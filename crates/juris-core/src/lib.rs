@@ -115,9 +115,7 @@ pub struct DeterministicRng {
 
 impl DeterministicRng {
     pub fn new(seed: u64) -> Self {
-        Self {
-            state: seed.max(1),
-        }
+        Self { state: seed.max(1) }
     }
 
     pub fn next_u64(&mut self) -> u64 {

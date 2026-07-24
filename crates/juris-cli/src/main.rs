@@ -48,10 +48,7 @@ fn parse_seed(args: &[String]) -> Option<u64> {
 }
 
 fn parse_mode(args: &[String]) -> Option<GameMode> {
-    let value = args
-        .windows(2)
-        .find(|pair| pair[0] == "--mode")?
-        .get(1)?;
+    let value = args.windows(2).find(|pair| pair[0] == "--mode")?.get(1)?;
     match value.as_str() {
         "career" => Some(GameMode::Career),
         "assisted" => Some(GameMode::Assisted),
@@ -80,7 +77,13 @@ fn read_selection(max: usize) -> usize {
 fn print_state(engine: &Engine<ScriptedAiActor>) {
     let state = engine.state();
     let (hour, minute) = state.now.hour_minute();
-    println!("\n=== Day {} {:02}:{:02} | {:?} ===", state.now.day(), hour, minute, state.stage);
+    println!(
+        "\n=== Day {} {:02}:{:02} | {:?} ===",
+        state.now.day(),
+        hour,
+        minute,
+        state.stage
+    );
     if let Some(seconds) = engine.decision_seconds() {
         println!("Decision window: {seconds} seconds");
     }
@@ -133,7 +136,10 @@ fn print_final(engine: &Engine<ScriptedAiActor>) {
         }
     }
     println!("Final position: {}/100", state.position_score());
-    println!("Ethical standing: {}/100", state.reputation.ethical_standing.value());
+    println!(
+        "Ethical standing: {}/100",
+        state.reputation.ethical_standing.value()
+    );
     println!("Total spend: EUR {}", state.budget_spent_eur);
 }
 

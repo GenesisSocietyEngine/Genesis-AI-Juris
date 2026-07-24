@@ -155,7 +155,9 @@ pub enum WorldEvent {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CaseOutcome {
-    Settlement { amount_eur: i64 },
+    Settlement {
+        amount_eur: i64,
+    },
     Judgment {
         client_won: bool,
         damages_eur: i64,

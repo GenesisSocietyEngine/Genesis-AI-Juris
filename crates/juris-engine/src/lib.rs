@@ -175,7 +175,10 @@ impl<A: AiActor> Engine<A> {
         if !self.available_actions().contains(&action) {
             return Err(EngineError::ActionUnavailable(action));
         }
-        if matches!(action, PlayerAction::AskAiResearch | PlayerAction::AskAiEvidenceReview) {
+        if matches!(
+            action,
+            PlayerAction::AskAiResearch | PlayerAction::AskAiEvidenceReview
+        ) {
             self.use_ai(action)?;
         } else {
             self.apply_non_ai_action(action);
@@ -317,15 +320,20 @@ impl<A: AiActor> Engine<A> {
 
     fn handle_world_event(&mut self, event: WorldEvent) {
         match event {
-            WorldEvent::InboxMessage { from, subject, body } => {
+            WorldEvent::InboxMessage {
+                from,
+                subject,
+                body,
+            } => {
                 self.state
                     .inbox
                     .push(format!("{from:?} — {subject}: {body}"));
             }
             WorldEvent::ClientPressure => {
-                self.state
-                    .inbox
-                    .push("Client CFO: We need a visible response today. The board is losing patience.".to_owned());
+                self.state.inbox.push(
+                    "Client CFO: We need a visible response today. The board is losing patience."
+                        .to_owned(),
+                );
                 self.state.reputation.client_trust.adjust(-2);
             }
             WorldEvent::PartnerReview => {
@@ -454,12 +462,48 @@ fn initial_actors() -> Vec<Actor> {
 
 fn initial_evidence() -> Vec<Evidence> {
     vec![
-        evidence(EvidenceId::SignedContract, "Signed implementation agreement", true, 90, 4),
-        evidence(EvidenceId::ChangeRequests, "Informal change requests", false, 70, -6),
-        evidence(EvidenceId::ProjectEmails, "Project correspondence", false, 80, 5),
-        evidence(EvidenceId::DeletedMailbox, "Recovered deleted mailbox data", false, 85, -8),
-        evidence(EvidenceId::ConditionalAcceptance, "Conditional delivery acceptance", false, 75, -4),
-        evidence(EvidenceId::IndependentExpertReport, "Independent ERP expert report", false, 88, 9),
+        evidence(
+            EvidenceId::SignedContract,
+            "Signed implementation agreement",
+            true,
+            90,
+            4,
+        ),
+        evidence(
+            EvidenceId::ChangeRequests,
+            "Informal change requests",
+            false,
+            70,
+            -6,
+        ),
+        evidence(
+            EvidenceId::ProjectEmails,
+            "Project correspondence",
+            false,
+            80,
+            5,
+        ),
+        evidence(
+            EvidenceId::DeletedMailbox,
+            "Recovered deleted mailbox data",
+            false,
+            85,
+            -8,
+        ),
+        evidence(
+            EvidenceId::ConditionalAcceptance,
+            "Conditional delivery acceptance",
+            false,
+            75,
+            -4,
+        ),
+        evidence(
+            EvidenceId::IndependentExpertReport,
+            "Independent ERP expert report",
+            false,
+            88,
+            9,
+        ),
     ]
 }
 
@@ -490,7 +534,9 @@ mod tests {
         engine.advance_to_next_event();
         engine.apply_action(PlayerAction::RunConflictCheck).unwrap();
         engine.apply_action(PlayerAction::RequestDocuments).unwrap();
-        engine.apply_action(PlayerAction::HireIndependentExpert).unwrap();
+        engine
+            .apply_action(PlayerAction::HireIndependentExpert)
+            .unwrap();
         engine.apply_action(PlayerAction::OfferMediation).unwrap();
         engine.advance_to_next_event();
         engine.apply_action(PlayerAction::Litigate).unwrap();
@@ -506,10 +552,10 @@ mod tests {
     #[test]
     fn hardcore_mode_exposes_no_internal_ai_actions() {
         let engine = Engine::new(1, GameMode::Hardcore, ScriptedAiActor);
-        assert!(!engine
-            .available_actions()
-            .iter()
-            .any(|action| matches!(action, PlayerAction::AskAiResearch | PlayerAction::AskAiEvidenceReview)));
+        assert!(!engine.available_actions().iter().any(|action| matches!(
+            action,
+            PlayerAction::AskAiResearch | PlayerAction::AskAiEvidenceReview
+        )));
     }
 
     #[test]
@@ -517,9 +563,13 @@ mod tests {
         let mut engine = Engine::new(1, GameMode::Career, ScriptedAiActor);
         engine.apply_action(PlayerAction::RunConflictCheck).unwrap();
         engine.apply_action(PlayerAction::RequestDocuments).unwrap();
-        engine.apply_action(PlayerAction::RecoverDeletedMailbox).unwrap();
+        engine
+            .apply_action(PlayerAction::RecoverDeletedMailbox)
+            .unwrap();
         let before = engine.state().reputation.ethical_standing.value();
-        engine.apply_action(PlayerAction::ConcealAdverseEmails).unwrap();
+        engine
+            .apply_action(PlayerAction::ConcealAdverseEmails)
+            .unwrap();
         assert!(engine.state().reputation.ethical_standing.value() <= before - 30);
     }
 
