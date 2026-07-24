@@ -1,0 +1,13 @@
+[package]
+name = "juris-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+juris-ai = { path = "../juris-ai" }
+juris-content = { path = "../juris-content" }
+juris-core = { path = "../juris-core" }
+juris-domain = { path = "../juris-domain" }
+thiserror.workspace = true

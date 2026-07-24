@@ -1,0 +1,10 @@
+{
+  "id": "failed-erp-implementation",
+  "title": "The Failed ERP Implementation",
+  "jurisdiction": "Belgium",
+  "practice_area": "Commercial contract dispute",
+  "claim_value_eur": 240000,
+  "opening_subject": "Urgent: ERP supplier termination notice",
+  "opening_message": "Our ERP supplier has terminated the project and denies responsibility. We estimate our losses at EUR 240,000. Some requirements changed during delivery, but the system still failed. Can you take the case?",
+  "opponent_initial_offer_eur": 60000
+}

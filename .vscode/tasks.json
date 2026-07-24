@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Juris: run living workday",
+      "type": "shell",
+      "command": "cargo run -p juris-cli -- start-day --mode assisted --seed 20260724",
+      "group": "build",
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "Juris: test workspace",
+      "type": "shell",
+      "command": "cargo test --workspace",
+      "group": "test",
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "Juris: quality gate",
+      "type": "shell",
+      "command": "cargo fmt --all -- --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace",
+      "problemMatcher": ["$rustc"]
+    }
+  ]
+}
