@@ -7,3 +7,6 @@ rust-version.workspace = true
 
 [dependencies]
 juris-domain = { path = "../juris-domain" }
+
+[dev-dependencies]
+juris-core = { path = "../juris-core" }

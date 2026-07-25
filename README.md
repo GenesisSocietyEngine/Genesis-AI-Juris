@@ -1,56 +1,100 @@
-# GENESIS: AI Juris v0.3.1
+# GENESIS: AI Juris v0.4.0
 
-The first event-driven vertical slice of an AI-native legal career simulator.
+A deterministic, AI-native legal-career simulation prototype written in Rust.
 
-## What changed from v0.2
+v0.4.0 turns the first ERP dispute into an active professional workday. The player must manage messages, deadlines, workload, delegation, evidence, settlement, litigation, ethics, and fatigue while the world continues to advance.
 
-- deterministic scheduler and typed world events;
-- a living legal workday with inbox messages, client pressure, partner review, offers, and a hearing;
-- AI actors behind a strict trait boundary;
-- case content stored as JSON rather than hard-coded prose;
-- six focused crates with one-way dependencies;
-- explicit career, assisted, hardcore, and tournament rules;
-- reproducibility and anti-cheating tests.
+## Current vertical slice
 
-## Run
+**Matter:** The Failed ERP Implementation  
+**Jurisdiction:** Belgium  
+**Practice area:** Commercial disputes
+
+The player can now:
+
+- triage and answer an active inbox;
+- meet or miss professional deadlines;
+- work beyond daily capacity and accumulate fatigue;
+- rest while the world and deadlines continue;
+- review documents personally or delegate to a junior;
+- commission and review an independent expert report;
+- use a limited in-game AI associate at several procedural stages;
+- negotiate settlement;
+- progress through pleadings, disclosure, expert evidence, hearing preparation, and hearing;
+- receive an explainable deterministic judgment.
+
+## Documentation
+
+- [`VISION.md`](VISION.md) — product vision, philosophy, principles, and long-term direction.
+- [`development-journal.md`](development-journal.md) — engineering milestones, rationale, invariants, validation, and open questions.
+- [`ROADMAP.md`](ROADMAP.md) — concise release-oriented roadmap.
+- [`RELEASE_NOTES_v0.4.0.md`](RELEASE_NOTES_v0.4.0.md) — changes in this release.
+- [`UPGRADE_FROM_v0.3.1.md`](UPGRADE_FROM_v0.3.1.md) — safe upgrade and Git instructions.
+
+## Workspace architecture
+
+```text
+juris-core       deterministic time, seeded RNG, FIFO scheduler
+juris-domain     legal and professional state, events, actions, outcomes
+juris-content    typed JSON scenario loading
+juris-ai         read-only AI actor boundary and offline scripted adapter
+juris-engine     authoritative simulation state transitions
+juris-cli        terminal input and presentation
+```
+
+### Authority rule
+
+Only `juris-engine` mutates `MatterState`.
+
+- The CLI submits `PlayerAction` values.
+- The AI adapter receives an immutable state reference.
+- JSON content provides configuration, not executable rules.
+- Outcomes are calculated by deterministic Rust code.
+
+## Run the game
+
+From the repository root:
 
 ```powershell
-cargo fmt --all
-cargo check --workspace
-cargo test --workspace
 cargo run -p juris-cli -- start-day --mode assisted --seed 20260724
 ```
 
-## Architecture
-
-```text
-juris-core       deterministic time, RNG, scheduler
-juris-domain     serializable legal state and typed actions/events
-juris-content    JSON case loading
-juris-ai         AI actor interfaces and offline scripted adapter
-juris-engine     the only crate allowed to mutate simulation state
-juris-cli        presentation and input only
-```
-
-The engine, not the LLM, remains the authority for costs, evidence, deadlines,
-reputation, ethics, settlement value, and outcomes.
-
-
-## First-time Git bootstrap
+Other modes:
 
 ```powershell
-git init
-git branch -M main
-git add .
-git status
-git commit -m "Initial event-driven prototype v0.3.1"
+cargo run -p juris-cli -- start-day --mode career --seed 20260724
+cargo run -p juris-cli -- start-day --mode hardcore --seed 20260724
+cargo run -p juris-cli -- start-day --mode tournament --seed 20260724
 ```
 
-Create an empty private GitHub repository named `genesis-ai-juris`, then run:
+Using the same seed and the same ordered choices should reproduce the same world and judgment.
+
+## Mandatory quality gate
+
+Run before every commit:
 
 ```powershell
-git remote add origin https://github.com/YOUR-USER-NAME/genesis-ai-juris.git
-git push -u origin main
-git tag -a v0.3.1 -m "GENESIS: AI Juris v0.3.1"
-git push origin v0.3.1
+cargo fmt --all
+cargo fmt --all -- --check
+cargo check --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
 ```
+
+The repository includes a GitHub Actions workflow that runs formatting, Clippy, and all tests on every push and pull request.
+
+## Code-comment standard
+
+Public crates and APIs explain:
+
+- architectural purpose;
+- authority boundaries;
+- ownership and borrowing rationale where material;
+- determinism constraints;
+- non-obvious business rules.
+
+Tests include a short statement of the behavior or invariant they prove. Comments should explain intent and constraints rather than paraphrasing obvious syntax.
+
+## Status
+
+This is a vertical prototype, not legal advice and not a validated model of every Belgian procedural rule. It exists to prove the game architecture and core professional loop before jurisdictional depth and content scale are expanded.

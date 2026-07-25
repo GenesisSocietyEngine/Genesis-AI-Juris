@@ -1,5 +1,11 @@
+//! Terminal presentation layer for the v0.4 vertical slice.
+//!
+//! The CLI owns input and rendering only. It never edits `MatterState`; every
+//! choice is submitted to `Engine::apply_action`. This intentionally mirrors a
+//! future mobile client, which should be replaceable without changing rules.
+
 use juris_ai::ScriptedAiActor;
-use juris_domain::{CaseOutcome, GameMode, PlayerAction};
+use juris_domain::{CaseOutcome, DeadlineStatus, GameMode, MatterState};
 use juris_engine::Engine;
 use std::env;
 use std::io::{self, Write};
@@ -15,30 +21,36 @@ fn main() {
     let mode = parse_mode(&args).unwrap_or(GameMode::Career);
     let mut engine = Engine::new(seed, mode, ScriptedAiActor);
 
-    println!("GENESIS: AI Juris v0.3.1");
+    println!("GENESIS: AI Juris v0.4.0");
     println!("Seed: {} | Mode: {:?}", engine.seed(), engine.mode());
     println!("Matter: {}\n", engine.state().title);
     engine.advance_to_next_event();
 
     while !engine.state().is_resolved() {
         print_state(&engine);
-        let actions = engine.available_actions();
-        for (index, action) in actions.iter().enumerate() {
-            println!("  {}. {}", index + 1, action_label(*action));
+        let options = engine.available_options();
+        for (index, option) in options.iter().enumerate() {
+            println!("  {}. {}", index + 1, option.label);
+            println!("     {}", option.description);
+            println!(
+                "     Player time: {} | Cost: EUR {}",
+                format_duration(option.player_minutes),
+                option.monetary_cost_eur
+            );
         }
-        println!("  {}. Advance to next world event", actions.len() + 1);
+        println!("  {}. Advance to next world event", options.len() + 1);
 
-        let choice = read_selection(actions.len() + 1);
-        if choice == actions.len() + 1 {
+        let choice = read_selection(options.len() + 1);
+        if choice == options.len() + 1 {
             if !engine.advance_to_next_event() {
                 println!("No scheduled events remain. Choose a legal action.\n");
             }
-        } else if let Err(error) = engine.apply_action(actions[choice - 1]) {
+        } else if let Err(error) = engine.apply_action(options[choice - 1].action) {
             println!("Action rejected: {error}\n");
         }
     }
 
-    print_final(&engine);
+    print_final(engine.state());
 }
 
 fn parse_seed(args: &[String]) -> Option<u64> {
@@ -103,67 +115,183 @@ fn print_state(engine: &Engine<ScriptedAiActor>) {
         state.reputation.client_trust.value()
     );
     println!(
-        "AI requests {}/{}",
-        state.ai_usage.requests_used, state.ai_usage.request_limit
+        "Today {:.1}/{:.1}h | Fatigue {} | Total overtime {:.1}h",
+        state.work.minutes_worked_today as f64 / 60.0,
+        state.work.daily_capacity_minutes as f64 / 60.0,
+        state.work.fatigue.value(),
+        state.work.overtime_minutes_total as f64 / 60.0
+    );
+    println!(
+        "AI requests {}/{} | Unhandled required messages {}",
+        state.ai_usage.requests_used,
+        state.ai_usage.request_limit,
+        state.unhandled_required_messages()
     );
     if let Some(note) = &state.ai_usage.last_note {
-        println!("AI note: {note}");
+        println!("Latest AI note: {note}");
     }
-    if !state.inbox.is_empty() {
-        println!("Inbox:");
-        for message in state.inbox.iter().rev().take(3).rev() {
-            println!("  - {message}");
-        }
+
+    print_inbox(state);
+    print_deadlines(state);
+    print_evidence(state);
+    print_litigation_status(state);
+    if let Some(amount) = state.settlement_offer_eur {
+        println!("Current settlement offer: EUR {amount}");
     }
     println!();
 }
 
-fn print_final(engine: &Engine<ScriptedAiActor>) {
-    let state = engine.state();
+fn print_inbox(state: &MatterState) {
+    if state.inbox.is_empty() {
+        return;
+    }
+    println!("Inbox:");
+    for message in state.inbox.iter().rev().take(8).rev() {
+        let (hour, minute) = message.received_at.hour_minute();
+        let status = if message.handled {
+            "handled"
+        } else if message.requires_response {
+            "RESPONSE REQUIRED"
+        } else {
+            "open"
+        };
+        println!(
+            "  - [Day {} {:02}:{:02} | {}] {:?} — {}",
+            message.received_at.day(),
+            hour,
+            minute,
+            status,
+            message.from,
+            message.subject
+        );
+        println!("    {}", message.body);
+    }
+}
+
+fn print_deadlines(state: &MatterState) {
+    if state.deadlines.is_empty() {
+        return;
+    }
+    println!("Deadlines:");
+    for deadline in &state.deadlines {
+        let (hour, minute) = deadline.due.hour_minute();
+        let marker = match deadline.status {
+            DeadlineStatus::Open => "OPEN",
+            DeadlineStatus::Completed => "DONE",
+            DeadlineStatus::Missed => "MISSED",
+        };
+        println!(
+            "  - [{marker}] {} — Day {} {:02}:{:02}",
+            deadline.label,
+            deadline.due.day(),
+            hour,
+            minute
+        );
+    }
+}
+
+fn print_evidence(state: &MatterState) {
+    let known: Vec<&str> = state
+        .evidence
+        .iter()
+        .filter(|evidence| evidence.discovered)
+        .map(|evidence| evidence.title.as_str())
+        .collect();
+    println!("Known evidence: {}", known.join(", "));
+}
+
+fn print_litigation_status(state: &MatterState) {
+    if state.litigation.statement_drafted
+        || state.litigation.statement_filed
+        || state.litigation.disclosure_served
+        || state.litigation.hearing_scheduled_for.is_some()
+    {
+        println!(
+            "Litigation: draft={} filed={} disclosure={} opponent-reviewed={} expert-reviewed={} witnesses={} rehearsal={}",
+            state.litigation.statement_drafted,
+            state.litigation.statement_filed,
+            state.litigation.disclosure_served,
+            state.litigation.opponent_disclosure_reviewed,
+            state.litigation.expert_report_reviewed,
+            state.litigation.witnesses_prepared,
+            state.litigation.hearing_rehearsed
+        );
+    }
+}
+
+fn print_final(state: &MatterState) {
     println!("\n=== MATTER RESOLVED ===");
-    match state.outcome.as_ref().expect("resolved state has outcome") {
-        CaseOutcome::Settlement { amount_eur } => {
-            println!("Settlement: EUR {amount_eur}");
+    match state
+        .outcome
+        .as_ref()
+        .expect("resolved matter must contain an outcome")
+    {
+        CaseOutcome::Settlement {
+            amount_eur,
+            net_after_legal_spend_eur,
+        } => {
+            println!("Settlement accepted: EUR {amount_eur}");
+            println!("Net after recorded legal spend: EUR {net_after_legal_spend_eur}");
         }
         CaseOutcome::Judgment {
             client_won,
             damages_eur,
             costs_awarded_eur,
+            breakdown,
         } => {
             println!("Client won: {client_won}");
             println!("Damages: EUR {damages_eur}");
             println!("Costs award: EUR {costs_awarded_eur}");
+            println!("\nJudgment calculation:");
+            println!("  Base position: {}%", breakdown.base_position);
+            for factor in &breakdown.factors {
+                println!("  {:+3}  {}", factor.modifier, factor.label);
+            }
+            println!("  Final win threshold: {}%", breakdown.win_threshold);
+            println!("  Deterministic roll: {}", breakdown.deterministic_roll);
         }
     }
-    println!("Final position: {}/100", state.position_score());
+    println!("\nFinal position: {}/100", state.position_score());
     println!(
         "Ethical standing: {}/100",
         state.reputation.ethical_standing.value()
     );
     println!("Total spend: EUR {}", state.budget_spent_eur);
+    println!(
+        "Billable time: {:.1}h",
+        state.billable_minutes as f64 / 60.0
+    );
+    println!("Final fatigue: {}/100", state.work.fatigue.value());
+    println!(
+        "Deadlines completed/missed: {}/{}",
+        state
+            .deadlines
+            .iter()
+            .filter(|deadline| deadline.status == DeadlineStatus::Completed)
+            .count(),
+        state
+            .deadlines
+            .iter()
+            .filter(|deadline| deadline.status == DeadlineStatus::Missed)
+            .count()
+    );
 }
 
-fn action_label(action: PlayerAction) -> &'static str {
-    match action {
-        PlayerAction::RunConflictCheck => "Run conflict check",
-        PlayerAction::AcceptMatterImmediately => "Accept matter immediately",
-        PlayerAction::RequestDocuments => "Request and review full document set",
-        PlayerAction::AskAiResearch => "Ask AI associate for legal research",
-        PlayerAction::AskAiEvidenceReview => "Ask AI associate to review known evidence",
-        PlayerAction::SendDemand => "Send an aggressive demand letter",
-        PlayerAction::OfferMediation => "Propose early mediation",
-        PlayerAction::RecoverDeletedMailbox => "Recover deleted mailbox data",
-        PlayerAction::HireIndependentExpert => "Hire an independent ERP expert",
-        PlayerAction::DiscloseAdverseEmails => "Disclose adverse emails",
-        PlayerAction::ConcealAdverseEmails => "Conceal adverse emails",
-        PlayerAction::AcceptSettlement => "Accept current settlement offer",
-        PlayerAction::Litigate => "Reject settlement and litigate",
-        PlayerAction::PrepareWitnesses => "Prepare witnesses for hearing",
+fn format_duration(minutes: u32) -> String {
+    if minutes == 0 {
+        return "immediate".to_owned();
+    }
+    let hours = minutes / 60;
+    let remainder = minutes % 60;
+    match (hours, remainder) {
+        (0, minutes) => format!("{minutes}m"),
+        (hours, 0) => format!("{hours}h"),
+        (hours, minutes) => format!("{hours}h {minutes}m"),
     }
 }
 
 fn print_usage() {
-    println!("Usage:");
-    println!("  cargo run -p juris-cli -- start-day --mode career --seed 20260724");
-    println!("Modes: career, assisted, hardcore, tournament");
+    println!(
+        "Usage: cargo run -p juris-cli -- start-day --mode <career|assisted|hardcore|tournament> --seed <u64>"
+    );
 }
