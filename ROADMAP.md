@@ -2,6 +2,23 @@
 
 The product vision and long-term principles live in `VISION.md`. This document tracks the next engineering releases.
 
+
+## v0.4.2 — Release hygiene patch
+
+- Restore compilation of all `juris-ai` test targets.
+- Remove use of APIs newer than the declared Rust 1.78 MSRV.
+- Enforce the exact MSRV in GitHub Actions.
+- Preserve v0.4.1 deterministic gameplay without balance changes.
+
+## v0.4.1 — Simulation integrity patch
+
+- Mandatory hearing attendance windows and default consequences.
+- Expiring, revisable settlement offers.
+- Concrete AI legal work product with visible reliability.
+- Acute fatigue plus cumulative strain.
+- Client budget approval gates.
+- Explicit inbox lifecycle states.
+
 ## v0.4.0 — Active legal workday
 
 - active inbox;

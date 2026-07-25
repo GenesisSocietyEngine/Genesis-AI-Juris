@@ -1,8 +1,8 @@
-# GENESIS: AI Juris v0.4.0
+# GENESIS: AI Juris v0.4.2
 
 A deterministic, AI-native legal-career simulation prototype written in Rust.
 
-v0.4.0 turns the first ERP dispute into an active professional workday. The player must manage messages, deadlines, workload, delegation, evidence, settlement, litigation, ethics, and fatigue while the world continues to advance.
+v0.4.2 is a release-hygiene patch on top of v0.4.1. It preserves the simulation-integrity gameplay while restoring test compilation and enforcing the documented Rust 1.78 minimum toolchain. v0.4.1 hardened the first active legal workday with mandatory hearing windows, expiring settlement offers, concrete AI work product, persistent strain, and client budget authority. The player must manage messages, deadlines, workload, delegation, evidence, settlement, litigation, ethics, and fatigue while the world continues to advance.
 
 ## Current vertical slice
 
@@ -28,7 +28,9 @@ The player can now:
 - [`VISION.md`](VISION.md) — product vision, philosophy, principles, and long-term direction.
 - [`development-journal.md`](development-journal.md) — engineering milestones, rationale, invariants, validation, and open questions.
 - [`ROADMAP.md`](ROADMAP.md) — concise release-oriented roadmap.
-- [`RELEASE_NOTES_v0.4.0.md`](RELEASE_NOTES_v0.4.0.md) — changes in this release.
+- [`RELEASE_NOTES_v0.4.2.md`](RELEASE_NOTES_v0.4.2.md) — test-compilation and MSRV corrections in this release.
+- [`RELEASE_NOTES_v0.4.1.md`](RELEASE_NOTES_v0.4.1.md) — simulation integrity changes introduced previously.
+- [`RELEASE_NOTES_v0.4.0.md`](RELEASE_NOTES_v0.4.0.md) — original active-workday milestone.
 - [`UPGRADE_FROM_v0.3.1.md`](UPGRADE_FROM_v0.3.1.md) — safe upgrade and Git instructions.
 
 ## Workspace architecture

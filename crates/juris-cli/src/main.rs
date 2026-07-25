@@ -5,7 +5,7 @@
 //! future mobile client, which should be replaceable without changing rules.
 
 use juris_ai::ScriptedAiActor;
-use juris_domain::{CaseOutcome, DeadlineStatus, GameMode, MatterState};
+use juris_domain::{CaseOutcome, DeadlineStatus, GameMode, InboxStatus, MatterState};
 use juris_engine::Engine;
 use std::env;
 use std::io::{self, Write};
@@ -21,7 +21,7 @@ fn main() {
     let mode = parse_mode(&args).unwrap_or(GameMode::Career);
     let mut engine = Engine::new(seed, mode, ScriptedAiActor);
 
-    println!("GENESIS: AI Juris v0.4.0");
+    println!("GENESIS: AI Juris v0.4.2");
     println!("Seed: {} | Mode: {:?}", engine.seed(), engine.mode());
     println!("Matter: {}\n", engine.state().title);
     engine.advance_to_next_event();
@@ -115,10 +115,11 @@ fn print_state(engine: &Engine<ScriptedAiActor>) {
         state.reputation.client_trust.value()
     );
     println!(
-        "Today {:.1}/{:.1}h | Fatigue {} | Total overtime {:.1}h",
+        "Today {:.1}/{:.1}h | Fatigue {} | Strain {} | Total overtime {:.1}h",
         state.work.minutes_worked_today as f64 / 60.0,
         state.work.daily_capacity_minutes as f64 / 60.0,
         state.work.fatigue.value(),
+        state.work.cumulative_strain.value(),
         state.work.overtime_minutes_total as f64 / 60.0
     );
     println!(
@@ -135,9 +136,24 @@ fn print_state(engine: &Engine<ScriptedAiActor>) {
     print_deadlines(state);
     print_evidence(state);
     print_litigation_status(state);
-    if let Some(amount) = state.settlement_offer_eur {
-        println!("Current settlement offer: EUR {amount}");
+    if let Some(offer) = &state.settlement_offer {
+        let (hour, minute) = offer.expires_at.hour_minute();
+        println!(
+            "Current settlement offer: EUR {} | revision {} | expires Day {} {:02}:{:02}",
+            offer.amount_eur,
+            offer.revision,
+            offer.expires_at.day(),
+            hour,
+            minute
+        );
     }
+    println!(
+        "Authorized budget: EUR {} | Remaining authority: EUR {}",
+        state.authorized_budget_eur,
+        state
+            .authorized_budget_eur
+            .saturating_sub(state.budget_spent_eur)
+    );
     println!();
 }
 
@@ -148,12 +164,12 @@ fn print_inbox(state: &MatterState) {
     println!("Inbox:");
     for message in state.inbox.iter().rev().take(8).rev() {
         let (hour, minute) = message.received_at.hour_minute();
-        let status = if message.handled {
-            "handled"
-        } else if message.requires_response {
-            "RESPONSE REQUIRED"
-        } else {
-            "open"
+        let status = match message.status {
+            InboxStatus::Unread => "unread",
+            InboxStatus::Read => "read",
+            InboxStatus::ActionRequired => "ACTION REQUIRED",
+            InboxStatus::Resolved => "resolved",
+            InboxStatus::Archived => "archived",
         };
         println!(
             "  - [Day {} {:02}:{:02} | {}] {:?} — {}",
@@ -243,11 +259,14 @@ fn print_final(state: &MatterState) {
             println!("Damages: EUR {damages_eur}");
             println!("Costs award: EUR {costs_awarded_eur}");
             println!("\nJudgment calculation:");
-            println!("  Base position: {}%", breakdown.base_position);
+            println!(
+                "  Pre-hearing case strength: {}/100",
+                breakdown.base_position
+            );
             for factor in &breakdown.factors {
                 println!("  {:+3}  {}", factor.modifier, factor.label);
             }
-            println!("  Final win threshold: {}%", breakdown.win_threshold);
+            println!("  Adjusted win probability: {}%", breakdown.win_threshold);
             println!("  Deterministic roll: {}", breakdown.deterministic_roll);
         }
     }

@@ -51,13 +51,40 @@ pub struct ScriptedAiActor;
 impl AiActor for ScriptedAiActor {
     fn respond(&self, prompt: &ActorPrompt, state: &MatterState) -> ActorResponse {
         let text = match prompt.actor {
-            ActorId::AiAssociate => format!(
-                "AI associate: {} I reviewed {} authorized facts at the {:?} stage. Current position is {}/100. Verify authorities, citations, and assumptions before relying on this note.",
-                prompt.objective,
-                prompt.known_facts.len(),
-                prompt.stage,
-                state.position_score()
-            ),
+            ActorId::AiAssociate => {
+                let evidence_list = if prompt.known_facts.is_empty() {
+                    "none".to_owned()
+                } else {
+                    prompt.known_facts.join(", ")
+                };
+                let objective = prompt.objective.to_ascii_lowercase();
+                if objective.contains("settlement range") {
+                    let low = (state.claim_value_eur * i64::from(state.position_score())) / 160;
+                    let high = (state.claim_value_eur * i64::from(state.position_score() + 20)) / 130;
+                    format!(
+                        "AI damages model — risk-adjusted range: EUR {low} to EUR {high}. Assumptions: recoverable loss is capped by the pleaded claim and the current position is {}/100. Evidence used: {evidence_list}. Unknowns: causation allocation, enforceability of the liability cap, and litigation collection risk. Human verification required.",
+                        state.position_score()
+                    )
+                } else if objective.contains("statement of claim") {
+                    format!(
+                        "AI draft review — check that every pleaded assertion maps to discovered evidence. Evidence used: {evidence_list}. Primary risk: the change-request history may contradict a simple supplier-default narrative. Confidence {}%. Human verification required before filing.",
+                        78
+                    )
+                } else if objective.contains("judicial questions") {
+                    format!(
+                        "AI hearing preparation — rehearse causation, scope changes, acceptance wording, mitigation, and the liability cap. Evidence used: {evidence_list}. Likely weak point: separating supplier failure from client-driven change. Human verification required."
+                    )
+                } else if objective.contains("contradictions") {
+                    format!(
+                        "AI evidence review — compare the signed scope, informal change requests, acceptance language, and project correspondence. Evidence used: {evidence_list}. Missing links: technical causation and quantified loss. Human verification required."
+                    )
+                } else {
+                    format!(
+                        "AI legal research — investigate Belgian contract interpretation, liability limitations, causation, mitigation, and evidentiary preservation. Authorized facts reviewed: {evidence_list}. Current position: {}/100. Verify authorities and citations before reliance.",
+                        state.position_score()
+                    )
+                }
+            }
             ActorId::OpposingCounsel => {
                 "Opposing counsel denies liability but remains open to a commercial resolution."
                     .to_owned()
@@ -85,8 +112,8 @@ mod tests {
     use super::{ActorPrompt, AiActor, ScriptedAiActor};
     use juris_core::SimMinute;
     use juris_domain::{
-        ActorId, AiUsage, CaseStage, DelegationState, LitigationState, MatterState, Reputation,
-        Score, WorkState,
+        ActorId, AiUsage, CaseStage, DelegationState, Evidence, EvidenceId, LitigationState,
+        MatterState, Reputation, Score, WorkState,
     };
 
     fn minimal_state() -> MatterState {
@@ -108,6 +135,7 @@ mod tests {
                 minutes_worked_today: 0,
                 daily_capacity_minutes: 540,
                 fatigue: Score::new(10),
+                cumulative_strain: Score::new(0),
                 overtime_minutes_total: 0,
             },
             delegation: DelegationState {
@@ -128,6 +156,7 @@ mod tests {
                 witnesses_prepared: false,
                 hearing_rehearsed: false,
                 hearing_scheduled_for: None,
+                hearing_attendance_deadline: None,
             },
             actors: Vec::new(),
             evidence: Vec::new(),
@@ -139,16 +168,33 @@ mod tests {
                 last_note: None,
             },
             inbox: Vec::new(),
-            settlement_offer_eur: None,
+            settlement_offer: None,
+            authorized_budget_eur: 25_000,
             outcome: None,
         }
     }
 
     #[test]
     fn scripted_actor_uses_only_explicitly_authorized_context() {
-        // The response names the exact number of supplied facts. This proves
-        // hidden evidence is not implicitly exposed by the adapter contract.
+        // This test verifies the actual security boundary rather than depending
+        // on the exact wording or grammar of the generated response.
+        //
+        // The authoritative matter state deliberately contains an undiscovered
+        // evidence item. The engine authorizes only "Signed contract" through
+        // `ActorPrompt::known_facts`. The AI adapter must mention the authorized
+        // fact and must not leak the hidden evidence from `MatterState`.
         let actor = ScriptedAiActor;
+        let mut state = minimal_state();
+
+        state.evidence.push(Evidence {
+            id: EvidenceId::DeletedMailbox,
+            title: "Hidden deleted mailbox data".to_owned(),
+            discovered: false,
+            disclosed: false,
+            reliability: Score::new(85),
+            merits_effect: -8,
+        });
+
         let response = actor.respond(
             &ActorPrompt {
                 actor: ActorId::AiAssociate,
@@ -156,8 +202,17 @@ mod tests {
                 known_facts: vec!["Signed contract".to_owned()],
                 stage: CaseStage::Investigation,
             },
-            &minimal_state(),
+            &state,
         );
-        assert!(response.text.contains("1 authorized facts"));
+
+        assert!(
+            response.text.contains("Signed contract"),
+            "The response should include the fact explicitly authorized by the engine"
+        );
+
+        assert!(
+            !response.text.contains("Hidden deleted mailbox data"),
+            "The AI adapter must not expose undiscovered evidence from MatterState"
+        );
     }
 }

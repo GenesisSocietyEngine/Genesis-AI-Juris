@@ -114,6 +114,7 @@ impl<A: AiActor> Engine<A> {
                 minutes_worked_today: 0,
                 daily_capacity_minutes: 9 * 60,
                 fatigue: Score::new(5),
+                cumulative_strain: Score::new(0),
                 overtime_minutes_total: 0,
             },
             delegation: DelegationState {
@@ -134,6 +135,7 @@ impl<A: AiActor> Engine<A> {
                 witnesses_prepared: false,
                 hearing_rehearsed: false,
                 hearing_scheduled_for: None,
+                hearing_attendance_deadline: None,
             },
             actors: initial_actors(),
             evidence: initial_evidence(),
@@ -145,7 +147,8 @@ impl<A: AiActor> Engine<A> {
                 last_note: None,
             },
             inbox: Vec::new(),
-            settlement_offer_eur: None,
+            settlement_offer: None,
+            authorized_budget_eur: 25_000,
             outcome: None,
         };
 
@@ -218,8 +221,14 @@ impl<A: AiActor> Engine<A> {
         self.add_inbox_response_actions(&mut actions);
         self.add_deadline_actions(&mut actions);
 
-        if self.state.settlement_offer_eur.is_some() {
+        if self.active_settlement_offer().is_some() {
             actions.push(PlayerAction::AcceptSettlement);
+        }
+
+        if self.state.budget_spent_eur >= self.state.authorized_budget_eur.saturating_sub(5_000)
+            && self.state.authorized_budget_eur < 100_000
+        {
+            actions.push(PlayerAction::RequestBudgetApproval);
         }
 
         match self.state.stage {
@@ -235,14 +244,20 @@ impl<A: AiActor> Engine<A> {
             CaseStage::ExpertEvidence => self.add_expert_actions(&mut actions),
             CaseStage::HearingPreparation => self.add_hearing_preparation_actions(&mut actions),
             CaseStage::Hearing => {
-                self.add_hearing_preparation_actions(&mut actions);
+                // Once the hearing is in session, the player must attend within
+                // the attendance window or accept a still-live settlement.
+                // Preparation and rest are no longer lawful escape routes.
                 actions.push(PlayerAction::AttendHearing);
             }
         }
 
-        // Deliberate rest is always available after intake. It is a strategic
-        // choice because deadlines and incoming events continue while resting.
-        actions.push(PlayerAction::RestUntilNextWorkday);
+        // Rest is available only when it cannot jump over a mandatory hearing.
+        // Other deadlines may still be missed deliberately; the hearing itself
+        // is a hard appointment with a default-loss consequence.
+        if self.can_rest_safely() {
+            actions.push(PlayerAction::RestUntilNextWorkday);
+        }
+        actions.retain(|action| self.action_within_authorized_budget(*action));
         actions.sort();
         actions.dedup();
         actions
@@ -498,6 +513,7 @@ impl<A: AiActor> Engine<A> {
                 self.state.evidence_quality.adjust(14 - quality_penalty);
                 self.state.legal_merits.adjust(8 - quality_penalty);
                 self.state.reputation.judicial_credibility.adjust(3);
+                self.schedule_revised_settlement_offer(60);
             }
             PlayerAction::SendDemand => {
                 self.spend(180, 900);
@@ -517,7 +533,10 @@ impl<A: AiActor> Engine<A> {
             }
             PlayerAction::AcceptSettlement => {
                 self.mark_message_handled(InboxMessageKind::SettlementOffer);
-                let amount = self.current_settlement_offer();
+                let amount = self
+                    .active_settlement_offer()
+                    .map(|offer| offer.amount_eur)
+                    .expect("validated settlement action requires a live offer");
                 self.resolve(CaseOutcome::Settlement {
                     amount_eur: amount,
                     net_after_legal_spend_eur: amount - self.state.budget_spent_eur,
@@ -554,6 +573,8 @@ impl<A: AiActor> Engine<A> {
                     .now
                     .saturating_add_minutes(self.template.hearing_delay_minutes_from_filing);
                 self.state.litigation.hearing_scheduled_for = Some(hearing_due);
+                self.state.litigation.hearing_attendance_deadline =
+                    Some(hearing_due.saturating_add_minutes(120));
                 self.scheduler.schedule(
                     self.state.now,
                     WorldEvent::InboxMessage {
@@ -566,6 +587,10 @@ impl<A: AiActor> Engine<A> {
                 );
                 self.scheduler
                     .schedule(hearing_due, WorldEvent::HearingReady);
+                self.scheduler.schedule(
+                    hearing_due.saturating_add_minutes(120),
+                    WorldEvent::HearingMissed,
+                );
             }
             PlayerAction::ServeDisclosure => {
                 self.spend(180, 2_500);
@@ -584,6 +609,7 @@ impl<A: AiActor> Engine<A> {
                 self.discover(EvidenceId::OpponentProjectLog);
                 self.state.evidence_quality.adjust(10 - quality_penalty);
                 self.state.legal_merits.adjust(5 - quality_penalty);
+                self.schedule_revised_settlement_offer(60);
             }
             PlayerAction::ProceedWithoutExpert => {
                 self.spend(30, 0);
@@ -602,7 +628,25 @@ impl<A: AiActor> Engine<A> {
             }
             PlayerAction::AttendHearing => {
                 self.spend(180, 6_000);
+                self.resolve_all_messages(InboxMessageKind::CourtNotice);
                 self.resolve_hearing();
+            }
+            PlayerAction::RequestBudgetApproval => {
+                self.spend(30, 250);
+                self.state.authorized_budget_eur =
+                    self.state.authorized_budget_eur.saturating_add(25_000);
+                self.state.reputation.client_trust.adjust(-1);
+                self.push_message(
+                    self.state.now,
+                    ActorId::ClientCfo,
+                    InboxMessageKind::BudgetApproval,
+                    "Additional litigation budget approved".to_owned(),
+                    format!(
+                        "The client approved a revised budget ceiling of EUR {}. Further overruns require another approval.",
+                        self.state.authorized_budget_eur
+                    ),
+                    false,
+                );
             }
             PlayerAction::RestUntilNextWorkday => self.rest_until_next_workday(),
             PlayerAction::AskAiResearch
@@ -662,12 +706,17 @@ impl<A: AiActor> Engine<A> {
 
         self.spend(90, 750);
         self.state.ai_usage.requests_used = self.state.ai_usage.requests_used.saturating_add(1);
-        self.state.ai_usage.last_note = Some(response.text);
 
         // Reliability is resolved by the seeded engine, never trusted from the
         // generated prose. This is both a safety boundary and an anti-cheating
         // mechanic: an eloquent answer may still require professional checking.
         let reliable = self.rng.roll_percent() < confidence;
+        let reliability_note = if reliable {
+            "Engine verification: the advisory result was mechanically reliable."
+        } else {
+            "Engine verification: the advisory result contained an unreliable inference and requires correction."
+        };
+        self.state.ai_usage.last_note = Some(format!("{} {}", response.text, reliability_note));
         match (action, reliable) {
             (PlayerAction::AskAiResearch, true) => self.state.procedural_position.adjust(3),
             (PlayerAction::AskAiResearch, false) => self.state.procedural_position.adjust(-2),
@@ -684,6 +733,9 @@ impl<A: AiActor> Engine<A> {
                 self.state.hearing_preparation.adjust(-3)
             }
             _ => unreachable!("all AI actions are covered"),
+        }
+        if action == PlayerAction::AskAiDamagesModel {
+            self.schedule_revised_settlement_offer(30);
         }
         Ok(())
     }
@@ -733,20 +785,51 @@ impl<A: AiActor> Engine<A> {
                     self.state.reputation.peer_respect.adjust(-2);
                 }
             }
-            WorldEvent::OpponentSettlementOffer { amount_eur } => {
-                self.state.settlement_offer_eur = Some(amount_eur);
+            WorldEvent::OpponentSettlementOffer {
+                amount_eur,
+                expires_at,
+                revision,
+            } => {
+                // A newer commercial proposal supersedes any earlier open one.
+                self.resolve_all_messages(InboxMessageKind::SettlementOffer);
+                self.state.settlement_offer = Some(SettlementOffer {
+                    amount_eur,
+                    made_at: occurred_at,
+                    expires_at,
+                    revision,
+                });
                 self.push_message(
                     occurred_at,
                     ActorId::OpposingCounsel,
                     InboxMessageKind::SettlementOffer,
-                    "Without-prejudice settlement offer".to_owned(),
+                    format!("Without-prejudice settlement offer — revision {revision}"),
                     format!(
-                        "Opposing counsel offers EUR {amount_eur} without admission of liability."
+                        "Opposing counsel offers EUR {amount_eur} without admission of liability. The offer expires {}.",
+                        format_sim_time("at", expires_at)
                     ),
                     true,
                 );
                 if self.state.stage == CaseStage::Investigation {
                     self.state.stage = CaseStage::PreLitigation;
+                }
+            }
+            WorldEvent::SettlementOfferExpired { revision } => {
+                let should_expire = self
+                    .state
+                    .settlement_offer
+                    .as_ref()
+                    .is_some_and(|offer| offer.revision == revision);
+                if should_expire {
+                    self.state.settlement_offer = None;
+                    self.resolve_all_messages(InboxMessageKind::SettlementOffer);
+                    self.push_message(
+                        occurred_at,
+                        ActorId::OpposingCounsel,
+                        InboxMessageKind::General,
+                        "Settlement offer expired".to_owned(),
+                        "The without-prejudice proposal is no longer available.".to_owned(),
+                        false,
+                    );
                 }
             }
             WorldEvent::DeadlineWarning {
@@ -808,15 +891,37 @@ impl<A: AiActor> Engine<A> {
             WorldEvent::HearingReady => {
                 if !self.state.is_resolved() {
                     self.state.stage = CaseStage::Hearing;
+                    self.resolve_all_messages(InboxMessageKind::CourtNotice);
+                    self.schedule_revised_settlement_offer(0);
                     self.push_message(
                         occurred_at,
                         ActorId::CourtRegistry,
                         InboxMessageKind::CourtNotice,
                         "Hearing now in session".to_owned(),
-                        "The court is ready. Attend the hearing or complete any remaining last-minute preparation first."
+                        "The court is ready. Attendance is mandatory within the two-hour hearing window."
                             .to_owned(),
-                        false,
+                        true,
                     );
+                }
+            }
+            WorldEvent::HearingMissed => {
+                if !self.state.is_resolved() && self.state.stage == CaseStage::Hearing {
+                    self.state.procedural_position.adjust(-40);
+                    self.state.reputation.judicial_credibility.adjust(-20);
+                    self.resolve(CaseOutcome::Judgment {
+                        client_won: false,
+                        damages_eur: 0,
+                        costs_awarded_eur: -25_000,
+                        breakdown: JudgmentBreakdown {
+                            base_position: self.state.position_score(),
+                            factors: vec![OutcomeFactor {
+                                label: "Mandatory hearing missed".to_owned(),
+                                modifier: -95,
+                            }],
+                            win_threshold: 5,
+                            deterministic_roll: 100,
+                        },
+                    });
                 }
             }
         }
@@ -841,26 +946,47 @@ impl<A: AiActor> Engine<A> {
             subject,
             body,
             requires_response,
-            handled: false,
+            status: if requires_response {
+                InboxStatus::ActionRequired
+            } else {
+                InboxStatus::Unread
+            },
         });
     }
 
     fn mark_message_handled(&mut self, kind: InboxMessageKind) {
-        if let Some(message) = self
+        if let Some(message) = self.state.inbox.iter_mut().find(|message| {
+            message.kind == kind
+                && matches!(
+                    message.status,
+                    InboxStatus::Unread | InboxStatus::ActionRequired
+                )
+        }) {
+            message.status = InboxStatus::Resolved;
+        }
+    }
+
+    fn resolve_all_messages(&mut self, kind: InboxMessageKind) {
+        for message in self
             .state
             .inbox
             .iter_mut()
-            .find(|message| message.kind == kind && !message.handled)
+            .filter(|message| message.kind == kind)
         {
-            message.handled = true;
+            if message.status != InboxStatus::Archived {
+                message.status = InboxStatus::Resolved;
+            }
         }
     }
 
     fn has_unhandled_message(&self, kind: InboxMessageKind) -> bool {
-        self.state
-            .inbox
-            .iter()
-            .any(|message| message.kind == kind && !message.handled)
+        self.state.inbox.iter().any(|message| {
+            message.kind == kind
+                && matches!(
+                    message.status,
+                    InboxStatus::Unread | InboxStatus::ActionRequired
+                )
+        })
     }
 
     fn add_deadline(&mut self, id: DeadlineId, label: &str, due: SimMinute) {
@@ -953,22 +1079,69 @@ impl<A: AiActor> Engine<A> {
     }
 
     fn schedule_settlement_offer(&mut self, delay_minutes: u32) {
-        let amount = self.current_settlement_offer();
-        self.scheduler.schedule(
-            self.state.now.saturating_add_minutes(delay_minutes),
-            WorldEvent::OpponentSettlementOffer { amount_eur: amount },
-        );
+        self.schedule_revised_settlement_offer(delay_minutes);
     }
 
-    fn current_settlement_offer(&self) -> i64 {
-        self.state.settlement_offer_eur.unwrap_or_else(|| {
-            let leverage_delta = i64::from(self.state.negotiation_leverage.value() - 35);
-            let position_delta = i64::from(self.state.position_score() - 45);
-            (self.template.opponent_initial_offer_eur
-                + leverage_delta * 1_000
-                + position_delta * 500)
-                .clamp(25_000, 180_000)
-        })
+    fn schedule_revised_settlement_offer(&mut self, delay_minutes: u32) {
+        let revision = self
+            .state
+            .settlement_offer
+            .as_ref()
+            .map_or(1, |offer| offer.revision.saturating_add(1));
+        let amount = self.calculated_settlement_offer();
+        let made_at = self.state.now.saturating_add_minutes(delay_minutes);
+        let expires_at = made_at.saturating_add_minutes(12 * 60);
+        self.scheduler.schedule(
+            made_at,
+            WorldEvent::OpponentSettlementOffer {
+                amount_eur: amount,
+                expires_at,
+                revision,
+            },
+        );
+        self.scheduler
+            .schedule(expires_at, WorldEvent::SettlementOfferExpired { revision });
+    }
+
+    fn calculated_settlement_offer(&self) -> i64 {
+        let leverage_delta = i64::from(self.state.negotiation_leverage.value() - 35);
+        let position_delta = i64::from(self.state.position_score() - 45);
+        let litigation_premium = if self.state.litigation.statement_filed {
+            18_000
+        } else {
+            0
+        };
+        let expert_premium = if self.state.litigation.expert_report_reviewed {
+            25_000
+        } else {
+            0
+        };
+        let disclosure_premium = if self.state.litigation.opponent_disclosure_reviewed {
+            30_000
+        } else {
+            0
+        };
+        let concealment_discount = if self.has_action(PlayerAction::ConcealAdverseEmails) {
+            35_000
+        } else {
+            0
+        };
+
+        (self.template.opponent_initial_offer_eur
+            + leverage_delta * 1_000
+            + position_delta * 900
+            + litigation_premium
+            + expert_premium
+            + disclosure_premium
+            - concealment_discount)
+            .clamp(25_000, 220_000)
+    }
+
+    fn active_settlement_offer(&self) -> Option<&SettlementOffer> {
+        self.state
+            .settlement_offer
+            .as_ref()
+            .filter(|offer| offer.expires_at >= self.state.now)
     }
 
     fn apply_document_review(&mut self, evidence_gain: i16, quality_penalty: i16) {
@@ -1171,6 +1344,9 @@ impl<A: AiActor> Engine<A> {
                 .work
                 .fatigue
                 .adjust(base_fatigue + overtime_fatigue);
+            let strain_gain =
+                (overtime_delta.div_ceil(120) as i16) + if chunk >= 6 * 60 { 1 } else { 0 };
+            self.state.work.cumulative_strain.adjust(strain_gain);
 
             self.state.now = self.state.now.saturating_add_minutes(chunk);
             let (hour, _) = self.state.now.hour_minute();
@@ -1187,6 +1363,7 @@ impl<A: AiActor> Engine<A> {
         self.state.work.tracked_day = self.state.now.day();
         self.state.work.minutes_worked_today = 0;
         self.state.work.fatigue.adjust(-30);
+        self.state.work.cumulative_strain.adjust(-4);
     }
 
     fn sync_workday_counter(&mut self) {
@@ -1199,13 +1376,43 @@ impl<A: AiActor> Engine<A> {
 
     fn current_quality_penalty(&self) -> i16 {
         let fatigue_penalty = self.state.work.fatigue.value() / 20;
+        let strain_penalty = self.state.work.cumulative_strain.value() / 25;
         let overtime_today = self
             .state
             .work
             .minutes_worked_today
             .saturating_sub(self.state.work.daily_capacity_minutes);
         let overtime_penalty = (overtime_today / 120) as i16;
-        (fatigue_penalty + overtime_penalty).clamp(0, 10)
+        (fatigue_penalty + strain_penalty + overtime_penalty).clamp(0, 10)
+    }
+
+    fn can_rest_safely(&self) -> bool {
+        if self.state.stage == CaseStage::Hearing {
+            return false;
+        }
+        let next_workday = self.state.now.next_workday_start();
+        // Use an explicit match instead of `Option::is_none_or`. The latter
+        // became stable in Rust 1.82, while this workspace promises Rust 1.78
+        // compatibility. Keeping the MSRV honest prevents a release from
+        // compiling on the maintainer's current toolchain but failing for users
+        // on the documented minimum version.
+        match self.state.litigation.hearing_scheduled_for {
+            None => true,
+            Some(hearing) => hearing >= next_workday || hearing <= self.state.now,
+        }
+    }
+
+    fn action_within_authorized_budget(&self, action: PlayerAction) -> bool {
+        if matches!(
+            action,
+            PlayerAction::RequestBudgetApproval
+                | PlayerAction::AcceptSettlement
+                | PlayerAction::RestUntilNextWorkday
+        ) {
+            return true;
+        }
+        let cost = action_option(action).monetary_cost_eur;
+        self.state.budget_spent_eur.saturating_add(cost) <= self.state.authorized_budget_eur
     }
 
     fn discover(&mut self, id: EvidenceId) {
@@ -1600,6 +1807,12 @@ fn action_option(action: PlayerAction) -> ActionOption {
             180,
             6_000,
         ),
+        RequestBudgetApproval => (
+            "Request additional budget approval",
+            "Ask the client to raise the approved legal-spend ceiling by EUR 25,000.",
+            30,
+            250,
+        ),
         RestUntilNextWorkday => (
             "Rest until next workday",
             "Recover fatigue while deadlines and world events continue.",
@@ -1643,39 +1856,16 @@ mod tests {
     }
 
     #[test]
-    fn replying_to_client_marks_the_opening_request_handled() {
-        // The test must inspect the specific message rather than the global
-        // unhandled-message count.
-        //
-        // The conflict check advances the world from 08:00 to 09:00. Replying to
-        // the client then consumes another 30 minutes. During that action the CFO
-        // pressure event, scheduled for 09:05, becomes due and creates a new
-        // required inbox item. The global unhandled count therefore remains one,
-        // even though the original CEO request was handled correctly.
+    fn replying_to_client_resolves_the_opening_request_even_when_new_mail_arrives() {
+        // The reply consumes time, so a later CFO message may arrive before the
+        // action completes. The test therefore inspects the specific opening
+        // request rather than assuming the global required-message count is zero.
         let mut engine = started_engine(1, GameMode::Career);
-
         engine.apply_action(PlayerAction::RunConflictCheck).unwrap();
-
-        assert!(engine.state().inbox.iter().any(|message| {
-            message.kind == InboxMessageKind::OpeningClientRequest && !message.handled
-        }));
-
         engine.apply_action(PlayerAction::ReplyToClient).unwrap();
-
-        // The player's reply must close the original intake request.
         assert!(engine.state().inbox.iter().any(|message| {
-            message.kind == InboxMessageKind::OpeningClientRequest && message.handled
-        }));
-
-        // No unhandled copy of the original request may remain.
-        assert!(!engine.state().inbox.iter().any(|message| {
-            message.kind == InboxMessageKind::OpeningClientRequest && !message.handled
-        }));
-
-        // The remaining required message is legitimate: it arrived asynchronously
-        // while the player was composing the reply.
-        assert!(engine.state().inbox.iter().any(|message| {
-            message.kind == InboxMessageKind::ClientPressure && !message.handled
+            message.kind == InboxMessageKind::OpeningClientRequest
+                && message.status == InboxStatus::Resolved
         }));
     }
 
@@ -1761,8 +1951,15 @@ mod tests {
         let mut engine = started_engine(6, GameMode::Career);
         engine.apply_action(PlayerAction::AskAiResearch).unwrap();
         let note = engine.state().ai_usage.last_note.as_ref().unwrap();
-        assert!(note.contains("1 authorized facts"));
-        assert!(!note.contains("deleted mailbox"));
+        assert!(
+            note.contains("Signed implementation agreement"),
+            "AI response should include evidence explicitly authorized by the engine: {note}"
+        );
+
+        assert!(
+            !note.contains("Recovered deleted mailbox data"),
+            "AI response must not reveal undiscovered evidence: {note}"
+        );
     }
 
     #[test]
@@ -1827,5 +2024,44 @@ mod tests {
         assert!((5..=95).contains(&breakdown.win_threshold));
         assert!((1..=100).contains(&breakdown.deterministic_roll));
         assert!(!breakdown.factors.is_empty());
+    }
+
+    #[test]
+    fn rest_is_blocked_when_it_would_skip_a_scheduled_hearing() {
+        // Mandatory court appointments are hard world constraints. The player
+        // may not use overnight rest to jump past a hearing start.
+        let mut engine = started_engine(91, GameMode::Career);
+        engine.state.litigation.hearing_scheduled_for =
+            Some(engine.state.now.saturating_add_minutes(60));
+        assert!(!engine
+            .available_actions()
+            .contains(&PlayerAction::RestUntilNextWorkday));
+    }
+
+    #[test]
+    fn repeated_overtime_creates_persistent_strain() {
+        // Acute fatigue may recover overnight, but cumulative strain must retain
+        // part of the cost of repeated long days.
+        let mut engine = started_engine(92, GameMode::Career);
+        engine.record_work(12 * 60);
+        let strain_before_rest = engine.state.work.cumulative_strain.value();
+        engine.rest_until_next_workday();
+        assert!(strain_before_rest > 0);
+        assert!(engine.state.work.cumulative_strain.value() < strain_before_rest);
+    }
+
+    #[test]
+    fn budget_authority_hides_actions_that_would_exceed_the_ceiling() {
+        // The client-approved budget is a real constraint rather than narrative
+        // flavour. Expensive work becomes available again only after approval.
+        let mut engine = started_engine(93, GameMode::Career);
+        engine.state.stage = CaseStage::PreLitigation;
+        engine.state.budget_spent_eur = 24_500;
+        assert!(!engine
+            .available_actions()
+            .contains(&PlayerAction::CommissionIndependentExpert));
+        assert!(engine
+            .available_actions()
+            .contains(&PlayerAction::RequestBudgetApproval));
     }
 }

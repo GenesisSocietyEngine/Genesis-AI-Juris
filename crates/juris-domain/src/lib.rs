@@ -189,6 +189,7 @@ pub enum PlayerAction {
     PrepareWitnesses,
     RehearseHearing,
     AttendHearing,
+    RequestBudgetApproval,
     RestUntilNextWorkday,
 }
 
@@ -225,7 +226,22 @@ pub enum InboxMessageKind {
     ExpertReport,
     OpponentDisclosure,
     CourtNotice,
+    BudgetApproval,
     General,
+}
+
+/// Lifecycle of an inbox item.
+///
+/// Keeping notification state separate from `requires_response` avoids the
+/// ambiguous v0.4 label `open`: a court notice may be unread without requiring
+/// a reply, while a partner request may be read but still unresolved.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum InboxStatus {
+    Unread,
+    Read,
+    ActionRequired,
+    Resolved,
+    Archived,
 }
 
 /// One message visible in the player's active inbox.
@@ -238,7 +254,7 @@ pub struct InboxMessage {
     pub subject: String,
     pub body: String,
     pub requires_response: bool,
-    pub handled: bool,
+    pub status: InboxStatus,
 }
 
 /// Deadline categories with distinct professional consequences.
@@ -289,8 +305,10 @@ pub struct WorkState {
     pub minutes_worked_today: u32,
     /// Soft capacity; work beyond this threshold creates stronger fatigue.
     pub daily_capacity_minutes: u32,
-    /// Persistent fatigue reduced only by deliberate rest.
+    /// Acute fatigue that responds strongly to one night's rest.
     pub fatigue: Score,
+    /// Multi-day strain that recovers slowly and makes repeated overtime matter.
+    pub cumulative_strain: Score,
     /// Career statistic useful for later performance reviews.
     pub overtime_minutes_total: u32,
 }
@@ -310,6 +328,8 @@ pub struct LitigationState {
     pub witnesses_prepared: bool,
     pub hearing_rehearsed: bool,
     pub hearing_scheduled_for: Option<SimMinute>,
+    /// Last minute at which attendance is accepted before a default outcome.
+    pub hearing_attendance_deadline: Option<SimMinute>,
 }
 
 /// Accounting for use of the official in-game AI associate.
@@ -341,6 +361,11 @@ pub enum WorldEvent {
     PartnerReview,
     OpponentSettlementOffer {
         amount_eur: i64,
+        expires_at: SimMinute,
+        revision: u8,
+    },
+    SettlementOfferExpired {
+        revision: u8,
     },
     JuniorTaskCompleted {
         task: DelegatedTask,
@@ -348,6 +373,16 @@ pub enum WorldEvent {
     ExpertReportCompleted,
     OpponentDisclosureReceived,
     HearingReady,
+    HearingMissed,
+}
+
+/// Active without-prejudice offer tracked as a time-bounded commercial option.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SettlementOffer {
+    pub amount_eur: i64,
+    pub made_at: SimMinute,
+    pub expires_at: SimMinute,
+    pub revision: u8,
 }
 
 /// One transparent modifier applied to the hearing win threshold.
@@ -409,7 +444,9 @@ pub struct MatterState {
     pub action_history: Vec<PlayerAction>,
     pub ai_usage: AiUsage,
     pub inbox: Vec<InboxMessage>,
-    pub settlement_offer_eur: Option<i64>,
+    pub settlement_offer: Option<SettlementOffer>,
+    /// Client-approved ceiling for recorded legal spend.
+    pub authorized_budget_eur: i64,
     pub outcome: Option<CaseOutcome>,
 }
 
@@ -433,7 +470,9 @@ impl MatterState {
     pub fn unhandled_required_messages(&self) -> usize {
         self.inbox
             .iter()
-            .filter(|message| message.requires_response && !message.handled)
+            .filter(|message| {
+                message.requires_response && message.status == InboxStatus::ActionRequired
+            })
             .count()
     }
 

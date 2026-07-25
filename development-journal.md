@@ -274,3 +274,38 @@ Prove that the core game remains understandable and strategically interesting wh
 3. Should billing pressure reward hours, efficiency, realization, or a combination?
 4. How should free-form player drafting be evaluated without making an LLM authoritative?
 5. Which parts of Belgian civil procedure require deeper jurisdictional modelling before public release?
+
+
+## 2026-07-25 — v0.4.1: Simulation integrity after the first full playthrough
+
+The first complete seed `20260724` run validated the active-workday loop but exposed several rule-integrity weaknesses. The player could sleep through a scheduled hearing, settlement offers never expired or reacted to the record, AI outputs were generic, overnight rest erased every workload consequence, and legal spend did not require client authority.
+
+The patch treats these observations as design evidence rather than isolated defects. Mandatory events now constrain time advancement. Settlement is represented as a time-bounded stateful offer. Acute fatigue and cumulative strain are separated. Client budget approval becomes a mechanical constraint. AI text contains concrete task-specific output, while the deterministic engine still decides whether the advice was reliable.
+
+### Architectural decision
+
+The engine continues to be the only authority that changes state. Offer values, expiries, hearing defaults, budget ceilings, and AI reliability all remain deterministic engine calculations. The AI adapter receives immutable state and returns owned text only.
+
+### Completion criteria for v0.4.1
+
+- A player cannot rest past a hearing.
+- Missing a hearing has a terminal adverse consequence.
+- Expired settlement offers are unavailable.
+- Material case developments can produce revised offers.
+- AI output gives the player usable information and exposes reliability.
+- Repeated overtime leaves persistent strain after sleep.
+- Expensive actions respect client-approved budget authority.
+
+## 2026-07-25 — v0.4.2: Release hygiene and enforceable MSRV
+
+The v0.4.1 local quality gate exposed two non-gameplay defects: a test-only `ActorId` import was absent, and `juris-engine` used `Option::is_none_or`, which is newer than the workspace's declared Rust 1.78 minimum.
+
+The correction keeps production behavior unchanged. The test imports `ActorId` explicitly, and hearing-rest eligibility uses a documented `match` expression compatible with Rust 1.78. A separate CI job now invokes `cargo +1.78.0` against the locked workspace so the MSRV is tested rather than merely stated in `Cargo.toml` or overridden by the repository toolchain file.
+
+### What this patch proves
+
+- `cargo check` alone is insufficient because it does not compile all test targets.
+- `cargo clippy --all-targets -- -D warnings` is a valuable release gate.
+- An MSRV declaration should be backed by CI on that exact compiler.
+- Release patches should avoid changing deterministic gameplay when correcting build hygiene.
+
