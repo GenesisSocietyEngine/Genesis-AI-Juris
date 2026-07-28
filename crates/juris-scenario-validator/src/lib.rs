@@ -11,6 +11,7 @@ mod lifecycle;
 mod reachability;
 mod references;
 mod structural;
+mod terminal;
 
 pub use diagnostic::{Diagnostic, DiagnosticCode, Severity, ValidationReport};
 
@@ -20,6 +21,7 @@ use lifecycle::validate_lifecycle;
 use reachability::validate_reachability;
 use references::validate_references;
 use structural::validate_structural;
+use terminal::validate_terminal_state;
 
 /// Validates structural integrity and all ScenarioDefinition v1 references.
 ///
@@ -33,6 +35,7 @@ pub fn validate_scenario(scenario: &ScenarioDefinition) -> ValidationReport {
     validate_references(scenario, &index, &mut report);
     validate_lifecycle(scenario, &mut report);
     validate_reachability(scenario, &mut report);
+    validate_terminal_state(scenario, &mut report);
 
     report.diagnostics.sort_by(|left, right| {
         left.code

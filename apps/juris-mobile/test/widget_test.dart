@@ -797,42 +797,59 @@ void main() {
     expect(judgment.status, InboxStatus.actionRequired);
   });
 
-  test('losing judgment opens claimant review advice before closure', () {
+  test('losing judgment opens appeal advice and client authorization', () {
     final DemoGameRepository repository =
         _buildMatterWithScheduledHearing(seed: 20260701);
 
     repository.applyAction('wait-until-hearing');
     repository.applyAction('attend-hearing');
     repository.applyAction('rest');
-    repository.applyAction('inform-client-judgment');
-    repository.applyAction('rest');
 
-    expect(repository.snapshot.stage, 'Claimant review');
+    expect(
+      repository.snapshot.caseResultStatus,
+      CaseResultStatus.lostAtFirstInstance,
+    );
+    expect(
+      repository.snapshot.engagementStatus,
+      EngagementStatus.awaitingClientInstructions,
+    );
+
+    repository.applyAction('inform-client-judgment');
+
+    expect(repository.snapshot.stage, 'Appeal assessment');
     expect(
       repository.snapshot.actions.any(
-        (GameActionView action) =>
-            action.id == 'assess-claimant-review-options',
+        (GameActionView action) => action.id == 'prepare-appeal-advice',
+      ),
+      isTrue,
+    );
+    expect(
+      repository.snapshot.deadlines.any(
+        (DeadlineView item) =>
+            item.id == 'appeal-deadline' && item.status == DeadlineStatus.open,
       ),
       isTrue,
     );
 
-    final InboxItemView request = repository.snapshot.inbox.singleWhere(
-      (InboxItemView item) => item.id.startsWith('client-review-options-'),
-    );
-    expect(request.status, InboxStatus.actionRequired);
-
-    repository.applyAction('assess-claimant-review-options');
-    expect(repository.snapshot.stage, 'Claimant review advised');
+    repository.applyAction('prepare-appeal-advice');
+    expect(repository.snapshot.stage, 'Awaiting appeal instructions');
     expect(
       repository.snapshot.inbox
-          .singleWhere((InboxItemView item) => item.id == request.id)
+          .singleWhere(
+            (InboxItemView item) => item.id == 'appeal-client-instructions',
+          )
           .status,
-      InboxStatus.resolved,
+      InboxStatus.actionRequired,
     );
 
-    repository.applyAction('rest');
-    expect(repository.snapshot.stage, 'Resolved');
-    expect(repository.snapshot.actions, isEmpty);
+    repository.applyAction('seek-client-appeal-authorization');
+    expect(repository.snapshot.stage, 'Appeal preparation');
+    expect(
+      repository.snapshot.actions.any(
+        (GameActionView action) => action.id == 'file-appeal',
+      ),
+      isTrue,
+    );
   });
 
   test('delegated junior review becomes ready and can be validated', () {
@@ -1012,6 +1029,8 @@ void main() {
 DemoGameRepository _buildMatterWithScheduledHearing({int seed = 20260724}) {
   final DemoGameRepository repository = DemoGameRepository(seed: seed);
   repository.applyAction('run-conflict-check');
+  repository.applyAction('prepare-partner-brief');
+  repository.applyAction('issue-preservation-notice');
   repository.applyAction('request-documents');
   repository.applyAction('reject-settlement');
   repository.applyAction('commence-proceedings');

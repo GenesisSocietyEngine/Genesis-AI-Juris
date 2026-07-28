@@ -31,6 +31,13 @@ pub enum DiagnosticCode {
     UnreachableOutcome,
     EventWithoutTrigger,
 
+    // Terminal-state closure validation.
+    ResolvedWithPendingTask,
+    ResolvedWithOpenDeadline,
+    ResolvedWithRequiredInbox,
+    ResolvedWithAvailableAction,
+    ResolvedWithoutOutcome,
+
     // Reference validation.
     UnknownStageReference,
     UnknownActionReference,
@@ -77,6 +84,11 @@ impl DiagnosticCode {
             Self::StageWithoutExit => "SCN302_STAGE_WITHOUT_EXIT",
             Self::UnreachableOutcome => "SCN303_UNREACHABLE_OUTCOME",
             Self::EventWithoutTrigger => "SCN304_EVENT_WITHOUT_TRIGGER",
+            Self::ResolvedWithPendingTask => "SCN401_RESOLVED_WITH_PENDING_TASK",
+            Self::ResolvedWithOpenDeadline => "SCN402_RESOLVED_WITH_OPEN_DEADLINE",
+            Self::ResolvedWithRequiredInbox => "SCN403_RESOLVED_WITH_REQUIRED_INBOX",
+            Self::ResolvedWithAvailableAction => "SCN404_RESOLVED_WITH_AVAILABLE_ACTION",
+            Self::ResolvedWithoutOutcome => "SCN405_RESOLVED_WITHOUT_OUTCOME",
         }
     }
 }

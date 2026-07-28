@@ -54,6 +54,85 @@ enum JuniorReviewStatus {
 /// This is presentation metadata only. It never determines simulation effects.
 enum ActionTone { primary, neutral, warning, danger }
 
+/// Foreground simulation speed selected by the player.
+///
+/// Every tick advances exactly one deterministic game minute. The speed only
+/// changes the real-time interval between ticks, so replay remains based on
+/// explicit `advanceTimeByMinutes(1)` commands rather than wall-clock time.
+enum SimulationClockSpeed { standard, x2, x4 }
+
+extension SimulationClockSpeedView on SimulationClockSpeed {
+  int get multiplier => switch (this) {
+        SimulationClockSpeed.standard => 1,
+        SimulationClockSpeed.x2 => 2,
+        SimulationClockSpeed.x4 => 4,
+      };
+
+  String get label => switch (this) {
+        SimulationClockSpeed.standard => '1×',
+        SimulationClockSpeed.x2 => '2×',
+        SimulationClockSpeed.x4 => '4×',
+      };
+
+  int get gameMinutesPerRealMinute => 15 * multiplier;
+
+  Duration get tickInterval => switch (this) {
+        SimulationClockSpeed.standard => const Duration(seconds: 4),
+        SimulationClockSpeed.x2 => const Duration(seconds: 2),
+        SimulationClockSpeed.x4 => const Duration(seconds: 1),
+      };
+}
+
+/// Substantive result of the matter, independent from its procedural stage.
+enum CaseResultStatus {
+  ongoing,
+  wonAtFirstInstance,
+  mixedAtFirstInstance,
+  lostAtFirstInstance,
+  wonOnAppeal,
+  lostOnAppeal,
+  remittedAfterCassation,
+  settled,
+  withdrawn,
+}
+
+extension CaseResultStatusView on CaseResultStatus {
+  String get label => switch (this) {
+        CaseResultStatus.ongoing => 'Ongoing',
+        CaseResultStatus.wonAtFirstInstance => 'Won at first instance',
+        CaseResultStatus.mixedAtFirstInstance => 'Mixed at first instance',
+        CaseResultStatus.lostAtFirstInstance => 'Lost at first instance',
+        CaseResultStatus.wonOnAppeal => 'Won on appeal',
+        CaseResultStatus.lostOnAppeal => 'Lost on appeal',
+        CaseResultStatus.remittedAfterCassation => 'Remitted after cassation',
+        CaseResultStatus.settled => 'Settled',
+        CaseResultStatus.withdrawn => 'Withdrawn',
+      };
+
+  bool get isAdverse =>
+      this == CaseResultStatus.lostAtFirstInstance ||
+      this == CaseResultStatus.lostOnAppeal ||
+      this == CaseResultStatus.withdrawn;
+}
+
+/// Status of the professional engagement, independent from the court result.
+enum EngagementStatus {
+  active,
+  awaitingClientInstructions,
+  terminatedByClient,
+  completed,
+}
+
+extension EngagementStatusView on EngagementStatus {
+  String get label => switch (this) {
+        EngagementStatus.active => 'Engagement active',
+        EngagementStatus.awaitingClientInstructions =>
+          'Awaiting client instructions',
+        EngagementStatus.terminatedByClient => 'Terminated by client',
+        EngagementStatus.completed => 'Engagement completed',
+      };
+}
+
 @immutable
 class InboxItemView {
   const InboxItemView({
@@ -268,6 +347,8 @@ class GameSnapshot {
     required this.dayLabel,
     required this.timeLabel,
     required this.stage,
+    required this.caseResultStatus,
+    required this.engagementStatus,
     required this.matterTitle,
     required this.caseStrength,
     required this.merits,
@@ -281,6 +362,8 @@ class GameSnapshot {
     required this.cumulativeStrain,
     required this.ethics,
     required this.clientTrust,
+    required this.inactivityMinutes,
+    required this.clientWarningLevel,
     required this.aiRequestsUsed,
     required this.aiRequestLimit,
     required this.knownFactsRevision,
@@ -306,6 +389,8 @@ class GameSnapshot {
   final String dayLabel;
   final String timeLabel;
   final String stage;
+  final CaseResultStatus caseResultStatus;
+  final EngagementStatus engagementStatus;
   final String matterTitle;
   final int caseStrength;
   final int merits;
@@ -319,6 +404,18 @@ class GameSnapshot {
   final int cumulativeStrain;
   final int ethics;
   final int clientTrust;
+
+  /// Minutes elapsed without a substantive player action.
+  ///
+  /// The mobile demo uses this counter to issue client warnings and eventually
+  /// terminate the engagement. Passive clock movement and rest increase it; a
+  /// genuine case action resets it.
+  final int inactivityMinutes;
+
+  /// Highest client-escalation tier already emitted for the current inactivity
+  /// streak: 0 = none, 1 = warning, 2 = final warning.
+  final int clientWarningLevel;
+
   final int aiRequestsUsed;
   final int aiRequestLimit;
 
@@ -376,6 +473,8 @@ class GameSnapshot {
     String? dayLabel,
     String? timeLabel,
     String? stage,
+    CaseResultStatus? caseResultStatus,
+    EngagementStatus? engagementStatus,
     int? caseStrength,
     int? merits,
     int? evidenceScore,
@@ -388,6 +487,8 @@ class GameSnapshot {
     int? cumulativeStrain,
     int? ethics,
     int? clientTrust,
+    int? inactivityMinutes,
+    int? clientWarningLevel,
     int? aiRequestsUsed,
     int? knownFactsRevision,
     int? aiLegalResearchRevision,
@@ -415,6 +516,8 @@ class GameSnapshot {
       dayLabel: dayLabel ?? this.dayLabel,
       timeLabel: timeLabel ?? this.timeLabel,
       stage: stage ?? this.stage,
+      caseResultStatus: caseResultStatus ?? this.caseResultStatus,
+      engagementStatus: engagementStatus ?? this.engagementStatus,
       matterTitle: matterTitle,
       caseStrength: caseStrength ?? this.caseStrength,
       merits: merits ?? this.merits,
@@ -428,6 +531,8 @@ class GameSnapshot {
       cumulativeStrain: cumulativeStrain ?? this.cumulativeStrain,
       ethics: ethics ?? this.ethics,
       clientTrust: clientTrust ?? this.clientTrust,
+      inactivityMinutes: inactivityMinutes ?? this.inactivityMinutes,
+      clientWarningLevel: clientWarningLevel ?? this.clientWarningLevel,
       aiRequestsUsed: aiRequestsUsed ?? this.aiRequestsUsed,
       aiRequestLimit: aiRequestLimit,
       knownFactsRevision: knownFactsRevision ?? this.knownFactsRevision,

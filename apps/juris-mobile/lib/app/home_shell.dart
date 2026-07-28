@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../data/demo_game_repository.dart';
@@ -24,8 +26,93 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
+  static const bool _runningUnderFlutterTest =
+      bool.fromEnvironment('FLUTTER_TEST');
+
   int _selectedIndex = 0;
+  Timer? _liveClockTimer;
+  bool _clockPaused = false;
+  bool _clockTickInProgress = false;
+  SimulationClockSpeed _clockSpeed = SimulationClockSpeed.standard;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _startLiveClock();
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.repository != widget.repository) {
+      _startLiveClock();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _startLiveClock();
+    } else {
+      _liveClockTimer?.cancel();
+      _liveClockTimer = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _liveClockTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  void _startLiveClock() {
+    _liveClockTimer?.cancel();
+    _liveClockTimer = null;
+    if (_runningUnderFlutterTest ||
+        _clockPaused ||
+        widget.repository.isTerminal) {
+      return;
+    }
+
+    _liveClockTimer = Timer.periodic(
+      _clockSpeed.tickInterval,
+      (Timer timer) {
+        if (!mounted ||
+            _clockPaused ||
+            _clockTickInProgress ||
+            widget.repository.isTerminal) {
+          if (widget.repository.isTerminal) {
+            timer.cancel();
+            _liveClockTimer = null;
+          }
+          return;
+        }
+
+        _clockTickInProgress = true;
+        try {
+          widget.repository.advanceTimeByMinutes(1);
+        } finally {
+          _clockTickInProgress = false;
+        }
+      },
+    );
+  }
+
+  void _toggleClock() {
+    setState(() => _clockPaused = !_clockPaused);
+    _startLiveClock();
+  }
+
+  void _selectClockSpeed(SimulationClockSpeed speed) {
+    if (_clockSpeed == speed) {
+      return;
+    }
+    setState(() => _clockSpeed = speed);
+    _startLiveClock();
+  }
 
   static const List<_Destination> _destinations = <_Destination>[
     _Destination('Inbox', Icons.inbox_outlined, Icons.inbox),
@@ -62,6 +149,60 @@ class _HomeShellState extends State<HomeShell> {
                   ],
                 ),
                 actions: <Widget>[
+                  PopupMenuButton<SimulationClockSpeed>(
+                    key: const ValueKey<String>('simulation-speed-menu'),
+                    tooltip:
+                        'Simulation speed: ${_clockSpeed.label} · ${_clockSpeed.gameMinutesPerRealMinute} game min / real min',
+                    initialValue: _clockSpeed,
+                    enabled: !widget.repository.isTerminal,
+                    onSelected: _selectClockSpeed,
+                    itemBuilder: (BuildContext context) => SimulationClockSpeed
+                        .values
+                        .map(
+                          (SimulationClockSpeed speed) =>
+                              PopupMenuItem<SimulationClockSpeed>(
+                            value: speed,
+                            height: 64,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  speed.label,
+                                  style: Theme.of(context).textTheme.labelLarge,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${speed.gameMinutesPerRealMinute} game min / real min',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                        .toList(growable: false),
+                    icon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        const Icon(Icons.speed),
+                        const SizedBox(width: 2),
+                        Text(_clockSpeed.label),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    key: const ValueKey<String>('simulation-pause-toggle'),
+                    tooltip: _clockPaused
+                        ? 'Resume simulation clock'
+                        : 'Pause simulation clock',
+                    onPressed:
+                        widget.repository.isTerminal ? null : _toggleClock,
+                    icon: Icon(
+                      _clockPaused
+                          ? Icons.play_circle_outline
+                          : Icons.pause_circle_outline,
+                    ),
+                  ),
                   IconButton(
                     tooltip: 'Reset deterministic demo',
                     onPressed: _confirmReset,
@@ -244,8 +385,21 @@ class _HomeShellState extends State<HomeShell> {
       actionIds = <String>{'inform-client-judgment'};
     } else if (item.id.startsWith('counterparty-cassation-')) {
       actionIds = <String>{'prepare-cassation-response'};
-    } else if (item.id.startsWith('client-review-options-')) {
-      actionIds = <String>{'assess-claimant-review-options'};
+    } else if (item.id.startsWith('client-review-options-') ||
+        item.id == 'appeal-advice-request') {
+      actionIds = <String>{'prepare-appeal-advice'};
+    } else if (item.id == 'appeal-client-instructions') {
+      actionIds = <String>{
+        'seek-client-appeal-authorization',
+        'accept-judgment-and-close',
+      };
+    } else if (item.id == 'cassation-assessment-request') {
+      actionIds = <String>{'assess-cassation-grounds'};
+    } else if (item.id == 'cassation-client-instructions') {
+      actionIds = <String>{
+        'seek-client-cassation-authorization',
+        'accept-appellate-judgment',
+      };
     } else if (item.id.startsWith('expert-report-ready')) {
       actionIds = <String>{'review-expert-report'};
     } else if (item.id == 'junior-findings-ready') {
@@ -367,6 +521,11 @@ class _HomeShellState extends State<HomeShell> {
 
     if (confirmed == true) {
       widget.repository.reset();
+      setState(() {
+        _clockPaused = false;
+        _clockSpeed = SimulationClockSpeed.standard;
+      });
+      _startLiveClock();
     }
   }
 }

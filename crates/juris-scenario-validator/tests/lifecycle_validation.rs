@@ -109,6 +109,7 @@ fn hearing_without_terminal_event_is_rejected() {
 #[test]
 fn hearing_with_schedule_and_terminal_events_is_valid() {
     let mut scenario = load_minimal_scenario();
+
     let hearing_stage = StageId::from("enterprise-court-hearing");
     let hearing_scheduled_event = EventId::from("hearing-scheduled");
 
@@ -121,8 +122,8 @@ fn hearing_with_schedule_and_terminal_events_is_valid() {
         terminal: false,
     });
 
-    // A timed scheduling event is independently reachable and transitions
-    // the scenario into the hearing stage.
+    // The timed event is independently reachable and moves the scenario into
+    // the hearing stage.
     scenario.events.push(EventDefinition {
         id: hearing_scheduled_event.clone(),
         title: "Hearing scheduled".to_owned(),
@@ -136,7 +137,8 @@ fn hearing_with_schedule_and_terminal_events_is_valid() {
         }],
     });
 
-    // The closing event has an explicit causal trigger and exits the hearing.
+    // Closing the hearing enters the terminal stage and triggers the existing
+    // matter-closed event, which resolves the fixture's successful outcome.
     scenario.events.push(EventDefinition {
         id: EventId::from("hearing-closed"),
         title: "Hearing closed".to_owned(),
@@ -145,9 +147,14 @@ fn hearing_with_schedule_and_terminal_events_is_valid() {
             event: hearing_scheduled_event,
         },
         condition: Default::default(),
-        effects: vec![Effect::SetStage {
-            stage: StageId::from("resolved"),
-        }],
+        effects: vec![
+            Effect::SetStage {
+                stage: StageId::from("resolved"),
+            },
+            Effect::TriggerEvent {
+                event: EventId::from("matter-closed"),
+            },
+        ],
     });
 
     let report = validate_scenario(&scenario);

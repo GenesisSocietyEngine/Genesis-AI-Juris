@@ -76,6 +76,18 @@ class _MatterHeader extends StatelessWidget {
             runSpacing: 8,
             children: <Widget>[
               Chip(label: Text(snapshot.stage)),
+              Chip(
+                avatar: Icon(
+                  snapshot.caseResultStatus.isAdverse
+                      ? Icons.cancel_outlined
+                      : snapshot.caseResultStatus == CaseResultStatus.ongoing
+                          ? Icons.timelapse_outlined
+                          : Icons.verified_outlined,
+                  size: 18,
+                ),
+                label: Text(snapshot.caseResultStatus.label),
+              ),
+              Chip(label: Text(snapshot.engagementStatus.label)),
               Chip(label: Text(snapshot.mode)),
               Chip(label: Text('Seed ${snapshot.seed}')),
             ],

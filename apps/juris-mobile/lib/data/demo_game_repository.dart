@@ -11,10 +11,27 @@ import '../models/game_snapshot.dart';
 class DemoGameRepository extends ChangeNotifier {
   DemoGameRepository({required this.seed}) : _snapshot = _initial(seed);
 
+  /// Standard foreground clock contract used by the Flutter shell.
+  ///
+  /// The shell always submits explicit one-minute commands. At standard speed
+  /// it submits one command every four real seconds: 15 game minutes per real
+  /// minute. The optional 2× and 4× controls shorten only the timer interval.
+  static const int standardClockGameMinutesPerRealMinute = 15;
+
+  static const int _workdayEndMinute = 18 * 60;
+  static const int _hearingAttendanceGraceMinutes = 6 * 60;
+  static const int _firstClientWarningMinutes = 180;
+  static const int _finalClientWarningMinutes = 300;
+  static const int _clientTerminationMinutes = 480;
+  static const int _restInactivityMinutes = 120;
+
   final int seed;
   GameSnapshot _snapshot;
 
   GameSnapshot get snapshot => _snapshot;
+
+  bool get isTerminal =>
+      _snapshot.stage == 'Resolved' || _snapshot.outcomeSummary != null;
 
   /// Resets the mobile playtest to the same seed and opening state.
   void reset() {
@@ -49,6 +66,483 @@ class DemoGameRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Advances the foreground workday clock without executing a player action.
+  ///
+  /// Flutter calls this with explicit one-minute commands at the selected
+  /// 1×, 2×, or 4× timer interval. The method is deterministic: wall-clock
+  /// time never enters the repository, and every
+  /// deadline, warning, and loss branch is derived from the supplied minute
+  /// count plus the current snapshot.
+  void advanceTimeByMinutes(int minutes) {
+    if (minutes <= 0 || isTerminal) {
+      return;
+    }
+
+    int remaining = minutes;
+    while (remaining > 0 && !isTerminal) {
+      final int currentMinute = _minuteOfDay(_snapshot.timeLabel);
+
+      // The demo models a workday clock. Reaching 18:00 advances to the next
+      // workday through the same event pipeline as the explicit Rest action.
+      if (currentMinute >= _workdayEndMinute) {
+        _rest();
+        return;
+      }
+
+      final int availableToday = _workdayEndMinute - currentMinute;
+      final int step = remaining < availableToday ? remaining : availableToday;
+      _advanceWithinWorkday(step);
+      remaining -= step;
+
+      if (remaining > 0 &&
+          _minuteOfDay(_snapshot.timeLabel) >= _workdayEndMinute &&
+          !isTerminal) {
+        _rest();
+        return;
+      }
+    }
+
+    notifyListeners();
+  }
+
+  void _advanceWithinWorkday(int minutes) {
+    if (minutes <= 0 || isTerminal) {
+      return;
+    }
+
+    final int day = _currentDayNumber();
+    final int targetMinute = _minuteOfDay(_snapshot.timeLabel) + minutes;
+    final List<DeadlineView> previousDeadlines = _snapshot.deadlines;
+    final List<DeadlineView> updatedDeadlines = _markOverdueDeadlines(
+      previousDeadlines,
+      day: day,
+      minuteOfDay: targetMinute,
+    );
+    final Set<String> newlyMissed = _newlyMissedDeadlineIds(
+      before: previousDeadlines,
+      after: updatedDeadlines,
+    );
+
+    int procedure = _snapshot.procedure;
+    int evidenceScore = _snapshot.evidenceScore;
+    int ethics = _snapshot.ethics;
+    int clientTrust = _snapshot.clientTrust;
+    String stage = _snapshot.stage;
+    List<InboxItemView> inbox = <InboxItemView>[..._snapshot.inbox];
+    List<GameActionView> actions = <GameActionView>[..._snapshot.actions];
+
+    if (newlyMissed.contains('partner-brief')) {
+      procedure -= 6;
+      clientTrust -= 5;
+      inbox.add(
+        InboxItemView(
+          id: 'partner-brief-missed-live-$day-$targetMinute',
+          sender: 'Matter partner',
+          subject: 'Partner risk brief missed',
+          body:
+              'The internal risk assessment was not delivered on time. Partner oversight, settlement planning, and confidence in the matter team have deteriorated.',
+          receivedAt: 'Day $day · ${_formatMinuteOfDay(targetMinute)}',
+          status: InboxStatus.unread,
+        ),
+      );
+    }
+
+    if (newlyMissed.contains('preservation')) {
+      procedure -= 12;
+      evidenceScore -= 10;
+      ethics -= 6;
+      clientTrust -= 10;
+      inbox.add(
+        InboxItemView(
+          id: 'preservation-missed-live-$day-$targetMinute',
+          sender: 'Matter risk system',
+          subject: 'Evidence-preservation deadline missed',
+          body:
+              'No legal hold was issued before the deadline. Relevant records may be incomplete, the evidentiary ceiling is reduced, and an adverse inference risk now applies.',
+          receivedAt: 'Day $day · ${_formatMinuteOfDay(targetMinute)}',
+          status: InboxStatus.unread,
+        ),
+      );
+    }
+
+    actions = _withDeadlineActions(
+      actions.where((GameActionView action) {
+        if (newlyMissed.contains('partner-brief') &&
+            action.id == 'prepare-partner-brief') {
+          return false;
+        }
+        if (newlyMissed.contains('preservation') &&
+            action.id == 'issue-preservation-notice') {
+          return false;
+        }
+        if (newlyMissed.contains('statement-of-claim') &&
+            action.id == 'prepare-statement-of-claim') {
+          return false;
+        }
+        return true;
+      }).toList(growable: false),
+      updatedDeadlines,
+    );
+
+    final bool settlementExpired = _isSettlementExpired(
+      day: day,
+      minuteOfDay: targetMinute,
+    );
+    if (settlementExpired && _snapshot.settlementOffer != null) {
+      inbox = inbox
+          .map(
+            (InboxItemView item) => item.id == 'settlement-offer'
+                ? item.copyWith(status: InboxStatus.resolved)
+                : item,
+          )
+          .toList(growable: true)
+        ..add(
+          InboxItemView(
+            id: 'settlement-expired-live-$day-$targetMinute',
+            sender: 'Opposing counsel',
+            subject: 'Settlement offer expired',
+            body:
+                'The without-prejudice offer expired without acceptance. Formal proceedings remain available, but the commercial exit has been lost.',
+            receivedAt: 'Day $day · ${_formatMinuteOfDay(targetMinute)}',
+            status: InboxStatus.unread,
+          ),
+        );
+      actions = actions
+          .where(
+            (GameActionView action) =>
+                action.id != 'future-settle' &&
+                action.id != 'reject-settlement',
+          )
+          .toList(growable: false);
+      if (stage == 'Pre-litigation') {
+        actions = _ensureAction(actions, _commenceProceedingsAction());
+      }
+    }
+
+    final (
+      List<InboxItemView>,
+      List<GameActionView>,
+      JuniorReviewStatus
+    ) juniorCompletion = _completeJuniorReviewIfDue(
+      inbox: inbox,
+      actions: actions,
+      status: _snapshot.juniorReviewStatus,
+      day: day,
+      minuteOfDay: targetMinute,
+    );
+    inbox = juniorCompletion.$1;
+    actions = juniorCompletion.$2;
+
+    final DeadlineView? hearing = _activeScheduledHearingFrom(updatedDeadlines);
+    if (hearing != null && stage == 'Hearing preparation') {
+      final (int hearingDay, int hearingMinute) = _calendarMoment(hearing);
+      final bool attendanceWindowOpen = day == hearingDay &&
+          targetMinute >= hearingMinute &&
+          targetMinute <= hearingMinute + _hearingAttendanceGraceMinutes;
+      if (attendanceWindowOpen) {
+        actions = actions
+            .where(
+              (GameActionView action) =>
+                  action.id != 'wait-until-hearing' &&
+                  action.id != 'request-hearing-reschedule',
+            )
+            .toList(growable: false);
+        actions = _ensureAction(actions, _attendHearingAction());
+        if (!inbox.any(
+          (InboxItemView item) =>
+              item.id == 'hearing-window-open-${hearing.id}',
+        )) {
+          inbox.add(
+            InboxItemView(
+              id: 'hearing-window-open-${hearing.id}',
+              sender: 'Enterprise Court Registry',
+              subject: 'Enterprise court hearing now in session',
+              body:
+                  'The attendance window is open. Attend before the six-hour grace window closes or the court will proceed on an adverse record.',
+              receivedAt: 'Day $day · ${_formatMinuteOfDay(targetMinute)}',
+              status: InboxStatus.actionRequired,
+            ),
+          );
+        }
+      }
+    }
+
+    String? missedHearingId;
+    for (final String id in newlyMissed) {
+      if (id.startsWith('enterprise-court-hearing-')) {
+        missedHearingId = id;
+        break;
+      }
+    }
+    if (missedHearingId != null) {
+      procedure -= 30;
+      clientTrust -= 25;
+      ethics -= 5;
+      stage = 'Judgment pending';
+      actions = const <GameActionView>[
+        GameActionView(
+          id: 'rest',
+          title: 'Rest until next workday',
+          description:
+              'Advance to the court decision after the mandatory hearing was missed.',
+          timeLabel: 'Until 08:00',
+          costEur: 0,
+          tone: ActionTone.danger,
+        ),
+      ];
+      inbox = inbox
+          .map(
+            (InboxItemView item) => item.id.startsWith('hearing-notice-') ||
+                    item.id.startsWith('hearing-window-open-')
+                ? item.copyWith(status: InboxStatus.resolved)
+                : item,
+          )
+          .toList(growable: true)
+        ..add(
+          InboxItemView(
+            id: 'hearing-missed-$missedHearingId',
+            sender: 'Enterprise Court Registry',
+            subject: 'Mandatory hearing missed',
+            body:
+                'No attendance was recorded within the mandatory window. The claim is now exposed to procedural default and cannot be rescued by the deterministic court variance.',
+            receivedAt: 'Day $day · ${_formatMinuteOfDay(targetMinute)}',
+            status: InboxStatus.unread,
+          ),
+        );
+    }
+
+    _snapshot = _snapshot.copyWith(
+      timeLabel: _formatMinuteOfDay(targetMinute),
+      stage: stage,
+      procedure: procedure.clamp(0, 100).toInt(),
+      evidenceScore: evidenceScore.clamp(0, 100).toInt(),
+      ethics: ethics.clamp(0, 100).toInt(),
+      clientTrust: clientTrust.clamp(0, 100).toInt(),
+      inactivityMinutes: _snapshot.inactivityMinutes + minutes,
+      deadlines: updatedDeadlines,
+      inbox: inbox,
+      actions: actions,
+      juniorReviewStatus: juniorCompletion.$3,
+      clearSettlementOffer: settlementExpired,
+    );
+
+    if (newlyMissed.contains('statement-of-claim')) {
+      _resolveProceduralDefault(
+        detail:
+            'The statement of claim was not filed before the mandatory deadline. The court dismissed the matter without reaching the merits.',
+      );
+      return;
+    }
+
+    if (newlyMissed.contains('appeal-deadline')) {
+      _closeCurrentLoss(
+        subject: 'Appeal deadline expired',
+        detail:
+            'No authorized appeal was filed before the deadline. The first-instance loss became final.',
+      );
+      return;
+    }
+
+    if (newlyMissed.contains('cassation-deadline')) {
+      _closeCurrentLoss(
+        subject: 'Cassation deadline expired',
+        detail:
+            'No authorized cassation appeal was filed before the deadline. The appellate loss became final.',
+      );
+      return;
+    }
+
+    _applyInactivityConsequences();
+  }
+
+  bool _isInactivityRiskStage(String stage) {
+    return stage == 'Intake' ||
+        stage == 'Investigation' ||
+        stage == 'Pre-litigation' ||
+        stage == 'Pleadings' ||
+        stage == 'Evidence';
+  }
+
+  void _applyInactivityConsequences() {
+    if (isTerminal || !_isInactivityRiskStage(_snapshot.stage)) {
+      return;
+    }
+
+    int warningLevel = _snapshot.clientWarningLevel;
+    int clientTrust = _snapshot.clientTrust;
+    int ethics = _snapshot.ethics;
+    final List<InboxItemView> inbox = <InboxItemView>[..._snapshot.inbox];
+
+    if (_snapshot.inactivityMinutes >= _firstClientWarningMinutes &&
+        warningLevel < 1) {
+      warningLevel = 1;
+      clientTrust -= 8;
+      ethics -= 2;
+      inbox.add(
+        InboxItemView(
+          id: 'client-inactivity-warning-${_snapshot.dayLabel}-${_snapshot.timeLabel}',
+          sender: 'Client CEO',
+          subject: 'Urgent engagement warning',
+          body:
+              'The client has seen no substantive progress for three simulated hours. Immediate action and a credible plan are required to preserve the engagement.',
+          receivedAt: '${_snapshot.dayLabel} · ${_snapshot.timeLabel}',
+          status: InboxStatus.unread,
+        ),
+      );
+    }
+
+    if (_snapshot.inactivityMinutes >= _finalClientWarningMinutes &&
+        warningLevel < 2) {
+      warningLevel = 2;
+      clientTrust -= 12;
+      ethics -= 4;
+      inbox.add(
+        InboxItemView(
+          id: 'client-final-warning-${_snapshot.dayLabel}-${_snapshot.timeLabel}',
+          sender: 'Client CEO',
+          subject: 'Final warning before termination',
+          body:
+              'The client considers the continuing inactivity a material service failure. The engagement will be terminated unless substantive work resumes immediately.',
+          receivedAt: '${_snapshot.dayLabel} · ${_snapshot.timeLabel}',
+          status: InboxStatus.unread,
+        ),
+      );
+    }
+
+    _snapshot = _snapshot.copyWith(
+      clientWarningLevel: warningLevel,
+      clientTrust: clientTrust.clamp(0, 100).toInt(),
+      ethics: ethics.clamp(0, 100).toInt(),
+      inbox: inbox,
+    );
+
+    if (_snapshot.inactivityMinutes >= _clientTerminationMinutes) {
+      _terminateEngagement();
+    }
+  }
+
+  void _terminateEngagement() {
+    if (isTerminal) {
+      return;
+    }
+
+    final String closedAt = '${_snapshot.dayLabel} · ${_snapshot.timeLabel}';
+    final ExpertReviewStatus expertStatus =
+        _snapshot.expertReviewStatus == ExpertReviewStatus.pending ||
+                _snapshot.expertReviewStatus == ExpertReviewStatus.reportReady
+            ? ExpertReviewStatus.expired
+            : _snapshot.expertReviewStatus;
+    final JuniorReviewStatus juniorStatus =
+        _snapshot.juniorReviewStatus == JuniorReviewStatus.inProgress ||
+                _snapshot.juniorReviewStatus == JuniorReviewStatus.findingsReady
+            ? JuniorReviewStatus.expired
+            : _snapshot.juniorReviewStatus;
+    final List<DeadlineView> deadlines =
+        _finalizeDeadlinesForClosure(_snapshot.deadlines);
+    final List<InboxItemView> inbox = _finalizeInboxForClosure(
+      inbox: <InboxItemView>[
+        ..._snapshot.inbox,
+        InboxItemView(
+          id: 'client-terminated-engagement',
+          sender: 'Client CEO',
+          subject: 'Engagement terminated for inactivity',
+          body:
+              'The client terminated the mandate after repeated warnings and sustained lack of substantive progress. The firm must write off part of the fees and record the service failure internally.',
+          receivedAt: closedAt,
+          status: InboxStatus.unread,
+        ),
+      ],
+      closedAt: closedAt,
+    );
+    final List<String> missed = <String>[
+      'Client engagement lost through inactivity',
+      ...deadlines
+          .where((DeadlineView item) => item.status == DeadlineStatus.missed)
+          .map((DeadlineView item) => item.title),
+    ];
+
+    _snapshot = _snapshot.copyWith(
+      stage: 'Resolved',
+      caseResultStatus: CaseResultStatus.withdrawn,
+      engagementStatus: EngagementStatus.terminatedByClient,
+      caseStrength: (_snapshot.caseStrength - 15).clamp(0, 100).toInt(),
+      procedure: (_snapshot.procedure - 15).clamp(0, 100).toInt(),
+      ethics: (_snapshot.ethics - 15).clamp(0, 100).toInt(),
+      clientTrust: 0,
+      expertReviewStatus: expertStatus,
+      juniorReviewStatus: juniorStatus,
+      deadlines: deadlines,
+      inbox: inbox,
+      actions: const <GameActionView>[],
+      clearSettlementOffer: true,
+      outcomeSummary: CaseOutcomeSummaryView(
+        headline: 'Client terminated engagement',
+        finalStatus: 'Mandate withdrawn for sustained inactivity',
+        detail:
+            'Repeated warnings were ignored and the client ended the engagement. No recovery was achieved; professional standing and client trust were materially reduced.',
+        closedAt: closedAt,
+        awardEur: 0,
+        costsEur: 0,
+        keySuccesses: const <String>[],
+        missedOpportunities: List<String>.unmodifiable(missed),
+      ),
+    );
+  }
+
+  void _resolveProceduralDefault({required String detail}) {
+    final String closedAt = '${_snapshot.dayLabel} · ${_snapshot.timeLabel}';
+    final List<DeadlineView> deadlines =
+        _finalizeDeadlinesForClosure(_snapshot.deadlines);
+    final List<InboxItemView> inbox = _finalizeInboxForClosure(
+      inbox: <InboxItemView>[
+        ..._snapshot.inbox,
+        InboxItemView(
+          id: 'procedural-default-${_snapshot.dayLabel}-${_snapshot.timeLabel}',
+          sender: 'Enterprise Court Registry',
+          subject: 'Claim dismissed by procedural default',
+          body: detail,
+          receivedAt: closedAt,
+          status: InboxStatus.unread,
+        ),
+      ],
+      closedAt: closedAt,
+    );
+
+    _snapshot = _snapshot.copyWith(
+      stage: 'Resolved',
+      caseResultStatus: CaseResultStatus.lostAtFirstInstance,
+      engagementStatus: EngagementStatus.completed,
+      caseStrength: (_snapshot.caseStrength - 20).clamp(0, 100).toInt(),
+      procedure: (_snapshot.procedure - 30).clamp(0, 100).toInt(),
+      ethics: (_snapshot.ethics - 8).clamp(0, 100).toInt(),
+      clientTrust: (_snapshot.clientTrust - 30).clamp(0, 100).toInt(),
+      deadlines: deadlines,
+      inbox: inbox,
+      actions: const <GameActionView>[],
+      clearSettlementOffer: true,
+      outcomeSummary: CaseOutcomeSummaryView(
+        headline: 'Claim dismissed by procedural default',
+        finalStatus: 'Mandatory filing or attendance requirement missed',
+        detail: detail,
+        closedAt: closedAt,
+        awardEur: 0,
+        costsEur: 12000,
+        keySuccesses: const <String>[],
+        missedOpportunities: const <String>[
+          'Mandatory procedural requirement was not completed',
+          'The merits were never determined',
+        ],
+      ),
+    );
+  }
+
+  static bool _isPassiveAction(String actionId) {
+    return actionId == 'rest' ||
+        actionId == 'wait-until-hearing' ||
+        actionId == 'await-appeal-decision' ||
+        actionId == 'await-cassation-decision';
+  }
+
   /// Applies one UI action from the deterministic mock script.
   ///
   /// Unknown action IDs are rejected defensively. This mirrors the Rust
@@ -62,6 +556,13 @@ class DemoGameRepository extends ChangeNotifier {
         title: 'Action unavailable',
         message: 'The world changed before this action could be applied.',
         isRisky: true,
+      );
+    }
+
+    if (!_isPassiveAction(actionId)) {
+      _snapshot = _snapshot.copyWith(
+        inactivityMinutes: 0,
+        clientWarningLevel: 0,
       );
     }
 
@@ -276,11 +777,82 @@ class DemoGameRepository extends ChangeNotifier {
             isRisky: false,
           );
         case 'assess-claimant-review-options':
-          _assessClaimantReviewOptions();
+        case 'prepare-appeal-advice':
+          _prepareAppealAdvice();
           return const ActionExecutionResult(
-            title: 'Review options assessed',
+            title: 'Appeal advice prepared',
             message:
-                'The client received a focused assessment of possible post-judgment challenge routes, cost, timing, and prospects.',
+                'The client received a reasoned assessment of appeal grounds, cost, timing, and prospects.',
+            isRisky: false,
+          );
+        case 'seek-client-appeal-authorization':
+          _seekClientAppealAuthorization();
+          return const ActionExecutionResult(
+            title: 'Appeal instructions requested',
+            message:
+                'The client decision now depends on the assessed grounds, trust, cost, and prospects.',
+            isRisky: false,
+          );
+        case 'file-appeal':
+          _fileAppeal();
+          return const ActionExecutionResult(
+            title: 'Appeal filed',
+            message:
+                'The appellate challenge was filed within the deterministic review window.',
+            isRisky: false,
+          );
+        case 'await-appeal-decision':
+          _rest();
+          return const ActionExecutionResult(
+            title: 'Appeal decision received',
+            message:
+                'The simulation advanced to the appellate decision update.',
+            isRisky: false,
+          );
+        case 'accept-judgment-and-close':
+          _closeCurrentLoss(
+            subject: 'First-instance judgment accepted',
+            detail:
+                'The client accepted the first-instance judgment and instructed the firm not to pursue an appeal.',
+          );
+          return const ActionExecutionResult(
+            title: 'Judgment accepted',
+            message: 'The matter closed as lost at first instance.',
+            isRisky: false,
+          );
+        case 'assess-cassation-grounds':
+          _assessCassationGrounds();
+          return const ActionExecutionResult(
+            title: 'Cassation grounds assessed',
+            message:
+                'The team separated legal and procedural grounds from disagreement with the factual record.',
+            isRisky: false,
+          );
+        case 'seek-client-cassation-authorization':
+          _seekClientCassationAuthorization();
+          return const ActionExecutionResult(
+            title: 'Cassation instructions requested',
+            message:
+                'The client decision now depends on viable legal grounds, cost, trust, and timing.',
+            isRisky: false,
+          );
+        case 'file-cassation-appeal':
+          _fileCassationAppeal();
+          return const ActionExecutionResult(
+            title: 'Cassation appeal filed',
+            message:
+                'A claimant-side cassation challenge was filed on the assessed legal grounds.',
+            isRisky: false,
+          );
+        case 'accept-appellate-judgment':
+          _closeCurrentLoss(
+            subject: 'Appellate judgment accepted',
+            detail:
+                'The client accepted the appellate loss and instructed the firm not to pursue cassation.',
+          );
+          return const ActionExecutionResult(
+            title: 'Appellate judgment accepted',
+            message: 'The matter closed as lost on appeal.',
             isRisky: false,
           );
         case 'prepare-cassation-response':
@@ -477,8 +1049,8 @@ class DemoGameRepository extends ChangeNotifier {
       cumulativeStrain: _snapshot.cumulativeStrain + 3,
       merits: 49,
       evidenceScore: 44,
-      procedure: _snapshot.procedure - (partnerBriefNewlyMissed ? 4 : 0),
-      clientTrust: _snapshot.clientTrust - (partnerBriefNewlyMissed ? 1 : 0),
+      procedure: _snapshot.procedure - (partnerBriefNewlyMissed ? 6 : 0),
+      clientTrust: _snapshot.clientTrust - (partnerBriefNewlyMissed ? 5 : 0),
       caseStrength: 48,
       knownFactsRevision: revisedKnownFacts,
       juniorReviewStatus: juniorCompletion.$3,
@@ -966,6 +1538,8 @@ class DemoGameRepository extends ChangeNotifier {
 
     _snapshot = _snapshot.copyWith(
       stage: 'Resolved',
+      caseResultStatus: CaseResultStatus.settled,
+      engagementStatus: EngagementStatus.completed,
       clientTrust: _snapshot.clientTrust + 2,
       expertReviewStatus: finalExpertStatus,
       juniorReviewStatus: finalJuniorStatus,
@@ -1021,6 +1595,18 @@ class DemoGameRepository extends ChangeNotifier {
         )
         .toList(growable: false);
 
+    final DeadlineView claimDeadline = DeadlineView(
+      id: 'statement-of-claim',
+      title: 'Statement of claim filing',
+      dueAt: 'Day 4 · 17:00',
+      status: DeadlineStatus.open,
+      detail:
+          'File the pleaded breach, causation case, damages, and requested relief.',
+      relatedActionId: 'prepare-statement-of-claim',
+      missedConsequence:
+          'The claim is dismissed by procedural default and the client may seek a fee write-off.',
+    );
+
     _snapshot = _snapshot.copyWith(
       timeLabel: completionTime,
       stage: 'Pleadings',
@@ -1030,6 +1616,12 @@ class DemoGameRepository extends ChangeNotifier {
       procedure: (_snapshot.procedure + 5).clamp(0, 100).toInt(),
       leverage: (_snapshot.leverage + 2).clamp(0, 100).toInt(),
       clientTrust: (_snapshot.clientTrust + 2).clamp(0, 100).toInt(),
+      deadlines: <DeadlineView>[
+        ..._snapshot.deadlines.where(
+          (DeadlineView item) => item.id != claimDeadline.id,
+        ),
+        claimDeadline,
+      ],
       inbox: <InboxItemView>[
         ..._snapshot.inbox,
         InboxItemView(
@@ -1051,7 +1643,8 @@ class DemoGameRepository extends ChangeNotifier {
   }
 
   void _prepareStatementOfClaim() {
-    if (_snapshot.stage != 'Pleadings') {
+    if (_snapshot.stage != 'Pleadings' ||
+        !_isDeadlineOpen('statement-of-claim')) {
       return;
     }
 
@@ -1070,6 +1663,7 @@ class DemoGameRepository extends ChangeNotifier {
       fatigue: (_snapshot.fatigue + 4).clamp(0, 100).toInt(),
       merits: (_snapshot.merits + 3).clamp(0, 100).toInt(),
       procedure: (_snapshot.procedure + 8).clamp(0, 100).toInt(),
+      deadlines: _setDeadlineStatus('statement-of-claim', DeadlineStatus.done),
       inbox: <InboxItemView>[
         ..._snapshot.inbox.map(
           (InboxItemView item) => item.id == 'proceedings-commenced'
@@ -1272,8 +1866,8 @@ class DemoGameRepository extends ChangeNotifier {
     List<InboxItemView> updatedInbox = <InboxItemView>[..._snapshot.inbox];
 
     if (newlyMissed.contains('partner-brief')) {
-      procedure -= 4;
-      clientTrust -= 1;
+      procedure -= 6;
+      clientTrust -= 5;
       updatedInbox.add(
         InboxItemView(
           id: 'partner-brief-missed-fast-forward-$hearingDay',
@@ -1288,9 +1882,10 @@ class DemoGameRepository extends ChangeNotifier {
     }
 
     if (newlyMissed.contains('preservation')) {
-      procedure -= 8;
-      evidenceScore -= 6;
-      ethics -= 3;
+      procedure -= 12;
+      evidenceScore -= 10;
+      ethics -= 6;
+      clientTrust -= 10;
       updatedInbox.add(
         InboxItemView(
           id: 'preservation-missed-fast-forward-$hearingDay',
@@ -1383,6 +1978,7 @@ class DemoGameRepository extends ChangeNotifier {
       evidenceScore: evidenceScore.clamp(0, 100).toInt(),
       ethics: ethics.clamp(0, 100).toInt(),
       clientTrust: clientTrust.clamp(0, 100).toInt(),
+      inactivityMinutes: _snapshot.inactivityMinutes + _restInactivityMinutes,
       expertReviewStatus: expertStatus,
       juniorReviewStatus: juniorStatus,
       deadlines: updatedDeadlines,
@@ -1567,89 +2163,473 @@ class DemoGameRepository extends ChangeNotifier {
   }
 
   void _informClientOfJudgment() {
+    final bool dismissed = _snapshot.inbox.any(
+      (InboxItemView item) =>
+          item.id.startsWith('judgment-day-') &&
+          item.subject.contains('claim dismissed'),
+    );
     final String completionTime = _timeAfter(minutes: 60);
+    final int appealDeadlineDay = _currentDayNumber() + 3;
+    final List<InboxItemView> inbox = <InboxItemView>[
+      ..._snapshot.inbox.map(
+        (InboxItemView item) => item.id.startsWith('judgment-day-')
+            ? item.copyWith(status: InboxStatus.resolved)
+            : item,
+      ),
+      InboxItemView(
+        id: 'client-judgment-briefed',
+        sender: 'Client CEO',
+        subject: 'Judgment briefing acknowledged',
+        body:
+            'The client received the outcome, damages explanation, enforcement considerations, and the available post-judgment routes.',
+        receivedAt: '${_snapshot.dayLabel} · $completionTime',
+        status: InboxStatus.unread,
+      ),
+      if (dismissed)
+        InboxItemView(
+          id: 'appeal-advice-request',
+          sender: 'Client CEO',
+          subject: 'Prepare appeal advice',
+          body:
+              'The client requests a candid assessment of appeal grounds, cost, timing, and prospects before deciding whether to continue the engagement.',
+          receivedAt: '${_snapshot.dayLabel} · $completionTime',
+          status: InboxStatus.actionRequired,
+        ),
+    ];
+    final List<DeadlineView> deadlines = dismissed
+        ? <DeadlineView>[
+            ..._snapshot.deadlines.where(
+              (DeadlineView item) => item.id != 'appeal-deadline',
+            ),
+            DeadlineView(
+              id: 'appeal-deadline',
+              title: 'Appeal filing deadline',
+              dueAt: 'Day $appealDeadlineDay · 17:00',
+              status: DeadlineStatus.open,
+              detail:
+                  'Prepare advice, obtain client authorization, and file the appeal before the review window closes.',
+              relatedActionId: 'prepare-appeal-advice',
+              missedConsequence:
+                  'The first-instance loss becomes final and the engagement closes.',
+            ),
+          ]
+        : _snapshot.deadlines;
+
     _snapshot = _snapshot.copyWith(
       timeLabel: completionTime,
+      stage: dismissed ? 'Appeal assessment' : 'Post-judgment',
+      engagementStatus: EngagementStatus.awaitingClientInstructions,
       billableMinutes: _snapshot.billableMinutes + 60,
       fatigue: (_snapshot.fatigue + 1).clamp(0, 100).toInt(),
       clientTrust: (_snapshot.clientTrust + 4).clamp(0, 100).toInt(),
+      inbox: inbox,
+      deadlines: deadlines,
+      actions: dismissed
+          ? <GameActionView>[
+              _prepareAppealAdviceAction(),
+              _acceptJudgmentAndCloseAction(),
+            ]
+          : const <GameActionView>[
+              GameActionView(
+                id: 'rest',
+                title: 'Rest until next workday',
+                description:
+                    'Advance to the next post-judgment update while recovering acute fatigue.',
+                timeLabel: 'Until 08:00',
+                costEur: 0,
+                tone: ActionTone.neutral,
+              ),
+            ],
+    );
+    notifyListeners();
+  }
+
+  void _prepareAppealAdvice() {
+    if (_snapshot.stage != 'Appeal assessment') {
+      return;
+    }
+
+    final bool hardProceduralDefault = _snapshot.inbox.any(
+      (InboxItemView item) =>
+          item.id.startsWith('judgment-day-') &&
+          item.subject.contains('procedural default'),
+    );
+    final int groundsScore = (((_snapshot.procedure * 35) +
+                (_snapshot.ethics * 20) +
+                (_snapshot.evidenceScore * 20) +
+                (_snapshot.merits * 25)) /
+            100)
+        .round();
+    final bool viable = !hardProceduralDefault && groundsScore >= 45;
+    final String completionTime = _timeAfter(minutes: 180);
+
+    _snapshot = _snapshot.copyWith(
+      timeLabel: completionTime,
+      stage: 'Awaiting appeal instructions',
+      spendEur: _snapshot.spendEur + 1200,
+      billableMinutes: _snapshot.billableMinutes + 180,
+      fatigue: (_snapshot.fatigue + 3).clamp(0, 100).toInt(),
+      ethics: (_snapshot.ethics + 1).clamp(0, 100).toInt(),
       inbox: <InboxItemView>[
         ..._snapshot.inbox.map(
-          (InboxItemView item) => item.id.startsWith('judgment-day-')
+          (InboxItemView item) => item.id == 'appeal-advice-request'
               ? item.copyWith(status: InboxStatus.resolved)
               : item,
         ),
         InboxItemView(
-          id: 'client-judgment-briefed',
-          sender: 'Client CEO',
-          subject: 'Judgment briefing acknowledged',
-          body:
-              'The client received the outcome, damages explanation, enforcement considerations, and the risk of further review proceedings.',
+          id: viable ? 'appeal-advice-viable' : 'appeal-advice-weak',
+          sender: 'Matter team',
+          subject: viable
+              ? 'Appeal grounds identified'
+              : 'Appeal prospects assessed as weak',
+          body: viable
+              ? 'The advice identifies an arguable appellate route and records a grounds score of $groundsScore/100. Client authorization remains mandatory before filing.'
+              : 'The loss primarily reflects the factual and evidentiary record, or a hard procedural failure. Grounds score $groundsScore/100. A further challenge may add cost without a proportionate prospect of success.',
           receivedAt: '${_snapshot.dayLabel} · $completionTime',
           status: InboxStatus.unread,
         ),
-      ],
-      actions: const <GameActionView>[
-        GameActionView(
-          id: 'rest',
-          title: 'Rest until next workday',
-          description:
-              'Advance to the next post-judgment update while recovering acute fatigue.',
-          timeLabel: 'Until 08:00',
-          costEur: 0,
-          tone: ActionTone.neutral,
+        InboxItemView(
+          id: 'appeal-client-instructions',
+          sender: 'Client CEO',
+          subject: 'Client decision required on appeal',
+          body:
+              'Present the recommendation and request express authority to appeal, or accept the judgment and close the matter.',
+          receivedAt: '${_snapshot.dayLabel} · $completionTime',
+          status: InboxStatus.actionRequired,
         ),
+      ],
+      deadlines: _snapshot.deadlines
+          .map(
+            (DeadlineView item) => item.id == 'appeal-deadline'
+                ? item.copyWith(
+                    relatedActionId: 'seek-client-appeal-authorization',
+                  )
+                : item,
+          )
+          .toList(growable: false),
+      actions: <GameActionView>[
+        _seekClientAppealAuthorizationAction(),
+        _acceptJudgmentAndCloseAction(),
       ],
     );
     notifyListeners();
   }
 
-  void _assessClaimantReviewOptions() {
-    final bool requestOpen = _snapshot.inbox.any(
-      (InboxItemView item) =>
-          item.id.startsWith('client-review-options-') &&
-          item.status == InboxStatus.actionRequired,
-    );
-    if (!requestOpen || _snapshot.stage != 'Claimant review') {
+  void _seekClientAppealAuthorization() {
+    if (_snapshot.stage != 'Awaiting appeal instructions') {
       return;
     }
 
-    final String completionTime = _timeAfter(minutes: 180);
+    final bool viable = _snapshot.inbox.any(
+      (InboxItemView item) => item.id == 'appeal-advice-viable',
+    );
+    final bool clientConsents = viable && _snapshot.clientTrust >= 25;
+    final List<InboxItemView> inbox = <InboxItemView>[
+      ..._snapshot.inbox.map(
+        (InboxItemView item) => item.id == 'appeal-client-instructions'
+            ? item.copyWith(status: InboxStatus.resolved)
+            : item,
+      ),
+      InboxItemView(
+        id: clientConsents
+            ? 'client-authorized-appeal'
+            : 'client-declined-appeal',
+        sender: 'Client CEO',
+        subject: clientConsents
+            ? 'Client authorized appeal'
+            : 'Client declined appeal',
+        body: clientConsents
+            ? 'The client approved the appeal budget and filing on the assessed grounds. File before the deadline.'
+            : 'The client declined further proceedings after considering the grounds, cost, trust, and prospects.',
+        receivedAt: '${_snapshot.dayLabel} · ${_snapshot.timeLabel}',
+        status: InboxStatus.unread,
+      ),
+    ];
+
+    if (!clientConsents) {
+      _snapshot = _snapshot.copyWith(inbox: inbox);
+      _closeCurrentLoss(
+        subject: 'First-instance judgment accepted',
+        detail:
+            'The client declined to authorize an appeal. The first-instance dismissal became final for this simulation branch.',
+      );
+      return;
+    }
+
+    _snapshot = _snapshot.copyWith(
+      stage: 'Appeal preparation',
+      engagementStatus: EngagementStatus.active,
+      clientTrust: (_snapshot.clientTrust - 1).clamp(0, 100).toInt(),
+      inbox: inbox,
+      deadlines: _snapshot.deadlines
+          .map(
+            (DeadlineView item) => item.id == 'appeal-deadline'
+                ? item.copyWith(relatedActionId: 'file-appeal')
+                : item,
+          )
+          .toList(growable: false),
+      actions: <GameActionView>[
+        _fileAppealAction(),
+        _acceptJudgmentAndCloseAction(),
+      ],
+    );
+    notifyListeners();
+  }
+
+  void _fileAppeal() {
+    if (_snapshot.stage != 'Appeal preparation') {
+      return;
+    }
+
+    final String completionTime = _timeAfter(minutes: 360);
     _snapshot = _snapshot.copyWith(
       timeLabel: completionTime,
-      stage: 'Claimant review advised',
-      spendEur: _snapshot.spendEur + 1200,
-      billableMinutes: _snapshot.billableMinutes + 180,
-      fatigue: (_snapshot.fatigue + 3).clamp(0, 100).toInt(),
-      ethics: (_snapshot.ethics + 1).clamp(0, 100).toInt(),
-      clientTrust: (_snapshot.clientTrust + 1).clamp(0, 100).toInt(),
+      stage: 'Appeal pending',
+      engagementStatus: EngagementStatus.active,
+      spendEur: _snapshot.spendEur + 4000,
+      billableMinutes: _snapshot.billableMinutes + 360,
+      fatigue: (_snapshot.fatigue + 5).clamp(0, 100).toInt(),
+      procedure: (_snapshot.procedure + 4).clamp(0, 100).toInt(),
       inbox: <InboxItemView>[
-        ..._snapshot.inbox.map(
-          (InboxItemView item) => item.id.startsWith('client-review-options-')
-              ? item.copyWith(status: InboxStatus.resolved)
-              : item,
-        ),
+        ..._snapshot.inbox,
         InboxItemView(
-          id: 'claimant-review-advice-delivered',
-          sender: 'Matter team',
-          subject: 'Post-judgment review advice delivered',
+          id: 'claimant-appeal-filed',
+          sender: 'Court of Appeal Registry',
+          subject: 'Appeal filed',
           body:
-              'The advice explains that the loss turned primarily on proof of causation and quantum. In this simplified scenario, no proportionate legal-review route offers a reliable basis to reopen those factual findings.',
+              'The appeal was filed on the authorized grounds. The first-instance result remains recorded while the appellate court reviews the matter.',
           receivedAt: '${_snapshot.dayLabel} · $completionTime',
           status: InboxStatus.unread,
         ),
       ],
-      actions: const <GameActionView>[
-        GameActionView(
-          id: 'rest',
-          title: 'Rest until next workday',
-          description:
-              'Advance to the client decision on the post-judgment recommendation.',
-          timeLabel: 'Until 08:00',
-          costEur: 0,
-          tone: ActionTone.neutral,
+      deadlines: _snapshot.deadlines
+          .map(
+            (DeadlineView item) => item.id == 'appeal-deadline'
+                ? item.copyWith(
+                    status: DeadlineStatus.done,
+                    clearRelatedActionId: true,
+                  )
+                : item,
+          )
+          .toList(growable: false),
+      actions: <GameActionView>[_awaitAppealDecisionAction()],
+    );
+    notifyListeners();
+  }
+
+  void _assessCassationGrounds() {
+    if (_snapshot.stage != 'Cassation assessment') {
+      return;
+    }
+
+    final bool hardProceduralDefault = _snapshot.inbox.any(
+      (InboxItemView item) =>
+          item.id.startsWith('judgment-day-') &&
+          item.subject.contains('procedural default'),
+    );
+    final int groundsScore = (((_snapshot.procedure * 55) +
+                (_snapshot.ethics * 25) +
+                (_snapshot.merits * 20)) /
+            100)
+        .round();
+    final bool viable = !hardProceduralDefault && groundsScore >= 40;
+    final String completionTime = _timeAfter(minutes: 240);
+
+    _snapshot = _snapshot.copyWith(
+      timeLabel: completionTime,
+      stage: 'Awaiting cassation instructions',
+      spendEur: _snapshot.spendEur + 2500,
+      billableMinutes: _snapshot.billableMinutes + 240,
+      fatigue: (_snapshot.fatigue + 4).clamp(0, 100).toInt(),
+      inbox: <InboxItemView>[
+        ..._snapshot.inbox.map(
+          (InboxItemView item) => item.id == 'cassation-assessment-request'
+              ? item.copyWith(status: InboxStatus.resolved)
+              : item,
+        ),
+        InboxItemView(
+          id: viable
+              ? 'cassation-grounds-viable'
+              : 'cassation-grounds-not-viable',
+          sender: 'Cassation counsel',
+          subject: viable
+              ? 'Arguable cassation ground identified'
+              : 'No proportionate cassation ground identified',
+          body: viable
+              ? 'Counsel identified an arguable legal or procedural ground, scoring $groundsScore/100. Client authorization is still required; cassation does not reopen the factual record.'
+              : 'The proposed challenge concerns factual assessment rather than a sufficient legal or procedural error. Grounds score $groundsScore/100.',
+          receivedAt: '${_snapshot.dayLabel} · $completionTime',
+          status: InboxStatus.unread,
+        ),
+        InboxItemView(
+          id: 'cassation-client-instructions',
+          sender: 'Client CEO',
+          subject: 'Client decision required on cassation',
+          body:
+              'Request express authority to file on the assessed legal ground, or accept the appellate judgment and close.',
+          receivedAt: '${_snapshot.dayLabel} · $completionTime',
+          status: InboxStatus.actionRequired,
         ),
       ],
+      deadlines: _snapshot.deadlines
+          .map(
+            (DeadlineView item) => item.id == 'cassation-deadline'
+                ? item.copyWith(
+                    relatedActionId: 'seek-client-cassation-authorization',
+                  )
+                : item,
+          )
+          .toList(growable: false),
+      actions: <GameActionView>[
+        _seekClientCassationAuthorizationAction(),
+        _acceptAppellateJudgmentAction(),
+      ],
+    );
+    notifyListeners();
+  }
+
+  void _seekClientCassationAuthorization() {
+    if (_snapshot.stage != 'Awaiting cassation instructions') {
+      return;
+    }
+
+    final bool viable = _snapshot.inbox.any(
+      (InboxItemView item) => item.id == 'cassation-grounds-viable',
+    );
+    final bool clientConsents = viable && _snapshot.clientTrust >= 25;
+    final List<InboxItemView> inbox = <InboxItemView>[
+      ..._snapshot.inbox.map(
+        (InboxItemView item) => item.id == 'cassation-client-instructions'
+            ? item.copyWith(status: InboxStatus.resolved)
+            : item,
+      ),
+      InboxItemView(
+        id: clientConsents
+            ? 'client-authorized-cassation'
+            : 'client-declined-cassation',
+        sender: 'Client CEO',
+        subject: clientConsents
+            ? 'Client authorized cassation appeal'
+            : 'Client declined cassation appeal',
+        body: clientConsents
+            ? 'The client approved filing on the identified legal ground. File before the cassation deadline.'
+            : 'The client declined the further challenge after considering the limited ground, cost, and prospects.',
+        receivedAt: '${_snapshot.dayLabel} · ${_snapshot.timeLabel}',
+        status: InboxStatus.unread,
+      ),
+    ];
+
+    if (!clientConsents) {
+      _snapshot = _snapshot.copyWith(inbox: inbox);
+      _closeCurrentLoss(
+        subject: 'Appellate judgment accepted',
+        detail:
+            'The client declined to authorize cassation. The appellate loss became final for this simulation branch.',
+      );
+      return;
+    }
+
+    _snapshot = _snapshot.copyWith(
+      stage: 'Cassation preparation',
+      engagementStatus: EngagementStatus.active,
+      clientTrust: (_snapshot.clientTrust - 1).clamp(0, 100).toInt(),
+      inbox: inbox,
+      deadlines: _snapshot.deadlines
+          .map(
+            (DeadlineView item) => item.id == 'cassation-deadline'
+                ? item.copyWith(relatedActionId: 'file-cassation-appeal')
+                : item,
+          )
+          .toList(growable: false),
+      actions: <GameActionView>[
+        _fileCassationAppealAction(),
+        _acceptAppellateJudgmentAction(),
+      ],
+    );
+    notifyListeners();
+  }
+
+  void _fileCassationAppeal() {
+    if (_snapshot.stage != 'Cassation preparation') {
+      return;
+    }
+
+    final String completionTime = _timeAfter(minutes: 300);
+    _snapshot = _snapshot.copyWith(
+      timeLabel: completionTime,
+      stage: 'Cassation pending',
+      engagementStatus: EngagementStatus.active,
+      spendEur: _snapshot.spendEur + 6000,
+      billableMinutes: _snapshot.billableMinutes + 300,
+      fatigue: (_snapshot.fatigue + 5).clamp(0, 100).toInt(),
+      procedure: (_snapshot.procedure + 3).clamp(0, 100).toInt(),
+      inbox: <InboxItemView>[
+        ..._snapshot.inbox,
+        InboxItemView(
+          id: 'claimant-cassation-filed',
+          sender: 'Court of Cassation Registry',
+          subject: 'Claimant cassation appeal filed',
+          body:
+              'The appeal was filed on the authorized legal ground. The court will review legality rather than retry the facts.',
+          receivedAt: '${_snapshot.dayLabel} · $completionTime',
+          status: InboxStatus.unread,
+        ),
+      ],
+      deadlines: _snapshot.deadlines
+          .map(
+            (DeadlineView item) => item.id == 'cassation-deadline'
+                ? item.copyWith(
+                    status: DeadlineStatus.done,
+                    clearRelatedActionId: true,
+                  )
+                : item,
+          )
+          .toList(growable: false),
+      actions: <GameActionView>[_awaitCassationDecisionAction()],
+    );
+    notifyListeners();
+  }
+
+  void _closeCurrentLoss({
+    required String subject,
+    required String detail,
+  }) {
+    final String closedAt = '${_snapshot.dayLabel} · ${_snapshot.timeLabel}';
+    final List<DeadlineView> deadlines =
+        _finalizeDeadlinesForClosure(_snapshot.deadlines);
+    final List<InboxItemView> inbox = _finalizeInboxForClosure(
+      inbox: <InboxItemView>[
+        ..._snapshot.inbox.map(
+          (InboxItemView item) => item.status == InboxStatus.actionRequired
+              ? item.copyWith(status: InboxStatus.resolved)
+              : item,
+        ),
+        InboxItemView(
+          id: 'judgment-accepted-${_snapshot.dayLabel}-${_snapshot.timeLabel}',
+          sender: 'Client CEO',
+          subject: subject,
+          body: detail,
+          receivedAt: closedAt,
+          status: InboxStatus.unread,
+        ),
+      ],
+      closedAt: closedAt,
+    );
+
+    _snapshot = _snapshot.copyWith(
+      stage: 'Resolved',
+      engagementStatus: EngagementStatus.completed,
+      deadlines: deadlines,
+      inbox: inbox,
+      actions: const <GameActionView>[],
+      outcomeSummary: _buildOutcomeSummary(
+        inbox: inbox,
+        deadlines: deadlines,
+        closedAt: closedAt,
+        expertStatus: _snapshot.expertReviewStatus,
+        juniorStatus: _snapshot.juniorReviewStatus,
+      ),
+      clearSettlementOffer: true,
     );
     notifyListeners();
   }
@@ -1762,9 +2742,17 @@ class DemoGameRepository extends ChangeNotifier {
     final InboxItemView? finalEvent = _lastInboxItemWhere(
       inbox,
       (InboxItemView item) =>
+          item.id.startsWith('appeal-outcome-') ||
+          item.id.startsWith('claimant-cassation-outcome-') ||
           item.id.startsWith('cassation-outcome-') ||
-          item.id.startsWith('claimant-review-closed-') ||
+          item.id.startsWith('judgment-accepted-') ||
+          item.id.startsWith('appeal-deadline-expired-') ||
+          item.id.startsWith('cassation-deadline-expired-') ||
           item.id.startsWith('judgment-finality-'),
+    );
+    final InboxItemView? proceduralDefault = _lastInboxItemWhere(
+      inbox,
+      (InboxItemView item) => item.id.startsWith('procedural-default-'),
     );
 
     String headline;
@@ -1773,13 +2761,31 @@ class DemoGameRepository extends ChangeNotifier {
     int awardEur;
     int costsEur;
 
-    if (settled) {
+    if (proceduralDefault != null) {
+      headline = 'Claim dismissed by procedural default';
+      finalStatus = 'Mandatory filing requirement missed';
+      detail = proceduralDefault.body;
+      awardEur = 0;
+      costsEur = 12000;
+    } else if (settled) {
       headline = 'Matter settled';
       finalStatus = 'Commercial resolution accepted';
       detail =
           'The client accepted EUR 64,500 without an admission of liability and avoided further litigation cost and uncertainty.';
       awardEur = 64500;
       costsEur = 0;
+    } else if (finalEvent?.subject == 'Appeal allowed') {
+      headline = 'Claim allowed on appeal';
+      finalStatus = 'Won on appeal';
+      detail = finalEvent!.body;
+      awardEur = 180000;
+      costsEur = 15000;
+    } else if (finalEvent?.subject == 'Decision quashed and remitted') {
+      headline = 'Decision quashed and remitted';
+      finalStatus = 'Remitted for rehearing';
+      detail = finalEvent!.body;
+      awardEur = 0;
+      costsEur = 5000;
     } else if (judgment?.subject.contains('substantially upheld') ?? false) {
       headline = 'Claim substantially upheld';
       finalStatus = finalEvent?.subject == 'Cassation challenge dismissed'
@@ -1790,10 +2796,10 @@ class DemoGameRepository extends ChangeNotifier {
       costsEur = 18000;
     } else if (judgment?.subject.contains('claim dismissed') ?? false) {
       headline = 'Claim dismissed';
-      finalStatus = finalEvent?.subject ?? 'Review options completed';
+      finalStatus = finalEvent?.subject ?? 'Lost at first instance';
       detail = finalEvent?.body ?? judgment!.body;
       awardEur = 0;
-      costsEur = 0;
+      costsEur = 12000;
     } else {
       headline = 'Mixed outcome';
       finalStatus = finalEvent?.subject ?? 'Matter concluded';
@@ -1824,6 +2830,10 @@ class DemoGameRepository extends ChangeNotifier {
       ))
         'Hearing strategy memorandum completed',
       if (settled) 'Commercial settlement achieved',
+      if (finalEvent?.subject == 'Appeal allowed')
+        'First-instance dismissal reversed on appeal',
+      if (finalEvent?.subject == 'Decision quashed and remitted')
+        'Cassation ground accepted and matter remitted',
     ];
 
     final List<String> missed = <String>[
@@ -1842,6 +2852,21 @@ class DemoGameRepository extends ChangeNotifier {
                 item.id == 'expert-report-not-reviewed-before-hearing',
           ))
         'Expert report was not reviewed before hearing',
+      if (judgment != null &&
+          !inbox.any(
+            (InboxItemView item) => item.id == 'hearing-strategy-prepared',
+          ))
+        'Hearing strategy memorandum was not completed',
+      if (judgment != null &&
+          !inbox.any(
+            (InboxItemView item) => item.id == 'key-witness-prepared',
+          ))
+        'Client key witness was not prepared',
+      if (judgment != null &&
+          !inbox.any(
+            (InboxItemView item) => item.id == 'damages-schedule-reconciled',
+          ))
+        'Damages schedule was not reconciled',
     ];
 
     return CaseOutcomeSummaryView(
@@ -1914,19 +2939,21 @@ class DemoGameRepository extends ChangeNotifier {
     int ethics = _snapshot.ethics;
     int clientTrust = _snapshot.clientTrust;
     String nextStage = _snapshot.stage;
+    CaseResultStatus caseResultStatus = _snapshot.caseResultStatus;
+    EngagementStatus engagementStatus = _snapshot.engagementStatus;
     JuniorReviewStatus juniorStatus = _snapshot.juniorReviewStatus;
     CaseOutcomeSummaryView? outcomeSummary = _snapshot.outcomeSummary;
 
     if (newlyMissed.contains('partner-brief')) {
-      procedure -= 4;
-      clientTrust -= 1;
+      procedure -= 6;
+      clientTrust -= 5;
       updatedInbox.add(
         InboxItemView(
           id: 'partner-brief-missed-day-$nextDay',
           sender: 'Matter partner',
           subject: 'Partner risk brief missed',
           body:
-              'The internal risk brief was not delivered by Day 1 at 15:00. Partner oversight and settlement planning are now weaker.',
+              'The internal risk brief was not delivered by Day 1 at 15:00. Partner oversight, settlement planning, and confidence in the matter team have deteriorated.',
           receivedAt: 'Day $nextDay · 08:00',
           status: InboxStatus.unread,
         ),
@@ -1934,16 +2961,17 @@ class DemoGameRepository extends ChangeNotifier {
     }
 
     if (newlyMissed.contains('preservation')) {
-      procedure -= 8;
-      evidenceScore -= 6;
-      ethics -= 3;
+      procedure -= 12;
+      evidenceScore -= 10;
+      ethics -= 6;
+      clientTrust -= 10;
       updatedInbox.add(
         InboxItemView(
           id: 'preservation-missed-day-$nextDay',
           sender: 'Matter risk system',
           subject: 'Evidence-preservation deadline missed',
           body:
-              'No preservation notice was issued by Day 2 at 17:00. Relevant records may now be incomplete or challenged.',
+              'No preservation notice was issued by Day 2 at 17:00. Relevant records may now be incomplete, the evidentiary ceiling is reduced, and an adverse inference risk now applies.',
           receivedAt: 'Day $nextDay · 08:00',
           status: InboxStatus.unread,
         ),
@@ -1958,8 +2986,9 @@ class DemoGameRepository extends ChangeNotifier {
       }
     }
     if (missedHearingId != null) {
-      procedure -= 20;
-      clientTrust -= 15;
+      procedure -= 30;
+      clientTrust -= 25;
+      ethics -= 5;
       nextStage = 'Judgment pending';
       updatedInbox = updatedInbox
           .map(
@@ -1994,6 +3023,63 @@ class DemoGameRepository extends ChangeNotifier {
       updatedInbox = juniorExpiry.$1;
       updatedActions = juniorExpiry.$2;
       juniorStatus = juniorExpiry.$3;
+    }
+
+    if (newlyMissed.contains('statement-of-claim')) {
+      procedure -= 30;
+      clientTrust -= 30;
+      ethics -= 8;
+      nextStage = 'Resolved';
+      caseResultStatus = CaseResultStatus.lostAtFirstInstance;
+      engagementStatus = EngagementStatus.completed;
+      updatedActions = const <GameActionView>[];
+      updatedInbox.add(
+        InboxItemView(
+          id: 'procedural-default-day-$nextDay',
+          sender: 'Enterprise Court Registry',
+          subject: 'Claim dismissed by procedural default',
+          body:
+              'The statement of claim was not filed before the mandatory deadline. The court dismissed the matter without reaching the merits, and the client is considering a fee write-off request.',
+          receivedAt: 'Day $nextDay · 08:00',
+          status: InboxStatus.unread,
+        ),
+      );
+    }
+
+    if (newlyMissed.contains('appeal-deadline')) {
+      nextStage = 'Resolved';
+      caseResultStatus = CaseResultStatus.lostAtFirstInstance;
+      engagementStatus = EngagementStatus.completed;
+      updatedActions = const <GameActionView>[];
+      updatedInbox.add(
+        InboxItemView(
+          id: 'appeal-deadline-expired-day-$nextDay',
+          sender: 'Matter risk system',
+          subject: 'Appeal deadline expired',
+          body:
+              'No authorized appeal was filed before the deadline. The first-instance loss is final and the engagement is closed.',
+          receivedAt: 'Day $nextDay · 08:00',
+          status: InboxStatus.unread,
+        ),
+      );
+    }
+
+    if (newlyMissed.contains('cassation-deadline')) {
+      nextStage = 'Resolved';
+      caseResultStatus = CaseResultStatus.lostOnAppeal;
+      engagementStatus = EngagementStatus.completed;
+      updatedActions = const <GameActionView>[];
+      updatedInbox.add(
+        InboxItemView(
+          id: 'cassation-deadline-expired-day-$nextDay',
+          sender: 'Matter risk system',
+          subject: 'Cassation deadline expired',
+          body:
+              'No authorized cassation appeal was filed before the deadline. The appellate loss is final and the engagement is closed.',
+          receivedAt: 'Day $nextDay · 08:00',
+          status: InboxStatus.unread,
+        ),
+      );
     }
 
     final bool settlementExpired = _isSettlementExpired(
@@ -2117,44 +3203,95 @@ class DemoGameRepository extends ChangeNotifier {
 
     final bool clearSettlementOffer = settlementExpired;
     if (_snapshot.stage == 'Judgment pending') {
-      // A hearing can now end in a genuine loss even when attendance was
-      // recorded. The result combines the developed record with a bounded,
-      // deterministic court variance. Optional preparation can move a weak
-      // case out of the dismissal band, but repeating the same seed and action
-      // sequence always produces the same judgment.
-      final int preparationScore = (_snapshot.expertReviewStatus ==
-                  ExpertReviewStatus.reviewed
-              ? 6
+      // Hard procedural failures always defeat the claim. Otherwise, the
+      // court evaluates a weighted record plus a deterministic seed variance.
+      // Preparation matters materially, but cannot rescue a missed filing or
+      // mandatory hearing.
+      final bool hearingMissed = updatedDeadlines.any(
+            (DeadlineView item) =>
+                item.isHearing && item.status == DeadlineStatus.missed,
+          ) ||
+          updatedInbox.any(
+            (InboxItemView item) => item.id.startsWith('hearing-missed-'),
+          );
+      final bool claimFilingMissed = updatedDeadlines.any(
+        (DeadlineView item) =>
+            item.id == 'statement-of-claim' &&
+            item.status == DeadlineStatus.missed,
+      );
+      final bool hardProceduralDefault = hearingMissed || claimFilingMissed;
+
+      final int preparationScore = (updatedDeadlines.any(
+            (DeadlineView item) =>
+                item.isHearing && item.status == DeadlineStatus.done,
+          )
+              ? 20
               : 0) +
-          (_snapshot.inbox.any(
+          (expertStatus == ExpertReviewStatus.reviewed ? 20 : 0) +
+          (juniorStatus == JuniorReviewStatus.reviewed ? 10 : 0) +
+          (updatedInbox.any(
             (InboxItemView item) => item.id == 'hearing-strategy-prepared',
           )
-              ? 5
+              ? 20
               : 0) +
-          (_snapshot.inbox.any(
+          (updatedInbox.any(
             (InboxItemView item) => item.id == 'key-witness-prepared',
           )
-              ? 4
+              ? 15
               : 0) +
-          (_snapshot.inbox.any(
+          (updatedInbox.any(
             (InboxItemView item) => item.id == 'damages-schedule-reconciled',
           )
-              ? 4
+              ? 15
+              : 0);
+
+      final bool preservationMissed = updatedDeadlines.any(
+        (DeadlineView item) =>
+            item.id == 'preservation' && item.status == DeadlineStatus.missed,
+      );
+      final int effectiveEvidenceScore = preservationMissed
+          ? evidenceScore.clamp(0, 55).toInt()
+          : evidenceScore;
+      final int criticalMissPenalty = (updatedDeadlines.any(
+            (DeadlineView item) =>
+                item.id == 'partner-brief' &&
+                item.status == DeadlineStatus.missed,
+          )
+              ? 8
+              : 0) +
+          (updatedDeadlines.any(
+            (DeadlineView item) =>
+                item.id == 'preservation' &&
+                item.status == DeadlineStatus.missed,
+          )
+              ? 18
               : 0);
       final int courtVariance = (seed % 31) - 15;
-      final int outcomeScore = _snapshot.caseStrength +
-          procedure +
-          evidenceScore +
-          _snapshot.merits +
-          preparationScore +
-          courtVariance;
-      final bool favorable = outcomeScore >= 220;
-      final bool dismissed = outcomeScore < 205;
+      final int weightedRecord = (((_snapshot.caseStrength * 20) +
+                  (_snapshot.merits * 20) +
+                  (effectiveEvidenceScore * 20) +
+                  (procedure * 20) +
+                  (preparationScore * 10) +
+                  (clientTrust * 5) +
+                  (ethics * 5)) /
+              100)
+          .round();
+      final int outcomeScore =
+          weightedRecord - criticalMissPenalty + courtVariance;
+      final bool favorable = !hardProceduralDefault && outcomeScore >= 60;
+      final bool dismissed = hardProceduralDefault || outcomeScore < 50;
 
       nextStage = 'Post-judgment';
+      caseResultStatus = favorable
+          ? CaseResultStatus.wonAtFirstInstance
+          : dismissed
+              ? CaseResultStatus.lostAtFirstInstance
+              : CaseResultStatus.mixedAtFirstInstance;
+      engagementStatus = EngagementStatus.awaitingClientInstructions;
       updatedActions = <GameActionView>[_informClientOfJudgmentAction()];
       if (dismissed) {
-        clientTrust -= 8;
+        clientTrust -= hardProceduralDefault ? 20 : 10;
+        ethics -= hardProceduralDefault ? 5 : 0;
       }
       updatedInbox.add(
         InboxItemView(
@@ -2163,17 +3300,97 @@ class DemoGameRepository extends ChangeNotifier {
           subject: favorable
               ? 'Judgment: claim substantially upheld'
               : dismissed
-                  ? 'Judgment: claim dismissed'
+                  ? hardProceduralDefault
+                      ? 'Judgment: claim dismissed by procedural default'
+                      : 'Judgment: claim dismissed'
                   : 'Judgment: mixed outcome',
           body: favorable
-              ? 'The court found material supplier breach and awarded substantial damages, with a reduction for scope changes and mitigation uncertainty. Inform the client and assess post-judgment risk.'
+              ? 'The court found material supplier breach and awarded substantial damages. The result reflects a sufficiently strong combined record despite the remaining scope-change and mitigation uncertainty. Decision score $outcomeScore: record $weightedRecord, critical-miss penalty -$criticalMissPenalty, court variance ${courtVariance >= 0 ? '+' : ''}$courtVariance.'
               : dismissed
-                  ? 'The court dismissed the claim despite recorded attendance. The client did not prove a sufficiently reliable causal link between the supplier breach and the claimed losses, while scope changes and incomplete quantum evidence created decisive doubt. Decision factors: merits ${_snapshot.merits}, evidence $evidenceScore, procedure $procedure, preparation $preparationScore, court variance ${courtVariance >= 0 ? '+' : ''}$courtVariance.'
-                  : 'The court accepted part of the breach case but reduced recovery because causation, scope variation, and proof of loss remained incomplete. Decision factors: merits ${_snapshot.merits}, evidence $evidenceScore, procedure $procedure, preparation $preparationScore, court variance ${courtVariance >= 0 ? '+' : ''}$courtVariance.',
+                  ? hardProceduralDefault
+                      ? 'The court dismissed the claim because a mandatory procedural requirement was missed. Hard failures cannot be overridden by the deterministic seed. Decision score $outcomeScore: record $weightedRecord, critical-miss penalty -$criticalMissPenalty, court variance ${courtVariance >= 0 ? '+' : ''}$courtVariance.'
+                      : 'The court dismissed the claim despite recorded attendance. Weak evidence, procedure, and hearing preparation did not establish a sufficiently reliable causal and quantum case. Decision score $outcomeScore: record $weightedRecord, preparation $preparationScore, critical-miss penalty -$criticalMissPenalty, court variance ${courtVariance >= 0 ? '+' : ''}$courtVariance.'
+                  : 'The court accepted part of the breach case but reduced recovery because causation, scope variation, and proof of loss remained incomplete. Decision score $outcomeScore: record $weightedRecord, preparation $preparationScore, critical-miss penalty -$criticalMissPenalty, court variance ${courtVariance >= 0 ? '+' : ''}$courtVariance.',
           receivedAt: 'Day $nextDay · 08:00',
           status: InboxStatus.actionRequired,
         ),
       );
+    } else if (_snapshot.stage == 'Appeal pending') {
+      final int appealRecord = (((procedure * 35) +
+                  (evidenceScore * 25) +
+                  (_snapshot.merits * 20) +
+                  (ethics * 10) +
+                  (clientTrust * 10)) /
+              100)
+          .round();
+      final int appealRoll = seed % 100;
+      final bool appealAllowed = appealRecord >= 50 && appealRoll >= 70;
+
+      if (appealAllowed) {
+        nextStage = 'Resolved';
+        caseResultStatus = CaseResultStatus.wonOnAppeal;
+        engagementStatus = EngagementStatus.completed;
+        updatedActions = const <GameActionView>[];
+        updatedInbox.add(
+          InboxItemView(
+            id: 'appeal-outcome-day-$nextDay',
+            sender: 'Court of Appeal Registry',
+            subject: 'Appeal allowed',
+            body:
+                'The appellate court set aside the dismissal and granted substantial relief. Appellate record $appealRecord/100; deterministic decision roll $appealRoll/100.',
+            receivedAt: 'Day $nextDay · 08:00',
+            status: InboxStatus.unread,
+          ),
+        );
+      } else {
+        final int cassationDeadlineDay = nextDay + 3;
+        nextStage = 'Cassation assessment';
+        caseResultStatus = CaseResultStatus.lostOnAppeal;
+        engagementStatus = EngagementStatus.awaitingClientInstructions;
+        clientTrust -= 5;
+        updatedActions = <GameActionView>[
+          _assessCassationGroundsAction(),
+          _acceptAppellateJudgmentAction(),
+        ];
+        updatedDeadlines = <DeadlineView>[
+          ...updatedDeadlines.where(
+            (DeadlineView item) => item.id != 'cassation-deadline',
+          ),
+          DeadlineView(
+            id: 'cassation-deadline',
+            title: 'Cassation filing deadline',
+            dueAt: 'Day $cassationDeadlineDay · 17:00',
+            status: DeadlineStatus.open,
+            detail:
+                'Assess legal grounds, obtain client authority, and file before the cassation deadline.',
+            relatedActionId: 'assess-cassation-grounds',
+            missedConsequence:
+                'The appellate loss becomes final and the engagement closes.',
+          ),
+        ];
+        updatedInbox.add(
+          InboxItemView(
+            id: 'appeal-outcome-day-$nextDay',
+            sender: 'Court of Appeal Registry',
+            subject: 'Appeal dismissed',
+            body:
+                'The appellate court upheld the first-instance dismissal. Appellate record $appealRecord/100; deterministic decision roll $appealRoll/100.',
+            receivedAt: 'Day $nextDay · 08:00',
+            status: InboxStatus.unread,
+          ),
+        );
+        updatedInbox.add(
+          InboxItemView(
+            id: 'cassation-assessment-request',
+            sender: 'Client CEO',
+            subject: 'Assess cassation options',
+            body:
+                'The client requests specialist advice on any legal or procedural ground for cassation. Factual disagreement alone is insufficient.',
+            receivedAt: 'Day $nextDay · 08:00',
+            status: InboxStatus.actionRequired,
+          ),
+        );
+      }
     } else if (_snapshot.stage == 'Post-judgment' &&
         _snapshot.inbox.any(
           (InboxItemView item) => item.id == 'client-judgment-briefed',
@@ -2206,17 +3423,37 @@ class DemoGameRepository extends ChangeNotifier {
           ),
         );
       } else if (dismissed) {
-        nextStage = 'Claimant review';
+        final int appealDeadlineDay = nextDay + 3;
+        nextStage = 'Appeal assessment';
+        caseResultStatus = CaseResultStatus.lostAtFirstInstance;
+        engagementStatus = EngagementStatus.awaitingClientInstructions;
         updatedActions = <GameActionView>[
-          _assessClaimantReviewOptionsAction(),
+          _prepareAppealAdviceAction(),
+          _acceptJudgmentAndCloseAction(),
+        ];
+        updatedDeadlines = <DeadlineView>[
+          ...updatedDeadlines.where(
+            (DeadlineView item) => item.id != 'appeal-deadline',
+          ),
+          DeadlineView(
+            id: 'appeal-deadline',
+            title: 'Appeal filing deadline',
+            dueAt: 'Day $appealDeadlineDay · 17:00',
+            status: DeadlineStatus.open,
+            detail:
+                'Prepare advice, obtain client authority, and file before the appellate deadline.',
+            relatedActionId: 'prepare-appeal-advice',
+            missedConsequence:
+                'The first-instance loss becomes final and the engagement closes.',
+          ),
         ];
         updatedInbox.add(
           InboxItemView(
-            id: 'client-review-options-day-$nextDay',
+            id: 'appeal-advice-request',
             sender: 'Client CEO',
-            subject: 'Assess post-judgment challenge options',
+            subject: 'Prepare appeal advice',
             body:
-                'The client wants a candid assessment of any proportionate appeal or legal-review route, including scope, cost, timing, and prospects. Do not treat disagreement with the factual findings as a legal ground.',
+                'The client requests a candid assessment of appellate grounds, cost, timing, and prospects before deciding whether to continue.',
             receivedAt: 'Day $nextDay · 08:00',
             status: InboxStatus.actionRequired,
           ),
@@ -2236,42 +3473,61 @@ class DemoGameRepository extends ChangeNotifier {
           ),
         );
       }
-    } else if (_snapshot.stage == 'Claimant review advised') {
-      nextStage = 'Resolved';
-      updatedActions = const <GameActionView>[];
-      updatedInbox.add(
-        InboxItemView(
-          id: 'claimant-review-closed-day-$nextDay',
-          sender: 'Client CEO',
-          subject: 'Review recommendation accepted',
-          body:
-              'The client accepted the recommendation not to pursue a disproportionate challenge in this simplified demo branch. The matter is closed.',
-          receivedAt: 'Day $nextDay · 08:00',
-          status: InboxStatus.unread,
-        ),
-      );
     } else if (_snapshot.stage == 'Cassation pending') {
-      final int decisionRoll = (seed + (nextDay * 29) + procedure) % 100;
-      final bool challengeDismissed = decisionRoll < 75;
-      nextStage = 'Resolved';
-      updatedActions = const <GameActionView>[];
-      updatedInbox.add(
-        InboxItemView(
-          id: 'cassation-outcome-day-$nextDay',
-          sender: 'Court of Cassation Registry',
-          subject: challengeDismissed
-              ? 'Cassation challenge dismissed'
-              : 'Limited cassation review admitted',
-          body: challengeDismissed
-              ? 'The counterparty challenge was dismissed in this deterministic demo branch. The enterprise-court judgment remains in place.'
-              : 'A limited legal issue was admitted for review in this deterministic demo branch. The mobile vertical slice closes here with the matter flagged for specialist follow-up.',
-          receivedAt: 'Day $nextDay · 08:00',
-          status: InboxStatus.unread,
-        ),
+      final bool claimantCassation = updatedInbox.any(
+        (InboxItemView item) => item.id == 'claimant-cassation-filed',
       );
+
+      if (claimantCassation) {
+        final int decisionRoll = seed % 100;
+        final bool quashedAndRemitted = procedure >= 40 && decisionRoll < 30;
+        nextStage = 'Resolved';
+        caseResultStatus = quashedAndRemitted
+            ? CaseResultStatus.remittedAfterCassation
+            : CaseResultStatus.lostOnAppeal;
+        engagementStatus = EngagementStatus.completed;
+        updatedActions = const <GameActionView>[];
+        updatedInbox.add(
+          InboxItemView(
+            id: 'claimant-cassation-outcome-day-$nextDay',
+            sender: 'Court of Cassation Registry',
+            subject: quashedAndRemitted
+                ? 'Decision quashed and remitted'
+                : 'Cassation appeal dismissed',
+            body: quashedAndRemitted
+                ? 'The court accepted the legal ground, quashed the appellate decision, and remitted the matter for rehearing. The factual merits were not finally determined. Deterministic decision roll $decisionRoll/100.'
+                : 'The court rejected the asserted legal ground. The appellate loss remains final. Deterministic decision roll $decisionRoll/100.',
+            receivedAt: 'Day $nextDay · 08:00',
+            status: InboxStatus.unread,
+          ),
+        );
+      } else {
+        final int decisionRoll = (seed + (nextDay * 29) + procedure) % 100;
+        final bool challengeDismissed = decisionRoll < 75;
+        nextStage = 'Resolved';
+        engagementStatus = EngagementStatus.completed;
+        updatedActions = const <GameActionView>[];
+        updatedInbox.add(
+          InboxItemView(
+            id: 'cassation-outcome-day-$nextDay',
+            sender: 'Court of Cassation Registry',
+            subject: challengeDismissed
+                ? 'Cassation challenge dismissed'
+                : 'Limited cassation review admitted',
+            body: challengeDismissed
+                ? 'The counterparty challenge was dismissed in this deterministic demo branch. The enterprise-court judgment remains in place.'
+                : 'A limited legal issue was admitted for review in this deterministic demo branch. The mobile vertical slice closes here with the matter flagged for specialist follow-up.',
+            receivedAt: 'Day $nextDay · 08:00',
+            status: InboxStatus.unread,
+          ),
+        );
+      }
     }
 
     if (nextStage == 'Resolved') {
+      if (engagementStatus != EngagementStatus.terminatedByClient) {
+        engagementStatus = EngagementStatus.completed;
+      }
       if (juniorStatus == JuniorReviewStatus.inProgress ||
           juniorStatus == JuniorReviewStatus.findingsReady) {
         juniorStatus = JuniorReviewStatus.expired;
@@ -2300,12 +3556,15 @@ class DemoGameRepository extends ChangeNotifier {
       dayLabel: 'Day $nextDay',
       timeLabel: '08:00',
       stage: nextStage,
+      caseResultStatus: caseResultStatus,
+      engagementStatus: engagementStatus,
       fatigue: 0,
       cumulativeStrain: (_snapshot.cumulativeStrain - 2).clamp(0, 100).toInt(),
       procedure: procedure.clamp(0, 100).toInt(),
       evidenceScore: evidenceScore.clamp(0, 100).toInt(),
       ethics: ethics.clamp(0, 100).toInt(),
       clientTrust: clientTrust.clamp(0, 100).toInt(),
+      inactivityMinutes: _snapshot.inactivityMinutes + _restInactivityMinutes,
       expertReviewStatus: expertStatus,
       juniorReviewStatus: juniorStatus,
       deadlines: updatedDeadlines,
@@ -2314,6 +3573,7 @@ class DemoGameRepository extends ChangeNotifier {
       outcomeSummary: outcomeSummary,
       clearSettlementOffer: clearSettlementOffer,
     );
+    _applyInactivityConsequences();
     notifyListeners();
   }
 
@@ -2577,8 +3837,15 @@ class DemoGameRepository extends ChangeNotifier {
         return deadline;
       }
       final (int dueDay, int dueMinute) = _calendarMoment(deadline);
-      final bool overdue =
-          day > dueDay || (day == dueDay && minuteOfDay > dueMinute);
+      int effectiveDueDay = dueDay;
+      int effectiveDueMinute = dueMinute;
+      if (deadline.isHearing) {
+        effectiveDueMinute += _hearingAttendanceGraceMinutes;
+        effectiveDueDay += effectiveDueMinute ~/ (24 * 60);
+        effectiveDueMinute %= 24 * 60;
+      }
+      final bool overdue = day > effectiveDueDay ||
+          (day == effectiveDueDay && minuteOfDay > effectiveDueMinute);
       return overdue
           ? deadline.copyWith(
               status: DeadlineStatus.missed,
@@ -2639,11 +3906,14 @@ class DemoGameRepository extends ChangeNotifier {
     _snapshot = _snapshot.copyWith(
       deadlines: _setDeadlineStatus(deadlineId, DeadlineStatus.missed),
       procedure:
-          (_snapshot.procedure - (preservation ? 8 : 4)).clamp(0, 100).toInt(),
-      evidenceScore: (_snapshot.evidenceScore - (preservation ? 6 : 0))
+          (_snapshot.procedure - (preservation ? 12 : 6)).clamp(0, 100).toInt(),
+      evidenceScore: (_snapshot.evidenceScore - (preservation ? 10 : 0))
           .clamp(0, 100)
           .toInt(),
-      ethics: (_snapshot.ethics - (preservation ? 3 : 0)).clamp(0, 100).toInt(),
+      ethics: (_snapshot.ethics - (preservation ? 6 : 0)).clamp(0, 100).toInt(),
+      clientTrust: (_snapshot.clientTrust - (preservation ? 10 : 5))
+          .clamp(0, 100)
+          .toInt(),
       actions: _snapshot.actions
           .where(
             (GameActionView action) =>
@@ -2672,6 +3942,33 @@ class DemoGameRepository extends ChangeNotifier {
           break;
         case 'issue-preservation-notice':
           result = _ensureAction(result, _preservationNoticeAction());
+          break;
+        case 'prepare-statement-of-claim':
+          result = _ensureAction(result, _prepareStatementOfClaimAction());
+          break;
+        case 'prepare-appeal-advice':
+          result = _ensureAction(result, _prepareAppealAdviceAction());
+          break;
+        case 'seek-client-appeal-authorization':
+          result = _ensureAction(
+            result,
+            _seekClientAppealAuthorizationAction(),
+          );
+          break;
+        case 'file-appeal':
+          result = _ensureAction(result, _fileAppealAction());
+          break;
+        case 'assess-cassation-grounds':
+          result = _ensureAction(result, _assessCassationGroundsAction());
+          break;
+        case 'seek-client-cassation-authorization':
+          result = _ensureAction(
+            result,
+            _seekClientCassationAuthorizationAction(),
+          );
+          break;
+        case 'file-cassation-appeal':
+          result = _ensureAction(result, _fileCassationAppealAction());
           break;
         case null:
           break;
@@ -2758,7 +4055,7 @@ class DemoGameRepository extends ChangeNotifier {
         detail: 'Merits, evidence gaps, budget, and settlement range.',
         relatedActionId: 'prepare-partner-brief',
         missedConsequence:
-            'Procedure -4 and client trust -1 because partner oversight was not documented in time.',
+            'Procedure -6 and client trust -5 because partner oversight was not documented in time.',
       ),
       DeadlineView(
         id: 'preservation',
@@ -2768,7 +4065,7 @@ class DemoGameRepository extends ChangeNotifier {
         detail: 'Preserve project mailboxes, tickets, and acceptance records.',
         relatedActionId: 'issue-preservation-notice',
         missedConsequence:
-            'Procedure -8, evidence -6, and ethics -3 because records may be incomplete or challenged.',
+            'Procedure -12, evidence -10, ethics -6, and client trust -10 because records may be incomplete or challenged.',
       ),
     ];
   }
@@ -2857,17 +4154,114 @@ class DemoGameRepository extends ChangeNotifier {
     );
   }
 
-  static GameActionView _assessClaimantReviewOptionsAction() {
+  static GameActionView _prepareAppealAdviceAction() {
     return const GameActionView(
-      id: 'assess-claimant-review-options',
-      title: 'Assess claimant review options',
+      id: 'prepare-appeal-advice',
+      title: 'Prepare appeal advice',
       description:
-          'Evaluate possible appeal or legal-review routes, separating legal grounds from disagreement with factual findings.',
+          'Separate appealable errors from disagreement with the evidence and quantify cost, timing, and prospects.',
       timeLabel: '3h',
       costEur: 1200,
       tone: ActionTone.warning,
+    );
+  }
+
+  static GameActionView _seekClientAppealAuthorizationAction() {
+    return const GameActionView(
+      id: 'seek-client-appeal-authorization',
+      title: 'Request client authorization to appeal',
+      description:
+          'Present the recommendation and obtain express authority before filing.',
+      timeLabel: '30m',
+      costEur: 0,
+      tone: ActionTone.primary,
+    );
+  }
+
+  static GameActionView _acceptJudgmentAndCloseAction() {
+    return const GameActionView(
+      id: 'accept-judgment-and-close',
+      title: 'Accept first-instance judgment and close',
+      description:
+          'Recommend no appeal and close the matter with the loss recorded.',
+      timeLabel: '30m',
+      costEur: 0,
+      tone: ActionTone.neutral,
+    );
+  }
+
+  static GameActionView _fileAppealAction() {
+    return const GameActionView(
+      id: 'file-appeal',
+      title: 'File appeal',
+      description:
+          'File the authorized challenge on the assessed appellate grounds.',
+      timeLabel: '6h',
+      costEur: 4000,
+      tone: ActionTone.warning,
       riskNote:
-          'A weak challenge can increase cost without reopening the factual record in this simplified scenario.',
+          'An appeal adds material cost and can preserve the loss if the grounds do not overcome the record.',
+    );
+  }
+
+  static GameActionView _awaitAppealDecisionAction() {
+    return const GameActionView(
+      id: 'await-appeal-decision',
+      title: 'Await appeal decision',
+      description: 'Advance the simulation to the appellate judgment update.',
+      timeLabel: 'Until decision update',
+      costEur: 0,
+      tone: ActionTone.primary,
+    );
+  }
+
+  static GameActionView _assessCassationGroundsAction() {
+    return const GameActionView(
+      id: 'assess-cassation-grounds',
+      title: 'Assess cassation grounds',
+      description:
+          'Obtain specialist advice on legal and procedural errors without reopening the facts.',
+      timeLabel: '4h',
+      costEur: 2500,
+      tone: ActionTone.warning,
+    );
+  }
+
+  static GameActionView _seekClientCassationAuthorizationAction() {
+    return const GameActionView(
+      id: 'seek-client-cassation-authorization',
+      title: 'Request client authorization for cassation',
+      description:
+          'Present the specialist opinion and obtain express authority before filing.',
+      timeLabel: '30m',
+      costEur: 0,
+      tone: ActionTone.primary,
+    );
+  }
+
+  static GameActionView _acceptAppellateJudgmentAction() {
+    return const GameActionView(
+      id: 'accept-appellate-judgment',
+      title: 'Accept appellate judgment and close',
+      description:
+          'Recommend no cassation appeal and close the matter with the appellate loss recorded.',
+      timeLabel: '30m',
+      costEur: 0,
+      tone: ActionTone.neutral,
+    );
+  }
+
+  static GameActionView _fileCassationAppealAction() {
+    return const GameActionView(
+      id: 'file-cassation-appeal',
+      title: 'File cassation appeal',
+      description:
+          'File the authorized challenge on the identified legal ground.',
+      timeLabel: '5h',
+      costEur: 6000,
+      tone: ActionTone.danger,
+      riskNote:
+          'Cassation reviews legality, not the factual record, and may result only in dismissal or remittal.',
     );
   }
 
@@ -2987,12 +4381,14 @@ class DemoGameRepository extends ChangeNotifier {
 
   static GameSnapshot _initial(int seed) {
     return GameSnapshot(
-      version: '0.5.0-alpha.2 closure and async-lifecycle patch',
+      version: '0.5.0-alpha.4 remedies and variable live clock',
       seed: seed,
       mode: 'Assisted',
       dayLabel: 'Day 1',
       timeLabel: '08:00',
       stage: 'Intake',
+      caseResultStatus: CaseResultStatus.ongoing,
+      engagementStatus: EngagementStatus.active,
       matterTitle: 'The Failed ERP Implementation',
       caseStrength: 43,
       merits: 52,
@@ -3006,6 +4402,8 @@ class DemoGameRepository extends ChangeNotifier {
       cumulativeStrain: 0,
       ethics: 70,
       clientTrust: 50,
+      inactivityMinutes: 0,
+      clientWarningLevel: 0,
       aiRequestsUsed: 0,
       aiRequestLimit: 5,
       knownFactsRevision: 1,
