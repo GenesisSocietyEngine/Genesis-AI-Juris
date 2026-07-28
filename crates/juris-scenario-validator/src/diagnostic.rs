@@ -16,6 +16,15 @@ pub enum DiagnosticCode {
     MissingInitialStage,
     NoOutcomes,
 
+    // Lifecycle validation.
+    AsyncTaskWithoutCompletionPath,
+    AsyncTaskWithoutTerminalBoundary,
+    RequiredInboxWithoutResolution,
+    DeadlineWithoutMissedPath,
+    DeadlineWithoutCompletionPath,
+    HearingWithoutScheduleEvent,
+    HearingWithoutTerminalEvent,
+
     // Reference validation.
     UnknownStageReference,
     UnknownActionReference,
@@ -50,6 +59,14 @@ impl DiagnosticCode {
             Self::UnknownActorReference => "SCN108_UNKNOWN_ACTOR_REFERENCE",
             Self::UnknownEvidenceReference => "SCN109_UNKNOWN_EVIDENCE_REFERENCE",
             Self::UnknownInboxItemReference => "SCN110_UNKNOWN_INBOX_ITEM_REFERENCE",
+
+            Self::AsyncTaskWithoutCompletionPath => "SCN201_ASYNC_TASK_WITHOUT_COMPLETION_PATH",
+            Self::AsyncTaskWithoutTerminalBoundary => "SCN202_ASYNC_TASK_WITHOUT_TERMINAL_BOUNDARY",
+            Self::RequiredInboxWithoutResolution => "SCN203_REQUIRED_INBOX_WITHOUT_RESOLUTION",
+            Self::DeadlineWithoutMissedPath => "SCN204_DEADLINE_WITHOUT_MISSED_PATH",
+            Self::DeadlineWithoutCompletionPath => "SCN205_DEADLINE_WITHOUT_COMPLETION_PATH",
+            Self::HearingWithoutScheduleEvent => "SCN206_HEARING_WITHOUT_SCHEDULE_EVENT",
+            Self::HearingWithoutTerminalEvent => "SCN207_HEARING_WITHOUT_TERMINAL_EVENT",
         }
     }
 }
