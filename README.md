@@ -120,8 +120,8 @@ GitHub Actions runs both Rust and Flutter quality gates.
 - [`VISION.md`](VISION.md) — product vision and long-term principles.
 - [`development-journal.md`](development-journal.md) — engineering decisions and milestone history.
 - [`ROADMAP.md`](ROADMAP.md) — release sequence.
-- [`MOBILE_UI_SPEC.md`](MOBILE_UI_SPEC.md) — screen model and v0.5.1 bridge contract.
-- [`RELEASE_NOTES_v0.5.0.md`](RELEASE_NOTES_v0.5.0.md) — mobile-shell scope.
+- [Mobile UI specification](docs/design/MOBILE_UI_SPEC.md) — screen model and v0.5.1 bridge contract.
+- [`RELEASE_NOTES_v0.5.0.md`](docs/releases/RELEASE_NOTES_v0.5.0.md) — mobile-shell scope.
 - [`UPGRADE_FROM_v0.4.2.md`](UPGRADE_FROM_v0.4.2.md) — installation and upgrade steps.
 
 ## Status

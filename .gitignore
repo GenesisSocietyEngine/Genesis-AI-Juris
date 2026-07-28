@@ -10,3 +10,7 @@ Thumbs.db
 /apps/juris-mobile/android/.gradle/
 /apps/juris-mobile/android/local.properties
 /dist/*.apk
+
+# Temporary local source archives
+/juris-mobile-current.zip
+/apps/juris-mobile/*.zip
