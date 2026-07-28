@@ -25,6 +25,10 @@ class MatterScreen extends StatelessWidget {
           sliver: SliverList.list(
             children: <Widget>[
               _MatterHeader(snapshot: snapshot),
+              if (snapshot.outcomeSummary != null) ...<Widget>[
+                const SizedBox(height: 16),
+                _OutcomeCard(summary: snapshot.outcomeSummary!),
+              ],
               const SizedBox(height: 16),
               _MetricGrid(snapshot: snapshot),
               const SizedBox(height: 16),
@@ -34,12 +38,14 @@ class MatterScreen extends StatelessWidget {
               ],
               _EvidenceCard(evidence: snapshot.evidence),
               const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: onShowActions,
-                icon: const Icon(Icons.playlist_add_check_circle_outlined),
-                label:
-                    Text('Review ${snapshot.actions.length} available actions'),
-              ),
+              if (snapshot.actions.isNotEmpty)
+                FilledButton.icon(
+                  onPressed: onShowActions,
+                  icon: const Icon(Icons.playlist_add_check_circle_outlined),
+                  label: Text(
+                    'Review ${snapshot.actions.length} available actions',
+                  ),
+                ),
             ],
           ),
         ),
@@ -106,6 +112,34 @@ class _MatterHeader extends StatelessWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OutcomeCard extends StatelessWidget {
+  const _OutcomeCard({required this.summary});
+
+  final CaseOutcomeSummaryView summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      title: 'Final outcome',
+      subtitle: summary.closedAt,
+      trailing: const Icon(Icons.verified_outlined),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            summary.headline,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 6),
+          Text(summary.finalStatus),
+          const SizedBox(height: 10),
+          Text(summary.detail),
         ],
       ),
     );

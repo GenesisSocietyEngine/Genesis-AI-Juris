@@ -8,6 +8,7 @@ import '../screens/career_screen.dart';
 import '../screens/inbox_screen.dart';
 import '../screens/matter_screen.dart';
 import '../widgets/action_picker_sheet.dart';
+import '../widgets/case_report_sheet.dart';
 import '../widgets/inbox_message_sheet.dart';
 
 /// Adaptive application shell shared by phone, tablet, and desktop previews.
@@ -145,6 +146,7 @@ class _HomeShellState extends State<HomeShell> {
       0 => InboxScreen(
           snapshot: snapshot,
           onMessageTap: _showInboxMessage,
+          onCaseReportTap: () => _showCaseReport(snapshot),
         ),
       1 => MatterScreen(
           snapshot: snapshot,
@@ -165,6 +167,7 @@ class _HomeShellState extends State<HomeShell> {
       _ => InboxScreen(
           snapshot: snapshot,
           onMessageTap: _showInboxMessage,
+          onCaseReportTap: () => _showCaseReport(snapshot),
         ),
     };
   }
@@ -245,6 +248,8 @@ class _HomeShellState extends State<HomeShell> {
       actionIds = <String>{'assess-claimant-review-options'};
     } else if (item.id.startsWith('expert-report-ready')) {
       actionIds = <String>{'review-expert-report'};
+    } else if (item.id == 'junior-findings-ready') {
+      actionIds = <String>{'review-junior-findings'};
     } else {
       actionIds = switch (item.id) {
         'opening-request' => <String>{
@@ -264,6 +269,24 @@ class _HomeShellState extends State<HomeShell> {
     return snapshot.actions
         .where((GameActionView action) => actionIds.contains(action.id))
         .toList(growable: false);
+  }
+
+  Future<void> _showCaseReport(GameSnapshot snapshot) async {
+    final CaseOutcomeSummaryView? summary = snapshot.outcomeSummary;
+    if (summary == null) {
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (BuildContext context) => CaseReportSheet(
+        snapshot: snapshot,
+        summary: summary,
+      ),
+    );
   }
 
   Future<void> _showActions(

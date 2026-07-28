@@ -29,7 +29,25 @@ enum RescheduleRequestStatus { none, pending, granted, denied, withdrawn }
 ///
 /// The distinction prevents a commissioned assignment from remaining pending
 /// forever and makes the report arrival an explicit world event.
-enum ExpertReviewStatus { notCommissioned, pending, reportReady, reviewed }
+enum ExpertReviewStatus {
+  notCommissioned,
+  pending,
+  reportReady,
+  reviewed,
+  expired,
+}
+
+/// Lifecycle of delegated first-pass document review.
+///
+/// The explicit terminal states prevent an asynchronous preparation task from
+/// remaining visually active after the hearing or after the matter closes.
+enum JuniorReviewStatus {
+  notDelegated,
+  inProgress,
+  findingsReady,
+  reviewed,
+  expired,
+}
 
 /// Visual severity for a player action.
 ///
@@ -213,6 +231,29 @@ class SettlementOfferView {
   final int revision;
 }
 
+@immutable
+class CaseOutcomeSummaryView {
+  const CaseOutcomeSummaryView({
+    required this.headline,
+    required this.finalStatus,
+    required this.detail,
+    required this.closedAt,
+    required this.awardEur,
+    required this.costsEur,
+    required this.keySuccesses,
+    required this.missedOpportunities,
+  });
+
+  final String headline;
+  final String finalStatus;
+  final String detail;
+  final String closedAt;
+  final int awardEur;
+  final int costsEur;
+  final List<String> keySuccesses;
+  final List<String> missedOpportunities;
+}
+
 /// Immutable read model consumed by Flutter screens.
 ///
 /// v0.5.1 will populate the same conceptual snapshot from Rust. Keeping the UI
@@ -247,12 +288,16 @@ class GameSnapshot {
     required this.aiDamagesModelRevision,
     required this.expertReviewStatus,
     required this.expertReportDueDay,
+    required this.juniorReviewStatus,
+    required this.juniorReviewDueDay,
+    required this.juniorReviewDueMinute,
     required this.inbox,
     required this.deadlines,
     required this.evidence,
     required this.actions,
     required this.latestAiNote,
     this.settlementOffer,
+    this.outcomeSummary,
   });
 
   final String version;
@@ -298,6 +343,13 @@ class GameSnapshot {
   /// Zero means that no report has been scheduled.
   final int expertReportDueDay;
 
+  /// Current lifecycle of delegated junior document review.
+  final JuniorReviewStatus juniorReviewStatus;
+
+  /// Scheduled completion moment for the delegated review.
+  final int juniorReviewDueDay;
+  final int juniorReviewDueMinute;
+
   bool get independentExpertCommissioned =>
       expertReviewStatus != ExpertReviewStatus.notCommissioned;
 
@@ -310,6 +362,7 @@ class GameSnapshot {
   final List<GameActionView> actions;
   final String? latestAiNote;
   final SettlementOfferView? settlementOffer;
+  final CaseOutcomeSummaryView? outcomeSummary;
 
   int get unhandledRequiredMessages => inbox
       .where((InboxItemView item) => item.status == InboxStatus.actionRequired)
@@ -341,6 +394,9 @@ class GameSnapshot {
     int? aiDamagesModelRevision,
     ExpertReviewStatus? expertReviewStatus,
     int? expertReportDueDay,
+    JuniorReviewStatus? juniorReviewStatus,
+    int? juniorReviewDueDay,
+    int? juniorReviewDueMinute,
     List<InboxItemView>? inbox,
     List<DeadlineView>? deadlines,
     List<EvidenceView>? evidence,
@@ -349,6 +405,8 @@ class GameSnapshot {
     bool clearLatestAiNote = false,
     SettlementOfferView? settlementOffer,
     bool clearSettlementOffer = false,
+    CaseOutcomeSummaryView? outcomeSummary,
+    bool clearOutcomeSummary = false,
   }) {
     return GameSnapshot(
       version: version,
@@ -379,6 +437,10 @@ class GameSnapshot {
           aiDamagesModelRevision ?? this.aiDamagesModelRevision,
       expertReviewStatus: expertReviewStatus ?? this.expertReviewStatus,
       expertReportDueDay: expertReportDueDay ?? this.expertReportDueDay,
+      juniorReviewStatus: juniorReviewStatus ?? this.juniorReviewStatus,
+      juniorReviewDueDay: juniorReviewDueDay ?? this.juniorReviewDueDay,
+      juniorReviewDueMinute:
+          juniorReviewDueMinute ?? this.juniorReviewDueMinute,
       inbox: inbox ?? this.inbox,
       deadlines: deadlines ?? this.deadlines,
       evidence: evidence ?? this.evidence,
@@ -387,6 +449,8 @@ class GameSnapshot {
           clearLatestAiNote ? null : latestAiNote ?? this.latestAiNote,
       settlementOffer:
           clearSettlementOffer ? null : settlementOffer ?? this.settlementOffer,
+      outcomeSummary:
+          clearOutcomeSummary ? null : outcomeSummary ?? this.outcomeSummary,
     );
   }
 }

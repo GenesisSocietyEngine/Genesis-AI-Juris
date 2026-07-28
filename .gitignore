@@ -14,3 +14,9 @@ Thumbs.db
 # Temporary local source archives
 /juris-mobile-current.zip
 /apps/juris-mobile/*.zip
+
+# Local mobile source backups
+/apps/juris-mobile-broken-*.zip
+
+# Local nested release checkouts
+/genesis-ai-juris-v*/

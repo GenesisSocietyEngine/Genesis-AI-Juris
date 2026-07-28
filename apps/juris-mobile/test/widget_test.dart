@@ -834,6 +834,179 @@ void main() {
     expect(repository.snapshot.stage, 'Resolved');
     expect(repository.snapshot.actions, isEmpty);
   });
+
+  test('delegated junior review becomes ready and can be validated', () {
+    final DemoGameRepository repository = DemoGameRepository(seed: 20260724);
+    repository.applyAction('run-conflict-check');
+    repository.applyAction('delegate-review');
+    repository.applyAction('request-documents');
+
+    expect(
+      repository.snapshot.juniorReviewStatus,
+      JuniorReviewStatus.findingsReady,
+    );
+    expect(
+      repository.snapshot.inbox
+          .singleWhere((InboxItemView item) => item.id == 'junior-report')
+          .status,
+      InboxStatus.resolved,
+    );
+    expect(
+      repository.snapshot.inbox
+          .singleWhere(
+            (InboxItemView item) => item.id == 'junior-findings-ready',
+          )
+          .status,
+      InboxStatus.actionRequired,
+    );
+    expect(
+      repository.snapshot.actions.any(
+        (GameActionView action) => action.id == 'review-junior-findings',
+      ),
+      isTrue,
+    );
+
+    repository.applyAction('review-junior-findings');
+
+    expect(
+      repository.snapshot.juniorReviewStatus,
+      JuniorReviewStatus.reviewed,
+    );
+    expect(
+      repository.snapshot.actions.any(
+        (GameActionView action) => action.id == 'review-junior-findings',
+      ),
+      isFalse,
+    );
+  });
+
+  test('unvalidated junior review expires when the hearing opens', () {
+    final DemoGameRepository repository = DemoGameRepository(seed: 20260724);
+    repository.applyAction('run-conflict-check');
+    repository.applyAction('reply-cfo');
+    repository.applyAction('delegate-review');
+    repository.applyAction('request-documents');
+    repository.applyAction('reject-settlement');
+    repository.applyAction('commence-proceedings');
+    repository.applyAction('prepare-statement-of-claim');
+    repository.applyAction('prepare-evidence-bundle');
+    repository.applyAction('wait-until-hearing');
+
+    expect(
+      repository.snapshot.juniorReviewStatus,
+      JuniorReviewStatus.expired,
+    );
+    expect(
+      repository.snapshot.actions.any(
+        (GameActionView action) => action.id == 'review-junior-findings',
+      ),
+      isFalse,
+    );
+    expect(
+      repository.snapshot.inbox.any(
+        (InboxItemView item) =>
+            item.id == 'junior-review-not-used-before-hearing',
+      ),
+      isTrue,
+    );
+    expect(
+      repository.snapshot.inbox.where(
+        (InboxItemView item) =>
+            (item.id == 'junior-report' ||
+                item.id == 'junior-findings-ready') &&
+            item.status == InboxStatus.actionRequired,
+      ),
+      isEmpty,
+    );
+  });
+
+  test('resolved matter has a terminal summary and no active work', () {
+    final DemoGameRepository repository = _buildMatterWithScheduledHearing();
+    repository.applyAction('wait-until-hearing');
+    repository.applyAction('attend-hearing');
+    repository.applyAction('rest');
+    repository.applyAction('inform-client-judgment');
+    repository.applyAction('rest');
+    repository.applyAction('prepare-cassation-response');
+    repository.applyAction('await-cassation-decision');
+
+    expect(repository.snapshot.stage, 'Resolved');
+    expect(repository.snapshot.outcomeSummary, isNotNull);
+    expect(repository.snapshot.actions, isEmpty);
+    expect(repository.snapshot.unhandledRequiredMessages, 0);
+    expect(
+      repository.snapshot.inbox.any(
+        (InboxItemView item) => item.id == 'matter-closed',
+      ),
+      isTrue,
+    );
+    expect(
+      repository.snapshot.deadlines.any(
+        (DeadlineView item) =>
+            item.status == DeadlineStatus.open ||
+            item.status == DeadlineStatus.scheduled,
+      ),
+      isFalse,
+    );
+  });
+
+  testWidgets('inbox displays newer events above older messages', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final DemoGameRepository repository = DemoGameRepository(seed: 20260724);
+    repository.applyAction('run-conflict-check');
+    repository.applyAction('request-documents');
+
+    await tester.pumpWidget(JurisApp(repository: repository));
+    await tester.pumpAndSettle();
+
+    final Finder newer = find.byKey(
+      const ValueKey<String>('inbox-item-settlement-offer'),
+    );
+    final Finder older = find.byKey(
+      const ValueKey<String>('inbox-item-cfo-pressure'),
+    );
+
+    expect(newer, findsOneWidget);
+    expect(older, findsOneWidget);
+    expect(
+      tester.getTopLeft(newer).dy,
+      lessThan(tester.getTopLeft(older).dy),
+    );
+  });
+
+  testWidgets('case closed card opens the final case report', (
+    WidgetTester tester,
+  ) async {
+    final DemoGameRepository repository = _buildMatterWithScheduledHearing();
+    repository.applyAction('wait-until-hearing');
+    repository.applyAction('attend-hearing');
+    repository.applyAction('rest');
+    repository.applyAction('inform-client-judgment');
+    repository.applyAction('rest');
+    repository.applyAction('prepare-cassation-response');
+    repository.applyAction('await-cassation-decision');
+
+    await tester.pumpWidget(JurisApp(repository: repository));
+    await tester.pumpAndSettle();
+
+    final Finder closedCard = find.byKey(
+      const ValueKey<String>('case-closed-card'),
+    );
+    expect(closedCard, findsOneWidget);
+
+    await tester.tap(closedCard);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Case report'), findsOneWidget);
+    expect(find.text('Financial result'), findsOneWidget);
+    expect(find.text('Performance'), findsOneWidget);
+  });
 }
 
 DemoGameRepository _buildMatterWithScheduledHearing({int seed = 20260724}) {

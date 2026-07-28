@@ -6,28 +6,41 @@ import '../widgets/status_badge.dart';
 
 /// Mobile inbox that treats messages as game state rather than narrative log.
 ///
-/// Every message tile is tappable. Action-required items open a contextual
-/// response flow, while resolved and informational items still open a readable
-/// detail view. This mirrors familiar mail applications and removes the need
-/// to find the global Actions button before answering a specific sender.
+/// Messages are ordered newest-first, matching a conventional mail client.
+/// Attention state remains visible through badges and the summary card without
+/// moving old messages above newer procedural events.
 class InboxScreen extends StatelessWidget {
   const InboxScreen({
     required this.snapshot,
     required this.onMessageTap,
+    required this.onCaseReportTap,
     super.key,
   });
 
   final GameSnapshot snapshot;
   final ValueChanged<InboxItemView> onMessageTap;
+  final VoidCallback onCaseReportTap;
 
   @override
   Widget build(BuildContext context) {
-    final List<InboxItemView> sorted = List<InboxItemView>.from(snapshot.inbox)
-      ..sort((InboxItemView left, InboxItemView right) {
-        final int leftPriority = _priority(left.status);
-        final int rightPriority = _priority(right.status);
-        return leftPriority.compareTo(rightPriority);
-      });
+    final List<MapEntry<int, InboxItemView>> ordered =
+        snapshot.inbox.asMap().entries.toList(growable: false)
+          ..sort(
+            (
+              MapEntry<int, InboxItemView> left,
+              MapEntry<int, InboxItemView> right,
+            ) {
+              final int momentComparison = _messageMoment(
+                right.value.receivedAt,
+              ).compareTo(_messageMoment(left.value.receivedAt));
+              if (momentComparison != 0) {
+                return momentComparison;
+              }
+
+              // Later insertions win when two world events share a timestamp.
+              return right.key.compareTo(left.key);
+            },
+          );
 
     return CustomScrollView(
       key: const PageStorageKey<String>('inbox-scroll'),
@@ -37,18 +50,27 @@ class InboxScreen extends StatelessWidget {
           sliver: SliverList.list(
             children: <Widget>[
               _InboxSummary(snapshot: snapshot),
+              if (snapshot.stage == 'Resolved' &&
+                  snapshot.outcomeSummary != null) ...<Widget>[
+                const SizedBox(height: 16),
+                _CaseClosedCard(
+                  snapshot: snapshot,
+                  summary: snapshot.outcomeSummary!,
+                  onTap: onCaseReportTap,
+                ),
+              ],
               const SizedBox(height: 16),
-              if (sorted.isEmpty)
+              if (ordered.isEmpty)
                 const SectionCard(
                   child: Text('The inbox is clear.'),
                 )
               else
-                ...sorted.map(
-                  (InboxItemView item) => Padding(
+                ...ordered.map(
+                  (MapEntry<int, InboxItemView> entry) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: _InboxMessageCard(
-                      item: item,
-                      onTap: () => onMessageTap(item),
+                      item: entry.value,
+                      onTap: () => onMessageTap(entry.value),
                     ),
                   ),
                 ),
@@ -59,14 +81,18 @@ class InboxScreen extends StatelessWidget {
     );
   }
 
-  int _priority(InboxStatus status) {
-    return switch (status) {
-      InboxStatus.actionRequired => 0,
-      InboxStatus.unread => 1,
-      InboxStatus.read => 2,
-      InboxStatus.resolved => 3,
-      InboxStatus.archived => 4,
-    };
+  int _messageMoment(String label) {
+    final RegExpMatch? match = RegExp(
+      r'^Day\s+(\d+)\s+·\s+(\d{1,2}):(\d{2})$',
+    ).firstMatch(label);
+    if (match == null) {
+      return 0;
+    }
+
+    final int day = int.tryParse(match.group(1) ?? '') ?? 0;
+    final int hour = int.tryParse(match.group(2) ?? '') ?? 0;
+    final int minute = int.tryParse(match.group(3) ?? '') ?? 0;
+    return (day * 24 * 60) + (hour * 60) + minute;
   }
 }
 
@@ -122,6 +148,63 @@ class _InboxSummary extends StatelessWidget {
   }
 }
 
+class _CaseClosedCard extends StatelessWidget {
+  const _CaseClosedCard({
+    required this.snapshot,
+    required this.summary,
+    required this.onTap,
+  });
+
+  final GameSnapshot snapshot;
+  final CaseOutcomeSummaryView summary;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      label: 'Open final case report',
+      child: SectionCard(
+        key: const ValueKey<String>('case-closed-card'),
+        onTap: onTap,
+        title: 'CASE CLOSED',
+        subtitle: summary.closedAt,
+        trailing: Icon(
+          Icons.chevron_right,
+          color: colors.onSurfaceVariant,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              summary.headline,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 6),
+            Text(summary.finalStatus),
+            const SizedBox(height: 12),
+            Text(
+              'Award / settlement: EUR ${_money(summary.awardEur)} · '
+              'Legal spend: EUR ${_money(snapshot.spendEur)}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'View case report',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: colors.primary,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _InboxMessageCard extends StatelessWidget {
   const _InboxMessageCard({
     required this.item,
@@ -140,6 +223,7 @@ class _InboxMessageCard extends StatelessWidget {
       button: true,
       label: 'Open message from ${item.sender}: ${item.subject}',
       child: SectionCard(
+        key: ValueKey<String>('inbox-item-${item.id}'),
         onTap: onTap,
         title: item.sender,
         subtitle: item.receivedAt,
@@ -171,4 +255,16 @@ class _InboxMessageCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _money(int value) {
+  final String digits = value.abs().toString();
+  final StringBuffer result = StringBuffer();
+  for (int index = 0; index < digits.length; index += 1) {
+    if (index > 0 && (digits.length - index) % 3 == 0) {
+      result.write(',');
+    }
+    result.write(digits[index]);
+  }
+  return value < 0 ? '-$result' : result.toString();
 }

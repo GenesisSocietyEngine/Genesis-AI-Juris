@@ -65,243 +65,258 @@ class DemoGameRepository extends ChangeNotifier {
       );
     }
 
-    switch (actionId) {
-      case 'run-conflict-check':
-        _runConflictCheck();
-        return const ActionExecutionResult(
-          title: 'Conflict check complete',
-          message:
-              'No conflict was found. The matter can proceed to investigation.',
-          isRisky: false,
-        );
-      case 'accept-immediately':
-        _acceptImmediately();
-        return const ActionExecutionResult(
-          title: 'Matter accepted',
-          message: 'You moved quickly, but skipped a professional safeguard.',
-          isRisky: true,
-        );
-      case 'ask-ai-research':
-        _askAiResearch();
-        return const ActionExecutionResult(
-          title: 'AI work product received',
-          message: 'The associate identified issues to verify before reliance.',
-          isRisky: false,
-        );
-      case 'reply-cfo':
-        _replyToCfo();
-        return const ActionExecutionResult(
-          title: 'CFO updated',
-          message:
-              'The board has a visible response and an evidence-first plan.',
-          isRisky: false,
-        );
-      case 'request-documents':
-        _requestDocuments();
-        return const ActionExecutionResult(
-          title: 'Document review completed',
-          message:
-              'New evidence improved the record but weakened the merits narrative.',
-          isRisky: false,
-        );
-      case 'delegate-review':
-        _delegateReview();
-        return const ActionExecutionResult(
-          title: 'Review delegated',
-          message:
-              'The junior will report asynchronously while you retain review responsibility.',
-          isRisky: false,
-        );
-      case 'prepare-partner-brief':
-        _preparePartnerRiskBrief();
-        return const ActionExecutionResult(
-          title: 'Partner brief filed',
-          message:
-              'The partner received a documented risk, budget, and settlement assessment.',
-          isRisky: false,
-        );
-      case 'issue-preservation-notice':
-        _issuePreservationNotice();
-        return const ActionExecutionResult(
-          title: 'Preservation notice issued',
-          message:
-              'Relevant mailboxes, tickets, and acceptance records are now preserved.',
-          isRisky: false,
-        );
-      case 'request-budget':
-        _requestBudgetApproval();
-        return const ActionExecutionResult(
-          title: 'Budget authority increased',
-          message:
-              'The client approved another EUR 25,000 with a small trust cost.',
-          isRisky: false,
-        );
-      case 'future-expert':
-        _commissionIndependentExpert();
-        return const ActionExecutionResult(
-          title: 'Independent expert commissioned',
-          message:
-              'The ERP expert started an asynchronous technical assessment.',
-          isRisky: false,
-        );
-      case 'future-damages':
-        _askAiForDamagesModel();
-        return const ActionExecutionResult(
-          title: 'AI damages model completed',
-          message: 'The model is now tied to the current known-facts revision.',
-          isRisky: false,
-        );
-      case 'review-expert-report':
-        _reviewExpertReport();
-        return const ActionExecutionResult(
-          title: 'Expert report reviewed',
-          message:
-              'The technical findings entered the evidentiary record and changed the known facts.',
-          isRisky: false,
-        );
-      case 'future-settle':
-        _acceptSettlement();
-        return const ActionExecutionResult(
-          title: 'Settlement accepted',
-          message:
-              'The matter resolved for EUR 64,500 without admission of liability.',
-          isRisky: false,
-        );
-      case 'reject-settlement':
-        _rejectSettlement();
-        return const ActionExecutionResult(
-          title: 'Settlement rejected',
-          message:
-              'The offer was declined. The matter remains open for further preparation.',
-          isRisky: false,
-        );
-      case 'commence-proceedings':
-        _commenceProceedings();
-        return const ActionExecutionResult(
-          title: 'Proceedings commenced',
-          message:
-              'The matter has moved from pre-litigation into formal pleadings.',
-          isRisky: false,
-        );
-      case 'prepare-statement-of-claim':
-        _prepareStatementOfClaim();
-        return const ActionExecutionResult(
-          title: 'Statement of claim filed',
-          message:
-              'The pleaded case has been filed and the matter advances to evidence.',
-          isRisky: false,
-        );
-      case 'prepare-evidence-bundle':
-        _prepareEvidenceBundle();
-        return const ActionExecutionResult(
-          title: 'Evidence bundle filed',
-          message:
-              'The evidentiary record is ready and the court has scheduled a formal hearing.',
-          isRisky: false,
-        );
-      case 'request-hearing-reschedule':
-        return _requestHearingReschedule();
-      case 'wait-until-hearing':
-        if (!_waitUntilHearing()) {
+    try {
+      switch (actionId) {
+        case 'run-conflict-check':
+          _runConflictCheck();
           return const ActionExecutionResult(
-            title: 'Action unavailable',
+            title: 'Conflict check complete',
             message:
-                'No scheduled hearing can be reached from the current calendar state.',
+                'No conflict was found. The matter can proceed to investigation.',
+            isRisky: false,
+          );
+        case 'accept-immediately':
+          _acceptImmediately();
+          return const ActionExecutionResult(
+            title: 'Matter accepted',
+            message: 'You moved quickly, but skipped a professional safeguard.',
             isRisky: true,
           );
-        }
-        return const ActionExecutionResult(
-          title: 'Hearing time reached',
-          message:
-              'The simulation clock advanced to the formal hearing attendance window.',
-          isRisky: false,
-        );
-      case 'attend-hearing':
-        if (!_isHearingAttendanceWindowOpen()) {
+        case 'ask-ai-research':
+          _askAiResearch();
           return const ActionExecutionResult(
-            title: 'Action unavailable',
+            title: 'AI work product received',
             message:
-                'The hearing has not started, has been moved, or is no longer attendable.',
-            isRisky: true,
+                'The associate identified issues to verify before reliance.',
+            isRisky: false,
           );
-        }
-        _attendHearing();
-        return const ActionExecutionResult(
-          title: 'Hearing concluded',
-          message:
-              'The court has taken the matter under advisement. Judgment is expected next workday.',
-          isRisky: false,
-        );
-      case 'prepare-hearing-strategy':
-        _prepareHearingStrategy();
-        return const ActionExecutionResult(
-          title: 'Hearing strategy completed',
-          message:
-              'The oral theory, likely judicial questions, and fallback positions are now documented.',
-          isRisky: false,
-        );
-      case 'prepare-key-witness':
-        _prepareKeyWitness();
-        return const ActionExecutionResult(
-          title: 'Witness preparation completed',
-          message:
-              'The client witness understands the record, likely challenges, and limits of proper preparation.',
-          isRisky: false,
-        );
-      case 'reconcile-damages-schedule':
-        _reconcileDamagesSchedule();
-        return const ActionExecutionResult(
-          title: 'Damages schedule reconciled',
-          message:
-              'The pleaded quantum now reconciles with invoices, mitigation, and the expert findings.',
-          isRisky: false,
-        );
-      case 'inform-client-judgment':
-        _informClientOfJudgment();
-        return const ActionExecutionResult(
-          title: 'Client informed',
-          message:
-              'The client received an explainable judgment briefing and a post-judgment risk plan.',
-          isRisky: false,
-        );
-      case 'assess-claimant-review-options':
-        _assessClaimantReviewOptions();
-        return const ActionExecutionResult(
-          title: 'Review options assessed',
-          message:
-              'The client received a focused assessment of possible post-judgment challenge routes, cost, timing, and prospects.',
-          isRisky: false,
-        );
-      case 'prepare-cassation-response':
-        _prepareCassationResponse();
-        return const ActionExecutionResult(
-          title: 'Cassation response filed',
-          message:
-              'The response addresses the legal grounds raised by the counterparty and preserves the judgment.',
-          isRisky: false,
-        );
-      case 'await-cassation-decision':
-        _rest();
-        return const ActionExecutionResult(
-          title: 'Cassation update received',
-          message:
-              'The simulation advanced to the Court of Cassation decision update.',
-          isRisky: false,
-        );
-      case 'rest':
-        _rest();
-        return const ActionExecutionResult(
-          title: 'New workday',
-          message:
-              'Acute fatigue recovered while cumulative strain declined slowly.',
-          isRisky: false,
-        );
-      default:
-        return const ActionExecutionResult(
-          title: 'Not implemented in v0.5.0',
-          message: 'This action will be executed by the Rust engine in v0.5.1.',
-          isRisky: false,
-        );
+        case 'reply-cfo':
+          _replyToCfo();
+          return const ActionExecutionResult(
+            title: 'CFO updated',
+            message:
+                'The board has a visible response and an evidence-first plan.',
+            isRisky: false,
+          );
+        case 'request-documents':
+          _requestDocuments();
+          return const ActionExecutionResult(
+            title: 'Document review completed',
+            message:
+                'New evidence improved the record but weakened the merits narrative.',
+            isRisky: false,
+          );
+        case 'delegate-review':
+          _delegateReview();
+          return const ActionExecutionResult(
+            title: 'Review delegated',
+            message:
+                'The junior will report asynchronously while you retain review responsibility.',
+            isRisky: false,
+          );
+        case 'review-junior-findings':
+          _reviewJuniorFindings();
+          return const ActionExecutionResult(
+            title: 'Junior findings validated',
+            message:
+                'The first-pass review was checked and incorporated into the matter record.',
+            isRisky: false,
+          );
+        case 'prepare-partner-brief':
+          _preparePartnerRiskBrief();
+          return const ActionExecutionResult(
+            title: 'Partner brief filed',
+            message:
+                'The partner received a documented risk, budget, and settlement assessment.',
+            isRisky: false,
+          );
+        case 'issue-preservation-notice':
+          _issuePreservationNotice();
+          return const ActionExecutionResult(
+            title: 'Preservation notice issued',
+            message:
+                'Relevant mailboxes, tickets, and acceptance records are now preserved.',
+            isRisky: false,
+          );
+        case 'request-budget':
+          _requestBudgetApproval();
+          return const ActionExecutionResult(
+            title: 'Budget authority increased',
+            message:
+                'The client approved another EUR 25,000 with a small trust cost.',
+            isRisky: false,
+          );
+        case 'future-expert':
+          _commissionIndependentExpert();
+          return const ActionExecutionResult(
+            title: 'Independent expert commissioned',
+            message:
+                'The ERP expert started an asynchronous technical assessment.',
+            isRisky: false,
+          );
+        case 'future-damages':
+          _askAiForDamagesModel();
+          return const ActionExecutionResult(
+            title: 'AI damages model completed',
+            message:
+                'The model is now tied to the current known-facts revision.',
+            isRisky: false,
+          );
+        case 'review-expert-report':
+          _reviewExpertReport();
+          return const ActionExecutionResult(
+            title: 'Expert report reviewed',
+            message:
+                'The technical findings entered the evidentiary record and changed the known facts.',
+            isRisky: false,
+          );
+        case 'future-settle':
+          _acceptSettlement();
+          return const ActionExecutionResult(
+            title: 'Settlement accepted',
+            message:
+                'The matter resolved for EUR 64,500 without admission of liability.',
+            isRisky: false,
+          );
+        case 'reject-settlement':
+          _rejectSettlement();
+          return const ActionExecutionResult(
+            title: 'Settlement rejected',
+            message:
+                'The offer was declined. The matter remains open for further preparation.',
+            isRisky: false,
+          );
+        case 'commence-proceedings':
+          _commenceProceedings();
+          return const ActionExecutionResult(
+            title: 'Proceedings commenced',
+            message:
+                'The matter has moved from pre-litigation into formal pleadings.',
+            isRisky: false,
+          );
+        case 'prepare-statement-of-claim':
+          _prepareStatementOfClaim();
+          return const ActionExecutionResult(
+            title: 'Statement of claim filed',
+            message:
+                'The pleaded case has been filed and the matter advances to evidence.',
+            isRisky: false,
+          );
+        case 'prepare-evidence-bundle':
+          _prepareEvidenceBundle();
+          return const ActionExecutionResult(
+            title: 'Evidence bundle filed',
+            message:
+                'The evidentiary record is ready and the court has scheduled a formal hearing.',
+            isRisky: false,
+          );
+        case 'request-hearing-reschedule':
+          return _requestHearingReschedule();
+        case 'wait-until-hearing':
+          if (!_waitUntilHearing()) {
+            return const ActionExecutionResult(
+              title: 'Action unavailable',
+              message:
+                  'No scheduled hearing can be reached from the current calendar state.',
+              isRisky: true,
+            );
+          }
+          return const ActionExecutionResult(
+            title: 'Hearing time reached',
+            message:
+                'The simulation clock advanced to the formal hearing attendance window.',
+            isRisky: false,
+          );
+        case 'attend-hearing':
+          if (!_isHearingAttendanceWindowOpen()) {
+            return const ActionExecutionResult(
+              title: 'Action unavailable',
+              message:
+                  'The hearing has not started, has been moved, or is no longer attendable.',
+              isRisky: true,
+            );
+          }
+          _attendHearing();
+          return const ActionExecutionResult(
+            title: 'Hearing concluded',
+            message:
+                'The court has taken the matter under advisement. Judgment is expected next workday.',
+            isRisky: false,
+          );
+        case 'prepare-hearing-strategy':
+          _prepareHearingStrategy();
+          return const ActionExecutionResult(
+            title: 'Hearing strategy completed',
+            message:
+                'The oral theory, likely judicial questions, and fallback positions are now documented.',
+            isRisky: false,
+          );
+        case 'prepare-key-witness':
+          _prepareKeyWitness();
+          return const ActionExecutionResult(
+            title: 'Witness preparation completed',
+            message:
+                'The client witness understands the record, likely challenges, and limits of proper preparation.',
+            isRisky: false,
+          );
+        case 'reconcile-damages-schedule':
+          _reconcileDamagesSchedule();
+          return const ActionExecutionResult(
+            title: 'Damages schedule reconciled',
+            message:
+                'The pleaded quantum now reconciles with invoices, mitigation, and the expert findings.',
+            isRisky: false,
+          );
+        case 'inform-client-judgment':
+          _informClientOfJudgment();
+          return const ActionExecutionResult(
+            title: 'Client informed',
+            message:
+                'The client received an explainable judgment briefing and a post-judgment risk plan.',
+            isRisky: false,
+          );
+        case 'assess-claimant-review-options':
+          _assessClaimantReviewOptions();
+          return const ActionExecutionResult(
+            title: 'Review options assessed',
+            message:
+                'The client received a focused assessment of possible post-judgment challenge routes, cost, timing, and prospects.',
+            isRisky: false,
+          );
+        case 'prepare-cassation-response':
+          _prepareCassationResponse();
+          return const ActionExecutionResult(
+            title: 'Cassation response filed',
+            message:
+                'The response addresses the legal grounds raised by the counterparty and preserves the judgment.',
+            isRisky: false,
+          );
+        case 'await-cassation-decision':
+          _rest();
+          return const ActionExecutionResult(
+            title: 'Cassation update received',
+            message:
+                'The simulation advanced to the Court of Cassation decision update.',
+            isRisky: false,
+          );
+        case 'rest':
+          _rest();
+          return const ActionExecutionResult(
+            title: 'New workday',
+            message:
+                'Acute fatigue recovered while cumulative strain declined slowly.',
+            isRisky: false,
+          );
+        default:
+          return const ActionExecutionResult(
+            title: 'Not implemented in v0.5.0',
+            message:
+                'This action will be executed by the Rust engine in v0.5.1.',
+            isRisky: false,
+          );
+      }
+    } finally {
+      _refreshJuniorReviewAtCurrentClock();
     }
   }
 
@@ -408,7 +423,7 @@ class DemoGameRepository extends ChangeNotifier {
       deadlineId: 'partner-brief',
     );
 
-    final List<InboxItemView> updatedInbox = <InboxItemView>[
+    List<InboxItemView> updatedInbox = <InboxItemView>[
       ..._snapshot.inbox,
       if (partnerBriefNewlyMissed)
         const InboxItemView(
@@ -431,13 +446,27 @@ class DemoGameRepository extends ChangeNotifier {
       ),
     ];
 
-    final List<GameActionView> preLitigationActions = _withDeadlineActions(
+    List<GameActionView> preLitigationActions = _withDeadlineActions(
       _preLitigationActions(
         includeExpert: !_snapshot.independentExpertCommissioned,
         includeAiDamages: _snapshot.aiDamagesModelRevision < revisedKnownFacts,
       ),
       updatedDeadlines,
     );
+
+    final (
+      List<InboxItemView>,
+      List<GameActionView>,
+      JuniorReviewStatus
+    ) juniorCompletion = _completeJuniorReviewIfDue(
+      inbox: updatedInbox,
+      actions: preLitigationActions,
+      status: _snapshot.juniorReviewStatus,
+      day: _currentDayNumber(),
+      minuteOfDay: (17 * 60) + 30,
+    );
+    updatedInbox = juniorCompletion.$1;
+    preLitigationActions = juniorCompletion.$2;
 
     _snapshot = _snapshot.copyWith(
       timeLabel: '17:30',
@@ -452,6 +481,7 @@ class DemoGameRepository extends ChangeNotifier {
       clientTrust: _snapshot.clientTrust - (partnerBriefNewlyMissed ? 1 : 0),
       caseStrength: 48,
       knownFactsRevision: revisedKnownFacts,
+      juniorReviewStatus: juniorCompletion.$3,
       deadlines: updatedDeadlines,
       evidence: const <EvidenceView>[
         EvidenceView(
@@ -497,6 +527,9 @@ class DemoGameRepository extends ChangeNotifier {
   void _delegateReview() {
     _snapshot = _snapshot.copyWith(
       timeLabel: '10:00',
+      juniorReviewStatus: JuniorReviewStatus.inProgress,
+      juniorReviewDueDay: _currentDayNumber(),
+      juniorReviewDueMinute: (13 * 60) + 30,
       spendEur: _snapshot.spendEur + 1800,
       billableMinutes: _snapshot.billableMinutes + 60,
       fatigue: _snapshot.fatigue + 1,
@@ -517,6 +550,181 @@ class DemoGameRepository extends ChangeNotifier {
           .toList(growable: false),
     );
     notifyListeners();
+  }
+
+  void _refreshJuniorReviewAtCurrentClock() {
+    if (_snapshot.juniorReviewStatus != JuniorReviewStatus.inProgress) {
+      return;
+    }
+
+    final (
+      List<InboxItemView>,
+      List<GameActionView>,
+      JuniorReviewStatus
+    ) completion = _completeJuniorReviewIfDue(
+      inbox: _snapshot.inbox,
+      actions: _snapshot.actions,
+      status: _snapshot.juniorReviewStatus,
+      day: _currentDayNumber(),
+      minuteOfDay: _minuteOfDay(_snapshot.timeLabel),
+    );
+    if (completion.$3 == _snapshot.juniorReviewStatus) {
+      return;
+    }
+
+    _snapshot = _snapshot.copyWith(
+      inbox: completion.$1,
+      actions: completion.$2,
+      juniorReviewStatus: completion.$3,
+    );
+    notifyListeners();
+  }
+
+  void _reviewJuniorFindings() {
+    if (_snapshot.juniorReviewStatus != JuniorReviewStatus.findingsReady) {
+      return;
+    }
+
+    final String completionTime = _timeAfter(minutes: 90);
+    _snapshot = _snapshot.copyWith(
+      timeLabel: completionTime,
+      juniorReviewStatus: JuniorReviewStatus.reviewed,
+      billableMinutes: _snapshot.billableMinutes + 90,
+      fatigue: (_snapshot.fatigue + 2).clamp(0, 100).toInt(),
+      evidenceScore: (_snapshot.evidenceScore + 4).clamp(0, 100).toInt(),
+      procedure: (_snapshot.procedure + 2).clamp(0, 100).toInt(),
+      caseStrength: (_snapshot.caseStrength + 3).clamp(0, 100).toInt(),
+      inbox: <InboxItemView>[
+        ..._snapshot.inbox.map(
+          (InboxItemView item) => item.id == 'junior-findings-ready'
+              ? item.copyWith(status: InboxStatus.resolved)
+              : item,
+        ),
+        InboxItemView(
+          id: 'junior-findings-validated',
+          sender: 'Junior associate',
+          subject: 'Document review findings validated',
+          body:
+              'The first-pass findings were checked against the source record and incorporated into the matter analysis.',
+          receivedAt: '${_snapshot.dayLabel} · $completionTime',
+          status: InboxStatus.unread,
+        ),
+      ],
+      actions: _snapshot.actions
+          .where(
+            (GameActionView action) => action.id != 'review-junior-findings',
+          )
+          .toList(growable: false),
+    );
+    notifyListeners();
+  }
+
+  (List<InboxItemView>, List<GameActionView>, JuniorReviewStatus)
+      _completeJuniorReviewIfDue({
+    required List<InboxItemView> inbox,
+    required List<GameActionView> actions,
+    required JuniorReviewStatus status,
+    required int day,
+    required int minuteOfDay,
+  }) {
+    if (status != JuniorReviewStatus.inProgress ||
+        !_hasReachedMoment(
+          day: day,
+          minuteOfDay: minuteOfDay,
+          targetDay: _snapshot.juniorReviewDueDay,
+          targetMinute: _snapshot.juniorReviewDueMinute,
+        )) {
+      return (inbox, actions, status);
+    }
+
+    final List<InboxItemView> updatedInbox = inbox
+        .map(
+          (InboxItemView item) => item.id == 'junior-report'
+              ? item.copyWith(status: InboxStatus.resolved)
+              : item,
+        )
+        .toList(growable: true);
+
+    if (!updatedInbox.any(
+      (InboxItemView item) => item.id == 'junior-findings-ready',
+    )) {
+      updatedInbox.add(
+        InboxItemView(
+          id: 'junior-findings-ready',
+          sender: 'Junior associate',
+          subject: 'Document review findings ready for validation',
+          body:
+              'The junior identified chronology gaps, acceptance-language risks, and correspondence requiring senior validation before use.',
+          receivedAt: 'Day $day · ${_formatMinuteOfDay(minuteOfDay)}',
+          status: InboxStatus.actionRequired,
+        ),
+      );
+    }
+
+    return (
+      updatedInbox,
+      _ensureAction(actions, _reviewJuniorFindingsAction()),
+      JuniorReviewStatus.findingsReady,
+    );
+  }
+
+  (List<InboxItemView>, List<GameActionView>, JuniorReviewStatus)
+      _expireJuniorReviewForHearing({
+    required List<InboxItemView> inbox,
+    required List<GameActionView> actions,
+    required JuniorReviewStatus status,
+    required int day,
+    required int minuteOfDay,
+  }) {
+    if (status != JuniorReviewStatus.inProgress &&
+        status != JuniorReviewStatus.findingsReady) {
+      return (inbox, actions, status);
+    }
+
+    final List<InboxItemView> updatedInbox = inbox
+        .map(
+          (InboxItemView item) =>
+              item.id == 'junior-report' || item.id == 'junior-findings-ready'
+                  ? item.copyWith(status: InboxStatus.resolved)
+                  : item,
+        )
+        .toList(growable: true);
+
+    if (!updatedInbox.any(
+      (InboxItemView item) =>
+          item.id == 'junior-review-not-used-before-hearing',
+    )) {
+      updatedInbox.add(
+        InboxItemView(
+          id: 'junior-review-not-used-before-hearing',
+          sender: 'Matter risk system',
+          subject: 'Junior review not used before hearing',
+          body:
+              'The delegated review was not validated before the hearing window opened. Its findings were not incorporated into the hearing record.',
+          receivedAt: 'Day $day · ${_formatMinuteOfDay(minuteOfDay)}',
+          status: InboxStatus.unread,
+        ),
+      );
+    }
+
+    return (
+      updatedInbox,
+      actions
+          .where(
+            (GameActionView action) => action.id != 'review-junior-findings',
+          )
+          .toList(growable: false),
+      JuniorReviewStatus.expired,
+    );
+  }
+
+  bool _hasReachedMoment({
+    required int day,
+    required int minuteOfDay,
+    required int targetDay,
+    required int targetMinute,
+  }) {
+    return day > targetDay || (day == targetDay && minuteOfDay >= targetMinute);
   }
 
   void _preparePartnerRiskBrief() {
@@ -738,11 +946,40 @@ class DemoGameRepository extends ChangeNotifier {
   }
 
   void _acceptSettlement() {
+    final String closedAt = '${_snapshot.dayLabel} · ${_snapshot.timeLabel}';
+    final List<DeadlineView> finalizedDeadlines =
+        _finalizeDeadlinesForClosure(_snapshot.deadlines);
+    final List<InboxItemView> finalizedInbox = _finalizeInboxForClosure(
+      inbox: _resolveInboxItem('settlement-offer'),
+      closedAt: closedAt,
+    );
+    final ExpertReviewStatus finalExpertStatus =
+        _snapshot.expertReviewStatus == ExpertReviewStatus.pending ||
+                _snapshot.expertReviewStatus == ExpertReviewStatus.reportReady
+            ? ExpertReviewStatus.expired
+            : _snapshot.expertReviewStatus;
+    final JuniorReviewStatus finalJuniorStatus =
+        _snapshot.juniorReviewStatus == JuniorReviewStatus.inProgress ||
+                _snapshot.juniorReviewStatus == JuniorReviewStatus.findingsReady
+            ? JuniorReviewStatus.expired
+            : _snapshot.juniorReviewStatus;
+
     _snapshot = _snapshot.copyWith(
       stage: 'Resolved',
       clientTrust: _snapshot.clientTrust + 2,
-      inbox: _resolveInboxItem('settlement-offer'),
+      expertReviewStatus: finalExpertStatus,
+      juniorReviewStatus: finalJuniorStatus,
+      inbox: finalizedInbox,
+      deadlines: finalizedDeadlines,
       actions: const <GameActionView>[],
+      outcomeSummary: _buildOutcomeSummary(
+        inbox: finalizedInbox,
+        deadlines: finalizedDeadlines,
+        closedAt: closedAt,
+        expertStatus: finalExpertStatus,
+        juniorStatus: finalJuniorStatus,
+        settled: true,
+      ),
       clearSettlementOffer: true,
     );
     notifyListeners();
@@ -1080,6 +1317,21 @@ class DemoGameRepository extends ChangeNotifier {
         )
         .toList(growable: false);
 
+    final (
+      List<InboxItemView>,
+      List<GameActionView>,
+      JuniorReviewStatus
+    ) juniorExpiry = _expireJuniorReviewForHearing(
+      inbox: updatedInbox,
+      actions: remainingActions,
+      status: _snapshot.juniorReviewStatus,
+      day: hearingDay,
+      minuteOfDay: hearingMinute,
+    );
+    updatedInbox = juniorExpiry.$1;
+    remainingActions = juniorExpiry.$2;
+    final JuniorReviewStatus juniorStatus = juniorExpiry.$3;
+
     if (expertStatus == ExpertReviewStatus.pending &&
         hearingDay >= _snapshot.expertReportDueDay) {
       expertStatus = ExpertReviewStatus.reportReady;
@@ -1132,6 +1384,7 @@ class DemoGameRepository extends ChangeNotifier {
       ethics: ethics.clamp(0, 100).toInt(),
       clientTrust: clientTrust.clamp(0, 100).toInt(),
       expertReviewStatus: expertStatus,
+      juniorReviewStatus: juniorStatus,
       deadlines: updatedDeadlines,
       inbox: updatedInbox,
       actions: _ensureAction(
@@ -1250,15 +1503,28 @@ class DemoGameRepository extends ChangeNotifier {
       clearRescheduleActionId: true,
     );
 
+    final (
+      List<InboxItemView>,
+      List<GameActionView>,
+      JuniorReviewStatus
+    ) juniorExpiry = _expireJuniorReviewForHearing(
+      inbox: _snapshot.inbox,
+      actions: _snapshot.actions,
+      status: _snapshot.juniorReviewStatus,
+      day: _currentDayNumber(),
+      minuteOfDay: _minuteOfDay(_snapshot.timeLabel),
+    );
+
     _snapshot = _snapshot.copyWith(
       timeLabel: completionTime,
       stage: 'Judgment pending',
       billableMinutes: _snapshot.billableMinutes + 360,
       fatigue: (_snapshot.fatigue + 8).clamp(0, 100).toInt(),
       cumulativeStrain: (_snapshot.cumulativeStrain + 3).clamp(0, 100).toInt(),
+      juniorReviewStatus: juniorExpiry.$3,
       deadlines: _replaceCalendarItem(completedHearing),
       inbox: <InboxItemView>[
-        ..._snapshot.inbox.map(
+        ...juniorExpiry.$1.map(
           (InboxItemView item) => item.id.startsWith('hearing-notice-') ||
                   (item.id.startsWith('expert-report-ready') &&
                       item.status == InboxStatus.actionRequired)
@@ -1421,6 +1687,175 @@ class DemoGameRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  List<InboxItemView> _finalizeInboxForClosure({
+    required List<InboxItemView> inbox,
+    required String closedAt,
+  }) {
+    final List<InboxItemView> finalized = inbox
+        .map(
+          (InboxItemView item) => item.status == InboxStatus.actionRequired ||
+                  item.id == 'junior-report' ||
+                  item.id == 'junior-findings-ready'
+              ? item.copyWith(status: InboxStatus.resolved)
+              : item,
+        )
+        .toList(growable: true);
+
+    if (!finalized.any((InboxItemView item) => item.id == 'matter-closed')) {
+      finalized.add(
+        InboxItemView(
+          id: 'matter-closed',
+          sender: 'Matter team',
+          subject: 'Matter closed',
+          body:
+              'The Failed ERP Implementation has been closed. The final outcome and performance assessment are available in the case report.',
+          receivedAt: closedAt,
+          status: InboxStatus.unread,
+        ),
+      );
+    }
+    return finalized;
+  }
+
+  List<DeadlineView> _finalizeDeadlinesForClosure(
+    List<DeadlineView> deadlines,
+  ) {
+    return deadlines
+        .map(
+          (DeadlineView item) => item.status == DeadlineStatus.open ||
+                  item.status == DeadlineStatus.scheduled
+              ? item.copyWith(
+                  status: DeadlineStatus.cancelled,
+                  clearRelatedActionId: true,
+                  clearRescheduleActionId: true,
+                )
+              : item,
+        )
+        .toList(growable: false);
+  }
+
+  InboxItemView? _lastInboxItemWhere(
+    List<InboxItemView> inbox,
+    bool Function(InboxItemView item) predicate,
+  ) {
+    for (int index = inbox.length - 1; index >= 0; index -= 1) {
+      final InboxItemView item = inbox[index];
+      if (predicate(item)) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  CaseOutcomeSummaryView _buildOutcomeSummary({
+    required List<InboxItemView> inbox,
+    required List<DeadlineView> deadlines,
+    required String closedAt,
+    required ExpertReviewStatus expertStatus,
+    required JuniorReviewStatus juniorStatus,
+    bool settled = false,
+  }) {
+    final InboxItemView? judgment = _lastInboxItemWhere(
+      inbox,
+      (InboxItemView item) => item.id.startsWith('judgment-day-'),
+    );
+    final InboxItemView? finalEvent = _lastInboxItemWhere(
+      inbox,
+      (InboxItemView item) =>
+          item.id.startsWith('cassation-outcome-') ||
+          item.id.startsWith('claimant-review-closed-') ||
+          item.id.startsWith('judgment-finality-'),
+    );
+
+    String headline;
+    String finalStatus;
+    String detail;
+    int awardEur;
+    int costsEur;
+
+    if (settled) {
+      headline = 'Matter settled';
+      finalStatus = 'Commercial resolution accepted';
+      detail =
+          'The client accepted EUR 64,500 without an admission of liability and avoided further litigation cost and uncertainty.';
+      awardEur = 64500;
+      costsEur = 0;
+    } else if (judgment?.subject.contains('substantially upheld') ?? false) {
+      headline = 'Claim substantially upheld';
+      finalStatus = finalEvent?.subject == 'Cassation challenge dismissed'
+          ? 'Original judgment remains effective'
+          : finalEvent?.subject ?? 'No further challenge pending';
+      detail = finalEvent?.body ?? judgment!.body;
+      awardEur = 220800;
+      costsEur = 18000;
+    } else if (judgment?.subject.contains('claim dismissed') ?? false) {
+      headline = 'Claim dismissed';
+      finalStatus = finalEvent?.subject ?? 'Review options completed';
+      detail = finalEvent?.body ?? judgment!.body;
+      awardEur = 0;
+      costsEur = 0;
+    } else {
+      headline = 'Mixed outcome';
+      finalStatus = finalEvent?.subject ?? 'Matter concluded';
+      detail = finalEvent?.body ??
+          judgment?.body ??
+          'The matter concluded after a mixed procedural and substantive result.';
+      awardEur = 95000;
+      costsEur = 9000;
+    }
+
+    final List<String> successes = <String>[
+      if (deadlines.any(
+        (DeadlineView item) =>
+            item.id == 'preservation' && item.status == DeadlineStatus.done,
+      ))
+        'Evidence-preservation notice completed',
+      if (expertStatus == ExpertReviewStatus.reviewed)
+        'Independent expert findings reviewed',
+      if (juniorStatus == JuniorReviewStatus.reviewed)
+        'Junior document findings validated',
+      if (deadlines.any(
+        (DeadlineView item) =>
+            item.isHearing && item.status == DeadlineStatus.done,
+      ))
+        'Mandatory court hearing attended',
+      if (inbox.any(
+        (InboxItemView item) => item.id == 'hearing-strategy-prepared',
+      ))
+        'Hearing strategy memorandum completed',
+      if (settled) 'Commercial settlement achieved',
+    ];
+
+    final List<String> missed = <String>[
+      ...deadlines
+          .where((DeadlineView item) => item.status == DeadlineStatus.missed)
+          .map((DeadlineView item) => item.title),
+      if (juniorStatus == JuniorReviewStatus.expired ||
+          inbox.any(
+            (InboxItemView item) =>
+                item.id == 'junior-review-not-used-before-hearing',
+          ))
+        'Junior review was not validated before hearing',
+      if (expertStatus == ExpertReviewStatus.expired ||
+          inbox.any(
+            (InboxItemView item) =>
+                item.id == 'expert-report-not-reviewed-before-hearing',
+          ))
+        'Expert report was not reviewed before hearing',
+    ];
+
+    return CaseOutcomeSummaryView(
+      headline: headline,
+      finalStatus: finalStatus,
+      detail: detail,
+      closedAt: closedAt,
+      awardEur: awardEur,
+      costsEur: costsEur,
+      keySuccesses: List<String>.unmodifiable(successes),
+      missedOpportunities: List<String>.unmodifiable(missed),
+    );
+  }
+
   List<InboxItemView> _resolveInboxItem(String itemId) {
     return _snapshot.inbox
         .map(
@@ -1463,7 +1898,7 @@ class DemoGameRepository extends ChangeNotifier {
     workingDeadlines = rescheduleDecision.$1;
     updatedInbox = rescheduleDecision.$2;
 
-    final List<DeadlineView> updatedDeadlines = _markOverdueDeadlines(
+    List<DeadlineView> updatedDeadlines = _markOverdueDeadlines(
       workingDeadlines,
       day: nextDay,
       minuteOfDay: 8 * 60,
@@ -1479,6 +1914,8 @@ class DemoGameRepository extends ChangeNotifier {
     int ethics = _snapshot.ethics;
     int clientTrust = _snapshot.clientTrust;
     String nextStage = _snapshot.stage;
+    JuniorReviewStatus juniorStatus = _snapshot.juniorReviewStatus;
+    CaseOutcomeSummaryView? outcomeSummary = _snapshot.outcomeSummary;
 
     if (newlyMissed.contains('partner-brief')) {
       procedure -= 4;
@@ -1542,6 +1979,21 @@ class DemoGameRepository extends ChangeNotifier {
             status: InboxStatus.unread,
           ),
         );
+
+      final (
+        List<InboxItemView>,
+        List<GameActionView>,
+        JuniorReviewStatus
+      ) juniorExpiry = _expireJuniorReviewForHearing(
+        inbox: updatedInbox,
+        actions: updatedActions,
+        status: juniorStatus,
+        day: nextDay,
+        minuteOfDay: 8 * 60,
+      );
+      updatedInbox = juniorExpiry.$1;
+      updatedActions = juniorExpiry.$2;
+      juniorStatus = juniorExpiry.$3;
     }
 
     final bool settlementExpired = _isSettlementExpired(
@@ -1619,6 +2071,21 @@ class DemoGameRepository extends ChangeNotifier {
         _reviewExpertReportAction(),
       );
     }
+
+    final (
+      List<InboxItemView>,
+      List<GameActionView>,
+      JuniorReviewStatus
+    ) juniorCompletion = _completeJuniorReviewIfDue(
+      inbox: updatedInbox,
+      actions: updatedActions,
+      status: juniorStatus,
+      day: nextDay,
+      minuteOfDay: 8 * 60,
+    );
+    updatedInbox = juniorCompletion.$1;
+    updatedActions = juniorCompletion.$2;
+    juniorStatus = juniorCompletion.$3;
 
     if (nextStage == 'Hearing preparation') {
       final DeadlineView? activeHearing = _activeScheduledHearingFrom(
@@ -1804,6 +2271,31 @@ class DemoGameRepository extends ChangeNotifier {
       );
     }
 
+    if (nextStage == 'Resolved') {
+      if (juniorStatus == JuniorReviewStatus.inProgress ||
+          juniorStatus == JuniorReviewStatus.findingsReady) {
+        juniorStatus = JuniorReviewStatus.expired;
+      }
+      if (expertStatus == ExpertReviewStatus.pending ||
+          expertStatus == ExpertReviewStatus.reportReady) {
+        expertStatus = ExpertReviewStatus.expired;
+      }
+
+      updatedDeadlines = _finalizeDeadlinesForClosure(updatedDeadlines);
+      updatedInbox = _finalizeInboxForClosure(
+        inbox: updatedInbox,
+        closedAt: 'Day $nextDay · 08:00',
+      );
+      updatedActions = const <GameActionView>[];
+      outcomeSummary = _buildOutcomeSummary(
+        inbox: updatedInbox,
+        deadlines: updatedDeadlines,
+        closedAt: 'Day $nextDay · 08:00',
+        expertStatus: expertStatus,
+        juniorStatus: juniorStatus,
+      );
+    }
+
     _snapshot = _snapshot.copyWith(
       dayLabel: 'Day $nextDay',
       timeLabel: '08:00',
@@ -1815,9 +2307,11 @@ class DemoGameRepository extends ChangeNotifier {
       ethics: ethics.clamp(0, 100).toInt(),
       clientTrust: clientTrust.clamp(0, 100).toInt(),
       expertReviewStatus: expertStatus,
+      juniorReviewStatus: juniorStatus,
       deadlines: updatedDeadlines,
       inbox: updatedInbox,
       actions: updatedActions,
+      outcomeSummary: outcomeSummary,
       clearSettlementOffer: clearSettlementOffer,
     );
     notifyListeners();
@@ -2242,6 +2736,18 @@ class DemoGameRepository extends ChangeNotifier {
     return _ensureAction(actions, _aiDamagesAction());
   }
 
+  static GameActionView _reviewJuniorFindingsAction() {
+    return const GameActionView(
+      id: 'review-junior-findings',
+      title: 'Review junior document findings',
+      description:
+          'Validate the first-pass chronology, risk flags, and source references before relying on them.',
+      timeLabel: '1h 30m',
+      costEur: 0,
+      tone: ActionTone.neutral,
+    );
+  }
+
   static List<DeadlineView> _openedDeadlines() {
     return const <DeadlineView>[
       DeadlineView(
@@ -2481,7 +2987,7 @@ class DemoGameRepository extends ChangeNotifier {
 
   static GameSnapshot _initial(int seed) {
     return GameSnapshot(
-      version: '0.5.0+9 combined lifecycle and adverse-judgment patch',
+      version: '0.5.0-alpha.2 closure and async-lifecycle patch',
       seed: seed,
       mode: 'Assisted',
       dayLabel: 'Day 1',
@@ -2507,6 +3013,9 @@ class DemoGameRepository extends ChangeNotifier {
       aiDamagesModelRevision: 0,
       expertReviewStatus: ExpertReviewStatus.notCommissioned,
       expertReportDueDay: 0,
+      juniorReviewStatus: JuniorReviewStatus.notDelegated,
+      juniorReviewDueDay: 0,
+      juniorReviewDueMinute: 0,
       inbox: const <InboxItemView>[
         InboxItemView(
           id: 'opening-request',
