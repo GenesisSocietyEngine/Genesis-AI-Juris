@@ -16,24 +16,44 @@ fn load_minimal_scenario() -> ScenarioDefinition {
 
 #[test]
 fn hearing_without_schedule_event_is_rejected() {
-    // The hearing has a valid closing event, isolating this test to the
-    // absence of a formal scheduling event.
+    // The hearing stage is reachable and has a valid closing event.
+    // The only intentional defect is the absence of a formal
+    // HearingScheduled event.
     let mut scenario = load_minimal_scenario();
+    let hearing_stage = StageId::from("enterprise-court-hearing");
+    let hearing_opened_event = EventId::from("hearing-opened");
 
     scenario.stages.push(StageDefinition {
-        id: StageId::from("enterprise-court-hearing"),
+        id: hearing_stage.clone(),
         title: "Enterprise Court Hearing".to_owned(),
         kind: StageKind::Hearing,
-        entry_event: None,
+        entry_event: Some(hearing_opened_event.clone()),
         exit_actions: vec![ActionId::from("close-matter")],
         terminal: false,
+    });
+
+    // This makes the hearing stage reachable without satisfying the separate
+    // requirement for a formal HearingScheduled event.
+    scenario.events.push(EventDefinition {
+        id: hearing_opened_event.clone(),
+        title: "Hearing opened".to_owned(),
+        kind: EventKind::HearingOpened,
+        trigger: EventTrigger::AtTime {
+            at: ScenarioTime::new(3, 540),
+        },
+        condition: Default::default(),
+        effects: vec![Effect::SetStage {
+            stage: hearing_stage,
+        }],
     });
 
     scenario.events.push(EventDefinition {
         id: EventId::from("hearing-closed"),
         title: "Hearing closed".to_owned(),
         kind: EventKind::HearingClosed,
-        trigger: EventTrigger::ByEffect,
+        trigger: EventTrigger::AfterEvent {
+            event: hearing_opened_event,
+        },
         condition: Default::default(),
         effects: vec![Effect::SetStage {
             stage: StageId::from("resolved"),
@@ -50,15 +70,17 @@ fn hearing_without_schedule_event_is_rejected() {
 
 #[test]
 fn hearing_without_terminal_event_is_rejected() {
-    // The hearing is formally scheduled, but no event closes it or resolves
-    // the matter.
+    // The hearing is formally scheduled and the schedule event makes the
+    // hearing stage reachable. The only intentional defect is that no
+    // HearingClosed event exits the hearing stage.
     let mut scenario = load_minimal_scenario();
+    let hearing_stage = StageId::from("enterprise-court-hearing");
 
     scenario.stages.push(StageDefinition {
-        id: StageId::from("enterprise-court-hearing"),
+        id: hearing_stage.clone(),
         title: "Enterprise Court Hearing".to_owned(),
         kind: StageKind::Hearing,
-        entry_event: None,
+        entry_event: Some(EventId::from("hearing-scheduled")),
         exit_actions: vec![ActionId::from("close-matter")],
         terminal: false,
     });
@@ -67,9 +89,13 @@ fn hearing_without_terminal_event_is_rejected() {
         id: EventId::from("hearing-scheduled"),
         title: "Hearing scheduled".to_owned(),
         kind: EventKind::HearingScheduled,
-        trigger: EventTrigger::ByEffect,
+        trigger: EventTrigger::AtTime {
+            at: ScenarioTime::new(3, 540),
+        },
         condition: Default::default(),
-        effects: Vec::new(),
+        effects: vec![Effect::SetStage {
+            stage: hearing_stage,
+        }],
     });
 
     let report = validate_scenario(&scenario);
@@ -83,30 +109,41 @@ fn hearing_without_terminal_event_is_rejected() {
 #[test]
 fn hearing_with_schedule_and_terminal_events_is_valid() {
     let mut scenario = load_minimal_scenario();
+    let hearing_stage = StageId::from("enterprise-court-hearing");
+    let hearing_scheduled_event = EventId::from("hearing-scheduled");
 
     scenario.stages.push(StageDefinition {
-        id: StageId::from("enterprise-court-hearing"),
+        id: hearing_stage.clone(),
         title: "Enterprise Court Hearing".to_owned(),
         kind: StageKind::Hearing,
-        entry_event: None,
+        entry_event: Some(hearing_scheduled_event.clone()),
         exit_actions: vec![ActionId::from("close-matter")],
         terminal: false,
     });
 
+    // A timed scheduling event is independently reachable and transitions
+    // the scenario into the hearing stage.
     scenario.events.push(EventDefinition {
-        id: EventId::from("hearing-scheduled"),
+        id: hearing_scheduled_event.clone(),
         title: "Hearing scheduled".to_owned(),
         kind: EventKind::HearingScheduled,
-        trigger: EventTrigger::ByEffect,
+        trigger: EventTrigger::AtTime {
+            at: ScenarioTime::new(3, 540),
+        },
         condition: Default::default(),
-        effects: Vec::new(),
+        effects: vec![Effect::SetStage {
+            stage: hearing_stage,
+        }],
     });
 
+    // The closing event has an explicit causal trigger and exits the hearing.
     scenario.events.push(EventDefinition {
         id: EventId::from("hearing-closed"),
         title: "Hearing closed".to_owned(),
         kind: EventKind::HearingClosed,
-        trigger: EventTrigger::ByEffect,
+        trigger: EventTrigger::AfterEvent {
+            event: hearing_scheduled_event,
+        },
         condition: Default::default(),
         effects: vec![Effect::SetStage {
             stage: StageId::from("resolved"),
@@ -140,7 +177,9 @@ fn async_task_without_completion_path_is_rejected() {
 
         // Incorrect: completion events for asynchronous tasks must use
         // AsyncTaskCompleted and identify the same task.
-        trigger: EventTrigger::ByEffect,
+        trigger: EventTrigger::AfterAction {
+            action: ActionId::from("close-matter"),
+        },
 
         condition: Default::default(),
 

@@ -8,6 +8,7 @@
 mod diagnostic;
 mod index;
 mod lifecycle;
+mod reachability;
 mod references;
 mod structural;
 
@@ -16,6 +17,7 @@ pub use diagnostic::{Diagnostic, DiagnosticCode, Severity, ValidationReport};
 use index::ScenarioIndex;
 use juris_scenario_schema::ScenarioDefinition;
 use lifecycle::validate_lifecycle;
+use reachability::validate_reachability;
 use references::validate_references;
 use structural::validate_structural;
 
@@ -30,6 +32,7 @@ pub fn validate_scenario(scenario: &ScenarioDefinition) -> ValidationReport {
     validate_structural(scenario, &index, &mut report);
     validate_references(scenario, &index, &mut report);
     validate_lifecycle(scenario, &mut report);
+    validate_reachability(scenario, &mut report);
 
     report.diagnostics.sort_by(|left, right| {
         left.code

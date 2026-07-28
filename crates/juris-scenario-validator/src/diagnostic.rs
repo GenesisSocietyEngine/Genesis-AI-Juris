@@ -25,6 +25,12 @@ pub enum DiagnosticCode {
     HearingWithoutScheduleEvent,
     HearingWithoutTerminalEvent,
 
+    // Reachability validation.
+    UnreachableStage,
+    StageWithoutExit,
+    UnreachableOutcome,
+    EventWithoutTrigger,
+
     // Reference validation.
     UnknownStageReference,
     UnknownActionReference,
@@ -67,6 +73,10 @@ impl DiagnosticCode {
             Self::DeadlineWithoutCompletionPath => "SCN205_DEADLINE_WITHOUT_COMPLETION_PATH",
             Self::HearingWithoutScheduleEvent => "SCN206_HEARING_WITHOUT_SCHEDULE_EVENT",
             Self::HearingWithoutTerminalEvent => "SCN207_HEARING_WITHOUT_TERMINAL_EVENT",
+            Self::UnreachableStage => "SCN301_UNREACHABLE_STAGE",
+            Self::StageWithoutExit => "SCN302_STAGE_WITHOUT_EXIT",
+            Self::UnreachableOutcome => "SCN303_UNREACHABLE_OUTCOME",
+            Self::EventWithoutTrigger => "SCN304_EVENT_WITHOUT_TRIGGER",
         }
     }
 }
