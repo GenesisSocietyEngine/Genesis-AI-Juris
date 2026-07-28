@@ -1,8 +1,8 @@
-# GENESIS: AI Juris v0.4.2
+# GENESIS: AI Juris v0.5.0
 
-A deterministic, AI-native legal-career simulation prototype written in Rust.
+A deterministic, AI-native legal-career simulation with a Rust engine and its first smartphone-first Flutter interface.
 
-v0.4.2 is a release-hygiene patch on top of v0.4.1. It preserves the simulation-integrity gameplay while restoring test compilation and enforcing the documented Rust 1.78 minimum toolchain. v0.4.1 hardened the first active legal workday with mandatory hearing windows, expiring settlement offers, concrete AI work product, persistent strain, and client budget authority. The player must manage messages, deadlines, workload, delegation, evidence, settlement, litigation, ethics, and fatigue while the world continues to advance.
+v0.5.0 is the **Mobile Shell milestone**. The existing terminal game remains available, while `apps/juris-mobile` introduces the product surface intended for Android and iPhone: active Inbox, matter dashboard, calendar, AI associate, career view, and reviewed player actions.
 
 ## Current vertical slice
 
@@ -10,70 +10,91 @@ v0.4.2 is a release-hygiene patch on top of v0.4.1. It preserves the simulation-
 **Jurisdiction:** Belgium  
 **Practice area:** Commercial disputes
 
-The player can now:
+The Rust engine models:
 
-- triage and answer an active inbox;
-- meet or miss professional deadlines;
-- work beyond daily capacity and accumulate fatigue;
-- rest while the world and deadlines continue;
-- review documents personally or delegate to a junior;
-- commission and review an independent expert report;
-- use a limited in-game AI associate at several procedural stages;
-- negotiate settlement;
-- progress through pleadings, disclosure, expert evidence, hearing preparation, and hearing;
-- receive an explainable deterministic judgment.
+- active messages and professional deadlines;
+- time, overtime, fatigue, and cumulative strain;
+- delegation, evidence, budgets, settlement, and litigation;
+- AI work product constrained to authorized facts;
+- explainable deterministic judgments.
 
-## Documentation
+The Flutter shell presents:
 
-- [`VISION.md`](VISION.md) — product vision, philosophy, principles, and long-term direction.
-- [`development-journal.md`](development-journal.md) — engineering milestones, rationale, invariants, validation, and open questions.
-- [`ROADMAP.md`](ROADMAP.md) — concise release-oriented roadmap.
-- [`RELEASE_NOTES_v0.4.2.md`](RELEASE_NOTES_v0.4.2.md) — test-compilation and MSRV corrections in this release.
-- [`RELEASE_NOTES_v0.4.1.md`](RELEASE_NOTES_v0.4.1.md) — simulation integrity changes introduced previously.
-- [`RELEASE_NOTES_v0.4.0.md`](RELEASE_NOTES_v0.4.0.md) — original active-workday milestone.
-- [`UPGRADE_FROM_v0.3.1.md`](UPGRADE_FROM_v0.3.1.md) — safe upgrade and Git instructions.
+- Inbox with unread, action-required, resolved, and archived states;
+- matter strength, evidence, budget, workload, ethics, and client trust;
+- deadlines and professional capacity;
+- AI work product and authority boundaries;
+- adaptive Material 3 navigation;
+- action review with visible time, cost, and known risk.
 
-## Workspace architecture
+## Repository layout
 
 ```text
-juris-core       deterministic time, seeded RNG, FIFO scheduler
-juris-domain     legal and professional state, events, actions, outcomes
-juris-content    typed JSON scenario loading
-juris-ai         read-only AI actor boundary and offline scripted adapter
-juris-engine     authoritative simulation state transitions
-juris-cli        terminal input and presentation
+crates/
+  juris-core        deterministic time, RNG, and scheduler
+  juris-domain      legal state, actions, events, and outcomes
+  juris-content     typed JSON scenario loading
+  juris-ai          read-only AI actor boundary
+  juris-engine      authoritative state transitions
+  juris-cli         terminal presentation
+
+apps/
+  juris-mobile      Flutter mobile shell and APK scripts
 ```
 
-### Authority rule
+## Authority rule
 
-Only `juris-engine` mutates `MatterState`.
+Only `juris-engine` may mutate authoritative `MatterState`.
 
-- The CLI submits `PlayerAction` values.
-- The AI adapter receives an immutable state reference.
-- JSON content provides configuration, not executable rules.
-- Outcomes are calculated by deterministic Rust code.
+The v0.5.0 Flutter application uses a small deterministic demo repository solely to validate interaction design. It is not a second production simulation. v0.5.1 will replace it with a narrow Rust bridge:
 
-## Run the game
+```text
+Flutter action ID
+      ↓
+Rust command API
+      ↓
+juris-engine
+      ↓
+immutable mobile snapshot
+```
 
-From the repository root:
+## Run the Rust game
 
 ```powershell
 cargo run -p juris-cli -- start-day --mode assisted --seed 20260724
 ```
 
-Other modes:
+## Prepare the Flutter mobile shell on Windows
+
+Install Flutter and Android tooling, then run:
 
 ```powershell
-cargo run -p juris-cli -- start-day --mode career --seed 20260724
-cargo run -p juris-cli -- start-day --mode hardcore --seed 20260724
-cargo run -p juris-cli -- start-day --mode tournament --seed 20260724
+powershell -ExecutionPolicy Bypass -File apps/juris-mobile/tool/bootstrap_flutter_windows.ps1
 ```
 
-Using the same seed and the same ordered choices should reproduce the same world and judgment.
+The script generates Android platform scaffolding using the developer's installed Flutter version, then runs analysis and widget tests.
 
-## Mandatory quality gate
+## Run on Android
 
-Run before every commit:
+```powershell
+powershell -ExecutionPolicy Bypass -File apps/juris-mobile/tool/run_android_windows.ps1
+```
+
+## Build the first debug APK
+
+```powershell
+powershell -ExecutionPolicy Bypass -File apps/juris-mobile/tool/build_debug_apk_windows.ps1
+```
+
+Expected output:
+
+```text
+dist/genesis-ai-juris-v0.5.0-debug.apk
+```
+
+## Quality gates
+
+Rust:
 
 ```powershell
 cargo fmt --all
@@ -83,20 +104,26 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-The repository includes a GitHub Actions workflow that runs formatting, Clippy, and all tests on every push and pull request.
+Flutter:
 
-## Code-comment standard
+```powershell
+cd apps/juris-mobile
+flutter pub get
+flutter analyze
+flutter test
+```
 
-Public crates and APIs explain:
+GitHub Actions runs both Rust and Flutter quality gates.
 
-- architectural purpose;
-- authority boundaries;
-- ownership and borrowing rationale where material;
-- determinism constraints;
-- non-obvious business rules.
+## Documentation
 
-Tests include a short statement of the behavior or invariant they prove. Comments should explain intent and constraints rather than paraphrasing obvious syntax.
+- [`VISION.md`](VISION.md) — product vision and long-term principles.
+- [`development-journal.md`](development-journal.md) — engineering decisions and milestone history.
+- [`ROADMAP.md`](ROADMAP.md) — release sequence.
+- [`MOBILE_UI_SPEC.md`](MOBILE_UI_SPEC.md) — screen model and v0.5.1 bridge contract.
+- [`RELEASE_NOTES_v0.5.0.md`](RELEASE_NOTES_v0.5.0.md) — mobile-shell scope.
+- [`UPGRADE_FROM_v0.4.2.md`](UPGRADE_FROM_v0.4.2.md) — installation and upgrade steps.
 
 ## Status
 
-This is a vertical prototype, not legal advice and not a validated model of every Belgian procedural rule. It exists to prove the game architecture and core professional loop before jurisdictional depth and content scale are expanded.
+This remains a vertical prototype, not legal advice. The mobile shell is interactive and testable, but v0.5.0 does not yet call the Rust engine. The first engine-backed APK is the explicit objective of v0.5.1.

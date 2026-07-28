@@ -176,16 +176,13 @@ mod tests {
 
     #[test]
     fn scripted_actor_uses_only_explicitly_authorized_context() {
-        // This test verifies the actual security boundary rather than depending
-        // on the exact wording or grammar of the generated response.
-        //
-        // The authoritative matter state deliberately contains an undiscovered
-        // evidence item. The engine authorizes only "Signed contract" through
-        // `ActorPrompt::known_facts`. The AI adapter must mention the authorized
-        // fact and must not leak the hidden evidence from `MatterState`.
+        // The test verifies the architectural security boundary rather than
+        // depending on a specific response template. The actor receives one
+        // authorized fact and an immutable state containing no discovered
+        // evidence. The response must use the supplied fact without inventing
+        // access to hidden matter data.
         let actor = ScriptedAiActor;
         let mut state = minimal_state();
-
         state.evidence.push(Evidence {
             id: EvidenceId::DeletedMailbox,
             title: "Hidden deleted mailbox data".to_owned(),
@@ -207,12 +204,11 @@ mod tests {
 
         assert!(
             response.text.contains("Signed contract"),
-            "The response should include the fact explicitly authorized by the engine"
+            "the response must include the fact explicitly authorized by the engine"
         );
-
         assert!(
             !response.text.contains("Hidden deleted mailbox data"),
-            "The AI adapter must not expose undiscovered evidence from MatterState"
+            "the read-only adapter must not expose undiscovered state"
         );
     }
 }

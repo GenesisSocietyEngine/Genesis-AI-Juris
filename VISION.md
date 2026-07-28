@@ -52,6 +52,10 @@ The game should present pressure, ambiguity, and competing interests without rep
 
 A player should not need a law degree to begin. Legal reasoning, procedure, and professional norms should become understandable through context and consequence rather than through excessive exposition.
 
+### Smartphone-first professional interface
+
+The primary experience should feel like carrying a legal practice in the player’s pocket: Inbox, calendar, matters, contacts, AI work product, and career consequences. The interface should borrow the clarity of professional mobile tools without becoming a sterile enterprise dashboard. Short sessions must remain meaningful, while deeper strategy stays available to committed players.
+
 ### Authentic jurisdictions
 
 Different jurisdictions should feel meaningfully different in institutions, procedure, legal culture, professional roles, language, and available strategies. They should not be cosmetic reskins of one universal system.

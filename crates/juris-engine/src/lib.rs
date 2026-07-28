@@ -1953,12 +1953,11 @@ mod tests {
         let note = engine.state().ai_usage.last_note.as_ref().unwrap();
         assert!(
             note.contains("Signed implementation agreement"),
-            "AI response should include evidence explicitly authorized by the engine: {note}"
+            "the AI note must include evidence explicitly authorized by the engine: {note}"
         );
-
         assert!(
             !note.contains("Recovered deleted mailbox data"),
-            "AI response must not reveal undiscovered evidence: {note}"
+            "the AI note must not reveal undiscovered evidence: {note}"
         );
     }
 

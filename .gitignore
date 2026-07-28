@@ -2,3 +2,11 @@
 .vscode/*.log
 .DS_Store
 Thumbs.db
+
+# Flutter mobile shell
+/apps/juris-mobile/.dart_tool/
+/apps/juris-mobile/build/
+/apps/juris-mobile/coverage/
+/apps/juris-mobile/android/.gradle/
+/apps/juris-mobile/android/local.properties
+/dist/*.apk

@@ -1,11 +1,15 @@
 {
   "folders": [
-    { "path": "." }
+    { "name": "GENESIS: AI Juris", "path": "." },
+    { "name": "Mobile UI", "path": "apps/juris-mobile" }
   ],
   "settings": {
     "rust-analyzer.cargo.allTargets": true,
     "files.exclude": {
-      "**/target": true
-    }
+      "**/target": true,
+      "**/.dart_tool": true,
+      "**/build": true
+    },
+    "powershell.cwd": "Mobile UI"
   }
 }

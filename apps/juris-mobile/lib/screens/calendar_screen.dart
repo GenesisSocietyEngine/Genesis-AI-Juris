@@ -1,0 +1,433 @@
+import 'package:flutter/material.dart';
+
+import '../models/game_snapshot.dart';
+import '../widgets/section_card.dart';
+import '../widgets/status_badge.dart';
+
+/// Deadline and workload screen.
+class CalendarScreen extends StatelessWidget {
+  const CalendarScreen({
+    required this.snapshot,
+    required this.onOpenRelatedAction,
+    super.key,
+  });
+
+  final GameSnapshot snapshot;
+
+  /// Opens the standard action confirmation flow for a calendar-item action.
+  ///
+  /// The calendar never mutates state directly. It only identifies the related
+  /// action; the repository remains responsible for validating and executing
+  /// it, matching the authority boundary planned for the Rust bridge.
+  final ValueChanged<String> onOpenRelatedAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      key: const PageStorageKey<String>('calendar-scroll'),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+      children: <Widget>[
+        SectionCard(
+          title: 'Workday capacity',
+          subtitle:
+              'Rest recovers acute fatigue but only slowly reduces strain.',
+          child: Column(
+            children: <Widget>[
+              _ProgressRow(
+                label: 'Billable time',
+                value: '${snapshot.billableHours.toStringAsFixed(1)}h total',
+                progress: (snapshot.billableHours / 9).clamp(0, 1),
+              ),
+              const SizedBox(height: 14),
+              _ProgressRow(
+                label: 'Acute fatigue',
+                value: '${snapshot.fatigue}/100',
+                progress: snapshot.fatigue / 100,
+              ),
+              const SizedBox(height: 14),
+              _ProgressRow(
+                label: 'Cumulative strain',
+                value: '${snapshot.cumulativeStrain}/100',
+                progress: snapshot.cumulativeStrain / 100,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        SectionCard(
+          title: 'Deadlines and hearings',
+          subtitle: snapshot.deadlines.isEmpty
+              ? 'No deadlines or court events have been opened yet.'
+              : 'Mandatory events continue while the player works or rests.',
+          child: snapshot.deadlines.isEmpty
+              ? const _EmptyCalendar()
+              : Column(
+                  children: snapshot.deadlines
+                      .map(
+                        (DeadlineView deadline) => _DeadlineRow(
+                          deadline: deadline,
+                          onTap: () async {
+                            final String? primaryActionId =
+                                _primaryActionFor(deadline);
+                            final bool rescheduleActionAvailable =
+                                deadline.rescheduleActionId != null &&
+                                    snapshot.actions.any(
+                                      (GameActionView action) =>
+                                          action.id ==
+                                          deadline.rescheduleActionId,
+                                    );
+
+                            final String? actionId = await _showDeadlineDetails(
+                              context,
+                              deadline,
+                              primaryActionId: primaryActionId,
+                              rescheduleActionAvailable:
+                                  rescheduleActionAvailable,
+                            );
+                            if (actionId != null) {
+                              onOpenRelatedAction(actionId);
+                            }
+                          },
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
+        ),
+      ],
+    );
+  }
+
+  String? _primaryActionFor(DeadlineView item) {
+    final String? directActionId = item.relatedActionId;
+    if (directActionId != null &&
+        snapshot.actions.any(
+          (GameActionView action) => action.id == directActionId,
+        )) {
+      return directActionId;
+    }
+
+    // A hearing is not attendable before its scheduled time. On the morning of
+    // the hearing, the repository exposes an explicit wait action that advances
+    // the clock to the formal attendance window.
+    if (item.isHearing &&
+        item.status == DeadlineStatus.scheduled &&
+        snapshot.actions.any(
+          (GameActionView action) => action.id == 'wait-until-hearing',
+        )) {
+      return 'wait-until-hearing';
+    }
+
+    return null;
+  }
+}
+
+class _ProgressRow extends StatelessWidget {
+  const _ProgressRow({
+    required this.label,
+    required this.value,
+    required this.progress,
+  });
+
+  final String label;
+  final String value;
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Expanded(child: Text(label)),
+            Text(value),
+          ],
+        ),
+        const SizedBox(height: 8),
+        LinearProgressIndicator(
+          value: progress,
+          borderRadius: BorderRadius.circular(999),
+        ),
+      ],
+    );
+  }
+}
+
+class _DeadlineRow extends StatelessWidget {
+  const _DeadlineRow({
+    required this.deadline,
+    required this.onTap,
+  });
+
+  final DeadlineView deadline;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final IconData statusIcon = switch (deadline.status) {
+      DeadlineStatus.open => Icons.radio_button_checked,
+      DeadlineStatus.scheduled => Icons.account_balance_outlined,
+      DeadlineStatus.rescheduled => Icons.event_repeat_outlined,
+      DeadlineStatus.done => Icons.check_circle_outline,
+      DeadlineStatus.missed => Icons.error_outline,
+      DeadlineStatus.cancelled => Icons.event_busy_outlined,
+    };
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: ValueKey<String>('calendar-item-${deadline.id}'),
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Icon(statusIcon, size: 18),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              deadline.title,
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                          ),
+                          StatusBadge.deadline(deadline.status),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.chevron_right, size: 20),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(deadline.dueAt),
+                      if (deadline.rescheduleStatus !=
+                          RescheduleRequestStatus.none) ...<Widget>[
+                        const SizedBox(height: 4),
+                        Text(
+                          _rescheduleStatusLabel(deadline.rescheduleStatus),
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.secondary,
+                              ),
+                        ),
+                      ],
+                      const SizedBox(height: 4),
+                      Text(
+                        deadline.detail,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<String?> _showDeadlineDetails(
+  BuildContext context,
+  DeadlineView deadline, {
+  required String? primaryActionId,
+  required bool rescheduleActionAvailable,
+}) {
+  return showModalBottomSheet<String>(
+    context: context,
+    useSafeArea: true,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (BuildContext context) {
+      final ColorScheme colors = Theme.of(context).colorScheme;
+      final bool isHearing = deadline.isHearing;
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              isHearing ? 'Hearing details' : 'Deadline details',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: colors.primary,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              deadline.title,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: <Widget>[
+                StatusBadge.deadline(deadline.status),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '${isHearing ? 'Scheduled' : 'Due'} ${deadline.dueAt}',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Text(deadline.detail),
+            if (isHearing) ...<Widget>[
+              const SizedBox(height: 14),
+              Text(
+                'Attendance remains mandatory unless the court grants a '
+                'rescheduling request.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+              ),
+            ],
+            if (deadline.rescheduleStatus !=
+                RescheduleRequestStatus.none) ...<Widget>[
+              const SizedBox(height: 16),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.secondaryContainer.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: colors.secondary.withValues(alpha: 0.30),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Text(
+                    _rescheduleStatusExplanation(deadline),
+                  ),
+                ),
+              ),
+            ],
+            if (deadline.status == DeadlineStatus.missed &&
+                deadline.missedConsequence != null) ...<Widget>[
+              const SizedBox(height: 14),
+              Text(
+                'Consequence',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: colors.error,
+                    ),
+              ),
+              const SizedBox(height: 6),
+              Text(deadline.missedConsequence!),
+            ],
+            const SizedBox(height: 24),
+            if (primaryActionId != null)
+              FilledButton.icon(
+                onPressed: () => Navigator.pop(context, primaryActionId),
+                icon: Icon(
+                  primaryActionId == 'wait-until-hearing'
+                      ? Icons.schedule
+                      : Icons.play_circle_outline,
+                ),
+                label: Text(
+                  primaryActionId == 'wait-until-hearing'
+                      ? 'Wait until hearing time'
+                      : 'Open related action',
+                ),
+              ),
+            if (rescheduleActionAvailable) ...<Widget>[
+              if (primaryActionId != null) const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.pop(
+                  context,
+                  deadline.rescheduleActionId,
+                ),
+                icon: const Icon(Icons.event_repeat_outlined),
+                label: const Text('Request rescheduling'),
+              ),
+            ],
+            if (primaryActionId == null && !rescheduleActionAvailable)
+              OutlinedButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(_closedButtonLabel(deadline)),
+              )
+            else
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+String _closedButtonLabel(DeadlineView item) {
+  return switch (item.status) {
+    DeadlineStatus.open => 'Related action unavailable',
+    DeadlineStatus.scheduled => 'No action available yet',
+    DeadlineStatus.rescheduled => 'Replaced by a later hearing',
+    DeadlineStatus.done => 'Completed',
+    DeadlineStatus.missed => 'Close',
+    DeadlineStatus.cancelled => 'Cancelled',
+  };
+}
+
+String _rescheduleStatusLabel(RescheduleRequestStatus status) {
+  return switch (status) {
+    RescheduleRequestStatus.none => '',
+    RescheduleRequestStatus.pending => 'Reschedule request pending',
+    RescheduleRequestStatus.granted => 'Reschedule request granted',
+    RescheduleRequestStatus.denied => 'Reschedule request denied',
+    RescheduleRequestStatus.withdrawn => 'Reschedule request withdrawn',
+  };
+}
+
+String _rescheduleStatusExplanation(DeadlineView hearing) {
+  return switch (hearing.rescheduleStatus) {
+    RescheduleRequestStatus.none => '',
+    RescheduleRequestStatus.pending =>
+      'The court has received the request. The original hearing at '
+          '${hearing.dueAt} remains binding until a decision is issued.',
+    RescheduleRequestStatus.granted => hearing.replacementItemId == null
+        ? 'The court granted the request and will issue a replacement date.'
+        : 'The court granted the request. A replacement hearing is listed '
+            'separately in the Calendar.',
+    RescheduleRequestStatus.denied =>
+      'The court denied the request. The scheduled hearing remains binding.',
+    RescheduleRequestStatus.withdrawn =>
+      'The request was withdrawn. The scheduled hearing remains binding.',
+  };
+}
+
+class _EmptyCalendar extends StatelessWidget {
+  const _EmptyCalendar();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 20),
+      child: Center(
+        child: Column(
+          children: <Widget>[
+            Icon(Icons.event_available_outlined, size: 40),
+            SizedBox(height: 10),
+            Text('Complete intake to open professional deadlines.'),
+          ],
+        ),
+      ),
+    );
+  }
+}

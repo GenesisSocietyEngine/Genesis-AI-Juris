@@ -2,30 +2,51 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Juris: run v0.4 assisted workday",
+      "label": "Juris: run Rust assisted workday",
       "type": "shell",
       "command": "cargo run -p juris-cli -- start-day --mode assisted --seed 20260724",
       "group": "build",
       "problemMatcher": ["$rustc"]
     },
     {
-      "label": "Juris: test workspace",
+      "label": "Juris: test Rust workspace",
       "type": "shell",
       "command": "cargo test --workspace",
       "group": "test",
       "problemMatcher": ["$rustc"]
     },
     {
-      "label": "Juris: format workspace",
-      "type": "shell",
-      "command": "cargo fmt --all",
-      "problemMatcher": []
-    },
-    {
-      "label": "Juris: quality gate",
+      "label": "Juris: Rust quality gate",
       "type": "shell",
       "command": "cargo fmt --all -- --check && cargo check --workspace && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace",
       "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "Mobile: bootstrap Android",
+      "type": "shell",
+      "command": "powershell -ExecutionPolicy Bypass -File apps/juris-mobile/tool/bootstrap_flutter_windows.ps1",
+      "problemMatcher": []
+    },
+    {
+      "label": "Mobile: analyze and test",
+      "type": "shell",
+      "command": "cd apps/juris-mobile && flutter pub get && flutter analyze && flutter test",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Mobile: run Android",
+      "type": "shell",
+      "command": "powershell -ExecutionPolicy Bypass -File apps/juris-mobile/tool/run_android_windows.ps1",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Mobile: build debug APK",
+      "type": "shell",
+      "command": "powershell -ExecutionPolicy Bypass -File apps/juris-mobile/tool/build_debug_apk_windows.ps1",
+      "group": "build",
+      "problemMatcher": []
     }
   ]
 }

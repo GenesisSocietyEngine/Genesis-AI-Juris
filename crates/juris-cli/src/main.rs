@@ -21,7 +21,7 @@ fn main() {
     let mode = parse_mode(&args).unwrap_or(GameMode::Career);
     let mut engine = Engine::new(seed, mode, ScriptedAiActor);
 
-    println!("GENESIS: AI Juris v0.4.2");
+    println!("GENESIS: AI Juris v0.5.0");
     println!("Seed: {} | Mode: {:?}", engine.seed(), engine.mode());
     println!("Matter: {}\n", engine.state().title);
     engine.advance_to_next_event();
