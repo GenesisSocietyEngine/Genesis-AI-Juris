@@ -5,7 +5,7 @@ members = [
     "crates/juris-content",
     "crates/juris-ai",
     "crates/juris-engine",
-    "crates/juris-cli",
+    "crates/juris-cli", "crates/juris-scenario-schema", "crates/juris-scenario-validator",
 ]
 resolver = "2"
 
