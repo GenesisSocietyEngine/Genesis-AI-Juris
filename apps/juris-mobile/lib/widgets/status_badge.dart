@@ -13,6 +13,13 @@ class StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Read informational messages intentionally show no pill. The absence of
+    // the badge is the familiar mail-app signal that the message has already
+    // been opened, while action-required and resolved states remain explicit.
+    if (status == InboxStatus.read) {
+      return const SizedBox.shrink();
+    }
+
     final _BadgeSpec spec = status != null
         ? _inboxSpec(context, status!)
         : _deadlineSpec(context, deadlineStatus!);
@@ -44,6 +51,13 @@ class StatusBadge extends StatelessWidget {
             'ACTION REQUIRED', colors.error, colors.errorContainer);
       case InboxStatus.unread:
         return _BadgeSpec('UNREAD', colors.primary, colors.primaryContainer);
+      case InboxStatus.read:
+        // Handled by the early return in build().
+        return _BadgeSpec(
+          'READ',
+          colors.onSurfaceVariant,
+          colors.surfaceContainerHighest,
+        );
       case InboxStatus.resolved:
         return _BadgeSpec(
             'RESOLVED', colors.tertiary, colors.tertiaryContainer);

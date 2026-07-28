@@ -63,8 +63,9 @@ class InboxScreen extends StatelessWidget {
     return switch (status) {
       InboxStatus.actionRequired => 0,
       InboxStatus.unread => 1,
-      InboxStatus.resolved => 2,
-      InboxStatus.archived => 3,
+      InboxStatus.read => 2,
+      InboxStatus.resolved => 3,
+      InboxStatus.archived => 4,
     };
   }
 }

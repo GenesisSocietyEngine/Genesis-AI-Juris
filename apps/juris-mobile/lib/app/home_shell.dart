@@ -144,8 +144,7 @@ class _HomeShellState extends State<HomeShell> {
     return switch (_selectedIndex) {
       0 => InboxScreen(
           snapshot: snapshot,
-          onMessageTap: (InboxItemView item) =>
-              _showInboxMessage(snapshot, item),
+          onMessageTap: _showInboxMessage,
         ),
       1 => MatterScreen(
           snapshot: snapshot,
@@ -165,8 +164,7 @@ class _HomeShellState extends State<HomeShell> {
       4 => CareerScreen(snapshot: snapshot),
       _ => InboxScreen(
           snapshot: snapshot,
-          onMessageTap: (InboxItemView item) =>
-              _showInboxMessage(snapshot, item),
+          onMessageTap: _showInboxMessage,
         ),
     };
   }
@@ -189,21 +187,31 @@ class _HomeShellState extends State<HomeShell> {
     setState(() => _selectedIndex = index);
   }
 
-  Future<void> _showInboxMessage(
-    GameSnapshot snapshot,
-    InboxItemView item,
-  ) async {
-    final List<GameActionView> actions = _actionsForInboxItem(snapshot, item);
+  Future<void> _showInboxMessage(InboxItemView item) async {
+    // Opening an informational message consumes its unread state immediately.
+    // Action-required messages remain unresolved until the mapped gameplay
+    // response is actually completed.
+    widget.repository.markInboxItemRead(item.id);
+    final GameSnapshot currentSnapshot = widget.repository.snapshot;
+    final InboxItemView currentItem = currentSnapshot.inbox.firstWhere(
+      (InboxItemView candidate) => candidate.id == item.id,
+      orElse: () => item,
+    );
+    final List<GameActionView> actions = _actionsForInboxItem(
+      currentSnapshot,
+      currentItem,
+    );
     final String? actionId = await showModalBottomSheet<String>(
       context: context,
       useSafeArea: true,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (BuildContext context) => InboxMessageSheet(
-        item: item,
+        item: currentItem,
         actions: actions,
-        settlementOffer:
-            item.id == 'settlement-offer' ? snapshot.settlementOffer : null,
+        settlementOffer: currentItem.id == 'settlement-offer'
+            ? currentSnapshot.settlementOffer
+            : null,
       ),
     );
 
@@ -228,19 +236,30 @@ class _HomeShellState extends State<HomeShell> {
     GameSnapshot snapshot,
     InboxItemView item,
   ) {
-    final Set<String> actionIds = switch (item.id) {
-      'opening-request' => <String>{
-          'run-conflict-check',
-          'accept-immediately',
-        },
-      'cfo-pressure' => <String>{'reply-cfo'},
-      'settlement-offer' => <String>{
-          'future-settle',
-          'reject-settlement',
-        },
-      'expert-report-ready' => <String>{'review-expert-report'},
-      _ => const <String>{},
-    };
+    final Set<String> actionIds;
+    if (item.id.startsWith('judgment-day-')) {
+      actionIds = <String>{'inform-client-judgment'};
+    } else if (item.id.startsWith('counterparty-cassation-')) {
+      actionIds = <String>{'prepare-cassation-response'};
+    } else if (item.id.startsWith('client-review-options-')) {
+      actionIds = <String>{'assess-claimant-review-options'};
+    } else if (item.id.startsWith('expert-report-ready')) {
+      actionIds = <String>{'review-expert-report'};
+    } else {
+      actionIds = switch (item.id) {
+        'opening-request' => <String>{
+            'run-conflict-check',
+            'accept-immediately',
+          },
+        'cfo-pressure' => <String>{'reply-cfo'},
+        'proceedings-commenced' => <String>{'prepare-statement-of-claim'},
+        'settlement-offer' => <String>{
+            'future-settle',
+            'reject-settlement',
+          },
+        _ => const <String>{},
+      };
+    }
 
     return snapshot.actions
         .where((GameActionView action) => actionIds.contains(action.id))

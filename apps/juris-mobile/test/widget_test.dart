@@ -506,62 +506,338 @@ void main() {
     expect(find.text('Open related action'), findsNothing);
   });
 
-  test('matter can advance through scheduled hearing and judgment', () {
+  test('judgment requires client briefing before post-judgment branch', () {
     final DemoGameRepository repository = _buildMatterWithScheduledHearing();
 
-    while (repository.snapshot.dayLabel != 'Day 5') {
-      final ActionExecutionResult rest = repository.applyAction('rest');
-      expect(rest.title, 'New workday');
-    }
+    final ActionExecutionResult advance =
+        repository.applyAction('wait-until-hearing');
+    expect(advance.title, 'Hearing time reached');
+    expect(repository.snapshot.dayLabel, 'Day 5');
+    expect(repository.snapshot.timeLabel, '10:00');
 
-    expect(repository.snapshot.timeLabel, '08:00');
+    repository.applyAction('attend-hearing');
+    expect(repository.snapshot.stage, 'Judgment pending');
+
+    repository.applyAction('rest');
+    expect(repository.snapshot.stage, 'Post-judgment');
     expect(
       repository.snapshot.actions.any(
-        (GameActionView action) => action.id == 'attend-hearing',
+        (GameActionView action) => action.id == 'inform-client-judgment',
       ),
-      isFalse,
+      isTrue,
     );
+
+    final InboxItemView judgment = repository.snapshot.inbox.singleWhere(
+      (InboxItemView item) => item.id.startsWith('judgment-day-'),
+    );
+    expect(judgment.status, InboxStatus.actionRequired);
+
+    repository.applyAction('inform-client-judgment');
+
+    final InboxItemView resolvedJudgment =
+        repository.snapshot.inbox.singleWhere(
+      (InboxItemView item) => item.id == judgment.id,
+    );
+    expect(resolvedJudgment.status, InboxStatus.resolved);
+    expect(
+      repository.snapshot.inbox.any(
+        (InboxItemView item) => item.id == 'client-judgment-briefed',
+      ),
+      isTrue,
+    );
+
+    // Seed 20260724 deterministically selects the optional counterparty
+    // cassation branch in the demo scenario.
+    repository.applyAction('rest');
+    expect(repository.snapshot.stage, 'Cassation response');
+    expect(
+      repository.snapshot.actions.any(
+        (GameActionView action) => action.id == 'prepare-cassation-response',
+      ),
+      isTrue,
+    );
+    expect(
+      repository.snapshot.inbox.any(
+        (InboxItemView item) =>
+            item.id.startsWith('counterparty-cassation-') &&
+            item.status == InboxStatus.actionRequired,
+      ),
+      isTrue,
+    );
+  });
+
+  test(
+      'rescheduled hearing immediately exposes extension work and clock advance',
+      () {
+    final DemoGameRepository repository = _buildMatterWithScheduledHearing();
+
+    repository.applyAction('request-hearing-reschedule');
+    repository.applyAction('rest');
+
+    expect(repository.snapshot.dayLabel, 'Day 2');
     expect(
       repository.snapshot.actions.any(
         (GameActionView action) => action.id == 'wait-until-hearing',
       ),
       isTrue,
     );
+    expect(
+      repository.snapshot.actions.any(
+        (GameActionView action) => action.id == 'prepare-hearing-strategy',
+      ),
+      isTrue,
+    );
+    expect(
+      repository.snapshot.actions.any(
+        (GameActionView action) => action.id == 'prepare-key-witness',
+      ),
+      isTrue,
+    );
+    expect(
+      repository.snapshot.actions.any(
+        (GameActionView action) => action.id == 'reconcile-damages-schedule',
+      ),
+      isTrue,
+    );
+
+    final int strengthBefore = repository.snapshot.caseStrength;
+    repository.applyAction('prepare-hearing-strategy');
+    expect(repository.snapshot.caseStrength, greaterThan(strengthBefore));
+    expect(
+      repository.snapshot.actions.any(
+        (GameActionView action) => action.id == 'prepare-hearing-strategy',
+      ),
+      isFalse,
+    );
 
     repository.applyAction('wait-until-hearing');
-    expect(repository.snapshot.timeLabel, '10:00');
+    expect(repository.snapshot.dayLabel, 'Day 9');
+    expect(repository.snapshot.timeLabel, '14:00');
     expect(
       repository.snapshot.actions.any(
         (GameActionView action) => action.id == 'attend-hearing',
       ),
       isTrue,
     );
+  });
+
+  testWidgets('opening an informational message clears its unread badge', (
+    WidgetTester tester,
+  ) async {
+    final DemoGameRepository repository = DemoGameRepository(seed: 20260724);
+    repository.applyAction('run-conflict-check');
+    repository.applyAction('delegate-review');
+
+    await tester.pumpWidget(JurisApp(repository: repository));
+
+    final Finder message = find.text('Document review in progress');
+    await tester.ensureVisible(message);
+    await tester.tap(message);
+    await tester.pumpAndSettle();
+
+    final InboxItemView opened = repository.snapshot.inbox.singleWhere(
+      (InboxItemView item) => item.id == 'junior-report',
+    );
+    expect(opened.status, InboxStatus.read);
+    expect(find.text('UNREAD'), findsNothing);
+  });
+
+  test('cassation response resolves the required event and reaches an outcome',
+      () {
+    final DemoGameRepository repository = _buildMatterWithScheduledHearing();
+    repository.applyAction('wait-until-hearing');
+    repository.applyAction('attend-hearing');
+    repository.applyAction('rest');
+    repository.applyAction('inform-client-judgment');
+    repository.applyAction('rest');
+
+    final InboxItemView challenge = repository.snapshot.inbox.singleWhere(
+      (InboxItemView item) => item.id.startsWith('counterparty-cassation-'),
+    );
+    expect(challenge.status, InboxStatus.actionRequired);
+
+    repository.applyAction('prepare-cassation-response');
+
+    final InboxItemView resolvedChallenge =
+        repository.snapshot.inbox.singleWhere(
+      (InboxItemView item) => item.id == challenge.id,
+    );
+    expect(resolvedChallenge.status, InboxStatus.resolved);
+    expect(repository.snapshot.stage, 'Cassation pending');
+    expect(
+      repository.snapshot.actions.any(
+        (GameActionView action) => action.id == 'await-cassation-decision',
+      ),
+      isTrue,
+    );
+    expect(
+      repository.snapshot.actions.any(
+        (GameActionView action) => action.id == 'rest',
+      ),
+      isFalse,
+    );
+
+    repository.applyAction('await-cassation-decision');
+    expect(repository.snapshot.stage, 'Resolved');
+    expect(repository.snapshot.actions, isEmpty);
+    expect(
+      repository.snapshot.inbox.any(
+        (InboxItemView item) => item.id.startsWith('cassation-outcome-'),
+      ),
+      isTrue,
+    );
+  });
+
+  test(
+      'unreviewed expert report no longer remains action-required after hearing',
+      () {
+    final DemoGameRepository repository = DemoGameRepository(seed: 20260724);
+    repository.applyAction('run-conflict-check');
+    // Resolve the unrelated CFO response first so this regression test
+    // measures only the lifecycle of the expert-report notification.
+    repository.applyAction('reply-cfo');
+    repository.applyAction('request-documents');
+    repository.applyAction('future-expert');
+    repository.applyAction('reject-settlement');
+    repository.applyAction('commence-proceedings');
+    repository.applyAction('prepare-statement-of-claim');
+    repository.applyAction('prepare-evidence-bundle');
+    repository.applyAction('wait-until-hearing');
+
+    final InboxItemView readyReport = repository.snapshot.inbox.singleWhere(
+      (InboxItemView item) => item.id.startsWith('expert-report-ready'),
+    );
+    expect(readyReport.status, InboxStatus.actionRequired);
 
     repository.applyAction('attend-hearing');
-    expect(repository.snapshot.stage, 'Judgment pending');
+
+    final InboxItemView archivedReport = repository.snapshot.inbox.singleWhere(
+      (InboxItemView item) => item.id == readyReport.id,
+    );
+    expect(archivedReport.status, InboxStatus.resolved);
     expect(
-      repository.snapshot.deadlines
-          .singleWhere(
-            (DeadlineView item) => item.id == 'enterprise-court-hearing-1',
-          )
+      repository.snapshot.inbox.where(
+        (InboxItemView item) =>
+            item.id.startsWith('expert-report-ready') &&
+            item.status == InboxStatus.actionRequired,
+      ),
+      isEmpty,
+    );
+    expect(
+      repository.snapshot.inbox.any(
+        (InboxItemView item) =>
+            item.id == 'expert-report-not-reviewed-before-hearing',
+      ),
+      isTrue,
+    );
+    expect(repository.snapshot.unhandledRequiredMessages, 0);
+  });
+
+  testWidgets('judgment action informs client and clears required status', (
+    WidgetTester tester,
+  ) async {
+    final DemoGameRepository repository = _buildMatterWithScheduledHearing();
+    repository.applyAction('wait-until-hearing');
+    repository.applyAction('attend-hearing');
+    repository.applyAction('rest');
+
+    final InboxItemView judgment = repository.snapshot.inbox.singleWhere(
+      (InboxItemView item) => item.id.startsWith('judgment-day-'),
+    );
+    expect(judgment.status, InboxStatus.actionRequired);
+    final int requiredBefore = repository.snapshot.unhandledRequiredMessages;
+
+    await tester.pumpWidget(JurisApp(repository: repository));
+    final Finder judgmentSubject = find.text(judgment.subject);
+    await tester.ensureVisible(judgmentSubject);
+    await tester.tap(judgmentSubject);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Inform client and explain judgment'), findsOneWidget);
+    await tester.tap(find.text('Inform client and explain judgment'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Yes'));
+    await tester.pumpAndSettle();
+
+    final InboxItemView resolved = repository.snapshot.inbox.singleWhere(
+      (InboxItemView item) => item.id == judgment.id,
+    );
+    expect(resolved.status, InboxStatus.resolved);
+    expect(
+      repository.snapshot.unhandledRequiredMessages,
+      requiredBefore - 1,
+    );
+  });
+
+  test('attended hearing can end in a full loss on a weak record', () {
+    final DemoGameRepository repository =
+        _buildMatterWithScheduledHearing(seed: 20260701);
+
+    repository.applyAction('wait-until-hearing');
+    final DeadlineView hearing = repository.snapshot.deadlines.singleWhere(
+      (DeadlineView item) => item.id == 'enterprise-court-hearing-1',
+    );
+    expect(hearing.status, DeadlineStatus.scheduled);
+
+    repository.applyAction('attend-hearing');
+    final DeadlineView completedHearing =
+        repository.snapshot.deadlines.singleWhere(
+      (DeadlineView item) => item.id == 'enterprise-court-hearing-1',
+    );
+    expect(completedHearing.status, DeadlineStatus.done);
+
+    repository.applyAction('rest');
+
+    expect(repository.snapshot.stage, 'Post-judgment');
+    final InboxItemView judgment = repository.snapshot.inbox.singleWhere(
+      (InboxItemView item) => item.id.startsWith('judgment-day-'),
+    );
+    expect(judgment.subject, 'Judgment: claim dismissed');
+    expect(judgment.body, contains('despite recorded attendance'));
+    expect(judgment.status, InboxStatus.actionRequired);
+  });
+
+  test('losing judgment opens claimant review advice before closure', () {
+    final DemoGameRepository repository =
+        _buildMatterWithScheduledHearing(seed: 20260701);
+
+    repository.applyAction('wait-until-hearing');
+    repository.applyAction('attend-hearing');
+    repository.applyAction('rest');
+    repository.applyAction('inform-client-judgment');
+    repository.applyAction('rest');
+
+    expect(repository.snapshot.stage, 'Claimant review');
+    expect(
+      repository.snapshot.actions.any(
+        (GameActionView action) =>
+            action.id == 'assess-claimant-review-options',
+      ),
+      isTrue,
+    );
+
+    final InboxItemView request = repository.snapshot.inbox.singleWhere(
+      (InboxItemView item) => item.id.startsWith('client-review-options-'),
+    );
+    expect(request.status, InboxStatus.actionRequired);
+
+    repository.applyAction('assess-claimant-review-options');
+    expect(repository.snapshot.stage, 'Claimant review advised');
+    expect(
+      repository.snapshot.inbox
+          .singleWhere((InboxItemView item) => item.id == request.id)
           .status,
-      DeadlineStatus.done,
+      InboxStatus.resolved,
     );
 
     repository.applyAction('rest');
     expect(repository.snapshot.stage, 'Resolved');
     expect(repository.snapshot.actions, isEmpty);
-    expect(
-      repository.snapshot.inbox.any(
-        (InboxItemView item) => item.id.startsWith('judgment-day-'),
-      ),
-      isTrue,
-    );
   });
 }
 
-DemoGameRepository _buildMatterWithScheduledHearing() {
-  final DemoGameRepository repository = DemoGameRepository(seed: 20260724);
+DemoGameRepository _buildMatterWithScheduledHearing({int seed = 20260724}) {
+  final DemoGameRepository repository = DemoGameRepository(seed: seed);
   repository.applyAction('run-conflict-check');
   repository.applyAction('request-documents');
   repository.applyAction('reject-settlement');

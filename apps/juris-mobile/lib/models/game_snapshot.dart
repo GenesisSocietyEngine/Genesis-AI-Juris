@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 /// an unanswered client request. The Rust engine already models this semantic
 /// difference; the UI keeps it explicit rather than reducing everything to a
 /// single Boolean flag.
-enum InboxStatus { unread, actionRequired, resolved, archived }
+enum InboxStatus { unread, read, actionRequired, resolved, archived }
 
 /// Calendar item type used by the mobile shell.
 ///

@@ -22,6 +22,33 @@ class DemoGameRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Marks an informational message as read when the player opens it.
+  ///
+  /// Action-required messages deliberately remain action-required until their
+  /// mapped gameplay response is completed. This keeps visual attention state
+  /// aligned with actual unresolved work instead of merely tracking views.
+  void markInboxItemRead(String itemId) {
+    final bool canMarkRead = _snapshot.inbox.any(
+      (InboxItemView item) =>
+          item.id == itemId && item.status == InboxStatus.unread,
+    );
+    if (!canMarkRead) {
+      return;
+    }
+
+    _snapshot = _snapshot.copyWith(
+      inbox: _snapshot.inbox
+          .map(
+            (InboxItemView item) =>
+                item.id == itemId && item.status == InboxStatus.unread
+                    ? item.copyWith(status: InboxStatus.read)
+                    : item,
+          )
+          .toList(growable: false),
+    );
+    notifyListeners();
+  }
+
   /// Applies one UI action from the deterministic mock script.
   ///
   /// Unknown action IDs are rejected defensively. This mirrors the Rust
@@ -203,6 +230,62 @@ class DemoGameRepository extends ChangeNotifier {
           title: 'Hearing concluded',
           message:
               'The court has taken the matter under advisement. Judgment is expected next workday.',
+          isRisky: false,
+        );
+      case 'prepare-hearing-strategy':
+        _prepareHearingStrategy();
+        return const ActionExecutionResult(
+          title: 'Hearing strategy completed',
+          message:
+              'The oral theory, likely judicial questions, and fallback positions are now documented.',
+          isRisky: false,
+        );
+      case 'prepare-key-witness':
+        _prepareKeyWitness();
+        return const ActionExecutionResult(
+          title: 'Witness preparation completed',
+          message:
+              'The client witness understands the record, likely challenges, and limits of proper preparation.',
+          isRisky: false,
+        );
+      case 'reconcile-damages-schedule':
+        _reconcileDamagesSchedule();
+        return const ActionExecutionResult(
+          title: 'Damages schedule reconciled',
+          message:
+              'The pleaded quantum now reconciles with invoices, mitigation, and the expert findings.',
+          isRisky: false,
+        );
+      case 'inform-client-judgment':
+        _informClientOfJudgment();
+        return const ActionExecutionResult(
+          title: 'Client informed',
+          message:
+              'The client received an explainable judgment briefing and a post-judgment risk plan.',
+          isRisky: false,
+        );
+      case 'assess-claimant-review-options':
+        _assessClaimantReviewOptions();
+        return const ActionExecutionResult(
+          title: 'Review options assessed',
+          message:
+              'The client received a focused assessment of possible post-judgment challenge routes, cost, timing, and prospects.',
+          isRisky: false,
+        );
+      case 'prepare-cassation-response':
+        _prepareCassationResponse();
+        return const ActionExecutionResult(
+          title: 'Cassation response filed',
+          message:
+              'The response addresses the legal grounds raised by the counterparty and preserves the judgment.',
+          isRisky: false,
+        );
+      case 'await-cassation-decision':
+        _rest();
+        return const ActionExecutionResult(
+          title: 'Cassation update received',
+          message:
+              'The simulation advanced to the Court of Cassation decision update.',
           isRisky: false,
         );
       case 'rest':
@@ -600,7 +683,7 @@ class DemoGameRepository extends ChangeNotifier {
       caseStrength: (_snapshot.caseStrength + 8).clamp(0, 100).toInt(),
       inbox: _snapshot.inbox
           .map(
-            (InboxItemView item) => item.id == 'expert-report-ready'
+            (InboxItemView item) => item.id.startsWith('expert-report-ready')
                 ? item.copyWith(status: InboxStatus.resolved)
                 : item,
           )
@@ -836,7 +919,7 @@ class DemoGameRepository extends ChangeNotifier {
           body:
               'The hearing is scheduled for Day $hearingDay at 10:00. Attendance is mandatory. A rescheduling request does not suspend the original date unless the court grants it.',
           receivedAt: '${_snapshot.dayLabel} · $completionTime',
-          status: InboxStatus.actionRequired,
+          status: InboxStatus.unread,
         ),
       ],
       deadlines: <DeadlineView>[
@@ -845,9 +928,10 @@ class DemoGameRepository extends ChangeNotifier {
         ),
         hearing,
       ],
-      actions: _ensureAction(
+      actions: _hearingPreparationActions(
         remainingActions,
-        _requestHearingRescheduleAction(hearing.dueAt),
+        hearing,
+        inbox: _snapshot.inbox,
       ),
     );
     notifyListeners();
@@ -918,32 +1002,239 @@ class DemoGameRepository extends ChangeNotifier {
 
   bool _waitUntilHearing() {
     final DeadlineView? hearing = _activeScheduledHearing();
-    if (hearing == null) {
+    if (hearing == null || _snapshot.stage != 'Hearing preparation') {
       return false;
     }
 
     final (int hearingDay, int hearingMinute) = _calendarMoment(hearing);
     final int currentDay = _currentDayNumber();
     final int currentMinute = _minuteOfDay(_snapshot.timeLabel);
-    if (currentDay != hearingDay || currentMinute >= hearingMinute) {
+    final bool beforeHearing = currentDay < hearingDay ||
+        (currentDay == hearingDay && currentMinute < hearingMinute);
+    if (!beforeHearing) {
       return false;
     }
 
+    // This is an explicit fast-forward. Optional hearing-preparation actions
+    // left unfinished are forfeited, but mandatory deadlines and asynchronous
+    // expert work are still evaluated at the destination moment.
+    final List<DeadlineView> updatedDeadlines = _markOverdueDeadlines(
+      _snapshot.deadlines,
+      day: hearingDay,
+      minuteOfDay: hearingMinute,
+    );
+    final Set<String> newlyMissed = _newlyMissedDeadlineIds(
+      before: _snapshot.deadlines,
+      after: updatedDeadlines,
+    );
+
+    int procedure = _snapshot.procedure;
+    int evidenceScore = _snapshot.evidenceScore;
+    int ethics = _snapshot.ethics;
+    int clientTrust = _snapshot.clientTrust;
+    List<InboxItemView> updatedInbox = <InboxItemView>[..._snapshot.inbox];
+
+    if (newlyMissed.contains('partner-brief')) {
+      procedure -= 4;
+      clientTrust -= 1;
+      updatedInbox.add(
+        InboxItemView(
+          id: 'partner-brief-missed-fast-forward-$hearingDay',
+          sender: 'Matter partner',
+          subject: 'Partner risk brief missed during clock advance',
+          body:
+              'The internal risk brief remained incomplete when the simulation advanced to the hearing.',
+          receivedAt: 'Day $hearingDay · ${_formatMinuteOfDay(hearingMinute)}',
+          status: InboxStatus.unread,
+        ),
+      );
+    }
+
+    if (newlyMissed.contains('preservation')) {
+      procedure -= 8;
+      evidenceScore -= 6;
+      ethics -= 3;
+      updatedInbox.add(
+        InboxItemView(
+          id: 'preservation-missed-fast-forward-$hearingDay',
+          sender: 'Matter risk system',
+          subject: 'Evidence-preservation deadline missed',
+          body:
+              'The preservation notice was not completed before the clock advanced to the hearing. Relevant records may be incomplete or challenged.',
+          receivedAt: 'Day $hearingDay · ${_formatMinuteOfDay(hearingMinute)}',
+          status: InboxStatus.unread,
+        ),
+      );
+    }
+
+    ExpertReviewStatus expertStatus = _snapshot.expertReviewStatus;
+    List<GameActionView> remainingActions = _snapshot.actions
+        .where(
+          (GameActionView action) =>
+              action.id != 'wait-until-hearing' &&
+              action.id != 'request-hearing-reschedule' &&
+              action.id != 'prepare-hearing-strategy' &&
+              action.id != 'prepare-key-witness' &&
+              action.id != 'reconcile-damages-schedule' &&
+              action.id != 'rest',
+        )
+        .toList(growable: false);
+
+    if (expertStatus == ExpertReviewStatus.pending &&
+        hearingDay >= _snapshot.expertReportDueDay) {
+      expertStatus = ExpertReviewStatus.reportReady;
+      updatedInbox = updatedInbox
+          .map(
+            (InboxItemView item) => item.id == 'expert-assignment'
+                ? item.copyWith(status: InboxStatus.resolved)
+                : item,
+          )
+          .toList(growable: true)
+        ..add(
+          InboxItemView(
+            id: 'expert-report-ready-at-hearing',
+            sender: 'Independent ERP expert',
+            subject: 'Technical assessment ready before hearing',
+            body:
+                'The expert report became available during the clock advance. It remains available for review, but the hearing window is now open.',
+            receivedAt:
+                'Day $hearingDay · ${_formatMinuteOfDay(hearingMinute)}',
+            status: InboxStatus.actionRequired,
+          ),
+        );
+      remainingActions = _ensureAction(
+        remainingActions,
+        _reviewExpertReportAction(),
+      );
+    }
+
+    updatedInbox.add(
+      InboxItemView(
+        id: 'hearing-window-open-${hearing.id}',
+        sender: 'Enterprise Court Registry',
+        subject: 'Enterprise court hearing now in session',
+        body:
+            'The scheduled attendance window has opened. Attend the hearing now or risk a missed mandatory event.',
+        receivedAt: 'Day $hearingDay · ${_formatMinuteOfDay(hearingMinute)}',
+        status: InboxStatus.unread,
+      ),
+    );
+
     _snapshot = _snapshot.copyWith(
+      dayLabel: 'Day $hearingDay',
       timeLabel: _formatMinuteOfDay(hearingMinute),
+      fatigue: currentDay < hearingDay ? 0 : _snapshot.fatigue,
+      cumulativeStrain: currentDay < hearingDay
+          ? (_snapshot.cumulativeStrain - 2).clamp(0, 100).toInt()
+          : _snapshot.cumulativeStrain,
+      procedure: procedure.clamp(0, 100).toInt(),
+      evidenceScore: evidenceScore.clamp(0, 100).toInt(),
+      ethics: ethics.clamp(0, 100).toInt(),
+      clientTrust: clientTrust.clamp(0, 100).toInt(),
+      expertReviewStatus: expertStatus,
+      deadlines: updatedDeadlines,
+      inbox: updatedInbox,
       actions: _ensureAction(
-        _snapshot.actions
-            .where(
-              (GameActionView action) =>
-                  action.id != 'wait-until-hearing' &&
-                  action.id != 'request-hearing-reschedule',
-            )
-            .toList(growable: false),
+        remainingActions,
         _attendHearingAction(),
       ),
     );
     notifyListeners();
     return true;
+  }
+
+  void _prepareHearingStrategy() {
+    final String completionTime = _timeAfter(minutes: 120);
+    _snapshot = _snapshot.copyWith(
+      timeLabel: completionTime,
+      spendEur: _snapshot.spendEur + 750,
+      billableMinutes: _snapshot.billableMinutes + 120,
+      fatigue: (_snapshot.fatigue + 2).clamp(0, 100).toInt(),
+      merits: (_snapshot.merits + 3).clamp(0, 100).toInt(),
+      procedure: (_snapshot.procedure + 3).clamp(0, 100).toInt(),
+      caseStrength: (_snapshot.caseStrength + 3).clamp(0, 100).toInt(),
+      inbox: <InboxItemView>[
+        ..._snapshot.inbox,
+        InboxItemView(
+          id: 'hearing-strategy-prepared',
+          sender: 'Matter team',
+          subject: 'Hearing strategy memorandum completed',
+          body:
+              'The oral theory, likely judicial questions, fallback submissions, and evidentiary weak points are now documented.',
+          receivedAt: '${_snapshot.dayLabel} · $completionTime',
+          status: InboxStatus.unread,
+        ),
+      ],
+      actions: _snapshot.actions
+          .where(
+            (GameActionView action) => action.id != 'prepare-hearing-strategy',
+          )
+          .toList(growable: false),
+    );
+    notifyListeners();
+  }
+
+  void _prepareKeyWitness() {
+    final String completionTime = _timeAfter(minutes: 120);
+    _snapshot = _snapshot.copyWith(
+      timeLabel: completionTime,
+      spendEur: _snapshot.spendEur + 900,
+      billableMinutes: _snapshot.billableMinutes + 120,
+      fatigue: (_snapshot.fatigue + 2).clamp(0, 100).toInt(),
+      evidenceScore: (_snapshot.evidenceScore + 3).clamp(0, 100).toInt(),
+      clientTrust: (_snapshot.clientTrust + 2).clamp(0, 100).toInt(),
+      caseStrength: (_snapshot.caseStrength + 2).clamp(0, 100).toInt(),
+      inbox: <InboxItemView>[
+        ..._snapshot.inbox,
+        InboxItemView(
+          id: 'key-witness-prepared',
+          sender: 'Client IT director',
+          subject: 'Witness preparation completed',
+          body:
+              'The witness reviewed the chronology, documentary references, likely cross-examination themes, and the limits of proper preparation.',
+          receivedAt: '${_snapshot.dayLabel} · $completionTime',
+          status: InboxStatus.unread,
+        ),
+      ],
+      actions: _snapshot.actions
+          .where(
+            (GameActionView action) => action.id != 'prepare-key-witness',
+          )
+          .toList(growable: false),
+    );
+    notifyListeners();
+  }
+
+  void _reconcileDamagesSchedule() {
+    final String completionTime = _timeAfter(minutes: 120);
+    _snapshot = _snapshot.copyWith(
+      timeLabel: completionTime,
+      spendEur: _snapshot.spendEur + 650,
+      billableMinutes: _snapshot.billableMinutes + 120,
+      fatigue: (_snapshot.fatigue + 2).clamp(0, 100).toInt(),
+      merits: (_snapshot.merits + 2).clamp(0, 100).toInt(),
+      leverage: (_snapshot.leverage + 3).clamp(0, 100).toInt(),
+      caseStrength: (_snapshot.caseStrength + 2).clamp(0, 100).toInt(),
+      inbox: <InboxItemView>[
+        ..._snapshot.inbox,
+        InboxItemView(
+          id: 'damages-schedule-reconciled',
+          sender: 'Matter team',
+          subject: 'Damages schedule reconciled',
+          body:
+              'Invoices, replacement costs, mitigation, internal effort, and expert findings now reconcile to the pleaded quantum.',
+          receivedAt: '${_snapshot.dayLabel} · $completionTime',
+          status: InboxStatus.unread,
+        ),
+      ],
+      actions: _snapshot.actions
+          .where(
+            (GameActionView action) =>
+                action.id != 'reconcile-damages-schedule',
+          )
+          .toList(growable: false),
+    );
+    notifyListeners();
   }
 
   void _attendHearing() {
@@ -968,10 +1259,22 @@ class DemoGameRepository extends ChangeNotifier {
       deadlines: _replaceCalendarItem(completedHearing),
       inbox: <InboxItemView>[
         ..._snapshot.inbox.map(
-          (InboxItemView item) => item.id.startsWith('hearing-notice-')
+          (InboxItemView item) => item.id.startsWith('hearing-notice-') ||
+                  (item.id.startsWith('expert-report-ready') &&
+                      item.status == InboxStatus.actionRequired)
               ? item.copyWith(status: InboxStatus.resolved)
               : item,
         ),
+        if (_snapshot.expertReviewStatus == ExpertReviewStatus.reportReady)
+          InboxItemView(
+            id: 'expert-report-not-reviewed-before-hearing',
+            sender: 'Matter risk system',
+            subject: 'Expert report not reviewed before hearing',
+            body:
+                'The technical report was available before attendance but was not reviewed into the hearing record. It is archived as a missed preparation opportunity and no longer requires a response.',
+            receivedAt: '${_snapshot.dayLabel} · $completionTime',
+            status: InboxStatus.unread,
+          ),
         InboxItemView(
           id: 'hearing-concluded',
           sender: 'Enterprise Court Registry',
@@ -992,6 +1295,127 @@ class DemoGameRepository extends ChangeNotifier {
           costEur: 0,
           tone: ActionTone.neutral,
         ),
+      ],
+    );
+    notifyListeners();
+  }
+
+  void _informClientOfJudgment() {
+    final String completionTime = _timeAfter(minutes: 60);
+    _snapshot = _snapshot.copyWith(
+      timeLabel: completionTime,
+      billableMinutes: _snapshot.billableMinutes + 60,
+      fatigue: (_snapshot.fatigue + 1).clamp(0, 100).toInt(),
+      clientTrust: (_snapshot.clientTrust + 4).clamp(0, 100).toInt(),
+      inbox: <InboxItemView>[
+        ..._snapshot.inbox.map(
+          (InboxItemView item) => item.id.startsWith('judgment-day-')
+              ? item.copyWith(status: InboxStatus.resolved)
+              : item,
+        ),
+        InboxItemView(
+          id: 'client-judgment-briefed',
+          sender: 'Client CEO',
+          subject: 'Judgment briefing acknowledged',
+          body:
+              'The client received the outcome, damages explanation, enforcement considerations, and the risk of further review proceedings.',
+          receivedAt: '${_snapshot.dayLabel} · $completionTime',
+          status: InboxStatus.unread,
+        ),
+      ],
+      actions: const <GameActionView>[
+        GameActionView(
+          id: 'rest',
+          title: 'Rest until next workday',
+          description:
+              'Advance to the next post-judgment update while recovering acute fatigue.',
+          timeLabel: 'Until 08:00',
+          costEur: 0,
+          tone: ActionTone.neutral,
+        ),
+      ],
+    );
+    notifyListeners();
+  }
+
+  void _assessClaimantReviewOptions() {
+    final bool requestOpen = _snapshot.inbox.any(
+      (InboxItemView item) =>
+          item.id.startsWith('client-review-options-') &&
+          item.status == InboxStatus.actionRequired,
+    );
+    if (!requestOpen || _snapshot.stage != 'Claimant review') {
+      return;
+    }
+
+    final String completionTime = _timeAfter(minutes: 180);
+    _snapshot = _snapshot.copyWith(
+      timeLabel: completionTime,
+      stage: 'Claimant review advised',
+      spendEur: _snapshot.spendEur + 1200,
+      billableMinutes: _snapshot.billableMinutes + 180,
+      fatigue: (_snapshot.fatigue + 3).clamp(0, 100).toInt(),
+      ethics: (_snapshot.ethics + 1).clamp(0, 100).toInt(),
+      clientTrust: (_snapshot.clientTrust + 1).clamp(0, 100).toInt(),
+      inbox: <InboxItemView>[
+        ..._snapshot.inbox.map(
+          (InboxItemView item) => item.id.startsWith('client-review-options-')
+              ? item.copyWith(status: InboxStatus.resolved)
+              : item,
+        ),
+        InboxItemView(
+          id: 'claimant-review-advice-delivered',
+          sender: 'Matter team',
+          subject: 'Post-judgment review advice delivered',
+          body:
+              'The advice explains that the loss turned primarily on proof of causation and quantum. In this simplified scenario, no proportionate legal-review route offers a reliable basis to reopen those factual findings.',
+          receivedAt: '${_snapshot.dayLabel} · $completionTime',
+          status: InboxStatus.unread,
+        ),
+      ],
+      actions: const <GameActionView>[
+        GameActionView(
+          id: 'rest',
+          title: 'Rest until next workday',
+          description:
+              'Advance to the client decision on the post-judgment recommendation.',
+          timeLabel: 'Until 08:00',
+          costEur: 0,
+          tone: ActionTone.neutral,
+        ),
+      ],
+    );
+    notifyListeners();
+  }
+
+  void _prepareCassationResponse() {
+    final String completionTime = _timeAfter(minutes: 240);
+    _snapshot = _snapshot.copyWith(
+      timeLabel: completionTime,
+      stage: 'Cassation pending',
+      spendEur: _snapshot.spendEur + 2500,
+      billableMinutes: _snapshot.billableMinutes + 240,
+      fatigue: (_snapshot.fatigue + 4).clamp(0, 100).toInt(),
+      procedure: (_snapshot.procedure + 5).clamp(0, 100).toInt(),
+      clientTrust: (_snapshot.clientTrust + 2).clamp(0, 100).toInt(),
+      inbox: <InboxItemView>[
+        ..._snapshot.inbox.map(
+          (InboxItemView item) => item.id.startsWith('counterparty-cassation-')
+              ? item.copyWith(status: InboxStatus.resolved)
+              : item,
+        ),
+        InboxItemView(
+          id: 'cassation-response-filed',
+          sender: 'Court of Cassation Registry',
+          subject: 'Response to cassation challenge filed',
+          body:
+              'The response addresses the legal grounds raised by the counterparty. The existing judgment remains effective subject to the review process.',
+          receivedAt: '${_snapshot.dayLabel} · $completionTime',
+          status: InboxStatus.unread,
+        ),
+      ],
+      actions: <GameActionView>[
+        _awaitCassationDecisionAction(),
       ],
     );
     notifyListeners();
@@ -1084,7 +1508,7 @@ class DemoGameRepository extends ChangeNotifier {
           body:
               'No preservation notice was issued by Day 2 at 17:00. Relevant records may now be incomplete or challenged.',
           receivedAt: 'Day $nextDay · 08:00',
-          status: InboxStatus.actionRequired,
+          status: InboxStatus.unread,
         ),
       );
     }
@@ -1115,7 +1539,7 @@ class DemoGameRepository extends ChangeNotifier {
             body:
                 'No attendance was recorded for the scheduled enterprise court hearing. The court may decide the case on the existing record with adverse procedural consequences.',
             receivedAt: 'Day $nextDay · 08:00',
-            status: InboxStatus.actionRequired,
+            status: InboxStatus.unread,
           ),
         );
     }
@@ -1203,6 +1627,8 @@ class DemoGameRepository extends ChangeNotifier {
       if (activeHearing != null) {
         final (int hearingDay, int hearingMinute) =
             _calendarMoment(activeHearing);
+        final bool beforeHearing = nextDay < hearingDay ||
+            (nextDay == hearingDay && (8 * 60) < hearingMinute);
         final bool requestAvailable = activeHearing.rescheduleActionId !=
                 null &&
             activeHearing.rescheduleStatus == RescheduleRequestStatus.none &&
@@ -1212,41 +1638,168 @@ class DemoGameRepository extends ChangeNotifier {
               minuteOfDay: 8 * 60,
             );
 
-        if (requestAvailable) {
-          updatedActions = _ensureAction(
-            updatedActions,
-            _requestHearingRescheduleAction(activeHearing.dueAt),
-          );
-        }
-
-        if (nextDay == hearingDay && (8 * 60) < hearingMinute) {
-          updatedActions = _ensureAction(
-            updatedActions,
-            _waitUntilHearingAction(activeHearing.dueAt),
-          );
-        }
+        updatedActions = _hearingPreparationActions(
+          updatedActions,
+          activeHearing,
+          inbox: updatedInbox,
+          includeWait: beforeHearing,
+          includeReschedule: requestAvailable,
+        );
       }
     }
 
     final bool clearSettlementOffer = settlementExpired;
     if (_snapshot.stage == 'Judgment pending') {
-      final int outcomeScore =
-          _snapshot.caseStrength + procedure + evidenceScore + _snapshot.merits;
-      final bool favorable = outcomeScore >= 205;
-      nextStage = 'Resolved';
-      updatedActions = const <GameActionView>[];
+      // A hearing can now end in a genuine loss even when attendance was
+      // recorded. The result combines the developed record with a bounded,
+      // deterministic court variance. Optional preparation can move a weak
+      // case out of the dismissal band, but repeating the same seed and action
+      // sequence always produces the same judgment.
+      final int preparationScore = (_snapshot.expertReviewStatus ==
+                  ExpertReviewStatus.reviewed
+              ? 6
+              : 0) +
+          (_snapshot.inbox.any(
+            (InboxItemView item) => item.id == 'hearing-strategy-prepared',
+          )
+              ? 5
+              : 0) +
+          (_snapshot.inbox.any(
+            (InboxItemView item) => item.id == 'key-witness-prepared',
+          )
+              ? 4
+              : 0) +
+          (_snapshot.inbox.any(
+            (InboxItemView item) => item.id == 'damages-schedule-reconciled',
+          )
+              ? 4
+              : 0);
+      final int courtVariance = (seed % 31) - 15;
+      final int outcomeScore = _snapshot.caseStrength +
+          procedure +
+          evidenceScore +
+          _snapshot.merits +
+          preparationScore +
+          courtVariance;
+      final bool favorable = outcomeScore >= 220;
+      final bool dismissed = outcomeScore < 205;
+
+      nextStage = 'Post-judgment';
+      updatedActions = <GameActionView>[_informClientOfJudgmentAction()];
+      if (dismissed) {
+        clientTrust -= 8;
+      }
       updatedInbox.add(
         InboxItemView(
           id: 'judgment-day-$nextDay',
           sender: 'Enterprise Court Registry',
           subject: favorable
               ? 'Judgment: claim substantially upheld'
-              : 'Judgment: mixed outcome',
+              : dismissed
+                  ? 'Judgment: claim dismissed'
+                  : 'Judgment: mixed outcome',
           body: favorable
-              ? 'The court found material supplier breach and awarded substantial damages, with a reduction for scope changes and mitigation uncertainty.'
-              : 'The court accepted part of the breach case but reduced recovery because causation, scope variation, and proof of loss remained incomplete.',
+              ? 'The court found material supplier breach and awarded substantial damages, with a reduction for scope changes and mitigation uncertainty. Inform the client and assess post-judgment risk.'
+              : dismissed
+                  ? 'The court dismissed the claim despite recorded attendance. The client did not prove a sufficiently reliable causal link between the supplier breach and the claimed losses, while scope changes and incomplete quantum evidence created decisive doubt. Decision factors: merits ${_snapshot.merits}, evidence $evidenceScore, procedure $procedure, preparation $preparationScore, court variance ${courtVariance >= 0 ? '+' : ''}$courtVariance.'
+                  : 'The court accepted part of the breach case but reduced recovery because causation, scope variation, and proof of loss remained incomplete. Decision factors: merits ${_snapshot.merits}, evidence $evidenceScore, procedure $procedure, preparation $preparationScore, court variance ${courtVariance >= 0 ? '+' : ''}$courtVariance.',
           receivedAt: 'Day $nextDay · 08:00',
           status: InboxStatus.actionRequired,
+        ),
+      );
+    } else if (_snapshot.stage == 'Post-judgment' &&
+        _snapshot.inbox.any(
+          (InboxItemView item) => item.id == 'client-judgment-briefed',
+        )) {
+      final bool favorable = _snapshot.inbox.any(
+        (InboxItemView item) =>
+            item.id.startsWith('judgment-day-') &&
+            item.subject.contains('substantially upheld'),
+      );
+      final bool dismissed = _snapshot.inbox.any(
+        (InboxItemView item) =>
+            item.id.startsWith('judgment-day-') &&
+            item.subject.contains('claim dismissed'),
+      );
+      final int cassationRoll = seed % 100;
+      final bool counterpartySeeksCassation = favorable && cassationRoll < 35;
+
+      if (counterpartySeeksCassation) {
+        nextStage = 'Cassation response';
+        updatedActions = <GameActionView>[_prepareCassationResponseAction()];
+        updatedInbox.add(
+          InboxItemView(
+            id: 'counterparty-cassation-day-$nextDay',
+            sender: 'Court of Cassation Registry',
+            subject: 'Counterparty filed a cassation challenge',
+            body:
+                'The supplier challenges alleged legal errors in the judgment. Prepare a focused response on the legal grounds; the review does not reopen the factual record in this simplified scenario.',
+            receivedAt: 'Day $nextDay · 08:00',
+            status: InboxStatus.actionRequired,
+          ),
+        );
+      } else if (dismissed) {
+        nextStage = 'Claimant review';
+        updatedActions = <GameActionView>[
+          _assessClaimantReviewOptionsAction(),
+        ];
+        updatedInbox.add(
+          InboxItemView(
+            id: 'client-review-options-day-$nextDay',
+            sender: 'Client CEO',
+            subject: 'Assess post-judgment challenge options',
+            body:
+                'The client wants a candid assessment of any proportionate appeal or legal-review route, including scope, cost, timing, and prospects. Do not treat disagreement with the factual findings as a legal ground.',
+            receivedAt: 'Day $nextDay · 08:00',
+            status: InboxStatus.actionRequired,
+          ),
+        );
+      } else {
+        nextStage = 'Resolved';
+        updatedActions = const <GameActionView>[];
+        updatedInbox.add(
+          InboxItemView(
+            id: 'judgment-finality-day-$nextDay',
+            sender: 'Matter team',
+            subject: 'No further challenge received',
+            body:
+                'No counterparty review challenge was received in the demo decision window. The matter is treated as resolved.',
+            receivedAt: 'Day $nextDay · 08:00',
+            status: InboxStatus.unread,
+          ),
+        );
+      }
+    } else if (_snapshot.stage == 'Claimant review advised') {
+      nextStage = 'Resolved';
+      updatedActions = const <GameActionView>[];
+      updatedInbox.add(
+        InboxItemView(
+          id: 'claimant-review-closed-day-$nextDay',
+          sender: 'Client CEO',
+          subject: 'Review recommendation accepted',
+          body:
+              'The client accepted the recommendation not to pursue a disproportionate challenge in this simplified demo branch. The matter is closed.',
+          receivedAt: 'Day $nextDay · 08:00',
+          status: InboxStatus.unread,
+        ),
+      );
+    } else if (_snapshot.stage == 'Cassation pending') {
+      final int decisionRoll = (seed + (nextDay * 29) + procedure) % 100;
+      final bool challengeDismissed = decisionRoll < 75;
+      nextStage = 'Resolved';
+      updatedActions = const <GameActionView>[];
+      updatedInbox.add(
+        InboxItemView(
+          id: 'cassation-outcome-day-$nextDay',
+          sender: 'Court of Cassation Registry',
+          subject: challengeDismissed
+              ? 'Cassation challenge dismissed'
+              : 'Limited cassation review admitted',
+          body: challengeDismissed
+              ? 'The counterparty challenge was dismissed in this deterministic demo branch. The enterprise-court judgment remains in place.'
+              : 'A limited legal issue was admitted for review in this deterministic demo branch. The mobile vertical slice closes here with the matter flagged for specialist follow-up.',
+          receivedAt: 'Day $nextDay · 08:00',
+          status: InboxStatus.unread,
         ),
       );
     }
@@ -1435,7 +1988,7 @@ class DemoGameRepository extends ChangeNotifier {
             body:
                 'The court did not find sufficient grounds to move the hearing. The original date ${pending.dueAt} remains binding.',
             receivedAt: 'Day $day · 08:00',
-            status: InboxStatus.actionRequired,
+            status: InboxStatus.unread,
           ),
         ],
       );
@@ -1493,7 +2046,7 @@ class DemoGameRepository extends ChangeNotifier {
         body:
             'The replacement hearing is scheduled for $replacementDate. Attendance is mandatory.',
         receivedAt: 'Day $day · 08:00',
-        status: InboxStatus.actionRequired,
+        status: InboxStatus.unread,
       ),
     ];
     return (updatedDeadlines, updatedInbox);
@@ -1635,6 +2188,39 @@ class DemoGameRepository extends ChangeNotifier {
     return result;
   }
 
+  static List<GameActionView> _hearingPreparationActions(
+    List<GameActionView> base,
+    DeadlineView hearing, {
+    required List<InboxItemView> inbox,
+    bool includeWait = true,
+    bool includeReschedule = true,
+  }) {
+    List<GameActionView> result = <GameActionView>[...base];
+
+    bool hasInboxItem(String id) =>
+        inbox.any((InboxItemView item) => item.id == id);
+
+    if (!hasInboxItem('hearing-strategy-prepared')) {
+      result = _ensureAction(result, _prepareHearingStrategyAction());
+    }
+    if (!hasInboxItem('key-witness-prepared')) {
+      result = _ensureAction(result, _prepareKeyWitnessAction());
+    }
+    if (!hasInboxItem('damages-schedule-reconciled')) {
+      result = _ensureAction(result, _reconcileDamagesScheduleAction());
+    }
+    if (includeWait) {
+      result = _ensureAction(result, _waitUntilHearingAction(hearing.dueAt));
+    }
+    if (includeReschedule && hearing.rescheduleActionId != null) {
+      result = _ensureAction(
+        result,
+        _requestHearingRescheduleAction(hearing.dueAt),
+      );
+    }
+    return result;
+  }
+
   static List<GameActionView> _ensureAction(
     List<GameActionView> actions,
     GameActionView candidate,
@@ -1717,6 +2303,94 @@ class DemoGameRepository extends ChangeNotifier {
     );
   }
 
+  static GameActionView _prepareHearingStrategyAction() {
+    return const GameActionView(
+      id: 'prepare-hearing-strategy',
+      title: 'Prepare hearing strategy memorandum',
+      description:
+          'Map the oral theory, likely judicial questions, weak points, and fallback submissions.',
+      timeLabel: '2h',
+      costEur: 750,
+      tone: ActionTone.primary,
+    );
+  }
+
+  static GameActionView _prepareKeyWitnessAction() {
+    return const GameActionView(
+      id: 'prepare-key-witness',
+      title: 'Prepare client key witness',
+      description:
+          'Review the chronology, documents, and likely challenge themes without scripting evidence.',
+      timeLabel: '2h',
+      costEur: 900,
+      tone: ActionTone.primary,
+    );
+  }
+
+  static GameActionView _reconcileDamagesScheduleAction() {
+    return const GameActionView(
+      id: 'reconcile-damages-schedule',
+      title: 'Reconcile damages schedule',
+      description:
+          'Tie invoices, replacement costs, mitigation, and expert findings to the pleaded quantum.',
+      timeLabel: '2h',
+      costEur: 650,
+      tone: ActionTone.neutral,
+    );
+  }
+
+  static GameActionView _informClientOfJudgmentAction() {
+    return const GameActionView(
+      id: 'inform-client-judgment',
+      title: 'Inform client and explain judgment',
+      description:
+          'Brief the client on the outcome, damages, enforcement considerations, and further-review risk.',
+      timeLabel: '1h',
+      costEur: 0,
+      tone: ActionTone.primary,
+    );
+  }
+
+  static GameActionView _assessClaimantReviewOptionsAction() {
+    return const GameActionView(
+      id: 'assess-claimant-review-options',
+      title: 'Assess claimant review options',
+      description:
+          'Evaluate possible appeal or legal-review routes, separating legal grounds from disagreement with factual findings.',
+      timeLabel: '3h',
+      costEur: 1200,
+      tone: ActionTone.warning,
+      riskNote:
+          'A weak challenge can increase cost without reopening the factual record in this simplified scenario.',
+    );
+  }
+
+  static GameActionView _prepareCassationResponseAction() {
+    return const GameActionView(
+      id: 'prepare-cassation-response',
+      title: 'Prepare response to cassation challenge',
+      description:
+          'Address the counterparty legal grounds and preserve the enterprise-court judgment.',
+      timeLabel: '4h',
+      costEur: 2500,
+      tone: ActionTone.warning,
+      riskNote:
+          'This simplified demo branch models a legal-review challenge rather than a retrial of facts.',
+    );
+  }
+
+  static GameActionView _awaitCassationDecisionAction() {
+    return const GameActionView(
+      id: 'await-cassation-decision',
+      title: 'Await Court of Cassation decision',
+      description:
+          'Advance the simulation to the next cassation update after the response has been filed.',
+      timeLabel: 'Until decision update',
+      costEur: 0,
+      tone: ActionTone.primary,
+    );
+  }
+
   static GameActionView _attendHearingAction() {
     return const GameActionView(
       id: 'attend-hearing',
@@ -1748,10 +2422,10 @@ class DemoGameRepository extends ChangeNotifier {
   static GameActionView _waitUntilHearingAction(String hearingDate) {
     return GameActionView(
       id: 'wait-until-hearing',
-      title: 'Wait until enterprise court hearing',
+      title: 'Advance clock to enterprise court hearing',
       description:
-          'Advance the simulation clock to the scheduled attendance window at $hearingDate.',
-      timeLabel: 'Until hearing',
+          'Advance directly to the scheduled attendance window at $hearingDate. Unfinished optional preparation is skipped.',
+      timeLabel: 'To hearing',
       costEur: 0,
       tone: ActionTone.neutral,
     );
@@ -1807,7 +2481,7 @@ class DemoGameRepository extends ChangeNotifier {
 
   static GameSnapshot _initial(int seed) {
     return GameSnapshot(
-      version: '0.5.0+7 hearing scheduling and rescheduling patch',
+      version: '0.5.0+9 combined lifecycle and adverse-judgment patch',
       seed: seed,
       mode: 'Assisted',
       dayLabel: 'Day 1',

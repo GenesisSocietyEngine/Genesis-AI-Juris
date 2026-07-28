@@ -106,9 +106,9 @@ class CalendarScreen extends StatelessWidget {
       return directActionId;
     }
 
-    // A hearing is not attendable before its scheduled time. On the morning of
-    // the hearing, the repository exposes an explicit wait action that advances
-    // the clock to the formal attendance window.
+    // A hearing is not attendable before its scheduled time. The repository
+    // exposes an explicit clock-advance action throughout the preparation
+    // period, allowing the player to skip remaining optional work deliberately.
     if (item.isHearing &&
         item.status == DeadlineStatus.scheduled &&
         snapshot.actions.any(
@@ -342,7 +342,7 @@ Future<String?> _showDeadlineDetails(
                 ),
                 label: Text(
                   primaryActionId == 'wait-until-hearing'
-                      ? 'Wait until hearing time'
+                      ? 'Advance clock to hearing'
                       : 'Open related action',
                 ),
               ),
