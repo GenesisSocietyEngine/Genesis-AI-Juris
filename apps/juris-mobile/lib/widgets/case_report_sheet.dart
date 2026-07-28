@@ -40,6 +40,19 @@ class CaseReportSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
+                  _ReportRow(
+                    label: 'Result',
+                    value: snapshot.caseResultStatus.label,
+                  ),
+                  _ReportRow(
+                    label: 'Procedural stage',
+                    value: snapshot.stage,
+                  ),
+                  _ReportRow(
+                    label: 'Engagement',
+                    value: snapshot.engagementStatus.label,
+                  ),
+                  const SizedBox(height: 10),
                   Text(summary.headline, style: text.titleLarge),
                   const SizedBox(height: 6),
                   Text(summary.finalStatus, style: text.titleSmall),
@@ -65,7 +78,9 @@ class CaseReportSheet extends StatelessWidget {
                     value: _eur(summary.awardEur),
                   ),
                   _ReportRow(
-                    label: 'Costs awarded',
+                    label: summary.awardEur == 0 && summary.costsEur > 0
+                        ? 'Adverse costs'
+                        : 'Costs awarded',
                     value: _eur(summary.costsEur),
                   ),
                   _ReportRow(
@@ -79,6 +94,37 @@ class CaseReportSheet extends StatelessWidget {
                 ],
               ),
             ),
+            if (snapshot.caseResultStatus.isAdverse ||
+                _isAdverseOutcome(summary)) ...<Widget>[
+              const SizedBox(height: 14),
+              _ReportSection(
+                title: 'Professional consequences',
+                child: Column(
+                  children: <Widget>[
+                    _ReportRow(
+                      label: 'Professional standing',
+                      value: '${snapshot.ethics}/100',
+                    ),
+                    _ReportRow(
+                      label: 'Client trust',
+                      value: '${snapshot.clientTrust}/100',
+                    ),
+                    _ReportRow(
+                      label: 'Internal review',
+                      value: snapshot.ethics < 50 ||
+                              summary.headline.contains('terminated')
+                          ? 'Required'
+                          : 'Recommended',
+                    ),
+                    if (summary.headline.contains('terminated'))
+                      _ReportRow(
+                        label: 'Potential fee write-off',
+                        value: _eur(snapshot.spendEur),
+                      ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 14),
             _ReportSection(
               title: 'Performance',
@@ -134,6 +180,13 @@ class CaseReportSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static bool _isAdverseOutcome(CaseOutcomeSummaryView summary) {
+    final String headline = summary.headline.toLowerCase();
+    return headline.contains('dismissed') ||
+        headline.contains('terminated') ||
+        headline.contains('adverse');
   }
 
   static String _eur(int value) {

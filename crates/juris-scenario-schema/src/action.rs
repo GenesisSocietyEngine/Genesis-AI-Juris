@@ -1,0 +1,50 @@
+//! Player and system actions available during a scenario.
+
+use crate::{ActionId, Condition, Effect};
+use serde::{Deserialize, Serialize};
+
+/// Controls whether an action may be executed more than once.
+///
+/// Repeatability is declared explicitly because accidental repeatability
+/// caused several lifecycle bugs in the mobile prototype.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum ActionRepeatability {
+    /// Actions are one-shot by default because accidental repeatability can
+    /// create duplicate expert requests, repeated filings, or other invalid
+    /// lifecycle transitions.
+    #[default]
+    Once,
+
+    Unlimited,
+
+    Limited {
+        max_uses: u32,
+    },
+}
+
+/// Declarative action definition.
+///
+/// No closures, callbacks, or mutable runtime objects are stored here.
+/// This makes actions serializable, inspectable, and validator-friendly.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ActionDefinition {
+    pub id: ActionId,
+    pub title: String,
+
+    #[serde(default)]
+    pub description: Option<String>,
+
+    #[serde(default)]
+    pub available_when: Condition,
+
+    #[serde(default)]
+    pub effects: Vec<Effect>,
+
+    /// Simulated time consumed by the action.
+    #[serde(default)]
+    pub time_cost_minutes: u32,
+
+    #[serde(default)]
+    pub repeatability: ActionRepeatability,
+}

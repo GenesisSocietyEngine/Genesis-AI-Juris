@@ -20,3 +20,5 @@ Thumbs.db
 
 # Local nested release checkouts
 /genesis-ai-juris-v*/
+
+.hotfix-backup/
