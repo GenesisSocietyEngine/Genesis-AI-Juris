@@ -102,6 +102,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "juris-scenario-diagnostics"
+version = "0.5.0"
+dependencies = [
+ "juris-scenario-schema",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "juris-scenario-schema"
 version = "0.5.0"
 dependencies = [
