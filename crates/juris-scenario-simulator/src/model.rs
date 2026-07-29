@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use juris_scenario_schema::{JudicialResult, MatterLifecycleStatus};
 use serde::{Deserialize, Serialize};
 
 /// Authoritative state tracked by the authoring-time simulator.
@@ -8,7 +9,10 @@ pub struct SimulationState {
     pub stage: String,
     pub clock_minutes: u64,
     pub flags: BTreeMap<String, bool>,
+    pub judicial_result: Option<JudicialResult>,
+    pub matter_lifecycle: MatterLifecycleStatus,
     pub resolved_outcome: Option<String>,
+    pub is_closed: bool,
 }
 
 /// Whether the supplied path completed the matter.

@@ -27,6 +27,9 @@ pub enum AuthoringDiagnosticCode {
     AmbiguousUnconditionalOutcomes,
     UnsatisfiableOutcomeCondition,
     TerminalPostJudgmentStage,
+    TerminalRemedyStage,
+    RemedyStageWithoutExit,
+    PrematureOutcomeResolution,
 }
 
 impl AuthoringDiagnosticCode {
@@ -49,6 +52,9 @@ impl AuthoringDiagnosticCode {
             Self::AmbiguousUnconditionalOutcomes => "AUT604_AMBIGUOUS_UNCONDITIONAL_OUTCOMES",
             Self::UnsatisfiableOutcomeCondition => "AUT605_UNSATISFIABLE_OUTCOME_CONDITION",
             Self::TerminalPostJudgmentStage => "AUT700_TERMINAL_POST_JUDGMENT_STAGE",
+            Self::TerminalRemedyStage => "AUT701_TERMINAL_REMEDY_STAGE",
+            Self::RemedyStageWithoutExit => "AUT702_REMEDY_STAGE_WITHOUT_EXIT",
+            Self::PrematureOutcomeResolution => "AUT703_PREMATURE_OUTCOME_RESOLUTION",
         }
     }
 }

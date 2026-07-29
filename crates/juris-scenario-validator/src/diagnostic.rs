@@ -15,6 +15,10 @@ pub enum DiagnosticCode {
     UnsupportedSchemaVersion,
     MissingInitialStage,
     NoOutcomes,
+    ResolvedStageNotTerminal,
+    TerminalStageNotResolved,
+    RemedyStageTerminal,
+    TerminalStageHasExitActions,
 
     // Lifecycle validation.
     AsyncTaskWithoutCompletionPath,
@@ -37,6 +41,7 @@ pub enum DiagnosticCode {
     ResolvedWithRequiredInbox,
     ResolvedWithAvailableAction,
     ResolvedWithoutOutcome,
+    OutcomeResolvedBeforeTerminalStage,
 
     // Reference validation.
     UnknownStageReference,
@@ -61,6 +66,10 @@ impl DiagnosticCode {
             Self::UnsupportedSchemaVersion => "SCN003_UNSUPPORTED_SCHEMA_VERSION",
             Self::MissingInitialStage => "SCN004_MISSING_INITIAL_STAGE",
             Self::NoOutcomes => "SCN005_NO_OUTCOMES",
+            Self::ResolvedStageNotTerminal => "SCN006_RESOLVED_STAGE_NOT_TERMINAL",
+            Self::TerminalStageNotResolved => "SCN007_TERMINAL_STAGE_NOT_RESOLVED",
+            Self::RemedyStageTerminal => "SCN008_REMEDY_STAGE_TERMINAL",
+            Self::TerminalStageHasExitActions => "SCN009_TERMINAL_STAGE_HAS_EXIT_ACTIONS",
 
             Self::UnknownStageReference => "SCN101_UNKNOWN_STAGE_REFERENCE",
             Self::UnknownActionReference => "SCN102_UNKNOWN_ACTION_REFERENCE",
@@ -89,6 +98,9 @@ impl DiagnosticCode {
             Self::ResolvedWithRequiredInbox => "SCN403_RESOLVED_WITH_REQUIRED_INBOX",
             Self::ResolvedWithAvailableAction => "SCN404_RESOLVED_WITH_AVAILABLE_ACTION",
             Self::ResolvedWithoutOutcome => "SCN405_RESOLVED_WITHOUT_OUTCOME",
+            Self::OutcomeResolvedBeforeTerminalStage => {
+                "SCN406_OUTCOME_RESOLVED_BEFORE_TERMINAL_STAGE"
+            }
         }
     }
 }

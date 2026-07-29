@@ -186,6 +186,7 @@ impl ReachabilityGraph {
                 }
 
                 Effect::SetFlag { .. }
+                | Effect::SetJudicialResult { .. }
                 | Effect::SetFactStatus { .. }
                 | Effect::MakeEvidenceAvailable { .. }
                 | Effect::MarkAsyncTaskReady { .. }
@@ -221,6 +222,7 @@ fn condition_may_be_true(condition: &Condition, reachable_stages: &HashSet<Strin
         Condition::Not { .. } => true,
 
         Condition::FlagEquals { .. }
+        | Condition::JudicialResultIs { .. }
         | Condition::FactStatusIs { .. }
         | Condition::EvidenceAvailable { .. }
         | Condition::DeadlineStatusIs { .. }
@@ -339,6 +341,7 @@ fn condition_mentions_stage(condition: &Condition, stage_id: &StageId) -> bool {
         Condition::Always
         | Condition::Not { .. }
         | Condition::FlagEquals { .. }
+        | Condition::JudicialResultIs { .. }
         | Condition::FactStatusIs { .. }
         | Condition::EvidenceAvailable { .. }
         | Condition::DeadlineStatusIs { .. }

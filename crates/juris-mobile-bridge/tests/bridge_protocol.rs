@@ -6,6 +6,8 @@ const LOGISTICS_SCENARIO: &str =
     include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
 const GREENFIRE_SCENARIO: &str =
     include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json");
+const REMEDIES_SCENARIO: &str =
+    include_str!("../../../content/fixtures/authoring/adverse_judgment_with_remedies.json");
 
 fn logistics_definition() -> ScenarioDefinition {
     serde_json::from_str(LOGISTICS_SCENARIO).expect("Logistics scenario must parse")
@@ -116,6 +118,73 @@ fn malformed_and_unavailable_commands_return_stable_errors() {
         panic!("expected error response");
     };
     assert_eq!(code, "unknown_session");
+}
+
+#[test]
+fn json_protocol_keeps_remedies_available_after_adverse_judgment() {
+    let mut bridge = MobileBridge::new();
+    let scenario: Value = serde_json::from_str(REMEDIES_SCENARIO).unwrap();
+    let created: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "create_session",
+                "scenario": scenario,
+                "seed": 20260729
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    let session_id = created["session_id"].as_u64().unwrap();
+
+    for action_id in ["request_judgment", "adverse_trial_judgment"] {
+        let response: Value = serde_json::from_str(
+            &bridge.execute_json(
+                &json!({
+                    "command": "dispatch",
+                    "session_id": session_id,
+                    "action_id": action_id
+                })
+                .to_string(),
+            ),
+        )
+        .unwrap();
+        assert_ne!(response["type"], "error");
+    }
+
+    let snapshot: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "snapshot",
+                "session_id": session_id
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(snapshot["snapshot"]["judicial_result"], "lost");
+    assert_eq!(snapshot["snapshot"]["matter_lifecycle"], "post_judgment");
+    assert_eq!(snapshot["snapshot"]["is_closed"], false);
+    assert_eq!(snapshot["snapshot"]["resolved_outcome"], Value::Null);
+    assert!(snapshot["snapshot"]["available_actions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|action| action["id"] == "file_appeal"));
+
+    let appeal: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "dispatch",
+                "session_id": session_id,
+                "action_id": "file_appeal"
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(appeal["snapshot"]["matter_lifecycle"], "appeal");
+    assert_eq!(appeal["snapshot"]["is_closed"], false);
 }
 
 #[test]

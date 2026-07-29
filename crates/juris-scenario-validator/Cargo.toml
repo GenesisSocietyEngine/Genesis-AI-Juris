@@ -10,4 +10,5 @@ rust-version.workspace = true
 juris-scenario-schema = { path = "../juris-scenario-schema" }
 
 [dev-dependencies]
+serde_json.workspace = true
 serde_yaml = "0.9"

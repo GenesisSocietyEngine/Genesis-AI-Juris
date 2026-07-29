@@ -134,6 +134,8 @@ mod tests {
 
     const LOGISTICS_SCENARIO: &str =
         include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
+    const REMEDIES_SCENARIO: &str =
+        include_str!("../../../content/fixtures/authoring/adverse_judgment_with_remedies.json");
 
     fn execute_request(request: Value) -> Value {
         let request = CString::new(request.to_string()).expect("request must be a C string");
@@ -221,5 +223,39 @@ mod tests {
         }));
         assert_eq!(invalid_handle["type"], "error");
         assert_eq!(invalid_handle["code"], "unknown_session");
+    }
+
+    #[test]
+    fn adverse_judgment_snapshot_remains_open_over_ffi() {
+        let scenario: Value = serde_json::from_str(REMEDIES_SCENARIO).unwrap();
+        let created = execute_request(json!({
+            "command": "create_session",
+            "scenario": scenario,
+            "seed": 20260729
+        }));
+        let session_id = created["session_id"].as_u64().unwrap();
+
+        for action_id in ["request_judgment", "adverse_trial_judgment"] {
+            let response = execute_request(json!({
+                "command": "dispatch",
+                "session_id": session_id,
+                "action_id": action_id
+            }));
+            assert_eq!(response["type"], "snapshot");
+        }
+
+        let snapshot = execute_request(json!({
+            "command": "snapshot",
+            "session_id": session_id
+        }));
+        assert_eq!(snapshot["snapshot"]["judicial_result"], "lost");
+        assert_eq!(snapshot["snapshot"]["matter_lifecycle"], "post_judgment");
+        assert_eq!(snapshot["snapshot"]["is_closed"], false);
+        assert_eq!(snapshot["snapshot"]["resolved_outcome"], Value::Null);
+        assert!(snapshot["snapshot"]["available_actions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|action| action["id"] == "file_appeal"));
     }
 }

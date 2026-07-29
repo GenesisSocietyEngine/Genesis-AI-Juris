@@ -34,7 +34,7 @@ fn unreachable_stage_is_rejected() {
     scenario.stages.push(StageDefinition {
         id: StageId::from("isolated-stage"),
         title: "Isolated Stage".to_owned(),
-        kind: StageKind::Standard,
+        kind: StageKind::Resolved,
         entry_event: None,
         exit_actions: Vec::new(),
         terminal: true,

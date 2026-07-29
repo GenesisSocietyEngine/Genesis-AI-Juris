@@ -4,7 +4,10 @@
 //! This proves that the public Rust types and the human-authored scenario
 //! format remain compatible.
 
-use juris_scenario_schema::{ActionId, ScenarioDefinition, StageId, SCENARIO_SCHEMA_VERSION_V1};
+use juris_scenario_schema::{
+    ActionId, Condition, Effect, JudicialResult, MatterLifecycleStatus, ScenarioDefinition,
+    StageId, StageKind, SCENARIO_SCHEMA_VERSION_V1,
+};
 
 const MINIMAL_SCENARIO: &str =
     include_str!("../../../content/fixtures/valid/minimal-scenario.yaml");
@@ -53,4 +56,71 @@ fn typed_identifiers_serialize_as_plain_yaml_scalars() {
     let serialized = serde_yaml::to_string(&action_id).expect("typed ID must serialize");
 
     assert_eq!(serialized.trim(), "request-expert-report");
+}
+
+#[test]
+fn judicial_result_effect_and_condition_round_trip() {
+    let effect = Effect::SetJudicialResult {
+        result: JudicialResult::PartiallyWon,
+    };
+    let condition = Condition::JudicialResultIs {
+        result: JudicialResult::Lost,
+    };
+
+    let effect_json = serde_json::to_string(&effect).expect("effect must serialize");
+    let condition_json = serde_json::to_string(&condition).expect("condition must serialize");
+
+    assert_eq!(
+        effect_json,
+        r#"{"type":"set_judicial_result","result":"partially_won"}"#
+    );
+    assert_eq!(
+        condition_json,
+        r#"{"type":"judicial_result_is","result":"lost"}"#
+    );
+    assert_eq!(
+        serde_json::from_str::<Effect>(&effect_json).expect("effect must deserialize"),
+        effect
+    );
+    assert_eq!(
+        serde_json::from_str::<Condition>(&condition_json).expect("condition must deserialize"),
+        condition
+    );
+}
+
+#[test]
+fn remedy_stage_kinds_and_lifecycle_use_stable_names() {
+    for (kind, lifecycle, expected_kind, expected_lifecycle) in [
+        (
+            StageKind::Appeal,
+            MatterLifecycleStatus::Appeal,
+            "\"appeal\"",
+            "\"appeal\"",
+        ),
+        (
+            StageKind::Cassation,
+            MatterLifecycleStatus::Cassation,
+            "\"cassation\"",
+            "\"cassation\"",
+        ),
+        (
+            StageKind::Enforcement,
+            MatterLifecycleStatus::Enforcement,
+            "\"enforcement\"",
+            "\"enforcement\"",
+        ),
+    ] {
+        assert_eq!(serde_json::to_string(&kind).unwrap(), expected_kind);
+        assert_eq!(
+            serde_json::to_string(&lifecycle).unwrap(),
+            expected_lifecycle
+        );
+    }
+}
+
+#[test]
+fn existing_scenario_without_judicial_result_remains_compatible() {
+    let scenario: ScenarioDefinition =
+        serde_yaml::from_str(MINIMAL_SCENARIO).expect("old v1 scenario must deserialize");
+    assert_eq!(scenario.schema_version, SCENARIO_SCHEMA_VERSION_V1);
 }

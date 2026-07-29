@@ -1,10 +1,12 @@
 use juris_engine::{ScenarioRuntimeError, ScenarioSession, ScenarioSessionRegistry};
-use juris_scenario_schema::ScenarioDefinition;
+use juris_scenario_schema::{JudicialResult, MatterLifecycleStatus, ScenarioDefinition};
 
 const LOGISTICS_SCENARIO: &str =
     include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
 const GREENFIRE_SCENARIO: &str =
     include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json");
+const REMEDIES_SCENARIO: &str =
+    include_str!("../../../content/fixtures/authoring/adverse_judgment_with_remedies.json");
 
 fn logistics_definition() -> ScenarioDefinition {
     serde_json::from_str(LOGISTICS_SCENARIO).expect("Logistics scenario must parse")
@@ -12,6 +14,69 @@ fn logistics_definition() -> ScenarioDefinition {
 
 fn greenfire_definition() -> ScenarioDefinition {
     serde_json::from_str(GREENFIRE_SCENARIO).expect("GreenFire scenario must parse")
+}
+
+fn remedies_definition() -> ScenarioDefinition {
+    serde_json::from_str(REMEDIES_SCENARIO).expect("remedies scenario must parse")
+}
+
+fn adverse_judgment_session() -> ScenarioSession {
+    let mut session =
+        ScenarioSession::new(remedies_definition(), 20260729).expect("session must start");
+    session.dispatch("request_judgment").unwrap();
+    session.dispatch("adverse_trial_judgment").unwrap();
+    session
+}
+
+#[test]
+fn lost_is_not_closed_and_appeal_remains_executable() {
+    let mut session = adverse_judgment_session();
+    let snapshot = session.snapshot();
+
+    assert_eq!(snapshot.judicial_result, Some(JudicialResult::Lost));
+    assert_eq!(
+        snapshot.matter_lifecycle,
+        MatterLifecycleStatus::PostJudgment
+    );
+    assert!(!snapshot.is_closed);
+    assert!(!snapshot.terminal);
+    assert_eq!(snapshot.resolved_outcome, None);
+    assert!(snapshot
+        .available_actions
+        .iter()
+        .any(|action| action.id == "file_appeal"));
+    assert!(snapshot
+        .available_actions
+        .iter()
+        .any(|action| action.id == "waive_appeal"));
+
+    let appeal = session
+        .dispatch("file_appeal")
+        .expect("appeal must remain available");
+    assert_eq!(appeal.matter_lifecycle, MatterLifecycleStatus::Appeal);
+    assert!(!appeal.is_closed);
+}
+
+#[test]
+fn waiver_and_remedies_exhaustion_close_the_matter() {
+    let mut waived = adverse_judgment_session();
+    let waived = waived.dispatch("waive_appeal").unwrap();
+    assert!(waived.is_closed);
+    assert_eq!(waived.resolved_outcome.as_deref(), Some("final_loss"));
+
+    let mut exhausted = adverse_judgment_session();
+    for action in [
+        "file_appeal",
+        "appeal_lost",
+        "file_cassation",
+        "cassation_rejected",
+        "close_after_remedies_exhausted",
+    ] {
+        exhausted.dispatch(action).unwrap();
+    }
+    let exhausted = exhausted.snapshot();
+    assert!(exhausted.is_closed);
+    assert_eq!(exhausted.resolved_outcome.as_deref(), Some("final_loss"));
 }
 
 #[test]
