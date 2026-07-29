@@ -18,9 +18,11 @@ import '../widgets/inbox_message_sheet.dart';
 /// Below 700 logical pixels it uses a Material 3 [NavigationBar]. Wider
 /// windows switch to [NavigationRail] without changing the destination state.
 class HomeShell extends StatefulWidget {
-  const HomeShell({required this.repository, super.key});
+  const HomeShell(
+      {required this.repository, this.onExitToCaseCatalog, super.key});
 
   final DemoGameRepository repository;
+  final VoidCallback? onExitToCaseCatalog;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -135,6 +137,13 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
             return Scaffold(
               appBar: AppBar(
+                leading: widget.onExitToCaseCatalog == null
+                    ? null
+                    : IconButton(
+                        tooltip: 'Back to case library',
+                        onPressed: widget.onExitToCaseCatalog,
+                        icon: const Icon(Icons.arrow_back),
+                      ),
                 title: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[

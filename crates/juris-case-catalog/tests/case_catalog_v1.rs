@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use juris_case_catalog::{
     load_catalog_bundle, validate_catalog, validate_catalog_bundle, validate_matter_identity,
-    validate_repository_relative_path, CaseCatalog, CaseId, CatalogBundle, MatterIdentity, PartyId,
-    ProceduralRole, Severity,
+    validate_repository_relative_path, CaseCatalog, CaseId, CatalogBundle, CatalogStatus,
+    MatterIdentity, PartyId, ProceduralRole, Severity,
 };
 
 fn repository_root() -> PathBuf {
@@ -133,12 +133,14 @@ fn catalog_json_round_trip_preserves_case_order() {
 }
 
 #[test]
-fn reference_library_contains_a_playable_case_and_an_outline() {
+fn reference_library_separates_scenario_content_from_mobile_playability() {
     let bundle = load_reference_bundle();
 
     assert_eq!(bundle.catalog.cases.len(), 2);
     assert!(bundle.catalog.cases[0].scenario_file.is_some());
-    assert!(bundle.catalog.cases[1].scenario_file.is_none());
+    assert_eq!(bundle.catalog.cases[0].status, CatalogStatus::Playable);
+    assert!(bundle.catalog.cases[1].scenario_file.is_some());
+    assert_eq!(bundle.catalog.cases[1].status, CatalogStatus::Outline);
     assert_eq!(
         bundle.identities[0].player_client_id.as_str(),
         "northbridge_consulting"

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 import 'app/juris_app.dart';
-import 'data/demo_game_repository.dart';
 
-/// Starts the v0.5 mobile shell with a deterministic local demonstration.
+/// Starts the mobile case library.
 ///
-/// The Flutter UI does not yet call the Rust simulation. That integration is
-/// deliberately reserved for v0.5.1, where a narrow snapshot/action bridge
-/// will replace [DemoGameRepository] without changing the screen hierarchy.
+/// The catalog and localized case metadata are generated from repository
+/// content. Selecting the Failed ERP matter opens the current deterministic
+/// demo runtime; additional validated scenarios can appear in the library
+/// without changing the case-selector UI.
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(JurisApp(repository: DemoGameRepository(seed: 20260724)));
+  runApp(const JurisApp.catalog());
 }

@@ -25,7 +25,8 @@
       "difficulty": "introductory",
       "status": "outline",
       "player_client_id": "velmont_logistics",
-      "identity_file": "content/catalog/cases/unpaid_logistics_invoices.identity.json"
+      "identity_file": "content/catalog/cases/unpaid_logistics_invoices.identity.json",
+      "scenario_file": "content/cases/unpaid_logistics_invoices.scenario.json"
     }
   ]
 }
