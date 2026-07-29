@@ -8,11 +8,9 @@ output_directory="${4:?Output directory is required}"
 app_root="$(cd "$(dirname "$0")/.." && pwd)"
 repository_root="$(cd "$app_root/../.." && pwd)"
 profile="debug"
-cargo_profile=()
 
 if [[ "$configuration" != "Debug" ]]; then
   profile="release"
-  cargo_profile=(--release)
 fi
 
 targets=()
@@ -31,7 +29,11 @@ done
 
 libraries=()
 for target in "${targets[@]}"; do
-  (cd "$repository_root" && cargo build -p juris-mobile-ffi --target "$target" "${cargo_profile[@]}")
+  if [[ "$profile" == "release" ]]; then
+    (cd "$repository_root" && cargo build -p juris-mobile-ffi --target "$target" --release)
+  else
+    (cd "$repository_root" && cargo build -p juris-mobile-ffi --target "$target")
+  fi
   libraries+=("$repository_root/target/$target/$profile/libjuris_mobile_ffi.a")
 done
 

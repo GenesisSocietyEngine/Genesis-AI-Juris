@@ -2,7 +2,7 @@
 document_type: cumulative_development_handoff
 project: "GENESIS: AI Juris"
 branch: feat/scenario-authoring-toolkit-v1
-head_commit: 8842698
+head_commit: 45cce64
 app_version: 0.5.1+12
 last_updated: 2026-07-29
 ---
@@ -11,13 +11,17 @@ last_updated: 2026-07-29
 
 ## Pending iOS native checkpoint — 2026-07-29
 
-Status: local changes are not committed or pushed.
+Status: initial checkpoint `45cce64` is pushed; the first macOS run exposed a
+build-script compatibility defect and the fix is pending locally.
 
 Completed:
 
 - verified remote GitHub Actions for `8842698`:
   - Rust CI run `30470625729`: success;
   - Flutter Mobile UI run `30470625878`: success;
+- verified the unchanged gates for `45cce64`:
+  - Rust CI run `30471349312`: success;
+  - Flutter Mobile UI run `30471340803`: success;
 - added a dedicated `iOS Native FFI` workflow on `macos-15-intel`;
 - configured the workflow to install both supported Rust simulator targets,
   build Flutter Runner through Xcode, and verify the generated static library
@@ -35,9 +39,13 @@ flutter pub get
 dart format integration_test/native_ios_ffi_smoke_test.dart
 flutter analyze --no-pub
 flutter test --no-pub
+C:\Program Files\Git\bin\bash.exe -n `
+  apps/juris-mobile/tool/build_rust_ios.sh
 git diff --check
 gh run list --repo GenesisSocietyEngine/Genesis-AI-Juris `
   --commit 88426988d6206c2c8744d9199a146a2bab5ea1e2
+gh run list --repo GenesisSocietyEngine/Genesis-AI-Juris `
+  --branch feat/scenario-authoring-toolkit-v1 --limit 8
 ```
 
 Results:
@@ -45,13 +53,28 @@ Results:
 - Flutter dependency resolution completed;
 - Flutter analyze reports no issues, including the new integration test;
 - all 56 existing Flutter tests pass;
+- the corrected build script passes a local syntax check with Git Bash 5.3;
 - repository diff whitespace validation passes;
-- both existing remote workflows for `8842698` are green.
+- both existing remote workflows for `8842698` are green;
+- Rust CI and Flutter Mobile UI for `45cce64` are green.
+
+First macOS execution:
+
+- iOS Native FFI run `30471349440`, job `90642090060`;
+- Flutter dependencies resolved and Xcode started the Runner build;
+- Xcode invoked `build_rust_ios.sh`;
+- the build stopped before Cargo because macOS system Bash 3.2 treats expansion
+  of an empty array as an unbound variable under `set -u`;
+- no staticlib, symbol, or Simulator success is claimed from this failed run;
+- the script now uses explicit Debug and Release Cargo invocations and no
+  longer expands an empty array.
 
 Known limitations:
 
-- the new `iOS Native FFI` workflow has not run yet because it is not committed
-  or pushed;
+- the first `iOS Native FFI` workflow run failed at the observed Bash 3.2
+  compatibility defect; the corrective rerun is still pending;
+- this Windows host does not provide system Bash 3.2, so the local syntax
+  check cannot replace the macOS compatibility rerun;
 - no local iOS build or Simulator result is claimed from this Windows host;
 - the iOS gate is complete only after the macOS job builds Runner, verifies the
   static symbols, boots an iPhone Simulator, and passes the native lifecycle
@@ -59,9 +82,9 @@ Known limitations:
 
 Next step:
 
-- commit and push this isolated iOS test/CI checkpoint;
-- inspect the first macOS run, fix only observed iOS integration defects, and
-  record the actual Xcode/staticlib/Simulator result here;
+- commit and push the isolated Bash 3.2 compatibility correction;
+- rerun the macOS gate and record the actual Xcode/staticlib/Simulator result
+  here;
 - begin lifecycle semantics work only after this remote iOS gate is green.
 
 ## FFI checkpoint `8842698` — 2026-07-29
