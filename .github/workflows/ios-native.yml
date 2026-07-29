@@ -1,0 +1,59 @@
+name: iOS Native FFI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  simulator-smoke:
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/juris-mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios-sim,x86_64-apple-ios
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve Flutter dependencies
+        run: flutter pub get
+
+      - name: Build Runner and Rust static library for iOS Simulator
+        run: flutter build ios --simulator --debug --no-codesign
+
+      - name: Verify native static library exports
+        run: |
+          test -f ios/Generated/libjuris_mobile_ffi.a
+          nm -gU ios/Generated/libjuris_mobile_ffi.a \
+            | grep 'juris_mobile_bridge_execute'
+          nm -gU ios/Generated/libjuris_mobile_ffi.a \
+            | grep 'juris_mobile_bridge_string_free'
+          nm -gU ios/Generated/libjuris_mobile_ffi.a \
+            | grep 'juris_mobile_bridge_abi_version'
+
+      - name: Boot an available iPhone Simulator
+        id: simulator
+        run: |
+          simulator_id="$(
+            xcrun simctl list devices available \
+              | grep -m 1 'iPhone' \
+              | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/'
+          )"
+          test -n "$simulator_id"
+          xcrun simctl boot "$simulator_id"
+          xcrun simctl bootstatus "$simulator_id" -b
+          echo "id=$simulator_id" >> "$GITHUB_OUTPUT"
+
+      - name: Run native Logistics lifecycle on iOS Simulator
+        run: >-
+          flutter test
+          integration_test/native_ios_ffi_smoke_test.dart
+          -d "${{ steps.simulator.outputs.id }}"

@@ -2,16 +2,71 @@
 document_type: cumulative_development_handoff
 project: "GENESIS: AI Juris"
 branch: feat/scenario-authoring-toolkit-v1
-head_commit: 8560568
+head_commit: 8842698
 app_version: 0.5.1+12
 last_updated: 2026-07-29
 ---
 
 # Current Progress
 
-## Pending FFI checkpoint — 2026-07-29
+## Pending iOS native checkpoint — 2026-07-29
 
 Status: local changes are not committed or pushed.
+
+Completed:
+
+- verified remote GitHub Actions for `8842698`:
+  - Rust CI run `30470625729`: success;
+  - Flutter Mobile UI run `30470625878`: success;
+- added a dedicated `iOS Native FFI` workflow on `macos-15-intel`;
+- configured the workflow to install both supported Rust simulator targets,
+  build Flutter Runner through Xcode, and verify the generated static library
+  exports all three C ABI symbols;
+- added an iOS Simulator integration smoke that resolves the Rust symbols via
+  `DynamicLibrary.process()` and executes:
+  `create_session -> dispatch -> snapshot -> dispose_session`;
+- the integration smoke also verifies a repeated dispose and an invalid
+  session handle return controlled versioned JSON responses.
+
+Commands actually executed locally:
+
+```powershell
+flutter pub get
+dart format integration_test/native_ios_ffi_smoke_test.dart
+flutter analyze --no-pub
+flutter test --no-pub
+git diff --check
+gh run list --repo GenesisSocietyEngine/Genesis-AI-Juris `
+  --commit 88426988d6206c2c8744d9199a146a2bab5ea1e2
+```
+
+Results:
+
+- Flutter dependency resolution completed;
+- Flutter analyze reports no issues, including the new integration test;
+- all 56 existing Flutter tests pass;
+- repository diff whitespace validation passes;
+- both existing remote workflows for `8842698` are green.
+
+Known limitations:
+
+- the new `iOS Native FFI` workflow has not run yet because it is not committed
+  or pushed;
+- no local iOS build or Simulator result is claimed from this Windows host;
+- the iOS gate is complete only after the macOS job builds Runner, verifies the
+  static symbols, boots an iPhone Simulator, and passes the native lifecycle
+  integration test.
+
+Next step:
+
+- commit and push this isolated iOS test/CI checkpoint;
+- inspect the first macOS run, fix only observed iOS integration defects, and
+  record the actual Xcode/staticlib/Simulator result here;
+- begin lifecycle semantics work only after this remote iOS gate is green.
+
+## FFI checkpoint `8842698` — 2026-07-29
+
+Status: committed, pushed, and green in remote Rust and Flutter CI.
 
 Completed:
 
@@ -60,13 +115,11 @@ Known limitations:
 - this Windows host cannot build an Apple static library, link Xcode Runner,
   or launch an iOS Simulator;
 - the existing macOS/Xcode build phase is therefore still unverified;
-- the GitHub Actions failure remains red remotely until this hotfix is
-  committed and pushed.
+- the original GitHub Actions MSRV failure is resolved.
 
 Next step:
 
-- commit and push this FFI-only checkpoint, wait for remote MSRV CI, then run
-  `build_rust_ios.sh`, Xcode linking, and the same lifecycle smoke on a
+- run `build_rust_ios.sh`, Xcode linking, and the same lifecycle smoke on a
   macOS/iOS Simulator host;
 - after the iOS gate, implement `Lost != Closed`, then formalize the
   deterministic foreground clock before persistence, capabilities, or
