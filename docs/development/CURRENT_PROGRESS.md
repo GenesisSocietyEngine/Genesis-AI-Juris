@@ -1,13 +1,86 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: AI Juris"
-branch: feat/goldenshell-recall-at-dawn
-head_commit: "51cb1ee (implementation HEAD before this documentation checkpoint)"
+branch: main
+head_commit: "084f43a (GoldenShell PR #6 merge before release documentation)"
+release_tag: v0.5.1-alpha.1
 app_version: 0.5.1+12
 last_updated: 2026-07-29
 ---
 
 # Current Progress
+
+## GoldenShell merge and iOS gate `084f43a` — 2026-07-29
+
+Status: pull request
+[#6](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/6) is merged
+into `main`. The documented release checkpoint is tagged
+`v0.5.1-alpha.1`.
+
+Repository state:
+
+- branch: `main`;
+- PR head before merge:
+  `90477396500e5ee228bef608c956f84475d6d058`;
+- merge commit:
+  `084f43a0464a632ceb1fe8cd982fbab68cab4307`;
+- release tag: `v0.5.1-alpha.1`;
+- tag meaning: first `0.5.1` alpha checkpoint containing the playable
+  GoldenShell recall-at-dawn scenario and its stable iOS native FFI gate.
+
+Completed:
+
+- merged the isolated GoldenShell scenario, mobile catalog integration,
+  deterministic bundle, runtime coverage, and authoring documentation;
+- preserved the implementation commit `51cb1ee`, progress commit `5d8eca7`,
+  and iOS CI stabilization commit `9047739` in merge history;
+- diagnosed iOS Native FFI run `30491693874`:
+  - Runner and Rust static library build passed;
+  - all three C ABI exports passed `nm` verification;
+  - the iPhone Simulator booted;
+  - `flutter test` then waited 34 minutes after `Xcode build done` without
+    connecting to the application and the 45-minute job timeout cancelled it;
+  - a retry on a new runner reproduced the launch/VM-service handshake stall;
+- replaced the flaky CI transport with a hosted XCTest that runs inside the
+  real iOS Runner process and calls the same three exported C ABI symbols;
+- the XCTest loads the canonical bundled Logistics scenario and verifies
+  `create_session -> dispatch -> snapshot -> dispose_session`, repeated
+  disposal, and an invalid session handle;
+- limited the native lifecycle step to 15 minutes so a future launch stall
+  cannot consume the complete 45-minute job without a precise step result.
+
+Remote quality gates on `9047739`:
+
+- Rust CI run
+  [30496143812](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/30496143812):
+  success;
+- Flutter Mobile UI run
+  [30496143759](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/30496143759):
+  success;
+- iOS Native FFI run
+  [30496143709](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/30496143709):
+  success;
+- the successful iOS run includes Runner/Rust build, ABI symbol verification,
+  Simulator boot, hosted XCTest lifecycle, and post-job cleanup.
+
+Known limitations:
+
+- the Dart `DynamicLibrary.process()` integration test remains available for
+  targeted/manual runs, but GitHub's release gate now uses hosted XCTest to
+  avoid the observed Flutter VM-service handshake deadlock;
+- no physical iPhone, release signing, App Store, Play Store, dossier schema,
+  or persistent save/load result is claimed;
+- `coordinate_operational_period` remains temporary until the authoritative
+  foreground-clock work is rebased onto this `main`.
+
+Next step:
+
+- rebase the foreground-clock branch onto merge `084f43a`;
+- expose authoritative foreground clock control through the existing bridge
+  and mapper;
+- remove temporary `coordinate_operational_period` actions from GreenFire and
+  GoldenShell while preserving their stable scenario/action IDs and
+  deterministic terminal paths.
 
 ## GoldenShell recall-at-dawn checkpoint `51cb1ee` — 2026-07-29
 
