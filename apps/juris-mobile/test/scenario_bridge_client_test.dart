@@ -20,7 +20,7 @@ void main() {
     expect(decoded['scenario']['metadata']['id'], 'scenario_001');
   });
 
-  test('dispatch and disposal use stable session and action IDs', () {
+  test('dispatch, time advancement, and disposal use stable IDs', () {
     expect(
       jsonDecode(
         ScenarioBridgeCommand.dispatch(
@@ -32,6 +32,16 @@ void main() {
         'command': 'dispatch',
         'session_id': 42,
         'action_id': 'audit_claim_file',
+      },
+    );
+    expect(
+      jsonDecode(
+        ScenarioBridgeCommand.advanceTime(sessionId: 42, minutes: 1),
+      ),
+      <String, dynamic>{
+        'command': 'advance_time',
+        'session_id': 42,
+        'minutes': 1,
       },
     );
     expect(

@@ -18,4 +18,7 @@ pub use cli::{help_text, run_cli};
 pub use document::ScenarioDocument;
 pub use engine::ScenarioSimulator;
 pub use error::SimulationError;
-pub use model::{SimulationResult, SimulationState, SimulationStatus, TraceEntry, TraceKind};
+pub use model::{
+    ScenarioTraceCommand, SimulationResult, SimulationState, SimulationStatus, TraceEntry,
+    TraceKind,
+};

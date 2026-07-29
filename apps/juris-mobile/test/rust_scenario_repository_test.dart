@@ -98,6 +98,10 @@ void main() {
     expect(client.lastScenarioId, 'greenfire_first_72_hours');
     expect(client.lastSeed, 20260729);
     expect(client.lastActionCount, 14);
+    expect(repository.supportsLiveClock, isTrue);
+    final String before = repository.snapshot.timeLabel;
+    repository.advanceTimeByMinutes(1);
+    expect(repository.snapshot.timeLabel, isNot(before));
     expect(repository.snapshot.matterTitle, contains('GreenFire'));
     repository.dispose();
   });
@@ -112,12 +116,31 @@ void main() {
     expect(client.lastScenarioId, 'goldenshell_recall_at_dawn');
     expect(client.lastSeed, 20260730);
     expect(client.lastActionCount, 18);
+    expect(repository.supportsLiveClock, isTrue);
     expect(repository.snapshot.matterTitle, contains('GoldenShell'));
     expect(repository.snapshot.stage, 'Emergency cooperative intake');
     expect(
       repository.snapshot.actions.single.id,
       'accept_cooperative_mandate',
     );
+    repository.dispose();
+  });
+
+  test('clock failure preserves snapshot and disables repeated ticking', () {
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: greenfire,
+      bridgeClient: _FakeScenarioBridgeClient(rejectAdvance: true),
+    );
+    final String before = repository.snapshot.timeLabel;
+
+    expect(
+      () => repository.advanceTimeByMinutes(1),
+      throwsA(isA<ScenarioClockAdvanceException>()),
+    );
+
+    expect(repository.snapshot.timeLabel, before);
+    expect(repository.clockErrorMessage, 'Clock unavailable');
+    expect(repository.supportsLiveClock, isFalse);
     repository.dispose();
   });
 
@@ -201,6 +224,9 @@ const List<String> _goldenshellFragmentedPath = <String>[
 ];
 
 final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
+  _FakeScenarioBridgeClient({this.rejectAdvance = false});
+
+  final bool rejectAdvance;
   int createCount = 0;
   int disposeCount = 0;
   int _sessionId = 0;
@@ -229,6 +255,7 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
     return switch (request['command']) {
       'create_session' => _create(request),
       'dispatch' => _dispatch(request['action_id'] as String),
+      'advance_time' => _advance(request['minutes'] as int),
       'snapshot' => _response('snapshot'),
       'dispose_session' => _dispose(),
       _ => jsonEncode(<String, dynamic>{
@@ -295,6 +322,18 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
     return _response('snapshot');
   }
 
+  String _advance(int minutes) {
+    if (rejectAdvance) {
+      return jsonEncode(<String, dynamic>{
+        'type': 'error',
+        'code': 'clock_advance_failed',
+        'message': 'Clock unavailable',
+      });
+    }
+    _clockMinutes += minutes;
+    return _response('snapshot');
+  }
+
   void _applyEffects(List<dynamic> effects) {
     for (final dynamic value in effects) {
       final Map<String, dynamic> effect = value as Map<String, dynamic>;
@@ -338,6 +377,9 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
         'stage_id': _stage,
         'stage_title': stage['title'] as String,
         'clock_minutes': _clockMinutes,
+        'clock_mode': ((_scenario['clock'] as Map<String, dynamic>?)?['mode']
+                as String?) ??
+            'action_driven',
         'terminal': _outcome != null,
         'flags': <String, bool>{},
         'facts': (_scenario['facts'] as List<dynamic>)

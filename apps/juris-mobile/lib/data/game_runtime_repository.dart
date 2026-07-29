@@ -14,9 +14,12 @@ abstract class GameRuntimeRepository extends ChangeNotifier {
   bool get isTerminal;
 
   /// Whether the shared shell should advance this runtime every foreground
-  /// clock tick. Declarative Rust scenarios advance through authoritative
-  /// action costs and therefore return false.
+  /// clock tick. Declarative Rust scenarios opt in through their authoritative
+  /// snapshot clock policy.
   bool get supportsLiveClock;
+
+  /// Last controlled automatic-clock failure, if ticking has been stopped.
+  String? get clockErrorMessage;
 
   void reset();
 

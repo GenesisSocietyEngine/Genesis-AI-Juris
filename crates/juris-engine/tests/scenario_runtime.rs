@@ -1,5 +1,6 @@
 use juris_engine::{ScenarioRuntimeError, ScenarioSession, ScenarioSessionRegistry};
-use juris_scenario_schema::ScenarioDefinition;
+use juris_scenario_schema::{ScenarioClockMode, ScenarioDefinition};
+use serde_json::json;
 
 const LOGISTICS_SCENARIO: &str =
     include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
@@ -18,6 +19,165 @@ fn greenfire_definition() -> ScenarioDefinition {
 
 fn goldenshell_definition() -> ScenarioDefinition {
     serde_json::from_str(GOLDENSHELL_SCENARIO).expect("GoldenShell scenario must parse")
+}
+
+#[test]
+fn snapshot_exposes_backward_compatible_clock_policy() {
+    assert_eq!(
+        logistics_definition().clock.mode,
+        ScenarioClockMode::ActionDriven
+    );
+    assert_eq!(
+        ScenarioSession::new(logistics_definition(), 1)
+            .unwrap()
+            .snapshot()
+            .clock_mode,
+        "action_driven"
+    );
+    assert_eq!(
+        ScenarioSession::new(greenfire_definition(), 1)
+            .unwrap()
+            .snapshot()
+            .clock_mode,
+        "foreground"
+    );
+    assert_eq!(
+        ScenarioSession::new(goldenshell_definition(), 1)
+            .unwrap()
+            .snapshot()
+            .clock_mode,
+        "foreground"
+    );
+}
+
+#[test]
+fn foreground_advance_contract_rejects_invalid_commands() {
+    let mut logistics = ScenarioSession::new(logistics_definition(), 1).unwrap();
+    assert_eq!(
+        logistics.advance_time(1),
+        Err(ScenarioRuntimeError::ClockAdvanceUnsupported)
+    );
+
+    let mut greenfire = ScenarioSession::new(greenfire_definition(), 1).unwrap();
+    assert_eq!(
+        greenfire.advance_time(0),
+        Err(ScenarioRuntimeError::InvalidClockAdvance)
+    );
+    assert_eq!(
+        greenfire.advance_time(1_441),
+        Err(ScenarioRuntimeError::ClockAdvanceLimitExceeded {
+            requested: 1_441,
+            maximum: 1_440,
+        })
+    );
+}
+
+#[test]
+fn action_cost_and_foreground_time_share_temporal_boundaries() {
+    let mut action_driven = ScenarioSession::new(greenfire_definition(), 11).unwrap();
+    let mut foreground = ScenarioSession::new(greenfire_definition(), 11).unwrap();
+    action_driven.dispatch("accept_emergency_mandate").unwrap();
+    foreground.dispatch("accept_emergency_mandate").unwrap();
+
+    let action_snapshot = action_driven
+        .dispatch("coordinate_operational_period")
+        .unwrap();
+    let foreground_snapshot = foreground.advance_time(360).unwrap();
+
+    assert_eq!(action_snapshot, foreground_snapshot);
+    assert_eq!(foreground_snapshot.clock_minutes, 390);
+    assert!(foreground_snapshot
+        .fired_event_ids
+        .contains(&"regulator_request_received".to_owned()));
+    assert!(foreground_snapshot
+        .fired_event_ids
+        .contains(&"legal_hold_missed".to_owned()));
+}
+
+#[test]
+fn temporal_categories_use_deterministic_same_minute_priority() {
+    let mut value: serde_json::Value = serde_json::from_str(GREENFIRE_SCENARIO).unwrap();
+    value["async_tasks"][0]["duration_minutes"] = json!(180);
+    value["actions"][0]["effects"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({
+            "type": "start_async_task",
+            "task": "preliminary_fire_assessment"
+        }));
+    value["events"][1]["trigger"]["at"] = json!({"day": 0, "minute_of_day": 180});
+    value["events"][1]["effects"] = json!([
+        {"type": "set_flag", "flag": "at_time_seen", "value": true}
+    ]);
+    value["events"][5]["condition"] = json!({
+        "type": "flag_equals",
+        "flag": "at_time_seen",
+        "value": true
+    });
+    value["events"][5]["effects"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({
+            "type": "set_flag",
+            "flag": "async_seen",
+            "value": true
+        }));
+    value["events"][2]["condition"] = json!({
+        "type": "flag_equals",
+        "flag": "async_seen",
+        "value": true
+    });
+    value["events"][2]["effects"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({
+            "type": "set_flag",
+            "flag": "deadline_seen",
+            "value": true
+        }));
+    let definition: ScenarioDefinition = serde_json::from_value(value).unwrap();
+    let mut session = ScenarioSession::new(definition, 12).unwrap();
+
+    session.dispatch("accept_emergency_mandate").unwrap();
+    let snapshot = session.advance_time(150).unwrap();
+
+    assert_eq!(snapshot.clock_minutes, 180);
+    assert_eq!(snapshot.flags.get("at_time_seen"), Some(&true));
+    assert_eq!(snapshot.flags.get("async_seen"), Some(&true));
+    assert_eq!(snapshot.flags.get("deadline_seen"), Some(&true));
+}
+
+#[test]
+fn terminal_boundary_stops_a_larger_foreground_advance() {
+    let mut value: serde_json::Value = serde_json::from_str(GREENFIRE_SCENARIO).unwrap();
+    value["events"][1]["effects"] = json!([
+        {"type": "expire_async_task", "task": "preliminary_fire_assessment"},
+        {"type": "miss_deadline", "deadline": "legal_hold_deadline"},
+        {"type": "miss_deadline", "deadline": "insurance_notice_deadline"},
+        {"type": "miss_deadline", "deadline": "initial_regulatory_response_deadline"},
+        {"type": "resolve_inbox_item", "item": "managing_director_emergency_call"},
+        {"type": "resolve_inbox_item", "item": "legal_hold_required"},
+        {"type": "resolve_inbox_item", "item": "insurance_notice_required"},
+        {"type": "resolve_inbox_item", "item": "separate_counsel_decision"},
+        {"type": "resolve_inbox_item", "item": "regulator_document_request"},
+        {"type": "resolve_inbox_item", "item": "expert_report_ready"},
+        {"type": "resolve_inbox_item", "item": "seventy_two_hour_handoff"},
+        {"type": "set_stage", "stage": "handoff_complete"},
+        {"type": "resolve_outcome", "outcome": "compromised_crisis_position"}
+    ]);
+    value["outcomes"][1]["condition"] = json!({"type": "always"});
+    let definition: ScenarioDefinition = serde_json::from_value(value).unwrap();
+    let mut session = ScenarioSession::new(definition, 13).unwrap();
+
+    session.dispatch("accept_emergency_mandate").unwrap();
+    let snapshot = session.advance_time(1_000).unwrap();
+
+    assert!(snapshot.terminal);
+    assert_eq!(snapshot.clock_minutes, 120);
+    assert_eq!(
+        snapshot.outcome.as_ref().map(|outcome| outcome.id.as_str()),
+        Some("compromised_crisis_position")
+    );
 }
 
 #[test]

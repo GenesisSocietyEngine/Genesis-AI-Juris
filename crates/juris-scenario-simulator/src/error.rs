@@ -82,6 +82,15 @@ pub enum SimulationError {
     #[error("simulation clock overflow while applying `{owner}`")]
     ClockOverflow { owner: String },
 
+    #[error("foreground clock advancement is not enabled for this scenario")]
+    ClockAdvanceUnsupported,
+
+    #[error("clock advancement must be greater than zero minutes")]
+    InvalidClockAdvance,
+
+    #[error("clock advancement of {requested} minutes exceeds the per-command limit of {maximum}")]
+    ClockAdvanceLimitExceeded { requested: u32, maximum: u32 },
+
     #[error("transition `{owner}` attempts to resolve several outcomes: {outcomes}")]
     MultipleOutcomes { owner: String, outcomes: String },
 
@@ -121,6 +130,9 @@ pub enum SimulationError {
 
     #[error("CLI option `{option}` was supplied more than once")]
     DuplicateOption { option: String },
+
+    #[error("CLI options `{first}` and `{second}` cannot be used together")]
+    ConflictingOptions { first: String, second: String },
 
     #[error("invalid positive integer `{value}` for option `{option}`")]
     InvalidPositiveInteger { option: String, value: String },

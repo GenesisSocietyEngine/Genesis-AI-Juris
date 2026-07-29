@@ -2,12 +2,14 @@
 
 use juris_scenario_schema::{
     ActionId, EventDefinition, EventId, EventKind, EventTrigger, OutcomeDefinition, OutcomeId,
-    ScenarioDefinition, StageDefinition, StageId, StageKind,
+    ScenarioClockMode, ScenarioDefinition, StageDefinition, StageId, StageKind,
 };
 use juris_scenario_validator::{validate_scenario, DiagnosticCode};
 
 const MINIMAL_SCENARIO: &str =
     include_str!("../../../content/fixtures/valid/minimal-scenario.yaml");
+const GREENFIRE_SCENARIO: &str =
+    include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json");
 
 fn load_minimal_scenario() -> ScenarioDefinition {
     serde_yaml::from_str(MINIMAL_SCENARIO).expect("minimal scenario fixture must deserialize")
@@ -21,6 +23,28 @@ fn minimal_scenario_passes_reachability_validation() {
     assert!(
         report.is_valid(),
         "expected valid scenario, got diagnostics: {:#?}",
+        report.diagnostics
+    );
+}
+
+#[test]
+fn foreground_time_keeps_scheduled_paths_reachable_without_a_wait_action() {
+    let mut scenario: ScenarioDefinition =
+        serde_yaml::from_str(GREENFIRE_SCENARIO).expect("GreenFire must deserialize");
+    scenario
+        .actions
+        .retain(|action| action.id.as_str() != "coordinate_operational_period");
+    for stage in &mut scenario.stages {
+        stage
+            .exit_actions
+            .retain(|action| action.as_str() != "coordinate_operational_period");
+    }
+
+    assert_eq!(scenario.clock.mode, ScenarioClockMode::Foreground);
+    let report = validate_scenario(&scenario);
+    assert!(
+        report.is_valid(),
+        "foreground reachability must not depend on a waiting action: {:#?}",
         report.diagnostics
     );
 }

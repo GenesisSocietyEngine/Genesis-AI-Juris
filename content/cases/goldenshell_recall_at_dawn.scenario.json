@@ -22,6 +22,9 @@
     "pack_version": "0.1.0"
   },
   "initial_stage": "emergency_intake",
+  "clock": {
+    "mode": "foreground"
+  },
   "actors": [
     {
       "id": "player_lawyer",

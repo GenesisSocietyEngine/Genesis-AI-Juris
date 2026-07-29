@@ -10,6 +10,7 @@
   },
   "jurisdiction": {"code": "NL", "pack_version": "0.1.0"},
   "initial_stage": "emergency_intake",
+  "clock": {"mode": "foreground"},
   "actors": [
     {"id": "player_lawyer", "name": "Player", "role": "player", "description": "Crisis counsel responsible for the GreenFire matter."},
     {"id": "greenfire_industrial_solutions", "name": "GreenFire Industrial Solutions B.V.", "role": "client", "description": "Chemical-storage operator affected by the fire."},

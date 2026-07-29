@@ -13,6 +13,10 @@ fn logistics_definition() -> ScenarioDefinition {
     serde_json::from_str(LOGISTICS_SCENARIO).expect("Logistics scenario must parse")
 }
 
+fn greenfire_definition() -> ScenarioDefinition {
+    serde_json::from_str(GREENFIRE_SCENARIO).expect("GreenFire scenario must parse")
+}
+
 #[test]
 fn decoded_protocol_creates_dispatches_and_disposes_a_session() {
     let mut bridge = MobileBridge::new();
@@ -46,6 +50,93 @@ fn decoded_protocol_creates_dispatches_and_disposes_a_session() {
         }
     );
     assert_eq!(bridge.session_count(), 0);
+}
+
+#[test]
+fn decoded_protocol_advances_foreground_time_across_boundaries() {
+    let mut bridge = MobileBridge::new();
+    let BridgeResponse::SessionCreated { session_id, .. } =
+        bridge.execute(BridgeRequest::CreateSession {
+            scenario: Box::new(greenfire_definition()),
+            seed: 20260729,
+        })
+    else {
+        panic!("expected session_created response");
+    };
+    bridge.execute(BridgeRequest::Dispatch {
+        session_id,
+        action_id: "accept_emergency_mandate".to_owned(),
+    });
+
+    let response = bridge.execute(BridgeRequest::AdvanceTime {
+        session_id,
+        minutes: 360,
+    });
+    let BridgeResponse::Snapshot { snapshot, .. } = response else {
+        panic!("expected snapshot response");
+    };
+
+    assert_eq!(snapshot.clock_minutes, 390);
+    assert_eq!(snapshot.clock_mode, "foreground");
+    assert!(snapshot
+        .fired_event_ids
+        .contains(&"regulator_request_received".to_owned()));
+    assert!(snapshot
+        .fired_event_ids
+        .contains(&"legal_hold_missed".to_owned()));
+}
+
+#[test]
+fn clock_protocol_returns_stable_policy_and_validation_errors() {
+    let mut bridge = MobileBridge::new();
+    let BridgeResponse::SessionCreated { session_id, .. } =
+        bridge.execute(BridgeRequest::CreateSession {
+            scenario: Box::new(logistics_definition()),
+            seed: 1,
+        })
+    else {
+        panic!("expected session_created response");
+    };
+
+    for (request, expected) in [
+        (
+            BridgeRequest::AdvanceTime {
+                session_id,
+                minutes: 1,
+            },
+            "clock_advance_unsupported",
+        ),
+        (
+            BridgeRequest::AdvanceTime {
+                session_id: 999,
+                minutes: 1,
+            },
+            "unknown_session",
+        ),
+    ] {
+        let BridgeResponse::Error { code, .. } = bridge.execute(request) else {
+            panic!("expected error response");
+        };
+        assert_eq!(code, expected);
+    }
+
+    let BridgeResponse::SessionCreated {
+        session_id: foreground_id,
+        ..
+    } = bridge.execute(BridgeRequest::CreateSession {
+        scenario: Box::new(greenfire_definition()),
+        seed: 1,
+    })
+    else {
+        panic!("expected session_created response");
+    };
+    let BridgeResponse::Error { code, .. } = bridge.execute(BridgeRequest::AdvanceTime {
+        session_id: foreground_id,
+        minutes: 0,
+    }) else {
+        panic!("expected error response");
+    };
+    assert_eq!(code, "invalid_clock_advance");
 }
 
 #[test]
@@ -189,6 +280,21 @@ fn json_protocol_runs_the_greenfire_protected_path() {
         "protected_crisis_position"
     );
     assert_eq!(snapshot["snapshot"]["clock_minutes"], 4_440);
+    assert_eq!(snapshot["snapshot"]["clock_mode"], "foreground");
+
+    let after_terminal: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "advance_time",
+                "session_id": session_id,
+                "minutes": 1
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(after_terminal["type"], "error");
+    assert_eq!(after_terminal["code"], "scenario_resolved");
 }
 
 #[test]
