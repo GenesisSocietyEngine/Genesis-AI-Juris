@@ -1,13 +1,117 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: AI Juris"
-branch: feat/scenario-authoring-toolkit-v1
-head_commit: "HEAD (GreenFire vertical-slice commit; parent c29f7e6)"
+branch: feat/goldenshell-recall-at-dawn
+head_commit: "51cb1ee (implementation HEAD before this documentation checkpoint)"
 app_version: 0.5.1+12
 last_updated: 2026-07-29
 ---
 
 # Current Progress
+
+## GoldenShell recall-at-dawn checkpoint `51cb1ee` — 2026-07-29
+
+Status: implementation is committed and pushed; pull request
+[#6](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/6) is open
+against `main`. No merge has been performed.
+
+Repository state:
+
+- branch: `feat/goldenshell-recall-at-dawn`;
+- base: `753496e064083925a532322ed0cf923d0f072cdb`;
+- implementation commit:
+  `51cb1eee5e7985833e480403c2129431f4e454ee`;
+- implementation commit subject:
+  `feat(scenarios): add GoldenShell recall at dawn`;
+- the implementation commit contains 16 files and is isolated from
+  `Lost != Closed`, foreground-clock, persistence, and dossier-schema work.
+
+Completed:
+
+- added fictional playable case `nl_food_safety_goldenshell_001` and canonical
+  scenario `goldenshell_recall_at_dawn` through the existing
+  `ScenarioDefinition v1` / `rust_scenario_v1` production path;
+- added 4 stages, 18 stable actions, 4 deadlines, 1 asynchronous residue
+  assessment, 10 Inbox items, 12 events, and 2 terminal outcomes;
+- populated 9 actors, 8 facts, and 13 evidence records using current schema
+  types;
+- added deterministic coordinated and fragmented paths:
+  - coordinated: `coordinated_claim_position`, clock 4545, no missed deadlines
+    or asynchronous-task expiry;
+  - fragmented: `fragmented_claim_position`, clock 4710, typed insurer,
+    contractor, and retailer deadline misses plus residue-assessment expiry;
+- added EN/RU case-catalog content and regenerated mobile bundle v3 from
+  3 cases to 4 cases;
+- corrected the shared exporter so engine-backed cases use canonical
+  `scenario.metadata.id` instead of assuming that case ID equals scenario ID;
+- added catalog, validator, diagnostics, simulator, engine, bridge, FFI, and
+  Flutter catalog/repository regression coverage;
+- documented fictionalization, stable IDs, proof layers, lifecycle, terminal
+  paths, and future dossier hooks in
+  `docs/authoring/GOLDENSHELL_RECALL_AT_DAWN.md`;
+- preserved the existing three-symbol mobile C ABI; no GoldenShell-specific
+  native API or Dart production repository was introduced.
+
+Commands actually executed:
+
+```powershell
+cargo run -q -p juris-scenario-diagnostics -- validate `
+  content/cases/goldenshell_recall_at_dawn.scenario.json --json
+cargo run -q -p juris-scenario-simulator -- run `
+  content/cases/goldenshell_recall_at_dawn.scenario.json `
+  --actions <coordinated-actions> --require-outcome
+cargo run -q -p juris-scenario-simulator -- run `
+  content/cases/goldenshell_recall_at_dawn.scenario.json `
+  --actions <fragmented-actions> --require-outcome
+cargo fmt --all -- --check
+cargo +1.78.0 check --workspace --locked
+cargo check --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+dart format lib test tool
+dart run tool/export_mobile_case_bundle.dart `
+  --repo-root C:\PROJECTS\Genesis-AI-Juris --check
+flutter analyze --no-pub
+flutter test --no-pub
+flutter build apk --debug --no-pub
+git diff --check
+```
+
+Results:
+
+- diagnostics CLI reports `{"diagnostics":[]}`;
+- both simulator CLI traces reach the expected deterministic terminal outcome
+  and clock;
+- Rust 1.78 MSRV check, formatting, current-toolchain workspace check, Clippy
+  with warnings denied, and the full Rust workspace test suite pass;
+- deterministic mobile bundle export check passes with 4 catalog cases and
+  18 GoldenShell actions;
+- Flutter analyze reports no issues;
+- all 59 Flutter tests pass;
+- Android debug APK builds successfully at
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`;
+- repository whitespace validation passes.
+
+Known limitations:
+
+- `coordinate_operational_period` remains a temporary content-level
+  clock-advance action. It must be removed only after the separate authoritative
+  foreground-clock change is merged and this branch is rebased;
+- this checkpoint does not add dossier schema, persistent save/load,
+  `Lost != Closed`, or foreground-clock runtime semantics;
+- no new physical-device, release-signing, App Store, Play Store, or iOS
+  Simulator result is claimed;
+- GitHub Actions for PR #6 are remote gates and are not yet recorded as green
+  in this checkpoint.
+
+Next step:
+
+- let PR #6 run Rust, Flutter, and native iOS CI; resolve only failures caused
+  by this branch;
+- after review and green CI, merge PR #6 into `main`;
+- then rebase the separate foreground-clock work onto the new `main` and remove
+  `coordinate_operational_period` from GoldenShell through the authoritative
+  clock control rather than adding case-specific behavior.
 
 ## GreenFire vertical slice — 2026-07-29
 
