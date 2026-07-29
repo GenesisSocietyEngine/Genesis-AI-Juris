@@ -55,7 +55,6 @@
         "submit_initial_regulatory_response",
         "release_unreviewed_documents",
         "establish_response_protocol",
-        "coordinate_operational_period",
         "complete_compromised_handoff"
       ],
       "terminal": false
@@ -65,7 +64,7 @@
       "title": "Coordinated crisis response",
       "kind": "standard",
       "entry_event": "response_protocol_established",
-      "exit_actions": ["review_preliminary_fire_assessment", "coordinate_operational_period", "complete_protected_handoff", "complete_compromised_handoff"],
+      "exit_actions": ["review_preliminary_fire_assessment", "complete_protected_handoff", "complete_compromised_handoff"],
       "terminal": false
     },
     {"id": "handoff_complete", "title": "Seventy-two-hour handoff complete", "kind": "resolved", "entry_event": "matter_handed_over", "exit_actions": [], "terminal": true}
@@ -248,18 +247,6 @@
       ],
       "time_cost_minutes": 60,
       "repeatability": {"type": "once"}
-    },
-    {
-      "id": "coordinate_operational_period",
-      "title": "Coordinate the next operational period",
-      "description": "Advance the crisis team through the next six-hour operational block.",
-      "available_when": {"type": "any", "conditions": [
-        {"type": "stage_is", "stage": "immediate_response"},
-        {"type": "stage_is", "stage": "coordinated_response"}
-      ]},
-      "effects": [],
-      "time_cost_minutes": 360,
-      "repeatability": {"type": "unlimited"}
     },
     {
       "id": "complete_protected_handoff",

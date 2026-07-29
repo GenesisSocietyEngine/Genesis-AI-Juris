@@ -47,16 +47,8 @@ fn reference_fixture_passes_temporal_and_outcome_diagnostics() {
 #[test]
 fn foreground_scenario_needs_no_synthetic_waiting_action() {
     let path = repository_root().join("content/cases/greenfire_first_72_hours.scenario.json");
-    let mut definition: ScenarioDefinition =
-        serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
-    definition
-        .actions
-        .retain(|action| action.id.as_str() != "coordinate_operational_period");
-    for stage in &mut definition.stages {
-        stage
-            .exit_actions
-            .retain(|action| action.as_str() != "coordinate_operational_period");
-    }
+    let definition: ScenarioDefinition = serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
+    assert_eq!(definition.actions.len(), 13);
 
     let report = validate_authoring_semantics(&definition);
     assert!(report.is_valid(), "{:#?}", report.diagnostics());

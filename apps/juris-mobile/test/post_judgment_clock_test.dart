@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juris_mobile/app/juris_app.dart';
 import 'package:juris_mobile/app/home_shell.dart';
+import 'package:juris_mobile/app/juris_app.dart';
 import 'package:juris_mobile/data/demo_game_repository.dart';
 import 'package:juris_mobile/models/game_snapshot.dart';
 

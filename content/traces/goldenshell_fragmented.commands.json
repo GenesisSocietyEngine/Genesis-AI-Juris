@@ -1,0 +1,18 @@
+[
+  {"command": "dispatch", "action_id": "accept_cooperative_mandate"},
+  {"command": "dispatch", "action_id": "authorise_recall_without_reference_samples"},
+  {"command": "dispatch", "action_id": "prioritise_regulator_claim"},
+  {"command": "advance_time", "minutes": 360},
+  {"command": "advance_time", "minutes": 360},
+  {"command": "advance_time", "minutes": 360},
+  {"command": "advance_time", "minutes": 360},
+  {"command": "advance_time", "minutes": 360},
+  {"command": "advance_time", "minutes": 360},
+  {"command": "advance_time", "minutes": 360},
+  {"command": "advance_time", "minutes": 360},
+  {"command": "advance_time", "minutes": 360},
+  {"command": "advance_time", "minutes": 360},
+  {"command": "advance_time", "minutes": 360},
+  {"command": "advance_time", "minutes": 360},
+  {"command": "dispatch", "action_id": "complete_fragmented_handoff"}
+]

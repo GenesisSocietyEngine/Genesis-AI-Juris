@@ -97,7 +97,7 @@ void main() {
 
     expect(client.lastScenarioId, 'greenfire_first_72_hours');
     expect(client.lastSeed, 20260729);
-    expect(client.lastActionCount, 14);
+    expect(client.lastActionCount, 13);
     expect(repository.supportsLiveClock, isTrue);
     final String before = repository.snapshot.timeLabel;
     repository.advanceTimeByMinutes(1);
@@ -115,7 +115,7 @@ void main() {
 
     expect(client.lastScenarioId, 'goldenshell_recall_at_dawn');
     expect(client.lastSeed, 20260730);
-    expect(client.lastActionCount, 18);
+    expect(client.lastActionCount, 17);
     expect(repository.supportsLiveClock, isTrue);
     expect(repository.snapshot.matterTitle, contains('GoldenShell'));
     expect(repository.snapshot.stage, 'Emergency cooperative intake');
@@ -146,16 +146,16 @@ void main() {
 
   test('maps both GoldenShell terminal outcomes through the shared repository',
       () {
-    for (final ({List<String> actions, String outcome}) path in <({
-      List<String> actions,
+    for (final ({List<Object> commands, String outcome}) path in <({
+      List<Object> commands,
       String outcome,
     })>[
       (
-        actions: _goldenshellCoordinatedPath,
+        commands: _goldenshellCoordinatedPath,
         outcome: 'Coordinated claim position',
       ),
       (
-        actions: _goldenshellFragmentedPath,
+        commands: _goldenshellFragmentedPath,
         outcome: 'Fragmented claim position',
       ),
     ]) {
@@ -164,8 +164,13 @@ void main() {
         bridgeClient: _FakeScenarioBridgeClient(),
       );
 
-      for (final String action in path.actions) {
-        expect(repository.applyAction(action).isRisky, isFalse);
+      for (final Object command in path.commands) {
+        switch (command) {
+          case final String actionId:
+            expect(repository.applyAction(actionId).isRisky, isFalse);
+          case final int minutes:
+            repository.advanceTimeByMinutes(minutes);
+        }
       }
 
       expect(repository.isTerminal, isTrue);
@@ -178,7 +183,7 @@ void main() {
   });
 }
 
-const List<String> _goldenshellCoordinatedPath = <String>[
+const List<Object> _goldenshellCoordinatedPath = <Object>[
   'accept_cooperative_mandate',
   'issue_coordinated_legal_hold',
   'preserve_reference_samples',
@@ -188,38 +193,38 @@ const List<String> _goldenshellCoordinatedPath = <String>[
   'coordinate_recall_response',
   'request_product_composition_records',
   'retain_independent_residue_expert',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
+  360,
+  360,
   'review_preliminary_residue_assessment',
   'map_common_and_individual_losses',
   'prepare_protective_attachment_strategy',
   'establish_coordinated_claim_protocol',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
   'complete_coordinated_handoff',
 ];
 
-const List<String> _goldenshellFragmentedPath = <String>[
+const List<Object> _goldenshellFragmentedPath = <Object>[
   'accept_cooperative_mandate',
   'authorise_recall_without_reference_samples',
   'prioritise_regulator_claim',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
   'complete_fragmented_handoff',
 ];
 

@@ -23,10 +23,14 @@ fn goldenshell_definition() -> ScenarioDefinition {
 
 #[test]
 fn snapshot_exposes_backward_compatible_clock_policy() {
+    let greenfire = greenfire_definition();
+    let goldenshell = goldenshell_definition();
     assert_eq!(
         logistics_definition().clock.mode,
         ScenarioClockMode::ActionDriven
     );
+    assert_eq!(greenfire.actions.len(), 13);
+    assert_eq!(goldenshell.actions.len(), 17);
     assert_eq!(
         ScenarioSession::new(logistics_definition(), 1)
             .unwrap()
@@ -35,14 +39,14 @@ fn snapshot_exposes_backward_compatible_clock_policy() {
         "action_driven"
     );
     assert_eq!(
-        ScenarioSession::new(greenfire_definition(), 1)
+        ScenarioSession::new(greenfire, 1)
             .unwrap()
             .snapshot()
             .clock_mode,
         "foreground"
     );
     assert_eq!(
-        ScenarioSession::new(goldenshell_definition(), 1)
+        ScenarioSession::new(goldenshell, 1)
             .unwrap()
             .snapshot()
             .clock_mode,
@@ -74,13 +78,27 @@ fn foreground_advance_contract_rejects_invalid_commands() {
 
 #[test]
 fn action_cost_and_foreground_time_share_temporal_boundaries() {
-    let mut action_driven = ScenarioSession::new(greenfire_definition(), 11).unwrap();
-    let mut foreground = ScenarioSession::new(greenfire_definition(), 11).unwrap();
+    let mut value: serde_json::Value = serde_json::from_str(GREENFIRE_SCENARIO).unwrap();
+    value["actions"].as_array_mut().unwrap().push(json!({
+        "id": "boundary_processor_test_action",
+        "title": "Boundary processor test action",
+        "available_when": {"type": "stage_is", "stage": "immediate_response"},
+        "effects": [],
+        "time_cost_minutes": 360,
+        "repeatability": {"type": "unlimited"}
+    }));
+    value["stages"][1]["exit_actions"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!("boundary_processor_test_action"));
+    let definition: ScenarioDefinition = serde_json::from_value(value).unwrap();
+    let mut action_driven = ScenarioSession::new(definition.clone(), 11).unwrap();
+    let mut foreground = ScenarioSession::new(definition, 11).unwrap();
     action_driven.dispatch("accept_emergency_mandate").unwrap();
     foreground.dispatch("accept_emergency_mandate").unwrap();
 
     let action_snapshot = action_driven
-        .dispatch("coordinate_operational_period")
+        .dispatch("boundary_processor_test_action")
         .unwrap();
     let foreground_snapshot = foreground.advance_time(360).unwrap();
 
@@ -317,22 +335,18 @@ fn greenfire_protected_path_runs_through_the_authoritative_engine() {
         "retain_independent_fire_expert",
         "open_controlled_regulator_channel",
         "submit_initial_regulatory_response",
-        "coordinate_operational_period",
-        "review_preliminary_fire_assessment",
-        "establish_response_protocol",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "complete_protected_handoff",
     ] {
         session.dispatch(action).expect("path action must succeed");
     }
+    session.advance_time(360).unwrap();
+    session
+        .dispatch("review_preliminary_fire_assessment")
+        .unwrap();
+    session.dispatch("establish_response_protocol").unwrap();
+    for _ in 0..9 {
+        session.advance_time(360).unwrap();
+    }
+    session.dispatch("complete_protected_handoff").unwrap();
     let snapshot = session.snapshot();
     assert!(snapshot.terminal);
     assert_eq!(snapshot.clock_minutes, 4_440);
@@ -351,9 +365,10 @@ fn greenfire_compromised_path_expires_unreviewed_expert_work() {
     let mut session =
         ScenarioSession::new(greenfire_definition(), 20260729).expect("session must start");
     session.dispatch("accept_emergency_mandate").unwrap();
-    session.dispatch("retain_independent_fire_expert").unwrap();
-    for _ in 0..12 {
-        session.dispatch("coordinate_operational_period").unwrap();
+    session.advance_time(360).unwrap();
+    session.dispatch("release_unreviewed_documents").unwrap();
+    for _ in 0..11 {
+        session.advance_time(360).unwrap();
     }
     let before_handoff = session.snapshot();
     assert!(before_handoff
@@ -363,6 +378,7 @@ fn greenfire_compromised_path_expires_unreviewed_expert_work() {
     let result = session
         .dispatch("complete_compromised_handoff")
         .expect("compromised handoff must succeed");
+    assert_eq!(result.clock_minutes, 4_590);
     assert_eq!(
         result.outcome.as_ref().map(|item| item.id.as_str()),
         Some("compromised_crisis_position")
@@ -396,23 +412,22 @@ fn goldenshell_coordinated_path_runs_through_the_authoritative_engine() {
         "coordinate_recall_response",
         "request_product_composition_records",
         "retain_independent_residue_expert",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
+    ] {
+        session.dispatch(action).expect("path action must succeed");
+    }
+    session.advance_time(720).unwrap();
+    for action in [
         "review_preliminary_residue_assessment",
         "map_common_and_individual_losses",
         "prepare_protective_attachment_strategy",
         "establish_coordinated_claim_protocol",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "complete_coordinated_handoff",
     ] {
         session.dispatch(action).expect("path action must succeed");
     }
+    for _ in 0..7 {
+        session.advance_time(360).unwrap();
+    }
+    session.dispatch("complete_coordinated_handoff").unwrap();
 
     let snapshot = session.snapshot();
     assert!(snapshot.terminal);
@@ -430,7 +445,7 @@ fn goldenshell_coordinated_path_runs_through_the_authoritative_engine() {
         item.id == "common_source_with_farm_specific_variation" && item.status == "inferred"
     }));
     assert_eq!(
-        session.dispatch("coordinate_operational_period"),
+        session.advance_time(1),
         Err(ScenarioRuntimeError::ScenarioResolved)
     );
 }
@@ -443,22 +458,13 @@ fn goldenshell_fragmented_path_runs_through_the_authoritative_engine() {
         "accept_cooperative_mandate",
         "authorise_recall_without_reference_samples",
         "prioritise_regulator_claim",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "complete_fragmented_handoff",
     ] {
         session.dispatch(action).expect("path action must succeed");
     }
+    for _ in 0..12 {
+        session.advance_time(360).unwrap();
+    }
+    session.dispatch("complete_fragmented_handoff").unwrap();
 
     let snapshot = session.snapshot();
     assert!(snapshot.terminal);

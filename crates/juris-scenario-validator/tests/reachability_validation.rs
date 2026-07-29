@@ -29,18 +29,15 @@ fn minimal_scenario_passes_reachability_validation() {
 
 #[test]
 fn foreground_time_keeps_scheduled_paths_reachable_without_a_wait_action() {
-    let mut scenario: ScenarioDefinition =
+    let scenario: ScenarioDefinition =
         serde_yaml::from_str(GREENFIRE_SCENARIO).expect("GreenFire must deserialize");
-    scenario
-        .actions
-        .retain(|action| action.id.as_str() != "coordinate_operational_period");
-    for stage in &mut scenario.stages {
-        stage
-            .exit_actions
-            .retain(|action| action.as_str() != "coordinate_operational_period");
-    }
 
     assert_eq!(scenario.clock.mode, ScenarioClockMode::Foreground);
+    assert_eq!(scenario.actions.len(), 13);
+    assert!(!scenario
+        .actions
+        .iter()
+        .any(|action| action.id.as_str() == "coordinate_operational_period"));
     let report = validate_scenario(&scenario);
     assert!(
         report.is_valid(),

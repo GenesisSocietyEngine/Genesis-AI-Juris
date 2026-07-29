@@ -8,6 +8,10 @@ const GREENFIRE_SCENARIO: &str =
     include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json");
 const GOLDENSHELL_SCENARIO: &str =
     include_str!("../../../content/cases/goldenshell_recall_at_dawn.scenario.json");
+const GREENFIRE_PROTECTED_TRACE: &str =
+    include_str!("../../../content/traces/greenfire_protected.commands.json");
+const GOLDENSHELL_COORDINATED_TRACE: &str =
+    include_str!("../../../content/traces/goldenshell_coordinated.commands.json");
 
 fn logistics_definition() -> ScenarioDefinition {
     serde_json::from_str(LOGISTICS_SCENARIO).expect("Logistics scenario must parse")
@@ -15,6 +19,16 @@ fn logistics_definition() -> ScenarioDefinition {
 
 fn greenfire_definition() -> ScenarioDefinition {
     serde_json::from_str(GREENFIRE_SCENARIO).expect("GreenFire scenario must parse")
+}
+
+fn execute_trace(bridge: &mut MobileBridge, session_id: u64, encoded: &str) {
+    let commands: Vec<Value> = serde_json::from_str(encoded).unwrap();
+    for mut command in commands {
+        command["session_id"] = json!(session_id);
+        let response: Value =
+            serde_json::from_str(&bridge.execute_json(&command.to_string())).unwrap();
+        assert_ne!(response["type"], "error", "failed command {command}");
+    }
 }
 
 #[test]
@@ -228,42 +242,7 @@ fn json_protocol_runs_the_greenfire_protected_path() {
     .unwrap();
     let session_id = created["session_id"].as_u64().unwrap();
 
-    for action_id in [
-        "accept_emergency_mandate",
-        "issue_legal_hold",
-        "run_conflict_assessment",
-        "appoint_separate_director_counsel",
-        "notify_insurers",
-        "retain_independent_fire_expert",
-        "open_controlled_regulator_channel",
-        "submit_initial_regulatory_response",
-        "coordinate_operational_period",
-        "review_preliminary_fire_assessment",
-        "establish_response_protocol",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "complete_protected_handoff",
-    ] {
-        let response: Value = serde_json::from_str(
-            &bridge.execute_json(
-                &json!({
-                    "command": "dispatch",
-                    "session_id": session_id,
-                    "action_id": action_id
-                })
-                .to_string(),
-            ),
-        )
-        .unwrap();
-        assert_ne!(response["type"], "error", "failed action {action_id}");
-    }
+    execute_trace(&mut bridge, session_id, GREENFIRE_PROTECTED_TRACE);
 
     let snapshot: Value = serde_json::from_str(
         &bridge.execute_json(
@@ -314,44 +293,7 @@ fn json_protocol_runs_the_goldenshell_coordinated_path() {
     .unwrap();
     let session_id = created["session_id"].as_u64().unwrap();
 
-    for action_id in [
-        "accept_cooperative_mandate",
-        "issue_coordinated_legal_hold",
-        "preserve_reference_samples",
-        "obtain_blocking_decisions",
-        "notify_cleaning_contractor",
-        "notify_farm_insurers",
-        "coordinate_recall_response",
-        "request_product_composition_records",
-        "retain_independent_residue_expert",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "review_preliminary_residue_assessment",
-        "map_common_and_individual_losses",
-        "prepare_protective_attachment_strategy",
-        "establish_coordinated_claim_protocol",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "complete_coordinated_handoff",
-    ] {
-        let response: Value = serde_json::from_str(
-            &bridge.execute_json(
-                &json!({
-                    "command": "dispatch",
-                    "session_id": session_id,
-                    "action_id": action_id
-                })
-                .to_string(),
-            ),
-        )
-        .unwrap();
-        assert_ne!(response["type"], "error", "failed action {action_id}");
-    }
+    execute_trace(&mut bridge, session_id, GOLDENSHELL_COORDINATED_TRACE);
 
     let snapshot: Value = serde_json::from_str(
         &bridge.execute_json(
