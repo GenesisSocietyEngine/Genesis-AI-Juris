@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../data/demo_game_repository.dart';
+import '../data/game_runtime_repository.dart';
 import '../models/game_snapshot.dart';
 import '../screens/ai_associate_screen.dart';
 import '../screens/calendar_screen.dart';
@@ -21,7 +21,7 @@ class HomeShell extends StatefulWidget {
   const HomeShell(
       {required this.repository, this.onExitToCaseCatalog, super.key});
 
-  final DemoGameRepository repository;
+  final GameRuntimeRepository repository;
   final VoidCallback? onExitToCaseCatalog;
 
   @override

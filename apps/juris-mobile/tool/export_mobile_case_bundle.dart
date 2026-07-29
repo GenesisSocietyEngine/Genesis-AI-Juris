@@ -144,6 +144,7 @@ void main(List<String> arguments) {
         'scenario_definition': scenarioAvailable,
         'diagnostics': readiness['diagnostics'] == true,
         'path_simulation': readiness['path_simulation'] == true,
+        'engine_runtime': readiness['engine_runtime'] == true,
         'mobile_bundle': true,
       },
       'localizations': localizedOutput,
@@ -160,7 +161,7 @@ void main(List<String> arguments) {
   });
 
   final Map<String, dynamic> output = <String, dynamic>{
-    'bundle_version': 1,
+    'bundle_version': 2,
     'catalog_version': catalog['catalog_version'],
     'default_locale': defaultLocale,
     'supported_locales': supportedLocales,

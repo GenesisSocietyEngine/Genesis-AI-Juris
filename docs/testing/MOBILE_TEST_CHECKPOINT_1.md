@@ -21,7 +21,8 @@ Verify:
 2. both fictional matters are visible;
 3. Failed ERP shows **Playable demo** and Logistics shows **Outline**;
 4. the Logistics conversion sheet marks scenario definition, diagnostics, and
-   deterministic path as ready, but shows no runtime adapter;
+   deterministic path and authoritative engine runtime as ready, but shows no
+   mobile runtime adapter;
 5. switching EN → RU changes topic, synopsis, roles, and library labels while
    party names and stable case identity remain unchanged;
 6. the Logistics Start button is disabled;

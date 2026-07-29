@@ -81,9 +81,14 @@ cargo run -p juris-scenario-simulator -- run `
   --require-outcome
 ```
 
-The next runtime milestone replaces the temporary adapter with one generic Rust
-snapshot/action bridge. At that point every validated scenario file can use the
-same mobile screens.
+The authoritative engine-side session and transport-neutral JSON bridge are now
+implemented by `juris-engine::ScenarioSession` and `juris-mobile-bridge`.
+Flutter also depends on a shared `GameRuntimeRepository` boundary rather than
+directly on the ERP demo.
+
+The remaining runtime milestone is a thin Android/iOS native transport plus a
+Rust-snapshot-to-`GameSnapshot` mapper. Once that boundary is connected, every
+validated scenario file can use the same mobile screens.
 
 ## Localization
 

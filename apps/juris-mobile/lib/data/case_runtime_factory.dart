@@ -1,5 +1,6 @@
 import '../models/case_catalog.dart';
 import 'demo_game_repository.dart';
+import 'game_runtime_repository.dart';
 
 /// Temporary runtime registry used until the generic Rust snapshot/action
 /// bridge can launch any validated scenario file.
@@ -15,7 +16,9 @@ abstract final class CaseRuntimeFactory {
         caseDefinition.scenarioAvailable;
   }
 
-  static DemoGameRepository create(MobileCaseDefinition caseDefinition) {
+  static GameRuntimeRepository create(
+    MobileCaseDefinition caseDefinition,
+  ) {
     if (!supports(caseDefinition)) {
       throw StateError(
         'No supported mobile runtime adapter for ${caseDefinition.caseId}',

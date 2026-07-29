@@ -58,6 +58,12 @@ fixture:
 - `juris-scenario-simulator/tests/catalog_scenarios.rs` proves both paths are
   deterministic and reach their declared outcomes.
 
-The scenario is not yet mobile-playable. The remaining boundary is a generic
-Rust snapshot/action bridge capable of loading any validated scenario without
-case-specific Flutter gameplay code.
+The scenario now runs through the authoritative generic `ScenarioSession` in
+`juris-engine`, and the `juris-mobile-bridge` JSON protocol proves session
+creation, snapshot retrieval, action dispatch, deterministic errors, and
+disposal.
+
+The scenario is not yet mobile-playable. The remaining boundary is the thin
+Android/iOS native transport and mapping from the generic Rust snapshot into
+the existing Flutter `GameSnapshot`. No case-specific Flutter gameplay code is
+required.

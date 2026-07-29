@@ -11,6 +11,7 @@ class CaseReadiness {
     required this.scenarioDefinition,
     required this.diagnostics,
     required this.pathSimulation,
+    required this.engineRuntime,
     required this.mobileBundle,
   });
 
@@ -20,6 +21,7 @@ class CaseReadiness {
       scenarioDefinition: _requiredBool(json, 'scenario_definition'),
       diagnostics: _requiredBool(json, 'diagnostics'),
       pathSimulation: _requiredBool(json, 'path_simulation'),
+      engineRuntime: _requiredBool(json, 'engine_runtime'),
       mobileBundle: _requiredBool(json, 'mobile_bundle'),
     );
   }
@@ -28,6 +30,7 @@ class CaseReadiness {
   final bool scenarioDefinition;
   final bool diagnostics;
   final bool pathSimulation;
+  final bool engineRuntime;
   final bool mobileBundle;
 }
 

@@ -54,6 +54,7 @@ void main() {
     expect(logistics.readiness.scenarioDefinition, isTrue);
     expect(logistics.readiness.diagnostics, isTrue);
     expect(logistics.readiness.pathSimulation, isTrue);
+    expect(logistics.readiness.engineRuntime, isTrue);
     expect(logistics.runtimeAdapter, isNull);
   });
 
@@ -183,6 +184,7 @@ void main() {
         "scenario_definition": false,
         "diagnostics": false,
         "path_simulation": false,
+        "engine_runtime": false,
         "mobile_bundle": true
       },
       "localizations": {

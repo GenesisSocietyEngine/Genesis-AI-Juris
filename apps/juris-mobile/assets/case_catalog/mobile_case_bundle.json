@@ -1,5 +1,5 @@
 {
-  "bundle_version": 1,
+  "bundle_version": 2,
   "catalog_version": 1,
   "default_locale": "en",
   "supported_locales": [
@@ -41,6 +41,7 @@
       "identity_ready": "Matter identity",
       "diagnostics_ready": "Authoring diagnostics",
       "path_ready": "Deterministic path test",
+      "engine_runtime_ready": "Authoritative engine runtime",
       "mobile_ready": "Mobile bundle",
       "ready": "Ready",
       "pending": "Pending",
@@ -88,6 +89,7 @@
       "identity_ready": "Идентичность дела",
       "diagnostics_ready": "Диагностика сценария",
       "path_ready": "Детерминированный путь",
+      "engine_runtime_ready": "Авторитетный Rust runtime",
       "mobile_ready": "Мобильный пакет",
       "ready": "Готово",
       "pending": "Ожидает",
@@ -127,6 +129,7 @@
         "scenario_definition": true,
         "diagnostics": false,
         "path_simulation": false,
+        "engine_runtime": false,
         "mobile_bundle": true
       },
       "localizations": {
@@ -182,6 +185,7 @@
         "scenario_definition": true,
         "diagnostics": true,
         "path_simulation": true,
+        "engine_runtime": true,
         "mobile_bundle": true
       },
       "localizations": {

@@ -519,6 +519,12 @@ class _ConversionSheet extends StatelessWidget {
             locale: locale,
           ),
           _ReadinessTile(
+            label: bundle.text(locale, 'engine_runtime_ready'),
+            ready: readiness.engineRuntime,
+            bundle: bundle,
+            locale: locale,
+          ),
+          _ReadinessTile(
             label: bundle.text(locale, 'mobile_ready'),
             ready: readiness.mobileBundle,
             bundle: bundle,

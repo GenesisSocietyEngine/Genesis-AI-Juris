@@ -36,6 +36,7 @@ crates/
   juris-content     typed JSON scenario loading
   juris-ai          read-only AI actor boundary
   juris-engine      authoritative state transitions
+  juris-mobile-bridge transport-neutral mobile JSON command protocol
   juris-cli         terminal presentation
 
 apps/
@@ -46,7 +47,7 @@ apps/
 
 Only `juris-engine` may mutate authoritative `MatterState`.
 
-The v0.5.0 Flutter application uses a small deterministic demo repository solely to validate interaction design. It is not a second production simulation. v0.5.1 will replace it with a narrow Rust bridge:
+The v0.5.0 Flutter application uses a small deterministic demo repository solely to validate interaction design. It is not a second production simulation. The generic engine-side scenario session and transport-neutral JSON command protocol now implement the narrow v0.5.1 contract:
 
 ```text
 Flutter action ID
@@ -57,6 +58,10 @@ juris-engine
       ↓
 immutable mobile snapshot
 ```
+
+Android/iOS native transport and snapshot mapping remain before canonical
+scenarios can launch from Flutter. Until then the Case Library keeps those
+cases visibly non-playable instead of falling back to another case's demo.
 
 ## Run the Rust game
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/case_catalog_repository.dart';
 import '../data/case_runtime_factory.dart';
 import '../data/demo_game_repository.dart';
+import '../data/game_runtime_repository.dart';
 import '../models/case_catalog.dart';
 import '../screens/case_catalog_screen.dart';
 import 'app_theme.dart';
@@ -33,7 +34,7 @@ class JurisApp extends StatefulWidget {
 }
 
 class _JurisAppState extends State<JurisApp> {
-  DemoGameRepository? _activeRepository;
+  GameRuntimeRepository? _activeRepository;
   String? _activeCaseId;
 
   bool get _usesCatalog => widget.repository == null;
@@ -63,7 +64,7 @@ class _JurisAppState extends State<JurisApp> {
   }
 
   Widget _buildHome() {
-    final DemoGameRepository? activeRepository = _activeRepository;
+    final GameRuntimeRepository? activeRepository = _activeRepository;
     if (activeRepository != null) {
       return HomeShell(
         key: ValueKey<String?>(_activeCaseId),
@@ -79,7 +80,7 @@ class _JurisAppState extends State<JurisApp> {
   }
 
   void _startCase(MobileCaseDefinition caseDefinition) {
-    final DemoGameRepository repository =
+    final GameRuntimeRepository repository =
         CaseRuntimeFactory.create(caseDefinition);
     setState(() {
       _activeRepository = repository;
@@ -88,7 +89,7 @@ class _JurisAppState extends State<JurisApp> {
   }
 
   void _exitToCatalog() {
-    final DemoGameRepository? previous = _activeRepository;
+    final GameRuntimeRepository? previous = _activeRepository;
     setState(() {
       _activeRepository = null;
       _activeCaseId = null;
