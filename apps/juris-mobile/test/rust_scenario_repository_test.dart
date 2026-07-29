@@ -11,6 +11,7 @@ void main() {
 
   late MobileCaseDefinition logistics;
   late MobileCaseDefinition greenfire;
+  late MobileCaseDefinition goldenshell;
 
   setUpAll(() async {
     final String encoded = await rootBundle.loadString(
@@ -25,6 +26,10 @@ void main() {
     );
     greenfire = bundle.cases.singleWhere(
       (MobileCaseDefinition item) => item.caseId == 'greenfire_first_72_hours',
+    );
+    goldenshell = bundle.cases.singleWhere(
+      (MobileCaseDefinition item) =>
+          item.caseId == 'nl_food_safety_goldenshell_001',
     );
   });
 
@@ -96,7 +101,104 @@ void main() {
     expect(repository.snapshot.matterTitle, contains('GreenFire'));
     repository.dispose();
   });
+
+  test('creates GoldenShell with its canonical opening action', () {
+    final _FakeScenarioBridgeClient client = _FakeScenarioBridgeClient();
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: goldenshell,
+      bridgeClient: client,
+    );
+
+    expect(client.lastScenarioId, 'goldenshell_recall_at_dawn');
+    expect(client.lastSeed, 20260730);
+    expect(client.lastActionCount, 18);
+    expect(repository.snapshot.matterTitle, contains('GoldenShell'));
+    expect(repository.snapshot.stage, 'Emergency cooperative intake');
+    expect(
+      repository.snapshot.actions.single.id,
+      'accept_cooperative_mandate',
+    );
+    repository.dispose();
+  });
+
+  test('maps both GoldenShell terminal outcomes through the shared repository',
+      () {
+    for (final ({List<String> actions, String outcome}) path in <({
+      List<String> actions,
+      String outcome,
+    })>[
+      (
+        actions: _goldenshellCoordinatedPath,
+        outcome: 'Coordinated claim position',
+      ),
+      (
+        actions: _goldenshellFragmentedPath,
+        outcome: 'Fragmented claim position',
+      ),
+    ]) {
+      final RustScenarioRepository repository = RustScenarioRepository(
+        caseDefinition: goldenshell,
+        bridgeClient: _FakeScenarioBridgeClient(),
+      );
+
+      for (final String action in path.actions) {
+        expect(repository.applyAction(action).isRisky, isFalse);
+      }
+
+      expect(repository.isTerminal, isTrue);
+      expect(
+          repository.snapshot.stage, 'Seventy-two-hour claim handoff complete');
+      expect(repository.snapshot.outcomeSummary?.headline, path.outcome);
+      expect(repository.snapshot.actions, isEmpty);
+      repository.dispose();
+    }
+  });
 }
+
+const List<String> _goldenshellCoordinatedPath = <String>[
+  'accept_cooperative_mandate',
+  'issue_coordinated_legal_hold',
+  'preserve_reference_samples',
+  'obtain_blocking_decisions',
+  'notify_cleaning_contractor',
+  'notify_farm_insurers',
+  'coordinate_recall_response',
+  'request_product_composition_records',
+  'retain_independent_residue_expert',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'review_preliminary_residue_assessment',
+  'map_common_and_individual_losses',
+  'prepare_protective_attachment_strategy',
+  'establish_coordinated_claim_protocol',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'complete_coordinated_handoff',
+];
+
+const List<String> _goldenshellFragmentedPath = <String>[
+  'accept_cooperative_mandate',
+  'authorise_recall_without_reference_samples',
+  'prioritise_regulator_claim',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'coordinate_operational_period',
+  'complete_fragmented_handoff',
+];
 
 final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
   int createCount = 0;
@@ -105,6 +207,17 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
   int _clockMinutes = 0;
   String _stage = 'intake';
   String? _outcome;
+  String _scenarioId = '';
+  int _seed = 0;
+  Map<String, dynamic> _scenario = <String, dynamic>{};
+  Map<String, Map<String, dynamic>> _actionDefinitions =
+      <String, Map<String, dynamic>>{};
+  Map<String, Map<String, dynamic>> _stageDefinitions =
+      <String, Map<String, dynamic>>{};
+  Map<String, Map<String, dynamic>> _eventDefinitions =
+      <String, Map<String, dynamic>>{};
+  Map<String, Map<String, dynamic>> _outcomeDefinitions =
+      <String, Map<String, dynamic>>{};
   String? lastScenarioId;
   int? lastSeed;
   int? lastActionCount;
@@ -131,44 +244,76 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
         request['scenario'] as Map<String, dynamic>;
     final Map<String, dynamic> metadata =
         scenario['metadata'] as Map<String, dynamic>;
-    lastScenarioId = metadata['id'] as String;
-    lastSeed = request['seed'] as int;
+    _scenario = scenario;
+    _scenarioId = metadata['id'] as String;
+    _seed = request['seed'] as int;
+    _actionDefinitions = <String, Map<String, dynamic>>{
+      for (final Map<String, dynamic> value
+          in (scenario['actions'] as List<dynamic>)
+              .cast<Map<String, dynamic>>())
+        value['id'] as String: value,
+    };
+    _stageDefinitions = <String, Map<String, dynamic>>{
+      for (final Map<String, dynamic> value
+          in (scenario['stages'] as List<dynamic>).cast<Map<String, dynamic>>())
+        value['id'] as String: value,
+    };
+    _eventDefinitions = <String, Map<String, dynamic>>{
+      for (final Map<String, dynamic> value
+          in (scenario['events'] as List<dynamic>).cast<Map<String, dynamic>>())
+        value['id'] as String: value,
+    };
+    _outcomeDefinitions = <String, Map<String, dynamic>>{
+      for (final Map<String, dynamic> value
+          in (scenario['outcomes'] as List<dynamic>)
+              .cast<Map<String, dynamic>>())
+        value['id'] as String: value,
+    };
+    lastScenarioId = _scenarioId;
+    lastSeed = _seed;
     lastActionCount = (scenario['actions'] as List<dynamic>).length;
     createCount += 1;
     _sessionId += 1;
     _clockMinutes = 0;
-    _stage = 'intake';
+    _stage = scenario['initial_stage'] as String;
     _outcome = null;
     return _response('session_created');
   }
 
   String _dispatch(String actionId) {
-    switch (actionId) {
-      case 'audit_claim_file':
-        _stage = 'pre_action';
-        _clockMinutes += 120;
-      case 'issue_formal_demand':
-        _stage = 'proceedings';
-        _clockMinutes += 60;
-      case 'accept_negotiated_payment':
-        _stage = 'resolved';
-        _outcome = 'negotiated_recovery';
-        _clockMinutes += 90;
-      case 'request_judgment':
-        _stage = 'post_judgment';
-        _clockMinutes += 240;
-      case 'enforce_judgment':
-        _stage = 'resolved';
-        _outcome = 'judgment_recovery';
-        _clockMinutes += 60;
-      default:
-        return jsonEncode(<String, dynamic>{
-          'type': 'error',
-          'code': 'action_unavailable',
-          'message': 'Unavailable action',
-        });
+    final Map<String, dynamic>? action = _actionDefinitions[actionId];
+    if (action == null || _outcome != null) {
+      return jsonEncode(<String, dynamic>{
+        'type': 'error',
+        'code': 'action_unavailable',
+        'message': 'Unavailable action',
+      });
     }
+
+    _clockMinutes += action['time_cost_minutes'] as int;
+    _applyEffects(action['effects'] as List<dynamic>);
     return _response('snapshot');
+  }
+
+  void _applyEffects(List<dynamic> effects) {
+    for (final dynamic value in effects) {
+      final Map<String, dynamic> effect = value as Map<String, dynamic>;
+      switch (effect['type']) {
+        case 'set_stage':
+          _stage = effect['stage'] as String;
+          break;
+        case 'resolve_outcome':
+          _outcome = effect['outcome'] as String;
+          break;
+        case 'trigger_event':
+          final Map<String, dynamic>? event =
+              _eventDefinitions[effect['event'] as String];
+          if (event != null) {
+            _applyEffects(event['effects'] as List<dynamic>);
+          }
+          break;
+      }
+    }
   }
 
   String _dispose() {
@@ -181,40 +326,39 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
   }
 
   String _response(String type) {
+    final Map<String, dynamic> stage = _stageDefinitions[_stage]!;
+    final Map<String, dynamic>? outcome = _outcomeDefinitions[_outcome];
     return jsonEncode(<String, dynamic>{
       'type': type,
       'session_id': _sessionId,
       'snapshot': <String, dynamic>{
         'snapshot_schema_version': 1,
-        'scenario_id': 'be_commercial_logistics_001',
-        'seed': 20260725,
+        'scenario_id': _scenarioId,
+        'seed': _seed,
         'stage_id': _stage,
-        'stage_title': switch (_stage) {
-          'intake' => 'Claim intake',
-          'pre_action' => 'Pre-action recovery',
-          'proceedings' => 'Recovery proceedings',
-          'post_judgment' => 'Post-judgment enforcement',
-          _ => 'Matter resolved',
-        },
+        'stage_title': stage['title'] as String,
         'clock_minutes': _clockMinutes,
         'terminal': _outcome != null,
         'flags': <String, bool>{},
-        'facts': <Map<String, dynamic>>[
-          <String, dynamic>{
-            'id': 'invoices_unpaid',
-            'statement': 'Invoices remain unpaid.',
-            'status': 'admitted',
-          },
-        ],
-        'evidence': List<Map<String, dynamic>>.generate(
-          5,
-          (int index) => <String, dynamic>{
-            'id': 'evidence_$index',
-            'title': 'Evidence $index',
-            'kind': 'document',
-            'available': true,
-          },
-        ),
+        'facts': (_scenario['facts'] as List<dynamic>)
+            .map(
+              (dynamic value) => <String, dynamic>{
+                'id': (value as Map<String, dynamic>)['id'],
+                'statement': value['statement'],
+                'status': value['initial_status'],
+              },
+            )
+            .toList(growable: false),
+        'evidence': (_scenario['evidence'] as List<dynamic>)
+            .map(
+              (dynamic value) => <String, dynamic>{
+                'id': (value as Map<String, dynamic>)['id'],
+                'title': value['title'],
+                'kind': value['kind'],
+                'available': value['initially_available'] ?? false,
+              },
+            )
+            .toList(growable: false),
         'deadlines': const <Map<String, dynamic>>[],
         'inbox': const <Map<String, dynamic>>[],
         'available_actions': _actions(),
@@ -226,35 +370,30 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
             ? null
             : <String, dynamic>{
                 'id': _outcome,
-                'title': _outcome == 'negotiated_recovery'
-                    ? 'Negotiated recovery'
-                    : 'Judgment recovered and enforced',
-                'summary': 'The logistics matter was resolved.',
+                'title': outcome!['title'],
+                'summary': outcome['summary'],
               },
       },
     });
   }
 
   List<Map<String, dynamic>> _actions() {
-    final List<String> ids = switch (_stage) {
-      'intake' => <String>['audit_claim_file'],
-      'pre_action' => <String>['issue_formal_demand'],
-      'proceedings' => <String>[
-          'accept_negotiated_payment',
-          'request_judgment',
-        ],
-      'post_judgment' => <String>['enforce_judgment'],
-      _ => const <String>[],
-    };
-    return ids
-        .map(
-          (String id) => <String, dynamic>{
-            'id': id,
-            'title': id.replaceAll('_', ' '),
-            'description': 'Execute $id.',
-            'time_cost_minutes': 60,
-          },
-        )
-        .toList(growable: false);
+    if (_outcome != null) {
+      return const <Map<String, dynamic>>[];
+    }
+    final List<String> ids =
+        (_stageDefinitions[_stage]!['exit_actions'] as List<dynamic>)
+            .cast<String>();
+    return ids.map(
+      (String id) {
+        final Map<String, dynamic> action = _actionDefinitions[id]!;
+        return <String, dynamic>{
+          'id': id,
+          'title': action['title'],
+          'description': action['description'],
+          'time_cost_minutes': action['time_cost_minutes'],
+        };
+      },
+    ).toList(growable: false);
   }
 }
