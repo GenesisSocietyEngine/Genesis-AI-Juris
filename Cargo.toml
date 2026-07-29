@@ -8,6 +8,8 @@ members = [
     "crates/juris-cli", "crates/juris-scenario-schema", "crates/juris-scenario-validator",
 
     "crates/juris-case-catalog",
+
+    "crates/juris-scenario-builder",
 ]
 resolver = "2"
 
