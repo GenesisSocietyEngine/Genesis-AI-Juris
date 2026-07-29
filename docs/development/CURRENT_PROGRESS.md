@@ -1,13 +1,105 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: AI Juris"
-branch: feat/lost-is-not-closed
-head_commit: "7372f55 (implementation HEAD before documentation checkpoint)"
+branch: feat/foreground-clock-control
+head_commit: "bf00dc6 (implementation HEAD before documentation checkpoint)"
 app_version: 0.5.1+12
 last_updated: 2026-07-29
 ---
 
 # Current Progress
+
+## Authoritative foreground clock control — 2026-07-29
+
+Status: implementation is complete in a branch stacked on the still-open
+`feat/lost-is-not-closed` PR. All local quality gates pass; the branch has not
+yet been pushed and no remote CI result is claimed.
+
+Commits:
+
+- `6558c00` — `feat(clock): add authoritative foreground time commands`;
+- `bf00dc6` — `feat(mobile): drive Rust scenarios with foreground clock`.
+
+Completed:
+
+- added deterministic `ScenarioSession::advance_time(minutes)` and the
+  corresponding session-registry operation;
+- added the versioned JSON bridge command
+  `{"command":"advance_time","session_id":...,"minutes":...}` without changing
+  the three-symbol native C ABI;
+- made Rust responsible for advancing typed scenario time, firing due events,
+  updating deadlines and asynchronous tasks, and returning the next immutable
+  mobile snapshot;
+- reject clock advancement after authoritative matter closure;
+- added ordered simulator commands and CLI syntax
+  `--commands action_id,+60,action_id`, including explicit trace entries for
+  foreground-time transitions and rejection of invalid or ambiguous options;
+- enabled the existing Flutter pause and 1x/2x/4x controls for
+  `RustScenarioRepository`; the shell emits deterministic one-minute commands
+  only while resumed and never derives game time from elapsed wall-clock time;
+- removed GreenFire's temporary `coordinate_operational_period` action from
+  stage exits, canonical content, the generated mobile bundle, and reference
+  paths; GreenFire now contains 13 stable legal actions;
+- preserved both GreenFire reference outcomes and exact final clocks:
+  - protected crisis position: 4440 minutes;
+  - compromised crisis position: 4590 minutes;
+- added engine, registry, simulator CLI, bridge JSON, C ABI, Dart command,
+  repository, and catalog regression coverage.
+
+Commands actually executed successfully:
+
+```powershell
+cargo +1.78.0 check --workspace --locked
+cargo fmt --all -- --check
+cargo check --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+cargo test -p juris-scenario-simulator --test scenario_path_simulator
+
+cargo run -q -p juris-scenario-simulator -- run `
+  content/cases/greenfire_first_72_hours.scenario.json `
+  --commands <protected-actions-and-time-commands> --require-outcome
+cargo run -q -p juris-scenario-simulator -- run `
+  content/cases/greenfire_first_72_hours.scenario.json `
+  --commands <compromised-actions-and-time-commands> --require-outcome
+
+dart.exe tool/export_mobile_case_bundle.dart `
+  --repo-root C:\PROJECTS\Genesis-AI-Juris --check
+flutter analyze --no-pub
+flutter test --no-pub
+flutter build apk --debug --no-pub
+git diff --check
+```
+
+Results:
+
+- Rust 1.78 MSRV, formatting, workspace check, Clippy with warnings denied,
+  workspace tests, and the focused 19-test simulator suite pass;
+- the protected and compromised GreenFire CLI paths reach their expected
+  deterministic outcome and clock using explicit time commands;
+- the generated mobile bundle is deterministic and contains 3 cases;
+- Flutter analyze reports no issues;
+- all 65 Flutter tests pass;
+- Android debug APK builds at
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`;
+- repository whitespace validation passes.
+
+Known limitations:
+
+- foreground time intentionally stops while the app is paused, backgrounded,
+  terminal, or not mounted; there is no background catch-up;
+- the synchronous repository clock method leaves the previous snapshot
+  unchanged if the native bridge rejects a tick; user-visible clock error
+  reporting remains future work;
+- no persistence or restoration of native scenario sessions exists yet;
+- no new physical-device, signing, or iOS Simulator result is claimed.
+
+Next step:
+
+- push the stacked branch and open a PR against `feat/lost-is-not-closed`;
+- run remote Rust, Flutter, Android, and native iOS gates;
+- after both stacked PRs merge, prioritize authoritative session save/restore
+  before expanding GreenFire beyond the first 72 hours.
 
 ## Lost != Closed lifecycle separation — 2026-07-29
 
