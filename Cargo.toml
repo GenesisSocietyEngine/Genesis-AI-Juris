@@ -6,6 +6,8 @@ members = [
     "crates/juris-ai",
     "crates/juris-engine",
     "crates/juris-cli",
+
+    "crates/juris-gameplay-engine",
 ]
 resolver = "2"
 
