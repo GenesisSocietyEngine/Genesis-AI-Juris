@@ -58,6 +58,9 @@ pub enum SimulationError {
     #[error("cannot execute action `{action}` after terminal stage `{stage}`")]
     ActionAfterTerminal { action: String, stage: String },
 
+    #[error("cannot advance time after terminal stage `{stage}`")]
+    TimeAdvanceAfterTerminal { stage: String },
+
     #[error("unsupported condition type `{condition_type}` at {path}")]
     UnsupportedCondition {
         condition_type: String,
@@ -124,6 +127,15 @@ pub enum SimulationError {
 
     #[error("invalid positive integer `{value}` for option `{option}`")]
     InvalidPositiveInteger { option: String, value: String },
+
+    #[error("options `{left}` and `{right}` cannot be used together")]
+    ConflictingOptions {
+        left: &'static str,
+        right: &'static str,
+    },
+
+    #[error("invalid simulation command `{command}`; expected action ID or +MINUTES")]
+    InvalidSimulationCommand { command: String },
 
     #[error("unexpected positional CLI argument `{argument}`")]
     UnexpectedArgument { argument: String },

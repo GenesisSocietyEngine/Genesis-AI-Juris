@@ -258,4 +258,25 @@ mod tests {
             .iter()
             .any(|action| action["id"] == "file_appeal"));
     }
+
+    #[test]
+    fn foreground_time_command_uses_the_existing_c_abi() {
+        let scenario: Value =
+            serde_json::from_str(LOGISTICS_SCENARIO).expect("scenario must parse");
+        let created = execute_request(json!({
+            "command": "create_session",
+            "scenario": scenario,
+            "seed": 20260729
+        }));
+        let session_id = created["session_id"].as_u64().unwrap();
+
+        let advanced = execute_request(json!({
+            "command": "advance_time",
+            "session_id": session_id,
+            "minutes": 17
+        }));
+
+        assert_eq!(advanced["type"], "snapshot");
+        assert_eq!(advanced["snapshot"]["clock_minutes"], 17);
+    }
 }

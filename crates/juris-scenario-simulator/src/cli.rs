@@ -4,7 +4,9 @@ use std::{
     path::PathBuf,
 };
 
-use crate::{ScenarioDocument, ScenarioSimulator, SimulationError, SimulationResult};
+use crate::{
+    ScenarioDocument, ScenarioSimulator, SimulationCommand, SimulationError, SimulationResult,
+};
 
 /// Runs the CLI from arguments excluding the executable name.
 pub fn run_cli<I>(arguments: I) -> Result<String, SimulationError>
@@ -31,7 +33,8 @@ pub fn help_text() -> &'static str {
     "juris-scenario-simulator v1\n\n\
 Usage:\n\
   juris-scenario-simulator inspect <scenario.json>\n\
-  juris-scenario-simulator run <scenario.json> --actions id1,id2 [--require-outcome] [--max-auto-events N] [--json]"
+  juris-scenario-simulator run <scenario.json> --actions id1,id2 [--require-outcome] [--max-auto-events N] [--json]\n\
+  juris-scenario-simulator run <scenario.json> --commands id1,+60,id2 [--require-outcome] [--max-auto-events N] [--json]"
 }
 
 fn inspect<I>(mut arguments: I) -> Result<String, SimulationError>
@@ -70,18 +73,28 @@ where
     })?;
     let options = parse_options(arguments)?;
 
-    let actions = options
-        .values
-        .get("actions")
-        .map(|value| {
-            value
-                .split(',')
-                .map(str::trim)
-                .filter(|item| !item.is_empty())
-                .map(str::to_owned)
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
+    if options.values.contains_key("actions") && options.values.contains_key("commands") {
+        return Err(SimulationError::ConflictingOptions {
+            left: "--actions",
+            right: "--commands",
+        });
+    }
+    let commands = if let Some(value) = options.values.get("commands") {
+        parse_commands(value)?
+    } else {
+        options
+            .values
+            .get("actions")
+            .map(|value| {
+                value
+                    .split(',')
+                    .map(str::trim)
+                    .filter(|item| !item.is_empty())
+                    .map(|action| SimulationCommand::Action(action.to_owned()))
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default()
+    };
 
     let max_auto_events = match options.values.get("max-auto-events") {
         Some(value) => {
@@ -106,7 +119,7 @@ where
     let document = ScenarioDocument::load(PathBuf::from(path))?;
     let mut simulator = ScenarioSimulator::new(document)?;
     simulator.set_max_auto_events(max_auto_events);
-    let result = simulator.run_actions(&actions, options.flags.contains("require-outcome"))?;
+    let result = simulator.run_commands(&commands, options.flags.contains("require-outcome"))?;
 
     if options.flags.contains("json") {
         serde_json::to_string_pretty(&result)
@@ -145,7 +158,7 @@ where
             continue;
         }
 
-        if name != "actions" && name != "max-auto-events" {
+        if name != "actions" && name != "commands" && name != "max-auto-events" {
             return Err(SimulationError::UnknownOption {
                 option: format!("--{name}"),
             });
@@ -165,6 +178,35 @@ where
     }
 
     Ok(parsed)
+}
+
+fn parse_commands(value: &str) -> Result<Vec<SimulationCommand>, SimulationError> {
+    value
+        .split(',')
+        .map(str::trim)
+        .filter(|item| !item.is_empty())
+        .map(|item| {
+            if let Some(minutes) = item.strip_prefix('+') {
+                let minutes = minutes.parse::<u32>().map_err(|_| {
+                    SimulationError::InvalidSimulationCommand {
+                        command: item.to_owned(),
+                    }
+                })?;
+                if minutes == 0 {
+                    return Err(SimulationError::InvalidSimulationCommand {
+                        command: item.to_owned(),
+                    });
+                }
+                Ok(SimulationCommand::AdvanceTime { minutes })
+            } else if item.starts_with('-') {
+                Err(SimulationError::InvalidSimulationCommand {
+                    command: item.to_owned(),
+                })
+            } else {
+                Ok(SimulationCommand::Action(item.to_owned()))
+            }
+        })
+        .collect()
 }
 
 fn render_text(result: &SimulationResult) -> String {

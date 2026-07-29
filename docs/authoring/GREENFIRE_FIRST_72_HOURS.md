@@ -11,7 +11,8 @@ or case-specific Dart repository.
 The slice uses only existing schema concepts: stages, actions, conditions,
 effects, deadlines, asynchronous tasks, Inbox items, events, outcomes, flags,
 facts, evidence, and deterministic action time costs. Flutter remains
-non-authoritative and sends stable action IDs through the shared native bridge.
+non-authoritative and sends stable action IDs or explicit foreground-time
+commands through the shared native bridge.
 
 The slice ends at the partner handoff after 72 simulated hours. Its terminal
 outcomes are:
@@ -22,7 +23,7 @@ outcomes are:
 ## Content inventory
 
 - 4 stages;
-- 14 stable actions;
+- 13 stable actions;
 - 3 deadlines;
 - 1 asynchronous expert task;
 - 7 Inbox items;
@@ -30,9 +31,10 @@ outcomes are:
 - 2 deterministic outcomes;
 - 8 actors, 5 facts, and 7 evidence items.
 
-The temporary `coordinate_operational_period` action advances the foreground
-clock in six-hour blocks. A later formal clock-control feature may replace the
-interaction without changing the stable legal action IDs.
+Foreground time advances through the authoritative `advance_time` bridge
+command. Pause and speed controls change only how frequently Flutter requests
+one deterministic game minute; wall-clock time never mutates scenario state
+directly.
 
 ## Runtime semantics exercised
 
@@ -57,10 +59,10 @@ notify_insurers
 retain_independent_fire_expert
 open_controlled_regulator_channel
 submit_initial_regulatory_response
-coordinate_operational_period
++360 foreground minutes
 review_preliminary_fire_assessment
 establish_response_protocol
-coordinate_operational_period × 9
++360 foreground minutes × 9
 complete_protected_handoff
 ```
 
@@ -70,9 +72,9 @@ Compromised:
 
 ```text
 accept_emergency_mandate
-coordinate_operational_period
++360 foreground minutes
 release_unreviewed_documents
-coordinate_operational_period × 11
++360 foreground minutes × 11
 complete_compromised_handoff
 ```
 

@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 
-use juris_scenario_simulator::{ScenarioDocument, ScenarioSimulator, SimulationStatus};
+use juris_scenario_simulator::{
+    ScenarioDocument, ScenarioSimulator, SimulationCommand, SimulationStatus,
+};
 
 fn logistics_scenario_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -18,17 +20,24 @@ fn run_path(actions: &[&str]) -> juris_scenario_simulator::SimulationResult {
 
 fn run_scenario_path(
     scenario_path: PathBuf,
-    actions: &[&str],
+    commands: &[&str],
 ) -> juris_scenario_simulator::SimulationResult {
     let document = ScenarioDocument::load(scenario_path).expect("scenario must load");
-    let actions = actions
+    let commands = commands
         .iter()
-        .map(|action| (*action).to_owned())
+        .map(|command| {
+            command
+                .strip_prefix('+')
+                .map(|minutes| SimulationCommand::AdvanceTime {
+                    minutes: minutes.parse().expect("clock command must be valid"),
+                })
+                .unwrap_or_else(|| SimulationCommand::Action((*command).to_owned()))
+        })
         .collect::<Vec<_>>();
 
     ScenarioSimulator::new(document)
         .expect("simulator must initialize")
-        .run_actions(&actions, true)
+        .run_commands(&commands, true)
         .expect("reference path must reach an outcome")
 }
 
@@ -41,36 +50,36 @@ const GREENFIRE_PROTECTED_PATH: &[&str] = &[
     "retain_independent_fire_expert",
     "open_controlled_regulator_channel",
     "submit_initial_regulatory_response",
-    "coordinate_operational_period",
+    "+360",
     "review_preliminary_fire_assessment",
     "establish_response_protocol",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
+    "+360",
+    "+360",
+    "+360",
+    "+360",
+    "+360",
+    "+360",
+    "+360",
+    "+360",
+    "+360",
     "complete_protected_handoff",
 ];
 
 const GREENFIRE_COMPROMISED_PATH: &[&str] = &[
     "accept_emergency_mandate",
-    "coordinate_operational_period",
+    "+360",
     "release_unreviewed_documents",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
-    "coordinate_operational_period",
+    "+360",
+    "+360",
+    "+360",
+    "+360",
+    "+360",
+    "+360",
+    "+360",
+    "+360",
+    "+360",
+    "+360",
+    "+360",
     "complete_compromised_handoff",
 ];
 
