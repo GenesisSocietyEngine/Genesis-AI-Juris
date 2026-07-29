@@ -40,12 +40,13 @@ dart run apps/juris-mobile/tool/export_mobile_case_bundle.dart `
 ## Case-to-game-scenario pipeline
 
 A case card may exist before the executable game is ready. The mobile bundle
-tracks five explicit readiness states:
+tracks six explicit readiness states:
 
 - matter identity;
 - executable scenario definition;
 - authoring diagnostics;
 - deterministic path simulation;
+- authoritative engine runtime;
 - generated mobile bundle.
 
 The Failed ERP case launches through `demo_failed_erp`. The logistics matter
@@ -54,10 +55,9 @@ now has a canonical executable scenario at
 validation, authoring diagnostics, and deterministic simulation for both its
 negotiated-recovery and judgment-enforcement paths.
 
-Logistics remains an outline and cannot launch until the generic Rust runtime
-bridge is available. This prevents it from accidentally opening ERP gameplay
-under the wrong case identity while allowing the mobile conversion sheet to
-report that its content gates are genuinely complete.
+Logistics is playable through `rust_scenario_v1`. Its canonical scenario JSON
+is embedded in bundle v3, validated again when Rust creates the session, and
+never falls back to ERP gameplay.
 
 Run its focused gates:
 
@@ -81,14 +81,11 @@ cargo run -p juris-scenario-simulator -- run `
   --require-outcome
 ```
 
-The authoritative engine-side session and transport-neutral JSON bridge are now
-implemented by `juris-engine::ScenarioSession` and `juris-mobile-bridge`.
-Flutter also depends on a shared `GameRuntimeRepository` boundary rather than
-directly on the ERP demo.
-
-The remaining runtime milestone is a thin Android/iOS native transport plus a
-Rust-snapshot-to-`GameSnapshot` mapper. Once that boundary is connected, every
-validated scenario file can use the same mobile screens.
+The authoritative session, JSON protocol, C ABI transport, Dart FFI client, and
+Rust-snapshot-to-`GameSnapshot` mapper are implemented by
+`juris-engine::ScenarioSession`, `juris-mobile-bridge`, `juris-mobile-ffi`, and
+`RustScenarioRepository`. Additional validated scenario files can use the same
+mobile screens by declaring `rust_scenario_v1`.
 
 ## Localization
 

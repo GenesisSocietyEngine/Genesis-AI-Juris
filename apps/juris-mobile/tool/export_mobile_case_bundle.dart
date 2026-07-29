@@ -84,6 +84,10 @@ void main(List<String> arguments) {
 
     final Map<String, dynamic> readiness = _object(
         caseConfig['readiness'] ?? <String, dynamic>{}, '$caseId.readiness');
+    final Map<String, dynamic>? scenarioDefinition =
+        readiness['engine_runtime'] == true && scenarioRelative != null
+            ? _readObject(File(_join(repository.path, scenarioRelative)))
+            : null;
     final Map<String, dynamic> localeSource =
         _object(caseConfig['locales'], '$caseId.locales');
     final Map<String, dynamic> localizedOutput = <String, dynamic>{};
@@ -138,6 +142,7 @@ void main(List<String> arguments) {
       'identity_file': identityRelative,
       'scenario_file': scenarioRelative,
       'scenario_available': scenarioAvailable,
+      'scenario': scenarioDefinition,
       'runtime_adapter': runtimeAdapter,
       'readiness': <String, dynamic>{
         'identity': true,
@@ -161,7 +166,7 @@ void main(List<String> arguments) {
   });
 
   final Map<String, dynamic> output = <String, dynamic>{
-    'bundle_version': 2,
+    'bundle_version': 3,
     'catalog_version': catalog['catalog_version'],
     'default_locale': defaultLocale,
     'supported_locales': supportedLocales,

@@ -63,7 +63,7 @@ The scenario now runs through the authoritative generic `ScenarioSession` in
 creation, snapshot retrieval, action dispatch, deterministic errors, and
 disposal.
 
-The scenario is not yet mobile-playable. The remaining boundary is the thin
-Android/iOS native transport and mapping from the generic Rust snapshot into
-the existing Flutter `GameSnapshot`. No case-specific Flutter gameplay code is
+The scenario is mobile-playable through `rust_scenario_v1`. Android and iOS use
+the same C ABI and JSON protocol, while `RustScenarioRepository` maps snapshots
+into the existing Flutter screens. No case-specific Flutter transition code is
 required.

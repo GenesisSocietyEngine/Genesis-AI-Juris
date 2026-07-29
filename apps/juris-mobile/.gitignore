@@ -10,5 +10,7 @@ android/.gradle/
 android/local.properties
 android/key.properties
 android/app/upload-keystore.jks
+android/app/src/main/jniLibs/
+ios/Generated/
 *.iml
 .idea/

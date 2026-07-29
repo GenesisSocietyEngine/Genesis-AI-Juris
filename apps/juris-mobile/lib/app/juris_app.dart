@@ -4,6 +4,7 @@ import '../data/case_catalog_repository.dart';
 import '../data/case_runtime_factory.dart';
 import '../data/demo_game_repository.dart';
 import '../data/game_runtime_repository.dart';
+import '../data/scenario_bridge_client.dart';
 import '../models/case_catalog.dart';
 import '../screens/case_catalog_screen.dart';
 import 'app_theme.dart';
@@ -19,15 +20,18 @@ class JurisApp extends StatefulWidget {
   const JurisApp({
     required this.repository,
     super.key,
-  }) : catalogRepository = null;
+  })  : catalogRepository = null,
+        scenarioBridgeClient = null;
 
   const JurisApp.catalog({
     this.catalogRepository = const CaseCatalogRepository(),
+    this.scenarioBridgeClient,
     super.key,
   }) : repository = null;
 
   final DemoGameRepository? repository;
   final CaseCatalogRepository? catalogRepository;
+  final ScenarioBridgeClient? scenarioBridgeClient;
 
   @override
   State<JurisApp> createState() => _JurisAppState();
@@ -80,8 +84,10 @@ class _JurisAppState extends State<JurisApp> {
   }
 
   void _startCase(MobileCaseDefinition caseDefinition) {
-    final GameRuntimeRepository repository =
-        CaseRuntimeFactory.create(caseDefinition);
+    final GameRuntimeRepository repository = CaseRuntimeFactory.create(
+      caseDefinition,
+      scenarioBridgeClient: widget.scenarioBridgeClient,
+    );
     setState(() {
       _activeRepository = repository;
       _activeCaseId = caseDefinition.caseId;

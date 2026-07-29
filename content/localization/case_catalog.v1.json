@@ -149,7 +149,7 @@
     "be_commercial_logistics_001": {
       "sort_order": 20,
       "seed": 20260725,
-      "runtime_adapter": null,
+      "runtime_adapter": "rust_scenario_v1",
       "readiness": {
         "diagnostics": true,
         "path_simulation": true,

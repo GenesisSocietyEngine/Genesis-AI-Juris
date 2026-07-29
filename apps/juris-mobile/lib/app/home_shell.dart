@@ -75,6 +75,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     _liveClockTimer = null;
     if (_runningUnderFlutterTest ||
         _clockPaused ||
+        !widget.repository.supportsLiveClock ||
         widget.repository.isTerminal) {
       return;
     }
@@ -163,7 +164,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                     tooltip:
                         'Simulation speed: ${_clockSpeed.label} · ${_clockSpeed.gameMinutesPerRealMinute} game min / real min',
                     initialValue: _clockSpeed,
-                    enabled: !widget.repository.isTerminal,
+                    enabled: widget.repository.supportsLiveClock &&
+                        !widget.repository.isTerminal,
                     onSelected: _selectClockSpeed,
                     itemBuilder: (BuildContext context) => SimulationClockSpeed
                         .values
@@ -204,8 +206,10 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                     tooltip: _clockPaused
                         ? 'Resume simulation clock'
                         : 'Pause simulation clock',
-                    onPressed:
-                        widget.repository.isTerminal ? null : _toggleClock,
+                    onPressed: widget.repository.supportsLiveClock &&
+                            !widget.repository.isTerminal
+                        ? _toggleClock
+                        : null,
                     icon: Icon(
                       _clockPaused
                           ? Icons.play_circle_outline
@@ -512,8 +516,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       context: context,
       builder: (BuildContext context) => AlertDialog(
         title: const Text('Reset playtest?'),
-        content: const Text(
-          'This returns the UI demo to Day 1 at 08:00 with seed 20260724.',
+        content: Text(
+          'This restarts ${widget.repository.snapshot.matterTitle} at '
+          'Day 1 · 08:00 with seed ${widget.repository.snapshot.seed}.',
         ),
         actions: <Widget>[
           TextButton(

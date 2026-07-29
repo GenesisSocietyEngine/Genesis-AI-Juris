@@ -32,6 +32,9 @@ class DemoGameRepository extends GameRuntimeRepository {
   bool get isTerminal =>
       _snapshot.stage == 'Resolved' || _snapshot.outcomeSummary != null;
 
+  @override
+  bool get supportsLiveClock => true;
+
   /// Resets the mobile playtest to the same seed and opening state.
   void reset() {
     _snapshot = _initial(seed);

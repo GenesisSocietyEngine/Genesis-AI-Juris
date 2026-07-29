@@ -106,6 +106,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "juris-mobile-ffi"
+version = "0.5.0"
+dependencies = [
+ "juris-mobile-bridge",
+ "serde_json",
+]
+
+[[package]]
 name = "juris-scenario-builder"
 version = "0.5.0"
 dependencies = [

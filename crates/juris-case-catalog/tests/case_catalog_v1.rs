@@ -133,14 +133,14 @@ fn catalog_json_round_trip_preserves_case_order() {
 }
 
 #[test]
-fn reference_library_separates_scenario_content_from_mobile_playability() {
+fn reference_library_exposes_both_mobile_playable_scenarios() {
     let bundle = load_reference_bundle();
 
     assert_eq!(bundle.catalog.cases.len(), 2);
     assert!(bundle.catalog.cases[0].scenario_file.is_some());
     assert_eq!(bundle.catalog.cases[0].status, CatalogStatus::Playable);
     assert!(bundle.catalog.cases[1].scenario_file.is_some());
-    assert_eq!(bundle.catalog.cases[1].status, CatalogStatus::Outline);
+    assert_eq!(bundle.catalog.cases[1].status, CatalogStatus::Playable);
     assert_eq!(
         bundle.identities[0].player_client_id.as_str(),
         "northbridge_consulting"

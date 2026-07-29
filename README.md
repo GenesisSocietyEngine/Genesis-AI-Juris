@@ -37,6 +37,7 @@ crates/
   juris-ai          read-only AI actor boundary
   juris-engine      authoritative state transitions
   juris-mobile-bridge transport-neutral mobile JSON command protocol
+  juris-mobile-ffi  Android/iOS C ABI for the mobile bridge
   juris-cli         terminal presentation
 
 apps/
@@ -59,9 +60,10 @@ juris-engine
 immutable mobile snapshot
 ```
 
-Android/iOS native transport and snapshot mapping remain before canonical
-scenarios can launch from Flutter. Until then the Case Library keeps those
-cases visibly non-playable instead of falling back to another case's demo.
+The Android/iOS C ABI transport and snapshot mapper now connect canonical
+scenarios to Flutter. Logistics is the first engine-backed mobile case; its
+scenario JSON is bundled, validated by Rust at session creation, and executed
+without case-specific transition code in Flutter.
 
 ## Run the Rust game
 
@@ -131,4 +133,6 @@ GitHub Actions runs both Rust and Flutter quality gates.
 
 ## Status
 
-This remains a vertical prototype, not legal advice. The mobile shell is interactive and testable, but v0.5.0 does not yet call the Rust engine. The first engine-backed APK is the explicit objective of v0.5.1.
+This remains a vertical prototype, not legal advice. Failed ERP still uses the
+temporary Dart demo runtime, while Logistics is executed by the authoritative
+Rust engine through the v0.5.1 native bridge.

@@ -13,6 +13,11 @@ abstract class GameRuntimeRepository extends ChangeNotifier {
 
   bool get isTerminal;
 
+  /// Whether the shared shell should advance this runtime every foreground
+  /// clock tick. Declarative Rust scenarios advance through authoritative
+  /// action costs and therefore return false.
+  bool get supportsLiveClock;
+
   void reset();
 
   void markInboxItemRead(String itemId);

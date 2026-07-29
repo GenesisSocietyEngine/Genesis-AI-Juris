@@ -50,8 +50,7 @@ class InboxScreen extends StatelessWidget {
           sliver: SliverList.list(
             children: <Widget>[
               _InboxSummary(snapshot: snapshot),
-              if (snapshot.stage == 'Resolved' &&
-                  snapshot.outcomeSummary != null) ...<Widget>[
+              if (snapshot.outcomeSummary != null) ...<Widget>[
                 const SizedBox(height: 16),
                 _CaseClosedCard(
                   snapshot: snapshot,

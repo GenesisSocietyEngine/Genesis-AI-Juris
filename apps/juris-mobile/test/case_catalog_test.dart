@@ -49,16 +49,17 @@ void main() {
       (MobileCaseDefinition item) =>
           item.caseId == 'be_commercial_logistics_001',
     );
-    expect(logistics.status, MobileCaseStatus.outline);
+    expect(logistics.status, MobileCaseStatus.playable);
     expect(logistics.scenarioAvailable, isTrue);
+    expect(logistics.scenario, isNotNull);
     expect(logistics.readiness.scenarioDefinition, isTrue);
     expect(logistics.readiness.diagnostics, isTrue);
     expect(logistics.readiness.pathSimulation, isTrue);
     expect(logistics.readiness.engineRuntime, isTrue);
-    expect(logistics.runtimeAdapter, isNull);
+    expect(logistics.runtimeAdapter, 'rust_scenario_v1');
   });
 
-  testWidgets('case library renders playable and authoring scenarios', (
+  testWidgets('case library renders both playable scenarios', (
     WidgetTester tester,
   ) async {
     await pumpCatalog(tester);
@@ -67,7 +68,7 @@ void main() {
       find.text('Asteron Systems NV v. Northbridge Consulting BV'),
       findsOneWidget,
     );
-    expect(find.text('Playable demo'), findsOneWidget);
+    expect(find.text('Playable demo'), findsWidgets);
 
     await tester.drag(
       find.byKey(const PageStorageKey<String>('case-catalog')),
@@ -79,7 +80,7 @@ void main() {
       find.text('Velmont Logistics SA v. Orbis Retail Belgium NV'),
       findsOneWidget,
     );
-    expect(find.text('Outline'), findsOneWidget);
+    expect(find.text('Playable demo'), findsWidgets);
   });
 
   testWidgets(
@@ -126,26 +127,28 @@ void main() {
     );
   });
 
-  testWidgets('outline case cannot silently launch the Failed ERP runtime', (
+  testWidgets('playable filter includes the Rust logistics scenario', (
     WidgetTester tester,
   ) async {
     await pumpCatalog(tester);
 
-    await tester.tap(find.text('In authoring'));
+    await tester.tap(find.text('Playable'));
     await tester.pumpAndSettle();
 
-    final List<FilledButton> buttons = tester
-        .widgetList<FilledButton>(
-          find.widgetWithText(FilledButton, 'Start case'),
-        )
-        .toList(growable: false);
+    await tester.drag(
+      find.byKey(const PageStorageKey<String>('case-catalog')),
+      const Offset(0, -550),
+    );
+    await tester.pumpAndSettle();
 
-    expect(buttons, hasLength(1));
-    expect(buttons.single.onPressed, isNull);
     expect(
       find.text('Velmont Logistics SA v. Orbis Retail Belgium NV'),
       findsOneWidget,
     );
+    final FilledButton logisticsStart = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Start case').last,
+    );
+    expect(logisticsStart.onPressed, isNotNull);
   });
 
   test('repository supports an injected deterministic bundle', () async {

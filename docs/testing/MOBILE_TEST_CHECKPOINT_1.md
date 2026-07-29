@@ -2,9 +2,8 @@
 
 ## Scope
 
-This checkpoint verifies the generated multi-case library and the existing
-Failed ERP gameplay shell. It does not yet certify generic Rust gameplay on a
-physical device.
+This checkpoint verifies the generated multi-case library, the existing Failed
+ERP shell, and the first engine-backed Logistics scenario.
 
 ## Emulator test
 
@@ -19,18 +18,20 @@ Verify:
 
 1. the app opens on **Case Library**, not directly in Inbox;
 2. both fictional matters are visible;
-3. Failed ERP shows **Playable demo** and Logistics shows **Outline**;
+3. both Failed ERP and Logistics show **Playable demo**;
 4. the Logistics conversion sheet marks scenario definition, diagnostics, and
-   deterministic path and authoritative engine runtime as ready, but shows no
-   mobile runtime adapter;
+   deterministic path, authoritative engine runtime, and mobile bundle as
+   ready, with `rust_scenario_v1` as its runtime adapter;
 5. switching EN → RU changes topic, synopsis, roles, and library labels while
    party names and stable case identity remain unchanged;
-6. the Logistics Start button is disabled;
-7. the Failed ERP Start button opens the current game;
-8. Inbox cards remain newest-first;
-9. a hearing action is unavailable until a formal hearing exists;
-10. terminal play shows a clear case outcome/closure;
-11. the back arrow returns to the library without mixing case state.
+6. the Logistics Start button opens **Claim intake** at Day 1, 08:00;
+7. **Audit the invoice and evidence file** advances to **Pre-action recovery**
+   at 10:00;
+8. both Logistics outcome paths reach a terminal case report;
+9. the Failed ERP Start button still opens the current demo;
+10. Inbox cards remain newest-first;
+11. the back arrow disposes the active native session and returns to the
+    library without mixing case state.
 
 ## Real-phone smoke test
 
@@ -41,6 +42,7 @@ flutter build apk --debug
 adb install -r build\app\outputs\flutter-apk\app-debug.apk
 ```
 
-On the phone verify startup, language switching, case-card layout, launch,
-background/resume, and return to the library. Save isolation is not certified
-until the next multi-save/runtime milestone.
+On the phone verify startup, language switching, both case-card layouts,
+Logistics launch/action/outcome, background/resume, and return to the library.
+Persistent saves remain a later milestone; process-local session isolation is
+covered by Rust tests.

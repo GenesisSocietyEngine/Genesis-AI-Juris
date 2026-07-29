@@ -83,6 +83,7 @@ class MobileCaseDefinition {
     required this.identityFile,
     required this.scenarioFile,
     required this.scenarioAvailable,
+    required this.scenario,
     required this.runtimeAdapter,
     required this.readiness,
     required this.localizations,
@@ -106,6 +107,9 @@ class MobileCaseDefinition {
       identityFile: _requiredString(json, 'identity_file'),
       scenarioFile: json['scenario_file'] as String?,
       scenarioAvailable: _requiredBool(json, 'scenario_available'),
+      scenario: json['scenario'] == null
+          ? null
+          : _asObject(json['scenario'], 'scenario'),
       runtimeAdapter: json['runtime_adapter'] as String?,
       readiness: CaseReadiness.fromJson(_requiredObject(json, 'readiness')),
       localizations: rawLocalizations.map(
@@ -130,6 +134,7 @@ class MobileCaseDefinition {
   final String identityFile;
   final String? scenarioFile;
   final bool scenarioAvailable;
+  final Map<String, dynamic>? scenario;
   final String? runtimeAdapter;
   final CaseReadiness readiness;
   final Map<String, LocalizedCaseText> localizations;
