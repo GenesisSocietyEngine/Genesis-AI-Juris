@@ -1,18 +1,57 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: AI Juris"
-branch: feat/scenario-authoring-toolkit-v1
-head_commit: "HEAD (GreenFire vertical-slice commit; parent c29f7e6)"
+branch: main
+head_commit: 753496e
 app_version: 0.5.1+12
 last_updated: 2026-07-29
 ---
 
 # Current Progress
 
+## Merge checkpoint `753496e` — 2026-07-29
+
+Status: PR #3 is merged into remote `main`.
+
+Completed:
+
+- pushed GreenFire commit `4cdc880` to
+  `feat/scenario-authoring-toolkit-v1`;
+- updated PR #3 title and scope to cover the authoring toolkit, authoritative
+  native runtime, iOS gate, and GreenFire vertical slice;
+- merged PR #3 into `main` on 2026-07-29 at 18:26:20 UTC;
+- verified remote refs:
+  - `main` -> `753496e064083925a532322ed0cf923d0f072cdb`;
+  - `feat/scenario-authoring-toolkit-v1` ->
+    `4cdc8807cbd1459a3199270b1a9e4021ce18f662`;
+- synchronized local `origin/main` to merge commit `753496e`.
+
+Remote verification:
+
+- PR #3 head Rust `quality` and `msrv`: success;
+- PR #3 head Flutter `analyze-and-test`: success;
+- PR #3 head iOS Native FFI run `30479355502`: success;
+- post-merge `main` Rust CI run `30479917039`: success;
+- post-merge `main` Flutter Mobile UI run `30479916856`: success;
+- post-merge `main` iOS Native FFI run `30479917635`: still in progress
+  when this entry was written.
+
+Known issues:
+
+- repository branch protection did not require the iOS job, so GitHub accepted
+  the merge while post-merge iOS validation was still running;
+- no physical iPhone, release signing, or store packaging result is claimed.
+
+Next step:
+
+- record the terminal result of post-merge iOS run `30479917635`;
+- implement `Lost != Closed`: separate judicial result from matter lifecycle
+  so an adverse decision can open remedies instead of terminating the case.
+
 ## GreenFire vertical slice — 2026-07-29
 
-Status: implementation and all local quality gates are complete; the isolated
-commit is ready to create.
+Status: committed as `4cdc880`, pushed, and merged into `main` by PR #3 as
+merge commit `753496e`.
 
 Completed:
 
@@ -82,8 +121,8 @@ Known limitations:
 
 Next step:
 
-- run remote CI for this commit, including the native iOS Simulator gate;
-- then implement the planned terminal-outcome separation (`Lost != Closed`)
+- record the post-merge iOS Simulator result, then implement the planned
+  terminal-outcome separation (`Lost != Closed`)
   without changing GreenFire stable IDs.
 
 ## iOS native checkpoint `c29f7e6` — 2026-07-29
@@ -264,13 +303,13 @@ Next step:
 
 ### Репозиторий
 
-- Ветка: `feat/scenario-authoring-toolkit-v1`.
-- HEAD: `14a6db6 feat(mobile): run scenarios through native Rust FFI`.
-- Ветка локально опережает
-  `origin/feat/scenario-authoring-toolkit-v1` на три коммита.
-- Рабочее дерево после `14a6db6` было чистым.
-- Три локальных непереданных коммита:
-  `aaae41a`, `266c890`, `14a6db6`.
+- Удалённая основная ветка: `main`.
+- Remote HEAD: `753496e Merge pull request #3`.
+- Исходная feature-ветка:
+  `feat/scenario-authoring-toolkit-v1` на `4cdc880`.
+- PR #3 объединён; непереданных продуктовых коммитов нет.
+- Локальная рабочая ветка остаётся feature-веткой, чтобы не менять checkout
+  автоматически после merge.
 
 ### Доступный продуктовый срез
 
@@ -280,9 +319,12 @@ Next step:
   `rust_scenario_v1`.
 - Logistics имеет два терминальных пути:
   `negotiated_recovery` и `judgment_recovery`.
+- GreenFire — The First 72 Hours запускается через тот же
+  `rust_scenario_v1` и имеет два детерминированных исхода:
+  `protected_crisis_position` и `compromised_crisis_position`.
 - Mobile Case Library и bundle полностью data-driven.
-- Bundle v3 содержит локализованную карточку дела и канонический
-  `ScenarioDefinition` для engine-backed сценария.
+- Bundle содержит 3 локализованные карточки и канонические
+  `ScenarioDefinition` для двух engine-backed сценариев.
 - Версия Flutter-приложения: `0.5.1+12`.
 
 ### Текущая архитектура authority boundary
@@ -306,62 +348,72 @@ Flutter отправляет только стабильные action ID. Усл
 
 ### Подтверждённые quality gates на HEAD
 
-В рабочей сессии для `14a6db6` выполнены:
+Для GreenFire commit `4cdc880` выполнены:
 
 ```powershell
+cargo +1.78.0 check --workspace --locked
 cargo fmt --all -- --check
 cargo check --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 
-dart run tool/export_mobile_case_bundle.dart `
+dart.exe --disable-dart-dev tool/export_mobile_case_bundle.dart `
   --repo-root C:\PROJECTS\Genesis-AI-Juris `
   --check
-flutter analyze
-flutter test
-flutter build apk --debug --no-pub
+dart.exe flutter_tools.snapshot analyze --no-pub
+dart.exe flutter_tools.snapshot test --no-pub
+dart.exe flutter_tools.snapshot build apk --debug --no-pub
 ```
 
 Результаты:
 
+- Rust 1.78 MSRV check прошёл;
 - полный Rust workspace прошёл без ошибок;
 - Flutter analyze прошёл без ошибок;
-- все 56 Flutter-тестов прошли;
+- все 57 Flutter-тестов прошли;
 - deterministic mobile bundle check прошёл;
-- Android x64 APK был установлен и запущен на `emulator-5554`;
-- native `create_session` и `dispatch` изменили Logistics stage и clock;
-- Android smoke path дошёл до terminal `judgment_recovery`;
-- fat debug APK успешно собран;
+- protected и compromised GreenFire paths прошли simulator и authoritative
+  engine;
+- native JSON bridge прошёл полный protected GreenFire path;
+- debug APK успешно собран;
 - APK содержит `libjuris_mobile_ffi.so` для `arm64-v8a`,
   `armeabi-v7a` и `x86_64`.
+- Rust и Flutter post-merge CI на `main` зелёные;
+- PR-head iOS Native FFI зелёный.
 
 ### Известные ограничения на HEAD
 
-1. iOS Runner, static-library build phase и FFI linking настроены, но iOS
-   сборка ещё не выполнялась на macOS/Xcode.
-2. Failed ERP остаётся отдельным Dart demo runtime и ещё не переведён в
+1. Failed ERP остаётся отдельным Dart demo runtime и ещё не переведён в
    канонический `ScenarioDefinition`.
-3. Native sessions process-local. Persistent save/load и восстановление после
+2. Native sessions process-local. Persistent save/load и восстановление после
    перезапуска приложения отсутствуют.
-4. Generic snapshot не содержит финансовые и карьерные показатели старого
+3. Generic snapshot не содержит финансовые и карьерные показатели старого
    ERP UI. Mapper использует нейтральные presentation defaults для полей,
    которых нет в scenario schema.
-5. Карточки дел локализованы, но display strings внутри
+4. Карточки дел локализованы, но display strings внутри
    `ScenarioDefinition` пока не имеют отдельного translation overlay.
-6. FFI API синхронный. Для текущих небольших JSON snapshots это приемлемо, но
+5. FFI API синхронный. Для текущих небольших JSON snapshots это приемлемо, но
    большие сценарии могут потребовать isolate/async transport.
-7. Release signing, App Store/Play Store packaging и физический iPhone
+6. GreenFire использует временное действие `coordinate_operational_period`
+   вместо формального foreground clock control.
+7. Судебный результат и закрытие дела ещё недостаточно разделены:
+   проигрыш может преждевременно стать terminal outcome.
+8. Release signing, App Store/Play Store packaging и физический iPhone
    checkpoint не выполнены.
 
 ### Следующий шаг
 
-Обязательная проверка: собрать и запустить iOS target на macOS/Xcode, выполнить
-`create_session -> dispatch -> dispose_session` на iOS simulator и записать
-результат в этот файл.
-
-Следующий продуктовый этап после iOS gate: добавить localization overlay,
-привязанный к стабильным scenario/entity ID, чтобы переводить факты, evidence,
-actions, stages, inbox и outcomes без изменения канонической игровой логики.
+1. Записать финальный результат post-merge iOS run `30479917635`.
+2. Реализовать `Lost != Closed`:
+   - отделить результат решения от lifecycle дела;
+   - после adverse judgment открывать appeal/cassation/settlement/enforcement;
+   - считать дело terminal только после отказа от remedies, их исчерпания или
+     явного закрытия matter;
+   - обновить validator, engine snapshot, bridge, mapper, UI и deterministic
+     tests без изменения GreenFire stable IDs.
+3. После стабилизации lifecycle формализовать foreground clock control и
+   убрать зависимость GreenFire от временного шестичасового действия.
+4. Затем добавить translation overlay по стабильным scenario/entity ID.
 
 ## Журнал коммитов
 
