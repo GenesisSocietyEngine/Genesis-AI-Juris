@@ -419,6 +419,29 @@ impl ScenarioSession {
         Ok(self.snapshot())
     }
 
+    /// Advances authoritative scenario time and processes every event that
+    /// becomes due. Wall-clock time never enters the deterministic runtime.
+    pub fn advance_time(
+        &mut self,
+        minutes: u32,
+    ) -> Result<MobileScenarioSnapshot, ScenarioRuntimeError> {
+        if self.is_closed() {
+            return Err(ScenarioRuntimeError::ScenarioResolved);
+        }
+
+        self.state.clock_minutes = self
+            .state
+            .clock_minutes
+            .checked_add(u64::from(minutes))
+            .ok_or(ScenarioRuntimeError::ClockOverflow)?;
+
+        let mut events = VecDeque::new();
+        self.queue_due_events(&mut events);
+        self.process_event_queue(events)?;
+
+        Ok(self.snapshot())
+    }
+
     fn available_actions(&self) -> Vec<MobileActionSnapshot> {
         if self.is_closed() {
             return Vec::new();
@@ -870,6 +893,17 @@ impl ScenarioSessionRegistry {
             .get_mut(&id)
             .ok_or(ScenarioRuntimeError::UnknownSession(id.0))?
             .dispatch(action_id)
+    }
+
+    pub fn advance_time(
+        &mut self,
+        id: ScenarioSessionId,
+        minutes: u32,
+    ) -> Result<MobileScenarioSnapshot, ScenarioRuntimeError> {
+        self.sessions
+            .get_mut(&id)
+            .ok_or(ScenarioRuntimeError::UnknownSession(id.0))?
+            .advance_time(minutes)
     }
 
     pub fn dispose(&mut self, id: ScenarioSessionId) -> bool {

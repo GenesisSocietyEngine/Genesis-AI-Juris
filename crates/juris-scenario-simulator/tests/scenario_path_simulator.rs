@@ -292,3 +292,54 @@ fn cli_json_trace_is_machine_readable() {
     let decoded: Value = serde_json::from_slice(&output.stdout).expect("CLI output must be JSON");
     assert_eq!(decoded["status"], "completed");
 }
+
+#[test]
+fn cli_commands_interleave_actions_and_foreground_time() {
+    let executable = env!("CARGO_BIN_EXE_juris-scenario-simulator");
+    let output = Command::new(executable)
+        .arg("run")
+        .arg(fixture_path())
+        .arg("--commands")
+        .arg("file_claim,+60")
+        .arg("--json")
+        .output()
+        .expect("CLI must execute");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let decoded: Value = serde_json::from_slice(&output.stdout).expect("CLI output must be JSON");
+    assert_eq!(decoded["final_state"]["clock_minutes"], 120);
+    assert_eq!(decoded["trace"][1]["kind"], "time_advance");
+    assert_eq!(decoded["trace"][1]["id"], "60");
+}
+
+#[test]
+fn cli_rejects_invalid_or_ambiguous_clock_commands() {
+    let executable = env!("CARGO_BIN_EXE_juris-scenario-simulator");
+    let invalid = Command::new(executable)
+        .arg("run")
+        .arg(fixture_path())
+        .arg("--commands")
+        .arg("+0")
+        .output()
+        .expect("CLI must execute");
+    assert!(!invalid.status.success());
+    assert!(String::from_utf8_lossy(&invalid.stderr)
+        .contains("invalid simulation command `+0`; expected action ID or +MINUTES"));
+
+    let conflicting = Command::new(executable)
+        .arg("run")
+        .arg(fixture_path())
+        .arg("--actions")
+        .arg("file_claim")
+        .arg("--commands")
+        .arg("+60")
+        .output()
+        .expect("CLI must execute");
+    assert!(!conflicting.status.success());
+    assert!(String::from_utf8_lossy(&conflicting.stderr)
+        .contains("options `--actions` and `--commands` cannot be used together"));
+}

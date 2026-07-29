@@ -8,8 +8,8 @@ use juris_scenario_schema::{
 use serde_json::Value;
 
 use crate::{
-    ScenarioDocument, SimulationError, SimulationResult, SimulationState, SimulationStatus,
-    TraceEntry, TraceKind,
+    ScenarioDocument, SimulationCommand, SimulationError, SimulationResult, SimulationState,
+    SimulationStatus, TraceEntry, TraceKind,
 };
 
 const DEFAULT_MAX_AUTO_EVENTS: usize = 256;
@@ -139,14 +139,33 @@ impl ScenarioSimulator {
 
     /// Executes authored action IDs in the supplied order.
     pub fn run_actions(
-        mut self,
+        self,
         actions: &[String],
+        require_outcome: bool,
+    ) -> Result<SimulationResult, SimulationError> {
+        let commands = actions
+            .iter()
+            .cloned()
+            .map(SimulationCommand::Action)
+            .collect::<Vec<_>>();
+        self.run_commands(&commands, require_outcome)
+    }
+
+    /// Executes explicit action and foreground-time commands in replay order.
+    pub fn run_commands(
+        mut self,
+        commands: &[SimulationCommand],
         require_outcome: bool,
     ) -> Result<SimulationResult, SimulationError> {
         self.process_due_events()?;
 
-        for action in actions {
-            self.apply_action(action)?;
+        for command in commands {
+            match command {
+                SimulationCommand::Action(action) => self.apply_action(action)?,
+                SimulationCommand::AdvanceTime { minutes } => {
+                    self.advance_time(*minutes)?;
+                }
+            }
         }
 
         if self.is_terminal_stage(&self.state.stage) && self.state.resolved_outcome.is_none() {
@@ -169,6 +188,34 @@ impl ScenarioSimulator {
             fired_events: self.fired_events.into_iter().collect(),
             trace: self.trace,
         })
+    }
+
+    fn advance_time(&mut self, minutes: u32) -> Result<(), SimulationError> {
+        if self.is_terminal_stage(&self.state.stage) {
+            return Err(SimulationError::TimeAdvanceAfterTerminal {
+                stage: self.state.stage.clone(),
+            });
+        }
+
+        let before = self.state.clone();
+        self.state.clock_minutes = self
+            .state
+            .clock_minutes
+            .checked_add(u64::from(minutes))
+            .ok_or_else(|| SimulationError::ClockOverflow {
+                owner: format!("advance_time:{minutes}"),
+            })?;
+
+        let mut events = VecDeque::new();
+        self.queue_due_events(&mut events)?;
+        self.trace.push(TraceEntry {
+            sequence: self.trace.len(),
+            kind: TraceKind::TimeAdvance,
+            id: minutes.to_string(),
+            state_before: before,
+            state_after: self.state.clone(),
+        });
+        self.process_event_queue(events)
     }
 
     fn apply_action(&mut self, action_id: &str) -> Result<(), SimulationError> {

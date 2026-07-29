@@ -28,6 +28,10 @@ pub enum BridgeRequest {
         session_id: u64,
         action_id: String,
     },
+    AdvanceTime {
+        session_id: u64,
+        minutes: u32,
+    },
     DisposeSession {
         session_id: u64,
     },
@@ -87,6 +91,19 @@ impl MobileBridge {
             } => {
                 let id = ScenarioSessionId(session_id);
                 match self.sessions.dispatch(id, &action_id) {
+                    Ok(snapshot) => BridgeResponse::Snapshot {
+                        session_id,
+                        snapshot,
+                    },
+                    Err(error) => runtime_error_response(error),
+                }
+            }
+            BridgeRequest::AdvanceTime {
+                session_id,
+                minutes,
+            } => {
+                let id = ScenarioSessionId(session_id);
+                match self.sessions.advance_time(id, minutes) {
                     Ok(snapshot) => BridgeResponse::Snapshot {
                         session_id,
                         snapshot,

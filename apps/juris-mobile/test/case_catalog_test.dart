@@ -65,7 +65,7 @@ void main() {
     expect(greenfire.status, MobileCaseStatus.playable);
     expect(greenfire.scenarioAvailable, isTrue);
     expect(greenfire.scenario, isNotNull);
-    expect(greenfire.scenario?['actions'], hasLength(14));
+    expect(greenfire.scenario?['actions'], hasLength(13));
     expect(greenfire.readiness.diagnostics, isTrue);
     expect(greenfire.readiness.pathSimulation, isTrue);
     expect(greenfire.readiness.engineRuntime, isTrue);

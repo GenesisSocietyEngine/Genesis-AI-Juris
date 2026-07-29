@@ -207,7 +207,7 @@ fn identical_inputs_produce_identical_snapshots() {
 fn greenfire_protected_path_runs_through_the_authoritative_engine() {
     let mut session =
         ScenarioSession::new(greenfire_definition(), 20260729).expect("session must start");
-    for action in [
+    for command in [
         "accept_emergency_mandate",
         "issue_legal_hold",
         "run_conflict_assessment",
@@ -216,21 +216,25 @@ fn greenfire_protected_path_runs_through_the_authoritative_engine() {
         "retain_independent_fire_expert",
         "open_controlled_regulator_channel",
         "submit_initial_regulatory_response",
-        "coordinate_operational_period",
+        "+360",
         "review_preliminary_fire_assessment",
         "establish_response_protocol",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
-        "coordinate_operational_period",
+        "+360",
+        "+360",
+        "+360",
+        "+360",
+        "+360",
+        "+360",
+        "+360",
+        "+360",
+        "+360",
         "complete_protected_handoff",
     ] {
-        session.dispatch(action).expect("path action must succeed");
+        if command == "+360" {
+            session.advance_time(360).expect("clock must advance");
+        } else {
+            session.dispatch(command).expect("path action must succeed");
+        }
     }
     let snapshot = session.snapshot();
     assert!(snapshot.terminal);
@@ -252,7 +256,7 @@ fn greenfire_compromised_path_expires_unreviewed_expert_work() {
     session.dispatch("accept_emergency_mandate").unwrap();
     session.dispatch("retain_independent_fire_expert").unwrap();
     for _ in 0..12 {
-        session.dispatch("coordinate_operational_period").unwrap();
+        session.advance_time(360).unwrap();
     }
     let before_handoff = session.snapshot();
     assert!(before_handoff
@@ -278,5 +282,57 @@ fn greenfire_handoff_is_unavailable_before_72_hours() {
         Err(ScenarioRuntimeError::ActionUnavailable(
             "complete_compromised_handoff".to_owned()
         ))
+    );
+}
+
+#[test]
+fn authoritative_clock_fires_greenfire_events_without_player_actions() {
+    let mut session =
+        ScenarioSession::new(greenfire_definition(), 20260729).expect("session must start");
+
+    let initial = session.snapshot();
+    assert_eq!(initial.clock_minutes, 0);
+    assert!(!initial
+        .fired_event_ids
+        .iter()
+        .any(|event| event == "regulator_request_received"));
+
+    let before_request = session.advance_time(119).expect("clock must advance");
+    assert_eq!(before_request.clock_minutes, 119);
+    assert!(!before_request
+        .fired_event_ids
+        .iter()
+        .any(|event| event == "regulator_request_received"));
+
+    let request = session.advance_time(1).expect("due event must fire");
+    assert_eq!(request.clock_minutes, 120);
+    assert!(request
+        .fired_event_ids
+        .iter()
+        .any(|event| event == "regulator_request_received"));
+    assert!(request
+        .inbox
+        .iter()
+        .any(|item| item.id == "regulator_document_request" && item.visible));
+}
+
+#[test]
+fn authoritative_clock_is_deterministic_and_stops_after_closure() {
+    let mut first =
+        ScenarioSession::new(greenfire_definition(), 20260729).expect("session must start");
+    let mut second =
+        ScenarioSession::new(greenfire_definition(), 20260729).expect("session must start");
+
+    first.dispatch("accept_emergency_mandate").unwrap();
+    second.dispatch("accept_emergency_mandate").unwrap();
+    assert_eq!(
+        first.advance_time(4_290).unwrap(),
+        second.advance_time(4_290).unwrap()
+    );
+
+    first.dispatch("complete_compromised_handoff").unwrap();
+    assert_eq!(
+        first.advance_time(1),
+        Err(ScenarioRuntimeError::ScenarioResolved)
     );
 }

@@ -40,6 +40,17 @@ abstract final class ScenarioBridgeCommand {
     });
   }
 
+  static String advanceTime({
+    required int sessionId,
+    required int minutes,
+  }) {
+    return jsonEncode(<String, dynamic>{
+      'command': 'advance_time',
+      'session_id': sessionId,
+      'minutes': minutes,
+    });
+  }
+
   static String disposeSession(int sessionId) {
     return jsonEncode(<String, dynamic>{
       'command': 'dispose_session',

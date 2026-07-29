@@ -28,7 +28,15 @@ pub enum SimulationStatus {
 #[serde(rename_all = "snake_case")]
 pub enum TraceKind {
     Action,
+    TimeAdvance,
     Event,
+}
+
+/// Explicit deterministic command accepted by the authoring simulator.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum SimulationCommand {
+    Action(String),
+    AdvanceTime { minutes: u32 },
 }
 
 /// One state transition in replay order.

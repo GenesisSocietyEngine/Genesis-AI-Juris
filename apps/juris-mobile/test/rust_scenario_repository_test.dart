@@ -34,7 +34,7 @@ void main() {
       bridgeClient: _FakeScenarioBridgeClient(),
     );
 
-    expect(repository.supportsLiveClock, isFalse);
+    expect(repository.supportsLiveClock, isTrue);
     expect(repository.snapshot.stage, 'Claim intake');
     expect(repository.snapshot.matterTitle, contains('Velmont Logistics'));
     expect(repository.snapshot.evidence, hasLength(5));
@@ -92,8 +92,27 @@ void main() {
 
     expect(client.lastScenarioId, 'greenfire_first_72_hours');
     expect(client.lastSeed, 20260729);
-    expect(client.lastActionCount, 14);
+    expect(client.lastActionCount, 13);
     expect(repository.snapshot.matterTitle, contains('GreenFire'));
+    repository.dispose();
+  });
+
+  test('foreground clock advances through the authoritative bridge', () {
+    final _FakeScenarioBridgeClient client = _FakeScenarioBridgeClient();
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: logistics,
+      bridgeClient: client,
+    );
+
+    expect(repository.snapshot.timeLabel, '08:00');
+    repository.advanceTimeByMinutes(15);
+
+    expect(client.advanceTimeCount, 1);
+    expect(repository.snapshot.timeLabel, '08:15');
+    expect(repository.snapshot.billableMinutes, 15);
+
+    repository.advanceTimeByMinutes(0);
+    expect(client.advanceTimeCount, 1);
     repository.dispose();
   });
 }
@@ -101,6 +120,7 @@ void main() {
 final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
   int createCount = 0;
   int disposeCount = 0;
+  int advanceTimeCount = 0;
   int _sessionId = 0;
   int _clockMinutes = 0;
   String _stage = 'intake';
@@ -116,6 +136,7 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
     return switch (request['command']) {
       'create_session' => _create(request),
       'dispatch' => _dispatch(request['action_id'] as String),
+      'advance_time' => _advanceTime(request['minutes'] as int),
       'snapshot' => _response('snapshot'),
       'dispose_session' => _dispose(),
       _ => jsonEncode(<String, dynamic>{
@@ -168,6 +189,12 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
           'message': 'Unavailable action',
         });
     }
+    return _response('snapshot');
+  }
+
+  String _advanceTime(int minutes) {
+    advanceTimeCount += 1;
+    _clockMinutes += minutes;
     return _response('snapshot');
   }
 
