@@ -2,7 +2,7 @@
 document_type: cumulative_development_handoff
 project: "GENESIS: AI Juris"
 branch: feat/scenario-authoring-toolkit-v1
-head_commit: 45cce64
+head_commit: b133222
 app_version: 0.5.1+12
 last_updated: 2026-07-29
 ---
@@ -11,8 +11,10 @@ last_updated: 2026-07-29
 
 ## Pending iOS native checkpoint — 2026-07-29
 
-Status: initial checkpoint `45cce64` is pushed; the first macOS run exposed a
-build-script compatibility defect and the fix is pending locally.
+Status: Bash 3.2 correction `b133222` is pushed. Its macOS run passed every
+product-facing iOS gate, but the workflow was cancelled while uploading the
+Flutter action cache after reaching the 30-minute job timeout. A CI-budget
+correction is pending locally.
 
 Completed:
 
@@ -22,6 +24,9 @@ Completed:
 - verified the unchanged gates for `45cce64`:
   - Rust CI run `30471349312`: success;
   - Flutter Mobile UI run `30471340803`: success;
+- verified the unchanged gates for `b133222`:
+  - Rust CI run `30472472294`: success;
+  - Flutter Mobile UI run `30472472141`: success;
 - added a dedicated `iOS Native FFI` workflow on `macos-15-intel`;
 - configured the workflow to install both supported Rust simulator targets,
   build Flutter Runner through Xcode, and verify the generated static library
@@ -46,6 +51,9 @@ gh run list --repo GenesisSocietyEngine/Genesis-AI-Juris `
   --commit 88426988d6206c2c8744d9199a146a2bab5ea1e2
 gh run list --repo GenesisSocietyEngine/Genesis-AI-Juris `
   --branch feat/scenario-authoring-toolkit-v1 --limit 8
+gh run view 30472472329 `
+  --repo GenesisSocietyEngine/Genesis-AI-Juris `
+  --json status,conclusion,jobs,startedAt,updatedAt
 ```
 
 Results:
@@ -56,7 +64,7 @@ Results:
 - the corrected build script passes a local syntax check with Git Bash 5.3;
 - repository diff whitespace validation passes;
 - both existing remote workflows for `8842698` are green;
-- Rust CI and Flutter Mobile UI for `45cce64` are green.
+- Rust CI and Flutter Mobile UI for `45cce64` and `b133222` are green.
 
 First macOS execution:
 
@@ -69,23 +77,32 @@ First macOS execution:
 - the script now uses explicit Debug and Release Cargo invocations and no
   longer expands an empty array.
 
+Second macOS execution:
+
+- iOS Native FFI run `30472472329`, job `90645880459`;
+- the Xcode Runner build and Rust static-library build passed;
+- `nm` confirmed all three required C ABI exports;
+- an available iPhone Simulator booted successfully;
+- the native Logistics lifecycle integration test passed through
+  `DynamicLibrary.process()`, including create, dispatch, snapshot, repeated
+  dispose, and invalid-handle behavior;
+- the job was cancelled only in `Post Run subosito/flutter-action@v2` after
+  exceeding the configured 30-minute total timeout;
+- the workflow timeout is now 45 minutes so cache cleanup has a separate
+  completion margin.
+
 Known limitations:
 
-- the first `iOS Native FFI` workflow run failed at the observed Bash 3.2
-  compatibility defect; the corrective rerun is still pending;
-- this Windows host does not provide system Bash 3.2, so the local syntax
-  check cannot replace the macOS compatibility rerun;
-- no local iOS build or Simulator result is claimed from this Windows host;
-- the iOS gate is complete only after the macOS job builds Runner, verifies the
-  static symbols, boots an iPhone Simulator, and passes the native lifecycle
-  integration test.
+- all product-facing iOS steps have passed remotely, but the workflow conclusion
+  remains cancelled until the timeout-only correction reruns successfully;
+- no physical iPhone, signing, or App Store packaging result is claimed.
 
 Next step:
 
-- commit and push the isolated Bash 3.2 compatibility correction;
-- rerun the macOS gate and record the actual Xcode/staticlib/Simulator result
-  here;
-- begin lifecycle semantics work only after this remote iOS gate is green.
+- commit and push the timeout-only CI correction, then require one fully green
+  macOS run;
+- after the green iOS checkpoint, implement the isolated GreenFire content
+  vertical slice supplied in `greenfire_first_72_hours_starter.zip`.
 
 ## FFI checkpoint `8842698` — 2026-07-29
 
