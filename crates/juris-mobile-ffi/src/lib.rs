@@ -134,6 +134,8 @@ mod tests {
 
     const LOGISTICS_SCENARIO: &str =
         include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
+    const GOLDENSHELL_SCENARIO: &str =
+        include_str!("../../../content/cases/goldenshell_recall_at_dawn.scenario.json");
 
     fn execute_request(request: Value) -> Value {
         let request = CString::new(request.to_string()).expect("request must be a C string");
@@ -221,5 +223,34 @@ mod tests {
         }));
         assert_eq!(invalid_handle["type"], "error");
         assert_eq!(invalid_handle["code"], "unknown_session");
+    }
+
+    #[test]
+    fn goldenshell_session_starts_through_the_existing_c_abi() {
+        let scenario: Value = serde_json::from_str(GOLDENSHELL_SCENARIO)
+            .expect("scenario fixture must be valid JSON");
+        let created = execute_request(json!({
+            "command": "create_session",
+            "scenario": scenario,
+            "seed": 20260730
+        }));
+
+        assert_eq!(created["type"], "session_created");
+        assert_eq!(
+            created["snapshot"]["scenario_id"],
+            "goldenshell_recall_at_dawn"
+        );
+        assert_eq!(created["snapshot"]["stage_id"], "emergency_intake");
+        assert_eq!(
+            created["snapshot"]["available_actions"][0]["id"],
+            "accept_cooperative_mandate"
+        );
+
+        let disposed = execute_request(json!({
+            "command": "dispose_session",
+            "session_id": created["session_id"]
+        }));
+        assert_eq!(disposed["type"], "session_disposed");
+        assert_eq!(disposed["disposed"], true);
     }
 }

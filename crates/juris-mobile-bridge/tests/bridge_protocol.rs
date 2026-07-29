@@ -6,6 +6,8 @@ const LOGISTICS_SCENARIO: &str =
     include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
 const GREENFIRE_SCENARIO: &str =
     include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json");
+const GOLDENSHELL_SCENARIO: &str =
+    include_str!("../../../content/cases/goldenshell_recall_at_dawn.scenario.json");
 
 fn logistics_definition() -> ScenarioDefinition {
     serde_json::from_str(LOGISTICS_SCENARIO).expect("Logistics scenario must parse")
@@ -187,4 +189,85 @@ fn json_protocol_runs_the_greenfire_protected_path() {
         "protected_crisis_position"
     );
     assert_eq!(snapshot["snapshot"]["clock_minutes"], 4_440);
+}
+
+#[test]
+fn json_protocol_runs_the_goldenshell_coordinated_path() {
+    let mut bridge = MobileBridge::new();
+    let scenario: Value = serde_json::from_str(GOLDENSHELL_SCENARIO).unwrap();
+    let created: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "create_session",
+                "scenario": scenario,
+                "seed": 20260730
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    let session_id = created["session_id"].as_u64().unwrap();
+
+    for action_id in [
+        "accept_cooperative_mandate",
+        "issue_coordinated_legal_hold",
+        "preserve_reference_samples",
+        "obtain_blocking_decisions",
+        "notify_cleaning_contractor",
+        "notify_farm_insurers",
+        "coordinate_recall_response",
+        "request_product_composition_records",
+        "retain_independent_residue_expert",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "review_preliminary_residue_assessment",
+        "map_common_and_individual_losses",
+        "prepare_protective_attachment_strategy",
+        "establish_coordinated_claim_protocol",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "complete_coordinated_handoff",
+    ] {
+        let response: Value = serde_json::from_str(
+            &bridge.execute_json(
+                &json!({
+                    "command": "dispatch",
+                    "session_id": session_id,
+                    "action_id": action_id
+                })
+                .to_string(),
+            ),
+        )
+        .unwrap();
+        assert_ne!(response["type"], "error", "failed action {action_id}");
+    }
+
+    let snapshot: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "snapshot",
+                "session_id": session_id
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(
+        snapshot["snapshot"]["outcome"]["id"],
+        "coordinated_claim_position"
+    );
+    assert_eq!(snapshot["snapshot"]["clock_minutes"], 4_545);
+    assert_eq!(snapshot["snapshot"]["terminal"], true);
+    assert_eq!(
+        snapshot["snapshot"]["available_actions"]
+            .as_array()
+            .unwrap()
+            .len(),
+        0
+    );
 }

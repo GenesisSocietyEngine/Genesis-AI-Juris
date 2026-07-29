@@ -136,7 +136,7 @@ fn catalog_json_round_trip_preserves_case_order() {
 fn reference_library_exposes_all_mobile_playable_scenarios() {
     let bundle = load_reference_bundle();
 
-    assert_eq!(bundle.catalog.cases.len(), 3);
+    assert_eq!(bundle.catalog.cases.len(), 4);
     assert!(bundle
         .catalog
         .cases
@@ -152,6 +152,7 @@ fn reference_library_exposes_all_mobile_playable_scenarios() {
             "northbridge_consulting",
             "velmont_logistics",
             "greenfire_industrial_solutions",
+            "goldenshell_producers_cooperative",
         ]
     );
 }

@@ -221,6 +221,46 @@
           ]
         }
       }
+    },
+    "nl_food_safety_goldenshell_001": {
+      "sort_order": 40,
+      "seed": 20260730,
+      "runtime_adapter": "rust_scenario_v1",
+      "readiness": {
+        "diagnostics": true,
+        "path_simulation": true,
+        "engine_runtime": true
+      },
+      "locales": {
+        "en": {
+          "topic": "Contaminated Egg Supply Chain",
+          "short_title": "Recall at Dawn",
+          "synopsis": "A food-safety authority blocks twelve poultry farms while retailers demand an immediate recall. Counsel for the GoldenShell cooperative must preserve samples, protect notice and insurance rights, distinguish common source proof from farm-specific losses, and prepare a coordinated claim position within 72 hours.",
+          "player_client_role": "Crisis and claims coordinator",
+          "legal_issues": [
+            "preservation of reference samples and chain of custody",
+            "contractual notice, exclusions, and contractor liability",
+            "recall, mitigation, and causation evidence",
+            "common liability questions versus farm-specific damages",
+            "insurance notification and protective attachment",
+            "contractor, supplier, and regulator theories"
+          ]
+        },
+        "ru": {
+          "topic": "Загрязнение цепочки поставок яиц",
+          "short_title": "Отзыв на рассвете",
+          "synopsis": "Орган по безопасности пищевой продукции блокирует двенадцать птицеферм, а торговые сети требуют немедленного отзыва продукции. Юрист кооператива GoldenShell должен сохранить образцы, защитить права по уведомлениям и страхованию, отделить общие доказательства источника загрязнения от убытков отдельных ферм и подготовить согласованную претензионную позицию за 72 часа.",
+          "player_client_role": "Координатор кризисной и претензионной работы",
+          "legal_issues": [
+            "сохранение контрольных образцов и цепочка их хранения",
+            "договорное уведомление, исключения и ответственность подрядчика",
+            "отзыв продукции, минимизация ущерба и доказательства причинной связи",
+            "общие вопросы ответственности и убытки отдельных ферм",
+            "уведомление страховщиков и обеспечительный арест",
+            "требования к подрядчику, поставщику и регулятору"
+          ]
+        }
+      }
     }
   }
 }
