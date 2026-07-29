@@ -1,13 +1,111 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: AI Juris"
-branch: feat/scenario-authoring-toolkit-v1
-head_commit: "HEAD (GreenFire vertical-slice commit; parent c29f7e6)"
+branch: feat/lost-is-not-closed
+head_commit: "7372f55 (implementation HEAD before documentation checkpoint)"
 app_version: 0.5.1+12
 last_updated: 2026-07-29
 ---
 
 # Current Progress
+
+## Lost != Closed lifecycle separation — 2026-07-29
+
+Status: implementation is committed and pushed; PR #4 is open against `main`
+without auto-merge. Local quality gates pass. Remote PR checks are still in
+progress and no remote CI success is claimed.
+
+Commits:
+
+- `5465ebb` — `feat(lifecycle): separate judicial result from matter closure`;
+- `7372f55` — `feat(mobile): present judicial result separately from closure`.
+
+Completed:
+
+- added authoritative, serializable `JudicialResult` state with `won`, `lost`,
+  `partially_won`, and `dismissed` values;
+- added `SetJudicialResult` and `JudicialResultIs` to Scenario Definition v1
+  without changing existing Logistics or GreenFire stable IDs;
+- added `Appeal`, `Cassation`, and `Enforcement` stage kinds;
+- added derived `MatterLifecycleStatus`; stage remains the single lifecycle
+  authority and `is_closed` is true only for terminal/resolved stages;
+- kept `OutcomeDefinition` terminal-only and added focused validation against
+  premature outcome resolution from nonterminal transitions;
+- extended simulator, authoritative engine, mobile snapshot, JSON bridge, and
+  existing C ABI transport with `judicial_result`, `matter_lifecycle`,
+  `resolved_outcome`, and `is_closed`;
+- updated the Flutter mapper and Material 3 matter/report UI so a lost decision
+  remains open and still displays remedy actions;
+- added the test-only fixture
+  `content/fixtures/authoring/adverse_judgment_with_remedies.json`;
+- proved three stable paths:
+  - appeal success and completed enforcement -> `appellate_success`, 360
+    minutes;
+  - express appeal waiver -> `final_loss`, 65 minutes;
+  - appeal loss and exhausted cassation -> `final_loss`, 425 minutes;
+- opened
+  `https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/4`.
+
+Commands actually executed successfully:
+
+```powershell
+cargo +1.78.0 check --workspace --locked
+cargo fmt --all -- --check
+cargo check --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+git diff --check
+
+cargo run -p juris-scenario-simulator -- run `
+  content/fixtures/authoring/adverse_judgment_with_remedies.json `
+  --actions request_judgment,adverse_trial_judgment,file_appeal,appeal_success,begin_enforcement,complete_enforcement `
+  --require-outcome
+cargo run -p juris-scenario-simulator -- run `
+  content/fixtures/authoring/adverse_judgment_with_remedies.json `
+  --actions request_judgment,adverse_trial_judgment,waive_appeal `
+  --require-outcome
+cargo run -p juris-scenario-simulator -- run `
+  content/fixtures/authoring/adverse_judgment_with_remedies.json `
+  --actions request_judgment,adverse_trial_judgment,file_appeal,appeal_lost,file_cassation,cassation_rejected,close_after_remedies_exhausted `
+  --require-outcome
+
+dart.exe --disable-dart-dev tool/export_mobile_case_bundle.dart `
+  --repo-root C:\PROJECTS\Genesis-AI-Juris --check
+dart.exe flutter_tools.snapshot analyze --no-pub
+dart.exe flutter_tools.snapshot test --no-pub
+dart.exe flutter_tools.snapshot build apk --debug --no-pub
+```
+
+Results:
+
+- Rust 1.78 MSRV, formatting, workspace check, Clippy with warnings denied,
+  workspace tests, and whitespace validation pass;
+- all three lifecycle fixture CLI paths reach the expected explicit terminal
+  outcome deterministically;
+- existing Logistics negotiated/judgment and GreenFire
+  protected/compromised regression paths pass;
+- deterministic mobile bundle check passes;
+- Flutter analyze reports no issues;
+- all 63 Flutter tests pass;
+- Android debug APK builds at
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`;
+- prior post-merge iOS Native FFI run `30479917635` reached terminal status
+  `cancelled`; it is not reported as successful;
+- PR #4 checks were still queued or running at the last observation.
+
+Known limitations:
+
+- the lifecycle fixture is test-only and is not a visible mobile catalog case;
+- native Rust scenario snapshots use authoritative `is_closed`; the older Dart
+  demo runtime retains a compatibility fallback to its existing terminal
+  summary until that separate runtime is migrated;
+- no physical-device, signing, persistence, translation-overlay, GoldenShell,
+  dossier, Failed ERP migration, or foreground-clock result is claimed.
+
+Next step:
+
+- formalize foreground clock control and remove GreenFire's temporary
+  `coordinate_operational_period` action in a separate branch.
 
 ## GreenFire vertical slice — 2026-07-29
 
@@ -368,6 +466,164 @@ actions, stages, inbox и outcomes без изменения каноничес�
 Исторические записи ниже основаны на Git diff, именах тестов и документации.
 Git не хранит stdout прошлых тестовых запусков, поэтому для старых коммитов
 указано тестовое покрытие, но не заявлен неподтверждённый факт запуска.
+
+### `753496e` — Merge pull request #3: scenario authoring toolkit and GreenFire
+
+Дата: 2026-07-29.
+
+Выполнено:
+
+- feature-ветка `feat/scenario-authoring-toolkit-v1` объединена с `main`;
+- `main` теперь содержит authoring pipeline, mobile case catalog, native Rust
+  runtime/FFI, iOS Simulator gate и playable GreenFire vertical slice.
+
+Тесты и проверки:
+
+- post-merge Rust CI `30479917039`: success;
+- post-merge Flutter Mobile UI `30479916856`: success;
+- post-merge iOS Native FFI `30479917635`: terminal `cancelled`; success не
+  заявлен.
+
+Известные проблемы:
+
+- branch protection не ожидал iOS job перед merge.
+
+Следующий шаг:
+
+- formalize foreground clock control and remove GreenFire's temporary
+  `coordinate_operational_period` action.
+
+### `4cdc880` — feat(scenarios): add GreenFire first 72 hours
+
+Дата: 2026-07-29.
+
+Выполнено:
+
+- добавлен третий playable catalog case и второй engine-backed сценарий;
+- реализованы оба 72-hour пути и общая schema v1 семантика simulator/runtime;
+- добавлены EN/RU catalog data, native/mobile coverage и authoring document.
+
+Тесты и проверки:
+
+- Rust 1.78 MSRV, fmt, check, Clippy и workspace tests: success;
+- protected/compromised simulator paths: success;
+- deterministic mobile bundle, Flutter analyze и 57 tests: success;
+- Android debug APK: success;
+- PR-head Rust, Flutter и один iOS Native FFI run: success.
+
+Известные проблемы:
+
+- формальный foreground clock, dossier и persistence остаются вне slice.
+
+Следующий шаг:
+
+- разделить adverse result и terminal matter closure.
+
+### `c29f7e6` — ci(ios): allow native simulator gate to finish
+
+Дата: 2026-07-29.
+
+Выполнено:
+
+- timeout iOS Native FFI workflow увеличен с 30 до 45 минут.
+
+Тесты и проверки:
+
+- iOS Native FFI run `30475911046`: success за 22 минуты 51 секунду.
+
+Известные проблемы:
+
+- физический iPhone и signing не проверялись.
+
+Следующий шаг:
+
+- реализовать GreenFire vertical slice.
+
+### `b133222` — fix(ios): support macOS Bash 3.2 build phase
+
+Дата: 2026-07-29.
+
+Выполнено:
+
+- iOS Rust build phase избавлен от несовместимого с Bash 3.2 раскрытия пустого
+  массива.
+
+Тесты и проверки:
+
+- Xcode/staticlib, ABI symbols, Simulator boot и native Logistics lifecycle:
+  success; run был отменён только на cache cleanup из-за старого timeout.
+
+Известные проблемы:
+
+- требовался отдельный timeout-only rerun.
+
+Следующий шаг:
+
+- увеличить CI timeout и получить полностью зелёный run.
+
+### `45cce64` — test(ios): add native scenario FFI simulator gate
+
+Дата: 2026-07-29.
+
+Выполнено:
+
+- добавлен macOS/Xcode build, ABI symbol check и native iOS Simulator lifecycle
+  test для Logistics.
+
+Тесты и проверки:
+
+- Rust и Flutter CI: success;
+- первый iOS run выявил несовместимость build script с Bash 3.2.
+
+Известные проблемы:
+
+- build phase требовал Bash 3.2 correction.
+
+Следующий шаг:
+
+- исправить portable shell invocation.
+
+### `8842698` — fix(ffi): restore Rust 1.78 compatibility
+
+Дата: 2026-07-29.
+
+Выполнено:
+
+- C ABI exports переведены на Rust 1.78-compatible `#[no_mangle]`;
+- добавлен FFI lifecycle regression.
+
+Тесты и проверки:
+
+- Rust 1.78 workspace check, Rust gates и 56 Flutter tests: success.
+
+Известные проблемы:
+
+- iOS Xcode linking ещё требовал отдельного remote checkpoint.
+
+Следующий шаг:
+
+- добавить native iOS Simulator gate.
+
+### `8560568` — docs(development): add cumulative progress handoff
+
+Дата: 2026-07-29.
+
+Выполнено:
+
+- создан накопительный `CURRENT_PROGRESS.md` с результатами, ограничениями и
+  следующим шагом для каждого checkpoint.
+
+Тесты и проверки:
+
+- documentation-only change; execution claims не добавлялись.
+
+Известные проблемы:
+
+- документ требует обновления в каждом следующем commit.
+
+Следующий шаг:
+
+- поддерживать handoff синхронно с кодом и CI.
 
 ### `14a6db6` — feat(mobile): run scenarios through native Rust FFI
 
