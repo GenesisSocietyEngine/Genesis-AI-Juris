@@ -11,7 +11,14 @@ abstract final class ScenarioSnapshotMapper {
     Set<String> locallyReadInboxIds = const <String>{},
   }) {
     final int clockMinutes = _int(source, 'clock_minutes');
-    final bool terminal = _bool(source, 'terminal');
+    final bool isClosed =
+        _optionalBool(source, 'is_closed') ?? _bool(source, 'terminal');
+    final JudicialResult? judicialResult =
+        _judicialResult(source['judicial_result']);
+    final MatterLifecycleStatus matterLifecycle = _matterLifecycle(
+      source['matter_lifecycle'],
+      isClosed: isClosed,
+    );
     final List<Map<String, dynamic>> facts = _objectList(source, 'facts');
     final List<Map<String, dynamic>> evidence = _objectList(source, 'evidence');
     final List<Map<String, dynamic>> availableEvidence = evidence
@@ -36,9 +43,9 @@ abstract final class ScenarioSnapshotMapper {
       dayLabel: _dayLabel(clockMinutes),
       timeLabel: _timeLabel(clockMinutes),
       stage: _string(source, 'stage_title'),
-      caseResultStatus: _caseResult(outcome),
+      caseResultStatus: _caseResult(judicialResult, outcome),
       engagementStatus:
-          terminal ? EngagementStatus.completed : EngagementStatus.active,
+          isClosed ? EngagementStatus.completed : EngagementStatus.active,
       matterTitle: _scenarioTitle(caseDefinition),
       caseStrength: ((factScore + evidenceScore) / 2).round(),
       merits: factScore,
@@ -115,7 +122,10 @@ abstract final class ScenarioSnapshotMapper {
           )
           .toList(growable: false),
       latestAiNote: null,
-      outcomeSummary: outcome == null
+      judicialResult: judicialResult,
+      matterLifecycle: matterLifecycle,
+      isClosed: isClosed,
+      outcomeSummary: !isClosed || outcome == null
           ? null
           : CaseOutcomeSummaryView(
               headline: _string(outcome, 'title'),
@@ -186,7 +196,21 @@ abstract final class ScenarioSnapshotMapper {
     };
   }
 
-  static CaseResultStatus _caseResult(Map<String, dynamic>? outcome) {
+  static CaseResultStatus _caseResult(
+    JudicialResult? judicialResult,
+    Map<String, dynamic>? outcome,
+  ) {
+    final CaseResultStatus? fromDecision = switch (judicialResult) {
+      JudicialResult.won => CaseResultStatus.wonAtFirstInstance,
+      JudicialResult.lost ||
+      JudicialResult.dismissed =>
+        CaseResultStatus.lostAtFirstInstance,
+      JudicialResult.partiallyWon => CaseResultStatus.mixedAtFirstInstance,
+      JudicialResult.unknown || null => null,
+    };
+    if (fromDecision != null) {
+      return fromDecision;
+    }
     if (outcome == null) {
       return CaseResultStatus.ongoing;
     }
@@ -195,6 +219,42 @@ abstract final class ScenarioSnapshotMapper {
       return CaseResultStatus.wonAtFirstInstance;
     }
     return CaseResultStatus.settled;
+  }
+
+  static JudicialResult? _judicialResult(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is! String) {
+      return JudicialResult.unknown;
+    }
+    return switch (value) {
+      'won' => JudicialResult.won,
+      'lost' => JudicialResult.lost,
+      'partially_won' => JudicialResult.partiallyWon,
+      'dismissed' => JudicialResult.dismissed,
+      _ => JudicialResult.unknown,
+    };
+  }
+
+  static MatterLifecycleStatus _matterLifecycle(
+    dynamic value, {
+    required bool isClosed,
+  }) {
+    if (value is! String) {
+      return isClosed
+          ? MatterLifecycleStatus.closed
+          : MatterLifecycleStatus.active;
+    }
+    return switch (value) {
+      'active' => MatterLifecycleStatus.active,
+      'post_judgment' => MatterLifecycleStatus.postJudgment,
+      'appeal' => MatterLifecycleStatus.appeal,
+      'cassation' => MatterLifecycleStatus.cassation,
+      'enforcement' => MatterLifecycleStatus.enforcement,
+      'closed' => MatterLifecycleStatus.closed,
+      _ => MatterLifecycleStatus.unknown,
+    };
   }
 
   static int _factStatusScore(String status) {
@@ -286,5 +346,10 @@ abstract final class ScenarioSnapshotMapper {
       return value;
     }
     throw FormatException('$field must be a Boolean');
+  }
+
+  static bool? _optionalBool(Map<String, dynamic> source, String field) {
+    final dynamic value = source[field];
+    return value is bool ? value : null;
   }
 }

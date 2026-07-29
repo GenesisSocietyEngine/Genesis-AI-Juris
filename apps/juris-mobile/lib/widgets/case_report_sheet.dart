@@ -42,7 +42,12 @@ class CaseReportSheet extends StatelessWidget {
                 children: <Widget>[
                   _ReportRow(
                     label: 'Result',
-                    value: snapshot.caseResultStatus.label,
+                    value: snapshot.judicialResult?.label ??
+                        snapshot.caseResultStatus.label,
+                  ),
+                  _ReportRow(
+                    label: 'Matter status',
+                    value: snapshot.matterLifecycle.label,
                   ),
                   _ReportRow(
                     label: 'Procedural stage',

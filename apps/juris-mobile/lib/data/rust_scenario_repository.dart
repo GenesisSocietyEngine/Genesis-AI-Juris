@@ -26,7 +26,7 @@ final class RustScenarioRepository extends GameRuntimeRepository {
   GameSnapshot get snapshot => _snapshot;
 
   @override
-  bool get isTerminal => _snapshot.outcomeSummary != null;
+  bool get isTerminal => _snapshot.isClosed;
 
   @override
   bool get supportsLiveClock => false;

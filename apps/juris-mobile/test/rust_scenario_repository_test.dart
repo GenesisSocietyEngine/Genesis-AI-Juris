@@ -197,6 +197,14 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
           _ => 'Matter resolved',
         },
         'clock_minutes': _clockMinutes,
+        'judicial_result': null,
+        'matter_lifecycle': _outcome != null
+            ? 'closed'
+            : _stage == 'post_judgment'
+                ? 'post_judgment'
+                : 'active',
+        'is_closed': _outcome != null,
+        'resolved_outcome': _outcome,
         'terminal': _outcome != null,
         'flags': <String, bool>{},
         'facts': <Map<String, dynamic>>[
