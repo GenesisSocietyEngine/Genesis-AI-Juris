@@ -11,9 +11,10 @@ last_updated: 2026-07-29
 
 ## Authoritative foreground clock control — 2026-07-29
 
-Status: implementation is complete in a branch stacked on the still-open
-`feat/lost-is-not-closed` PR. All local quality gates pass; the branch has not
-yet been pushed and no remote CI result is claimed.
+Status: implementation is committed and pushed. PR #5 is open against
+`feat/lost-is-not-closed` as a stacked dependency on PR #4. All local quality
+gates pass; remote checks have just started and no remote CI success is
+claimed.
 
 Commits:
 
@@ -44,7 +45,9 @@ Completed:
   - protected crisis position: 4440 minutes;
   - compromised crisis position: 4590 minutes;
 - added engine, registry, simulator CLI, bridge JSON, C ABI, Dart command,
-  repository, and catalog regression coverage.
+  repository, and catalog regression coverage;
+- pushed `feat/foreground-clock-control` and opened
+  `https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/5`.
 
 Commands actually executed successfully:
 
@@ -96,10 +99,10 @@ Known limitations:
 
 Next step:
 
-- push the stacked branch and open a PR against `feat/lost-is-not-closed`;
-- run remote Rust, Flutter, Android, and native iOS gates;
-- after both stacked PRs merge, prioritize authoritative session save/restore
-  before expanding GreenFire beyond the first 72 hours.
+- wait for remote Rust, Flutter, Android, and native iOS gates on PR #5;
+- merge PR #4 first, then retarget PR #5 to `main` and re-run its checks;
+- after both PRs merge, prioritize authoritative session save/restore before
+  expanding GreenFire beyond the first 72 hours.
 
 ## Lost != Closed lifecycle separation — 2026-07-29
 
