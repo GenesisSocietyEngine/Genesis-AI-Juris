@@ -29,7 +29,7 @@ final class RustScenarioRepository extends GameRuntimeRepository {
   bool get isTerminal => _snapshot.isClosed;
 
   @override
-  bool get supportsLiveClock => false;
+  bool get supportsLiveClock => true;
 
   @override
   ActionExecutionResult applyAction(String actionId) {
@@ -64,8 +64,20 @@ final class RustScenarioRepository extends GameRuntimeRepository {
 
   @override
   void advanceTimeByMinutes(int minutes) {
-    // Generic scenarios advance their authoritative clock through action costs.
-    // The shared shell checks supportsLiveClock and does not call this method.
+    if (minutes <= 0 || isTerminal) {
+      return;
+    }
+    final ScenarioBridgeResponse response = _execute(
+      ScenarioBridgeCommand.advanceTime(
+        sessionId: _sessionId,
+        minutes: minutes,
+      ),
+    );
+    if (response.isError) {
+      return;
+    }
+    _acceptSnapshot(response);
+    notifyListeners();
   }
 
   @override

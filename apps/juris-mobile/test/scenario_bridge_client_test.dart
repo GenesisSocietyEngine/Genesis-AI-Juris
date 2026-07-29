@@ -43,6 +43,22 @@ void main() {
     );
   });
 
+  test('foreground time command uses explicit deterministic minutes', () {
+    expect(
+      jsonDecode(
+        ScenarioBridgeCommand.advanceTime(
+          sessionId: 42,
+          minutes: 15,
+        ),
+      ),
+      <String, dynamic>{
+        'command': 'advance_time',
+        'session_id': 42,
+        'minutes': 15,
+      },
+    );
+  });
+
   test('response parser preserves snapshot and typed errors', () {
     final ScenarioBridgeResponse snapshot = ScenarioBridgeResponse.parse(
       '{"type":"snapshot","session_id":3,"snapshot":{"stage_id":"intake"}}',

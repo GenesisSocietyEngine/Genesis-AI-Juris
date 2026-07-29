@@ -13,15 +13,19 @@ abstract class GameRuntimeRepository extends ChangeNotifier {
 
   bool get isTerminal;
 
-  /// Whether the shared shell should advance this runtime every foreground
-  /// clock tick. Declarative Rust scenarios advance through authoritative
-  /// action costs and therefore return false.
+  /// Whether the shared shell may send explicit time commands while resumed.
+  ///
+  /// The shell stops ticks while paused, backgrounded, or terminal. Supporting
+  /// repositories remain authoritative over each requested state transition.
   bool get supportsLiveClock;
 
   void reset();
 
   void markInboxItemRead(String itemId);
 
+  /// Requests one deterministic foreground-time transition.
+  ///
+  /// Implementations must not derive elapsed game time from the wall clock.
   void advanceTimeByMinutes(int minutes);
 
   ActionExecutionResult applyAction(String actionId);
