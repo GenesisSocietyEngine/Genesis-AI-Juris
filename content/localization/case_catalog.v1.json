@@ -183,6 +183,44 @@
           ]
         }
       }
+    },
+    "greenfire_first_72_hours": {
+      "sort_order": 30,
+      "seed": 20260729,
+      "runtime_adapter": "rust_scenario_v1",
+      "readiness": {
+        "diagnostics": true,
+        "path_simulation": true,
+        "engine_runtime": true
+      },
+      "locales": {
+        "en": {
+          "topic": "The First 72 Hours",
+          "short_title": "GreenFire",
+          "synopsis": "An industrial fire places GreenFire under simultaneous regulatory, environmental, insurance, criminal, and governance pressure. Crisis counsel must preserve evidence and hand over a defensible position within 72 hours.",
+          "player_client_role": "Managing Director",
+          "legal_issues": [
+            "evidence preservation after a major incident",
+            "company and director representation conflicts",
+            "environmental regulator communications",
+            "insurance notification and coverage protection",
+            "privileged expert investigation"
+          ]
+        },
+        "ru": {
+          "topic": "Первые 72 часа",
+          "short_title": "GreenFire",
+          "synopsis": "Промышленный пожар создаёт для GreenFire одновременные регуляторные, экологические, страховые, уголовно-правовые и корпоративные риски. Кризисный юрист должен сохранить доказательства и передать защищённую позицию в течение 72 часов.",
+          "player_client_role": "Управляющий директор",
+          "legal_issues": [
+            "сохранение доказательств после крупного происшествия",
+            "конфликт представительства компании и директора",
+            "коммуникации с экологическим регулятором",
+            "уведомление страховщиков и защита покрытия",
+            "привилегированное экспертное расследование"
+          ]
+        }
+      }
     }
   }
 }

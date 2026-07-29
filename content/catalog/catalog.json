@@ -27,6 +27,19 @@
       "player_client_id": "velmont_logistics",
       "identity_file": "content/catalog/cases/unpaid_logistics_invoices.identity.json",
       "scenario_file": "content/cases/unpaid_logistics_invoices.scenario.json"
+    },
+    {
+      "case_id": "greenfire_first_72_hours",
+      "caption": "Port Haven Environmental Authority v. GreenFire Industrial Solutions B.V.",
+      "topic": "The First 72 Hours",
+      "short_title": "GreenFire",
+      "jurisdiction": "NL",
+      "practice_area": "crisis_management",
+      "difficulty": "advanced",
+      "status": "playable",
+      "player_client_id": "greenfire_industrial_solutions",
+      "identity_file": "content/catalog/cases/greenfire_first_72_hours.identity.json",
+      "scenario_file": "content/cases/greenfire_first_72_hours.scenario.json"
     }
   ]
 }

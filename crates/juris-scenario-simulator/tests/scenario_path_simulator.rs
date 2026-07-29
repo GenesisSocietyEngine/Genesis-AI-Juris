@@ -205,8 +205,8 @@ fn one_transition_cannot_resolve_multiple_outcomes() {
 fn unsupported_condition_is_not_silently_ignored() {
     let mut value = fixture_value();
     value["actions"][0]["available_when"] = json!({
-        "type": "evidence_available",
-        "evidence": "contract"
+        "type": "money_at_least",
+        "amount": 50
     });
 
     let error = run(value, &["file_claim"]).expect_err("unsupported condition must fail");

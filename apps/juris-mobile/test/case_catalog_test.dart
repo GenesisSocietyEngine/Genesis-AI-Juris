@@ -35,12 +35,13 @@ void main() {
       decoded as Map<String, dynamic>,
     );
 
-    expect(bundle.cases, hasLength(2));
+    expect(bundle.cases, hasLength(3));
     expect(
       bundle.cases.map((MobileCaseDefinition item) => item.caseId),
       containsAll(<String>[
         'be_commercial_failed_erp_001',
         'be_commercial_logistics_001',
+        'greenfire_first_72_hours',
       ]),
     );
     expect(bundle.supportedLocales, containsAll(<String>['en', 'ru']));
@@ -57,9 +58,21 @@ void main() {
     expect(logistics.readiness.pathSimulation, isTrue);
     expect(logistics.readiness.engineRuntime, isTrue);
     expect(logistics.runtimeAdapter, 'rust_scenario_v1');
+
+    final MobileCaseDefinition greenfire = bundle.cases.singleWhere(
+      (MobileCaseDefinition item) => item.caseId == 'greenfire_first_72_hours',
+    );
+    expect(greenfire.status, MobileCaseStatus.playable);
+    expect(greenfire.scenarioAvailable, isTrue);
+    expect(greenfire.scenario, isNotNull);
+    expect(greenfire.scenario?['actions'], hasLength(14));
+    expect(greenfire.readiness.diagnostics, isTrue);
+    expect(greenfire.readiness.pathSimulation, isTrue);
+    expect(greenfire.readiness.engineRuntime, isTrue);
+    expect(greenfire.runtimeAdapter, 'rust_scenario_v1');
   });
 
-  testWidgets('case library renders both playable scenarios', (
+  testWidgets('case library renders all catalog scenarios', (
     WidgetTester tester,
   ) async {
     await pumpCatalog(tester);
@@ -81,6 +94,19 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Playable demo'), findsWidgets);
+
+    await tester.drag(
+      find.byKey(const PageStorageKey<String>('case-catalog')),
+      const Offset(0, -550),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Port Haven Environmental Authority v. GreenFire Industrial Solutions B.V.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets(

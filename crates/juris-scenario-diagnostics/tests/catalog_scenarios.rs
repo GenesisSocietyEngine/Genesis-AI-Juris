@@ -3,16 +3,22 @@ use juris_scenario_schema::ScenarioDefinition;
 
 const LOGISTICS_SCENARIO: &str =
     include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
+const GREENFIRE_SCENARIO: &str =
+    include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json");
 
 #[test]
-fn logistics_catalog_scenario_passes_authoring_diagnostics() {
-    let scenario: ScenarioDefinition =
-        serde_json::from_str(LOGISTICS_SCENARIO).expect("scenario JSON must deserialize");
-    let report = validate_authoring_semantics(&scenario);
-
-    assert!(
-        report.is_valid(),
-        "expected valid Logistics authoring semantics, got diagnostics: {:#?}",
-        report.diagnostics()
-    );
+fn playable_catalog_scenarios_pass_authoring_diagnostics() {
+    for (name, encoded) in [
+        ("Logistics", LOGISTICS_SCENARIO),
+        ("GreenFire", GREENFIRE_SCENARIO),
+    ] {
+        let scenario: ScenarioDefinition =
+            serde_json::from_str(encoded).expect("scenario JSON must deserialize");
+        let report = validate_authoring_semantics(&scenario);
+        assert!(
+            report.is_valid(),
+            "expected valid {name} authoring semantics, got diagnostics: {:#?}",
+            report.diagnostics()
+        );
+    }
 }

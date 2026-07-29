@@ -655,8 +655,9 @@ impl ScenarioSession {
             }
 
             self.state.fired_events.insert(event_id.clone());
-            self.activate_event_owned_state(&event);
+            let mut event_owned = self.activate_event_owned_state(&event);
             self.apply_effects(&event.effects)?;
+            events.append(&mut event_owned);
 
             for dependent in &self.definition.events {
                 if matches!(
@@ -672,7 +673,8 @@ impl ScenarioSession {
         Ok(())
     }
 
-    fn activate_event_owned_state(&mut self, event: &EventDefinition) {
+    fn activate_event_owned_state(&mut self, event: &EventDefinition) -> VecDeque<String> {
+        let mut events = VecDeque::new();
         for deadline in &self.definition.deadlines {
             if deadline.activation_event.as_ref() == Some(&event.id) {
                 self.state
@@ -690,6 +692,26 @@ impl ScenarioSession {
                     .insert(item.id.as_str().to_owned());
             }
         }
+        for task in &self.definition.async_tasks {
+            if task.usable_until_event.as_ref() != Some(&event.id) {
+                continue;
+            }
+            let status = self
+                .state
+                .task_statuses
+                .get(task.id.as_str())
+                .copied()
+                .unwrap_or(AsyncTaskStatus::NotStarted);
+            if matches!(
+                status,
+                AsyncTaskStatus::NotStarted | AsyncTaskStatus::InProgress | AsyncTaskStatus::Ready
+            ) {
+                if let Some(expiry_event) = &task.expiry_event {
+                    events.push_back(expiry_event.as_str().to_owned());
+                }
+            }
+        }
+        events
     }
 
     fn queue_due_events(&mut self, events: &mut VecDeque<String>) {

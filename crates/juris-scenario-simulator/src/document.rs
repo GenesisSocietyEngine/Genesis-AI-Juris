@@ -68,26 +68,6 @@ impl ScenarioDocument {
     pub fn root(&self) -> &Value {
         &self.root
     }
-
-    pub(crate) fn events(&self) -> Result<&[Value], SimulationError> {
-        required_array(&self.root, "events")
-    }
-
-    pub(crate) fn action(&self, id: &str) -> Result<Option<&Value>, SimulationError> {
-        find_by_id(&self.root, "actions", id)
-    }
-
-    pub(crate) fn event(&self, id: &str) -> Result<Option<&Value>, SimulationError> {
-        find_by_id(&self.root, "events", id)
-    }
-
-    pub(crate) fn outcome(&self, id: &str) -> Result<Option<&Value>, SimulationError> {
-        find_by_id(&self.root, "outcomes", id)
-    }
-
-    pub(crate) fn stage(&self, id: &str) -> Result<Option<&Value>, SimulationError> {
-        find_by_id(&self.root, "stages", id)
-    }
 }
 
 pub(crate) fn required_string(value: &Value, field: &str) -> Result<String, SimulationError> {

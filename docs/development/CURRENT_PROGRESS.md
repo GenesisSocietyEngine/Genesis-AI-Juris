@@ -2,19 +2,93 @@
 document_type: cumulative_development_handoff
 project: "GENESIS: AI Juris"
 branch: feat/scenario-authoring-toolkit-v1
-head_commit: b133222
+head_commit: "HEAD (GreenFire vertical-slice commit; parent c29f7e6)"
 app_version: 0.5.1+12
 last_updated: 2026-07-29
 ---
 
 # Current Progress
 
-## Pending iOS native checkpoint — 2026-07-29
+## GreenFire vertical slice — 2026-07-29
 
-Status: Bash 3.2 correction `b133222` is pushed. Its macOS run passed every
-product-facing iOS gate, but the workflow was cancelled while uploading the
-Flutter action cache after reaching the 30-minute job timeout. A CI-budget
-correction is pending locally.
+Status: implementation and all local quality gates are complete; the isolated
+commit is ready to create.
+
+Completed:
+
+- added playable case `greenfire_first_72_hours` using the existing
+  `ScenarioDefinition v1`, `rust_scenario_v1` adapter, bridge, FFI, mapper, and
+  Flutter case library;
+- added 4 stages, 14 stable actions, 3 deadlines, 1 asynchronous expert task,
+  7 Inbox items, 10 events, 2 outcomes, 8 actors, 5 facts, and 7 evidence
+  records;
+- added EN/RU catalog content and regenerated the deterministic mobile bundle;
+- added protected and compromised deterministic traces:
+  - protected: `protected_crisis_position`, 4440 minutes;
+  - compromised: `compromised_crisis_position`, 4590 minutes;
+- expanded the shared authoring simulator to execute every condition, effect,
+  and event trigger already declared by ScenarioDefinition v1;
+- implemented the shared authoritative runtime rule
+  `usable_until_event -> expiry_event` for unreviewed asynchronous work;
+- added validator, diagnostics, simulator, engine, bridge, catalog, Flutter
+  catalog, and Flutter Rust-repository coverage;
+- documented the vertical-slice boundary in
+  `docs/authoring/GREENFIRE_FIRST_72_HOURS.md`.
+
+Commands actually executed:
+
+```powershell
+cargo run -q -p juris-scenario-diagnostics -- validate `
+  content/cases/greenfire_first_72_hours.scenario.json --json
+cargo run -q -p juris-scenario-simulator -- run `
+  content/cases/greenfire_first_72_hours.scenario.json `
+  --actions <protected-actions> --require-outcome
+cargo run -q -p juris-scenario-simulator -- run `
+  content/cases/greenfire_first_72_hours.scenario.json `
+  --actions <compromised-actions> --require-outcome
+cargo fmt --all -- --check
+cargo check --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+dart.exe --disable-dart-dev tool/export_mobile_case_bundle.dart `
+  --repo-root C:\PROJECTS\Genesis-AI-Juris --check
+dart.exe flutter_tools.snapshot analyze --no-pub
+dart.exe flutter_tools.snapshot test --no-pub
+dart.exe flutter_tools.snapshot build apk --debug --no-pub
+git diff --check
+```
+
+Results:
+
+- core validation and authoring diagnostics report no errors;
+- protected and compromised simulator CLI traces reach their expected outcome
+  and clock;
+- Rust formatting, workspace check, Clippy with warnings denied, and the full
+  workspace test suite pass;
+- the mobile case bundle is deterministic and current with 3 cases;
+- Flutter analyze reports no issues;
+- all 57 Flutter tests pass;
+- Android debug APK builds successfully at
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`;
+- repository whitespace validation passes.
+
+Known limitations:
+
+- `coordinate_operational_period` remains a temporary six-hour foreground
+  clock action pending the formal clock-control architecture;
+- GreenFire covers the first 72 hours only; dossier, save/load, scoring, and
+  later criminal/environmental/civil branches remain out of scope;
+- no new physical-device, signing, or App Store result is claimed.
+
+Next step:
+
+- run remote CI for this commit, including the native iOS Simulator gate;
+- then implement the planned terminal-outcome separation (`Lost != Closed`)
+  without changing GreenFire stable IDs.
+
+## iOS native checkpoint `c29f7e6` — 2026-07-29
+
+Status: committed, pushed, and fully green in remote GitHub Actions.
 
 Completed:
 
@@ -91,18 +165,21 @@ Second macOS execution:
 - the workflow timeout is now 45 minutes so cache cleanup has a separate
   completion margin.
 
+Final macOS execution:
+
+- iOS Native FFI run `30475911046`, job `90657430970`;
+- completed successfully in 22 minutes 51 seconds;
+- Xcode/Rust static-library build, ABI symbol verification, iPhone Simulator
+  boot, native Logistics lifecycle, cache cleanup, and checkout cleanup all
+  passed.
+
 Known limitations:
 
-- all product-facing iOS steps have passed remotely, but the workflow conclusion
-  remains cancelled until the timeout-only correction reruns successfully;
 - no physical iPhone, signing, or App Store packaging result is claimed.
 
 Next step:
 
-- commit and push the timeout-only CI correction, then require one fully green
-  macOS run;
-- after the green iOS checkpoint, implement the isolated GreenFire content
-  vertical slice supplied in `greenfire_first_72_hours_starter.zip`.
+- implement and validate the isolated GreenFire content vertical slice.
 
 ## FFI checkpoint `8842698` — 2026-07-29
 

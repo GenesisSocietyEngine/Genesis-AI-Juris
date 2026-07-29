@@ -19,6 +19,12 @@ pub enum SimulationError {
         source: serde_json::Error,
     },
 
+    #[error("scenario document does not conform to ScenarioDefinition v1")]
+    InvalidScenarioDocument {
+        #[source]
+        source: serde_json::Error,
+    },
+
     #[error("scenario document is missing required field `{field}`")]
     MissingField { field: String },
 

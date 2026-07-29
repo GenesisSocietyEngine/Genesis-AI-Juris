@@ -10,6 +10,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MobileCaseDefinition logistics;
+  late MobileCaseDefinition greenfire;
 
   setUpAll(() async {
     final String encoded = await rootBundle.loadString(
@@ -21,6 +22,9 @@ void main() {
     logistics = bundle.cases.singleWhere(
       (MobileCaseDefinition item) =>
           item.caseId == 'be_commercial_logistics_001',
+    );
+    greenfire = bundle.cases.singleWhere(
+      (MobileCaseDefinition item) => item.caseId == 'greenfire_first_72_hours',
     );
   });
 
@@ -78,6 +82,20 @@ void main() {
     repository.dispose();
     expect(client.disposeCount, 2);
   });
+
+  test('creates GreenFire from its canonical bundled scenario and seed', () {
+    final _FakeScenarioBridgeClient client = _FakeScenarioBridgeClient();
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: greenfire,
+      bridgeClient: client,
+    );
+
+    expect(client.lastScenarioId, 'greenfire_first_72_hours');
+    expect(client.lastSeed, 20260729);
+    expect(client.lastActionCount, 14);
+    expect(repository.snapshot.matterTitle, contains('GreenFire'));
+    repository.dispose();
+  });
 }
 
 final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
@@ -87,13 +105,16 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
   int _clockMinutes = 0;
   String _stage = 'intake';
   String? _outcome;
+  String? lastScenarioId;
+  int? lastSeed;
+  int? lastActionCount;
 
   @override
   String execute(String encodedRequest) {
     final Map<String, dynamic> request =
         jsonDecode(encodedRequest) as Map<String, dynamic>;
     return switch (request['command']) {
-      'create_session' => _create(),
+      'create_session' => _create(request),
       'dispatch' => _dispatch(request['action_id'] as String),
       'snapshot' => _response('snapshot'),
       'dispose_session' => _dispose(),
@@ -105,7 +126,14 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
     };
   }
 
-  String _create() {
+  String _create(Map<String, dynamic> request) {
+    final Map<String, dynamic> scenario =
+        request['scenario'] as Map<String, dynamic>;
+    final Map<String, dynamic> metadata =
+        scenario['metadata'] as Map<String, dynamic>;
+    lastScenarioId = metadata['id'] as String;
+    lastSeed = request['seed'] as int;
+    lastActionCount = (scenario['actions'] as List<dynamic>).length;
     createCount += 1;
     _sessionId += 1;
     _clockMinutes = 0;

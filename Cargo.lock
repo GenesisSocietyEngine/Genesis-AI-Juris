@@ -145,6 +145,7 @@ dependencies = [
 name = "juris-scenario-simulator"
 version = "0.5.0"
 dependencies = [
+ "juris-scenario-schema",
  "serde",
  "serde_json",
  "thiserror",

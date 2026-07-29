@@ -3,9 +3,15 @@ use juris_scenario_schema::ScenarioDefinition;
 
 const LOGISTICS_SCENARIO: &str =
     include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
+const GREENFIRE_SCENARIO: &str =
+    include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json");
 
 fn logistics_definition() -> ScenarioDefinition {
     serde_json::from_str(LOGISTICS_SCENARIO).expect("Logistics scenario must parse")
+}
+
+fn greenfire_definition() -> ScenarioDefinition {
+    serde_json::from_str(GREENFIRE_SCENARIO).expect("GreenFire scenario must parse")
 }
 
 #[test]
@@ -129,5 +135,83 @@ fn identical_inputs_produce_identical_snapshots() {
     assert_eq!(
         serde_json::to_string(&first.snapshot()).unwrap(),
         serde_json::to_string(&second.snapshot()).unwrap()
+    );
+}
+
+#[test]
+fn greenfire_protected_path_runs_through_the_authoritative_engine() {
+    let mut session =
+        ScenarioSession::new(greenfire_definition(), 20260729).expect("session must start");
+    for action in [
+        "accept_emergency_mandate",
+        "issue_legal_hold",
+        "run_conflict_assessment",
+        "appoint_separate_director_counsel",
+        "notify_insurers",
+        "retain_independent_fire_expert",
+        "open_controlled_regulator_channel",
+        "submit_initial_regulatory_response",
+        "coordinate_operational_period",
+        "review_preliminary_fire_assessment",
+        "establish_response_protocol",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "complete_protected_handoff",
+    ] {
+        session.dispatch(action).expect("path action must succeed");
+    }
+    let snapshot = session.snapshot();
+    assert!(snapshot.terminal);
+    assert_eq!(snapshot.clock_minutes, 4_440);
+    assert_eq!(
+        snapshot.outcome.as_ref().map(|item| item.id.as_str()),
+        Some("protected_crisis_position")
+    );
+    assert!(!snapshot
+        .fired_event_ids
+        .iter()
+        .any(|event| event == "expert_assessment_expired"));
+}
+
+#[test]
+fn greenfire_compromised_path_expires_unreviewed_expert_work() {
+    let mut session =
+        ScenarioSession::new(greenfire_definition(), 20260729).expect("session must start");
+    session.dispatch("accept_emergency_mandate").unwrap();
+    session.dispatch("retain_independent_fire_expert").unwrap();
+    for _ in 0..12 {
+        session.dispatch("coordinate_operational_period").unwrap();
+    }
+    let before_handoff = session.snapshot();
+    assert!(before_handoff
+        .fired_event_ids
+        .iter()
+        .any(|event| event == "expert_assessment_expired"));
+    let result = session
+        .dispatch("complete_compromised_handoff")
+        .expect("compromised handoff must succeed");
+    assert_eq!(
+        result.outcome.as_ref().map(|item| item.id.as_str()),
+        Some("compromised_crisis_position")
+    );
+}
+
+#[test]
+fn greenfire_handoff_is_unavailable_before_72_hours() {
+    let mut session =
+        ScenarioSession::new(greenfire_definition(), 20260729).expect("session must start");
+    session.dispatch("accept_emergency_mandate").unwrap();
+    assert_eq!(
+        session.dispatch("complete_compromised_handoff"),
+        Err(ScenarioRuntimeError::ActionUnavailable(
+            "complete_compromised_handoff".to_owned()
+        ))
     );
 }

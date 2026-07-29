@@ -4,6 +4,8 @@ use serde_json::{json, Value};
 
 const LOGISTICS_SCENARIO: &str =
     include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
+const GREENFIRE_SCENARIO: &str =
+    include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json");
 
 fn logistics_definition() -> ScenarioDefinition {
     serde_json::from_str(LOGISTICS_SCENARIO).expect("Logistics scenario must parse")
@@ -114,4 +116,75 @@ fn malformed_and_unavailable_commands_return_stable_errors() {
         panic!("expected error response");
     };
     assert_eq!(code, "unknown_session");
+}
+
+#[test]
+fn json_protocol_runs_the_greenfire_protected_path() {
+    let mut bridge = MobileBridge::new();
+    let scenario: Value = serde_json::from_str(GREENFIRE_SCENARIO).unwrap();
+    let created: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "create_session",
+                "scenario": scenario,
+                "seed": 20260729
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    let session_id = created["session_id"].as_u64().unwrap();
+
+    for action_id in [
+        "accept_emergency_mandate",
+        "issue_legal_hold",
+        "run_conflict_assessment",
+        "appoint_separate_director_counsel",
+        "notify_insurers",
+        "retain_independent_fire_expert",
+        "open_controlled_regulator_channel",
+        "submit_initial_regulatory_response",
+        "coordinate_operational_period",
+        "review_preliminary_fire_assessment",
+        "establish_response_protocol",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "coordinate_operational_period",
+        "complete_protected_handoff",
+    ] {
+        let response: Value = serde_json::from_str(
+            &bridge.execute_json(
+                &json!({
+                    "command": "dispatch",
+                    "session_id": session_id,
+                    "action_id": action_id
+                })
+                .to_string(),
+            ),
+        )
+        .unwrap();
+        assert_ne!(response["type"], "error", "failed action {action_id}");
+    }
+
+    let snapshot: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "snapshot",
+                "session_id": session_id
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(
+        snapshot["snapshot"]["outcome"]["id"],
+        "protected_crisis_position"
+    );
+    assert_eq!(snapshot["snapshot"]["clock_minutes"], 4_440);
 }
