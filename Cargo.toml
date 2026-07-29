@@ -6,6 +6,16 @@ members = [
     "crates/juris-ai",
     "crates/juris-engine",
     "crates/juris-cli", "crates/juris-scenario-schema", "crates/juris-scenario-validator",
+
+    "crates/juris-case-catalog",
+
+    "crates/juris-scenario-builder",
+
+    "crates/juris-scenario-diagnostics",
+
+    "crates/juris-scenario-simulator",
+    "crates/juris-mobile-bridge",
+    "crates/juris-mobile-ffi",
 ]
 resolver = "2"
 

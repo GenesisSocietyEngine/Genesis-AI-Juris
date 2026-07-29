@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../data/demo_game_repository.dart';
+import '../data/game_runtime_repository.dart';
 import '../models/game_snapshot.dart';
 import '../screens/ai_associate_screen.dart';
 import '../screens/calendar_screen.dart';
@@ -18,9 +18,11 @@ import '../widgets/inbox_message_sheet.dart';
 /// Below 700 logical pixels it uses a Material 3 [NavigationBar]. Wider
 /// windows switch to [NavigationRail] without changing the destination state.
 class HomeShell extends StatefulWidget {
-  const HomeShell({required this.repository, super.key});
+  const HomeShell(
+      {required this.repository, this.onExitToCaseCatalog, super.key});
 
-  final DemoGameRepository repository;
+  final GameRuntimeRepository repository;
+  final VoidCallback? onExitToCaseCatalog;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -73,6 +75,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     _liveClockTimer = null;
     if (_runningUnderFlutterTest ||
         _clockPaused ||
+        !widget.repository.supportsLiveClock ||
         widget.repository.isTerminal) {
       return;
     }
@@ -135,6 +138,13 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
             return Scaffold(
               appBar: AppBar(
+                leading: widget.onExitToCaseCatalog == null
+                    ? null
+                    : IconButton(
+                        tooltip: 'Back to case library',
+                        onPressed: widget.onExitToCaseCatalog,
+                        icon: const Icon(Icons.arrow_back),
+                      ),
                 title: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
@@ -154,7 +164,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                     tooltip:
                         'Simulation speed: ${_clockSpeed.label} · ${_clockSpeed.gameMinutesPerRealMinute} game min / real min',
                     initialValue: _clockSpeed,
-                    enabled: !widget.repository.isTerminal,
+                    enabled: widget.repository.supportsLiveClock &&
+                        !widget.repository.isTerminal,
                     onSelected: _selectClockSpeed,
                     itemBuilder: (BuildContext context) => SimulationClockSpeed
                         .values
@@ -195,8 +206,10 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                     tooltip: _clockPaused
                         ? 'Resume simulation clock'
                         : 'Pause simulation clock',
-                    onPressed:
-                        widget.repository.isTerminal ? null : _toggleClock,
+                    onPressed: widget.repository.supportsLiveClock &&
+                            !widget.repository.isTerminal
+                        ? _toggleClock
+                        : null,
                     icon: Icon(
                       _clockPaused
                           ? Icons.play_circle_outline
@@ -503,8 +516,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       context: context,
       builder: (BuildContext context) => AlertDialog(
         title: const Text('Reset playtest?'),
-        content: const Text(
-          'This returns the UI demo to Day 1 at 08:00 with seed 20260724.',
+        content: Text(
+          'This restarts ${widget.repository.snapshot.matterTitle} at '
+          'Day 1 · 08:00 with seed ${widget.repository.snapshot.seed}.',
         ),
         actions: <Widget>[
           TextButton(

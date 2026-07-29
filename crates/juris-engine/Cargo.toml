@@ -10,4 +10,8 @@ juris-ai = { path = "../juris-ai" }
 juris-content = { path = "../juris-content" }
 juris-core = { path = "../juris-core" }
 juris-domain = { path = "../juris-domain" }
+juris-scenario-schema = { path = "../juris-scenario-schema" }
+juris-scenario-validator = { path = "../juris-scenario-validator" }
+serde.workspace = true
+serde_json.workspace = true
 thiserror.workspace = true

@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "id": "authoring_diagnostics_valid",
+    "title": "Asteron Systems NV v. Northbridge Consulting BV",
+    "summary": "Minimal valid authoring-diagnostics fixture.",
+    "content_version": "1",
+    "tags": [
+      "fixture"
+    ]
+  },
+  "jurisdiction": {
+    "code": "BE",
+    "pack_version": "1"
+  },
+  "initial_stage": "intake",
+  "stages": [
+    {
+      "id": "intake",
+      "title": "Intake",
+      "kind": "standard",
+      "exit_actions": [
+        "file_claim"
+      ]
+    },
+    {
+      "id": "post_judgment",
+      "title": "Post-judgment",
+      "kind": "post_judgment",
+      "exit_actions": [
+        "accept_judgment"
+      ]
+    },
+    {
+      "id": "resolved",
+      "title": "Resolved",
+      "kind": "resolved",
+      "terminal": true
+    }
+  ],
+  "actions": [
+    {
+      "id": "file_claim",
+      "title": "File claim",
+      "available_when": {
+        "type": "stage_is",
+        "stage": "intake"
+      },
+      "effects": [
+        {
+          "type": "trigger_event",
+          "event": "judgment"
+        }
+      ],
+      "time_cost_minutes": 60
+    },
+    {
+      "id": "accept_judgment",
+      "title": "Accept judgment and close",
+      "available_when": {
+        "type": "stage_is",
+        "stage": "post_judgment"
+      },
+      "effects": [
+        {
+          "type": "set_flag",
+          "flag": "judgment_accepted",
+          "value": true
+        },
+        {
+          "type": "set_stage",
+          "stage": "resolved"
+        },
+        {
+          "type": "resolve_outcome",
+          "outcome": "judgment_accepted"
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "judgment",
+      "title": "First-instance judgment",
+      "kind": "judgment",
+      "trigger": {
+        "type": "after_action",
+        "action": "file_claim"
+      },
+      "effects": [
+        {
+          "type": "set_stage",
+          "stage": "post_judgment"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "judgment_accepted",
+      "title": "Judgment accepted",
+      "summary": "The client accepts the result and the matter closes.",
+      "terminal_stage": "resolved",
+      "condition": {
+        "type": "flag_equals",
+        "flag": "judgment_accepted",
+        "value": true
+      }
+    }
+  ]
+}

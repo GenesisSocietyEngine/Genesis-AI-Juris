@@ -1,7 +1,7 @@
 name: juris_mobile
 description: "Smartphone-first UI shell for GENESIS: AI Juris."
 publish_to: "none"
-version: 0.5.0+10
+version: 0.5.1+12
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
@@ -9,12 +9,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  ffi: ^2.2.0
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
 
 flutter:
   uses-material-design: true
   assets:
     - assets/branding/genesis_ai_juris_logo.png
+    - assets/case_catalog/

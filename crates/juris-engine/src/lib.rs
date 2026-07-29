@@ -25,6 +25,14 @@ use juris_core::{DeterministicRng, Scheduler, SimMinute, MINUTES_PER_DAY};
 use juris_domain::*;
 use thiserror::Error;
 
+mod scenario_runtime;
+
+pub use scenario_runtime::{
+    MobileActionSnapshot, MobileDeadlineSnapshot, MobileEvidenceSnapshot, MobileFactSnapshot,
+    MobileInboxSnapshot, MobileOutcomeSnapshot, MobileScenarioSnapshot, ScenarioRuntimeError,
+    ScenarioSession, ScenarioSessionId, ScenarioSessionRegistry,
+};
+
 /// Errors returned when a presentation layer submits an invalid intention.
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum EngineError {

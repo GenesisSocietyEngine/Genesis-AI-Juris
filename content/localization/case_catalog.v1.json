@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "default_locale": "en",
+  "supported_locales": [
+    "en",
+    "ru"
+  ],
+  "fictional_notice": {
+    "en": "All organizations, persons, disputes, and events in this library are fictional.",
+    "ru": "Все организации, лица, споры и события в этой библиотеке являются вымышленными."
+  },
+  "ui": {
+    "en": {
+      "library_title": "Case Library",
+      "library_subtitle": "Choose a matter. Stable IDs keep saves, translations, and gameplay references separate from display text.",
+      "all_cases": "All",
+      "playable_cases": "Playable",
+      "authoring_cases": "In authoring",
+      "player_client": "Player client",
+      "player_role": "Procedural role",
+      "jurisdiction": "Jurisdiction",
+      "practice_area": "Practice area",
+      "difficulty": "Difficulty",
+      "start_case": "Start case",
+      "continue_case": "Continue case",
+      "conversion_plan": "Conversion plan",
+      "playable": "Playable demo",
+      "outline": "Outline",
+      "coming_soon": "Coming soon",
+      "introductory": "Introductory",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "expert": "Expert",
+      "claimant": "Claimant",
+      "defendant": "Defendant",
+      "appellant": "Appellant",
+      "respondent": "Respondent",
+      "third_party": "Third party",
+      "scenario_present": "Scenario definition",
+      "identity_ready": "Matter identity",
+      "diagnostics_ready": "Authoring diagnostics",
+      "path_ready": "Deterministic path test",
+      "engine_runtime_ready": "Authoritative engine runtime",
+      "mobile_ready": "Mobile bundle",
+      "ready": "Ready",
+      "pending": "Pending",
+      "not_available": "Not available",
+      "conversion_title": "Case-to-scenario conversion",
+      "conversion_explanation": "A case becomes playable when identity, executable scenario data, diagnostics, path simulation, and a supported runtime adapter are all ready.",
+      "runtime_adapter": "Runtime adapter",
+      "scenario_file": "Scenario file",
+      "language": "Language",
+      "retry": "Retry",
+      "load_failed": "The case library could not be loaded.",
+      "no_cases": "No cases match this filter.",
+      "back_to_library": "Back to case library",
+      "fictional": "Fictional case",
+      "topic": "Topic",
+      "legal_issues": "Legal issues"
+    },
+    "ru": {
+      "library_title": "Библиотека дел",
+      "library_subtitle": "Выберите дело. Стабильные ID отделяют сохранения, переводы и игровые ссылки от отображаемого текста.",
+      "all_cases": "Все",
+      "playable_cases": "Играбельные",
+      "authoring_cases": "В разработке",
+      "player_client": "Клиент игрока",
+      "player_role": "Процессуальная роль",
+      "jurisdiction": "Юрисдикция",
+      "practice_area": "Область права",
+      "difficulty": "Сложность",
+      "start_case": "Начать дело",
+      "continue_case": "Продолжить",
+      "conversion_plan": "План конвертации",
+      "playable": "Играбельное демо",
+      "outline": "Контур дела",
+      "coming_soon": "Скоро",
+      "introductory": "Начальный",
+      "intermediate": "Средний",
+      "advanced": "Продвинутый",
+      "expert": "Экспертный",
+      "claimant": "Истец",
+      "defendant": "Ответчик",
+      "appellant": "Апеллянт",
+      "respondent": "Другая сторона",
+      "third_party": "Третье лицо",
+      "scenario_present": "Сценарий",
+      "identity_ready": "Идентичность дела",
+      "diagnostics_ready": "Диагностика сценария",
+      "path_ready": "Детерминированный путь",
+      "engine_runtime_ready": "Авторитетный Rust runtime",
+      "mobile_ready": "Мобильный пакет",
+      "ready": "Готово",
+      "pending": "Ожидает",
+      "not_available": "Недоступно",
+      "conversion_title": "Конвертация дела в игровой сценарий",
+      "conversion_explanation": "Дело становится играбельным, когда готовы идентичность, исполняемый сценарий, диагностика, симуляция пути и поддерживаемый runtime-адаптер.",
+      "runtime_adapter": "Runtime-адаптер",
+      "scenario_file": "Файл сценария",
+      "language": "Язык",
+      "retry": "Повторить",
+      "load_failed": "Не удалось загрузить библиотеку дел.",
+      "no_cases": "Нет дел, соответствующих фильтру.",
+      "back_to_library": "Назад в библиотеку дел",
+      "fictional": "Вымышленное дело",
+      "topic": "Тема",
+      "legal_issues": "Правовые вопросы"
+    }
+  },
+  "cases": {
+    "be_commercial_failed_erp_001": {
+      "sort_order": 10,
+      "seed": 20260724,
+      "runtime_adapter": "demo_failed_erp",
+      "readiness": {
+        "diagnostics": false,
+        "path_simulation": false,
+        "engine_runtime": false
+      },
+      "locales": {
+        "en": {
+          "topic": "Failed ERP Implementation",
+          "short_title": "Failed ERP",
+          "synopsis": "Asteron Systems claims that Northbridge Consulting failed to deliver a usable ERP implementation, while Northbridge maintains that scope changes, incomplete data, and weak client governance caused the programme to fail.",
+          "player_client_role": "Chief Operating Officer",
+          "legal_issues": [
+            "contractual scope and change control",
+            "professional standard of care",
+            "causation of implementation failure",
+            "proof and quantification of loss",
+            "procedural compliance and available remedies"
+          ]
+        },
+        "ru": {
+          "topic": "Неудачное внедрение ERP",
+          "short_title": "Провал ERP-проекта",
+          "synopsis": "Asteron Systems утверждает, что Northbridge Consulting не поставила работоспособную ERP-систему. Northbridge считает, что причиной провала стали изменения объёма работ, неполные данные и слабое управление проектом со стороны клиента.",
+          "player_client_role": "Операционный директор",
+          "legal_issues": [
+            "договорный объём работ и управление изменениями",
+            "профессиональный стандарт качества",
+            "причинная связь с провалом внедрения",
+            "доказательство и расчёт убытков",
+            "процессуальные требования и доступные средства защиты"
+          ]
+        }
+      }
+    },
+    "be_commercial_logistics_001": {
+      "sort_order": 20,
+      "seed": 20260725,
+      "runtime_adapter": "rust_scenario_v1",
+      "readiness": {
+        "diagnostics": true,
+        "path_simulation": true,
+        "engine_runtime": true
+      },
+      "locales": {
+        "en": {
+          "topic": "Unpaid Logistics Invoices",
+          "short_title": "Unpaid Logistics Invoices",
+          "synopsis": "Velmont Logistics seeks payment of freight and warehousing invoices. Orbis Retail disputes service levels, detention charges, and the contractual basis for several surcharges.",
+          "player_client_role": "Finance Director",
+          "legal_issues": [
+            "incorporation of logistics terms",
+            "proof of delivery and service performance",
+            "invoice acceptance and protest",
+            "contractual interest and collection costs",
+            "set-off based on alleged service failures"
+          ]
+        },
+        "ru": {
+          "topic": "Неоплаченные логистические счета",
+          "short_title": "Логистические счета",
+          "synopsis": "Velmont Logistics требует оплаты счетов за перевозку и хранение. Orbis Retail оспаривает качество услуг, плату за простой и договорное основание отдельных надбавок.",
+          "player_client_role": "Финансовый директор",
+          "legal_issues": [
+            "включение логистических условий в договор",
+            "доказательство доставки и оказания услуг",
+            "принятие и оспаривание счетов",
+            "договорные проценты и расходы на взыскание",
+            "зачёт требований из-за предполагаемых нарушений качества"
+          ]
+        }
+      }
+    },
+    "greenfire_first_72_hours": {
+      "sort_order": 30,
+      "seed": 20260729,
+      "runtime_adapter": "rust_scenario_v1",
+      "readiness": {
+        "diagnostics": true,
+        "path_simulation": true,
+        "engine_runtime": true
+      },
+      "locales": {
+        "en": {
+          "topic": "The First 72 Hours",
+          "short_title": "GreenFire",
+          "synopsis": "An industrial fire places GreenFire under simultaneous regulatory, environmental, insurance, criminal, and governance pressure. Crisis counsel must preserve evidence and hand over a defensible position within 72 hours.",
+          "player_client_role": "Managing Director",
+          "legal_issues": [
+            "evidence preservation after a major incident",
+            "company and director representation conflicts",
+            "environmental regulator communications",
+            "insurance notification and coverage protection",
+            "privileged expert investigation"
+          ]
+        },
+        "ru": {
+          "topic": "Первые 72 часа",
+          "short_title": "GreenFire",
+          "synopsis": "Промышленный пожар создаёт для GreenFire одновременные регуляторные, экологические, страховые, уголовно-правовые и корпоративные риски. Кризисный юрист должен сохранить доказательства и передать защищённую позицию в течение 72 часов.",
+          "player_client_role": "Управляющий директор",
+          "legal_issues": [
+            "сохранение доказательств после крупного происшествия",
+            "конфликт представительства компании и директора",
+            "коммуникации с экологическим регулятором",
+            "уведомление страховщиков и защита покрытия",
+            "привилегированное экспертное расследование"
+          ]
+        }
+      }
+    }
+  }
+}

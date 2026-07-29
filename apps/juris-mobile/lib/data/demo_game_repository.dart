@@ -1,6 +1,5 @@
-import 'package:flutter/foundation.dart';
-
 import '../models/game_snapshot.dart';
+import 'game_runtime_repository.dart';
 
 /// Local deterministic demonstration used by the v0.5.0 UI shell.
 ///
@@ -8,7 +7,7 @@ import '../models/game_snapshot.dart';
 /// slice. It exists to make every screen interactive before native Rust FFI is
 /// introduced. It must not become a second authoritative simulation engine.
 /// v0.5.1 will replace its transition code with calls to the Rust snapshot API.
-class DemoGameRepository extends ChangeNotifier {
+class DemoGameRepository extends GameRuntimeRepository {
   DemoGameRepository({required this.seed}) : _snapshot = _initial(seed);
 
   /// Standard foreground clock contract used by the Flutter shell.
@@ -32,6 +31,9 @@ class DemoGameRepository extends ChangeNotifier {
 
   bool get isTerminal =>
       _snapshot.stage == 'Resolved' || _snapshot.outcomeSummary != null;
+
+  @override
+  bool get supportsLiveClock => true;
 
   /// Resets the mobile playtest to the same seed and opening state.
   void reset() {

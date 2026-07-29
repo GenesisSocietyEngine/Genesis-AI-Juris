@@ -39,6 +39,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "juris-case-catalog"
+version = "0.5.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "juris-cli"
 version = "0.5.0"
 dependencies = [
@@ -79,6 +88,48 @@ dependencies = [
  "juris-content",
  "juris-core",
  "juris-domain",
+ "juris-scenario-schema",
+ "juris-scenario-validator",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "juris-mobile-bridge"
+version = "0.5.0"
+dependencies = [
+ "juris-engine",
+ "juris-scenario-schema",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "juris-mobile-ffi"
+version = "0.5.0"
+dependencies = [
+ "juris-mobile-bridge",
+ "serde_json",
+]
+
+[[package]]
+name = "juris-scenario-builder"
+version = "0.5.0"
+dependencies = [
+ "juris-case-catalog",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "juris-scenario-diagnostics"
+version = "0.5.0"
+dependencies = [
+ "juris-scenario-schema",
+ "serde",
+ "serde_json",
  "thiserror",
 ]
 
@@ -88,6 +139,16 @@ version = "0.5.0"
 dependencies = [
  "serde",
  "serde_yaml",
+]
+
+[[package]]
+name = "juris-scenario-simulator"
+version = "0.5.0"
+dependencies = [
+ "juris-scenario-schema",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]

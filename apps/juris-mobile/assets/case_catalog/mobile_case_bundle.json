@@ -1,0 +1,2201 @@
+{
+  "bundle_version": 3,
+  "catalog_version": 1,
+  "default_locale": "en",
+  "supported_locales": [
+    "en",
+    "ru"
+  ],
+  "fictional_notice": {
+    "en": "All organizations, persons, disputes, and events in this library are fictional.",
+    "ru": "Все организации, лица, споры и события в этой библиотеке являются вымышленными."
+  },
+  "ui": {
+    "en": {
+      "library_title": "Case Library",
+      "library_subtitle": "Choose a matter. Stable IDs keep saves, translations, and gameplay references separate from display text.",
+      "all_cases": "All",
+      "playable_cases": "Playable",
+      "authoring_cases": "In authoring",
+      "player_client": "Player client",
+      "player_role": "Procedural role",
+      "jurisdiction": "Jurisdiction",
+      "practice_area": "Practice area",
+      "difficulty": "Difficulty",
+      "start_case": "Start case",
+      "continue_case": "Continue case",
+      "conversion_plan": "Conversion plan",
+      "playable": "Playable demo",
+      "outline": "Outline",
+      "coming_soon": "Coming soon",
+      "introductory": "Introductory",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "expert": "Expert",
+      "claimant": "Claimant",
+      "defendant": "Defendant",
+      "appellant": "Appellant",
+      "respondent": "Respondent",
+      "third_party": "Third party",
+      "scenario_present": "Scenario definition",
+      "identity_ready": "Matter identity",
+      "diagnostics_ready": "Authoring diagnostics",
+      "path_ready": "Deterministic path test",
+      "engine_runtime_ready": "Authoritative engine runtime",
+      "mobile_ready": "Mobile bundle",
+      "ready": "Ready",
+      "pending": "Pending",
+      "not_available": "Not available",
+      "conversion_title": "Case-to-scenario conversion",
+      "conversion_explanation": "A case becomes playable when identity, executable scenario data, diagnostics, path simulation, and a supported runtime adapter are all ready.",
+      "runtime_adapter": "Runtime adapter",
+      "scenario_file": "Scenario file",
+      "language": "Language",
+      "retry": "Retry",
+      "load_failed": "The case library could not be loaded.",
+      "no_cases": "No cases match this filter.",
+      "back_to_library": "Back to case library",
+      "fictional": "Fictional case",
+      "topic": "Topic",
+      "legal_issues": "Legal issues"
+    },
+    "ru": {
+      "library_title": "Библиотека дел",
+      "library_subtitle": "Выберите дело. Стабильные ID отделяют сохранения, переводы и игровые ссылки от отображаемого текста.",
+      "all_cases": "Все",
+      "playable_cases": "Играбельные",
+      "authoring_cases": "В разработке",
+      "player_client": "Клиент игрока",
+      "player_role": "Процессуальная роль",
+      "jurisdiction": "Юрисдикция",
+      "practice_area": "Область права",
+      "difficulty": "Сложность",
+      "start_case": "Начать дело",
+      "continue_case": "Продолжить",
+      "conversion_plan": "План конвертации",
+      "playable": "Играбельное демо",
+      "outline": "Контур дела",
+      "coming_soon": "Скоро",
+      "introductory": "Начальный",
+      "intermediate": "Средний",
+      "advanced": "Продвинутый",
+      "expert": "Экспертный",
+      "claimant": "Истец",
+      "defendant": "Ответчик",
+      "appellant": "Апеллянт",
+      "respondent": "Другая сторона",
+      "third_party": "Третье лицо",
+      "scenario_present": "Сценарий",
+      "identity_ready": "Идентичность дела",
+      "diagnostics_ready": "Диагностика сценария",
+      "path_ready": "Детерминированный путь",
+      "engine_runtime_ready": "Авторитетный Rust runtime",
+      "mobile_ready": "Мобильный пакет",
+      "ready": "Готово",
+      "pending": "Ожидает",
+      "not_available": "Недоступно",
+      "conversion_title": "Конвертация дела в игровой сценарий",
+      "conversion_explanation": "Дело становится играбельным, когда готовы идентичность, исполняемый сценарий, диагностика, симуляция пути и поддерживаемый runtime-адаптер.",
+      "runtime_adapter": "Runtime-адаптер",
+      "scenario_file": "Файл сценария",
+      "language": "Язык",
+      "retry": "Повторить",
+      "load_failed": "Не удалось загрузить библиотеку дел.",
+      "no_cases": "Нет дел, соответствующих фильтру.",
+      "back_to_library": "Назад в библиотеку дел",
+      "fictional": "Вымышленное дело",
+      "topic": "Тема",
+      "legal_issues": "Правовые вопросы"
+    }
+  },
+  "cases": [
+    {
+      "case_id": "be_commercial_failed_erp_001",
+      "scenario_id": "be_commercial_failed_erp_001",
+      "sort_order": 10,
+      "seed": 20260724,
+      "status": "playable",
+      "difficulty": "intermediate",
+      "jurisdiction": "BE",
+      "practice_area": "commercial_litigation",
+      "player_client_id": "northbridge_consulting",
+      "player_role": "defendant",
+      "identity_file": "content/catalog/cases/failed_erp.identity.json",
+      "scenario_file": "content/cases/failed_erp.json",
+      "scenario_available": true,
+      "scenario": null,
+      "runtime_adapter": "demo_failed_erp",
+      "readiness": {
+        "identity": true,
+        "scenario_definition": true,
+        "diagnostics": false,
+        "path_simulation": false,
+        "engine_runtime": false,
+        "mobile_bundle": true
+      },
+      "localizations": {
+        "en": {
+          "caption": "Asteron Systems NV v. Northbridge Consulting BV",
+          "topic": "Failed ERP Implementation",
+          "short_title": "Failed ERP",
+          "synopsis": "Asteron Systems claims that Northbridge Consulting failed to deliver a usable ERP implementation, while Northbridge maintains that scope changes, incomplete data, and weak client governance caused the programme to fail.",
+          "player_client_name": "Northbridge Consulting BV",
+          "player_client_role": "Chief Operating Officer",
+          "legal_issues": [
+            "contractual scope and change control",
+            "professional standard of care",
+            "causation of implementation failure",
+            "proof and quantification of loss",
+            "procedural compliance and available remedies"
+          ]
+        },
+        "ru": {
+          "caption": "Asteron Systems NV v. Northbridge Consulting BV",
+          "topic": "Неудачное внедрение ERP",
+          "short_title": "Провал ERP-проекта",
+          "synopsis": "Asteron Systems утверждает, что Northbridge Consulting не поставила работоспособную ERP-систему. Northbridge считает, что причиной провала стали изменения объёма работ, неполные данные и слабое управление проектом со стороны клиента.",
+          "player_client_name": "Northbridge Consulting BV",
+          "player_client_role": "Операционный директор",
+          "legal_issues": [
+            "договорный объём работ и управление изменениями",
+            "профессиональный стандарт качества",
+            "причинная связь с провалом внедрения",
+            "доказательство и расчёт убытков",
+            "процессуальные требования и доступные средства защиты"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "be_commercial_logistics_001",
+      "scenario_id": "be_commercial_logistics_001",
+      "sort_order": 20,
+      "seed": 20260725,
+      "status": "playable",
+      "difficulty": "introductory",
+      "jurisdiction": "BE",
+      "practice_area": "commercial_litigation",
+      "player_client_id": "velmont_logistics",
+      "player_role": "claimant",
+      "identity_file": "content/catalog/cases/unpaid_logistics_invoices.identity.json",
+      "scenario_file": "content/cases/unpaid_logistics_invoices.scenario.json",
+      "scenario_available": true,
+      "scenario": {
+        "schema_version": "1.0",
+        "metadata": {
+          "id": "be_commercial_logistics_001",
+          "title": "Velmont Logistics SA v. Orbis Retail Belgium NV",
+          "summary": "Velmont Logistics seeks recovery of unpaid freight and warehousing invoices while Orbis Retail disputes service levels, detention charges, and contractual surcharges.",
+          "content_version": "1.0.0",
+          "author": "GENESIS",
+          "tags": [
+            "commercial_litigation",
+            "logistics",
+            "debt_recovery",
+            "claimant",
+            "introductory"
+          ]
+        },
+        "jurisdiction": {
+          "code": "BE",
+          "pack_version": "1"
+        },
+        "initial_stage": "intake",
+        "actors": [
+          {
+            "id": "player_lawyer",
+            "name": "Player",
+            "role": "player",
+            "description": "Counsel responsible for the Velmont Logistics matter."
+          },
+          {
+            "id": "velmont_logistics",
+            "name": "Velmont Logistics SA",
+            "role": "client",
+            "description": "Belgian freight and warehousing provider seeking payment."
+          },
+          {
+            "id": "orbis_retail_belgium",
+            "name": "Orbis Retail Belgium NV",
+            "role": "opposing_party",
+            "description": "Retail customer disputing charges and service quality."
+          },
+          {
+            "id": "orbis_counsel",
+            "name": "Counsel for Orbis Retail",
+            "role": "opposing_counsel"
+          },
+          {
+            "id": "enterprise_court",
+            "name": "Belgian Enterprise Court",
+            "role": "court"
+          },
+          {
+            "id": "velmont_operations_manager",
+            "name": "Velmont Operations Manager",
+            "role": "witness",
+            "description": "Operational witness for performance and detention records."
+          }
+        ],
+        "facts": [
+          {
+            "id": "services_performed",
+            "statement": "Velmont performed the invoiced freight and warehousing services.",
+            "initial_status": "alleged",
+            "related_actors": [
+              "velmont_logistics",
+              "orbis_retail_belgium",
+              "velmont_operations_manager"
+            ]
+          },
+          {
+            "id": "invoices_unpaid",
+            "statement": "Orbis has not paid the invoices identified in Velmont's ledger.",
+            "initial_status": "admitted",
+            "related_actors": [
+              "velmont_logistics",
+              "orbis_retail_belgium"
+            ]
+          },
+          {
+            "id": "terms_incorporated",
+            "statement": "Velmont's logistics terms were incorporated into the parties' contract.",
+            "initial_status": "disputed",
+            "related_actors": [
+              "velmont_logistics",
+              "orbis_retail_belgium"
+            ]
+          },
+          {
+            "id": "surcharges_contractual",
+            "statement": "The detention and fuel surcharges have a contractual basis.",
+            "initial_status": "disputed",
+            "related_actors": [
+              "velmont_logistics",
+              "orbis_retail_belgium"
+            ]
+          },
+          {
+            "id": "service_failures",
+            "statement": "Velmont's alleged service failures caused loss that Orbis may set off.",
+            "initial_status": "disputed",
+            "related_actors": [
+              "velmont_logistics",
+              "orbis_retail_belgium"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "master_services_agreement",
+            "title": "Master services agreement and logistics terms",
+            "kind": "contract",
+            "description": "Executed framework agreement, tariff schedule, and incorporated terms.",
+            "supports_facts": [
+              "terms_incorporated",
+              "surcharges_contractual"
+            ],
+            "initially_available": true
+          },
+          {
+            "id": "invoice_ledger",
+            "title": "Invoice and payment ledger",
+            "kind": "invoice",
+            "description": "Reconciled invoices, credits, payments, and outstanding principal.",
+            "supports_facts": [
+              "invoices_unpaid"
+            ],
+            "initially_available": true
+          },
+          {
+            "id": "proof_of_delivery_bundle",
+            "title": "Proof-of-delivery bundle",
+            "kind": "document",
+            "description": "Signed delivery records and warehouse movement confirmations.",
+            "supports_facts": [
+              "services_performed"
+            ],
+            "contradicts_facts": [
+              "service_failures"
+            ],
+            "initially_available": true
+          },
+          {
+            "id": "detention_records",
+            "title": "Vehicle detention records",
+            "kind": "system_record",
+            "description": "Time-stamped arrival, release, and waiting-time records.",
+            "supports_facts": [
+              "services_performed",
+              "surcharges_contractual"
+            ],
+            "initially_available": true
+          },
+          {
+            "id": "orbis_complaints",
+            "title": "Orbis service complaints",
+            "kind": "email",
+            "description": "Contemporaneous complaints relied on for the proposed set-off.",
+            "supports_facts": [
+              "service_failures"
+            ],
+            "contradicts_facts": [
+              "services_performed"
+            ],
+            "initially_available": true
+          }
+        ],
+        "stages": [
+          {
+            "id": "intake",
+            "title": "Claim intake",
+            "kind": "standard",
+            "exit_actions": [
+              "audit_claim_file"
+            ]
+          },
+          {
+            "id": "pre_action",
+            "title": "Pre-action recovery",
+            "kind": "standard",
+            "exit_actions": [
+              "issue_formal_demand"
+            ]
+          },
+          {
+            "id": "proceedings",
+            "title": "Recovery proceedings",
+            "kind": "standard",
+            "exit_actions": [
+              "accept_negotiated_payment",
+              "request_judgment"
+            ]
+          },
+          {
+            "id": "post_judgment",
+            "title": "Post-judgment enforcement",
+            "kind": "post_judgment",
+            "entry_event": "judgment_for_velmont",
+            "exit_actions": [
+              "enforce_judgment"
+            ]
+          },
+          {
+            "id": "resolved",
+            "title": "Matter resolved",
+            "kind": "resolved",
+            "terminal": true
+          }
+        ],
+        "actions": [
+          {
+            "id": "audit_claim_file",
+            "title": "Audit the invoice and evidence file",
+            "description": "Reconcile principal, identify disputed surcharges, and test the proposed set-off against contemporaneous records.",
+            "available_when": {
+              "type": "stage_is",
+              "stage": "intake"
+            },
+            "effects": [
+              {
+                "type": "set_flag",
+                "flag": "claim_file_audited",
+                "value": true
+              },
+              {
+                "type": "set_stage",
+                "stage": "pre_action"
+              }
+            ],
+            "time_cost_minutes": 120,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "issue_formal_demand",
+            "title": "Issue a documented formal demand",
+            "description": "Send the reconciled demand with contractual terms, delivery proof, and a response deadline.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "pre_action"
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "claim_file_audited",
+                  "value": true
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "set_flag",
+                "flag": "formal_demand_issued",
+                "value": true
+              },
+              {
+                "type": "set_stage",
+                "stage": "proceedings"
+              }
+            ],
+            "time_cost_minutes": 60,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "accept_negotiated_payment",
+            "title": "Accept negotiated payment",
+            "description": "Resolve the disputed surcharges and set-off through an agreed payment and final settlement.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "proceedings"
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "formal_demand_issued",
+                  "value": true
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "set_flag",
+                "flag": "negotiated_payment_accepted",
+                "value": true
+              },
+              {
+                "type": "set_stage",
+                "stage": "resolved"
+              },
+              {
+                "type": "resolve_outcome",
+                "outcome": "negotiated_recovery"
+              }
+            ],
+            "time_cost_minutes": 90,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "request_judgment",
+            "title": "Present the claim for judgment",
+            "description": "Proceed on the documentary record and answer the service-level and set-off defences.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "proceedings"
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "formal_demand_issued",
+                  "value": true
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "set_flag",
+                "flag": "judgment_requested",
+                "value": true
+              },
+              {
+                "type": "trigger_event",
+                "event": "judgment_for_velmont"
+              }
+            ],
+            "time_cost_minutes": 240,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "enforce_judgment",
+            "title": "Complete judgment enforcement",
+            "description": "Provide the enforceable title, recover payment, and close the client matter.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "post_judgment"
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "judgment_received",
+                  "value": true
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "set_flag",
+                "flag": "judgment_enforced",
+                "value": true
+              },
+              {
+                "type": "set_stage",
+                "stage": "resolved"
+              },
+              {
+                "type": "resolve_outcome",
+                "outcome": "judgment_recovery"
+              }
+            ],
+            "time_cost_minutes": 60,
+            "repeatability": {
+              "type": "once"
+            }
+          }
+        ],
+        "deadlines": [],
+        "async_tasks": [],
+        "inbox_items": [],
+        "events": [
+          {
+            "id": "judgment_for_velmont",
+            "title": "Judgment for Velmont Logistics",
+            "kind": "judgment",
+            "trigger": {
+              "type": "after_action",
+              "action": "request_judgment"
+            },
+            "condition": {
+              "type": "flag_equals",
+              "flag": "judgment_requested",
+              "value": true
+            },
+            "effects": [
+              {
+                "type": "set_flag",
+                "flag": "judgment_received",
+                "value": true
+              },
+              {
+                "type": "set_stage",
+                "stage": "post_judgment"
+              }
+            ]
+          }
+        ],
+        "outcomes": [
+          {
+            "id": "negotiated_recovery",
+            "title": "Negotiated recovery",
+            "summary": "Velmont accepts a documented payment resolving the invoice balance, disputed surcharges, and Orbis's proposed set-off.",
+            "terminal_stage": "resolved",
+            "condition": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "resolved"
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "negotiated_payment_accepted",
+                  "value": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "judgment_recovery",
+            "title": "Judgment recovered and enforced",
+            "summary": "Velmont obtains and enforces judgment on the documented logistics debt after addressing the disputed service and surcharge issues.",
+            "terminal_stage": "resolved",
+            "condition": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "resolved"
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "judgment_enforced",
+                  "value": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "runtime_adapter": "rust_scenario_v1",
+      "readiness": {
+        "identity": true,
+        "scenario_definition": true,
+        "diagnostics": true,
+        "path_simulation": true,
+        "engine_runtime": true,
+        "mobile_bundle": true
+      },
+      "localizations": {
+        "en": {
+          "caption": "Velmont Logistics SA v. Orbis Retail Belgium NV",
+          "topic": "Unpaid Logistics Invoices",
+          "short_title": "Unpaid Logistics Invoices",
+          "synopsis": "Velmont Logistics seeks payment of freight and warehousing invoices. Orbis Retail disputes service levels, detention charges, and the contractual basis for several surcharges.",
+          "player_client_name": "Velmont Logistics SA",
+          "player_client_role": "Finance Director",
+          "legal_issues": [
+            "incorporation of logistics terms",
+            "proof of delivery and service performance",
+            "invoice acceptance and protest",
+            "contractual interest and collection costs",
+            "set-off based on alleged service failures"
+          ]
+        },
+        "ru": {
+          "caption": "Velmont Logistics SA v. Orbis Retail Belgium NV",
+          "topic": "Неоплаченные логистические счета",
+          "short_title": "Логистические счета",
+          "synopsis": "Velmont Logistics требует оплаты счетов за перевозку и хранение. Orbis Retail оспаривает качество услуг, плату за простой и договорное основание отдельных надбавок.",
+          "player_client_name": "Velmont Logistics SA",
+          "player_client_role": "Финансовый директор",
+          "legal_issues": [
+            "включение логистических условий в договор",
+            "доказательство доставки и оказания услуг",
+            "принятие и оспаривание счетов",
+            "договорные проценты и расходы на взыскание",
+            "зачёт требований из-за предполагаемых нарушений качества"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "greenfire_first_72_hours",
+      "scenario_id": "greenfire_first_72_hours",
+      "sort_order": 30,
+      "seed": 20260729,
+      "status": "playable",
+      "difficulty": "advanced",
+      "jurisdiction": "NL",
+      "practice_area": "crisis_management",
+      "player_client_id": "greenfire_industrial_solutions",
+      "player_role": "defendant",
+      "identity_file": "content/catalog/cases/greenfire_first_72_hours.identity.json",
+      "scenario_file": "content/cases/greenfire_first_72_hours.scenario.json",
+      "scenario_available": true,
+      "scenario": {
+        "schema_version": "1.0",
+        "metadata": {
+          "id": "greenfire_first_72_hours",
+          "title": "GreenFire — The First 72 Hours",
+          "summary": "An industrial fire places a chemical-storage company under simultaneous criminal, regulatory, environmental, insurance, and insolvency pressure. Preserve evidence, control communications, protect coverage, manage conflicts, and hand over a defensible crisis position within 72 hours.",
+          "content_version": "0.1.0",
+          "author": "GENESIS: AI Juris",
+          "tags": [
+            "crisis_management",
+            "environmental",
+            "corporate_crime",
+            "insurance",
+            "netherlands",
+            "fictional"
+          ]
+        },
+        "jurisdiction": {
+          "code": "NL",
+          "pack_version": "0.1.0"
+        },
+        "initial_stage": "emergency_intake",
+        "actors": [
+          {
+            "id": "player_lawyer",
+            "name": "Player",
+            "role": "player",
+            "description": "Crisis counsel responsible for the GreenFire matter."
+          },
+          {
+            "id": "greenfire_industrial_solutions",
+            "name": "GreenFire Industrial Solutions B.V.",
+            "role": "client",
+            "description": "Chemical-storage operator affected by the fire."
+          },
+          {
+            "id": "eva_de_wit",
+            "name": "Eva de Wit",
+            "role": "witness",
+            "description": "Managing director and primary client contact."
+          },
+          {
+            "id": "daan_vermeer",
+            "name": "Daan Vermeer",
+            "role": "witness",
+            "description": "Operations manager with knowledge of the affected storage site."
+          },
+          {
+            "id": "port_haven_environment_authority",
+            "name": "Port Haven Environmental Authority",
+            "role": "opposing_party",
+            "description": "Lead environmental regulator investigating the incident."
+          },
+          {
+            "id": "delta_water_board",
+            "name": "Delta Water Board",
+            "role": "other",
+            "description": "Public authority addressing contaminated runoff."
+          },
+          {
+            "id": "mira_van_leeuwen",
+            "name": "Mira van Leeuwen",
+            "role": "expert",
+            "description": "Independent fire and explosion expert."
+          },
+          {
+            "id": "northsea_specialty_insurance",
+            "name": "NorthSea Specialty Insurance",
+            "role": "other",
+            "description": "Potentially responsive insurer."
+          }
+        ],
+        "facts": [
+          {
+            "id": "torch_used_near_storage",
+            "statement": "Hot work may have been performed near chemical storage shortly before the fire.",
+            "initial_status": "unknown",
+            "related_actors": [
+              "greenfire_industrial_solutions",
+              "daan_vermeer"
+            ]
+          },
+          {
+            "id": "materials_outside_permit_zone",
+            "statement": "Chemical materials may have been stored outside the permitted zone.",
+            "initial_status": "unknown",
+            "related_actors": [
+              "greenfire_industrial_solutions",
+              "port_haven_environment_authority"
+            ]
+          },
+          {
+            "id": "safety_warning_not_escalated",
+            "statement": "An internal safety warning may not have been escalated to management.",
+            "initial_status": "unknown",
+            "related_actors": [
+              "greenfire_industrial_solutions",
+              "eva_de_wit"
+            ]
+          },
+          {
+            "id": "director_lacked_specific_operational_knowledge",
+            "statement": "The managing director may have lacked specific knowledge of the site practice that preceded the fire.",
+            "initial_status": "unknown",
+            "related_actors": [
+              "eva_de_wit",
+              "daan_vermeer"
+            ]
+          },
+          {
+            "id": "policy_notice_window",
+            "statement": "Potentially responsive insurance policies require prompt incident notice.",
+            "initial_status": "unknown",
+            "related_actors": [
+              "greenfire_industrial_solutions",
+              "northsea_specialty_insurance"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "site_cctv",
+            "title": "Site CCTV export",
+            "kind": "system_record",
+            "supports_facts": [
+              "torch_used_near_storage"
+            ],
+            "initially_available": true
+          },
+          {
+            "id": "dangerous_goods_manifest",
+            "title": "Dangerous-goods manifest",
+            "kind": "document",
+            "supports_facts": [
+              "materials_outside_permit_zone"
+            ],
+            "initially_available": true
+          },
+          {
+            "id": "permit_site_plan",
+            "title": "Environmental permit and site plan",
+            "kind": "document",
+            "supports_facts": [
+              "materials_outside_permit_zone"
+            ],
+            "initially_available": true
+          },
+          {
+            "id": "safety_coordinator_email",
+            "title": "Safety coordinator email",
+            "kind": "email",
+            "supports_facts": [
+              "safety_warning_not_escalated"
+            ],
+            "initially_available": true
+          },
+          {
+            "id": "insurance_policy_bundle",
+            "title": "Insurance policy bundle",
+            "kind": "contract",
+            "supports_facts": [
+              "policy_notice_window"
+            ],
+            "initially_available": true
+          },
+          {
+            "id": "fire_service_runoff_map",
+            "title": "Fire-service runoff map",
+            "kind": "document",
+            "initially_available": true
+          },
+          {
+            "id": "expert_preliminary_assessment",
+            "title": "Privileged preliminary fire assessment",
+            "kind": "expert_report",
+            "supports_facts": [
+              "torch_used_near_storage",
+              "materials_outside_permit_zone",
+              "director_lacked_specific_operational_knowledge"
+            ],
+            "initially_available": false
+          }
+        ],
+        "stages": [
+          {
+            "id": "emergency_intake",
+            "title": "Emergency intake",
+            "kind": "standard",
+            "exit_actions": [
+              "accept_emergency_mandate"
+            ],
+            "terminal": false
+          },
+          {
+            "id": "immediate_response",
+            "title": "Immediate response",
+            "kind": "standard",
+            "entry_event": "mandate_accepted",
+            "exit_actions": [
+              "issue_legal_hold",
+              "run_conflict_assessment",
+              "appoint_separate_director_counsel",
+              "notify_insurers",
+              "retain_independent_fire_expert",
+              "review_preliminary_fire_assessment",
+              "open_controlled_regulator_channel",
+              "submit_initial_regulatory_response",
+              "release_unreviewed_documents",
+              "establish_response_protocol",
+              "coordinate_operational_period",
+              "complete_compromised_handoff"
+            ],
+            "terminal": false
+          },
+          {
+            "id": "coordinated_response",
+            "title": "Coordinated crisis response",
+            "kind": "standard",
+            "entry_event": "response_protocol_established",
+            "exit_actions": [
+              "review_preliminary_fire_assessment",
+              "coordinate_operational_period",
+              "complete_protected_handoff",
+              "complete_compromised_handoff"
+            ],
+            "terminal": false
+          },
+          {
+            "id": "handoff_complete",
+            "title": "Seventy-two-hour handoff complete",
+            "kind": "resolved",
+            "entry_event": "matter_handed_over",
+            "exit_actions": [],
+            "terminal": true
+          }
+        ],
+        "actions": [
+          {
+            "id": "accept_emergency_mandate",
+            "title": "Accept the emergency mandate",
+            "description": "Confirm representation and establish a privileged crisis channel.",
+            "available_when": {
+              "type": "stage_is",
+              "stage": "emergency_intake"
+            },
+            "effects": [
+              {
+                "type": "resolve_inbox_item",
+                "item": "managing_director_emergency_call"
+              },
+              {
+                "type": "set_flag",
+                "flag": "mandate_accepted",
+                "value": true
+              },
+              {
+                "type": "trigger_event",
+                "event": "mandate_accepted"
+              },
+              {
+                "type": "set_stage",
+                "stage": "immediate_response"
+              }
+            ],
+            "time_cost_minutes": 30,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "issue_legal_hold",
+            "title": "Issue an evidence-preservation hold",
+            "description": "Preserve logs, CCTV, manifests, emails, maintenance data, and incident communications.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "immediate_response"
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "legal_hold_issued",
+                  "value": false
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "set_flag",
+                "flag": "legal_hold_issued",
+                "value": true
+              },
+              {
+                "type": "complete_deadline",
+                "deadline": "legal_hold_deadline"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "legal_hold_required"
+              }
+            ],
+            "time_cost_minutes": 90,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "run_conflict_assessment",
+            "title": "Assess company/director conflicts",
+            "description": "Assess whether corporate and personal interests permit joint representation.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "immediate_response"
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "conflict_assessed",
+                  "value": false
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "set_flag",
+                "flag": "conflict_assessed",
+                "value": true
+              },
+              {
+                "type": "create_inbox_item",
+                "item": "separate_counsel_decision"
+              }
+            ],
+            "time_cost_minutes": 60,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "appoint_separate_director_counsel",
+            "title": "Appoint separate counsel for the director",
+            "description": "Protect privilege where personal and corporate interests may diverge.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "immediate_response"
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "conflict_assessed",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "separate_director_counsel",
+                  "value": false
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "set_flag",
+                "flag": "separate_director_counsel",
+                "value": true
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "separate_counsel_decision"
+              }
+            ],
+            "time_cost_minutes": 45,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "notify_insurers",
+            "title": "Notify all potentially responsive insurers",
+            "description": "Send controlled notice across all potentially responsive policies.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "immediate_response"
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "insurers_notified",
+                  "value": false
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "set_flag",
+                "flag": "insurers_notified",
+                "value": true
+              },
+              {
+                "type": "complete_deadline",
+                "deadline": "insurance_notice_deadline"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "insurance_notice_required"
+              },
+              {
+                "type": "set_fact_status",
+                "fact": "policy_notice_window",
+                "status": "proven"
+              }
+            ],
+            "time_cost_minutes": 90,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "retain_independent_fire_expert",
+            "title": "Retain an independent fire expert",
+            "description": "Commission a privileged preliminary assessment.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "immediate_response"
+                },
+                {
+                  "type": "async_task_status_is",
+                  "task": "preliminary_fire_assessment",
+                  "status": "not_started"
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "start_async_task",
+                "task": "preliminary_fire_assessment"
+              }
+            ],
+            "time_cost_minutes": 45,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "review_preliminary_fire_assessment",
+            "title": "Review the preliminary fire assessment",
+            "description": "Convert preliminary findings into a controlled legal risk map.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "any",
+                  "conditions": [
+                    {
+                      "type": "stage_is",
+                      "stage": "immediate_response"
+                    },
+                    {
+                      "type": "stage_is",
+                      "stage": "coordinated_response"
+                    }
+                  ]
+                },
+                {
+                  "type": "async_task_status_is",
+                  "task": "preliminary_fire_assessment",
+                  "status": "ready"
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "review_async_task",
+                "task": "preliminary_fire_assessment"
+              },
+              {
+                "type": "make_evidence_available",
+                "evidence": "expert_preliminary_assessment"
+              },
+              {
+                "type": "set_fact_status",
+                "fact": "torch_used_near_storage",
+                "status": "inferred"
+              },
+              {
+                "type": "set_fact_status",
+                "fact": "materials_outside_permit_zone",
+                "status": "inferred"
+              },
+              {
+                "type": "set_flag",
+                "flag": "causation_risk_assessed",
+                "value": true
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "expert_report_ready"
+              }
+            ],
+            "time_cost_minutes": 120,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "open_controlled_regulator_channel",
+            "title": "Open a controlled regulator channel",
+            "description": "Separate urgent factual cooperation from unreviewed legal admissions.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "immediate_response"
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "regulator_channel_controlled",
+                  "value": false
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "set_flag",
+                "flag": "regulator_channel_controlled",
+                "value": true
+              }
+            ],
+            "time_cost_minutes": 60,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "submit_initial_regulatory_response",
+            "title": "Submit the reviewed initial response",
+            "description": "Provide time-critical facts through the controlled channel while reserving legal positions.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "immediate_response"
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "regulator_channel_controlled",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "regulatory_response_submitted",
+                  "value": false
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "set_flag",
+                "flag": "regulatory_response_submitted",
+                "value": true
+              },
+              {
+                "type": "complete_deadline",
+                "deadline": "initial_regulatory_response_deadline"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "regulator_document_request"
+              }
+            ],
+            "time_cost_minutes": 180,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "release_unreviewed_documents",
+            "title": "Release the requested files without review",
+            "description": "Send the shared-drive export immediately, risking uncontrolled disclosure.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "immediate_response"
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "regulatory_response_submitted",
+                  "value": false
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "set_flag",
+                "flag": "uncontrolled_disclosure",
+                "value": true
+              },
+              {
+                "type": "set_flag",
+                "flag": "regulatory_response_submitted",
+                "value": true
+              },
+              {
+                "type": "complete_deadline",
+                "deadline": "initial_regulatory_response_deadline"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "regulator_document_request"
+              }
+            ],
+            "time_cost_minutes": 180,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "establish_response_protocol",
+            "title": "Establish the integrated crisis-response protocol",
+            "description": "Lock all crisis workstreams into one controlled protocol.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "immediate_response"
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "legal_hold_issued",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "insurers_notified",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "separate_director_counsel",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "regulatory_response_submitted",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "uncontrolled_disclosure",
+                  "value": false
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "set_flag",
+                "flag": "response_protocol_established",
+                "value": true
+              },
+              {
+                "type": "trigger_event",
+                "event": "response_protocol_established"
+              },
+              {
+                "type": "set_stage",
+                "stage": "coordinated_response"
+              }
+            ],
+            "time_cost_minutes": 60,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "coordinate_operational_period",
+            "title": "Coordinate the next operational period",
+            "description": "Advance the crisis team through the next six-hour operational block.",
+            "available_when": {
+              "type": "any",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "immediate_response"
+                },
+                {
+                  "type": "stage_is",
+                  "stage": "coordinated_response"
+                }
+              ]
+            },
+            "effects": [],
+            "time_cost_minutes": 360,
+            "repeatability": {
+              "type": "unlimited"
+            }
+          },
+          {
+            "id": "complete_protected_handoff",
+            "title": "Hand over a protected crisis position",
+            "description": "Deliver the handoff with evidence, coverage, representation, communications, and causation work controlled.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "stage_is",
+                  "stage": "coordinated_response"
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "handoff_window_open",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "response_protocol_established",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "legal_hold_issued",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "insurers_notified",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "separate_director_counsel",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "regulatory_response_submitted",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "causation_risk_assessed",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "uncontrolled_disclosure",
+                  "value": false
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "legal_hold_missed",
+                  "value": false
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "insurance_notice_missed",
+                  "value": false
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "regulatory_response_missed",
+                  "value": false
+                },
+                {
+                  "type": "async_task_status_is",
+                  "task": "preliminary_fire_assessment",
+                  "status": "reviewed"
+                },
+                {
+                  "type": "deadline_status_is",
+                  "deadline": "legal_hold_deadline",
+                  "status": "completed"
+                },
+                {
+                  "type": "deadline_status_is",
+                  "deadline": "insurance_notice_deadline",
+                  "status": "completed"
+                },
+                {
+                  "type": "deadline_status_is",
+                  "deadline": "initial_regulatory_response_deadline",
+                  "status": "completed"
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "resolve_inbox_item",
+                "item": "managing_director_emergency_call"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "legal_hold_required"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "insurance_notice_required"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "separate_counsel_decision"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "regulator_document_request"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "expert_report_ready"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "seventy_two_hour_handoff"
+              },
+              {
+                "type": "trigger_event",
+                "event": "matter_handed_over"
+              },
+              {
+                "type": "set_stage",
+                "stage": "handoff_complete"
+              },
+              {
+                "type": "resolve_outcome",
+                "outcome": "protected_crisis_position"
+              }
+            ],
+            "time_cost_minutes": 60,
+            "repeatability": {
+              "type": "once"
+            }
+          },
+          {
+            "id": "complete_compromised_handoff",
+            "title": "Hand over a compromised crisis position",
+            "description": "Close the first 72 hours with material unresolved exposure.",
+            "available_when": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "any",
+                  "conditions": [
+                    {
+                      "type": "stage_is",
+                      "stage": "immediate_response"
+                    },
+                    {
+                      "type": "stage_is",
+                      "stage": "coordinated_response"
+                    }
+                  ]
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "handoff_window_open",
+                  "value": true
+                },
+                {
+                  "type": "any",
+                  "conditions": [
+                    {
+                      "type": "flag_equals",
+                      "flag": "response_protocol_established",
+                      "value": false
+                    },
+                    {
+                      "type": "flag_equals",
+                      "flag": "legal_hold_issued",
+                      "value": false
+                    },
+                    {
+                      "type": "flag_equals",
+                      "flag": "insurers_notified",
+                      "value": false
+                    },
+                    {
+                      "type": "flag_equals",
+                      "flag": "separate_director_counsel",
+                      "value": false
+                    },
+                    {
+                      "type": "flag_equals",
+                      "flag": "regulatory_response_submitted",
+                      "value": false
+                    },
+                    {
+                      "type": "flag_equals",
+                      "flag": "causation_risk_assessed",
+                      "value": false
+                    },
+                    {
+                      "type": "flag_equals",
+                      "flag": "uncontrolled_disclosure",
+                      "value": true
+                    },
+                    {
+                      "type": "flag_equals",
+                      "flag": "legal_hold_missed",
+                      "value": true
+                    },
+                    {
+                      "type": "flag_equals",
+                      "flag": "insurance_notice_missed",
+                      "value": true
+                    },
+                    {
+                      "type": "flag_equals",
+                      "flag": "regulatory_response_missed",
+                      "value": true
+                    }
+                  ]
+                },
+                {
+                  "type": "any",
+                  "conditions": [
+                    {
+                      "type": "deadline_status_is",
+                      "deadline": "legal_hold_deadline",
+                      "status": "completed"
+                    },
+                    {
+                      "type": "deadline_status_is",
+                      "deadline": "legal_hold_deadline",
+                      "status": "missed"
+                    }
+                  ]
+                },
+                {
+                  "type": "any",
+                  "conditions": [
+                    {
+                      "type": "deadline_status_is",
+                      "deadline": "insurance_notice_deadline",
+                      "status": "completed"
+                    },
+                    {
+                      "type": "deadline_status_is",
+                      "deadline": "insurance_notice_deadline",
+                      "status": "missed"
+                    }
+                  ]
+                },
+                {
+                  "type": "any",
+                  "conditions": [
+                    {
+                      "type": "deadline_status_is",
+                      "deadline": "initial_regulatory_response_deadline",
+                      "status": "completed"
+                    },
+                    {
+                      "type": "deadline_status_is",
+                      "deadline": "initial_regulatory_response_deadline",
+                      "status": "missed"
+                    }
+                  ]
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "expire_async_task",
+                "task": "preliminary_fire_assessment"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "managing_director_emergency_call"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "legal_hold_required"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "insurance_notice_required"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "separate_counsel_decision"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "regulator_document_request"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "expert_report_ready"
+              },
+              {
+                "type": "resolve_inbox_item",
+                "item": "seventy_two_hour_handoff"
+              },
+              {
+                "type": "trigger_event",
+                "event": "matter_handed_over"
+              },
+              {
+                "type": "set_stage",
+                "stage": "handoff_complete"
+              },
+              {
+                "type": "resolve_outcome",
+                "outcome": "compromised_crisis_position"
+              }
+            ],
+            "time_cost_minutes": 60,
+            "repeatability": {
+              "type": "once"
+            }
+          }
+        ],
+        "deadlines": [
+          {
+            "id": "legal_hold_deadline",
+            "title": "Issue the evidence-preservation hold",
+            "due_at": {
+              "day": 0,
+              "minute_of_day": 180
+            },
+            "completion_actions": [
+              "issue_legal_hold"
+            ],
+            "missed_event": "legal_hold_missed"
+          },
+          {
+            "id": "insurance_notice_deadline",
+            "title": "Notify potentially responsive insurers",
+            "due_at": {
+              "day": 0,
+              "minute_of_day": 720
+            },
+            "completion_actions": [
+              "notify_insurers"
+            ],
+            "missed_event": "insurance_notice_missed"
+          },
+          {
+            "id": "initial_regulatory_response_deadline",
+            "title": "Submit the initial regulatory response",
+            "due_at": {
+              "day": 1,
+              "minute_of_day": 720
+            },
+            "activation_event": "regulator_request_received",
+            "completion_actions": [
+              "submit_initial_regulatory_response",
+              "release_unreviewed_documents"
+            ],
+            "missed_event": "regulatory_response_missed"
+          }
+        ],
+        "async_tasks": [
+          {
+            "id": "preliminary_fire_assessment",
+            "title": "Preliminary independent fire assessment",
+            "start_action": "retain_independent_fire_expert",
+            "completion_event": "expert_assessment_completed",
+            "duration_minutes": 360,
+            "usable_until_event": "handoff_window_opened",
+            "expiry_event": "expert_assessment_expired"
+          }
+        ],
+        "inbox_items": [
+          {
+            "id": "managing_director_emergency_call",
+            "subject": "URGENT: Fire at the GreenFire storage site",
+            "body": "A major fire has caused runoff, police attendance, regulatory inspection, and media attention.",
+            "initially_visible": true,
+            "action_required": true,
+            "resolution_actions": [
+              "accept_emergency_mandate"
+            ]
+          },
+          {
+            "id": "legal_hold_required",
+            "subject": "Evidence preservation must begin immediately",
+            "body": "CCTV, logs, manifests, maintenance data, and communications are at risk.",
+            "initially_visible": true,
+            "action_required": true,
+            "resolution_actions": [
+              "issue_legal_hold"
+            ],
+            "expiry_event": "legal_hold_missed"
+          },
+          {
+            "id": "insurance_notice_required",
+            "subject": "Coverage counsel: notice deadlines may apply",
+            "body": "Late notice could create coverage and funding disputes.",
+            "initially_visible": true,
+            "action_required": true,
+            "resolution_actions": [
+              "notify_insurers"
+            ],
+            "expiry_event": "insurance_notice_missed"
+          },
+          {
+            "id": "separate_counsel_decision",
+            "subject": "Potential conflict between GreenFire and its director",
+            "body": "Early accounts of storage practices and operational instructions may diverge.",
+            "initially_visible": false,
+            "action_required": true,
+            "resolution_actions": [
+              "appoint_separate_director_counsel"
+            ],
+            "expiry_event": "handoff_window_opened"
+          },
+          {
+            "id": "regulator_document_request",
+            "subject": "Environmental authority demands records",
+            "body": "The authority requests site plans, inventories, permits, inspections, and incident messages.",
+            "created_by_event": "regulator_request_received",
+            "initially_visible": false,
+            "action_required": true,
+            "resolution_actions": [
+              "submit_initial_regulatory_response",
+              "release_unreviewed_documents"
+            ],
+            "expiry_event": "regulatory_response_missed"
+          },
+          {
+            "id": "expert_report_ready",
+            "subject": "Preliminary fire assessment is ready",
+            "body": "The expert identified a probable ignition sequence and records requiring preservation.",
+            "created_by_event": "expert_assessment_completed",
+            "initially_visible": false,
+            "action_required": true,
+            "resolution_actions": [
+              "review_preliminary_fire_assessment"
+            ],
+            "expiry_event": "expert_assessment_expired"
+          },
+          {
+            "id": "seventy_two_hour_handoff",
+            "subject": "Partner requests the 72-hour crisis handoff",
+            "body": "Summarise evidence, representation, coverage, communications, findings, deadlines, and next steps.",
+            "created_by_event": "handoff_window_opened",
+            "initially_visible": false,
+            "action_required": true,
+            "resolution_actions": [
+              "complete_protected_handoff",
+              "complete_compromised_handoff"
+            ]
+          }
+        ],
+        "events": [
+          {
+            "id": "mandate_accepted",
+            "title": "Emergency mandate accepted",
+            "kind": "generic",
+            "trigger": {
+              "type": "by_effect"
+            },
+            "effects": []
+          },
+          {
+            "id": "regulator_request_received",
+            "title": "Regulator document request received",
+            "kind": "generic",
+            "trigger": {
+              "type": "at_time",
+              "at": {
+                "day": 0,
+                "minute_of_day": 120
+              }
+            },
+            "effects": [
+              {
+                "type": "create_inbox_item",
+                "item": "regulator_document_request"
+              }
+            ]
+          },
+          {
+            "id": "legal_hold_missed",
+            "title": "Evidence-preservation deadline missed",
+            "kind": "generic",
+            "trigger": {
+              "type": "deadline_missed",
+              "deadline": "legal_hold_deadline"
+            },
+            "effects": [
+              {
+                "type": "miss_deadline",
+                "deadline": "legal_hold_deadline"
+              },
+              {
+                "type": "set_flag",
+                "flag": "legal_hold_missed",
+                "value": true
+              }
+            ]
+          },
+          {
+            "id": "insurance_notice_missed",
+            "title": "Insurance-notice deadline missed",
+            "kind": "generic",
+            "trigger": {
+              "type": "deadline_missed",
+              "deadline": "insurance_notice_deadline"
+            },
+            "effects": [
+              {
+                "type": "miss_deadline",
+                "deadline": "insurance_notice_deadline"
+              },
+              {
+                "type": "set_flag",
+                "flag": "insurance_notice_missed",
+                "value": true
+              }
+            ]
+          },
+          {
+            "id": "regulatory_response_missed",
+            "title": "Initial regulatory response deadline missed",
+            "kind": "generic",
+            "trigger": {
+              "type": "deadline_missed",
+              "deadline": "initial_regulatory_response_deadline"
+            },
+            "effects": [
+              {
+                "type": "miss_deadline",
+                "deadline": "initial_regulatory_response_deadline"
+              },
+              {
+                "type": "set_flag",
+                "flag": "regulatory_response_missed",
+                "value": true
+              }
+            ]
+          },
+          {
+            "id": "expert_assessment_completed",
+            "title": "Preliminary fire assessment completed",
+            "kind": "generic",
+            "trigger": {
+              "type": "async_task_completed",
+              "task": "preliminary_fire_assessment"
+            },
+            "effects": [
+              {
+                "type": "mark_async_task_ready",
+                "task": "preliminary_fire_assessment"
+              },
+              {
+                "type": "create_inbox_item",
+                "item": "expert_report_ready"
+              }
+            ]
+          },
+          {
+            "id": "expert_assessment_expired",
+            "title": "Preliminary assessment was not reviewed in time",
+            "kind": "generic",
+            "trigger": {
+              "type": "by_effect"
+            },
+            "condition": {
+              "type": "any",
+              "conditions": [
+                {
+                  "type": "async_task_status_is",
+                  "task": "preliminary_fire_assessment",
+                  "status": "not_started"
+                },
+                {
+                  "type": "async_task_status_is",
+                  "task": "preliminary_fire_assessment",
+                  "status": "in_progress"
+                },
+                {
+                  "type": "async_task_status_is",
+                  "task": "preliminary_fire_assessment",
+                  "status": "ready"
+                }
+              ]
+            },
+            "effects": [
+              {
+                "type": "expire_async_task",
+                "task": "preliminary_fire_assessment"
+              }
+            ]
+          },
+          {
+            "id": "response_protocol_established",
+            "title": "Integrated crisis-response protocol established",
+            "kind": "generic",
+            "trigger": {
+              "type": "by_effect"
+            },
+            "effects": []
+          },
+          {
+            "id": "handoff_window_opened",
+            "title": "Seventy-two-hour handoff window opened",
+            "kind": "generic",
+            "trigger": {
+              "type": "at_time",
+              "at": {
+                "day": 3,
+                "minute_of_day": 0
+              }
+            },
+            "effects": [
+              {
+                "type": "set_flag",
+                "flag": "handoff_window_open",
+                "value": true
+              },
+              {
+                "type": "create_inbox_item",
+                "item": "seventy_two_hour_handoff"
+              },
+              {
+                "type": "trigger_event",
+                "event": "expert_assessment_expired"
+              }
+            ]
+          },
+          {
+            "id": "matter_handed_over",
+            "title": "First 72 hours handed over",
+            "kind": "matter_closed",
+            "trigger": {
+              "type": "by_effect"
+            },
+            "effects": []
+          }
+        ],
+        "outcomes": [
+          {
+            "id": "protected_crisis_position",
+            "title": "Protected crisis position",
+            "summary": "Evidence is preserved, conflicts controlled, insurers notified, communications reviewed, and causation risk assessed.",
+            "terminal_stage": "handoff_complete",
+            "condition": {
+              "type": "all",
+              "conditions": [
+                {
+                  "type": "flag_equals",
+                  "flag": "response_protocol_established",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "legal_hold_issued",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "insurers_notified",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "separate_director_counsel",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "regulatory_response_submitted",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "causation_risk_assessed",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "uncontrolled_disclosure",
+                  "value": false
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "legal_hold_missed",
+                  "value": false
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "insurance_notice_missed",
+                  "value": false
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "regulatory_response_missed",
+                  "value": false
+                }
+              ]
+            }
+          },
+          {
+            "id": "compromised_crisis_position",
+            "title": "Compromised crisis position",
+            "summary": "Material exposure remains in preservation, coverage, conflicts, expert review, or regulatory disclosure.",
+            "terminal_stage": "handoff_complete",
+            "condition": {
+              "type": "any",
+              "conditions": [
+                {
+                  "type": "flag_equals",
+                  "flag": "response_protocol_established",
+                  "value": false
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "legal_hold_issued",
+                  "value": false
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "insurers_notified",
+                  "value": false
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "separate_director_counsel",
+                  "value": false
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "regulatory_response_submitted",
+                  "value": false
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "causation_risk_assessed",
+                  "value": false
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "uncontrolled_disclosure",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "legal_hold_missed",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "insurance_notice_missed",
+                  "value": true
+                },
+                {
+                  "type": "flag_equals",
+                  "flag": "regulatory_response_missed",
+                  "value": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "runtime_adapter": "rust_scenario_v1",
+      "readiness": {
+        "identity": true,
+        "scenario_definition": true,
+        "diagnostics": true,
+        "path_simulation": true,
+        "engine_runtime": true,
+        "mobile_bundle": true
+      },
+      "localizations": {
+        "en": {
+          "caption": "Port Haven Environmental Authority v. GreenFire Industrial Solutions B.V.",
+          "topic": "The First 72 Hours",
+          "short_title": "GreenFire",
+          "synopsis": "An industrial fire places GreenFire under simultaneous regulatory, environmental, insurance, criminal, and governance pressure. Crisis counsel must preserve evidence and hand over a defensible position within 72 hours.",
+          "player_client_name": "GreenFire Industrial Solutions B.V.",
+          "player_client_role": "Managing Director",
+          "legal_issues": [
+            "evidence preservation after a major incident",
+            "company and director representation conflicts",
+            "environmental regulator communications",
+            "insurance notification and coverage protection",
+            "privileged expert investigation"
+          ]
+        },
+        "ru": {
+          "caption": "Port Haven Environmental Authority v. GreenFire Industrial Solutions B.V.",
+          "topic": "Первые 72 часа",
+          "short_title": "GreenFire",
+          "synopsis": "Промышленный пожар создаёт для GreenFire одновременные регуляторные, экологические, страховые, уголовно-правовые и корпоративные риски. Кризисный юрист должен сохранить доказательства и передать защищённую позицию в течение 72 часов.",
+          "player_client_name": "GreenFire Industrial Solutions B.V.",
+          "player_client_role": "Управляющий директор",
+          "legal_issues": [
+            "сохранение доказательств после крупного происшествия",
+            "конфликт представительства компании и директора",
+            "коммуникации с экологическим регулятором",
+            "уведомление страховщиков и защита покрытия",
+            "привилегированное экспертное расследование"
+          ]
+        }
+      }
+    }
+  ]
+}
