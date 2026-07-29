@@ -48,7 +48,7 @@ fn response_c_string(response: String) -> *mut c_char {
 ///
 /// `request` must be a non-null pointer to a valid NUL-terminated byte string
 /// for the duration of this call.
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub unsafe extern "C" fn juris_mobile_bridge_execute(request: *const c_char) -> *mut c_char {
     if request.is_null() {
         return response_c_string(error_json(
@@ -95,7 +95,7 @@ pub unsafe extern "C" fn juris_mobile_bridge_execute(request: *const c_char) -> 
 ///
 /// `response` must be null or a pointer returned by
 /// [`juris_mobile_bridge_execute`] that has not already been released.
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub unsafe extern "C" fn juris_mobile_bridge_string_free(response: *mut c_char) {
     if response.is_null() {
         return;
@@ -107,7 +107,7 @@ pub unsafe extern "C" fn juris_mobile_bridge_string_free(response: *mut c_char) 
 }
 
 /// Returns a stable ABI version without allocating memory.
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn juris_mobile_bridge_abi_version() -> u32 {
     1
 }
@@ -130,6 +130,23 @@ fn execute_null_request() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::{json, Value};
+
+    const LOGISTICS_SCENARIO: &str =
+        include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
+
+    fn execute_request(request: Value) -> Value {
+        let request = CString::new(request.to_string()).expect("request must be a C string");
+        // SAFETY: `request` remains a valid C string for the complete call.
+        let response = unsafe { juris_mobile_bridge_execute(request.as_ptr()) };
+        // SAFETY: The bridge returns a valid owned C string.
+        let decoded = unsafe { CStr::from_ptr(response) }
+            .to_string_lossy()
+            .into_owned();
+        // SAFETY: `response` is released exactly once after decoding.
+        unsafe { juris_mobile_bridge_string_free(response) };
+        serde_json::from_str(&decoded).expect("FFI response must be valid JSON")
+    }
 
     #[test]
     fn null_request_returns_stable_error_and_abi_is_versioned() {
@@ -151,5 +168,58 @@ mod tests {
 
         assert!(decoded.contains("\"type\":\"error\""));
         assert!(decoded.contains("\"code\":\"invalid_request\""));
+    }
+
+    #[test]
+    fn scenario_lifecycle_and_invalid_handles_are_controlled_over_ffi() {
+        let scenario: Value =
+            serde_json::from_str(LOGISTICS_SCENARIO).expect("scenario fixture must be valid JSON");
+        let created = execute_request(json!({
+            "command": "create_session",
+            "scenario": scenario,
+            "seed": 20260725
+        }));
+        assert_eq!(created["type"], "session_created");
+        assert_eq!(created["snapshot"]["stage_id"], "intake");
+        let session_id = created["session_id"]
+            .as_u64()
+            .expect("created session must expose an ID");
+
+        let dispatched = execute_request(json!({
+            "command": "dispatch",
+            "session_id": session_id,
+            "action_id": "audit_claim_file"
+        }));
+        assert_eq!(dispatched["type"], "snapshot");
+        assert_eq!(dispatched["snapshot"]["stage_id"], "pre_action");
+        assert_eq!(dispatched["snapshot"]["clock_minutes"], 120);
+
+        let snapshot = execute_request(json!({
+            "command": "snapshot",
+            "session_id": session_id
+        }));
+        assert_eq!(snapshot["type"], "snapshot");
+        assert_eq!(snapshot["snapshot"]["stage_id"], "pre_action");
+
+        let disposed = execute_request(json!({
+            "command": "dispose_session",
+            "session_id": session_id
+        }));
+        assert_eq!(disposed["type"], "session_disposed");
+        assert_eq!(disposed["disposed"], true);
+
+        let disposed_again = execute_request(json!({
+            "command": "dispose_session",
+            "session_id": session_id
+        }));
+        assert_eq!(disposed_again["type"], "session_disposed");
+        assert_eq!(disposed_again["disposed"], false);
+
+        let invalid_handle = execute_request(json!({
+            "command": "snapshot",
+            "session_id": session_id
+        }));
+        assert_eq!(invalid_handle["type"], "error");
+        assert_eq!(invalid_handle["code"], "unknown_session");
     }
 }

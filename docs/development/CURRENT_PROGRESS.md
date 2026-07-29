@@ -2,12 +2,75 @@
 document_type: cumulative_development_handoff
 project: "GENESIS: AI Juris"
 branch: feat/scenario-authoring-toolkit-v1
-head_commit: 14a6db6
+head_commit: 8560568
 app_version: 0.5.1+12
 last_updated: 2026-07-29
 ---
 
 # Current Progress
+
+## Pending FFI checkpoint — 2026-07-29
+
+Status: local changes are not committed or pushed.
+
+Completed:
+
+- restored the agreed narrow scope: no schema, runtime-semantics, or Flutter UI
+  migration is included in this checkpoint;
+- replaced the post-MSRV `#[unsafe(no_mangle)]` syntax with the Rust
+  1.78-compatible `#[no_mangle]` on all three exported C ABI functions;
+- added an FFI-level Logistics lifecycle regression covering
+  `create_session -> dispatch -> snapshot -> dispose_session`;
+- added controlled coverage for an invalid session handle and a repeated
+  `dispose_session` (`disposed: false`, valid JSON, no panic).
+
+Commands actually executed:
+
+```powershell
+cargo +1.78.0 check --workspace --locked
+cargo fmt --all -- --check
+cargo check --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+cargo test -p juris-mobile-ffi
+dart.exe tool/export_mobile_case_bundle.dart `
+  --repo-root C:\PROJECTS\Genesis-AI-Juris `
+  --check
+dart.exe flutter_tools.snapshot analyze --no-pub
+dart.exe flutter_tools.snapshot test --no-pub
+```
+
+Results:
+
+- the exact GitHub Actions MSRV command passes on Rust 1.78.0;
+- Rust formatting, workspace check, Clippy with warnings denied, and the full
+  workspace test suite pass;
+- `juris-mobile-ffi`: 3 passed, 0 failed;
+- the native lifecycle test confirms stage `intake -> pre_action` and clock
+  `0 -> 120`;
+- the deterministic mobile bundle check passes;
+- Flutter analyze reports no issues;
+- all 56 Flutter tests pass;
+- the standard Windows `dart.bat` / `flutter.bat` wrappers hung in their
+  bootstrap script before starting Dart; the recorded successful gates used
+  the same installed SDK's `dart.exe` and `flutter_tools.snapshot` directly.
+
+Known limitations:
+
+- this Windows host cannot build an Apple static library, link Xcode Runner,
+  or launch an iOS Simulator;
+- the existing macOS/Xcode build phase is therefore still unverified;
+- the GitHub Actions failure remains red remotely until this hotfix is
+  committed and pushed.
+
+Next step:
+
+- commit and push this FFI-only checkpoint, wait for remote MSRV CI, then run
+  `build_rust_ios.sh`, Xcode linking, and the same lifecycle smoke on a
+  macOS/iOS Simulator host;
+- after the iOS gate, implement `Lost != Closed`, then formalize the
+  deterministic foreground clock before persistence, capabilities, or
+  localization.
 
 Этот файл — накопительный источник контекста для продолжения разработки и
 архитектурного руководства. Он фиксирует состояние проекта после каждого
