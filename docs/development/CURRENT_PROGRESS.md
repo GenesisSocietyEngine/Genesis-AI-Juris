@@ -1,14 +1,128 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: AI Juris"
-branch: fix/goldenshell-playability-localization
-head_commit: "GoldenShell/GreenFire playability checkpoint (see current git log)"
+branch: feat/persistent-command-log-v1
+head_commit: "documentation commit containing this cumulative entry"
 release_tag: v0.5.1-alpha.1
 app_version: 0.5.1+12
-last_updated: 2026-07-30
+last_updated: 2026-07-31
 ---
 
 # Current Progress
+
+## Persistent Command-Log Save/Load v1 publication checkpoint — 2026-07-31
+
+Status: review is approved, implementation and local validation are complete on
+`feat/persistent-command-log-v1`, based on clean merged
+`main@e68007b2e6357ca4964c12bb856386b3c7b5f80e`. The implementation is isolated
+in commit `ca24c08` (`feat(runtime): add persistent command-log save/load`);
+this cumulative handoff and the persistence contract are isolated in the
+following documentation commit. Remote PR and CI observations happen after
+these commits are pushed, so no remote result is claimed by this entry.
+
+Repository state:
+
+- PR #8 was marked Ready for review with no comments or unresolved threads;
+- all eight Rust, Flutter, and iOS checks for PR #8 passed;
+- PR #8 was merged by explicit authorization using merge commit `e68007b`;
+- local `main` was updated strictly by fast-forward and matched `origin/main`;
+- this branch was created from that exact merge;
+- the approved implementation was committed separately as `ca24c08`;
+- documentation remains isolated from the implementation diff;
+- open PR #4 (`Lost != Closed`) remains isolated and is not copied into this
+  persistence checkpoint.
+
+Completed:
+
+- added public Save v1 envelope
+  `genesis.ai-juris.command-log` / schema version `1`;
+- records deterministic seed plus ordered `dispatch` and `advance_time`
+  commands, never generated events;
+- records commands on a cloned candidate before their generated effects and
+  publishes the candidate only after complete command success;
+- added canonical SHA-256 scenario fingerprint and authoritative final-state
+  digest independent of locale, formatting, platform, map iteration order, and
+  wall-clock time;
+- added fresh-session replay with explicit rejection of malformed JSON,
+  unknown schema/runtime/scenario/command/action, fingerprint mismatch, invalid
+  time, illegal command sequence, event-budget failure, and digest mismatch;
+- registry load is failure-atomic and does not replace or remove existing
+  sessions on failure;
+- extended the existing JSON bridge with `save_session` and `load_session`;
+- preserved C ABI version 1 and exactly the existing execute, string-free, and
+  ABI-version symbols;
+- added Flutter opaque save storage under Application Support using a
+  verified temporary file and recoverable backup;
+- added repository save/load mapping with old-session preservation until the
+  new Rust session and Flutter snapshot both validate;
+- added EN/RU Save/Load controls, load confirmation/cancellation, controlled
+  not-found/compatibility/corruption errors, and foreground-clock suspension;
+- added a reproducible native Android persistence integration smoke covering
+  GreenFire RU, GoldenShell RU around a deadline, terminal Logistics, and a
+  corrupted platform save;
+- added `docs/development/PERSISTENT_COMMAND_LOG_V1.md`.
+
+Local quality gates:
+
+- `cargo +1.78.0 check --workspace --locked`: passed;
+- `cargo fmt --all -- --check`: passed;
+- `cargo check --workspace`: passed;
+- `cargo clippy --workspace --all-targets -- -D warnings`: passed;
+- `cargo test --workspace`: 179 passed, 0 failed;
+- focused persistence: 15 passed;
+- mobile bridge: 9 passed;
+- mobile FFI: 7 passed, including save/load through ABI version 1;
+- diagnostics: Logistics, GreenFire, and GoldenShell each returned no
+  diagnostics;
+- mixed simulator traces remain exact:
+  - GreenFire protected: `protected_crisis_position` at 4440;
+  - GreenFire compromised: `compromised_crisis_position` at 4590;
+  - GoldenShell coordinated: `coordinated_claim_position` at 4545;
+  - GoldenShell fragmented: `fragmented_claim_position` at 4710;
+- Dart format: 38 files checked, 0 changed;
+- deterministic mobile bundle check: passed;
+- Flutter analyze: `No issues found`;
+- Flutter unit/widget tests: 76 passed, 0 failed;
+- Android native persistence integration tests: 4 passed, 0 failed;
+- Flutter debug APK: built successfully;
+- `git diff --check`: passed.
+
+Android emulator acceptance:
+
+- device: `emulator-5554`, Android API 37, 1080x1920;
+- ordinary debug app launched and used with the real native bridge;
+- Logistics was saved after advancing from 08:00 to 10:00, the app was
+  closed/restarted, a fresh 08:00 session was opened, and Load restored 10:00;
+- the reproducible device suite verified GreenFire RU action/time save/load,
+  GoldenShell RU open/missed deadline replay around minute 360, terminal
+  Logistics save/load, and corrupted-save failure atomicity;
+- production UI evidence:
+  - `apps/juris-mobile/build/persistent-logistics-loaded.png`;
+  - `apps/juris-mobile/build/persistent-greenfire-ru-restored.png`
+    (localized gameplay plus controlled save-not-found message);
+  - `apps/juris-mobile/build/persistent-goldenshell-ru-cost.png`
+    (localized action sheet with `30м` and `EUR 750`);
+- no physical-device result is claimed.
+
+Known limitations:
+
+- Save v1 has one manual local slot per case, without autosave, cloud sync,
+  accounts, or background/offline time catch-up;
+- saves are integrity-checked but not encrypted or authenticated against a
+  malicious player;
+- full-content scenario fingerprints intentionally invalidate saves after any
+  canonical scenario text/content change;
+- the legacy Dart Failed ERP demo does not use this Rust persistence contract;
+- local iOS execution is unavailable on Windows; both hosted iOS Native FFI
+  workflows must be observed after publication;
+- no physical-device, release-signing, App Store, or Play Store result is
+  claimed.
+
+Next step:
+
+- push the two intentional commits on `feat/persistent-command-log-v1`, open a
+  Draft PR, and observe Rust CI, Flutter Mobile UI, and both iOS Native FFI jobs
+  to terminal state without automatic merge.
 
 ## GoldenShell/GreenFire playability and RU gameplay checkpoint — 2026-07-30
 
