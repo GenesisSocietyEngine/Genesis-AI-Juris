@@ -45,6 +45,13 @@ pub struct ActionDefinition {
     #[serde(default)]
     pub time_cost_minutes: u32,
 
+    /// External professional, expert, filing, or operational spend in euros.
+    ///
+    /// This is deliberately separate from simulated player time. Existing
+    /// scenarios remain backward compatible and deserialize with zero cost.
+    #[serde(default)]
+    pub cost_eur: u32,
+
     #[serde(default)]
     pub repeatability: ActionRepeatability,
 }

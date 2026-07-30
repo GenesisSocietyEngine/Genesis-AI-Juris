@@ -35,6 +35,7 @@ void main() {
       decoded as Map<String, dynamic>,
     );
 
+    expect(bundle.bundleVersion, 4);
     expect(bundle.cases, hasLength(4));
     expect(
       bundle.cases.map((MobileCaseDefinition item) => item.caseId),
@@ -75,6 +76,7 @@ void main() {
     expect(greenfire.readiness.pathSimulation, isTrue);
     expect(greenfire.readiness.engineRuntime, isTrue);
     expect(greenfire.runtimeAdapter, 'rust_scenario_v1');
+    expect(greenfire.scenarioLocalizations, contains('ru'));
 
     final MobileCaseDefinition goldenshell = bundle.cases.singleWhere(
       (MobileCaseDefinition item) =>
@@ -92,6 +94,15 @@ void main() {
     expect(goldenshell.readiness.pathSimulation, isTrue);
     expect(goldenshell.readiness.engineRuntime, isTrue);
     expect(goldenshell.runtimeAdapter, 'rust_scenario_v1');
+    expect(goldenshell.scenarioLocalizations, contains('ru'));
+    expect(
+      (goldenshell.scenario?['actions'] as List<dynamic>).every(
+        (dynamic action) =>
+            (action as Map<String, dynamic>)['cost_eur'] is int &&
+            (action['cost_eur'] as int) > 0,
+      ),
+      isTrue,
+    );
   });
 
   testWidgets('case library renders all catalog scenarios', (

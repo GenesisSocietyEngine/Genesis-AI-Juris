@@ -102,6 +102,7 @@ void main(List<String> arguments) {
     final Map<String, dynamic> localeSource =
         _object(caseConfig['locales'], '$caseId.locales');
     final Map<String, dynamic> localizedOutput = <String, dynamic>{};
+    final Map<String, dynamic> scenarioLocalizedOutput = <String, dynamic>{};
 
     for (final String locale in supportedLocales) {
       final Map<String, dynamic> defaultText = _object(
@@ -139,6 +140,45 @@ void main(List<String> arguments) {
       };
     }
 
+    final Map<String, dynamic> scenarioLocalizationFiles = _object(
+      caseConfig['scenario_localization_files'] ?? <String, dynamic>{},
+      '$caseId.scenario_localization_files',
+    );
+    for (final MapEntry<String, dynamic> item
+        in scenarioLocalizationFiles.entries) {
+      if (item.value is! String) {
+        throw FormatException(
+          '$caseId.scenario_localization_files.${item.key} must be a path',
+        );
+      }
+      if (!supportedLocales.contains(item.key)) {
+        throw FormatException(
+          '$caseId scenario localization uses unsupported locale ${item.key}',
+        );
+      }
+      final Map<String, dynamic> overlay = _readObject(
+        File(_join(repository.path, item.value as String)),
+      );
+      _requireEqual(
+        scenarioId,
+        _requireString(overlay, 'scenario_id'),
+        '$caseId.scenario_localizations.${item.key}.scenario_id',
+      );
+      _requireEqual(
+        item.key,
+        _requireString(overlay, 'locale'),
+        '$caseId.scenario_localizations.${item.key}.locale',
+      );
+      if (scenarioDefinition != null) {
+        _validateScenarioLocalization(
+          overlay,
+          scenarioDefinition,
+          '$caseId.scenario_localizations.${item.key}',
+        );
+      }
+      scenarioLocalizedOutput[item.key] = overlay;
+    }
+
     exportedCases.add(<String, dynamic>{
       'case_id': caseId,
       'scenario_id': scenarioId,
@@ -164,6 +204,7 @@ void main(List<String> arguments) {
         'mobile_bundle': true,
       },
       'localizations': localizedOutput,
+      'scenario_localizations': scenarioLocalizedOutput,
     });
   }
 
@@ -177,7 +218,7 @@ void main(List<String> arguments) {
   });
 
   final Map<String, dynamic> output = <String, dynamic>{
-    'bundle_version': 3,
+    'bundle_version': 4,
     'catalog_version': catalog['catalog_version'],
     'default_locale': defaultLocale,
     'supported_locales': supportedLocales,
@@ -278,6 +319,41 @@ void _validateStableId(String value, String path) {
   final RegExp pattern = RegExp(r'^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$');
   if (!pattern.hasMatch(value)) {
     throw FormatException('$path is not a stable ID: $value');
+  }
+}
+
+void _validateScenarioLocalization(
+  Map<String, dynamic> overlay,
+  Map<String, dynamic> scenario,
+  String path,
+) {
+  const List<String> sections = <String>[
+    'stages',
+    'actions',
+    'deadlines',
+    'inbox_items',
+    'facts',
+    'evidence',
+    'outcomes',
+  ];
+  for (final String section in sections) {
+    final Set<String> canonicalIds = _list(
+      scenario[section],
+      'scenario.$section',
+    ).map((dynamic item) {
+      return _requireString(_object(item, 'scenario.$section item'), 'id');
+    }).toSet();
+    final Set<String> translatedIds =
+        _object(overlay[section], '$path.$section').keys.toSet();
+    final Set<String> missing = canonicalIds.difference(translatedIds);
+    final Set<String> unknown = translatedIds.difference(canonicalIds);
+    if (missing.isNotEmpty || unknown.isNotEmpty) {
+      throw FormatException(
+        '$path.$section stable IDs differ: '
+        'missing=${missing.toList()..sort()}, '
+        'unknown=${unknown.toList()..sort()}',
+      );
+    }
   }
 }
 

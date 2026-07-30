@@ -63,6 +63,48 @@ void main() {
     expect(find.text('60 game min / real min'), findsOneWidget);
   });
 
+  testWidgets('open gameplay sheets suspend foreground clock ticks', (
+    WidgetTester tester,
+  ) async {
+    final DemoGameRepository repository = DemoGameRepository(seed: 20260724);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeShell(
+          repository: repository,
+          enableLiveClockInTests: true,
+        ),
+      ),
+    );
+    final String before = repository.snapshot.timeLabel;
+
+    await tester.tap(find.text('Urgent: ERP supplier termination notice'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 8));
+
+    expect(repository.snapshot.timeLabel, before);
+    Navigator.of(tester.element(find.byType(HomeShell))).pop();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('calendar offers rest until the next 08:00 work period', (
+    WidgetTester tester,
+  ) async {
+    final DemoGameRepository repository = DemoGameRepository(seed: 20260724);
+    await tester.pumpWidget(JurisApp(repository: repository));
+
+    await tester.tap(find.byIcon(Icons.event_outlined));
+    await tester.pumpAndSettle();
+    final Finder restButton =
+        find.byKey(const ValueKey<String>('rest-until-next-workday'));
+    await tester.ensureVisible(restButton);
+    await tester.pumpAndSettle();
+    await tester.tap(restButton);
+    await tester.pumpAndSettle();
+
+    expect(repository.snapshot.dayLabel, 'Day 2');
+    expect(repository.snapshot.timeLabel, '08:00');
+  });
+
   testWidgets('automatic clock error pauses subsequent commands', (
     WidgetTester tester,
   ) async {

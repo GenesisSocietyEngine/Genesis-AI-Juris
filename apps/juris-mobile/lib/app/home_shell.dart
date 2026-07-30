@@ -12,6 +12,7 @@ import '../screens/matter_screen.dart';
 import '../widgets/action_picker_sheet.dart';
 import '../widgets/case_report_sheet.dart';
 import '../widgets/inbox_message_sheet.dart';
+import 'gameplay_locale.dart';
 
 /// Adaptive application shell shared by phone, tablet, and desktop previews.
 ///
@@ -20,11 +21,13 @@ import '../widgets/inbox_message_sheet.dart';
 class HomeShell extends StatefulWidget {
   const HomeShell(
       {required this.repository,
+      this.locale = 'en',
       this.onExitToCaseCatalog,
       this.enableLiveClockInTests = false,
       super.key});
 
   final GameRuntimeRepository repository;
+  final String locale;
   final VoidCallback? onExitToCaseCatalog;
   final bool enableLiveClockInTests;
 
@@ -40,6 +43,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   Timer? _liveClockTimer;
   bool _clockPaused = false;
   bool _clockTickInProgress = false;
+  int _openModalCount = 0;
   SimulationClockSpeed _clockSpeed = SimulationClockSpeed.standard;
 
   @override
@@ -79,6 +83,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     _liveClockTimer = null;
     if ((_runningUnderFlutterTest && !widget.enableLiveClockInTests) ||
         _clockPaused ||
+        _openModalCount > 0 ||
         !widget.repository.supportsLiveClock ||
         widget.repository.isTerminal) {
       return;
@@ -89,6 +94,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       (Timer timer) {
         if (!mounted ||
             _clockPaused ||
+            _openModalCount > 0 ||
             _clockTickInProgress ||
             !widget.repository.supportsLiveClock ||
             widget.repository.isTerminal) {
@@ -137,13 +143,79 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     _startLiveClock();
   }
 
-  static const List<_Destination> _destinations = <_Destination>[
-    _Destination('Inbox', Icons.inbox_outlined, Icons.inbox),
-    _Destination('Matter', Icons.gavel_outlined, Icons.gavel),
-    _Destination('Calendar', Icons.event_outlined, Icons.event),
-    _Destination('AI', Icons.auto_awesome_outlined, Icons.auto_awesome),
-    _Destination('Career', Icons.account_circle_outlined, Icons.account_circle),
-  ];
+  void _setModalVisible(bool visible) {
+    if (visible) {
+      _openModalCount += 1;
+    } else if (_openModalCount > 0) {
+      _openModalCount -= 1;
+    }
+    if (visible) {
+      _liveClockTimer?.cancel();
+      _liveClockTimer = null;
+    } else if (_openModalCount == 0) {
+      _startLiveClock();
+    }
+  }
+
+  Future<T?> _whileClockSuspended<T>(Future<T?> Function() showModal) async {
+    _setModalVisible(true);
+    try {
+      return await showModal();
+    } finally {
+      _setModalVisible(false);
+    }
+  }
+
+  void _restUntilNextWorkday() {
+    try {
+      widget.repository.restUntilNextWorkday();
+    } on Object catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${GameplayLocale.text(context, 'Could not advance to the next workday', 'Не удалось перейти к следующему рабочему дню')}: $error',
+          ),
+          showCloseIcon: true,
+        ),
+      );
+    }
+  }
+
+  List<_Destination> _destinationsFor(BuildContext context) => <_Destination>[
+        _Destination(
+          'inbox',
+          GameplayLocale.text(context, 'Inbox', 'Входящие'),
+          Icons.inbox_outlined,
+          Icons.inbox,
+        ),
+        _Destination(
+          'matter',
+          GameplayLocale.text(context, 'Matter', 'Дело'),
+          Icons.gavel_outlined,
+          Icons.gavel,
+        ),
+        _Destination(
+          'calendar',
+          GameplayLocale.text(context, 'Calendar', 'Календарь'),
+          Icons.event_outlined,
+          Icons.event,
+        ),
+        const _Destination(
+          'ai',
+          'AI',
+          Icons.auto_awesome_outlined,
+          Icons.auto_awesome,
+        ),
+        _Destination(
+          'career',
+          GameplayLocale.text(context, 'Career', 'Карьера'),
+          Icons.account_circle_outlined,
+          Icons.account_circle,
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -151,162 +223,201 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       listenable: widget.repository,
       builder: (BuildContext context, Widget? child) {
         final GameSnapshot snapshot = widget.repository.snapshot;
-        return LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final bool useRail = constraints.maxWidth >= 700;
-            final Widget content = _buildContent(snapshot);
+        return GameplayLocale(
+          locale: widget.locale,
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final List<_Destination> destinations = _destinationsFor(context);
+              final bool useRail = constraints.maxWidth >= 700;
+              final Widget content = _buildContent(snapshot);
 
-            return Scaffold(
-              appBar: AppBar(
-                leading: widget.onExitToCaseCatalog == null
-                    ? null
-                    : IconButton(
-                        tooltip: 'Back to case library',
-                        onPressed: widget.onExitToCaseCatalog,
-                        icon: const Icon(Icons.arrow_back),
+              return Scaffold(
+                appBar: AppBar(
+                  leading: widget.onExitToCaseCatalog == null
+                      ? null
+                      : IconButton(
+                          tooltip: GameplayLocale.text(
+                            context,
+                            'Back to case library',
+                            'Назад в библиотеку дел',
+                          ),
+                          onPressed: widget.onExitToCaseCatalog,
+                          icon: const Icon(Icons.arrow_back),
+                        ),
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(destinations[_selectedIndex].label),
+                      Text(
+                        '${snapshot.dayLabel} · ${snapshot.timeLabel} · ${snapshot.stage}',
+                        style:
+                            Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
                       ),
-                title: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(_destinations[_selectedIndex].label),
-                    Text(
-                      '${snapshot.dayLabel} · ${snapshot.timeLabel} · ${snapshot.stage}',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                  ],
-                ),
-                actions: <Widget>[
-                  PopupMenuButton<SimulationClockSpeed>(
-                    key: const ValueKey<String>('simulation-speed-menu'),
-                    tooltip:
-                        'Simulation speed: ${_clockSpeed.label} · ${_clockSpeed.gameMinutesPerRealMinute} game min / real min',
-                    initialValue: _clockSpeed,
-                    enabled: widget.repository.supportsLiveClock &&
-                        !widget.repository.isTerminal,
-                    onSelected: _selectClockSpeed,
-                    itemBuilder: (BuildContext context) => SimulationClockSpeed
-                        .values
-                        .map(
-                          (SimulationClockSpeed speed) =>
-                              PopupMenuItem<SimulationClockSpeed>(
-                            value: speed,
-                            height: 64,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(
-                                  speed.label,
-                                  style: Theme.of(context).textTheme.labelLarge,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${speed.gameMinutesPerRealMinute} game min / real min',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                        .toList(growable: false),
-                    icon: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        const Icon(Icons.speed),
-                        const SizedBox(width: 2),
-                        Text(_clockSpeed.label),
-                      ],
-                    ),
+                    ],
                   ),
-                  IconButton(
-                    key: const ValueKey<String>('simulation-pause-toggle'),
-                    tooltip: _clockPaused
-                        ? 'Resume simulation clock'
-                        : 'Pause simulation clock',
-                    onPressed: widget.repository.supportsLiveClock &&
-                            !widget.repository.isTerminal
-                        ? _toggleClock
-                        : null,
-                    icon: Icon(
-                      _clockPaused
-                          ? Icons.play_circle_outline
-                          : Icons.pause_circle_outline,
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Reset deterministic demo',
-                    onPressed: _confirmReset,
-                    icon: const Icon(Icons.restart_alt),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-              ),
-              body: useRail
-                  ? Row(
-                      children: <Widget>[
-                        NavigationRail(
-                          selectedIndex: _selectedIndex,
-                          onDestinationSelected: _selectDestination,
-                          labelType: NavigationRailLabelType.all,
-                          leading: Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: _MatterMonogram(
-                              requiredMessages:
-                                  snapshot.unhandledRequiredMessages,
-                            ),
-                          ),
-                          destinations: _destinations
+                  actions: <Widget>[
+                    PopupMenuButton<SimulationClockSpeed>(
+                      key: const ValueKey<String>('simulation-speed-menu'),
+                      tooltip: GameplayLocale.of(context) == 'ru'
+                          ? 'Скорость симуляции: ${_clockSpeed.label} · '
+                              '${_clockSpeed.gameMinutesPerRealMinute} игровых мин / реальную мин'
+                          : 'Simulation speed: ${_clockSpeed.label} · '
+                              '${_clockSpeed.gameMinutesPerRealMinute} game min / real min',
+                      initialValue: _clockSpeed,
+                      enabled: widget.repository.supportsLiveClock &&
+                          !widget.repository.isTerminal,
+                      onSelected: _selectClockSpeed,
+                      itemBuilder: (BuildContext context) =>
+                          SimulationClockSpeed.values
                               .map(
-                                (_Destination destination) =>
-                                    NavigationRailDestination(
-                                  icon: Icon(destination.icon),
-                                  selectedIcon: Icon(destination.selectedIcon),
-                                  label: Text(destination.label),
+                                (SimulationClockSpeed speed) =>
+                                    PopupMenuItem<SimulationClockSpeed>(
+                                  value: speed,
+                                  height: 64,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      Text(
+                                        speed.label,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelLarge,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        GameplayLocale.of(context) == 'ru'
+                                            ? '${speed.gameMinutesPerRealMinute} '
+                                                'игровых мин / реальную мин'
+                                            : '${speed.gameMinutesPerRealMinute} '
+                                                'game min / real min',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               )
                               .toList(growable: false),
-                        ),
-                        const VerticalDivider(width: 1),
-                        Expanded(child: content),
-                      ],
-                    )
-                  : content,
-              bottomNavigationBar: useRail
-                  ? null
-                  : NavigationBar(
-                      selectedIndex: _selectedIndex,
-                      onDestinationSelected: _selectDestination,
-                      destinations: _destinations
-                          .map(
-                            (_Destination destination) => NavigationDestination(
-                              icon: _navigationIcon(
-                                destination.icon,
-                                destination.label,
-                                snapshot,
-                              ),
-                              selectedIcon: _navigationIcon(
-                                destination.selectedIcon,
-                                destination.label,
-                                snapshot,
-                              ),
-                              label: destination.label,
+                      icon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          const Icon(Icons.speed),
+                          const SizedBox(width: 2),
+                          Text(_clockSpeed.label),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      key: const ValueKey<String>('simulation-pause-toggle'),
+                      tooltip: _clockPaused
+                          ? GameplayLocale.text(
+                              context,
+                              'Resume simulation clock',
+                              'Продолжить игровые часы',
+                            )
+                          : GameplayLocale.text(
+                              context,
+                              'Pause simulation clock',
+                              'Приостановить игровые часы',
                             ),
-                          )
-                          .toList(growable: false),
+                      onPressed: widget.repository.supportsLiveClock &&
+                              !widget.repository.isTerminal
+                          ? _toggleClock
+                          : null,
+                      icon: Icon(
+                        _clockPaused
+                            ? Icons.play_circle_outline
+                            : Icons.pause_circle_outline,
+                      ),
                     ),
-              floatingActionButton: snapshot.actions.isEmpty
-                  ? null
-                  : FloatingActionButton.extended(
-                      onPressed: () => _showActions(snapshot),
-                      icon:
-                          const Icon(Icons.playlist_add_check_circle_outlined),
-                      label: Text('Actions · ${snapshot.actions.length}'),
+                    IconButton(
+                      tooltip: GameplayLocale.text(
+                        context,
+                        'Reset deterministic demo',
+                        'Сбросить прохождение',
+                      ),
+                      onPressed: _confirmReset,
+                      icon: const Icon(Icons.restart_alt),
                     ),
-            );
-          },
+                    const SizedBox(width: 8),
+                  ],
+                ),
+                body: useRail
+                    ? Row(
+                        children: <Widget>[
+                          NavigationRail(
+                            selectedIndex: _selectedIndex,
+                            onDestinationSelected: _selectDestination,
+                            labelType: NavigationRailLabelType.all,
+                            leading: Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: _MatterMonogram(
+                                requiredMessages:
+                                    snapshot.unhandledRequiredMessages,
+                              ),
+                            ),
+                            destinations: destinations
+                                .map(
+                                  (_Destination destination) =>
+                                      NavigationRailDestination(
+                                    icon: Icon(destination.icon),
+                                    selectedIcon:
+                                        Icon(destination.selectedIcon),
+                                    label: Text(destination.label),
+                                  ),
+                                )
+                                .toList(growable: false),
+                          ),
+                          const VerticalDivider(width: 1),
+                          Expanded(child: content),
+                        ],
+                      )
+                    : content,
+                bottomNavigationBar: useRail
+                    ? null
+                    : NavigationBar(
+                        selectedIndex: _selectedIndex,
+                        onDestinationSelected: _selectDestination,
+                        destinations: destinations
+                            .map(
+                              (_Destination destination) =>
+                                  NavigationDestination(
+                                icon: _navigationIcon(
+                                  destination.icon,
+                                  destination.id,
+                                  snapshot,
+                                ),
+                                selectedIcon: _navigationIcon(
+                                  destination.selectedIcon,
+                                  destination.id,
+                                  snapshot,
+                                ),
+                                label: destination.label,
+                              ),
+                            )
+                            .toList(growable: false),
+                      ),
+                floatingActionButton: snapshot.actions.isEmpty
+                    ? null
+                    : FloatingActionButton.extended(
+                        onPressed: () => _showActions(snapshot),
+                        icon: const Icon(
+                            Icons.playlist_add_check_circle_outlined),
+                        label: Text(
+                          '${GameplayLocale.text(context, 'Actions', 'Действия')}'
+                          ' · ${snapshot.actions.length}',
+                        ),
+                      ),
+              );
+            },
+          ),
         );
       },
     );
@@ -328,6 +439,11 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         ),
       2 => CalendarScreen(
           snapshot: snapshot,
+          onRestUntilNextWorkday: widget.repository.supportsLiveClock &&
+                  !widget.repository.isTerminal
+              ? _restUntilNextWorkday
+              : null,
+          onModalVisibilityChanged: _setModalVisible,
           onOpenRelatedAction: (String actionId) => _showActions(
             snapshot,
             onlyActionId: actionId,
@@ -348,10 +464,10 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
   Widget _navigationIcon(
     IconData icon,
-    String label,
+    String destinationId,
     GameSnapshot snapshot,
   ) {
-    if (label != 'Inbox' || snapshot.unhandledRequiredMessages == 0) {
+    if (destinationId != 'inbox' || snapshot.unhandledRequiredMessages == 0) {
       return Icon(icon);
     }
     return Badge(
@@ -378,17 +494,19 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       currentSnapshot,
       currentItem,
     );
-    final String? actionId = await showModalBottomSheet<String>(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (BuildContext context) => InboxMessageSheet(
-        item: currentItem,
-        actions: actions,
-        settlementOffer: currentItem.id == 'settlement-offer'
-            ? currentSnapshot.settlementOffer
-            : null,
+    final String? actionId = await _whileClockSuspended<String>(
+      () => showModalBottomSheet<String>(
+        context: context,
+        useSafeArea: true,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (BuildContext context) => InboxMessageSheet(
+          item: currentItem,
+          actions: actions,
+          settlementOffer: currentItem.id == 'settlement-offer'
+              ? currentSnapshot.settlementOffer
+              : null,
+        ),
       ),
     );
 
@@ -464,14 +582,16 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       return;
     }
 
-    await showModalBottomSheet<void>(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (BuildContext context) => CaseReportSheet(
-        snapshot: snapshot,
-        summary: summary,
+    await _whileClockSuspended<void>(
+      () => showModalBottomSheet<void>(
+        context: context,
+        useSafeArea: true,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (BuildContext context) => CaseReportSheet(
+          snapshot: snapshot,
+          summary: summary,
+        ),
       ),
     );
   }
@@ -501,17 +621,30 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No matching actions are available now.')),
+        SnackBar(
+          content: Text(
+            GameplayLocale.text(
+              context,
+              'No matching actions are available now.',
+              'Подходящие действия сейчас недоступны.',
+            ),
+          ),
+        ),
       );
       return;
     }
 
-    final String? actionId = await showModalBottomSheet<String>(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (BuildContext context) => ActionPickerSheet(actions: actions),
+    final String? actionId = await _whileClockSuspended<String>(
+      () => showModalBottomSheet<String>(
+        context: context,
+        useSafeArea: true,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (BuildContext context) => ActionPickerSheet(
+          actions: actions,
+          locale: widget.locale,
+        ),
+      ),
     );
 
     if (actionId == null || !mounted) {
@@ -532,24 +665,41 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   }
 
   Future<void> _confirmReset() async {
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: const Text('Reset playtest?'),
-        content: Text(
-          'This restarts ${widget.repository.snapshot.matterTitle} at '
-          'Day 1 · 08:00 with seed ${widget.repository.snapshot.seed}.',
+    final bool? confirmed = await _whileClockSuspended<bool>(
+      () => showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
+          title: Text(
+            GameplayLocale.text(
+              context,
+              'Reset playtest?',
+              'Сбросить прохождение?',
+            ),
+          ),
+          content: Text(
+            GameplayLocale.of(context) == 'ru'
+                ? 'Сценарий ${widget.repository.snapshot.matterTitle} начнётся '
+                    'заново в День 1 · 08:00 с seed '
+                    '${widget.repository.snapshot.seed}.'
+                : 'This restarts ${widget.repository.snapshot.matterTitle} at '
+                    'Day 1 · 08:00 with seed '
+                    '${widget.repository.snapshot.seed}.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                GameplayLocale.text(context, 'Cancel', 'Отмена'),
+              ),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                GameplayLocale.text(context, 'Reset', 'Сбросить'),
+              ),
+            ),
+          ],
         ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Reset'),
-          ),
-        ],
       ),
     );
 
@@ -565,8 +715,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 }
 
 class _Destination {
-  const _Destination(this.label, this.icon, this.selectedIcon);
+  const _Destination(this.id, this.label, this.icon, this.selectedIcon);
 
+  final String id;
   final String label;
   final IconData icon;
   final IconData selectedIcon;

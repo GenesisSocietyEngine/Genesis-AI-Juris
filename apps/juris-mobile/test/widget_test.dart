@@ -346,6 +346,8 @@ void main() {
       scrollable: find.byType(Scrollable).last,
       maxScrolls: 10,
     );
+    await tester.ensureVisible(find.text('Evidence-preservation notice'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Evidence-preservation notice'));
     await tester.pumpAndSettle();
 

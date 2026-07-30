@@ -27,6 +27,7 @@ abstract final class CaseRuntimeFactory {
 
   static GameRuntimeRepository create(
     MobileCaseDefinition caseDefinition, {
+    String locale = 'en',
     ScenarioBridgeClient? scenarioBridgeClient,
   }) {
     if (!supports(caseDefinition)) {
@@ -39,6 +40,7 @@ abstract final class CaseRuntimeFactory {
     }
     return RustScenarioRepository(
       caseDefinition: caseDefinition,
+      locale: locale,
       bridgeClient: scenarioBridgeClient ?? NativeScenarioBridgeClient(),
     );
   }

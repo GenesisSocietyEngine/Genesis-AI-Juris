@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app/gameplay_locale.dart';
 import '../models/game_snapshot.dart';
 import '../widgets/metric_tile.dart';
 import '../widgets/section_card.dart';
@@ -43,7 +44,9 @@ class MatterScreen extends StatelessWidget {
                   onPressed: onShowActions,
                   icon: const Icon(Icons.playlist_add_check_circle_outlined),
                   label: Text(
-                    'Review ${snapshot.actions.length} available actions',
+                    '${GameplayLocale.text(context, 'Review', 'Просмотреть')} '
+                    '${snapshot.actions.length} '
+                    '${GameplayLocale.text(context, 'available actions', 'доступных действий')}',
                   ),
                 ),
             ],
@@ -85,9 +88,15 @@ class _MatterHeader extends StatelessWidget {
                           : Icons.verified_outlined,
                   size: 18,
                 ),
-                label: Text(snapshot.caseResultStatus.label),
+                label: Text(
+                  _caseResultLabel(context, snapshot.caseResultStatus),
+                ),
               ),
-              Chip(label: Text(snapshot.engagementStatus.label)),
+              Chip(
+                label: Text(
+                  _engagementLabel(context, snapshot.engagementStatus),
+                ),
+              ),
               Chip(label: Text(snapshot.mode)),
               Chip(label: Text('Seed ${snapshot.seed}')),
             ],
@@ -100,7 +109,11 @@ class _MatterHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      'Case strength',
+                      GameplayLocale.text(
+                        context,
+                        'Case strength',
+                        'Сила позиции',
+                      ),
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
                             color: colors.onSurfaceVariant,
                           ),
@@ -138,7 +151,11 @@ class _OutcomeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      title: 'Final outcome',
+      title: GameplayLocale.text(
+        context,
+        'Final outcome',
+        'Итоговый результат',
+      ),
       subtitle: summary.closedAt,
       trailing: const Icon(Icons.verified_outlined),
       child: Column(
@@ -180,31 +197,38 @@ class _MetricGrid extends StatelessWidget {
 
         final List<Widget> tiles = <Widget>[
           MetricTile(
-            label: 'Budget',
+            label: GameplayLocale.text(context, 'Budget', 'Бюджет'),
             value: 'EUR ${_money(snapshot.spendEur)}',
-            detail:
-                'EUR ${_money(snapshot.remainingBudgetEur)} authority remaining',
+            detail: 'EUR ${_money(snapshot.remainingBudgetEur)} '
+                '${GameplayLocale.text(context, 'authority remaining', 'доступно по полномочиям')}',
             icon: Icons.account_balance_wallet_outlined,
             progress: budgetProgress,
           ),
           MetricTile(
-            label: 'Evidence',
+            label: GameplayLocale.text(context, 'Evidence', 'Доказательства'),
             value: '${snapshot.evidenceScore}/100',
-            detail: '${snapshot.evidence.length} discovered items',
+            detail: '${snapshot.evidence.length} '
+                '${GameplayLocale.text(context, 'discovered items', 'обнаруженных материалов')}',
             icon: Icons.fact_check_outlined,
             progress: snapshot.evidenceScore / 100,
           ),
           MetricTile(
-            label: 'Workload',
+            label: GameplayLocale.text(context, 'Workload', 'Нагрузка'),
             value: '${snapshot.billableHours.toStringAsFixed(1)}h',
             detail:
-                'Fatigue ${snapshot.fatigue} · strain ${snapshot.cumulativeStrain}',
+                '${GameplayLocale.text(context, 'Fatigue', 'Усталость')} ${snapshot.fatigue} · '
+                '${GameplayLocale.text(context, 'strain', 'напряжение')} ${snapshot.cumulativeStrain}',
             icon: Icons.schedule_outlined,
           ),
           MetricTile(
-            label: 'Professional standing',
+            label: GameplayLocale.text(
+              context,
+              'Professional standing',
+              'Профессиональная репутация',
+            ),
             value: '${snapshot.ethics}/100',
-            detail: 'Client trust ${snapshot.clientTrust}/100',
+            detail:
+                '${GameplayLocale.text(context, 'Client trust', 'Доверие клиента')} ${snapshot.clientTrust}/100',
             icon: Icons.balance_outlined,
             progress: snapshot.ethics / 100,
           ),
@@ -231,7 +255,9 @@ class _SettlementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
     return SectionCard(
-      title: 'Settlement offer · revision ${offer.revision}',
+      title:
+          '${GameplayLocale.text(context, 'Settlement offer', 'Предложение об урегулировании')} · '
+          '${GameplayLocale.text(context, 'revision', 'редакция')} ${offer.revision}',
       trailing: Icon(Icons.handshake_outlined, color: colors.primary),
       child: Row(
         children: <Widget>[
@@ -242,7 +268,7 @@ class _SettlementCard extends StatelessWidget {
             ),
           ),
           Text(
-            'Expires ${offer.expiresAt}',
+            '${GameplayLocale.text(context, 'Expires', 'Истекает')} ${offer.expiresAt}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
@@ -261,8 +287,16 @@ class _EvidenceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      title: 'Known evidence',
-      subtitle: 'Only evidence authorized by the engine may appear here.',
+      title: GameplayLocale.text(
+        context,
+        'Known evidence',
+        'Известные доказательства',
+      ),
+      subtitle: GameplayLocale.text(
+        context,
+        'Only evidence authorized by the engine may appear here.',
+        'Здесь отображаются только доказательства, разрешённые движком.',
+      ),
       child: Column(
         children: evidence
             .map(
@@ -296,4 +330,36 @@ String _money(int value) {
     result.write(digits[index]);
   }
   return value < 0 ? '-$result' : result.toString();
+}
+
+String _caseResultLabel(BuildContext context, CaseResultStatus status) {
+  if (GameplayLocale.of(context) != 'ru') {
+    return status.label;
+  }
+  return switch (status) {
+    CaseResultStatus.ongoing => 'Рассмотрение продолжается',
+    CaseResultStatus.wonAtFirstInstance => 'Победа в первой инстанции',
+    CaseResultStatus.mixedAtFirstInstance =>
+      'Смешанный результат первой инстанции',
+    CaseResultStatus.lostAtFirstInstance => 'Поражение в первой инстанции',
+    CaseResultStatus.wonOnAppeal => 'Победа в апелляции',
+    CaseResultStatus.lostOnAppeal => 'Поражение в апелляции',
+    CaseResultStatus.remittedAfterCassation =>
+      'Направлено на новое рассмотрение',
+    CaseResultStatus.settled => 'Урегулировано',
+    CaseResultStatus.withdrawn => 'Отозвано',
+  };
+}
+
+String _engagementLabel(BuildContext context, EngagementStatus status) {
+  if (GameplayLocale.of(context) != 'ru') {
+    return status.label;
+  }
+  return switch (status) {
+    EngagementStatus.active => 'Поручение активно',
+    EngagementStatus.awaitingClientInstructions =>
+      'Ожидаются инструкции клиента',
+    EngagementStatus.terminatedByClient => 'Прекращено клиентом',
+    EngagementStatus.completed => 'Поручение завершено',
+  };
 }

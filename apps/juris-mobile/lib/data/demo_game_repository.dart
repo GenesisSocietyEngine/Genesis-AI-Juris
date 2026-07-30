@@ -38,6 +38,13 @@ class DemoGameRepository extends GameRuntimeRepository {
   @override
   String? get clockErrorMessage => null;
 
+  @override
+  void restUntilNextWorkday() {
+    if (!isTerminal) {
+      _rest();
+    }
+  }
+
   /// Resets the mobile playtest to the same seed and opening state.
   void reset() {
     _snapshot = _initial(seed);

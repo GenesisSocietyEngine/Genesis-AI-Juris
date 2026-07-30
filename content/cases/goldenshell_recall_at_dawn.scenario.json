@@ -365,6 +365,7 @@
         }
       ],
       "time_cost_minutes": 30,
+      "cost_eur": 750,
       "repeatability": {
         "type": "once"
       }
@@ -399,6 +400,7 @@
         }
       ],
       "time_cost_minutes": 90,
+      "cost_eur": 2200,
       "repeatability": {
         "type": "once"
       }
@@ -446,6 +448,7 @@
         }
       ],
       "time_cost_minutes": 120,
+      "cost_eur": 4800,
       "repeatability": {
         "type": "once"
       }
@@ -489,6 +492,7 @@
         }
       ],
       "time_cost_minutes": 60,
+      "cost_eur": 900,
       "repeatability": {
         "type": "once"
       }
@@ -523,6 +527,7 @@
         }
       ],
       "time_cost_minutes": 90,
+      "cost_eur": 1800,
       "repeatability": {
         "type": "once"
       }
@@ -561,6 +566,7 @@
         }
       ],
       "time_cost_minutes": 60,
+      "cost_eur": 1200,
       "repeatability": {
         "type": "once"
       }
@@ -599,6 +605,7 @@
         }
       ],
       "time_cost_minutes": 60,
+      "cost_eur": 1600,
       "repeatability": {
         "type": "once"
       }
@@ -641,6 +648,7 @@
         }
       ],
       "time_cost_minutes": 180,
+      "cost_eur": 6500,
       "repeatability": {
         "type": "once"
       }
@@ -675,6 +683,7 @@
         }
       ],
       "time_cost_minutes": 60,
+      "cost_eur": 1400,
       "repeatability": {
         "type": "once"
       }
@@ -704,6 +713,7 @@
         }
       ],
       "time_cost_minutes": 45,
+      "cost_eur": 7500,
       "repeatability": {
         "type": "once"
       }
@@ -765,6 +775,7 @@
         }
       ],
       "time_cost_minutes": 120,
+      "cost_eur": 2800,
       "repeatability": {
         "type": "once"
       }
@@ -818,6 +829,7 @@
         }
       ],
       "time_cost_minutes": 180,
+      "cost_eur": 5200,
       "repeatability": {
         "type": "once"
       }
@@ -863,6 +875,7 @@
         }
       ],
       "time_cost_minutes": 120,
+      "cost_eur": 4500,
       "repeatability": {
         "type": "once"
       }
@@ -902,6 +915,7 @@
         }
       ],
       "time_cost_minutes": 240,
+      "cost_eur": 6000,
       "repeatability": {
         "type": "once"
       }
@@ -1005,6 +1019,7 @@
         }
       ],
       "time_cost_minutes": 90,
+      "cost_eur": 3500,
       "repeatability": {
         "type": "once"
       }
@@ -1178,6 +1193,7 @@
         }
       ],
       "time_cost_minutes": 60,
+      "cost_eur": 2500,
       "repeatability": {
         "type": "once"
       }
@@ -1404,6 +1420,7 @@
         }
       ],
       "time_cost_minutes": 60,
+      "cost_eur": 1800,
       "repeatability": {
         "type": "once"
       }

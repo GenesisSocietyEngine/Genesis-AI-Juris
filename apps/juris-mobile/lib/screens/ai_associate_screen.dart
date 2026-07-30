@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app/gameplay_locale.dart';
 import '../models/game_snapshot.dart';
 import '../widgets/section_card.dart';
 
@@ -35,12 +36,18 @@ class AiAssociateScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      'AI associate',
+                      GameplayLocale.text(
+                        context,
+                        'AI associate',
+                        'AI-ассистент',
+                      ),
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$remaining of ${snapshot.aiRequestLimit} requests remaining',
+                      GameplayLocale.of(context) == 'ru'
+                          ? 'Осталось запросов: $remaining из ${snapshot.aiRequestLimit}'
+                          : '$remaining of ${snapshot.aiRequestLimit} requests remaining',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color:
                                 Theme.of(context).colorScheme.onSurfaceVariant,
@@ -54,31 +61,52 @@ class AiAssociateScreen extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         SectionCard(
-          title: 'Latest work product',
-          subtitle:
-              'The assistant receives authorized facts only and cannot mutate simulation state.',
+          title: GameplayLocale.text(
+            context,
+            'Latest work product',
+            'Последний результат работы',
+          ),
+          subtitle: GameplayLocale.text(
+            context,
+            'The assistant receives authorized facts only and cannot mutate simulation state.',
+            'Ассистент получает только разрешённые факты и не может изменять состояние симуляции.',
+          ),
           child: snapshot.latestAiNote == null
               ? const _NoAiWork()
               : SelectableText(snapshot.latestAiNote!),
         ),
         const SizedBox(height: 16),
         SectionCard(
-          title: 'Authority boundary',
+          title: GameplayLocale.text(
+            context,
+            'Authority boundary',
+            'Граница полномочий',
+          ),
           child: Column(
-            children: const <Widget>[
+            children: <Widget>[
               _BoundaryRow(
                 icon: Icons.visibility_outlined,
-                text: 'May read only facts explicitly supplied by the engine.',
+                text: GameplayLocale.text(
+                  context,
+                  'May read only facts explicitly supplied by the engine.',
+                  'Может читать только факты, явно переданные движком.',
+                ),
               ),
               _BoundaryRow(
                 icon: Icons.block_outlined,
-                text:
-                    'Cannot discover evidence, spend money, or change reputation.',
+                text: GameplayLocale.text(
+                  context,
+                  'Cannot discover evidence, spend money, or change reputation.',
+                  'Не может обнаруживать доказательства, тратить деньги или менять репутацию.',
+                ),
               ),
               _BoundaryRow(
                 icon: Icons.verified_user_outlined,
-                text:
-                    'Every output requires human verification before reliance.',
+                text: GameplayLocale.text(
+                  context,
+                  'Every output requires human verification before reliance.',
+                  'Каждый результат требует проверки человеком перед использованием.',
+                ),
               ),
             ],
           ),
@@ -87,7 +115,13 @@ class AiAssociateScreen extends StatelessWidget {
         FilledButton.icon(
           onPressed: remaining > 0 ? onShowActions : null,
           icon: const Icon(Icons.auto_awesome),
-          label: const Text('Show AI actions'),
+          label: Text(
+            GameplayLocale.text(
+              context,
+              'Show AI actions',
+              'Показать действия AI',
+            ),
+          ),
         ),
       ],
     );
@@ -99,14 +133,20 @@ class _NoAiWork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 18),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 18),
       child: Center(
         child: Column(
           children: <Widget>[
-            Icon(Icons.description_outlined, size: 40),
-            SizedBox(height: 10),
-            Text('No AI work product has been requested.'),
+            const Icon(Icons.description_outlined, size: 40),
+            const SizedBox(height: 10),
+            Text(
+              GameplayLocale.text(
+                context,
+                'No AI work product has been requested.',
+                'Результаты работы AI ещё не запрашивались.',
+              ),
+            ),
           ],
         ),
       ),

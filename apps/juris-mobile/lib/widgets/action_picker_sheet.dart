@@ -8,9 +8,17 @@ import '../models/game_snapshot.dart';
 /// time, cost, and known risk visible before the player commits, while the
 /// eventual Rust engine remains responsible for actual eligibility and effects.
 class ActionPickerSheet extends StatelessWidget {
-  const ActionPickerSheet({required this.actions, super.key});
+  const ActionPickerSheet({
+    required this.actions,
+    this.locale = 'en',
+    super.key,
+  });
 
   final List<GameActionView> actions;
+  final String locale;
+
+  String _text(String english, String russian) =>
+      locale == 'ru' ? russian : english;
 
   @override
   Widget build(BuildContext context) {
@@ -24,11 +32,14 @@ class ActionPickerSheet extends StatelessWidget {
           controller: controller,
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
           children: <Widget>[
-            Text('Available actions',
+            Text(_text('Available actions', 'Доступные действия'),
                 style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 6),
             Text(
-              'Every action advances the world. Review time, cost, and known risk before committing.',
+              _text(
+                'Every action advances the world. Review time, cost, and known risk before committing.',
+                'Каждое действие двигает мир вперёд. Перед подтверждением проверьте время, стоимость и известный риск.',
+              ),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -37,7 +48,7 @@ class ActionPickerSheet extends StatelessWidget {
             ...actions.map(
               (GameActionView action) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: _ActionCard(action: action),
+                child: _ActionCard(action: action, locale: locale),
               ),
             ),
           ],
@@ -48,9 +59,13 @@ class ActionPickerSheet extends StatelessWidget {
 }
 
 class _ActionCard extends StatelessWidget {
-  const _ActionCard({required this.action});
+  const _ActionCard({required this.action, required this.locale});
 
   final GameActionView action;
+  final String locale;
+
+  String _text(String english, String russian) =>
+      locale == 'ru' ? russian : english;
 
   @override
   Widget build(BuildContext context) {
@@ -120,17 +135,18 @@ class _ActionCard extends StatelessWidget {
       builder: (BuildContext context) => AlertDialog(
         title: Text(action.title),
         content: Text(
-          '${action.description}\n\nTime: ${action.timeLabel}\nCost: EUR ${_formatInt(action.costEur)}'
-          '${action.riskNote == null ? '' : '\n\nKnown risk: ${action.riskNote}'}',
+          '${action.description}\n\n${_text('Time', 'Время')}: ${action.timeLabel}\n'
+          '${_text('Cost', 'Стоимость')}: EUR ${_formatInt(action.costEur)}'
+          '${action.riskNote == null ? '' : '\n\n${_text('Known risk', 'Известный риск')}: ${action.riskNote}'}',
         ),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('No'),
+            child: Text(_text('No', 'Нет')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Yes'),
+            child: Text(_text('Yes', 'Да')),
           ),
         ],
       ),
