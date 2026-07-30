@@ -1,14 +1,141 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: AI Juris"
-branch: feat/authoritative-foreground-clock
-head_commit: "e3d9752 (foreground-clock implementation head before progress documentation)"
+branch: feat/lost-is-not-closed
+head_commit: "3961cb4 (integration HEAD before lifecycle progress documentation)"
 release_tag: v0.5.1-alpha.1
 app_version: 0.5.1+12
 last_updated: 2026-07-30
 ---
 
 # Current Progress
+
+## Lost != Closed lifecycle separation `5465ebb` / `7372f55` / `3961cb4` — 2026-07-30
+
+Status: the two isolated implementation commits are integrated with current
+`main@2f00b942ec6668d24096d1244170ffb402259b80`. All local quality gates pass.
+PR [#4](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/4)
+remains open; its remote branch and CI are not claimed as updated until the
+local merge and this documentation commit are pushed.
+
+Repository state:
+
+- prerequisite PR #7 was green and merged as `2f00b94`;
+- Rust lifecycle commit:
+  `5465ebb feat(lifecycle): separate judicial result from matter closure`;
+- Flutter presentation commit:
+  `7372f55 feat(mobile): present judicial result separately from closure`;
+- current `main` was merged without rewriting those implementation commits:
+  `3961cb4 Merge main after authoritative foreground clock checkpoint`;
+- the working tree was clean and `CURRENT_PROGRESS.md` had no uncommitted
+  changes, so no stash was required;
+- the pre-foreground lifecycle head remains recoverable locally as
+  `archive/lost-is-not-closed-pre-foreground@7eb24ba`.
+
+Completed:
+
+- added serializable `JudicialResult` values `won`, `lost`, `partially_won`,
+  and `dismissed`;
+- added declarative `SetJudicialResult` and `JudicialResultIs` without
+  changing Scenario Definition v1 or existing scenario stable IDs;
+- added `Appeal`, `Cassation`, and `Enforcement` stage kinds;
+- derives `MatterLifecycleStatus` from the authoritative current stage, so
+  stage and lifecycle cannot silently disagree;
+- keeps `OutcomeDefinition` terminal-only and makes `is_closed` depend on the
+  derived closed lifecycle rather than an adverse judicial result;
+- keeps `Lost` nonterminal: available remedy actions remain visible and an
+  appeal can be dispatched;
+- extends simulator, engine, versioned JSON bridge, existing three-symbol C
+  ABI, and Flutter snapshot mapping with `judicial_result`,
+  `matter_lifecycle`, `is_closed`, and `resolved_outcome`;
+- preserves additive foreground-clock `clock_mode` and `advance_time`
+  semantics while combining both checkpoints;
+- adds focused validator/diagnostics rules for nonterminal remedy stages,
+  explicit resolved stages, and premature outcome resolution;
+- adds the test-only fixture
+  `content/fixtures/authoring/adverse_judgment_with_remedies.json`;
+- updates the Material 3 matter/report UI so decision and matter lifecycle are
+  presented separately and the final report appears only after closure;
+- preserves Logistics, GreenFire, and GoldenShell runtime and mobile
+  regressions.
+
+Deterministic fixture paths:
+
+- appeal success and completed enforcement:
+  `appellate_success`, closed at 360 minutes;
+- express appeal waiver:
+  `final_loss`, closed at 65 minutes;
+- appeal loss and exhausted cassation:
+  `final_loss`, closed at 425 minutes.
+
+Commands actually executed after integration:
+
+```powershell
+cargo test -p juris-scenario-schema
+cargo test -p juris-scenario-validator
+cargo test -p juris-scenario-diagnostics
+cargo test -p juris-scenario-simulator
+cargo test -p juris-engine
+cargo test -p juris-mobile-bridge
+cargo test -p juris-mobile-ffi
+cargo +1.78.0 check --workspace --locked
+cargo fmt --all -- --check
+cargo check --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+cargo run -q -p juris-scenario-simulator -- run `
+  content/fixtures/authoring/adverse_judgment_with_remedies.json `
+  --actions <appeal-success-actions> --require-outcome
+cargo run -q -p juris-scenario-simulator -- run `
+  content/fixtures/authoring/adverse_judgment_with_remedies.json `
+  --actions <waiver-actions> --require-outcome
+cargo run -q -p juris-scenario-simulator -- run `
+  content/fixtures/authoring/adverse_judgment_with_remedies.json `
+  --actions <cassation-exhaustion-actions> --require-outcome
+dart format --output=none --set-exit-if-changed lib test tool
+dart run tool/export_mobile_case_bundle.dart `
+  --repo-root C:\PROJECTS\Genesis-AI-Juris --check
+dart flutter_tools.snapshot analyze --no-pub
+dart flutter_tools.snapshot test --no-pub
+dart flutter_tools.snapshot build apk --debug --no-pub
+git diff --check
+```
+
+Observed results:
+
+- all focused schema, validator, diagnostics, simulator, engine, bridge, and
+  FFI tests passed;
+- Rust 1.78 MSRV, formatting, workspace check, Clippy with warnings denied,
+  full workspace tests, and doc tests passed;
+- all three lifecycle fixture paths completed with the exact outcome and clock
+  listed above;
+- foreground-clock, Logistics, GreenFire, and GoldenShell regressions passed;
+- deterministic four-case mobile bundle check passed;
+- Dart format reported 35 files and zero changes;
+- Flutter analyze reported `No issues found`;
+- all 67 Flutter tests passed;
+- Android debug APK built at
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`;
+- repository whitespace validation passed.
+
+Known limitations:
+
+- the lifecycle fixture is intentionally test-only and is not a visible
+  catalog scenario;
+- no local iOS build is claimed from Windows; PR #4 must run the hosted iOS
+  Native FFI gate after push;
+- no physical Android/iPhone device, release signing, App Store, or Play Store
+  result is claimed;
+- translation overlay, persistent command-log save/load, dossier evolution,
+  claimant groups, multi-matter sessions, and Failed ERP migration remain out
+  of scope.
+
+Next step:
+
+- push `feat/lost-is-not-closed` without rewriting its history and update
+  existing PR #4;
+- observe Rust CI, Flutter Mobile UI, and iOS Native FFI to terminal status;
+- after review and merge, implement the stable-ID translation overlay.
 
 ## Authoritative foreground clock checkpoint `06c6f82` / `e3d9752` — 2026-07-30
 
