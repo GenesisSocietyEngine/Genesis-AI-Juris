@@ -2,7 +2,8 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use juris_scenario_schema::{
     ActionDefinition, ActionRepeatability, AsyncTaskStatus, Condition, DeadlineStatus, Effect,
-    EventDefinition, EventTrigger, FactStatus, ScenarioClockMode, ScenarioDefinition, StageKind,
+    EventDefinition, EventTrigger, FactStatus, MatterLifecycleStatus, ScenarioClockMode,
+    ScenarioDefinition, StageKind,
 };
 use serde_json::Value;
 
@@ -90,13 +91,26 @@ impl ScenarioSimulator {
             .map(|item| item.id.as_str().to_owned())
             .collect();
 
+        let initial_stage_definition = definition
+            .stages
+            .iter()
+            .find(|stage| stage.id.as_str() == initial_stage)
+            .expect("validated initial stage must exist");
+        let matter_lifecycle = MatterLifecycleStatus::from_stage(
+            initial_stage_definition.kind,
+            initial_stage_definition.terminal,
+        );
+
         Ok(Self {
             definition,
             state: SimulationState {
                 stage: initial_stage,
                 clock_minutes: 0,
                 flags: BTreeMap::new(),
+                judicial_result: None,
+                matter_lifecycle,
                 resolved_outcome: None,
+                is_closed: matter_lifecycle.is_closed(),
             },
             runtime: RuntimeState {
                 fact_statuses,
@@ -169,7 +183,7 @@ impl ScenarioSimulator {
 
         Ok(SimulationResult {
             scenario_id: self.definition.metadata.id.as_str().to_owned(),
-            status: if self.state.resolved_outcome.is_some() {
+            status: if self.state.is_closed {
                 SimulationStatus::Completed
             } else {
                 SimulationStatus::InProgress
@@ -434,6 +448,7 @@ impl ScenarioSimulator {
                         });
                     }
                     self.state.stage = stage.as_str().to_owned();
+                    self.refresh_lifecycle();
                 }
                 Effect::SetFlag { flag, value } => {
                     self.state.flags.insert(flag.as_str().to_owned(), *value);
@@ -504,6 +519,9 @@ impl ScenarioSimulator {
                 }
                 Effect::ResolveInboxItem { item } => {
                     self.runtime.resolved_inbox.insert(item.as_str().to_owned());
+                }
+                Effect::SetJudicialResult { result } => {
+                    self.state.judicial_result = Some(*result);
                 }
                 Effect::TriggerEvent { event } => {
                     if !self.definition.events.iter().any(|item| item.id == *event) {
@@ -638,6 +656,7 @@ impl ScenarioSimulator {
             Condition::InboxItemResolved { item } => {
                 self.runtime.resolved_inbox.contains(item.as_str())
             }
+            Condition::JudicialResultIs { result } => self.state.judicial_result == Some(*result),
             Condition::All { conditions } => {
                 conditions.iter().all(|item| self.evaluate_condition(item))
             }
@@ -779,6 +798,17 @@ impl ScenarioSimulator {
             .find(|item| item.id.as_str() == stage_id)
             .is_some_and(|stage| stage.terminal || stage.kind == StageKind::Resolved)
     }
+
+    fn refresh_lifecycle(&mut self) {
+        let stage = self
+            .definition
+            .stages
+            .iter()
+            .find(|item| item.id.as_str() == self.state.stage)
+            .expect("validated current stage must exist");
+        self.state.matter_lifecycle = MatterLifecycleStatus::from_stage(stage.kind, stage.terminal);
+        self.state.is_closed = self.state.matter_lifecycle.is_closed();
+    }
 }
 
 fn scenario_time_minutes(time: juris_scenario_schema::ScenarioTime) -> u64 {
@@ -839,6 +869,7 @@ fn validate_supported_v1_shapes(root: &Value) -> Result<(), SimulationError> {
                         | "miss_deadline"
                         | "create_inbox_item"
                         | "resolve_inbox_item"
+                        | "set_judicial_result"
                         | "trigger_event"
                         | "resolve_outcome"
                 ) {
@@ -896,6 +927,7 @@ fn validate_condition_shape(condition: &Value, path: &str) -> Result<(), Simulat
         | "deadline_status_is"
         | "async_task_status_is"
         | "inbox_item_resolved" => Ok(()),
+        "judicial_result_is" => Ok(()),
         "all" | "any" => {
             for (index, child) in condition
                 .get("conditions")

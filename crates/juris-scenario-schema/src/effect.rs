@@ -5,7 +5,7 @@
 
 use crate::{
     AsyncTaskId, DeadlineId, EventId, EvidenceId, FactId, FactStatus, FlagId, InboxItemId,
-    OutcomeId, StageId,
+    JudicialResult, OutcomeId, StageId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -36,6 +36,8 @@ pub enum Effect {
     CreateInboxItem { item: InboxItemId },
 
     ResolveInboxItem { item: InboxItemId },
+
+    SetJudicialResult { result: JudicialResult },
 
     TriggerEvent { event: EventId },
 

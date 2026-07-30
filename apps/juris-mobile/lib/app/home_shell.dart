@@ -460,7 +460,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
   Future<void> _showCaseReport(GameSnapshot snapshot) async {
     final CaseOutcomeSummaryView? summary = snapshot.outcomeSummary;
-    if (summary == null) {
+    if (!snapshot.isClosed || summary == null) {
       return;
     }
 

@@ -25,7 +25,8 @@ class MatterScreen extends StatelessWidget {
           sliver: SliverList.list(
             children: <Widget>[
               _MatterHeader(snapshot: snapshot),
-              if (snapshot.outcomeSummary != null) ...<Widget>[
+              if (snapshot.isClosed &&
+                  snapshot.outcomeSummary != null) ...<Widget>[
                 const SizedBox(height: 16),
                 _OutcomeCard(summary: snapshot.outcomeSummary!),
               ],
@@ -76,6 +77,23 @@ class _MatterHeader extends StatelessWidget {
             runSpacing: 8,
             children: <Widget>[
               Chip(label: Text(snapshot.stage)),
+              if (snapshot.judicialResult != null)
+                Chip(
+                  avatar: Icon(
+                    snapshot.judicialResult!.isAdverse
+                        ? Icons.cancel_outlined
+                        : Icons.gavel_outlined,
+                    size: 18,
+                  ),
+                  label: Text(
+                    'Decision: ${snapshot.judicialResult!.label}',
+                  ),
+                ),
+              Chip(
+                label: Text(
+                  'Matter status: ${snapshot.matterLifecycle.label}',
+                ),
+              ),
               Chip(
                 avatar: Icon(
                   snapshot.caseResultStatus.isAdverse

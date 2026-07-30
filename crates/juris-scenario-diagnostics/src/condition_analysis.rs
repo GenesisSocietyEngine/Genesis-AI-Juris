@@ -130,6 +130,7 @@ fn has_direct_contradiction(conditions: &[Condition]) -> bool {
             Condition::Always
             | Condition::EvidenceAvailable { .. }
             | Condition::InboxItemResolved { .. }
+            | Condition::JudicialResultIs { .. }
             | Condition::All { .. }
             | Condition::Any { .. } => {}
         }

@@ -24,6 +24,7 @@ mod evidence;
 mod fact;
 mod ids;
 mod inbox;
+mod lifecycle;
 mod outcome;
 mod scenario;
 mod stage;
@@ -42,6 +43,7 @@ pub use ids::{
     OutcomeId, ScenarioId, StageId,
 };
 pub use inbox::InboxItemDefinition;
+pub use lifecycle::{JudicialResult, MatterLifecycleStatus};
 pub use outcome::OutcomeDefinition;
 pub use scenario::{
     JurisdictionReference, ScenarioClockDefinition, ScenarioClockMode, ScenarioDefinition,

@@ -138,6 +138,7 @@ name = "juris-scenario-schema"
 version = "0.5.0"
 dependencies = [
  "serde",
+ "serde_json",
  "serde_yaml",
 ]
 
@@ -156,6 +157,7 @@ name = "juris-scenario-validator"
 version = "0.5.0"
 dependencies = [
  "juris-scenario-schema",
+ "serde_json",
  "serde_yaml",
 ]
 
