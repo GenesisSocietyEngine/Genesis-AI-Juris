@@ -82,6 +82,7 @@ pub struct MobileActionSnapshot {
     pub title: String,
     pub description: Option<String>,
     pub time_cost_minutes: u32,
+    pub cost_eur: u32,
 }
 
 /// Presentation-safe fact state.
@@ -108,6 +109,7 @@ pub struct MobileDeadlineSnapshot {
     pub title: String,
     pub due_at_minutes: u64,
     pub status: Option<String>,
+    pub completion_action_ids: Vec<String>,
 }
 
 /// Presentation-safe Inbox state.
@@ -322,6 +324,11 @@ impl ScenarioSession {
                     .flatten()
                     .map(deadline_status_name)
                     .map(str::to_owned),
+                completion_action_ids: deadline
+                    .completion_actions
+                    .iter()
+                    .map(|action| action.as_str().to_owned())
+                    .collect(),
             })
             .collect();
         let inbox = self
@@ -527,6 +534,7 @@ impl ScenarioSession {
                 title: action.title.clone(),
                 description: action.description.clone(),
                 time_cost_minutes: action.time_cost_minutes,
+                cost_eur: action.cost_eur,
             })
             .collect()
     }

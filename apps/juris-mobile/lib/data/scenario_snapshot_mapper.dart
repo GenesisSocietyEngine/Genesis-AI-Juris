@@ -8,12 +8,18 @@ abstract final class ScenarioSnapshotMapper {
   static GameSnapshot map({
     required Map<String, dynamic> source,
     required MobileCaseDefinition caseDefinition,
+    String locale = 'en',
     Set<String> locallyReadInboxIds = const <String>{},
   }) {
     final int clockMinutes = _int(source, 'clock_minutes');
     final bool terminal = _bool(source, 'terminal');
     final List<Map<String, dynamic>> facts = _objectList(source, 'facts');
     final List<Map<String, dynamic>> evidence = _objectList(source, 'evidence');
+    final List<Map<String, dynamic>> availableActions =
+        _objectList(source, 'available_actions');
+    final Set<String> availableActionIds = availableActions
+        .map((Map<String, dynamic> action) => _string(action, 'id'))
+        .toSet();
     final List<Map<String, dynamic>> availableEvidence = evidence
         .where((Map<String, dynamic> item) => _bool(item, 'available'))
         .toList(growable: false);
@@ -32,14 +38,20 @@ abstract final class ScenarioSnapshotMapper {
     return GameSnapshot(
       version: '0.5.1 native scenario runtime',
       seed: _int(source, 'seed'),
-      mode: 'Authoritative Rust',
-      dayLabel: _dayLabel(clockMinutes),
+      mode: locale == 'ru' ? 'Авторитетный Rust' : 'Authoritative Rust',
+      dayLabel: _dayLabel(clockMinutes, locale),
       timeLabel: _timeLabel(clockMinutes),
-      stage: _string(source, 'stage_title'),
+      stage: caseDefinition.scenarioText(
+        locale: locale,
+        section: 'stages',
+        id: _string(source, 'stage_id'),
+        field: 'title',
+        fallback: _string(source, 'stage_title'),
+      ),
       caseResultStatus: _caseResult(outcome),
       engagementStatus:
           terminal ? EngagementStatus.completed : EngagementStatus.active,
-      matterTitle: _scenarioTitle(caseDefinition),
+      matterTitle: _scenarioTitle(caseDefinition, locale),
       caseStrength: ((factScore + evidenceScore) / 2).round(),
       merits: factScore,
       evidenceScore: evidenceScore,
@@ -69,10 +81,23 @@ abstract final class ScenarioSnapshotMapper {
           .map(
             (Map<String, dynamic> item) => InboxItemView(
               id: _string(item, 'id'),
-              sender: 'Scenario update',
-              subject: _string(item, 'subject'),
-              body: _string(item, 'body'),
-              receivedAt: '${_dayLabel(clockMinutes)} · '
+              sender:
+                  locale == 'ru' ? 'Обновление сценария' : 'Scenario update',
+              subject: caseDefinition.scenarioText(
+                locale: locale,
+                section: 'inbox_items',
+                id: _string(item, 'id'),
+                field: 'subject',
+                fallback: _string(item, 'subject'),
+              ),
+              body: caseDefinition.scenarioText(
+                locale: locale,
+                section: 'inbox_items',
+                id: _string(item, 'id'),
+                field: 'body',
+                fallback: _string(item, 'body'),
+              ),
+              receivedAt: '${_dayLabel(clockMinutes, locale)} · '
                   '${_timeLabel(clockMinutes)}',
               status: _inboxStatus(item, locallyReadInboxIds),
             ),
@@ -83,10 +108,22 @@ abstract final class ScenarioSnapshotMapper {
           .map(
             (Map<String, dynamic> item) => DeadlineView(
               id: _string(item, 'id'),
-              title: _string(item, 'title'),
-              dueAt: _absoluteMoment(_int(item, 'due_at_minutes')),
+              title: caseDefinition.scenarioText(
+                locale: locale,
+                section: 'deadlines',
+                id: _string(item, 'id'),
+                field: 'title',
+                fallback: _string(item, 'title'),
+              ),
+              dueAt: _absoluteMoment(_int(item, 'due_at_minutes'), locale),
               status: _deadlineStatus(_string(item, 'status')),
-              detail: 'Authoritative scenario deadline.',
+              detail: locale == 'ru'
+                  ? 'Обязательный срок авторитетного сценария.'
+                  : 'Authoritative scenario deadline.',
+              relatedActionId: _firstAvailableString(
+                item['completion_action_ids'],
+                availableActionIds,
+              ),
             ),
           )
           .toList(growable: false),
@@ -94,22 +131,45 @@ abstract final class ScenarioSnapshotMapper {
           .map(
             (Map<String, dynamic> item) => EvidenceView(
               id: _string(item, 'id'),
-              title: _string(item, 'title'),
-              detail: '${_string(item, 'kind')} · available',
+              title: caseDefinition.scenarioText(
+                locale: locale,
+                section: 'evidence',
+                id: _string(item, 'id'),
+                field: 'title',
+                fallback: _string(item, 'title'),
+              ),
+              detail: locale == 'ru'
+                  ? '${_evidenceKind(_string(item, 'kind'), locale)} · доступно'
+                  : '${_string(item, 'kind')} · available',
               reliability: 100,
               isAdverse: false,
             ),
           )
           .toList(growable: false),
-      actions: _objectList(source, 'available_actions')
+      actions: availableActions
           .map(
             (Map<String, dynamic> item) => GameActionView(
               id: _string(item, 'id'),
-              title: _string(item, 'title'),
-              description: item['description'] as String? ??
-                  'Execute this authoritative scenario action.',
-              timeLabel: _durationLabel(_int(item, 'time_cost_minutes')),
-              costEur: 0,
+              title: caseDefinition.scenarioText(
+                locale: locale,
+                section: 'actions',
+                id: _string(item, 'id'),
+                field: 'title',
+                fallback: _string(item, 'title'),
+              ),
+              description: caseDefinition.scenarioText(
+                locale: locale,
+                section: 'actions',
+                id: _string(item, 'id'),
+                field: 'description',
+                fallback: item['description'] as String? ??
+                    (locale == 'ru'
+                        ? 'Выполнить действие авторитетного сценария.'
+                        : 'Execute this authoritative scenario action.'),
+              ),
+              timeLabel:
+                  _durationLabel(_int(item, 'time_cost_minutes'), locale),
+              costEur: _optionalInt(item, 'cost_eur'),
               tone: ActionTone.primary,
             ),
           )
@@ -118,27 +178,49 @@ abstract final class ScenarioSnapshotMapper {
       outcomeSummary: outcome == null
           ? null
           : CaseOutcomeSummaryView(
-              headline: _string(outcome, 'title'),
+              headline: caseDefinition.scenarioText(
+                locale: locale,
+                section: 'outcomes',
+                id: _string(outcome, 'id'),
+                field: 'title',
+                fallback: _string(outcome, 'title'),
+              ),
               finalStatus: _string(outcome, 'id'),
-              detail: _string(outcome, 'summary'),
-              closedAt: '${_dayLabel(clockMinutes)} · '
+              detail: caseDefinition.scenarioText(
+                locale: locale,
+                section: 'outcomes',
+                id: _string(outcome, 'id'),
+                field: 'summary',
+                fallback: _string(outcome, 'summary'),
+              ),
+              closedAt: '${_dayLabel(clockMinutes, locale)} · '
                   '${_timeLabel(clockMinutes)}',
               awardEur: 0,
               costsEur: 0,
-              keySuccesses: const <String>[
-                'Completed an authoritative deterministic scenario path.',
+              keySuccesses: <String>[
+                locale == 'ru'
+                    ? 'Завершён авторитетный детерминированный путь сценария.'
+                    : 'Completed an authoritative deterministic scenario path.',
               ],
               missedOpportunities: const <String>[],
             ),
     );
   }
 
-  static String _scenarioTitle(MobileCaseDefinition definition) {
+  static String _scenarioTitle(
+    MobileCaseDefinition definition,
+    String locale,
+  ) {
     final Map<String, dynamic>? metadata =
         _nullableObject(definition.scenario?['metadata']);
     final dynamic title = metadata?['title'];
     if (title is String && title.isNotEmpty) {
-      return title;
+      return definition.scenarioText(
+        locale: locale,
+        section: 'metadata',
+        field: 'title',
+        fallback: title,
+      );
     }
     return definition.localized('en', 'en').caption;
   }
@@ -209,24 +291,46 @@ abstract final class ScenarioSnapshotMapper {
     };
   }
 
-  static String _durationLabel(int minutes) {
+  static String _durationLabel(int minutes, String locale) {
     if (minutes == 0) {
-      return 'Immediate';
+      return locale == 'ru' ? 'Сразу' : 'Immediate';
     }
     final int hours = minutes ~/ 60;
     final int remainder = minutes % 60;
     if (hours == 0) {
-      return '${remainder}m';
+      return '$remainder${locale == 'ru' ? 'м' : 'm'}';
     }
     if (remainder == 0) {
-      return '${hours}h';
+      return '$hours${locale == 'ru' ? 'ч' : 'h'}';
     }
-    return '${hours}h ${remainder}m';
+    return '$hours${locale == 'ru' ? 'ч' : 'h'} '
+        '$remainder${locale == 'ru' ? 'м' : 'm'}';
   }
 
-  static String _dayLabel(int elapsedMinutes) {
+  static String _evidenceKind(String kind, String locale) {
+    if (locale != 'ru') {
+      return kind;
+    }
+    return switch (kind) {
+      'document' => 'документ',
+      'contract' => 'договор',
+      'email' => 'электронное письмо',
+      'expert_report' => 'заключение эксперта',
+      'invoice' => 'счёт',
+      'system_record' => 'системная запись',
+      'other' => 'иной материал',
+      'testimony' => 'показания',
+      'physical' => 'вещественное доказательство',
+      'digital' => 'цифровое доказательство',
+      'expert' => 'экспертный материал',
+      _ => kind,
+    };
+  }
+
+  static String _dayLabel(int elapsedMinutes, String locale) {
     final int absoluteMinutes = 8 * 60 + elapsedMinutes;
-    return 'Day ${absoluteMinutes ~/ 1440 + 1}';
+    final int day = absoluteMinutes ~/ 1440 + 1;
+    return locale == 'ru' ? 'День $day' : 'Day $day';
   }
 
   static String _timeLabel(int elapsedMinutes) {
@@ -236,12 +340,13 @@ abstract final class ScenarioSnapshotMapper {
     return '$hour:$minute';
   }
 
-  static String _absoluteMoment(int minutes) {
-    final int day = minutes ~/ 1440 + 1;
-    final int minuteOfDay = minutes % 1440;
+  static String _absoluteMoment(int minutes, String locale) {
+    final int absoluteMinutes = 8 * 60 + minutes;
+    final int day = absoluteMinutes ~/ 1440 + 1;
+    final int minuteOfDay = absoluteMinutes % 1440;
     final String hour = (minuteOfDay ~/ 60).toString().padLeft(2, '0');
     final String minute = (minuteOfDay % 60).toString().padLeft(2, '0');
-    return 'Day $day · $hour:$minute';
+    return '${locale == 'ru' ? 'День' : 'Day'} $day · $hour:$minute';
   }
 
   static List<Map<String, dynamic>> _objectList(
@@ -278,6 +383,40 @@ abstract final class ScenarioSnapshotMapper {
       return value;
     }
     throw FormatException('$field must be an integer');
+  }
+
+  static int _optionalInt(Map<String, dynamic> source, String field) {
+    final dynamic value = source[field];
+    if (value == null) {
+      return 0;
+    }
+    if (value is int) {
+      return value;
+    }
+    throw FormatException('$field must be an integer');
+  }
+
+  static String? _firstAvailableString(
+    dynamic value,
+    Set<String> available,
+  ) {
+    if (value == null) {
+      return null;
+    }
+    if (value is! List<dynamic>) {
+      throw const FormatException('completion_action_ids must be an array');
+    }
+    for (final dynamic item in value) {
+      if (item is! String) {
+        throw const FormatException(
+          'completion_action_ids entries must be strings',
+        );
+      }
+      if (available.contains(item)) {
+        return item;
+      }
+    }
+    return null;
   }
 
   static bool _bool(Map<String, dynamic> source, String field) {

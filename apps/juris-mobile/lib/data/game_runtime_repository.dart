@@ -27,5 +27,24 @@ abstract class GameRuntimeRepository extends ChangeNotifier {
 
   void advanceTimeByMinutes(int minutes);
 
+  /// Advances the authoritative clock to 08:00 at the next work period.
+  ///
+  /// Scenario clocks expose civil time through the shared snapshot. The
+  /// command still crosses the normal runtime boundary; Flutter never mutates
+  /// scenario state locally.
+  void restUntilNextWorkday() {
+    final List<String> parts = snapshot.timeLabel.split(':');
+    if (parts.length != 2) {
+      throw StateError('Unsupported scenario time: ${snapshot.timeLabel}');
+    }
+    final int minuteOfDay = int.parse(parts[0]) * 60 + int.parse(parts[1]);
+    const int workdayStart = 8 * 60;
+    int minutes = workdayStart - minuteOfDay;
+    if (minutes <= 0) {
+      minutes += 24 * 60;
+    }
+    advanceTimeByMinutes(minutes);
+  }
+
   ActionExecutionResult applyAction(String actionId);
 }

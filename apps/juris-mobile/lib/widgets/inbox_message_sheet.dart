@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app/gameplay_locale.dart';
 import '../models/game_snapshot.dart';
 import 'status_badge.dart';
 
@@ -96,13 +97,16 @@ class InboxMessageSheet extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
                             Text(
-                              'Offer EUR ${_formatInt(settlementOffer!.amountEur)}',
+                              '${GameplayLocale.text(context, 'Offer', 'Предложение')} '
+                              'EUR ${_formatInt(settlementOffer!.amountEur)}',
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Revision ${settlementOffer!.revision} · '
-                              'expires ${settlementOffer!.expiresAt}',
+                              '${GameplayLocale.text(context, 'Revision', 'Редакция')} '
+                              '${settlementOffer!.revision} · '
+                              '${GameplayLocale.text(context, 'expires', 'истекает')} '
+                              '${settlementOffer!.expiresAt}',
                             ),
                           ],
                         ),
@@ -130,7 +134,13 @@ class InboxMessageSheet extends StatelessWidget {
                           width: double.infinity,
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(context),
-                            child: const Text('Close'),
+                            child: Text(
+                              GameplayLocale.text(
+                                context,
+                                'Close',
+                                'Закрыть',
+                              ),
+                            ),
                           ),
                         )
                       : Column(
@@ -139,8 +149,16 @@ class InboxMessageSheet extends StatelessWidget {
                           children: <Widget>[
                             Text(
                               item.status == InboxStatus.actionRequired
-                                  ? 'Your response'
-                                  : 'Available actions',
+                                  ? GameplayLocale.text(
+                                      context,
+                                      'Your response',
+                                      'Ваш ответ',
+                                    )
+                                  : GameplayLocale.text(
+                                      context,
+                                      'Available actions',
+                                      'Доступные действия',
+                                    ),
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             const SizedBox(height: 10),
@@ -155,7 +173,13 @@ class InboxMessageSheet extends StatelessWidget {
                             ),
                             TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: const Text('Not now'),
+                              child: Text(
+                                GameplayLocale.text(
+                                  context,
+                                  'Not now',
+                                  'Не сейчас',
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -184,9 +208,18 @@ class _ResponseButton extends StatelessWidget {
     final bool isNo = action.id == 'reject-settlement';
     final String label = switch (action.id) {
       'future-settle' => settlementOffer == null
-          ? 'Yes — accept the offer'
-          : 'Yes — accept EUR ${_formatInt(settlementOffer!.amountEur)}',
-      'reject-settlement' => 'No — reject the offer',
+          ? GameplayLocale.text(
+              context,
+              'Yes — accept the offer',
+              'Да — принять предложение',
+            )
+          : '${GameplayLocale.text(context, 'Yes — accept', 'Да — принять')} '
+              'EUR ${_formatInt(settlementOffer!.amountEur)}',
+      'reject-settlement' => GameplayLocale.text(
+          context,
+          'No — reject the offer',
+          'Нет — отклонить предложение',
+        ),
       _ => action.title,
     };
 
@@ -226,19 +259,21 @@ class _ResponseButton extends StatelessWidget {
       builder: (BuildContext context) => AlertDialog(
         title: Text(action.title),
         content: Text(
-          'Response: $responseLabel\n\n${action.description}'
-          '\n\nTime: ${action.timeLabel}'
-          '\nCost: EUR ${_formatInt(action.costEur)}'
-          '${action.riskNote == null ? '' : '\n\nKnown risk: ${action.riskNote}'}',
+          '${GameplayLocale.text(context, 'Response', 'Ответ')}: '
+          '$responseLabel\n\n${action.description}'
+          '\n\n${GameplayLocale.text(context, 'Time', 'Время')}: ${action.timeLabel}'
+          '\n${GameplayLocale.text(context, 'Cost', 'Стоимость')}: '
+          'EUR ${_formatInt(action.costEur)}'
+          '${action.riskNote == null ? '' : '\n\n${GameplayLocale.text(context, 'Known risk', 'Известный риск')}: ${action.riskNote}'}',
         ),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('No'),
+            child: Text(GameplayLocale.text(context, 'No', 'Нет')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Yes'),
+            child: Text(GameplayLocale.text(context, 'Yes', 'Да')),
           ),
         ],
       ),

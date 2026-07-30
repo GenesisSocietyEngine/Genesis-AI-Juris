@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app/gameplay_locale.dart';
 import '../models/game_snapshot.dart';
 import '../widgets/section_card.dart';
 import '../widgets/status_badge.dart';
@@ -9,6 +10,8 @@ class CalendarScreen extends StatelessWidget {
   const CalendarScreen({
     required this.snapshot,
     required this.onOpenRelatedAction,
+    this.onRestUntilNextWorkday,
+    this.onModalVisibilityChanged,
     super.key,
   });
 
@@ -20,6 +23,8 @@ class CalendarScreen extends StatelessWidget {
   /// action; the repository remains responsible for validating and executing
   /// it, matching the authority boundary planned for the Rust bridge.
   final ValueChanged<String> onOpenRelatedAction;
+  final VoidCallback? onRestUntilNextWorkday;
+  final ValueChanged<bool>? onModalVisibilityChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -28,37 +33,87 @@ class CalendarScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
       children: <Widget>[
         SectionCard(
-          title: 'Workday capacity',
-          subtitle:
-              'Rest recovers acute fatigue but only slowly reduces strain.',
+          title: GameplayLocale.text(
+            context,
+            'Workday capacity',
+            'Ресурс рабочего дня',
+          ),
+          subtitle: GameplayLocale.text(
+            context,
+            'Rest recovers acute fatigue but only slowly reduces strain.',
+            'Отдых снимает острую усталость, но медленно уменьшает накопленное напряжение.',
+          ),
           child: Column(
             children: <Widget>[
               _ProgressRow(
-                label: 'Billable time',
-                value: '${snapshot.billableHours.toStringAsFixed(1)}h total',
+                label: GameplayLocale.text(
+                  context,
+                  'Billable time',
+                  'Учтённое время',
+                ),
+                value:
+                    '${snapshot.billableHours.toStringAsFixed(1)} ${GameplayLocale.text(context, 'h total', 'ч всего')}',
                 progress: (snapshot.billableHours / 9).clamp(0, 1),
               ),
               const SizedBox(height: 14),
               _ProgressRow(
-                label: 'Acute fatigue',
+                label: GameplayLocale.text(
+                  context,
+                  'Acute fatigue',
+                  'Острая усталость',
+                ),
                 value: '${snapshot.fatigue}/100',
                 progress: snapshot.fatigue / 100,
               ),
               const SizedBox(height: 14),
               _ProgressRow(
-                label: 'Cumulative strain',
+                label: GameplayLocale.text(
+                  context,
+                  'Cumulative strain',
+                  'Накопленное напряжение',
+                ),
                 value: '${snapshot.cumulativeStrain}/100',
                 progress: snapshot.cumulativeStrain / 100,
               ),
+              if (onRestUntilNextWorkday != null) ...<Widget>[
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    key: const ValueKey<String>('rest-until-next-workday'),
+                    onPressed: onRestUntilNextWorkday,
+                    icon: const Icon(Icons.bedtime_outlined),
+                    label: Text(
+                      GameplayLocale.text(
+                        context,
+                        'Rest until next workday · 08:00',
+                        'Отдыхать до следующего рабочего дня · 08:00',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
         const SizedBox(height: 16),
         SectionCard(
-          title: 'Deadlines and hearings',
+          title: GameplayLocale.text(
+            context,
+            'Deadlines and hearings',
+            'Сроки и слушания',
+          ),
           subtitle: snapshot.deadlines.isEmpty
-              ? 'No deadlines or court events have been opened yet.'
-              : 'Mandatory events continue while the player works or rests.',
+              ? GameplayLocale.text(
+                  context,
+                  'No deadlines or court events have been opened yet.',
+                  'Сроки и судебные события ещё не открыты.',
+                )
+              : GameplayLocale.text(
+                  context,
+                  'Mandatory events continue while the player works or rests.',
+                  'Обязательные события продолжаются во время работы и отдыха.',
+                ),
           child: snapshot.deadlines.isEmpty
               ? const _EmptyCalendar()
               : Column(
@@ -77,13 +132,19 @@ class CalendarScreen extends StatelessWidget {
                                           deadline.rescheduleActionId,
                                     );
 
-                            final String? actionId = await _showDeadlineDetails(
-                              context,
-                              deadline,
-                              primaryActionId: primaryActionId,
-                              rescheduleActionAvailable:
-                                  rescheduleActionAvailable,
-                            );
+                            onModalVisibilityChanged?.call(true);
+                            final String? actionId;
+                            try {
+                              actionId = await _showDeadlineDetails(
+                                context,
+                                deadline,
+                                primaryActionId: primaryActionId,
+                                rescheduleActionAvailable:
+                                    rescheduleActionAvailable,
+                              );
+                            } finally {
+                              onModalVisibilityChanged?.call(false);
+                            }
                             if (actionId != null) {
                               onOpenRelatedAction(actionId);
                             }
@@ -265,7 +326,17 @@ Future<String?> _showDeadlineDetails(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Text(
-              isHearing ? 'Hearing details' : 'Deadline details',
+              isHearing
+                  ? GameplayLocale.text(
+                      context,
+                      'Hearing details',
+                      'Сведения о слушании',
+                    )
+                  : GameplayLocale.text(
+                      context,
+                      'Deadline details',
+                      'Сведения о сроке',
+                    ),
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     color: colors.primary,
                   ),
@@ -282,7 +353,7 @@ Future<String?> _showDeadlineDetails(
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    '${isHearing ? 'Scheduled' : 'Due'} ${deadline.dueAt}',
+                    '${isHearing ? GameplayLocale.text(context, 'Scheduled', 'Назначено') : GameplayLocale.text(context, 'Due', 'Срок')} ${deadline.dueAt}',
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ),
@@ -293,8 +364,11 @@ Future<String?> _showDeadlineDetails(
             if (isHearing) ...<Widget>[
               const SizedBox(height: 14),
               Text(
-                'Attendance remains mandatory unless the court grants a '
-                'rescheduling request.',
+                GameplayLocale.text(
+                  context,
+                  'Attendance remains mandatory unless the court grants a rescheduling request.',
+                  'Явка остаётся обязательной, пока суд не удовлетворит ходатайство о переносе.',
+                ),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
@@ -323,7 +397,7 @@ Future<String?> _showDeadlineDetails(
                 deadline.missedConsequence != null) ...<Widget>[
               const SizedBox(height: 14),
               Text(
-                'Consequence',
+                GameplayLocale.text(context, 'Consequence', 'Последствие'),
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: colors.error,
                     ),
@@ -342,8 +416,16 @@ Future<String?> _showDeadlineDetails(
                 ),
                 label: Text(
                   primaryActionId == 'wait-until-hearing'
-                      ? 'Advance clock to hearing'
-                      : 'Open related action',
+                      ? GameplayLocale.text(
+                          context,
+                          'Advance clock to hearing',
+                          'Перевести часы к слушанию',
+                        )
+                      : GameplayLocale.text(
+                          context,
+                          'Open related action',
+                          'Открыть связанное действие',
+                        ),
                 ),
               ),
             if (rescheduleActionAvailable) ...<Widget>[
@@ -354,18 +436,31 @@ Future<String?> _showDeadlineDetails(
                   deadline.rescheduleActionId,
                 ),
                 icon: const Icon(Icons.event_repeat_outlined),
-                label: const Text('Request rescheduling'),
+                label: Text(
+                  GameplayLocale.text(
+                    context,
+                    'Request rescheduling',
+                    'Запросить перенос',
+                  ),
+                ),
               ),
             ],
             if (primaryActionId == null && !rescheduleActionAvailable)
               OutlinedButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(_closedButtonLabel(deadline)),
+                child: Text(
+                  _closedButtonLabel(
+                    deadline,
+                    GameplayLocale.of(context) == 'ru',
+                  ),
+                ),
               )
             else
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
+                child: Text(
+                  GameplayLocale.text(context, 'Close', 'Закрыть'),
+                ),
               ),
           ],
         ),
@@ -374,14 +469,18 @@ Future<String?> _showDeadlineDetails(
   );
 }
 
-String _closedButtonLabel(DeadlineView item) {
+String _closedButtonLabel(DeadlineView item, bool russian) {
   return switch (item.status) {
-    DeadlineStatus.open => 'Related action unavailable',
-    DeadlineStatus.scheduled => 'No action available yet',
-    DeadlineStatus.rescheduled => 'Replaced by a later hearing',
-    DeadlineStatus.done => 'Completed',
-    DeadlineStatus.missed => 'Close',
-    DeadlineStatus.cancelled => 'Cancelled',
+    DeadlineStatus.open =>
+      russian ? 'Связанное действие недоступно' : 'Related action unavailable',
+    DeadlineStatus.scheduled =>
+      russian ? 'Действие пока недоступно' : 'No action available yet',
+    DeadlineStatus.rescheduled => russian
+        ? 'Заменено более поздним слушанием'
+        : 'Replaced by a later hearing',
+    DeadlineStatus.done => russian ? 'Выполнено' : 'Completed',
+    DeadlineStatus.missed => russian ? 'Закрыть' : 'Close',
+    DeadlineStatus.cancelled => russian ? 'Отменено' : 'Cancelled',
   };
 }
 

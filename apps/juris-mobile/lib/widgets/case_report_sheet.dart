@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app/gameplay_locale.dart';
 import '../models/game_snapshot.dart';
 
 /// Read-only post-matter report shown once every active lifecycle branch has
@@ -26,7 +27,10 @@ class CaseReportSheet extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Text('Case report', style: text.headlineSmall),
+            Text(
+              GameplayLocale.text(context, 'Case report', 'Отчёт по делу'),
+              style: text.headlineSmall,
+            ),
             const SizedBox(height: 6),
             Text(
               snapshot.matterTitle,
@@ -36,21 +40,26 @@ class CaseReportSheet extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             _ReportSection(
-              title: 'Outcome',
+              title: GameplayLocale.text(context, 'Outcome', 'Исход'),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   _ReportRow(
-                    label: 'Result',
-                    value: snapshot.caseResultStatus.label,
+                    label: GameplayLocale.text(context, 'Result', 'Результат'),
+                    value: _caseResultLabel(context, snapshot.caseResultStatus),
                   ),
                   _ReportRow(
-                    label: 'Procedural stage',
+                    label: GameplayLocale.text(
+                      context,
+                      'Procedural stage',
+                      'Процессуальная стадия',
+                    ),
                     value: snapshot.stage,
                   ),
                   _ReportRow(
-                    label: 'Engagement',
-                    value: snapshot.engagementStatus.label,
+                    label:
+                        GameplayLocale.text(context, 'Engagement', 'Поручение'),
+                    value: _engagementLabel(context, snapshot.engagementStatus),
                   ),
                   const SizedBox(height: 10),
                   Text(summary.headline, style: text.titleLarge),
@@ -60,7 +69,8 @@ class CaseReportSheet extends StatelessWidget {
                   Text(summary.detail),
                   const SizedBox(height: 10),
                   Text(
-                    'Closed ${summary.closedAt}',
+                    '${GameplayLocale.text(context, 'Closed', 'Завершено')} '
+                    '${summary.closedAt}',
                     style: text.bodySmall?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
@@ -70,26 +80,51 @@ class CaseReportSheet extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             _ReportSection(
-              title: 'Financial result',
+              title: GameplayLocale.text(
+                context,
+                'Financial result',
+                'Финансовый результат',
+              ),
               child: Column(
                 children: <Widget>[
                   _ReportRow(
-                    label: 'Award / settlement',
+                    label: GameplayLocale.text(
+                      context,
+                      'Award / settlement',
+                      'Присуждение / урегулирование',
+                    ),
                     value: _eur(summary.awardEur),
                   ),
                   _ReportRow(
                     label: summary.awardEur == 0 && summary.costsEur > 0
-                        ? 'Adverse costs'
-                        : 'Costs awarded',
+                        ? GameplayLocale.text(
+                            context,
+                            'Adverse costs',
+                            'Расходы в пользу другой стороны',
+                          )
+                        : GameplayLocale.text(
+                            context,
+                            'Costs awarded',
+                            'Присуждённые расходы',
+                          ),
                     value: _eur(summary.costsEur),
                   ),
                   _ReportRow(
-                    label: 'Legal spend',
+                    label: GameplayLocale.text(
+                      context,
+                      'Legal spend',
+                      'Юридические расходы',
+                    ),
                     value: _eur(snapshot.spendEur),
                   ),
                   _ReportRow(
-                    label: 'Billable time',
-                    value: '${snapshot.billableHours.toStringAsFixed(1)}h',
+                    label: GameplayLocale.text(
+                      context,
+                      'Billable time',
+                      'Учтённое время',
+                    ),
+                    value:
+                        '${snapshot.billableHours.toStringAsFixed(1)}${GameplayLocale.of(context) == 'ru' ? 'ч' : 'h'}',
                   ),
                 ],
               ),
@@ -98,27 +133,55 @@ class CaseReportSheet extends StatelessWidget {
                 _isAdverseOutcome(summary)) ...<Widget>[
               const SizedBox(height: 14),
               _ReportSection(
-                title: 'Professional consequences',
+                title: GameplayLocale.text(
+                  context,
+                  'Professional consequences',
+                  'Профессиональные последствия',
+                ),
                 child: Column(
                   children: <Widget>[
                     _ReportRow(
-                      label: 'Professional standing',
+                      label: GameplayLocale.text(
+                        context,
+                        'Professional standing',
+                        'Профессиональная репутация',
+                      ),
                       value: '${snapshot.ethics}/100',
                     ),
                     _ReportRow(
-                      label: 'Client trust',
+                      label: GameplayLocale.text(
+                        context,
+                        'Client trust',
+                        'Доверие клиента',
+                      ),
                       value: '${snapshot.clientTrust}/100',
                     ),
                     _ReportRow(
-                      label: 'Internal review',
+                      label: GameplayLocale.text(
+                        context,
+                        'Internal review',
+                        'Внутренняя проверка',
+                      ),
                       value: snapshot.ethics < 50 ||
                               summary.headline.contains('terminated')
-                          ? 'Required'
-                          : 'Recommended',
+                          ? GameplayLocale.text(
+                              context,
+                              'Required',
+                              'Обязательна',
+                            )
+                          : GameplayLocale.text(
+                              context,
+                              'Recommended',
+                              'Рекомендуется',
+                            ),
                     ),
                     if (summary.headline.contains('terminated'))
                       _ReportRow(
-                        label: 'Potential fee write-off',
+                        label: GameplayLocale.text(
+                          context,
+                          'Potential fee write-off',
+                          'Возможное списание гонорара',
+                        ),
                         value: _eur(snapshot.spendEur),
                       ),
                   ],
@@ -127,34 +190,65 @@ class CaseReportSheet extends StatelessWidget {
             ],
             const SizedBox(height: 14),
             _ReportSection(
-              title: 'Performance',
+              title: GameplayLocale.text(
+                context,
+                'Performance',
+                'Показатели',
+              ),
               child: Column(
                 children: <Widget>[
                   _ReportRow(
-                    label: 'Case strength',
+                    label: GameplayLocale.text(
+                      context,
+                      'Case strength',
+                      'Сила позиции',
+                    ),
                     value: '${snapshot.caseStrength}/100',
                   ),
-                  _ReportRow(label: 'Merits', value: '${snapshot.merits}/100'),
                   _ReportRow(
-                    label: 'Evidence',
+                    label: GameplayLocale.text(
+                      context,
+                      'Merits',
+                      'Обоснованность',
+                    ),
+                    value: '${snapshot.merits}/100',
+                  ),
+                  _ReportRow(
+                    label: GameplayLocale.text(
+                      context,
+                      'Evidence',
+                      'Доказательства',
+                    ),
                     value: '${snapshot.evidenceScore}/100',
                   ),
                   _ReportRow(
-                    label: 'Procedure',
+                    label:
+                        GameplayLocale.text(context, 'Procedure', 'Процедура'),
                     value: '${snapshot.procedure}/100',
                   ),
                   _ReportRow(
-                    label: 'Client trust',
+                    label: GameplayLocale.text(
+                      context,
+                      'Client trust',
+                      'Доверие клиента',
+                    ),
                     value: '${snapshot.clientTrust}/100',
                   ),
-                  _ReportRow(label: 'Ethics', value: '${snapshot.ethics}/100'),
+                  _ReportRow(
+                    label: GameplayLocale.text(context, 'Ethics', 'Этика'),
+                    value: '${snapshot.ethics}/100',
+                  ),
                 ],
               ),
             ),
             if (summary.keySuccesses.isNotEmpty) ...<Widget>[
               const SizedBox(height: 14),
               _ReportSection(
-                title: 'Key successes',
+                title: GameplayLocale.text(
+                  context,
+                  'Key successes',
+                  'Ключевые успехи',
+                ),
                 child: _ReportList(
                   entries: summary.keySuccesses,
                   icon: Icons.check_circle_outline,
@@ -164,7 +258,11 @@ class CaseReportSheet extends StatelessWidget {
             if (summary.missedOpportunities.isNotEmpty) ...<Widget>[
               const SizedBox(height: 14),
               _ReportSection(
-                title: 'Missed opportunities',
+                title: GameplayLocale.text(
+                  context,
+                  'Missed opportunities',
+                  'Упущенные возможности',
+                ),
                 child: _ReportList(
                   entries: summary.missedOpportunities,
                   icon: Icons.warning_amber_outlined,
@@ -174,7 +272,9 @@ class CaseReportSheet extends StatelessWidget {
             const SizedBox(height: 22),
             OutlinedButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
+              child: Text(
+                GameplayLocale.text(context, 'Close', 'Закрыть'),
+              ),
             ),
           ],
         ),
@@ -201,6 +301,38 @@ class CaseReportSheet extends StatelessWidget {
     }
     return 'EUR $result';
   }
+}
+
+String _caseResultLabel(BuildContext context, CaseResultStatus status) {
+  if (GameplayLocale.of(context) != 'ru') {
+    return status.label;
+  }
+  return switch (status) {
+    CaseResultStatus.ongoing => 'Рассмотрение продолжается',
+    CaseResultStatus.wonAtFirstInstance => 'Победа в первой инстанции',
+    CaseResultStatus.mixedAtFirstInstance =>
+      'Смешанный результат первой инстанции',
+    CaseResultStatus.lostAtFirstInstance => 'Поражение в первой инстанции',
+    CaseResultStatus.wonOnAppeal => 'Победа в апелляции',
+    CaseResultStatus.lostOnAppeal => 'Поражение в апелляции',
+    CaseResultStatus.remittedAfterCassation =>
+      'Направлено на новое рассмотрение',
+    CaseResultStatus.settled => 'Урегулировано',
+    CaseResultStatus.withdrawn => 'Отозвано',
+  };
+}
+
+String _engagementLabel(BuildContext context, EngagementStatus status) {
+  if (GameplayLocale.of(context) != 'ru') {
+    return status.label;
+  }
+  return switch (status) {
+    EngagementStatus.active => 'Поручение активно',
+    EngagementStatus.awaitingClientInstructions =>
+      'Ожидаются инструкции клиента',
+    EngagementStatus.terminatedByClient => 'Прекращено клиентом',
+    EngagementStatus.completed => 'Поручение завершено',
+  };
 }
 
 class _ReportSection extends StatelessWidget {

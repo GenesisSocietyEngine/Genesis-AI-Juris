@@ -1,14 +1,115 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: AI Juris"
-branch: feat/authoritative-foreground-clock
-head_commit: "e3d9752 (foreground-clock implementation head before progress documentation)"
+branch: fix/goldenshell-playability-localization
+head_commit: "GoldenShell/GreenFire playability checkpoint (see current git log)"
 release_tag: v0.5.1-alpha.1
 app_version: 0.5.1+12
 last_updated: 2026-07-30
 ---
 
 # Current Progress
+
+## GoldenShell/GreenFire playability and RU gameplay checkpoint — 2026-07-30
+
+Status: implementation checkpoint on
+`fix/goldenshell-playability-localization`; local Rust, Flutter, deterministic
+bundle, and Android APK gates pass. The exact commit hash is assigned by Git to
+the commit containing this entry; remote PR and CI observations belong in the
+next cumulative update.
+
+Repository state:
+
+- base: `main@2f00b94` (merge of authoritative foreground clock PR #7);
+- branch: `fix/goldenshell-playability-localization`;
+- PR #4 lifecycle work remains isolated and is not mixed into this branch;
+- generated mobile bundle schema version increased additively from 3 to 4.
+
+Completed:
+
+- added backward-compatible `cost_eur` to declarative scenario actions;
+- propagated action cost through the Rust mobile snapshot, JSON/FFI bridge,
+  Flutter mapper, action cards, and confirmation dialogs;
+- assigned non-zero EUR costs to all 17 GoldenShell actions;
+- added `completion_action_ids` to deadline snapshots so Calendar can open the
+  currently available action that completes a deadline;
+- corrected scenario deadline display to use the mobile civil-time origin at
+  08:00; for example GreenFire `legal_hold_deadline` at elapsed minute 180 now
+  displays `Day 1 · 11:00`, not `Day 1 · 03:00`;
+- added a shared `Rest until next workday · 08:00` Calendar control;
+- the control submits normal authoritative `advance_time` commands for Rust
+  scenarios and uses the existing deterministic rest transition in the legacy
+  demo adapter;
+- automatic foreground ticking is suspended while Inbox, action, deadline,
+  report, and reset modal UI is open, then resumes only if the player had not
+  paused it;
+- preserved foreground-clock authority in Rust: Flutter does not mutate
+  scenario time or effects locally;
+- carried the selected catalog locale through case launch, runtime factory,
+  repository, mapper, and gameplay shell;
+- added complete Russian stable-ID overlays for GreenFire and GoldenShell:
+  metadata, stages, actions, deadlines, Inbox items, facts, evidence, and
+  terminal outcomes;
+- added Russian gameplay-shell labels for navigation, Inbox, Matter, Calendar,
+  AI, Career, status badges, action review, response dialogs, workload, and
+  deadline controls;
+- exporter now loads scenario localization files, rejects unsupported locales,
+  verifies scenario identity, and requires exact stable-ID coverage for every
+  translated scenario section;
+- regenerated the deterministic four-case mobile bundle.
+
+Tests and checks:
+
+```powershell
+cargo check --workspace
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+dart format lib test tool
+dart run tool/export_mobile_case_bundle.dart `
+  --repo-root C:\PROJECTS\Genesis-AI-Juris --check
+flutter analyze
+flutter test
+flutter build apk --debug
+git diff --check
+```
+
+Observed results:
+
+- Rust workspace check, formatting, Clippy with warnings denied, all unit,
+  integration, scenario, bridge, FFI, simulator, validator, and doc tests:
+  passed;
+- deterministic bundle validation and generated-file check: passed;
+- Flutter analyze: `No issues found`;
+- Flutter tests: 67 passed, including:
+  - GoldenShell action-cost projection;
+  - GoldenShell and GreenFire Russian runtime mapping;
+  - GreenFire civil-time deadline and related-action mapping;
+  - next-workday rest;
+  - modal foreground-clock suspension;
+  - Russian GoldenShell shell/action-sheet rendering;
+- Android debug APK built successfully at
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`.
+
+Known limitations:
+
+- action costs are displayed authoritatively per action but cumulative scenario
+  spend and a scenario-specific budget ceiling are not yet modeled;
+- Russian scenario overlays are complete for GreenFire and GoldenShell;
+  Logistics still falls back to its canonical English scenario prose;
+- local iOS build is unavailable on Windows and still requires the hosted iOS
+  Native FFI workflow after push;
+- no physical-device, release-signing, App Store, or Play Store result is
+  claimed;
+- persistent saves and command-log replay are not part of this checkpoint.
+
+Next step:
+
+- review the isolated diff, commit it with this cumulative handoff, push the
+  branch, open a PR, and observe Rust, Flutter, and iOS CI;
+- after merge, continue with persistent command-log save/load, then dossier
+  evolution. The stable-ID translation-overlay foundation planned in the
+  roadmap is now implemented for GreenFire and GoldenShell.
 
 ## Authoritative foreground clock checkpoint `06c6f82` / `e3d9752` — 2026-07-30
 

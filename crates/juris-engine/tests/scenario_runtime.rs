@@ -55,6 +55,33 @@ fn snapshot_exposes_backward_compatible_clock_policy() {
 }
 
 #[test]
+fn mobile_snapshot_exposes_costs_and_deadline_action_links() {
+    let goldenshell = goldenshell_definition();
+    assert!(goldenshell.actions.iter().all(|action| action.cost_eur > 0));
+    let goldenshell_snapshot = ScenarioSession::new(goldenshell, 1).unwrap().snapshot();
+    assert_eq!(goldenshell_snapshot.available_actions.len(), 1);
+    assert_eq!(goldenshell_snapshot.available_actions[0].cost_eur, 750);
+
+    let mut greenfire = ScenarioSession::new(greenfire_definition(), 1).unwrap();
+    greenfire.dispatch("accept_emergency_mandate").unwrap();
+    let snapshot = greenfire.snapshot();
+    let legal_hold = snapshot
+        .deadlines
+        .iter()
+        .find(|deadline| deadline.id == "legal_hold_deadline")
+        .unwrap();
+    assert_eq!(
+        legal_hold.completion_action_ids,
+        vec!["issue_legal_hold".to_owned()]
+    );
+
+    let logistics_snapshot = ScenarioSession::new(logistics_definition(), 1)
+        .unwrap()
+        .snapshot();
+    assert_eq!(logistics_snapshot.available_actions[0].cost_eur, 0);
+}
+
+#[test]
 fn foreground_advance_contract_rejects_invalid_commands() {
     let mut logistics = ScenarioSession::new(logistics_definition(), 1).unwrap();
     assert_eq!(

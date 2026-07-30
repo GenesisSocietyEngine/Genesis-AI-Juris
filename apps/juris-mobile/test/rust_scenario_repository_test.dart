@@ -1,7 +1,9 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juris_mobile/app/home_shell.dart';
 import 'package:juris_mobile/data/rust_scenario_repository.dart';
 import 'package:juris_mobile/data/scenario_bridge_client.dart';
 import 'package:juris_mobile/models/case_catalog.dart';
@@ -123,6 +125,84 @@ void main() {
       repository.snapshot.actions.single.id,
       'accept_cooperative_mandate',
     );
+    repository.dispose();
+  });
+
+  test('GoldenShell exposes assigned action costs and Russian scenario text',
+      () {
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: goldenshell,
+      locale: 'ru',
+      bridgeClient: _FakeScenarioBridgeClient(),
+    );
+
+    expect(repository.snapshot.matterTitle, 'GoldenShell — Отзыв на рассвете');
+    expect(repository.snapshot.stage, 'Экстренный приём кооператива');
+    expect(repository.snapshot.actions.single.title,
+        'Принять поручение кооператива');
+    expect(repository.snapshot.actions.single.costEur, 750);
+    repository.dispose();
+  });
+
+  test('rest advances a foreground scenario to the next 08:00 work period', () {
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: goldenshell,
+      bridgeClient: _FakeScenarioBridgeClient(),
+    );
+
+    repository.advanceTimeByMinutes(1205);
+    expect(repository.snapshot.timeLabel, '04:05');
+    repository.restUntilNextWorkday();
+
+    expect(repository.snapshot.dayLabel, 'Day 2');
+    expect(repository.snapshot.timeLabel, '08:00');
+    repository.dispose();
+  });
+
+  test('GreenFire deadline uses civil-time offset and opens its action', () {
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: greenfire,
+      locale: 'ru',
+      bridgeClient: _FakeScenarioBridgeClient(),
+    );
+
+    expect(repository.snapshot.matterTitle, 'GreenFire — Первые 72 часа');
+    expect(repository.snapshot.stage, 'Экстренный приём');
+    expect(repository.snapshot.actions.single.title,
+        'Принять экстренное поручение');
+    repository.applyAction('accept_emergency_mandate');
+    final deadline = repository.snapshot.deadlines.singleWhere(
+      (item) => item.id == 'legal_hold_deadline',
+    );
+    expect(deadline.title, 'Ввести режим сохранения доказательств');
+    expect(deadline.dueAt, 'День 1 · 11:00');
+    expect(deadline.relatedActionId, 'issue_legal_hold');
+    repository.dispose();
+  });
+
+  testWidgets('Russian GoldenShell launch localizes shell and action sheet', (
+    WidgetTester tester,
+  ) async {
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: goldenshell,
+      locale: 'ru',
+      bridgeClient: _FakeScenarioBridgeClient(),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeShell(repository: repository, locale: 'ru'),
+      ),
+    );
+
+    expect(find.text('Входящие'), findsWidgets);
+    expect(find.text('Дело'), findsOneWidget);
+    expect(find.textContaining('Экстренный приём кооператива'), findsOneWidget);
+    await tester.tap(find.text('Действия · 1'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Доступные действия'), findsOneWidget);
+    expect(find.text('Принять поручение кооператива'), findsOneWidget);
+    expect(find.text('EUR 750'), findsOneWidget);
     repository.dispose();
   });
 
@@ -406,7 +486,21 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
               },
             )
             .toList(growable: false),
-        'deadlines': const <Map<String, dynamic>>[],
+        'deadlines': (_scenario['deadlines'] as List<dynamic>)
+            .map(
+              (dynamic value) => <String, dynamic>{
+                'id': (value as Map<String, dynamic>)['id'],
+                'title': value['title'],
+                'due_at_minutes':
+                    ((value['due_at'] as Map<String, dynamic>)['day'] as int) *
+                            1440 +
+                        ((value['due_at']
+                            as Map<String, dynamic>)['minute_of_day'] as int),
+                'status': value['activation_event'] == null ? 'open' : null,
+                'completion_action_ids': value['completion_actions'],
+              },
+            )
+            .toList(growable: false),
         'inbox': const <Map<String, dynamic>>[],
         'available_actions': _actions(),
         'fired_event_ids': <String>[
@@ -439,6 +533,7 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
           'title': action['title'],
           'description': action['description'],
           'time_cost_minutes': action['time_cost_minutes'],
+          'cost_eur': action['cost_eur'] ?? 0,
         };
       },
     ).toList(growable: false);

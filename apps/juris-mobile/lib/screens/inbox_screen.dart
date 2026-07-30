@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app/gameplay_locale.dart';
 import '../models/game_snapshot.dart';
 import '../widgets/section_card.dart';
 import '../widgets/status_badge.dart';
@@ -60,8 +61,14 @@ class InboxScreen extends StatelessWidget {
               ],
               const SizedBox(height: 16),
               if (ordered.isEmpty)
-                const SectionCard(
-                  child: Text('The inbox is clear.'),
+                SectionCard(
+                  child: Text(
+                    GameplayLocale.text(
+                      context,
+                      'The inbox is clear.',
+                      'Входящих сообщений нет.',
+                    ),
+                  ),
                 )
               else
                 ...ordered.map(
@@ -82,7 +89,7 @@ class InboxScreen extends StatelessWidget {
 
   int _messageMoment(String label) {
     final RegExpMatch? match = RegExp(
-      r'^Day\s+(\d+)\s+·\s+(\d{1,2}):(\d{2})$',
+      r'^(?:Day|День)\s+(\d+)\s+·\s+(\d{1,2}):(\d{2})$',
     ).firstMatch(label);
     if (match == null) {
       return 0;
@@ -125,14 +132,19 @@ class _InboxSummary extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    snapshot.unhandledRequiredMessages == 1
-                        ? '1 response requires attention'
-                        : '${snapshot.unhandledRequiredMessages} responses require attention',
+                    GameplayLocale.of(context) == 'ru'
+                        ? _russianAttentionLabel(
+                            snapshot.unhandledRequiredMessages,
+                          )
+                        : snapshot.unhandledRequiredMessages == 1
+                            ? '1 response requires attention'
+                            : '${snapshot.unhandledRequiredMessages} responses require attention',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${snapshot.matterTitle} · ${snapshot.mode} · seed ${snapshot.seed}',
+                    '${snapshot.matterTitle} · ${snapshot.mode} · '
+                    'seed ${snapshot.seed}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colors.onSurfaceVariant,
                         ),
@@ -163,11 +175,15 @@ class _CaseClosedCard extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     return Semantics(
       button: true,
-      label: 'Open final case report',
+      label: GameplayLocale.text(
+        context,
+        'Open final case report',
+        'Открыть итоговый отчёт по делу',
+      ),
       child: SectionCard(
         key: const ValueKey<String>('case-closed-card'),
         onTap: onTap,
-        title: 'CASE CLOSED',
+        title: GameplayLocale.text(context, 'CASE CLOSED', 'ДЕЛО ЗАВЕРШЕНО'),
         subtitle: summary.closedAt,
         trailing: Icon(
           Icons.chevron_right,
@@ -184,15 +200,21 @@ class _CaseClosedCard extends StatelessWidget {
             Text(summary.finalStatus),
             const SizedBox(height: 12),
             Text(
-              'Award / settlement: EUR ${_money(summary.awardEur)} · '
-              'Legal spend: EUR ${_money(snapshot.spendEur)}',
+              '${GameplayLocale.text(context, 'Award / settlement', 'Присуждение / урегулирование')}: '
+              'EUR ${_money(summary.awardEur)} · '
+              '${GameplayLocale.text(context, 'Legal spend', 'Юридические расходы')}: '
+              'EUR ${_money(snapshot.spendEur)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: colors.onSurfaceVariant,
                   ),
             ),
             const SizedBox(height: 12),
             Text(
-              'View case report',
+              GameplayLocale.text(
+                context,
+                'View case report',
+                'Открыть отчёт по делу',
+              ),
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     color: colors.primary,
                   ),
@@ -220,7 +242,9 @@ class _InboxMessageCard extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: 'Open message from ${item.sender}: ${item.subject}',
+      label:
+          '${GameplayLocale.text(context, 'Open message from', 'Открыть сообщение от')} '
+          '${item.sender}: ${item.subject}',
       child: SectionCard(
         key: ValueKey<String>('inbox-item-${item.id}'),
         onTap: onTap,
@@ -266,4 +290,16 @@ String _money(int value) {
     result.write(digits[index]);
   }
   return value < 0 ? '-$result' : result.toString();
+}
+
+String _russianAttentionLabel(int count) {
+  final int lastTwo = count % 100;
+  final int last = count % 10;
+  if (last == 1 && lastTwo != 11) {
+    return '$count ответ требует внимания';
+  }
+  if (last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14)) {
+    return '$count ответа требуют внимания';
+  }
+  return '$count ответов требуют внимания';
 }

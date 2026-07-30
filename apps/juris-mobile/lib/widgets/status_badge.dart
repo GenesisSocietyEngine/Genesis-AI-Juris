@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app/gameplay_locale.dart';
 import '../models/game_snapshot.dart';
 
 /// Small semantic status label used in inbox and deadline lists.
@@ -48,22 +49,36 @@ class StatusBadge extends StatelessWidget {
     switch (value) {
       case InboxStatus.actionRequired:
         return _BadgeSpec(
-            'ACTION REQUIRED', colors.error, colors.errorContainer);
+          GameplayLocale.text(
+            context,
+            'ACTION REQUIRED',
+            'ТРЕБУЕТСЯ ДЕЙСТВИЕ',
+          ),
+          colors.error,
+          colors.errorContainer,
+        );
       case InboxStatus.unread:
-        return _BadgeSpec('UNREAD', colors.primary, colors.primaryContainer);
+        return _BadgeSpec(
+          GameplayLocale.text(context, 'UNREAD', 'НЕ ПРОЧИТАНО'),
+          colors.primary,
+          colors.primaryContainer,
+        );
       case InboxStatus.read:
         // Handled by the early return in build().
         return _BadgeSpec(
-          'READ',
+          GameplayLocale.text(context, 'READ', 'ПРОЧИТАНО'),
           colors.onSurfaceVariant,
           colors.surfaceContainerHighest,
         );
       case InboxStatus.resolved:
         return _BadgeSpec(
-            'RESOLVED', colors.tertiary, colors.tertiaryContainer);
+          GameplayLocale.text(context, 'RESOLVED', 'РЕШЕНО'),
+          colors.tertiary,
+          colors.tertiaryContainer,
+        );
       case InboxStatus.archived:
         return _BadgeSpec(
-          'ARCHIVED',
+          GameplayLocale.text(context, 'ARCHIVED', 'В АРХИВЕ'),
           colors.onSurfaceVariant,
           colors.surfaceContainerHighest,
         );
@@ -74,26 +89,38 @@ class StatusBadge extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     switch (value) {
       case DeadlineStatus.open:
-        return _BadgeSpec('OPEN', colors.primary, colors.primaryContainer);
+        return _BadgeSpec(
+          GameplayLocale.text(context, 'OPEN', 'ОТКРЫТ'),
+          colors.primary,
+          colors.primaryContainer,
+        );
       case DeadlineStatus.scheduled:
         return _BadgeSpec(
-          'SCHEDULED',
+          GameplayLocale.text(context, 'SCHEDULED', 'НАЗНАЧЕН'),
           colors.primary,
           colors.primaryContainer,
         );
       case DeadlineStatus.rescheduled:
         return _BadgeSpec(
-          'RESCHEDULED',
+          GameplayLocale.text(context, 'RESCHEDULED', 'ПЕРЕНЕСЁН'),
           colors.tertiary,
           colors.tertiaryContainer,
         );
       case DeadlineStatus.done:
-        return _BadgeSpec('DONE', colors.tertiary, colors.tertiaryContainer);
+        return _BadgeSpec(
+          GameplayLocale.text(context, 'DONE', 'ВЫПОЛНЕН'),
+          colors.tertiary,
+          colors.tertiaryContainer,
+        );
       case DeadlineStatus.missed:
-        return _BadgeSpec('MISSED', colors.error, colors.errorContainer);
+        return _BadgeSpec(
+          GameplayLocale.text(context, 'MISSED', 'ПРОПУЩЕН'),
+          colors.error,
+          colors.errorContainer,
+        );
       case DeadlineStatus.cancelled:
         return _BadgeSpec(
-          'CANCELLED',
+          GameplayLocale.text(context, 'CANCELLED', 'ОТМЕНЁН'),
           colors.onSurfaceVariant,
           colors.surfaceContainerHighest,
         );

@@ -40,6 +40,7 @@ class JurisApp extends StatefulWidget {
 class _JurisAppState extends State<JurisApp> {
   GameRuntimeRepository? _activeRepository;
   String? _activeCaseId;
+  String _activeLocale = 'en';
 
   bool get _usesCatalog => widget.repository == null;
 
@@ -73,6 +74,7 @@ class _JurisAppState extends State<JurisApp> {
       return HomeShell(
         key: ValueKey<String?>(_activeCaseId),
         repository: activeRepository,
+        locale: _activeLocale,
         onExitToCaseCatalog: _usesCatalog ? _exitToCatalog : null,
       );
     }
@@ -83,14 +85,16 @@ class _JurisAppState extends State<JurisApp> {
     );
   }
 
-  void _startCase(MobileCaseDefinition caseDefinition) {
+  void _startCase(MobileCaseDefinition caseDefinition, String locale) {
     final GameRuntimeRepository repository = CaseRuntimeFactory.create(
       caseDefinition,
+      locale: locale,
       scenarioBridgeClient: widget.scenarioBridgeClient,
     );
     setState(() {
       _activeRepository = repository;
       _activeCaseId = caseDefinition.caseId;
+      _activeLocale = locale;
     });
   }
 
@@ -99,6 +103,7 @@ class _JurisAppState extends State<JurisApp> {
     setState(() {
       _activeRepository = null;
       _activeCaseId = null;
+      _activeLocale = 'en';
     });
     previous?.dispose();
   }

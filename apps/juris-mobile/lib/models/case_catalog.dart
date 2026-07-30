@@ -87,6 +87,7 @@ class MobileCaseDefinition {
     required this.runtimeAdapter,
     required this.readiness,
     required this.localizations,
+    required this.scenarioLocalizations,
   });
 
   factory MobileCaseDefinition.fromJson(Map<String, dynamic> json) {
@@ -118,6 +119,16 @@ class MobileCaseDefinition {
           LocalizedCaseText.fromJson(_asObject(value, 'localizations.$locale')),
         ),
       ),
+      scenarioLocalizations:
+          (json['scenario_localizations'] as Map<String, dynamic>? ??
+                  const <String, dynamic>{})
+              .map(
+        (String locale, dynamic value) =>
+            MapEntry<String, Map<String, dynamic>>(
+          locale,
+          _asObject(value, 'scenario_localizations.$locale'),
+        ),
+      ),
     );
   }
 
@@ -138,6 +149,7 @@ class MobileCaseDefinition {
   final String? runtimeAdapter;
   final CaseReadiness readiness;
   final Map<String, LocalizedCaseText> localizations;
+  final Map<String, Map<String, dynamic>> scenarioLocalizations;
 
   LocalizedCaseText localized(String locale, String fallbackLocale) {
     final LocalizedCaseText? selected = localizations[locale];
@@ -149,6 +161,31 @@ class MobileCaseDefinition {
       return fallback;
     }
     return localizations.values.first;
+  }
+
+  String scenarioText({
+    required String locale,
+    required String section,
+    required String field,
+    required String fallback,
+    String? id,
+  }) {
+    final Map<String, dynamic>? overlay = scenarioLocalizations[locale];
+    if (overlay == null) {
+      return fallback;
+    }
+    final dynamic rawSection = overlay[section];
+    if (rawSection is! Map<String, dynamic>) {
+      return fallback;
+    }
+    final dynamic container = id == null ? rawSection : rawSection[id];
+    if (container is! Map<String, dynamic>) {
+      return fallback;
+    }
+    final dynamic translated = container[field];
+    return translated is String && translated.isNotEmpty
+        ? translated
+        : fallback;
   }
 }
 

@@ -6,6 +6,11 @@ import '../models/case_catalog.dart';
 
 enum _CaseFilter { all, playable, authoring }
 
+typedef CaseStartCallback = void Function(
+  MobileCaseDefinition caseDefinition,
+  String locale,
+);
+
 class CaseCatalogLoaderScreen extends StatefulWidget {
   const CaseCatalogLoaderScreen({
     required this.repository,
@@ -14,7 +19,7 @@ class CaseCatalogLoaderScreen extends StatefulWidget {
   });
 
   final CaseCatalogRepository repository;
-  final ValueChanged<MobileCaseDefinition> onStartCase;
+  final CaseStartCallback onStartCase;
 
   @override
   State<CaseCatalogLoaderScreen> createState() =>
@@ -100,7 +105,7 @@ class CaseCatalogScreen extends StatefulWidget {
   });
 
   final CaseCatalogBundle bundle;
-  final ValueChanged<MobileCaseDefinition> onStartCase;
+  final CaseStartCallback onStartCase;
 
   @override
   State<CaseCatalogScreen> createState() => _CaseCatalogScreenState();
@@ -215,7 +220,7 @@ class _CaseCatalogScreenState extends State<CaseCatalogScreen> {
                     bundle: widget.bundle,
                     locale: _locale,
                     caseDefinition: caseDefinition,
-                    onStart: () => widget.onStartCase(caseDefinition),
+                    onStart: () => widget.onStartCase(caseDefinition, _locale),
                     onConversionPlan: () => _showConversionPlan(
                       caseDefinition,
                     ),

@@ -53,6 +53,7 @@ fn resolved_with_pending_task_is_rejected() {
             task: task_id.clone(),
         }],
         time_cost_minutes: 5,
+        cost_eur: 0,
         repeatability: ActionRepeatability::Once,
     });
 
@@ -75,6 +76,7 @@ fn resolved_with_pending_task_is_rejected() {
             task: task_id.clone(),
         }],
         time_cost_minutes: 5,
+        cost_eur: 0,
         repeatability: ActionRepeatability::Once,
     });
 
@@ -120,6 +122,7 @@ fn resolved_with_open_deadline_is_rejected() {
             deadline: deadline_id.clone(),
         }],
         time_cost_minutes: 5,
+        cost_eur: 0,
         repeatability: ActionRepeatability::Once,
     });
 
@@ -165,6 +168,7 @@ fn resolved_with_required_inbox_is_rejected() {
             item: item_id.clone(),
         }],
         time_cost_minutes: 5,
+        cost_eur: 0,
         repeatability: ActionRepeatability::Once,
     });
 

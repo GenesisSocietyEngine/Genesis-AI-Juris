@@ -9,11 +9,13 @@ final class RustScenarioRepository extends GameRuntimeRepository {
   RustScenarioRepository({
     required this.caseDefinition,
     required ScenarioBridgeClient bridgeClient,
+    this.locale = 'en',
   }) : _bridgeClient = bridgeClient {
     _createSession();
   }
 
   final MobileCaseDefinition caseDefinition;
+  final String locale;
   final ScenarioBridgeClient _bridgeClient;
   final Set<String> _locallyReadInboxIds = <String>{};
 
@@ -58,8 +60,9 @@ final class RustScenarioRepository extends GameRuntimeRepository {
     _acceptSnapshot(response);
     notifyListeners();
     final String message = _snapshot.outcomeSummary == null
-        ? 'Stage: ${_snapshot.stage}.'
-        : 'Outcome: ${_snapshot.outcomeSummary!.headline}.';
+        ? '${locale == 'ru' ? 'Стадия' : 'Stage'}: ${_snapshot.stage}.'
+        : '${locale == 'ru' ? 'Исход' : 'Outcome'}: '
+            '${_snapshot.outcomeSummary!.headline}.';
     return ActionExecutionResult(
       title: selected?.title ?? actionId,
       message: message,
@@ -175,6 +178,7 @@ final class RustScenarioRepository extends GameRuntimeRepository {
     _snapshot = ScenarioSnapshotMapper.map(
       source: _rawSnapshot,
       caseDefinition: caseDefinition,
+      locale: locale,
       locallyReadInboxIds: _locallyReadInboxIds,
     );
   }
