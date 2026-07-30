@@ -136,6 +136,10 @@ mod tests {
         include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
     const REMEDIES_SCENARIO: &str =
         include_str!("../../../content/fixtures/authoring/adverse_judgment_with_remedies.json");
+    const GREENFIRE_SCENARIO: &str =
+        include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json");
+    const GOLDENSHELL_SCENARIO: &str =
+        include_str!("../../../content/cases/goldenshell_recall_at_dawn.scenario.json");
 
     fn execute_request(request: Value) -> Value {
         let request = CString::new(request.to_string()).expect("request must be a C string");
@@ -223,6 +227,86 @@ mod tests {
         }));
         assert_eq!(invalid_handle["type"], "error");
         assert_eq!(invalid_handle["code"], "unknown_session");
+    }
+
+    #[test]
+    fn goldenshell_session_starts_through_the_existing_c_abi() {
+        let scenario: Value = serde_json::from_str(GOLDENSHELL_SCENARIO)
+            .expect("scenario fixture must be valid JSON");
+        let created = execute_request(json!({
+            "command": "create_session",
+            "scenario": scenario,
+            "seed": 20260730
+        }));
+
+        assert_eq!(created["type"], "session_created");
+        assert_eq!(
+            created["snapshot"]["scenario_id"],
+            "goldenshell_recall_at_dawn"
+        );
+        assert_eq!(created["snapshot"]["stage_id"], "emergency_intake");
+        assert_eq!(
+            created["snapshot"]["available_actions"][0]["id"],
+            "accept_cooperative_mandate"
+        );
+
+        let disposed = execute_request(json!({
+            "command": "dispose_session",
+            "session_id": created["session_id"]
+        }));
+        assert_eq!(disposed["type"], "session_disposed");
+        assert_eq!(disposed["disposed"], true);
+    }
+
+    #[test]
+    fn foreground_time_uses_the_existing_execute_symbol() {
+        let scenario: Value =
+            serde_json::from_str(GREENFIRE_SCENARIO).expect("scenario fixture must be valid JSON");
+        let created = execute_request(json!({
+            "command": "create_session",
+            "scenario": scenario,
+            "seed": 20260729
+        }));
+        let session_id = created["session_id"].as_u64().unwrap();
+
+        let advanced = execute_request(json!({
+            "command": "advance_time",
+            "session_id": session_id,
+            "minutes": 120
+        }));
+        assert_eq!(advanced["type"], "snapshot");
+        assert_eq!(advanced["snapshot"]["clock_minutes"], 120);
+        assert_eq!(advanced["snapshot"]["clock_mode"], "foreground");
+        assert!(advanced["snapshot"]["fired_event_ids"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|event| event == "regulator_request_received"));
+
+        let disposed = execute_request(json!({
+            "command": "dispose_session",
+            "session_id": session_id
+        }));
+        assert_eq!(disposed["disposed"], true);
+    }
+
+    #[test]
+    fn action_driven_time_rejection_is_stable_over_ffi() {
+        let scenario: Value =
+            serde_json::from_str(LOGISTICS_SCENARIO).expect("scenario fixture must be valid JSON");
+        let created = execute_request(json!({
+            "command": "create_session",
+            "scenario": scenario,
+            "seed": 20260725
+        }));
+
+        let rejected = execute_request(json!({
+            "command": "advance_time",
+            "session_id": created["session_id"],
+            "minutes": 1
+        }));
+        assert_eq!(rejected["type"], "error");
+        assert_eq!(rejected["code"], "clock_advance_unsupported");
     }
 
     #[test]

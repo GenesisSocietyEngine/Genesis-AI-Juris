@@ -1,0 +1,1989 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "id": "goldenshell_recall_at_dawn",
+    "title": "GoldenShell — Recall at Dawn",
+    "summary": "A food-safety authority blocks twelve poultry farms after traces of an unauthorised pesticide are detected in eggs. The player represents the farmers' cooperative and must preserve samples, coordinate the recall, protect contractual and insurance rights, build a common causation model, and separate shared liability issues from farm-specific losses within 72 hours.",
+    "content_version": "0.1.0",
+    "author": "GENESIS: AI Juris",
+    "tags": [
+      "food_safety",
+      "supply_chain",
+      "mass_claims",
+      "contract",
+      "causation",
+      "insurance",
+      "netherlands",
+      "fictional"
+    ]
+  },
+  "jurisdiction": {
+    "code": "NL",
+    "pack_version": "0.1.0"
+  },
+  "initial_stage": "emergency_intake",
+  "clock": {
+    "mode": "foreground"
+  },
+  "actors": [
+    {
+      "id": "player_lawyer",
+      "name": "Player",
+      "role": "player",
+      "description": "Crisis and claims counsel coordinating the first 72 hours."
+    },
+    {
+      "id": "goldenshell_producers_cooperative",
+      "name": "GoldenShell Producers Cooperative U.A.",
+      "role": "client",
+      "description": "The fictional cooperative acting as the player client for twelve affected farms."
+    },
+    {
+      "id": "twelve_member_farms",
+      "name": "Twelve GoldenShell member farms",
+      "role": "other",
+      "description": "Related businesses with shared source issues but separate contracts, evidence, mitigation, and losses."
+    },
+    {
+      "id": "miteguard_services",
+      "name": "MiteGuard Services V.O.F.",
+      "role": "opposing_party",
+      "description": "The fictional cleaning contractor that treated the member farms."
+    },
+    {
+      "id": "ardenbio_solutions",
+      "name": "ArdenBio Solutions SRL",
+      "role": "other",
+      "description": "The fictional cross-border supplier of NaturaShield X16."
+    },
+    {
+      "id": "national_food_chain_authority",
+      "name": "National Food Chain Authority",
+      "role": "other",
+      "description": "The fictional regulator that issued farm-specific blocking decisions."
+    },
+    {
+      "id": "freshmart_retail_group",
+      "name": "FreshMart Retail Group N.V.",
+      "role": "other",
+      "description": "A fictional retailer coordinating traceability and recall demands."
+    },
+    {
+      "id": "noor_van_dijk",
+      "name": "Dr Noor van Dijk",
+      "role": "expert",
+      "description": "Independent fictional residue and causation expert."
+    },
+    {
+      "id": "lowlands_agro_insurance",
+      "name": "Lowlands Agro Insurance N.V.",
+      "role": "other",
+      "description": "A fictional lead insurer among the potentially responsive policies."
+    }
+  ],
+  "facts": [
+    {
+      "id": "unauthorised_active_ingredient_present",
+      "statement": "NaturaShield X16 contained an undeclared active pesticide ingredient.",
+      "initial_status": "unknown",
+      "related_actors": [
+        "miteguard_services",
+        "ardenbio_solutions"
+      ]
+    },
+    {
+      "id": "contractor_knew_product_composition",
+      "statement": "The contractor's principals knew the treatment mixture contained the active ingredient.",
+      "initial_status": "unknown",
+      "related_actors": [
+        "miteguard_services"
+      ]
+    },
+    {
+      "id": "safety_sheet_omitted_ingredient",
+      "statement": "A safety data sheet was adapted from another product and omitted the active ingredient.",
+      "initial_status": "unknown",
+      "related_actors": [
+        "miteguard_services",
+        "ardenbio_solutions"
+      ]
+    },
+    {
+      "id": "registration_warning_forwarded",
+      "statement": "A written warning that the product lacked required registration was forwarded to the contractor.",
+      "initial_status": "unknown",
+      "related_actors": [
+        "miteguard_services",
+        "ardenbio_solutions"
+      ]
+    },
+    {
+      "id": "containers_removed_during_inspection",
+      "statement": "Product containers and labelled samples were removed while an inspection was underway.",
+      "initial_status": "unknown",
+      "related_actors": [
+        "miteguard_services",
+        "national_food_chain_authority"
+      ]
+    },
+    {
+      "id": "common_source_with_farm_specific_variation",
+      "statement": "The same contractor treated every farm, but treatment dates, quantities, flocks, and laboratory results differ.",
+      "initial_status": "alleged",
+      "related_actors": [
+        "twelve_member_farms",
+        "miteguard_services"
+      ]
+    },
+    {
+      "id": "regulator_received_earlier_signal",
+      "statement": "The authority received an earlier market signal, but its scope and legal consequence remain uncertain.",
+      "initial_status": "unknown",
+      "related_actors": [
+        "national_food_chain_authority"
+      ]
+    },
+    {
+      "id": "quality_control_differences",
+      "statement": "Several farms had materially different internal quality-control and mitigation records.",
+      "initial_status": "unknown",
+      "related_actors": [
+        "twelve_member_farms"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "farm_blocking_decisions",
+      "title": "Farm-specific blocking decisions",
+      "kind": "document",
+      "description": "Regulatory decisions whose farm identifiers, laboratory references, and legal bases must remain separate.",
+      "supports_facts": [
+        "common_source_with_farm_specific_variation"
+      ],
+      "initially_available": false
+    },
+    {
+      "id": "reference_sample_chain_of_custody",
+      "title": "Reference-sample chain of custody",
+      "kind": "other",
+      "description": "Physical and laboratory reference material preserved before recall destruction and cleaning.",
+      "supports_facts": [
+        "unauthorised_active_ingredient_present",
+        "common_source_with_farm_specific_variation"
+      ],
+      "initially_available": false
+    },
+    {
+      "id": "treatment_work_orders",
+      "title": "Treatment work orders",
+      "kind": "contract",
+      "description": "Farm-specific instructions, dates, services, contracting entities, and incorporated terms.",
+      "supports_facts": [
+        "common_source_with_farm_specific_variation"
+      ],
+      "initially_available": true
+    },
+    {
+      "id": "general_terms_archives",
+      "title": "Archived contractor terms",
+      "kind": "contract",
+      "description": "Versioned online terms relevant to notice, exclusions, limitations, and incorporation.",
+      "initially_available": true
+    },
+    {
+      "id": "product_safety_sheet_versions",
+      "title": "Product safety-sheet versions",
+      "kind": "document",
+      "description": "Technical sheets with disputed provenance and ingredient disclosures.",
+      "supports_facts": [
+        "safety_sheet_omitted_ingredient"
+      ],
+      "initially_available": false
+    },
+    {
+      "id": "registration_warning_email",
+      "title": "Registration warning email",
+      "kind": "email",
+      "description": "A warning whose authenticity, forwarding path, and recipients require proof.",
+      "supports_facts": [
+        "registration_warning_forwarded",
+        "contractor_knew_product_composition"
+      ],
+      "initially_available": false
+    },
+    {
+      "id": "supplier_invoices_and_batch_records",
+      "title": "Supplier invoices and batch records",
+      "kind": "invoice",
+      "description": "Commercial records linking product names, formulations, supplies, and treatment batches.",
+      "supports_facts": [
+        "unauthorised_active_ingredient_present",
+        "contractor_knew_product_composition"
+      ],
+      "initially_available": false
+    },
+    {
+      "id": "contractor_internal_messages",
+      "title": "Contractor internal messages",
+      "kind": "email",
+      "description": "Digital communications requiring authentication, context, and lawful provenance.",
+      "supports_facts": [
+        "contractor_knew_product_composition",
+        "containers_removed_during_inspection"
+      ],
+      "initially_available": false
+    },
+    {
+      "id": "retailer_recall_records",
+      "title": "Retailer recall records",
+      "kind": "system_record",
+      "description": "Lot tracing, segregation, collection, destruction, mitigation, and cost-coding records.",
+      "initially_available": false
+    },
+    {
+      "id": "farm_specific_loss_schedules",
+      "title": "Farm-specific loss schedules",
+      "kind": "document",
+      "description": "Separate production, recall, mitigation, interruption, and own-fault records for each farm.",
+      "supports_facts": [
+        "quality_control_differences"
+      ],
+      "initially_available": false
+    },
+    {
+      "id": "insurance_policy_bundle",
+      "title": "Farm and recall insurance bundle",
+      "kind": "contract",
+      "description": "Policies with differing notice, contamination, recall, interruption, and aggregation clauses.",
+      "initially_available": true
+    },
+    {
+      "id": "regulator_signal_timeline",
+      "title": "Regulator signal timeline",
+      "kind": "system_record",
+      "description": "A public-authority chronology that does not itself prove a legal warning duty.",
+      "supports_facts": [
+        "regulator_received_earlier_signal"
+      ],
+      "initially_available": false
+    },
+    {
+      "id": "preliminary_residue_assessment_report",
+      "title": "Preliminary residue assessment",
+      "kind": "expert_report",
+      "description": "A privileged preliminary model of likely treatment pathways, alternatives, and farm-specific differences.",
+      "supports_facts": [
+        "unauthorised_active_ingredient_present",
+        "common_source_with_farm_specific_variation",
+        "quality_control_differences"
+      ],
+      "initially_available": false
+    }
+  ],
+  "stages": [
+    {
+      "id": "emergency_intake",
+      "title": "Emergency cooperative intake",
+      "kind": "standard",
+      "exit_actions": [
+        "accept_cooperative_mandate"
+      ],
+      "terminal": false
+    },
+    {
+      "id": "immediate_containment",
+      "title": "Immediate recall and evidence containment",
+      "kind": "standard",
+      "entry_event": "cooperative_mandate_accepted",
+      "exit_actions": [
+        "issue_coordinated_legal_hold",
+        "preserve_reference_samples",
+        "authorise_recall_without_reference_samples",
+        "obtain_blocking_decisions",
+        "notify_cleaning_contractor",
+        "notify_farm_insurers",
+        "coordinate_recall_response",
+        "request_product_composition_records",
+        "retain_independent_residue_expert",
+        "review_preliminary_residue_assessment",
+        "map_common_and_individual_losses",
+        "prepare_protective_attachment_strategy",
+        "prioritise_regulator_claim",
+        "establish_coordinated_claim_protocol",
+        "complete_fragmented_handoff"
+      ],
+      "terminal": false
+    },
+    {
+      "id": "coordinated_claim_build",
+      "title": "Coordinated liability and loss preparation",
+      "kind": "standard",
+      "entry_event": "claim_protocol_established",
+      "exit_actions": [
+        "review_preliminary_residue_assessment",
+        "complete_coordinated_handoff",
+        "complete_fragmented_handoff"
+      ],
+      "terminal": false
+    },
+    {
+      "id": "handoff_complete",
+      "title": "Seventy-two-hour claim handoff complete",
+      "kind": "resolved",
+      "entry_event": "matter_handed_over",
+      "exit_actions": [],
+      "terminal": true
+    }
+  ],
+  "actions": [
+    {
+      "id": "accept_cooperative_mandate",
+      "title": "Accept the cooperative mandate",
+      "description": "Confirm the limited emergency mandate for the cooperative and twelve member farms, identify immediate conflicts, and establish one privileged coordination channel.",
+      "available_when": {
+        "type": "stage_is",
+        "stage": "emergency_intake"
+      },
+      "effects": [
+        {
+          "type": "resolve_inbox_item",
+          "item": "cooperative_emergency_call"
+        },
+        {
+          "type": "set_flag",
+          "flag": "cooperative_mandate_accepted",
+          "value": true
+        },
+        {
+          "type": "trigger_event",
+          "event": "cooperative_mandate_accepted"
+        },
+        {
+          "type": "set_stage",
+          "stage": "immediate_containment"
+        }
+      ],
+      "time_cost_minutes": 30,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "issue_coordinated_legal_hold",
+      "title": "Issue a coordinated legal hold",
+      "description": "Preserve treatment records, quality-system data, laboratory results, retailer communications, work orders, invoices, policies, and farm-level production records.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "immediate_containment"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "legal_hold_issued",
+            "value": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_flag",
+          "flag": "legal_hold_issued",
+          "value": true
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "coordinated_legal_hold_required"
+        }
+      ],
+      "time_cost_minutes": 90,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "preserve_reference_samples",
+      "title": "Preserve independent reference samples",
+      "description": "Create a documented chain of custody for eggs, feed, dust, treatment residues, and packaging before recall destruction or cleaning removes potential causation evidence.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "immediate_containment"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "sample_strategy_completed",
+            "value": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_flag",
+          "flag": "sample_strategy_completed",
+          "value": true
+        },
+        {
+          "type": "set_flag",
+          "flag": "reference_samples_preserved",
+          "value": true
+        },
+        {
+          "type": "make_evidence_available",
+          "evidence": "reference_sample_chain_of_custody"
+        },
+        {
+          "type": "complete_deadline",
+          "deadline": "sample_preservation_deadline"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "sample_preservation_required"
+        }
+      ],
+      "time_cost_minutes": 120,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "authorise_recall_without_reference_samples",
+      "title": "Authorise destruction without reference samples",
+      "description": "Prioritise immediate destruction of affected stock without first preserving a defensible independent sample set. This accelerates operations but weakens later causation proof.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "immediate_containment"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "sample_strategy_completed",
+            "value": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_flag",
+          "flag": "sample_strategy_completed",
+          "value": true
+        },
+        {
+          "type": "set_flag",
+          "flag": "samples_destroyed_without_reference",
+          "value": true
+        },
+        {
+          "type": "complete_deadline",
+          "deadline": "sample_preservation_deadline"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "sample_preservation_required"
+        }
+      ],
+      "time_cost_minutes": 60,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "obtain_blocking_decisions",
+      "title": "Collect every blocking decision",
+      "description": "Obtain the authority's farm-specific decisions, laboratory references, affected flock and product identifiers, dates, and restrictions for all twelve clients.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "immediate_containment"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "blocking_decisions_collected",
+            "value": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_flag",
+          "flag": "blocking_decisions_collected",
+          "value": true
+        },
+        {
+          "type": "make_evidence_available",
+          "evidence": "farm_blocking_decisions"
+        }
+      ],
+      "time_cost_minutes": 90,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "notify_cleaning_contractor",
+      "title": "Send formal written notice to the contractor",
+      "description": "Give the cleaning contractor immediate written notice of suspected harmful effects, reserve all rights, demand preservation, and identify the potentially affected farms.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "immediate_containment"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "contractor_notified",
+            "value": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_flag",
+          "flag": "contractor_notified",
+          "value": true
+        },
+        {
+          "type": "complete_deadline",
+          "deadline": "contractor_notice_deadline"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "contractor_notice_required"
+        }
+      ],
+      "time_cost_minutes": 60,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "notify_farm_insurers",
+      "title": "Notify farm and recall insurers",
+      "description": "Notify liability, business-interruption, product-contamination, legal-expenses, and livestock insurers without conceding source, fault, or loss allocation.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "immediate_containment"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "insurers_notified",
+            "value": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_flag",
+          "flag": "insurers_notified",
+          "value": true
+        },
+        {
+          "type": "complete_deadline",
+          "deadline": "insurance_notice_deadline"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "insurance_notice_required"
+        }
+      ],
+      "time_cost_minutes": 60,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "coordinate_recall_response",
+      "title": "Coordinate the recall without waiving claims",
+      "description": "Agree traceability, segregation, destruction records, retailer communications, and cost coding while expressly preserving causation and recovery positions.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "immediate_containment"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "recall_position_controlled",
+            "value": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_flag",
+          "flag": "recall_position_controlled",
+          "value": true
+        },
+        {
+          "type": "make_evidence_available",
+          "evidence": "retailer_recall_records"
+        },
+        {
+          "type": "complete_deadline",
+          "deadline": "retailer_recall_deadline"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "retailer_recall_demand"
+        }
+      ],
+      "time_cost_minutes": 180,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "request_product_composition_records",
+      "title": "Demand product-composition and registration records",
+      "description": "Demand all labels, safety data sheets, registration materials, ingredient records, supplier invoices, batch data, and communications about the treatment product.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "immediate_containment"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "product_records_requested",
+            "value": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_flag",
+          "flag": "product_records_requested",
+          "value": true
+        },
+        {
+          "type": "trigger_event",
+          "event": "contractor_denial_received"
+        }
+      ],
+      "time_cost_minutes": 60,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "retain_independent_residue_expert",
+      "title": "Retain an independent residue expert",
+      "description": "Commission a privileged preliminary assessment of likely contamination pathways, sample comparability, alternative sources, and the evidence needed for a common causation case.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "immediate_containment"
+          },
+          {
+            "type": "async_task_status_is",
+            "task": "preliminary_residue_assessment",
+            "status": "not_started"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "start_async_task",
+          "task": "preliminary_residue_assessment"
+        }
+      ],
+      "time_cost_minutes": 45,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "review_preliminary_residue_assessment",
+      "title": "Review the preliminary residue assessment",
+      "description": "Translate preliminary scientific findings into a legal causation matrix while preserving uncertainty, alternative-source analysis, and farm-specific differences.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "any",
+            "conditions": [
+              {
+                "type": "stage_is",
+                "stage": "immediate_containment"
+              },
+              {
+                "type": "stage_is",
+                "stage": "coordinated_claim_build"
+              }
+            ]
+          },
+          {
+            "type": "async_task_status_is",
+            "task": "preliminary_residue_assessment",
+            "status": "ready"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "review_async_task",
+          "task": "preliminary_residue_assessment"
+        },
+        {
+          "type": "make_evidence_available",
+          "evidence": "preliminary_residue_assessment_report"
+        },
+        {
+          "type": "set_fact_status",
+          "fact": "unauthorised_active_ingredient_present",
+          "status": "inferred"
+        },
+        {
+          "type": "set_fact_status",
+          "fact": "common_source_with_farm_specific_variation",
+          "status": "inferred"
+        },
+        {
+          "type": "set_flag",
+          "flag": "common_causation_model_built",
+          "value": true
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "residue_assessment_ready"
+        }
+      ],
+      "time_cost_minutes": 120,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "map_common_and_individual_losses",
+      "title": "Separate common liability from individual losses",
+      "description": "Build one common liability narrative while preserving farm-specific treatment dates, laboratory results, flock decisions, recall costs, lost production, mitigation, and own-fault issues.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "immediate_containment"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "blocking_decisions_collected",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "legal_hold_issued",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "loss_matrix_built",
+            "value": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_flag",
+          "flag": "loss_matrix_built",
+          "value": true
+        },
+        {
+          "type": "make_evidence_available",
+          "evidence": "farm_specific_loss_schedules"
+        },
+        {
+          "type": "set_fact_status",
+          "fact": "quality_control_differences",
+          "status": "inferred"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "group_claim_strategy"
+        }
+      ],
+      "time_cost_minutes": 180,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "prepare_protective_attachment_strategy",
+      "title": "Prepare a protective-attachment strategy",
+      "description": "Assess assets, insurance proceeds, proportionality, security exposure, and timing before seeking conservatory measures against the contractor or responsible principals.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "immediate_containment"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "contractor_notified",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "product_records_requested",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "common_causation_model_built",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "asset_strategy_prepared",
+            "value": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_flag",
+          "flag": "asset_strategy_prepared",
+          "value": true
+        }
+      ],
+      "time_cost_minutes": 120,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "prioritise_regulator_claim",
+      "title": "Prioritise a claim against the regulator",
+      "description": "Commit the emergency team to proving regulatory failure before securing the direct contract claim and source evidence. This may divert time from the strongest immediate defendant.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "immediate_containment"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "regulator_claim_prioritised",
+            "value": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_flag",
+          "flag": "regulator_claim_prioritised",
+          "value": true
+        },
+        {
+          "type": "make_evidence_available",
+          "evidence": "regulator_signal_timeline"
+        },
+        {
+          "type": "set_fact_status",
+          "fact": "regulator_received_earlier_signal",
+          "status": "alleged"
+        }
+      ],
+      "time_cost_minutes": 240,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "establish_coordinated_claim_protocol",
+      "title": "Establish the coordinated claim protocol",
+      "description": "Lock in common evidence, individual loss files, contractor notice, insurance, recall, expert work, and asset preservation under one controlled multi-client protocol.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "immediate_containment"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "legal_hold_issued",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "reference_samples_preserved",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "contractor_notified",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "insurers_notified",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "recall_position_controlled",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "blocking_decisions_collected",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "common_causation_model_built",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "loss_matrix_built",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "asset_strategy_prepared",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "regulator_claim_prioritised",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "sample_preservation_missed",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "contractor_notice_missed",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "insurance_notice_missed",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "retailer_recall_missed",
+            "value": false
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_flag",
+          "flag": "claim_protocol_established",
+          "value": true
+        },
+        {
+          "type": "trigger_event",
+          "event": "claim_protocol_established"
+        },
+        {
+          "type": "set_stage",
+          "stage": "coordinated_claim_build"
+        }
+      ],
+      "time_cost_minutes": 90,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "complete_coordinated_handoff",
+      "title": "Hand over a coordinated claim position",
+      "description": "Deliver the 72-hour handoff with samples, notices, recall records, causation, loss segmentation, insurance, and asset strategy preserved.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "coordinated_claim_build"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "handoff_window_open",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "claim_protocol_established",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "legal_hold_issued",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "reference_samples_preserved",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "contractor_notified",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "insurers_notified",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "recall_position_controlled",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "common_causation_model_built",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "loss_matrix_built",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "asset_strategy_prepared",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "samples_destroyed_without_reference",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "regulator_claim_prioritised",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "sample_preservation_missed",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "contractor_notice_missed",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "insurance_notice_missed",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "retailer_recall_missed",
+            "value": false
+          },
+          {
+            "type": "async_task_status_is",
+            "task": "preliminary_residue_assessment",
+            "status": "reviewed"
+          },
+          {
+            "type": "deadline_status_is",
+            "deadline": "sample_preservation_deadline",
+            "status": "completed"
+          },
+          {
+            "type": "deadline_status_is",
+            "deadline": "retailer_recall_deadline",
+            "status": "completed"
+          },
+          {
+            "type": "deadline_status_is",
+            "deadline": "contractor_notice_deadline",
+            "status": "completed"
+          },
+          {
+            "type": "deadline_status_is",
+            "deadline": "insurance_notice_deadline",
+            "status": "completed"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "resolve_inbox_item",
+          "item": "cooperative_emergency_call"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "coordinated_legal_hold_required"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "sample_preservation_required"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "contractor_notice_required"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "insurance_notice_required"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "group_claim_strategy"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "retailer_recall_demand"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "residue_assessment_ready"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "seventy_two_hour_handoff"
+        },
+        {
+          "type": "trigger_event",
+          "event": "matter_handed_over"
+        },
+        {
+          "type": "set_stage",
+          "stage": "handoff_complete"
+        },
+        {
+          "type": "resolve_outcome",
+          "outcome": "coordinated_claim_position"
+        }
+      ],
+      "time_cost_minutes": 60,
+      "repeatability": {
+        "type": "once"
+      }
+    },
+    {
+      "id": "complete_fragmented_handoff",
+      "title": "Hand over a fragmented claim position",
+      "description": "Close the first 72 hours with material weaknesses in samples, notice, recall, causation, multi-client loss proof, insurance, or defendant strategy.",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "any",
+            "conditions": [
+              {
+                "type": "stage_is",
+                "stage": "immediate_containment"
+              },
+              {
+                "type": "stage_is",
+                "stage": "coordinated_claim_build"
+              }
+            ]
+          },
+          {
+            "type": "flag_equals",
+            "flag": "handoff_window_open",
+            "value": true
+          },
+          {
+            "type": "any",
+            "conditions": [
+              {
+                "type": "flag_equals",
+                "flag": "claim_protocol_established",
+                "value": false
+              },
+              {
+                "type": "flag_equals",
+                "flag": "legal_hold_issued",
+                "value": false
+              },
+              {
+                "type": "flag_equals",
+                "flag": "reference_samples_preserved",
+                "value": false
+              },
+              {
+                "type": "flag_equals",
+                "flag": "contractor_notified",
+                "value": false
+              },
+              {
+                "type": "flag_equals",
+                "flag": "insurers_notified",
+                "value": false
+              },
+              {
+                "type": "flag_equals",
+                "flag": "recall_position_controlled",
+                "value": false
+              },
+              {
+                "type": "flag_equals",
+                "flag": "common_causation_model_built",
+                "value": false
+              },
+              {
+                "type": "flag_equals",
+                "flag": "loss_matrix_built",
+                "value": false
+              },
+              {
+                "type": "flag_equals",
+                "flag": "asset_strategy_prepared",
+                "value": false
+              },
+              {
+                "type": "flag_equals",
+                "flag": "samples_destroyed_without_reference",
+                "value": true
+              },
+              {
+                "type": "flag_equals",
+                "flag": "regulator_claim_prioritised",
+                "value": true
+              },
+              {
+                "type": "flag_equals",
+                "flag": "sample_preservation_missed",
+                "value": true
+              },
+              {
+                "type": "flag_equals",
+                "flag": "contractor_notice_missed",
+                "value": true
+              },
+              {
+                "type": "flag_equals",
+                "flag": "insurance_notice_missed",
+                "value": true
+              },
+              {
+                "type": "flag_equals",
+                "flag": "retailer_recall_missed",
+                "value": true
+              }
+            ]
+          },
+          {
+            "type": "any",
+            "conditions": [
+              {
+                "type": "deadline_status_is",
+                "deadline": "sample_preservation_deadline",
+                "status": "completed"
+              },
+              {
+                "type": "deadline_status_is",
+                "deadline": "sample_preservation_deadline",
+                "status": "missed"
+              }
+            ]
+          },
+          {
+            "type": "any",
+            "conditions": [
+              {
+                "type": "deadline_status_is",
+                "deadline": "retailer_recall_deadline",
+                "status": "completed"
+              },
+              {
+                "type": "deadline_status_is",
+                "deadline": "retailer_recall_deadline",
+                "status": "missed"
+              }
+            ]
+          },
+          {
+            "type": "any",
+            "conditions": [
+              {
+                "type": "deadline_status_is",
+                "deadline": "contractor_notice_deadline",
+                "status": "completed"
+              },
+              {
+                "type": "deadline_status_is",
+                "deadline": "contractor_notice_deadline",
+                "status": "missed"
+              }
+            ]
+          },
+          {
+            "type": "any",
+            "conditions": [
+              {
+                "type": "deadline_status_is",
+                "deadline": "insurance_notice_deadline",
+                "status": "completed"
+              },
+              {
+                "type": "deadline_status_is",
+                "deadline": "insurance_notice_deadline",
+                "status": "missed"
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "expire_async_task",
+          "task": "preliminary_residue_assessment"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "cooperative_emergency_call"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "coordinated_legal_hold_required"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "sample_preservation_required"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "contractor_notice_required"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "insurance_notice_required"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "group_claim_strategy"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "retailer_recall_demand"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "residue_assessment_ready"
+        },
+        {
+          "type": "resolve_inbox_item",
+          "item": "seventy_two_hour_handoff"
+        },
+        {
+          "type": "trigger_event",
+          "event": "matter_handed_over"
+        },
+        {
+          "type": "set_stage",
+          "stage": "handoff_complete"
+        },
+        {
+          "type": "resolve_outcome",
+          "outcome": "fragmented_claim_position"
+        }
+      ],
+      "time_cost_minutes": 60,
+      "repeatability": {
+        "type": "once"
+      }
+    }
+  ],
+  "deadlines": [
+    {
+      "id": "sample_preservation_deadline",
+      "title": "Preserve defensible reference samples",
+      "due_at": {
+        "day": 0,
+        "minute_of_day": 360
+      },
+      "completion_actions": [
+        "preserve_reference_samples",
+        "authorise_recall_without_reference_samples"
+      ],
+      "missed_event": "sample_preservation_missed"
+    },
+    {
+      "id": "retailer_recall_deadline",
+      "title": "Respond to retailer recall demands",
+      "due_at": {
+        "day": 0,
+        "minute_of_day": 720
+      },
+      "activation_event": "retailer_recall_demand_received",
+      "completion_actions": [
+        "coordinate_recall_response"
+      ],
+      "missed_event": "retailer_recall_missed"
+    },
+    {
+      "id": "contractor_notice_deadline",
+      "title": "Give formal written notice to the cleaning contractor",
+      "due_at": {
+        "day": 1,
+        "minute_of_day": 0
+      },
+      "completion_actions": [
+        "notify_cleaning_contractor"
+      ],
+      "missed_event": "contractor_notice_missed"
+    },
+    {
+      "id": "insurance_notice_deadline",
+      "title": "Notify potentially responsive insurers",
+      "due_at": {
+        "day": 1,
+        "minute_of_day": 360
+      },
+      "completion_actions": [
+        "notify_farm_insurers"
+      ],
+      "missed_event": "insurance_notice_missed"
+    }
+  ],
+  "async_tasks": [
+    {
+      "id": "preliminary_residue_assessment",
+      "title": "Preliminary residue-source and causation assessment",
+      "start_action": "retain_independent_residue_expert",
+      "completion_event": "residue_assessment_completed",
+      "duration_minutes": 720,
+      "usable_until_event": "handoff_window_opened",
+      "expiry_event": "residue_assessment_expired"
+    }
+  ],
+  "inbox_items": [
+    {
+      "id": "cooperative_emergency_call",
+      "subject": "URGENT: Twelve farms blocked before morning dispatch",
+      "body": "The cooperative reports food-authority blocking decisions, retailer recall demands, possible contaminated eggs, and a cleaning contractor denying prohibited ingredients.",
+      "initially_visible": true,
+      "action_required": true,
+      "resolution_actions": [
+        "accept_cooperative_mandate"
+      ]
+    },
+    {
+      "id": "coordinated_legal_hold_required",
+      "subject": "Preserve evidence across all member farms",
+      "body": "Treatment records, samples, laboratory data, invoices, retailer messages, quality files, and production records are distributed across twelve businesses and may be overwritten or discarded.",
+      "initially_visible": true,
+      "action_required": true,
+      "resolution_actions": [
+        "issue_coordinated_legal_hold"
+      ],
+      "expiry_event": "handoff_window_opened"
+    },
+    {
+      "id": "sample_preservation_required",
+      "subject": "Recall destruction may eliminate causation evidence",
+      "body": "Affected eggs and materials are being segregated for destruction. Independent reference samples and chain-of-custody records must be secured before the stock disappears.",
+      "initially_visible": true,
+      "action_required": true,
+      "resolution_actions": [
+        "preserve_reference_samples",
+        "authorise_recall_without_reference_samples"
+      ],
+      "expiry_event": "sample_preservation_missed"
+    },
+    {
+      "id": "contractor_notice_required",
+      "subject": "Contract documents mention a 24-hour harmful-effects notice",
+      "body": "The available work orders refer to online terms containing a short written-notice condition. Applicability and enforceability remain disputed, but delay creates avoidable risk.",
+      "initially_visible": true,
+      "action_required": true,
+      "resolution_actions": [
+        "notify_cleaning_contractor"
+      ],
+      "expiry_event": "contractor_notice_missed"
+    },
+    {
+      "id": "insurance_notice_required",
+      "subject": "Multiple farm and contamination policies may respond",
+      "body": "Coverage may exist for interruption, recall, livestock, legal expenses, or contamination. Late notice and inconsistent descriptions could trigger reservations.",
+      "initially_visible": true,
+      "action_required": true,
+      "resolution_actions": [
+        "notify_farm_insurers"
+      ],
+      "expiry_event": "insurance_notice_missed"
+    },
+    {
+      "id": "group_claim_strategy",
+      "subject": "One common case or twelve individual claims?",
+      "body": "The contractor treated every farm, but dates, doses, laboratory results, mitigation choices, losses, contract documents, and quality controls differ.",
+      "created_by_event": "cooperative_mandate_accepted",
+      "initially_visible": false,
+      "action_required": true,
+      "resolution_actions": [
+        "map_common_and_individual_losses"
+      ],
+      "expiry_event": "handoff_window_opened"
+    },
+    {
+      "id": "retailer_recall_demand",
+      "subject": "Retailers demand traceability and immediate recall confirmation",
+      "body": "Retailers require affected lot numbers, collection instructions, destruction records, and one public communication position before the next distribution cycle.",
+      "created_by_event": "retailer_recall_demand_received",
+      "initially_visible": false,
+      "action_required": true,
+      "resolution_actions": [
+        "coordinate_recall_response"
+      ],
+      "expiry_event": "retailer_recall_missed"
+    },
+    {
+      "id": "contractor_denial",
+      "subject": "Contractor denies using any unauthorised ingredient",
+      "body": "The contractor says the treatment was a natural aromatic mixture, refuses to identify the supplier, and invokes liability exclusions and a short notification clause.",
+      "created_by_event": "contractor_denial_received",
+      "initially_visible": false,
+      "action_required": false,
+      "resolution_actions": []
+    },
+    {
+      "id": "residue_assessment_ready",
+      "subject": "Preliminary residue assessment is ready",
+      "body": "The expert has mapped likely treatment pathways, identified evidentiary gaps, and separated common source indicators from farm-specific alternative explanations.",
+      "created_by_event": "residue_assessment_completed",
+      "initially_visible": false,
+      "action_required": true,
+      "resolution_actions": [
+        "review_preliminary_residue_assessment"
+      ],
+      "expiry_event": "residue_assessment_expired"
+    },
+    {
+      "id": "seventy_two_hour_handoff",
+      "subject": "Partner requests the 72-hour GoldenShell handoff",
+      "body": "Summarise sample custody, contractor notice, recall records, insurance, common causation, individual loss files, asset strategy, missed deadlines, and immediate litigation options.",
+      "created_by_event": "handoff_window_opened",
+      "initially_visible": false,
+      "action_required": true,
+      "resolution_actions": [
+        "complete_coordinated_handoff",
+        "complete_fragmented_handoff"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "cooperative_mandate_accepted",
+      "title": "Cooperative mandate accepted",
+      "kind": "generic",
+      "trigger": {
+        "type": "by_effect"
+      },
+      "effects": [
+        {
+          "type": "create_inbox_item",
+          "item": "group_claim_strategy"
+        }
+      ]
+    },
+    {
+      "id": "retailer_recall_demand_received",
+      "title": "Retailer recall demand received",
+      "kind": "generic",
+      "trigger": {
+        "type": "at_time",
+        "at": {
+          "day": 0,
+          "minute_of_day": 90
+        }
+      },
+      "effects": [
+        {
+          "type": "create_inbox_item",
+          "item": "retailer_recall_demand"
+        }
+      ]
+    },
+    {
+      "id": "contractor_denial_received",
+      "title": "Contractor denial received",
+      "kind": "generic",
+      "trigger": {
+        "type": "by_effect"
+      },
+      "effects": [
+        {
+          "type": "create_inbox_item",
+          "item": "contractor_denial"
+        }
+      ]
+    },
+    {
+      "id": "sample_preservation_missed",
+      "title": "Reference-sample deadline missed",
+      "kind": "generic",
+      "trigger": {
+        "type": "deadline_missed",
+        "deadline": "sample_preservation_deadline"
+      },
+      "effects": [
+        {
+          "type": "miss_deadline",
+          "deadline": "sample_preservation_deadline"
+        },
+        {
+          "type": "set_flag",
+          "flag": "sample_preservation_missed",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "retailer_recall_missed",
+      "title": "Retailer recall-response deadline missed",
+      "kind": "generic",
+      "trigger": {
+        "type": "deadline_missed",
+        "deadline": "retailer_recall_deadline"
+      },
+      "effects": [
+        {
+          "type": "miss_deadline",
+          "deadline": "retailer_recall_deadline"
+        },
+        {
+          "type": "set_flag",
+          "flag": "retailer_recall_missed",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "contractor_notice_missed",
+      "title": "Contractor notice deadline missed",
+      "kind": "generic",
+      "trigger": {
+        "type": "deadline_missed",
+        "deadline": "contractor_notice_deadline"
+      },
+      "effects": [
+        {
+          "type": "miss_deadline",
+          "deadline": "contractor_notice_deadline"
+        },
+        {
+          "type": "set_flag",
+          "flag": "contractor_notice_missed",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "insurance_notice_missed",
+      "title": "Insurance notice deadline missed",
+      "kind": "generic",
+      "trigger": {
+        "type": "deadline_missed",
+        "deadline": "insurance_notice_deadline"
+      },
+      "effects": [
+        {
+          "type": "miss_deadline",
+          "deadline": "insurance_notice_deadline"
+        },
+        {
+          "type": "set_flag",
+          "flag": "insurance_notice_missed",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "residue_assessment_completed",
+      "title": "Preliminary residue assessment completed",
+      "kind": "generic",
+      "trigger": {
+        "type": "async_task_completed",
+        "task": "preliminary_residue_assessment"
+      },
+      "effects": [
+        {
+          "type": "mark_async_task_ready",
+          "task": "preliminary_residue_assessment"
+        },
+        {
+          "type": "create_inbox_item",
+          "item": "residue_assessment_ready"
+        }
+      ]
+    },
+    {
+      "id": "residue_assessment_expired",
+      "title": "Residue assessment was not reviewed in time",
+      "kind": "generic",
+      "trigger": {
+        "type": "by_effect"
+      },
+      "condition": {
+        "type": "any",
+        "conditions": [
+          {
+            "type": "async_task_status_is",
+            "task": "preliminary_residue_assessment",
+            "status": "not_started"
+          },
+          {
+            "type": "async_task_status_is",
+            "task": "preliminary_residue_assessment",
+            "status": "in_progress"
+          },
+          {
+            "type": "async_task_status_is",
+            "task": "preliminary_residue_assessment",
+            "status": "ready"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "expire_async_task",
+          "task": "preliminary_residue_assessment"
+        }
+      ]
+    },
+    {
+      "id": "claim_protocol_established",
+      "title": "Coordinated claim protocol established",
+      "kind": "generic",
+      "trigger": {
+        "type": "by_effect"
+      },
+      "effects": []
+    },
+    {
+      "id": "handoff_window_opened",
+      "title": "Seventy-two-hour claim handoff window opened",
+      "kind": "generic",
+      "trigger": {
+        "type": "at_time",
+        "at": {
+          "day": 3,
+          "minute_of_day": 0
+        }
+      },
+      "effects": [
+        {
+          "type": "set_flag",
+          "flag": "handoff_window_open",
+          "value": true
+        },
+        {
+          "type": "create_inbox_item",
+          "item": "seventy_two_hour_handoff"
+        },
+        {
+          "type": "trigger_event",
+          "event": "residue_assessment_expired"
+        }
+      ]
+    },
+    {
+      "id": "matter_handed_over",
+      "title": "First 72 hours handed over",
+      "kind": "matter_closed",
+      "trigger": {
+        "type": "by_effect"
+      },
+      "effects": []
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "coordinated_claim_position",
+      "title": "Coordinated claim position",
+      "summary": "The first 72 hours end with reference samples preserved, the contractor and insurers notified, recall records controlled, a common causation model built, individual losses segmented, and an asset strategy ready. The wider GoldenShell dossier can proceed from a coherent liability and damages baseline.",
+      "terminal_stage": "handoff_complete",
+      "condition": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "flag_equals",
+            "flag": "claim_protocol_established",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "legal_hold_issued",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "reference_samples_preserved",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "contractor_notified",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "insurers_notified",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "recall_position_controlled",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "common_causation_model_built",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "loss_matrix_built",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "asset_strategy_prepared",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "samples_destroyed_without_reference",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "regulator_claim_prioritised",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "sample_preservation_missed",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "contractor_notice_missed",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "insurance_notice_missed",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "retailer_recall_missed",
+            "value": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "fragmented_claim_position",
+      "title": "Fragmented claim position",
+      "summary": "The first 72 hours end with material gaps in sample custody, notice, recall records, causation, insurance, loss segmentation, or defendant strategy. Later contract, mass-damages, regulatory, insurance, and criminal matters will inherit those weaknesses.",
+      "terminal_stage": "handoff_complete",
+      "condition": {
+        "type": "any",
+        "conditions": [
+          {
+            "type": "flag_equals",
+            "flag": "claim_protocol_established",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "legal_hold_issued",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "reference_samples_preserved",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "contractor_notified",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "insurers_notified",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "recall_position_controlled",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "common_causation_model_built",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "loss_matrix_built",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "asset_strategy_prepared",
+            "value": false
+          },
+          {
+            "type": "flag_equals",
+            "flag": "samples_destroyed_without_reference",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "regulator_claim_prioritised",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "sample_preservation_missed",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "contractor_notice_missed",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "insurance_notice_missed",
+            "value": true
+          },
+          {
+            "type": "flag_equals",
+            "flag": "retailer_recall_missed",
+            "value": true
+          }
+        ]
+      }
+    }
+  ]
+}

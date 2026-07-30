@@ -35,13 +35,14 @@ void main() {
       decoded as Map<String, dynamic>,
     );
 
-    expect(bundle.cases, hasLength(3));
+    expect(bundle.cases, hasLength(4));
     expect(
       bundle.cases.map((MobileCaseDefinition item) => item.caseId),
       containsAll(<String>[
         'be_commercial_failed_erp_001',
         'be_commercial_logistics_001',
         'greenfire_first_72_hours',
+        'nl_food_safety_goldenshell_001',
       ]),
     );
     expect(bundle.supportedLocales, containsAll(<String>['en', 'ru']));
@@ -58,6 +59,7 @@ void main() {
     expect(logistics.readiness.pathSimulation, isTrue);
     expect(logistics.readiness.engineRuntime, isTrue);
     expect(logistics.runtimeAdapter, 'rust_scenario_v1');
+    expect(logistics.scenario?['clock'], isNull);
 
     final MobileCaseDefinition greenfire = bundle.cases.singleWhere(
       (MobileCaseDefinition item) => item.caseId == 'greenfire_first_72_hours',
@@ -65,11 +67,31 @@ void main() {
     expect(greenfire.status, MobileCaseStatus.playable);
     expect(greenfire.scenarioAvailable, isTrue);
     expect(greenfire.scenario, isNotNull);
-    expect(greenfire.scenario?['actions'], hasLength(14));
+    expect(greenfire.scenario?['actions'], hasLength(13));
+    expect(greenfire.scenario?['clock'], <String, dynamic>{
+      'mode': 'foreground',
+    });
     expect(greenfire.readiness.diagnostics, isTrue);
     expect(greenfire.readiness.pathSimulation, isTrue);
     expect(greenfire.readiness.engineRuntime, isTrue);
     expect(greenfire.runtimeAdapter, 'rust_scenario_v1');
+
+    final MobileCaseDefinition goldenshell = bundle.cases.singleWhere(
+      (MobileCaseDefinition item) =>
+          item.caseId == 'nl_food_safety_goldenshell_001',
+    );
+    expect(goldenshell.status, MobileCaseStatus.playable);
+    expect(goldenshell.scenarioId, 'goldenshell_recall_at_dawn');
+    expect(goldenshell.scenarioAvailable, isTrue);
+    expect(goldenshell.scenario, isNotNull);
+    expect(goldenshell.scenario?['actions'], hasLength(17));
+    expect(goldenshell.scenario?['clock'], <String, dynamic>{
+      'mode': 'foreground',
+    });
+    expect(goldenshell.readiness.diagnostics, isTrue);
+    expect(goldenshell.readiness.pathSimulation, isTrue);
+    expect(goldenshell.readiness.engineRuntime, isTrue);
+    expect(goldenshell.runtimeAdapter, 'rust_scenario_v1');
   });
 
   testWidgets('case library renders all catalog scenarios', (
@@ -107,6 +129,20 @@ void main() {
       ),
       findsOneWidget,
     );
+
+    await tester.drag(
+      find.byKey(const PageStorageKey<String>('case-catalog')),
+      const Offset(0, -550),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'GoldenShell Producers Cooperative U.A. v. MiteGuard Services V.O.F.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Contaminated Egg Supply Chain'), findsOneWidget);
   });
 
   testWidgets(
@@ -124,6 +160,22 @@ void main() {
     expect(find.text('Неудачное внедрение ERP'), findsOneWidget);
     expect(
       find.text('Asteron Systems NV v. Northbridge Consulting BV'),
+      findsOneWidget,
+    );
+
+    for (int index = 0; index < 3; index += 1) {
+      await tester.drag(
+        find.byKey(const PageStorageKey<String>('case-catalog')),
+        const Offset(0, -550),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    expect(find.text('Загрязнение цепочки поставок яиц'), findsOneWidget);
+    expect(
+      find.text(
+        'GoldenShell Producers Cooperative U.A. v. MiteGuard Services V.O.F.',
+      ),
       findsOneWidget,
     );
   });

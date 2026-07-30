@@ -10,6 +10,26 @@ use serde::{Deserialize, Serialize};
 /// Current version understood by this schema crate.
 pub const SCENARIO_SCHEMA_VERSION_V1: &str = "1.0";
 
+/// How simulated time may advance for a scenario.
+///
+/// Action-driven remains the backward-compatible default. Foreground scenarios
+/// additionally accept explicit deterministic minute commands while the app is
+/// active.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ScenarioClockMode {
+    #[default]
+    ActionDriven,
+    Foreground,
+}
+
+/// Declarative clock policy for one scenario.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct ScenarioClockDefinition {
+    #[serde(default)]
+    pub mode: ScenarioClockMode,
+}
+
 /// Deterministic simulated time.
 ///
 /// Time is represented as a day plus minute-of-day instead of wall-clock
@@ -62,6 +82,9 @@ pub struct ScenarioDefinition {
     pub metadata: ScenarioMetadata,
     pub jurisdiction: JurisdictionReference,
     pub initial_stage: StageId,
+
+    #[serde(default)]
+    pub clock: ScenarioClockDefinition,
 
     #[serde(default)]
     pub actors: Vec<ActorDefinition>,

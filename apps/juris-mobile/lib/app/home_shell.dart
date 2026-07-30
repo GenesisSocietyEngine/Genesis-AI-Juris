@@ -19,10 +19,14 @@ import '../widgets/inbox_message_sheet.dart';
 /// windows switch to [NavigationRail] without changing the destination state.
 class HomeShell extends StatefulWidget {
   const HomeShell(
-      {required this.repository, this.onExitToCaseCatalog, super.key});
+      {required this.repository,
+      this.onExitToCaseCatalog,
+      this.enableLiveClockInTests = false,
+      super.key});
 
   final GameRuntimeRepository repository;
   final VoidCallback? onExitToCaseCatalog;
+  final bool enableLiveClockInTests;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -73,7 +77,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   void _startLiveClock() {
     _liveClockTimer?.cancel();
     _liveClockTimer = null;
-    if (_runningUnderFlutterTest ||
+    if ((_runningUnderFlutterTest && !widget.enableLiveClockInTests) ||
         _clockPaused ||
         !widget.repository.supportsLiveClock ||
         widget.repository.isTerminal) {
@@ -86,8 +90,10 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         if (!mounted ||
             _clockPaused ||
             _clockTickInProgress ||
+            !widget.repository.supportsLiveClock ||
             widget.repository.isTerminal) {
-          if (widget.repository.isTerminal) {
+          if (!widget.repository.supportsLiveClock ||
+              widget.repository.isTerminal) {
             timer.cancel();
             _liveClockTimer = null;
           }
@@ -97,6 +103,20 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         _clockTickInProgress = true;
         try {
           widget.repository.advanceTimeByMinutes(1);
+        } on Object catch (error) {
+          timer.cancel();
+          _liveClockTimer = null;
+          if (mounted) {
+            setState(() => _clockPaused = true);
+            final String message = widget.repository.clockErrorMessage ??
+                'Simulation clock stopped: $error';
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(message),
+                showCloseIcon: true,
+              ),
+            );
+          }
         } finally {
           _clockTickInProgress = false;
         }

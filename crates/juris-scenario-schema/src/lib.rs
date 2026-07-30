@@ -46,7 +46,7 @@ pub use inbox::InboxItemDefinition;
 pub use lifecycle::{JudicialResult, MatterLifecycleStatus};
 pub use outcome::OutcomeDefinition;
 pub use scenario::{
-    JurisdictionReference, ScenarioDefinition, ScenarioMetadata, ScenarioTime,
-    SCENARIO_SCHEMA_VERSION_V1,
+    JurisdictionReference, ScenarioClockDefinition, ScenarioClockMode, ScenarioDefinition,
+    ScenarioMetadata, ScenarioTime, SCENARIO_SCHEMA_VERSION_V1,
 };
 pub use stage::{StageDefinition, StageKind};

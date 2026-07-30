@@ -2,17 +2,18 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use juris_scenario_schema::{
     ActionDefinition, ActionRepeatability, AsyncTaskStatus, Condition, DeadlineStatus, Effect,
-    EventDefinition, EventTrigger, FactStatus, MatterLifecycleStatus, ScenarioDefinition,
-    StageKind,
+    EventDefinition, EventTrigger, FactStatus, MatterLifecycleStatus, ScenarioClockMode,
+    ScenarioDefinition, StageKind,
 };
 use serde_json::Value;
 
 use crate::{
-    ScenarioDocument, SimulationError, SimulationResult, SimulationState, SimulationStatus,
-    TraceEntry, TraceKind,
+    ScenarioDocument, ScenarioTraceCommand, SimulationError, SimulationResult, SimulationState,
+    SimulationStatus, TraceEntry, TraceKind,
 };
 
 const DEFAULT_MAX_AUTO_EVENTS: usize = 256;
+const MAX_FOREGROUND_ADVANCE_MINUTES: u32 = 1_440;
 
 #[derive(Clone, Debug)]
 struct RuntimeState {
@@ -139,16 +140,38 @@ impl ScenarioSimulator {
 
     /// Executes authored action IDs in the supplied order.
     pub fn run_actions(
-        mut self,
+        self,
         actions: &[String],
+        require_outcome: bool,
+    ) -> Result<SimulationResult, SimulationError> {
+        let commands = actions
+            .iter()
+            .map(|action_id| ScenarioTraceCommand::Dispatch {
+                action_id: action_id.clone(),
+            })
+            .collect::<Vec<_>>();
+        self.run_commands(&commands, require_outcome)
+    }
+
+    /// Executes a mixed deterministic sequence of action and time commands.
+    pub fn run_commands(
+        mut self,
+        commands: &[ScenarioTraceCommand],
         require_outcome: bool,
     ) -> Result<SimulationResult, SimulationError> {
         self.process_due_events()?;
 
-        for action in actions {
-            self.apply_action(action)?;
+        for command in commands {
+            match command {
+                ScenarioTraceCommand::Dispatch { action_id } => self.apply_action(action_id)?,
+                ScenarioTraceCommand::AdvanceTime { minutes } => self.advance_time(*minutes)?,
+            }
         }
 
+        self.finish(require_outcome)
+    }
+
+    fn finish(self, require_outcome: bool) -> Result<SimulationResult, SimulationError> {
         if self.is_terminal_stage(&self.state.stage) && self.state.resolved_outcome.is_none() {
             return Err(SimulationError::TerminalWithoutOutcome {
                 stage: self.state.stage.clone(),
@@ -167,6 +190,18 @@ impl ScenarioSimulator {
             },
             final_state: self.state,
             fired_events: self.fired_events.into_iter().collect(),
+            deadline_statuses: self
+                .runtime
+                .deadline_statuses
+                .into_iter()
+                .map(|(id, status)| (id, status.map(|value| format!("{value:?}").to_lowercase())))
+                .collect(),
+            async_task_statuses: self
+                .runtime
+                .task_statuses
+                .into_iter()
+                .map(|(id, status)| (id, format!("{status:?}").to_lowercase()))
+                .collect(),
             trace: self.trace,
         })
     }
@@ -203,14 +238,6 @@ impl ScenarioSimulator {
             .action_uses
             .entry(action_id.to_owned())
             .or_default() += 1;
-        self.state.clock_minutes = self
-            .state
-            .clock_minutes
-            .checked_add(u64::from(action.time_cost_minutes))
-            .ok_or_else(|| SimulationError::ClockOverflow {
-                owner: action_id.to_owned(),
-            })?;
-
         for event in &self.definition.events {
             if matches!(
                 &event.trigger,
@@ -219,7 +246,11 @@ impl ScenarioSimulator {
                 queued_events.push_back(event.id.as_str().to_owned());
             }
         }
-        self.queue_due_events(&mut queued_events)?;
+        self.advance_clock_by(
+            action.time_cost_minutes,
+            queued_events,
+            &format!("action `{action_id}`"),
+        )?;
 
         self.trace.push(TraceEntry {
             sequence: self.trace.len(),
@@ -228,7 +259,111 @@ impl ScenarioSimulator {
             state_before: before,
             state_after: self.state.clone(),
         });
-        self.process_event_queue(queued_events)
+        Ok(())
+    }
+
+    fn advance_time(&mut self, minutes: u32) -> Result<(), SimulationError> {
+        if self.is_terminal_stage(&self.state.stage) || self.state.resolved_outcome.is_some() {
+            return Err(SimulationError::ActionAfterTerminal {
+                action: "advance_time".to_owned(),
+                stage: self.state.stage.clone(),
+            });
+        }
+        if self.definition.clock.mode != ScenarioClockMode::Foreground {
+            return Err(SimulationError::ClockAdvanceUnsupported);
+        }
+        if minutes == 0 {
+            return Err(SimulationError::InvalidClockAdvance);
+        }
+        if minutes > MAX_FOREGROUND_ADVANCE_MINUTES {
+            return Err(SimulationError::ClockAdvanceLimitExceeded {
+                requested: minutes,
+                maximum: MAX_FOREGROUND_ADVANCE_MINUTES,
+            });
+        }
+
+        let before = self.state.clone();
+        self.advance_clock_by(minutes, VecDeque::new(), "advance_time")?;
+        self.trace.push(TraceEntry {
+            sequence: self.trace.len(),
+            kind: TraceKind::AdvanceTime,
+            id: minutes.to_string(),
+            state_before: before,
+            state_after: self.state.clone(),
+        });
+        Ok(())
+    }
+
+    fn advance_clock_by(
+        &mut self,
+        minutes: u32,
+        final_events: VecDeque<String>,
+        owner: &str,
+    ) -> Result<(), SimulationError> {
+        let target = self
+            .state
+            .clock_minutes
+            .checked_add(u64::from(minutes))
+            .ok_or_else(|| SimulationError::ClockOverflow {
+                owner: owner.to_owned(),
+            })?;
+
+        if self.is_terminal_stage(&self.state.stage) || self.state.resolved_outcome.is_some() {
+            self.state.clock_minutes = target;
+            return Ok(());
+        }
+
+        while let Some(boundary) = self.next_temporal_boundary_before(target) {
+            self.state.clock_minutes = boundary;
+            let mut due_events = VecDeque::new();
+            self.queue_due_events(&mut due_events)?;
+            self.process_event_queue(due_events)?;
+            if self.is_terminal_stage(&self.state.stage) || self.state.resolved_outcome.is_some() {
+                return Ok(());
+            }
+        }
+
+        self.state.clock_minutes = target;
+        let mut events = final_events;
+        self.queue_due_events(&mut events)?;
+        self.process_event_queue(events)
+    }
+
+    fn next_temporal_boundary_before(&self, target: u64) -> Option<u64> {
+        let current = self.state.clock_minutes;
+        let at_time = self.definition.events.iter().filter_map(|event| {
+            if self.fired_events.contains(event.id.as_str()) {
+                return None;
+            }
+            match event.trigger {
+                EventTrigger::AtTime { at } => Some(scenario_time_minutes(at)),
+                _ => None,
+            }
+        });
+        let async_tasks = self
+            .runtime
+            .task_due_minutes
+            .iter()
+            .filter_map(|(task_id, due)| {
+                (self.runtime.task_statuses.get(task_id) == Some(&AsyncTaskStatus::InProgress))
+                    .then_some(*due)
+            });
+        let deadlines = self.definition.deadlines.iter().filter_map(|deadline| {
+            (self
+                .runtime
+                .deadline_statuses
+                .get(deadline.id.as_str())
+                .copied()
+                .flatten()
+                == Some(DeadlineStatus::Open))
+            .then_some(scenario_time_minutes(deadline.due_at))
+        });
+
+        at_time
+            .chain(async_tasks)
+            .chain(deadlines)
+            .filter(|boundary| *boundary > current && *boundary < target)
+            .min()
     }
 
     fn process_due_events(&mut self) -> Result<(), SimulationError> {

@@ -45,6 +45,16 @@ fn reference_fixture_passes_temporal_and_outcome_diagnostics() {
 }
 
 #[test]
+fn foreground_scenario_needs_no_synthetic_waiting_action() {
+    let path = repository_root().join("content/cases/greenfire_first_72_hours.scenario.json");
+    let definition: ScenarioDefinition = serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
+    assert_eq!(definition.actions.len(), 13);
+
+    let report = validate_authoring_semantics(&definition);
+    assert!(report.is_valid(), "{:#?}", report.diagnostics());
+}
+
+#[test]
 fn invalid_minute_of_day_is_rejected_for_events() {
     let mut value = fixture_value();
     push(

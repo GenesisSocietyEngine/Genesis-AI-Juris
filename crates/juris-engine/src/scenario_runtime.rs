@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use juris_scenario_schema::{
     ActionDefinition, ActionRepeatability, AsyncTaskStatus, Condition, DeadlineStatus, Effect,
     EventDefinition, EventTrigger, FactStatus, JudicialResult, MatterLifecycleStatus,
-    ScenarioDefinition,
+    ScenarioClockMode, ScenarioDefinition,
 };
 use juris_scenario_validator::validate_scenario;
 use serde::Serialize;
@@ -18,6 +18,7 @@ use thiserror::Error;
 
 const SNAPSHOT_SCHEMA_VERSION: u32 = 1;
 const MAX_EVENTS_PER_COMMAND: usize = 256;
+pub const MAX_FOREGROUND_ADVANCE_MINUTES: u32 = 1_440;
 
 /// Errors returned by the generic scenario runtime.
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -33,6 +34,15 @@ pub enum ScenarioRuntimeError {
 
     #[error("action `{0}` is not currently available")]
     ActionUnavailable(String),
+
+    #[error("foreground clock advancement is not enabled for this scenario")]
+    ClockAdvanceUnsupported,
+
+    #[error("clock advancement must be greater than zero minutes")]
+    InvalidClockAdvance,
+
+    #[error("clock advancement of {requested} minutes exceeds the per-command limit of {maximum}")]
+    ClockAdvanceLimitExceeded { requested: u32, maximum: u32 },
 
     #[error("event `{0}` does not exist")]
     UnknownEvent(String),
@@ -134,6 +144,7 @@ pub struct MobileScenarioSnapshot {
     pub is_closed: bool,
     pub resolved_outcome: Option<String>,
     /// Backward-compatible alias for `is_closed`.
+    pub clock_mode: String,
     pub terminal: bool,
     pub flags: BTreeMap<String, bool>,
     pub facts: Vec<MobileFactSnapshot>,
@@ -361,6 +372,7 @@ impl ScenarioSession {
             matter_lifecycle,
             is_closed,
             resolved_outcome: self.state.outcome_id.clone(),
+            clock_mode: clock_mode_name(self.definition.clock.mode).to_owned(),
             terminal: is_closed,
             flags: self.state.flags.clone(),
             facts,
@@ -397,12 +409,6 @@ impl ScenarioSession {
             .action_uses
             .entry(action_id.to_owned())
             .or_default() += 1;
-        self.state.clock_minutes = self
-            .state
-            .clock_minutes
-            .checked_add(u64::from(action.time_cost_minutes))
-            .ok_or(ScenarioRuntimeError::ClockOverflow)?;
-
         let mut events = VecDeque::new();
         for event in &self.definition.events {
             if matches!(
@@ -413,10 +419,112 @@ impl ScenarioSession {
                 events.push_back(event.id.as_str().to_owned());
             }
         }
-        self.queue_due_events(&mut events);
-        self.process_event_queue(events)?;
+        self.advance_clock_by(action.time_cost_minutes, events)?;
 
         Ok(self.snapshot())
+    }
+
+    /// Advances an eligible foreground scenario by deterministic simulated
+    /// minutes and returns the resulting authoritative snapshot.
+    pub fn advance_time(
+        &mut self,
+        minutes: u32,
+    ) -> Result<MobileScenarioSnapshot, ScenarioRuntimeError> {
+        if self.is_closed() {
+            return Err(ScenarioRuntimeError::ScenarioResolved);
+        }
+        if self.definition.clock.mode != ScenarioClockMode::Foreground {
+            return Err(ScenarioRuntimeError::ClockAdvanceUnsupported);
+        }
+        if minutes == 0 {
+            return Err(ScenarioRuntimeError::InvalidClockAdvance);
+        }
+        if minutes > MAX_FOREGROUND_ADVANCE_MINUTES {
+            return Err(ScenarioRuntimeError::ClockAdvanceLimitExceeded {
+                requested: minutes,
+                maximum: MAX_FOREGROUND_ADVANCE_MINUTES,
+            });
+        }
+
+        self.advance_clock_by(minutes, VecDeque::new())?;
+        Ok(self.snapshot())
+    }
+
+    /// Shared deterministic boundary processor used by action costs and
+    /// explicit foreground-time commands.
+    ///
+    /// At each minute boundary, due consequences are queued in definition
+    /// order with this category priority: AtTime events, async completions,
+    /// then deadline misses.
+    fn advance_clock_by(
+        &mut self,
+        minutes: u32,
+        final_events: VecDeque<String>,
+    ) -> Result<(), ScenarioRuntimeError> {
+        let target = self
+            .state
+            .clock_minutes
+            .checked_add(u64::from(minutes))
+            .ok_or(ScenarioRuntimeError::ClockOverflow)?;
+
+        // An action may resolve the scenario in its effects. Its declared time
+        // cost still belongs to that action, but no later temporal event fires.
+        if self.is_closed() {
+            self.state.clock_minutes = target;
+            return Ok(());
+        }
+
+        while let Some(boundary) = self.next_temporal_boundary_before(target) {
+            self.state.clock_minutes = boundary;
+            let mut due_events = VecDeque::new();
+            self.queue_due_events(&mut due_events);
+            self.process_event_queue(due_events)?;
+            if self.is_closed() {
+                return Ok(());
+            }
+        }
+
+        self.state.clock_minutes = target;
+        let mut events = final_events;
+        self.queue_due_events(&mut events);
+        self.process_event_queue(events)
+    }
+
+    fn next_temporal_boundary_before(&self, target: u64) -> Option<u64> {
+        let current = self.state.clock_minutes;
+        let at_time = self.definition.events.iter().filter_map(|event| {
+            if self.state.fired_events.contains(event.id.as_str()) {
+                return None;
+            }
+            match event.trigger {
+                EventTrigger::AtTime { at } => Some(scenario_time_minutes(at)),
+                _ => None,
+            }
+        });
+        let async_tasks = self
+            .state
+            .task_due_minutes
+            .iter()
+            .filter_map(|(task_id, due)| {
+                (self.state.task_statuses.get(task_id) == Some(&AsyncTaskStatus::InProgress))
+                    .then_some(*due)
+            });
+        let deadlines = self.definition.deadlines.iter().filter_map(|deadline| {
+            (self
+                .state
+                .deadline_statuses
+                .get(deadline.id.as_str())
+                .copied()
+                .flatten()
+                == Some(DeadlineStatus::Open))
+            .then_some(scenario_time_minutes(deadline.due_at))
+        });
+
+        at_time
+            .chain(async_tasks)
+            .chain(deadlines)
+            .filter(|boundary| *boundary > current && *boundary < target)
+            .min()
     }
 
     fn available_actions(&self) -> Vec<MobileActionSnapshot> {
@@ -872,6 +980,17 @@ impl ScenarioSessionRegistry {
             .dispatch(action_id)
     }
 
+    pub fn advance_time(
+        &mut self,
+        id: ScenarioSessionId,
+        minutes: u32,
+    ) -> Result<MobileScenarioSnapshot, ScenarioRuntimeError> {
+        self.sessions
+            .get_mut(&id)
+            .ok_or(ScenarioRuntimeError::UnknownSession(id.0))?
+            .advance_time(minutes)
+    }
+
     pub fn dispose(&mut self, id: ScenarioSessionId) -> bool {
         self.sessions.remove(&id).is_some()
     }
@@ -920,5 +1039,12 @@ fn deadline_status_name(status: DeadlineStatus) -> &'static str {
         DeadlineStatus::Open => "open",
         DeadlineStatus::Completed => "completed",
         DeadlineStatus::Missed => "missed",
+    }
+}
+
+fn clock_mode_name(mode: ScenarioClockMode) -> &'static str {
+    match mode {
+        ScenarioClockMode::ActionDriven => "action_driven",
+        ScenarioClockMode::Foreground => "foreground",
     }
 }

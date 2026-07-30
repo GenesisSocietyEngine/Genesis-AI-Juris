@@ -84,10 +84,21 @@ void main(List<String> arguments) {
 
     final Map<String, dynamic> readiness = _object(
         caseConfig['readiness'] ?? <String, dynamic>{}, '$caseId.readiness');
+    final Map<String, dynamic>? scenarioSource = scenarioAvailable
+        ? _readObject(File(_join(repository.path, scenarioRelative)))
+        : null;
     final Map<String, dynamic>? scenarioDefinition =
-        readiness['engine_runtime'] == true && scenarioRelative != null
-            ? _readObject(File(_join(repository.path, scenarioRelative)))
-            : null;
+        readiness['engine_runtime'] == true ? scenarioSource : null;
+    final String scenarioId = scenarioDefinition == null
+        ? caseId
+        : _requireString(
+            _object(
+              scenarioDefinition['metadata'],
+              '$caseId.scenario.metadata',
+            ),
+            'id',
+          );
+    _validateStableId(scenarioId, '$caseId.scenario_id');
     final Map<String, dynamic> localeSource =
         _object(caseConfig['locales'], '$caseId.locales');
     final Map<String, dynamic> localizedOutput = <String, dynamic>{};
@@ -130,7 +141,7 @@ void main(List<String> arguments) {
 
     exportedCases.add(<String, dynamic>{
       'case_id': caseId,
-      'scenario_id': caseId,
+      'scenario_id': scenarioId,
       'sort_order': _requireInt(caseConfig, 'sort_order'),
       'seed': _requireInt(caseConfig, 'seed'),
       'status': _requireString(entry, 'status'),

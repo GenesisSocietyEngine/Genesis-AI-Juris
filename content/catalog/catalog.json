@@ -40,6 +40,19 @@
       "player_client_id": "greenfire_industrial_solutions",
       "identity_file": "content/catalog/cases/greenfire_first_72_hours.identity.json",
       "scenario_file": "content/cases/greenfire_first_72_hours.scenario.json"
+    },
+    {
+      "case_id": "nl_food_safety_goldenshell_001",
+      "caption": "GoldenShell Producers Cooperative U.A. v. MiteGuard Services V.O.F.",
+      "topic": "Contaminated Egg Supply Chain",
+      "short_title": "Recall at Dawn",
+      "jurisdiction": "NL",
+      "practice_area": "commercial_litigation",
+      "difficulty": "advanced",
+      "status": "playable",
+      "player_client_id": "goldenshell_producers_cooperative",
+      "identity_file": "content/catalog/cases/goldenshell_recall_at_dawn.identity.json",
+      "scenario_file": "content/cases/goldenshell_recall_at_dawn.scenario.json"
     }
   ]
 }
