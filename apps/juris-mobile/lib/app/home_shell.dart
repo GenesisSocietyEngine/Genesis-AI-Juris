@@ -43,6 +43,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   Timer? _liveClockTimer;
   bool _clockPaused = false;
   bool _clockTickInProgress = false;
+  bool _persistenceInProgress = false;
   int _openModalCount = 0;
   SimulationClockSpeed _clockSpeed = SimulationClockSpeed.standard;
 
@@ -152,7 +153,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     if (visible) {
       _liveClockTimer?.cancel();
       _liveClockTimer = null;
-    } else if (_openModalCount == 0) {
+    } else if (_openModalCount == 0 && mounted) {
       _startLiveClock();
     }
   }
@@ -241,7 +242,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                             'Back to case library',
                             'Назад в библиотеку дел',
                           ),
-                          onPressed: widget.onExitToCaseCatalog,
+                          onPressed: _persistenceInProgress
+                              ? null
+                              : widget.onExitToCaseCatalog,
                           icon: const Icon(Icons.arrow_back),
                         ),
                   title: Column(
@@ -269,6 +272,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                               '${_clockSpeed.gameMinutesPerRealMinute} game min / real min',
                       initialValue: _clockSpeed,
                       enabled: widget.repository.supportsLiveClock &&
+                          !_persistenceInProgress &&
                           !widget.repository.isTerminal,
                       onSelected: _selectClockSpeed,
                       itemBuilder: (BuildContext context) =>
@@ -328,6 +332,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                               'Приостановить игровые часы',
                             ),
                       onPressed: widget.repository.supportsLiveClock &&
+                              !_persistenceInProgress &&
                               !widget.repository.isTerminal
                           ? _toggleClock
                           : null,
@@ -337,54 +342,112 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                             : Icons.pause_circle_outline,
                       ),
                     ),
+                    PopupMenuButton<_PersistenceAction>(
+                      key: const ValueKey<String>('save-load-menu'),
+                      tooltip: GameplayLocale.text(
+                        context,
+                        'Saved game',
+                        'Сохранённая игра',
+                      ),
+                      enabled: widget.repository.supportsPersistence &&
+                          !_persistenceInProgress,
+                      onSelected: (_PersistenceAction action) {
+                        switch (action) {
+                          case _PersistenceAction.save:
+                            _saveGame();
+                            break;
+                          case _PersistenceAction.load:
+                            _confirmLoadGame();
+                            break;
+                        }
+                      },
+                      itemBuilder: (BuildContext context) =>
+                          <PopupMenuEntry<_PersistenceAction>>[
+                        PopupMenuItem<_PersistenceAction>(
+                          key: const ValueKey<String>('save-game-action'),
+                          value: _PersistenceAction.save,
+                          child: ListTile(
+                            leading: const Icon(Icons.save_outlined),
+                            title: Text(
+                              GameplayLocale.text(
+                                context,
+                                'Save game',
+                                'Сохранить игру',
+                              ),
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem<_PersistenceAction>(
+                          key: const ValueKey<String>('load-game-action'),
+                          value: _PersistenceAction.load,
+                          child: ListTile(
+                            leading: const Icon(Icons.restore_page_outlined),
+                            title: Text(
+                              GameplayLocale.text(
+                                context,
+                                'Load game',
+                                'Загрузить игру',
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      icon: _persistenceInProgress
+                          ? const Icon(Icons.hourglass_top)
+                          : const Icon(Icons.save_outlined),
+                    ),
                     IconButton(
                       tooltip: GameplayLocale.text(
                         context,
                         'Reset deterministic demo',
                         'Сбросить прохождение',
                       ),
-                      onPressed: _confirmReset,
+                      onPressed: _persistenceInProgress ? null : _confirmReset,
                       icon: const Icon(Icons.restart_alt),
                     ),
                     const SizedBox(width: 8),
                   ],
                 ),
-                body: useRail
-                    ? Row(
-                        children: <Widget>[
-                          NavigationRail(
-                            selectedIndex: _selectedIndex,
-                            onDestinationSelected: _selectDestination,
-                            labelType: NavigationRailLabelType.all,
-                            leading: Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: _MatterMonogram(
-                                requiredMessages:
-                                    snapshot.unhandledRequiredMessages,
+                body: AbsorbPointer(
+                  absorbing: _persistenceInProgress,
+                  child: useRail
+                      ? Row(
+                          children: <Widget>[
+                            NavigationRail(
+                              selectedIndex: _selectedIndex,
+                              onDestinationSelected: _selectDestination,
+                              labelType: NavigationRailLabelType.all,
+                              leading: Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _MatterMonogram(
+                                  requiredMessages:
+                                      snapshot.unhandledRequiredMessages,
+                                ),
                               ),
+                              destinations: destinations
+                                  .map(
+                                    (_Destination destination) =>
+                                        NavigationRailDestination(
+                                      icon: Icon(destination.icon),
+                                      selectedIcon:
+                                          Icon(destination.selectedIcon),
+                                      label: Text(destination.label),
+                                    ),
+                                  )
+                                  .toList(growable: false),
                             ),
-                            destinations: destinations
-                                .map(
-                                  (_Destination destination) =>
-                                      NavigationRailDestination(
-                                    icon: Icon(destination.icon),
-                                    selectedIcon:
-                                        Icon(destination.selectedIcon),
-                                    label: Text(destination.label),
-                                  ),
-                                )
-                                .toList(growable: false),
-                          ),
-                          const VerticalDivider(width: 1),
-                          Expanded(child: content),
-                        ],
-                      )
-                    : content,
+                            const VerticalDivider(width: 1),
+                            Expanded(child: content),
+                          ],
+                        )
+                      : content,
+                ),
                 bottomNavigationBar: useRail
                     ? null
                     : NavigationBar(
                         selectedIndex: _selectedIndex,
-                        onDestinationSelected: _selectDestination,
+                        onDestinationSelected:
+                            _persistenceInProgress ? null : _selectDestination,
                         destinations: destinations
                             .map(
                               (_Destination destination) =>
@@ -404,17 +467,18 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                             )
                             .toList(growable: false),
                       ),
-                floatingActionButton: snapshot.actions.isEmpty
-                    ? null
-                    : FloatingActionButton.extended(
-                        onPressed: () => _showActions(snapshot),
-                        icon: const Icon(
-                            Icons.playlist_add_check_circle_outlined),
-                        label: Text(
-                          '${GameplayLocale.text(context, 'Actions', 'Действия')}'
-                          ' · ${snapshot.actions.length}',
-                        ),
-                      ),
+                floatingActionButton:
+                    snapshot.actions.isEmpty || _persistenceInProgress
+                        ? null
+                        : FloatingActionButton.extended(
+                            onPressed: () => _showActions(snapshot),
+                            icon: const Icon(
+                                Icons.playlist_add_check_circle_outlined),
+                            label: Text(
+                              '${GameplayLocale.text(context, 'Actions', 'Действия')}'
+                              ' · ${snapshot.actions.length}',
+                            ),
+                          ),
               );
             },
           ),
@@ -712,7 +776,168 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       _startLiveClock();
     }
   }
+
+  Future<void> _saveGame() async {
+    if (_persistenceInProgress) {
+      return;
+    }
+    setState(() => _persistenceInProgress = true);
+    _setModalVisible(true);
+    try {
+      await widget.repository.saveGame();
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              _localized(
+                'Game saved successfully.',
+                'Игра успешно сохранена.',
+              ),
+            ),
+            showCloseIcon: true,
+          ),
+        );
+    } on GamePersistenceException catch (error) {
+      _showPersistenceError(error);
+    } on Object catch (error) {
+      _showPersistenceError(
+        GamePersistenceException(
+          code: 'save_failed',
+          message: error.toString(),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _persistenceInProgress = false);
+      }
+      _setModalVisible(false);
+    }
+  }
+
+  Future<void> _confirmLoadGame() async {
+    if (_persistenceInProgress) {
+      return;
+    }
+    setState(() => _persistenceInProgress = true);
+    _setModalVisible(true);
+    try {
+      final bool? confirmed = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
+          title: Text(
+            _localized(
+              'Load saved game?',
+              'Загрузить сохранённую игру?',
+            ),
+          ),
+          content: Text(
+            _localized(
+              'Current unsaved progress will be replaced only after the saved game passes compatibility and integrity checks.',
+              'Текущий несохранённый прогресс будет заменён только после проверки совместимости и целостности сохранения.',
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              key: const ValueKey<String>('cancel-load-game'),
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                _localized('Cancel', 'Отмена'),
+              ),
+            ),
+            FilledButton(
+              key: const ValueKey<String>('confirm-load-game'),
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                _localized('Load', 'Загрузить'),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) {
+        return;
+      }
+
+      await widget.repository.loadGame();
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              _localized(
+                'Saved game loaded.',
+                'Сохранённая игра загружена.',
+              ),
+            ),
+            showCloseIcon: true,
+          ),
+        );
+    } on GamePersistenceException catch (error) {
+      _showPersistenceError(error);
+    } on Object catch (error) {
+      _showPersistenceError(
+        GamePersistenceException(
+          code: 'load_failed',
+          message: error.toString(),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _persistenceInProgress = false);
+      }
+      _setModalVisible(false);
+    }
+  }
+
+  void _showPersistenceError(GamePersistenceException error) {
+    if (!mounted) {
+      return;
+    }
+    final bool russian = widget.locale == 'ru';
+    final String message = switch (error.code) {
+      'save_not_found' =>
+        russian ? 'Сохранённая игра не найдена.' : 'No saved game was found.',
+      'unknown_save_schema' ||
+      'unknown_save_schema_version' ||
+      'incompatible_runtime' ||
+      'unknown_save_scenario' ||
+      'scenario_fingerprint_mismatch' =>
+        russian
+            ? 'Сохранение несовместимо с текущей версией сценария.'
+            : 'The save is incompatible with this scenario version.',
+      'invalid_save_json' ||
+      'unknown_save_command' ||
+      'unknown_save_action' ||
+      'invalid_save_time_advance' ||
+      'illegal_save_command_sequence' ||
+      'save_integrity_mismatch' =>
+        russian
+            ? 'Сохранение повреждено и не было загружено.'
+            : 'The save is corrupted and was not loaded.',
+      _ => error.message,
+    };
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          showCloseIcon: true,
+        ),
+      );
+  }
+
+  String _localized(String english, String russian) =>
+      widget.locale == 'ru' ? russian : english;
 }
+
+enum _PersistenceAction { save, load }
 
 class _Destination {
   const _Destination(this.id, this.label, this.icon, this.selectedIcon);

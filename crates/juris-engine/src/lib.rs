@@ -29,8 +29,9 @@ mod scenario_runtime;
 
 pub use scenario_runtime::{
     MobileActionSnapshot, MobileDeadlineSnapshot, MobileEvidenceSnapshot, MobileFactSnapshot,
-    MobileInboxSnapshot, MobileOutcomeSnapshot, MobileScenarioSnapshot, ScenarioRuntimeError,
-    ScenarioSession, ScenarioSessionId, ScenarioSessionRegistry,
+    MobileInboxSnapshot, MobileOutcomeSnapshot, MobileScenarioSnapshot, ScenarioCommand,
+    ScenarioRuntimeError, ScenarioSaveEnvelope, ScenarioSaveError, ScenarioSession,
+    ScenarioSessionId, ScenarioSessionRegistry, SAVE_SCHEMA_ID, SAVE_SCHEMA_VERSION,
 };
 
 /// Errors returned when a presentation layer submits an invalid intention.

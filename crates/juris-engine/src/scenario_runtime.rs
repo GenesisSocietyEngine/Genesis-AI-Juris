@@ -15,6 +15,12 @@ use juris_scenario_validator::validate_scenario;
 use serde::Serialize;
 use thiserror::Error;
 
+mod persistence;
+
+pub use persistence::{
+    ScenarioCommand, ScenarioSaveEnvelope, ScenarioSaveError, SAVE_SCHEMA_ID, SAVE_SCHEMA_VERSION,
+};
+
 const SNAPSHOT_SCHEMA_VERSION: u32 = 1;
 const MAX_EVENTS_PER_COMMAND: usize = 256;
 pub const MAX_FOREGROUND_ADVANCE_MINUTES: u32 = 1_440;
@@ -175,6 +181,7 @@ pub struct ScenarioSession {
     seed: u64,
     definition: ScenarioDefinition,
     state: ScenarioRuntimeState,
+    command_log: Vec<ScenarioCommand>,
 }
 
 impl ScenarioSession {
@@ -252,6 +259,7 @@ impl ScenarioSession {
                 outcome_id: None,
             },
             definition,
+            command_log: Vec::new(),
         };
 
         let mut initial_events = VecDeque::new();
@@ -383,6 +391,19 @@ impl ScenarioSession {
         &mut self,
         action_id: &str,
     ) -> Result<MobileScenarioSnapshot, ScenarioRuntimeError> {
+        let mut candidate = self.clone();
+        candidate.command_log.push(ScenarioCommand::Dispatch {
+            action_id: action_id.to_owned(),
+        });
+        let snapshot = candidate.dispatch_unlogged(action_id)?;
+        *self = candidate;
+        Ok(snapshot)
+    }
+
+    fn dispatch_unlogged(
+        &mut self,
+        action_id: &str,
+    ) -> Result<MobileScenarioSnapshot, ScenarioRuntimeError> {
         if self.is_terminal() {
             return Err(ScenarioRuntimeError::ScenarioResolved);
         }
@@ -420,6 +441,19 @@ impl ScenarioSession {
     /// Advances an eligible foreground scenario by deterministic simulated
     /// minutes and returns the resulting authoritative snapshot.
     pub fn advance_time(
+        &mut self,
+        minutes: u32,
+    ) -> Result<MobileScenarioSnapshot, ScenarioRuntimeError> {
+        let mut candidate = self.clone();
+        candidate
+            .command_log
+            .push(ScenarioCommand::AdvanceTime { minutes });
+        let snapshot = candidate.advance_time_unlogged(minutes)?;
+        *self = candidate;
+        Ok(snapshot)
+    }
+
+    fn advance_time_unlogged(
         &mut self,
         minutes: u32,
     ) -> Result<MobileScenarioSnapshot, ScenarioRuntimeError> {

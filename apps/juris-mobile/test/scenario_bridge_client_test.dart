@@ -20,7 +20,7 @@ void main() {
     expect(decoded['scenario']['metadata']['id'], 'scenario_001');
   });
 
-  test('dispatch, time advancement, and disposal use stable IDs', () {
+  test('dispatch, time, persistence, and disposal use stable IDs', () {
     expect(
       jsonDecode(
         ScenarioBridgeCommand.dispatch(
@@ -45,6 +45,30 @@ void main() {
       },
     );
     expect(
+      jsonDecode(ScenarioBridgeCommand.saveSession(42)),
+      <String, dynamic>{
+        'command': 'save_session',
+        'session_id': 42,
+      },
+    );
+    expect(
+      jsonDecode(
+        ScenarioBridgeCommand.loadSession(
+          scenario: <String, dynamic>{
+            'metadata': <String, dynamic>{'id': 'scenario_001'},
+          },
+          encodedSave: '{"schema_version":1}',
+        ),
+      ),
+      <String, dynamic>{
+        'command': 'load_session',
+        'scenario': <String, dynamic>{
+          'metadata': <String, dynamic>{'id': 'scenario_001'},
+        },
+        'encoded_save': '{"schema_version":1}',
+      },
+    );
+    expect(
       jsonDecode(ScenarioBridgeCommand.disposeSession(42)),
       <String, dynamic>{
         'command': 'dispose_session',
@@ -60,6 +84,11 @@ void main() {
     expect(snapshot.isError, isFalse);
     expect(snapshot.sessionId, 3);
     expect(snapshot.snapshot?['stage_id'], 'intake');
+
+    final ScenarioBridgeResponse saved = ScenarioBridgeResponse.parse(
+      '{"type":"session_saved","session_id":3,"encoded_save":"{}"}',
+    );
+    expect(saved.encodedSave, '{}');
 
     final ScenarioBridgeResponse error = ScenarioBridgeResponse.parse(
       '{"type":"error","code":"action_unavailable","message":"No"}',

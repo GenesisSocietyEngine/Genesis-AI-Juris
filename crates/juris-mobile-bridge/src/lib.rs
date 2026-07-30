@@ -8,7 +8,8 @@
 #![forbid(unsafe_code)]
 
 use juris_engine::{
-    MobileScenarioSnapshot, ScenarioRuntimeError, ScenarioSessionId, ScenarioSessionRegistry,
+    MobileScenarioSnapshot, ScenarioRuntimeError, ScenarioSaveError, ScenarioSessionId,
+    ScenarioSessionRegistry,
 };
 use juris_scenario_schema::ScenarioDefinition;
 use serde::{Deserialize, Serialize};
@@ -32,6 +33,13 @@ pub enum BridgeRequest {
         session_id: u64,
         minutes: u32,
     },
+    SaveSession {
+        session_id: u64,
+    },
+    LoadSession {
+        scenario: Box<ScenarioDefinition>,
+        encoded_save: String,
+    },
     DisposeSession {
         session_id: u64,
     },
@@ -46,6 +54,14 @@ pub enum BridgeResponse {
         snapshot: MobileScenarioSnapshot,
     },
     Snapshot {
+        session_id: u64,
+        snapshot: MobileScenarioSnapshot,
+    },
+    SessionSaved {
+        session_id: u64,
+        encoded_save: String,
+    },
+    SessionLoaded {
         session_id: u64,
         snapshot: MobileScenarioSnapshot,
     },
@@ -111,6 +127,28 @@ impl MobileBridge {
                     Err(error) => runtime_error_response(error),
                 }
             }
+            BridgeRequest::SaveSession { session_id } => {
+                match self.sessions.save_json(ScenarioSessionId(session_id)) {
+                    Ok(encoded_save) => BridgeResponse::SessionSaved {
+                        session_id,
+                        encoded_save,
+                    },
+                    Err(error) => save_error_response(error),
+                }
+            }
+            BridgeRequest::LoadSession {
+                scenario,
+                encoded_save,
+            } => match self.sessions.load_from_json(*scenario, &encoded_save) {
+                Ok(id) => match self.sessions.snapshot(id) {
+                    Ok(snapshot) => BridgeResponse::SessionLoaded {
+                        session_id: id.0,
+                        snapshot,
+                    },
+                    Err(error) => runtime_error_response(error),
+                },
+                Err(error) => save_error_response(error),
+            },
             BridgeRequest::DisposeSession { session_id } => {
                 let disposed = self.sessions.dispose(ScenarioSessionId(session_id));
                 BridgeResponse::SessionDisposed {
@@ -158,6 +196,28 @@ impl MobileBridge {
             },
             Err(error) => runtime_error_response(error),
         }
+    }
+}
+
+fn save_error_response(error: ScenarioSaveError) -> BridgeResponse {
+    let code = match &error {
+        ScenarioSaveError::InvalidJson(_) => "invalid_save_json",
+        ScenarioSaveError::UnknownSchema(_) => "unknown_save_schema",
+        ScenarioSaveError::UnknownSchemaVersion(_) => "unknown_save_schema_version",
+        ScenarioSaveError::RuntimeCompatibility(_) => "incompatible_runtime",
+        ScenarioSaveError::UnknownScenario(_) => "unknown_save_scenario",
+        ScenarioSaveError::FingerprintMismatch => "scenario_fingerprint_mismatch",
+        ScenarioSaveError::UnknownCommand(_) => "unknown_save_command",
+        ScenarioSaveError::UnknownAction(_) => "unknown_save_action",
+        ScenarioSaveError::InvalidTimeAdvance(_) => "invalid_save_time_advance",
+        ScenarioSaveError::IllegalCommandSequence { .. } => "illegal_save_command_sequence",
+        ScenarioSaveError::IntegrityMismatch => "save_integrity_mismatch",
+        ScenarioSaveError::UnknownSession(_) => "unknown_session",
+        ScenarioSaveError::Serialization(_) => "save_serialization_failure",
+    };
+    BridgeResponse::Error {
+        code: code.to_owned(),
+        message: error.to_string(),
     }
 }
 

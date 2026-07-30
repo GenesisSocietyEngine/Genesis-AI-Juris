@@ -51,6 +51,24 @@ abstract final class ScenarioBridgeCommand {
     });
   }
 
+  static String saveSession(int sessionId) {
+    return jsonEncode(<String, dynamic>{
+      'command': 'save_session',
+      'session_id': sessionId,
+    });
+  }
+
+  static String loadSession({
+    required Map<String, dynamic> scenario,
+    required String encodedSave,
+  }) {
+    return jsonEncode(<String, dynamic>{
+      'command': 'load_session',
+      'scenario': scenario,
+      'encoded_save': encodedSave,
+    });
+  }
+
   static String disposeSession(int sessionId) {
     return jsonEncode(<String, dynamic>{
       'command': 'dispose_session',
@@ -94,4 +112,6 @@ class ScenarioBridgeResponse {
   String? get errorCode => payload['code'] as String?;
 
   String? get errorMessage => payload['message'] as String?;
+
+  String? get encodedSave => payload['encoded_save'] as String?;
 }
