@@ -20,6 +20,7 @@ final class RustScenarioRepository extends GameRuntimeRepository {
   late int _sessionId;
   late Map<String, dynamic> _rawSnapshot;
   late GameSnapshot _snapshot;
+  String? _clockErrorMessage;
   bool _disposed = false;
 
   @override
@@ -29,7 +30,11 @@ final class RustScenarioRepository extends GameRuntimeRepository {
   bool get isTerminal => _snapshot.outcomeSummary != null;
 
   @override
-  bool get supportsLiveClock => false;
+  bool get supportsLiveClock =>
+      _clockErrorMessage == null && _rawSnapshot['clock_mode'] == 'foreground';
+
+  @override
+  String? get clockErrorMessage => _clockErrorMessage;
 
   @override
   ActionExecutionResult applyAction(String actionId) {
@@ -64,8 +69,35 @@ final class RustScenarioRepository extends GameRuntimeRepository {
 
   @override
   void advanceTimeByMinutes(int minutes) {
-    // Generic scenarios advance their authoritative clock through action costs.
-    // The shared shell checks supportsLiveClock and does not call this method.
+    try {
+      final ScenarioBridgeResponse response = _execute(
+        ScenarioBridgeCommand.advanceTime(
+          sessionId: _sessionId,
+          minutes: minutes,
+        ),
+      );
+      if (response.isError) {
+        final String message =
+            response.errorMessage ?? 'The scenario clock command was rejected.';
+        _stopClockWithError(message);
+        throw ScenarioClockAdvanceException(
+          code: response.errorCode ?? 'clock_advance_failed',
+          message: message,
+        );
+      }
+
+      _acceptSnapshot(response);
+      notifyListeners();
+    } on ScenarioClockAdvanceException {
+      rethrow;
+    } on Object catch (error) {
+      final String message = 'Scenario clock transport failed: $error';
+      _stopClockWithError(message);
+      throw ScenarioClockAdvanceException(
+        code: 'clock_transport_failed',
+        message: message,
+      );
+    }
   }
 
   @override
@@ -81,6 +113,7 @@ final class RustScenarioRepository extends GameRuntimeRepository {
   void reset() {
     _disposeNativeSession();
     _locallyReadInboxIds.clear();
+    _clockErrorMessage = null;
     _createSession();
     notifyListeners();
   }
@@ -146,6 +179,11 @@ final class RustScenarioRepository extends GameRuntimeRepository {
     );
   }
 
+  void _stopClockWithError(String message) {
+    _clockErrorMessage = message;
+    notifyListeners();
+  }
+
   void _disposeNativeSession() {
     if (_disposed) {
       return;
@@ -157,6 +195,21 @@ final class RustScenarioRepository extends GameRuntimeRepository {
       // with the native library even after a transport failure.
     }
   }
+}
+
+/// Controlled failure used by the shell to pause automatic ticking without
+/// discarding the last valid authoritative snapshot.
+final class ScenarioClockAdvanceException implements Exception {
+  const ScenarioClockAdvanceException({
+    required this.code,
+    required this.message,
+  });
+
+  final String code;
+  final String message;
+
+  @override
+  String toString() => '$code: $message';
 }
 
 extension<T> on Iterable<T> {

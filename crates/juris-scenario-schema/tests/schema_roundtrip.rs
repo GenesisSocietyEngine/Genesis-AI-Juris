@@ -4,7 +4,9 @@
 //! This proves that the public Rust types and the human-authored scenario
 //! format remain compatible.
 
-use juris_scenario_schema::{ActionId, ScenarioDefinition, StageId, SCENARIO_SCHEMA_VERSION_V1};
+use juris_scenario_schema::{
+    ActionId, ScenarioClockMode, ScenarioDefinition, StageId, SCENARIO_SCHEMA_VERSION_V1,
+};
 
 const MINIMAL_SCENARIO: &str =
     include_str!("../../../content/fixtures/valid/minimal-scenario.yaml");
@@ -19,10 +21,25 @@ fn minimal_yaml_deserializes_into_scenario_definition() {
     assert_eq!(scenario.schema_version, SCENARIO_SCHEMA_VERSION_V1);
     assert_eq!(scenario.metadata.id.as_str(), "minimal-scenario");
     assert_eq!(scenario.initial_stage, StageId::from("intake"));
+    assert_eq!(scenario.clock.mode, ScenarioClockMode::ActionDriven);
     assert_eq!(scenario.stages.len(), 2);
     assert_eq!(scenario.actions.len(), 1);
     assert_eq!(scenario.events.len(), 1);
     assert_eq!(scenario.outcomes.len(), 1);
+}
+
+#[test]
+fn foreground_clock_policy_round_trips_additively() {
+    let mut scenario: ScenarioDefinition =
+        serde_yaml::from_str(MINIMAL_SCENARIO).expect("minimal YAML must deserialize");
+    scenario.clock.mode = ScenarioClockMode::Foreground;
+
+    let encoded = serde_yaml::to_string(&scenario).expect("scenario must serialize");
+    let restored: ScenarioDefinition =
+        serde_yaml::from_str(&encoded).expect("scenario must deserialize");
+
+    assert_eq!(restored.clock.mode, ScenarioClockMode::Foreground);
+    assert!(encoded.contains("clock:\n  mode: foreground"));
 }
 
 #[test]

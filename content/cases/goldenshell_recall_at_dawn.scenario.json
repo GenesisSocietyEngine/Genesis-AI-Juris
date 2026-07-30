@@ -22,6 +22,9 @@
     "pack_version": "0.1.0"
   },
   "initial_stage": "emergency_intake",
+  "clock": {
+    "mode": "foreground"
+  },
   "actors": [
     {
       "id": "player_lawyer",
@@ -308,7 +311,6 @@
         "prepare_protective_attachment_strategy",
         "prioritise_regulator_claim",
         "establish_coordinated_claim_protocol",
-        "coordinate_operational_period",
         "complete_fragmented_handoff"
       ],
       "terminal": false
@@ -320,7 +322,6 @@
       "entry_event": "claim_protocol_established",
       "exit_actions": [
         "review_preliminary_residue_assessment",
-        "coordinate_operational_period",
         "complete_coordinated_handoff",
         "complete_fragmented_handoff"
       ],
@@ -1006,29 +1007,6 @@
       "time_cost_minutes": 90,
       "repeatability": {
         "type": "once"
-      }
-    },
-    {
-      "id": "coordinate_operational_period",
-      "title": "Coordinate the next operational period",
-      "description": "Advance the matter through the next six-hour block while laboratories, retailers, farms, insurers, the contractor, and the food-safety authority continue working.",
-      "available_when": {
-        "type": "any",
-        "conditions": [
-          {
-            "type": "stage_is",
-            "stage": "immediate_containment"
-          },
-          {
-            "type": "stage_is",
-            "stage": "coordinated_claim_build"
-          }
-        ]
-      },
-      "effects": [],
-      "time_cost_minutes": 360,
-      "repeatability": {
-        "type": "unlimited"
       }
     },
     {

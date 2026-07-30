@@ -35,6 +35,9 @@ class DemoGameRepository extends GameRuntimeRepository {
   @override
   bool get supportsLiveClock => true;
 
+  @override
+  String? get clockErrorMessage => null;
+
   /// Resets the mobile playtest to the same seed and opening state.
   void reset() {
     _snapshot = _initial(seed);

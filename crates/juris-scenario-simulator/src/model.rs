@@ -24,7 +24,16 @@ pub enum SimulationStatus {
 #[serde(rename_all = "snake_case")]
 pub enum TraceKind {
     Action,
+    AdvanceTime,
     Event,
+}
+
+/// One deterministic authoring/replay command.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "command", rename_all = "snake_case")]
+pub enum ScenarioTraceCommand {
+    Dispatch { action_id: String },
+    AdvanceTime { minutes: u32 },
 }
 
 /// One state transition in replay order.
@@ -44,5 +53,7 @@ pub struct SimulationResult {
     pub status: SimulationStatus,
     pub final_state: SimulationState,
     pub fired_events: Vec<String>,
+    pub deadline_statuses: BTreeMap<String, Option<String>>,
+    pub async_task_statuses: BTreeMap<String, String>,
     pub trace: Vec<TraceEntry>,
 }

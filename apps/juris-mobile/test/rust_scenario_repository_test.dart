@@ -97,7 +97,11 @@ void main() {
 
     expect(client.lastScenarioId, 'greenfire_first_72_hours');
     expect(client.lastSeed, 20260729);
-    expect(client.lastActionCount, 14);
+    expect(client.lastActionCount, 13);
+    expect(repository.supportsLiveClock, isTrue);
+    final String before = repository.snapshot.timeLabel;
+    repository.advanceTimeByMinutes(1);
+    expect(repository.snapshot.timeLabel, isNot(before));
     expect(repository.snapshot.matterTitle, contains('GreenFire'));
     repository.dispose();
   });
@@ -111,7 +115,8 @@ void main() {
 
     expect(client.lastScenarioId, 'goldenshell_recall_at_dawn');
     expect(client.lastSeed, 20260730);
-    expect(client.lastActionCount, 18);
+    expect(client.lastActionCount, 17);
+    expect(repository.supportsLiveClock, isTrue);
     expect(repository.snapshot.matterTitle, contains('GoldenShell'));
     expect(repository.snapshot.stage, 'Emergency cooperative intake');
     expect(
@@ -121,18 +126,36 @@ void main() {
     repository.dispose();
   });
 
+  test('clock failure preserves snapshot and disables repeated ticking', () {
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: greenfire,
+      bridgeClient: _FakeScenarioBridgeClient(rejectAdvance: true),
+    );
+    final String before = repository.snapshot.timeLabel;
+
+    expect(
+      () => repository.advanceTimeByMinutes(1),
+      throwsA(isA<ScenarioClockAdvanceException>()),
+    );
+
+    expect(repository.snapshot.timeLabel, before);
+    expect(repository.clockErrorMessage, 'Clock unavailable');
+    expect(repository.supportsLiveClock, isFalse);
+    repository.dispose();
+  });
+
   test('maps both GoldenShell terminal outcomes through the shared repository',
       () {
-    for (final ({List<String> actions, String outcome}) path in <({
-      List<String> actions,
+    for (final ({List<Object> commands, String outcome}) path in <({
+      List<Object> commands,
       String outcome,
     })>[
       (
-        actions: _goldenshellCoordinatedPath,
+        commands: _goldenshellCoordinatedPath,
         outcome: 'Coordinated claim position',
       ),
       (
-        actions: _goldenshellFragmentedPath,
+        commands: _goldenshellFragmentedPath,
         outcome: 'Fragmented claim position',
       ),
     ]) {
@@ -141,8 +164,13 @@ void main() {
         bridgeClient: _FakeScenarioBridgeClient(),
       );
 
-      for (final String action in path.actions) {
-        expect(repository.applyAction(action).isRisky, isFalse);
+      for (final Object command in path.commands) {
+        switch (command) {
+          case final String actionId:
+            expect(repository.applyAction(actionId).isRisky, isFalse);
+          case final int minutes:
+            repository.advanceTimeByMinutes(minutes);
+        }
       }
 
       expect(repository.isTerminal, isTrue);
@@ -155,7 +183,7 @@ void main() {
   });
 }
 
-const List<String> _goldenshellCoordinatedPath = <String>[
+const List<Object> _goldenshellCoordinatedPath = <Object>[
   'accept_cooperative_mandate',
   'issue_coordinated_legal_hold',
   'preserve_reference_samples',
@@ -165,42 +193,45 @@ const List<String> _goldenshellCoordinatedPath = <String>[
   'coordinate_recall_response',
   'request_product_composition_records',
   'retain_independent_residue_expert',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
+  360,
+  360,
   'review_preliminary_residue_assessment',
   'map_common_and_individual_losses',
   'prepare_protective_attachment_strategy',
   'establish_coordinated_claim_protocol',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
   'complete_coordinated_handoff',
 ];
 
-const List<String> _goldenshellFragmentedPath = <String>[
+const List<Object> _goldenshellFragmentedPath = <Object>[
   'accept_cooperative_mandate',
   'authorise_recall_without_reference_samples',
   'prioritise_regulator_claim',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
-  'coordinate_operational_period',
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
+  360,
   'complete_fragmented_handoff',
 ];
 
 final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
+  _FakeScenarioBridgeClient({this.rejectAdvance = false});
+
+  final bool rejectAdvance;
   int createCount = 0;
   int disposeCount = 0;
   int _sessionId = 0;
@@ -229,6 +260,7 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
     return switch (request['command']) {
       'create_session' => _create(request),
       'dispatch' => _dispatch(request['action_id'] as String),
+      'advance_time' => _advance(request['minutes'] as int),
       'snapshot' => _response('snapshot'),
       'dispose_session' => _dispose(),
       _ => jsonEncode(<String, dynamic>{
@@ -295,6 +327,18 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
     return _response('snapshot');
   }
 
+  String _advance(int minutes) {
+    if (rejectAdvance) {
+      return jsonEncode(<String, dynamic>{
+        'type': 'error',
+        'code': 'clock_advance_failed',
+        'message': 'Clock unavailable',
+      });
+    }
+    _clockMinutes += minutes;
+    return _response('snapshot');
+  }
+
   void _applyEffects(List<dynamic> effects) {
     for (final dynamic value in effects) {
       final Map<String, dynamic> effect = value as Map<String, dynamic>;
@@ -338,6 +382,9 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
         'stage_id': _stage,
         'stage_title': stage['title'] as String,
         'clock_minutes': _clockMinutes,
+        'clock_mode': ((_scenario['clock'] as Map<String, dynamic>?)?['mode']
+                as String?) ??
+            'action_driven',
         'terminal': _outcome != null,
         'flags': <String, bool>{},
         'facts': (_scenario['facts'] as List<dynamic>)

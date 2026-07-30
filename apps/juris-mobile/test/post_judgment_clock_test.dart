@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juris_mobile/app/home_shell.dart';
 import 'package:juris_mobile/app/juris_app.dart';
 import 'package:juris_mobile/data/demo_game_repository.dart';
 import 'package:juris_mobile/models/game_snapshot.dart';
@@ -60,6 +61,28 @@ void main() {
     expect(find.text('15 game min / real min'), findsOneWidget);
     expect(find.text('30 game min / real min'), findsOneWidget);
     expect(find.text('60 game min / real min'), findsOneWidget);
+  });
+
+  testWidgets('automatic clock error pauses subsequent commands', (
+    WidgetTester tester,
+  ) async {
+    final _FailingClockRepository repository = _FailingClockRepository();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeShell(
+          repository: repository,
+          enableLiveClockInTests: true,
+        ),
+      ),
+    );
+
+    await tester.pump(const Duration(seconds: 4));
+    expect(repository.advanceCalls, 1);
+    expect(find.text('Controlled clock failure'), findsOneWidget);
+    expect(find.byTooltip('Resume simulation clock'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 12));
+    expect(repository.advanceCalls, 1);
   });
 
   test('dismissed judgment records loss without closing review routes', () {
@@ -175,4 +198,19 @@ DemoGameRepository _buildLosingHearingMatter() {
   repository.applyAction('attend-hearing');
   repository.applyAction('rest');
   return repository;
+}
+
+final class _FailingClockRepository extends DemoGameRepository {
+  _FailingClockRepository() : super(seed: 20260724);
+
+  int advanceCalls = 0;
+
+  @override
+  String? get clockErrorMessage => 'Controlled clock failure';
+
+  @override
+  void advanceTimeByMinutes(int minutes) {
+    advanceCalls += 1;
+    throw StateError('controlled test error');
+  }
 }

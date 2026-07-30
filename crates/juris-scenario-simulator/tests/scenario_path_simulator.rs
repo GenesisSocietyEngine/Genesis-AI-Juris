@@ -1,7 +1,8 @@
 use std::{fs, path::PathBuf, process::Command};
 
 use juris_scenario_simulator::{
-    ScenarioDocument, ScenarioSimulator, SimulationError, SimulationStatus, TraceKind,
+    ScenarioDocument, ScenarioSimulator, ScenarioTraceCommand, SimulationError, SimulationStatus,
+    TraceKind,
 };
 use serde_json::{json, Value};
 
@@ -16,6 +17,10 @@ fn fixture_path() -> PathBuf {
 fn fixture_value() -> Value {
     let bytes = fs::read(fixture_path()).expect("fixture must be readable");
     serde_json::from_slice(&bytes).expect("fixture must parse")
+}
+
+fn greenfire_path() -> PathBuf {
+    repository_root().join("content/cases/greenfire_first_72_hours.scenario.json")
 }
 
 fn run(
@@ -140,6 +145,49 @@ fn due_at_time_event_fires_after_clock_advances() {
         Some(&true)
     );
     assert_eq!(result.fired_events, vec!["clock_event".to_owned()]);
+}
+
+#[test]
+fn mixed_commands_advance_foreground_time_deterministically() {
+    let commands = [
+        ScenarioTraceCommand::Dispatch {
+            action_id: "accept_emergency_mandate".to_owned(),
+        },
+        ScenarioTraceCommand::AdvanceTime { minutes: 150 },
+    ];
+    let run_once = || {
+        ScenarioSimulator::new(ScenarioDocument::load(greenfire_path()).unwrap())
+            .unwrap()
+            .run_commands(&commands, false)
+            .unwrap()
+    };
+
+    let first = run_once();
+    let second = run_once();
+    assert_eq!(first, second);
+    assert_eq!(first.final_state.clock_minutes, 180);
+    assert!(first
+        .fired_events
+        .contains(&"regulator_request_received".to_owned()));
+    assert_eq!(
+        first.deadline_statuses.get("legal_hold_deadline"),
+        Some(&Some("missed".to_owned()))
+    );
+    assert!(first
+        .trace
+        .iter()
+        .any(|entry| entry.kind == TraceKind::AdvanceTime));
+}
+
+#[test]
+fn mixed_commands_reject_time_for_action_driven_scenarios() {
+    let document = ScenarioDocument::from_value(fixture_value()).unwrap();
+    let error = ScenarioSimulator::new(document)
+        .unwrap()
+        .run_commands(&[ScenarioTraceCommand::AdvanceTime { minutes: 1 }], false)
+        .expect_err("legacy action-driven scenarios must reject foreground time");
+
+    assert!(matches!(error, SimulationError::ClockAdvanceUnsupported));
 }
 
 #[test]
@@ -291,4 +339,28 @@ fn cli_json_trace_is_machine_readable() {
     assert!(output.status.success());
     let decoded: Value = serde_json::from_slice(&output.stdout).expect("CLI output must be JSON");
     assert_eq!(decoded["status"], "completed");
+}
+
+#[test]
+fn cli_reads_mixed_commands_from_a_file() {
+    let executable = env!("CARGO_BIN_EXE_juris-scenario-simulator");
+    let commands =
+        repository_root().join("content/fixtures/authoring/foreground_clock_commands.json");
+    let output = Command::new(executable)
+        .arg("run")
+        .arg(greenfire_path())
+        .arg("--commands-file")
+        .arg(commands)
+        .arg("--json")
+        .output()
+        .expect("CLI must execute");
+
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let decoded: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(decoded["final_state"]["clock_minutes"], 1);
+    assert_eq!(decoded["trace"][0]["kind"], "advance_time");
 }

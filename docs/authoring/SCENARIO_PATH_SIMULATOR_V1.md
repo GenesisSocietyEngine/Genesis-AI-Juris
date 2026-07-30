@@ -1,24 +1,19 @@
 # Scenario Path Simulator v1
 
-Commit 11D adds a deterministic authoring-time replay harness. It executes an
-explicit sequence of stable action IDs against canonical scenario JSON.
+The authoring-time replay harness executes stable action IDs and, for
+foreground scenarios, explicit simulated-minute commands against canonical
+scenario JSON.
 
 ## Purpose
 
-The simulator is a pre-mobile content gate. It proves that:
+The simulator proves that actions are available in the intended stages,
+temporal consequences fire deterministically, each event fires at most once,
+unsupported schema shapes fail explicitly, terminal stages resolve an outcome,
+and identical commands produce identical results.
 
-- authored actions are available in the intended stages;
-- typed scenario time advances deterministically;
-- `after_action`, explicit `trigger_event`, and fixed `at_time` events fire in
-  reproducible order;
-- each event fires at most once per replay;
-- unsupported conditions and effects are never silently ignored;
-- terminal stages resolve exactly one explicit outcome;
-- the same scenario and action list produce the same replay trace.
+It is an authoring/content gate, not a save-state format.
 
-It is not yet the final gameplay runtime or save-state engine.
-
-## Run the reference path
+## Action-only input
 
 ```powershell
 cargo run -p juris-scenario-simulator -- run `
@@ -27,45 +22,42 @@ cargo run -p juris-scenario-simulator -- run `
   --require-outcome
 ```
 
-Machine-readable trace:
+## Mixed action/time input
 
 ```powershell
 cargo run -p juris-scenario-simulator -- run `
-  content/fixtures/authoring/scenario_path_valid.json `
-  --actions file_claim,prepare_hearing,accept_judgment `
+  content/cases/greenfire_first_72_hours.scenario.json `
+  --commands-file content/traces/greenfire_protected.commands.json `
   --require-outcome `
   --json
 ```
 
-Inspect a scenario:
+A command file is a JSON array:
 
-```powershell
-cargo run -p juris-scenario-simulator -- inspect `
-  content/fixtures/authoring/scenario_path_valid.json
+```json
+[
+  {"command": "dispatch", "action_id": "accept_emergency_mandate"},
+  {"command": "advance_time", "minutes": 360}
+]
 ```
 
-## Supported v1 semantics
+It contains no session IDs. Action-only `--actions` remains supported for
+backward compatibility.
 
-Conditions:
+## Deterministic clock semantics
 
-- `always`
-- `stage_is`
-- `flag_equals`
-- `all`
-- `any`
-- `not`
+Action costs and `advance_time` use the same boundary algorithm. At one minute,
+consequences run in scenario-definition order with category priority:
 
-Effects:
+1. `at_time` events;
+2. async-task completions;
+3. deadline misses.
 
-- `set_stage`
-- `set_flag`
-- `trigger_event`
-- `resolve_outcome`
+Recursively triggered events finish before the next boundary. A terminal
+consequence stops a larger advance at its exact minute. JSON output includes
+the final clock, fired events, deadline states, async-task states, outcome, and
+terminal status.
 
-Automatic triggers:
-
-- `after_action`
-- `at_time`
-
-Unsupported gameplay semantics fail explicitly. They should be added only with
-tests and deterministic ownership rules.
+The simulator supports the complete condition, effect, and trigger subset
+represented by `ScenarioDefinition v1`; unknown shapes fail instead of being
+ignored.

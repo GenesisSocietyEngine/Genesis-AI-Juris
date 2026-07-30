@@ -59,6 +59,7 @@ void main() {
     expect(logistics.readiness.pathSimulation, isTrue);
     expect(logistics.readiness.engineRuntime, isTrue);
     expect(logistics.runtimeAdapter, 'rust_scenario_v1');
+    expect(logistics.scenario?['clock'], isNull);
 
     final MobileCaseDefinition greenfire = bundle.cases.singleWhere(
       (MobileCaseDefinition item) => item.caseId == 'greenfire_first_72_hours',
@@ -66,7 +67,10 @@ void main() {
     expect(greenfire.status, MobileCaseStatus.playable);
     expect(greenfire.scenarioAvailable, isTrue);
     expect(greenfire.scenario, isNotNull);
-    expect(greenfire.scenario?['actions'], hasLength(14));
+    expect(greenfire.scenario?['actions'], hasLength(13));
+    expect(greenfire.scenario?['clock'], <String, dynamic>{
+      'mode': 'foreground',
+    });
     expect(greenfire.readiness.diagnostics, isTrue);
     expect(greenfire.readiness.pathSimulation, isTrue);
     expect(greenfire.readiness.engineRuntime, isTrue);
@@ -80,7 +84,10 @@ void main() {
     expect(goldenshell.scenarioId, 'goldenshell_recall_at_dawn');
     expect(goldenshell.scenarioAvailable, isTrue);
     expect(goldenshell.scenario, isNotNull);
-    expect(goldenshell.scenario?['actions'], hasLength(18));
+    expect(goldenshell.scenario?['actions'], hasLength(17));
+    expect(goldenshell.scenario?['clock'], <String, dynamic>{
+      'mode': 'foreground',
+    });
     expect(goldenshell.readiness.diagnostics, isTrue);
     expect(goldenshell.readiness.pathSimulation, isTrue);
     expect(goldenshell.readiness.engineRuntime, isTrue);
