@@ -2,13 +2,81 @@
 document_type: cumulative_development_handoff
 project: "GENESIS: AI Juris"
 branch: feat/persistent-command-log-v1
-head_commit: "documentation commit containing this cumulative entry"
+head_commit: "remote-gate documentation commit containing this cumulative entry"
 release_tag: v0.5.1-alpha.1
 app_version: 0.5.1+12
 last_updated: 2026-07-31
 ---
 
 # Current Progress
+
+## Persistent Command-Log Save/Load v1 remote gate and merge preparation — 2026-07-31
+
+Status: the implementation and contract are published in Draft PR
+[#9](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/9).
+The initial push and pull-request checks completed successfully, the PR has no
+comments or review threads, and explicit authorization to merge PR #9 was
+received. This entry is the final documentation-only update before the fresh
+checks triggered by its push and the authorized merge.
+
+Repository state:
+
+- branch: `feat/persistent-command-log-v1`;
+- base: `main@e68007b2e6357ca4964c12bb856386b3c7b5f80e`;
+- implementation commit:
+  `ca24c08ddc77dff3611b55d294ba596296c712c8`;
+- persistence-contract documentation commit:
+  `18cd9692a0a3840cee0d889afd4076b64a0bd5ac`;
+- PR #9 targets `main`, remains Draft at the time of this entry, and reports
+  `mergeStateStatus: CLEAN`;
+- GitHub reports no PR comments, reviews, or unresolved inline review threads;
+- open PR #4 (`Lost != Closed`) remains isolated and was not modified.
+
+Remote quality gates on initial PR head `18cd969`:
+
+- Rust CI pull-request run
+  [30589753688](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/30589753688):
+  success;
+  - `quality`: success;
+  - Rust 1.78 `msrv`: success;
+- Flutter Mobile UI pull-request run
+  [30589753691](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/30589753691):
+  `analyze-and-test` success;
+- iOS Native FFI pull-request run
+  [30589753680](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/30589753680):
+  `simulator-smoke` success, including Runner/Rust static-library build,
+  verification of all three C ABI exports, iPhone Simulator boot, and the
+  native Logistics lifecycle.
+
+Duplicate push-triggered quality gates:
+
+- Rust CI run
+  [30589723427](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/30589723427):
+  `quality` and `msrv` success;
+- Flutter Mobile UI run
+  [30589723431](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/30589723431):
+  `analyze-and-test` success;
+- iOS Native FFI run
+  [30589723430](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/30589723430):
+  `simulator-smoke` success in 25m24s.
+
+Known limitations and observations:
+
+- GitHub emitted a non-blocking deprecation annotation because
+  `actions/checkout@v4` targets Node.js 20 and the hosted runner forces it onto
+  Node.js 24; this did not affect any check result;
+- no physical-device, release-signing, App Store, or Play Store result is
+  claimed;
+- the Save v1 product limitations documented below remain unchanged.
+
+Next step:
+
+- commit and push this documentation-only update;
+- observe the newly triggered Rust `quality`, Rust `msrv`, Flutter
+  `analyze-and-test`, and iOS `simulator-smoke` checks to terminal success;
+- mark PR #9 Ready for review and merge it using a merge commit under the
+  explicit authorization received on 2026-07-31;
+- fast-forward local `main` to the resulting remote merge.
 
 ## Persistent Command-Log Save/Load v1 publication checkpoint — 2026-07-31
 
