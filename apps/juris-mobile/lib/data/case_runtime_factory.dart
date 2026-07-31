@@ -1,6 +1,7 @@
 import '../models/case_catalog.dart';
 import 'demo_game_repository.dart';
 import 'game_runtime_repository.dart';
+import 'game_save_store.dart';
 import 'native_scenario_bridge_client.dart';
 import 'rust_scenario_repository.dart';
 import 'scenario_bridge_client.dart';
@@ -29,6 +30,7 @@ abstract final class CaseRuntimeFactory {
     MobileCaseDefinition caseDefinition, {
     String locale = 'en',
     ScenarioBridgeClient? scenarioBridgeClient,
+    GameSaveStore? gameSaveStore,
   }) {
     if (!supports(caseDefinition)) {
       throw StateError(
@@ -42,6 +44,7 @@ abstract final class CaseRuntimeFactory {
       caseDefinition: caseDefinition,
       locale: locale,
       bridgeClient: scenarioBridgeClient ?? NativeScenarioBridgeClient(),
+      saveStore: gameSaveStore,
     );
   }
 }

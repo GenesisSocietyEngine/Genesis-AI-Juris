@@ -1,6 +1,7 @@
 import '../models/case_catalog.dart';
 import '../models/game_snapshot.dart';
 import 'game_runtime_repository.dart';
+import 'game_save_store.dart';
 import 'scenario_bridge_client.dart';
 import 'scenario_snapshot_mapper.dart';
 
@@ -9,14 +10,17 @@ final class RustScenarioRepository extends GameRuntimeRepository {
   RustScenarioRepository({
     required this.caseDefinition,
     required ScenarioBridgeClient bridgeClient,
+    GameSaveStore? saveStore,
     this.locale = 'en',
-  }) : _bridgeClient = bridgeClient {
+  })  : _bridgeClient = bridgeClient,
+        _saveStore = saveStore ?? ApplicationSupportGameSaveStore() {
     _createSession();
   }
 
   final MobileCaseDefinition caseDefinition;
   final String locale;
   final ScenarioBridgeClient _bridgeClient;
+  final GameSaveStore _saveStore;
   final Set<String> _locallyReadInboxIds = <String>{};
 
   late int _sessionId;
@@ -37,6 +41,105 @@ final class RustScenarioRepository extends GameRuntimeRepository {
 
   @override
   String? get clockErrorMessage => _clockErrorMessage;
+
+  @override
+  bool get supportsPersistence => true;
+
+  @override
+  Future<bool> hasSavedGame() => _saveStore.exists(caseDefinition.caseId);
+
+  @override
+  Future<void> saveGame() async {
+    final ScenarioBridgeResponse response = _execute(
+      ScenarioBridgeCommand.saveSession(_sessionId),
+    );
+    if (response.isError) {
+      throw GamePersistenceException(
+        code: response.errorCode ?? 'save_failed',
+        message: response.errorMessage ?? 'The game could not be saved.',
+      );
+    }
+    final String? encodedSave = response.encodedSave;
+    if (encodedSave == null || encodedSave.isEmpty) {
+      throw const GamePersistenceException(
+        code: 'invalid_save_response',
+        message: 'The runtime returned an empty save.',
+      );
+    }
+    try {
+      await _saveStore.write(caseDefinition.caseId, encodedSave);
+    } on GameSaveStorageException catch (error) {
+      throw GamePersistenceException(
+        code: error.code,
+        message: error.message,
+      );
+    }
+  }
+
+  @override
+  Future<void> loadGame() async {
+    final String encodedSave;
+    try {
+      encodedSave = await _saveStore.read(caseDefinition.caseId);
+    } on GameSaveStorageException catch (error) {
+      throw GamePersistenceException(
+        code: error.code,
+        message: error.message,
+      );
+    }
+    final Map<String, dynamic>? scenario = caseDefinition.scenario;
+    if (scenario == null) {
+      throw const GamePersistenceException(
+        code: 'scenario_unavailable',
+        message: 'The canonical scenario is unavailable.',
+      );
+    }
+    final int previousSessionId = _sessionId;
+    final ScenarioBridgeResponse response = _execute(
+      ScenarioBridgeCommand.loadSession(
+        scenario: scenario,
+        encodedSave: encodedSave,
+      ),
+    );
+    if (response.isError) {
+      throw GamePersistenceException(
+        code: response.errorCode ?? 'load_failed',
+        message: response.errorMessage ?? 'The saved game could not be loaded.',
+      );
+    }
+    final int? nextSessionId = response.sessionId;
+    final Map<String, dynamic>? nextRawSnapshot = response.snapshot;
+    if (nextSessionId == null || nextRawSnapshot == null) {
+      throw const GamePersistenceException(
+        code: 'invalid_load_response',
+        message: 'The runtime returned an incomplete loaded session.',
+      );
+    }
+
+    final GameSnapshot nextSnapshot;
+    try {
+      nextSnapshot = ScenarioSnapshotMapper.map(
+        source: nextRawSnapshot,
+        caseDefinition: caseDefinition,
+        locale: locale,
+        locallyReadInboxIds: const <String>{},
+      );
+    } on Object catch (error) {
+      _disposeSessionId(nextSessionId);
+      throw GamePersistenceException(
+        code: 'invalid_loaded_snapshot',
+        message: 'The loaded snapshot is invalid: $error',
+      );
+    }
+
+    _sessionId = nextSessionId;
+    _rawSnapshot = nextRawSnapshot;
+    _snapshot = nextSnapshot;
+    _locallyReadInboxIds.clear();
+    _clockErrorMessage = null;
+    _disposeSessionId(previousSessionId);
+    notifyListeners();
+  }
 
   @override
   ActionExecutionResult applyAction(String actionId) {
@@ -192,8 +295,12 @@ final class RustScenarioRepository extends GameRuntimeRepository {
     if (_disposed) {
       return;
     }
+    _disposeSessionId(_sessionId);
+  }
+
+  void _disposeSessionId(int sessionId) {
     try {
-      _execute(ScenarioBridgeCommand.disposeSession(_sessionId));
+      _execute(ScenarioBridgeCommand.disposeSession(sessionId));
     } on Object {
       // Widget disposal is best effort. The process registry is reclaimed
       // with the native library even after a transport failure.

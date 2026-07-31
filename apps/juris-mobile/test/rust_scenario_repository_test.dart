@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juris_mobile/app/home_shell.dart';
+import 'package:juris_mobile/data/game_runtime_repository.dart';
+import 'package:juris_mobile/data/game_save_store.dart';
 import 'package:juris_mobile/data/rust_scenario_repository.dart';
 import 'package:juris_mobile/data/scenario_bridge_client.dart';
 import 'package:juris_mobile/models/case_catalog.dart';
@@ -159,6 +162,113 @@ void main() {
     repository.dispose();
   });
 
+  test('save and load restore an authoritative repository snapshot', () async {
+    final _MemoryGameSaveStore store = _MemoryGameSaveStore();
+    final _FakeScenarioBridgeClient client = _FakeScenarioBridgeClient();
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: logistics,
+      bridgeClient: client,
+      saveStore: store,
+    );
+
+    repository.applyAction('audit_claim_file');
+    final String savedStage = repository.snapshot.stage;
+    await repository.saveGame();
+    repository.applyAction('issue_formal_demand');
+    expect(repository.snapshot.stage, isNot(savedStage));
+
+    await repository.loadGame();
+    expect(repository.snapshot.stage, savedStage);
+    expect(client.loadCount, 1);
+    expect(client.disposeCount, 1);
+    repository.dispose();
+  });
+
+  test('failed load preserves the existing active snapshot', () async {
+    final _MemoryGameSaveStore store = _MemoryGameSaveStore()
+      ..encodedSave = '{corrupted';
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: logistics,
+      bridgeClient: _FakeScenarioBridgeClient(),
+      saveStore: store,
+    );
+    repository.applyAction('audit_claim_file');
+    final String stage = repository.snapshot.stage;
+    final String time = repository.snapshot.timeLabel;
+
+    await expectLater(
+      repository.loadGame(),
+      throwsA(
+        isA<GamePersistenceException>().having(
+          (GamePersistenceException error) => error.code,
+          'code',
+          'invalid_save_json',
+        ),
+      ),
+    );
+    expect(repository.snapshot.stage, stage);
+    expect(repository.snapshot.timeLabel, time);
+    repository.dispose();
+  });
+
+  test('EN and RU presentation produce identical authoritative saves',
+      () async {
+    final _MemoryGameSaveStore englishStore = _MemoryGameSaveStore();
+    final _MemoryGameSaveStore russianStore = _MemoryGameSaveStore();
+    final RustScenarioRepository english = RustScenarioRepository(
+      caseDefinition: goldenshell,
+      locale: 'en',
+      bridgeClient: _FakeScenarioBridgeClient(),
+      saveStore: englishStore,
+    );
+    final RustScenarioRepository russian = RustScenarioRepository(
+      caseDefinition: goldenshell,
+      locale: 'ru',
+      bridgeClient: _FakeScenarioBridgeClient(),
+      saveStore: russianStore,
+    );
+    english.applyAction('accept_cooperative_mandate');
+    russian.applyAction('accept_cooperative_mandate');
+
+    await english.saveGame();
+    await russian.saveGame();
+    expect(russianStore.encodedSave, englishStore.encodedSave);
+    expect(russianStore.encodedSave, isNot(contains('locale')));
+    english.dispose();
+    russian.dispose();
+  });
+
+  test('terminal scenario save loads without replaying the final command',
+      () async {
+    final _MemoryGameSaveStore store = _MemoryGameSaveStore();
+    final _FakeScenarioBridgeClient client = _FakeScenarioBridgeClient();
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: logistics,
+      bridgeClient: client,
+      saveStore: store,
+    );
+    for (final String action in <String>[
+      'audit_claim_file',
+      'issue_formal_demand',
+      'accept_negotiated_payment',
+    ]) {
+      repository.applyAction(action);
+    }
+    expect(repository.isTerminal, isTrue);
+    await repository.saveGame();
+    repository.reset();
+    expect(repository.isTerminal, isFalse);
+
+    await repository.loadGame();
+    expect(repository.isTerminal, isTrue);
+    expect(
+      repository.snapshot.outcomeSummary?.headline,
+      'Negotiated recovery',
+    );
+    expect(client.loadCount, 1);
+    repository.dispose();
+  });
+
   test('GreenFire deadline uses civil-time offset and opens its action', () {
     final RustScenarioRepository repository = RustScenarioRepository(
       caseDefinition: greenfire,
@@ -203,6 +313,120 @@ void main() {
     expect(find.text('Доступные действия'), findsOneWidget);
     expect(find.text('Принять поручение кооператива'), findsOneWidget);
     expect(find.text('EUR 750'), findsOneWidget);
+    repository.dispose();
+  });
+
+  testWidgets('save/load controls confirm, cancel, and restore gameplay', (
+    WidgetTester tester,
+  ) async {
+    final _MemoryGameSaveStore store = _MemoryGameSaveStore();
+    final _FakeScenarioBridgeClient client = _FakeScenarioBridgeClient();
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: goldenshell,
+      locale: 'ru',
+      bridgeClient: client,
+      saveStore: store,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeShell(repository: repository, locale: 'ru'),
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey<String>('save-load-menu')));
+    await tester.pumpAndSettle();
+    expect(find.text('Сохранить игру'), findsOneWidget);
+    expect(find.text('Загрузить игру'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey<String>('save-game-action')));
+    await tester.pumpAndSettle();
+    expect(find.text('Игра успешно сохранена.'), findsOneWidget);
+    final String savedStage = repository.snapshot.stage;
+    repository.applyAction('accept_cooperative_mandate');
+    await tester.pump();
+    expect(repository.snapshot.stage, isNot(savedStage));
+
+    await tester.tap(find.byKey(const ValueKey<String>('save-load-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('load-game-action')));
+    await tester.pumpAndSettle();
+    expect(find.text('Загрузить сохранённую игру?'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey<String>('cancel-load-game')));
+    await tester.pumpAndSettle();
+    expect(client.loadCount, 0);
+    expect(repository.snapshot.stage, isNot(savedStage));
+
+    await tester.tap(find.byKey(const ValueKey<String>('save-load-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('load-game-action')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('confirm-load-game')));
+    await tester.pumpAndSettle();
+    expect(client.loadCount, 1);
+    expect(repository.snapshot.stage, savedStage);
+    expect(find.textContaining(savedStage), findsOneWidget);
+    expect(find.text('Сохранённая игра загружена.'), findsOneWidget);
+    repository.dispose();
+  });
+
+  testWidgets('save suspension resumes one foreground timer without duplicates',
+      (WidgetTester tester) async {
+    final _DelayedGameSaveStore store = _DelayedGameSaveStore();
+    final _FakeScenarioBridgeClient client = _FakeScenarioBridgeClient();
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: greenfire,
+      bridgeClient: client,
+      saveStore: store,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeShell(
+          repository: repository,
+          enableLiveClockInTests: true,
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey<String>('save-load-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('save-game-action')));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 8));
+    expect(client.advanceCount, 0);
+
+    store.completeWrite();
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 4));
+    expect(client.advanceCount, 1);
+    await tester.pump(const Duration(seconds: 4));
+    expect(client.advanceCount, 2);
+    repository.dispose();
+  });
+
+  testWidgets('corrupted save shows a controlled load error', (
+    WidgetTester tester,
+  ) async {
+    final _MemoryGameSaveStore store = _MemoryGameSaveStore()
+      ..encodedSave = '{corrupted';
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: logistics,
+      bridgeClient: _FakeScenarioBridgeClient(),
+      saveStore: store,
+    );
+    await tester.pumpWidget(
+      MaterialApp(home: HomeShell(repository: repository)),
+    );
+
+    await tester.tap(find.byKey(const ValueKey<String>('save-load-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('load-game-action')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('confirm-load-game')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('The save is corrupted and was not loaded.'),
+      findsOneWidget,
+    );
     repository.dispose();
   });
 
@@ -314,6 +538,8 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
   final bool rejectAdvance;
   int createCount = 0;
   int disposeCount = 0;
+  int loadCount = 0;
+  int advanceCount = 0;
   int _sessionId = 0;
   int _clockMinutes = 0;
   String _stage = 'intake';
@@ -341,6 +567,8 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
       'create_session' => _create(request),
       'dispatch' => _dispatch(request['action_id'] as String),
       'advance_time' => _advance(request['minutes'] as int),
+      'save_session' => _save(),
+      'load_session' => _load(request),
       'snapshot' => _response('snapshot'),
       'dispose_session' => _dispose(),
       _ => jsonEncode(<String, dynamic>{
@@ -415,8 +643,57 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
         'message': 'Clock unavailable',
       });
     }
+    advanceCount += 1;
     _clockMinutes += minutes;
     return _response('snapshot');
+  }
+
+  String _save() {
+    return jsonEncode(<String, dynamic>{
+      'type': 'session_saved',
+      'session_id': _sessionId,
+      'encoded_save': jsonEncode(<String, dynamic>{
+        'scenario_id': _scenarioId,
+        'seed': _seed,
+        'stage': _stage,
+        'clock_minutes': _clockMinutes,
+        'outcome': _outcome,
+      }),
+    });
+  }
+
+  String _load(Map<String, dynamic> request) {
+    final Map<String, dynamic> save;
+    try {
+      save =
+          jsonDecode(request['encoded_save'] as String) as Map<String, dynamic>;
+    } on Object {
+      return jsonEncode(<String, dynamic>{
+        'type': 'error',
+        'code': 'invalid_save_json',
+        'message': 'The save is corrupted.',
+      });
+    }
+    final Map<String, dynamic> scenario =
+        request['scenario'] as Map<String, dynamic>;
+    final Map<String, dynamic> metadata =
+        scenario['metadata'] as Map<String, dynamic>;
+    if (save['scenario_id'] != metadata['id']) {
+      return jsonEncode(<String, dynamic>{
+        'type': 'error',
+        'code': 'scenario_fingerprint_mismatch',
+        'message': 'The save targets different content.',
+      });
+    }
+    loadCount += 1;
+    _sessionId += 1;
+    _scenario = scenario;
+    _scenarioId = save['scenario_id'] as String;
+    _seed = save['seed'] as int;
+    _stage = save['stage'] as String;
+    _clockMinutes = save['clock_minutes'] as int;
+    _outcome = save['outcome'] as String?;
+    return _response('session_loaded');
   }
 
   void _applyEffects(List<dynamic> effects) {
@@ -538,4 +815,40 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
       },
     ).toList(growable: false);
   }
+}
+
+class _MemoryGameSaveStore implements GameSaveStore {
+  String? encodedSave;
+
+  @override
+  Future<bool> exists(String slotId) async => encodedSave != null;
+
+  @override
+  Future<String> read(String slotId) async {
+    final String? value = encodedSave;
+    if (value == null) {
+      throw const GameSaveStorageException(
+        code: 'save_not_found',
+        message: 'No save.',
+      );
+    }
+    return value;
+  }
+
+  @override
+  Future<void> write(String slotId, String encodedSave) async {
+    this.encodedSave = encodedSave;
+  }
+}
+
+final class _DelayedGameSaveStore extends _MemoryGameSaveStore {
+  final Completer<void> _writeGate = Completer<void>();
+
+  @override
+  Future<void> write(String slotId, String encodedSave) async {
+    await _writeGate.future;
+    await super.write(slotId, encodedSave);
+  }
+
+  void completeWrite() => _writeGate.complete();
 }

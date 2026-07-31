@@ -21,6 +21,25 @@ abstract class GameRuntimeRepository extends ChangeNotifier {
   /// Last controlled automatic-clock failure, if ticking has been stopped.
   String? get clockErrorMessage;
 
+  /// Whether this runtime exposes the versioned save/load contract.
+  bool get supportsPersistence => false;
+
+  Future<bool> hasSavedGame() async => false;
+
+  Future<void> saveGame() async {
+    throw const GamePersistenceException(
+      code: 'persistence_unsupported',
+      message: 'This runtime does not support saved games.',
+    );
+  }
+
+  Future<void> loadGame() async {
+    throw const GamePersistenceException(
+      code: 'persistence_unsupported',
+      message: 'This runtime does not support saved games.',
+    );
+  }
+
   void reset();
 
   void markInboxItemRead(String itemId);
@@ -47,4 +66,18 @@ abstract class GameRuntimeRepository extends ChangeNotifier {
   }
 
   ActionExecutionResult applyAction(String actionId);
+}
+
+/// Controlled save/load failure suitable for localized presentation.
+final class GamePersistenceException implements Exception {
+  const GamePersistenceException({
+    required this.code,
+    required this.message,
+  });
+
+  final String code;
+  final String message;
+
+  @override
+  String toString() => '$code: $message';
 }

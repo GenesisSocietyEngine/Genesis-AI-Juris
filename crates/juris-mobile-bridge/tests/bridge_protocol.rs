@@ -226,6 +226,105 @@ fn malformed_and_unavailable_commands_return_stable_errors() {
 }
 
 #[test]
+fn json_protocol_saves_and_loads_a_fresh_replayed_session() {
+    let mut bridge = MobileBridge::new();
+    let scenario: Value = serde_json::from_str(LOGISTICS_SCENARIO).unwrap();
+    let created: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "create_session",
+                "scenario": scenario,
+                "seed": 20260725
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    let original_id = created["session_id"].as_u64().unwrap();
+    for action_id in ["audit_claim_file", "issue_formal_demand"] {
+        let response: Value = serde_json::from_str(
+            &bridge.execute_json(
+                &json!({
+                    "command": "dispatch",
+                    "session_id": original_id,
+                    "action_id": action_id
+                })
+                .to_string(),
+            ),
+        )
+        .unwrap();
+        assert_ne!(response["type"], "error");
+    }
+
+    let saved: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "save_session",
+                "session_id": original_id
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(saved["type"], "session_saved");
+    let encoded_save = saved["encoded_save"].as_str().unwrap();
+    let save: Value = serde_json::from_str(encoded_save).unwrap();
+    assert_eq!(save["schema_id"], "genesis.ai-juris.command-log");
+    assert_eq!(save["schema_version"], 1);
+    assert_eq!(save["commands"].as_array().unwrap().len(), 2);
+
+    let scenario: Value = serde_json::from_str(LOGISTICS_SCENARIO).unwrap();
+    let loaded: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "load_session",
+                "scenario": scenario,
+                "encoded_save": encoded_save
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(loaded["type"], "session_loaded");
+    assert_ne!(loaded["session_id"], original_id);
+    assert_eq!(loaded["snapshot"]["stage_id"], "proceedings");
+    assert_eq!(loaded["snapshot"]["clock_minutes"], 180);
+    assert_eq!(bridge.session_count(), 2);
+}
+
+#[test]
+fn failed_json_load_keeps_the_existing_session_intact() {
+    let mut bridge = MobileBridge::new();
+    let BridgeResponse::SessionCreated { session_id, .. } =
+        bridge.execute(BridgeRequest::CreateSession {
+            scenario: Box::new(logistics_definition()),
+            seed: 17,
+        })
+    else {
+        panic!("expected session_created response");
+    };
+    bridge.execute(BridgeRequest::Dispatch {
+        session_id,
+        action_id: "audit_claim_file".to_owned(),
+    });
+    let before = bridge.execute(BridgeRequest::Snapshot { session_id });
+
+    let response = bridge.execute(BridgeRequest::LoadSession {
+        scenario: Box::new(logistics_definition()),
+        encoded_save: "{truncated".to_owned(),
+    });
+    let BridgeResponse::Error { code, .. } = response else {
+        panic!("expected controlled load error");
+    };
+    assert_eq!(code, "invalid_save_json");
+    assert_eq!(bridge.session_count(), 1);
+    assert_eq!(
+        bridge.execute(BridgeRequest::Snapshot { session_id }),
+        before
+    );
+}
+
+#[test]
 fn json_protocol_runs_the_greenfire_protected_path() {
     let mut bridge = MobileBridge::new();
     let scenario: Value = serde_json::from_str(GREENFIRE_SCENARIO).unwrap();

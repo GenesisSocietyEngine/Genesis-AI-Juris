@@ -306,4 +306,41 @@ mod tests {
         assert_eq!(rejected["type"], "error");
         assert_eq!(rejected["code"], "clock_advance_unsupported");
     }
+
+    #[test]
+    fn command_log_save_load_uses_the_existing_three_symbol_c_abi() {
+        assert_eq!(juris_mobile_bridge_abi_version(), 1);
+        let scenario: Value =
+            serde_json::from_str(LOGISTICS_SCENARIO).expect("scenario fixture must be valid JSON");
+        let created = execute_request(json!({
+            "command": "create_session",
+            "scenario": scenario,
+            "seed": 20260725
+        }));
+        let session_id = created["session_id"].as_u64().unwrap();
+        execute_request(json!({
+            "command": "dispatch",
+            "session_id": session_id,
+            "action_id": "audit_claim_file"
+        }));
+
+        let saved = execute_request(json!({
+            "command": "save_session",
+            "session_id": session_id
+        }));
+        assert_eq!(saved["type"], "session_saved");
+        let encoded_save = saved["encoded_save"].as_str().unwrap();
+        assert!(encoded_save.contains("\"schema_version\":1"));
+
+        let scenario: Value =
+            serde_json::from_str(LOGISTICS_SCENARIO).expect("scenario fixture must be valid JSON");
+        let loaded = execute_request(json!({
+            "command": "load_session",
+            "scenario": scenario,
+            "encoded_save": encoded_save
+        }));
+        assert_eq!(loaded["type"], "session_loaded");
+        assert_eq!(loaded["snapshot"]["stage_id"], "pre_action");
+        assert_eq!(loaded["snapshot"]["clock_minutes"], 120);
+    }
 }
