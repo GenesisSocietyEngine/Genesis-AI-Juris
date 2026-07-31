@@ -12,7 +12,14 @@ abstract final class ScenarioSnapshotMapper {
     Set<String> locallyReadInboxIds = const <String>{},
   }) {
     final int clockMinutes = _int(source, 'clock_minutes');
-    final bool terminal = _bool(source, 'terminal');
+    final bool isClosed =
+        _optionalBool(source, 'is_closed') ?? _bool(source, 'terminal');
+    final JudicialResult? judicialResult =
+        _judicialResult(source['judicial_result']);
+    final MatterLifecycleStatus matterLifecycle = _matterLifecycle(
+      source['matter_lifecycle'],
+      isClosed: isClosed,
+    );
     final List<Map<String, dynamic>> facts = _objectList(source, 'facts');
     final List<Map<String, dynamic>> evidence = _objectList(source, 'evidence');
     final List<Map<String, dynamic>> availableActions =
@@ -48,9 +55,13 @@ abstract final class ScenarioSnapshotMapper {
         field: 'title',
         fallback: _string(source, 'stage_title'),
       ),
-      caseResultStatus: _caseResult(outcome),
+      caseResultStatus: _caseResult(
+        judicialResult,
+        matterLifecycle,
+        outcome,
+      ),
       engagementStatus:
-          terminal ? EngagementStatus.completed : EngagementStatus.active,
+          isClosed ? EngagementStatus.completed : EngagementStatus.active,
       matterTitle: _scenarioTitle(caseDefinition, locale),
       caseStrength: ((factScore + evidenceScore) / 2).round(),
       merits: factScore,
@@ -175,7 +186,10 @@ abstract final class ScenarioSnapshotMapper {
           )
           .toList(growable: false),
       latestAiNote: null,
-      outcomeSummary: outcome == null
+      judicialResult: judicialResult,
+      matterLifecycle: matterLifecycle,
+      isClosed: isClosed,
+      outcomeSummary: !isClosed || outcome == null
           ? null
           : CaseOutcomeSummaryView(
               headline: caseDefinition.scenarioText(
@@ -268,15 +282,80 @@ abstract final class ScenarioSnapshotMapper {
     };
   }
 
-  static CaseResultStatus _caseResult(Map<String, dynamic>? outcome) {
+  static CaseResultStatus _caseResult(
+    JudicialResult? judicialResult,
+    MatterLifecycleStatus matterLifecycle,
+    Map<String, dynamic>? outcome,
+  ) {
+    final String? outcomeId = outcome == null ? null : _string(outcome, 'id');
+    if (outcomeId != null &&
+        outcomeId.contains('appellate') &&
+        judicialResult == JudicialResult.won) {
+      return CaseResultStatus.wonOnAppeal;
+    }
+    final CaseResultStatus? fromDecision = switch (judicialResult) {
+      JudicialResult.won
+          when matterLifecycle == MatterLifecycleStatus.appeal ||
+              matterLifecycle == MatterLifecycleStatus.enforcement =>
+        CaseResultStatus.wonOnAppeal,
+      JudicialResult.won => CaseResultStatus.wonAtFirstInstance,
+      JudicialResult.lost ||
+      JudicialResult.dismissed
+          when matterLifecycle == MatterLifecycleStatus.appeal ||
+              matterLifecycle == MatterLifecycleStatus.cassation =>
+        CaseResultStatus.lostOnAppeal,
+      JudicialResult.lost ||
+      JudicialResult.dismissed =>
+        CaseResultStatus.lostAtFirstInstance,
+      JudicialResult.partiallyWon => CaseResultStatus.mixedAtFirstInstance,
+      JudicialResult.unknown || null => null,
+    };
+    if (fromDecision != null) {
+      return fromDecision;
+    }
     if (outcome == null) {
       return CaseResultStatus.ongoing;
     }
-    final String id = _string(outcome, 'id');
-    if (id.contains('judgment')) {
+    if (outcomeId!.contains('judgment')) {
       return CaseResultStatus.wonAtFirstInstance;
     }
     return CaseResultStatus.settled;
+  }
+
+  static JudicialResult? _judicialResult(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is! String) {
+      return JudicialResult.unknown;
+    }
+    return switch (value) {
+      'won' => JudicialResult.won,
+      'lost' => JudicialResult.lost,
+      'partially_won' => JudicialResult.partiallyWon,
+      'dismissed' => JudicialResult.dismissed,
+      _ => JudicialResult.unknown,
+    };
+  }
+
+  static MatterLifecycleStatus _matterLifecycle(
+    dynamic value, {
+    required bool isClosed,
+  }) {
+    if (value is! String) {
+      return isClosed
+          ? MatterLifecycleStatus.closed
+          : MatterLifecycleStatus.active;
+    }
+    return switch (value) {
+      'active' => MatterLifecycleStatus.active,
+      'post_judgment' => MatterLifecycleStatus.postJudgment,
+      'appeal' => MatterLifecycleStatus.appeal,
+      'cassation' => MatterLifecycleStatus.cassation,
+      'enforcement' => MatterLifecycleStatus.enforcement,
+      'closed' => MatterLifecycleStatus.closed,
+      _ => MatterLifecycleStatus.unknown,
+    };
   }
 
   static int _factStatusScore(String status) {
@@ -425,5 +504,10 @@ abstract final class ScenarioSnapshotMapper {
       return value;
     }
     throw FormatException('$field must be a Boolean');
+  }
+
+  static bool? _optionalBool(Map<String, dynamic> source, String field) {
+    final dynamic value = source[field];
+    return value is bool ? value : null;
   }
 }

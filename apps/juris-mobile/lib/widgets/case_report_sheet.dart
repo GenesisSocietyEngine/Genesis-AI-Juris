@@ -46,7 +46,22 @@ class CaseReportSheet extends StatelessWidget {
                 children: <Widget>[
                   _ReportRow(
                     label: GameplayLocale.text(context, 'Result', 'Результат'),
-                    value: _caseResultLabel(context, snapshot.caseResultStatus),
+                    value: _judicialResultLabel(
+                          context,
+                          snapshot.judicialResult,
+                        ) ??
+                        _caseResultLabel(context, snapshot.caseResultStatus),
+                  ),
+                  _ReportRow(
+                    label: GameplayLocale.text(
+                      context,
+                      'Matter status',
+                      'Статус дела',
+                    ),
+                    value: _matterLifecycleLabel(
+                      context,
+                      snapshot.matterLifecycle,
+                    ),
                   ),
                   _ReportRow(
                     label: GameplayLocale.text(
@@ -319,6 +334,44 @@ String _caseResultLabel(BuildContext context, CaseResultStatus status) {
       'Направлено на новое рассмотрение',
     CaseResultStatus.settled => 'Урегулировано',
     CaseResultStatus.withdrawn => 'Отозвано',
+  };
+}
+
+String? _judicialResultLabel(
+  BuildContext context,
+  JudicialResult? result,
+) {
+  if (result == null) {
+    return null;
+  }
+  if (GameplayLocale.of(context) != 'ru') {
+    return result.label;
+  }
+  return switch (result) {
+    JudicialResult.won => 'Победа',
+    JudicialResult.lost => 'Поражение',
+    JudicialResult.partiallyWon => 'Частичная победа',
+    JudicialResult.dismissed => 'Требования отклонены',
+    JudicialResult.unknown => 'Неизвестное решение',
+  };
+}
+
+String _matterLifecycleLabel(
+  BuildContext context,
+  MatterLifecycleStatus status,
+) {
+  if (GameplayLocale.of(context) != 'ru') {
+    return status.label;
+  }
+  return switch (status) {
+    MatterLifecycleStatus.active => 'Активно',
+    MatterLifecycleStatus.postJudgment =>
+      'После решения — доступны средства обжалования',
+    MatterLifecycleStatus.appeal => 'Апелляция',
+    MatterLifecycleStatus.cassation => 'Кассация',
+    MatterLifecycleStatus.enforcement => 'Исполнение',
+    MatterLifecycleStatus.closed => 'Закрыто',
+    MatterLifecycleStatus.unknown => 'Неизвестный статус',
   };
 }
 
