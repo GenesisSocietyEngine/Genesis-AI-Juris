@@ -138,6 +138,8 @@ mod tests {
         include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json");
     const GOLDENSHELL_SCENARIO: &str =
         include_str!("../../../content/cases/goldenshell_recall_at_dawn.scenario.json");
+    const REMEDIES_SCENARIO: &str =
+        include_str!("../../../content/fixtures/authoring/adverse_judgment_with_remedies.json");
 
     fn execute_request(request: Value) -> Value {
         let request = CString::new(request.to_string()).expect("request must be a C string");
@@ -342,5 +344,39 @@ mod tests {
         assert_eq!(loaded["type"], "session_loaded");
         assert_eq!(loaded["snapshot"]["stage_id"], "pre_action");
         assert_eq!(loaded["snapshot"]["clock_minutes"], 120);
+    }
+
+    #[test]
+    fn adverse_judgment_snapshot_remains_open_over_ffi() {
+        let scenario: Value = serde_json::from_str(REMEDIES_SCENARIO).unwrap();
+        let created = execute_request(json!({
+            "command": "create_session",
+            "scenario": scenario,
+            "seed": 20260729
+        }));
+        let session_id = created["session_id"].as_u64().unwrap();
+
+        for action_id in ["request_judgment", "adverse_trial_judgment"] {
+            let response = execute_request(json!({
+                "command": "dispatch",
+                "session_id": session_id,
+                "action_id": action_id
+            }));
+            assert_eq!(response["type"], "snapshot");
+        }
+
+        let snapshot = execute_request(json!({
+            "command": "snapshot",
+            "session_id": session_id
+        }));
+        assert_eq!(snapshot["snapshot"]["judicial_result"], "lost");
+        assert_eq!(snapshot["snapshot"]["matter_lifecycle"], "post_judgment");
+        assert_eq!(snapshot["snapshot"]["is_closed"], false);
+        assert_eq!(snapshot["snapshot"]["resolved_outcome"], Value::Null);
+        assert!(snapshot["snapshot"]["available_actions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|action| action["id"] == "file_appeal"));
     }
 }

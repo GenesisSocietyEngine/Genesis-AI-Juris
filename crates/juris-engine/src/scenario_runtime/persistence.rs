@@ -281,7 +281,7 @@ fn final_state_digest(session: &ScenarioSession) -> Result<String, ScenarioSaveE
         .iter()
         .map(|(id, status)| (id.as_str(), task_status_name(*status)))
         .collect();
-    let projection = serde_json::json!({
+    let mut projection = serde_json::json!({
         "scenario_id": session.definition.metadata.id.as_str(),
         "scenario_fingerprint": scenario_fingerprint(&session.definition)?,
         "seed": session.seed,
@@ -299,6 +299,16 @@ fn final_state_digest(session: &ScenarioSession) -> Result<String, ScenarioSaveE
         "fired_events": session.state.fired_events,
         "outcome_id": session.state.outcome_id,
     });
+    if let Some(judicial_result) = session.state.judicial_result {
+        projection
+            .as_object_mut()
+            .expect("authoritative state projection must be an object")
+            .insert(
+                "judicial_result".to_owned(),
+                serde_json::to_value(judicial_result)
+                    .map_err(|error| ScenarioSaveError::Serialization(error.to_string()))?,
+            );
+    }
     digest_serializable(&projection)
 }
 

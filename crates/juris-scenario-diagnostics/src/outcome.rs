@@ -20,12 +20,123 @@ pub(crate) fn validate_outcome_semantics(
         .collect::<BTreeMap<_, _>>();
 
     validate_post_judgment_stages(scenario, report);
+    validate_remedy_stages(scenario, report);
     validate_terminal_outcome_coverage(scenario, &stages, report);
+    validate_outcomes_resolve_at_closure(scenario, &stages, report);
     validate_outcome_producers(scenario, report);
     validate_transition_outcome_cardinality(scenario, report);
     validate_unconditional_outcome_ambiguity(scenario, report);
     validate_outcome_conditions(scenario, report);
     report.sort();
+}
+
+fn validate_remedy_stages(scenario: &ScenarioDefinition, report: &mut AuthoringValidationReport) {
+    for (index, stage) in scenario.stages.iter().enumerate() {
+        if !matches!(
+            stage.kind,
+            StageKind::PostJudgment
+                | StageKind::Appeal
+                | StageKind::Cassation
+                | StageKind::Enforcement
+        ) {
+            continue;
+        }
+
+        if stage.terminal && stage.kind != StageKind::PostJudgment {
+            report.push(AuthoringDiagnostic::error(
+                AuthoringDiagnosticCode::TerminalRemedyStage,
+                format!("stages[{index}].terminal"),
+                format!(
+                    "remedy stage `{}` is terminal and would suppress available remedies",
+                    stage.id
+                ),
+                "Keep remedy stages non-terminal and close through a separate resolved stage.",
+            ));
+        }
+
+        if stage.exit_actions.is_empty() {
+            report.push(AuthoringDiagnostic::error(
+                AuthoringDiagnosticCode::RemedyStageWithoutExit,
+                format!("stages[{index}].exit_actions"),
+                format!("remedy stage `{}` has no declared exit action", stage.id),
+                "Declare at least one reachable remedy, waiver, exhaustion, settlement, or enforcement-completion action.",
+            ));
+        }
+    }
+}
+
+fn validate_outcomes_resolve_at_closure(
+    scenario: &ScenarioDefinition,
+    stages: &BTreeMap<&str, &StageDefinition>,
+    report: &mut AuthoringValidationReport,
+) {
+    for (collection, index, condition, effects) in
+        scenario
+            .actions
+            .iter()
+            .enumerate()
+            .map(|(index, action)| {
+                (
+                    "actions",
+                    index,
+                    &action.available_when,
+                    action.effects.as_slice(),
+                )
+            })
+            .chain(scenario.events.iter().enumerate().map(|(index, event)| {
+                ("events", index, &event.condition, event.effects.as_slice())
+            }))
+    {
+        if !effects
+            .iter()
+            .any(|effect| resolve_outcome(effect).is_some())
+        {
+            continue;
+        }
+        let enters_terminal = effects.iter().any(|effect| {
+            let Effect::SetStage { stage } = effect else {
+                return false;
+            };
+            stages.get(stage.as_str()).copied().is_some_and(is_terminal)
+        }) || condition_targets_terminal(condition, stages);
+        if !enters_terminal {
+            report.push(AuthoringDiagnostic::error(
+                AuthoringDiagnosticCode::PrematureOutcomeResolution,
+                format!("{collection}[{index}].effects"),
+                "transition resolves the complete scenario outcome without entering a terminal stage",
+                "Record an intermediate judicial result with SetJudicialResult; resolve an outcome only when entering a resolved terminal stage.",
+            ));
+        }
+    }
+}
+
+fn condition_targets_terminal(
+    condition: &Condition,
+    stages: &BTreeMap<&str, &StageDefinition>,
+) -> bool {
+    match condition {
+        Condition::StageIs { stage } => {
+            stages.get(stage.as_str()).copied().is_some_and(is_terminal)
+        }
+        Condition::All { conditions } => conditions
+            .iter()
+            .any(|nested| condition_targets_terminal(nested, stages)),
+        Condition::Any { conditions } => {
+            !conditions.is_empty()
+                && conditions
+                    .iter()
+                    .all(|nested| condition_targets_terminal(nested, stages))
+        }
+        Condition::Always
+        | Condition::FlagEquals { .. }
+        | Condition::FactStatusIs { .. }
+        | Condition::EvidenceAvailable { .. }
+        | Condition::DeadlineStatusIs { .. }
+        | Condition::AsyncTaskStatusIs { .. }
+        | Condition::InboxItemResolved { .. }
+        | Condition::JudicialResultIs { .. }
+        | Condition::Not { .. } => false,
+    }
 }
 
 fn validate_post_judgment_stages(

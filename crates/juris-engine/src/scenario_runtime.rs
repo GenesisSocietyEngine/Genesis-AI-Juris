@@ -9,7 +9,8 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use juris_scenario_schema::{
     ActionDefinition, ActionRepeatability, AsyncTaskStatus, Condition, DeadlineStatus, Effect,
-    EventDefinition, EventTrigger, FactStatus, ScenarioClockMode, ScenarioDefinition, StageKind,
+    EventDefinition, EventTrigger, FactStatus, JudicialResult, MatterLifecycleStatus,
+    ScenarioClockMode, ScenarioDefinition,
 };
 use juris_scenario_validator::validate_scenario;
 use serde::Serialize;
@@ -147,6 +148,11 @@ pub struct MobileScenarioSnapshot {
     pub stage_title: String,
     pub clock_minutes: u64,
     pub clock_mode: String,
+    pub judicial_result: Option<JudicialResult>,
+    pub matter_lifecycle: MatterLifecycleStatus,
+    pub is_closed: bool,
+    pub resolved_outcome: Option<String>,
+    /// Backward-compatible alias for `is_closed`.
     pub terminal: bool,
     pub flags: BTreeMap<String, bool>,
     pub facts: Vec<MobileFactSnapshot>,
@@ -172,6 +178,7 @@ struct ScenarioRuntimeState {
     resolved_inbox: BTreeSet<String>,
     action_uses: BTreeMap<String, u32>,
     fired_events: BTreeSet<String>,
+    judicial_result: Option<JudicialResult>,
     outcome_id: Option<String>,
 }
 
@@ -256,6 +263,7 @@ impl ScenarioSession {
                 resolved_inbox: BTreeSet::new(),
                 action_uses: BTreeMap::new(),
                 fired_events: BTreeSet::new(),
+                judicial_result: None,
                 outcome_id: None,
             },
             definition,
@@ -365,6 +373,8 @@ impl ScenarioSession {
                 summary: definition.summary.clone(),
             }
         });
+        let matter_lifecycle = MatterLifecycleStatus::from_stage(stage.kind, stage.terminal);
+        let is_closed = matter_lifecycle.is_closed();
 
         MobileScenarioSnapshot {
             snapshot_schema_version: SNAPSHOT_SCHEMA_VERSION,
@@ -374,7 +384,11 @@ impl ScenarioSession {
             stage_title: stage.title.clone(),
             clock_minutes: self.state.clock_minutes,
             clock_mode: clock_mode_name(self.definition.clock.mode).to_owned(),
-            terminal: self.is_terminal(),
+            judicial_result: self.state.judicial_result,
+            matter_lifecycle,
+            is_closed,
+            resolved_outcome: self.state.outcome_id.clone(),
+            terminal: is_closed,
             flags: self.state.flags.clone(),
             facts,
             evidence,
@@ -404,7 +418,7 @@ impl ScenarioSession {
         &mut self,
         action_id: &str,
     ) -> Result<MobileScenarioSnapshot, ScenarioRuntimeError> {
-        if self.is_terminal() {
+        if self.is_closed() {
             return Err(ScenarioRuntimeError::ScenarioResolved);
         }
 
@@ -457,7 +471,7 @@ impl ScenarioSession {
         &mut self,
         minutes: u32,
     ) -> Result<MobileScenarioSnapshot, ScenarioRuntimeError> {
-        if self.is_terminal() {
+        if self.is_closed() {
             return Err(ScenarioRuntimeError::ScenarioResolved);
         }
         if self.definition.clock.mode != ScenarioClockMode::Foreground {
@@ -496,7 +510,7 @@ impl ScenarioSession {
 
         // An action may resolve the scenario in its effects. Its declared time
         // cost still belongs to that action, but no later temporal event fires.
-        if self.is_terminal() {
+        if self.is_closed() {
             self.state.clock_minutes = target;
             return Ok(());
         }
@@ -506,7 +520,7 @@ impl ScenarioSession {
             let mut due_events = VecDeque::new();
             self.queue_due_events(&mut due_events);
             self.process_event_queue(due_events)?;
-            if self.is_terminal() {
+            if self.is_closed() {
                 return Ok(());
             }
         }
@@ -555,7 +569,7 @@ impl ScenarioSession {
     }
 
     fn available_actions(&self) -> Vec<MobileActionSnapshot> {
-        if self.is_terminal() {
+        if self.is_closed() {
             return Vec::new();
         }
 
@@ -605,14 +619,14 @@ impl ScenarioSession {
         repeatable && self.evaluate_condition(&action.available_when)
     }
 
-    fn is_terminal(&self) -> bool {
-        let terminal_stage = self
-            .definition
+    fn is_closed(&self) -> bool {
+        self.definition
             .stages
             .iter()
             .find(|item| item.id.as_str() == self.state.stage_id)
-            .is_some_and(|stage| stage.terminal || stage.kind == StageKind::Resolved);
-        terminal_stage || self.state.outcome_id.is_some()
+            .is_some_and(|stage| {
+                MatterLifecycleStatus::from_stage(stage.kind, stage.terminal).is_closed()
+            })
     }
 
     fn evaluate_condition(&self, condition: &Condition) -> bool {
@@ -647,6 +661,7 @@ impl ScenarioSession {
             Condition::InboxItemResolved { item } => {
                 self.state.resolved_inbox.contains(item.as_str())
             }
+            Condition::JudicialResultIs { result } => self.state.judicial_result == Some(*result),
             Condition::All { conditions } => {
                 conditions.iter().all(|item| self.evaluate_condition(item))
             }
@@ -731,6 +746,9 @@ impl ScenarioSession {
                 }
                 Effect::ResolveInboxItem { item } => {
                     self.state.resolved_inbox.insert(item.as_str().to_owned());
+                }
+                Effect::SetJudicialResult { result } => {
+                    self.state.judicial_result = Some(*result);
                 }
                 Effect::TriggerEvent { event } => {
                     events.push_back(event.as_str().to_owned());

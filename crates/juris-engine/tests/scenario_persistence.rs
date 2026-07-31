@@ -2,7 +2,7 @@ use juris_engine::{
     ScenarioCommand, ScenarioSaveEnvelope, ScenarioSaveError, ScenarioSession,
     ScenarioSessionRegistry,
 };
-use juris_scenario_schema::ScenarioDefinition;
+use juris_scenario_schema::{JudicialResult, MatterLifecycleStatus, ScenarioDefinition};
 use serde_json::json;
 
 const LOGISTICS_SCENARIO: &str =
@@ -11,6 +11,8 @@ const GREENFIRE_SCENARIO: &str =
     include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json");
 const GOLDENSHELL_SCENARIO: &str =
     include_str!("../../../content/cases/goldenshell_recall_at_dawn.scenario.json");
+const REMEDIES_SCENARIO: &str =
+    include_str!("../../../content/fixtures/authoring/adverse_judgment_with_remedies.json");
 
 fn definition(encoded: &str) -> ScenarioDefinition {
     serde_json::from_str(encoded).expect("canonical scenario must parse")
@@ -71,6 +73,55 @@ fn foreground_goldenshell_round_trips() {
     session.dispatch("preserve_reference_samples").unwrap();
     session.advance_time(360).unwrap();
     assert_round_trip(&session, definition(GOLDENSHELL_SCENARIO));
+}
+
+#[test]
+fn adverse_judgment_and_remedy_state_round_trip_without_closing() {
+    let mut session = ScenarioSession::new(definition(REMEDIES_SCENARIO), 20260729).unwrap();
+    session.dispatch("request_judgment").unwrap();
+    session.dispatch("adverse_trial_judgment").unwrap();
+
+    let snapshot = session.snapshot();
+    assert_eq!(snapshot.judicial_result, Some(JudicialResult::Lost));
+    assert_eq!(
+        snapshot.matter_lifecycle,
+        MatterLifecycleStatus::PostJudgment
+    );
+    assert!(!snapshot.is_closed);
+    assert!(snapshot
+        .available_actions
+        .iter()
+        .any(|action| action.id == "file_appeal"));
+    assert_round_trip(&session, definition(REMEDIES_SCENARIO));
+
+    let encoded = session.save_json().unwrap();
+    let mut restored =
+        ScenarioSession::from_save_json(definition(REMEDIES_SCENARIO), &encoded).unwrap();
+    restored.dispatch("file_appeal").unwrap();
+    assert_eq!(
+        restored.snapshot().matter_lifecycle,
+        MatterLifecycleStatus::Appeal
+    );
+    assert_round_trip(&restored, definition(REMEDIES_SCENARIO));
+}
+
+#[test]
+fn repeated_remedy_load_does_not_duplicate_generated_events() {
+    let mut session = ScenarioSession::new(definition(REMEDIES_SCENARIO), 20260729).unwrap();
+    session.dispatch("request_judgment").unwrap();
+    session.dispatch("adverse_trial_judgment").unwrap();
+    let encoded = session.save_json().unwrap();
+
+    let first = ScenarioSession::from_save_json(definition(REMEDIES_SCENARIO), &encoded).unwrap();
+    let second = ScenarioSession::from_save_json(definition(REMEDIES_SCENARIO), &encoded).unwrap();
+
+    assert_eq!(first.snapshot(), second.snapshot());
+    assert_eq!(
+        first.snapshot().fired_event_ids,
+        vec!["adverse_judgment_delivered", "hearing_scheduled"]
+    );
+    assert_eq!(first.command_log().len(), 2);
+    assert_eq!(second.command_log().len(), 2);
 }
 
 #[test]

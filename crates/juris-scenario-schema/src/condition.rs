@@ -5,7 +5,7 @@
 //! scenario generation, and future cross-platform execution.
 
 use crate::{AsyncTaskId, DeadlineId, EvidenceId, FactId, FlagId, InboxItemId, StageId};
-use crate::{AsyncTaskStatus, DeadlineStatus, FactStatus};
+use crate::{AsyncTaskStatus, DeadlineStatus, FactStatus, JudicialResult};
 use serde::{Deserialize, Serialize};
 
 /// Predicate evaluated against authoritative runtime state.
@@ -47,6 +47,10 @@ pub enum Condition {
 
     InboxItemResolved {
         item: InboxItemId,
+    },
+
+    JudicialResultIs {
+        result: JudicialResult,
     },
 
     All {

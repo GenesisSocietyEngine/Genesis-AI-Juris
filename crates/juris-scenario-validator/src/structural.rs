@@ -1,7 +1,7 @@
 //! Structural validation independent of cross-reference traversal.
 
 use crate::{Diagnostic, DiagnosticCode, ScenarioIndex, ValidationReport};
-use juris_scenario_schema::{ScenarioDefinition, SCENARIO_SCHEMA_VERSION_V1};
+use juris_scenario_schema::{ScenarioDefinition, StageKind, SCENARIO_SCHEMA_VERSION_V1};
 use std::collections::HashSet;
 
 pub(crate) fn validate_structural(
@@ -13,6 +13,7 @@ pub(crate) fn validate_structural(
     validate_metadata_id(scenario, report);
     validate_initial_stage(scenario, index, report);
     validate_outcomes(scenario, report);
+    validate_stage_lifecycle_contract(scenario, report);
 
     validate_id_collection(
         "actors",
@@ -75,6 +76,52 @@ pub(crate) fn validate_structural(
     );
 }
 
+fn validate_stage_lifecycle_contract(scenario: &ScenarioDefinition, report: &mut ValidationReport) {
+    for (index, stage) in scenario.stages.iter().enumerate() {
+        if stage.kind == StageKind::Resolved && !stage.terminal {
+            report.push(Diagnostic::error(
+                DiagnosticCode::ResolvedStageNotTerminal,
+                format!("stages[{index}].terminal"),
+                format!("resolved stage `{}` must be terminal", stage.id),
+            ));
+        }
+
+        if stage.terminal && stage.kind != StageKind::Resolved {
+            report.push(Diagnostic::error(
+                DiagnosticCode::TerminalStageNotResolved,
+                format!("stages[{index}].kind"),
+                format!(
+                    "terminal stage `{}` must use the resolved stage kind",
+                    stage.id
+                ),
+            ));
+        }
+
+        if matches!(
+            stage.kind,
+            StageKind::PostJudgment
+                | StageKind::Appeal
+                | StageKind::Cassation
+                | StageKind::Enforcement
+        ) && stage.terminal
+        {
+            report.push(Diagnostic::error(
+                DiagnosticCode::RemedyStageTerminal,
+                format!("stages[{index}].terminal"),
+                format!("remedy stage `{}` must remain nonterminal", stage.id),
+            ));
+        }
+
+        if stage.terminal && !stage.exit_actions.is_empty() {
+            report.push(Diagnostic::error(
+                DiagnosticCode::TerminalStageHasExitActions,
+                format!("stages[{index}].exit_actions"),
+                format!("terminal stage `{}` must not expose exit actions", stage.id),
+            ));
+        }
+    }
+}
+
 fn validate_schema_version(scenario: &ScenarioDefinition, report: &mut ValidationReport) {
     if scenario.schema_version != SCENARIO_SCHEMA_VERSION_V1 {
         report.push(Diagnostic::error(
@@ -127,6 +174,28 @@ fn validate_outcomes(scenario: &ScenarioDefinition, report: &mut ValidationRepor
             "outcomes",
             "a playable scenario must define at least one terminal outcome",
         ));
+    }
+
+    for (index, outcome) in scenario.outcomes.iter().enumerate() {
+        let Some(target) = scenario
+            .stages
+            .iter()
+            .find(|stage| stage.id == outcome.terminal_stage)
+        else {
+            // Reference validation owns unknown stage diagnostics.
+            continue;
+        };
+
+        if !(target.terminal || target.kind == StageKind::Resolved) {
+            report.push(Diagnostic::error(
+                DiagnosticCode::OutcomeResolvedBeforeTerminalStage,
+                format!("outcomes[{index}].terminal_stage"),
+                format!(
+                    "outcome `{}` must target a terminal resolved stage, not `{}`",
+                    outcome.id, target.id
+                ),
+            ));
+        }
     }
 }
 
