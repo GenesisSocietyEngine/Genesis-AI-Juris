@@ -14,6 +14,9 @@ pub enum StageKind {
     HearingPreparation,
     Hearing,
     PostJudgment,
+    Appeal,
+    Cassation,
+    Enforcement,
     Resolved,
 }
 

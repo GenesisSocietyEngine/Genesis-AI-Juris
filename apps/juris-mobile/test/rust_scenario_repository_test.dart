@@ -742,6 +742,14 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
         'clock_mode': ((_scenario['clock'] as Map<String, dynamic>?)?['mode']
                 as String?) ??
             'action_driven',
+        'judicial_result': null,
+        'matter_lifecycle': _outcome != null
+            ? 'closed'
+            : _stage == 'post_judgment'
+                ? 'post_judgment'
+                : 'active',
+        'is_closed': _outcome != null,
+        'resolved_outcome': _outcome,
         'terminal': _outcome != null,
         'flags': <String, bool>{},
         'facts': (_scenario['facts'] as List<dynamic>)

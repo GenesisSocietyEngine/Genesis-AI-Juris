@@ -1,0 +1,375 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "id": "adverse_judgment_with_remedies",
+    "title": "Adverse Judgment with Available Remedies",
+    "summary": "Focused lifecycle fixture proving that a judicial loss does not close a matter.",
+    "content_version": "1",
+    "tags": ["fixture", "lifecycle", "remedies"]
+  },
+  "jurisdiction": {
+    "code": "BE",
+    "pack_version": "1"
+  },
+  "initial_stage": "hearing",
+  "stages": [
+    {
+      "id": "hearing",
+      "title": "Hearing",
+      "kind": "hearing",
+      "exit_actions": ["request_judgment", "adverse_trial_judgment"]
+    },
+    {
+      "id": "post_judgment_remedies",
+      "title": "Post-judgment remedies",
+      "kind": "post_judgment",
+      "exit_actions": ["file_appeal", "waive_appeal"]
+    },
+    {
+      "id": "appeal",
+      "title": "Appeal",
+      "kind": "appeal",
+      "exit_actions": [
+        "appeal_success",
+        "appeal_lost",
+        "begin_enforcement",
+        "file_cassation"
+      ]
+    },
+    {
+      "id": "cassation",
+      "title": "Cassation",
+      "kind": "cassation",
+      "exit_actions": [
+        "cassation_rejected",
+        "close_after_remedies_exhausted"
+      ]
+    },
+    {
+      "id": "enforcement",
+      "title": "Enforcement",
+      "kind": "enforcement",
+      "exit_actions": ["complete_enforcement"]
+    },
+    {
+      "id": "resolved",
+      "title": "Resolved",
+      "kind": "resolved",
+      "terminal": true
+    }
+  ],
+  "actions": [
+    {
+      "id": "request_judgment",
+      "title": "Request judgment",
+      "available_when": {
+        "type": "stage_is",
+        "stage": "hearing"
+      },
+      "effects": [
+        {
+          "type": "set_flag",
+          "flag": "judgment_requested",
+          "value": true
+        },
+        {
+          "type": "trigger_event",
+          "event": "hearing_scheduled"
+        }
+      ],
+      "time_cost_minutes": 15
+    },
+    {
+      "id": "adverse_trial_judgment",
+      "title": "Receive adverse trial judgment",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "hearing"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "judgment_requested",
+            "value": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "trigger_event",
+          "event": "adverse_judgment_delivered"
+        }
+      ],
+      "time_cost_minutes": 45
+    },
+    {
+      "id": "file_appeal",
+      "title": "File appeal",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "post_judgment_remedies"
+          },
+          {
+            "type": "judicial_result_is",
+            "result": "lost"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_stage",
+          "stage": "appeal"
+        }
+      ],
+      "time_cost_minutes": 60
+    },
+    {
+      "id": "waive_appeal",
+      "title": "Waive appeal and close",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "post_judgment_remedies"
+          },
+          {
+            "type": "judicial_result_is",
+            "result": "lost"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_stage",
+          "stage": "resolved"
+        },
+        {
+          "type": "resolve_outcome",
+          "outcome": "final_loss"
+        }
+      ],
+      "time_cost_minutes": 5
+    },
+    {
+      "id": "appeal_success",
+      "title": "Receive successful appeal judgment",
+      "available_when": {
+        "type": "stage_is",
+        "stage": "appeal"
+      },
+      "effects": [
+        {
+          "type": "set_judicial_result",
+          "result": "won"
+        }
+      ],
+      "time_cost_minutes": 120
+    },
+    {
+      "id": "appeal_lost",
+      "title": "Receive adverse appeal judgment",
+      "available_when": {
+        "type": "stage_is",
+        "stage": "appeal"
+      },
+      "effects": [
+        {
+          "type": "set_judicial_result",
+          "result": "lost"
+        },
+        {
+          "type": "set_flag",
+          "flag": "appeal_lost",
+          "value": true
+        }
+      ],
+      "time_cost_minutes": 120
+    },
+    {
+      "id": "begin_enforcement",
+      "title": "Begin enforcement",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "appeal"
+          },
+          {
+            "type": "judicial_result_is",
+            "result": "won"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_stage",
+          "stage": "enforcement"
+        }
+      ],
+      "time_cost_minutes": 60
+    },
+    {
+      "id": "file_cassation",
+      "title": "File cassation",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "appeal"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "appeal_lost",
+            "value": true
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_stage",
+          "stage": "cassation"
+        }
+      ],
+      "time_cost_minutes": 60
+    },
+    {
+      "id": "cassation_rejected",
+      "title": "Receive cassation rejection",
+      "available_when": {
+        "type": "stage_is",
+        "stage": "cassation"
+      },
+      "effects": [
+        {
+          "type": "set_judicial_result",
+          "result": "lost"
+        },
+        {
+          "type": "set_flag",
+          "flag": "remedies_exhausted",
+          "value": true
+        }
+      ],
+      "time_cost_minutes": 120
+    },
+    {
+      "id": "close_after_remedies_exhausted",
+      "title": "Close after remedies exhausted",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "cassation"
+          },
+          {
+            "type": "flag_equals",
+            "flag": "remedies_exhausted",
+            "value": true
+          },
+          {
+            "type": "judicial_result_is",
+            "result": "lost"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_stage",
+          "stage": "resolved"
+        },
+        {
+          "type": "resolve_outcome",
+          "outcome": "final_loss"
+        }
+      ],
+      "time_cost_minutes": 5
+    },
+    {
+      "id": "complete_enforcement",
+      "title": "Complete enforcement and close",
+      "available_when": {
+        "type": "all",
+        "conditions": [
+          {
+            "type": "stage_is",
+            "stage": "enforcement"
+          },
+          {
+            "type": "judicial_result_is",
+            "result": "won"
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "set_stage",
+          "stage": "resolved"
+        },
+        {
+          "type": "resolve_outcome",
+          "outcome": "appellate_success"
+        }
+      ],
+      "time_cost_minutes": 60
+    }
+  ],
+  "events": [
+    {
+      "id": "hearing_scheduled",
+      "title": "Hearing scheduled",
+      "kind": "hearing_scheduled",
+      "trigger": {
+        "type": "by_effect"
+      }
+    },
+    {
+      "id": "adverse_judgment_delivered",
+      "title": "Adverse trial judgment delivered",
+      "kind": "hearing_closed",
+      "trigger": {
+        "type": "by_effect"
+      },
+      "effects": [
+        {
+          "type": "set_judicial_result",
+          "result": "lost"
+        },
+        {
+          "type": "set_stage",
+          "stage": "post_judgment_remedies"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "final_loss",
+      "title": "Final loss",
+      "summary": "The adverse result became final after waiver or exhaustion of remedies.",
+      "terminal_stage": "resolved",
+      "condition": {
+        "type": "judicial_result_is",
+        "result": "lost"
+      }
+    },
+    {
+      "id": "appellate_success",
+      "title": "Appellate success enforced",
+      "summary": "The appellate victory was enforced and the matter was expressly closed.",
+      "terminal_stage": "resolved",
+      "condition": {
+        "type": "judicial_result_is",
+        "result": "won"
+      }
+    }
+  ]
+}

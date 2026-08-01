@@ -96,6 +96,46 @@ enum CaseResultStatus {
   withdrawn,
 }
 
+/// Latest authoritative judicial decision, independent from matter closure.
+enum JudicialResult { won, lost, partiallyWon, dismissed, unknown }
+
+extension JudicialResultView on JudicialResult {
+  String get label => switch (this) {
+        JudicialResult.won => 'Won',
+        JudicialResult.lost => 'Lost',
+        JudicialResult.partiallyWon => 'Partially won',
+        JudicialResult.dismissed => 'Dismissed',
+        JudicialResult.unknown => 'Unknown decision',
+      };
+
+  bool get isAdverse =>
+      this == JudicialResult.lost || this == JudicialResult.dismissed;
+}
+
+/// Procedural lifecycle derived by Rust from the authoritative current stage.
+enum MatterLifecycleStatus {
+  active,
+  postJudgment,
+  appeal,
+  cassation,
+  enforcement,
+  closed,
+  unknown,
+}
+
+extension MatterLifecycleStatusView on MatterLifecycleStatus {
+  String get label => switch (this) {
+        MatterLifecycleStatus.active => 'Active',
+        MatterLifecycleStatus.postJudgment =>
+          'Post-judgment — remedies available',
+        MatterLifecycleStatus.appeal => 'Appeal',
+        MatterLifecycleStatus.cassation => 'Cassation',
+        MatterLifecycleStatus.enforcement => 'Enforcement',
+        MatterLifecycleStatus.closed => 'Closed',
+        MatterLifecycleStatus.unknown => 'Unknown status',
+      };
+}
+
 extension CaseResultStatusView on CaseResultStatus {
   String get label => switch (this) {
         CaseResultStatus.ongoing => 'Ongoing',
@@ -379,9 +419,12 @@ class GameSnapshot {
     required this.evidence,
     required this.actions,
     required this.latestAiNote,
+    this.judicialResult,
+    this.matterLifecycle = MatterLifecycleStatus.active,
+    bool? isClosed,
     this.settlementOffer,
     this.outcomeSummary,
-  });
+  }) : _authoritativeIsClosed = isClosed;
 
   final String version;
   final int seed;
@@ -458,8 +501,15 @@ class GameSnapshot {
   final List<EvidenceView> evidence;
   final List<GameActionView> actions;
   final String? latestAiNote;
+  final JudicialResult? judicialResult;
+  final MatterLifecycleStatus matterLifecycle;
+  final bool? _authoritativeIsClosed;
   final SettlementOfferView? settlementOffer;
   final CaseOutcomeSummaryView? outcomeSummary;
+
+  /// Authoritative for native scenarios; legacy demo snapshots derive closure
+  /// from their existing terminal summary until that runtime is migrated.
+  bool get isClosed => _authoritativeIsClosed ?? outcomeSummary != null;
 
   int get unhandledRequiredMessages => inbox
       .where((InboxItemView item) => item.status == InboxStatus.actionRequired)
@@ -504,6 +554,10 @@ class GameSnapshot {
     List<GameActionView>? actions,
     String? latestAiNote,
     bool clearLatestAiNote = false,
+    JudicialResult? judicialResult,
+    bool clearJudicialResult = false,
+    MatterLifecycleStatus? matterLifecycle,
+    bool? isClosed,
     SettlementOfferView? settlementOffer,
     bool clearSettlementOffer = false,
     CaseOutcomeSummaryView? outcomeSummary,
@@ -552,6 +606,10 @@ class GameSnapshot {
       actions: actions ?? this.actions,
       latestAiNote:
           clearLatestAiNote ? null : latestAiNote ?? this.latestAiNote,
+      judicialResult:
+          clearJudicialResult ? null : judicialResult ?? this.judicialResult,
+      matterLifecycle: matterLifecycle ?? this.matterLifecycle,
+      isClosed: isClosed ?? _authoritativeIsClosed,
       settlementOffer:
           clearSettlementOffer ? null : settlementOffer ?? this.settlementOffer,
       outcomeSummary:

@@ -12,8 +12,8 @@ session initialization plus accepted player commands and reconstructs state by
 starting a new session and replaying those commands.
 
 The legacy Failed ERP Dart demo is unchanged and does not advertise this save
-contract. The open `Lost != Closed` lifecycle work in PR #4 is intentionally
-not included.
+contract. Matter Lifecycle v1 reuses this exact envelope and reconstructs its
+authoritative judicial-result state through normal command replay.
 
 ## Public save envelope
 
@@ -104,7 +104,10 @@ projection containing:
 - visible and resolved Inbox IDs;
 - action-use counters;
 - fired event IDs;
-- terminal outcome ID.
+- terminal outcome ID;
+- judicial result when an authoritative value exists; the key is omitted when
+  the result is absent so pre-lifecycle final-state digests remain
+  byte-compatible.
 
 Maps and sets are backed by ordered Rust collections before canonical JSON
 encoding. The digest does not include locale, JSON formatting, hash-map

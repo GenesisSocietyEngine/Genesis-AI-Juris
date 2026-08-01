@@ -323,7 +323,7 @@ fn validate_condition(
     path: &str,
 ) {
     match condition {
-        Condition::Always | Condition::FlagEquals { .. } => {}
+        Condition::Always | Condition::FlagEquals { .. } | Condition::JudicialResultIs { .. } => {}
 
         Condition::StageIs { stage } => require_reference(
             index.has_stage(stage.as_str()),
@@ -412,7 +412,7 @@ fn validate_effect(
             report,
         ),
 
-        Effect::SetFlag { .. } => {}
+        Effect::SetFlag { .. } | Effect::SetJudicialResult { .. } => {}
 
         Effect::SetFactStatus { fact, .. } => require_reference(
             index.has_fact(fact.as_str()),

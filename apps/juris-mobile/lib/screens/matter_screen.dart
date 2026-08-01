@@ -26,7 +26,8 @@ class MatterScreen extends StatelessWidget {
           sliver: SliverList.list(
             children: <Widget>[
               _MatterHeader(snapshot: snapshot),
-              if (snapshot.outcomeSummary != null) ...<Widget>[
+              if (snapshot.isClosed &&
+                  snapshot.outcomeSummary != null) ...<Widget>[
                 const SizedBox(height: 16),
                 _OutcomeCard(summary: snapshot.outcomeSummary!),
               ],
@@ -79,19 +80,39 @@ class _MatterHeader extends StatelessWidget {
             runSpacing: 8,
             children: <Widget>[
               Chip(label: Text(snapshot.stage)),
-              Chip(
-                avatar: Icon(
-                  snapshot.caseResultStatus.isAdverse
-                      ? Icons.cancel_outlined
-                      : snapshot.caseResultStatus == CaseResultStatus.ongoing
-                          ? Icons.timelapse_outlined
-                          : Icons.verified_outlined,
-                  size: 18,
+              if (snapshot.judicialResult != null)
+                Chip(
+                  avatar: Icon(
+                    snapshot.judicialResult!.isAdverse
+                        ? Icons.cancel_outlined
+                        : Icons.gavel_outlined,
+                    size: 18,
+                  ),
+                  label: Text(
+                    '${GameplayLocale.text(context, 'Decision', 'Решение')}: '
+                    '${_judicialResultLabel(context, snapshot.judicialResult!)}',
+                  ),
                 ),
+              Chip(
                 label: Text(
-                  _caseResultLabel(context, snapshot.caseResultStatus),
+                  '${GameplayLocale.text(context, 'Matter status', 'Статус дела')}: '
+                  '${_matterLifecycleLabel(context, snapshot.matterLifecycle)}',
                 ),
               ),
+              if (snapshot.judicialResult == null)
+                Chip(
+                  avatar: Icon(
+                    snapshot.caseResultStatus.isAdverse
+                        ? Icons.cancel_outlined
+                        : snapshot.caseResultStatus == CaseResultStatus.ongoing
+                            ? Icons.timelapse_outlined
+                            : Icons.verified_outlined,
+                    size: 18,
+                  ),
+                  label: Text(
+                    _caseResultLabel(context, snapshot.caseResultStatus),
+                  ),
+                ),
               Chip(
                 label: Text(
                   _engagementLabel(context, snapshot.engagementStatus),
@@ -348,6 +369,41 @@ String _caseResultLabel(BuildContext context, CaseResultStatus status) {
       'Направлено на новое рассмотрение',
     CaseResultStatus.settled => 'Урегулировано',
     CaseResultStatus.withdrawn => 'Отозвано',
+  };
+}
+
+String _judicialResultLabel(
+  BuildContext context,
+  JudicialResult result,
+) {
+  if (GameplayLocale.of(context) != 'ru') {
+    return result.label;
+  }
+  return switch (result) {
+    JudicialResult.won => 'Победа',
+    JudicialResult.lost => 'Поражение',
+    JudicialResult.partiallyWon => 'Частичная победа',
+    JudicialResult.dismissed => 'Требования отклонены',
+    JudicialResult.unknown => 'Неизвестное решение',
+  };
+}
+
+String _matterLifecycleLabel(
+  BuildContext context,
+  MatterLifecycleStatus status,
+) {
+  if (GameplayLocale.of(context) != 'ru') {
+    return status.label;
+  }
+  return switch (status) {
+    MatterLifecycleStatus.active => 'Активно',
+    MatterLifecycleStatus.postJudgment =>
+      'После решения — доступны средства обжалования',
+    MatterLifecycleStatus.appeal => 'Апелляция',
+    MatterLifecycleStatus.cassation => 'Кассация',
+    MatterLifecycleStatus.enforcement => 'Исполнение',
+    MatterLifecycleStatus.closed => 'Закрыто',
+    MatterLifecycleStatus.unknown => 'Неизвестный статус',
   };
 }
 

@@ -1,14 +1,147 @@
 ---
 document_type: cumulative_development_handoff
-project: "GENESIS: AI Juris"
-branch: feat/persistent-command-log-v1
-head_commit: "remote-gate documentation commit containing this cumulative entry"
+project: "GENESIS: JURIS"
+branch: feat/matter-lifecycle-v1
+head_commit: "documentation commit containing this cumulative entry"
 release_tag: v0.5.1-alpha.1
 app_version: 0.5.1+12
 last_updated: 2026-07-31
 ---
 
 # Current Progress
+
+## Matter Lifecycle v1 / Lost != Closed local review checkpoint — 2026-07-31
+
+Status: implementation, documentation, and all available local quality gates
+are complete on `feat/matter-lifecycle-v1`. This is the required local review
+checkpoint. The branch has not been pushed, no new PR has been opened, and no
+merge is authorized or attempted.
+
+Repository state:
+
+- PR #9 was merged by explicit authorization; clean local `main` and
+  `origin/main` matched merge commit
+  `06e566afd6b09a6691800cd120bfb546d698583d` before this branch was created;
+- the post-merge Rust `quality`, Rust 1.78 `msrv`, Flutter
+  `analyze-and-test`, and iOS `simulator-smoke` gates for PR #9 were green;
+- branch: `feat/matter-lifecycle-v1`;
+- base: `main@06e566afd6b09a6691800cd120bfb546d698583d`;
+- authoritative lifecycle commit:
+  `2d7747a feat(lifecycle): separate judicial result from matter closure`;
+- mobile presentation commit:
+  `a8c73d2 feat(mobile): present judicial result separately from closure`;
+- this contract/progress update is isolated in the following documentation
+  commit;
+- stale conflicting PR #4 and its branch were audited but not modified,
+  rebased, pushed, closed, or merged.
+
+Completed:
+
+- added authoritative `JudicialResult` values `won`, `lost`,
+  `partially_won`, and `dismissed`, plus declarative
+  `set_judicial_result` effects and `judicial_result_is` conditions;
+- added `appeal`, `cassation`, and `enforcement` stage kinds;
+- derives `MatterLifecycleStatus` from the current stage instead of maintaining
+  a second mutable lifecycle state machine;
+- post-judgment, appeal, cassation, and enforcement remain open; only a
+  resolved/terminal stage closes the matter;
+- validator and authoring diagnostics reject terminal remedy stages, exposed
+  actions after closure, incomplete closure, outcome resolution before a
+  terminal transition, and outcomes targeting nonterminal stages;
+- added the focused test-only
+  `adverse_judgment_with_remedies` fixture with appeal, waiver, cassation, and
+  enforcement paths;
+- snapshot schema version 1 now additively exposes `judicial_result`,
+  `matter_lifecycle`, `is_closed`, and `resolved_outcome`; `terminal` remains
+  the backward-compatible closure alias;
+- preserved command-log mutation atomicity and deterministic replay;
+  `judicial_result` participates in the final-state digest only when present,
+  preserving the previous digest projection when it is absent;
+- added persistence regressions for lost-but-open save/load, continuation into
+  appeal, repeated-load equality, and non-duplication of generated events and
+  command-log entries;
+- JSON bridge and FFI tests prove that an adverse decision remains open and
+  remedy actions remain executable;
+- Flutter now uses authoritative `is_closed` for repository/report lifecycle,
+  presents the judicial decision separately from procedural status, hides the
+  terminal report while remedies remain, and preserves stable-ID scenario
+  localization, action costs, deadline/action links, foreground clock, and
+  save/load behavior;
+- new lifecycle labels are localized in EN/RU, and appellate/enforcement
+  decisions are no longer presented as first-instance results;
+- added `docs/development/MATTER_LIFECYCLE_V1.md` and updated the Save v1
+  digest contract.
+
+Compatibility and content consequences:
+
+- Scenario Definition remains version `1.0`;
+- snapshot schema remains version `1`;
+- Save schema remains `genesis.ai-juris.command-log` version `1` with runtime
+  marker `scenario-runtime-v1`;
+- C ABI remains version `1` with exactly the existing execute, string-free,
+  and ABI-version symbols;
+- Logistics, GreenFire, GoldenShell, catalog records, localized overlays, and
+  the deterministic mobile bundle are byte-unchanged by this branch, so their
+  scenario fingerprints are unchanged;
+- only a test fixture was added; no new public catalog case is claimed.
+
+Local quality gates:
+
+- `cargo +1.78.0 check --workspace --locked`: passed;
+- `cargo fmt --all -- --check`: passed;
+- `cargo check --workspace --locked`: passed;
+- `cargo clippy --workspace --all-targets -- -D warnings`: passed;
+- `cargo test --workspace`: 200 passed, 0 failed;
+- authoring diagnostics: Logistics, GreenFire, GoldenShell, and the lifecycle
+  fixture each passed;
+- production deterministic traces remain exact:
+  - GreenFire protected: `protected_crisis_position` at minute 4440;
+  - GreenFire compromised: `compromised_crisis_position` at minute 4590;
+  - GoldenShell coordinated: `coordinated_claim_position` at minute 4545;
+  - GoldenShell fragmented: `fragmented_claim_position` at minute 4710;
+- lifecycle deterministic traces:
+  - appeal success and enforcement: `appellate_success` at minute 360;
+  - express waiver: `final_loss` at minute 65;
+  - appeal and cassation exhausted: `final_loss` at minute 425;
+- deterministic mobile bundle check: passed;
+- Dart format: 38 files checked, 0 changed;
+- Flutter analyze: `No issues found`;
+- Flutter unit/widget tests: 85 passed, 0 failed;
+- debug APK built at
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`;
+- Android API 37 native persistence/FFI smoke on `emulator-5554`: 4 passed,
+  covering GreenFire RU, GoldenShell RU around a deadline, terminal Logistics,
+  and corrupted-save failure atomicity;
+- fresh `arm64-v8a`, `armeabi-v7a`, and `x86_64` Android libraries each export
+  exactly `juris_mobile_bridge_execute`,
+  `juris_mobile_bridge_string_free`, and
+  `juris_mobile_bridge_abi_version`;
+- `git diff --check`: passed.
+
+Known limitations and risks:
+
+- the lifecycle fixture is intentionally test-only, so no public catalog case
+  yet demonstrates appeal/cassation/enforcement end to end;
+- external consumers that incorrectly reject additive snapshot fields must be
+  updated, although the supported Flutter mapper accepts both old and new
+  snapshots;
+- custom v1 content that previously resolved an outcome without a true
+  terminal stage is now rejected as malformed;
+- existing production fingerprints and legacy final-state digests are
+  preserved structurally, but no literal golden hash is committed;
+- local iOS execution is unavailable on Windows; hosted iOS branch-head
+  verification is required after publication;
+- no physical-device, release-signing, App Store, or Play Store result is
+  claimed.
+
+Next step:
+
+- review the three-commit local checkpoint and its compatibility report;
+- only after explicit approval, publish with `github:yeet`, open a Draft PR,
+  and observe the four remote Rust/Flutter/iOS checks to terminal state without
+  automatic merge;
+- do not begin Dossier Projection v1 until Matter Lifecycle v1 has been
+  explicitly reviewed and merged.
 
 ## Persistent Command-Log Save/Load v1 remote gate and merge preparation — 2026-07-31
 

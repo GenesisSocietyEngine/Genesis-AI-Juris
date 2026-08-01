@@ -33,7 +33,66 @@ pub(crate) fn validate_terminal_state(
     }
 
     validate_terminal_transitions(scenario, report);
+    validate_outcomes_only_resolve_at_terminal_stage(scenario, report);
     validate_terminal_action_availability(scenario, report);
+}
+
+fn validate_outcomes_only_resolve_at_terminal_stage(
+    scenario: &ScenarioDefinition,
+    report: &mut ValidationReport,
+) {
+    for (collection, index, condition, effects) in
+        scenario
+            .actions
+            .iter()
+            .enumerate()
+            .map(|(index, action)| {
+                (
+                    "actions",
+                    index,
+                    &action.available_when,
+                    action.effects.as_slice(),
+                )
+            })
+            .chain(scenario.events.iter().enumerate().map(|(index, event)| {
+                ("events", index, &event.condition, event.effects.as_slice())
+            }))
+    {
+        if !effects
+            .iter()
+            .any(|effect| matches!(effect, Effect::ResolveOutcome { .. }))
+        {
+            continue;
+        }
+
+        let enters_terminal = effects.iter().any(|effect| {
+            let Effect::SetStage { stage } = effect else {
+                return false;
+            };
+            scenario
+                .stages
+                .iter()
+                .find(|candidate| candidate.id == *stage)
+                .is_some_and(is_terminal_stage)
+        }) || condition_guarantees(condition, &|nested| {
+            let Condition::StageIs { stage } = nested else {
+                return false;
+            };
+            scenario
+                .stages
+                .iter()
+                .find(|candidate| candidate.id == *stage)
+                .is_some_and(is_terminal_stage)
+        });
+
+        if !enters_terminal {
+            report.push(Diagnostic::error(
+                DiagnosticCode::OutcomeResolvedBeforeTerminalStage,
+                format!("{collection}[{index}].effects"),
+                "a complete scenario outcome may resolve only in a transition that enters a terminal stage",
+            ));
+        }
+    }
 }
 
 fn validate_terminal_transitions(scenario: &ScenarioDefinition, report: &mut ValidationReport) {
@@ -521,6 +580,7 @@ where
         | Condition::DeadlineStatusIs { .. }
         | Condition::AsyncTaskStatusIs { .. }
         | Condition::InboxItemResolved { .. }
+        | Condition::JudicialResultIs { .. }
         | Condition::Not { .. } => false,
     }
 }
@@ -591,6 +651,7 @@ fn condition_may_be_true_in_stage(condition: &Condition, stage_id: &StageId) -> 
         | Condition::DeadlineStatusIs { .. }
         | Condition::AsyncTaskStatusIs { .. }
         | Condition::InboxItemResolved { .. } => true,
+        Condition::JudicialResultIs { .. } => true,
     }
 }
 
@@ -611,5 +672,6 @@ fn condition_may_be_false_in_stage(condition: &Condition, stage_id: &StageId) ->
         | Condition::DeadlineStatusIs { .. }
         | Condition::AsyncTaskStatusIs { .. }
         | Condition::InboxItemResolved { .. } => true,
+        Condition::JudicialResultIs { .. } => true,
     }
 }
