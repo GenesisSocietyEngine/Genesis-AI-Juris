@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use juris_scenario_schema::{JudicialResult, MatterLifecycleStatus};
+use juris_scenario_schema::{JudicialDecisionInstance, JudicialResult, MatterLifecycleStatus};
 use juris_scenario_simulator::{ScenarioDocument, ScenarioSimulator, SimulationResult};
 
 fn fixture_path() -> PathBuf {
@@ -24,6 +24,7 @@ fn run(actions: &[&str]) -> SimulationResult {
 
 #[test]
 fn lost_intermediate_state_is_open_and_deterministic() {
+    assert_eq!(run(&[]).final_state.judicial_decision_instance, None);
     let actions = ["request_judgment", "adverse_trial_judgment"];
     let first = run(&actions);
     let second = run(&actions);
@@ -32,6 +33,10 @@ fn lost_intermediate_state_is_open_and_deterministic() {
     assert_eq!(
         first.final_state.judicial_result,
         Some(JudicialResult::Lost)
+    );
+    assert_eq!(
+        first.final_state.judicial_decision_instance,
+        Some(JudicialDecisionInstance::FirstInstance)
     );
     assert_eq!(
         first.final_state.matter_lifecycle,
@@ -57,6 +62,10 @@ fn appeal_success_path_closes_only_after_enforcement() {
         Some(JudicialResult::Won)
     );
     assert_eq!(
+        result.final_state.judicial_decision_instance,
+        Some(JudicialDecisionInstance::Appeal)
+    );
+    assert_eq!(
         result.final_state.matter_lifecycle,
         MatterLifecycleStatus::Closed
     );
@@ -79,6 +88,15 @@ fn waiver_and_cassation_exhaustion_are_explicit_closure_paths() {
         "cassation_rejected",
         "close_after_remedies_exhausted",
     ]);
+
+    assert_eq!(
+        waiver.final_state.judicial_decision_instance,
+        Some(JudicialDecisionInstance::FirstInstance)
+    );
+    assert_eq!(
+        exhausted.final_state.judicial_decision_instance,
+        Some(JudicialDecisionInstance::Cassation)
+    );
 
     for result in [waiver, exhausted] {
         assert_eq!(

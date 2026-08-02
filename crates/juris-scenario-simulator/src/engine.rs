@@ -2,8 +2,8 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use juris_scenario_schema::{
     ActionDefinition, ActionRepeatability, AsyncTaskStatus, Condition, DeadlineStatus, Effect,
-    EventDefinition, EventTrigger, FactStatus, MatterLifecycleStatus, ScenarioClockMode,
-    ScenarioDefinition, StageKind,
+    EventDefinition, EventTrigger, FactStatus, JudicialDecisionInstance, MatterLifecycleStatus,
+    ScenarioClockMode, ScenarioDefinition, StageKind,
 };
 use serde_json::Value;
 
@@ -108,6 +108,7 @@ impl ScenarioSimulator {
                 clock_minutes: 0,
                 flags: BTreeMap::new(),
                 judicial_result: None,
+                judicial_decision_instance: None,
                 matter_lifecycle,
                 resolved_outcome: None,
                 is_closed: matter_lifecycle.is_closed(),
@@ -521,7 +522,18 @@ impl ScenarioSimulator {
                     self.runtime.resolved_inbox.insert(item.as_str().to_owned());
                 }
                 Effect::SetJudicialResult { result } => {
+                    let current_stage = self
+                        .definition
+                        .stages
+                        .iter()
+                        .find(|stage| stage.id.as_str() == self.state.stage)
+                        .expect("validated current stage must exist");
                     self.state.judicial_result = Some(*result);
+                    self.state.judicial_decision_instance =
+                        Some(JudicialDecisionInstance::from_stage(
+                            current_stage.kind,
+                            self.state.judicial_decision_instance,
+                        ));
                 }
                 Effect::TriggerEvent { event } => {
                     if !self.definition.events.iter().any(|item| item.id == *event) {

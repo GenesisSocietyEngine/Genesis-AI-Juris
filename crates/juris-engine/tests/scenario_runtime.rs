@@ -1,6 +1,7 @@
 use juris_engine::{ScenarioRuntimeError, ScenarioSession, ScenarioSessionRegistry};
 use juris_scenario_schema::{
-    JudicialResult, MatterLifecycleStatus, ScenarioClockMode, ScenarioDefinition,
+    JudicialDecisionInstance, JudicialResult, MatterLifecycleStatus, ScenarioClockMode,
+    ScenarioDefinition,
 };
 use serde_json::json;
 
@@ -248,6 +249,10 @@ fn lost_is_not_closed_and_appeal_remains_executable() {
 
     assert_eq!(snapshot.judicial_result, Some(JudicialResult::Lost));
     assert_eq!(
+        snapshot.judicial_decision_instance,
+        Some(JudicialDecisionInstance::FirstInstance)
+    );
+    assert_eq!(
         snapshot.matter_lifecycle,
         MatterLifecycleStatus::PostJudgment
     );
@@ -268,6 +273,36 @@ fn lost_is_not_closed_and_appeal_remains_executable() {
         .expect("appeal must remain available");
     assert_eq!(appeal.matter_lifecycle, MatterLifecycleStatus::Appeal);
     assert!(!appeal.is_closed);
+}
+
+#[test]
+fn decision_instance_is_absent_until_result_and_tracks_the_latest_deciding_stage() {
+    let mut session =
+        ScenarioSession::new(remedies_definition(), 20260729).expect("session must start");
+    assert_eq!(session.snapshot().judicial_decision_instance, None);
+
+    session.dispatch("request_judgment").unwrap();
+    assert_eq!(session.snapshot().judicial_decision_instance, None);
+
+    session.dispatch("adverse_trial_judgment").unwrap();
+    assert_eq!(
+        session.snapshot().judicial_decision_instance,
+        Some(JudicialDecisionInstance::FirstInstance)
+    );
+
+    session.dispatch("file_appeal").unwrap();
+    session.dispatch("appeal_lost").unwrap();
+    assert_eq!(
+        session.snapshot().judicial_decision_instance,
+        Some(JudicialDecisionInstance::Appeal)
+    );
+
+    session.dispatch("file_cassation").unwrap();
+    session.dispatch("cassation_rejected").unwrap();
+    assert_eq!(
+        session.snapshot().judicial_decision_instance,
+        Some(JudicialDecisionInstance::Cassation)
+    );
 }
 
 #[test]

@@ -5,8 +5,8 @@
 //! format remain compatible.
 
 use juris_scenario_schema::{
-    ActionId, Condition, Effect, JudicialResult, MatterLifecycleStatus, ScenarioClockMode,
-    ScenarioDefinition, StageId, StageKind, SCENARIO_SCHEMA_VERSION_V1,
+    ActionId, Condition, Effect, JudicialDecisionInstance, JudicialResult, MatterLifecycleStatus,
+    ScenarioClockMode, ScenarioDefinition, StageId, StageKind, SCENARIO_SCHEMA_VERSION_V1,
 };
 
 const MINIMAL_SCENARIO: &str =
@@ -100,6 +100,49 @@ fn judicial_result_effect_and_condition_round_trip() {
     assert_eq!(
         serde_json::from_str::<Condition>(&condition_json).expect("condition must deserialize"),
         condition
+    );
+}
+
+#[test]
+fn judicial_decision_instances_use_stable_names_and_stage_mapping() {
+    for (stage, instance, encoded) in [
+        (
+            StageKind::Hearing,
+            JudicialDecisionInstance::FirstInstance,
+            "\"first_instance\"",
+        ),
+        (
+            StageKind::Appeal,
+            JudicialDecisionInstance::Appeal,
+            "\"appeal\"",
+        ),
+        (
+            StageKind::Cassation,
+            JudicialDecisionInstance::Cassation,
+            "\"cassation\"",
+        ),
+    ] {
+        assert_eq!(JudicialDecisionInstance::from_stage(stage, None), instance);
+        assert_eq!(serde_json::to_string(&instance).unwrap(), encoded);
+    }
+
+    assert_eq!(
+        JudicialDecisionInstance::from_stage(
+            StageKind::Enforcement,
+            Some(JudicialDecisionInstance::Appeal),
+        ),
+        JudicialDecisionInstance::Appeal
+    );
+    assert_eq!(
+        JudicialDecisionInstance::from_stage(
+            StageKind::Resolved,
+            Some(JudicialDecisionInstance::Cassation),
+        ),
+        JudicialDecisionInstance::Cassation
+    );
+    assert_eq!(
+        JudicialDecisionInstance::from_stage(StageKind::Enforcement, None),
+        JudicialDecisionInstance::FirstInstance
     );
 }
 

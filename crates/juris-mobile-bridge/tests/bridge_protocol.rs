@@ -369,6 +369,10 @@ fn json_protocol_keeps_remedies_available_after_adverse_judgment() {
     )
     .unwrap();
     assert_eq!(snapshot["snapshot"]["judicial_result"], "lost");
+    assert_eq!(
+        snapshot["snapshot"]["judicial_decision_instance"],
+        "first_instance"
+    );
     assert_eq!(snapshot["snapshot"]["matter_lifecycle"], "post_judgment");
     assert_eq!(snapshot["snapshot"]["is_closed"], false);
     assert_eq!(snapshot["snapshot"]["resolved_outcome"], Value::Null);
@@ -390,7 +394,27 @@ fn json_protocol_keeps_remedies_available_after_adverse_judgment() {
     )
     .unwrap();
     assert_eq!(appeal["snapshot"]["matter_lifecycle"], "appeal");
+    assert_eq!(
+        appeal["snapshot"]["judicial_decision_instance"],
+        "first_instance"
+    );
     assert_eq!(appeal["snapshot"]["is_closed"], false);
+
+    let appeal_decision: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "dispatch",
+                "session_id": session_id,
+                "action_id": "appeal_success"
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(
+        appeal_decision["snapshot"]["judicial_decision_instance"],
+        "appeal"
+    );
 }
 
 #[test]

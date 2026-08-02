@@ -370,6 +370,10 @@ mod tests {
             "session_id": session_id
         }));
         assert_eq!(snapshot["snapshot"]["judicial_result"], "lost");
+        assert_eq!(
+            snapshot["snapshot"]["judicial_decision_instance"],
+            "first_instance"
+        );
         assert_eq!(snapshot["snapshot"]["matter_lifecycle"], "post_judgment");
         assert_eq!(snapshot["snapshot"]["is_closed"], false);
         assert_eq!(snapshot["snapshot"]["resolved_outcome"], Value::Null);

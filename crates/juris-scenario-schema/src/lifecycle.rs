@@ -16,6 +16,44 @@ pub enum JudicialResult {
     Dismissed,
 }
 
+/// Procedural instance that produced the current [`JudicialResult`].
+///
+/// This value is absent until a judicial result is recorded. A subsequent
+/// decision replaces both the result and its instance, so the two values
+/// always describe the same latest authoritative decision.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum JudicialDecisionInstance {
+    FirstInstance,
+    Appeal,
+    Cassation,
+}
+
+impl JudicialDecisionInstance {
+    /// Maps the authoritative stage at `SetJudicialResult` execution time and
+    /// the prior instance, if any, to the instance that produced the result.
+    ///
+    /// Appeal and cassation map to their corresponding remedies. Trial and
+    /// post-judgment stages map to first instance. Enforcement and resolved
+    /// stages are not decision instances, so they preserve the prior instance;
+    /// first instance is used only when no prior instance exists.
+    #[must_use]
+    pub const fn from_stage(kind: StageKind, prior: Option<Self>) -> Self {
+        match kind {
+            StageKind::Appeal => Self::Appeal,
+            StageKind::Cassation => Self::Cassation,
+            StageKind::Standard
+            | StageKind::HearingPreparation
+            | StageKind::Hearing
+            | StageKind::PostJudgment => Self::FirstInstance,
+            StageKind::Enforcement | StageKind::Resolved => match prior {
+                Some(instance) => instance,
+                None => Self::FirstInstance,
+            },
+        }
+    }
+}
+
 /// Procedural lifecycle derived from the authoritative current stage.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
