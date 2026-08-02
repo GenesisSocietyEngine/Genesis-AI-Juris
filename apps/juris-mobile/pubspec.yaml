@@ -13,6 +13,7 @@ dependencies:
   path_provider: ^2.1.6
 
 dev_dependencies:
+  crypto: ^3.0.7
   flutter_test:
     sdk: flutter
   integration_test:

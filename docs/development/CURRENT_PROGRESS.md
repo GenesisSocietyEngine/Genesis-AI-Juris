@@ -34,11 +34,11 @@ Repository state:
   trace, action, deadline, outcome, or balance file changed;
 - intentional local commits:
   - Rust/schema/simulator/bridge/FFI implementation and immutable fixtures:
-    `fix(runtime): add lifecycle persistence compatibility v2` (hash recorded
-    by the following cumulative update);
+    `18998c5b77fe470404990cc6803aa913ee5edcf6` —
+    `fix(runtime): add lifecycle persistence compatibility v2`;
   - Flutter mapping, atomic load behavior, EN/RU presentation, and Android
     acceptance: `fix(mobile): preserve lifecycle loads across compatibility
-    errors` (hash recorded by the following cumulative update);
+    errors` (the mobile commit containing this cumulative update);
   - compatibility contracts and this cumulative handoff:
     `docs(development): record lifecycle compatibility remediation` (the
     documentation commit containing the final form of this entry).

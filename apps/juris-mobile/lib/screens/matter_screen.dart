@@ -93,6 +93,14 @@ class _MatterHeader extends StatelessWidget {
                     '${_judicialResultLabel(context, snapshot.judicialResult!)}',
                   ),
                 ),
+              if (snapshot.judicialDecisionInstance != null)
+                Chip(
+                  avatar: const Icon(Icons.account_balance_outlined, size: 18),
+                  label: Text(
+                    '${GameplayLocale.text(context, 'Court instance', 'Судебная инстанция')}: '
+                    '${_judicialDecisionInstanceLabel(context, snapshot.judicialDecisionInstance!)}',
+                  ),
+                ),
               Chip(
                 label: Text(
                   '${GameplayLocale.text(context, 'Matter status', 'Статус дела')}: '
@@ -385,6 +393,21 @@ String _judicialResultLabel(
     JudicialResult.partiallyWon => 'Частичная победа',
     JudicialResult.dismissed => 'Требования отклонены',
     JudicialResult.unknown => 'Неизвестное решение',
+  };
+}
+
+String _judicialDecisionInstanceLabel(
+  BuildContext context,
+  JudicialDecisionInstance instance,
+) {
+  if (GameplayLocale.of(context) != 'ru') {
+    return instance.label;
+  }
+  return switch (instance) {
+    JudicialDecisionInstance.firstInstance => 'Первая инстанция',
+    JudicialDecisionInstance.appeal => 'Апелляция',
+    JudicialDecisionInstance.cassation => 'Кассация',
+    JudicialDecisionInstance.unknown => 'Неизвестная судебная инстанция',
   };
 }
 

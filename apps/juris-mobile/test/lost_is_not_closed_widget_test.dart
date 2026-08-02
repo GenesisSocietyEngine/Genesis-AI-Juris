@@ -14,6 +14,7 @@ void main() {
         DemoGameRepository(seed: 20260724).snapshot.copyWith(
               stage: 'Post-judgment remedies',
               judicialResult: JudicialResult.lost,
+              judicialDecisionInstance: JudicialDecisionInstance.firstInstance,
               matterLifecycle: MatterLifecycleStatus.postJudgment,
               isClosed: false,
               actions: const <GameActionView>[
@@ -38,6 +39,7 @@ void main() {
     );
 
     expect(find.text('Decision: Lost'), findsOneWidget);
+    expect(find.text('Court instance: First instance'), findsOneWidget);
     expect(
       find.text('Matter status: Post-judgment — remedies available'),
       findsOneWidget,
@@ -61,6 +63,7 @@ void main() {
         DemoGameRepository(seed: 20260724).snapshot.copyWith(
               stage: 'Resolved',
               judicialResult: JudicialResult.won,
+              judicialDecisionInstance: JudicialDecisionInstance.appeal,
               matterLifecycle: MatterLifecycleStatus.closed,
               isClosed: true,
               outcomeSummary: const CaseOutcomeSummaryView(
@@ -88,6 +91,8 @@ void main() {
 
     expect(find.text('Case report'), findsOneWidget);
     expect(find.text('Won'), findsOneWidget);
+    expect(find.text('Court instance'), findsOneWidget);
+    expect(find.text('Appeal'), findsOneWidget);
     expect(find.text('Closed'), findsOneWidget);
     expect(find.text('Appellate success enforced'), findsOneWidget);
   });
@@ -99,10 +104,28 @@ void main() {
         DemoGameRepository(seed: 20260724).snapshot.copyWith(
               stage: 'Средства обжалования после решения',
               judicialResult: JudicialResult.lost,
+              judicialDecisionInstance: JudicialDecisionInstance.firstInstance,
               matterLifecycle: MatterLifecycleStatus.postJudgment,
               isClosed: false,
               clearOutcomeSummary: true,
             );
+
+    await tester.pumpWidget(
+      GameplayLocale(
+        locale: 'en',
+        child: MaterialApp(
+          home: Scaffold(
+            body: MatterScreen(snapshot: snapshot, onShowActions: () {}),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Decision: Lost'), findsOneWidget);
+    expect(find.text('Court instance: First instance'), findsOneWidget);
+    expect(
+      find.text('Matter status: Post-judgment — remedies available'),
+      findsOneWidget,
+    );
 
     await tester.pumpWidget(
       GameplayLocale(
@@ -116,6 +139,10 @@ void main() {
     );
 
     expect(find.text('Решение: Поражение'), findsOneWidget);
+    expect(
+      find.text('Судебная инстанция: Первая инстанция'),
+      findsOneWidget,
+    );
     expect(
       find.text(
         'Статус дела: После решения — доступны средства обжалования',

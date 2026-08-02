@@ -110,6 +110,9 @@ final class RustScenarioRepository extends GameRuntimeRepository {
     final int? nextSessionId = response.sessionId;
     final Map<String, dynamic>? nextRawSnapshot = response.snapshot;
     if (nextSessionId == null || nextRawSnapshot == null) {
+      if (nextSessionId != null && nextSessionId != previousSessionId) {
+        _disposeSessionId(nextSessionId);
+      }
       throw const GamePersistenceException(
         code: 'invalid_load_response',
         message: 'The runtime returned an incomplete loaded session.',
@@ -125,7 +128,9 @@ final class RustScenarioRepository extends GameRuntimeRepository {
         locallyReadInboxIds: const <String>{},
       );
     } on Object catch (error) {
-      _disposeSessionId(nextSessionId);
+      if (nextSessionId != previousSessionId) {
+        _disposeSessionId(nextSessionId);
+      }
       throw GamePersistenceException(
         code: 'invalid_loaded_snapshot',
         message: 'The loaded snapshot is invalid: $error',

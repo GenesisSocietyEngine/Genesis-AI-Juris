@@ -10,6 +10,7 @@ import 'package:juris_mobile/data/game_save_store.dart';
 import 'package:juris_mobile/data/rust_scenario_repository.dart';
 import 'package:juris_mobile/data/scenario_bridge_client.dart';
 import 'package:juris_mobile/models/case_catalog.dart';
+import 'package:juris_mobile/models/game_snapshot.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -88,7 +89,10 @@ void main() {
       repository.snapshot.outcomeSummary?.headline,
       'Judgment recovered and enforced',
     );
-    expect(repository.snapshot.caseResultStatus.name, 'wonAtFirstInstance');
+    // The legacy Logistics content does not emit an authoritative judicial
+    // result/instance pair, so Flutter must not infer a court level from its
+    // outcome ID.
+    expect(repository.snapshot.caseResultStatus.name, 'settled');
     repository.dispose();
     expect(client.disposeCount, 2);
   });
@@ -210,6 +214,160 @@ void main() {
     expect(repository.snapshot.timeLabel, time);
     repository.dispose();
   });
+
+  for (final ({
+    String code,
+    String encodedSave,
+    String? bridgeRejection
+  }) failure in <({String code, String encodedSave, String? bridgeRejection})>[
+    (
+      code: 'invalid_save_json',
+      encodedSave: '{corrupted',
+      bridgeRejection: null,
+    ),
+    (
+      code: 'incompatible_runtime',
+      encodedSave: '{"historical":true}',
+      bridgeRejection: 'incompatible_runtime',
+    ),
+    (
+      code: 'save_integrity_mismatch',
+      encodedSave: '{"tampered":true}',
+      bridgeRejection: 'save_integrity_mismatch',
+    ),
+    for (final String code in <String>[
+      'unknown_save_schema',
+      'unknown_save_schema_version',
+      'unknown_save_scenario',
+      'scenario_fingerprint_mismatch',
+      'unknown_save_command',
+      'unknown_save_action',
+      'invalid_save_time_advance',
+      'illegal_save_command_sequence',
+      'save_serialization_failure',
+    ])
+      (
+        code: code,
+        encodedSave: '{"rejected_by_native_runtime":true}',
+        bridgeRejection: code,
+      ),
+  ]) {
+    test('${failure.code} repeatedly preserves snapshot and native session ID',
+        () async {
+      final _MemoryGameSaveStore store = _MemoryGameSaveStore()
+        ..encodedSave = failure.encodedSave;
+      final _FakeScenarioBridgeClient client = _FakeScenarioBridgeClient(
+        judicialResult: 'lost',
+        judicialDecisionInstance: 'first_instance',
+        rejectLoadCode: failure.bridgeRejection,
+      );
+      final RustScenarioRepository repository = RustScenarioRepository(
+        caseDefinition: logistics,
+        bridgeClient: client,
+        saveStore: store,
+      );
+      expect(repository.applyAction('audit_claim_file').isRisky, isFalse);
+      final int originalSessionId = client.dispatchSessionIds.single;
+      final GameSnapshot before = repository.snapshot;
+      expect(before.judicialResult, JudicialResult.lost);
+      expect(
+        before.judicialDecisionInstance,
+        JudicialDecisionInstance.firstInstance,
+      );
+
+      for (int attempt = 0; attempt < 2; attempt += 1) {
+        await expectLater(
+          repository.loadGame(),
+          throwsA(
+            isA<GamePersistenceException>().having(
+              (GamePersistenceException error) => error.code,
+              'code',
+              failure.code,
+            ),
+          ),
+        );
+        expect(repository.snapshot, same(before));
+        expect(client.disposeCount, 0);
+      }
+
+      expect(client.loadAttemptCount, 2);
+      expect(repository.applyAction('issue_formal_demand').isRisky, isFalse);
+      repository.advanceTimeByMinutes(1);
+      expect(
+        client.dispatchSessionIds,
+        <int>[originalSessionId, originalSessionId],
+      );
+      expect(client.advanceSessionIds, <int>[originalSessionId]);
+      expect(client.disposeCount, 0);
+      expect(repository.snapshot.judicialResult, JudicialResult.lost);
+      expect(
+        repository.snapshot.judicialDecisionInstance,
+        JudicialDecisionInstance.firstInstance,
+      );
+
+      repository.dispose();
+      expect(client.disposeSessionIds, <int>[originalSessionId]);
+    });
+  }
+
+  for (final ({
+    _LoadResponseMode mode,
+    String expectedCode,
+  }) failure in <({
+    _LoadResponseMode mode,
+    String expectedCode,
+  })>[
+    (
+      mode: _LoadResponseMode.incompleteSuccess,
+      expectedCode: 'invalid_load_response',
+    ),
+    (
+      mode: _LoadResponseMode.invalidSnapshot,
+      expectedCode: 'invalid_loaded_snapshot',
+    ),
+  ]) {
+    test('${failure.mode.name} disposes only the temporary loaded session',
+        () async {
+      final _MemoryGameSaveStore store = _MemoryGameSaveStore();
+      final _FakeScenarioBridgeClient client = _FakeScenarioBridgeClient(
+        loadResponseMode: failure.mode,
+      );
+      final RustScenarioRepository repository = RustScenarioRepository(
+        caseDefinition: logistics,
+        bridgeClient: client,
+        saveStore: store,
+      );
+      expect(repository.applyAction('audit_claim_file').isRisky, isFalse);
+      await repository.saveGame();
+      final GameSnapshot before = repository.snapshot;
+      final int activeSessionId = client.dispatchSessionIds.single;
+
+      await expectLater(
+        repository.loadGame(),
+        throwsA(
+          isA<GamePersistenceException>().having(
+            (GamePersistenceException error) => error.code,
+            'code',
+            failure.expectedCode,
+          ),
+        ),
+      );
+
+      expect(repository.snapshot, same(before));
+      expect(client.disposeSessionIds, <int>[activeSessionId + 1]);
+      expect(repository.applyAction('issue_formal_demand').isRisky, isFalse);
+      expect(
+        client.dispatchSessionIds,
+        <int>[activeSessionId, activeSessionId],
+      );
+
+      repository.dispose();
+      expect(
+        client.disposeSessionIds,
+        <int>[activeSessionId + 1, activeSessionId],
+      );
+    });
+  }
 
   test('EN and RU presentation produce identical authoritative saves',
       () async {
@@ -532,14 +690,30 @@ const List<Object> _goldenshellFragmentedPath = <Object>[
   'complete_fragmented_handoff',
 ];
 
+enum _LoadResponseMode { normal, incompleteSuccess, invalidSnapshot }
+
 final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
-  _FakeScenarioBridgeClient({this.rejectAdvance = false});
+  _FakeScenarioBridgeClient({
+    this.rejectAdvance = false,
+    this.judicialResult,
+    this.judicialDecisionInstance,
+    this.rejectLoadCode,
+    this.loadResponseMode = _LoadResponseMode.normal,
+  });
 
   final bool rejectAdvance;
+  final String? judicialResult;
+  final String? judicialDecisionInstance;
+  final String? rejectLoadCode;
+  final _LoadResponseMode loadResponseMode;
   int createCount = 0;
   int disposeCount = 0;
   int loadCount = 0;
+  int loadAttemptCount = 0;
   int advanceCount = 0;
+  final List<int> dispatchSessionIds = <int>[];
+  final List<int> advanceSessionIds = <int>[];
+  final List<int> disposeSessionIds = <int>[];
   int _sessionId = 0;
   int _clockMinutes = 0;
   String _stage = 'intake';
@@ -565,12 +739,18 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
         jsonDecode(encodedRequest) as Map<String, dynamic>;
     return switch (request['command']) {
       'create_session' => _create(request),
-      'dispatch' => _dispatch(request['action_id'] as String),
-      'advance_time' => _advance(request['minutes'] as int),
+      'dispatch' => _dispatch(
+          request['session_id'] as int,
+          request['action_id'] as String,
+        ),
+      'advance_time' => _advance(
+          request['session_id'] as int,
+          request['minutes'] as int,
+        ),
       'save_session' => _save(),
       'load_session' => _load(request),
       'snapshot' => _response('snapshot'),
-      'dispose_session' => _dispose(),
+      'dispose_session' => _dispose(request['session_id'] as int),
       _ => jsonEncode(<String, dynamic>{
           'type': 'error',
           'code': 'invalid_request',
@@ -620,7 +800,8 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
     return _response('session_created');
   }
 
-  String _dispatch(String actionId) {
+  String _dispatch(int sessionId, String actionId) {
+    dispatchSessionIds.add(sessionId);
     final Map<String, dynamic>? action = _actionDefinitions[actionId];
     if (action == null || _outcome != null) {
       return jsonEncode(<String, dynamic>{
@@ -635,7 +816,7 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
     return _response('snapshot');
   }
 
-  String _advance(int minutes) {
+  String _advance(int sessionId, int minutes) {
     if (rejectAdvance) {
       return jsonEncode(<String, dynamic>{
         'type': 'error',
@@ -643,6 +824,7 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
         'message': 'Clock unavailable',
       });
     }
+    advanceSessionIds.add(sessionId);
     advanceCount += 1;
     _clockMinutes += minutes;
     return _response('snapshot');
@@ -663,6 +845,14 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
   }
 
   String _load(Map<String, dynamic> request) {
+    loadAttemptCount += 1;
+    if (rejectLoadCode case final String code) {
+      return jsonEncode(<String, dynamic>{
+        'type': 'error',
+        'code': code,
+        'message': 'The save runtime is incompatible.',
+      });
+    }
     final Map<String, dynamic> save;
     try {
       save =
@@ -693,6 +883,22 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
     _stage = save['stage'] as String;
     _clockMinutes = save['clock_minutes'] as int;
     _outcome = save['outcome'] as String?;
+    if (loadResponseMode == _LoadResponseMode.incompleteSuccess) {
+      return jsonEncode(<String, dynamic>{
+        'type': 'session_loaded',
+        'session_id': _sessionId,
+      });
+    }
+    if (loadResponseMode == _LoadResponseMode.invalidSnapshot) {
+      return jsonEncode(<String, dynamic>{
+        'type': 'session_loaded',
+        'session_id': _sessionId,
+        'snapshot': <String, dynamic>{
+          'snapshot_schema_version': 1,
+          'scenario_id': _scenarioId,
+        },
+      });
+    }
     return _response('session_loaded');
   }
 
@@ -717,8 +923,9 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
     }
   }
 
-  String _dispose() {
+  String _dispose(int sessionId) {
     disposeCount += 1;
+    disposeSessionIds.add(sessionId);
     return jsonEncode(<String, dynamic>{
       'type': 'session_disposed',
       'session_id': _sessionId,
@@ -742,7 +949,8 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
         'clock_mode': ((_scenario['clock'] as Map<String, dynamic>?)?['mode']
                 as String?) ??
             'action_driven',
-        'judicial_result': null,
+        'judicial_result': judicialResult,
+        'judicial_decision_instance': judicialDecisionInstance,
         'matter_lifecycle': _outcome != null
             ? 'closed'
             : _stage == 'post_judgment'

@@ -52,6 +52,18 @@ class CaseReportSheet extends StatelessWidget {
                         ) ??
                         _caseResultLabel(context, snapshot.caseResultStatus),
                   ),
+                  if (snapshot.judicialDecisionInstance != null)
+                    _ReportRow(
+                      label: GameplayLocale.text(
+                        context,
+                        'Court instance',
+                        'Судебная инстанция',
+                      ),
+                      value: _judicialDecisionInstanceLabel(
+                        context,
+                        snapshot.judicialDecisionInstance!,
+                      ),
+                    ),
                   _ReportRow(
                     label: GameplayLocale.text(
                       context,
@@ -353,6 +365,21 @@ String? _judicialResultLabel(
     JudicialResult.partiallyWon => 'Частичная победа',
     JudicialResult.dismissed => 'Требования отклонены',
     JudicialResult.unknown => 'Неизвестное решение',
+  };
+}
+
+String _judicialDecisionInstanceLabel(
+  BuildContext context,
+  JudicialDecisionInstance instance,
+) {
+  if (GameplayLocale.of(context) != 'ru') {
+    return instance.label;
+  }
+  return switch (instance) {
+    JudicialDecisionInstance.firstInstance => 'Первая инстанция',
+    JudicialDecisionInstance.appeal => 'Апелляция',
+    JudicialDecisionInstance.cassation => 'Кассация',
+    JudicialDecisionInstance.unknown => 'Неизвестная судебная инстанция',
   };
 }
 
