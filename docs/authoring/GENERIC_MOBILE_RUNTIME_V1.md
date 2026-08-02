@@ -20,7 +20,10 @@ Flutter GameRuntimeRepository
 `ScenarioSession` validates content before creating mutable state. It supports
 all schema v1 condition and effect variants, action repeatability, deterministic
 time, automatic events, deadline and asynchronous-task completion, terminal
-outcomes, and one-fire event identity.
+outcomes, Matter Lifecycle state, the Rust-owned judicial decision instance,
+and one-fire event identity. A complete outcome must resolve through a
+transition into a terminal stage, and every terminal stage must use the
+`resolved` stage kind.
 
 `ScenarioSessionRegistry` assigns opaque process-local session IDs. Case IDs
 are not session IDs because several saves or concurrent playthroughs may use
@@ -28,11 +31,14 @@ the same scenario.
 
 ## Mobile protocol
 
-`juris-mobile-bridge` accepts four transport-neutral JSON commands:
+`juris-mobile-bridge` accepts seven transport-neutral JSON commands:
 
 - `create_session`;
 - `snapshot`;
 - `dispatch`;
+- `advance_time`;
+- `save_session`;
+- `load_session`;
 - `dispose_session`.
 
 Responses contain either an immutable snapshot or a stable error code. The
@@ -49,7 +55,42 @@ the UI depend on demo-specific mutation.
 resolves the statically linked symbols from the Runner process on iOS.
 `RustScenarioRepository` owns one native session, and
 `ScenarioSnapshotMapper` maps its immutable snapshot into the existing
-`GameSnapshot`. Logistics is registered through `rust_scenario_v1`.
+`GameSnapshot`. The mapper consumes the authoritative
+`judicial_decision_instance` value (`first_instance`, `appeal`, or
+`cassation`) and never infers it from stage IDs, outcome IDs, or localized
+text. Logistics is registered through `rust_scenario_v1`.
+
+## Persistence compatibility boundary
+
+The command-log envelope keeps schema ID
+`genesis.ai-juris.command-log`, envelope schema version 1, and its existing
+eight fields. Schema version identifies the wire shape; the separate runtime
+marker selects replay and final-digest semantics.
+
+New sessions save as `scenario-runtime-v2`. The loader recognizes historical
+`scenario-runtime-v1` through a generic, side-effect-free migration preflight:
+
+- compatible pre-PR #10 canonical saves replay with their exact v1 digest and
+  are next written as v2;
+- the old valid-v1 early-outcome/nonterminal case is rejected as
+  `RuntimeCompatibility` before replay;
+- a valid-v1 ordered-effects case that enters a terminal stage, resolves an
+  outcome, and then leaves it is also rejected before replay;
+- event-owned outcome resolution, and outcome actions whose event queue may
+  change stage, are conservatively rejected unless equivalence can be proven;
+- compatible v1-labelled PR #10 lifecycle saves verify the v1 digest, derive
+  their Rust-owned judicial decision instance, and are next written as v2;
+- unknown markers are rejected without falling back to current semantics.
+
+The marker is selected before command payload decoding, and the v1 proof uses
+the final ordered `set_stage`, not merely the presence of a terminal stage in
+an effect list. This boundary is generic and independent of case IDs.
+
+The v1 digest excludes `judicial_decision_instance` and conditionally includes
+`judicial_result` only when present. The v2 digest always includes both keys,
+including explicit nulls. Load commits a new registry session only after
+preflight, replay, and the marker-selected integrity check all succeed; Flutter
+retains its existing session if any step fails.
 
 ## Native packaging
 

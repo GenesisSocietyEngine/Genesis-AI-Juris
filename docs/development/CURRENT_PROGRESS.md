@@ -37,8 +37,8 @@ Repository state:
     `18998c5b77fe470404990cc6803aa913ee5edcf6` —
     `fix(runtime): add lifecycle persistence compatibility v2`;
   - Flutter mapping, atomic load behavior, EN/RU presentation, and Android
-    acceptance: `fix(mobile): preserve lifecycle loads across compatibility
-    errors` (the mobile commit containing this cumulative update);
+    acceptance: `ef0168fb5c7f2469be6a2235c22621ab99b23629` —
+    `fix(mobile): preserve lifecycle loads across compatibility errors`;
   - compatibility contracts and this cumulative handoff:
     `docs(development): record lifecycle compatibility remediation` (the
     documentation commit containing the final form of this entry).
