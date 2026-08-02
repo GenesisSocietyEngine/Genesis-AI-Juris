@@ -2,10 +2,10 @@
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
 branch: fix/matter-lifecycle-runtime-v2-compatibility
-head_commit: "documentation commit containing this cumulative entry"
+checkpoint_documentation_commit: 1bdeeffabe333a7fe05f8d6b9dbb3b158015ddcc
 release_tag: v0.5.1-alpha.1
 app_version: 0.5.1+12
-last_updated: 2026-08-02
+last_updated: 2026-08-03
 ---
 
 # Current Progress
@@ -40,8 +40,8 @@ Repository state:
     acceptance: `ef0168fb5c7f2469be6a2235c22621ab99b23629` —
     `fix(mobile): preserve lifecycle loads across compatibility errors`;
   - compatibility contracts and this cumulative handoff:
-    `docs(development): record lifecycle compatibility remediation` (the
-    documentation commit containing the final form of this entry).
+    `1bdeeffabe333a7fe05f8d6b9dbb3b158015ddcc` —
+    `docs(development): record lifecycle compatibility remediation`.
 
 Completed runtime and public-contract changes:
 
