@@ -112,6 +112,22 @@ extension JudicialResultView on JudicialResult {
       this == JudicialResult.lost || this == JudicialResult.dismissed;
 }
 
+/// Court instance that produced the latest authoritative judicial result.
+///
+/// This value is owned by Rust. Flutter keeps an explicit `unknown` value for
+/// forward-compatible snapshots and never reconstructs the instance from
+/// stage IDs, outcome IDs, or translated presentation text.
+enum JudicialDecisionInstance { firstInstance, appeal, cassation, unknown }
+
+extension JudicialDecisionInstanceView on JudicialDecisionInstance {
+  String get label => switch (this) {
+        JudicialDecisionInstance.firstInstance => 'First instance',
+        JudicialDecisionInstance.appeal => 'Appeal',
+        JudicialDecisionInstance.cassation => 'Cassation',
+        JudicialDecisionInstance.unknown => 'Unknown court instance',
+      };
+}
+
 /// Procedural lifecycle derived by Rust from the authoritative current stage.
 enum MatterLifecycleStatus {
   active,
@@ -420,6 +436,7 @@ class GameSnapshot {
     required this.actions,
     required this.latestAiNote,
     this.judicialResult,
+    this.judicialDecisionInstance,
     this.matterLifecycle = MatterLifecycleStatus.active,
     bool? isClosed,
     this.settlementOffer,
@@ -502,6 +519,7 @@ class GameSnapshot {
   final List<GameActionView> actions;
   final String? latestAiNote;
   final JudicialResult? judicialResult;
+  final JudicialDecisionInstance? judicialDecisionInstance;
   final MatterLifecycleStatus matterLifecycle;
   final bool? _authoritativeIsClosed;
   final SettlementOfferView? settlementOffer;
@@ -556,6 +574,8 @@ class GameSnapshot {
     bool clearLatestAiNote = false,
     JudicialResult? judicialResult,
     bool clearJudicialResult = false,
+    JudicialDecisionInstance? judicialDecisionInstance,
+    bool clearJudicialDecisionInstance = false,
     MatterLifecycleStatus? matterLifecycle,
     bool? isClosed,
     SettlementOfferView? settlementOffer,
@@ -608,6 +628,9 @@ class GameSnapshot {
           clearLatestAiNote ? null : latestAiNote ?? this.latestAiNote,
       judicialResult:
           clearJudicialResult ? null : judicialResult ?? this.judicialResult,
+      judicialDecisionInstance: clearJudicialDecisionInstance
+          ? null
+          : judicialDecisionInstance ?? this.judicialDecisionInstance,
       matterLifecycle: matterLifecycle ?? this.matterLifecycle,
       isClosed: isClosed ?? _authoritativeIsClosed,
       settlementOffer:

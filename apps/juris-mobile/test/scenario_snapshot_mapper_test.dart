@@ -25,6 +25,7 @@ void main() {
     final GameSnapshot snapshot = ScenarioSnapshotMapper.map(
       source: _snapshot(
         judicialResult: 'lost',
+        judicialDecisionInstance: 'first_instance',
         lifecycle: 'post_judgment',
         isClosed: false,
         actions: const <String>['file_appeal', 'waive_appeal'],
@@ -33,6 +34,11 @@ void main() {
     );
 
     expect(snapshot.judicialResult, JudicialResult.lost);
+    expect(
+      snapshot.judicialDecisionInstance,
+      JudicialDecisionInstance.firstInstance,
+    );
+    expect(snapshot.caseResultStatus, CaseResultStatus.lostAtFirstInstance);
     expect(
       snapshot.matterLifecycle,
       MatterLifecycleStatus.postJudgment,
@@ -49,6 +55,7 @@ void main() {
     final GameSnapshot snapshot = ScenarioSnapshotMapper.map(
       source: _snapshot(
         judicialResult: 'lost',
+        judicialDecisionInstance: 'first_instance',
         lifecycle: 'closed',
         isClosed: true,
         outcomeId: 'final_loss',
@@ -66,6 +73,7 @@ void main() {
     final GameSnapshot snapshot = ScenarioSnapshotMapper.map(
       source: _snapshot(
         judicialResult: 'won',
+        judicialDecisionInstance: 'appeal',
         lifecycle: 'enforcement',
         isClosed: false,
         actions: const <String>['complete_enforcement'],
@@ -84,6 +92,7 @@ void main() {
     final GameSnapshot snapshot = ScenarioSnapshotMapper.map(
       source: _snapshot(
         judicialResult: 'lost',
+        judicialDecisionInstance: 'appeal',
         lifecycle: 'appeal',
         isClosed: false,
       ),
@@ -97,6 +106,7 @@ void main() {
     final GameSnapshot snapshot = ScenarioSnapshotMapper.map(
       source: _snapshot(
         judicialResult: 'won',
+        judicialDecisionInstance: 'appeal',
         lifecycle: 'closed',
         isClosed: true,
         outcomeId: 'appellate_success',
@@ -107,10 +117,35 @@ void main() {
     expect(snapshot.caseResultStatus, CaseResultStatus.wonOnAppeal);
   });
 
+  test('does not invent a cassation remittal from result and court instance',
+      () {
+    final GameSnapshot snapshot = ScenarioSnapshotMapper.map(
+      source: _snapshot(
+        judicialResult: 'won',
+        judicialDecisionInstance: 'cassation',
+        lifecycle: 'cassation',
+        isClosed: false,
+      ),
+      caseDefinition: caseDefinition,
+    );
+
+    expect(snapshot.judicialResult, JudicialResult.won);
+    expect(
+      snapshot.judicialDecisionInstance,
+      JudicialDecisionInstance.cassation,
+    );
+    expect(snapshot.caseResultStatus, CaseResultStatus.ongoing);
+    expect(
+      snapshot.caseResultStatus,
+      isNot(CaseResultStatus.remittedAfterCassation),
+    );
+  });
+
   test('nullable and future judicial-result values parse safely', () {
     final GameSnapshot absent = ScenarioSnapshotMapper.map(
       source: _snapshot(
         judicialResult: null,
+        judicialDecisionInstance: null,
         lifecycle: 'active',
         isClosed: false,
       ),
@@ -119,6 +154,7 @@ void main() {
     final GameSnapshot future = ScenarioSnapshotMapper.map(
       source: _snapshot(
         judicialResult: 'vacated_for_retrial',
+        judicialDecisionInstance: 'supreme_court_review',
         lifecycle: 'future_remedy',
         isClosed: false,
       ),
@@ -126,13 +162,102 @@ void main() {
     );
 
     expect(absent.judicialResult, isNull);
+    expect(absent.judicialDecisionInstance, isNull);
     expect(future.judicialResult, JudicialResult.unknown);
+    expect(
+      future.judicialDecisionInstance,
+      JudicialDecisionInstance.unknown,
+    );
     expect(future.matterLifecycle, MatterLifecycleStatus.unknown);
+  });
+
+  test('never infers decision instance from lifecycle stage or outcome ID', () {
+    final GameSnapshot appealStage = ScenarioSnapshotMapper.map(
+      source: _snapshot(
+        judicialResult: 'lost',
+        judicialDecisionInstance: null,
+        lifecycle: 'appeal',
+        isClosed: false,
+      ),
+      caseDefinition: caseDefinition,
+    );
+    final GameSnapshot appellateOutcome = ScenarioSnapshotMapper.map(
+      source: _snapshot(
+        judicialResult: 'won',
+        judicialDecisionInstance: null,
+        lifecycle: 'closed',
+        isClosed: true,
+        outcomeId: 'appellate_success',
+      ),
+      caseDefinition: caseDefinition,
+    );
+
+    expect(appealStage.judicialDecisionInstance, isNull);
+    expect(appealStage.caseResultStatus, CaseResultStatus.ongoing);
+    expect(appellateOutcome.judicialDecisionInstance, isNull);
+    expect(
+      appellateOutcome.caseResultStatus,
+      isNot(CaseResultStatus.wonOnAppeal),
+    );
+  });
+
+  test('old snapshot may omit the additive decision-instance key', () {
+    final Map<String, dynamic> source = _snapshot(
+      judicialResult: 'lost',
+      judicialDecisionInstance: null,
+      lifecycle: 'appeal',
+      isClosed: false,
+    )..remove('judicial_decision_instance');
+
+    final GameSnapshot snapshot = ScenarioSnapshotMapper.map(
+      source: source,
+      caseDefinition: caseDefinition,
+    );
+
+    expect(snapshot.judicialResult, JudicialResult.lost);
+    expect(snapshot.judicialDecisionInstance, isNull);
+    expect(snapshot.matterLifecycle, MatterLifecycleStatus.appeal);
+    expect(snapshot.caseResultStatus, CaseResultStatus.ongoing);
+  });
+
+  test('EN and RU mappings retain identical authoritative lifecycle state', () {
+    final Map<String, dynamic> source = _snapshot(
+      judicialResult: 'lost',
+      judicialDecisionInstance: 'first_instance',
+      lifecycle: 'post_judgment',
+      isClosed: false,
+      actions: const <String>['file_appeal', 'waive_appeal'],
+    );
+    final GameSnapshot english = ScenarioSnapshotMapper.map(
+      source: source,
+      caseDefinition: caseDefinition,
+      locale: 'en',
+    );
+    final GameSnapshot russian = ScenarioSnapshotMapper.map(
+      source: source,
+      caseDefinition: caseDefinition,
+      locale: 'ru',
+    );
+
+    expect(russian.seed, english.seed);
+    expect(russian.judicialResult, english.judicialResult);
+    expect(
+      russian.judicialDecisionInstance,
+      english.judicialDecisionInstance,
+    );
+    expect(russian.matterLifecycle, english.matterLifecycle);
+    expect(russian.isClosed, english.isClosed);
+    expect(russian.caseResultStatus, english.caseResultStatus);
+    expect(
+      russian.actions.map((GameActionView action) => action.id),
+      english.actions.map((GameActionView action) => action.id),
+    );
   });
 }
 
 Map<String, dynamic> _snapshot({
   required Object? judicialResult,
+  required Object? judicialDecisionInstance,
   required String lifecycle,
   required bool isClosed,
   List<String> actions = const <String>[],
@@ -146,6 +271,7 @@ Map<String, dynamic> _snapshot({
     'stage_title': lifecycle.replaceAll('_', ' '),
     'clock_minutes': 60,
     'judicial_result': judicialResult,
+    'judicial_decision_instance': judicialDecisionInstance,
     'matter_lifecycle': lifecycle,
     'is_closed': isClosed,
     'resolved_outcome': outcomeId,

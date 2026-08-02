@@ -2,7 +2,8 @@
 
 ## Status and boundary
 
-This checkpoint adds replay-based persistence for validated
+PR #9 is merged at `06e566afd6b09a6691800cd120bfb546d698583d` and
+introduced replay-based persistence for validated
 `ScenarioDefinition v1` sessions. Rust remains the sole authority for time,
 actions, generated events, asynchronous completions, deadlines, Inbox state,
 effects, and terminal outcomes.
@@ -12,8 +13,10 @@ session initialization plus accepted player commands and reconstructs state by
 starting a new session and replaying those commands.
 
 The legacy Failed ERP Dart demo is unchanged and does not advertise this save
-contract. Matter Lifecycle v1 reuses this exact envelope and reconstructs its
-authoritative judicial-result state through normal command replay.
+contract. Matter Lifecycle v1 was subsequently merged through PR #10 at
+`0c8c2cc11f6bab44abb3cdafe9f97dee91ff36fc`. Its persistence remediation keeps
+the envelope shape unchanged while introducing an explicit v2 runtime profile
+for the changed replay, lifecycle, and digest semantics.
 
 ## Public save envelope
 
@@ -24,7 +27,7 @@ fields:
 {
   "schema_id": "genesis.ai-juris.command-log",
   "schema_version": 1,
-  "runtime_compatibility": "scenario-runtime-v1",
+  "runtime_compatibility": "scenario-runtime-v2",
   "scenario_id": "greenfire_first_72_hours",
   "scenario_fingerprint": "64-lowercase-hex-sha256",
   "seed": 20260729,
@@ -92,8 +95,8 @@ and RU therefore does not change the fingerprint.
 
 ## Final-state digest
 
-The final-state digest is SHA-256 over a separate canonical authoritative
-projection containing:
+The runtime compatibility marker selects the digest profile. Both profiles
+use SHA-256 over a separate canonical authoritative projection containing:
 
 - scenario ID, scenario fingerprint, and seed;
 - stage and elapsed scenario minutes;
@@ -104,10 +107,19 @@ projection containing:
 - visible and resolved Inbox IDs;
 - action-use counters;
 - fired event IDs;
-- terminal outcome ID;
-- judicial result when an authoritative value exists; the key is omitted when
-  the result is absent so pre-lifecycle final-state digests remain
-  byte-compatible.
+- terminal outcome ID.
+
+`scenario-runtime-v1` preserves the historical projection exactly. It omits
+`judicial_result` when no result exists, includes it when a PR #10 lifecycle
+save has an authoritative result, and never includes
+`judicial_decision_instance`. This single profile verifies both genuine
+pre-PR #10 saves and the v1-labelled lifecycle saves emitted by PR #10 without
+guessing producer generation from incidental fields.
+
+`scenario-runtime-v2` always adds both `judicial_result` and
+`judicial_decision_instance`, including explicit JSON `null` values before a
+decision exists. The decision-instance value distinguishes the latest
+authoritative decision that produced the current judicial result.
 
 Maps and sets are backed by ordered Rust collections before canonical JSON
 encoding. The digest does not include locale, JSON formatting, hash-map
@@ -133,6 +145,27 @@ Load rejects:
 - zero or over-limit time advance;
 - replay/runtime errors, including the automatic-event budget;
 - a final digest that differs from the envelope.
+
+Schema and runtime-marker validation happen before command payload decoding,
+so an unsupported future runtime carrying a future command still fails as
+`RuntimeCompatibility`, not `UnknownCommand`. Compatibility validation and the
+v1 migration preflight both happen before command replay.
+
+A v1 definition is eligible only when the current generic validator passes and
+a separate ordered-effect proof establishes the old outcome-implies-terminal
+behavior is continuation-safe under v2. The proof requires every action-owned
+outcome to finish at the last `set_stage` in a terminal/resolved stage. It
+conservatively rejects event-owned outcome resolution; when an outcome action
+explicitly triggers an event, it also rejects definitions in which any event
+can change stage, because explicit, dependent, and due events share one queue.
+This closes the case where an effect list enters a terminal stage, resolves an
+outcome, and then leaves for a nonterminal stage—a shape the ordinary validator
+can accept because it validates presence, not final ordered state.
+
+An ineligible v1 save is rejected as `RuntimeCompatibility`, before it can
+surface as an illegal command sequence or digest mismatch. No case-specific
+stable ID is used by this proof. Conservative rejection is intentional where a
+static proof would otherwise require a historical event interpreter.
 
 The registry inserts the replayed session only after every command and the
 final digest pass. A failed load leaves all existing session IDs and snapshots
@@ -200,15 +233,44 @@ The shell:
 
 ## Compatibility rules
 
-Save v1 is compatible only when all of the following match:
+The eight-field Save v1 wire envelope is compatible only when all of the
+following match:
 
 - schema ID `genesis.ai-juris.command-log`;
 - schema version `1`;
-- runtime marker `scenario-runtime-v1`;
+- a supported runtime marker, `scenario-runtime-v1` or
+  `scenario-runtime-v2`;
 - scenario stable ID;
 - complete scenario fingerprint;
 - understood command variants and valid command sequence;
-- final authoritative digest.
+- the authoritative digest selected by the runtime marker.
+
+`schema_version: 1` describes the unchanged eight-field wire shape.
+`runtime_compatibility` independently identifies replay and digest semantics.
+Every newly created or successfully migrated save is emitted with
+`scenario-runtime-v2`; unknown markers fail closed and never fall back to the
+newest runtime.
+
+### v1 migration and rejection matrix
+
+| Save producer/category | Loader behavior | Next save |
+|---|---|---|
+| Pre-PR #10 compatible canonical save | Pass the generic lifecycle preflight, replay with current semantics, and verify the exact historical v1 digest | Written as v2 with the v2 digest |
+| Pre-PR #10 valid-v1 save that resolves an outcome before a terminal stage | Reject before replay as `RuntimeCompatibility`; do not report `IllegalCommandSequence` or digest mismatch | No save is written |
+| Pre-PR #10 valid-v1 save whose ordered effects enter a terminal stage, resolve an outcome, then leave it | Reject before replay as `RuntimeCompatibility`, even though the current validator accepts the definition | No save is written |
+| v1 definition with event-owned outcome resolution, or an outcome action that triggers events while some event can change stage | Conservatively reject before replay because continuation equivalence is not statically proven | No save is written |
+| PR #10 v1-labelled lifecycle save | Pass preflight, replay, verify the v1 digest with conditional `judicial_result` and no decision-instance key, then derive the Rust-owned decision instance | Written as v2 with result and decision instance in the digest |
+| Corrupted JSON or digest | Return the controlled JSON or integrity error after the applicable compatibility checks | No save is written |
+| Unknown runtime marker | Reject before replay as `RuntimeCompatibility` | No save is written |
+
+The two committed historical counterexamples cover both a direct nonterminal
+outcome and ordered `terminal → resolve outcome → nonterminal` effects. Their
+producer commits, Rust version, commands, exact v1 digests, expected results,
+and disposable-worktree reproduction procedure are recorded in
+`crates/juris-engine/tests/fixtures/persistence/README.md`. A failed migration
+leaves the Rust registry and active Flutter session unchanged; an incomplete
+successful native response or invalid mapped snapshot disposes only the
+temporary loaded session.
 
 Existing scenario JSON, mobile bundle schema, snapshot schema, and three-symbol
 C ABI remain backward compatible.
@@ -230,14 +292,16 @@ C ABI remain backward compatible.
 
 ## Future migration strategy
 
-A future reader must dispatch on `schema_id` and `schema_version` before
-decoding commands. Migration should:
+A future reader must validate `schema_id` and `schema_version`, then dispatch
+on `runtime_compatibility` before replay. Migration should:
 
 1. parse the old public envelope without private runtime structs;
 2. transform old initialization/commands into the next public schema;
 3. replay against an explicitly compatible content version;
-4. compute and verify the new final-state digest;
-5. write the migrated save only after successful replay.
+4. compute and verify the digest profile declared by the old runtime marker;
+5. derive the new authoritative state and compute the new profile only after
+   successful replay;
+6. write the migrated save only after successful replay.
 
 Unknown versions must continue to fail closed. Internal Rust refactors that
 preserve the public replay contract require no save migration.

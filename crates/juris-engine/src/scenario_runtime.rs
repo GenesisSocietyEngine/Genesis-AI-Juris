@@ -9,8 +9,8 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use juris_scenario_schema::{
     ActionDefinition, ActionRepeatability, AsyncTaskStatus, Condition, DeadlineStatus, Effect,
-    EventDefinition, EventTrigger, FactStatus, JudicialResult, MatterLifecycleStatus,
-    ScenarioClockMode, ScenarioDefinition,
+    EventDefinition, EventTrigger, FactStatus, JudicialDecisionInstance, JudicialResult,
+    MatterLifecycleStatus, ScenarioClockMode, ScenarioDefinition,
 };
 use juris_scenario_validator::validate_scenario;
 use serde::Serialize;
@@ -149,6 +149,7 @@ pub struct MobileScenarioSnapshot {
     pub clock_minutes: u64,
     pub clock_mode: String,
     pub judicial_result: Option<JudicialResult>,
+    pub judicial_decision_instance: Option<JudicialDecisionInstance>,
     pub matter_lifecycle: MatterLifecycleStatus,
     pub is_closed: bool,
     pub resolved_outcome: Option<String>,
@@ -179,6 +180,7 @@ struct ScenarioRuntimeState {
     action_uses: BTreeMap<String, u32>,
     fired_events: BTreeSet<String>,
     judicial_result: Option<JudicialResult>,
+    judicial_decision_instance: Option<JudicialDecisionInstance>,
     outcome_id: Option<String>,
 }
 
@@ -264,6 +266,7 @@ impl ScenarioSession {
                 action_uses: BTreeMap::new(),
                 fired_events: BTreeSet::new(),
                 judicial_result: None,
+                judicial_decision_instance: None,
                 outcome_id: None,
             },
             definition,
@@ -385,6 +388,7 @@ impl ScenarioSession {
             clock_minutes: self.state.clock_minutes,
             clock_mode: clock_mode_name(self.definition.clock.mode).to_owned(),
             judicial_result: self.state.judicial_result,
+            judicial_decision_instance: self.state.judicial_decision_instance,
             matter_lifecycle,
             is_closed,
             resolved_outcome: self.state.outcome_id.clone(),
@@ -748,7 +752,18 @@ impl ScenarioSession {
                     self.state.resolved_inbox.insert(item.as_str().to_owned());
                 }
                 Effect::SetJudicialResult { result } => {
+                    let current_stage = self
+                        .definition
+                        .stages
+                        .iter()
+                        .find(|stage| stage.id.as_str() == self.state.stage_id)
+                        .expect("validated current stage must exist");
                     self.state.judicial_result = Some(*result);
+                    self.state.judicial_decision_instance =
+                        Some(JudicialDecisionInstance::from_stage(
+                            current_stage.kind,
+                            self.state.judicial_decision_instance,
+                        ));
                 }
                 Effect::TriggerEvent { event } => {
                     events.push_back(event.as_str().to_owned());

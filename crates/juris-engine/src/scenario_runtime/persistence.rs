@@ -7,7 +7,10 @@
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
-use juris_scenario_schema::{AsyncTaskStatus, DeadlineStatus, FactStatus, ScenarioDefinition};
+use juris_scenario_schema::{
+    AsyncTaskStatus, DeadlineStatus, Effect, FactStatus, ScenarioDefinition, StageKind,
+};
+use juris_scenario_validator::validate_scenario;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -20,7 +23,24 @@ use super::{
 
 pub const SAVE_SCHEMA_ID: &str = "genesis.ai-juris.command-log";
 pub const SAVE_SCHEMA_VERSION: u32 = 1;
-const RUNTIME_COMPATIBILITY: &str = "scenario-runtime-v1";
+const RUNTIME_COMPATIBILITY_V1: &str = "scenario-runtime-v1";
+const RUNTIME_COMPATIBILITY_V2: &str = "scenario-runtime-v2";
+
+/// The runtime marker selects replay semantics and the canonical digest
+/// projection. It is intentionally independent from the envelope schema
+/// version: both profiles use the same stable eight-field wire envelope.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RuntimeCompatibility {
+    V1,
+    V2,
+}
+
+#[derive(Debug, Deserialize)]
+struct SaveCompatibilityHeader {
+    schema_id: String,
+    schema_version: u32,
+    runtime_compatibility: String,
+}
 
 /// One accepted player intention in authoritative replay order.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -92,6 +112,20 @@ impl ScenarioSaveEnvelope {
     pub fn from_json(encoded: &str) -> Result<Self, ScenarioSaveError> {
         let value: Value = serde_json::from_str(encoded)
             .map_err(|error| ScenarioSaveError::InvalidJson(error.to_string()))?;
+
+        // Select the compatibility boundary from the envelope header before
+        // interpreting the command payload. A future runtime is free to add a
+        // command this runtime does not know; it must still fail as an
+        // unsupported runtime rather than being misreported as an unknown v1
+        // or v2 command.
+        let header: SaveCompatibilityHeader = serde_json::from_value(value.clone())
+            .map_err(|error| ScenarioSaveError::InvalidJson(error.to_string()))?;
+        validate_save_header(
+            &header.schema_id,
+            header.schema_version,
+            &header.runtime_compatibility,
+        )?;
+
         if let Some(commands) = value.get("commands").and_then(Value::as_array) {
             for command in commands {
                 let Some(command_type) = command.get("command").and_then(Value::as_str) else {
@@ -120,12 +154,12 @@ impl ScenarioSession {
         Ok(ScenarioSaveEnvelope {
             schema_id: SAVE_SCHEMA_ID.to_owned(),
             schema_version: SAVE_SCHEMA_VERSION,
-            runtime_compatibility: RUNTIME_COMPATIBILITY.to_owned(),
+            runtime_compatibility: RUNTIME_COMPATIBILITY_V2.to_owned(),
             scenario_id: self.definition.metadata.id.as_str().to_owned(),
             scenario_fingerprint: scenario_fingerprint(&self.definition)?,
             seed: self.seed,
             commands: self.command_log.clone(),
-            final_state_digest: final_state_digest(self)?,
+            final_state_digest: final_state_digest(self, RuntimeCompatibility::V2)?,
         })
     }
 
@@ -146,7 +180,16 @@ impl ScenarioSession {
         definition: ScenarioDefinition,
         envelope: ScenarioSaveEnvelope,
     ) -> Result<Self, ScenarioSaveError> {
-        validate_envelope_compatibility(&definition, &envelope)?;
+        let compatibility = validate_envelope_compatibility(&definition, &envelope)?;
+
+        // A v1 envelope may only cross the lifecycle boundary when a pure
+        // definition-level proof establishes that old terminal semantics are
+        // representable by v2. This check deliberately runs before session
+        // construction or command replay, so an incompatible save cannot
+        // partially execute and cannot surface later as an integrity error.
+        if compatibility == RuntimeCompatibility::V1 {
+            validate_v1_migration_eligibility(&definition)?;
+        }
 
         for command in &envelope.commands {
             match command {
@@ -178,7 +221,7 @@ impl ScenarioSession {
             result.map_err(|error| illegal_sequence(index, error))?;
         }
 
-        if final_state_digest(&session)? != envelope.final_state_digest {
+        if final_state_digest(&session, compatibility)? != envelope.final_state_digest {
             return Err(ScenarioSaveError::IntegrityMismatch);
         }
         Ok(session)
@@ -194,7 +237,7 @@ impl ScenarioSession {
     }
 
     pub fn final_state_digest(&self) -> Result<String, ScenarioSaveError> {
-        final_state_digest(self)
+        final_state_digest(self, RuntimeCompatibility::V2)
     }
 }
 
@@ -221,20 +264,12 @@ impl ScenarioSessionRegistry {
 fn validate_envelope_compatibility(
     definition: &ScenarioDefinition,
     envelope: &ScenarioSaveEnvelope,
-) -> Result<(), ScenarioSaveError> {
-    if envelope.schema_id != SAVE_SCHEMA_ID {
-        return Err(ScenarioSaveError::UnknownSchema(envelope.schema_id.clone()));
-    }
-    if envelope.schema_version != SAVE_SCHEMA_VERSION {
-        return Err(ScenarioSaveError::UnknownSchemaVersion(
-            envelope.schema_version,
-        ));
-    }
-    if envelope.runtime_compatibility != RUNTIME_COMPATIBILITY {
-        return Err(ScenarioSaveError::RuntimeCompatibility(
-            envelope.runtime_compatibility.clone(),
-        ));
-    }
+) -> Result<RuntimeCompatibility, ScenarioSaveError> {
+    let compatibility = validate_save_header(
+        &envelope.schema_id,
+        envelope.schema_version,
+        &envelope.runtime_compatibility,
+    )?;
     if envelope.scenario_id != definition.metadata.id.as_str() {
         return Err(ScenarioSaveError::UnknownScenario(
             envelope.scenario_id.clone(),
@@ -243,7 +278,119 @@ fn validate_envelope_compatibility(
     if envelope.scenario_fingerprint != scenario_fingerprint(definition)? {
         return Err(ScenarioSaveError::FingerprintMismatch);
     }
+    Ok(compatibility)
+}
+
+fn validate_save_header(
+    schema_id: &str,
+    schema_version: u32,
+    runtime_compatibility: &str,
+) -> Result<RuntimeCompatibility, ScenarioSaveError> {
+    if schema_id != SAVE_SCHEMA_ID {
+        return Err(ScenarioSaveError::UnknownSchema(schema_id.to_owned()));
+    }
+    if schema_version != SAVE_SCHEMA_VERSION {
+        return Err(ScenarioSaveError::UnknownSchemaVersion(schema_version));
+    }
+    Ok(match runtime_compatibility {
+        RUNTIME_COMPATIBILITY_V1 => RuntimeCompatibility::V1,
+        RUNTIME_COMPATIBILITY_V2 => RuntimeCompatibility::V2,
+        _ => {
+            return Err(ScenarioSaveError::RuntimeCompatibility(
+                runtime_compatibility.to_owned(),
+            ));
+        }
+    })
+}
+
+/// Proves that a historical v1 definition does not depend on terminal
+/// behavior removed by lifecycle v2.
+///
+/// A genuine v1 producer could only save a definition accepted by its own
+/// validator. If that same fingerprint is not accepted by the current
+/// validator, the loader cannot prove which later semantic invariant changed;
+/// conservative rejection is therefore safer than an allowlist that could let
+/// a future validator change leak out as an illegal command or digest error.
+/// No commands are executed, no registry is touched, and no case-specific IDs
+/// are used. Definitions that pass this gate are then replayed normally by the
+/// current authoritative engine.
+fn validate_v1_migration_eligibility(
+    definition: &ScenarioDefinition,
+) -> Result<(), ScenarioSaveError> {
+    let report = validate_scenario(definition);
+    if !report.is_valid() || !v1_outcome_boundaries_are_v2_safe(definition) {
+        return Err(ScenarioSaveError::RuntimeCompatibility(
+            RUNTIME_COMPATIBILITY_V1.to_owned(),
+        ));
+    }
     Ok(())
+}
+
+/// Conservatively proves that the one v1/v2 terminal-semantic difference
+/// cannot change continuation after a successfully replayed command.
+///
+/// V1 treated any resolved outcome as terminal. V2 derives closure only from
+/// the final stage. Merely asking the current validator whether a transition
+/// *mentions* a terminal stage is insufficient: ordered effects could enter a
+/// terminal stage, resolve an outcome, and then leave it again. For migration
+/// we therefore require each action-owned outcome to finish at a terminal
+/// stage. Event-owned outcomes are rejected because event scheduling can mix
+/// explicit, dependent, and due events; proving their final stage requires a
+/// historical event interpreter rather than a static shortcut.
+///
+/// A closure action with an explicit event trigger is accepted only when no
+/// event in the definition can change stage. Processing a triggered event also
+/// queues dependent and currently-due events, so restricting only the named
+/// event would not be a complete proof. This rule is intentionally
+/// conservative, generic, deterministic, and independent of case IDs.
+fn v1_outcome_boundaries_are_v2_safe(definition: &ScenarioDefinition) -> bool {
+    if definition.events.iter().any(|event| {
+        event
+            .effects
+            .iter()
+            .any(|effect| matches!(effect, Effect::ResolveOutcome { .. }))
+    }) {
+        return false;
+    }
+
+    let any_event_changes_stage = definition.events.iter().any(|event| {
+        event
+            .effects
+            .iter()
+            .any(|effect| matches!(effect, Effect::SetStage { .. }))
+    });
+
+    definition.actions.iter().all(|action| {
+        let resolves_outcome = action
+            .effects
+            .iter()
+            .any(|effect| matches!(effect, Effect::ResolveOutcome { .. }));
+        if !resolves_outcome {
+            return true;
+        }
+
+        let finishes_terminal = action
+            .effects
+            .iter()
+            .rev()
+            .find_map(|effect| match effect {
+                Effect::SetStage { stage } => definition
+                    .stages
+                    .iter()
+                    .find(|candidate| candidate.id == *stage),
+                _ => None,
+            })
+            .is_some_and(|stage| stage.terminal || stage.kind == StageKind::Resolved);
+        if !finishes_terminal {
+            return false;
+        }
+
+        let triggers_event = action
+            .effects
+            .iter()
+            .any(|effect| matches!(effect, Effect::TriggerEvent { .. }));
+        !triggers_event || !any_event_changes_stage
+    })
 }
 
 fn illegal_sequence(index: usize, error: ScenarioRuntimeError) -> ScenarioSaveError {
@@ -257,7 +404,10 @@ fn scenario_fingerprint(definition: &ScenarioDefinition) -> Result<String, Scena
     digest_serializable(definition)
 }
 
-fn final_state_digest(session: &ScenarioSession) -> Result<String, ScenarioSaveError> {
+fn final_state_digest(
+    session: &ScenarioSession,
+    compatibility: RuntimeCompatibility,
+) -> Result<String, ScenarioSaveError> {
     let fact_statuses: BTreeMap<&str, &str> = session
         .state
         .fact_statuses
@@ -299,17 +449,40 @@ fn final_state_digest(session: &ScenarioSession) -> Result<String, ScenarioSaveE
         "fired_events": session.state.fired_events,
         "outcome_id": session.state.outcome_id,
     });
-    if let Some(judicial_result) = session.state.judicial_result {
-        projection
-            .as_object_mut()
-            .expect("authoritative state projection must be an object")
-            .insert(
+    let projection = projection
+        .as_object_mut()
+        .expect("authoritative state projection must be an object");
+    match compatibility {
+        RuntimeCompatibility::V1 => {
+            // PR #10 still emitted v1 markers but added judicial_result to the
+            // digest only when present. Pre-lifecycle saves have no result, so
+            // this one historical projection verifies both generations without
+            // inferring a producer from incidental envelope data.
+            if let Some(judicial_result) = session.state.judicial_result {
+                projection.insert(
+                    "judicial_result".to_owned(),
+                    serde_json::to_value(judicial_result)
+                        .map_err(|error| ScenarioSaveError::Serialization(error.to_string()))?,
+                );
+            }
+        }
+        RuntimeCompatibility::V2 => {
+            // V2 always emits both lifecycle keys. Explicit nulls distinguish
+            // the profile deterministically even before a decision exists and
+            // make absence policy independent from serialization defaults.
+            projection.insert(
                 "judicial_result".to_owned(),
-                serde_json::to_value(judicial_result)
+                serde_json::to_value(session.state.judicial_result)
                     .map_err(|error| ScenarioSaveError::Serialization(error.to_string()))?,
             );
+            projection.insert(
+                "judicial_decision_instance".to_owned(),
+                serde_json::to_value(session.state.judicial_decision_instance)
+                    .map_err(|error| ScenarioSaveError::Serialization(error.to_string()))?,
+            );
+        }
     }
-    digest_serializable(&projection)
+    digest_serializable(projection)
 }
 
 fn digest_serializable<T: Serialize>(value: &T) -> Result<String, ScenarioSaveError> {
@@ -391,5 +564,44 @@ fn task_status_name(status: AsyncTaskStatus) -> &'static str {
         AsyncTaskStatus::Ready => "ready",
         AsyncTaskStatus::Reviewed => "reviewed",
         AsyncTaskStatus::Expired => "expired",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use juris_scenario_schema::{JudicialDecisionInstance, JudicialResult};
+
+    const LOGISTICS: &str =
+        include_str!("../../../../content/cases/unpaid_logistics_invoices.scenario.json");
+
+    #[test]
+    fn decision_instance_is_v2_authoritative_but_absent_from_the_v1_profile() {
+        let definition: ScenarioDefinition = serde_json::from_str(LOGISTICS).unwrap();
+        let base = ScenarioSession::new(definition, 20260725).unwrap();
+        let mut first_instance = base.clone();
+        first_instance.state.judicial_result = Some(JudicialResult::Lost);
+        first_instance.state.judicial_decision_instance =
+            Some(JudicialDecisionInstance::FirstInstance);
+        let mut appeal = first_instance.clone();
+        appeal.state.judicial_decision_instance = Some(JudicialDecisionInstance::Appeal);
+
+        // The sessions differ in exactly one authoritative lifecycle field.
+        // Historical v1 never covered that field, while v2 must distinguish it.
+        assert_eq!(
+            final_state_digest(&first_instance, RuntimeCompatibility::V1).unwrap(),
+            final_state_digest(&appeal, RuntimeCompatibility::V1).unwrap()
+        );
+        let first_v2 = final_state_digest(&first_instance, RuntimeCompatibility::V2).unwrap();
+        let appeal_v2 = final_state_digest(&appeal, RuntimeCompatibility::V2).unwrap();
+        assert_eq!(
+            first_v2,
+            "4125d90df1f15fd19a31048ecce41a22621f7a5367a8adbcd13c5c31dbaa715a"
+        );
+        assert_eq!(
+            appeal_v2,
+            "8db5604e69b8089368a379db5b8a9aee1e33b91e75f749df86726d6a4510c1de"
+        );
+        assert_ne!(first_v2, appeal_v2);
     }
 }

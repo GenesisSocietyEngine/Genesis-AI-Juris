@@ -16,6 +16,8 @@ abstract final class ScenarioSnapshotMapper {
         _optionalBool(source, 'is_closed') ?? _bool(source, 'terminal');
     final JudicialResult? judicialResult =
         _judicialResult(source['judicial_result']);
+    final JudicialDecisionInstance? judicialDecisionInstance =
+        _judicialDecisionInstance(source['judicial_decision_instance']);
     final MatterLifecycleStatus matterLifecycle = _matterLifecycle(
       source['matter_lifecycle'],
       isClosed: isClosed,
@@ -57,7 +59,7 @@ abstract final class ScenarioSnapshotMapper {
       ),
       caseResultStatus: _caseResult(
         judicialResult,
-        matterLifecycle,
+        judicialDecisionInstance,
         outcome,
       ),
       engagementStatus:
@@ -187,6 +189,7 @@ abstract final class ScenarioSnapshotMapper {
           .toList(growable: false),
       latestAiNote: null,
       judicialResult: judicialResult,
+      judicialDecisionInstance: judicialDecisionInstance,
       matterLifecycle: matterLifecycle,
       isClosed: isClosed,
       outcomeSummary: !isClosed || outcome == null
@@ -284,40 +287,37 @@ abstract final class ScenarioSnapshotMapper {
 
   static CaseResultStatus _caseResult(
     JudicialResult? judicialResult,
-    MatterLifecycleStatus matterLifecycle,
+    JudicialDecisionInstance? judicialDecisionInstance,
     Map<String, dynamic>? outcome,
   ) {
-    final String? outcomeId = outcome == null ? null : _string(outcome, 'id');
-    if (outcomeId != null &&
-        outcomeId.contains('appellate') &&
-        judicialResult == JudicialResult.won) {
-      return CaseResultStatus.wonOnAppeal;
-    }
-    final CaseResultStatus? fromDecision = switch (judicialResult) {
-      JudicialResult.won
-          when matterLifecycle == MatterLifecycleStatus.appeal ||
-              matterLifecycle == MatterLifecycleStatus.enforcement =>
-        CaseResultStatus.wonOnAppeal,
-      JudicialResult.won => CaseResultStatus.wonAtFirstInstance,
-      JudicialResult.lost ||
-      JudicialResult.dismissed
-          when matterLifecycle == MatterLifecycleStatus.appeal ||
-              matterLifecycle == MatterLifecycleStatus.cassation =>
-        CaseResultStatus.lostOnAppeal,
-      JudicialResult.lost ||
-      JudicialResult.dismissed =>
+    // Decision level is mapped only from Rust's authoritative instance field.
+    // A lifecycle stage or outcome ID does not identify which court produced
+    // the latest decision.
+    final CaseResultStatus? fromDecision =
+        switch ((judicialResult, judicialDecisionInstance)) {
+      (JudicialResult.won, JudicialDecisionInstance.firstInstance) =>
+        CaseResultStatus.wonAtFirstInstance,
+      (JudicialResult.partiallyWon, JudicialDecisionInstance.firstInstance) =>
+        CaseResultStatus.mixedAtFirstInstance,
+      (
+        JudicialResult.lost || JudicialResult.dismissed,
+        JudicialDecisionInstance.firstInstance
+      ) =>
         CaseResultStatus.lostAtFirstInstance,
-      JudicialResult.partiallyWon => CaseResultStatus.mixedAtFirstInstance,
-      JudicialResult.unknown || null => null,
+      (JudicialResult.won, JudicialDecisionInstance.appeal) =>
+        CaseResultStatus.wonOnAppeal,
+      (
+        JudicialResult.lost || JudicialResult.dismissed,
+        JudicialDecisionInstance.appeal
+      ) =>
+        CaseResultStatus.lostOnAppeal,
+      _ => null,
     };
     if (fromDecision != null) {
       return fromDecision;
     }
     if (outcome == null) {
       return CaseResultStatus.ongoing;
-    }
-    if (outcomeId!.contains('judgment')) {
-      return CaseResultStatus.wonAtFirstInstance;
     }
     return CaseResultStatus.settled;
   }
@@ -335,6 +335,21 @@ abstract final class ScenarioSnapshotMapper {
       'partially_won' => JudicialResult.partiallyWon,
       'dismissed' => JudicialResult.dismissed,
       _ => JudicialResult.unknown,
+    };
+  }
+
+  static JudicialDecisionInstance? _judicialDecisionInstance(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is! String) {
+      return JudicialDecisionInstance.unknown;
+    }
+    return switch (value) {
+      'first_instance' => JudicialDecisionInstance.firstInstance,
+      'appeal' => JudicialDecisionInstance.appeal,
+      'cassation' => JudicialDecisionInstance.cassation,
+      _ => JudicialDecisionInstance.unknown,
     };
   }
 

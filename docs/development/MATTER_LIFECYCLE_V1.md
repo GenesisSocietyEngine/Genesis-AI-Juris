@@ -2,8 +2,11 @@
 
 ## Status and boundary
 
-Matter Lifecycle v1 establishes the authoritative rule that an adverse
-judicial result does not, by itself, close a matter.
+Matter Lifecycle v1 was merged through PR #10 at
+`0c8c2cc11f6bab44abb3cdafe9f97dee91ff36fc`. It establishes the authoritative
+rule that an adverse judicial result does not, by itself, close a matter. The
+persistence compatibility remediation documented below is a separate local
+checkpoint and is not described as published or merged.
 
 Rust remains the sole authority for the current procedural stage, judicial
 result, matter lifecycle, available remedies, elapsed scenario time, generated
@@ -27,6 +30,20 @@ does not introduce player-authored legal theory.
 
 It is mutable runtime state rather than a terminal outcome. A later appeal,
 cassation, remittal, or other authored remedy may replace an earlier result.
+
+`JudicialDecisionInstance` records the procedural instance that produced that
+current result:
+
+- `first_instance`;
+- `appeal`;
+- `cassation`.
+
+It is absent until a judicial result exists. Rust derives it at
+`SetJudicialResult` execution time from the authoritative stage. A later
+decision replaces both the result and its instance, so the two fields always
+describe the same latest authoritative decision. Enforcement and resolved
+stages preserve an existing instance because they are not themselves judicial
+decision instances.
 
 Scenario authors set and query it declaratively:
 
@@ -64,9 +81,11 @@ The authoring contract requires:
 - post-judgment and remedy stages to remain nonterminal;
 - every remedy stage to provide a valid exit;
 - a resolved stage to be terminal;
+- every terminal stage to use the `resolved` stage kind;
 - a terminal stage to expose no exit actions;
 - a complete `OutcomeDefinition` to resolve only in a transition that enters
-  a terminal or resolved stage.
+  a terminal stage. Because every terminal stage must use the `resolved` kind,
+  this is also the resolved terminal boundary.
 
 Consequently, `lost` and `dismissed` may be adverse results while the matter
 remains open. Dispatch and foreground time advancement stop only after derived
@@ -78,6 +97,8 @@ other authored actions remain executable.
 The versioned mobile snapshot remains schema version 1 and adds:
 
 - `judicial_result`: nullable latest decision;
+- `judicial_decision_instance`: nullable Rust-owned instance that produced the
+  current decision;
 - `matter_lifecycle`: stage-derived lifecycle;
 - `is_closed`: authoritative closure flag;
 - `resolved_outcome`: nullable terminal outcome ID.
@@ -94,22 +115,43 @@ Scenario Definition v1 remains version `1.0`. The lifecycle additions are
 additive enum, condition, effect, and stage-kind variants. Existing scenario
 stable IDs and existing scenario documents are unchanged.
 
-Persistent Command-Log Save/Load v1 also remains unchanged:
+Persistent Command-Log Save/Load retains its wire contract:
 
 - technical schema ID: `genesis.ai-juris.command-log`;
 - schema version: `1`;
-- runtime compatibility marker: `scenario-runtime-v1`;
+- exactly the same eight envelope fields;
 - accepted player commands: `dispatch` and `advance_time`;
 - replay from the authoritative scenario definition and seed;
 - scenario fingerprint and final-state digest verification;
 - failure-atomic registry and Flutter session replacement.
 
-Judicial-result changes are reconstructed by replaying accepted commands and
-their deterministic effects. `judicial_result` is included in the
-authoritative final-state digest when present. It is omitted when absent so
-the digest projection for existing pre-lifecycle sessions remains unchanged.
-Matter lifecycle is derived from the restored stage and is therefore not
-duplicated in the save envelope.
+Envelope schema version 1 identifies this unchanged wire shape. The separate
+runtime marker identifies replay and digest semantics. New lifecycle saves
+write `scenario-runtime-v2`.
+
+For historical `scenario-runtime-v1` saves, the loader performs a generic,
+side-effect-free lifecycle eligibility check before replay. Compatible
+pre-PR #10 saves replay with the exact v1 digest projection and migrate to v2.
+The known valid-v1 definition that resolves an outcome before entering a
+terminal stage is rejected before replay as `RuntimeCompatibility`. It is not
+allowed to fail later as an illegal command sequence or digest mismatch.
+
+The eligibility check is stricter than ordinary definition validation because
+effect order is authoritative. Every action-owned outcome must finish at the
+last `set_stage` in a terminal/resolved stage. Event-owned outcome resolution
+is conservatively rejected, as is an outcome action that triggers events when
+any event can change stage. Consequently, the historical definition whose
+effects enter `resolved`, resolve an outcome, and then return to a nonterminal
+stage is rejected as `RuntimeCompatibility` even though the current validator
+accepts it. This rule is generic and contains no scenario IDs.
+
+PR #10 also emitted v1-labelled lifecycle saves. They use the same v1 digest
+profile: `judicial_result` is present only when authoritative state has a
+result, and `judicial_decision_instance` is absent. Compatible saves in that
+category replay under the v1 profile, derive the decision instance from Rust
+state, and are re-saved as v2. The v2 digest always includes both result and
+decision-instance keys, including explicit nulls. Matter lifecycle remains
+derived from the restored stage rather than duplicated in the envelope.
 
 The lifecycle fixture has its own scenario identity and does not change the
 fingerprints of Logistics, GreenFire, or GoldenShell. Localization overlays
@@ -154,11 +196,18 @@ the lifecycle boundary. Persistence coverage verifies an open adverse result,
 continuation into appeal after load, identical repeated loads, and no
 duplication of generated events or command-log entries.
 
+Historical cross-version bytes and provenance are committed under
+`crates/juris-engine/tests/fixtures/persistence/`. They include both semantic
+counterexamples, including the ordered-effects v1 digest
+`f7118812912dfb37fe8cb4d7c2f9060af363138c4d1ece1072c14768b978559e`.
+
 ## Flutter EN/RU behavior
 
 Flutter maps the authoritative lifecycle fields without using localized text
-as an identifier. Missing `is_closed` falls back to the legacy `terminal`
-field, and unknown future judicial-result or lifecycle values map to explicit
+as an identifier. It maps `judicial_decision_instance` directly and does not
+reconstruct it from stage IDs, outcome IDs, or display text. Missing
+`is_closed` falls back to the legacy `terminal` field, and unknown future
+judicial-result, decision-instance, or lifecycle values map to explicit
 presentation-safe `unknown` values.
 
 The Matter screen presents decision and lifecycle separately. For example:
@@ -189,8 +238,9 @@ command log, scenario fingerprint, or final-state digest.
 
 ## Next dependency
 
-The next architectural dependency is Dossier Projection v1: a deterministic,
-Rust-owned read model derived from authoritative scenario state. That
-checkpoint must preserve stable IDs, replay determinism, save/load failure
-atomicity, EN/RU parity, snapshot compatibility, and C ABI version 1. It must
-not yet introduce player-authored legal theory.
+After this persistence compatibility remediation receives explicit acceptance,
+the next separately authorized architectural dependency is Dossier Projection
+v1: a deterministic, Rust-owned read model derived from authoritative scenario
+state. That checkpoint must preserve stable IDs, replay determinism, save/load
+failure atomicity, EN/RU parity, snapshot compatibility, and C ABI version 1.
+It must not yet introduce player-authored legal theory.

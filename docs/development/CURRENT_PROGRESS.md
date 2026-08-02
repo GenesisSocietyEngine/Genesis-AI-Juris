@@ -1,14 +1,205 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: feat/matter-lifecycle-v1
-head_commit: "documentation commit containing this cumulative entry"
+branch: fix/matter-lifecycle-runtime-v2-compatibility
+checkpoint_documentation_commit: 1bdeeffabe333a7fe05f8d6b9dbb3b158015ddcc
 release_tag: v0.5.1-alpha.1
 app_version: 0.5.1+12
-last_updated: 2026-07-31
+last_updated: 2026-08-03
 ---
 
 # Current Progress
+
+## Matter Lifecycle persistence compatibility remediation local checkpoint — 2026-08-02
+
+Status: the runtime-v2 compatibility boundary, narrowly proven v1 migration,
+controlled v1 rejection, historical golden fixtures, Rust-owned judicial
+decision instance, Flutter atomic-load handling, and lifecycle Android
+acceptance are complete locally on
+`fix/matter-lifecycle-runtime-v2-compatibility`. Nothing from this checkpoint
+has been pushed, no PR was opened or modified, and no merge was attempted.
+
+Repository state:
+
+- verified clean starting point before implementation:
+  `main`, `origin/main`, `feat/dossier-projection-v1`, and `HEAD` all matched
+  `0c8c2cc11f6bab44abb3cdafe9f97dee91ff36fc`;
+- merge base remains
+  `0c8c2cc11f6bab44abb3cdafe9f97dee91ff36fc` (PR #10 merge commit);
+- PR #9 is present through merge commit
+  `06e566afd6b09a6691800cd120bfb546d698583d` and PR #10 through `0c8c2cc`;
+- the empty `feat/dossier-projection-v1` branch was not changed or deleted;
+- stale PR #4 was not pushed, modified, closed, rebased, or merged;
+- no Logistics, GreenFire, GoldenShell, catalog, localization, production
+  trace, action, deadline, outcome, or balance file changed;
+- intentional local commits:
+  - Rust/schema/simulator/bridge/FFI implementation and immutable fixtures:
+    `18998c5b77fe470404990cc6803aa913ee5edcf6` —
+    `fix(runtime): add lifecycle persistence compatibility v2`;
+  - Flutter mapping, atomic load behavior, EN/RU presentation, and Android
+    acceptance: `ef0168fb5c7f2469be6a2235c22621ab99b23629` —
+    `fix(mobile): preserve lifecycle loads across compatibility errors`;
+  - compatibility contracts and this cumulative handoff:
+    `1bdeeffabe333a7fe05f8d6b9dbb3b158015ddcc` —
+    `docs(development): record lifecycle compatibility remediation`.
+
+Completed runtime and public-contract changes:
+
+- save `schema_id` remains `genesis.ai-juris.command-log`, envelope
+  `schema_version` remains `1`, and the eight envelope fields are unchanged;
+- every new save and every successfully migrated save now emits
+  `runtime_compatibility: scenario-runtime-v2`;
+- the marker selects replay and digest semantics; schema ID, schema version,
+  and marker are validated before command payload decoding, so a future marker
+  with a future command fails as `RuntimeCompatibility`, not `UnknownCommand`;
+- v1 digest verification preserves the historical projection exactly:
+  `judicial_result` is conditional and
+  `judicial_decision_instance` is absent;
+- v2 digest verification always includes `judicial_result` and
+  `judicial_decision_instance`, including explicit nulls, and remains ordered,
+  locale-free, wall-clock-free, and platform-independent;
+- the v1 migration preflight is side-effect-free and generic. The current
+  validator must pass, every action-owned outcome must finish at its final
+  `set_stage` in a terminal/resolved stage, event-owned outcomes are rejected,
+  and an outcome action that triggers events is rejected when any event can
+  change stage;
+- both the direct nonterminal-outcome counterexample and the valid ordered
+  `terminal → resolve outcome → nonterminal` counterexample are rejected before
+  replay as `RuntimeCompatibility`; neither can first surface as
+  `IllegalCommandSequence` or `IntegrityMismatch`;
+- registry insertion remains temporary until preflight, replay, and the
+  marker-selected digest all pass. Repeated failures across all controlled
+  loader categories preserve registry length and the existing session;
+- added Rust-owned nullable `judicial_decision_instance` with stable values
+  `first_instance`, `appeal`, and `cassation`. It is the instance that produced
+  the current/latest authoritative `judicial_result`;
+- bridge snapshots carry the field additively. Flutter maps it directly and
+  no longer reconstructs it from stage IDs, outcome IDs, or display text;
+- Flutter keeps its old session ID and identical mapped snapshot on failed
+  load, disposes only a temporary session returned by an incomplete success or
+  invalid mapped snapshot, and covers repeated failures for JSON, schema,
+  runtime, fingerprint, command, replay, serialization, and integrity errors;
+- EN/RU map and present the same result, decision instance, lifecycle,
+  closure, stable action IDs, deadlines, and Inbox state. Flutter no longer
+  invents a cassation remittal from `won + cassation`;
+- snapshot schema remains version `1`; the decision-instance field is
+  additive, nullable, unknown-safe, and genuinely optional for older snapshots;
+- C ABI remains version `1`; no command, function, or fourth symbol was added.
+
+Historical fixture matrix:
+
+| Producer / fixture | Current result |
+|---|---|
+| `06e566a_before_judgment.json` | migrates; next save is v2 |
+| `06e566a_winning_judgment_open.json` | migrates open; next save is v2 |
+| `06e566a_losing_terminal_outcome.json` | migrates closed; next save is v2 |
+| `06e566a_logistics_terminal_boundary.json` | migrates closed; next save is v2 |
+| `06e566a_fully_enforced_win.json` | migrates closed; next save is v2 |
+| `06e566a_corrupted_digest.json` | `IntegrityMismatch` |
+| `06e566a_corrupted_json.json` | `InvalidJson` |
+| `06e566a_unsupported_marker.json` | `RuntimeCompatibility` before replay |
+| `06e566a_nonterminal_outcome.json` | `RuntimeCompatibility` before replay |
+| `06e566a_terminal_then_nonterminal_outcome.json` | `RuntimeCompatibility` before replay; exact v1 digest `f7118812912dfb37fe8cb4d7c2f9060af363138c4d1ece1072c14768b978559e` |
+| `0c8c2cc_lost_but_open.json` | migrates open with first-instance loss |
+| `0c8c2cc_appeal_success_enforced.json` | migrates closed with appellate win |
+| `0c8c2cc_appeal_cassation_exhausted.json` | migrates closed with cassation loss |
+| `0c8c2cc_explicitly_closed.json` | migrates explicit first-instance closure |
+
+The committed fixture README records producer commits, Rust 1.78, scenario
+IDs, command sequences, exact historical digests, expected results, and
+disposable-worktree generation commands. Normal tests consume immutable bytes
+and do not regenerate them with current code.
+
+Local quality gates:
+
+- `cargo +1.78.0 check --workspace --locked`: passed;
+- `cargo fmt --all -- --check`: passed;
+- `cargo check --workspace`: passed;
+- `cargo clippy --workspace --all-targets -- -D warnings`: passed;
+- `cargo test --workspace`: 209 passed, 0 failed;
+- focused Rust totals: `juris-engine` 57 (14 unit + 23 persistence + 20
+  runtime), bridge 10, FFI 8;
+- authoring diagnostics: Logistics, GreenFire, GoldenShell, and the adverse
+  lifecycle fixture each passed;
+- production deterministic traces remain exact:
+  - GreenFire protected: `protected_crisis_position`, minute 4440, 26 steps;
+  - GreenFire compromised: `compromised_crisis_position`, minute 4590,
+    21 steps;
+  - GoldenShell coordinated: `coordinated_claim_position`, minute 4545,
+    29 steps;
+  - GoldenShell fragmented: `fragmented_claim_position`, minute 4710,
+    23 steps;
+- lifecycle deterministic traces remain exact:
+  - appeal success + enforcement: `appellate_success`, minute 360,
+    result `won`, instance `appeal`, 8 steps;
+  - express waiver: `final_loss`, minute 65, result `lost`, instance
+    `first_instance`, 5 steps;
+  - appeal/cassation exhausted: `final_loss`, minute 425, result `lost`,
+    instance `cassation`, 9 steps;
+- deterministic mobile bundle: passed and current;
+- final Dart format gate: 42 files, 0 changes;
+- Flutter analyze: `No issues found`;
+- Flutter unit/widget tests: 103 passed, 0 failed;
+- debug APK: built at
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`;
+- Android native integration: 5 passed, 0 failed on `emulator-5554`, Android
+  17 / API 37;
+- fresh `armeabi-v7a`, `arm64-v8a`, and `x86_64` libraries each define exactly
+  `juris_mobile_bridge_execute`, `juris_mobile_bridge_string_free`, and
+  `juris_mobile_bridge_abi_version`;
+- `git diff --check`: passed.
+
+Android lifecycle acceptance evidence:
+
+- uses an integration/debug-only injected case, absent from the production
+  catalog and mobile bundle;
+- executes `request_judgment` then `adverse_trial_judgment`: minute 60
+  (09:00 presentation), `lost`, `first_instance`, `post_judgment`, open, no
+  terminal outcome, appeal deadline open, action-required Inbox visible, and
+  `file_appeal` / `waive_appeal` available;
+- saves, resets to another live session, loads, and restores exact lifecycle,
+  decision instance, deadline, Inbox, actions, stage, and time;
+- verifies embedded historical scenario/save bytes at runtime: 8306 bytes /
+  SHA-256 `639c8da2913e3473928c43f31d2aa7b96741c9da1e8b5292899cae8ba402258a`
+  and 535 bytes / SHA-256
+  `e42efef295db5ca7493ee57f4cea8b28807432da4c2e3bd6660d2f919f3d8c7e`;
+- routes two real native incompatible-v1 attempts through
+  `RustScenarioRepository.loadGame`; both return `incompatible_runtime` while
+  preserving the same Flutter snapshot and native session;
+- dispatches `file_appeal` through that retained session, reaches minute 120
+  (10:00), lifecycle `appeal`, completed appeal deadline, resolved Inbox, open
+  matter, and no outcome;
+- the other four Android tests cover GreenFire RU save/time, GoldenShell RU
+  around a deadline, terminal Logistics save/load, and corrupted-save
+  failure atomicity.
+
+Known limitations and consequences:
+
+- semantically compatible custom v1 definitions with event-owned outcomes, or
+  outcome actions whose event queue may change stage, are rejected
+  conservatively. Those users must begin a new session unless a future narrow
+  historical interpreter proves migration safety;
+- the two known incompatible v1 semantic shapes are deliberately not migrated;
+  the old save remains untouched, the active session remains playable, and the
+  loader returns a controlled compatibility error;
+- compatible pre-PR #10 and PR #10 v1-labelled saves covered by committed
+  goldens migrate and are thereafter written as v2;
+- external snapshot consumers must tolerate the additive nullable
+  `judicial_decision_instance` field;
+- local iOS/static-library execution is unavailable on Windows, so no
+  branch-head iOS result is claimed before publication and hosted CI;
+- no physical-device, release-signing, App Store, Play Store, or remote CI
+  result is claimed for this unpublished branch;
+- a stale local Flutter startup lock from old validation runners was removed;
+  all reported Flutter/Android gates were then rerun in fresh processes.
+
+Next step:
+
+- review the local three-commit remediation checkpoint and this compatibility
+  report;
+- only after explicit approval, push the branch, open a Draft PR, and observe
+  Rust quality/MSRV, Flutter, and iOS workflows to terminal state;
+- do not merge or begin Dossier Projection v1 without separate authorization.
 
 ## Matter Lifecycle v1 / Lost != Closed local review checkpoint — 2026-07-31
 
