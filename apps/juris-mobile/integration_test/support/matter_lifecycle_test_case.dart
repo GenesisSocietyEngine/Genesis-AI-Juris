@@ -70,6 +70,11 @@ MobileCaseDefinition matterLifecycleAndroidTestCase() {
           'resolved': <String, String>{'title': 'Завершено'},
         },
         'actions': <String, dynamic>{
+          'review_dossier_materials': <String, String>{
+            'title': 'Изучить материалы досье',
+            'description':
+                'Проверить полученные материалы и раскрыть подтверждённые сведения.',
+          },
           'request_judgment': <String, String>{
             'title': 'Запросить решение',
             'description': 'Передать дело на разрешение суда.',
@@ -90,6 +95,24 @@ MobileCaseDefinition matterLifecycleAndroidTestCase() {
         'deadlines': <String, dynamic>{
           'appeal_deadline': <String, String>{
             'title': 'Подать апелляцию',
+          },
+        },
+        'facts': <String, dynamic>{
+          'claim_was_filed': <String, String>{
+            'statement': 'Иск был подан в первую инстанцию.',
+          },
+          'registry_record_confirms_service': <String, String>{
+            'statement': 'Реестровая запись подтверждает вручение ответчику.',
+          },
+        },
+        'evidence': <String, dynamic>{
+          'client_instruction_letter': <String, String>{
+            'title': 'Письмо с инструкциями клиента',
+            'description': 'Инструкции клиента о ведении иска.',
+          },
+          'court_registry_extract': <String, String>{
+            'title': 'Выписка из судебного реестра',
+            'description': 'Выписка подтверждает вручение документов.',
           },
         },
         'inbox_items': <String, dynamic>{
@@ -141,7 +164,7 @@ const String _scenarioJson = r'''
       "id": "hearing",
       "title": "Hearing",
       "kind": "hearing",
-      "exit_actions": ["request_judgment", "adverse_trial_judgment"]
+      "exit_actions": ["review_dossier_materials", "request_judgment", "adverse_trial_judgment"]
     },
     {
       "id": "post_judgment_remedies",
@@ -163,6 +186,19 @@ const String _scenarioJson = r'''
     }
   ],
   "actions": [
+    {
+      "id": "review_dossier_materials",
+      "title": "Review dossier materials",
+      "description": "Review the received file and disclose the supported record.",
+      "available_when": {"type": "stage_is", "stage": "hearing"},
+      "effects": [
+        {"type": "set_fact_status", "fact": "registry_record_confirms_service", "status": "proven"},
+        {"type": "make_evidence_available", "evidence": "court_registry_extract"}
+      ],
+      "time_cost_minutes": 10,
+      "cost_eur": 100,
+      "repeatability": {"type": "once"}
+    },
     {
       "id": "request_judgment",
       "title": "Request judgment",
@@ -245,8 +281,36 @@ const String _scenarioJson = r'''
       "cost_eur": 200
     }
   ],
-  "facts": [],
-  "evidence": [],
+  "facts": [
+    {
+      "id": "claim_was_filed",
+      "statement": "The claim was filed at first instance.",
+      "initial_status": "admitted"
+    },
+    {
+      "id": "registry_record_confirms_service",
+      "statement": "HIDDEN FACT SENTINEL: the registry record confirms service on the defendant.",
+      "initial_status": "unknown"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "client_instruction_letter",
+      "title": "Client instruction letter",
+      "kind": "document",
+      "description": "The client's instructions for pursuing the claim.",
+      "supports_facts": ["claim_was_filed"],
+      "initially_available": true
+    },
+    {
+      "id": "court_registry_extract",
+      "title": "HIDDEN EVIDENCE SENTINEL: court registry extract",
+      "kind": "system_record",
+      "description": "The extract confirms service of the claim documents.",
+      "supports_facts": ["registry_record_confirms_service"],
+      "initially_available": false
+    }
+  ],
   "deadlines": [
     {
       "id": "appeal_deadline",

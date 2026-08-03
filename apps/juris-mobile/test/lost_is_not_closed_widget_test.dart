@@ -33,7 +33,11 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: MatterScreen(snapshot: snapshot, onShowActions: () {}),
+          body: MatterScreen(
+            snapshot: snapshot,
+            onShowActions: () {},
+            onShowDossier: () {},
+          ),
         ),
       ),
     );
@@ -115,7 +119,11 @@ void main() {
         locale: 'en',
         child: MaterialApp(
           home: Scaffold(
-            body: MatterScreen(snapshot: snapshot, onShowActions: () {}),
+            body: MatterScreen(
+              snapshot: snapshot,
+              onShowActions: () {},
+              onShowDossier: () {},
+            ),
           ),
         ),
       ),
@@ -132,7 +140,11 @@ void main() {
         locale: 'ru',
         child: MaterialApp(
           home: Scaffold(
-            body: MatterScreen(snapshot: snapshot, onShowActions: () {}),
+            body: MatterScreen(
+              snapshot: snapshot,
+              onShowActions: () {},
+              onShowDossier: () {},
+            ),
           ),
         ),
       ),

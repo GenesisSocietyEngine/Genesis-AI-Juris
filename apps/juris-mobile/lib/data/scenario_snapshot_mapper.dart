@@ -1,4 +1,5 @@
 import '../models/case_catalog.dart';
+import '../models/dossier_projection.dart';
 import '../models/game_snapshot.dart';
 
 /// Converts the stable Rust mobile snapshot into the current Flutter read
@@ -192,6 +193,11 @@ abstract final class ScenarioSnapshotMapper {
       judicialDecisionInstance: judicialDecisionInstance,
       matterLifecycle: matterLifecycle,
       isClosed: isClosed,
+      dossier: _dossierProjection(
+        source: source,
+        caseDefinition: caseDefinition,
+        locale: locale,
+      ),
       outcomeSummary: !isClosed || outcome == null
           ? null
           : CaseOutcomeSummaryView(
@@ -222,6 +228,250 @@ abstract final class ScenarioSnapshotMapper {
               missedOpportunities: const <String>[],
             ),
     );
+  }
+
+  static DossierProjectionView? _dossierProjection({
+    required Map<String, dynamic> source,
+    required MobileCaseDefinition caseDefinition,
+    required String locale,
+  }) {
+    if (!source.containsKey('dossier') || source['dossier'] == null) {
+      return null;
+    }
+    final Map<String, dynamic> dossier = _requiredObjectValue(
+      source['dossier'],
+      'dossier',
+    );
+    final Map<String, dynamic> procedure = _requiredObjectValue(
+      dossier['procedure'],
+      'dossier.procedure',
+    );
+    final String stageId = _string(procedure, 'stage_id');
+
+    final List<DossierFactView> facts =
+        _objectList(dossier, 'facts').map((Map<String, dynamic> fact) {
+      final String id = _string(fact, 'id');
+      return DossierFactView(
+        id: id,
+        statement: caseDefinition.scenarioText(
+          locale: locale,
+          section: 'facts',
+          id: id,
+          field: 'statement',
+          fallback: _string(fact, 'statement'),
+        ),
+        status: _dossierFactStatus(_string(fact, 'status')),
+      );
+    }).toList(growable: false);
+
+    final List<DossierEvidenceView> evidence =
+        _objectList(dossier, 'evidence').map((Map<String, dynamic> item) {
+      final String id = _string(item, 'id');
+      final String? description = _optionalString(item, 'description');
+      return DossierEvidenceView(
+        id: id,
+        title: caseDefinition.scenarioText(
+          locale: locale,
+          section: 'evidence',
+          id: id,
+          field: 'title',
+          fallback: _string(item, 'title'),
+        ),
+        kind: _string(item, 'kind'),
+        description: description == null
+            ? null
+            : caseDefinition.scenarioText(
+                locale: locale,
+                section: 'evidence',
+                id: id,
+                field: 'description',
+                fallback: description,
+              ),
+        supportsFactIds: _stringList(item, 'supports_fact_ids'),
+        contradictsFactIds: _stringList(item, 'contradicts_fact_ids'),
+      );
+    }).toList(growable: false);
+
+    final List<DossierDeadlineView> deadlines =
+        _objectList(dossier, 'deadlines').map((Map<String, dynamic> deadline) {
+      final String id = _string(deadline, 'id');
+      final List<DossierRemedyView> remedies =
+          _objectList(deadline, 'remedies').map((Map<String, dynamic> remedy) {
+        final String actionId = _string(remedy, 'action_id');
+        final String? description = _optionalString(remedy, 'description');
+        return DossierRemedyView(
+          actionId: actionId,
+          title: caseDefinition.scenarioText(
+            locale: locale,
+            section: 'actions',
+            id: actionId,
+            field: 'title',
+            fallback: _string(remedy, 'title'),
+          ),
+          description: description == null
+              ? null
+              : caseDefinition.scenarioText(
+                  locale: locale,
+                  section: 'actions',
+                  id: actionId,
+                  field: 'description',
+                  fallback: description,
+                ),
+          timeCostMinutes: _int(remedy, 'time_cost_minutes'),
+          costEur: _int(remedy, 'cost_eur'),
+        );
+      }).toList(growable: false);
+      return DossierDeadlineView(
+        id: id,
+        title: caseDefinition.scenarioText(
+          locale: locale,
+          section: 'deadlines',
+          id: id,
+          field: 'title',
+          fallback: _string(deadline, 'title'),
+        ),
+        dueAtMinutes: _int(deadline, 'due_at_minutes'),
+        status: _dossierDeadlineStatus(_string(deadline, 'status')),
+        remedies: remedies,
+      );
+    }).toList(growable: false);
+
+    final Map<String, dynamic>? rawOutcome = _optionalObjectValue(
+      dossier,
+      'outcome',
+      'dossier.outcome',
+    );
+    final DossierOutcomeView? outcome;
+    if (rawOutcome == null) {
+      outcome = null;
+    } else {
+      final String id = _string(rawOutcome, 'id');
+      outcome = DossierOutcomeView(
+        id: id,
+        title: caseDefinition.scenarioText(
+          locale: locale,
+          section: 'outcomes',
+          id: id,
+          field: 'title',
+          fallback: _string(rawOutcome, 'title'),
+        ),
+        summary: caseDefinition.scenarioText(
+          locale: locale,
+          section: 'outcomes',
+          id: id,
+          field: 'summary',
+          fallback: _string(rawOutcome, 'summary'),
+        ),
+      );
+    }
+
+    return DossierProjectionView(
+      projectionSchemaVersion: _int(dossier, 'projection_schema_version'),
+      procedure: DossierProcedureView(
+        stageId: stageId,
+        stageTitle: caseDefinition.scenarioText(
+          locale: locale,
+          section: 'stages',
+          id: stageId,
+          field: 'title',
+          fallback: _string(procedure, 'stage_title'),
+        ),
+        clockMinutes: _int(procedure, 'clock_minutes'),
+        matterLifecycle: _dossierLifecycleStatus(
+          _string(procedure, 'matter_lifecycle'),
+        ),
+        isClosed: _bool(procedure, 'is_closed'),
+        matterStatus: _dossierMatterStatus(
+          _string(procedure, 'matter_status'),
+        ),
+      ),
+      judicialResult: _dossierJudicialResult(dossier['judicial_result']),
+      judicialDecisionInstance: _dossierDecisionInstance(
+        dossier['judicial_decision_instance'],
+      ),
+      facts: facts,
+      evidence: evidence,
+      deadlines: deadlines,
+      outcome: outcome,
+    );
+  }
+
+  static DossierMatterStatus _dossierMatterStatus(String value) {
+    return switch (value) {
+      'open' => DossierMatterStatus.open,
+      'recoverable' => DossierMatterStatus.recoverable,
+      'closed' => DossierMatterStatus.closed,
+      _ => DossierMatterStatus.unknown,
+    };
+  }
+
+  static DossierLifecycleStatus _dossierLifecycleStatus(String value) {
+    return switch (value) {
+      'active' => DossierLifecycleStatus.active,
+      'post_judgment' => DossierLifecycleStatus.postJudgment,
+      'appeal' => DossierLifecycleStatus.appeal,
+      'cassation' => DossierLifecycleStatus.cassation,
+      'enforcement' => DossierLifecycleStatus.enforcement,
+      'closed' => DossierLifecycleStatus.closed,
+      _ => DossierLifecycleStatus.unknown,
+    };
+  }
+
+  static DossierJudicialResult? _dossierJudicialResult(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is! String) {
+      throw const FormatException(
+        'dossier.judicial_result must be a string or null',
+      );
+    }
+    return switch (value) {
+      'won' => DossierJudicialResult.won,
+      'lost' => DossierJudicialResult.lost,
+      'partially_won' => DossierJudicialResult.partiallyWon,
+      'dismissed' => DossierJudicialResult.dismissed,
+      _ => DossierJudicialResult.unknown,
+    };
+  }
+
+  static DossierJudicialDecisionInstance? _dossierDecisionInstance(
+    dynamic value,
+  ) {
+    if (value == null) {
+      return null;
+    }
+    if (value is! String) {
+      throw const FormatException(
+        'dossier.judicial_decision_instance must be a string or null',
+      );
+    }
+    return switch (value) {
+      'first_instance' => DossierJudicialDecisionInstance.firstInstance,
+      'appeal' => DossierJudicialDecisionInstance.appeal,
+      'cassation' => DossierJudicialDecisionInstance.cassation,
+      _ => DossierJudicialDecisionInstance.unknown,
+    };
+  }
+
+  static DossierFactStatus _dossierFactStatus(String value) {
+    return switch (value) {
+      'alleged' => DossierFactStatus.alleged,
+      'admitted' => DossierFactStatus.admitted,
+      'disputed' => DossierFactStatus.disputed,
+      'proven' => DossierFactStatus.proven,
+      'inferred' => DossierFactStatus.inferred,
+      _ => DossierFactStatus.unknown,
+    };
+  }
+
+  static DossierDeadlineStatus _dossierDeadlineStatus(String value) {
+    return switch (value) {
+      'open' => DossierDeadlineStatus.open,
+      'completed' => DossierDeadlineStatus.completed,
+      'missed' => DossierDeadlineStatus.missed,
+      _ => DossierDeadlineStatus.unknown,
+    };
   }
 
   static String _scenarioTitle(
@@ -463,6 +713,31 @@ abstract final class ScenarioSnapshotMapper {
     return value is Map<String, dynamic> ? value : null;
   }
 
+  static Map<String, dynamic> _requiredObjectValue(
+    dynamic value,
+    String path,
+  ) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    throw FormatException('$path must be an object');
+  }
+
+  static Map<String, dynamic>? _optionalObjectValue(
+    Map<String, dynamic> source,
+    String field,
+    String path,
+  ) {
+    final dynamic value = source[field];
+    if (value == null) {
+      return null;
+    }
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    throw FormatException('$path must be an object or null');
+  }
+
   static String _string(Map<String, dynamic> source, String field) {
     final dynamic value = source[field];
     if (value is String) {
@@ -488,6 +763,36 @@ abstract final class ScenarioSnapshotMapper {
       return value;
     }
     throw FormatException('$field must be an integer');
+  }
+
+  static String? _optionalString(
+    Map<String, dynamic> source,
+    String field,
+  ) {
+    final dynamic value = source[field];
+    if (value == null) {
+      return null;
+    }
+    if (value is String) {
+      return value;
+    }
+    throw FormatException('$field must be a string or null');
+  }
+
+  static List<String> _stringList(
+    Map<String, dynamic> source,
+    String field,
+  ) {
+    final dynamic value = source[field];
+    if (value is! List<dynamic>) {
+      throw FormatException('$field must be an array');
+    }
+    return value.map((dynamic item) {
+      if (item is! String) {
+        throw FormatException('$field entries must be strings');
+      }
+      return item;
+    }).toList(growable: false);
   }
 
   static String? _firstAvailableString(

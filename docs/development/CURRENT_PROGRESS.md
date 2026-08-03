@@ -12,11 +12,12 @@ last_updated: 2026-08-03
 
 ## Dossier Projection v1 — authoritative Rust projection — 2026-08-03
 
-Status: the authoritative Rust portion of Dossier Projection v1 is complete
-locally and ready for its isolated implementation commit. The Flutter
-presentation and final documentation are kept as separate local commits. No
-Dossier commit has been pushed and no pull request, tag, or release has been
-created.
+Status: the authoritative Rust portion of Dossier Projection v1 is committed
+locally. The Flutter projection mapping, Matter entry point, EN/RU dossier
+presentation and complete Android acceptance path are included in this
+isolated mobile implementation commit. Final documentation remains separate.
+No Dossier commit has been pushed and no pull request, tag, or release has
+been created.
 
 Repository state:
 
@@ -30,10 +31,15 @@ Repository state:
 - branch: `feat/dossier-projection-v1`;
 - exact base and merge base:
   `7b9c5e1fd9866b19484deec391c8cf9fe6b4de43`;
+- authoritative runtime commit:
+  `9a32f32effaf67b4e94aecf1236c21e245a2d971` —
+  `feat(runtime): add authoritative dossier projection`;
+- mobile implementation commit: this commit; its exact hash is pinned by the
+  following documentation-only update;
 - PR #4 was not modified or closed;
 - no Dossier branch was pushed and no Draft PR was opened.
 
-Authoritative runtime changes in this commit:
+Authoritative runtime changes:
 
 - added an additive nested `dossier` projection to the existing version-1
   mobile snapshot; it is recomputed from `ScenarioSession` and is not a second
@@ -94,6 +100,47 @@ Runtime verification:
 - deterministic mobile bundle remains current with SHA-256
   `8d9db2e75c5cac14df95073843cc5a0775df8d17323fb434c688a8854a012835`.
 
+Flutter and Android changes in the next isolated commit:
+
+- added unknown-safe immutable Dossier models and a mapper that consumes only
+  the nested Rust projection; missing legacy dossier data maps safely to no
+  projection and malformed projection data cannot mutate the repository;
+- added a scrollable, small-screen-safe Dossier screen with Procedure, Facts,
+  Evidence, and Deadlines/remedies sections, explicit text/icon status, and
+  consistent EN/RU stable-ID localization;
+- the Matter screen opens Dossier while the foreground clock is suspended; a
+  remedy returns its authoritative action ID to the existing action picker;
+- Flutter does not infer lifecycle, closure, remedy availability, judicial
+  result, decision instance, visibility, or dossier status;
+- mapper/widget/repository tests cover missing and malformed data, unknown
+  future enum values, EN/RU identity, hidden-data omission, closed and
+  recoverable presentation, small screens, action handoff, and atomic load;
+- Dart format checked 46 files with 0 changes, `flutter analyze` found no
+  issues, and all 113 Flutter unit/widget tests passed;
+- ordinary three-ABI debug APK built successfully after the integration runner,
+  192,458,673 bytes, SHA-256
+  `9d402919ca9232ba255edafadbdce5c129bf4d31dc13bf93e49f34d8e5aedbdc`;
+- Android native integration passed 5/5 on `emulator-5554`,
+  `sdk_gphone64_x86_64`, Android 17 / API 37, 1080x1920;
+- Dossier acceptance uses debug-only case
+  `integration_adverse_judgment_with_remedies`: initial minute 0 exposes only
+  fact `claim_was_filed` and evidence `client_instruction_letter`;
+  `review_dossier_materials` reaches minute 10 and reveals
+  `registry_record_confirms_service` plus `court_registry_extract` exactly
+  once;
+- `request_judgment` and `adverse_trial_judgment` reach minute 70 with result
+  `lost`, instance `first_instance`, lifecycle `post_judgment`, status
+  `recoverable`, open deadline `appeal_deadline`, and remedy `file_appeal`;
+- save/reset/load restores an equal dossier, repeated incompatible-v1 failures
+  preserve the active session, and `file_appeal` reaches minute 130 with the
+  deadline completed and no remaining remedy;
+- `abandon_appeal` then reaches explicit closure at minute 135 (10:15), exposes
+  dossier status `closed` and outcome `final_loss`, and both a subsequent
+  dispatch and one-minute clock advance are rejected as `scenario_resolved`
+  without changing the dossier;
+- all three APK ABIs (`armeabi-v7a`, `arm64-v8a`, `x86_64`) define exactly the
+  same three C ABI symbols and ABI version remains `1`.
+
 Known limitation:
 
 - the established top-level version-1 snapshot arrays can enumerate unknown,
@@ -105,8 +152,8 @@ Known limitation:
 
 Next step:
 
-- commit this Rust/runtime slice locally, then record its exact hash here and
-  create the isolated Flutter presentation commit; do not push or open a PR.
+- record the exact mobile implementation hash, then finalize the focused
+  contract and local review documentation; do not push or open a PR.
 
 ## Matter Lifecycle persistence compatibility remediation local checkpoint — 2026-08-02
 

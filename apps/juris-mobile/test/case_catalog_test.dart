@@ -46,6 +46,15 @@ void main() {
         'nl_food_safety_goldenshell_001',
       ]),
     );
+    expect(
+      bundle.cases.map((MobileCaseDefinition item) => item.scenarioId),
+      isNot(contains('integration_adverse_judgment_with_remedies')),
+      reason: 'The lifecycle/dossier fixture is debug-only Android content.',
+    );
+    expect(
+      generatedBundle,
+      isNot(contains('integration_adverse_judgment_with_remedies')),
+    );
     expect(bundle.supportedLocales, containsAll(<String>['en', 'ru']));
 
     final MobileCaseDefinition logistics = bundle.cases.singleWhere(
