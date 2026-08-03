@@ -14,6 +14,8 @@ const GOLDENSHELL_COORDINATED_TRACE: &str =
     include_str!("../../../content/traces/goldenshell_coordinated.commands.json");
 const REMEDIES_SCENARIO: &str =
     include_str!("../../../content/fixtures/authoring/adverse_judgment_with_remedies.json");
+const DOSSIER_SCENARIO: &str =
+    include_str!("../../../content/fixtures/authoring/dossier_projection_v1.json");
 
 fn logistics_definition() -> ScenarioDefinition {
     serde_json::from_str(LOGISTICS_SCENARIO).expect("Logistics scenario must parse")
@@ -509,5 +511,90 @@ fn json_protocol_runs_the_goldenshell_coordinated_path() {
             .unwrap()
             .len(),
         0
+    );
+}
+
+#[test]
+fn json_protocol_carries_the_filtered_authoritative_dossier_additively() {
+    let mut bridge = MobileBridge::new();
+    let scenario: Value = serde_json::from_str(DOSSIER_SCENARIO).unwrap();
+    let created: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "create_session",
+                "scenario": scenario,
+                "seed": 20260803
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(created["type"], "session_created");
+    assert_eq!(
+        created["snapshot"]["dossier"]["projection_schema_version"],
+        1
+    );
+    assert_eq!(
+        created["snapshot"]["dossier"]["procedure"]["matter_status"],
+        "open"
+    );
+    let initial_dossier = created["snapshot"]["dossier"].to_string();
+    for sentinel in [
+        "sentinel_unknown_fact",
+        "sentinel_unavailable_evidence",
+        "sentinel_inactive_deadline",
+        "sentinel_unfired_event",
+        "sentinel_private_flag",
+        "sentinel_future_activation_action",
+        "sentinel_future_remedy_action",
+        "final_loss",
+    ] {
+        assert!(
+            !initial_dossier.contains(sentinel),
+            "bridge dossier leaked `{sentinel}`: {initial_dossier}"
+        );
+    }
+
+    let session_id = created["session_id"].as_u64().unwrap();
+    let revealed: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "dispatch",
+                "session_id": session_id,
+                "action_id": "z_reveal_record"
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    let revealed_dossier = revealed["snapshot"]["dossier"].to_string();
+    assert!(revealed_dossier.contains("sentinel_unknown_fact"));
+    assert!(revealed_dossier.contains("sentinel_unavailable_evidence"));
+    assert!(!revealed_dossier.contains("sentinel_private_flag"));
+    assert!(!revealed_dossier.contains("sentinel_unfired_event"));
+
+    let adverse: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "dispatch",
+                "session_id": session_id,
+                "action_id": "a_receive_adverse_decision"
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(
+        adverse["snapshot"]["dossier"]["procedure"]["matter_status"],
+        "recoverable"
+    );
+    assert_eq!(adverse["snapshot"]["dossier"]["judicial_result"], "lost");
+    assert_eq!(
+        adverse["snapshot"]["dossier"]["judicial_decision_instance"],
+        "first_instance"
+    );
+    assert_eq!(
+        adverse["snapshot"]["dossier"]["deadlines"][0]["id"],
+        "a_review_deadline"
     );
 }

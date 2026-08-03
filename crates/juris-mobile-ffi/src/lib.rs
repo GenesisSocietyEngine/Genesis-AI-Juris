@@ -140,6 +140,8 @@ mod tests {
         include_str!("../../../content/cases/goldenshell_recall_at_dawn.scenario.json");
     const REMEDIES_SCENARIO: &str =
         include_str!("../../../content/fixtures/authoring/adverse_judgment_with_remedies.json");
+    const DOSSIER_SCENARIO: &str =
+        include_str!("../../../content/fixtures/authoring/dossier_projection_v1.json");
 
     fn execute_request(request: Value) -> Value {
         let request = CString::new(request.to_string()).expect("request must be a C string");
@@ -382,5 +384,49 @@ mod tests {
             .unwrap()
             .iter()
             .any(|action| action["id"] == "file_appeal"));
+    }
+
+    #[test]
+    fn filtered_dossier_uses_the_existing_execute_symbol() {
+        assert_eq!(juris_mobile_bridge_abi_version(), 1);
+        let scenario: Value =
+            serde_json::from_str(DOSSIER_SCENARIO).expect("dossier fixture must be valid JSON");
+        let created = execute_request(json!({
+            "command": "create_session",
+            "scenario": scenario,
+            "seed": 20260803
+        }));
+
+        assert_eq!(created["type"], "session_created");
+        assert_eq!(
+            created["snapshot"]["dossier"]["projection_schema_version"],
+            1
+        );
+        assert_eq!(
+            created["snapshot"]["dossier"]["procedure"]["matter_status"],
+            "open"
+        );
+        let dossier = created["snapshot"]["dossier"].to_string();
+        for sentinel in [
+            "sentinel_unknown_fact",
+            "sentinel_unavailable_evidence",
+            "sentinel_inactive_deadline",
+            "sentinel_unfired_event",
+            "sentinel_private_flag",
+            "sentinel_future_activation_action",
+            "sentinel_future_remedy_action",
+            "final_loss",
+        ] {
+            assert!(
+                !dossier.contains(sentinel),
+                "FFI dossier leaked `{sentinel}`: {dossier}"
+            );
+        }
+
+        let disposed = execute_request(json!({
+            "command": "dispose_session",
+            "session_id": created["session_id"]
+        }));
+        assert_eq!(disposed["disposed"], true);
     }
 }
