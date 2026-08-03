@@ -2,7 +2,7 @@
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
 branch: feat/dossier-projection-v1
-checkpoint_documentation_commit: pending_local_review
+checkpoint_documentation_commit: afbb43068cd23474ab674b3c4f3900a43956b91f
 release_tag: v0.5.1-alpha.1
 app_version: 0.5.1+12
 last_updated: 2026-08-03
@@ -37,8 +37,11 @@ Repository state:
 - mobile implementation commit:
   `61c74f2c7f95e4e542fc3d0ecc183633105de13a` —
   `feat(mobile): present authoritative dossier projection`;
-- focused contract and final cumulative handoff: the following isolated
-  documentation commit;
+- focused contract and final cumulative handoff:
+  `afbb43068cd23474ab674b3c4f3900a43956b91f` —
+  `docs(development): record dossier projection checkpoint`;
+- the following documentation-only commit pins that exact hash in this
+  cumulative file;
 - PR #4 was not modified or closed;
 - no Dossier branch was pushed and no Draft PR was opened.
 
