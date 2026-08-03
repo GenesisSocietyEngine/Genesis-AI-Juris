@@ -10,14 +10,14 @@ last_updated: 2026-08-03
 
 # Current Progress
 
-## Dossier Projection v1 — authoritative Rust projection — 2026-08-03
+## Dossier Projection v1 local review checkpoint — 2026-08-03
 
-Status: the authoritative Rust portion of Dossier Projection v1 is committed
-locally. The Flutter projection mapping, Matter entry point, EN/RU dossier
-presentation and complete Android acceptance path are included in this
-isolated mobile implementation commit. Final documentation remains separate.
-No Dossier commit has been pushed and no pull request, tag, or release has
-been created.
+Status: Dossier Projection v1 is implementation-complete and locally verified.
+The authoritative Rust projection, additive bridge payload, Flutter mapping,
+Matter entry point, EN/RU presentation, persistence regressions, complete
+Android acceptance path, focused contract, and cumulative handoff are ready
+for local review. No Dossier commit has been pushed and no pull request, tag,
+or release has been created.
 
 Repository state:
 
@@ -34,8 +34,11 @@ Repository state:
 - authoritative runtime commit:
   `9a32f32effaf67b4e94aecf1236c21e245a2d971` —
   `feat(runtime): add authoritative dossier projection`;
-- mobile implementation commit: this commit; its exact hash is pinned by the
-  following documentation-only update;
+- mobile implementation commit:
+  `61c74f2c7f95e4e542fc3d0ecc183633105de13a` —
+  `feat(mobile): present authoritative dossier projection`;
+- focused contract and final cumulative handoff: the following isolated
+  documentation commit;
 - PR #4 was not modified or closed;
 - no Dossier branch was pushed and no Draft PR was opened.
 
@@ -100,7 +103,7 @@ Runtime verification:
 - deterministic mobile bundle remains current with SHA-256
   `8d9db2e75c5cac14df95073843cc5a0775df8d17323fb434c688a8854a012835`.
 
-Flutter and Android changes in the next isolated commit:
+Flutter and Android changes:
 
 - added unknown-safe immutable Dossier models and a mapper that consumes only
   the nested Rust projection; missing legacy dossier data maps safely to no
@@ -152,8 +155,12 @@ Known limitation:
 
 Next step:
 
-- record the exact mobile implementation hash, then finalize the focused
-  contract and local review documentation; do not push or open a PR.
+- review the local implementation and documentation commits, exact
+  compatibility evidence, Android path, ABI audit, and remaining legacy
+  snapshot limitation;
+- only after explicit authorization, publish the branch and open a Draft PR;
+  do not push, open a PR, merge, tag, release, or start a later roadmap phase
+  from this local checkpoint.
 
 ## Matter Lifecycle persistence compatibility remediation local checkpoint — 2026-08-02
 
