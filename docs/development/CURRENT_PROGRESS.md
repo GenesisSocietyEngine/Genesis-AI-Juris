@@ -1,14 +1,104 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: feat/dossier-projection-v1
-checkpoint_documentation_commit: afbb43068cd23474ab674b3c4f3900a43956b91f
-release_tag: v0.5.1-alpha.1
-app_version: 0.5.1+12
-last_updated: 2026-08-03
+branch: agent/release-v0.6.0-alpha.1
+head_commit: "9d1ad87961cabd61571fa59e1432d5c70c6d450c (PR #12 merge before release preparation)"
+release_tag: v0.6.0-alpha.1
+app_version: 0.6.0+13
+last_updated: 2026-08-04
 ---
 
 # Current Progress
+
+## v0.6.0-alpha.1 release preparation — 2026-08-04
+
+Status: PR #12 was revalidated, marked Ready, and merged by a normal merge
+commit. Release metadata is being prepared on an isolated branch before the
+annotated source tag and GitHub pre-release are created.
+
+Repository and publication state:
+
+- accepted Dossier HEAD:
+  `62111ddef1623f0211149c70617564f2aa622dd4`;
+- PR #12 merge commit:
+  `9d1ad87961cabd61571fa59e1432d5c70c6d450c`;
+- the merge commit preserves all four intentional Dossier commits and has the
+  accepted Dossier HEAD as its second parent;
+- local `main` was fast-forwarded and exactly matched `origin/main`; the tree
+  was clean before this release-preparation branch was created;
+- every post-merge workflow passed on the exact merge commit:
+  - Rust CI run `30858517251`: quality job `91835046904` and Rust 1.78 MSRV
+    job `91835046912` succeeded;
+  - Flutter Mobile UI run `30858517042`: analyze-and-test job `91835046189`
+    succeeded;
+  - iOS Native FFI run `30858517073`: simulator-smoke job `91835046406`
+    succeeded;
+- hosted iOS checked out exact SHA
+  `9d1ad87961cabd61571fa59e1432d5c70c6d450c`, built Runner and the Rust static
+  library, found the three required exports, booted an iPhone 16 Pro Simulator,
+  and passed `RunnerTests.testNativeLogisticsLifecycle()`;
+- release-preparation branch: `agent/release-v0.6.0-alpha.1`;
+- Flutter product version: `0.6.0+13`;
+- Cargo workspace version remains `0.5.0` because this is an integrated
+  product/source checkpoint, not a Rust-crate publication;
+- no existing tag will be moved or overwritten, and the unsigned debug APK
+  will not be attached as a production artifact;
+- PR #4 remains untouched.
+
+Production catalogue baseline before Desert Water:
+
+- position 1 / `sort_order` 10: legacy Dart case
+  `be_commercial_failed_erp_001`, with no authoritative Rust
+  `ScenarioDefinition` fingerprint or canonical runtime trace/final minute;
+- position 2 / `sort_order` 20: Logistics
+  `be_commercial_logistics_001`, fingerprint
+  `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8`,
+  canonical outcomes/minutes `negotiated_recovery`/270 and
+  `judgment_recovery`/480;
+- position 3 / `sort_order` 30: GreenFire
+  `greenfire_first_72_hours`, fingerprint
+  `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261`,
+  canonical outcomes/minutes `protected_crisis_position`/4440 and
+  `compromised_crisis_position`/4590;
+- position 4 / `sort_order` 40: GoldenShell scenario
+  `goldenshell_recall_at_dawn` (`case_id`
+  `nl_food_safety_goldenshell_001`), fingerprint
+  `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4`,
+  canonical outcomes/minutes `coordinated_claim_position`/4545 and
+  `fragmented_claim_position`/4710;
+- full EN/RU public titles and the compatibility meaning of the absent legacy
+  fingerprint/trace are recorded in
+  `docs/releases/RELEASE_NOTES_v0.6.0-alpha.1.md`;
+- the authoritative production catalogue count is exactly four, so Desert
+  Water may be authored as the fifth position; the four existing identities,
+  relative ordering, behavior, and three available Rust fingerprints/traces
+  must remain unchanged.
+
+Release evidence carried forward from the accepted Dossier checkpoint:
+
+- Rust tests: 217 passed, 0 failed;
+- Flutter tests: 113 passed, 0 failed; analysis clean;
+- Android native integration: 5 passed, 0 failed on Android 17 / API 37;
+- C ABI version 1 with exactly
+  `juris_mobile_bridge_execute`, `juris_mobile_bridge_string_free`, and
+  `juris_mobile_bridge_abi_version`;
+- deterministic mobile bundle SHA-256:
+  `8d9db2e75c5cac14df95073843cc5a0775df8d17323fb434c688a8854a012835`;
+- unsigned debug APK SHA-256:
+  `9d402919ca9232ba255edafadbdce5c129bf4d31dc13bf93e49f34d8e5aedbdc`.
+
+Next step:
+
+- validate this metadata-only diff, commit, and publish a narrowly scoped
+  release-preparation PR;
+- require all Rust, Flutter, and hosted iOS PR workflows to pass, merge that
+  PR, then tag its merge commit as annotated `v0.6.0-alpha.1` and create the
+  GitHub pre-release with the exact released source SHA;
+- only after release publication and a clean final `main`, create
+  `feat/desert-water-case` and implement Desert Water as production catalogue
+  position five;
+- do not begin Snapshot Visibility Hardening, Pressure & Countermove Runtime,
+  or Legal Theory, and do not modify or close PR #4.
 
 ## Dossier Projection v1 local review checkpoint — 2026-08-03
 
