@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'dossier_projection.dart';
+
 /// Lifecycle states used by the mobile Inbox.
 ///
 /// The distinction matters because an unread court notice is not the same as
@@ -441,6 +443,7 @@ class GameSnapshot {
     bool? isClosed,
     this.settlementOffer,
     this.outcomeSummary,
+    this.dossier,
   }) : _authoritativeIsClosed = isClosed;
 
   final String version;
@@ -525,6 +528,12 @@ class GameSnapshot {
   final SettlementOfferView? settlementOffer;
   final CaseOutcomeSummaryView? outcomeSummary;
 
+  /// Read-only player dossier projected from authoritative Rust state.
+  ///
+  /// Legacy snapshots may omit this additive field. Flutter does not build a
+  /// substitute projection from its older presentation metrics.
+  final DossierProjectionView? dossier;
+
   /// Authoritative for native scenarios; legacy demo snapshots derive closure
   /// from their existing terminal summary until that runtime is migrated.
   bool get isClosed => _authoritativeIsClosed ?? outcomeSummary != null;
@@ -582,6 +591,8 @@ class GameSnapshot {
     bool clearSettlementOffer = false,
     CaseOutcomeSummaryView? outcomeSummary,
     bool clearOutcomeSummary = false,
+    DossierProjectionView? dossier,
+    bool clearDossier = false,
   }) {
     return GameSnapshot(
       version: version,
@@ -637,6 +648,7 @@ class GameSnapshot {
           clearSettlementOffer ? null : settlementOffer ?? this.settlementOffer,
       outcomeSummary:
           clearOutcomeSummary ? null : outcomeSummary ?? this.outcomeSummary,
+      dossier: clearDossier ? null : dossier ?? this.dossier,
     );
   }
 }

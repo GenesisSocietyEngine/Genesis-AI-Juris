@@ -7,6 +7,7 @@ import '../models/game_snapshot.dart';
 import '../screens/ai_associate_screen.dart';
 import '../screens/calendar_screen.dart';
 import '../screens/career_screen.dart';
+import '../screens/dossier_screen.dart';
 import '../screens/inbox_screen.dart';
 import '../screens/matter_screen.dart';
 import '../widgets/action_picker_sheet.dart';
@@ -500,6 +501,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       1 => MatterScreen(
           snapshot: snapshot,
           onShowActions: () => _showActions(snapshot),
+          onShowDossier: () => _showDossier(snapshot),
         ),
       2 => CalendarScreen(
           snapshot: snapshot,
@@ -657,6 +659,35 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           summary: summary,
         ),
       ),
+    );
+  }
+
+  Future<void> _showDossier(GameSnapshot snapshot) async {
+    final dossier = snapshot.dossier;
+    if (dossier == null) {
+      return;
+    }
+
+    final String? actionId = await _whileClockSuspended<String>(
+      () => Navigator.of(context).push<String>(
+        MaterialPageRoute<String>(
+          builder: (BuildContext routeContext) => GameplayLocale(
+            locale: widget.locale,
+            child: DossierScreen(
+              dossier: dossier,
+              locale: widget.locale,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (actionId == null || !mounted) {
+      return;
+    }
+    await _showActions(
+      widget.repository.snapshot,
+      onlyActionId: actionId,
     );
   }
 

@@ -1,14 +1,169 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: fix/matter-lifecycle-runtime-v2-compatibility
-checkpoint_documentation_commit: 1bdeeffabe333a7fe05f8d6b9dbb3b158015ddcc
+branch: feat/dossier-projection-v1
+checkpoint_documentation_commit: afbb43068cd23474ab674b3c4f3900a43956b91f
 release_tag: v0.5.1-alpha.1
 app_version: 0.5.1+12
 last_updated: 2026-08-03
 ---
 
 # Current Progress
+
+## Dossier Projection v1 local review checkpoint — 2026-08-03
+
+Status: Dossier Projection v1 is implementation-complete and locally verified.
+The authoritative Rust projection, additive bridge payload, Flutter mapping,
+Matter entry point, EN/RU presentation, persistence regressions, complete
+Android acceptance path, focused contract, and cumulative handoff are ready
+for local review. No Dossier commit has been pushed and no pull request, tag,
+or release has been created.
+
+Repository state:
+
+- PR #11 was marked Ready and merged by the explicitly authorized merge-commit
+  method;
+- PR #11 head was
+  `eb3260a1b12999924836c2cef5d005ccfe974cfe` and its merge commit is
+  `7b9c5e1fd9866b19484deec391c8cf9fe6b4de43`;
+- the hosted PR-head Rust quality, Rust 1.78 MSRV, Flutter, iOS static-library
+  export, and iOS simulator lifecycle gates were successful before merge;
+- branch: `feat/dossier-projection-v1`;
+- exact base and merge base:
+  `7b9c5e1fd9866b19484deec391c8cf9fe6b4de43`;
+- authoritative runtime commit:
+  `9a32f32effaf67b4e94aecf1236c21e245a2d971` —
+  `feat(runtime): add authoritative dossier projection`;
+- mobile implementation commit:
+  `61c74f2c7f95e4e542fc3d0ecc183633105de13a` —
+  `feat(mobile): present authoritative dossier projection`;
+- focused contract and final cumulative handoff:
+  `afbb43068cd23474ab674b3c4f3900a43956b91f` —
+  `docs(development): record dossier projection checkpoint`;
+- the following documentation-only commit pins that exact hash in this
+  cumulative file;
+- PR #4 was not modified or closed;
+- no Dossier branch was pushed and no Draft PR was opened.
+
+Authoritative runtime changes:
+
+- added an additive nested `dossier` projection to the existing version-1
+  mobile snapshot; it is recomputed from `ScenarioSession` and is not a second
+  state machine;
+- procedure exposes authoritative stage, scenario minute, lifecycle, closure,
+  judicial result and Rust-owned decision instance;
+- dossier matter status is `closed` after explicit closure, `recoverable` for
+  an adverse open result with an executable deadline remedy, and `open`
+  otherwise;
+- facts whose status is `unknown`, unavailable evidence, inactive deadlines,
+  future actions, private flags, unfired events, effects, hidden outcomes,
+  scoring and validator internals are absent from the nested projection;
+- evidence relationships are intersected with visible fact IDs; open deadline
+  remedies are intersected with currently available completion actions;
+- facts, evidence, relationships, deadlines and remedies use stable-ID/time
+  canonical ordering;
+- added the test-only `dossier_projection_v1` fixture. It is absent from the
+  production catalog and mobile bundle;
+- bridge and FFI coverage proves that the dossier is additive JSON through the
+  existing execute request and does not add a native function.
+
+Compatibility contracts preserved:
+
+- Scenario Definition remains version `1.0` and mobile snapshot schema remains
+  version `1`;
+- save ID remains `genesis.ai-juris.command-log`, envelope version remains `1`,
+  the envelope remains eight fields, and new saves remain
+  `scenario-runtime-v2`;
+- no persistence implementation or digest projection changed; the dossier is
+  derived after replay and is never serialized;
+- Logistics, GreenFire and GoldenShell definitions, catalog/localization,
+  balance, production traces and mobile bundle are unchanged;
+- C ABI remains version `1` with exactly
+  `juris_mobile_bridge_execute`, `juris_mobile_bridge_string_free`, and
+  `juris_mobile_bridge_abi_version`.
+
+Runtime verification:
+
+- `cargo +1.78.0 check --workspace --locked`: passed;
+- `cargo fmt --all -- --check`: passed;
+- `cargo check --workspace`: passed;
+- `cargo clippy --workspace --all-targets -- -D warnings`: passed;
+- `cargo test --workspace`: 217 passed, 0 failed;
+- focused totals: engine 63 (14 unit + 6 dossier + 23 persistence + 20
+  runtime), bridge 11, FFI 9;
+- authoring diagnostics: Logistics, GreenFire, GoldenShell, adverse lifecycle,
+  and the dossier fixture passed;
+- production fingerprints remain:
+  - Logistics:
+    `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8`;
+  - GreenFire:
+    `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261`;
+  - GoldenShell:
+    `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4`;
+- GreenFire protected/compromised remain minute 4440/4590 with 26/21
+  transitions; GoldenShell coordinated/fragmented remain minute 4545/4710
+  with 29/23 transitions;
+- deterministic mobile bundle remains current with SHA-256
+  `8d9db2e75c5cac14df95073843cc5a0775df8d17323fb434c688a8854a012835`.
+
+Flutter and Android changes:
+
+- added unknown-safe immutable Dossier models and a mapper that consumes only
+  the nested Rust projection; missing legacy dossier data maps safely to no
+  projection and malformed projection data cannot mutate the repository;
+- added a scrollable, small-screen-safe Dossier screen with Procedure, Facts,
+  Evidence, and Deadlines/remedies sections, explicit text/icon status, and
+  consistent EN/RU stable-ID localization;
+- the Matter screen opens Dossier while the foreground clock is suspended; a
+  remedy returns its authoritative action ID to the existing action picker;
+- Flutter does not infer lifecycle, closure, remedy availability, judicial
+  result, decision instance, visibility, or dossier status;
+- mapper/widget/repository tests cover missing and malformed data, unknown
+  future enum values, EN/RU identity, hidden-data omission, closed and
+  recoverable presentation, small screens, action handoff, and atomic load;
+- Dart format checked 46 files with 0 changes, `flutter analyze` found no
+  issues, and all 113 Flutter unit/widget tests passed;
+- ordinary three-ABI debug APK built successfully after the integration runner,
+  192,458,673 bytes, SHA-256
+  `9d402919ca9232ba255edafadbdce5c129bf4d31dc13bf93e49f34d8e5aedbdc`;
+- Android native integration passed 5/5 on `emulator-5554`,
+  `sdk_gphone64_x86_64`, Android 17 / API 37, 1080x1920;
+- Dossier acceptance uses debug-only case
+  `integration_adverse_judgment_with_remedies`: initial minute 0 exposes only
+  fact `claim_was_filed` and evidence `client_instruction_letter`;
+  `review_dossier_materials` reaches minute 10 and reveals
+  `registry_record_confirms_service` plus `court_registry_extract` exactly
+  once;
+- `request_judgment` and `adverse_trial_judgment` reach minute 70 with result
+  `lost`, instance `first_instance`, lifecycle `post_judgment`, status
+  `recoverable`, open deadline `appeal_deadline`, and remedy `file_appeal`;
+- save/reset/load restores an equal dossier, repeated incompatible-v1 failures
+  preserve the active session, and `file_appeal` reaches minute 130 with the
+  deadline completed and no remaining remedy;
+- `abandon_appeal` then reaches explicit closure at minute 135 (10:15), exposes
+  dossier status `closed` and outcome `final_loss`, and both a subsequent
+  dispatch and one-minute clock advance are rejected as `scenario_resolved`
+  without changing the dossier;
+- all three APK ABIs (`armeabi-v7a`, `arm64-v8a`, `x86_64`) define exactly the
+  same three C ABI symbols and ABI version remains `1`.
+
+Known limitation:
+
+- the established top-level version-1 snapshot arrays can enumerate unknown,
+  unavailable or inactive definition-backed entities. They are retained for
+  compatibility. Only the new nested `dossier` has the disclosure-safe
+  contract, and Flutter must never fall back to those legacy arrays for the
+  Dossier view. Broader snapshot hardening requires a separate compatibility
+  audit.
+
+Next step:
+
+- review the local implementation and documentation commits, exact
+  compatibility evidence, Android path, ABI audit, and remaining legacy
+  snapshot limitation;
+- only after explicit authorization, publish the branch and open a Draft PR;
+  do not push, open a PR, merge, tag, release, or start a later roadmap phase
+  from this local checkpoint.
 
 ## Matter Lifecycle persistence compatibility remediation local checkpoint — 2026-08-02
 

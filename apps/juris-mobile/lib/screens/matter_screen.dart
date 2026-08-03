@@ -10,11 +10,13 @@ class MatterScreen extends StatelessWidget {
   const MatterScreen({
     required this.snapshot,
     required this.onShowActions,
+    required this.onShowDossier,
     super.key,
   });
 
   final GameSnapshot snapshot;
   final VoidCallback onShowActions;
+  final VoidCallback onShowDossier;
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +28,29 @@ class MatterScreen extends StatelessWidget {
           sliver: SliverList.list(
             children: <Widget>[
               _MatterHeader(snapshot: snapshot),
+              if (snapshot.dossier != null) ...<Widget>[
+                const SizedBox(height: 16),
+                Semantics(
+                  button: true,
+                  label: GameplayLocale.text(
+                    context,
+                    'Open the authoritative matter dossier',
+                    'Открыть авторитетное досье дела',
+                  ),
+                  child: OutlinedButton.icon(
+                    key: const ValueKey<String>('open-dossier-button'),
+                    onPressed: onShowDossier,
+                    icon: const Icon(Icons.folder_open_outlined),
+                    label: Text(
+                      GameplayLocale.text(
+                        context,
+                        'Open matter dossier',
+                        'Открыть досье дела',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               if (snapshot.isClosed &&
                   snapshot.outcomeSummary != null) ...<Widget>[
                 const SizedBox(height: 16),

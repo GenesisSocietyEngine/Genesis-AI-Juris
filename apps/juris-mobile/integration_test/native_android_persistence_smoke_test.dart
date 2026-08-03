@@ -12,6 +12,7 @@ import 'package:juris_mobile/data/native_scenario_bridge_client.dart';
 import 'package:juris_mobile/data/rust_scenario_repository.dart';
 import 'package:juris_mobile/data/scenario_bridge_client.dart';
 import 'package:juris_mobile/models/case_catalog.dart';
+import 'package:juris_mobile/models/dossier_projection.dart';
 import 'package:juris_mobile/models/game_snapshot.dart';
 
 import 'support/historical_v1_counterexample.dart';
@@ -219,6 +220,71 @@ void main() {
         historicalV1NonterminalOutcomeSaveSha256,
       );
 
+      final DossierProjectionView openingDossier = repository.snapshot.dossier!;
+      expect(
+        openingDossier.facts.map((DossierFactView item) => item.id),
+        <String>['claim_was_filed'],
+      );
+      expect(
+        openingDossier.evidence.map((DossierEvidenceView item) => item.id),
+        <String>['client_instruction_letter'],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeShell(repository: repository, locale: 'en'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Matter'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey<String>('open-dossier-button')),
+        240,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('open-dossier-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Matter dossier'), findsOneWidget);
+      expect(
+          find.text('The claim was filed at first instance.'), findsOneWidget);
+      expect(find.textContaining('HIDDEN FACT SENTINEL'), findsNothing);
+      expect(find.textContaining('HIDDEN EVIDENCE SENTINEL'), findsNothing);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      expect(
+        repository.applyAction('review_dossier_materials').isRisky,
+        isFalse,
+      );
+      await tester.pump();
+      final DossierProjectionView revealedDossier =
+          repository.snapshot.dossier!;
+      expect(
+        revealedDossier.facts.map((DossierFactView item) => item.id),
+        <String>['claim_was_filed', 'registry_record_confirms_service'],
+      );
+      expect(
+        revealedDossier.evidence.map((DossierEvidenceView item) => item.id),
+        <String>['client_instruction_letter', 'court_registry_extract'],
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('open-dossier-button')),
+      );
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.textContaining('HIDDEN EVIDENCE SENTINEL'),
+        240,
+        scrollable: find.byType(Scrollable).last,
+        maxScrolls: 30,
+      );
+      expect(find.textContaining('HIDDEN FACT SENTINEL'), findsOneWidget);
+      expect(find.textContaining('HIDDEN EVIDENCE SENTINEL'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
       expect(repository.applyAction('request_judgment').isRisky, isFalse);
       expect(
         repository.applyAction('adverse_trial_judgment').isRisky,
@@ -248,8 +314,11 @@ void main() {
           .toList(growable: false);
       final String savedStage = repository.snapshot.stage;
       final String savedTime = repository.snapshot.timeLabel;
+      final List<Object?> savedDossier = _dossierState(
+        repository.snapshot.dossier!,
+      );
 
-      expect(savedTime, '09:00');
+      expect(savedTime, '09:10');
       expect(savedDeadline.status, DeadlineStatus.open);
       expect(savedInboxIds, <String>['adverse_judgment_notice']);
       expect(savedInboxStatuses, <InboxStatus>[InboxStatus.actionRequired]);
@@ -289,6 +358,7 @@ void main() {
         repository.snapshot.actions.map((GameActionView action) => action.id),
         savedActionIds,
       );
+      expect(_dossierState(repository.snapshot.dossier!), savedDossier);
       final int? activeSessionId = bridge.lastSuccessfulLoadSessionId;
       expect(activeSessionId, isNotNull);
       final GameSnapshot liveSnapshot = repository.snapshot;
@@ -300,13 +370,12 @@ void main() {
       final List<List<Object?>> liveActions =
           repository.snapshot.actions.map(_actionState).toList(growable: false);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: HomeShell(repository: repository, locale: 'en'),
-        ),
+      await tester.scrollUntilVisible(
+        find.text('Decision: Lost'),
+        -240,
+        scrollable: find.byType(Scrollable).last,
+        maxScrolls: 30,
       );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Matter'));
       await tester.pumpAndSettle();
       expect(find.text('Decision: Lost'), findsOneWidget);
       expect(find.text('Court instance: First instance'), findsOneWidget);
@@ -314,6 +383,34 @@ void main() {
         find.text('Matter status: Post-judgment — remedies available'),
         findsOneWidget,
       );
+
+      await tester.ensureVisible(
+        find.byKey(const ValueKey<String>('open-dossier-button')),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('open-dossier-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Recoverable — remedy available'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey<String>('dossier-remedy-file_appeal')),
+        240,
+        scrollable: find.byType(Scrollable).last,
+        maxScrolls: 30,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('dossier-remedy-file_appeal')),
+        findsOneWidget,
+      );
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Decision: Lost'),
+        -240,
+        scrollable: find.byType(Scrollable).last,
+        maxScrolls: 30,
+      );
+      await tester.pumpAndSettle();
 
       bridge.rejectHistoricalV1Loads = true;
       for (int attempt = 0; attempt < 2; attempt += 1) {
@@ -350,6 +447,7 @@ void main() {
         );
         expect(repository.snapshot.inbox.map(_inboxState), liveInbox);
         expect(repository.snapshot.actions.map(_actionState), liveActions);
+        expect(_dossierState(repository.snapshot.dossier!), savedDossier);
         expect(find.text('Decision: Lost'), findsOneWidget);
         expect(find.text('Court instance: First instance'), findsOneWidget);
         expect(
@@ -363,7 +461,7 @@ void main() {
       await tester.pump();
       expect(appeal.isRisky, isFalse);
       expect(bridge.dispatchSessionIds.last, activeSessionId);
-      expect(repository.snapshot.timeLabel, '10:00');
+      expect(repository.snapshot.timeLabel, '10:10');
       expect(
         repository.snapshot.matterLifecycle,
         MatterLifecycleStatus.appeal,
@@ -374,10 +472,192 @@ void main() {
           _deadline(repository, 'appeal_deadline').status, DeadlineStatus.done);
       expect(repository.snapshot.inbox.single.status, InboxStatus.resolved);
       expect(repository.snapshot.actions.single.id, 'abandon_appeal');
+      final DossierDeadlineView completedDeadline =
+          repository.snapshot.dossier!.deadlines.singleWhere(
+              (DossierDeadlineView item) => item.id == 'appeal_deadline');
+      expect(completedDeadline.status, DossierDeadlineStatus.completed);
+      expect(completedDeadline.remedies, isEmpty);
+      final List<Object?> completedDossier = _dossierState(
+        repository.snapshot.dossier!,
+      );
+      bridge.rejectHistoricalV1Loads = false;
+      await repository.saveGame();
+      repository.reset();
+      await repository.loadGame();
+      await tester.pumpAndSettle();
+      expect(_dossierState(repository.snapshot.dossier!), completedDossier);
+      expect(
+        repository.snapshot.dossier!.deadlines
+            .singleWhere(
+              (DossierDeadlineView item) => item.id == 'appeal_deadline',
+            )
+            .status,
+        DossierDeadlineStatus.completed,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          key: const ValueKey<String>('restored-dossier-host'),
+          home: HomeShell(repository: repository, locale: 'en'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Matter'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey<String>('open-dossier-button')),
+        240,
+        scrollable: find.byType(Scrollable).last,
+        maxScrolls: 30,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('open-dossier-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('dossier-screen')),
+        findsOneWidget,
+      );
+      final Finder dossierScroll = find.byKey(
+        const PageStorageKey<String>('dossier-scroll'),
+      );
+      expect(dossierScroll, findsOneWidget);
+      final Finder completedStatus = find.byKey(
+        const ValueKey<String>('dossier-deadline-status-appeal_deadline'),
+      );
+      expect(completedStatus, findsOneWidget);
+      expect(
+        tester.widget<Text>(completedStatus).data,
+        contains('Completed'),
+      );
+      await tester.ensureVisible(completedStatus);
+      await tester.pumpAndSettle();
+      expect(completedStatus, findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('dossier-remedy-file_appeal')),
+        findsNothing,
+      );
+
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      final ActionExecutionResult closure =
+          repository.applyAction('abandon_appeal');
+      await tester.pumpAndSettle();
+      expect(closure.isRisky, isFalse);
+      expect(repository.snapshot.timeLabel, '10:15');
+      expect(repository.snapshot.isClosed, isTrue);
+      expect(
+        repository.snapshot.matterLifecycle,
+        MatterLifecycleStatus.closed,
+      );
+      expect(repository.snapshot.outcomeSummary?.finalStatus, 'final_loss');
+      expect(repository.snapshot.actions, isEmpty);
+      expect(
+        repository.snapshot.dossier!.procedure.matterStatus,
+        DossierMatterStatus.closed,
+      );
+      expect(repository.snapshot.dossier!.outcome?.id, 'final_loss');
+
+      final GameSnapshot closedSnapshot = repository.snapshot;
+      final List<Object?> closedDossier = _dossierState(
+        repository.snapshot.dossier!,
+      );
+      final ActionExecutionResult rejectedDispatch =
+          repository.applyAction('abandon_appeal');
+      expect(rejectedDispatch.isRisky, isTrue);
+      expect(repository.snapshot, same(closedSnapshot));
+      expect(
+        () => repository.advanceTimeByMinutes(1),
+        throwsA(
+          isA<ScenarioClockAdvanceException>().having(
+            (ScenarioClockAdvanceException error) => error.code,
+            'code',
+            'scenario_resolved',
+          ),
+        ),
+      );
+      expect(repository.snapshot, same(closedSnapshot));
+      expect(_dossierState(repository.snapshot.dossier!), closedDossier);
+
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey<String>('open-dossier-button')),
+        240,
+        scrollable: find.byType(Scrollable).last,
+        maxScrolls: 30,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('open-dossier-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Closed matter'), findsOneWidget);
+      expect(find.text('Final loss'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('dossier-remedy-file_appeal')),
+        findsNothing,
+      );
 
       repository.dispose();
     },
   );
+}
+
+List<Object?> _dossierState(DossierProjectionView dossier) {
+  return <Object?>[
+    dossier.projectionSchemaVersion,
+    dossier.procedure.stageId,
+    dossier.procedure.stageTitle,
+    dossier.procedure.clockMinutes,
+    dossier.procedure.matterLifecycle.name,
+    dossier.procedure.isClosed,
+    dossier.procedure.matterStatus.name,
+    dossier.judicialResult?.name,
+    dossier.judicialDecisionInstance?.name,
+    dossier.facts
+        .map(
+          (DossierFactView item) => <Object?>[
+            item.id,
+            item.statement,
+            item.status.name,
+          ],
+        )
+        .toList(growable: false),
+    dossier.evidence
+        .map(
+          (DossierEvidenceView item) => <Object?>[
+            item.id,
+            item.title,
+            item.kind,
+            item.description,
+            item.supportsFactIds,
+            item.contradictsFactIds,
+          ],
+        )
+        .toList(growable: false),
+    dossier.deadlines
+        .map(
+          (DossierDeadlineView item) => <Object?>[
+            item.id,
+            item.title,
+            item.dueAtMinutes,
+            item.status.name,
+            item.remedies
+                .map(
+                  (DossierRemedyView remedy) => <Object?>[
+                    remedy.actionId,
+                    remedy.title,
+                    remedy.description,
+                    remedy.timeCostMinutes,
+                    remedy.costEur,
+                  ],
+                )
+                .toList(growable: false),
+          ],
+        )
+        .toList(growable: false),
+    if (dossier.outcome case final DossierOutcomeView outcome)
+      <Object?>[outcome.id, outcome.title, outcome.summary]
+    else
+      null,
+  ];
 }
 
 RustScenarioRepository _repository(

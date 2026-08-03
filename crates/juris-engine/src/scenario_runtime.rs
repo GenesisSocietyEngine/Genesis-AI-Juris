@@ -16,7 +16,14 @@ use juris_scenario_validator::validate_scenario;
 use serde::Serialize;
 use thiserror::Error;
 
+mod dossier;
 mod persistence;
+
+pub use dossier::{
+    DossierDeadlineProjection, DossierEvidenceProjection, DossierFactProjection,
+    DossierMatterStatus, DossierOutcomeProjection, DossierProcedureProjection, DossierProjection,
+    DossierRemedyProjection, DOSSIER_PROJECTION_SCHEMA_VERSION,
+};
 
 pub use persistence::{
     ScenarioCommand, ScenarioSaveEnvelope, ScenarioSaveError, SAVE_SCHEMA_ID, SAVE_SCHEMA_VERSION,
@@ -155,6 +162,7 @@ pub struct MobileScenarioSnapshot {
     pub resolved_outcome: Option<String>,
     /// Backward-compatible alias for `is_closed`.
     pub terminal: bool,
+    pub dossier: DossierProjection,
     pub flags: BTreeMap<String, bool>,
     pub facts: Vec<MobileFactSnapshot>,
     pub evidence: Vec<MobileEvidenceSnapshot>,
@@ -378,6 +386,15 @@ impl ScenarioSession {
         });
         let matter_lifecycle = MatterLifecycleStatus::from_stage(stage.kind, stage.terminal);
         let is_closed = matter_lifecycle.is_closed();
+        let available_actions = self.available_actions();
+        let dossier = dossier::project_dossier(
+            self,
+            stage,
+            matter_lifecycle,
+            is_closed,
+            &available_actions,
+            outcome.as_ref(),
+        );
 
         MobileScenarioSnapshot {
             snapshot_schema_version: SNAPSHOT_SCHEMA_VERSION,
@@ -393,12 +410,13 @@ impl ScenarioSession {
             is_closed,
             resolved_outcome: self.state.outcome_id.clone(),
             terminal: is_closed,
+            dossier,
             flags: self.state.flags.clone(),
             facts,
             evidence,
             deadlines,
             inbox,
-            available_actions: self.available_actions(),
+            available_actions,
             fired_event_ids: self.state.fired_events.iter().cloned().collect(),
             outcome,
         }

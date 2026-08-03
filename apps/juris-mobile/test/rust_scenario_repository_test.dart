@@ -325,6 +325,10 @@ void main() {
       mode: _LoadResponseMode.invalidSnapshot,
       expectedCode: 'invalid_loaded_snapshot',
     ),
+    (
+      mode: _LoadResponseMode.malformedDossier,
+      expectedCode: 'invalid_loaded_snapshot',
+    ),
   ]) {
     test('${failure.mode.name} disposes only the temporary loaded session',
         () async {
@@ -690,7 +694,12 @@ const List<Object> _goldenshellFragmentedPath = <Object>[
   'complete_fragmented_handoff',
 ];
 
-enum _LoadResponseMode { normal, incompleteSuccess, invalidSnapshot }
+enum _LoadResponseMode {
+  normal,
+  incompleteSuccess,
+  invalidSnapshot,
+  malformedDossier,
+}
 
 final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
   _FakeScenarioBridgeClient({
@@ -898,6 +907,16 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
           'scenario_id': _scenarioId,
         },
       });
+    }
+    if (loadResponseMode == _LoadResponseMode.malformedDossier) {
+      final Map<String, dynamic> response =
+          jsonDecode(_response('session_loaded')) as Map<String, dynamic>;
+      final Map<String, dynamic> snapshot =
+          response['snapshot'] as Map<String, dynamic>;
+      snapshot['dossier'] = <String, dynamic>{
+        'projection_schema_version': 1,
+      };
+      return jsonEncode(response);
     }
     return _response('session_loaded');
   }
