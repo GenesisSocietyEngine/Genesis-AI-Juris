@@ -3,6 +3,7 @@ document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
 branch: agent/release-v0.6.0-alpha.1
 head_commit: "9d1ad87961cabd61571fa59e1432d5c70c6d450c (PR #12 merge before release preparation)"
+checkpoint_documentation_commit: b223367426d13362cbaeb896303ffc59cc76ea4b
 release_tag: v0.6.0-alpha.1
 app_version: 0.6.0+13
 last_updated: 2026-08-04
@@ -38,6 +39,8 @@ Repository and publication state:
   library, found the three required exports, booted an iPhone 16 Pro Simulator,
   and passed `RunnerTests.testNativeLogisticsLifecycle()`;
 - release-preparation branch: `agent/release-v0.6.0-alpha.1`;
+- reviewed metadata and release-note commit:
+  `b223367426d13362cbaeb896303ffc59cc76ea4b`;
 - Flutter product version: `0.6.0+13`;
 - Cargo workspace version remains `0.5.0` because this is an integrated
   product/source checkpoint, not a Rust-crate publication;
