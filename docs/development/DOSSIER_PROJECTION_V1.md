@@ -27,6 +27,13 @@ IDs, localized text, or case-specific rules.
 This contract records required behavior and validation evidence to collect. It
 does not, by itself, claim that an unrun gate or Android path has passed.
 
+The later local Failed ERP Rust migration supplies the first production
+position-1 Dossier using exactly eight facts and five evidence items from the
+characterized legacy story. Unknown entities are absent, reveal is additive,
+save/load re-derives the same sorted projection, and EN/RU preserve stable
+identity. Scenario-specific inventory and Android evidence are recorded in
+`FAILED_ERP_RUST_MIGRATION_V1.md`; the projection architecture remains generic.
+
 ## Authority and additive snapshot contract
 
 Rust derives the dossier during normal snapshot creation from the validated

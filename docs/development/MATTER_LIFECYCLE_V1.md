@@ -17,6 +17,13 @@ This checkpoint is generic engine and presentation infrastructure. It does not
 revise the balance or authored paths of the existing playable cases, and it
 does not introduce player-authored legal theory.
 
+The later local Failed ERP Rust migration applies this generic contract to the
+position-1 production case. First-instance mixed/loss, appeal loss, limited
+cassation review, and remittal remain open with executable continuations;
+explicit acceptance, remedy exhaustion, settlement, or another authored final
+boundary closes the matter. The 18-path evidence is recorded in
+`FAILED_ERP_RUST_MIGRATION_V1.md` without changing this lifecycle contract.
+
 ## Authoritative lifecycle contract
 
 ### Judicial result
@@ -229,8 +236,9 @@ command log, scenario fingerprint, or final-state digest.
 - Procedural availability, waiver, exhaustion, and enforcement rules remain
   authored scenario content; this checkpoint does not encode jurisdiction-
   specific appellate law in engine code.
-- The legacy Failed ERP Dart demo retains its compatibility fallback until it
-  is migrated to the generic Rust scenario runtime.
+- The later Failed ERP migration now exercises the generic lifecycle contract
+  in production. The Dart implementation remains only in historical tests and
+  has no catalogue/runtime-factory fallback.
 - Save v1 remains manual, single-slot, local, integrity-checked rather than
   encrypted, and without background or offline time advancement.
 - No physical-device, release-signing, App Store, or Play Store behavior is
@@ -238,9 +246,10 @@ command log, scenario fingerprint, or final-state digest.
 
 ## Next dependency
 
-After this persistence compatibility remediation receives explicit acceptance,
-the next separately authorized architectural dependency is Dossier Projection
-v1: a deterministic, Rust-owned read model derived from authoritative scenario
-state. That checkpoint must preserve stable IDs, replay determinism, save/load
-failure atomicity, EN/RU parity, snapshot compatibility, and C ABI version 1.
-It must not yet introduce player-authored legal theory.
+At the time of this checkpoint, the next separately authorized architectural
+dependency was Dossier Projection v1: a deterministic, Rust-owned read model
+derived from authoritative scenario state. That checkpoint was subsequently
+implemented and is documented in `DOSSIER_PROJECTION_V1.md`. It preserved
+stable IDs, replay determinism, save/load failure atomicity, EN/RU parity,
+snapshot compatibility, and C ABI version 1 without introducing
+player-authored legal theory.

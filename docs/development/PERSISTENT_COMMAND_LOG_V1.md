@@ -12,8 +12,14 @@ Save v1 does not serialize private runtime structs. It records deterministic
 session initialization plus accepted player commands and reconstructs state by
 starting a new session and replaying those commands.
 
-The legacy Failed ERP Dart demo is unchanged and does not advertise this save
-contract. Matter Lifecycle v1 was subsequently merged through PR #10 at
+At the time this persistence contract was introduced, the legacy Failed ERP
+Dart demo did not advertise persistence. The later local Failed ERP Rust
+migration confirms that no supported legacy save could exist and therefore
+adds no importer or alternate format. New Failed ERP sessions use the same
+eight-field `scenario-runtime-v2` envelope and atomic replay/load contract as
+the other Rust scenarios. See `FAILED_ERP_RUST_MIGRATION_V1.md`.
+
+Matter Lifecycle v1 was subsequently merged through PR #10 at
 `0c8c2cc11f6bab44abb3cdafe9f97dee91ff36fc`. Its persistence remediation keeps
 the envelope shape unchanged while introducing an explicit v2 runtime profile
 for the changed replay, lifecycle, and digest semantics.
@@ -286,7 +292,9 @@ C ABI remain backward compatible.
 - A canonical scenario text edit changes the full-content fingerprint even when
   gameplay semantics are unchanged.
 - There is no background/offline time catch-up.
-- The legacy Failed ERP Dart demo is not persisted by this contract.
+- The retired Failed ERP Dart demo had no supported persistence. Its later
+  production Rust scenario uses this contract directly; no legacy importer
+  exists or is required.
 - Physical-device, release-signing, App Store, and Play Store behavior require
   separate verification.
 
