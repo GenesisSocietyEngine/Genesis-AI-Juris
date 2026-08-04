@@ -2,11 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juris_mobile/data/case_runtime_factory.dart';
 import 'package:juris_mobile/data/demo_game_repository.dart';
 import 'package:juris_mobile/data/game_runtime_repository.dart';
-import 'package:juris_mobile/data/game_save_store.dart';
-import 'package:juris_mobile/models/case_catalog.dart';
 import 'package:juris_mobile/models/game_snapshot.dart';
 
 /// Characterizes the executable Failed ERP Dart runtime before it is replaced
@@ -25,7 +22,8 @@ void main() {
       );
       final GameSnapshot snapshot = repository.snapshot;
 
-      expect(snapshot.version, '0.5.0-alpha.4 remedies and variable live clock');
+      expect(
+          snapshot.version, '0.5.0-alpha.4 remedies and variable live clock');
       expect(snapshot.seed, canonicalSeed);
       expect(snapshot.mode, 'Assisted');
       expect(snapshot.dayLabel, 'Day 1');
@@ -159,8 +157,7 @@ void main() {
       expect(repository.snapshot.spendEur, 4150);
       expect(repository.snapshot.billableMinutes, 600);
       expect(repository.snapshot.settlementOffer?.amountEur, 64500);
-      expect(repository.snapshot.settlementOffer?.expiresAt,
-          'Day 2 · 17:30');
+      expect(repository.snapshot.settlementOffer?.expiresAt, 'Day 2 · 17:30');
       expect(repository.snapshot.settlementOffer?.amountEur,
           isNot(template['opponent_initial_offer_eur']));
     });
@@ -184,32 +181,10 @@ void main() {
       );
     });
 
-    test('factory selects Dart runtime and does not touch a supplied save store',
-        () async {
-      final CaseCatalogBundle bundle = CaseCatalogBundle.fromJson(
-        jsonDecode(
-          await _repositoryFile(
-            'apps/juris-mobile/assets/case_catalog/mobile_case_bundle.json',
-          ).readAsString(),
-        ) as Map<String, dynamic>,
+    test('archived Dart runtime has no supported persistence format', () async {
+      final GameRuntimeRepository repository = DemoGameRepository(
+        seed: canonicalSeed,
       );
-      final MobileCaseDefinition failedErp = bundle.cases.singleWhere(
-        (MobileCaseDefinition item) =>
-            item.caseId == 'be_commercial_failed_erp_001',
-      );
-      final _TrackingGameSaveStore saveStore = _TrackingGameSaveStore();
-
-      expect(failedErp.sortOrder, 10);
-      expect(failedErp.seed, canonicalSeed);
-      expect(failedErp.runtimeAdapter,
-          CaseRuntimeFactory.failedErpDemoAdapter);
-      expect(failedErp.scenario, isNull);
-
-      final GameRuntimeRepository repository = CaseRuntimeFactory.create(
-        failedErp,
-        gameSaveStore: saveStore,
-      );
-      expect(repository, isA<DemoGameRepository>());
       expect(repository.supportsPersistence, isFalse);
       expect(await repository.hasSavedGame(), isFalse);
       await expectLater(
@@ -232,7 +207,6 @@ void main() {
           ),
         ),
       );
-      expect(saveStore.operationCount, 0);
     });
 
     test('settlement resolves for EUR 64,500 and closes the legacy matter', () {
@@ -339,9 +313,11 @@ void main() {
       expect(repository.snapshot.judicialResult, isNull);
       expect(repository.snapshot.matterLifecycle, MatterLifecycleStatus.active);
       expect(
-        repository.snapshot.inbox.singleWhere(
-          (InboxItemView item) => item.id.startsWith('judgment-day-'),
-        ).subject,
+        repository.snapshot.inbox
+            .singleWhere(
+              (InboxItemView item) => item.id.startsWith('judgment-day-'),
+            )
+            .subject,
         'Judgment: claim dismissed',
       );
 
@@ -397,26 +373,4 @@ File _repositoryFile(String repositoryRelativePath) {
       '${Directory.current.path}.',
     ),
   );
-}
-
-final class _TrackingGameSaveStore implements GameSaveStore {
-  int operationCount = 0;
-
-  @override
-  Future<bool> exists(String slotId) async {
-    operationCount += 1;
-    return false;
-  }
-
-  @override
-  Future<String> read(String slotId) async {
-    operationCount += 1;
-    throw StateError('The legacy runtime must not read from the save store.');
-  }
-
-  @override
-  Future<void> write(String slotId, String encodedSave) async {
-    operationCount += 1;
-    throw StateError('The legacy runtime must not write to the save store.');
-  }
 }

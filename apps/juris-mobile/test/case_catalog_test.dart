@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juris_mobile/app/juris_app.dart';
 import 'package:juris_mobile/data/case_catalog_repository.dart';
+import 'package:juris_mobile/data/case_runtime_factory.dart';
+import 'package:juris_mobile/data/scenario_bridge_client.dart';
 import 'package:juris_mobile/models/case_catalog.dart';
 
 void main() {
@@ -24,6 +26,7 @@ void main() {
         catalogRepository: CaseCatalogRepository(
           assetLoader: (_) async => generatedBundle,
         ),
+        scenarioBridgeClient: _CatalogScenarioBridgeClient(),
       ),
     );
     await tester.pumpAndSettle();
@@ -56,6 +59,37 @@ void main() {
       isNot(contains('integration_adverse_judgment_with_remedies')),
     );
     expect(bundle.supportedLocales, containsAll(<String>['en', 'ru']));
+
+    final MobileCaseDefinition failedErp = bundle.cases.first;
+    expect(failedErp.caseId, 'be_commercial_failed_erp_001');
+    expect(failedErp.scenarioId, 'be_commercial_failed_erp_001');
+    expect(failedErp.sortOrder, 10);
+    expect(failedErp.playerClientId, 'asteron_systems');
+    expect(failedErp.playerRole, 'claimant');
+    expect(
+        failedErp.localized('en', 'en').playerClientName, 'Asteron Systems NV');
+    expect(failedErp.status, MobileCaseStatus.playable);
+    expect(failedErp.scenarioAvailable, isTrue);
+    expect(failedErp.scenario, isNotNull);
+    expect(
+      (failedErp.scenario?['metadata'] as Map<String, dynamic>)['id'],
+      'be_commercial_failed_erp_001',
+    );
+    expect(failedErp.readiness.scenarioDefinition, isTrue);
+    expect(failedErp.readiness.diagnostics, isTrue);
+    expect(failedErp.readiness.pathSimulation, isTrue);
+    expect(failedErp.readiness.engineRuntime, isTrue);
+    expect(failedErp.runtimeAdapter, CaseRuntimeFactory.rustScenarioAdapter);
+    expect(CaseRuntimeFactory.supports(failedErp), isTrue);
+    expect(failedErp.scenarioLocalizations.keys,
+        containsAll(<String>['en', 'ru']));
+    for (final String locale in <String>['en', 'ru']) {
+      expect(
+        failedErp.scenarioLocalizations[locale],
+        allOf(contains('metrics'), contains('resources')),
+        reason: '$locale gameplay must label Rust-owned metrics and resources',
+      );
+    }
 
     final MobileCaseDefinition logistics = bundle.cases.singleWhere(
       (MobileCaseDefinition item) =>
@@ -111,6 +145,122 @@ void main() {
             (action['cost_eur'] as int) > 0,
       ),
       isTrue,
+    );
+  });
+
+  test('Failed ERP EN and RU overlays preserve canonical authority', () {
+    final CaseCatalogBundle bundle = CaseCatalogBundle.fromJson(
+      jsonDecode(generatedBundle) as Map<String, dynamic>,
+    );
+    final MobileCaseDefinition failedErp = bundle.cases.singleWhere(
+      (MobileCaseDefinition item) =>
+          item.caseId == 'be_commercial_failed_erp_001',
+    );
+    final Map<String, dynamic> scenario = failedErp.scenario!;
+    final String canonicalBeforeLocalization = jsonEncode(scenario);
+
+    const List<String> entitySections = <String>[
+      'stages',
+      'actions',
+      'deadlines',
+      'inbox_items',
+      'facts',
+      'evidence',
+      'outcomes',
+    ];
+    for (final String locale in <String>['en', 'ru']) {
+      final Map<String, dynamic> overlay =
+          failedErp.scenarioLocalizations[locale]!;
+      for (final String section in entitySections) {
+        final Set<String> canonicalIds =
+            (scenario[section] as List<dynamic>).map((dynamic item) {
+          return (item as Map<String, dynamic>)['id'] as String;
+        }).toSet();
+        expect(
+          (overlay[section] as Map<String, dynamic>).keys.toSet(),
+          canonicalIds,
+          reason: '$locale.$section must have exact canonical stable IDs',
+        );
+      }
+
+      expect(
+        (overlay['metrics'] as Map<String, dynamic>).keys.toSet(),
+        (scenario['numeric_metrics'] as Map<String, dynamic>).keys.toSet(),
+      );
+      expect(
+        (overlay['resources'] as Map<String, dynamic>).keys.toSet(),
+        <String>{
+          ...(scenario['initial_resources'] as Map<String, dynamic>).keys,
+          'spend_eur',
+          'billable_minutes',
+        },
+      );
+    }
+
+    final Map<String, dynamic> english = failedErp.scenarioLocalizations['en']!;
+    final Map<String, List<String>> canonicalTextFields =
+        <String, List<String>>{
+      'stages': <String>['title'],
+      'actions': <String>['title', 'description'],
+      'deadlines': <String>['title'],
+      'inbox_items': <String>['sender', 'subject', 'body'],
+      'facts': <String>['statement'],
+      'evidence': <String>['title', 'description'],
+      'outcomes': <String>['title', 'summary'],
+    };
+    for (final MapEntry<String, List<String>> section
+        in canonicalTextFields.entries) {
+      final Map<String, dynamic> overlaySection =
+          english[section.key] as Map<String, dynamic>;
+      for (final dynamic rawItem in scenario[section.key] as List<dynamic>) {
+        final Map<String, dynamic> item = rawItem as Map<String, dynamic>;
+        final Map<String, dynamic> localized =
+            overlaySection[item['id']] as Map<String, dynamic>;
+        for (final String field in section.value) {
+          expect(
+            localized[field],
+            item[field],
+            reason: 'EN ${section.key}.${item['id']}.$field must be canonical',
+          );
+        }
+      }
+    }
+    expect(
+      english['metadata'],
+      <String, dynamic>{
+        'title': (scenario['metadata'] as Map<String, dynamic>)['title'],
+        'summary': (scenario['metadata'] as Map<String, dynamic>)['summary'],
+      },
+    );
+
+    for (final String locale in <String>['en', 'ru']) {
+      failedErp.scenarioText(
+        locale: locale,
+        section: 'metadata',
+        field: 'title',
+        fallback: 'fallback',
+      );
+    }
+    expect(
+      jsonEncode(scenario),
+      canonicalBeforeLocalization,
+      reason: 'locale overlays cannot alter scenario fingerprint input',
+    );
+  });
+
+  test('factory rejects the retired Failed ERP demo adapter', () {
+    final Map<String, dynamic> decoded =
+        jsonDecode(generatedBundle) as Map<String, dynamic>;
+    final Map<String, dynamic> retiredCase = Map<String, dynamic>.from(
+        (decoded['cases'] as List<dynamic>).first as Map<String, dynamic>)
+      ..['runtime_adapter'] = 'demo_failed_erp';
+    final MobileCaseDefinition definition =
+        MobileCaseDefinition.fromJson(retiredCase);
+
+    expect(CaseRuntimeFactory.supports(definition), isFalse);
+    expect(
+      () => CaseRuntimeFactory.create(definition),
+      throwsA(isA<StateError>()),
     );
   });
 
@@ -200,7 +350,7 @@ void main() {
     );
   });
 
-  testWidgets('playable case opens demo and returns to library', (
+  testWidgets('playable Rust case opens and returns to library', (
     WidgetTester tester,
   ) async {
     await pumpCatalog(tester);
@@ -320,4 +470,82 @@ void main() {
     expect(bundle.cases.single.scenarioId, 'test_scenario_001');
     expect(bundle.cases.single.scenarioAvailable, isFalse);
   });
+}
+
+final class _CatalogScenarioBridgeClient implements ScenarioBridgeClient {
+  int _nextSessionId = 0;
+
+  @override
+  String execute(String encodedRequest) {
+    final Map<String, dynamic> request =
+        jsonDecode(encodedRequest) as Map<String, dynamic>;
+    if (request['command'] == 'dispose_session') {
+      return jsonEncode(<String, dynamic>{
+        'type': 'session_disposed',
+        'session_id': request['session_id'],
+      });
+    }
+    if (request['command'] != 'create_session') {
+      return jsonEncode(<String, dynamic>{
+        'type': 'error',
+        'code': 'unsupported_test_command',
+        'message': 'The catalog test bridge only creates sessions.',
+      });
+    }
+
+    final Map<String, dynamic> scenario =
+        request['scenario'] as Map<String, dynamic>;
+    final List<dynamic> stages = scenario['stages'] as List<dynamic>;
+    final String initialStage = scenario['initial_stage'] as String;
+    final Map<String, dynamic> stage = stages
+        .cast<Map<String, dynamic>>()
+        .singleWhere((Map<String, dynamic> item) => item['id'] == initialStage);
+    final List<dynamic> inboxDefinitions =
+        scenario['inbox_items'] as List<dynamic>;
+    final Map<String, dynamic>? openingInbox = inboxDefinitions.isEmpty
+        ? null
+        : inboxDefinitions.first as Map<String, dynamic>;
+    final Map<String, dynamic> metadata =
+        scenario['metadata'] as Map<String, dynamic>;
+    _nextSessionId += 1;
+    return jsonEncode(<String, dynamic>{
+      'type': 'session_created',
+      'session_id': _nextSessionId,
+      'snapshot': <String, dynamic>{
+        'snapshot_schema_version': 1,
+        'scenario_id': metadata['id'],
+        'seed': request['seed'],
+        // Runtime snapshots expose elapsed monotonic minutes. `initial_clock`
+        // is only the civil-time baseline used to resolve authored targets.
+        'clock_minutes': 0,
+        'clock_mode': 'manual',
+        'stage_id': initialStage,
+        'stage_title': stage['title'],
+        'terminal': false,
+        'is_closed': false,
+        'matter_lifecycle': 'active',
+        'judicial_result': null,
+        'judicial_decision_instance': null,
+        'facts': const <dynamic>[],
+        'evidence': const <dynamic>[],
+        'available_actions': const <dynamic>[],
+        'deadlines': const <dynamic>[],
+        'inbox': openingInbox == null
+            ? const <dynamic>[]
+            : <dynamic>[
+                <String, dynamic>{
+                  'id': openingInbox['id'],
+                  'subject': openingInbox['subject'],
+                  'body': openingInbox['body'],
+                  'visible': true,
+                  'resolved': false,
+                  'action_required': true,
+                },
+              ],
+        'outcome': null,
+        'numeric_metrics': scenario['numeric_metrics'],
+        'resources': scenario['initial_resources'],
+      },
+    });
+  }
 }
