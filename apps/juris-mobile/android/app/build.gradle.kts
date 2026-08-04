@@ -94,9 +94,12 @@ val rustBuildTasks = rustAndroidTargets.map { target ->
         inputs.files(
             rootProject.file("../../../Cargo.toml"),
             rootProject.file("../../../Cargo.lock"),
-            rootProject.fileTree("../../../crates/juris-engine/src"),
-            rootProject.fileTree("../../../crates/juris-mobile-bridge/src"),
-            rootProject.fileTree("../../../crates/juris-mobile-ffi/src"),
+            rootProject.fileTree("../../../crates") {
+                include("*/Cargo.toml")
+                include("*/src/**")
+                include("*/build.rs")
+            },
+            script,
         )
         outputs.file(
             project.layout.projectDirectory.file(

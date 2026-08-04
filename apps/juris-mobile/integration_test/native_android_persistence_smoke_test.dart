@@ -840,7 +840,7 @@ void main() {
       );
       expect(repository.supportsLiveClock, isTrue);
       expect(repository.snapshot.stage, 'Community intake');
-      expect(repository.snapshot.timeLabel, '00:00');
+      expect(repository.snapshot.timeLabel, '08:00');
       expect(
         repository.snapshot.dossier!.facts
             .map((DossierFactView item) => item.id),
@@ -938,7 +938,7 @@ void main() {
       }
 
       expect(repository.snapshot.dayLabel, 'Day 3');
-      expect(repository.snapshot.timeLabel, '05:00');
+      expect(repository.snapshot.timeLabel, '13:00');
       expect(repository.snapshot.judicialResult, JudicialResult.lost);
       expect(
         repository.snapshot.judicialDecisionInstance,
@@ -1008,7 +1008,7 @@ void main() {
       ]) {
         expect(repository.applyAction(actionId).isRisky, isFalse);
       }
-      expect(repository.snapshot.timeLabel, '10:00');
+      expect(repository.snapshot.timeLabel, '18:00');
       expect(
         repository.snapshot.judicialDecisionInstance,
         JudicialDecisionInstance.appeal,
@@ -1021,7 +1021,7 @@ void main() {
         repository.applyAction('close_after_adverse_appeal').isRisky,
         isFalse,
       );
-      expect(repository.snapshot.timeLabel, '10:30');
+      expect(repository.snapshot.timeLabel, '18:30');
       expect(repository.snapshot.isClosed, isTrue);
       expect(
         repository.snapshot.outcomeSummary?.finalStatus,
