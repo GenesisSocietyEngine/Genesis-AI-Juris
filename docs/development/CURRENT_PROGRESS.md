@@ -1,15 +1,147 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: agent/release-v0.6.0-alpha.1
-head_commit: "9d1ad87961cabd61571fa59e1432d5c70c6d450c (PR #12 merge before release preparation)"
-checkpoint_documentation_commit: b223367426d13362cbaeb896303ffc59cc76ea4b
-release_tag: v0.6.0-alpha.1
+branch: refactor/failed-erp-authoritative-rust
+base_commit: 3c27eb2782a61662d7ceffbd19e5434bce389470
+implementation_head: 6a27e53549b06911e81fe8c9a61eae3e814fca30
+latest_published_release_tag: v0.6.0-alpha.1
 app_version: 0.6.0+13
 last_updated: 2026-08-04
 ---
 
 # Current Progress
+
+## Failed ERP authoritative Rust migration local checkpoint — 2026-08-04
+
+Status: implementation and full local validation are complete. Failed ERP is
+now a production `ScenarioDefinition v1` on the generic authoritative Rust
+runtime, with Rust-owned metrics/resources, timing, decisions, lifecycle,
+Dossier, replay, and persistence. The branch is stopped for local review; it
+has not been pushed and no PR, tag, release, or merge was created.
+
+Repository state:
+
+- branch: `refactor/failed-erp-authoritative-rust`;
+- exact base and merge base:
+  `3c27eb2782a61662d7ceffbd19e5434bce389470`;
+- implementation HEAD before the documentation commit:
+  `6a27e53549b06911e81fe8c9a61eae3e814fca30`;
+- intentional implementation commits:
+  - `f898d09232b51aa1d7bdcce0208ed7a93a76462b` — legacy
+    characterization;
+  - `a26bb58d5d0ca7a5dc0149011206fd261874978f` — generic metrics,
+    resources, and deterministic decisions;
+  - `8442b9bf42f2ac03c5a4e25f7bc005e543e3ee33` — relative timing and
+    completion-deadline constraints;
+  - `e61d68a6bf88556f7aeded3239b16a297341ef2c` — authoritative
+    production scenario and traces;
+  - `33dc65f3ff1c6d042a2787fc54de9045126e7b74` — mobile Rust routing and
+    generic snapshot presentation;
+  - `6a27e53549b06911e81fe8c9a61eae3e814fca30` — replay, Dossier,
+    persistence, FFI, and Android lifecycle coverage;
+- the final seventh commit is
+  `docs: record Failed ERP Rust migration checkpoint`; its exact SHA is
+  reported after creation because a commit cannot embed its own stable hash;
+- PR #4 remains untouched;
+- Desert Water remains preserved and unpublished on
+  `feat/desert-water-case` at
+  `44e565b22c52a4c3a3e69b2c137353b7771fcf77`; its four intentional commits
+  remain reachable and no remote branch contains that HEAD.
+
+Authority and identity:
+
+- production ID: `be_commercial_failed_erp_001`;
+- catalogue position 1 / sort order 10;
+- Asteron Systems NV is the claimant/buyer and player client;
+- Northbridge Consulting BV remains the defendant/supplier;
+- `DemoGameRepository` was the parity authority because it was the executable
+  legacy behavior; the old template is migration provenance only;
+- settlement remains EUR 64,500;
+- the production factory no longer imports or selects the Dart demo adapter;
+- the Dart repository remains only as a characterization fixture for the
+  historical widget/parity suite;
+- no case-ID branch exists in generic Rust, bridge, FFI, or Flutter mapper.
+
+Scenario and deterministic evidence:
+
+- first Failed ERP fingerprint:
+  `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8`;
+- 21 stages, 39 actions (37 legacy plus 2 minimal lifecycle continuations),
+  13 decisions, 9 deadlines, 2 async tasks, 34 Inbox items, 66 events,
+  9 outcomes, 12 actors, 8 facts, 5 evidence items, 19 metrics, and
+  5 resources;
+- settlement trace: seed 20260724, 3 commands / 9 transitions, minute 570,
+  `settlement_64500`, spend EUR 2,350, award EUR 64,500;
+- prepared-litigation trace: seed 6, 26 commands / 52 transitions, minute
+  8640, `judgment_preserved_after_cassation`;
+- remittal trace: seed 28, 29 commands / 62 transitions, minute 10080,
+  open `post_judgment` state with no terminal outcome;
+- an explicit 18-path lifecycle manifest covers all 9 terminal outcomes and
+  all meaningful open remedy/remittal states with exact commands, resources,
+  minutes, lifecycle, result/instance, digest, deadlines, tasks, and Inbox;
+- exact-due completion succeeds only for the opt-in inclusive policy;
+  due-plus-one rejection is atomic;
+- closed sessions expose no actions or open work and reject dispatch/time
+  advancement without mutation.
+
+Compatibility:
+
+- Logistics fingerprint remains
+  `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8`
+  with canonical minutes/transitions 270/3 and 480/5;
+- GreenFire remains
+  `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261`
+  with 4440/26 and 4590/21;
+- GoldenShell remains
+  `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4`
+  with 4545/29 and 4710/23;
+- their definitions, costs, deadlines, traces, outcomes, final minutes,
+  digests, and relative catalogue order are unchanged;
+- no supported legacy Failed ERP save existed; no importer or second save
+  mechanism was added;
+- schema ID `genesis.ai-juris.command-log`, envelope schema version 1,
+  eight-field shape, `scenario-runtime-v2`, fingerprint validation, and the
+  final-state digest contract remain unchanged;
+- C ABI remains version 1 with exactly execute, string-free, and ABI-version
+  exports.
+
+Quality gates:
+
+- Rust 1.78 locked workspace check passed;
+- Rust fmt, locked workspace check, and Clippy `-D warnings` passed;
+- full Rust workspace: 293 passed, 0 failed, 0 ignored;
+- focused totals: engine 92, bridge 15, FFI 13, simulator 53,
+  validator 45, diagnostics 27, and case catalogue 14;
+- Failed ERP formula/economic parity: 10/10;
+- lifecycle matrix harness: 2/2 over 18 explicit manifest paths;
+- deterministic bundle check passed; SHA-256 changed as expected from
+  `8d9db2e75c5cac14df95073843cc5a0775df8d17323fb434c688a8854a012835`
+  to
+  `afe93194de58761fe534a1b818968bc7a2b5bd931eba597ab03a06561733baf1`;
+- Dart format checked 48 files with 0 changes;
+- Flutter analysis found no issues;
+- full Flutter unit/widget suite: 130 passed, 0 failed;
+- Failed ERP native Android acceptance: 1/1 on Android 17 / API 37;
+- unsigned three-ABI debug APK: 97,983,130 bytes, SHA-256
+  `501b84a01f96b425d25acb2f7e4174f03a39080b1ba94da851f43a707ed280fd`;
+- `llvm-nm` found exactly
+  `juris_mobile_bridge_execute`, `juris_mobile_bridge_string_free`, and
+  `juris_mobile_bridge_abi_version` in `armeabi-v7a`, `arm64-v8a`, and
+  `x86_64`;
+- `git diff --check` passed.
+
+Known limitations and next step:
+
+- historical Dart and old `juris-content` prototype fixtures remain in the
+  tree but are not production mobile/ScenarioSession authority or save aliases;
+- top-level snapshot-array visibility hardening remains a separate checkpoint;
+- hosted iOS and remote CI have not run because publication is forbidden at
+  this stop point;
+- review the seven local commits and the focused contract in
+  `docs/development/FAILED_ERP_RUST_MIGRATION_V1.md`;
+- only after explicit authorization may this branch be pushed and a Draft PR
+  opened; Desert Water may be rebased and revalidated only after the Failed
+  ERP checkpoint is separately published and merged.
 
 ## v0.6.0-alpha.1 release preparation — 2026-08-04
 

@@ -9,11 +9,14 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use juris_scenario_schema::{
     ActionDefinition, ActionRepeatability, AsyncTaskStatus, Condition, DeadlineStatus, Effect,
-    EventDefinition, EventTrigger, FactStatus, JudicialDecisionInstance, JudicialResult,
-    MatterLifecycleStatus, ScenarioClockMode, ScenarioDefinition,
+    EventDefinition, EventTrigger, FactStatus, IntegerComparisonOperator, IntegerOperand,
+    JudicialDecisionInstance, JudicialResult, MatterLifecycleStatus, RelativeTimeDefinition,
+    ScenarioClockMode, ScenarioDefinition, ScenarioTime, RESOURCE_BILLABLE_MINUTES,
+    RESOURCE_SPEND_EUR,
 };
 use juris_scenario_validator::validate_scenario;
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 use thiserror::Error;
 
 mod dossier;
@@ -47,6 +50,34 @@ pub enum ScenarioRuntimeError {
 
     #[error("action `{0}` is not currently available")]
     ActionUnavailable(String),
+
+    #[error("deadline `{0}` is not active")]
+    DeadlineInactive(String),
+
+    #[error(
+        "action `{action}` would complete at minute {completion}, outside deadline `{deadline}` at minute {due}"
+    )]
+    ActionCompletionDeadlineExceeded {
+        action: String,
+        deadline: String,
+        completion: u64,
+        due: u64,
+    },
+
+    #[error("integer state overflow while updating `{0}`")]
+    IntegerOverflow(String),
+
+    #[error("integer state `{0}` is not configured")]
+    UnknownIntegerState(String),
+
+    #[error("deterministic decision `{0}` does not exist")]
+    UnknownDecision(String),
+
+    #[error("deterministic decision `{0}` has no eligible positive-weight branch")]
+    NoEligibleDecisionBranch(String),
+
+    #[error("deterministic decision `{0}` could not be resolved: {1}")]
+    DecisionResolution(String, String),
 
     #[error("foreground clock advancement is not enabled for this scenario")]
     ClockAdvanceUnsupported,
@@ -95,8 +126,19 @@ pub struct MobileActionSnapshot {
     pub id: String,
     pub title: String,
     pub description: Option<String>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub presentation_tags: Vec<String>,
     pub time_cost_minutes: u32,
     pub cost_eur: u32,
+
+    #[serde(skip_serializing_if = "is_zero_u32")]
+    pub billable_minutes: u32,
+
+    /// Forward elapsed completion target for actions that opt into calendar or
+    /// deadline-driven timing.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub completion_at_minutes: Option<u64>,
 }
 
 /// Presentation-safe fact state.
@@ -130,11 +172,18 @@ pub struct MobileDeadlineSnapshot {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct MobileInboxSnapshot {
     pub id: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sender: Option<String>,
+
     pub subject: String,
     pub body: String,
     pub visible: bool,
     pub action_required: bool,
     pub resolved: bool,
+
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub resolution_action_ids: Vec<String>,
 }
 
 /// Explicit terminal outcome exposed to mobile clients.
@@ -164,6 +213,14 @@ pub struct MobileScenarioSnapshot {
     pub terminal: bool,
     pub dossier: DossierProjection,
     pub flags: BTreeMap<String, bool>,
+
+    /// Optional canonical generic state. Existing scenarios that do not opt
+    /// in omit these keys from serialized snapshots.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub numeric_metrics: Option<BTreeMap<String, i64>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resources: Option<BTreeMap<String, i64>>,
     pub facts: Vec<MobileFactSnapshot>,
     pub evidence: Vec<MobileEvidenceSnapshot>,
     pub deadlines: Vec<MobileDeadlineSnapshot>,
@@ -178,18 +235,28 @@ struct ScenarioRuntimeState {
     stage_id: String,
     clock_minutes: u64,
     flags: BTreeMap<String, bool>,
+    numeric_metrics: BTreeMap<String, i64>,
+    resources: BTreeMap<String, i64>,
     fact_statuses: BTreeMap<String, FactStatus>,
     available_evidence: BTreeSet<String>,
     deadline_statuses: BTreeMap<String, Option<DeadlineStatus>>,
+    deadline_due_minutes: BTreeMap<String, u64>,
     task_statuses: BTreeMap<String, AsyncTaskStatus>,
     task_due_minutes: BTreeMap<String, u64>,
     visible_inbox: BTreeSet<String>,
     resolved_inbox: BTreeSet<String>,
     action_uses: BTreeMap<String, u32>,
     fired_events: BTreeSet<String>,
+    decision_resolutions: BTreeMap<String, Vec<String>>,
     judicial_result: Option<JudicialResult>,
     judicial_decision_instance: Option<JudicialDecisionInstance>,
     outcome_id: Option<String>,
+}
+
+#[derive(Default)]
+struct EventProcessingContext {
+    processed: usize,
+    repeatable_ids: BTreeSet<String>,
 }
 
 /// Authoritative runtime for one validated declarative scenario.
@@ -199,6 +266,9 @@ pub struct ScenarioSession {
     definition: ScenarioDefinition,
     state: ScenarioRuntimeState,
     command_log: Vec<ScenarioCommand>,
+    /// Ephemeral causal anchor used while one accepted action applies effects.
+    /// It is reconstructed by replay and is never persisted or projected.
+    effect_time_anchor: Option<u64>,
 }
 
 impl ScenarioSession {
@@ -233,6 +303,10 @@ impl ScenarioSession {
             .filter(|item| item.initially_available)
             .map(|item| item.id.as_str().to_owned())
             .collect();
+        let calendar_baseline = definition
+            .initial_clock
+            .map(scenario_time_minutes)
+            .unwrap_or(0);
         let deadline_statuses = definition
             .deadlines
             .iter()
@@ -246,6 +320,36 @@ impl ScenarioSession {
                 )
             })
             .collect();
+        // Static authored due times are known independently of activation.
+        // Populate those first so a relative deadline never depends on array
+        // order when it names a later-declared static anchor.
+        let mut deadline_due_minutes = definition
+            .deadlines
+            .iter()
+            .filter(|deadline| deadline.relative_due.is_none())
+            .map(|deadline| {
+                let due = authored_time_to_elapsed(deadline.due_at, definition.initial_clock)
+                    .expect("validated static deadline cannot precede initial_clock");
+                (deadline.id.as_str().to_owned(), due)
+            })
+            .collect::<BTreeMap<_, _>>();
+        let initially_active_relative_ids = definition
+            .deadlines
+            .iter()
+            .filter(|deadline| {
+                deadline.activation_event.is_none() && deadline.relative_due.is_some()
+            })
+            .map(|deadline| deadline.id.as_str().to_owned())
+            .collect::<Vec<_>>();
+        for deadline_id in initially_active_relative_ids {
+            resolve_initial_deadline_due(
+                &definition,
+                &deadline_id,
+                calendar_baseline,
+                &mut deadline_due_minutes,
+                &mut BTreeSet::new(),
+            )?;
+        }
         let task_statuses = definition
             .async_tasks
             .iter()
@@ -257,6 +361,22 @@ impl ScenarioSession {
             .filter(|item| item.initially_visible || item.created_by_event.is_none())
             .map(|item| item.id.as_str().to_owned())
             .collect();
+        let numeric_metrics = definition
+            .numeric_metrics
+            .iter()
+            .map(|(id, value)| (id.as_str().to_owned(), *value))
+            .collect();
+        let mut resources = definition
+            .initial_resources
+            .iter()
+            .map(|(id, value)| (id.as_str().to_owned(), *value))
+            .collect::<BTreeMap<_, _>>();
+        if !definition.initial_resources.is_empty() {
+            resources.entry(RESOURCE_SPEND_EUR.to_owned()).or_insert(0);
+            resources
+                .entry(RESOURCE_BILLABLE_MINUTES.to_owned())
+                .or_insert(0);
+        }
 
         let mut session = Self {
             seed,
@@ -264,21 +384,26 @@ impl ScenarioSession {
                 stage_id: definition.initial_stage.as_str().to_owned(),
                 clock_minutes: 0,
                 flags: BTreeMap::new(),
+                numeric_metrics,
+                resources,
                 fact_statuses,
                 available_evidence,
                 deadline_statuses,
+                deadline_due_minutes,
                 task_statuses,
                 task_due_minutes: BTreeMap::new(),
                 visible_inbox,
                 resolved_inbox: BTreeSet::new(),
                 action_uses: BTreeMap::new(),
                 fired_events: BTreeSet::new(),
+                decision_resolutions: BTreeMap::new(),
                 judicial_result: None,
                 judicial_decision_instance: None,
                 outcome_id: None,
             },
             definition,
             command_log: Vec::new(),
+            effect_time_anchor: None,
         };
 
         let mut initial_events = VecDeque::new();
@@ -287,13 +412,21 @@ impl ScenarioSession {
                 EventTrigger::ScenarioStart => {
                     initial_events.push_back(event.id.as_str().to_owned());
                 }
-                EventTrigger::AtTime { at } if scenario_time_minutes(*at) == 0 => {
+                EventTrigger::AtTime { at }
+                    if authored_time_to_elapsed(*at, session.definition.initial_clock)
+                        == Some(0) =>
+                {
                     initial_events.push_back(event.id.as_str().to_owned());
                 }
                 _ => {}
             }
         }
         session.process_event_queue(initial_events)?;
+        // Boundary zero is authoritative even when the scenario has no
+        // ScenarioStart or AtTime(0) event to enter the event queue.
+        let mut initial_due_events = VecDeque::new();
+        session.queue_due_events(&mut initial_due_events);
+        session.process_event_queue(initial_due_events)?;
         Ok(session)
     }
 
@@ -342,7 +475,15 @@ impl ScenarioSession {
             .map(|deadline| MobileDeadlineSnapshot {
                 id: deadline.id.as_str().to_owned(),
                 title: deadline.title.clone(),
-                due_at_minutes: scenario_time_minutes(deadline.due_at),
+                due_at_minutes: self
+                    .state
+                    .deadline_due_minutes
+                    .get(deadline.id.as_str())
+                    .copied()
+                    .or_else(|| {
+                        authored_time_to_elapsed(deadline.due_at, self.definition.initial_clock)
+                    })
+                    .expect("validated deadline must have a presentation due minute"),
                 status: self
                     .state
                     .deadline_statuses
@@ -364,11 +505,17 @@ impl ScenarioSession {
             .iter()
             .map(|item| MobileInboxSnapshot {
                 id: item.id.as_str().to_owned(),
+                sender: item.sender.clone(),
                 subject: item.subject.clone(),
                 body: item.body.clone(),
                 visible: self.state.visible_inbox.contains(item.id.as_str()),
                 action_required: item.action_required,
                 resolved: self.state.resolved_inbox.contains(item.id.as_str()),
+                resolution_action_ids: item
+                    .resolution_actions
+                    .iter()
+                    .map(|action| action.as_str().to_owned())
+                    .collect(),
             })
             .collect();
         let outcome = self.state.outcome_id.as_ref().map(|outcome_id| {
@@ -412,6 +559,10 @@ impl ScenarioSession {
             terminal: is_closed,
             dossier,
             flags: self.state.flags.clone(),
+            numeric_metrics: (!self.definition.numeric_metrics.is_empty())
+                .then(|| self.state.numeric_metrics.clone()),
+            resources: (!self.definition.initial_resources.is_empty())
+                .then(|| self.state.resources.clone()),
             facts,
             evidence,
             deadlines,
@@ -450,10 +601,31 @@ impl ScenarioSession {
             .iter()
             .find(|item| item.id.as_str() == action_id)
             .cloned()
-            .filter(|item| self.action_is_available(item))
+            .filter(|item| self.action_is_basically_available(item))
             .ok_or_else(|| ScenarioRuntimeError::ActionUnavailable(action_id.to_owned()))?;
 
-        self.apply_effects(&action.effects)?;
+        let (completion_target, selected_advance_deadline) =
+            self.action_completion_target(&action)?;
+        self.ensure_action_finishes_by_deadline(
+            &action,
+            completion_target,
+            selected_advance_deadline.as_deref(),
+        )?;
+        self.precomplete_action_deadlines(&action);
+
+        // Effects remain pre-clock for existing scenarios. Calendar-sensitive
+        // effects use the accepted completion target as their causal anchor.
+        self.effect_time_anchor = Some(completion_target);
+        let effects_result = self.apply_effects(&action.effects);
+        self.effect_time_anchor = None;
+        effects_result?;
+        if !self.definition.initial_resources.is_empty() {
+            self.add_resource(RESOURCE_SPEND_EUR, i64::from(action.cost_eur))?;
+            self.add_resource(
+                RESOURCE_BILLABLE_MINUTES,
+                i64::from(action.billable_minutes),
+            )?;
+        }
         *self
             .state
             .action_uses
@@ -469,7 +641,12 @@ impl ScenarioSession {
                 events.push_back(event.id.as_str().to_owned());
             }
         }
-        self.advance_clock_by(action.time_cost_minutes, events)?;
+        self.advance_clock_to_with_deadline_completion(
+            completion_target,
+            events,
+            false,
+            selected_advance_deadline.as_deref(),
+        )?;
 
         Ok(self.snapshot())
     }
@@ -509,7 +686,7 @@ impl ScenarioSession {
             });
         }
 
-        self.advance_clock_by(minutes, VecDeque::new())?;
+        self.advance_clock_by(minutes, VecDeque::new(), true)?;
         Ok(self.snapshot())
     }
 
@@ -523,12 +700,40 @@ impl ScenarioSession {
         &mut self,
         minutes: u32,
         final_events: VecDeque<String>,
+        apply_foreground_metric_rates: bool,
     ) -> Result<(), ScenarioRuntimeError> {
         let target = self
             .state
             .clock_minutes
             .checked_add(u64::from(minutes))
             .ok_or(ScenarioRuntimeError::ClockOverflow)?;
+        self.advance_clock_to(target, final_events, apply_foreground_metric_rates)
+    }
+
+    fn advance_clock_to(
+        &mut self,
+        target: u64,
+        final_events: VecDeque<String>,
+        apply_foreground_metric_rates: bool,
+    ) -> Result<(), ScenarioRuntimeError> {
+        self.advance_clock_to_with_deadline_completion(
+            target,
+            final_events,
+            apply_foreground_metric_rates,
+            None,
+        )
+    }
+
+    fn advance_clock_to_with_deadline_completion(
+        &mut self,
+        target: u64,
+        final_events: VecDeque<String>,
+        apply_foreground_metric_rates: bool,
+        completion_deadline: Option<&str>,
+    ) -> Result<(), ScenarioRuntimeError> {
+        if target < self.state.clock_minutes {
+            return Err(ScenarioRuntimeError::ClockOverflow);
+        }
 
         // An action may resolve the scenario in its effects. Its declared time
         // cost still belongs to that action, but no later temporal event fires.
@@ -537,7 +742,14 @@ impl ScenarioSession {
             return Ok(());
         }
 
-        while let Some(boundary) = self.next_temporal_boundary_before(target) {
+        while let Some(boundary) =
+            self.next_temporal_boundary_before(target, apply_foreground_metric_rates)
+        {
+            let previous_metrics = self.state.numeric_metrics.clone();
+            let elapsed = boundary - self.state.clock_minutes;
+            if apply_foreground_metric_rates {
+                self.increment_foreground_metrics(elapsed)?;
+            }
             self.state.clock_minutes = boundary;
             let mut due_events = VecDeque::new();
             self.queue_due_events(&mut due_events);
@@ -545,22 +757,61 @@ impl ScenarioSession {
             if self.is_closed() {
                 return Ok(());
             }
+            if apply_foreground_metric_rates {
+                let mut metric_events = VecDeque::new();
+                self.queue_crossed_metric_events(&previous_metrics, &mut metric_events);
+                self.process_event_queue(metric_events)?;
+                if self.is_closed() {
+                    return Ok(());
+                }
+            }
         }
 
+        let previous_metrics = self.state.numeric_metrics.clone();
+        let elapsed = target - self.state.clock_minutes;
+        if apply_foreground_metric_rates {
+            self.increment_foreground_metrics(elapsed)?;
+        }
         self.state.clock_minutes = target;
+        if let Some(deadline_id) = completion_deadline {
+            if self
+                .state
+                .deadline_statuses
+                .get(deadline_id)
+                .copied()
+                .flatten()
+                == Some(DeadlineStatus::Open)
+            {
+                self.state
+                    .deadline_statuses
+                    .insert(deadline_id.to_owned(), Some(DeadlineStatus::Completed));
+            }
+        }
         let mut events = final_events;
         self.queue_due_events(&mut events);
-        self.process_event_queue(events)
+        self.process_event_queue(events)?;
+        if self.is_closed() || !apply_foreground_metric_rates {
+            return Ok(());
+        }
+        let mut metric_events = VecDeque::new();
+        self.queue_crossed_metric_events(&previous_metrics, &mut metric_events);
+        self.process_event_queue(metric_events)
     }
 
-    fn next_temporal_boundary_before(&self, target: u64) -> Option<u64> {
+    fn next_temporal_boundary_before(
+        &self,
+        target: u64,
+        include_foreground_metric_thresholds: bool,
+    ) -> Option<u64> {
         let current = self.state.clock_minutes;
         let at_time = self.definition.events.iter().filter_map(|event| {
             if self.state.fired_events.contains(event.id.as_str()) {
                 return None;
             }
             match event.trigger {
-                EventTrigger::AtTime { at } => Some(scenario_time_minutes(at)),
+                EventTrigger::AtTime { at } => {
+                    authored_time_to_elapsed(at, self.definition.initial_clock)
+                }
                 _ => None,
             }
         });
@@ -568,26 +819,106 @@ impl ScenarioSession {
             .state
             .task_due_minutes
             .iter()
-            .filter_map(|(task_id, due)| {
-                (self.state.task_statuses.get(task_id) == Some(&AsyncTaskStatus::InProgress))
-                    .then_some(*due)
+            .filter(|(task_id, _)| {
+                self.state.task_statuses.get(*task_id) == Some(&AsyncTaskStatus::InProgress)
+            })
+            .map(|(_, due)| *due);
+        let deadlines = self
+            .definition
+            .deadlines
+            .iter()
+            .filter(|deadline| {
+                self.state
+                    .deadline_statuses
+                    .get(deadline.id.as_str())
+                    .copied()
+                    .flatten()
+                    == Some(DeadlineStatus::Open)
+            })
+            .filter_map(|deadline| {
+                self.state
+                    .deadline_due_minutes
+                    .get(deadline.id.as_str())
+                    .copied()
+                    .map(|due| deadline_miss_boundary(deadline, due))
             });
-        let deadlines = self.definition.deadlines.iter().filter_map(|deadline| {
-            (self
-                .state
-                .deadline_statuses
-                .get(deadline.id.as_str())
-                .copied()
-                .flatten()
-                == Some(DeadlineStatus::Open))
-            .then_some(scenario_time_minutes(deadline.due_at))
+        let metric_thresholds = self.definition.events.iter().filter_map(|event| {
+            if !include_foreground_metric_thresholds
+                || (self.state.fired_events.contains(event.id.as_str()) && !event.repeatable)
+            {
+                return None;
+            }
+            let EventTrigger::MetricThresholdReached { metric, threshold } = &event.trigger else {
+                return None;
+            };
+            let rate = self
+                .definition
+                .foreground_metric_rates
+                .get(metric)
+                .copied()?;
+            let current_value = self.state.numeric_metrics.get(metric.as_str()).copied()?;
+            if rate <= 0 || current_value >= *threshold {
+                return None;
+            }
+            let distance = threshold.checked_sub(current_value)?;
+            let steps = distance.checked_sub(1)?.checked_div(rate)?.checked_add(1)?;
+            let steps = u64::try_from(steps).ok()?;
+            current.checked_add(steps)
         });
 
         at_time
             .chain(async_tasks)
             .chain(deadlines)
+            .chain(metric_thresholds)
             .filter(|boundary| *boundary > current && *boundary < target)
             .min()
+    }
+
+    fn increment_foreground_metrics(
+        &mut self,
+        elapsed_minutes: u64,
+    ) -> Result<(), ScenarioRuntimeError> {
+        let elapsed =
+            i64::try_from(elapsed_minutes).map_err(|_| ScenarioRuntimeError::ClockOverflow)?;
+        let increments = self
+            .definition
+            .foreground_metric_rates
+            .iter()
+            .map(|(metric, rate)| {
+                rate.checked_mul(elapsed)
+                    .map(|amount| (metric.as_str().to_owned(), amount))
+                    .ok_or_else(|| {
+                        ScenarioRuntimeError::IntegerOverflow(metric.as_str().to_owned())
+                    })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        for (metric, amount) in increments {
+            self.add_metric(&metric, amount)?;
+        }
+        Ok(())
+    }
+
+    fn queue_crossed_metric_events(
+        &self,
+        previous_metrics: &BTreeMap<String, i64>,
+        events: &mut VecDeque<String>,
+    ) {
+        for event in &self.definition.events {
+            if self.state.fired_events.contains(event.id.as_str()) && !event.repeatable {
+                continue;
+            }
+            let EventTrigger::MetricThresholdReached { metric, threshold } = &event.trigger else {
+                continue;
+            };
+            let previous = previous_metrics.get(metric.as_str()).copied();
+            let current = self.state.numeric_metrics.get(metric.as_str()).copied();
+            if previous
+                .zip(current)
+                .is_some_and(|(previous, current)| previous < *threshold && current >= *threshold)
+            {
+                events.push_back(event.id.as_str().to_owned());
+            }
+        }
     }
 
     fn available_actions(&self) -> Vec<MobileActionSnapshot> {
@@ -599,17 +930,45 @@ impl ScenarioSession {
             .actions
             .iter()
             .filter(|action| self.action_is_available(action))
-            .map(|action| MobileActionSnapshot {
-                id: action.id.as_str().to_owned(),
-                title: action.title.clone(),
-                description: action.description.clone(),
-                time_cost_minutes: action.time_cost_minutes,
-                cost_eur: action.cost_eur,
+            .map(|action| {
+                let completion_at_minutes = (!action.advance_to_deadlines.is_empty()
+                    || action.completion_timing.is_some())
+                .then(|| {
+                    self.action_completion_target(action)
+                        .expect("available action must have a completion target")
+                        .0
+                });
+                MobileActionSnapshot {
+                    id: action.id.as_str().to_owned(),
+                    title: action.title.clone(),
+                    description: action.description.clone(),
+                    presentation_tags: action.presentation_tags.clone(),
+                    time_cost_minutes: action.time_cost_minutes,
+                    cost_eur: action.cost_eur,
+                    billable_minutes: action.billable_minutes,
+                    completion_at_minutes,
+                }
             })
             .collect()
     }
 
     fn action_is_available(&self, action: &ActionDefinition) -> bool {
+        if !self.action_is_basically_available(action) {
+            return false;
+        }
+        let Ok((completion_target, selected_advance)) = self.action_completion_target(action)
+        else {
+            return false;
+        };
+        self.ensure_action_finishes_by_deadline(
+            action,
+            completion_target,
+            selected_advance.as_deref(),
+        )
+        .is_ok()
+    }
+
+    fn action_is_basically_available(&self, action: &ActionDefinition) -> bool {
         let Some(stage) = self
             .definition
             .stages
@@ -639,6 +998,189 @@ impl ScenarioSession {
         };
 
         repeatable && self.evaluate_condition(&action.available_when)
+    }
+
+    fn action_completion_target(
+        &self,
+        action: &ActionDefinition,
+    ) -> Result<(u64, Option<String>), ScenarioRuntimeError> {
+        let mut target = self
+            .state
+            .clock_minutes
+            .checked_add(u64::from(action.time_cost_minutes))
+            .ok_or(ScenarioRuntimeError::ClockOverflow)?;
+        if let Some(timing) = &action.completion_timing {
+            target = target.max(self.resolve_timing_at(timing, self.state.clock_minutes)?);
+        }
+        let selected_advance = if action.advance_to_deadlines.is_empty() {
+            None
+        } else {
+            let (deadline, due) = self
+                .select_open_deadline(&action.advance_to_deadlines)
+                .ok_or_else(|| {
+                    ScenarioRuntimeError::DeadlineInactive(
+                        action.advance_to_deadlines[0].as_str().to_owned(),
+                    )
+                })?;
+            target = target.max(due);
+            Some(deadline)
+        };
+        Ok((target, selected_advance))
+    }
+
+    fn ensure_action_finishes_by_deadline(
+        &self,
+        action: &ActionDefinition,
+        completion: u64,
+        selected_advance_deadline: Option<&str>,
+    ) -> Result<(), ScenarioRuntimeError> {
+        if let Some(deadline_id) = selected_advance_deadline {
+            let deadline = self
+                .definition
+                .deadlines
+                .iter()
+                .find(|deadline| deadline.id.as_str() == deadline_id)
+                .expect("selected advance deadline must exist");
+            if deadline
+                .completion_actions
+                .iter()
+                .any(|candidate| candidate == &action.id)
+            {
+                let due = *self
+                    .state
+                    .deadline_due_minutes
+                    .get(deadline_id)
+                    .expect("open deadline must have a stored due minute");
+                self.ensure_completion_is_timely(action, deadline, completion, due)?;
+            }
+        }
+        if !action.completion_deadlines.is_empty() {
+            let (deadline_id, due) = self
+                .select_open_deadline(&action.completion_deadlines)
+                .ok_or_else(|| {
+                    ScenarioRuntimeError::DeadlineInactive(
+                        action.completion_deadlines[0].as_str().to_owned(),
+                    )
+                })?;
+            let adjusted_due = add_signed_minutes(due, action.completion_deadline_offset_minutes)
+                .ok_or(ScenarioRuntimeError::ClockOverflow)?;
+            let definition = self
+                .definition
+                .deadlines
+                .iter()
+                .find(|deadline| deadline.id.as_str() == deadline_id)
+                .expect("validated completion deadline must exist");
+            self.ensure_completion_is_timely(action, definition, completion, adjusted_due)?;
+        }
+        Ok(())
+    }
+
+    fn ensure_completion_is_timely(
+        &self,
+        action: &ActionDefinition,
+        deadline: &juris_scenario_schema::DeadlineDefinition,
+        completion: u64,
+        due: u64,
+    ) -> Result<(), ScenarioRuntimeError> {
+        let late = if deadline.completion_at_due_allowed {
+            completion > due
+        } else {
+            completion >= due
+        };
+        if late {
+            return Err(ScenarioRuntimeError::ActionCompletionDeadlineExceeded {
+                action: action.id.as_str().to_owned(),
+                deadline: deadline.id.as_str().to_owned(),
+                completion,
+                due,
+            });
+        }
+        Ok(())
+    }
+
+    fn select_open_deadline(
+        &self,
+        ids: &[juris_scenario_schema::DeadlineId],
+    ) -> Option<(String, u64)> {
+        ids.iter()
+            .filter_map(|id| {
+                (self
+                    .state
+                    .deadline_statuses
+                    .get(id.as_str())
+                    .copied()
+                    .flatten()
+                    == Some(DeadlineStatus::Open))
+                .then(|| {
+                    self.state
+                        .deadline_due_minutes
+                        .get(id.as_str())
+                        .copied()
+                        .map(|due| (id.as_str().to_owned(), due))
+                })
+                .flatten()
+            })
+            .min_by(|(left_id, left_due), (right_id, right_due)| {
+                left_due.cmp(right_due).then_with(|| left_id.cmp(right_id))
+            })
+    }
+
+    fn precomplete_action_deadlines(&mut self, action: &ActionDefinition) {
+        let deadline_ids = self
+            .definition
+            .deadlines
+            .iter()
+            .filter(|deadline| {
+                self.state
+                    .deadline_statuses
+                    .get(deadline.id.as_str())
+                    .copied()
+                    .flatten()
+                    == Some(DeadlineStatus::Open)
+                    && deadline
+                        .completion_actions
+                        .iter()
+                        .any(|candidate| candidate == &action.id)
+                    && action.advance_to_deadlines.is_empty()
+            })
+            .map(|deadline| deadline.id.as_str().to_owned())
+            .collect::<Vec<_>>();
+        for deadline_id in deadline_ids {
+            self.state
+                .deadline_statuses
+                .insert(deadline_id, Some(DeadlineStatus::Completed));
+        }
+    }
+
+    fn resolve_timing_at(
+        &self,
+        timing: &RelativeTimeDefinition,
+        default_anchor: u64,
+    ) -> Result<u64, ScenarioRuntimeError> {
+        let anchor = match &timing.relative_to_deadline {
+            Some(deadline) => self
+                .state
+                .deadline_due_minutes
+                .get(deadline.as_str())
+                .copied()
+                .ok_or_else(|| {
+                    ScenarioRuntimeError::DeadlineInactive(deadline.as_str().to_owned())
+                })?,
+            None => default_anchor,
+        };
+        resolve_forward_time(
+            self.state.clock_minutes,
+            timing,
+            anchor,
+            self.calendar_baseline(),
+        )
+    }
+
+    fn calendar_baseline(&self) -> u64 {
+        self.definition
+            .initial_clock
+            .map(scenario_time_minutes)
+            .unwrap_or(0)
     }
 
     fn is_closed(&self) -> bool {
@@ -684,6 +1226,14 @@ impl ScenarioSession {
                 self.state.resolved_inbox.contains(item.as_str())
             }
             Condition::JudicialResultIs { result } => self.state.judicial_result == Some(*result),
+            Condition::IntegerCompare {
+                left,
+                operator,
+                right,
+            } => self
+                .integer_operand_value(left)
+                .zip(self.integer_operand_value(right))
+                .is_some_and(|(left, right)| compare_integers(left, *operator, right)),
             Condition::All { conditions } => {
                 conditions.iter().all(|item| self.evaluate_condition(item))
             }
@@ -694,7 +1244,33 @@ impl ScenarioSession {
         }
     }
 
+    fn integer_operand_value(&self, operand: &IntegerOperand) -> Option<i64> {
+        match operand {
+            IntegerOperand::Constant { value } => Some(*value),
+            IntegerOperand::Metric { metric, offset } => self
+                .state
+                .numeric_metrics
+                .get(metric.as_str())
+                .copied()?
+                .checked_add(*offset),
+            IntegerOperand::Resource { resource, offset } => self
+                .state
+                .resources
+                .get(resource.as_str())
+                .copied()?
+                .checked_add(*offset),
+        }
+    }
+
     fn apply_effects(&mut self, effects: &[Effect]) -> Result<(), ScenarioRuntimeError> {
+        self.apply_effects_with_context(effects, &mut EventProcessingContext::default())
+    }
+
+    fn apply_effects_with_context(
+        &mut self,
+        effects: &[Effect],
+        context: &mut EventProcessingContext,
+    ) -> Result<(), ScenarioRuntimeError> {
         let mut events = VecDeque::new();
         for effect in effects {
             match effect {
@@ -703,6 +1279,47 @@ impl ScenarioSession {
                 }
                 Effect::SetFlag { flag, value } => {
                     self.state.flags.insert(flag.as_str().to_owned(), *value);
+                }
+                Effect::SetMetric { metric, value } => {
+                    self.set_metric(metric.as_str(), *value)?;
+                }
+                Effect::AddMetric { metric, amount } => {
+                    self.add_metric(metric.as_str(), *amount)?;
+                }
+                Effect::SubtractMetric { metric, amount } => {
+                    let delta = amount.checked_neg().ok_or_else(|| {
+                        ScenarioRuntimeError::IntegerOverflow(metric.as_str().to_owned())
+                    })?;
+                    self.add_metric(metric.as_str(), delta)?;
+                }
+                Effect::ClampMetric {
+                    metric,
+                    minimum,
+                    maximum,
+                } => {
+                    let value = self
+                        .state
+                        .numeric_metrics
+                        .get(metric.as_str())
+                        .copied()
+                        .ok_or_else(|| {
+                            ScenarioRuntimeError::UnknownIntegerState(metric.as_str().to_owned())
+                        })?;
+                    let value = minimum.map_or(value, |minimum| value.max(minimum));
+                    let value = maximum.map_or(value, |maximum| value.min(maximum));
+                    self.set_metric(metric.as_str(), value)?;
+                }
+                Effect::SetResource { resource, value } => {
+                    self.set_resource(resource.as_str(), *value)?;
+                }
+                Effect::AddResource { resource, amount } => {
+                    self.add_resource(resource.as_str(), *amount)?;
+                }
+                Effect::SubtractResource { resource, amount } => {
+                    let delta = amount.checked_neg().ok_or_else(|| {
+                        ScenarioRuntimeError::IntegerOverflow(resource.as_str().to_owned())
+                    })?;
+                    self.add_resource(resource.as_str(), delta)?;
                 }
                 Effect::SetFactStatus { fact, status } => {
                     self.state
@@ -723,12 +1340,24 @@ impl ScenarioSession {
                         .async_tasks
                         .iter()
                         .find(|item| item.id == *task)
+                        .cloned()
                     {
-                        let due = self
-                            .state
-                            .clock_minutes
-                            .checked_add(u64::from(definition.duration_minutes))
-                            .ok_or(ScenarioRuntimeError::ClockOverflow)?;
+                        let due = if let Some(timing) = &definition.completion_timing {
+                            let anchor =
+                                self.effect_time_anchor.unwrap_or(self.state.clock_minutes);
+                            anchor
+                                .checked_add(u64::from(definition.duration_minutes))
+                                .ok_or(ScenarioRuntimeError::ClockOverflow)?
+                                .max(self.resolve_timing_at(timing, anchor)?)
+                        } else {
+                            // Preserve schema-v1 behavior exactly: without an
+                            // explicit timing extension, asynchronous duration
+                            // starts at the pre-clock effect minute.
+                            self.state
+                                .clock_minutes
+                                .checked_add(u64::from(definition.duration_minutes))
+                                .ok_or(ScenarioRuntimeError::ClockOverflow)?
+                        };
                         self.state
                             .task_due_minutes
                             .insert(task.as_str().to_owned(), due);
@@ -765,6 +1394,7 @@ impl ScenarioSession {
                 }
                 Effect::CreateInboxItem { item } => {
                     self.state.visible_inbox.insert(item.as_str().to_owned());
+                    self.state.resolved_inbox.remove(item.as_str());
                 }
                 Effect::ResolveInboxItem { item } => {
                     self.state.resolved_inbox.insert(item.as_str().to_owned());
@@ -783,6 +1413,9 @@ impl ScenarioSession {
                             self.state.judicial_decision_instance,
                         ));
                 }
+                Effect::ResolveDeterministicDecision { decision } => {
+                    self.resolve_deterministic_decision(decision.as_str(), context)?;
+                }
                 Effect::TriggerEvent { event } => {
                     events.push_back(event.as_str().to_owned());
                 }
@@ -791,7 +1424,163 @@ impl ScenarioSession {
                 }
             }
         }
-        self.process_event_queue(events)
+        self.process_event_queue_with_context(events, context)
+    }
+
+    fn set_metric(&mut self, id: &str, value: i64) -> Result<(), ScenarioRuntimeError> {
+        let metric = self
+            .state
+            .numeric_metrics
+            .get_mut(id)
+            .ok_or_else(|| ScenarioRuntimeError::UnknownIntegerState(id.to_owned()))?;
+        *metric = value;
+        Ok(())
+    }
+
+    fn add_metric(&mut self, id: &str, amount: i64) -> Result<(), ScenarioRuntimeError> {
+        let metric = self
+            .state
+            .numeric_metrics
+            .get_mut(id)
+            .ok_or_else(|| ScenarioRuntimeError::UnknownIntegerState(id.to_owned()))?;
+        *metric = metric
+            .checked_add(amount)
+            .ok_or_else(|| ScenarioRuntimeError::IntegerOverflow(id.to_owned()))?;
+        Ok(())
+    }
+
+    fn set_resource(&mut self, id: &str, value: i64) -> Result<(), ScenarioRuntimeError> {
+        let resource = self
+            .state
+            .resources
+            .get_mut(id)
+            .ok_or_else(|| ScenarioRuntimeError::UnknownIntegerState(id.to_owned()))?;
+        *resource = value;
+        Ok(())
+    }
+
+    fn add_resource(&mut self, id: &str, amount: i64) -> Result<(), ScenarioRuntimeError> {
+        let resource = self
+            .state
+            .resources
+            .get_mut(id)
+            .ok_or_else(|| ScenarioRuntimeError::UnknownIntegerState(id.to_owned()))?;
+        *resource = resource
+            .checked_add(amount)
+            .ok_or_else(|| ScenarioRuntimeError::IntegerOverflow(id.to_owned()))?;
+        Ok(())
+    }
+
+    fn resolve_deterministic_decision(
+        &mut self,
+        id: &str,
+        context: &mut EventProcessingContext,
+    ) -> Result<(), ScenarioRuntimeError> {
+        let decision = self
+            .definition
+            .deterministic_decisions
+            .iter()
+            .find(|decision| decision.id.as_str() == id)
+            .cloned()
+            .ok_or_else(|| ScenarioRuntimeError::UnknownDecision(id.to_owned()))?;
+        if decision.roll_range == 0 {
+            return Err(ScenarioRuntimeError::NoEligibleDecisionBranch(
+                id.to_owned(),
+            ));
+        }
+
+        let occurrence = self
+            .state
+            .decision_resolutions
+            .get(id)
+            .map_or(0_u64, |items| items.len() as u64);
+        let fingerprint = self.scenario_fingerprint().map_err(|error| {
+            ScenarioRuntimeError::DecisionResolution(id.to_owned(), error.to_string())
+        })?;
+        let mut hash = Sha256::new();
+        hash.update(self.seed.to_be_bytes());
+        hash.update((fingerprint.len() as u64).to_be_bytes());
+        hash.update(fingerprint.as_bytes());
+        hash.update((id.len() as u64).to_be_bytes());
+        hash.update(id.as_bytes());
+        hash.update(occurrence.to_be_bytes());
+        let digest = hash.finalize();
+        let raw = u64::from_be_bytes(
+            digest[..8]
+                .try_into()
+                .expect("SHA-256 prefix always contains eight bytes"),
+        ) % u64::from(decision.roll_range);
+        let roll = i64::try_from(raw)
+            .ok()
+            .and_then(|raw| raw.checked_add(decision.roll_offset))
+            .ok_or_else(|| ScenarioRuntimeError::IntegerOverflow(id.to_owned()))?;
+        let mut score_sum = match &decision.score_metric {
+            Some(metric) => self
+                .state
+                .numeric_metrics
+                .get(metric.as_str())
+                .copied()
+                .ok_or_else(|| {
+                    ScenarioRuntimeError::UnknownIntegerState(metric.as_str().to_owned())
+                })?,
+            None => 0,
+        };
+        for term in &decision.score_terms {
+            if !self.evaluate_condition(&term.condition) {
+                continue;
+            }
+            let value = self.integer_operand_value(&term.operand).ok_or_else(|| {
+                ScenarioRuntimeError::DecisionResolution(
+                    id.to_owned(),
+                    "score term references missing or overflowing integer state".to_owned(),
+                )
+            })?;
+            let value = term.minimum.map_or(value, |minimum| value.max(minimum));
+            let value = term.maximum.map_or(value, |maximum| value.min(maximum));
+            let contribution = value
+                .checked_mul(term.multiplier)
+                .ok_or_else(|| ScenarioRuntimeError::IntegerOverflow(id.to_owned()))?;
+            score_sum = score_sum
+                .checked_add(contribution)
+                .ok_or_else(|| ScenarioRuntimeError::IntegerOverflow(id.to_owned()))?;
+        }
+        if decision.score_divisor <= 0 {
+            return Err(ScenarioRuntimeError::DecisionResolution(
+                id.to_owned(),
+                "score divisor must be positive".to_owned(),
+            ));
+        }
+        let score = score_sum
+            .checked_add(decision.score_offset)
+            .and_then(|score| score.checked_div(decision.score_divisor))
+            .ok_or_else(|| ScenarioRuntimeError::IntegerOverflow(id.to_owned()))?;
+        let total = roll
+            .checked_mul(decision.roll_multiplier)
+            .and_then(|roll| roll.checked_add(score))
+            .ok_or_else(|| ScenarioRuntimeError::IntegerOverflow(id.to_owned()))?;
+        let branch = decision
+            .branches
+            .iter()
+            .find(|branch| {
+                self.evaluate_condition(&branch.condition)
+                    && branch.minimum_roll.map_or(true, |minimum| roll >= minimum)
+                    && branch.maximum_roll.map_or(true, |maximum| roll <= maximum)
+                    && branch
+                        .minimum_total
+                        .map_or(true, |minimum| total >= minimum)
+                    && branch
+                        .maximum_total
+                        .map_or(true, |maximum| total <= maximum)
+            })
+            .cloned()
+            .ok_or_else(|| ScenarioRuntimeError::NoEligibleDecisionBranch(id.to_owned()))?;
+
+        self.state
+            .decision_resolutions
+            .entry(id.to_owned())
+            .or_default()
+            .push(branch.id.as_str().to_owned());
+        self.apply_effects_with_context(&branch.effects, context)
     }
 
     fn resolve_outcome(&mut self, outcome_id: &str) -> Result<(), ScenarioRuntimeError> {
@@ -830,20 +1619,17 @@ impl ScenarioSession {
 
     fn process_event_queue(
         &mut self,
-        mut events: VecDeque<String>,
+        events: VecDeque<String>,
     ) -> Result<(), ScenarioRuntimeError> {
-        let mut processed = 0_usize;
-        while let Some(event_id) = events.pop_front() {
-            if self.state.fired_events.contains(&event_id) {
-                continue;
-            }
-            processed += 1;
-            if processed > MAX_EVENTS_PER_COMMAND {
-                return Err(ScenarioRuntimeError::EventLimitExceeded(
-                    MAX_EVENTS_PER_COMMAND,
-                ));
-            }
+        self.process_event_queue_with_context(events, &mut EventProcessingContext::default())
+    }
 
+    fn process_event_queue_with_context(
+        &mut self,
+        mut events: VecDeque<String>,
+        context: &mut EventProcessingContext,
+    ) -> Result<(), ScenarioRuntimeError> {
+        while let Some(event_id) = events.pop_front() {
             let event = self
                 .definition
                 .events
@@ -851,13 +1637,28 @@ impl ScenarioSession {
                 .find(|item| item.id.as_str() == event_id)
                 .cloned()
                 .ok_or_else(|| ScenarioRuntimeError::UnknownEvent(event_id.clone()))?;
+            if event.repeatable {
+                if !context.repeatable_ids.insert(event_id.clone()) {
+                    continue;
+                }
+            } else if self.state.fired_events.contains(&event_id) {
+                continue;
+            }
+            context.processed += 1;
+            if context.processed > MAX_EVENTS_PER_COMMAND {
+                return Err(ScenarioRuntimeError::EventLimitExceeded(
+                    MAX_EVENTS_PER_COMMAND,
+                ));
+            }
             if !self.evaluate_condition(&event.condition) {
                 continue;
             }
 
-            self.state.fired_events.insert(event_id.clone());
-            let mut event_owned = self.activate_event_owned_state(&event);
-            self.apply_effects(&event.effects)?;
+            if !event.repeatable {
+                self.state.fired_events.insert(event_id.clone());
+            }
+            let mut event_owned = self.activate_event_owned_state(&event)?;
+            self.apply_effects_with_context(&event.effects, context)?;
             events.append(&mut event_owned);
 
             for dependent in &self.definition.events {
@@ -874,14 +1675,20 @@ impl ScenarioSession {
         Ok(())
     }
 
-    fn activate_event_owned_state(&mut self, event: &EventDefinition) -> VecDeque<String> {
+    fn activate_event_owned_state(
+        &mut self,
+        event: &EventDefinition,
+    ) -> Result<VecDeque<String>, ScenarioRuntimeError> {
         let mut events = VecDeque::new();
-        for deadline in &self.definition.deadlines {
-            if deadline.activation_event.as_ref() == Some(&event.id) {
-                self.state
-                    .deadline_statuses
-                    .insert(deadline.id.as_str().to_owned(), Some(DeadlineStatus::Open));
-            }
+        let activated_deadlines = self
+            .definition
+            .deadlines
+            .iter()
+            .filter(|deadline| deadline.activation_event.as_ref() == Some(&event.id))
+            .map(|deadline| deadline.id.as_str().to_owned())
+            .collect::<Vec<_>>();
+        for deadline_id in activated_deadlines {
+            self.activate_deadline(&deadline_id)?;
         }
         for item in &self.definition.inbox_items {
             if item.created_by_event.as_ref() == Some(&event.id) {
@@ -912,7 +1719,32 @@ impl ScenarioSession {
                 }
             }
         }
-        events
+        Ok(events)
+    }
+
+    fn activate_deadline(&mut self, deadline_id: &str) -> Result<(), ScenarioRuntimeError> {
+        let deadline = self
+            .definition
+            .deadlines
+            .iter()
+            .find(|deadline| deadline.id.as_str() == deadline_id)
+            .cloned()
+            .expect("validated activated deadline must exist");
+        let due = match &deadline.relative_due {
+            Some(timing) => self.resolve_timing_at(
+                timing,
+                self.effect_time_anchor.unwrap_or(self.state.clock_minutes),
+            )?,
+            None => authored_time_to_elapsed(deadline.due_at, self.definition.initial_clock)
+                .expect("validated static deadline cannot precede initial_clock"),
+        };
+        self.state
+            .deadline_due_minutes
+            .insert(deadline_id.to_owned(), due);
+        self.state
+            .deadline_statuses
+            .insert(deadline_id.to_owned(), Some(DeadlineStatus::Open));
+        Ok(())
     }
 
     fn queue_due_events(&mut self, events: &mut VecDeque<String>) {
@@ -923,7 +1755,8 @@ impl ScenarioSession {
             if matches!(
                 event.trigger,
                 EventTrigger::AtTime { at }
-                    if scenario_time_minutes(at) <= self.state.clock_minutes
+                    if authored_time_to_elapsed(at, self.definition.initial_clock)
+                        .is_some_and(|at| at <= self.state.clock_minutes)
             ) {
                 events.push_back(event.id.as_str().to_owned());
             }
@@ -965,7 +1798,13 @@ impl ScenarioSession {
             .deadlines
             .iter()
             .filter(|deadline| {
-                scenario_time_minutes(deadline.due_at) <= self.state.clock_minutes
+                self.state
+                    .deadline_due_minutes
+                    .get(deadline.id.as_str())
+                    .copied()
+                    .is_some_and(|due| {
+                        deadline_miss_boundary(deadline, due) <= self.state.clock_minutes
+                    })
                     && self
                         .state
                         .deadline_statuses
@@ -1094,8 +1933,118 @@ impl ScenarioSessionRegistry {
     }
 }
 
-fn scenario_time_minutes(time: juris_scenario_schema::ScenarioTime) -> u64 {
+fn scenario_time_minutes(time: ScenarioTime) -> u64 {
     u64::from(time.day) * 1_440 + u64::from(time.minute_of_day)
+}
+
+fn authored_time_to_elapsed(
+    time: ScenarioTime,
+    initial_clock: Option<ScenarioTime>,
+) -> Option<u64> {
+    scenario_time_minutes(time).checked_sub(initial_clock.map_or(0, scenario_time_minutes))
+}
+
+fn resolve_forward_time(
+    current: u64,
+    timing: &RelativeTimeDefinition,
+    anchor: u64,
+    calendar_baseline: u64,
+) -> Result<u64, ScenarioRuntimeError> {
+    let offset = anchor
+        .checked_add(u64::from(timing.offset_minutes))
+        .ok_or(ScenarioRuntimeError::ClockOverflow)?;
+    let turnaround = current
+        .checked_add(u64::from(timing.minimum_turnaround_minutes))
+        .ok_or(ScenarioRuntimeError::ClockOverflow)?;
+    let mut target = current.max(offset).max(turnaround);
+
+    if let Some(calendar) = timing.calendar_target {
+        let anchor_civil = calendar_baseline
+            .checked_add(anchor)
+            .ok_or(ScenarioRuntimeError::ClockOverflow)?;
+        let target_day = anchor_civil
+            .checked_div(1_440)
+            .and_then(|day| day.checked_add(u64::from(calendar.day_offset)))
+            .ok_or(ScenarioRuntimeError::ClockOverflow)?;
+        let target_civil = target_day
+            .checked_mul(1_440)
+            .and_then(|day| day.checked_add(u64::from(calendar.minute_of_day)))
+            .ok_or(ScenarioRuntimeError::ClockOverflow)?;
+        target = target.max(target_civil.saturating_sub(calendar_baseline));
+    }
+    if let Some(not_before) = timing.not_before {
+        target = target.max(scenario_time_minutes(not_before).saturating_sub(calendar_baseline));
+    }
+    Ok(target)
+}
+
+fn resolve_initial_deadline_due(
+    definition: &ScenarioDefinition,
+    deadline_id: &str,
+    calendar_baseline: u64,
+    due_minutes: &mut BTreeMap<String, u64>,
+    visiting: &mut BTreeSet<String>,
+) -> Result<u64, ScenarioRuntimeError> {
+    if let Some(due) = due_minutes.get(deadline_id).copied() {
+        return Ok(due);
+    }
+    if !visiting.insert(deadline_id.to_owned()) {
+        // Validation owns the descriptive cycle diagnostic. This guard keeps
+        // construction total if an unvalidated definition reaches the helper.
+        return Err(ScenarioRuntimeError::DeadlineInactive(
+            deadline_id.to_owned(),
+        ));
+    }
+    let deadline = definition
+        .deadlines
+        .iter()
+        .find(|deadline| deadline.id.as_str() == deadline_id)
+        .expect("validated relative deadline must exist");
+    let timing = deadline
+        .relative_due
+        .as_ref()
+        .expect("static due minutes are populated before relative resolution");
+    let anchor = match &timing.relative_to_deadline {
+        Some(anchor) => resolve_initial_deadline_due(
+            definition,
+            anchor.as_str(),
+            calendar_baseline,
+            due_minutes,
+            visiting,
+        )?,
+        None => 0,
+    };
+    let due = resolve_forward_time(0, timing, anchor, calendar_baseline)?;
+    visiting.remove(deadline_id);
+    due_minutes.insert(deadline_id.to_owned(), due);
+    Ok(due)
+}
+
+fn add_signed_minutes(base: u64, offset: i64) -> Option<u64> {
+    if offset >= 0 {
+        base.checked_add(offset.unsigned_abs())
+    } else {
+        base.checked_sub(offset.unsigned_abs())
+    }
+}
+
+fn deadline_miss_boundary(deadline: &juris_scenario_schema::DeadlineDefinition, due: u64) -> u64 {
+    due.saturating_add(u64::from(deadline.completion_at_due_allowed))
+}
+
+fn compare_integers(left: i64, operator: IntegerComparisonOperator, right: i64) -> bool {
+    match operator {
+        IntegerComparisonOperator::Equal => left == right,
+        IntegerComparisonOperator::NotEqual => left != right,
+        IntegerComparisonOperator::LessThan => left < right,
+        IntegerComparisonOperator::LessThanOrEqual => left <= right,
+        IntegerComparisonOperator::GreaterThan => left > right,
+        IntegerComparisonOperator::GreaterThanOrEqual => left >= right,
+    }
+}
+
+const fn is_zero_u32(value: &u32) -> bool {
+    *value == 0
 }
 
 fn fact_status_name(status: FactStatus) -> &'static str {

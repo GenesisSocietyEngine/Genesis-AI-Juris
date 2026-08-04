@@ -76,6 +76,63 @@ fn invalid_minute_of_day_is_rejected_for_events() {
 }
 
 #[test]
+fn invalid_initial_and_relative_calendar_times_are_rejected() {
+    let mut value = fixture_value();
+    value["initial_clock"] = json!({"day": 0, "minute_of_day": 1440});
+    value["actions"][0]["completion_timing"] = json!({
+        "calendar_target": {"day_offset": 1, "minute_of_day": 1440}
+    });
+
+    let report = report(value);
+    let invalid_times = report
+        .diagnostics()
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic.code == AuthoringDiagnosticCode::InvalidScenarioTime.as_str()
+        })
+        .count();
+    assert_eq!(invalid_times, 2, "{:#?}", report.diagnostics());
+}
+
+#[test]
+fn relative_deadline_is_not_compared_to_its_placeholder_due_at() {
+    let mut value = fixture_value();
+    push(
+        &mut value["events"],
+        json!({
+            "id": "relative_deadline_activation",
+            "title": "Relative deadline activation",
+            "kind": "generic",
+            "trigger": {"type": "at_time", "at": {"day": 3, "minute_of_day": 600}}
+        }),
+    );
+    push(
+        &mut value["events"],
+        json!({
+            "id": "relative_deadline_missed",
+            "title": "Relative deadline missed",
+            "kind": "generic",
+            "trigger": {"type": "deadline_missed", "deadline": "relative_deadline"}
+        }),
+    );
+    push(
+        &mut value["deadlines"],
+        json!({
+            "id": "relative_deadline",
+            "title": "Relative deadline",
+            "due_at": {"day": 2, "minute_of_day": 600},
+            "activation_event": "relative_deadline_activation",
+            "relative_due": {"offset_minutes": 60},
+            "completion_actions": ["file_claim"],
+            "missed_event": "relative_deadline_missed"
+        }),
+    );
+
+    let report = report(value);
+    assert!(!report.contains_code(AuthoringDiagnosticCode::DeadlineActivatesAfterDue));
+}
+
+#[test]
 fn deadline_cannot_activate_after_it_is_due() {
     let mut value = fixture_value();
     push(
@@ -348,6 +405,79 @@ fn contradictory_outcome_condition_is_rejected() {
     let report = report(value);
 
     assert!(report.contains_code(AuthoringDiagnosticCode::UnsatisfiableOutcomeCondition));
+}
+
+#[test]
+fn constant_integer_contradiction_is_rejected() {
+    let mut value = fixture_value();
+    value["outcomes"][0]["condition"] = json!({
+        "type": "integer_compare",
+        "left": {"source": "constant", "value": 2},
+        "operator": "greater_than",
+        "right": {"source": "constant", "value": 3}
+    });
+
+    let report = report(value);
+
+    assert!(report.contains_code(AuthoringDiagnosticCode::UnsatisfiableOutcomeCondition));
+}
+
+#[test]
+fn deterministic_decision_branch_is_an_outcome_producer() {
+    let mut value = fixture_value();
+    value["actions"][1]["effects"] = json!([{
+        "type": "resolve_deterministic_decision",
+        "decision": "acceptance"
+    }]);
+    value["deterministic_decisions"] = json!([{
+        "id": "acceptance",
+        "roll_range": 1,
+        "branches": [{
+            "id": "accepted",
+            "effects": [
+                {"type": "set_flag", "flag": "judgment_accepted", "value": true},
+                {"type": "set_stage", "stage": "resolved"},
+                {"type": "resolve_outcome", "outcome": "judgment_accepted"}
+            ]
+        }]
+    }]);
+
+    let report = report(value);
+
+    assert!(report.is_valid(), "{:#?}", report.diagnostics());
+    assert!(!report.contains_code(AuthoringDiagnosticCode::OutcomeWithoutProducer));
+    assert!(!report.contains_code(AuthoringDiagnosticCode::PrematureOutcomeResolution));
+}
+
+#[test]
+fn deterministic_decision_branch_cannot_resolve_competing_outcomes() {
+    let mut value = fixture_value();
+    push(
+        &mut value["outcomes"],
+        json!({
+            "id": "second_outcome",
+            "title": "Second outcome",
+            "summary": "Competing outcome.",
+            "terminal_stage": "resolved",
+            "condition": {"type": "always"}
+        }),
+    );
+    value["deterministic_decisions"] = json!([{
+        "id": "invalid_choice",
+        "roll_range": 1,
+        "branches": [{
+            "id": "invalid_branch",
+            "effects": [
+                {"type": "set_stage", "stage": "resolved"},
+                {"type": "resolve_outcome", "outcome": "judgment_accepted"},
+                {"type": "resolve_outcome", "outcome": "second_outcome"}
+            ]
+        }]
+    }]);
+
+    let report = report(value);
+
+    assert!(report.contains_code(AuthoringDiagnosticCode::MultipleOutcomesInTransition));
 }
 
 #[test]

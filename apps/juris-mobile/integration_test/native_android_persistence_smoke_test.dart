@@ -24,6 +24,7 @@ void main() {
   late MobileCaseDefinition logistics;
   late MobileCaseDefinition greenfire;
   late MobileCaseDefinition goldenshell;
+  late MobileCaseDefinition failedErp;
   late MobileCaseDefinition lifecycle;
 
   setUpAll(() async {
@@ -43,6 +44,10 @@ void main() {
     goldenshell = bundle.cases.singleWhere(
       (MobileCaseDefinition item) =>
           item.caseId == 'nl_food_safety_goldenshell_001',
+    );
+    failedErp = bundle.cases.singleWhere(
+      (MobileCaseDefinition item) =>
+          item.caseId == 'be_commercial_failed_erp_001',
     );
     lifecycle = matterLifecycleAndroidTestCase();
   });
@@ -182,6 +187,176 @@ void main() {
     expect(repository.isTerminal, isFalse);
     repository.dispose();
   });
+
+  testWidgets(
+    'Failed ERP RU claimant state survives native save load and corruption',
+    (WidgetTester tester) async {
+      final ApplicationSupportGameSaveStore store =
+          ApplicationSupportGameSaveStore();
+      final RustScenarioRepository repository = _repository(
+        failedErp,
+        saveStore: store,
+        locale: 'ru',
+      );
+
+      expect(failedErp.playerClientId, 'asteron_systems');
+      expect(failedErp.playerRole, 'claimant');
+      expect(
+        failedErp.localized('ru', 'en').playerClientName,
+        'Asteron Systems NV',
+      );
+      expect(repository.snapshot.matterTitle, 'Неудачное внедрение ERP');
+      expect(repository.snapshot.authorizedBudgetEur, 25000);
+      expect(repository.snapshot.spendEur, 0);
+      expect(repository.snapshot.billableMinutes, 0);
+      expect(repository.snapshot.resources, <String, int>{
+        'authorized_budget_eur': 25000,
+        'award_eur': 0,
+        'billable_minutes': 0,
+        'outcome_costs_eur': 0,
+        'spend_eur': 0,
+      });
+
+      final GameActionView conflictCheck = repository.snapshot.actions
+          .singleWhere(
+              (GameActionView action) => action.id == 'run-conflict-check');
+      expect(conflictCheck.title, 'Провести проверку конфликта интересов');
+      expect(conflictCheck.timeLabel, '1ч');
+      expect(conflictCheck.costEur, 350);
+
+      final DossierProjectionView openingDossier = repository.snapshot.dossier!;
+      expect(
+        openingDossier.facts
+            .map((DossierFactView fact) => <Object?>[fact.id, fact.status]),
+        <List<Object?>>[
+          <Object?>['claimed_loss_240000', DossierFactStatus.alleged],
+          <Object?>['contract_in_force', DossierFactStatus.proven],
+          <Object?>['go_live_failure', DossierFactStatus.alleged],
+        ],
+      );
+      expect(
+        openingDossier.evidence
+            .map((DossierEvidenceView evidence) => evidence.id),
+        <String>['erp_implementation_contract'],
+      );
+
+      expect(repository.applyAction('run-conflict-check').isRisky, isFalse);
+      expect(repository.snapshot.spendEur, 350);
+      expect(repository.snapshot.billableMinutes, 60);
+      final GameActionView documentReview = repository.snapshot.actions
+          .singleWhere(
+              (GameActionView action) => action.id == 'request-documents');
+      expect(documentReview.costEur, 2000);
+      expect(repository.applyAction('request-documents').isRisky, isFalse);
+      expect(repository.snapshot.stage, 'Досудебная стадия');
+      expect(repository.snapshot.spendEur, 2350);
+      expect(repository.snapshot.billableMinutes, 540);
+      expect(repository.snapshot.resources, <String, int>{
+        'authorized_budget_eur': 25000,
+        'award_eur': 0,
+        'billable_minutes': 540,
+        'outcome_costs_eur': 0,
+        'spend_eur': 2350,
+      });
+
+      final DossierProjectionView revealedDossier =
+          repository.snapshot.dossier!;
+      expect(
+        revealedDossier.facts
+            .map((DossierFactView fact) => <Object?>[fact.id, fact.status]),
+        <List<Object?>>[
+          <Object?>['acceptance_status', DossierFactStatus.disputed],
+          <Object?>['claimed_loss_240000', DossierFactStatus.alleged],
+          <Object?>['contract_in_force', DossierFactStatus.proven],
+          <Object?>['go_live_failure', DossierFactStatus.alleged],
+          <Object?>[
+            'scope_change_responsibility',
+            DossierFactStatus.disputed,
+          ],
+          <Object?>['supplier_delay_notice', DossierFactStatus.inferred],
+        ],
+      );
+      expect(
+        revealedDossier.evidence
+            .map((DossierEvidenceView evidence) => evidence.id),
+        <String>[
+          'acceptance_record',
+          'change_request_register',
+          'erp_implementation_contract',
+          'project_email_correspondence',
+        ],
+      );
+      final GameActionView settlement = repository.snapshot.actions
+          .singleWhere((GameActionView action) => action.id == 'future-settle');
+      expect(
+        settlement.title,
+        'Принять текущее предложение об урегулировании',
+      );
+      expect(settlement.costEur, 0);
+
+      final String savedStage = repository.snapshot.stage;
+      final String savedDay = repository.snapshot.dayLabel;
+      final String savedTime = repository.snapshot.timeLabel;
+      final Map<String, int> savedResources =
+          Map<String, int>.of(repository.snapshot.resources);
+      final List<List<Object?>> savedActions =
+          repository.snapshot.actions.map(_actionState).toList(growable: false);
+      final List<Object?> savedDossier = _dossierState(revealedDossier);
+
+      await repository.saveGame();
+      final String encodedSave = await store.read(failedErp.caseId);
+      final Map<String, dynamic> saveEnvelope =
+          jsonDecode(encodedSave) as Map<String, dynamic>;
+      expect(saveEnvelope, hasLength(8));
+      expect(saveEnvelope['schema_id'], 'genesis.ai-juris.command-log');
+      expect(saveEnvelope['schema_version'], 1);
+      expect(saveEnvelope['runtime_compatibility'], 'scenario-runtime-v2');
+      expect(saveEnvelope['scenario_id'], failedErp.caseId);
+      expect(saveEnvelope['commands'], hasLength(2));
+      repository.reset();
+      expect(repository.snapshot.stage, isNot(savedStage));
+      expect(repository.snapshot.spendEur, 0);
+      await repository.loadGame();
+
+      expect(repository.snapshot.stage, savedStage);
+      expect(repository.snapshot.dayLabel, savedDay);
+      expect(repository.snapshot.timeLabel, savedTime);
+      expect(repository.snapshot.resources, savedResources);
+      expect(repository.snapshot.actions.map(_actionState), savedActions);
+      expect(_dossierState(repository.snapshot.dossier!), savedDossier);
+      await repository.saveGame();
+      expect(await store.read(failedErp.caseId), encodedSave);
+
+      final GameSnapshot liveSnapshot = repository.snapshot;
+      await store.write(failedErp.caseId, '{corrupted');
+      await expectLater(
+        repository.loadGame(),
+        throwsA(
+          isA<GamePersistenceException>().having(
+            (GamePersistenceException error) => error.code,
+            'code',
+            'invalid_save_json',
+          ),
+        ),
+      );
+      expect(repository.snapshot, same(liveSnapshot));
+      expect(repository.snapshot.resources, savedResources);
+      expect(repository.snapshot.actions.map(_actionState), savedActions);
+      expect(_dossierState(repository.snapshot.dossier!), savedDossier);
+
+      expect(repository.applyAction('future-settle').isRisky, isFalse);
+      expect(repository.snapshot.isClosed, isTrue);
+      expect(repository.isTerminal, isTrue);
+      expect(repository.snapshot.resources['award_eur'], 64500);
+      expect(repository.snapshot.resources['spend_eur'], 2350);
+      expect(
+        repository.snapshot.outcomeSummary?.headline,
+        'Урегулирование принято за 64 500 евро',
+      );
+      expect(repository.snapshot.actions, isEmpty);
+      repository.dispose();
+    },
+  );
 
   testWidgets(
     'debug-only lost-but-open lifecycle restores authoritative mobile state',

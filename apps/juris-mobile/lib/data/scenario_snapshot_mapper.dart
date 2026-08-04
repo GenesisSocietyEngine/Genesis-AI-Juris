@@ -33,6 +33,9 @@ abstract final class ScenarioSnapshotMapper {
     final List<Map<String, dynamic>> availableEvidence = evidence
         .where((Map<String, dynamic> item) => _bool(item, 'available'))
         .toList(growable: false);
+    final Map<String, int> numericMetrics =
+        _optionalIntegerMap(source, 'numeric_metrics');
+    final Map<String, int> resources = _optionalIntegerMap(source, 'resources');
     final int factScore = facts.isEmpty
         ? 0
         : facts
@@ -66,25 +69,29 @@ abstract final class ScenarioSnapshotMapper {
       engagementStatus:
           isClosed ? EngagementStatus.completed : EngagementStatus.active,
       matterTitle: _scenarioTitle(caseDefinition, locale),
-      caseStrength: ((factScore + evidenceScore) / 2).round(),
-      merits: factScore,
-      evidenceScore: evidenceScore,
-      procedure: _stageProgress(source, caseDefinition),
-      leverage: factScore,
-      spendEur: 0,
-      authorizedBudgetEur: 0,
-      billableMinutes: clockMinutes,
-      fatigue: 0,
-      cumulativeStrain: 0,
-      ethics: 100,
-      clientTrust: 100,
-      inactivityMinutes: 0,
-      clientWarningLevel: 0,
-      aiRequestsUsed: 0,
-      aiRequestLimit: 0,
-      knownFactsRevision: facts.length,
-      aiLegalResearchRevision: 0,
-      aiDamagesModelRevision: 0,
+      caseStrength: numericMetrics['case_strength'] ??
+          ((factScore + evidenceScore) / 2).round(),
+      merits: numericMetrics['merits'] ?? factScore,
+      evidenceScore: numericMetrics['evidence'] ?? evidenceScore,
+      procedure:
+          numericMetrics['procedure'] ?? _stageProgress(source, caseDefinition),
+      leverage: numericMetrics['leverage'] ?? factScore,
+      spendEur: resources['spend_eur'] ?? 0,
+      authorizedBudgetEur: resources['authorized_budget_eur'] ?? 0,
+      billableMinutes: resources['billable_minutes'] ?? clockMinutes,
+      fatigue: numericMetrics['fatigue'] ?? 0,
+      cumulativeStrain: numericMetrics['cumulative_strain'] ?? 0,
+      ethics: numericMetrics['ethics'] ?? 100,
+      clientTrust: numericMetrics['client_trust'] ?? 100,
+      inactivityMinutes: numericMetrics['inactivity_minutes'] ?? 0,
+      clientWarningLevel: numericMetrics['client_warning_level'] ?? 0,
+      aiRequestsUsed: numericMetrics['ai_requests_used'] ?? 0,
+      aiRequestLimit: numericMetrics['ai_request_limit'] ?? 0,
+      knownFactsRevision:
+          numericMetrics['known_facts_revision'] ?? facts.length,
+      aiLegalResearchRevision:
+          numericMetrics['ai_legal_research_revision'] ?? 0,
+      aiDamagesModelRevision: numericMetrics['ai_damages_model_revision'] ?? 0,
       expertReviewStatus: ExpertReviewStatus.notCommissioned,
       expertReportDueDay: 0,
       juniorReviewStatus: JuniorReviewStatus.notDelegated,
@@ -95,8 +102,16 @@ abstract final class ScenarioSnapshotMapper {
           .map(
             (Map<String, dynamic> item) => InboxItemView(
               id: _string(item, 'id'),
-              sender:
-                  locale == 'ru' ? 'Обновление сценария' : 'Scenario update',
+              sender: caseDefinition.scenarioText(
+                locale: locale,
+                section: 'inbox_items',
+                id: _string(item, 'id'),
+                field: 'sender',
+                fallback: _optionalString(item, 'sender') ??
+                    (locale == 'ru'
+                        ? 'Обновление сценария'
+                        : 'Scenario update'),
+              ),
               subject: caseDefinition.scenarioText(
                 locale: locale,
                 section: 'inbox_items',
@@ -114,6 +129,8 @@ abstract final class ScenarioSnapshotMapper {
               receivedAt: '${_dayLabel(clockMinutes, locale)} · '
                   '${_timeLabel(clockMinutes)}',
               status: _inboxStatus(item, locallyReadInboxIds),
+              resolutionActionIds:
+                  _optionalStringList(item, 'resolution_action_ids'),
             ),
           )
           .toList(growable: false),
@@ -181,10 +198,10 @@ abstract final class ScenarioSnapshotMapper {
                         ? 'Выполнить действие авторитетного сценария.'
                         : 'Execute this authoritative scenario action.'),
               ),
-              timeLabel:
-                  _durationLabel(_int(item, 'time_cost_minutes'), locale),
+              timeLabel: _actionTimeLabel(item, locale),
               costEur: _optionalInt(item, 'cost_eur'),
               tone: ActionTone.primary,
+              presentationTags: _optionalStringList(item, 'presentation_tags'),
             ),
           )
           .toList(growable: false),
@@ -198,6 +215,8 @@ abstract final class ScenarioSnapshotMapper {
         caseDefinition: caseDefinition,
         locale: locale,
       ),
+      numericMetrics: Map<String, int>.unmodifiable(numericMetrics),
+      resources: Map<String, int>.unmodifiable(resources),
       outcomeSummary: !isClosed || outcome == null
           ? null
           : CaseOutcomeSummaryView(
@@ -218,8 +237,8 @@ abstract final class ScenarioSnapshotMapper {
               ),
               closedAt: '${_dayLabel(clockMinutes, locale)} · '
                   '${_timeLabel(clockMinutes)}',
-              awardEur: 0,
-              costsEur: 0,
+              awardEur: resources['award_eur'] ?? 0,
+              costsEur: resources['outcome_costs_eur'] ?? 0,
               keySuccesses: <String>[
                 locale == 'ru'
                     ? 'Завершён авторитетный детерминированный путь сценария.'
@@ -651,6 +670,23 @@ abstract final class ScenarioSnapshotMapper {
         '$remainder${locale == 'ru' ? 'м' : 'm'}';
   }
 
+  static String _actionTimeLabel(
+    Map<String, dynamic> action,
+    String locale,
+  ) {
+    final int? completionAt = _nullableInt(
+      action,
+      'completion_at_minutes',
+    );
+    if (completionAt != null) {
+      final String moment = _absoluteMoment(completionAt, locale);
+      return locale == 'ru'
+          ? 'До ${moment.replaceFirst('День ', 'дня ')}'
+          : 'Until $moment';
+    }
+    return _durationLabel(_int(action, 'time_cost_minutes'), locale);
+  }
+
   static String _evidenceKind(String kind, String locale) {
     if (locale != 'ru') {
       return kind;
@@ -713,6 +749,25 @@ abstract final class ScenarioSnapshotMapper {
     return value is Map<String, dynamic> ? value : null;
   }
 
+  static Map<String, int> _optionalIntegerMap(
+    Map<String, dynamic> source,
+    String field,
+  ) {
+    final dynamic value = source[field];
+    if (value == null) {
+      return const <String, int>{};
+    }
+    if (value is! Map<String, dynamic>) {
+      throw FormatException('$field must be an object or null');
+    }
+    return value.map((String id, dynamic raw) {
+      if (raw is! int) {
+        throw FormatException('$field.$id must be an integer');
+      }
+      return MapEntry<String, int>(id, raw);
+    });
+  }
+
   static Map<String, dynamic> _requiredObjectValue(
     dynamic value,
     String path,
@@ -765,6 +820,20 @@ abstract final class ScenarioSnapshotMapper {
     throw FormatException('$field must be an integer');
   }
 
+  static int? _nullableInt(
+    Map<String, dynamic> source,
+    String field,
+  ) {
+    final dynamic value = source[field];
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return value;
+    }
+    throw FormatException('$field must be an integer or null');
+  }
+
   static String? _optionalString(
     Map<String, dynamic> source,
     String field,
@@ -793,6 +862,16 @@ abstract final class ScenarioSnapshotMapper {
       }
       return item;
     }).toList(growable: false);
+  }
+
+  static List<String> _optionalStringList(
+    Map<String, dynamic> source,
+    String field,
+  ) {
+    if (source[field] == null) {
+      return const <String>[];
+    }
+    return _stringList(source, field);
   }
 
   static String? _firstAvailableString(

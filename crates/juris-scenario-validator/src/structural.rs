@@ -1,7 +1,10 @@
 //! Structural validation independent of cross-reference traversal.
 
 use crate::{Diagnostic, DiagnosticCode, ScenarioIndex, ValidationReport};
-use juris_scenario_schema::{ScenarioDefinition, StageKind, SCENARIO_SCHEMA_VERSION_V1};
+use juris_scenario_schema::{
+    Effect, EventTrigger, RelativeTimeDefinition, ScenarioDefinition, ScenarioTime, StageKind,
+    SCENARIO_SCHEMA_VERSION_V1,
+};
 use std::collections::HashSet;
 
 pub(crate) fn validate_structural(
@@ -14,6 +17,7 @@ pub(crate) fn validate_structural(
     validate_initial_stage(scenario, index, report);
     validate_outcomes(scenario, report);
     validate_stage_lifecycle_contract(scenario, report);
+    validate_extended_runtime_contract(scenario, report);
 
     validate_id_collection(
         "actors",
@@ -74,6 +78,304 @@ pub(crate) fn validate_structural(
         scenario.outcomes.iter().map(|item| item.id.as_str()),
         report,
     );
+
+    validate_id_collection(
+        "numeric_metrics",
+        scenario.numeric_metrics.keys().map(|id| id.as_str()),
+        report,
+    );
+
+    validate_id_collection(
+        "initial_resources",
+        scenario.initial_resources.keys().map(|id| id.as_str()),
+        report,
+    );
+
+    validate_id_collection(
+        "deterministic_decisions",
+        scenario
+            .deterministic_decisions
+            .iter()
+            .map(|item| item.id.as_str()),
+        report,
+    );
+
+    for (decision_index, decision) in scenario.deterministic_decisions.iter().enumerate() {
+        validate_id_collection(
+            &format!("deterministic_decisions[{decision_index}].branches"),
+            decision.branches.iter().map(|branch| branch.id.as_str()),
+            report,
+        );
+    }
+}
+
+fn validate_extended_runtime_contract(
+    scenario: &ScenarioDefinition,
+    report: &mut ValidationReport,
+) {
+    validate_timing_contract(scenario, report);
+    for (metric, rate) in &scenario.foreground_metric_rates {
+        if *rate <= 0 {
+            report.push(Diagnostic::error(
+                DiagnosticCode::InvalidForegroundMetricRate,
+                format!("foreground_metric_rates.{}", metric.as_str()),
+                "foreground metric rates must be positive",
+            ));
+        }
+    }
+    for (index, action) in scenario.actions.iter().enumerate() {
+        for (effect_index, effect) in action.effects.iter().enumerate() {
+            validate_integer_effect(
+                effect,
+                &format!("actions[{index}].effects[{effect_index}]"),
+                report,
+            );
+        }
+    }
+    for (index, event) in scenario.events.iter().enumerate() {
+        if event.repeatable
+            && matches!(
+                event.trigger,
+                juris_scenario_schema::EventTrigger::AtTime { .. }
+            )
+        {
+            report.push(Diagnostic::error(
+                DiagnosticCode::InvalidRepeatableEventTrigger,
+                format!("events[{index}].repeatable"),
+                "at_time is a one-shot absolute trigger and cannot be repeatable",
+            ));
+        }
+        for (effect_index, effect) in event.effects.iter().enumerate() {
+            validate_integer_effect(
+                effect,
+                &format!("events[{index}].effects[{effect_index}]"),
+                report,
+            );
+        }
+    }
+    for (decision_index, decision) in scenario.deterministic_decisions.iter().enumerate() {
+        let path = format!("deterministic_decisions[{decision_index}]");
+        if decision.roll_range == 0 || decision.score_divisor <= 0 || decision.branches.is_empty() {
+            report.push(Diagnostic::error(
+                DiagnosticCode::InvalidDecisionDefinition,
+                &path,
+                "a decision requires a positive roll range, positive score divisor, and at least one branch",
+            ));
+        }
+        for (term_index, term) in decision.score_terms.iter().enumerate() {
+            if term
+                .minimum
+                .zip(term.maximum)
+                .is_some_and(|(minimum, maximum)| minimum > maximum)
+            {
+                report.push(Diagnostic::error(
+                    DiagnosticCode::InvalidDecisionDefinition,
+                    format!("{path}.score_terms[{term_index}]"),
+                    "score-term minimum cannot exceed maximum",
+                ));
+            }
+        }
+        for (branch_index, branch) in decision.branches.iter().enumerate() {
+            let branch_path = format!("{path}.branches[{branch_index}]");
+            if branch
+                .minimum_roll
+                .zip(branch.maximum_roll)
+                .is_some_and(|(minimum, maximum)| minimum > maximum)
+                || branch
+                    .minimum_total
+                    .zip(branch.maximum_total)
+                    .is_some_and(|(minimum, maximum)| minimum > maximum)
+            {
+                report.push(Diagnostic::error(
+                    DiagnosticCode::InvalidDecisionDefinition,
+                    &branch_path,
+                    "decision branch minimum cannot exceed maximum",
+                ));
+            }
+            for (effect_index, effect) in branch.effects.iter().enumerate() {
+                if matches!(effect, Effect::ResolveDeterministicDecision { .. }) {
+                    report.push(Diagnostic::error(
+                        DiagnosticCode::InvalidDecisionDefinition,
+                        format!("{branch_path}.effects[{effect_index}]"),
+                        "decision branches cannot recursively resolve another decision",
+                    ));
+                }
+                validate_integer_effect(
+                    effect,
+                    &format!("{branch_path}.effects[{effect_index}]"),
+                    report,
+                );
+            }
+        }
+    }
+}
+
+fn validate_timing_contract(scenario: &ScenarioDefinition, report: &mut ValidationReport) {
+    if let Some(initial_clock) = scenario.initial_clock {
+        validate_scenario_time("initial_clock", initial_clock, report);
+    }
+    let baseline = scenario.initial_clock.map(scenario_time_minutes);
+
+    for (index, action) in scenario.actions.iter().enumerate() {
+        if let Some(timing) = &action.completion_timing {
+            validate_relative_timing(
+                timing,
+                &format!("actions[{index}].completion_timing"),
+                report,
+            );
+        }
+    }
+    for (index, deadline) in scenario.deadlines.iter().enumerate() {
+        validate_scenario_time(
+            &format!("deadlines[{index}].due_at"),
+            deadline.due_at,
+            report,
+        );
+        if baseline.is_some_and(|baseline| scenario_time_minutes(deadline.due_at) < baseline) {
+            report.push(Diagnostic::error(
+                DiagnosticCode::InvalidScenarioTime,
+                format!("deadlines[{index}].due_at"),
+                "an authored civil deadline cannot precede initial_clock",
+            ));
+        }
+        if let Some(timing) = &deadline.relative_due {
+            validate_relative_timing(timing, &format!("deadlines[{index}].relative_due"), report);
+        }
+    }
+    for (index, task) in scenario.async_tasks.iter().enumerate() {
+        if let Some(timing) = &task.completion_timing {
+            validate_relative_timing(
+                timing,
+                &format!("async_tasks[{index}].completion_timing"),
+                report,
+            );
+        }
+    }
+    for (index, event) in scenario.events.iter().enumerate() {
+        if let EventTrigger::AtTime { at } = event.trigger {
+            validate_scenario_time(&format!("events[{index}].trigger.at"), at, report);
+            if baseline.is_some_and(|baseline| scenario_time_minutes(at) < baseline) {
+                report.push(Diagnostic::error(
+                    DiagnosticCode::InvalidScenarioTime,
+                    format!("events[{index}].trigger.at"),
+                    "a civil at_time event cannot precede initial_clock",
+                ));
+            }
+        }
+    }
+
+    // Runtime resolution follows stable IDs, not array order. Cycles have no
+    // authoritative anchor and are rejected before session construction.
+    for (index, deadline) in scenario.deadlines.iter().enumerate() {
+        let mut seen = HashSet::new();
+        let mut current = Some(deadline.id.as_str());
+        while let Some(id) = current {
+            if !seen.insert(id) {
+                report.push(Diagnostic::error(
+                    DiagnosticCode::InvalidScenarioTime,
+                    format!("deadlines[{index}].relative_due.relative_to_deadline"),
+                    format!("relative deadline dependency cycle reaches `{id}`"),
+                ));
+                break;
+            }
+            current = scenario
+                .deadlines
+                .iter()
+                .find(|candidate| candidate.id.as_str() == id)
+                .and_then(|candidate| candidate.relative_due.as_ref())
+                .and_then(|timing| timing.relative_to_deadline.as_ref())
+                .map(|id| id.as_str());
+        }
+
+        if deadline.activation_event.is_none() {
+            let mut current = deadline
+                .relative_due
+                .as_ref()
+                .and_then(|timing| timing.relative_to_deadline.as_ref())
+                .map(|id| id.as_str());
+            while let Some(id) = current {
+                let Some(anchor) = scenario
+                    .deadlines
+                    .iter()
+                    .find(|candidate| candidate.id.as_str() == id)
+                else {
+                    break;
+                };
+                if anchor.relative_due.is_some() && anchor.activation_event.is_some() {
+                    report.push(Diagnostic::error(
+                        DiagnosticCode::InvalidScenarioTime,
+                        format!("deadlines[{index}].relative_due.relative_to_deadline"),
+                        format!(
+                            "initially active relative deadline cannot depend on later-activated relative deadline `{id}`"
+                        ),
+                    ));
+                    break;
+                }
+                current = anchor
+                    .relative_due
+                    .as_ref()
+                    .and_then(|timing| timing.relative_to_deadline.as_ref())
+                    .map(|id| id.as_str());
+            }
+        }
+    }
+}
+
+fn validate_relative_timing(
+    timing: &RelativeTimeDefinition,
+    path: &str,
+    report: &mut ValidationReport,
+) {
+    if let Some(calendar) = timing.calendar_target {
+        if calendar.minute_of_day >= 1_440 {
+            report.push(Diagnostic::error(
+                DiagnosticCode::InvalidScenarioTime,
+                format!("{path}.calendar_target.minute_of_day"),
+                "minute_of_day must be below 1440",
+            ));
+        }
+    }
+    if let Some(not_before) = timing.not_before {
+        validate_scenario_time(&format!("{path}.not_before"), not_before, report);
+    }
+}
+
+fn validate_scenario_time(path: &str, time: ScenarioTime, report: &mut ValidationReport) {
+    if time.minute_of_day >= 1_440 {
+        report.push(Diagnostic::error(
+            DiagnosticCode::InvalidScenarioTime,
+            format!("{path}.minute_of_day"),
+            "minute_of_day must be below 1440",
+        ));
+    }
+}
+
+fn scenario_time_minutes(time: ScenarioTime) -> u64 {
+    u64::from(time.day) * 1_440 + u64::from(time.minute_of_day)
+}
+
+fn validate_integer_effect(effect: &Effect, path: &str, report: &mut ValidationReport) {
+    let invalid_amount = matches!(
+        effect,
+        Effect::AddMetric { amount, .. }
+            | Effect::SubtractMetric { amount, .. }
+            | Effect::AddResource { amount, .. }
+            | Effect::SubtractResource { amount, .. }
+            if *amount < 0
+    );
+    let invalid_clamp = matches!(
+        effect,
+        Effect::ClampMetric { minimum, maximum, .. }
+            if minimum.is_none() && maximum.is_none()
+                || minimum.zip(*maximum).is_some_and(|(minimum, maximum)| minimum > maximum)
+    );
+    if invalid_amount || invalid_clamp {
+        report.push(Diagnostic::error(
+            DiagnosticCode::InvalidIntegerEffect,
+            path,
+            "integer deltas must be non-negative and clamp bounds must be ordered",
+        ));
+    }
 }
 
 fn validate_stage_lifecycle_contract(scenario: &ScenarioDefinition, report: &mut ValidationReport) {

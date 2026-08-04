@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../data/case_catalog_repository.dart';
 import '../data/case_runtime_factory.dart';
-import '../data/demo_game_repository.dart';
 import '../data/game_runtime_repository.dart';
 import '../data/game_save_store.dart';
 import '../data/scenario_bridge_client.dart';
@@ -32,7 +31,7 @@ class JurisApp extends StatefulWidget {
     super.key,
   }) : repository = null;
 
-  final DemoGameRepository? repository;
+  final GameRuntimeRepository? repository;
   final CaseCatalogRepository? catalogRepository;
   final ScenarioBridgeClient? scenarioBridgeClient;
   final GameSaveStore? gameSaveStore;

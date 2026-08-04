@@ -3,10 +3,10 @@
 //! Structural validation proves that references exist. Lifecycle validation
 //! proves that active entities have an explicit path to a terminal state.
 
-use crate::{Diagnostic, DiagnosticCode, ValidationReport};
+use crate::{effect_closure::EffectClosure, Diagnostic, DiagnosticCode, ValidationReport};
 use juris_scenario_schema::{
-    ActionDefinition, ActionId, DeadlineId, Effect, EventId, EventKind, EventTrigger,
-    ScenarioDefinition, StageKind,
+    ActionDefinition, ActionId, Effect, EventId, EventKind, EventTrigger, ScenarioDefinition,
+    StageKind,
 };
 
 /// Enforces lifecycle invariants discovered during mobile playtesting.
@@ -108,7 +108,9 @@ fn validate_async_tasks(scenario: &ScenarioDefinition, report: &mut ValidationRe
             } if referenced_task == &task.id
         );
 
-        let completion_marks_task_ready = completion_event.effects.iter().any(|effect| {
+        let mut completion_closure = EffectClosure::new(scenario);
+        completion_closure.add_effects(&completion_event.effects);
+        let completion_marks_task_ready = completion_closure.contains(|effect| {
             matches!(
                 effect,
                 Effect::MarkAsyncTaskReady {
@@ -145,14 +147,7 @@ fn validate_async_tasks(scenario: &ScenarioDefinition, report: &mut ValidationRe
         let has_review_path = scenario.actions.iter().any(|action| {
             effects_terminalize_async_task(scenario, &action.effects, task.id.as_str(), false)
         }) || scenario.events.iter().any(|event| {
-            event.effects.iter().any(|effect| {
-                matches!(
-                    effect,
-                    Effect::ReviewAsyncTask {
-                        task: referenced_task
-                    } if referenced_task == &task.id
-                )
-            })
+            effects_terminalize_async_task(scenario, &event.effects, task.id.as_str(), false)
         });
 
         let has_expiry_path = task
@@ -160,14 +155,7 @@ fn validate_async_tasks(scenario: &ScenarioDefinition, report: &mut ValidationRe
             .as_ref()
             .and_then(|event_id| event_by_id(scenario, event_id))
             .is_some_and(|event| {
-                event.effects.iter().any(|effect| {
-                    matches!(
-                        effect,
-                        Effect::ExpireAsyncTask {
-                            task: referenced_task
-                        } if referenced_task == &task.id
-                    )
-                })
+                effects_terminalize_async_task(scenario, &event.effects, task.id.as_str(), true)
             });
 
         // A usable-until boundary without an expiry event would leave the task
@@ -188,10 +176,7 @@ fn validate_async_tasks(scenario: &ScenarioDefinition, report: &mut ValidationRe
     }
 }
 
-/// Checks whether direct effects, or one explicitly triggered event, review or
-/// expire an asynchronous task.
-///
-/// Recursive event-graph traversal belongs to the later reachability phase.
+/// Checks whether the deterministic effect closure reviews or expires a task.
 fn effects_terminalize_async_task(
     scenario: &ScenarioDefinition,
     effects: &[Effect],
@@ -211,19 +196,9 @@ fn effects_terminalize_async_task(
             ))
     };
 
-    if effects.iter().any(&matches_terminal_effect) {
-        return true;
-    }
-
-    effects.iter().any(|effect| {
-        let Effect::TriggerEvent { event } = effect else {
-            return false;
-        };
-
-        event_by_id(scenario, event).is_some_and(|triggered_event| {
-            triggered_event.effects.iter().any(&matches_terminal_effect)
-        })
-    })
+    let mut closure = EffectClosure::new(scenario);
+    closure.add_effects(effects);
+    closure.contains(matches_terminal_effect)
 }
 
 /// Every action-required Inbox item must eventually be resolved.
@@ -253,13 +228,7 @@ fn validate_required_inbox_items(scenario: &ScenarioDefinition, report: &mut Val
             .as_ref()
             .and_then(|event_id| event_by_id(scenario, event_id))
             .is_some_and(|event| {
-                event.effects.iter().any(|effect| {
-                    matches!(
-                        effect,
-                        Effect::ResolveInboxItem { item: referenced_item }
-                            if referenced_item == &item.id
-                    )
-                })
+                effects_resolve_inbox_item(scenario, &event.effects, item.id.as_str())
             });
 
         if !action_resolves_item && !expiry_resolves_item {
@@ -276,39 +245,20 @@ fn validate_required_inbox_items(scenario: &ScenarioDefinition, report: &mut Val
     }
 }
 
-/// Checks direct effects and one explicitly triggered event.
-///
-/// Deeper event-graph traversal will be implemented later in the
-/// reachability validator.
+/// Checks whether the deterministic effect closure resolves an Inbox item.
 fn effects_resolve_inbox_item(
     scenario: &ScenarioDefinition,
     effects: &[Effect],
     inbox_item_id: &str,
 ) -> bool {
-    if effects.iter().any(|effect| {
+    let mut closure = EffectClosure::new(scenario);
+    closure.add_effects(effects);
+    closure.contains(|effect| {
         matches!(
             effect,
             Effect::ResolveInboxItem { item }
                 if item.as_str() == inbox_item_id
         )
-    }) {
-        return true;
-    }
-
-    effects.iter().any(|effect| {
-        let Effect::TriggerEvent { event } = effect else {
-            return false;
-        };
-
-        event_by_id(scenario, event).is_some_and(|triggered_event| {
-            triggered_event.effects.iter().any(|triggered_effect| {
-                matches!(
-                    triggered_effect,
-                    Effect::ResolveInboxItem { item }
-                        if item.as_str() == inbox_item_id
-                )
-            })
-        })
     })
 }
 
@@ -369,12 +319,11 @@ fn validate_deadlines(scenario: &ScenarioDefinition, report: &mut ValidationRepo
             ));
         }
 
-        let completion_action_closes_deadline =
-            deadline.completion_actions.iter().any(|action_id| {
-                action_by_id(scenario, action_id).is_some_and(|action| {
-                    effects_complete_deadline(scenario, &action.effects, &deadline.id)
-                })
-            });
+        // Completion actions are authoritative runtime transitions: accepting
+        // a listed action completes the open deadline before temporal miss
+        // processing. Scenario content does not need to duplicate that generic
+        // rule with a case-specific CompleteDeadline effect.
+        let completion_action_closes_deadline = !deadline.completion_actions.is_empty();
 
         let completion_event_closes_deadline = deadline
             .completion_event
@@ -403,42 +352,4 @@ fn validate_deadlines(scenario: &ScenarioDefinition, report: &mut ValidationRepo
             ));
         }
     }
-}
-
-/// Checks direct action effects and one explicitly triggered event for a
-/// deadline-completion effect.
-///
-/// Full recursive event traversal belongs to the later reachability phase.
-fn effects_complete_deadline(
-    scenario: &ScenarioDefinition,
-    effects: &[Effect],
-    deadline_id: &DeadlineId,
-) -> bool {
-    if effects.iter().any(|effect| {
-        matches!(
-            effect,
-            Effect::CompleteDeadline {
-                deadline: referenced_deadline
-            } if referenced_deadline == deadline_id
-        )
-    }) {
-        return true;
-    }
-
-    effects.iter().any(|effect| {
-        let Effect::TriggerEvent { event } = effect else {
-            return false;
-        };
-
-        event_by_id(scenario, event).is_some_and(|triggered_event| {
-            triggered_event.effects.iter().any(|triggered_effect| {
-                matches!(
-                    triggered_effect,
-                    Effect::CompleteDeadline {
-                        deadline: referenced_deadline
-                    } if referenced_deadline == deadline_id
-                )
-            })
-        })
-    })
 }

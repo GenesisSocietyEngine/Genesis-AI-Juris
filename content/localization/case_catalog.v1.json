@@ -111,18 +111,22 @@
     "be_commercial_failed_erp_001": {
       "sort_order": 10,
       "seed": 20260724,
-      "runtime_adapter": "demo_failed_erp",
+      "runtime_adapter": "rust_scenario_v1",
+      "scenario_localization_files": {
+        "en": "content/localization/scenarios/failed_erp.en.v1.json",
+        "ru": "content/localization/scenarios/failed_erp.ru.v1.json"
+      },
       "readiness": {
-        "diagnostics": false,
-        "path_simulation": false,
-        "engine_runtime": false
+        "diagnostics": true,
+        "path_simulation": true,
+        "engine_runtime": true
       },
       "locales": {
         "en": {
           "topic": "Failed ERP Implementation",
           "short_title": "Failed ERP",
-          "synopsis": "Asteron Systems claims that Northbridge Consulting failed to deliver a usable ERP implementation, while Northbridge maintains that scope changes, incomplete data, and weak client governance caused the programme to fail.",
-          "player_client_role": "Chief Operating Officer",
+          "synopsis": "Asteron Systems claims that Northbridge Consulting failed to deliver a usable ERP implementation. Northbridge maintains that scope changes, incomplete data, and weak client governance caused the programme to fail.",
+          "player_client_role": "Chief Executive Officer",
           "legal_issues": [
             "contractual scope and change control",
             "professional standard of care",
@@ -135,7 +139,7 @@
           "topic": "Неудачное внедрение ERP",
           "short_title": "Провал ERP-проекта",
           "synopsis": "Asteron Systems утверждает, что Northbridge Consulting не поставила работоспособную ERP-систему. Northbridge считает, что причиной провала стали изменения объёма работ, неполные данные и слабое управление проектом со стороны клиента.",
-          "player_client_role": "Операционный директор",
+          "player_client_role": "Генеральный директор",
           "legal_issues": [
             "договорный объём работ и управление изменениями",
             "профессиональный стандарт качества",

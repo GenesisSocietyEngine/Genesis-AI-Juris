@@ -4,7 +4,7 @@
 //! checks explicit and efficient. Duplicate detection remains a structural
 //! validation responsibility.
 
-use juris_scenario_schema::ScenarioDefinition;
+use juris_scenario_schema::{ScenarioDefinition, RESOURCE_BILLABLE_MINUTES, RESOURCE_SPEND_EUR};
 use std::collections::HashSet;
 
 #[derive(Debug)]
@@ -19,6 +19,9 @@ pub(crate) struct ScenarioIndex {
     inbox_items: HashSet<String>,
     events: HashSet<String>,
     outcomes: HashSet<String>,
+    metrics: HashSet<String>,
+    resources: HashSet<String>,
+    decisions: HashSet<String>,
 }
 
 impl ScenarioIndex {
@@ -83,6 +86,31 @@ impl ScenarioIndex {
                 .iter()
                 .map(|item| item.id.as_str().to_owned())
                 .collect(),
+
+            metrics: scenario
+                .numeric_metrics
+                .keys()
+                .map(|id| id.as_str().to_owned())
+                .collect(),
+
+            resources: {
+                let mut resources = scenario
+                    .initial_resources
+                    .keys()
+                    .map(|id| id.as_str().to_owned())
+                    .collect::<HashSet<_>>();
+                if !scenario.initial_resources.is_empty() {
+                    resources.insert(RESOURCE_SPEND_EUR.to_owned());
+                    resources.insert(RESOURCE_BILLABLE_MINUTES.to_owned());
+                }
+                resources
+            },
+
+            decisions: scenario
+                .deterministic_decisions
+                .iter()
+                .map(|item| item.id.as_str().to_owned())
+                .collect(),
         }
     }
 
@@ -124,5 +152,17 @@ impl ScenarioIndex {
 
     pub(crate) fn has_outcome(&self, id: &str) -> bool {
         self.outcomes.contains(id)
+    }
+
+    pub(crate) fn has_metric(&self, id: &str) -> bool {
+        self.metrics.contains(id)
+    }
+
+    pub(crate) fn has_resource(&self, id: &str) -> bool {
+        self.resources.contains(id)
+    }
+
+    pub(crate) fn has_decision(&self, id: &str) -> bool {
+        self.decisions.contains(id)
     }
 }

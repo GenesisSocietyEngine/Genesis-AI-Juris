@@ -355,6 +355,66 @@ void _validateScenarioLocalization(
       );
     }
   }
+
+  _validateOptionalScenarioLabelSection(
+    overlay: overlay,
+    scenario: scenario,
+    overlaySection: 'metrics',
+    scenarioSection: 'numeric_metrics',
+    path: path,
+  );
+  _validateOptionalScenarioLabelSection(
+    overlay: overlay,
+    scenario: scenario,
+    overlaySection: 'resources',
+    scenarioSection: 'initial_resources',
+    path: path,
+    derivedIds: const <String>{'spend_eur', 'billable_minutes'},
+  );
+}
+
+void _validateOptionalScenarioLabelSection({
+  required Map<String, dynamic> overlay,
+  required Map<String, dynamic> scenario,
+  required String overlaySection,
+  required String scenarioSection,
+  required String path,
+  Set<String> derivedIds = const <String>{},
+}) {
+  if (!overlay.containsKey(overlaySection)) {
+    return;
+  }
+
+  final Map<String, dynamic> canonical = _object(
+    scenario[scenarioSection] ?? <String, dynamic>{},
+    'scenario.$scenarioSection',
+  );
+  final Map<String, dynamic> labels = _object(
+    overlay[overlaySection],
+    '$path.$overlaySection',
+  );
+  final Set<String> canonicalIds = canonical.keys.toSet();
+  if (canonicalIds.isNotEmpty) {
+    canonicalIds.addAll(derivedIds);
+  }
+  final Set<String> translatedIds = labels.keys.toSet();
+  final Set<String> missing = canonicalIds.difference(translatedIds);
+  final Set<String> unknown = translatedIds.difference(canonicalIds);
+  if (missing.isNotEmpty || unknown.isNotEmpty) {
+    throw FormatException(
+      '$path.$overlaySection stable IDs differ: '
+      'missing=${missing.toList()..sort()}, '
+      'unknown=${unknown.toList()..sort()}',
+    );
+  }
+
+  for (final MapEntry<String, dynamic> item in labels.entries) {
+    final Map<String, dynamic> label = _object(
+      item.value,
+      '$path.$overlaySection.${item.key}',
+    );
+    _requireString(label, 'label');
+  }
 }
 
 String _join(String root, String relative) {

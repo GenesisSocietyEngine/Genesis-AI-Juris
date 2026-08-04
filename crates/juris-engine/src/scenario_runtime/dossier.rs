@@ -13,8 +13,8 @@ use juris_scenario_schema::{
 use serde::Serialize;
 
 use super::{
-    deadline_status_name, fact_status_name, scenario_time_minutes, MobileActionSnapshot,
-    MobileOutcomeSnapshot, ScenarioSession,
+    deadline_status_name, fact_status_name, MobileActionSnapshot, MobileOutcomeSnapshot,
+    ScenarioSession,
 };
 
 /// Version of the additive dossier read model carried by a mobile snapshot.
@@ -206,7 +206,12 @@ pub(super) fn project_dossier(
             Some(DossierDeadlineProjection {
                 id: deadline.id.as_str().to_owned(),
                 title: deadline.title.clone(),
-                due_at_minutes: scenario_time_minutes(deadline.due_at),
+                due_at_minutes: session
+                    .state
+                    .deadline_due_minutes
+                    .get(deadline.id.as_str())
+                    .copied()
+                    .expect("active deadline must have a stored due minute"),
                 status: deadline_status_name(status).to_owned(),
                 remedies,
             })

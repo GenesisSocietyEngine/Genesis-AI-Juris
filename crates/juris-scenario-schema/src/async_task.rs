@@ -1,6 +1,6 @@
 //! Asynchronous work such as expert reports and delegated document reviews.
 
-use crate::{ActionId, AsyncTaskId, EventId};
+use crate::{ActionId, AsyncTaskId, EventId, RelativeTimeDefinition};
 use serde::{Deserialize, Serialize};
 
 /// Complete lifecycle for asynchronous work.
@@ -29,6 +29,10 @@ pub struct AsyncTaskDefinition {
     pub start_action: ActionId,
     pub completion_event: EventId,
     pub duration_minutes: u32,
+
+    /// Optional forward calendar target combined with duration as a minimum.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub completion_timing: Option<RelativeTimeDefinition>,
 
     #[serde(default)]
     pub usable_until_event: Option<EventId>,

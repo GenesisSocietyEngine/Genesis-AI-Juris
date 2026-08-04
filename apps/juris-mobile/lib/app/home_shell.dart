@@ -597,6 +597,17 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     GameSnapshot snapshot,
     InboxItemView item,
   ) {
+    if (item.resolutionActionIds.isNotEmpty) {
+      final Set<String> projectedActionIds = item.resolutionActionIds.toSet();
+      return snapshot.actions
+          .where(
+            (GameActionView action) => projectedActionIds.contains(action.id),
+          )
+          .toList(growable: false);
+    }
+
+    // Backward-compatible presentation fallback for older snapshots that do
+    // not yet project scenario-defined inbox/action relationships.
     final Set<String> actionIds;
     if (item.id.startsWith('judgment-day-')) {
       actionIds = <String>{'inform-client-judgment'};
@@ -706,6 +717,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
             ? snapshot.actions
                 .where(
                   (GameActionView action) =>
+                      action.presentationTags.contains('ai') ||
                       action.title.toLowerCase().contains('ai associate'),
                 )
                 .toList(growable: false)

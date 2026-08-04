@@ -4,8 +4,8 @@
 //! applying effects in a deterministic order and recording resulting events.
 
 use crate::{
-    AsyncTaskId, DeadlineId, EventId, EvidenceId, FactId, FactStatus, FlagId, InboxItemId,
-    JudicialResult, OutcomeId, StageId,
+    AsyncTaskId, DeadlineId, DecisionId, EventId, EvidenceId, FactId, FactStatus, FlagId,
+    InboxItemId, JudicialResult, MetricId, OutcomeId, ResourceId, StageId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -13,33 +13,107 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Effect {
-    SetStage { stage: StageId },
+    SetStage {
+        stage: StageId,
+    },
 
-    SetFlag { flag: FlagId, value: bool },
+    SetFlag {
+        flag: FlagId,
+        value: bool,
+    },
 
-    SetFactStatus { fact: FactId, status: FactStatus },
+    SetMetric {
+        metric: MetricId,
+        value: i64,
+    },
 
-    MakeEvidenceAvailable { evidence: EvidenceId },
+    AddMetric {
+        metric: MetricId,
+        amount: i64,
+    },
 
-    StartAsyncTask { task: AsyncTaskId },
+    SubtractMetric {
+        metric: MetricId,
+        amount: i64,
+    },
 
-    MarkAsyncTaskReady { task: AsyncTaskId },
+    ClampMetric {
+        metric: MetricId,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        minimum: Option<i64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        maximum: Option<i64>,
+    },
 
-    ReviewAsyncTask { task: AsyncTaskId },
+    SetResource {
+        resource: ResourceId,
+        value: i64,
+    },
 
-    ExpireAsyncTask { task: AsyncTaskId },
+    AddResource {
+        resource: ResourceId,
+        amount: i64,
+    },
 
-    CompleteDeadline { deadline: DeadlineId },
+    SubtractResource {
+        resource: ResourceId,
+        amount: i64,
+    },
 
-    MissDeadline { deadline: DeadlineId },
+    SetFactStatus {
+        fact: FactId,
+        status: FactStatus,
+    },
 
-    CreateInboxItem { item: InboxItemId },
+    MakeEvidenceAvailable {
+        evidence: EvidenceId,
+    },
 
-    ResolveInboxItem { item: InboxItemId },
+    StartAsyncTask {
+        task: AsyncTaskId,
+    },
 
-    SetJudicialResult { result: JudicialResult },
+    MarkAsyncTaskReady {
+        task: AsyncTaskId,
+    },
 
-    TriggerEvent { event: EventId },
+    ReviewAsyncTask {
+        task: AsyncTaskId,
+    },
 
-    ResolveOutcome { outcome: OutcomeId },
+    ExpireAsyncTask {
+        task: AsyncTaskId,
+    },
+
+    CompleteDeadline {
+        deadline: DeadlineId,
+    },
+
+    MissDeadline {
+        deadline: DeadlineId,
+    },
+
+    CreateInboxItem {
+        item: InboxItemId,
+    },
+
+    ResolveInboxItem {
+        item: InboxItemId,
+    },
+
+    SetJudicialResult {
+        result: JudicialResult,
+    },
+
+    ResolveDeterministicDecision {
+        decision: DecisionId,
+    },
+
+    TriggerEvent {
+        event: EventId,
+    },
+
+    ResolveOutcome {
+        outcome: OutcomeId,
+    },
 }

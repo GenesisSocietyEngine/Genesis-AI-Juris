@@ -253,6 +253,143 @@ void main() {
       english.actions.map((GameActionView action) => action.id),
     );
   });
+
+  test('uses optional authoritative metric and resource projections', () {
+    final GameSnapshot snapshot = ScenarioSnapshotMapper.map(
+      source: _snapshot(
+        judicialResult: null,
+        judicialDecisionInstance: null,
+        lifecycle: 'active',
+        isClosed: false,
+        numericMetrics: const <String, int>{
+          'case_strength': 43,
+          'merits': 52,
+          'evidence': 28,
+          'procedure': 55,
+          'leverage': 35,
+          'fatigue': 7,
+          'cumulative_strain': 3,
+          'ethics': 70,
+          'client_trust': 50,
+        },
+        resources: const <String, int>{
+          'spend_eur': 2350,
+          'authorized_budget_eur': 25000,
+          'billable_minutes': 540,
+          'award_eur': 220800,
+          'outcome_costs_eur': 18000,
+        },
+      ),
+      caseDefinition: caseDefinition,
+    );
+
+    expect(snapshot.caseStrength, 43);
+    expect(snapshot.merits, 52);
+    expect(snapshot.evidenceScore, 28);
+    expect(snapshot.procedure, 55);
+    expect(snapshot.leverage, 35);
+    expect(snapshot.fatigue, 7);
+    expect(snapshot.cumulativeStrain, 3);
+    expect(snapshot.ethics, 70);
+    expect(snapshot.clientTrust, 50);
+    expect(snapshot.spendEur, 2350);
+    expect(snapshot.authorizedBudgetEur, 25000);
+    expect(snapshot.billableMinutes, 540);
+    expect(snapshot.numericMetrics['merits'], 52);
+    expect(snapshot.resources['spend_eur'], 2350);
+  });
+
+  test('maps generic terminal award and costs resources', () {
+    final GameSnapshot snapshot = ScenarioSnapshotMapper.map(
+      source: _snapshot(
+        judicialResult: 'won',
+        judicialDecisionInstance: 'first_instance',
+        lifecycle: 'closed',
+        isClosed: true,
+        outcomeId: 'substantially_upheld',
+        resources: const <String, int>{
+          'award_eur': 220800,
+          'outcome_costs_eur': 18000,
+        },
+      ),
+      caseDefinition: caseDefinition,
+    );
+
+    expect(snapshot.outcomeSummary?.awardEur, 220800);
+    expect(snapshot.outcomeSummary?.costsEur, 18000);
+  });
+
+  test('projects semantic action tags and inbox resolution relationships', () {
+    final Map<String, dynamic> source = _snapshot(
+      judicialResult: null,
+      judicialDecisionInstance: null,
+      lifecycle: 'active',
+      isClosed: false,
+    );
+    source['inbox'] = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'id': 'research-request',
+        'sender': 'Client legal team',
+        'subject': 'Research requested',
+        'body': 'Prepare a focused legal review.',
+        'visible': true,
+        'resolved': false,
+        'action_required': true,
+        'resolution_action_ids': <String>['ask-ai-research'],
+      },
+    ];
+    source['available_actions'] = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'id': 'ask-ai-research',
+        'title': 'Research with the AI associate',
+        'description': 'Prepare a focused legal review.',
+        'presentation_tags': <String>['ai'],
+        'time_cost_minutes': 15,
+      },
+    ];
+
+    final GameSnapshot snapshot = ScenarioSnapshotMapper.map(
+      source: source,
+      caseDefinition: caseDefinition,
+    );
+
+    expect(snapshot.inbox.single.resolutionActionIds, <String>[
+      'ask-ai-research',
+    ]);
+    expect(snapshot.inbox.single.sender, 'Client legal team');
+    expect(snapshot.actions.single.presentationTags, <String>['ai']);
+  });
+
+  test('presents an authoritative relative completion target in EN and RU', () {
+    final Map<String, dynamic> source = _snapshot(
+      judicialResult: null,
+      judicialDecisionInstance: null,
+      lifecycle: 'active',
+      isClosed: false,
+    );
+    source['available_actions'] = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'id': 'rest-until-next-workday',
+        'title': 'Rest until the next workday',
+        'description': 'Advance to the next workday.',
+        'time_cost_minutes': 0,
+        'completion_at_minutes': 1440,
+      },
+    ];
+
+    final GameSnapshot english = ScenarioSnapshotMapper.map(
+      source: source,
+      caseDefinition: caseDefinition,
+    );
+    final GameSnapshot russian = ScenarioSnapshotMapper.map(
+      source: source,
+      caseDefinition: caseDefinition,
+      locale: 'ru',
+    );
+
+    expect(english.actions.single.timeLabel, 'Until Day 2 · 08:00');
+    expect(russian.actions.single.timeLabel, 'До дня 2 · 08:00');
+  });
 }
 
 Map<String, dynamic> _snapshot({
@@ -262,6 +399,8 @@ Map<String, dynamic> _snapshot({
   required bool isClosed,
   List<String> actions = const <String>[],
   String? outcomeId,
+  Map<String, int>? numericMetrics,
+  Map<String, int>? resources,
 }) {
   return <String, dynamic>{
     'snapshot_schema_version': 1,
@@ -276,6 +415,8 @@ Map<String, dynamic> _snapshot({
     'is_closed': isClosed,
     'resolved_outcome': outcomeId,
     'terminal': isClosed,
+    if (numericMetrics != null) 'numeric_metrics': numericMetrics,
+    if (resources != null) 'resources': resources,
     'flags': <String, bool>{},
     'facts': const <Map<String, dynamic>>[],
     'evidence': const <Map<String, dynamic>>[],

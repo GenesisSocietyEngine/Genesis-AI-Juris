@@ -82,6 +82,34 @@ pub enum SimulationError {
     #[error("simulation clock overflow while applying `{owner}`")]
     ClockOverflow { owner: String },
 
+    #[error("deadline `{deadline}` is not active")]
+    DeadlineInactive { deadline: String },
+
+    #[error(
+        "action `{action}` would complete at minute {completion}, outside deadline `{deadline}` at minute {due}"
+    )]
+    ActionCompletionDeadlineExceeded {
+        action: String,
+        deadline: String,
+        completion: u64,
+        due: u64,
+    },
+
+    #[error("integer state `{state}` is not declared")]
+    UnknownIntegerState { state: String },
+
+    #[error("integer state `{state}` overflowed")]
+    IntegerOverflow { state: String },
+
+    #[error("deterministic decision `{decision}` is not declared")]
+    UnknownDecision { decision: String },
+
+    #[error("deterministic decision `{decision}` has no eligible branch")]
+    NoEligibleDecisionBranch { decision: String },
+
+    #[error("deterministic decision `{decision}` could not be resolved: {message}")]
+    DecisionResolution { decision: String, message: String },
+
     #[error("foreground clock advancement is not enabled for this scenario")]
     ClockAdvanceUnsupported,
 

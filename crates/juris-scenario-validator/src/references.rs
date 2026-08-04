@@ -1,7 +1,9 @@
 //! Validation of every typed cross-reference in ScenarioDefinition v1.
 
 use crate::{Diagnostic, DiagnosticCode, ScenarioIndex, ValidationReport};
-use juris_scenario_schema::{Condition, Effect, EventTrigger, ScenarioDefinition};
+use juris_scenario_schema::{
+    Condition, Effect, EventTrigger, IntegerOperand, RelativeTimeDefinition, ScenarioDefinition,
+};
 
 pub(crate) fn validate_references(
     scenario: &ScenarioDefinition,
@@ -17,6 +19,8 @@ pub(crate) fn validate_references(
     validate_inbox_references(scenario, index, report);
     validate_event_references(scenario, index, report);
     validate_outcome_references(scenario, index, report);
+    validate_decision_references(scenario, index, report);
+    validate_foreground_metric_rate_references(scenario, index, report);
 }
 
 fn validate_fact_references(
@@ -111,6 +115,35 @@ fn validate_action_references(
             &format!("actions[{action_index}].available_when"),
         );
 
+        if let Some(timing) = &action.completion_timing {
+            validate_timing_references(
+                timing,
+                index,
+                report,
+                &format!("actions[{action_index}].completion_timing"),
+            );
+        }
+        for (deadline_index, deadline) in action.advance_to_deadlines.iter().enumerate() {
+            require_reference(
+                index.has_deadline(deadline.as_str()),
+                DiagnosticCode::UnknownDeadlineReference,
+                format!("actions[{action_index}].advance_to_deadlines[{deadline_index}]"),
+                "deadline",
+                deadline.as_str(),
+                report,
+            );
+        }
+        for (deadline_index, deadline) in action.completion_deadlines.iter().enumerate() {
+            require_reference(
+                index.has_deadline(deadline.as_str()),
+                DiagnosticCode::UnknownDeadlineReference,
+                format!("actions[{action_index}].completion_deadlines[{deadline_index}]"),
+                "deadline",
+                deadline.as_str(),
+                report,
+            );
+        }
+
         for (effect_index, effect) in action.effects.iter().enumerate() {
             validate_effect(
                 effect,
@@ -128,6 +161,14 @@ fn validate_deadline_references(
     report: &mut ValidationReport,
 ) {
     for (deadline_index, deadline) in scenario.deadlines.iter().enumerate() {
+        if let Some(timing) = &deadline.relative_due {
+            validate_timing_references(
+                timing,
+                index,
+                report,
+                &format!("deadlines[{deadline_index}].relative_due"),
+            );
+        }
         if let Some(event) = &deadline.activation_event {
             require_reference(
                 index.has_event(event.as_str()),
@@ -138,7 +179,6 @@ fn validate_deadline_references(
                 report,
             );
         }
-
         for (action_index, action) in deadline.completion_actions.iter().enumerate() {
             require_reference(
                 index.has_action(action.as_str()),
@@ -178,6 +218,14 @@ fn validate_async_task_references(
     report: &mut ValidationReport,
 ) {
     for (task_index, task) in scenario.async_tasks.iter().enumerate() {
+        if let Some(timing) = &task.completion_timing {
+            validate_timing_references(
+                timing,
+                index,
+                report,
+                &format!("async_tasks[{task_index}].completion_timing"),
+            );
+        }
         require_reference(
             index.has_action(task.start_action.as_str()),
             DiagnosticCode::UnknownActionReference,
@@ -217,6 +265,24 @@ fn validate_async_task_references(
                 report,
             );
         }
+    }
+}
+
+fn validate_timing_references(
+    timing: &RelativeTimeDefinition,
+    index: &ScenarioIndex,
+    report: &mut ValidationReport,
+    path: &str,
+) {
+    if let Some(deadline) = &timing.relative_to_deadline {
+        require_reference(
+            index.has_deadline(deadline.as_str()),
+            DiagnosticCode::UnknownDeadlineReference,
+            format!("{path}.relative_to_deadline"),
+            "deadline",
+            deadline.as_str(),
+            report,
+        );
     }
 }
 
@@ -325,6 +391,11 @@ fn validate_condition(
     match condition {
         Condition::Always | Condition::FlagEquals { .. } | Condition::JudicialResultIs { .. } => {}
 
+        Condition::IntegerCompare { left, right, .. } => {
+            validate_integer_operand(left, index, report, &format!("{path}.left"));
+            validate_integer_operand(right, index, report, &format!("{path}.right"));
+        }
+
         Condition::StageIs { stage } => require_reference(
             index.has_stage(stage.as_str()),
             DiagnosticCode::UnknownStageReference,
@@ -414,6 +485,29 @@ fn validate_effect(
 
         Effect::SetFlag { .. } | Effect::SetJudicialResult { .. } => {}
 
+        Effect::SetMetric { metric, .. }
+        | Effect::AddMetric { metric, .. }
+        | Effect::SubtractMetric { metric, .. }
+        | Effect::ClampMetric { metric, .. } => require_reference(
+            index.has_metric(metric.as_str()),
+            DiagnosticCode::UnknownMetricReference,
+            format!("{path}.metric"),
+            "numeric metric",
+            metric.as_str(),
+            report,
+        ),
+
+        Effect::SetResource { resource, .. }
+        | Effect::AddResource { resource, .. }
+        | Effect::SubtractResource { resource, .. } => require_reference(
+            index.has_resource(resource.as_str()),
+            DiagnosticCode::UnknownResourceReference,
+            format!("{path}.resource"),
+            "resource",
+            resource.as_str(),
+            report,
+        ),
+
         Effect::SetFactStatus { fact, .. } => require_reference(
             index.has_fact(fact.as_str()),
             DiagnosticCode::UnknownFactReference,
@@ -481,6 +575,111 @@ fn validate_effect(
             outcome.as_str(),
             report,
         ),
+
+        Effect::ResolveDeterministicDecision { decision } => require_reference(
+            index.has_decision(decision.as_str()),
+            DiagnosticCode::UnknownDecisionReference,
+            format!("{path}.decision"),
+            "deterministic decision",
+            decision.as_str(),
+            report,
+        ),
+    }
+}
+
+fn validate_decision_references(
+    scenario: &ScenarioDefinition,
+    index: &ScenarioIndex,
+    report: &mut ValidationReport,
+) {
+    for (decision_index, decision) in scenario.deterministic_decisions.iter().enumerate() {
+        let path = format!("deterministic_decisions[{decision_index}]");
+        if let Some(metric) = &decision.score_metric {
+            require_reference(
+                index.has_metric(metric.as_str()),
+                DiagnosticCode::UnknownMetricReference,
+                format!("{path}.score_metric"),
+                "numeric metric",
+                metric.as_str(),
+                report,
+            );
+        }
+        for (term_index, term) in decision.score_terms.iter().enumerate() {
+            let term_path = format!("{path}.score_terms[{term_index}]");
+            validate_integer_operand(
+                &term.operand,
+                index,
+                report,
+                &format!("{term_path}.operand"),
+            );
+            validate_condition(
+                &term.condition,
+                index,
+                report,
+                &format!("{term_path}.condition"),
+            );
+        }
+        for (branch_index, branch) in decision.branches.iter().enumerate() {
+            let branch_path = format!("{path}.branches[{branch_index}]");
+            validate_condition(
+                &branch.condition,
+                index,
+                report,
+                &format!("{branch_path}.condition"),
+            );
+            for (effect_index, effect) in branch.effects.iter().enumerate() {
+                validate_effect(
+                    effect,
+                    index,
+                    report,
+                    &format!("{branch_path}.effects[{effect_index}]"),
+                );
+            }
+        }
+    }
+}
+
+fn validate_foreground_metric_rate_references(
+    scenario: &ScenarioDefinition,
+    index: &ScenarioIndex,
+    report: &mut ValidationReport,
+) {
+    for metric in scenario.foreground_metric_rates.keys() {
+        require_reference(
+            index.has_metric(metric.as_str()),
+            DiagnosticCode::UnknownMetricReference,
+            format!("foreground_metric_rates.{}", metric.as_str()),
+            "numeric metric",
+            metric.as_str(),
+            report,
+        );
+    }
+}
+
+fn validate_integer_operand(
+    operand: &IntegerOperand,
+    index: &ScenarioIndex,
+    report: &mut ValidationReport,
+    path: &str,
+) {
+    match operand {
+        IntegerOperand::Constant { .. } => {}
+        IntegerOperand::Metric { metric, .. } => require_reference(
+            index.has_metric(metric.as_str()),
+            DiagnosticCode::UnknownMetricReference,
+            format!("{path}.metric"),
+            "numeric metric",
+            metric.as_str(),
+            report,
+        ),
+        IntegerOperand::Resource { resource, .. } => require_reference(
+            index.has_resource(resource.as_str()),
+            DiagnosticCode::UnknownResourceReference,
+            format!("{path}.resource"),
+            "resource",
+            resource.as_str(),
+            report,
+        ),
     }
 }
 
@@ -526,6 +725,15 @@ fn validate_event_trigger(
             format!("{path}.deadline"),
             "deadline",
             deadline.as_str(),
+            report,
+        ),
+
+        EventTrigger::MetricThresholdReached { metric, .. } => require_reference(
+            index.has_metric(metric.as_str()),
+            DiagnosticCode::UnknownMetricReference,
+            format!("{path}.metric"),
+            "numeric metric",
+            metric.as_str(),
             report,
         ),
     }

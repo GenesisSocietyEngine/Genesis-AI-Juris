@@ -108,6 +108,7 @@ fn by_effect_event_without_triggering_effect_is_rejected() {
         title: "Orphan event".to_owned(),
         kind: EventKind::Generic,
         trigger: EventTrigger::ByEffect,
+        repeatable: false,
         condition: Default::default(),
         effects: Vec::new(),
     });

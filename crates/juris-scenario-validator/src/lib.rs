@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 
 mod diagnostic;
+mod effect_closure;
 mod index;
 mod lifecycle;
 mod reachability;

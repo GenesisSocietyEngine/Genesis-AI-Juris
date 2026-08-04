@@ -1,19 +1,31 @@
-# GENESIS: AI Juris Mobile Shell v0.5.0
+# GENESIS: JURIS Mobile
 
-This Flutter application is the first smartphone-first interface for the legal-career simulation.
+This Flutter application is the smartphone-first interface for the legal-career
+simulation.
 
 ## Scope
 
-v0.5.0 deliberately uses a deterministic local demonstration repository. It proves:
+The production case catalogue launches validated scenario definitions through
+the native Rust bridge. Rust owns action legality, state transitions, time,
+deadlines, outcomes, lifecycle, Dossier projection, deterministic replay, and
+command-log persistence. Flutter renders immutable snapshots and sends stable
+action IDs or foreground-clock commands.
+
+The current mobile scope includes:
 
 - Material 3 mobile information architecture;
 - adaptive phone/tablet navigation;
 - active Inbox statuses;
 - matter metrics, budget, evidence, deadlines, workload, AI work product, and career views;
 - action review and confirmation;
-- widget-testable immutable snapshots.
+- widget-testable immutable snapshots;
+- four Rust-backed production cases with EN/RU presentation;
+- native Android/iOS transport using C ABI version 1;
+- replay-based save/load with atomic failure handling.
 
-The Rust engine remains authoritative. v0.5.1 will replace `DemoGameRepository` with a generated Rust bridge that exposes only snapshots and action IDs.
+`DemoGameRepository` remains only as a legacy characterization fixture for the
+historical widget suite. `CaseRuntimeFactory` does not expose it as a production
+runtime adapter.
 
 ## First-time Windows setup
 

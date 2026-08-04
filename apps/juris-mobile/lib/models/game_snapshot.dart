@@ -200,6 +200,7 @@ class InboxItemView {
     required this.body,
     required this.receivedAt,
     required this.status,
+    this.resolutionActionIds = const <String>[],
   });
 
   final String id;
@@ -209,6 +210,10 @@ class InboxItemView {
   final String receivedAt;
   final InboxStatus status;
 
+  /// Authoritative, scenario-defined actions that can resolve this item.
+  /// Empty for legacy snapshots that do not project the relationship.
+  final List<String> resolutionActionIds;
+
   InboxItemView copyWith({InboxStatus? status}) {
     return InboxItemView(
       id: id,
@@ -217,6 +222,7 @@ class InboxItemView {
       body: body,
       receivedAt: receivedAt,
       status: status ?? this.status,
+      resolutionActionIds: resolutionActionIds,
     );
   }
 }
@@ -344,6 +350,7 @@ class GameActionView {
     required this.costEur,
     required this.tone,
     this.riskNote,
+    this.presentationTags = const <String>[],
   });
 
   final String id;
@@ -353,6 +360,9 @@ class GameActionView {
   final int costEur;
   final ActionTone tone;
   final String? riskNote;
+
+  /// ID-agnostic semantic tags used only to select presentation surfaces.
+  final List<String> presentationTags;
 }
 
 @immutable
@@ -444,6 +454,8 @@ class GameSnapshot {
     this.settlementOffer,
     this.outcomeSummary,
     this.dossier,
+    this.numericMetrics = const <String, int>{},
+    this.resources = const <String, int>{},
   }) : _authoritativeIsClosed = isClosed;
 
   final String version;
@@ -534,6 +546,16 @@ class GameSnapshot {
   /// substitute projection from its older presentation metrics.
   final DossierProjectionView? dossier;
 
+  /// Optional ID-agnostic integer metrics projected by the authoritative
+  /// scenario runtime. Existing scenarios may omit the projection and retain
+  /// their established presentation fallbacks.
+  final Map<String, int> numericMetrics;
+
+  /// Optional ID-agnostic resource totals projected by Rust. Standard keys
+  /// currently include `spend_eur`, `authorized_budget_eur`, and
+  /// `billable_minutes`.
+  final Map<String, int> resources;
+
   /// Authoritative for native scenarios; legacy demo snapshots derive closure
   /// from their existing terminal summary until that runtime is migrated.
   bool get isClosed => _authoritativeIsClosed ?? outcomeSummary != null;
@@ -593,6 +615,8 @@ class GameSnapshot {
     bool clearOutcomeSummary = false,
     DossierProjectionView? dossier,
     bool clearDossier = false,
+    Map<String, int>? numericMetrics,
+    Map<String, int>? resources,
   }) {
     return GameSnapshot(
       version: version,
@@ -649,6 +673,8 @@ class GameSnapshot {
       outcomeSummary:
           clearOutcomeSummary ? null : outcomeSummary ?? this.outcomeSummary,
       dossier: clearDossier ? null : dossier ?? this.dossier,
+      numericMetrics: numericMetrics ?? this.numericMetrics,
+      resources: resources ?? this.resources,
     );
   }
 }

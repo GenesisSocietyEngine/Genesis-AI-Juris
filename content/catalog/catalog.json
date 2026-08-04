@@ -11,9 +11,9 @@
       "practice_area": "commercial_litigation",
       "difficulty": "intermediate",
       "status": "playable",
-      "player_client_id": "northbridge_consulting",
+      "player_client_id": "asteron_systems",
       "identity_file": "content/catalog/cases/failed_erp.identity.json",
-      "scenario_file": "content/cases/failed_erp.json"
+      "scenario_file": "content/cases/failed_erp.scenario.json"
     },
     {
       "case_id": "be_commercial_logistics_001",

@@ -227,6 +227,15 @@ fn runtime_error_response(error: ScenarioRuntimeError) -> BridgeResponse {
         ScenarioRuntimeError::InvalidScenario(_) => "invalid_scenario",
         ScenarioRuntimeError::ScenarioResolved => "scenario_resolved",
         ScenarioRuntimeError::ActionUnavailable(_) => "action_unavailable",
+        ScenarioRuntimeError::DeadlineInactive(_) => "deadline_inactive",
+        ScenarioRuntimeError::ActionCompletionDeadlineExceeded { .. } => {
+            "action_completion_deadline_exceeded"
+        }
+        ScenarioRuntimeError::IntegerOverflow(_) => "integer_overflow",
+        ScenarioRuntimeError::UnknownIntegerState(_) => "unknown_integer_state",
+        ScenarioRuntimeError::UnknownDecision(_) => "unknown_decision",
+        ScenarioRuntimeError::NoEligibleDecisionBranch(_) => "no_eligible_decision_branch",
+        ScenarioRuntimeError::DecisionResolution(_, _) => "decision_resolution_failed",
         ScenarioRuntimeError::ClockAdvanceUnsupported => "clock_advance_unsupported",
         ScenarioRuntimeError::InvalidClockAdvance => "invalid_clock_advance",
         ScenarioRuntimeError::ClockAdvanceLimitExceeded { .. } => "clock_advance_limit_exceeded",

@@ -19,6 +19,11 @@ pub enum DiagnosticCode {
     TerminalStageNotResolved,
     RemedyStageTerminal,
     TerminalStageHasExitActions,
+    InvalidScenarioTime,
+    InvalidIntegerEffect,
+    InvalidDecisionDefinition,
+    InvalidForegroundMetricRate,
+    InvalidRepeatableEventTrigger,
 
     // Lifecycle validation.
     AsyncTaskWithoutCompletionPath,
@@ -54,6 +59,9 @@ pub enum DiagnosticCode {
     UnknownActorReference,
     UnknownEvidenceReference,
     UnknownInboxItemReference,
+    UnknownMetricReference,
+    UnknownResourceReference,
+    UnknownDecisionReference,
 }
 
 impl DiagnosticCode {
@@ -70,6 +78,11 @@ impl DiagnosticCode {
             Self::TerminalStageNotResolved => "SCN007_TERMINAL_STAGE_NOT_RESOLVED",
             Self::RemedyStageTerminal => "SCN008_REMEDY_STAGE_TERMINAL",
             Self::TerminalStageHasExitActions => "SCN009_TERMINAL_STAGE_HAS_EXIT_ACTIONS",
+            Self::InvalidScenarioTime => "SCN010_INVALID_SCENARIO_TIME",
+            Self::InvalidIntegerEffect => "SCN011_INVALID_INTEGER_EFFECT",
+            Self::InvalidDecisionDefinition => "SCN012_INVALID_DECISION_DEFINITION",
+            Self::InvalidForegroundMetricRate => "SCN013_INVALID_FOREGROUND_METRIC_RATE",
+            Self::InvalidRepeatableEventTrigger => "SCN014_INVALID_REPEATABLE_EVENT_TRIGGER",
 
             Self::UnknownStageReference => "SCN101_UNKNOWN_STAGE_REFERENCE",
             Self::UnknownActionReference => "SCN102_UNKNOWN_ACTION_REFERENCE",
@@ -81,6 +94,9 @@ impl DiagnosticCode {
             Self::UnknownActorReference => "SCN108_UNKNOWN_ACTOR_REFERENCE",
             Self::UnknownEvidenceReference => "SCN109_UNKNOWN_EVIDENCE_REFERENCE",
             Self::UnknownInboxItemReference => "SCN110_UNKNOWN_INBOX_ITEM_REFERENCE",
+            Self::UnknownMetricReference => "SCN111_UNKNOWN_METRIC_REFERENCE",
+            Self::UnknownResourceReference => "SCN112_UNKNOWN_RESOURCE_REFERENCE",
+            Self::UnknownDecisionReference => "SCN113_UNKNOWN_DECISION_REFERENCE",
 
             Self::AsyncTaskWithoutCompletionPath => "SCN201_ASYNC_TASK_WITHOUT_COMPLETION_PATH",
             Self::AsyncTaskWithoutTerminalBoundary => "SCN202_ASYNC_TASK_WITHOUT_TERMINAL_BOUNDARY",
