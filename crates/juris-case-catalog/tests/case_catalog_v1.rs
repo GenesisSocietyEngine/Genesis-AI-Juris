@@ -180,8 +180,7 @@ fn reference_library_exposes_all_mobile_playable_scenarios() {
 #[test]
 fn four_pre_desert_water_catalogue_identities_remain_exact() {
     const LOCALIZATION: &str = include_str!("../../../content/localization/case_catalog.v1.json");
-    const FAILED_ERP: &str =
-        include_str!("../../../content/cases/failed_erp.scenario.json");
+    const FAILED_ERP: &str = include_str!("../../../content/cases/failed_erp.scenario.json");
     const LOGISTICS: &str =
         include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
     const GREENFIRE: &str =

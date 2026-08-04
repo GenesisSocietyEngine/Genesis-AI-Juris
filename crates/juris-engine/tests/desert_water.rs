@@ -6,8 +6,7 @@ use juris_scenario_schema::{
     JudicialDecisionInstance, JudicialResult, MatterLifecycleStatus, ScenarioDefinition,
 };
 
-const FAILED_ERP_SCENARIO: &str =
-    include_str!("../../../content/cases/failed_erp.scenario.json");
+const FAILED_ERP_SCENARIO: &str = include_str!("../../../content/cases/failed_erp.scenario.json");
 const LOGISTICS_SCENARIO: &str =
     include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
 const GREENFIRE_SCENARIO: &str =
