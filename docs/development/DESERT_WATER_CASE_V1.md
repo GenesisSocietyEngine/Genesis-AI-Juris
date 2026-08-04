@@ -556,8 +556,14 @@ Target terminal state: outcome `credible_source_and_remedy`, judicial result
 `won`, decision instance `first_instance`, lifecycle closed. Target action
 spend is EUR 54,150. The canonical scenario fingerprint is
 `056bfa737932a81005fb8d9a78246593d1c1908308543d4bf9c5811d73201e8d`;
-the final-state digest, transition count, and event order remain subject to the
-deterministic trace assertions.
+the runtime-v2 final-state digest is
+`8d9f9c5e39dcdb0dc6639d42844a3b9e5f8394702231f1d8eb0aede6be244240`.
+The simulator signature contains exactly 24 ordered transitions and its
+canonical fired-event set contains `mandate_accepted`,
+`operator_preservation_response_received`,
+`hydrogeology_assessment_completed`, `claim_window_opened`,
+`first_instance_hearing_scheduled`, and
+`favorable_first_instance_judgment_delivered`.
 
 ### Compromised residents path — target minute 3510
 
@@ -581,6 +587,13 @@ Target terminal state: outcome `compromised_claim_closed`, judicial result
 EUR 23,350. At minute 3180, before filing the appeal, the Dossier must be
 `recoverable`, expose the open appeal deadline and `file_appeal`, and expose no
 outcome. At minute 3480 the adverse appeal still does not close the matter.
+The runtime-v2 final-state digest is
+`f5a08dc13bb49b879bc0e4929fbbbb08184cc4269c463eaa4ca8b1fad162c895`.
+The simulator signature contains exactly 21 ordered transitions; its
+canonical fired-event set includes the two missed deadlines, both adverse
+judgments, `appeal_filed`, `matter_closed`, and
+`hydrogeology_assessment_expired` in the exact order pinned by the simulator
+test.
 
 ### Focused remedy and expiry paths
 
