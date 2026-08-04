@@ -8,6 +8,8 @@ failed_erp_head: 0aa393096f1e9be4458070d3d53d739c1f8483c0
 failed_erp_merge_commit: 3cfa3066b64f36b92f3a77a30ec4a070e74860ed
 original_desert_head: 44e565b22c52a4c3a3e69b2c137353b7771fcf77
 desert_recovery_ref: backup/desert-water-pre-failed-erp
+validator_followup: d7a52d836f4f51b9c510af38513bcb2722cbd6a2
+android_followup: de7ac065d095a0e268e14961b4b74edd754cf52e
 latest_published_release_tag: v0.6.0-alpha.1
 app_version: 0.6.0+13
 last_updated: 2026-08-04
@@ -15,19 +17,148 @@ last_updated: 2026-08-04
 
 # Current Progress
 
-## Five-case integration in progress — 2026-08-04
+## Five-case integration local validation checkpoint — 2026-08-04
 
-Status: Failed ERP was merged through PR #14 at
-`3cfa3066b64f36b92f3a77a30ec4a070e74860ed` after all push, pull-request,
-and post-merge Rust, Flutter, and iOS gates succeeded. The four unpublished
-Desert Water commits are being rebased onto that exact merge commit. The local
-recovery ref `backup/desert-water-pre-failed-erp` preserves original Desert
-HEAD `44e565b22c52a4c3a3e69b2c137353b7771fcf77`.
+Status: complete locally and stopped for owner playtesting. Failed ERP was
+published through PR #14, merged normally, and validated remotely. Desert Water
+was then rebased locally, combined with Failed ERP, and passed the complete
+host, Android API 37, APK, and ABI checkpoint. `feat/desert-water-case` remains
+unpublished; no Desert PR, tag, release, or APK asset was created.
 
-Combined five-case host, Android, bundle, APK, ABI, and interactive emulator
-validation is still pending at this intermediate history-rewrite point. The
-two sections immediately below are retained as historical checkpoint evidence
-and must not be interpreted as combined-tree results.
+### Failed ERP publication and hosted gates
+
+- PR: `#14`, title `refactor: migrate Failed ERP to authoritative Rust`;
+- exact PR head: `0aa393096f1e9be4458070d3d53d739c1f8483c0`;
+- exact merge commit and new Desert base:
+  `3cfa3066b64f36b92f3a77a30ec4a070e74860ed`;
+- all push runs succeeded on exact PR head: Rust `30914773696`, Flutter
+  `30914772361`, iOS native/FFI `30914772343`;
+- all pull-request runs succeeded: Rust `30914820927`, Flutter `30914822595`,
+  iOS native/FFI `30914821159`;
+- all post-merge runs succeeded on exact merge commit: Rust `30917034321`,
+  Flutter `30917034285`, iOS native/FFI `30917034226`; the hosted iOS build,
+  static-library export audit, simulator boot, and native Logistics lifecycle
+  all passed;
+- PR #4 remained open and untouched.
+
+### Desert recovery, rebase, and local commits
+
+- recovery ref `backup/desert-water-pre-failed-erp` still points exactly to
+  original unpublished Desert HEAD
+  `44e565b22c52a4c3a3e69b2c137353b7771fcf77` and was not published;
+- old-to-new rebase mapping:
+  - `c0ad5a369caf85bcb4aa24a53e6b125d1d6fa25b` ->
+    `57caf237a86d39a2c21b3fe37cf33971fb5f2af4`;
+  - `18f65ceb52d87b9d3c8fc944c48a308b7643cc67` ->
+    `6d510738eced7552469b99cbc462382e395e9179`;
+  - `7ca533ca986cb90511114fd11e4ce70afe3a7794` ->
+    `14ed61ce6a8a14a9fe2e76a8508b6c10c7740541`;
+  - `44e565b22c52a4c3a3e69b2c137353b7771fcf77` ->
+    `6a5006e4da0a807f84ea439ef3b716939704e324`;
+- conflicts were resolved semantically in the production catalogue, validator
+  and diagnostics catalogue tests, Android integration harness, generated
+  bundle, engine fingerprint regression, and cumulative documentation. Failed
+  ERP remained sort 10/Rust-owned; Desert Water remained sort 50; no runtime,
+  persistence, digest, bridge, FFI, ABI, balance, or existing scenario contract
+  was changed by the rebase;
+- `d7a52d836f4f51b9c510af38513bcb2722cbd6a2` fixes validator provenance for
+  the sole terminal event's guard while keeping ambiguous paths conservative;
+- `de7ac065d095a0e268e14961b4b74edd754cf52e` makes Android Gradle native tasks
+  track transitive Rust workspace sources/manifests and the build script, and
+  corrects Desert integration labels to the shared 08:00 UI baseline. It was
+  required because the first x86_64 acceptance attempt packaged a stale
+  pre-validator-fix library;
+- neither follow-up changes production scenario semantics, fingerprints,
+  persistence, digests, bridge commands, FFI behavior, or ABI version/shape.
+
+### Final authoritative five-case catalogue
+
+| Sort | Case / scenario identity | Public EN / RU title | Fingerprint | Canonical paths: final minute / digest |
+|---:|---|---|---|---|
+| 10 | `be_commercial_failed_erp_001` | Failed ERP Implementation / Неудачное внедрение ERP | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` | settlement `settlement_64500`: 570 / `fd77a45422e4abd7f141fc7b1db767524ebf48d9674bd25c21354fb7a2b8c029`; prepared `judgment_preserved_after_cassation`: 8640 / `f25604fc0225d7ac5a7e98d192ce3b82114970158a3662aee7575b128430ca0c`; remittal open: 10080 / `268f27867fd1f45a417c0e999819165bd79f76a74f3ab2e65ee075e193cbc34a` |
+| 20 | `be_commercial_logistics_001` | Unpaid Logistics Invoices / Неоплаченные логистические счета | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` | negotiated: 270 / `139239e001417ae563e270128864a512e88c0ff535a498e15b000731b8ca5bfe`; judgment: 480 / `e25e1eeb36249c1b7da0fe7a947f29ed3363ce7dac0357a110951c49bb738ac3` |
+| 30 | `greenfire_first_72_hours` | The First 72 Hours / Первые 72 часа | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` | protected: 4440 / `17f58f95551abacb445ce6d886fc059bcbd7a7660c3f089d9509e7a25f01a216`; compromised: 4590 / `432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec` |
+| 40 | case `nl_food_safety_goldenshell_001`; scenario `goldenshell_recall_at_dawn` | Contaminated Egg Supply Chain / Загрязнение цепочки поставок яиц | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` | coordinated: 4545 / `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b`; fragmented: 4710 / `846c96ed8ba240bb392daead67e03bd4b9a7cbe1b23bdd6d412314e582c13503` |
+| 50 | case `us_environmental_desert_water_001`; scenario `desert_water_groundwater_claim` | Desert Water / Вода пустыни | `056bfa737932a81005fb8d9a78246593d1c1908308543d4bf9c5811d73201e8d` | coordinated `credible_source_and_remedy`: 3180 / `8d9f9c5e39dcdb0dc6639d42844a3b9e5f8394702231f1d8eb0aede6be244240`; compromised `compromised_claim_closed`: 3510 / `f5a08dc13bb49b879bc0e4929fbbbb08184cc4269c463eaa4ca8b1fad162c895` |
+
+All five use `rust_scenario_v1`. The four pre-existing fingerprints, canonical
+traces, outcomes, costs, deadlines, final minutes, save digests, and relative
+ordering remain unchanged.
+
+### Combined artifacts and host gates
+
+- deterministic mobile bundle: version 4, exactly five Rust cases, 620,529
+  bytes, SHA-256
+  `645bcd25b9cfa915ce9d0e3b0558e480325e5a45bfc20d7eb69144aba52cb985`;
+- Rust 1.78 locked check, formatting, current workspace check, and Clippy with
+  warnings denied passed;
+- full Rust workspace: 312 passed, 0 failed, 0 ignored; focused totals passed:
+  engine 100, bridge 16, FFI 14, simulator 56, validator 49, diagnostics 28,
+  production catalogue integration 14; Failed ERP formula/economic parity
+  10/10; lifecycle harness 2/2 over 18 explicit paths;
+- Dart format: 49 files, 0 changed; Flutter analysis: no issues; Flutter
+  unit/widget suite: 133 passed, 0 failed;
+- final ordinary three-ABI debug APK:
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`,
+  187,596,640 bytes, SHA-256
+  `689b95b0da9f47bbe385bad9312a74b7625ad23860c0ea63113882f1611e3053`;
+- C ABI remains version 1. The exact stripped libraries inside the APK match
+  Gradle outputs; `armeabi-v7a`, `arm64-v8a`, and `x86_64` each dynamically
+  export exactly `juris_mobile_bridge_execute`,
+  `juris_mobile_bridge_string_free`, and
+  `juris_mobile_bridge_abi_version`;
+- `git diff --check` passed. The branch is clean after the local documentation
+  commit containing this handoff.
+
+### Android API 37 automated and interactive evidence
+
+- explicit target: AVD `Pixel`, device `emulator-5554`, model
+  `sdk_gphone64_x86_64`, Android 17 / API 37, `x86_64`, 1080x1920,
+  `boot_completed=1`;
+- complete native integration suite: 7 passed, 0 failed in 5:42:
+  1. GreenFire RU save/actions/foreground time;
+  2. GoldenShell RU replay across a deadline boundary;
+  3. terminal Logistics save/load;
+  4. corrupted platform save atomicity;
+  5. Failed ERP RU claimant save/load/corruption;
+  6. debug-only lost-but-open lifecycle fixture;
+  7. production Desert Water reveal/save/load/appeal/explicit closure;
+- Failed ERP closed as `settlement_64500` at minute 570. Desert Water proved
+  initial Dossier omission and reveal, lost-but-open first instance at minute
+  3180, repeated atomic restore without duplicates, adverse appeal still open
+  at minute 3480, explicit `compromised_claim_closed` at minute 3510, and
+  immutable rejection of dispatch/time advance after closure;
+- ordinary production app verification found all five catalogue cards in sort
+  order, confirmed `Asteron Systems NV` as Failed ERP player claimant, opened
+  Desert Water at `Community intake` without bridge/asset/mapper error, and
+  returned to the catalogue without executing a player action;
+- final presentation evidence:
+  `apps/juris-mobile/build/five-case-catalog-api37.png` and
+  `apps/juris-mobile/build/desert-water-open-api37.png`;
+- the emulator and ordinary app remain running for owner playtesting, with the
+  catalogue foreground. The last verified app PID was `17672`.
+
+### Known issues and stop boundary
+
+- the API 37 AVD showed slow post-install startup. One launch recovery required
+  an ADB server restart and bounded reconnect after a transient `device
+  offline`; after repeated native runs Android also displayed one `system` ANR
+  dialog. Selecting `Wait` recovered without wiping data or crashing the app;
+  emulator performance remains an environmental risk;
+- the combined branch has no hosted CI result because Desert publication is
+  forbidden at this checkpoint. The hosted records above cover exact Failed
+  ERP PR/merge commits, while all combined evidence is local;
+- screenshot/APK files under `apps/juris-mobile/build/` are local, ignored
+  evidence rather than published release assets;
+- Desert Water was not pushed and no PR/tag/release was created; the backup ref
+  remains; PR #4 was not modified or closed; later architecture phases were not
+  started;
+- next step: owner playtesting, followed only by an explicit publication
+  decision. Do not push/open a Desert PR, tag/release, delete the backup ref, or
+  start a later roadmap checkpoint without authorization.
+
+The two sections immediately below are retained as historical checkpoint
+evidence and must not be interpreted as combined-tree results.
 
 ## Historical: Failed ERP authoritative Rust migration local checkpoint — 2026-08-04
 
@@ -57,9 +188,8 @@ Repository state:
     generic snapshot presentation;
   - `6a27e53549b06911e81fe8c9a61eae3e814fca30` — replay, Dossier,
     persistence, FFI, and Android lifecycle coverage;
-- the final seventh commit is
-  `docs: record Failed ERP Rust migration checkpoint`; its exact SHA is
-  reported after creation because a commit cannot embed its own stable hash;
+- `0aa393096f1e9be4458070d3d53d739c1f8483c0` —
+  `docs: record Failed ERP Rust migration checkpoint`;
 - PR #4 remains untouched;
 - Desert Water remains preserved and unpublished on
   `feat/desert-water-case` at
@@ -193,10 +323,9 @@ Repository state:
     `feat: add Desert Water production scenario`;
   - `7ca533ca986cb90511114fd11e4ce70afe3a7794` —
     `test: cover Desert Water runtime and dossier`;
-- this cumulative handoff is the fourth intentional local commit,
-  `docs: record Desert Water validation checkpoint`; its exact hash is the
-  final branch HEAD reported by Git after the self-referential document is
-  committed.
+- `44e565b22c52a4c3a3e69b2c137353b7771fcf77` is the fourth original local
+  commit, `docs: record Desert Water validation checkpoint`; its rebased
+  equivalent is `6a5006e4da0a807f84ea439ef3b716939704e324`.
 
 Cumulative commit records:
 
@@ -213,7 +342,7 @@ Cumulative commit records:
   validator/diagnostics/catalogue, bridge/FFI, Flutter mapper/widget/catalogue,
   and Android native acceptance coverage. Full host gates are green; the
   post-fix Android device rerun remains the known issue and next step.
-- this documentation commit records the completed gates, exact hashes,
+- `44e565b22c52a4c3a3e69b2c137353b7771fcf77` records the completed gates, exact hashes,
   unchanged compatibility contracts, pending Android evidence, and stop
   boundary. It changes no gameplay or production source.
 - no Desert Water commit has been pushed and no PR, tag, or release has been

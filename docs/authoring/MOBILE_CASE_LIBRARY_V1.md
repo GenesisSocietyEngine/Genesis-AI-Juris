@@ -8,7 +8,7 @@ production entrypoint.
 
 Flutter does not hard-code case captions, topics, clients, roles, difficulty,
 or authoring status. The generated mobile bundle contains a list of stable
-`case_id` and `scenario_id` records. Adding a third case therefore does not
+`case_id` and `scenario_id` records. Adding another case therefore does not
 require another case-card widget.
 
 The checked-in source layers are:
@@ -16,7 +16,7 @@ The checked-in source layers are:
 1. `content/catalog/catalog.json` — stable catalog identity and scenario path;
 2. `content/catalog/cases/*.identity.json` — fictional parties and matter data;
 3. `content/localization/case_catalog.v1.json` — localized narrative text and
-   temporary runtime metadata;
+   runtime metadata;
 4. `apps/juris-mobile/tool/export_mobile_case_bundle.dart` — deterministic
    exporter;
 5. `apps/juris-mobile/assets/case_catalog/mobile_case_bundle.json` — generated
@@ -49,15 +49,21 @@ tracks six explicit readiness states:
 - authoritative engine runtime;
 - generated mobile bundle.
 
-The Failed ERP case launches through `demo_failed_erp`. The logistics matter
-now has a canonical executable scenario at
-`content/cases/unpaid_logistics_invoices.scenario.json`. It passes core
-validation, authoring diagnostics, and deterministic simulation for both its
-negotiated-recovery and judgment-enforcement paths.
+The production library currently contains five `rust_scenario_v1` entries in
+deterministic sort order:
 
-Logistics is playable through `rust_scenario_v1`. Its canonical scenario JSON
-is embedded in bundle v3, validated again when Rust creates the session, and
-never falls back to ERP gameplay.
+1. `be_commercial_failed_erp_001`;
+2. `be_commercial_logistics_001`;
+3. `greenfire_first_72_hours`;
+4. `goldenshell_recall_at_dawn`;
+5. `desert_water_groundwater_claim`.
+
+Their canonical scenario JSON is embedded in bundle v4 and validated again
+when Rust creates the session. The combined five-case bundle is 620,529 bytes
+with SHA-256
+`645bcd25b9cfa915ce9d0e3b0558e480325e5a45bfc20d7eb69144aba52cb985`.
+`DemoGameRepository` is retained only for historical Failed ERP
+characterization tests and is never selected by the production factory.
 
 Run its focused gates:
 

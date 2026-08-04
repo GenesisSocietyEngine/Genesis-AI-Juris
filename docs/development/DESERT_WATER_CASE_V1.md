@@ -6,25 +6,41 @@ This document is the specification-first contract for the production scenario
 Desert Water. The player acts for the affected residents; Caldera Compression
 & Cooling Inc. is the opposing industrial operator.
 
-The implementation branch is `feat/desert-water-case`. Its released base and
-initial HEAD are `3c27eb2782a61662d7ceffbd19e5434bce389470`, tagged
-`v0.6.0-alpha.1`.
+The implementation branch is `feat/desert-water-case`. It is rebased on the
+Failed ERP PR #14 merge commit
+`3cfa3066b64f36b92f3a77a30ec4a070e74860ed`; PR #14 published exact head
+`0aa393096f1e9be4458070d3d53d739c1f8483c0`. The original unpublished Desert
+head is retained locally as
+`backup/desert-water-pre-failed-erp` ->
+`44e565b22c52a4c3a3e69b2c137353b7771fcf77`.
 
-This specification is not proof that the scenario, fingerprint, bundle,
-traces, tests, APK, or Android acceptance already exist or pass. Results may be
-recorded only after the corresponding deterministic tools have run.
+The rebased Desert implementation commits are `57caf237`, `6d510738`,
+`14ed61ce`, and `6a5006e4`. Two narrow follow-ups complete local validation:
 
-Desert Water must be implemented as declarative `ScenarioDefinition` v1
-content using the existing authoritative Rust runtime, Matter Lifecycle v1,
-Dossier Projection v1, command-log persistence, JSON bridge, and three-symbol
-native ABI. No engine, schema, persistence, bridge, FFI, or generic Flutter
-change is authorized by this case contract.
+- `d7a52d836f4f51b9c510af38513bcb2722cbd6a2` corrects generic validator
+  analysis so an unambiguous terminal event retains its own condition guard;
+  ambiguous terminal chains remain conservatively rejected;
+- `de7ac065d095a0e268e14961b4b74edd754cf52e` makes Android Gradle tasks track
+  transitive Rust workspace sources/manifests and the native build script, and
+  aligns Desert integration assertions with the shared 08:00 presentation
+  baseline.
+
+Neither follow-up changes scenario content, runtime execution, persistence,
+digest, bridge, FFI, or ABI contracts. The branch remains local and
+unpublished.
+
+This document is both the specification-first contract and the current local
+integration handoff. Desert Water is implemented as declarative
+`ScenarioDefinition` v1 content using the existing authoritative Rust runtime,
+Matter Lifecycle v1, Dossier Projection v1, command-log persistence, JSON
+bridge, and three-symbol native ABI. The fingerprint, generated five-case
+bundle, combined Rust/Flutter totals, APK, and Android API 37 acceptance below
+are measured results. The checkpoint has reached its local-review stop.
 
 The case is:
 
 - catalogue position 5 with `sort_order: 50`;
-- the fourth authoritative Rust scenario, because the first catalogue card is
-  the legacy Failed ERP Dart demo;
+- the fifth authoritative Rust production scenario;
 - a fictional, expert-level United States environmental-litigation matter;
 - playable only after all local acceptance gates in this document pass.
 
@@ -39,16 +55,17 @@ rewritten while adding Desert Water.
 
 | Position | Catalogue/runtime identity | Caption | EN / RU topic | Fingerprint | Existing canonical traces |
 |---:|---|---|---|---|---|
-| 1 / sort 10 | case `be_commercial_failed_erp_001`; legacy source scenario `failed-erp-implementation`; adapter `demo_failed_erp` | Asteron Systems NV v. Northbridge Consulting BV | Failed ERP Implementation / Неудачное внедрение ERP | N/A: legacy Dart demo, not a Rust `ScenarioDefinition` | N/A: no authoritative Rust outcome or final minute |
+| 1 / sort 10 | case and scenario `be_commercial_failed_erp_001`; adapter `rust_scenario_v1` | Asteron Systems NV v. Northbridge Consulting BV | Failed ERP Implementation / Неудачное внедрение ERP | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` | `settlement_64500` at minute 570; `judgment_preserved_after_cassation` at minute 8640; remittal returns open at minute 10080 |
 | 2 / sort 20 | case and scenario `be_commercial_logistics_001`; adapter `rust_scenario_v1` | Velmont Logistics SA v. Orbis Retail Belgium NV | Unpaid Logistics Invoices / Неоплаченные логистические счета | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` | `negotiated_recovery` at minute 270; `judgment_recovery` at minute 480 |
 | 3 / sort 30 | case and scenario `greenfire_first_72_hours`; adapter `rust_scenario_v1` | Port Haven Environmental Authority v. GreenFire Industrial Solutions B.V. | The First 72 Hours / Первые 72 часа | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` | `protected_crisis_position` at minute 4440; `compromised_crisis_position` at minute 4590 |
 | 4 / sort 40 | case `nl_food_safety_goldenshell_001`; scenario `goldenshell_recall_at_dawn`; adapter `rust_scenario_v1` | GoldenShell Producers Cooperative U.A. v. MiteGuard Services V.O.F. | Contaminated Egg Supply Chain / Загрязнение цепочки поставок яиц | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` | `coordinated_claim_position` at minute 4545; `fragmented_claim_position` at minute 4710 |
 
-Failed ERP's N/A values are compatibility facts, not missing values to invent.
-The pre-Desert mobile-bundle SHA-256 is
-`8d9db2e75c5cac14df95073843cc5a0775df8d17323fb434c688a8854a012835`.
-Adding Desert Water intentionally changes that digest. The new bundle digest
-is `fa3a2556e5baec0303f2fb8b8fe4b8e51fca6419da606cf000810d8643821644`.
+All four pre-existing catalogue entries are authoritative Rust scenarios. The
+Failed-ERP-only pre-Desert mobile bundle was 479,920 bytes with SHA-256
+`afe93194de58761fe534a1b818968bc7a2b5bd931eba597ab03a06561733baf1`.
+Adding Desert Water intentionally changes that digest. The deterministic
+combined five-case bundle is 620,529 bytes with SHA-256
+`645bcd25b9cfa915ce9d0e3b0558e480325e5a45bfc20d7eb69144aba52cb985`.
 The final Desert Water fingerprint is
 `056bfa737932a81005fb8d9a78246593d1c1908308543d4bf9c5811d73201e8d`.
 
@@ -693,15 +710,16 @@ must not change:
   `juris_mobile_bridge_string_free`, and
   `juris_mobile_bridge_abi_version`.
 
-Existing Logistics, GreenFire, and GoldenShell saves must replay with identical
-semantics and digests. The Failed ERP Dart demo remains unaffected by Rust
-command-log persistence. No new export, persistence field, compatibility
-marker, or scenario-specific bridge command is permitted.
+Existing Failed ERP, Logistics, GreenFire, and GoldenShell saves and canonical
+replays must retain identical semantics and digests. Failed ERP uses the same
+`scenario-runtime-v2` command-log contract; no supported legacy Dart save
+format existed and no importer was added. No new export, persistence field,
+compatibility marker, or scenario-specific bridge command is permitted.
 
 ## Required implementation artifacts
 
-The content checkpoint adds only content, tests, generated bundle output, and
-documentation, following existing production templates:
+The four Desert implementation commits contain content, tests, generated
+bundle output, and documentation following existing production templates:
 
 - identity record for `us_environmental_desert_water_001`;
 - `content/cases/desert_water_groundwater_claim.scenario.json`;
@@ -713,19 +731,24 @@ documentation, following existing production templates:
 - focused Flutter catalogue, localization, mapper/widget tests;
 - production-native Android acceptance path.
 
-`mobile_case_bundle.json` remains bundle version 4. Its content SHA changes.
-No `apps/juris-mobile/lib/**` or generic Rust production source modification is
-expected. If declarative content cannot satisfy this document, stop and report
-the missing generic capability before changing an engine or schema.
+`mobile_case_bundle.json` remains bundle version 4. The combined artifact is
+620,529 bytes with SHA-256
+`645bcd25b9cfa915ce9d0e3b0558e480325e5a45bfc20d7eb69144aba52cb985`.
+No `apps/juris-mobile/lib/**`, engine, schema, persistence, bridge, or FFI
+production change is part of Desert Water. The validator-only correction in
+`d7a52d8` preserves conservative handling of ambiguous paths. The Android
+build/test correction in `de7ac06` prevents a transitive Rust change from
+leaving a stale ABI library in `jniLibs`; it changes no runtime semantics. If
+declarative content cannot satisfy this document, stop and report the missing
+generic capability before changing an engine or schema.
 
 ## Required tests and deterministic assertions
 
 Rust/bridge/content tests must prove:
 
 - schema parsing, validation, diagnostics, and authoring analysis are clean;
-- Desert Water's stable fingerprint is deterministic, the three pre-existing
-  Rust fingerprints remain byte-exact, and the legacy Failed ERP catalogue
-  identity/adapter remains exact;
+- Desert Water's stable fingerprint is deterministic and all four pre-existing
+  Rust fingerprints, including Failed ERP, remain byte-exact;
 - all four pre-existing catalogue identities, public EN/RU titles,
   catalogue-relative ordering, canonical traces where applicable, outcomes,
   final minutes, content, balance, costs, actions, and deadlines remain exact;
@@ -750,12 +773,13 @@ Rust/bridge/content tests must prove:
 - JSON bridge and FFI carry the additive existing Dossier without a new
   symbol;
 - mobile bundle export is deterministic and pins the generated SHA-256
-  `fa3a2556e5baec0303f2fb8b8fe4b8e51fca6419da606cf000810d8643821644`.
+  `645bcd25b9cfa915ce9d0e3b0558e480325e5a45bfc20d7eb69144aba52cb985`.
 
 Flutter tests must prove:
 
 - bundle version 4, five exact ordered catalogue IDs, and Desert at index 4;
-- Failed ERP retains its truthful legacy adapter/N/A runtime characteristics;
+- Failed ERP retains its authoritative `rust_scenario_v1` adapter, Asteron
+  claimant identity, fingerprint, canonical traces, and lifecycle matrix;
 - Desert identity, scenario ID, sort, seed, foreground clock, readiness, and
   all-positive action costs are exact;
 - RU overlay has the exact canonical stable-ID sets and every required field;
@@ -800,8 +824,35 @@ The test must:
     as `scenario_resolved` without changing the snapshot or Dossier.
 
 Record emulator ID/model/API, screen size, seed, exact commands and minutes,
-outcome ID, fingerprint, bundle SHA, APK SHA, and screenshots of catalogue,
-opening Dossier, reveal, adverse-open remedy, restored state, and closure.
+outcome ID, fingerprint, bundle SHA, and APK SHA. Capture catalogue and
+ordinary production case-open screenshots. Lifecycle screenshots are optional
+presentation evidence and never replace automated assertions.
+
+Post-rebase combined acceptance result:
+
+- emulator/AVD/device/API/ABI/resolution: AVD `Pixel`, device
+  `emulator-5554`, model `sdk_gphone64_x86_64`, Android 17 / API 37, `x86_64`,
+  1080x1920, with `boot_completed=1`;
+- complete native integration total, including both Failed ERP and Desert
+  Water: 7 passed, 0 failed in 5:42;
+- the Failed ERP native path dispatched `run-conflict-check`,
+  `request-documents`, and `future-settle`, then closed as `settlement_64500`
+  at scenario minute 570;
+- the production Desert path proved initial Dossier omission and the
+  `commission_defensible_sampling` reveal, reset, reached lost-but-open first
+  instance at minute 3180, survived save/reset/load and repeated load without
+  duplicates, remained open after adverse appeal at minute 3480, explicitly
+  closed as `compromised_claim_closed` at minute 3510, and rejected dispatch
+  and one-minute foreground advance after closure without mutation;
+- presentation evidence:
+  `apps/juris-mobile/build/five-case-catalog-api37.png` and
+  `apps/juris-mobile/build/desert-water-open-api37.png`; automated assertions,
+  not screenshots, remain the authority for the complete lifecycle trace;
+- no manual full-lifecycle screenshot replay was performed after the automated
+  run, so the owner's intended ordinary session was not advanced;
+- the last verified ordinary production-app PID was `17672`; at verification,
+  ordinary `MainActivity` was foreground on the five-case catalogue and the
+  emulator had not been closed.
 
 ## Validation gates
 
@@ -825,8 +876,48 @@ Before declaring local completion, run and record:
 - ABI audit for `armeabi-v7a`, `arm64-v8a`, and `x86_64`, each with ABI
   version 1 and exactly the three exports above.
 
+Final combined local measurements:
+
+- deterministic five-case bundle: 620,529 bytes, SHA-256
+  `645bcd25b9cfa915ce9d0e3b0558e480325e5a45bfc20d7eb69144aba52cb985`;
+- generic terminal-event guard correction:
+  `d7a52d836f4f51b9c510af38513bcb2722cbd6a2`;
+- Rust 1.78 locked check, formatting, current workspace check, and Clippy with
+  warnings denied passed; the full workspace ran 312 tests, all passed;
+- focused Rust totals passed: engine 100, bridge 16, FFI 14, simulator 56,
+  validator 49, diagnostics 28, and production catalogue integration 14;
+  Failed ERP formula/economic parity remained 10/10 and the lifecycle harness
+  remained 2/2 over 18 explicit paths;
+- Dart format checked 49 files with 0 changes; Flutter analysis found no
+  issues; the full unit/widget suite ran 133 tests, all passed;
+- final debug APK:
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`,
+  187,596,640 bytes, SHA-256
+  `689b95b0da9f47bbe385bad9312a74b7625ad23860c0ea63113882f1611e3053`;
+- C ABI version remains 1. The exact stripped libraries packaged in the APK
+  match the Gradle outputs, and `armeabi-v7a`, `arm64-v8a`, and `x86_64` each
+  dynamically export exactly `juris_mobile_bridge_execute`,
+  `juris_mobile_bridge_string_free`, and
+  `juris_mobile_bridge_abi_version`;
+- Android API 37 native integration ran 7 tests, all passed; the ordinary app
+  then displayed all five cards in sort order, identified Asteron as Failed ERP
+  claimant/player, opened Desert Water without bridge/asset/mapper error, and
+  returned to the catalogue;
+- `git diff --check` passed. The working tree is clean after the local
+  documentation commit recorded by this handoff.
+
+Separate-branch totals, APK hashes, and the earlier Desert-on-release bundle
+hash are historical inputs and must not fill these combined-result fields.
+
 Hosted iOS validation occurs only after later publication. A local Windows
 checkpoint must not claim it.
+
+Device-environment note: the API 37 AVD required one ADB server restart and a
+bounded reconnect after a transient offline state. After repeated native runs,
+Android also displayed one `system` ANR dialog; choosing `Wait` recovered the
+ordinary app without a crash, data wipe, or skipped test. Slow AVD startup
+remains an environmental risk. The complete 7/7 run and final ordinary-app
+verification were performed after recovery.
 
 ## Explicit exclusions and stop conditions
 
@@ -853,14 +944,16 @@ Stop and report rather than changing generic code if:
   processing;
 - ABI audit shows any fourth export.
 
-The local review checkpoint ends after implementation, deterministic
+The local review checkpoint has ended after implementation, deterministic
 validation, Android API 37 evidence, and cumulative progress documentation.
+Keep `feat/desert-water-case` unpublished and retain
+`backup/desert-water-pre-failed-erp` at `44e565b22c52a4c3a3e69b2c137353b7771fcf77`.
 Do not push, open a Desert Water PR, create another tag/release, modify or close
 PR #4, or begin a later roadmap phase without explicit authorization.
 
 The final local report must list all five catalogue positions with stable case
-and scenario identities, EN/RU public titles, fingerprints (truthful N/A for
-the legacy Dart case), and canonical outcomes/final minutes where applicable.
+and scenario identities, EN/RU public titles, authoritative Rust fingerprints,
+and canonical outcomes/final minutes where applicable.
 It must show the old and new mobile-bundle SHA-256 values and explicitly prove
 that the four pre-existing identities and their relative ordering did not
 change.
