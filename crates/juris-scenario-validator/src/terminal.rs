@@ -9,10 +9,13 @@
 //! analysis therefore runs only after those phases have produced no errors,
 //! avoiding misleading cascade diagnostics.
 
-use crate::{Diagnostic, DiagnosticCode, ValidationReport};
+use crate::{
+    effect_closure::{correlated_transition_paths, EffectPath},
+    Diagnostic, DiagnosticCode, ValidationReport,
+};
 use juris_scenario_schema::{
     ActionId, AsyncTaskId, AsyncTaskStatus, Condition, DeadlineId, DeadlineStatus, Effect, EventId,
-    EventTrigger, InboxItemId, ScenarioDefinition, StageDefinition, StageId, StageKind,
+    InboxItemId, ScenarioDefinition, StageDefinition, StageId, StageKind,
 };
 use std::collections::HashSet;
 
@@ -41,57 +44,77 @@ fn validate_outcomes_only_resolve_at_terminal_stage(
     scenario: &ScenarioDefinition,
     report: &mut ValidationReport,
 ) {
-    for (collection, index, condition, effects) in
+    for (index, action) in scenario.actions.iter().enumerate() {
+        validate_outcome_resolution_transition(
+            scenario,
+            &action.available_when,
+            &action.effects,
+            Some(action.id.as_str()),
+            None,
+            &format!("actions[{index}].effects"),
+            report,
+        );
+    }
+    for (index, event) in scenario.events.iter().enumerate() {
+        validate_outcome_resolution_transition(
+            scenario,
+            &event.condition,
+            &event.effects,
+            None,
+            Some(event.id.as_str()),
+            &format!("events[{index}].effects"),
+            report,
+        );
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn validate_outcome_resolution_transition(
+    scenario: &ScenarioDefinition,
+    condition: &Condition,
+    effects: &[Effect],
+    source_action: Option<&str>,
+    source_event: Option<&str>,
+    path: &str,
+    report: &mut ValidationReport,
+) {
+    let condition_enters_terminal = condition_guarantees(condition, &|nested| {
+        let Condition::StageIs { stage } = nested else {
+            return false;
+        };
         scenario
-            .actions
+            .stages
             .iter()
-            .enumerate()
-            .map(|(index, action)| {
-                (
-                    "actions",
-                    index,
-                    &action.available_when,
-                    action.effects.as_slice(),
-                )
-            })
-            .chain(scenario.events.iter().enumerate().map(|(index, event)| {
-                ("events", index, &event.condition, event.effects.as_slice())
-            }))
-    {
-        if !effects
+            .find(|candidate| candidate.id == *stage)
+            .is_some_and(is_terminal_stage)
+    });
+    let has_invalid_path =
+        correlated_transition_paths(scenario, effects, source_action, source_event)
             .iter()
-            .any(|effect| matches!(effect, Effect::ResolveOutcome { .. }))
-        {
-            continue;
-        }
-
-        let enters_terminal = effects.iter().any(|effect| {
-            let Effect::SetStage { stage } = effect else {
-                return false;
-            };
-            scenario
-                .stages
-                .iter()
-                .find(|candidate| candidate.id == *stage)
-                .is_some_and(is_terminal_stage)
-        }) || condition_guarantees(condition, &|nested| {
-            let Condition::StageIs { stage } = nested else {
-                return false;
-            };
-            scenario
-                .stages
-                .iter()
-                .find(|candidate| candidate.id == *stage)
-                .is_some_and(is_terminal_stage)
-        });
-
-        if !enters_terminal {
-            report.push(Diagnostic::error(
-                DiagnosticCode::OutcomeResolvedBeforeTerminalStage,
-                format!("{collection}[{index}].effects"),
-                "a complete scenario outcome may resolve only in a transition that enters a terminal stage",
-            ));
-        }
+            .any(|transition| {
+                let resolves_outcome = transition
+                    .effects()
+                    .iter()
+                    .any(|effect| matches!(effect, Effect::ResolveOutcome { .. }));
+                let enters_terminal = condition_enters_terminal
+                    || transition.effects().iter().any(|effect| {
+                        let Effect::SetStage { stage } = effect else {
+                            return false;
+                        };
+                        scenario
+                            .stages
+                            .iter()
+                            .find(|candidate| candidate.id == *stage)
+                            .is_some_and(is_terminal_stage)
+                    });
+                resolves_outcome && !enters_terminal
+            });
+    if has_invalid_path {
+        report.push(Diagnostic::error(
+            DiagnosticCode::OutcomeResolvedBeforeTerminalStage,
+            path.to_owned(),
+            "a complete scenario outcome may resolve only in a transition that enters a terminal stage",
+        ));
     }
 }
 
@@ -131,56 +154,82 @@ fn validate_terminal_transition(
     path: &str,
     report: &mut ValidationReport,
 ) {
-    let terminal_targets = terminal_stage_targets(scenario, effects);
+    let transition_paths = correlated_transition_paths(
+        scenario,
+        effects,
+        source_action.map(|action| action.as_str()),
+        source_event.map(|event| event.as_str()),
+    );
+    for transition_path in transition_paths {
+        validate_terminal_effect_path(
+            scenario,
+            condition,
+            &transition_path,
+            source_action,
+            path,
+            report,
+        );
+    }
+}
 
+fn validate_terminal_effect_path(
+    scenario: &ScenarioDefinition,
+    condition: &Condition,
+    transition_path: &EffectPath<'_>,
+    source_action: Option<&ActionId>,
+    diagnostic_path: &str,
+    report: &mut ValidationReport,
+) {
+    let effects = transition_path
+        .effects()
+        .iter()
+        .map(|effect| (*effect).clone())
+        .collect::<Vec<_>>();
+    let terminal_targets = terminal_stage_targets(scenario, &effects);
     if terminal_targets.is_empty() {
         return;
     }
-
     let target_names = terminal_targets
         .iter()
         .map(|stage| stage.id.as_str())
         .collect::<Vec<_>>()
         .join(", ");
-
-    let chain = TransitionChain::build(scenario, effects, source_action, source_event);
+    let chain = TransitionChain::from_effect_path(transition_path);
 
     validate_terminal_tasks(
         scenario,
         condition,
-        effects,
+        &effects,
         source_action,
         &chain,
-        path,
+        diagnostic_path,
         &target_names,
         report,
     );
-
     validate_terminal_deadlines(
         scenario,
         condition,
-        effects,
+        &effects,
         &chain,
-        path,
+        diagnostic_path,
         &target_names,
         report,
     );
-
     validate_terminal_inbox(
         scenario,
         condition,
-        effects,
+        &effects,
         &chain,
-        path,
+        diagnostic_path,
         &target_names,
         report,
     );
 
     for terminal_stage in terminal_targets {
-        if !chain.resolves_outcome_for_stage(scenario, effects, &terminal_stage.id) {
+        if !chain.resolves_outcome_for_stage(scenario, &effects, &terminal_stage.id) {
             report.push(Diagnostic::error(
                 DiagnosticCode::ResolvedWithoutOutcome,
-                path.to_owned(),
+                diagnostic_path.to_owned(),
                 format!(
                     "transition enters terminal stage `{}` without resolving an outcome assigned to that stage",
                     terminal_stage.id
@@ -441,62 +490,10 @@ struct TransitionChain {
 }
 
 impl TransitionChain {
-    fn build(
-        scenario: &ScenarioDefinition,
-        root_effects: &[Effect],
-        source_action: Option<&ActionId>,
-        source_event: Option<&EventId>,
-    ) -> Self {
-        let mut chain = Self::default();
-        let mut pending_events = Vec::new();
-
-        if let Some(event) = source_event {
-            pending_events.push(event.as_str().to_owned());
+    fn from_effect_path(path: &EffectPath<'_>) -> Self {
+        Self {
+            event_ids: path.event_ids().map(str::to_owned).collect(),
         }
-
-        if let Some(action) = source_action {
-            for event in &scenario.events {
-                if matches!(
-                    &event.trigger,
-                    EventTrigger::AfterAction {
-                        action: trigger_action
-                    } if trigger_action == action
-                ) {
-                    pending_events.push(event.id.as_str().to_owned());
-                }
-            }
-        }
-
-        add_triggered_events(root_effects, &mut pending_events);
-
-        while let Some(event_id) = pending_events.pop() {
-            if !chain.event_ids.insert(event_id.clone()) {
-                continue;
-            }
-
-            let Some(event) = scenario
-                .events
-                .iter()
-                .find(|candidate| candidate.id.as_str() == event_id.as_str())
-            else {
-                continue;
-            };
-
-            add_triggered_events(&event.effects, &mut pending_events);
-
-            for dependent_event in &scenario.events {
-                if matches!(
-                    &dependent_event.trigger,
-                    EventTrigger::AfterEvent {
-                        event: trigger_event
-                    } if trigger_event == &event.id
-                ) {
-                    pending_events.push(dependent_event.id.as_str().to_owned());
-                }
-            }
-        }
-
-        chain
     }
 
     fn contains_event(&self, event: &EventId) -> bool {
@@ -505,24 +502,14 @@ impl TransitionChain {
 
     fn contains_effect<F>(
         &self,
-        scenario: &ScenarioDefinition,
+        _scenario: &ScenarioDefinition,
         root_effects: &[Effect],
         predicate: &F,
     ) -> bool
     where
         F: Fn(&Effect) -> bool,
     {
-        if root_effects.iter().any(predicate) {
-            return true;
-        }
-
-        self.event_ids.iter().any(|event_id| {
-            scenario
-                .events
-                .iter()
-                .find(|event| event.id.as_str() == event_id.as_str())
-                .is_some_and(|event| event.effects.iter().any(predicate))
-        })
+        root_effects.iter().any(predicate)
     }
 
     fn resolves_outcome_for_stage(
@@ -540,14 +527,6 @@ impl TransitionChain {
                 definition.id == *outcome && definition.terminal_stage == *terminal_stage
             })
         })
-    }
-}
-
-fn add_triggered_events(effects: &[Effect], pending_events: &mut Vec<String>) {
-    for effect in effects {
-        if let Effect::TriggerEvent { event } = effect {
-            pending_events.push(event.as_str().to_owned());
-        }
     }
 }
 

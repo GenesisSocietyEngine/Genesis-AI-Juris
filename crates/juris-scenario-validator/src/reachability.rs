@@ -8,7 +8,7 @@
 //! potentially satisfiable. This avoids incorrectly rejecting valid branches
 //! merely because runtime evidence is not available during static analysis.
 
-use crate::{Diagnostic, DiagnosticCode, ValidationReport};
+use crate::{effect_closure::EffectClosure, Diagnostic, DiagnosticCode, ValidationReport};
 use juris_scenario_schema::{Condition, Effect, EventTrigger, ScenarioDefinition, StageId};
 use std::collections::HashSet;
 
@@ -153,26 +153,29 @@ impl ReachabilityGraph {
     }
 
     fn apply_reachable_effects(&mut self, scenario: &ScenarioDefinition) {
-        let action_effects: Vec<&Effect> = scenario
+        let mut closure = EffectClosure::new(scenario);
+        for action in scenario
             .actions
             .iter()
             .filter(|action| self.actions.contains(action.id.as_str()))
-            .flat_map(|action| action.effects.iter())
-            .collect();
-
-        let event_effects: Vec<&Effect> = scenario
+        {
+            closure.add_effects(&action.effects);
+        }
+        for event in scenario
             .events
             .iter()
             .filter(|event| self.events.contains(event.id.as_str()))
-            .flat_map(|event| event.effects.iter())
-            .collect();
+        {
+            closure.add_effects(&event.effects);
+        }
 
-        for effect in action_effects.into_iter().chain(event_effects) {
-            self.apply_reachable_effect(scenario, effect);
+        self.events.extend(closure.event_ids().map(str::to_owned));
+        for effect in closure.effects() {
+            self.apply_reachable_effect(effect);
         }
     }
 
-    fn apply_reachable_effect(&mut self, scenario: &ScenarioDefinition, effect: &Effect) {
+    fn apply_reachable_effect(&mut self, effect: &Effect) {
         match effect {
             Effect::SetStage { stage } => {
                 self.stages.insert(stage.as_str().to_owned());
@@ -189,19 +192,7 @@ impl ReachabilityGraph {
             Effect::ResolveOutcome { outcome } => {
                 self.outcomes.insert(outcome.as_str().to_owned());
             }
-            Effect::ResolveDeterministicDecision { decision } => {
-                if let Some(definition) = scenario
-                    .deterministic_decisions
-                    .iter()
-                    .find(|candidate| candidate.id == *decision)
-                {
-                    for branch in &definition.branches {
-                        for branch_effect in &branch.effects {
-                            self.apply_reachable_effect(scenario, branch_effect);
-                        }
-                    }
-                }
-            }
+            Effect::ResolveDeterministicDecision { .. } => {}
             Effect::SetFlag { .. }
             | Effect::SetMetric { .. }
             | Effect::AddMetric { .. }
@@ -293,7 +284,7 @@ fn validate_stage_exits(scenario: &ScenarioDefinition, report: &mut ValidationRe
                 .actions
                 .iter()
                 .find(|action| action.id == *action_id)
-                .is_some_and(|action| effects_exit_stage(scenario, &action.effects, &stage.id))
+                .is_some_and(|action| action_exits_stage(scenario, action, &stage.id))
         });
 
         let has_event_exit = scenario.events.iter().any(|event| {
@@ -315,38 +306,39 @@ fn validate_stage_exits(scenario: &ScenarioDefinition, report: &mut ValidationRe
     }
 }
 
+fn action_exits_stage(
+    scenario: &ScenarioDefinition,
+    action: &juris_scenario_schema::ActionDefinition,
+    current_stage: &StageId,
+) -> bool {
+    let mut closure = EffectClosure::new(scenario);
+    closure.add_effects(&action.effects);
+    for event in &scenario.events {
+        if matches!(
+            &event.trigger,
+            EventTrigger::AfterAction { action: trigger } if trigger == &action.id
+        ) {
+            closure.add_event(event.id.as_str());
+        }
+    }
+    closure.contains(|effect| match effect {
+        Effect::SetStage { stage } => stage != current_stage,
+        Effect::ResolveOutcome { .. } => true,
+        _ => false,
+    })
+}
+
 fn effects_exit_stage(
     scenario: &ScenarioDefinition,
     effects: &[Effect],
     current_stage: &StageId,
 ) -> bool {
-    if effects.iter().any(|effect| match effect {
+    let mut closure = EffectClosure::new(scenario);
+    closure.add_effects(effects);
+    closure.contains(|effect| match effect {
         Effect::SetStage { stage } => stage != current_stage,
         Effect::ResolveOutcome { .. } => true,
         _ => false,
-    }) {
-        return true;
-    }
-
-    effects.iter().any(|effect| {
-        let Effect::TriggerEvent { event } = effect else {
-            return false;
-        };
-
-        scenario
-            .events
-            .iter()
-            .find(|candidate| candidate.id == *event)
-            .is_some_and(|triggered_event| {
-                triggered_event
-                    .effects
-                    .iter()
-                    .any(|triggered_effect| match triggered_effect {
-                        Effect::SetStage { stage } => stage != current_stage,
-                        Effect::ResolveOutcome { .. } => true,
-                        _ => false,
-                    })
-            })
     })
 }
 
@@ -396,8 +388,16 @@ fn validate_reachable_outcomes(
 }
 
 fn validate_event_triggers(scenario: &ScenarioDefinition, report: &mut ValidationReport) {
+    let mut closure = EffectClosure::new(scenario);
+    for action in &scenario.actions {
+        closure.add_effects(&action.effects);
+    }
+    for event in &scenario.events {
+        closure.add_effects(&event.effects);
+    }
+
     for (event_index, event) in scenario.events.iter().enumerate() {
-        if event_has_declared_trigger_path(scenario, event) {
+        if event_has_declared_trigger_path(scenario, event, &closure) {
             continue;
         }
 
@@ -416,6 +416,7 @@ fn validate_event_triggers(scenario: &ScenarioDefinition, report: &mut Validatio
 fn event_has_declared_trigger_path(
     scenario: &ScenarioDefinition,
     event: &juris_scenario_schema::EventDefinition,
+    closure: &EffectClosure<'_>,
 ) -> bool {
     match &event.trigger {
         EventTrigger::ScenarioStart
@@ -424,24 +425,19 @@ fn event_has_declared_trigger_path(
         | EventTrigger::AfterEvent { .. }
         | EventTrigger::MetricThresholdReached { .. } => true,
 
-        EventTrigger::ByEffect => scenario
-            .actions
-            .iter()
-            .flat_map(|action| action.effects.iter())
-            .chain(
-                scenario
-                    .events
-                    .iter()
-                    .flat_map(|candidate| candidate.effects.iter()),
-            )
-            .any(|effect| {
+        EventTrigger::ByEffect => {
+            closure.contains(|effect| {
                 matches!(
                     effect,
                     Effect::TriggerEvent {
                         event: referenced_event
                     } if referenced_event == &event.id
                 )
-            }),
+            }) || scenario
+                .async_tasks
+                .iter()
+                .any(|task| task.expiry_event.as_ref() == Some(&event.id))
+        }
 
         EventTrigger::AsyncTaskCompleted { task } => {
             let Some(task_definition) = scenario

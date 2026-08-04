@@ -7,6 +7,7 @@ const GREENFIRE_SCENARIO: &str =
     include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json");
 const GOLDENSHELL_SCENARIO: &str =
     include_str!("../../../content/cases/goldenshell_recall_at_dawn.scenario.json");
+const FAILED_ERP_SCENARIO: &str = include_str!("../../../content/cases/failed_erp.scenario.json");
 
 #[test]
 fn playable_catalog_scenarios_pass_core_validation() {
@@ -14,6 +15,7 @@ fn playable_catalog_scenarios_pass_core_validation() {
         ("Logistics", LOGISTICS_SCENARIO),
         ("GreenFire", GREENFIRE_SCENARIO),
         ("GoldenShell", GOLDENSHELL_SCENARIO),
+        ("Failed ERP", FAILED_ERP_SCENARIO),
     ] {
         let scenario: ScenarioDefinition =
             serde_yaml::from_str(encoded).expect("scenario JSON must deserialize");

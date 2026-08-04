@@ -149,7 +149,7 @@ fn reference_library_exposes_all_mobile_playable_scenarios() {
             .map(|identity| identity.player_client_id.as_str())
             .collect::<Vec<_>>(),
         vec![
-            "northbridge_consulting",
+            "asteron_systems",
             "velmont_logistics",
             "greenfire_industrial_solutions",
             "goldenshell_producers_cooperative",

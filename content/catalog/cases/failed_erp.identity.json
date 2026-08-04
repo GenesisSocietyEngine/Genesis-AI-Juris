@@ -8,8 +8,8 @@
   "jurisdiction": "BE",
   "practice_area": "commercial_litigation",
   "difficulty": "intermediate",
-  "player_client_id": "northbridge_consulting",
-  "synopsis": "Asteron Systems claims that Northbridge Consulting failed to deliver a usable ERP implementation, while Northbridge maintains that scope changes, incomplete data, and weak client governance caused the programme to fail.",
+  "player_client_id": "asteron_systems",
+  "synopsis": "Asteron Systems claims that Northbridge Consulting failed to deliver a usable ERP implementation. Northbridge maintains that scope changes, incomplete data, and weak client governance caused the programme to fail.",
   "legal_issues": [
     "contractual scope and change control",
     "professional standard of care",
@@ -22,23 +22,23 @@
     "technology",
     "commercial_contract",
     "expert_evidence",
-    "defence"
+    "claimant"
   ],
   "parties": [
     {
       "party_id": "asteron_systems",
       "display_name": "Asteron Systems NV",
-      "procedural_role": "claimant"
+      "procedural_role": "claimant",
+      "client_contact": {
+        "contact_id": "asteron_chief_executive",
+        "display_name": "Asteron Systems Chief Executive Officer",
+        "role": "Chief Executive Officer"
+      }
     },
     {
       "party_id": "northbridge_consulting",
       "display_name": "Northbridge Consulting BV",
-      "procedural_role": "defendant",
-      "client_contact": {
-        "contact_id": "elise_van_den_berg",
-        "display_name": "Elise Van den Berg",
-        "role": "Chief Operating Officer"
-      }
+      "procedural_role": "defendant"
     }
   ]
 }

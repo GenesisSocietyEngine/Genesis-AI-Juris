@@ -3,6 +3,23 @@ use std::path::PathBuf;
 use juris_scenario_simulator::{
     ScenarioDocument, ScenarioSimulator, ScenarioTraceCommand, SimulationStatus,
 };
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+struct ActionEconomics {
+    id: String,
+    time_cost_minutes: u32,
+    cost_eur: u32,
+    billable_minutes: u32,
+}
+
+#[derive(Debug, Deserialize)]
+struct FailedErpActionInventory {
+    scenario_id: String,
+    legacy_actions: Vec<ActionEconomics>,
+    lifecycle_continuations: Vec<ActionEconomics>,
+    excluded_dead_aliases: Vec<String>,
+}
 
 fn logistics_scenario_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -17,6 +34,10 @@ fn greenfire_scenario_path() -> PathBuf {
 fn goldenshell_scenario_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../content/cases/goldenshell_recall_at_dawn.scenario.json")
+}
+
+fn failed_erp_scenario_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../content/cases/failed_erp.scenario.json")
 }
 
 fn run_path(actions: &[&str]) -> juris_scenario_simulator::SimulationResult {
@@ -58,6 +79,53 @@ fn run_scenario_commands(
         .expect("simulator must initialize")
         .run_commands(&commands, true)
         .expect("reference trace must reach an outcome")
+}
+
+#[test]
+fn failed_erp_preserves_the_executable_legacy_action_inventory() {
+    let inventory_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../content/fixtures/failed_erp_legacy_action_inventory.json");
+    let inventory: FailedErpActionInventory =
+        serde_json::from_slice(&std::fs::read(inventory_path).expect("inventory must be readable"))
+            .expect("inventory must parse");
+    let definition: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(failed_erp_scenario_path()).expect("Failed ERP must be readable"),
+    )
+    .expect("Failed ERP must parse");
+
+    assert_eq!(definition["metadata"]["id"], inventory.scenario_id);
+    let actual = definition
+        .get("actions")
+        .and_then(serde_json::Value::as_array)
+        .expect("Failed ERP actions must be an array")
+        .iter()
+        .map(|action| ActionEconomics {
+            id: action["id"]
+                .as_str()
+                .expect("action ID must be a string")
+                .to_owned(),
+            time_cost_minutes: action["time_cost_minutes"].as_u64().unwrap_or(0) as u32,
+            cost_eur: action["cost_eur"].as_u64().unwrap_or(0) as u32,
+            billable_minutes: action["billable_minutes"].as_u64().unwrap_or(0) as u32,
+        })
+        .collect::<Vec<_>>();
+    let expected = inventory
+        .legacy_actions
+        .into_iter()
+        .chain(inventory.lifecycle_continuations)
+        .collect::<Vec<_>>();
+
+    assert_eq!(actual, expected);
+    for dead_alias in inventory.excluded_dead_aliases {
+        assert!(
+            definition["actions"]
+                .as_array()
+                .expect("Failed ERP actions must be an array")
+                .iter()
+                .all(|action| action["id"].as_str() != Some(dead_alias.as_str())),
+            "dead legacy alias `{dead_alias}` must stay excluded"
+        );
+    }
 }
 
 #[test]
