@@ -14,6 +14,7 @@ import 'package:juris_mobile/data/scenario_bridge_client.dart';
 import 'package:juris_mobile/models/case_catalog.dart';
 import 'package:juris_mobile/models/dossier_projection.dart';
 import 'package:juris_mobile/models/game_snapshot.dart';
+import 'package:juris_mobile/screens/case_catalog_screen.dart';
 
 import 'support/historical_v1_counterexample.dart';
 import 'support/matter_lifecycle_test_case.dart';
@@ -25,29 +26,35 @@ void main() {
   late MobileCaseDefinition greenfire;
   late MobileCaseDefinition goldenshell;
   late MobileCaseDefinition failedErp;
+  late MobileCaseDefinition desertWater;
   late MobileCaseDefinition lifecycle;
+  late CaseCatalogBundle productionBundle;
 
   setUpAll(() async {
     final String encodedBundle = await rootBundle.loadString(
       'assets/case_catalog/mobile_case_bundle.json',
     );
-    final CaseCatalogBundle bundle = CaseCatalogBundle.fromJson(
+    productionBundle = CaseCatalogBundle.fromJson(
       jsonDecode(encodedBundle) as Map<String, dynamic>,
     );
-    logistics = bundle.cases.singleWhere(
+    logistics = productionBundle.cases.singleWhere(
       (MobileCaseDefinition item) =>
           item.caseId == 'be_commercial_logistics_001',
     );
-    greenfire = bundle.cases.singleWhere(
+    greenfire = productionBundle.cases.singleWhere(
       (MobileCaseDefinition item) => item.caseId == 'greenfire_first_72_hours',
     );
-    goldenshell = bundle.cases.singleWhere(
+    goldenshell = productionBundle.cases.singleWhere(
       (MobileCaseDefinition item) =>
           item.caseId == 'nl_food_safety_goldenshell_001',
     );
-    failedErp = bundle.cases.singleWhere(
+    failedErp = productionBundle.cases.singleWhere(
       (MobileCaseDefinition item) =>
           item.caseId == 'be_commercial_failed_erp_001',
+    );
+    desertWater = productionBundle.cases.singleWhere(
+      (MobileCaseDefinition item) =>
+          item.caseId == 'us_environmental_desert_water_001',
     );
     lifecycle = matterLifecycleAndroidTestCase();
   });
@@ -770,6 +777,275 @@ void main() {
         findsNothing,
       );
 
+      repository.dispose();
+    },
+  );
+
+  testWidgets(
+    'production Desert Water reveals, restores, appeals, and closes natively',
+    (WidgetTester tester) async {
+      MobileCaseDefinition? selectedCase;
+      String? selectedLocale;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CaseCatalogScreen(
+            bundle: productionBundle,
+            onStartCase: (MobileCaseDefinition definition, String locale) {
+              selectedCase = definition;
+              selectedLocale = locale;
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder catalog = find.byKey(
+        const PageStorageKey<String>('case-catalog'),
+      );
+      final Finder catalogScrollable = find.descendant(
+        of: catalog,
+        matching: find.byType(Scrollable),
+      );
+      final Finder caption = find.text(
+        'Sundial Mesa Residents Association v. Caldera Compression & Cooling Inc.',
+      );
+      await tester.scrollUntilVisible(
+        caption,
+        550,
+        scrollable: catalogScrollable,
+        maxScrolls: 20,
+      );
+      final Finder desertCard = find.ancestor(
+        of: caption,
+        matching: find.byType(Card),
+      );
+      final Finder start = find.descendant(
+        of: desertCard,
+        matching: find.widgetWithText(FilledButton, 'Start case'),
+      );
+      expect(start, findsOneWidget);
+      await tester.ensureVisible(start);
+      await tester.pumpAndSettle();
+      await tester.tap(start);
+      await tester.pump();
+
+      expect(selectedCase?.caseId, desertWater.caseId);
+      expect(selectedCase?.scenarioId, 'desert_water_groundwater_claim');
+      expect(selectedCase?.seed, 20260804);
+      expect(selectedLocale, 'en');
+
+      final RustScenarioRepository repository = _repository(
+        selectedCase!,
+        locale: 'en',
+      );
+      expect(repository.supportsLiveClock, isTrue);
+      expect(repository.snapshot.stage, 'Community intake');
+      expect(repository.snapshot.timeLabel, '00:00');
+      expect(
+        repository.snapshot.dossier!.facts
+            .map((DossierFactView item) => item.id),
+        <String>[
+          'community_reports_shared_exposure',
+          'medical_causation_requires_individual_proof',
+        ],
+      );
+      expect(
+        repository.snapshot.dossier!.evidence
+            .map((DossierEvidenceView item) => item.id),
+        <String>['community_well_register', 'public_facility_permit'],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(home: HomeShell(repository: repository, locale: 'en')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Matter'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey<String>('open-dossier-button')),
+        240,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('open-dossier-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Matter dossier'), findsOneWidget);
+      expect(
+        find.text(
+          'The groundwater plume links the Caldera facility to the affected wells.',
+        ),
+        findsNothing,
+      );
+      expect(find.text('Hydrogeological source assessment'), findsNothing);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      expect(
+        repository.applyAction('accept_residents_mandate').isRisky,
+        isFalse,
+      );
+      expect(
+        repository.applyAction('commission_defensible_sampling').isRisky,
+        isFalse,
+      );
+      await tester.pump();
+      expect(
+        repository.snapshot.dossier!.facts
+            .map((DossierFactView item) => item.id),
+        containsAll(<String>[
+          'chromium_detected_in_residential_wells',
+          'sampling_chain_is_defensible',
+        ]),
+      );
+      expect(
+        repository.snapshot.dossier!.evidence
+            .map((DossierEvidenceView item) => item.id),
+        containsAll(<String>[
+          'independent_lab_results',
+          'sampling_chain_record',
+        ]),
+      );
+
+      // The reveal checkpoint uses the defensible branch. Reset before the
+      // canonical compromised trace so its exact minute-3180 remedy boundary
+      // remains stable and independently reproducible.
+      repository.reset();
+      for (final String actionId in <String>[
+        'accept_residents_mandate',
+        'rely_on_unverified_samples',
+        'interview_affected_residents',
+      ]) {
+        expect(repository.applyAction(actionId).isRisky, isFalse);
+      }
+      repository.advanceTimeByMinutes(511);
+      expect(
+        _deadline(repository, 'plant_record_preservation_deadline').status,
+        DeadlineStatus.missed,
+      );
+      repository.advanceTimeByMinutes(720);
+      expect(
+        _deadline(repository, 'limitation_protection_deadline').status,
+        DeadlineStatus.missed,
+      );
+      repository.advanceTimeByMinutes(1439);
+      for (final String actionId in <String>[
+        'prepare_incomplete_claim',
+        'file_underdeveloped_claim',
+        'receive_adverse_first_instance_judgment',
+      ]) {
+        expect(repository.applyAction(actionId).isRisky, isFalse);
+      }
+
+      expect(repository.snapshot.dayLabel, 'Day 3');
+      expect(repository.snapshot.timeLabel, '05:00');
+      expect(repository.snapshot.judicialResult, JudicialResult.lost);
+      expect(
+        repository.snapshot.judicialDecisionInstance,
+        JudicialDecisionInstance.firstInstance,
+      );
+      expect(
+        repository.snapshot.matterLifecycle,
+        MatterLifecycleStatus.postJudgment,
+      );
+      expect(repository.snapshot.isClosed, isFalse);
+      expect(repository.snapshot.outcomeSummary, isNull);
+      expect(
+        _deadline(repository, 'appeal_deadline').status,
+        DeadlineStatus.open,
+      );
+      final DossierProjectionView recoverable = repository.snapshot.dossier!;
+      expect(
+        recoverable.procedure.matterStatus,
+        DossierMatterStatus.recoverable,
+      );
+      expect(
+        recoverable.deadlines
+            .singleWhere(
+              (DossierDeadlineView item) => item.id == 'appeal_deadline',
+            )
+            .remedies
+            .map((DossierRemedyView item) => item.actionId),
+        <String>['file_appeal'],
+      );
+
+      final String savedStage = repository.snapshot.stage;
+      final String savedTime = repository.snapshot.timeLabel;
+      final List<List<Object?>> savedInbox =
+          repository.snapshot.inbox.map(_inboxState).toList(growable: false);
+      final List<List<Object?>> savedDeadlines = repository.snapshot.deadlines
+          .map(_deadlineState)
+          .toList(growable: false);
+      final List<Object?> savedDossier = _dossierState(recoverable);
+      await repository.saveGame();
+      repository.reset();
+      await repository.loadGame();
+      expect(repository.snapshot.stage, savedStage);
+      expect(repository.snapshot.timeLabel, savedTime);
+      expect(repository.snapshot.inbox.map(_inboxState), savedInbox);
+      expect(repository.snapshot.deadlines.map(_deadlineState), savedDeadlines);
+      expect(_dossierState(repository.snapshot.dossier!), savedDossier);
+      await repository.loadGame();
+      expect(_dossierState(repository.snapshot.dossier!), savedDossier);
+      expect(
+        repository.snapshot.dossier!.facts
+            .map((DossierFactView item) => item.id)
+            .toSet()
+            .length,
+        repository.snapshot.dossier!.facts.length,
+      );
+      expect(
+        repository.snapshot.dossier!.evidence
+            .map((DossierEvidenceView item) => item.id)
+            .toSet()
+            .length,
+        repository.snapshot.dossier!.evidence.length,
+      );
+
+      for (final String actionId in <String>[
+        'file_appeal',
+        'receive_adverse_appeal_judgment',
+      ]) {
+        expect(repository.applyAction(actionId).isRisky, isFalse);
+      }
+      expect(repository.snapshot.timeLabel, '10:00');
+      expect(
+        repository.snapshot.judicialDecisionInstance,
+        JudicialDecisionInstance.appeal,
+      );
+      expect(repository.snapshot.matterLifecycle, MatterLifecycleStatus.appeal);
+      expect(repository.snapshot.isClosed, isFalse);
+      expect(repository.snapshot.outcomeSummary, isNull);
+
+      expect(
+        repository.applyAction('close_after_adverse_appeal').isRisky,
+        isFalse,
+      );
+      expect(repository.snapshot.timeLabel, '10:30');
+      expect(repository.snapshot.isClosed, isTrue);
+      expect(
+        repository.snapshot.outcomeSummary?.finalStatus,
+        'compromised_claim_closed',
+      );
+      final GameSnapshot closed = repository.snapshot;
+      final List<Object?> closedDossier = _dossierState(closed.dossier!);
+      expect(
+        repository.applyAction('close_after_adverse_appeal').isRisky,
+        isTrue,
+      );
+      expect(repository.snapshot, same(closed));
+      expect(
+        () => repository.advanceTimeByMinutes(1),
+        throwsA(
+          isA<ScenarioClockAdvanceException>().having(
+            (ScenarioClockAdvanceException error) => error.code,
+            'code',
+            'scenario_resolved',
+          ),
+        ),
+      );
+      expect(repository.snapshot, same(closed));
+      expect(_dossierState(repository.snapshot.dossier!), closedDossier);
       repository.dispose();
     },
   );
