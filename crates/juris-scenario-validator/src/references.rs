@@ -1,7 +1,9 @@
 //! Validation of every typed cross-reference in ScenarioDefinition v1.
 
 use crate::{Diagnostic, DiagnosticCode, ScenarioIndex, ValidationReport};
-use juris_scenario_schema::{Condition, Effect, EventTrigger, IntegerOperand, ScenarioDefinition};
+use juris_scenario_schema::{
+    Condition, Effect, EventTrigger, IntegerOperand, RelativeTimeDefinition, ScenarioDefinition,
+};
 
 pub(crate) fn validate_references(
     scenario: &ScenarioDefinition,
@@ -113,6 +115,35 @@ fn validate_action_references(
             &format!("actions[{action_index}].available_when"),
         );
 
+        if let Some(timing) = &action.completion_timing {
+            validate_timing_references(
+                timing,
+                index,
+                report,
+                &format!("actions[{action_index}].completion_timing"),
+            );
+        }
+        for (deadline_index, deadline) in action.advance_to_deadlines.iter().enumerate() {
+            require_reference(
+                index.has_deadline(deadline.as_str()),
+                DiagnosticCode::UnknownDeadlineReference,
+                format!("actions[{action_index}].advance_to_deadlines[{deadline_index}]"),
+                "deadline",
+                deadline.as_str(),
+                report,
+            );
+        }
+        for (deadline_index, deadline) in action.completion_deadlines.iter().enumerate() {
+            require_reference(
+                index.has_deadline(deadline.as_str()),
+                DiagnosticCode::UnknownDeadlineReference,
+                format!("actions[{action_index}].completion_deadlines[{deadline_index}]"),
+                "deadline",
+                deadline.as_str(),
+                report,
+            );
+        }
+
         for (effect_index, effect) in action.effects.iter().enumerate() {
             validate_effect(
                 effect,
@@ -130,6 +161,14 @@ fn validate_deadline_references(
     report: &mut ValidationReport,
 ) {
     for (deadline_index, deadline) in scenario.deadlines.iter().enumerate() {
+        if let Some(timing) = &deadline.relative_due {
+            validate_timing_references(
+                timing,
+                index,
+                report,
+                &format!("deadlines[{deadline_index}].relative_due"),
+            );
+        }
         if let Some(event) = &deadline.activation_event {
             require_reference(
                 index.has_event(event.as_str()),
@@ -179,6 +218,14 @@ fn validate_async_task_references(
     report: &mut ValidationReport,
 ) {
     for (task_index, task) in scenario.async_tasks.iter().enumerate() {
+        if let Some(timing) = &task.completion_timing {
+            validate_timing_references(
+                timing,
+                index,
+                report,
+                &format!("async_tasks[{task_index}].completion_timing"),
+            );
+        }
         require_reference(
             index.has_action(task.start_action.as_str()),
             DiagnosticCode::UnknownActionReference,
@@ -218,6 +265,24 @@ fn validate_async_task_references(
                 report,
             );
         }
+    }
+}
+
+fn validate_timing_references(
+    timing: &RelativeTimeDefinition,
+    index: &ScenarioIndex,
+    report: &mut ValidationReport,
+    path: &str,
+) {
+    if let Some(deadline) = &timing.relative_to_deadline {
+        require_reference(
+            index.has_deadline(deadline.as_str()),
+            DiagnosticCode::UnknownDeadlineReference,
+            format!("{path}.relative_to_deadline"),
+            "deadline",
+            deadline.as_str(),
+            report,
+        );
     }
 }
 

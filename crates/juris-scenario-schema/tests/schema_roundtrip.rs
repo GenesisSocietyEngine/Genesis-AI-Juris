@@ -5,9 +5,9 @@
 //! format remain compatible.
 
 use juris_scenario_schema::{
-    ActionId, Condition, DeterministicDecisionDefinition, Effect, JudicialDecisionInstance,
-    JudicialResult, MatterLifecycleStatus, ScenarioClockMode, ScenarioDefinition, StageId,
-    StageKind, SCENARIO_SCHEMA_VERSION_V1,
+    ActionId, Condition, DeadlineDefinition, DeterministicDecisionDefinition, Effect,
+    JudicialDecisionInstance, JudicialResult, MatterLifecycleStatus, RelativeTimeDefinition,
+    ScenarioClockMode, ScenarioDefinition, StageId, StageKind, SCENARIO_SCHEMA_VERSION_V1,
 };
 use serde_json::json;
 
@@ -193,6 +193,7 @@ fn absent_runtime_extensions_do_not_change_serialized_definition_shape() {
     let object = encoded.as_object().unwrap();
 
     for key in [
+        "initial_clock",
         "numeric_metrics",
         "foreground_metric_rates",
         "initial_resources",
@@ -201,9 +202,64 @@ fn absent_runtime_extensions_do_not_change_serialized_definition_shape() {
         assert!(!object.contains_key(key), "unexpected additive key {key}");
     }
     let action = encoded["actions"][0].as_object().unwrap();
-    for key in ["billable_minutes", "presentation_tags"] {
+    for key in [
+        "billable_minutes",
+        "presentation_tags",
+        "completion_timing",
+        "advance_to_deadlines",
+        "completion_deadlines",
+        "completion_deadline_offset_minutes",
+    ] {
         assert!(!action.contains_key(key), "unexpected additive key {key}");
     }
+}
+
+#[test]
+fn forward_timing_and_inclusive_deadline_policy_round_trip_additively() {
+    let timing: RelativeTimeDefinition = serde_json::from_value(json!({
+        "relative_to_deadline": "anchor",
+        "offset_minutes": 60,
+        "minimum_turnaround_minutes": 15,
+        "calendar_target": {"day_offset": 1, "minute_of_day": 480},
+        "not_before": {"day": 2, "minute_of_day": 600}
+    }))
+    .unwrap();
+    let encoded = serde_json::to_value(&timing).unwrap();
+    assert_eq!(encoded["relative_to_deadline"], "anchor");
+    assert_eq!(encoded["calendar_target"]["minute_of_day"], 480);
+    assert_eq!(
+        serde_json::from_value::<RelativeTimeDefinition>(encoded).unwrap(),
+        timing
+    );
+
+    let deadline: DeadlineDefinition = serde_json::from_value(json!({
+        "id": "deadline",
+        "title": "Deadline",
+        "due_at": {"day": 1, "minute_of_day": 600},
+        "relative_due": {"offset_minutes": 90},
+        "completion_at_due_allowed": true,
+        "completion_actions": [],
+        "missed_event": "missed"
+    }))
+    .unwrap();
+    let encoded = serde_json::to_value(&deadline).unwrap();
+    assert_eq!(encoded["completion_at_due_allowed"], true);
+    assert_eq!(encoded["relative_due"]["offset_minutes"], 90);
+
+    let legacy: DeadlineDefinition = serde_json::from_value(json!({
+        "id": "legacy",
+        "title": "Legacy",
+        "due_at": {"day": 1, "minute_of_day": 600},
+        "completion_actions": [],
+        "missed_event": "missed"
+    }))
+    .unwrap();
+    let legacy = serde_json::to_value(legacy).unwrap();
+    assert!(!legacy.as_object().unwrap().contains_key("relative_due"));
+    assert!(!legacy
+        .as_object()
+        .unwrap()
+        .contains_key("completion_at_due_allowed"));
 }
 
 #[test]

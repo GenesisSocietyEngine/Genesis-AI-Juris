@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
 use juris_scenario_schema::{
-    EventDefinition, EventKind, EventTrigger, ScenarioDefinition, ScenarioTime,
+    EventDefinition, EventKind, EventTrigger, RelativeTimeDefinition, ScenarioDefinition,
+    ScenarioTime,
 };
 
 use crate::{AuthoringDiagnostic, AuthoringDiagnosticCode, AuthoringValidationReport};
@@ -16,11 +17,33 @@ pub(crate) fn validate_temporal_coherence(
         .map(|event| (event.id.as_str(), event))
         .collect::<BTreeMap<_, _>>();
 
+    if let Some(initial_clock) = scenario.initial_clock {
+        validate_time(
+            initial_clock,
+            "initial_clock".to_owned(),
+            "initial clock",
+            report,
+        );
+    }
     validate_event_times(scenario, report);
+    validate_action_times(scenario, report);
     validate_deadlines(scenario, &events, report);
     validate_async_tasks(scenario, &events, report);
     validate_fixed_procedural_order(scenario, report);
     report.sort();
+}
+
+fn validate_action_times(scenario: &ScenarioDefinition, report: &mut AuthoringValidationReport) {
+    for (index, action) in scenario.actions.iter().enumerate() {
+        if let Some(timing) = &action.completion_timing {
+            validate_relative_time(
+                timing,
+                &format!("actions[{index}].completion_timing"),
+                "action completion",
+                report,
+            );
+        }
+    }
 }
 
 fn validate_event_times(scenario: &ScenarioDefinition, report: &mut AuthoringValidationReport) {
@@ -49,43 +72,55 @@ fn validate_deadlines(
             "deadline",
             report,
         );
+        if let Some(relative_due) = &deadline.relative_due {
+            validate_relative_time(
+                relative_due,
+                &format!("{path}.relative_due"),
+                "relative deadline",
+                report,
+            );
+        }
 
-        if let Some(activation_id) = deadline.activation_event.as_ref() {
-            if let Some(EventDefinition {
-                trigger: EventTrigger::AtTime { at },
-                ..
-            }) = events.get(activation_id.as_str()).copied()
-            {
-                if let (Some(activation), Some(due)) = (time_value(*at), due) {
-                    if activation > due {
-                        report.push(AuthoringDiagnostic::error(
-                            AuthoringDiagnosticCode::DeadlineActivatesAfterDue,
-                            format!("{path}.activation_event"),
-                            format!("deadline `{}` activates after its due time", deadline.id),
-                            "Move the activation event earlier or move the deadline later.",
-                        ));
+        if deadline.relative_due.is_none() {
+            if let Some(activation_id) = deadline.activation_event.as_ref() {
+                if let Some(EventDefinition {
+                    trigger: EventTrigger::AtTime { at },
+                    ..
+                }) = events.get(activation_id.as_str()).copied()
+                {
+                    if let (Some(activation), Some(due)) = (time_value(*at), due) {
+                        if activation > due {
+                            report.push(AuthoringDiagnostic::error(
+                                AuthoringDiagnosticCode::DeadlineActivatesAfterDue,
+                                format!("{path}.activation_event"),
+                                format!("deadline `{}` activates after its due time", deadline.id),
+                                "Move the activation event earlier or move the deadline later.",
+                            ));
+                        }
                     }
                 }
             }
         }
 
-        if let Some(completion_id) = deadline.completion_event.as_ref() {
-            if let Some(EventDefinition {
-                trigger: EventTrigger::AtTime { at },
-                ..
-            }) = events.get(completion_id.as_str()).copied()
-            {
-                if let (Some(completion), Some(due)) = (time_value(*at), due) {
-                    if completion > due {
-                        report.push(AuthoringDiagnostic::error(
-                            AuthoringDiagnosticCode::DeadlineCompletionAfterDue,
-                            format!("{path}.completion_event"),
-                            format!(
-                                "deadline `{}` has a fixed completion event after its due time",
-                                deadline.id
-                            ),
-                            "Schedule completion no later than the due time or make it action-driven.",
-                        ));
+        if deadline.relative_due.is_none() {
+            if let Some(completion_id) = deadline.completion_event.as_ref() {
+                if let Some(EventDefinition {
+                    trigger: EventTrigger::AtTime { at },
+                    ..
+                }) = events.get(completion_id.as_str()).copied()
+                {
+                    if let (Some(completion), Some(due)) = (time_value(*at), due) {
+                        if completion > due {
+                            report.push(AuthoringDiagnostic::error(
+                                AuthoringDiagnosticCode::DeadlineCompletionAfterDue,
+                                format!("{path}.completion_event"),
+                                format!(
+                                    "deadline `{}` has a fixed completion event after its due time",
+                                    deadline.id
+                                ),
+                                "Schedule completion no later than the due time or make it action-driven.",
+                            ));
+                        }
                     }
                 }
             }
@@ -133,6 +168,14 @@ fn validate_async_tasks(
                 "Use a positive deterministic duration in simulated minutes.",
             ));
         }
+        if let Some(timing) = &task.completion_timing {
+            validate_relative_time(
+                timing,
+                &format!("{path}.completion_timing"),
+                "asynchronous completion",
+                report,
+            );
+        }
 
         let usable = task
             .usable_until_event
@@ -156,6 +199,25 @@ fn validate_async_tasks(
                 ));
             }
         }
+    }
+}
+
+fn validate_relative_time(
+    timing: &RelativeTimeDefinition,
+    path: &str,
+    subject: &str,
+    report: &mut AuthoringValidationReport,
+) {
+    if let Some(calendar) = timing.calendar_target {
+        validate_time(
+            ScenarioTime::new(calendar.day_offset, calendar.minute_of_day),
+            format!("{path}.calendar_target.minute_of_day"),
+            subject,
+            report,
+        );
+    }
+    if let Some(not_before) = timing.not_before {
+        validate_time(not_before, format!("{path}.not_before"), subject, report);
     }
 }
 

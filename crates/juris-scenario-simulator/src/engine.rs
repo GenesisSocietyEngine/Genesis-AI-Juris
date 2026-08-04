@@ -3,8 +3,8 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use juris_scenario_schema::{
     ActionDefinition, ActionRepeatability, AsyncTaskStatus, Condition, DeadlineStatus, Effect,
     EventDefinition, EventTrigger, FactStatus, IntegerComparisonOperator, IntegerOperand,
-    JudicialDecisionInstance, MatterLifecycleStatus, ScenarioClockMode, ScenarioDefinition,
-    StageKind, RESOURCE_BILLABLE_MINUTES, RESOURCE_SPEND_EUR,
+    JudicialDecisionInstance, MatterLifecycleStatus, RelativeTimeDefinition, ScenarioClockMode,
+    ScenarioDefinition, StageKind, RESOURCE_BILLABLE_MINUTES, RESOURCE_SPEND_EUR,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -22,6 +22,7 @@ struct RuntimeState {
     fact_statuses: BTreeMap<String, FactStatus>,
     available_evidence: BTreeSet<String>,
     deadline_statuses: BTreeMap<String, Option<DeadlineStatus>>,
+    deadline_due_minutes: BTreeMap<String, u64>,
     task_statuses: BTreeMap<String, AsyncTaskStatus>,
     task_due_minutes: BTreeMap<String, u64>,
     visible_inbox: BTreeSet<String>,
@@ -34,6 +35,7 @@ struct RuntimeState {
 #[derive(Clone, Debug)]
 pub struct ScenarioSimulator {
     seed: u64,
+    effect_time_anchor: Option<u64>,
     definition: ScenarioDefinition,
     state: SimulationState,
     runtime: RuntimeState,
@@ -89,6 +91,42 @@ impl ScenarioSimulator {
                 )
             })
             .collect();
+        let calendar_baseline = definition
+            .initial_clock
+            .map(scenario_time_minutes)
+            .unwrap_or(0);
+        // Static authored due times are known independently of activation.
+        // Populate those first so a relative deadline never depends on array
+        // order when it names a later-declared static anchor.
+        let mut deadline_due_minutes = definition
+            .deadlines
+            .iter()
+            .filter(|deadline| deadline.relative_due.is_none())
+            .map(|deadline| {
+                let due = authored_time_to_elapsed(deadline.due_at, definition.initial_clock)
+                    .ok_or_else(|| SimulationError::ClockOverflow {
+                        owner: deadline.id.as_str().to_owned(),
+                    })?;
+                Ok((deadline.id.as_str().to_owned(), due))
+            })
+            .collect::<Result<BTreeMap<_, _>, SimulationError>>()?;
+        let initially_active_relative_ids = definition
+            .deadlines
+            .iter()
+            .filter(|deadline| {
+                deadline.activation_event.is_none() && deadline.relative_due.is_some()
+            })
+            .map(|deadline| deadline.id.as_str().to_owned())
+            .collect::<Vec<_>>();
+        for deadline_id in initially_active_relative_ids {
+            resolve_initial_deadline_due(
+                &definition,
+                &deadline_id,
+                calendar_baseline,
+                &mut deadline_due_minutes,
+                &mut BTreeSet::new(),
+            )?;
+        }
         let task_statuses = definition
             .async_tasks
             .iter()
@@ -130,6 +168,7 @@ impl ScenarioSimulator {
 
         Ok(Self {
             seed,
+            effect_time_anchor: None,
             definition,
             state: SimulationState {
                 stage: initial_stage,
@@ -147,6 +186,7 @@ impl ScenarioSimulator {
                 fact_statuses,
                 available_evidence,
                 deadline_statuses,
+                deadline_due_minutes,
                 task_statuses,
                 task_due_minutes: BTreeMap::new(),
                 visible_inbox,
@@ -261,10 +301,20 @@ impl ScenarioSimulator {
                 action: action_id.to_owned(),
             });
         }
+        let (completion_target, selected_advance_deadline) =
+            self.action_completion_target(&action)?;
+        self.ensure_action_finishes_by_deadline(
+            &action,
+            completion_target,
+            selected_advance_deadline.as_deref(),
+        )?;
+        self.precomplete_action_deadlines(&action);
 
         let before = self.state.clone();
-        let mut queued_events =
-            self.apply_effects(&action.effects, &format!("action `{action_id}`"))?;
+        let previous_anchor = self.effect_time_anchor.replace(completion_target);
+        let effect_result = self.apply_effects(&action.effects, &format!("action `{action_id}`"));
+        self.effect_time_anchor = previous_anchor;
+        let mut queued_events = effect_result?;
         if !self.definition.initial_resources.is_empty() {
             self.add_resource(RESOURCE_SPEND_EUR, i64::from(action.cost_eur))?;
             self.add_resource(
@@ -285,11 +335,11 @@ impl ScenarioSimulator {
                 queued_events.push_back(event.id.as_str().to_owned());
             }
         }
-        self.advance_clock_by(
-            action.time_cost_minutes,
+        self.advance_clock_to_with_deadline_completion(
+            completion_target,
             queued_events,
-            &format!("action `{action_id}`"),
             false,
+            selected_advance_deadline.as_deref(),
         )?;
 
         self.trace.push(TraceEntry {
@@ -300,6 +350,181 @@ impl ScenarioSimulator {
             state_after: self.state.clone(),
         });
         Ok(())
+    }
+
+    fn action_completion_target(
+        &self,
+        action: &ActionDefinition,
+    ) -> Result<(u64, Option<String>), SimulationError> {
+        let now = self.state.clock_minutes;
+        let mut target = now
+            .checked_add(u64::from(action.time_cost_minutes))
+            .ok_or_else(|| SimulationError::ClockOverflow {
+                owner: action.id.as_str().to_owned(),
+            })?;
+        if let Some(timing) = &action.completion_timing {
+            target = target.max(self.resolve_timing_at(now, timing)?);
+        }
+        let selected_advance = if action.advance_to_deadlines.is_empty() {
+            None
+        } else {
+            let (deadline, due) = self
+                .select_open_deadline(&action.advance_to_deadlines)
+                .ok_or_else(|| SimulationError::DeadlineInactive {
+                    deadline: action.advance_to_deadlines[0].as_str().to_owned(),
+                })?;
+            target = target.max(due);
+            Some(deadline)
+        };
+        Ok((target, selected_advance))
+    }
+
+    fn ensure_action_finishes_by_deadline(
+        &self,
+        action: &ActionDefinition,
+        completion: u64,
+        selected_advance_deadline: Option<&str>,
+    ) -> Result<(), SimulationError> {
+        if let Some(deadline_id) = selected_advance_deadline {
+            let deadline = self
+                .definition
+                .deadlines
+                .iter()
+                .find(|deadline| deadline.id.as_str() == deadline_id)
+                .expect("selected advance deadline must exist");
+            if deadline
+                .completion_actions
+                .iter()
+                .any(|candidate| candidate == &action.id)
+            {
+                let due = *self
+                    .runtime
+                    .deadline_due_minutes
+                    .get(deadline_id)
+                    .expect("open deadline must have a stored due minute");
+                self.ensure_completion_is_timely(action, deadline, completion, due)?;
+            }
+        }
+        if action.completion_deadlines.is_empty() {
+            return Ok(());
+        }
+        let (deadline_id, stored_due) = self
+            .select_open_deadline(&action.completion_deadlines)
+            .ok_or_else(|| SimulationError::DeadlineInactive {
+                deadline: action.completion_deadlines[0].as_str().to_owned(),
+            })?;
+        let due = add_signed_minutes(stored_due, action.completion_deadline_offset_minutes)
+            .ok_or_else(|| SimulationError::ClockOverflow {
+                owner: action.id.as_str().to_owned(),
+            })?;
+        let deadline = self
+            .definition
+            .deadlines
+            .iter()
+            .find(|deadline| deadline.id.as_str() == deadline_id)
+            .expect("validated completion deadline must exist");
+        self.ensure_completion_is_timely(action, deadline, completion, due)
+    }
+
+    fn ensure_completion_is_timely(
+        &self,
+        action: &ActionDefinition,
+        deadline: &juris_scenario_schema::DeadlineDefinition,
+        completion: u64,
+        due: u64,
+    ) -> Result<(), SimulationError> {
+        let late = if deadline.completion_at_due_allowed {
+            completion > due
+        } else {
+            completion >= due
+        };
+        if late {
+            return Err(SimulationError::ActionCompletionDeadlineExceeded {
+                action: action.id.as_str().to_owned(),
+                deadline: deadline.id.as_str().to_owned(),
+                completion,
+                due,
+            });
+        }
+        Ok(())
+    }
+
+    fn select_open_deadline(
+        &self,
+        ids: &[juris_scenario_schema::DeadlineId],
+    ) -> Option<(String, u64)> {
+        ids.iter()
+            .filter_map(|id| {
+                (self
+                    .runtime
+                    .deadline_statuses
+                    .get(id.as_str())
+                    .copied()
+                    .flatten()
+                    == Some(DeadlineStatus::Open))
+                .then(|| {
+                    self.runtime
+                        .deadline_due_minutes
+                        .get(id.as_str())
+                        .copied()
+                        .map(|due| (id.as_str().to_owned(), due))
+                })
+                .flatten()
+            })
+            .min_by(|(left_id, left_due), (right_id, right_due)| {
+                left_due.cmp(right_due).then_with(|| left_id.cmp(right_id))
+            })
+    }
+
+    fn precomplete_action_deadlines(&mut self, action: &ActionDefinition) {
+        let deadline_ids = self
+            .definition
+            .deadlines
+            .iter()
+            .filter(|deadline| {
+                self.runtime
+                    .deadline_statuses
+                    .get(deadline.id.as_str())
+                    .copied()
+                    .flatten()
+                    == Some(DeadlineStatus::Open)
+                    && deadline
+                        .completion_actions
+                        .iter()
+                        .any(|candidate| candidate == &action.id)
+                    && action.advance_to_deadlines.is_empty()
+            })
+            .map(|deadline| deadline.id.as_str().to_owned())
+            .collect::<Vec<_>>();
+        for deadline_id in deadline_ids {
+            self.runtime
+                .deadline_statuses
+                .insert(deadline_id, Some(DeadlineStatus::Completed));
+        }
+    }
+
+    fn resolve_timing_at(
+        &self,
+        now: u64,
+        timing: &RelativeTimeDefinition,
+    ) -> Result<u64, SimulationError> {
+        let anchor = match &timing.relative_to_deadline {
+            Some(id) => self
+                .runtime
+                .deadline_due_minutes
+                .get(id.as_str())
+                .copied()
+                .ok_or_else(|| SimulationError::DeadlineInactive {
+                    deadline: id.as_str().to_owned(),
+                })?,
+            None => now,
+        };
+        let calendar_baseline = self
+            .definition
+            .initial_clock
+            .map(scenario_time_minutes)
+            .unwrap_or(0);
+        resolve_forward_time(now, timing, anchor, calendar_baseline)
     }
 
     fn advance_time(&mut self, minutes: u32) -> Result<(), SimulationError> {
@@ -348,6 +573,35 @@ impl ScenarioSimulator {
             .ok_or_else(|| SimulationError::ClockOverflow {
                 owner: owner.to_owned(),
             })?;
+        self.advance_clock_to(target, final_events, apply_foreground_metric_rates)
+    }
+
+    fn advance_clock_to(
+        &mut self,
+        target: u64,
+        final_events: VecDeque<String>,
+        apply_foreground_metric_rates: bool,
+    ) -> Result<(), SimulationError> {
+        self.advance_clock_to_with_deadline_completion(
+            target,
+            final_events,
+            apply_foreground_metric_rates,
+            None,
+        )
+    }
+
+    fn advance_clock_to_with_deadline_completion(
+        &mut self,
+        target: u64,
+        final_events: VecDeque<String>,
+        apply_foreground_metric_rates: bool,
+        completion_deadline: Option<&str>,
+    ) -> Result<(), SimulationError> {
+        if target < self.state.clock_minutes {
+            return Err(SimulationError::ClockOverflow {
+                owner: "advance_clock_to".to_owned(),
+            });
+        }
 
         if self.is_terminal_stage(&self.state.stage) || self.state.resolved_outcome.is_some() {
             self.state.clock_minutes = target;
@@ -387,6 +641,20 @@ impl ScenarioSimulator {
             self.increment_foreground_metrics(elapsed)?;
         }
         self.state.clock_minutes = target;
+        if let Some(deadline_id) = completion_deadline {
+            if self
+                .runtime
+                .deadline_statuses
+                .get(deadline_id)
+                .copied()
+                .flatten()
+                == Some(DeadlineStatus::Open)
+            {
+                self.runtime
+                    .deadline_statuses
+                    .insert(deadline_id.to_owned(), Some(DeadlineStatus::Completed));
+            }
+        }
         let mut events = final_events;
         self.queue_due_events(&mut events)?;
         self.process_event_queue(events)?;
@@ -412,7 +680,9 @@ impl ScenarioSimulator {
                 return None;
             }
             match event.trigger {
-                EventTrigger::AtTime { at } => Some(scenario_time_minutes(at)),
+                EventTrigger::AtTime { at } => {
+                    authored_time_to_elapsed(at, self.definition.initial_clock)
+                }
                 _ => None,
             }
         });
@@ -432,7 +702,8 @@ impl ScenarioSimulator {
                 .copied()
                 .flatten()
                 == Some(DeadlineStatus::Open))
-            .then_some(scenario_time_minutes(deadline.due_at))
+            .then(|| self.deadline_miss_boundary(deadline))
+            .flatten()
         });
         let metric_thresholds = self.definition.events.iter().filter_map(|event| {
             if !include_foreground_metric_thresholds
@@ -464,6 +735,18 @@ impl ScenarioSimulator {
             .chain(metric_thresholds)
             .filter(|boundary| *boundary > current && *boundary < target)
             .min()
+    }
+
+    fn deadline_miss_boundary(
+        &self,
+        deadline: &juris_scenario_schema::DeadlineDefinition,
+    ) -> Option<u64> {
+        let due = self
+            .runtime
+            .deadline_due_minutes
+            .get(deadline.id.as_str())
+            .copied()?;
+        Some(deadline_miss_boundary(deadline, due))
     }
 
     fn increment_foreground_metrics(
@@ -561,7 +844,7 @@ impl ScenarioSimulator {
                 self.fired_events.insert(event_id.clone());
             }
             let before = self.state.clone();
-            let mut nested = self.activate_event_owned_state(&event);
+            let mut nested = self.activate_event_owned_state(&event)?;
             let mut effect_events =
                 self.apply_effects(&event.effects, &format!("event `{event_id}`"))?;
             nested.append(&mut effect_events);
@@ -676,13 +959,17 @@ impl ScenarioSimulator {
                         .iter()
                         .find(|item| item.id == *task)
                     {
-                        let due = self
-                            .state
-                            .clock_minutes
+                        let timing_anchor =
+                            self.effect_time_anchor.unwrap_or(self.state.clock_minutes);
+                        let due = timing_anchor
                             .checked_add(u64::from(definition.duration_minutes))
                             .ok_or_else(|| SimulationError::ClockOverflow {
                                 owner: task.as_str().to_owned(),
                             })?;
+                        let due = match &definition.completion_timing {
+                            Some(timing) => due.max(self.resolve_timing_at(timing_anchor, timing)?),
+                            None => due,
+                        };
                         self.runtime
                             .task_due_minutes
                             .insert(task.as_str().to_owned(), due);
@@ -1092,14 +1379,20 @@ impl ScenarioSimulator {
         }
     }
 
-    fn activate_event_owned_state(&mut self, event: &EventDefinition) -> VecDeque<String> {
+    fn activate_event_owned_state(
+        &mut self,
+        event: &EventDefinition,
+    ) -> Result<VecDeque<String>, SimulationError> {
         let mut events = VecDeque::new();
-        for deadline in &self.definition.deadlines {
-            if deadline.activation_event.as_ref() == Some(&event.id) {
-                self.runtime
-                    .deadline_statuses
-                    .insert(deadline.id.as_str().to_owned(), Some(DeadlineStatus::Open));
-            }
+        let activated_deadlines = self
+            .definition
+            .deadlines
+            .iter()
+            .filter(|deadline| deadline.activation_event.as_ref() == Some(&event.id))
+            .map(|deadline| deadline.id.as_str().to_owned())
+            .collect::<Vec<_>>();
+        for deadline_id in activated_deadlines {
+            self.activate_deadline(&deadline_id)?;
         }
         for item in &self.definition.inbox_items {
             if item.created_by_event.as_ref() == Some(&event.id) {
@@ -1132,7 +1425,41 @@ impl ScenarioSimulator {
                 }
             }
         }
-        events
+        Ok(events)
+    }
+
+    fn activate_deadline(&mut self, id: &str) -> Result<(), SimulationError> {
+        let deadline = self
+            .definition
+            .deadlines
+            .iter()
+            .find(|deadline| deadline.id.as_str() == id)
+            .cloned()
+            .ok_or_else(|| SimulationError::DeadlineInactive {
+                deadline: id.to_owned(),
+            })?;
+        let due = match &deadline.relative_due {
+            Some(timing) => self.resolve_timing_at(
+                self.effect_time_anchor.unwrap_or(self.state.clock_minutes),
+                timing,
+            )?,
+            None => self
+                .runtime
+                .deadline_due_minutes
+                .get(id)
+                .copied()
+                .or_else(|| {
+                    authored_time_to_elapsed(deadline.due_at, self.definition.initial_clock)
+                })
+                .ok_or_else(|| SimulationError::ClockOverflow {
+                    owner: id.to_owned(),
+                })?,
+        };
+        self.runtime.deadline_due_minutes.insert(id.to_owned(), due);
+        self.runtime
+            .deadline_statuses
+            .insert(id.to_owned(), Some(DeadlineStatus::Open));
+        Ok(())
     }
 
     fn queue_due_events(&mut self, events: &mut VecDeque<String>) -> Result<(), SimulationError> {
@@ -1143,7 +1470,8 @@ impl ScenarioSimulator {
             if matches!(
                 event.trigger,
                 EventTrigger::AtTime { at }
-                    if scenario_time_minutes(at) <= self.state.clock_minutes
+                    if authored_time_to_elapsed(at, self.definition.initial_clock)
+                        .is_some_and(|at| at <= self.state.clock_minutes)
             ) {
                 events.push_back(event.id.as_str().to_owned());
             }
@@ -1185,7 +1513,8 @@ impl ScenarioSimulator {
             .deadlines
             .iter()
             .filter(|deadline| {
-                scenario_time_minutes(deadline.due_at) <= self.state.clock_minutes
+                self.deadline_miss_boundary(deadline)
+                    .is_some_and(|boundary| boundary <= self.state.clock_minutes)
                     && self
                         .runtime
                         .deadline_statuses
@@ -1238,6 +1567,110 @@ impl ScenarioSimulator {
 
 fn scenario_time_minutes(time: juris_scenario_schema::ScenarioTime) -> u64 {
     u64::from(time.day) * 1_440 + u64::from(time.minute_of_day)
+}
+
+fn authored_time_to_elapsed(
+    time: juris_scenario_schema::ScenarioTime,
+    initial_clock: Option<juris_scenario_schema::ScenarioTime>,
+) -> Option<u64> {
+    scenario_time_minutes(time).checked_sub(initial_clock.map(scenario_time_minutes).unwrap_or(0))
+}
+
+fn resolve_forward_time(
+    now: u64,
+    timing: &RelativeTimeDefinition,
+    anchor: u64,
+    calendar_baseline: u64,
+) -> Result<u64, SimulationError> {
+    let offset = anchor
+        .checked_add(u64::from(timing.offset_minutes))
+        .ok_or_else(|| SimulationError::ClockOverflow {
+            owner: "relative_time".to_owned(),
+        })?;
+    let turnaround = now
+        .checked_add(u64::from(timing.minimum_turnaround_minutes))
+        .ok_or_else(|| SimulationError::ClockOverflow {
+            owner: "relative_time".to_owned(),
+        })?;
+    let mut target = now.max(offset).max(turnaround);
+
+    if let Some(calendar) = timing.calendar_target {
+        let anchor_civil = calendar_baseline.checked_add(anchor).ok_or_else(|| {
+            SimulationError::ClockOverflow {
+                owner: "calendar_target".to_owned(),
+            }
+        })?;
+        let target_day = anchor_civil
+            .checked_div(1_440)
+            .and_then(|day| day.checked_add(u64::from(calendar.day_offset)))
+            .ok_or_else(|| SimulationError::ClockOverflow {
+                owner: "calendar_target".to_owned(),
+            })?;
+        let target_civil = target_day
+            .checked_mul(1_440)
+            .and_then(|day| day.checked_add(u64::from(calendar.minute_of_day)))
+            .ok_or_else(|| SimulationError::ClockOverflow {
+                owner: "calendar_target".to_owned(),
+            })?;
+        target = target.max(target_civil.saturating_sub(calendar_baseline));
+    }
+
+    if let Some(not_before) = timing.not_before {
+        target = target.max(scenario_time_minutes(not_before).saturating_sub(calendar_baseline));
+    }
+    Ok(target)
+}
+
+fn resolve_initial_deadline_due(
+    definition: &ScenarioDefinition,
+    deadline_id: &str,
+    calendar_baseline: u64,
+    due_minutes: &mut BTreeMap<String, u64>,
+    visiting: &mut BTreeSet<String>,
+) -> Result<u64, SimulationError> {
+    if let Some(due) = due_minutes.get(deadline_id).copied() {
+        return Ok(due);
+    }
+    if !visiting.insert(deadline_id.to_owned()) {
+        return Err(SimulationError::DeadlineInactive {
+            deadline: deadline_id.to_owned(),
+        });
+    }
+    let deadline = definition
+        .deadlines
+        .iter()
+        .find(|deadline| deadline.id.as_str() == deadline_id)
+        .expect("validated relative deadline must exist");
+    let timing = deadline
+        .relative_due
+        .as_ref()
+        .expect("static due minutes are populated before relative resolution");
+    let anchor = match &timing.relative_to_deadline {
+        Some(anchor) => resolve_initial_deadline_due(
+            definition,
+            anchor.as_str(),
+            calendar_baseline,
+            due_minutes,
+            visiting,
+        )?,
+        None => 0,
+    };
+    let due = resolve_forward_time(0, timing, anchor, calendar_baseline)?;
+    visiting.remove(deadline_id);
+    due_minutes.insert(deadline_id.to_owned(), due);
+    Ok(due)
+}
+
+fn add_signed_minutes(base: u64, offset: i64) -> Option<u64> {
+    if offset >= 0 {
+        base.checked_add(offset.unsigned_abs())
+    } else {
+        base.checked_sub(offset.unsigned_abs())
+    }
+}
+
+fn deadline_miss_boundary(deadline: &juris_scenario_schema::DeadlineDefinition, due: u64) -> u64 {
+    due.saturating_add(u64::from(deadline.completion_at_due_allowed))
 }
 
 fn compare_integers(left: i64, operator: IntegerComparisonOperator, right: i64) -> bool {

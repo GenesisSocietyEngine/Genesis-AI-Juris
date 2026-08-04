@@ -93,6 +93,12 @@ pub struct ScenarioDefinition {
     #[serde(default)]
     pub clock: ScenarioClockDefinition,
 
+    /// Optional civil calendar baseline. Runtime snapshots remain elapsed and
+    /// start at zero; authored ScenarioTime values are translated against this
+    /// baseline only when it is present.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub initial_clock: Option<ScenarioTime>,
+
     /// Canonically ordered integer metrics initialized at session creation.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub numeric_metrics: BTreeMap<MetricId, i64>,

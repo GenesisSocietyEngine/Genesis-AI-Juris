@@ -76,6 +76,63 @@ fn invalid_minute_of_day_is_rejected_for_events() {
 }
 
 #[test]
+fn invalid_initial_and_relative_calendar_times_are_rejected() {
+    let mut value = fixture_value();
+    value["initial_clock"] = json!({"day": 0, "minute_of_day": 1440});
+    value["actions"][0]["completion_timing"] = json!({
+        "calendar_target": {"day_offset": 1, "minute_of_day": 1440}
+    });
+
+    let report = report(value);
+    let invalid_times = report
+        .diagnostics()
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic.code == AuthoringDiagnosticCode::InvalidScenarioTime.as_str()
+        })
+        .count();
+    assert_eq!(invalid_times, 2, "{:#?}", report.diagnostics());
+}
+
+#[test]
+fn relative_deadline_is_not_compared_to_its_placeholder_due_at() {
+    let mut value = fixture_value();
+    push(
+        &mut value["events"],
+        json!({
+            "id": "relative_deadline_activation",
+            "title": "Relative deadline activation",
+            "kind": "generic",
+            "trigger": {"type": "at_time", "at": {"day": 3, "minute_of_day": 600}}
+        }),
+    );
+    push(
+        &mut value["events"],
+        json!({
+            "id": "relative_deadline_missed",
+            "title": "Relative deadline missed",
+            "kind": "generic",
+            "trigger": {"type": "deadline_missed", "deadline": "relative_deadline"}
+        }),
+    );
+    push(
+        &mut value["deadlines"],
+        json!({
+            "id": "relative_deadline",
+            "title": "Relative deadline",
+            "due_at": {"day": 2, "minute_of_day": 600},
+            "activation_event": "relative_deadline_activation",
+            "relative_due": {"offset_minutes": 60},
+            "completion_actions": ["file_claim"],
+            "missed_event": "relative_deadline_missed"
+        }),
+    );
+
+    let report = report(value);
+    assert!(!report.contains_code(AuthoringDiagnosticCode::DeadlineActivatesAfterDue));
+}
+
+#[test]
 fn deadline_cannot_activate_after_it_is_due() {
     let mut value = fixture_value();
     push(

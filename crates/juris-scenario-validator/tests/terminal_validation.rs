@@ -56,6 +56,10 @@ fn resolved_with_pending_task_is_rejected() {
         time_cost_minutes: 5,
         cost_eur: 0,
         billable_minutes: 0,
+        completion_timing: None,
+        advance_to_deadlines: Vec::new(),
+        completion_deadlines: Vec::new(),
+        completion_deadline_offset_minutes: 0,
         repeatability: ActionRepeatability::Once,
     });
 
@@ -81,6 +85,10 @@ fn resolved_with_pending_task_is_rejected() {
         time_cost_minutes: 5,
         cost_eur: 0,
         billable_minutes: 0,
+        completion_timing: None,
+        advance_to_deadlines: Vec::new(),
+        completion_deadlines: Vec::new(),
+        completion_deadline_offset_minutes: 0,
         repeatability: ActionRepeatability::Once,
     });
 
@@ -104,6 +112,7 @@ fn resolved_with_pending_task_is_rejected() {
         start_action: ActionId::from("start-pending-review"),
         completion_event: EventId::from("pending-review-completed"),
         duration_minutes: 60,
+        completion_timing: None,
         usable_until_event: None,
         expiry_event: None,
     });
@@ -130,6 +139,10 @@ fn resolved_with_open_deadline_is_rejected() {
         time_cost_minutes: 5,
         cost_eur: 0,
         billable_minutes: 0,
+        completion_timing: None,
+        advance_to_deadlines: Vec::new(),
+        completion_deadlines: Vec::new(),
+        completion_deadline_offset_minutes: 0,
         repeatability: ActionRepeatability::Once,
     });
 
@@ -151,6 +164,8 @@ fn resolved_with_open_deadline_is_rejected() {
         id: deadline_id,
         title: "Open terminal deadline".to_owned(),
         due_at: ScenarioTime::new(2, 600),
+        relative_due: None,
+        completion_at_due_allowed: false,
         activation_event: None,
         completion_actions: vec![ActionId::from("complete-terminal-deadline")],
         completion_event: None,
@@ -179,6 +194,10 @@ fn resolved_with_required_inbox_is_rejected() {
         time_cost_minutes: 5,
         cost_eur: 0,
         billable_minutes: 0,
+        completion_timing: None,
+        advance_to_deadlines: Vec::new(),
+        completion_deadlines: Vec::new(),
+        completion_deadline_offset_minutes: 0,
         repeatability: ActionRepeatability::Once,
     });
 

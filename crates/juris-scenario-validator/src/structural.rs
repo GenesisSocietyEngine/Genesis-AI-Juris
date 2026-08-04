@@ -1,7 +1,10 @@
 //! Structural validation independent of cross-reference traversal.
 
 use crate::{Diagnostic, DiagnosticCode, ScenarioIndex, ValidationReport};
-use juris_scenario_schema::{Effect, ScenarioDefinition, StageKind, SCENARIO_SCHEMA_VERSION_V1};
+use juris_scenario_schema::{
+    Effect, EventTrigger, RelativeTimeDefinition, ScenarioDefinition, ScenarioTime, StageKind,
+    SCENARIO_SCHEMA_VERSION_V1,
+};
 use std::collections::HashSet;
 
 pub(crate) fn validate_structural(
@@ -110,6 +113,7 @@ fn validate_extended_runtime_contract(
     scenario: &ScenarioDefinition,
     report: &mut ValidationReport,
 ) {
+    validate_timing_contract(scenario, report);
     for (metric, rate) in &scenario.foreground_metric_rates {
         if *rate <= 0 {
             report.push(Diagnostic::error(
@@ -204,6 +208,150 @@ fn validate_extended_runtime_contract(
             }
         }
     }
+}
+
+fn validate_timing_contract(scenario: &ScenarioDefinition, report: &mut ValidationReport) {
+    if let Some(initial_clock) = scenario.initial_clock {
+        validate_scenario_time("initial_clock", initial_clock, report);
+    }
+    let baseline = scenario.initial_clock.map(scenario_time_minutes);
+
+    for (index, action) in scenario.actions.iter().enumerate() {
+        if let Some(timing) = &action.completion_timing {
+            validate_relative_timing(
+                timing,
+                &format!("actions[{index}].completion_timing"),
+                report,
+            );
+        }
+    }
+    for (index, deadline) in scenario.deadlines.iter().enumerate() {
+        validate_scenario_time(
+            &format!("deadlines[{index}].due_at"),
+            deadline.due_at,
+            report,
+        );
+        if baseline.is_some_and(|baseline| scenario_time_minutes(deadline.due_at) < baseline) {
+            report.push(Diagnostic::error(
+                DiagnosticCode::InvalidScenarioTime,
+                format!("deadlines[{index}].due_at"),
+                "an authored civil deadline cannot precede initial_clock",
+            ));
+        }
+        if let Some(timing) = &deadline.relative_due {
+            validate_relative_timing(timing, &format!("deadlines[{index}].relative_due"), report);
+        }
+    }
+    for (index, task) in scenario.async_tasks.iter().enumerate() {
+        if let Some(timing) = &task.completion_timing {
+            validate_relative_timing(
+                timing,
+                &format!("async_tasks[{index}].completion_timing"),
+                report,
+            );
+        }
+    }
+    for (index, event) in scenario.events.iter().enumerate() {
+        if let EventTrigger::AtTime { at } = event.trigger {
+            validate_scenario_time(&format!("events[{index}].trigger.at"), at, report);
+            if baseline.is_some_and(|baseline| scenario_time_minutes(at) < baseline) {
+                report.push(Diagnostic::error(
+                    DiagnosticCode::InvalidScenarioTime,
+                    format!("events[{index}].trigger.at"),
+                    "a civil at_time event cannot precede initial_clock",
+                ));
+            }
+        }
+    }
+
+    // Runtime resolution follows stable IDs, not array order. Cycles have no
+    // authoritative anchor and are rejected before session construction.
+    for (index, deadline) in scenario.deadlines.iter().enumerate() {
+        let mut seen = HashSet::new();
+        let mut current = Some(deadline.id.as_str());
+        while let Some(id) = current {
+            if !seen.insert(id) {
+                report.push(Diagnostic::error(
+                    DiagnosticCode::InvalidScenarioTime,
+                    format!("deadlines[{index}].relative_due.relative_to_deadline"),
+                    format!("relative deadline dependency cycle reaches `{id}`"),
+                ));
+                break;
+            }
+            current = scenario
+                .deadlines
+                .iter()
+                .find(|candidate| candidate.id.as_str() == id)
+                .and_then(|candidate| candidate.relative_due.as_ref())
+                .and_then(|timing| timing.relative_to_deadline.as_ref())
+                .map(|id| id.as_str());
+        }
+
+        if deadline.activation_event.is_none() {
+            let mut current = deadline
+                .relative_due
+                .as_ref()
+                .and_then(|timing| timing.relative_to_deadline.as_ref())
+                .map(|id| id.as_str());
+            while let Some(id) = current {
+                let Some(anchor) = scenario
+                    .deadlines
+                    .iter()
+                    .find(|candidate| candidate.id.as_str() == id)
+                else {
+                    break;
+                };
+                if anchor.relative_due.is_some() && anchor.activation_event.is_some() {
+                    report.push(Diagnostic::error(
+                        DiagnosticCode::InvalidScenarioTime,
+                        format!("deadlines[{index}].relative_due.relative_to_deadline"),
+                        format!(
+                            "initially active relative deadline cannot depend on later-activated relative deadline `{id}`"
+                        ),
+                    ));
+                    break;
+                }
+                current = anchor
+                    .relative_due
+                    .as_ref()
+                    .and_then(|timing| timing.relative_to_deadline.as_ref())
+                    .map(|id| id.as_str());
+            }
+        }
+    }
+}
+
+fn validate_relative_timing(
+    timing: &RelativeTimeDefinition,
+    path: &str,
+    report: &mut ValidationReport,
+) {
+    if let Some(calendar) = timing.calendar_target {
+        if calendar.minute_of_day >= 1_440 {
+            report.push(Diagnostic::error(
+                DiagnosticCode::InvalidScenarioTime,
+                format!("{path}.calendar_target.minute_of_day"),
+                "minute_of_day must be below 1440",
+            ));
+        }
+    }
+    if let Some(not_before) = timing.not_before {
+        validate_scenario_time(&format!("{path}.not_before"), not_before, report);
+    }
+}
+
+fn validate_scenario_time(path: &str, time: ScenarioTime, report: &mut ValidationReport) {
+    if time.minute_of_day >= 1_440 {
+        report.push(Diagnostic::error(
+            DiagnosticCode::InvalidScenarioTime,
+            format!("{path}.minute_of_day"),
+            "minute_of_day must be below 1440",
+        ));
+    }
+}
+
+fn scenario_time_minutes(time: ScenarioTime) -> u64 {
+    u64::from(time.day) * 1_440 + u64::from(time.minute_of_day)
 }
 
 fn validate_integer_effect(effect: &Effect, path: &str, report: &mut ValidationReport) {

@@ -82,6 +82,19 @@ pub enum SimulationError {
     #[error("simulation clock overflow while applying `{owner}`")]
     ClockOverflow { owner: String },
 
+    #[error("deadline `{deadline}` is not active")]
+    DeadlineInactive { deadline: String },
+
+    #[error(
+        "action `{action}` would complete at minute {completion}, outside deadline `{deadline}` at minute {due}"
+    )]
+    ActionCompletionDeadlineExceeded {
+        action: String,
+        deadline: String,
+        completion: u64,
+        due: u64,
+    },
+
     #[error("integer state `{state}` is not declared")]
     UnknownIntegerState { state: String },
 

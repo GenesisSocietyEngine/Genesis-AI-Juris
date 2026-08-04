@@ -30,6 +30,7 @@ mod lifecycle;
 mod outcome;
 mod scenario;
 mod stage;
+mod timing;
 
 pub use action::{ActionDefinition, ActionRepeatability};
 pub use actor::{ActorDefinition, ActorRole};
@@ -57,3 +58,4 @@ pub use scenario::{
     RESOURCE_SPEND_EUR, SCENARIO_SCHEMA_VERSION_V1,
 };
 pub use stage::{StageDefinition, StageKind};
+pub use timing::{RelativeCalendarTarget, RelativeTimeDefinition};

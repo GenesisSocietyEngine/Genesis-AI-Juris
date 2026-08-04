@@ -360,3 +360,432 @@ fn same_minute_deadline_precedes_foreground_thresholds() {
         .iter()
         .all(|entry| entry.id != "idle_termination"));
 }
+
+fn timing_parity_scenario(completion_at_due_allowed: bool) -> Value {
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../content/fixtures/authoring/scenario_path_valid.json");
+    let mut value: Value =
+        serde_json::from_slice(&fs::read(fixture).expect("fixture must be readable"))
+            .expect("fixture must parse");
+
+    value["clock"] = json!({"mode": "foreground"});
+    value["initial_clock"] = json!({"day": 3, "minute_of_day": 480});
+    value["deadlines"] = json!([
+        {
+            "id": "z_relative_deadline",
+            "title": "Relative deadline",
+            "due_at": {"day": 3, "minute_of_day": 660},
+            "relative_due": {
+                "relative_to_deadline": "a_exact_deadline",
+                "offset_minutes": 60
+            },
+            "completion_actions": ["respond_to_relative_deadline"],
+            "missed_event": "relative_deadline_missed",
+            "completion_at_due_allowed": true
+        },
+        {
+            "id": "a_exact_deadline",
+            "title": "Exact deadline",
+            "due_at": {"day": 3, "minute_of_day": 600},
+            "completion_actions": ["wait_until_exact_deadline"],
+            "missed_event": "exact_deadline_missed",
+            "completion_at_due_allowed": completion_at_due_allowed
+        },
+        {
+            "id": "activated_relative_deadline",
+            "title": "Activated relative deadline",
+            "due_at": {"day": 3, "minute_of_day": 510},
+            "activation_event": "timed_task_ready",
+            "relative_due": {"offset_minutes": 30},
+            "completion_actions": ["respond_to_relative_deadline"],
+            "missed_event": "activated_deadline_missed",
+            "completion_at_due_allowed": true
+        }
+    ]);
+    value["async_tasks"] = json!([{
+        "id": "timed_task",
+        "title": "Timed task",
+        "start_action": "start_timed_task",
+        "completion_event": "timed_task_ready",
+        "duration_minutes": 10,
+        "completion_timing": {"offset_minutes": 100}
+    }]);
+    value["deterministic_decisions"] = json!([{
+        "id": "observe_selected_deadline_before_clock",
+        "roll_range": 1,
+        "branches": [
+            {
+                "id": "open_before_clock",
+                "condition": {
+                    "type": "deadline_status_is",
+                    "deadline": "a_exact_deadline",
+                    "status": "open"
+                },
+                "effects": [
+                    {"type": "set_flag", "flag": "deadline_open_during_action_effects", "value": true}
+                ]
+            },
+            {
+                "id": "completed_before_clock",
+                "condition": {
+                    "type": "deadline_status_is",
+                    "deadline": "a_exact_deadline",
+                    "status": "completed"
+                },
+                "effects": [
+                    {"type": "set_flag", "flag": "deadline_completed_during_action_effects", "value": true}
+                ]
+            }
+        ]
+    }]);
+
+    let terminal_action = value["actions"]
+        .as_array_mut()
+        .expect("actions must be an array")
+        .iter_mut()
+        .find(|action| action["id"] == "accept_judgment")
+        .expect("fixture must contain its terminal action");
+    let terminal_effects = terminal_action["effects"]
+        .as_array_mut()
+        .expect("effects must be an array");
+    terminal_effects.splice(
+        0..0,
+        [
+            json!({"type": "expire_async_task", "task": "timed_task"}),
+            json!({"type": "complete_deadline", "deadline": "z_relative_deadline"}),
+            json!({"type": "complete_deadline", "deadline": "a_exact_deadline"}),
+            json!({"type": "complete_deadline", "deadline": "activated_relative_deadline"}),
+        ],
+    );
+
+    let actions = value["actions"]
+        .as_array_mut()
+        .expect("actions must be an array");
+    actions.extend([
+        json!({
+            "id": "wait_until_exact_deadline",
+            "title": "Wait until exact deadline",
+            "available_when": {"type": "stage_is", "stage": "intake"},
+            "effects": [
+                {"type": "resolve_deterministic_decision", "decision": "observe_selected_deadline_before_clock"}
+            ],
+            "advance_to_deadlines": ["z_relative_deadline", "a_exact_deadline"]
+        }),
+        json!({
+            "id": "respond_to_relative_deadline",
+            "title": "Respond to relative deadline",
+            "available_when": {"type": "stage_is", "stage": "intake"},
+            "effects": []
+        }),
+        json!({
+            "id": "rest_until_next_workday",
+            "title": "Rest until next workday",
+            "available_when": {"type": "stage_is", "stage": "intake"},
+            "effects": [],
+            "completion_timing": {
+                "calendar_target": {"day_offset": 1, "minute_of_day": 480}
+            }
+        }),
+        json!({
+            "id": "start_timed_task",
+            "title": "Start timed task",
+            "available_when": {"type": "stage_is", "stage": "intake"},
+            "effects": [{"type": "start_async_task", "task": "timed_task"}],
+            "time_cost_minutes": 60
+        }),
+        json!({
+            "id": "review_timed_task",
+            "title": "Review timed task",
+            "available_when": {
+                "type": "all",
+                "conditions": [
+                    {"type": "stage_is", "stage": "intake"},
+                    {"type": "async_task_status_is", "task": "timed_task", "status": "ready"}
+                ]
+            },
+            "effects": [{"type": "review_async_task", "task": "timed_task"}]
+        }),
+    ]);
+    value["stages"][0]["exit_actions"]
+        .as_array_mut()
+        .expect("exit actions must be an array")
+        .extend([
+            json!("wait_until_exact_deadline"),
+            json!("respond_to_relative_deadline"),
+            json!("rest_until_next_workday"),
+            json!("start_timed_task"),
+            json!("review_timed_task"),
+        ]);
+
+    value["events"]
+        .as_array_mut()
+        .expect("events must be an array")
+        .extend([
+            json!({
+                "id": "after_wait_observed_completed",
+                "title": "After-wait deadline observation",
+                "kind": "generic",
+                "trigger": {"type": "after_action", "action": "wait_until_exact_deadline"},
+                "condition": {
+                    "type": "deadline_status_is",
+                    "deadline": "a_exact_deadline",
+                    "status": "completed"
+                },
+                "effects": [
+                    {"type": "set_flag", "flag": "deadline_completed_before_after_action_event", "value": true}
+                ]
+            }),
+            json!({
+                "id": "civil_clock_event",
+                "title": "Civil clock event",
+                "kind": "generic",
+                "trigger": {"type": "at_time", "at": {"day": 3, "minute_of_day": 540}},
+                "effects": [{"type": "set_flag", "flag": "civil_clock_event_fired", "value": true}]
+            }),
+            json!({
+                "id": "exact_deadline_missed",
+                "title": "Exact deadline missed",
+                "kind": "generic",
+                "trigger": {"type": "deadline_missed", "deadline": "a_exact_deadline"},
+                "effects": [
+                    {"type": "miss_deadline", "deadline": "a_exact_deadline"},
+                    {"type": "set_flag", "flag": "exact_deadline_missed", "value": true}
+                ]
+            }),
+            json!({
+                "id": "relative_deadline_missed",
+                "title": "Relative deadline missed",
+                "kind": "generic",
+                "trigger": {"type": "deadline_missed", "deadline": "z_relative_deadline"},
+                "effects": [
+                    {"type": "miss_deadline", "deadline": "z_relative_deadline"},
+                    {"type": "set_flag", "flag": "relative_deadline_missed", "value": true}
+                ]
+            }),
+            json!({
+                "id": "activated_deadline_missed",
+                "title": "Activated deadline missed",
+                "kind": "generic",
+                "trigger": {"type": "deadline_missed", "deadline": "activated_relative_deadline"},
+                "effects": [
+                    {"type": "miss_deadline", "deadline": "activated_relative_deadline"},
+                    {"type": "set_flag", "flag": "activated_deadline_missed", "value": true}
+                ]
+            }),
+            json!({
+                "id": "timed_task_ready",
+                "title": "Timed task ready",
+                "kind": "generic",
+                "trigger": {"type": "async_task_completed", "task": "timed_task"},
+                "effects": [{"type": "mark_async_task_ready", "task": "timed_task"}]
+            }),
+        ]);
+    value
+}
+
+fn deadline_status<'a>(
+    snapshot: &'a juris_engine::MobileScenarioSnapshot,
+    id: &str,
+) -> Option<&'a str> {
+    snapshot
+        .deadlines
+        .iter()
+        .find(|deadline| deadline.id == id)
+        .and_then(|deadline| deadline.status.as_deref())
+}
+
+#[test]
+fn exact_due_action_precompletes_only_the_selected_deadline() {
+    let commands = [ScenarioTraceCommand::Dispatch {
+        action_id: "wait_until_exact_deadline".to_owned(),
+    }];
+    let (simulated, authoritative) = run_both(timing_parity_scenario(true), 19, &commands);
+    assert_core_parity(&simulated, &authoritative);
+
+    assert_eq!(simulated.final_state.clock_minutes, 120);
+    assert_eq!(
+        simulated.deadline_statuses["a_exact_deadline"].as_deref(),
+        Some("completed")
+    );
+    assert_eq!(
+        simulated.deadline_statuses["z_relative_deadline"].as_deref(),
+        Some("open")
+    );
+    assert_eq!(
+        deadline_status(&authoritative, "a_exact_deadline"),
+        Some("completed")
+    );
+    assert_eq!(
+        deadline_status(&authoritative, "z_relative_deadline"),
+        Some("open")
+    );
+    assert!(simulated.final_state.flags["civil_clock_event_fired"]);
+    assert!(simulated.final_state.flags["deadline_open_during_action_effects"]);
+    assert!(simulated.final_state.flags["deadline_completed_before_after_action_event"]);
+    assert!(!simulated
+        .final_state
+        .flags
+        .contains_key("deadline_completed_during_action_effects"));
+    assert!(!simulated
+        .final_state
+        .flags
+        .contains_key("exact_deadline_missed"));
+}
+
+#[test]
+fn completion_at_due_policy_and_due_plus_one_boundary_match_the_engine() {
+    let value = timing_parity_scenario(true);
+    let at_due = [ScenarioTraceCommand::AdvanceTime { minutes: 120 }];
+    let (simulated, authoritative) = run_both(value.clone(), 19, &at_due);
+    assert_core_parity(&simulated, &authoritative);
+    assert_eq!(
+        simulated.deadline_statuses["a_exact_deadline"].as_deref(),
+        Some("open")
+    );
+    assert_eq!(
+        deadline_status(&authoritative, "a_exact_deadline"),
+        Some("open")
+    );
+
+    let after_due = [ScenarioTraceCommand::AdvanceTime { minutes: 121 }];
+    let (simulated, authoritative) = run_both(value, 19, &after_due);
+    assert_core_parity(&simulated, &authoritative);
+    assert_eq!(
+        simulated.deadline_statuses["a_exact_deadline"].as_deref(),
+        Some("missed")
+    );
+    assert_eq!(
+        deadline_status(&authoritative, "a_exact_deadline"),
+        Some("missed")
+    );
+    assert!(simulated.final_state.flags["exact_deadline_missed"]);
+
+    let rejected = timing_parity_scenario(false);
+    let definition: ScenarioDefinition =
+        serde_json::from_value(rejected.clone()).expect("typed scenario must parse");
+    let mut authoritative =
+        ScenarioSession::new(definition, 19).expect("authoritative runtime must initialize");
+    let before = authoritative.snapshot();
+    let error = authoritative
+        .dispatch("wait_until_exact_deadline")
+        .expect_err("exact due must be rejected when the policy is false");
+    assert!(matches!(
+        error,
+        juris_engine::ScenarioRuntimeError::ActionCompletionDeadlineExceeded {
+            completion: 120,
+            due: 120,
+            ..
+        }
+    ));
+    assert_eq!(authoritative.snapshot(), before, "rejection must be atomic");
+
+    let error = ScenarioSimulator::new_with_seed(
+        ScenarioDocument::from_value(rejected).expect("document must parse"),
+        19,
+    )
+    .expect("simulator must initialize")
+    .run_commands(
+        &[ScenarioTraceCommand::Dispatch {
+            action_id: "wait_until_exact_deadline".to_owned(),
+        }],
+        false,
+    )
+    .expect_err("simulator must enforce the same exact-due policy");
+    assert!(matches!(
+        error,
+        juris_scenario_simulator::SimulationError::ActionCompletionDeadlineExceeded {
+            completion: 120,
+            due: 120,
+            ..
+        }
+    ));
+}
+
+#[test]
+fn elapsed_zero_deadline_boundary_is_processed_at_session_start() {
+    let mut immediate = timing_parity_scenario(false);
+    immediate["deadlines"][1]["due_at"] = json!({"day": 3, "minute_of_day": 480});
+    let (simulated, authoritative) = run_both(immediate, 19, &[]);
+    assert_core_parity(&simulated, &authoritative);
+    assert_eq!(simulated.final_state.clock_minutes, 0);
+    assert_eq!(
+        simulated.deadline_statuses["a_exact_deadline"].as_deref(),
+        Some("missed")
+    );
+    assert_eq!(
+        deadline_status(&authoritative, "a_exact_deadline"),
+        Some("missed")
+    );
+    assert!(simulated.final_state.flags["exact_deadline_missed"]);
+    assert!(simulated
+        .fired_events
+        .iter()
+        .any(|event| event == "exact_deadline_missed"));
+}
+
+#[test]
+fn next_workday_and_relative_async_targets_match_the_engine() {
+    let rest = [ScenarioTraceCommand::Dispatch {
+        action_id: "rest_until_next_workday".to_owned(),
+    }];
+    let (simulated, authoritative) = run_both(timing_parity_scenario(true), 23, &rest);
+    assert_core_parity(&simulated, &authoritative);
+    assert_eq!(simulated.final_state.clock_minutes, 1_440);
+
+    let before_ready = [
+        ScenarioTraceCommand::Dispatch {
+            action_id: "start_timed_task".to_owned(),
+        },
+        ScenarioTraceCommand::AdvanceTime { minutes: 99 },
+    ];
+    let (simulated, authoritative) = run_both(timing_parity_scenario(true), 23, &before_ready);
+    assert_core_parity(&simulated, &authoritative);
+    assert_eq!(simulated.final_state.clock_minutes, 159);
+    assert_eq!(simulated.async_task_statuses["timed_task"], "inprogress");
+    assert!(!simulated
+        .fired_events
+        .iter()
+        .any(|event| event == "timed_task_ready"));
+
+    let at_ready = [
+        ScenarioTraceCommand::Dispatch {
+            action_id: "start_timed_task".to_owned(),
+        },
+        ScenarioTraceCommand::AdvanceTime { minutes: 100 },
+    ];
+    let (simulated, authoritative) = run_both(timing_parity_scenario(true), 23, &at_ready);
+    assert_core_parity(&simulated, &authoritative);
+    assert_eq!(simulated.final_state.clock_minutes, 160);
+    assert_eq!(simulated.async_task_statuses["timed_task"], "ready");
+    assert!(simulated
+        .fired_events
+        .iter()
+        .any(|event| event == "timed_task_ready"));
+    assert_eq!(
+        simulated.deadline_statuses["activated_relative_deadline"].as_deref(),
+        Some("open")
+    );
+    assert_eq!(
+        deadline_status(&authoritative, "activated_relative_deadline"),
+        Some("open")
+    );
+
+    let after_activated_due = [
+        ScenarioTraceCommand::Dispatch {
+            action_id: "start_timed_task".to_owned(),
+        },
+        ScenarioTraceCommand::AdvanceTime { minutes: 131 },
+    ];
+    let (simulated, authoritative) =
+        run_both(timing_parity_scenario(true), 23, &after_activated_due);
+    assert_core_parity(&simulated, &authoritative);
+    assert_eq!(simulated.final_state.clock_minutes, 191);
+    assert_eq!(
+        simulated.deadline_statuses["activated_relative_deadline"].as_deref(),
+        Some("missed")
+    );
+    assert_eq!(
+        deadline_status(&authoritative, "activated_relative_deadline"),
+        Some("missed")
+    );
+}

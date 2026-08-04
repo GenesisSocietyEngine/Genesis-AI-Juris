@@ -5,8 +5,8 @@
 
 use crate::{Diagnostic, DiagnosticCode, ValidationReport};
 use juris_scenario_schema::{
-    ActionDefinition, ActionId, DeadlineId, Effect, EventId, EventKind, EventTrigger,
-    ScenarioDefinition, StageKind,
+    ActionDefinition, ActionId, Effect, EventId, EventKind, EventTrigger, ScenarioDefinition,
+    StageKind,
 };
 
 /// Enforces lifecycle invariants discovered during mobile playtesting.
@@ -369,12 +369,11 @@ fn validate_deadlines(scenario: &ScenarioDefinition, report: &mut ValidationRepo
             ));
         }
 
-        let completion_action_closes_deadline =
-            deadline.completion_actions.iter().any(|action_id| {
-                action_by_id(scenario, action_id).is_some_and(|action| {
-                    effects_complete_deadline(scenario, &action.effects, &deadline.id)
-                })
-            });
+        // Completion actions are authoritative runtime transitions: accepting
+        // a listed action completes the open deadline before temporal miss
+        // processing. Scenario content does not need to duplicate that generic
+        // rule with a case-specific CompleteDeadline effect.
+        let completion_action_closes_deadline = !deadline.completion_actions.is_empty();
 
         let completion_event_closes_deadline = deadline
             .completion_event
@@ -403,42 +402,4 @@ fn validate_deadlines(scenario: &ScenarioDefinition, report: &mut ValidationRepo
             ));
         }
     }
-}
-
-/// Checks direct action effects and one explicitly triggered event for a
-/// deadline-completion effect.
-///
-/// Full recursive event traversal belongs to the later reachability phase.
-fn effects_complete_deadline(
-    scenario: &ScenarioDefinition,
-    effects: &[Effect],
-    deadline_id: &DeadlineId,
-) -> bool {
-    if effects.iter().any(|effect| {
-        matches!(
-            effect,
-            Effect::CompleteDeadline {
-                deadline: referenced_deadline
-            } if referenced_deadline == deadline_id
-        )
-    }) {
-        return true;
-    }
-
-    effects.iter().any(|effect| {
-        let Effect::TriggerEvent { event } = effect else {
-            return false;
-        };
-
-        event_by_id(scenario, event).is_some_and(|triggered_event| {
-            triggered_event.effects.iter().any(|triggered_effect| {
-                matches!(
-                    triggered_effect,
-                    Effect::CompleteDeadline {
-                        deadline: referenced_deadline
-                    } if referenced_deadline == deadline_id
-                )
-            })
-        })
-    })
 }

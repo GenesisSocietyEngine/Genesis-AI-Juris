@@ -227,6 +227,10 @@ fn runtime_error_response(error: ScenarioRuntimeError) -> BridgeResponse {
         ScenarioRuntimeError::InvalidScenario(_) => "invalid_scenario",
         ScenarioRuntimeError::ScenarioResolved => "scenario_resolved",
         ScenarioRuntimeError::ActionUnavailable(_) => "action_unavailable",
+        ScenarioRuntimeError::DeadlineInactive(_) => "deadline_inactive",
+        ScenarioRuntimeError::ActionCompletionDeadlineExceeded { .. } => {
+            "action_completion_deadline_exceeded"
+        }
         ScenarioRuntimeError::IntegerOverflow(_) => "integer_overflow",
         ScenarioRuntimeError::UnknownIntegerState(_) => "unknown_integer_state",
         ScenarioRuntimeError::UnknownDecision(_) => "unknown_decision",

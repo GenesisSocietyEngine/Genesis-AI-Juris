@@ -206,6 +206,7 @@ fn async_task_without_completion_path_is_rejected() {
         start_action: ActionId::from("close-matter"),
         completion_event: EventId::from("junior-review-completed"),
         duration_minutes: 120,
+        completion_timing: None,
         usable_until_event: None,
         expiry_event: None,
     });
@@ -245,6 +246,7 @@ fn async_task_without_terminal_boundary_is_rejected() {
         start_action: ActionId::from("close-matter"),
         completion_event: EventId::from("expert-report-completed"),
         duration_minutes: 240,
+        completion_timing: None,
         usable_until_event: None,
         expiry_event: None,
     });
@@ -286,6 +288,7 @@ fn async_task_with_completion_and_review_paths_is_valid() {
         start_action: ActionId::from("close-matter"),
         completion_event: EventId::from("valid-expert-report-completed"),
         duration_minutes: 180,
+        completion_timing: None,
         usable_until_event: None,
         expiry_event: None,
     });
@@ -325,6 +328,8 @@ fn deadline_without_completion_path_is_rejected() {
         id: deadline_id,
         title: "Submit partner risk brief".to_owned(),
         due_at: ScenarioTime::new(2, 720),
+        relative_due: None,
+        completion_at_due_allowed: false,
         activation_event: None,
         completion_actions: Vec::new(),
         completion_event: None,
@@ -365,6 +370,8 @@ fn deadline_without_missed_path_is_rejected() {
         id: deadline_id,
         title: "Preserve relevant evidence".to_owned(),
         due_at: ScenarioTime::new(1, 600),
+        relative_due: None,
+        completion_at_due_allowed: false,
         activation_event: None,
         completion_actions: vec![ActionId::from("close-matter")],
         completion_event: None,
