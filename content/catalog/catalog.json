@@ -53,6 +53,19 @@
       "player_client_id": "goldenshell_producers_cooperative",
       "identity_file": "content/catalog/cases/goldenshell_recall_at_dawn.identity.json",
       "scenario_file": "content/cases/goldenshell_recall_at_dawn.scenario.json"
+    },
+    {
+      "case_id": "us_environmental_desert_water_001",
+      "caption": "Sundial Mesa Residents Association v. Caldera Compression & Cooling Inc.",
+      "topic": "Desert Water",
+      "short_title": "Desert Water",
+      "jurisdiction": "US",
+      "practice_area": "environmental_litigation",
+      "difficulty": "expert",
+      "status": "playable",
+      "player_client_id": "sundial_mesa_residents_association",
+      "identity_file": "content/catalog/cases/desert_water_groundwater_claim.identity.json",
+      "scenario_file": "content/cases/desert_water_groundwater_claim.scenario.json"
     }
   ]
 }

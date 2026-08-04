@@ -271,6 +271,49 @@
           ]
         }
       }
+    },
+    "us_environmental_desert_water_001": {
+      "sort_order": 50,
+      "seed": 20260804,
+      "runtime_adapter": "rust_scenario_v1",
+      "scenario_localization_files": {
+        "ru": "content/localization/scenarios/desert_water_groundwater_claim.ru.v1.json"
+      },
+      "readiness": {
+        "diagnostics": true,
+        "path_simulation": true,
+        "engine_runtime": true
+      },
+      "locales": {
+        "en": {
+          "topic": "Desert Water",
+          "short_title": "Desert Water",
+          "synopsis": "Residents of Sundial Mesa suspect that hexavalent chromium from Caldera's cooling and compressor facility reached their wells. Counsel must preserve records, build a defensible sampling and hydrological chain, distinguish exposure from individual medical causation, protect filing deadlines, and keep an adverse judgment open for appeal before explicitly closing the matter.",
+          "player_client_role": "Residents' counsel",
+          "legal_issues": [
+            "groundwater contamination and source attribution",
+            "defensible sampling and chain of custody",
+            "facility use, disposal records, and corporate notice",
+            "exposure chronology versus individual medical causation",
+            "preservation, limitation, claim-filing, and appeal deadlines",
+            "first-instance judgment, appellate remedy, and explicit closure"
+          ]
+        },
+        "ru": {
+          "topic": "Вода пустыни",
+          "short_title": "Вода пустыни",
+          "synopsis": "Жители Сандиал-Месы подозревают, что шестивалентный хром с объекта Caldera, использующего системы охлаждения и компрессоры, попал в их скважины. Юрист должен сохранить документы, выстроить надёжную цепочку отбора проб и гидрогеологического подтверждения источника, отделить факт воздействия от индивидуальной медицинской причинности, соблюсти сроки подачи и сохранить право на апелляцию после неблагоприятного решения до явного закрытия дела.",
+          "player_client_role": "Юрист жителей",
+          "legal_issues": [
+            "загрязнение грунтовых вод и установление источника",
+            "надлежащий отбор проб и цепочка их хранения",
+            "использование объекта, документы об утилизации и осведомлённость компании",
+            "хронология воздействия и индивидуальная медицинская причинность",
+            "сроки сохранения доказательств, исковой давности, подачи иска и апелляции",
+            "решение первой инстанции, апелляционное средство защиты и явное закрытие дела"
+          ]
+        }
+      }
     }
   }
 }

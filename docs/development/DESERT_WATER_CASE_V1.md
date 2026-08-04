@@ -39,7 +39,7 @@ rewritten while adding Desert Water.
 
 | Position | Catalogue/runtime identity | Caption | EN / RU topic | Fingerprint | Existing canonical traces |
 |---:|---|---|---|---|---|
-| 1 / sort 10 | case `be_commercial_failed_erp_001`; adapter `demo_failed_erp` | Asteron Systems NV v. Northbridge Consulting BV | Failed ERP Implementation / Неудачное внедрение ERP | N/A: legacy Dart demo, not a Rust `ScenarioDefinition` | N/A: no authoritative Rust outcome or final minute |
+| 1 / sort 10 | case `be_commercial_failed_erp_001`; legacy source scenario `failed-erp-implementation`; adapter `demo_failed_erp` | Asteron Systems NV v. Northbridge Consulting BV | Failed ERP Implementation / Неудачное внедрение ERP | N/A: legacy Dart demo, not a Rust `ScenarioDefinition` | N/A: no authoritative Rust outcome or final minute |
 | 2 / sort 20 | case and scenario `be_commercial_logistics_001`; adapter `rust_scenario_v1` | Velmont Logistics SA v. Orbis Retail Belgium NV | Unpaid Logistics Invoices / Неоплаченные логистические счета | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` | `negotiated_recovery` at minute 270; `judgment_recovery` at minute 480 |
 | 3 / sort 30 | case and scenario `greenfire_first_72_hours`; adapter `rust_scenario_v1` | Port Haven Environmental Authority v. GreenFire Industrial Solutions B.V. | The First 72 Hours / Первые 72 часа | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` | `protected_crisis_position` at minute 4440; `compromised_crisis_position` at minute 4590 |
 | 4 / sort 40 | case `nl_food_safety_goldenshell_001`; scenario `goldenshell_recall_at_dawn`; adapter `rust_scenario_v1` | GoldenShell Producers Cooperative U.A. v. MiteGuard Services V.O.F. | Contaminated Egg Supply Chain / Загрязнение цепочки поставок яиц | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` | `coordinated_claim_position` at minute 4545; `fragmented_claim_position` at minute 4710 |
@@ -48,8 +48,9 @@ Failed ERP's N/A values are compatibility facts, not missing values to invent.
 The pre-Desert mobile-bundle SHA-256 is
 `8d9db2e75c5cac14df95073843cc5a0775df8d17323fb434c688a8854a012835`.
 Adding Desert Water intentionally changes that digest. The new bundle digest
-and Desert Water fingerprint are not yet computed and must remain explicitly
-unclaimed until the final content is exported and fingerprinted.
+is `fa3a2556e5baec0303f2fb8b8fe4b8e51fca6419da606cf000810d8643821644`.
+The final Desert Water fingerprint is
+`056bfa737932a81005fb8d9a78246593d1c1908308543d4bf9c5811d73201e8d`.
 
 ## Fictional premise and disclaimer
 
@@ -80,6 +81,7 @@ evidence, file a claim, and preserve a remedy after an adverse judgment.
 |---|---|
 | `case_id` | `us_environmental_desert_water_001` |
 | scenario `metadata.id` | `desert_water_groundwater_claim` |
+| canonical fingerprint | `056bfa737932a81005fb8d9a78246593d1c1908308543d4bf9c5811d73201e8d` |
 | caption | Sundial Mesa Residents Association v. Caldera Compression & Cooling Inc. |
 | EN topic | Desert Water |
 | RU topic | Вода пустыни |
@@ -324,17 +326,17 @@ uses their exact schema-v1 representations.
 | `prepare_expert_evidence` | `stage=environmental_investigation`; hydro task reviewed; defensible sampling, well timeline, plant records, alternative-source test, and limitation protected | set `expert_evidence_prepared` and preparation choice; confirm only already revealed fact statuses; set stage `claim_preparation` |
 | `prepare_incomplete_claim` | `stage` is urgent preservation or environmental investigation; limitation missed; no preparation choice | set `incomplete_claim_prepared` and preparation choice; set stage `claim_preparation`; reveal nothing new |
 | `file_evidence_backed_claim` | `stage=claim_preparation`; expert evidence prepared; claim deadline `open`; `claim_filed=false` | set claim filed/evidence-backed flags; complete claim deadline; resolve claim-window Inbox; trigger `first_instance_hearing_scheduled` |
-| `file_underdeveloped_claim` | `stage=claim_preparation`; incomplete claim prepared; limitation deadline `missed`; `claim_filed=false` | set claim filed/underdeveloped flags; trigger `first_instance_hearing_scheduled`; the protected claim deadline remains inactive and is neither opened nor falsely completed |
-| `receive_supported_first_instance_judgment` | `stage=first_instance_hearing`; evidence-backed claim and expert evidence; hydro task `reviewed`; all active deadlines closed; `first_instance_decision_received=false` | set `first_instance_decision_received=true` and `supported_first_instance_closure=true`; set judicial result `won` while still in hearing; trigger favorable hearing-closed event, whose direct effects close remaining required Inbox state, set stage `resolved`, trigger `matter_closed`, and resolve `credible_source_and_remedy` last |
+| `file_underdeveloped_claim` | `stage=claim_preparation`; incomplete claim prepared; (`limitation_protection_deadline=missed` OR `claim_filing_deadline=open`); `claim_filed=false` | set claim filed/underdeveloped flags; resolve the claim-window Inbox if present; trigger `first_instance_hearing_scheduled`; do not complete the protected claim deadline (it remains inactive on the canonical compromised path) |
+| `receive_supported_first_instance_judgment` | `stage=first_instance_hearing`; evidence-backed claim and expert evidence; hydro task `reviewed`; all active deadlines closed; `first_instance_decision_received=false` | set `first_instance_decision_received=true` and `supported_first_instance_closure=true`; set judicial result `won` while still in hearing; trigger favorable hearing-closed event, whose direct effects close remaining required Inbox state, create the closure report, set stage `resolved`, and resolve `credible_source_and_remedy` last |
 | `receive_adverse_first_instance_judgment` | `stage=first_instance_hearing`; claim filed; `first_instance_decision_received=false` | set `first_instance_decision_received=true` and `adverse_first_instance_received=true`; set judicial result `lost` while still in hearing; trigger adverse hearing-closed event, whose direct effects set stage `post_judgment_remedies`, activate the appeal deadline, and create the adverse-judgment Inbox; no outcome |
 | `preserve_source_issue_for_appeal` | `stage=post_judgment_remedies`; first-instance loss; appeal deadline open | set `source_issue_preserved_for_appeal`; no stage/result/outcome change |
-| `file_appeal` | `stage=post_judgment_remedies`; first-instance loss; appeal deadline `open`; `appeal_filed=false` | set `appeal_filed=true`; complete appeal deadline; resolve adverse-judgment Inbox; set stage `appeal`; trigger `appeal_filed` |
-| `waive_appeal_and_close` | `stage=post_judgment_remedies`; first-instance loss; appeal deadline `open` | complete appeal deadline; resolve adverse Inbox; set `appeal_waived=true`; close outstanding task/required Inbox; set stage `resolved`; trigger `matter_closed`; resolve compromised outcome last; preserve prior judicial result/instance |
-| `receive_favorable_appeal_judgment` | `stage=appeal`; appeal filed; source issue preserved; expert evidence and source chain complete; `appeal_decision_received=false` | set `appeal_decision_received=true` and `favorable_appeal_closure=true`; set judicial result `won` while still in appeal; resolve appeal-hearing Inbox; trigger favorable appeal event; set stage `resolved`; trigger `matter_closed`; resolve credible outcome last |
+| `file_appeal` | `stage=post_judgment_remedies`; adverse first-instance flag and Rust-owned loss; appeal deadline `open`; `appeal_filed=false` | set `appeal_filed=true`; complete appeal deadline; resolve adverse-judgment Inbox; trigger `appeal_filed`; that event, not the action, creates the appeal-hearing Inbox and sets stage `appeal` |
+| `waive_appeal_and_close` | `stage=post_judgment_remedies`; first-instance loss; appeal deadline `open` | complete appeal deadline; set `appeal_waived=true`; trigger `matter_closed`, whose direct effects terminalize the compromised path; preserve prior judicial result/instance |
+| `receive_favorable_appeal_judgment` | `stage=appeal`; appeal filed; source issue preserved; expert evidence and source chain complete; `appeal_decision_received=false` | set `appeal_decision_received=true` and `favorable_appeal_closure=true`; set judicial result `won` while still in appeal; trigger favorable appeal event, whose direct effects close required Inbox state, create the closure report, set stage `resolved`, and resolve the credible outcome last |
 | `receive_adverse_appeal_judgment` | `stage=appeal`; appeal filed; `appeal_decision_received=false` | set `appeal_decision_received=true` and `adverse_appeal_received=true`; set judicial result `lost` while still in appeal; resolve appeal-hearing Inbox; trigger adverse appeal event; remain in `appeal`; no outcome |
-| `close_after_adverse_appeal` | `stage=appeal`; `adverse_appeal_received=true`; not closed | set `adverse_appeal_closed=true`; close outstanding task/required Inbox; set stage `resolved`; trigger `matter_closed`; resolve compromised outcome last; preserve appeal decision instance |
-| `close_after_appeal_expiry` | `stage=post_judgment_remedies`; appeal deadline `missed`; first-instance loss | set `appeal_expiry_closed=true`; resolve/expire outstanding required state; set stage `resolved`; trigger `matter_closed`; resolve compromised outcome last |
-| `acknowledge_time_bar_and_close` | `stage` urgent preservation, environmental investigation, or claim preparation; limitation deadline `missed`; `claim_filed=false` | set `time_bar_closed=true`; expire any unfinished task and resolve required Inbox; set stage `resolved`; trigger `matter_closed`; resolve compromised outcome last; do not fabricate a judicial result |
+| `close_after_adverse_appeal` | `stage=appeal`; `adverse_appeal_received=true`; not closed | set `adverse_appeal_closed=true`; trigger `matter_closed`, whose direct effects terminalize the compromised path; preserve appeal decision instance |
+| `close_after_appeal_expiry` | `stage=post_judgment_remedies`; appeal deadline `missed`; first-instance loss | set `appeal_expiry_closed=true`; trigger `matter_closed`, whose direct effects terminalize the compromised path |
+| `acknowledge_time_bar_and_close` | `stage` urgent preservation, environmental investigation, or claim preparation; `claim_filed=false`; (`limitation_protection_deadline=missed` OR `claim_filing_deadline=missed`); each of the sampling, plant-preservation, and limitation deadlines is either `completed` or `missed` | set `time_bar_closed=true`; trigger `matter_closed`, whose direct effects terminalize the compromised path; do not fabricate a judicial result |
 
 The two sampling actions, two preparation actions, filing actions, decision
 actions, and closure actions are mutually exclusive through flags and their
@@ -345,9 +347,11 @@ closure effects sufficient for the static terminal validator; it must not rely
 only on state established by an earlier command or on an implicit runtime
 boundary. In particular, each terminalizing condition proves every
 start-active deadline completed or missed (or the same transition closes it),
-`matter_closed` directly resolves every action-required Inbox item, and the
-conditional after-event task-expiry event gives the static chain an explicit
-task terminalization path while preserving already reviewed work at runtime.
+the dedicated favorable events directly resolve every action-required Inbox
+item, while `matter_closed` owns the complete compromised terminal transition.
+The conditional after-event task-expiry event gives the compromised static
+chain an explicit task terminalization path while preserving already reviewed
+work at runtime.
 
 ## Five deadlines
 
@@ -428,20 +432,27 @@ triggers, conditions, and effects are locale-independent.
 | `hydrogeology_assessment_completed` | `async_task_completed` | Hydrogeology assessment ready / Гидрогеологическое исследование готово | marks task ready and creates ready Inbox; reveals no report |
 | `hydrogeology_assessment_expired` | `after_event matter_closed`; task not-started/in-progress/ready condition | Hydrogeology assessment expired / Гидрогеологическое исследование утратило актуальность | expires unfinished task; no evidence reveal; reviewed work remains reviewed |
 | `first_instance_hearing_scheduled` | `hearing_scheduled`, by effect | First-instance hearing scheduled / Назначено заседание первой инстанции | filing triggers this event; its direct effect sets stage `first_instance_hearing` |
-| `favorable_first_instance_judgment_delivered` | `hearing_closed`, by effect | Favorable first-instance judgment delivered / Вынесено благоприятное решение первой инстанции | after the Rust-owned `won` result, its direct effects close required Inbox state, set stage `resolved`, trigger `matter_closed`, and resolve the credible outcome last |
+| `favorable_first_instance_judgment_delivered` | `hearing_closed`, by effect | Favorable first-instance judgment delivered / Вынесено благоприятное решение первой инстанции | after the Rust-owned `won` result, its direct effects close required Inbox state, create the closure report, set stage `resolved`, and resolve the credible outcome last |
 | `adverse_first_instance_judgment_delivered` | `hearing_closed`, by effect | Adverse first-instance judgment delivered / Вынесено неблагоприятное решение первой инстанции | after the Rust-owned `lost` result, its direct effects set stage `post_judgment_remedies`, activate the appeal deadline, and create the adverse-judgment Inbox |
-| `appeal_filed` | `appeal`, by effect | Appeal filed / Апелляция подана | creates `appeal_hearing_instruction` |
-| `favorable_appeal_judgment_delivered` | `appeal`, by effect | Favorable appeal judgment delivered / Вынесено благоприятное решение апелляции | records Rust-owned appeal win before closure |
+| `appeal_filed` | `appeal`, by effect | Appeal filed / Апелляция подана | creates `appeal_hearing_instruction` and directly sets stage `appeal` |
+| `favorable_appeal_judgment_delivered` | `appeal`, by effect | Favorable appeal judgment delivered / Вынесено благоприятное решение апелляции | after the Rust-owned appeal win, its direct effects close required Inbox state, create the closure report, set stage `resolved`, and resolve the credible outcome last |
 | `adverse_appeal_judgment_delivered` | `appeal`, by effect | Adverse appeal judgment delivered / Вынесено неблагоприятное решение апелляции | records Rust-owned appeal loss; does not close |
-| `matter_closed` | `matter_closed`, by effect | Matter explicitly closed / Дело явно закрыто | directly resolves all action-required Inbox items and creates the non-action-required closure report; no hidden information |
+| `matter_closed` | `matter_closed`, by effect; compromised closure-flag condition | Matter explicitly closed / Дело явно закрыто | owns the compromised terminal transition: resolves all action-required Inbox items, creates the closure report, sets stage `resolved`, and resolves `compromised_claim_closed` last; no hidden information |
 
 Filing triggers a `HearingScheduled` event whose direct effects enter the
 hearing. First-instance decision actions apply `SetJudicialResult` first, then
 trigger a `HearingClosed` event whose direct effects leave the hearing. The
 favorable hearing event owns its complete terminal transition, including
 closed-state proof and final outcome resolution; the adverse event owns the
-non-terminal remedies transition. Appeal judgment actions likewise set the
-result while still in the appeal stage so Rust captures `appeal`.
+non-terminal remedies transition. `file_appeal` records and completes the
+filing state, then its `appeal_filed` event owns creation of the appeal-hearing
+Inbox and the stage transition into `appeal`. The favorable appeal event owns
+its credible terminal transition. All four compromised closure actions only establish their
+mutually exclusive closure flag (and complete an open appeal deadline where
+applicable) before triggering `matter_closed`, so both authoritative runtime
+and simulator process the closure/expiry event chain before the outcome becomes
+terminal. Appeal judgment actions set the result while still in the appeal
+stage so Rust captures `appeal`.
 
 ## Inbox contract
 
@@ -460,7 +471,13 @@ state only information visible at creation time.
 | `claim_window_instruction` | `claim_window_opened` | yes | Protected claim-filing window is open / Открыто защищённое окно подачи иска | resolve by evidence-backed filing; expire on claim miss |
 | `adverse_judgment_notice` | adverse first judgment | yes | Adverse judgment: appeal remains available / Неблагоприятное решение: апелляция доступна | resolve by appeal or waiver; expire on appeal miss |
 | `appeal_hearing_instruction` | `appeal_filed` | yes | Appeal record requires a source decision / Апелляционный материал требует решения по источнику | resolve by favorable or adverse appeal judgment |
-| `matter_closure_report` | `matter_closed` | no | Matter closure report / Отчёт о закрытии дела | informational; already resolved/non-required |
+| `matter_closure_report` | metadata `created_by_event=matter_closed`; also created directly by either favorable terminal event | no | Matter closure report / Отчёт о закрытии дела | informational; already resolved/non-required |
+
+The closure-report item's metadata names `matter_closed` for the compromised
+closure chain. The favorable first-instance and favorable-appeal events do not
+trigger `matter_closed`; each creates the same report directly as part of its
+own credible terminal transition. Thus every terminal path creates the report
+exactly once, while only compromised closure is owned by `matter_closed`.
 
 The full localization files contain a non-empty EN and RU body for every row.
 `hydrogeology_assessment_ready` may say only that work is ready; it must not
@@ -537,8 +554,10 @@ of silently claiming this target.
 
 Target terminal state: outcome `credible_source_and_remedy`, judicial result
 `won`, decision instance `first_instance`, lifecycle closed. Target action
-spend is EUR 54,150. The actual fingerprint, final-state digest, transition
-count, and event order remain unclaimed until computed.
+spend is EUR 54,150. The canonical scenario fingerprint is
+`056bfa737932a81005fb8d9a78246593d1c1908308543d4bf9c5811d73201e8d`;
+the final-state digest, transition count, and event order remain subject to the
+deterministic trace assertions.
 
 ### Compromised residents path — target minute 3510
 
@@ -717,8 +736,8 @@ Rust/bridge/content tests must prove:
   remain exact;
 - JSON bridge and FFI carry the additive existing Dossier without a new
   symbol;
-- mobile bundle export is deterministic and its new SHA is recorded only after
-  generation.
+- mobile bundle export is deterministic and pins the generated SHA-256
+  `fa3a2556e5baec0303f2fb8b8fe4b8e51fca6419da606cf000810d8643821644`.
 
 Flutter tests must prove:
 
