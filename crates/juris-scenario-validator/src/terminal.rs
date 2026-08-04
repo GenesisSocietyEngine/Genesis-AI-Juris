@@ -581,6 +581,7 @@ where
         | Condition::AsyncTaskStatusIs { .. }
         | Condition::InboxItemResolved { .. }
         | Condition::JudicialResultIs { .. }
+        | Condition::IntegerCompare { .. }
         | Condition::Not { .. } => false,
     }
 }
@@ -651,7 +652,7 @@ fn condition_may_be_true_in_stage(condition: &Condition, stage_id: &StageId) -> 
         | Condition::DeadlineStatusIs { .. }
         | Condition::AsyncTaskStatusIs { .. }
         | Condition::InboxItemResolved { .. } => true,
-        Condition::JudicialResultIs { .. } => true,
+        Condition::JudicialResultIs { .. } | Condition::IntegerCompare { .. } => true,
     }
 }
 
@@ -672,6 +673,6 @@ fn condition_may_be_false_in_stage(condition: &Condition, stage_id: &StageId) ->
         | Condition::DeadlineStatusIs { .. }
         | Condition::AsyncTaskStatusIs { .. }
         | Condition::InboxItemResolved { .. } => true,
-        Condition::JudicialResultIs { .. } => true,
+        Condition::JudicialResultIs { .. } | Condition::IntegerCompare { .. } => true,
     }
 }

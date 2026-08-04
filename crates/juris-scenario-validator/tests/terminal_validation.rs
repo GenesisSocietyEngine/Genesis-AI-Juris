@@ -46,6 +46,7 @@ fn resolved_with_pending_task_is_rejected() {
         id: ActionId::from("start-pending-review"),
         title: "Start pending review".to_owned(),
         description: None,
+        presentation_tags: Vec::new(),
         available_when: Condition::StageIs {
             stage: scenario.initial_stage.clone(),
         },
@@ -54,6 +55,7 @@ fn resolved_with_pending_task_is_rejected() {
         }],
         time_cost_minutes: 5,
         cost_eur: 0,
+        billable_minutes: 0,
         repeatability: ActionRepeatability::Once,
     });
 
@@ -61,6 +63,7 @@ fn resolved_with_pending_task_is_rejected() {
         id: ActionId::from("review-pending-work"),
         title: "Review pending work".to_owned(),
         description: None,
+        presentation_tags: Vec::new(),
         available_when: Condition::All {
             conditions: vec![
                 Condition::StageIs {
@@ -77,6 +80,7 @@ fn resolved_with_pending_task_is_rejected() {
         }],
         time_cost_minutes: 5,
         cost_eur: 0,
+        billable_minutes: 0,
         repeatability: ActionRepeatability::Once,
     });
 
@@ -87,6 +91,7 @@ fn resolved_with_pending_task_is_rejected() {
         trigger: EventTrigger::AsyncTaskCompleted {
             task: task_id.clone(),
         },
+        repeatable: false,
         condition: Condition::Always,
         effects: vec![Effect::MarkAsyncTaskReady {
             task: task_id.clone(),
@@ -115,6 +120,7 @@ fn resolved_with_open_deadline_is_rejected() {
         id: ActionId::from("complete-terminal-deadline"),
         title: "Complete terminal deadline".to_owned(),
         description: None,
+        presentation_tags: Vec::new(),
         available_when: Condition::StageIs {
             stage: scenario.initial_stage.clone(),
         },
@@ -123,6 +129,7 @@ fn resolved_with_open_deadline_is_rejected() {
         }],
         time_cost_minutes: 5,
         cost_eur: 0,
+        billable_minutes: 0,
         repeatability: ActionRepeatability::Once,
     });
 
@@ -133,6 +140,7 @@ fn resolved_with_open_deadline_is_rejected() {
         trigger: EventTrigger::DeadlineMissed {
             deadline: deadline_id.clone(),
         },
+        repeatable: false,
         condition: Condition::Always,
         effects: vec![Effect::MissDeadline {
             deadline: deadline_id.clone(),
@@ -161,6 +169,7 @@ fn resolved_with_required_inbox_is_rejected() {
         id: ActionId::from("resolve-terminal-message"),
         title: "Resolve terminal message".to_owned(),
         description: None,
+        presentation_tags: Vec::new(),
         available_when: Condition::StageIs {
             stage: scenario.initial_stage.clone(),
         },
@@ -169,11 +178,13 @@ fn resolved_with_required_inbox_is_rejected() {
         }],
         time_cost_minutes: 5,
         cost_eur: 0,
+        billable_minutes: 0,
         repeatability: ActionRepeatability::Once,
     });
 
     scenario.inbox_items.push(InboxItemDefinition {
         id: item_id,
+        sender: None,
         subject: "Required response".to_owned(),
         body: "A response is required before closure.".to_owned(),
         created_by_event: None,
@@ -206,6 +217,7 @@ fn resolved_without_outcome_is_rejected() {
         title: "Independent outcome resolution".to_owned(),
         kind: EventKind::Generic,
         trigger: EventTrigger::ScenarioStart,
+        repeatable: false,
         condition: Condition::Always,
         effects: vec![Effect::ResolveOutcome {
             outcome: scenario.outcomes[0].id.clone(),

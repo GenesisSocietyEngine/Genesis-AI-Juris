@@ -137,6 +137,10 @@ impl ReachabilityGraph {
                     self.deadlines.contains(deadline.as_str())
                 }
 
+                EventTrigger::MetricThresholdReached { metric, .. } => {
+                    scenario.foreground_metric_rates.contains_key(metric)
+                }
+
                 // ByEffect events are added when a reachable action or event
                 // contains Effect::TriggerEvent.
                 EventTrigger::ByEffect => self.events.contains(event.id.as_str()),
@@ -164,37 +168,56 @@ impl ReachabilityGraph {
             .collect();
 
         for effect in action_effects.into_iter().chain(event_effects) {
-            match effect {
-                Effect::SetStage { stage } => {
-                    self.stages.insert(stage.as_str().to_owned());
-                }
+            self.apply_reachable_effect(scenario, effect);
+        }
+    }
 
-                Effect::TriggerEvent { event } => {
-                    self.events.insert(event.as_str().to_owned());
-                }
-
-                Effect::StartAsyncTask { task } => {
-                    self.async_tasks.insert(task.as_str().to_owned());
-                }
-
-                Effect::CompleteDeadline { deadline } | Effect::MissDeadline { deadline } => {
-                    self.deadlines.insert(deadline.as_str().to_owned());
-                }
-
-                Effect::ResolveOutcome { outcome } => {
-                    self.outcomes.insert(outcome.as_str().to_owned());
-                }
-
-                Effect::SetFlag { .. }
-                | Effect::SetJudicialResult { .. }
-                | Effect::SetFactStatus { .. }
-                | Effect::MakeEvidenceAvailable { .. }
-                | Effect::MarkAsyncTaskReady { .. }
-                | Effect::ReviewAsyncTask { .. }
-                | Effect::ExpireAsyncTask { .. }
-                | Effect::CreateInboxItem { .. }
-                | Effect::ResolveInboxItem { .. } => {}
+    fn apply_reachable_effect(&mut self, scenario: &ScenarioDefinition, effect: &Effect) {
+        match effect {
+            Effect::SetStage { stage } => {
+                self.stages.insert(stage.as_str().to_owned());
             }
+            Effect::TriggerEvent { event } => {
+                self.events.insert(event.as_str().to_owned());
+            }
+            Effect::StartAsyncTask { task } => {
+                self.async_tasks.insert(task.as_str().to_owned());
+            }
+            Effect::CompleteDeadline { deadline } | Effect::MissDeadline { deadline } => {
+                self.deadlines.insert(deadline.as_str().to_owned());
+            }
+            Effect::ResolveOutcome { outcome } => {
+                self.outcomes.insert(outcome.as_str().to_owned());
+            }
+            Effect::ResolveDeterministicDecision { decision } => {
+                if let Some(definition) = scenario
+                    .deterministic_decisions
+                    .iter()
+                    .find(|candidate| candidate.id == *decision)
+                {
+                    for branch in &definition.branches {
+                        for branch_effect in &branch.effects {
+                            self.apply_reachable_effect(scenario, branch_effect);
+                        }
+                    }
+                }
+            }
+            Effect::SetFlag { .. }
+            | Effect::SetMetric { .. }
+            | Effect::AddMetric { .. }
+            | Effect::SubtractMetric { .. }
+            | Effect::ClampMetric { .. }
+            | Effect::SetResource { .. }
+            | Effect::AddResource { .. }
+            | Effect::SubtractResource { .. }
+            | Effect::SetJudicialResult { .. }
+            | Effect::SetFactStatus { .. }
+            | Effect::MakeEvidenceAvailable { .. }
+            | Effect::MarkAsyncTaskReady { .. }
+            | Effect::ReviewAsyncTask { .. }
+            | Effect::ExpireAsyncTask { .. }
+            | Effect::CreateInboxItem { .. }
+            | Effect::ResolveInboxItem { .. } => {}
         }
     }
 }
@@ -222,6 +245,7 @@ fn condition_may_be_true(condition: &Condition, reachable_stages: &HashSet<Strin
         Condition::Not { .. } => true,
 
         Condition::FlagEquals { .. }
+        | Condition::IntegerCompare { .. }
         | Condition::JudicialResultIs { .. }
         | Condition::FactStatusIs { .. }
         | Condition::EvidenceAvailable { .. }
@@ -341,6 +365,7 @@ fn condition_mentions_stage(condition: &Condition, stage_id: &StageId) -> bool {
         Condition::Always
         | Condition::Not { .. }
         | Condition::FlagEquals { .. }
+        | Condition::IntegerCompare { .. }
         | Condition::JudicialResultIs { .. }
         | Condition::FactStatusIs { .. }
         | Condition::EvidenceAvailable { .. }
@@ -396,7 +421,8 @@ fn event_has_declared_trigger_path(
         EventTrigger::ScenarioStart
         | EventTrigger::AtTime { .. }
         | EventTrigger::AfterAction { .. }
-        | EventTrigger::AfterEvent { .. } => true,
+        | EventTrigger::AfterEvent { .. }
+        | EventTrigger::MetricThresholdReached { .. } => true,
 
         EventTrigger::ByEffect => scenario
             .actions

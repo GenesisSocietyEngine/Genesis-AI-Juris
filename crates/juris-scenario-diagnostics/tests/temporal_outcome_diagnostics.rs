@@ -351,6 +351,79 @@ fn contradictory_outcome_condition_is_rejected() {
 }
 
 #[test]
+fn constant_integer_contradiction_is_rejected() {
+    let mut value = fixture_value();
+    value["outcomes"][0]["condition"] = json!({
+        "type": "integer_compare",
+        "left": {"source": "constant", "value": 2},
+        "operator": "greater_than",
+        "right": {"source": "constant", "value": 3}
+    });
+
+    let report = report(value);
+
+    assert!(report.contains_code(AuthoringDiagnosticCode::UnsatisfiableOutcomeCondition));
+}
+
+#[test]
+fn deterministic_decision_branch_is_an_outcome_producer() {
+    let mut value = fixture_value();
+    value["actions"][1]["effects"] = json!([{
+        "type": "resolve_deterministic_decision",
+        "decision": "acceptance"
+    }]);
+    value["deterministic_decisions"] = json!([{
+        "id": "acceptance",
+        "roll_range": 1,
+        "branches": [{
+            "id": "accepted",
+            "effects": [
+                {"type": "set_flag", "flag": "judgment_accepted", "value": true},
+                {"type": "set_stage", "stage": "resolved"},
+                {"type": "resolve_outcome", "outcome": "judgment_accepted"}
+            ]
+        }]
+    }]);
+
+    let report = report(value);
+
+    assert!(report.is_valid(), "{:#?}", report.diagnostics());
+    assert!(!report.contains_code(AuthoringDiagnosticCode::OutcomeWithoutProducer));
+    assert!(!report.contains_code(AuthoringDiagnosticCode::PrematureOutcomeResolution));
+}
+
+#[test]
+fn deterministic_decision_branch_cannot_resolve_competing_outcomes() {
+    let mut value = fixture_value();
+    push(
+        &mut value["outcomes"],
+        json!({
+            "id": "second_outcome",
+            "title": "Second outcome",
+            "summary": "Competing outcome.",
+            "terminal_stage": "resolved",
+            "condition": {"type": "always"}
+        }),
+    );
+    value["deterministic_decisions"] = json!([{
+        "id": "invalid_choice",
+        "roll_range": 1,
+        "branches": [{
+            "id": "invalid_branch",
+            "effects": [
+                {"type": "set_stage", "stage": "resolved"},
+                {"type": "resolve_outcome", "outcome": "judgment_accepted"},
+                {"type": "resolve_outcome", "outcome": "second_outcome"}
+            ]
+        }]
+    }]);
+
+    let report = report(value);
+
+    assert!(report.contains_code(AuthoringDiagnosticCode::MultipleOutcomesInTransition));
+}
+
+#[test]
 fn post_judgment_stage_must_remain_open_for_remedies() {
     let mut value = fixture_value();
     value["stages"][1]["terminal"] = json!(true);

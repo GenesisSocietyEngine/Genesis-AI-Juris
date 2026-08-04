@@ -5,7 +5,7 @@
 
 use std::collections::BTreeMap;
 
-use juris_scenario_schema::Condition;
+use juris_scenario_schema::{Condition, IntegerComparisonOperator, IntegerOperand};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum Satisfiability {
@@ -25,7 +25,64 @@ pub(crate) fn classify(condition: &Condition) -> Satisfiability {
             Satisfiability::Never => Satisfiability::Always,
             Satisfiability::Possible => Satisfiability::Possible,
         },
+        Condition::IntegerCompare {
+            left,
+            operator,
+            right,
+        } => classify_integer_compare(left, *operator, right),
         _ => Satisfiability::Possible,
+    }
+}
+
+fn classify_integer_compare(
+    left: &IntegerOperand,
+    operator: IntegerComparisonOperator,
+    right: &IntegerOperand,
+) -> Satisfiability {
+    let known = match (left, right) {
+        (IntegerOperand::Constant { value: left }, IntegerOperand::Constant { value: right }) => {
+            Some((*left, *right))
+        }
+        (
+            IntegerOperand::Metric {
+                metric: left,
+                offset: left_offset,
+            },
+            IntegerOperand::Metric {
+                metric: right,
+                offset: right_offset,
+            },
+        ) if left == right => Some((*left_offset, *right_offset)),
+        (
+            IntegerOperand::Resource {
+                resource: left,
+                offset: left_offset,
+            },
+            IntegerOperand::Resource {
+                resource: right,
+                offset: right_offset,
+            },
+        ) if left == right => Some((*left_offset, *right_offset)),
+        _ => None,
+    };
+    let Some((left, right)) = known else {
+        return Satisfiability::Possible;
+    };
+    if compare_integers(left, operator, right) {
+        Satisfiability::Always
+    } else {
+        Satisfiability::Never
+    }
+}
+
+fn compare_integers(left: i64, operator: IntegerComparisonOperator, right: i64) -> bool {
+    match operator {
+        IntegerComparisonOperator::Equal => left == right,
+        IntegerComparisonOperator::NotEqual => left != right,
+        IntegerComparisonOperator::LessThan => left < right,
+        IntegerComparisonOperator::LessThanOrEqual => left <= right,
+        IntegerComparisonOperator::GreaterThan => left > right,
+        IntegerComparisonOperator::GreaterThanOrEqual => left >= right,
     }
 }
 
@@ -131,6 +188,7 @@ fn has_direct_contradiction(conditions: &[Condition]) -> bool {
             | Condition::EvidenceAvailable { .. }
             | Condition::InboxItemResolved { .. }
             | Condition::JudicialResultIs { .. }
+            | Condition::IntegerCompare { .. }
             | Condition::All { .. }
             | Condition::Any { .. } => {}
         }

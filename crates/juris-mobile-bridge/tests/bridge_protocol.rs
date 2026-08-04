@@ -25,6 +25,105 @@ fn greenfire_definition() -> ScenarioDefinition {
     serde_json::from_str(GREENFIRE_SCENARIO).expect("GreenFire scenario must parse")
 }
 
+fn extended_projection_scenario() -> Value {
+    json!({
+        "schema_version": "1.0",
+        "metadata": {
+            "id": "bridge_projection_fixture",
+            "title": "Bridge projection fixture",
+            "summary": "Exercises additive integer projections over the JSON bridge.",
+            "content_version": "1"
+        },
+        "jurisdiction": {
+            "code": "BE",
+            "pack_version": "test-1"
+        },
+        "initial_stage": "intake",
+        "numeric_metrics": {
+            "case_strength": 40
+        },
+        "initial_resources": {
+            "authorized_budget_eur": 25000,
+            "review_credits": 2
+        },
+        "stages": [
+            {
+                "id": "intake",
+                "title": "Intake",
+                "kind": "standard",
+                "exit_actions": ["perform_review"]
+            },
+            {
+                "id": "review",
+                "title": "Review",
+                "kind": "standard",
+                "exit_actions": ["overflow_metric", "close_matter"]
+            },
+            {
+                "id": "resolved",
+                "title": "Resolved",
+                "kind": "resolved",
+                "terminal": true
+            }
+        ],
+        "actions": [
+            {
+                "id": "perform_review",
+                "title": "Perform review",
+                "available_when": {"type": "stage_is", "stage": "intake"},
+                "effects": [
+                    {"type": "add_metric", "metric": "case_strength", "amount": 7},
+                    {"type": "add_resource", "resource": "review_credits", "amount": 3},
+                    {"type": "set_stage", "stage": "review"}
+                ],
+                "time_cost_minutes": 90,
+                "cost_eur": 350,
+                "billable_minutes": 60
+            },
+            {
+                "id": "overflow_metric",
+                "title": "Overflow metric",
+                "available_when": {"type": "stage_is", "stage": "review"},
+                "effects": [
+                    {"type": "add_resource", "resource": "review_credits", "amount": 100},
+                    {"type": "add_metric", "metric": "case_strength", "amount": i64::MAX}
+                ],
+                "time_cost_minutes": 15,
+                "cost_eur": 999,
+                "billable_minutes": 999,
+                "repeatability": {"type": "unlimited"}
+            },
+            {
+                "id": "close_matter",
+                "title": "Close matter",
+                "available_when": {"type": "stage_is", "stage": "review"},
+                "effects": [
+                    {"type": "set_stage", "stage": "resolved"},
+                    {"type": "trigger_event", "event": "matter_closed"}
+                ],
+                "time_cost_minutes": 5,
+                "cost_eur": 150,
+                "billable_minutes": 30
+            }
+        ],
+        "events": [{
+            "id": "matter_closed",
+            "title": "Matter closed",
+            "kind": "matter_closed",
+            "trigger": {"type": "by_effect"},
+            "condition": {"type": "stage_is", "stage": "resolved"},
+            "effects": [{"type": "resolve_outcome", "outcome": "successful_closure"}]
+        }],
+        "outcomes": [{
+            "id": "successful_closure",
+            "title": "Successful closure",
+            "summary": "The projection fixture completed.",
+            "terminal_stage": "resolved",
+            "condition": {"type": "stage_is", "stage": "resolved"}
+        }]
+    })
+}
+
 fn execute_trace(bridge: &mut MobileBridge, session_id: u64, encoded: &str) {
     let commands: Vec<Value> = serde_json::from_str(encoded).unwrap();
     for mut command in commands {
@@ -227,6 +326,124 @@ fn malformed_and_unavailable_commands_return_stable_errors() {
         panic!("expected error response");
     };
     assert_eq!(code, "unknown_session");
+}
+
+#[test]
+fn json_protocol_projects_and_atomically_updates_generic_integer_state() {
+    let mut bridge = MobileBridge::new();
+    let created: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "create_session",
+                "scenario": extended_projection_scenario(),
+                "seed": 17
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(created["type"], "session_created", "{created}");
+    assert_eq!(created["snapshot"]["numeric_metrics"]["case_strength"], 40);
+    assert_eq!(
+        created["snapshot"]["resources"],
+        json!({
+            "authorized_budget_eur": 25000,
+            "billable_minutes": 0,
+            "review_credits": 2,
+            "spend_eur": 0
+        })
+    );
+    assert_eq!(
+        created["snapshot"]["available_actions"][0]["billable_minutes"],
+        60
+    );
+    let session_id = created["session_id"].as_u64().unwrap();
+
+    let reviewed: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "dispatch",
+                "session_id": session_id,
+                "action_id": "perform_review"
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(reviewed["type"], "snapshot", "{reviewed}");
+    assert_eq!(reviewed["snapshot"]["stage_id"], "review");
+    assert_eq!(reviewed["snapshot"]["clock_minutes"], 90);
+    assert_eq!(reviewed["snapshot"]["numeric_metrics"]["case_strength"], 47);
+    assert_eq!(reviewed["snapshot"]["resources"]["review_credits"], 5);
+    assert_eq!(reviewed["snapshot"]["resources"]["spend_eur"], 350);
+    assert_eq!(reviewed["snapshot"]["resources"]["billable_minutes"], 60);
+
+    let before_rejection = reviewed["snapshot"].clone();
+    let rejected: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "dispatch",
+                "session_id": session_id,
+                "action_id": "overflow_metric"
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(rejected["type"], "error", "{rejected}");
+    assert_eq!(rejected["code"], "integer_overflow");
+
+    let after_rejection: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "snapshot",
+                "session_id": session_id
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(after_rejection["snapshot"], before_rejection);
+
+    let closed: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "dispatch",
+                "session_id": session_id,
+                "action_id": "close_matter"
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(closed["type"], "snapshot", "{closed}");
+    assert_eq!(closed["snapshot"]["terminal"], true);
+    assert_eq!(closed["snapshot"]["clock_minutes"], 95);
+    assert_eq!(closed["snapshot"]["resources"]["spend_eur"], 500);
+    assert_eq!(closed["snapshot"]["resources"]["billable_minutes"], 90);
+}
+
+#[test]
+fn existing_scenario_snapshot_omits_additive_projection_keys() {
+    let mut bridge = MobileBridge::new();
+    let created: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "create_session",
+                "scenario": serde_json::from_str::<Value>(LOGISTICS_SCENARIO).unwrap(),
+                "seed": 20260725
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    let snapshot = created["snapshot"].as_object().unwrap();
+
+    assert!(!snapshot.contains_key("numeric_metrics"));
+    assert!(!snapshot.contains_key("resources"));
+    for action in snapshot["available_actions"].as_array().unwrap() {
+        assert!(!action.as_object().unwrap().contains_key("billable_minutes"));
+    }
 }
 
 #[test]

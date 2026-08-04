@@ -429,4 +429,115 @@ mod tests {
         }));
         assert_eq!(disposed["disposed"], true);
     }
+
+    #[test]
+    fn additive_integer_projections_use_the_existing_execute_symbol() {
+        let mut scenario: Value =
+            serde_json::from_str(LOGISTICS_SCENARIO).expect("scenario fixture must be valid JSON");
+        scenario["numeric_metrics"] = json!({"case_strength": 10});
+        scenario["initial_resources"] = json!({
+            "authorized_budget_eur": 10000,
+            "review_credits": 4
+        });
+        scenario["actions"][0]["cost_eur"] = json!(125);
+        scenario["actions"][0]["billable_minutes"] = json!(75);
+        scenario["actions"][0]["effects"]
+            .as_array_mut()
+            .unwrap()
+            .insert(
+                0,
+                json!({"type": "add_metric", "metric": "case_strength", "amount": 5}),
+            );
+
+        let created = execute_request(json!({
+            "command": "create_session",
+            "scenario": scenario,
+            "seed": 20260725
+        }));
+        assert_eq!(created["type"], "session_created", "{created}");
+        assert_eq!(created["snapshot"]["numeric_metrics"]["case_strength"], 10);
+        assert_eq!(created["snapshot"]["resources"]["spend_eur"], 0);
+        assert_eq!(
+            created["snapshot"]["available_actions"][0]["billable_minutes"],
+            75
+        );
+        let session_id = created["session_id"].as_u64().unwrap();
+
+        let dispatched = execute_request(json!({
+            "command": "dispatch",
+            "session_id": session_id,
+            "action_id": "audit_claim_file"
+        }));
+        assert_eq!(dispatched["type"], "snapshot", "{dispatched}");
+        assert_eq!(
+            dispatched["snapshot"]["numeric_metrics"]["case_strength"],
+            15
+        );
+        assert_eq!(dispatched["snapshot"]["resources"]["spend_eur"], 125);
+        assert_eq!(dispatched["snapshot"]["resources"]["billable_minutes"], 75);
+
+        let disposed = execute_request(json!({
+            "command": "dispose_session",
+            "session_id": session_id
+        }));
+        assert_eq!(disposed["disposed"], true);
+    }
+
+    #[test]
+    fn existing_ffi_snapshot_omits_additive_projection_keys() {
+        let scenario: Value =
+            serde_json::from_str(LOGISTICS_SCENARIO).expect("scenario fixture must be valid JSON");
+        let created = execute_request(json!({
+            "command": "create_session",
+            "scenario": scenario,
+            "seed": 20260725
+        }));
+        let snapshot = created["snapshot"].as_object().unwrap();
+
+        assert!(!snapshot.contains_key("numeric_metrics"));
+        assert!(!snapshot.contains_key("resources"));
+        for action in snapshot["available_actions"].as_array().unwrap() {
+            assert!(!action.as_object().unwrap().contains_key("billable_minutes"));
+        }
+
+        let disposed = execute_request(json!({
+            "command": "dispose_session",
+            "session_id": created["session_id"]
+        }));
+        assert_eq!(disposed["disposed"], true);
+    }
+
+    #[test]
+    fn c_abi_surface_remains_version_one_with_exactly_three_exports() {
+        let _: unsafe extern "C" fn(*const c_char) -> *mut c_char = juris_mobile_bridge_execute;
+        let _: unsafe extern "C" fn(*mut c_char) = juris_mobile_bridge_string_free;
+        let _: extern "C" fn() -> u32 = juris_mobile_bridge_abi_version;
+        assert_eq!(juris_mobile_bridge_abi_version(), 1);
+
+        let source = include_str!("lib.rs");
+        let exported_symbols = source
+            .lines()
+            .enumerate()
+            .filter(|(_, line)| line.trim() == "#[no_mangle]")
+            .map(|(index, _)| {
+                let signature = source
+                    .lines()
+                    .nth(index + 1)
+                    .expect("every no_mangle attribute must decorate a symbol");
+                signature
+                    .split_once("fn ")
+                    .and_then(|(_, remainder)| remainder.split_once('('))
+                    .map(|(name, _)| name)
+                    .expect("every no_mangle symbol must be an extern function")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            exported_symbols,
+            [
+                "juris_mobile_bridge_execute",
+                "juris_mobile_bridge_string_free",
+                "juris_mobile_bridge_abi_version"
+            ]
+        );
+    }
 }

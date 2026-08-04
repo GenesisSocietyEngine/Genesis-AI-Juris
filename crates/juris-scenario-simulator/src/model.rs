@@ -9,6 +9,14 @@ pub struct SimulationState {
     pub stage: String,
     pub clock_minutes: u64,
     pub flags: BTreeMap<String, bool>,
+    /// Generic authoritative integer metrics. Empty for legacy scenarios and
+    /// omitted from their serialized traces to preserve the v1 output shape.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub numeric_metrics: BTreeMap<String, i64>,
+    /// Generic authoritative resources such as budget, spend, and billable
+    /// minutes. Empty for legacy scenarios.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub resources: BTreeMap<String, i64>,
     pub judicial_result: Option<JudicialResult>,
     pub judicial_decision_instance: Option<JudicialDecisionInstance>,
     pub matter_lifecycle: MatterLifecycleStatus,

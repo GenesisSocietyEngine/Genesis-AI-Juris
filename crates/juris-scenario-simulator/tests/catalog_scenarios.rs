@@ -78,6 +78,8 @@ fn logistics_negotiated_recovery_path_is_deterministic() {
         Some("negotiated_recovery")
     );
     assert_eq!(first.final_state.clock_minutes, 270);
+    assert_eq!(first.trace.len(), 3);
+    assert!(first.fired_events.is_empty());
 }
 
 #[test]
@@ -97,6 +99,7 @@ fn logistics_judgment_recovery_path_is_deterministic() {
     );
     assert_eq!(result.final_state.clock_minutes, 480);
     assert_eq!(result.fired_events, vec!["judgment_for_velmont"]);
+    assert_eq!(result.trace.len(), 5);
 }
 
 #[test]
@@ -117,6 +120,18 @@ fn greenfire_protected_path_is_deterministic() {
         first.final_state.resolved_outcome.as_deref(),
         Some("protected_crisis_position")
     );
+    assert_eq!(first.trace.len(), 26);
+    assert_eq!(
+        first.fired_events,
+        [
+            "expert_assessment_completed",
+            "handoff_window_opened",
+            "mandate_accepted",
+            "regulator_request_received",
+            "response_protocol_established",
+        ]
+        .map(str::to_owned)
+    );
     assert!(!first
         .fired_events
         .iter()
@@ -135,6 +150,19 @@ fn greenfire_compromised_path_records_deadlines_and_expiry() {
     assert_eq!(
         result.final_state.resolved_outcome.as_deref(),
         Some("compromised_crisis_position")
+    );
+    assert_eq!(result.trace.len(), 21);
+    assert_eq!(
+        result.fired_events,
+        [
+            "expert_assessment_expired",
+            "handoff_window_opened",
+            "insurance_notice_missed",
+            "legal_hold_missed",
+            "mandate_accepted",
+            "regulator_request_received",
+        ]
+        .map(str::to_owned)
     );
     for event in [
         "legal_hold_missed",
@@ -181,6 +209,19 @@ fn goldenshell_coordinated_path_is_deterministic() {
         first.final_state.resolved_outcome.as_deref(),
         Some("coordinated_claim_position")
     );
+    assert_eq!(first.trace.len(), 29);
+    assert_eq!(
+        first.fired_events,
+        [
+            "claim_protocol_established",
+            "contractor_denial_received",
+            "cooperative_mandate_accepted",
+            "handoff_window_opened",
+            "residue_assessment_completed",
+            "retailer_recall_demand_received",
+        ]
+        .map(str::to_owned)
+    );
     assert_eq!(
         first.final_state.flags.get("common_causation_model_built"),
         Some(&true)
@@ -203,6 +244,20 @@ fn goldenshell_fragmented_path_records_missed_notices_and_expiry() {
     assert_eq!(
         result.final_state.resolved_outcome.as_deref(),
         Some("fragmented_claim_position")
+    );
+    assert_eq!(result.trace.len(), 23);
+    assert_eq!(
+        result.fired_events,
+        [
+            "contractor_notice_missed",
+            "cooperative_mandate_accepted",
+            "handoff_window_opened",
+            "insurance_notice_missed",
+            "residue_assessment_expired",
+            "retailer_recall_demand_received",
+            "retailer_recall_missed",
+        ]
+        .map(str::to_owned)
     );
     for event in [
         "contractor_notice_missed",

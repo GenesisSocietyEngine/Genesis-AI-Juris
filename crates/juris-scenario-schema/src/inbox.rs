@@ -11,6 +11,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InboxItemDefinition {
     pub id: InboxItemId,
+
+    /// Optional presentation identity for the author of this message.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sender: Option<String>,
+
     pub subject: String,
     pub body: String,
 

@@ -604,4 +604,28 @@ mod tests {
         );
         assert_ne!(first_v2, appeal_v2);
     }
+
+    #[test]
+    fn v2_digest_excludes_replay_derived_integer_and_decision_caches() {
+        let definition: ScenarioDefinition = serde_json::from_str(LOGISTICS).unwrap();
+        let base = ScenarioSession::new(definition, 20260725).unwrap();
+        let mut derived = base.clone();
+        derived
+            .state
+            .numeric_metrics
+            .insert("test_metric".to_owned(), 91);
+        derived
+            .state
+            .resources
+            .insert("test_resource".to_owned(), 42_000);
+        derived
+            .state
+            .decision_resolutions
+            .insert("test_decision".to_owned(), vec!["branch_a".to_owned()]);
+        assert_eq!(
+            final_state_digest(&base, RuntimeCompatibility::V2).unwrap(),
+            final_state_digest(&derived, RuntimeCompatibility::V2).unwrap(),
+            "replay-derived generic projections must not change the frozen v2 digest projection"
+        );
+    }
 }

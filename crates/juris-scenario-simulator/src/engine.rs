@@ -2,10 +2,12 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use juris_scenario_schema::{
     ActionDefinition, ActionRepeatability, AsyncTaskStatus, Condition, DeadlineStatus, Effect,
-    EventDefinition, EventTrigger, FactStatus, JudicialDecisionInstance, MatterLifecycleStatus,
-    ScenarioClockMode, ScenarioDefinition, StageKind,
+    EventDefinition, EventTrigger, FactStatus, IntegerComparisonOperator, IntegerOperand,
+    JudicialDecisionInstance, MatterLifecycleStatus, ScenarioClockMode, ScenarioDefinition,
+    StageKind, RESOURCE_BILLABLE_MINUTES, RESOURCE_SPEND_EUR,
 };
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 
 use crate::{
     ScenarioDocument, ScenarioTraceCommand, SimulationError, SimulationResult, SimulationState,
@@ -25,11 +27,13 @@ struct RuntimeState {
     visible_inbox: BTreeSet<String>,
     resolved_inbox: BTreeSet<String>,
     action_uses: BTreeMap<String, u32>,
+    decision_resolutions: BTreeMap<String, Vec<String>>,
 }
 
 /// Deterministic path simulator over one canonical ScenarioDefinition v1 document.
 #[derive(Clone, Debug)]
 pub struct ScenarioSimulator {
+    seed: u64,
     definition: ScenarioDefinition,
     state: SimulationState,
     runtime: RuntimeState,
@@ -41,6 +45,12 @@ pub struct ScenarioSimulator {
 impl ScenarioSimulator {
     /// Creates a simulator at the initial stage and minute zero.
     pub fn new(document: ScenarioDocument) -> Result<Self, SimulationError> {
+        Self::new_with_seed(document, 0)
+    }
+
+    /// Creates a simulator with the seed used by deterministic decisions.
+    /// The legacy constructor remains equivalent to seed zero.
+    pub fn new_with_seed(document: ScenarioDocument, seed: u64) -> Result<Self, SimulationError> {
         validate_supported_v1_shapes(document.root())?;
         let definition: ScenarioDefinition = serde_json::from_value(document.root().clone())
             .map_err(|source| SimulationError::InvalidScenarioDocument { source })?;
@@ -101,12 +111,32 @@ impl ScenarioSimulator {
             initial_stage_definition.terminal,
         );
 
+        let numeric_metrics = definition
+            .numeric_metrics
+            .iter()
+            .map(|(id, value)| (id.as_str().to_owned(), *value))
+            .collect();
+        let mut resources = definition
+            .initial_resources
+            .iter()
+            .map(|(id, value)| (id.as_str().to_owned(), *value))
+            .collect::<BTreeMap<_, _>>();
+        if !definition.initial_resources.is_empty() {
+            resources.entry(RESOURCE_SPEND_EUR.to_owned()).or_insert(0);
+            resources
+                .entry(RESOURCE_BILLABLE_MINUTES.to_owned())
+                .or_insert(0);
+        }
+
         Ok(Self {
+            seed,
             definition,
             state: SimulationState {
                 stage: initial_stage,
                 clock_minutes: 0,
                 flags: BTreeMap::new(),
+                numeric_metrics,
+                resources,
                 judicial_result: None,
                 judicial_decision_instance: None,
                 matter_lifecycle,
@@ -122,6 +152,7 @@ impl ScenarioSimulator {
                 visible_inbox,
                 resolved_inbox: BTreeSet::new(),
                 action_uses: BTreeMap::new(),
+                decision_resolutions: BTreeMap::new(),
             },
             fired_events: BTreeSet::new(),
             trace: Vec::new(),
@@ -234,6 +265,13 @@ impl ScenarioSimulator {
         let before = self.state.clone();
         let mut queued_events =
             self.apply_effects(&action.effects, &format!("action `{action_id}`"))?;
+        if !self.definition.initial_resources.is_empty() {
+            self.add_resource(RESOURCE_SPEND_EUR, i64::from(action.cost_eur))?;
+            self.add_resource(
+                RESOURCE_BILLABLE_MINUTES,
+                i64::from(action.billable_minutes),
+            )?;
+        }
         *self
             .runtime
             .action_uses
@@ -251,6 +289,7 @@ impl ScenarioSimulator {
             action.time_cost_minutes,
             queued_events,
             &format!("action `{action_id}`"),
+            false,
         )?;
 
         self.trace.push(TraceEntry {
@@ -284,7 +323,7 @@ impl ScenarioSimulator {
         }
 
         let before = self.state.clone();
-        self.advance_clock_by(minutes, VecDeque::new(), "advance_time")?;
+        self.advance_clock_by(minutes, VecDeque::new(), "advance_time", true)?;
         self.trace.push(TraceEntry {
             sequence: self.trace.len(),
             kind: TraceKind::AdvanceTime,
@@ -300,6 +339,7 @@ impl ScenarioSimulator {
         minutes: u32,
         final_events: VecDeque<String>,
         owner: &str,
+        apply_foreground_metric_rates: bool,
     ) -> Result<(), SimulationError> {
         let target = self
             .state
@@ -314,7 +354,14 @@ impl ScenarioSimulator {
             return Ok(());
         }
 
-        while let Some(boundary) = self.next_temporal_boundary_before(target) {
+        while let Some(boundary) =
+            self.next_temporal_boundary_before(target, apply_foreground_metric_rates)
+        {
+            let previous_metrics = self.state.numeric_metrics.clone();
+            let elapsed = boundary - self.state.clock_minutes;
+            if apply_foreground_metric_rates {
+                self.increment_foreground_metrics(elapsed)?;
+            }
             self.state.clock_minutes = boundary;
             let mut due_events = VecDeque::new();
             self.queue_due_events(&mut due_events)?;
@@ -322,15 +369,43 @@ impl ScenarioSimulator {
             if self.is_terminal_stage(&self.state.stage) || self.state.resolved_outcome.is_some() {
                 return Ok(());
             }
+            if apply_foreground_metric_rates {
+                let mut metric_events = VecDeque::new();
+                self.queue_crossed_metric_events(&previous_metrics, &mut metric_events);
+                self.process_event_queue(metric_events)?;
+                if self.is_terminal_stage(&self.state.stage)
+                    || self.state.resolved_outcome.is_some()
+                {
+                    return Ok(());
+                }
+            }
         }
 
+        let previous_metrics = self.state.numeric_metrics.clone();
+        let elapsed = target - self.state.clock_minutes;
+        if apply_foreground_metric_rates {
+            self.increment_foreground_metrics(elapsed)?;
+        }
         self.state.clock_minutes = target;
         let mut events = final_events;
         self.queue_due_events(&mut events)?;
-        self.process_event_queue(events)
+        self.process_event_queue(events)?;
+        if self.is_terminal_stage(&self.state.stage)
+            || self.state.resolved_outcome.is_some()
+            || !apply_foreground_metric_rates
+        {
+            return Ok(());
+        }
+        let mut metric_events = VecDeque::new();
+        self.queue_crossed_metric_events(&previous_metrics, &mut metric_events);
+        self.process_event_queue(metric_events)
     }
 
-    fn next_temporal_boundary_before(&self, target: u64) -> Option<u64> {
+    fn next_temporal_boundary_before(
+        &self,
+        target: u64,
+        include_foreground_metric_thresholds: bool,
+    ) -> Option<u64> {
         let current = self.state.clock_minutes;
         let at_time = self.definition.events.iter().filter_map(|event| {
             if self.fired_events.contains(event.id.as_str()) {
@@ -359,12 +434,85 @@ impl ScenarioSimulator {
                 == Some(DeadlineStatus::Open))
             .then_some(scenario_time_minutes(deadline.due_at))
         });
+        let metric_thresholds = self.definition.events.iter().filter_map(|event| {
+            if !include_foreground_metric_thresholds
+                || (self.fired_events.contains(event.id.as_str()) && !event.repeatable)
+            {
+                return None;
+            }
+            let EventTrigger::MetricThresholdReached { metric, threshold } = &event.trigger else {
+                return None;
+            };
+            let rate = self
+                .definition
+                .foreground_metric_rates
+                .get(metric)
+                .copied()?;
+            let current_value = self.state.numeric_metrics.get(metric.as_str()).copied()?;
+            if rate <= 0 || current_value >= *threshold {
+                return None;
+            }
+            let distance = threshold.checked_sub(current_value)?;
+            let steps = distance.checked_sub(1)?.checked_div(rate)?.checked_add(1)?;
+            let steps = u64::try_from(steps).ok()?;
+            current.checked_add(steps)
+        });
 
         at_time
             .chain(async_tasks)
             .chain(deadlines)
+            .chain(metric_thresholds)
             .filter(|boundary| *boundary > current && *boundary < target)
             .min()
+    }
+
+    fn increment_foreground_metrics(
+        &mut self,
+        elapsed_minutes: u64,
+    ) -> Result<(), SimulationError> {
+        let elapsed =
+            i64::try_from(elapsed_minutes).map_err(|_| SimulationError::ClockOverflow {
+                owner: "foreground_metrics".to_owned(),
+            })?;
+        let increments = self
+            .definition
+            .foreground_metric_rates
+            .iter()
+            .map(|(metric, rate)| {
+                rate.checked_mul(elapsed)
+                    .map(|amount| (metric.as_str().to_owned(), amount))
+                    .ok_or_else(|| SimulationError::IntegerOverflow {
+                        state: metric.as_str().to_owned(),
+                    })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        for (metric, amount) in increments {
+            self.add_metric(&metric, amount)?;
+        }
+        Ok(())
+    }
+
+    fn queue_crossed_metric_events(
+        &self,
+        previous_metrics: &BTreeMap<String, i64>,
+        events: &mut VecDeque<String>,
+    ) {
+        for event in &self.definition.events {
+            if self.fired_events.contains(event.id.as_str()) && !event.repeatable {
+                continue;
+            }
+            let EventTrigger::MetricThresholdReached { metric, threshold } = &event.trigger else {
+                continue;
+            };
+            let previous = previous_metrics.get(metric.as_str()).copied();
+            let current = self.state.numeric_metrics.get(metric.as_str()).copied();
+            if previous
+                .zip(current)
+                .is_some_and(|(previous, current)| previous < *threshold && current >= *threshold)
+            {
+                events.push_back(event.id.as_str().to_owned());
+            }
+        }
     }
 
     fn process_due_events(&mut self) -> Result<(), SimulationError> {
@@ -380,10 +528,8 @@ impl ScenarioSimulator {
 
     fn process_event_queue(&mut self, mut queue: VecDeque<String>) -> Result<(), SimulationError> {
         let mut processed = 0_usize;
+        let mut processed_repeatable = BTreeSet::new();
         while let Some(event_id) = queue.pop_front() {
-            if self.fired_events.contains(&event_id) {
-                continue;
-            }
             processed += 1;
             if processed > self.max_auto_events {
                 return Err(SimulationError::AutomaticEventLimitExceeded {
@@ -400,11 +546,20 @@ impl ScenarioSimulator {
                 .ok_or_else(|| SimulationError::UnknownEvent {
                     event: event_id.clone(),
                 })?;
+            if event.repeatable {
+                if !processed_repeatable.insert(event_id.clone()) {
+                    continue;
+                }
+            } else if self.fired_events.contains(&event_id) {
+                continue;
+            }
             if !self.evaluate_condition(&event.condition) {
                 continue;
             }
 
-            self.fired_events.insert(event_id.clone());
+            if !event.repeatable {
+                self.fired_events.insert(event_id.clone());
+            }
             let before = self.state.clone();
             let mut nested = self.activate_event_owned_state(&event);
             let mut effect_events =
@@ -453,6 +608,53 @@ impl ScenarioSimulator {
                 }
                 Effect::SetFlag { flag, value } => {
                     self.state.flags.insert(flag.as_str().to_owned(), *value);
+                }
+                Effect::SetMetric { metric, value } => {
+                    self.set_metric(metric.as_str(), *value)?;
+                }
+                Effect::AddMetric { metric, amount } => {
+                    self.add_metric(metric.as_str(), *amount)?;
+                }
+                Effect::SubtractMetric { metric, amount } => {
+                    let delta =
+                        amount
+                            .checked_neg()
+                            .ok_or_else(|| SimulationError::IntegerOverflow {
+                                state: metric.as_str().to_owned(),
+                            })?;
+                    self.add_metric(metric.as_str(), delta)?;
+                }
+                Effect::ClampMetric {
+                    metric,
+                    minimum,
+                    maximum,
+                } => {
+                    let value = self
+                        .state
+                        .numeric_metrics
+                        .get(metric.as_str())
+                        .copied()
+                        .ok_or_else(|| SimulationError::UnknownIntegerState {
+                            state: metric.as_str().to_owned(),
+                        })?;
+                    let value = minimum.map_or(value, |minimum| value.max(minimum));
+                    let value = maximum.map_or(value, |maximum| value.min(maximum));
+                    self.set_metric(metric.as_str(), value)?;
+                }
+                Effect::SetResource { resource, value } => {
+                    self.set_resource(resource.as_str(), *value)?;
+                }
+                Effect::AddResource { resource, amount } => {
+                    self.add_resource(resource.as_str(), *amount)?;
+                }
+                Effect::SubtractResource { resource, amount } => {
+                    let delta =
+                        amount
+                            .checked_neg()
+                            .ok_or_else(|| SimulationError::IntegerOverflow {
+                                state: resource.as_str().to_owned(),
+                            })?;
+                    self.add_resource(resource.as_str(), delta)?;
                 }
                 Effect::SetFactStatus { fact, status } => {
                     self.runtime
@@ -517,6 +719,7 @@ impl ScenarioSimulator {
                 }
                 Effect::CreateInboxItem { item } => {
                     self.runtime.visible_inbox.insert(item.as_str().to_owned());
+                    self.runtime.resolved_inbox.remove(item.as_str());
                 }
                 Effect::ResolveInboxItem { item } => {
                     self.runtime.resolved_inbox.insert(item.as_str().to_owned());
@@ -534,6 +737,11 @@ impl ScenarioSimulator {
                             current_stage.kind,
                             self.state.judicial_decision_instance,
                         ));
+                }
+                Effect::ResolveDeterministicDecision { decision } => {
+                    let mut decision_events =
+                        self.resolve_deterministic_decision(decision.as_str())?;
+                    events.append(&mut decision_events);
                 }
                 Effect::TriggerEvent { event } => {
                     if !self.definition.events.iter().any(|item| item.id == *event) {
@@ -561,6 +769,185 @@ impl ScenarioSimulator {
             self.resolve_outcome(outcome)?;
         }
         Ok(events)
+    }
+
+    fn set_metric(&mut self, id: &str, value: i64) -> Result<(), SimulationError> {
+        let metric = self.state.numeric_metrics.get_mut(id).ok_or_else(|| {
+            SimulationError::UnknownIntegerState {
+                state: id.to_owned(),
+            }
+        })?;
+        *metric = value;
+        Ok(())
+    }
+
+    fn add_metric(&mut self, id: &str, amount: i64) -> Result<(), SimulationError> {
+        let metric = self.state.numeric_metrics.get_mut(id).ok_or_else(|| {
+            SimulationError::UnknownIntegerState {
+                state: id.to_owned(),
+            }
+        })?;
+        *metric = metric
+            .checked_add(amount)
+            .ok_or_else(|| SimulationError::IntegerOverflow {
+                state: id.to_owned(),
+            })?;
+        Ok(())
+    }
+
+    fn set_resource(&mut self, id: &str, value: i64) -> Result<(), SimulationError> {
+        let resource = self.state.resources.get_mut(id).ok_or_else(|| {
+            SimulationError::UnknownIntegerState {
+                state: id.to_owned(),
+            }
+        })?;
+        *resource = value;
+        Ok(())
+    }
+
+    fn add_resource(&mut self, id: &str, amount: i64) -> Result<(), SimulationError> {
+        let resource = self.state.resources.get_mut(id).ok_or_else(|| {
+            SimulationError::UnknownIntegerState {
+                state: id.to_owned(),
+            }
+        })?;
+        *resource =
+            resource
+                .checked_add(amount)
+                .ok_or_else(|| SimulationError::IntegerOverflow {
+                    state: id.to_owned(),
+                })?;
+        Ok(())
+    }
+
+    fn resolve_deterministic_decision(
+        &mut self,
+        id: &str,
+    ) -> Result<VecDeque<String>, SimulationError> {
+        let decision = self
+            .definition
+            .deterministic_decisions
+            .iter()
+            .find(|decision| decision.id.as_str() == id)
+            .cloned()
+            .ok_or_else(|| SimulationError::UnknownDecision {
+                decision: id.to_owned(),
+            })?;
+        if decision.roll_range == 0 {
+            return Err(SimulationError::NoEligibleDecisionBranch {
+                decision: id.to_owned(),
+            });
+        }
+
+        let occurrence = self
+            .runtime
+            .decision_resolutions
+            .get(id)
+            .map_or(0_u64, |items| items.len() as u64);
+        let fingerprint = scenario_fingerprint(&self.definition).map_err(|message| {
+            SimulationError::DecisionResolution {
+                decision: id.to_owned(),
+                message,
+            }
+        })?;
+        let mut hash = Sha256::new();
+        hash.update(self.seed.to_be_bytes());
+        hash.update((fingerprint.len() as u64).to_be_bytes());
+        hash.update(fingerprint.as_bytes());
+        hash.update((id.len() as u64).to_be_bytes());
+        hash.update(id.as_bytes());
+        hash.update(occurrence.to_be_bytes());
+        let digest = hash.finalize();
+        let raw = u64::from_be_bytes(
+            digest[..8]
+                .try_into()
+                .expect("SHA-256 prefix always contains eight bytes"),
+        ) % u64::from(decision.roll_range);
+        let roll = i64::try_from(raw)
+            .ok()
+            .and_then(|raw| raw.checked_add(decision.roll_offset))
+            .ok_or_else(|| SimulationError::IntegerOverflow {
+                state: id.to_owned(),
+            })?;
+
+        let mut score_sum = match &decision.score_metric {
+            Some(metric) => self
+                .state
+                .numeric_metrics
+                .get(metric.as_str())
+                .copied()
+                .ok_or_else(|| SimulationError::UnknownIntegerState {
+                    state: metric.as_str().to_owned(),
+                })?,
+            None => 0,
+        };
+        for term in &decision.score_terms {
+            if !self.evaluate_condition(&term.condition) {
+                continue;
+            }
+            let value = self.integer_operand_value(&term.operand).ok_or_else(|| {
+                SimulationError::DecisionResolution {
+                    decision: id.to_owned(),
+                    message: "score term references missing or overflowing integer state"
+                        .to_owned(),
+                }
+            })?;
+            let value = term.minimum.map_or(value, |minimum| value.max(minimum));
+            let value = term.maximum.map_or(value, |maximum| value.min(maximum));
+            let contribution = value.checked_mul(term.multiplier).ok_or_else(|| {
+                SimulationError::IntegerOverflow {
+                    state: id.to_owned(),
+                }
+            })?;
+            score_sum = score_sum.checked_add(contribution).ok_or_else(|| {
+                SimulationError::IntegerOverflow {
+                    state: id.to_owned(),
+                }
+            })?;
+        }
+        if decision.score_divisor <= 0 {
+            return Err(SimulationError::DecisionResolution {
+                decision: id.to_owned(),
+                message: "score divisor must be positive".to_owned(),
+            });
+        }
+        let score = score_sum
+            .checked_add(decision.score_offset)
+            .and_then(|score| score.checked_div(decision.score_divisor))
+            .ok_or_else(|| SimulationError::IntegerOverflow {
+                state: id.to_owned(),
+            })?;
+        let total = roll
+            .checked_mul(decision.roll_multiplier)
+            .and_then(|roll| roll.checked_add(score))
+            .ok_or_else(|| SimulationError::IntegerOverflow {
+                state: id.to_owned(),
+            })?;
+        let branch = decision
+            .branches
+            .iter()
+            .find(|branch| {
+                self.evaluate_condition(&branch.condition)
+                    && branch.minimum_roll.map_or(true, |minimum| roll >= minimum)
+                    && branch.maximum_roll.map_or(true, |maximum| roll <= maximum)
+                    && branch
+                        .minimum_total
+                        .map_or(true, |minimum| total >= minimum)
+                    && branch
+                        .maximum_total
+                        .map_or(true, |maximum| total <= maximum)
+            })
+            .cloned()
+            .ok_or_else(|| SimulationError::NoEligibleDecisionBranch {
+                decision: id.to_owned(),
+            })?;
+
+        self.runtime
+            .decision_resolutions
+            .entry(id.to_owned())
+            .or_default()
+            .push(branch.id.as_str().to_owned());
+        self.apply_effects(&branch.effects, &format!("decision `{id}`"))
     }
 
     fn resolve_outcome(&mut self, outcome_id: &str) -> Result<(), SimulationError> {
@@ -669,6 +1056,14 @@ impl ScenarioSimulator {
                 self.runtime.resolved_inbox.contains(item.as_str())
             }
             Condition::JudicialResultIs { result } => self.state.judicial_result == Some(*result),
+            Condition::IntegerCompare {
+                left,
+                operator,
+                right,
+            } => self
+                .integer_operand_value(left)
+                .zip(self.integer_operand_value(right))
+                .is_some_and(|(left, right)| compare_integers(left, *operator, right)),
             Condition::All { conditions } => {
                 conditions.iter().all(|item| self.evaluate_condition(item))
             }
@@ -676,6 +1071,24 @@ impl ScenarioSimulator {
                 conditions.iter().any(|item| self.evaluate_condition(item))
             }
             Condition::Not { condition } => !self.evaluate_condition(condition),
+        }
+    }
+
+    fn integer_operand_value(&self, operand: &IntegerOperand) -> Option<i64> {
+        match operand {
+            IntegerOperand::Constant { value } => Some(*value),
+            IntegerOperand::Metric { metric, offset } => self
+                .state
+                .numeric_metrics
+                .get(metric.as_str())
+                .copied()?
+                .checked_add(*offset),
+            IntegerOperand::Resource { resource, offset } => self
+                .state
+                .resources
+                .get(resource.as_str())
+                .copied()?
+                .checked_add(*offset),
         }
     }
 
@@ -827,6 +1240,58 @@ fn scenario_time_minutes(time: juris_scenario_schema::ScenarioTime) -> u64 {
     u64::from(time.day) * 1_440 + u64::from(time.minute_of_day)
 }
 
+fn compare_integers(left: i64, operator: IntegerComparisonOperator, right: i64) -> bool {
+    match operator {
+        IntegerComparisonOperator::Equal => left == right,
+        IntegerComparisonOperator::NotEqual => left != right,
+        IntegerComparisonOperator::LessThan => left < right,
+        IntegerComparisonOperator::LessThanOrEqual => left <= right,
+        IntegerComparisonOperator::GreaterThan => left > right,
+        IntegerComparisonOperator::GreaterThanOrEqual => left >= right,
+    }
+}
+
+fn scenario_fingerprint(definition: &ScenarioDefinition) -> Result<String, String> {
+    let value = serde_json::to_value(definition).map_err(|error| error.to_string())?;
+    let mut canonical = String::new();
+    write_canonical_json(&value, &mut canonical)?;
+    let digest = Sha256::digest(canonical.as_bytes());
+    Ok(digest.iter().map(|byte| format!("{byte:02x}")).collect())
+}
+
+fn write_canonical_json(value: &Value, output: &mut String) -> Result<(), String> {
+    match value {
+        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => {
+            output.push_str(&serde_json::to_string(value).map_err(|error| error.to_string())?);
+        }
+        Value::Array(values) => {
+            output.push('[');
+            for (index, value) in values.iter().enumerate() {
+                if index > 0 {
+                    output.push(',');
+                }
+                write_canonical_json(value, output)?;
+            }
+            output.push(']');
+        }
+        Value::Object(values) => {
+            output.push('{');
+            let mut entries = values.iter().collect::<Vec<_>>();
+            entries.sort_unstable_by_key(|(key, _)| *key);
+            for (index, (key, value)) in entries.into_iter().enumerate() {
+                if index > 0 {
+                    output.push(',');
+                }
+                output.push_str(&serde_json::to_string(key).map_err(|error| error.to_string())?);
+                output.push(':');
+                write_canonical_json(value, output)?;
+            }
+            output.push('}');
+        }
+    }
+    Ok(())
+}
+
 fn validate_supported_v1_shapes(root: &Value) -> Result<(), SimulationError> {
     for (collection, condition_field) in [
         ("actions", "available_when"),
@@ -848,6 +1313,60 @@ fn validate_supported_v1_shapes(root: &Value) -> Result<(), SimulationError> {
             }
         }
     }
+    for (decision_index, decision) in root
+        .get("deterministic_decisions")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .enumerate()
+    {
+        for (term_index, term) in decision
+            .get("score_terms")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .enumerate()
+        {
+            if let Some(condition) = term.get("condition") {
+                validate_condition_shape(
+                    condition,
+                    &format!(
+                        "deterministic_decisions[{decision_index}].score_terms[{term_index}].condition"
+                    ),
+                )?;
+            }
+        }
+        for (branch_index, branch) in decision
+            .get("branches")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .enumerate()
+        {
+            if let Some(condition) = branch.get("condition") {
+                validate_condition_shape(
+                    condition,
+                    &format!(
+                        "deterministic_decisions[{decision_index}].branches[{branch_index}].condition"
+                    ),
+                )?;
+            }
+            for (effect_index, effect) in branch
+                .get("effects")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .enumerate()
+            {
+                validate_effect_shape(
+                    effect,
+                    format!(
+                        "deterministic_decisions[{decision_index}].branches[{branch_index}].effects[{effect_index}]"
+                    ),
+                )?;
+            }
+        }
+    }
     for collection in ["actions", "events"] {
         for (item_index, item) in root
             .get(collection)
@@ -863,33 +1382,10 @@ fn validate_supported_v1_shapes(root: &Value) -> Result<(), SimulationError> {
                 .flatten()
                 .enumerate()
             {
-                let effect_type = effect
-                    .get("type")
-                    .and_then(Value::as_str)
-                    .unwrap_or_default();
-                if !matches!(
-                    effect_type,
-                    "set_stage"
-                        | "set_flag"
-                        | "set_fact_status"
-                        | "make_evidence_available"
-                        | "start_async_task"
-                        | "mark_async_task_ready"
-                        | "review_async_task"
-                        | "expire_async_task"
-                        | "complete_deadline"
-                        | "miss_deadline"
-                        | "create_inbox_item"
-                        | "resolve_inbox_item"
-                        | "set_judicial_result"
-                        | "trigger_event"
-                        | "resolve_outcome"
-                ) {
-                    return Err(SimulationError::UnsupportedEffect {
-                        effect_type: effect_type.to_owned(),
-                        path: format!("{collection}[{item_index}].effects[{effect_index}]"),
-                    });
-                }
+                validate_effect_shape(
+                    effect,
+                    format!("{collection}[{item_index}].effects[{effect_index}]"),
+                )?;
             }
         }
     }
@@ -913,6 +1409,7 @@ fn validate_supported_v1_shapes(root: &Value) -> Result<(), SimulationError> {
                     | "after_event"
                     | "async_task_completed"
                     | "deadline_missed"
+                    | "metric_threshold_reached"
                     | "by_effect"
             ) {
                 return Err(SimulationError::UnsupportedEventTrigger {
@@ -923,6 +1420,46 @@ fn validate_supported_v1_shapes(root: &Value) -> Result<(), SimulationError> {
         }
     }
     Ok(())
+}
+
+fn validate_effect_shape(effect: &Value, path: String) -> Result<(), SimulationError> {
+    let effect_type = effect
+        .get("type")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    if matches!(
+        effect_type,
+        "set_stage"
+            | "set_flag"
+            | "set_metric"
+            | "add_metric"
+            | "subtract_metric"
+            | "clamp_metric"
+            | "set_resource"
+            | "add_resource"
+            | "subtract_resource"
+            | "set_fact_status"
+            | "make_evidence_available"
+            | "start_async_task"
+            | "mark_async_task_ready"
+            | "review_async_task"
+            | "expire_async_task"
+            | "complete_deadline"
+            | "miss_deadline"
+            | "create_inbox_item"
+            | "resolve_inbox_item"
+            | "set_judicial_result"
+            | "resolve_deterministic_decision"
+            | "trigger_event"
+            | "resolve_outcome"
+    ) {
+        Ok(())
+    } else {
+        Err(SimulationError::UnsupportedEffect {
+            effect_type: effect_type.to_owned(),
+            path,
+        })
+    }
 }
 
 fn validate_condition_shape(condition: &Value, path: &str) -> Result<(), SimulationError> {
@@ -938,7 +1475,8 @@ fn validate_condition_shape(condition: &Value, path: &str) -> Result<(), Simulat
         | "evidence_available"
         | "deadline_status_is"
         | "async_task_status_is"
-        | "inbox_item_resolved" => Ok(()),
+        | "inbox_item_resolved"
+        | "integer_compare" => Ok(()),
         "judicial_result_is" => Ok(()),
         "all" | "any" => {
             for (index, child) in condition

@@ -41,6 +41,7 @@ fn hearing_without_schedule_event_is_rejected() {
         trigger: EventTrigger::AtTime {
             at: ScenarioTime::new(3, 540),
         },
+        repeatable: false,
         condition: Default::default(),
         effects: vec![Effect::SetStage {
             stage: hearing_stage,
@@ -54,6 +55,7 @@ fn hearing_without_schedule_event_is_rejected() {
         trigger: EventTrigger::AfterEvent {
             event: hearing_opened_event,
         },
+        repeatable: false,
         condition: Default::default(),
         effects: vec![Effect::SetStage {
             stage: StageId::from("resolved"),
@@ -92,6 +94,7 @@ fn hearing_without_terminal_event_is_rejected() {
         trigger: EventTrigger::AtTime {
             at: ScenarioTime::new(3, 540),
         },
+        repeatable: false,
         condition: Default::default(),
         effects: vec![Effect::SetStage {
             stage: hearing_stage,
@@ -131,6 +134,7 @@ fn hearing_with_schedule_and_terminal_events_is_valid() {
         trigger: EventTrigger::AtTime {
             at: ScenarioTime::new(3, 540),
         },
+        repeatable: false,
         condition: Default::default(),
         effects: vec![Effect::SetStage {
             stage: hearing_stage,
@@ -146,6 +150,7 @@ fn hearing_with_schedule_and_terminal_events_is_valid() {
         trigger: EventTrigger::AfterEvent {
             event: hearing_scheduled_event,
         },
+        repeatable: false,
         condition: Default::default(),
         effects: vec![
             Effect::SetStage {
@@ -188,6 +193,7 @@ fn async_task_without_completion_path_is_rejected() {
             action: ActionId::from("close-matter"),
         },
 
+        repeatable: false,
         condition: Default::default(),
 
         // Incorrect: this event does not mark the task Ready.
@@ -226,6 +232,7 @@ fn async_task_without_terminal_boundary_is_rejected() {
         trigger: EventTrigger::AsyncTaskCompleted {
             task: task_id.clone(),
         },
+        repeatable: false,
         condition: Default::default(),
         effects: vec![Effect::MarkAsyncTaskReady {
             task: task_id.clone(),
@@ -266,6 +273,7 @@ fn async_task_with_completion_and_review_paths_is_valid() {
         trigger: EventTrigger::AsyncTaskCompleted {
             task: task_id.clone(),
         },
+        repeatable: false,
         condition: Default::default(),
         effects: vec![Effect::MarkAsyncTaskReady {
             task: task_id.clone(),
@@ -306,6 +314,7 @@ fn deadline_without_completion_path_is_rejected() {
         trigger: EventTrigger::DeadlineMissed {
             deadline: deadline_id.clone(),
         },
+        repeatable: false,
         condition: Default::default(),
         effects: vec![Effect::MissDeadline {
             deadline: deadline_id.clone(),
@@ -347,6 +356,7 @@ fn deadline_without_missed_path_is_rejected() {
         trigger: EventTrigger::DeadlineMissed {
             deadline: deadline_id.clone(),
         },
+        repeatable: false,
         condition: Default::default(),
         effects: Vec::new(),
     });
@@ -376,6 +386,7 @@ fn required_inbox_item_without_resolution_is_rejected() {
 
     scenario.inbox_items.push(InboxItemDefinition {
         id: InboxItemId::from("orphan-required-message"),
+        sender: None,
         subject: "Client response required".to_owned(),
         body: "The player must respond, but no resolution path exists.".to_owned(),
         created_by_event: None,

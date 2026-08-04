@@ -5,9 +5,11 @@
 //! format remain compatible.
 
 use juris_scenario_schema::{
-    ActionId, Condition, Effect, JudicialDecisionInstance, JudicialResult, MatterLifecycleStatus,
-    ScenarioClockMode, ScenarioDefinition, StageId, StageKind, SCENARIO_SCHEMA_VERSION_V1,
+    ActionId, Condition, DeterministicDecisionDefinition, Effect, JudicialDecisionInstance,
+    JudicialResult, MatterLifecycleStatus, ScenarioClockMode, ScenarioDefinition, StageId,
+    StageKind, SCENARIO_SCHEMA_VERSION_V1,
 };
+use serde_json::json;
 
 const MINIMAL_SCENARIO: &str =
     include_str!("../../../content/fixtures/valid/minimal-scenario.yaml");
@@ -181,4 +183,71 @@ fn existing_scenario_without_judicial_result_remains_compatible() {
     let scenario: ScenarioDefinition =
         serde_yaml::from_str(MINIMAL_SCENARIO).expect("old v1 scenario must deserialize");
     assert_eq!(scenario.schema_version, SCENARIO_SCHEMA_VERSION_V1);
+}
+
+#[test]
+fn absent_runtime_extensions_do_not_change_serialized_definition_shape() {
+    let scenario: ScenarioDefinition =
+        serde_yaml::from_str(MINIMAL_SCENARIO).expect("old scenario must deserialize");
+    let encoded = serde_json::to_value(&scenario).expect("scenario must serialize");
+    let object = encoded.as_object().unwrap();
+
+    for key in [
+        "numeric_metrics",
+        "foreground_metric_rates",
+        "initial_resources",
+        "deterministic_decisions",
+    ] {
+        assert!(!object.contains_key(key), "unexpected additive key {key}");
+    }
+    let action = encoded["actions"][0].as_object().unwrap();
+    for key in ["billable_minutes", "presentation_tags"] {
+        assert!(!action.contains_key(key), "unexpected additive key {key}");
+    }
+}
+
+#[test]
+fn absent_inbox_sender_is_omitted_from_the_serialized_shape() {
+    let inbox: juris_scenario_schema::InboxItemDefinition = serde_json::from_value(json!({
+        "id": "message",
+        "subject": "Subject",
+        "body": "Body"
+    }))
+    .unwrap();
+    let encoded = serde_json::to_value(inbox).unwrap();
+    assert!(!encoded.as_object().unwrap().contains_key("sender"));
+}
+
+#[test]
+fn deterministic_integer_shapes_round_trip_stably() {
+    let decision: DeterministicDecisionDefinition = serde_json::from_value(json!({
+        "id": "judgment",
+        "roll_range": 31,
+        "roll_offset": -15,
+        "roll_multiplier": 100,
+        "score_terms": [{
+            "operand": {"source": "metric", "metric": "evidence"},
+            "multiplier": 20,
+            "condition": {"type": "always"},
+            "maximum": 55
+        }],
+        "score_divisor": 100,
+        "score_offset": 50,
+        "branches": [{
+            "id": "favorable",
+            "condition": {
+                "type": "integer_compare",
+                "left": {"source": "resource", "resource": "authorized_budget_eur"},
+                "operator": "greater_than_or_equal",
+                "right": {"source": "resource", "resource": "spend_eur", "offset": 1000}
+            },
+            "minimum_total": 60,
+            "effects": [{"type": "set_flag", "flag": "won", "value": true}]
+        }]
+    }))
+    .expect("extended decision must deserialize");
+
+    let restored: DeterministicDecisionDefinition =
+        serde_json::from_value(serde_json::to_value(&decision).unwrap()).unwrap();
+    assert_eq!(restored, decision);
 }

@@ -1,6 +1,8 @@
 //! Scheduled and causally triggered scenario events.
 
-use crate::{ActionId, AsyncTaskId, Condition, DeadlineId, Effect, EventId, ScenarioTime};
+use crate::{
+    ActionId, AsyncTaskId, Condition, DeadlineId, Effect, EventId, MetricId, ScenarioTime,
+};
 use serde::{Deserialize, Serialize};
 
 /// Semantic classification used by validators and user interfaces.
@@ -26,15 +28,32 @@ pub enum EventKind {
 pub enum EventTrigger {
     ScenarioStart,
 
-    AtTime { at: ScenarioTime },
+    AtTime {
+        at: ScenarioTime,
+    },
 
-    AfterAction { action: ActionId },
+    AfterAction {
+        action: ActionId,
+    },
 
-    AfterEvent { event: EventId },
+    AfterEvent {
+        event: EventId,
+    },
 
-    AsyncTaskCompleted { task: AsyncTaskId },
+    AsyncTaskCompleted {
+        task: AsyncTaskId,
+    },
 
-    DeadlineMissed { deadline: DeadlineId },
+    DeadlineMissed {
+        deadline: DeadlineId,
+    },
+
+    /// Edge-triggered when an explicit foreground-time segment crosses from
+    /// below `threshold` to greater than or equal to it.
+    MetricThresholdReached {
+        metric: MetricId,
+        threshold: i64,
+    },
 
     ByEffect,
 }
@@ -47,9 +66,18 @@ pub struct EventDefinition {
     pub kind: EventKind,
     pub trigger: EventTrigger,
 
+    /// Repeatable events may fire again after their trigger is re-armed (for
+    /// example, a metric is reset below an idle-warning threshold).
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub repeatable: bool,
+
     #[serde(default)]
     pub condition: Condition,
 
     #[serde(default)]
     pub effects: Vec<Effect>,
+}
+
+const fn is_false(value: &bool) -> bool {
+    !*value
 }

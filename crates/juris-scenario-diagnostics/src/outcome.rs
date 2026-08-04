@@ -108,6 +108,34 @@ fn validate_outcomes_resolve_at_closure(
             ));
         }
     }
+
+    for (decision_index, decision) in scenario.deterministic_decisions.iter().enumerate() {
+        for (branch_index, branch) in decision.branches.iter().enumerate() {
+            if !branch
+                .effects
+                .iter()
+                .any(|effect| resolve_outcome(effect).is_some())
+            {
+                continue;
+            }
+            let enters_terminal = branch.effects.iter().any(|effect| {
+                let Effect::SetStage { stage } = effect else {
+                    return false;
+                };
+                stages.get(stage.as_str()).copied().is_some_and(is_terminal)
+            }) || condition_targets_terminal(&branch.condition, stages);
+            if !enters_terminal {
+                report.push(AuthoringDiagnostic::error(
+                    AuthoringDiagnosticCode::PrematureOutcomeResolution,
+                    format!(
+                        "deterministic_decisions[{decision_index}].branches[{branch_index}].effects"
+                    ),
+                    "decision branch resolves the complete scenario outcome without entering a terminal stage",
+                    "Record an intermediate judicial result with SetJudicialResult; resolve an outcome only when entering a resolved terminal stage.",
+                ));
+            }
+        }
+    }
 }
 
 fn condition_targets_terminal(
@@ -135,6 +163,7 @@ fn condition_targets_terminal(
         | Condition::AsyncTaskStatusIs { .. }
         | Condition::InboxItemResolved { .. }
         | Condition::JudicialResultIs { .. }
+        | Condition::IntegerCompare { .. }
         | Condition::Not { .. } => false,
     }
 }
@@ -210,6 +239,13 @@ fn validate_outcome_producers(
                 .iter()
                 .flat_map(|event| event.effects.iter()),
         )
+        .chain(
+            scenario
+                .deterministic_decisions
+                .iter()
+                .flat_map(|decision| decision.branches.iter())
+                .flat_map(|branch| branch.effects.iter()),
+        )
         .filter_map(resolve_outcome)
         .map(OutcomeId::as_str)
         .collect::<BTreeSet<_>>();
@@ -220,10 +256,10 @@ fn validate_outcome_producers(
                 AuthoringDiagnosticCode::OutcomeWithoutProducer,
                 format!("outcomes[{index}]"),
                 format!(
-                    "outcome `{}` is declared but no action or event resolves it",
+                    "outcome `{}` is declared but no action, event, or deterministic decision branch resolves it",
                     outcome.id
                 ),
-                "Add Effect::ResolveOutcome to a reachable action or event.",
+                "Add Effect::ResolveOutcome to a reachable action, event, or deterministic decision branch.",
             ));
         }
     }
@@ -249,6 +285,19 @@ fn validate_transition_outcome_cardinality(
             format!("event `{}`", event.id),
             report,
         );
+    }
+
+    for (decision_index, decision) in scenario.deterministic_decisions.iter().enumerate() {
+        for (branch_index, branch) in decision.branches.iter().enumerate() {
+            validate_effect_set(
+                &branch.effects,
+                format!(
+                    "deterministic_decisions[{decision_index}].branches[{branch_index}].effects"
+                ),
+                format!("decision `{}` branch `{}`", decision.id, branch.id),
+                report,
+            );
+        }
     }
 }
 

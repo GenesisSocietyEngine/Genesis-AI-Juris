@@ -35,6 +35,11 @@ pub struct ActionDefinition {
     #[serde(default)]
     pub description: Option<String>,
 
+    /// Stable presentation capabilities such as `ai`. Presentation code may
+    /// filter by these tags without parsing localized titles or action IDs.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub presentation_tags: Vec<String>,
+
     #[serde(default)]
     pub available_when: Condition,
 
@@ -52,6 +57,15 @@ pub struct ActionDefinition {
     #[serde(default)]
     pub cost_eur: u32,
 
+    /// Professional time charged to the client. This is deliberately
+    /// independent from elapsed scenario time.
+    #[serde(default, skip_serializing_if = "is_zero_u32")]
+    pub billable_minutes: u32,
+
     #[serde(default)]
     pub repeatability: ActionRepeatability,
+}
+
+const fn is_zero_u32(value: &u32) -> bool {
+    *value == 0
 }

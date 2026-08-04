@@ -6,6 +6,7 @@
 
 use crate::{AsyncTaskId, DeadlineId, EvidenceId, FactId, FlagId, InboxItemId, StageId};
 use crate::{AsyncTaskStatus, DeadlineStatus, FactStatus, JudicialResult};
+use crate::{IntegerComparisonOperator, IntegerOperand};
 use serde::{Deserialize, Serialize};
 
 /// Predicate evaluated against authoritative runtime state.
@@ -51,6 +52,14 @@ pub enum Condition {
 
     JudicialResultIs {
         result: JudicialResult,
+    },
+
+    /// Compares two deterministic integer operands. Missing metric or
+    /// resource values fail the condition instead of silently becoming zero.
+    IntegerCompare {
+        left: IntegerOperand,
+        operator: IntegerComparisonOperator,
+        right: IntegerOperand,
     },
 
     All {

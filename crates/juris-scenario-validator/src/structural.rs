@@ -1,7 +1,7 @@
 //! Structural validation independent of cross-reference traversal.
 
 use crate::{Diagnostic, DiagnosticCode, ScenarioIndex, ValidationReport};
-use juris_scenario_schema::{ScenarioDefinition, StageKind, SCENARIO_SCHEMA_VERSION_V1};
+use juris_scenario_schema::{Effect, ScenarioDefinition, StageKind, SCENARIO_SCHEMA_VERSION_V1};
 use std::collections::HashSet;
 
 pub(crate) fn validate_structural(
@@ -14,6 +14,7 @@ pub(crate) fn validate_structural(
     validate_initial_stage(scenario, index, report);
     validate_outcomes(scenario, report);
     validate_stage_lifecycle_contract(scenario, report);
+    validate_extended_runtime_contract(scenario, report);
 
     validate_id_collection(
         "actors",
@@ -74,6 +75,159 @@ pub(crate) fn validate_structural(
         scenario.outcomes.iter().map(|item| item.id.as_str()),
         report,
     );
+
+    validate_id_collection(
+        "numeric_metrics",
+        scenario.numeric_metrics.keys().map(|id| id.as_str()),
+        report,
+    );
+
+    validate_id_collection(
+        "initial_resources",
+        scenario.initial_resources.keys().map(|id| id.as_str()),
+        report,
+    );
+
+    validate_id_collection(
+        "deterministic_decisions",
+        scenario
+            .deterministic_decisions
+            .iter()
+            .map(|item| item.id.as_str()),
+        report,
+    );
+
+    for (decision_index, decision) in scenario.deterministic_decisions.iter().enumerate() {
+        validate_id_collection(
+            &format!("deterministic_decisions[{decision_index}].branches"),
+            decision.branches.iter().map(|branch| branch.id.as_str()),
+            report,
+        );
+    }
+}
+
+fn validate_extended_runtime_contract(
+    scenario: &ScenarioDefinition,
+    report: &mut ValidationReport,
+) {
+    for (metric, rate) in &scenario.foreground_metric_rates {
+        if *rate <= 0 {
+            report.push(Diagnostic::error(
+                DiagnosticCode::InvalidForegroundMetricRate,
+                format!("foreground_metric_rates.{}", metric.as_str()),
+                "foreground metric rates must be positive",
+            ));
+        }
+    }
+    for (index, action) in scenario.actions.iter().enumerate() {
+        for (effect_index, effect) in action.effects.iter().enumerate() {
+            validate_integer_effect(
+                effect,
+                &format!("actions[{index}].effects[{effect_index}]"),
+                report,
+            );
+        }
+    }
+    for (index, event) in scenario.events.iter().enumerate() {
+        if event.repeatable
+            && matches!(
+                event.trigger,
+                juris_scenario_schema::EventTrigger::AtTime { .. }
+            )
+        {
+            report.push(Diagnostic::error(
+                DiagnosticCode::InvalidRepeatableEventTrigger,
+                format!("events[{index}].repeatable"),
+                "at_time is a one-shot absolute trigger and cannot be repeatable",
+            ));
+        }
+        for (effect_index, effect) in event.effects.iter().enumerate() {
+            validate_integer_effect(
+                effect,
+                &format!("events[{index}].effects[{effect_index}]"),
+                report,
+            );
+        }
+    }
+    for (decision_index, decision) in scenario.deterministic_decisions.iter().enumerate() {
+        let path = format!("deterministic_decisions[{decision_index}]");
+        if decision.roll_range == 0 || decision.score_divisor <= 0 || decision.branches.is_empty() {
+            report.push(Diagnostic::error(
+                DiagnosticCode::InvalidDecisionDefinition,
+                &path,
+                "a decision requires a positive roll range, positive score divisor, and at least one branch",
+            ));
+        }
+        for (term_index, term) in decision.score_terms.iter().enumerate() {
+            if term
+                .minimum
+                .zip(term.maximum)
+                .is_some_and(|(minimum, maximum)| minimum > maximum)
+            {
+                report.push(Diagnostic::error(
+                    DiagnosticCode::InvalidDecisionDefinition,
+                    format!("{path}.score_terms[{term_index}]"),
+                    "score-term minimum cannot exceed maximum",
+                ));
+            }
+        }
+        for (branch_index, branch) in decision.branches.iter().enumerate() {
+            let branch_path = format!("{path}.branches[{branch_index}]");
+            if branch
+                .minimum_roll
+                .zip(branch.maximum_roll)
+                .is_some_and(|(minimum, maximum)| minimum > maximum)
+                || branch
+                    .minimum_total
+                    .zip(branch.maximum_total)
+                    .is_some_and(|(minimum, maximum)| minimum > maximum)
+            {
+                report.push(Diagnostic::error(
+                    DiagnosticCode::InvalidDecisionDefinition,
+                    &branch_path,
+                    "decision branch minimum cannot exceed maximum",
+                ));
+            }
+            for (effect_index, effect) in branch.effects.iter().enumerate() {
+                if matches!(effect, Effect::ResolveDeterministicDecision { .. }) {
+                    report.push(Diagnostic::error(
+                        DiagnosticCode::InvalidDecisionDefinition,
+                        format!("{branch_path}.effects[{effect_index}]"),
+                        "decision branches cannot recursively resolve another decision",
+                    ));
+                }
+                validate_integer_effect(
+                    effect,
+                    &format!("{branch_path}.effects[{effect_index}]"),
+                    report,
+                );
+            }
+        }
+    }
+}
+
+fn validate_integer_effect(effect: &Effect, path: &str, report: &mut ValidationReport) {
+    let invalid_amount = matches!(
+        effect,
+        Effect::AddMetric { amount, .. }
+            | Effect::SubtractMetric { amount, .. }
+            | Effect::AddResource { amount, .. }
+            | Effect::SubtractResource { amount, .. }
+            if *amount < 0
+    );
+    let invalid_clamp = matches!(
+        effect,
+        Effect::ClampMetric { minimum, maximum, .. }
+            if minimum.is_none() && maximum.is_none()
+                || minimum.zip(*maximum).is_some_and(|(minimum, maximum)| minimum > maximum)
+    );
+    if invalid_amount || invalid_clamp {
+        report.push(Diagnostic::error(
+            DiagnosticCode::InvalidIntegerEffect,
+            path,
+            "integer deltas must be non-negative and clamp bounds must be ordered",
+        ));
+    }
 }
 
 fn validate_stage_lifecycle_contract(scenario: &ScenarioDefinition, report: &mut ValidationReport) {

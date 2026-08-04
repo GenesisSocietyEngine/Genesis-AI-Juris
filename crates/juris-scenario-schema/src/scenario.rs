@@ -1,14 +1,21 @@
 //! Top-level declarative scenario document.
 
 use crate::{
-    ActionDefinition, ActorDefinition, AsyncTaskDefinition, DeadlineDefinition, EventDefinition,
-    EvidenceDefinition, FactDefinition, InboxItemDefinition, OutcomeDefinition, ScenarioId,
-    StageDefinition, StageId,
+    ActionDefinition, ActorDefinition, AsyncTaskDefinition, DeadlineDefinition,
+    DeterministicDecisionDefinition, EventDefinition, EvidenceDefinition, FactDefinition,
+    InboxItemDefinition, MetricId, OutcomeDefinition, ResourceId, ScenarioId, StageDefinition,
+    StageId,
 };
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 /// Current version understood by this schema crate.
 pub const SCENARIO_SCHEMA_VERSION_V1: &str = "1.0";
+
+/// Standard generic resource IDs used by authoritative resource projection.
+pub const RESOURCE_AUTHORIZED_BUDGET_EUR: &str = "authorized_budget_eur";
+pub const RESOURCE_SPEND_EUR: &str = "spend_eur";
+pub const RESOURCE_BILLABLE_MINUTES: &str = "billable_minutes";
 
 /// How simulated time may advance for a scenario.
 ///
@@ -85,6 +92,23 @@ pub struct ScenarioDefinition {
 
     #[serde(default)]
     pub clock: ScenarioClockDefinition,
+
+    /// Canonically ordered integer metrics initialized at session creation.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub numeric_metrics: BTreeMap<MetricId, i64>,
+
+    /// Per-minute metric rates applied only by explicit foreground
+    /// `AdvanceTime` commands. Action time never applies these rates.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub foreground_metric_rates: BTreeMap<MetricId, i64>,
+
+    /// Canonically ordered integer resources initialized at session creation.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub initial_resources: BTreeMap<ResourceId, i64>,
+
+    /// Explicit weighted decisions resolved only by an ordinary effect.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub deterministic_decisions: Vec<DeterministicDecisionDefinition>,
 
     #[serde(default)]
     pub actors: Vec<ActorDefinition>,
