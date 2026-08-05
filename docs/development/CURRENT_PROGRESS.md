@@ -19,13 +19,16 @@ last_updated: 2026-08-05
 
 ## Desert Water authoritative budget recovery checkpoint — 2026-08-05
 
-Status: complete as an uncommitted local recovery checkpoint. The running
-player Save was exported before further gameplay interaction, the first faulty
-boundary was demonstrated across Rust, bridge JSON, and Flutter before the
-production correction, and the exact 291-command session was replay-migrated,
-restored, and verified on Android API 37. No gameplay action was dispatched by
-the live-emulator restoration; commands 191 and 192 were dispatched only in
-isolated deterministic audit/replay sessions. No commit or push was made.
+Status: complete in implementation commit
+`aae66104b6bf0df8626898d34ff50f21cf80e8dc`. The running player Save was
+exported before further gameplay interaction, the first faulty boundary was
+demonstrated across Rust, bridge JSON, and Flutter before the production
+correction, and the exact 291-command session was replay-migrated, restored,
+and verified on Android API 37. No gameplay action was dispatched by the
+live-emulator restoration; commands 191 and 192 were dispatched only in
+isolated deterministic audit/replay sessions. Owner playtest passed and
+publication through a Draft PR, hosted gates, and a green-only merge is
+explicitly authorized.
 
 ### Preservation and first faulty boundary
 
@@ -143,7 +146,8 @@ isolated deterministic audit/replay sessions. No commit or push was made.
 - evidence is preserved at
   `apps/juris-mobile/build/budget-fixed-restored-matter.png` and
   `apps/juris-mobile/build/budget-fixed-restored-action.png`. The ordinary app
-  remains running on the paused restored matter for owner playtesting;
+  remains running on the paused restored matter as recovery evidence; owner
+  playtest passed;
 - Rust formatting, current workspace check, Clippy across all targets with
   warnings denied, Rust 1.78 locked workspace check, and all 315 Rust tests
   passed with no failure;
@@ -153,8 +157,10 @@ isolated deterministic audit/replay sessions. No commit or push was made.
   dynamically exports exactly `juris_mobile_bridge_abi_version`,
   `juris_mobile_bridge_execute`, and `juris_mobile_bridge_string_free`; C ABI
   version remains 1;
-- `git diff --check` passed. No tag, release, commit, push, or PR was created.
-  The next step requires an explicit publication decision after owner review.
+- `git diff --check` passed. The validated resource-model hotfix is commit
+  `aae66104b6bf0df8626898d34ff50f21cf80e8dc`; publication is authorized
+  without a tag, release, or APK asset, while PR #4 and recovery refs remain
+  untouched.
 
 ## Historical: Desert Water / Caldera day-two no-action recovery checkpoint — 2026-08-05
 

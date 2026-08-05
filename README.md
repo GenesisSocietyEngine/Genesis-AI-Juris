@@ -4,9 +4,9 @@ A deterministic, AI-native legal-career simulation with an authoritative Rust
 engine and a smartphone-first Flutter interface.
 
 The local production catalogue contains five declarative, Rust-backed cases.
-The combined Desert Water branch has passed its local gates and remains
-unpublished at the required local-review stop. Its validated Android API 37
-build is open for owner playtesting.
+The combined Desert Water branch has passed its local gates and owner
+playtest. Publication proceeds through a Draft PR and the mandatory hosted
+Rust, Flutter, MSRV, and iOS gates.
 
 ## Current production catalogue
 

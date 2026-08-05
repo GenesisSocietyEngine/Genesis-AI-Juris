@@ -26,8 +26,8 @@ The rebased Desert implementation commits are `57caf237`, `6d510738`,
   baseline.
 
 Neither follow-up changes scenario content, runtime execution, persistence,
-digest, bridge, FFI, or ABI contracts. The branch remains local and
-unpublished.
+digest, bridge, FFI, or ABI contracts. Owner playtest passed, and publication
+of the validated branch is authorized through a Draft PR and green-only merge.
 
 This document is both the specification-first contract and the current local
 integration handoff. Desert Water is implemented as declarative
@@ -35,7 +35,9 @@ integration handoff. Desert Water is implemented as declarative
 Matter Lifecycle v1, Dossier Projection v1, command-log persistence, JSON
 bridge, and three-symbol native ABI. The fingerprint, generated five-case
 bundle, combined Rust/Flutter totals, APK, and Android API 37 acceptance below
-are measured results. The checkpoint has reached its local-review stop.
+are measured results. Resource-model implementation commit
+`aae66104b6bf0df8626898d34ff50f21cf80e8dc` follows the completed local-review
+checkpoint.
 
 The case is:
 
@@ -736,18 +738,21 @@ replays must retain identical semantics and digests. Failed ERP uses the same
 format existed and no importer was added. No new export, persistence field,
 compatibility marker, or scenario-specific bridge command is permitted.
 
-Desert Water saves produced by fingerprint
+Desert Water saves produced by either prior fingerprint — committed pre-hotfix
+`056bfa737932a81005fb8d9a78246593d1c1908308543d4bf9c5811d73201e8d`
+or recovered-session
 `f93d22cd9dfe3ed34c8fbdd3f6d0faa65559e898f635fd42e19193579a5feb83`
-cannot be loaded unchanged after the resource definition changes. A preserved
-player save is migrated narrowly by replaying its exact seed and ordered
-commands against the new definition and then emitting a fresh runtime-v2
-envelope and digest. Fingerprint or digest fields are never edited manually,
-and the original save remains immutable audit evidence.
+— cannot be loaded unchanged after the resource definition changes. A
+preserved player save is migrated narrowly by replaying its exact seed and
+ordered commands against the new definition and then emitting a fresh
+runtime-v2 envelope and digest. Fingerprint or digest fields are never edited
+manually, and the original save remains immutable audit evidence.
 
 ## Required implementation artifacts
 
-The four Desert implementation commits contain content, tests, generated
-bundle output, and documentation following existing production templates:
+The Desert implementation history contains content, tests, generated bundle
+output, validation follow-ups, and documentation following existing
+production templates:
 
 - identity record for `us_environmental_desert_water_001`;
 - `content/cases/desert_water_groundwater_claim.scenario.json`;
@@ -934,8 +939,9 @@ Final combined local measurements:
   60,000 authority, EUR 41,650 spend, EUR 18,350 remaining, 1,065 billable
   minutes, and only `prepare_expert_evidence` available at 180 minutes / EUR
   5,500. No gameplay action was dispatched during restoration;
-- `git diff --check` passed. The budget recovery remains an intentionally
-  uncommitted local checkpoint pending owner review.
+- `git diff --check` passed. The budget recovery is implementation commit
+  `aae66104b6bf0df8626898d34ff50f21cf80e8dc`; owner playtest passed and
+  publication is explicitly authorized.
 
 Separate-branch totals, APK hashes, and the earlier Desert-on-release bundle
 hash are historical inputs and must not fill these combined-result fields.
@@ -976,11 +982,12 @@ Stop and report rather than changing generic code if:
 - ABI audit shows any fourth export.
 
 The local review checkpoint has ended after implementation, deterministic
-validation, Android API 37 evidence, and cumulative progress documentation.
-Keep `feat/desert-water-case` unpublished and retain
-`backup/desert-water-pre-failed-erp` at `44e565b22c52a4c3a3e69b2c137353b7771fcf77`.
-Do not push, open a Desert Water PR, create another tag/release, modify or close
-PR #4, or begin a later roadmap phase without explicit authorization.
+validation, Android API 37 evidence, owner playtest, and cumulative progress
+documentation. Publication of `feat/desert-water-case` is authorized through
+a Draft PR, all mandatory hosted gates, and merge only when fully green. Retain
+`backup/desert-water-pre-failed-erp` at
+`44e565b22c52a4c3a3e69b2c137353b7771fcf77`; do not create a tag, release, or
+APK asset, and do not modify or close PR #4.
 
 The final local report must list all five catalogue positions with stable case
 and scenario identities, EN/RU public titles, authoritative Rust fingerprints,
