@@ -38,6 +38,11 @@ void main() {
     expect(desertWater.scenarioId, 'desert_water_groundwater_claim');
     expect(desertWater.runtimeAdapter, 'rust_scenario_v1');
     expect(scenario['clock'], <String, dynamic>{'mode': 'foreground'});
+    expect(scenario['initial_resources'], <String, dynamic>{
+      'authorized_budget_eur': 60000,
+      'billable_minutes': 0,
+      'spend_eur': 0,
+    });
     expect(russian['schema_version'], 1);
     expect(russian['scenario_id'], desertWater.scenarioId);
     expect(russian['locale'], 'ru');
@@ -105,10 +110,107 @@ void main() {
       _objectList(scenario['actions']).every(
         (Map<String, dynamic> action) =>
             (action['cost_eur']! as int) > 0 &&
-            (action['time_cost_minutes']! as int) > 0,
+            (action['time_cost_minutes']! as int) > 0 &&
+            action['billable_minutes'] == action['time_cost_minutes'],
       ),
       isTrue,
     );
+  });
+
+  test('maps exact authoritative budget checkpoints without clock fallback',
+      () {
+    final Map<String, dynamic> scenario = desertWater.scenario!;
+    final List<Map<String, dynamic>> actions = _objectList(
+      scenario['actions'],
+    );
+    final List<
+        ({
+          int clock,
+          int spend,
+          int billable,
+          int remaining,
+          String actionId,
+          int actionCost,
+          int actionTime,
+          String actionTimeLabel,
+          String timeLabel,
+        })> checkpoints = <({
+      int clock,
+      int spend,
+      int billable,
+      int remaining,
+      String actionId,
+      int actionCost,
+      int actionTime,
+      String actionTimeLabel,
+      String timeLabel,
+    })>[
+      (
+        clock: 1728,
+        spend: 37050,
+        billable: 855,
+        remaining: 22950,
+        actionId: 'interview_affected_residents',
+        actionCost: 2400,
+        actionTime: 120,
+        actionTimeLabel: '2h',
+        timeLabel: '12:48',
+      ),
+      (
+        clock: 1848,
+        spend: 39450,
+        billable: 975,
+        remaining: 20550,
+        actionId: 'map_wells_and_exposure_periods',
+        actionCost: 2200,
+        actionTime: 90,
+        actionTimeLabel: '1h 30m',
+        timeLabel: '14:48',
+      ),
+      (
+        clock: 1938,
+        spend: 41650,
+        billable: 1065,
+        remaining: 18350,
+        actionId: 'prepare_expert_evidence',
+        actionCost: 5500,
+        actionTime: 180,
+        actionTimeLabel: '3h',
+        timeLabel: '16:18',
+      ),
+    ];
+
+    for (final checkpoint in checkpoints) {
+      final Map<String, dynamic> action = actions.singleWhere(
+        (Map<String, dynamic> item) => item['id'] == checkpoint.actionId,
+      );
+      final Map<String, dynamic> source = _openingSnapshot(desertWater)
+        ..['clock_minutes'] = checkpoint.clock
+        ..['resources'] = <String, dynamic>{
+          'authorized_budget_eur': 60000,
+          'billable_minutes': checkpoint.billable,
+          'spend_eur': checkpoint.spend,
+        }
+        ..['available_actions'] = <Map<String, dynamic>>[
+          _actionSnapshot(action),
+        ];
+      final GameSnapshot mapped = ScenarioSnapshotMapper.map(
+        source: source,
+        caseDefinition: desertWater,
+      );
+
+      expect(mapped.authorizedBudgetEur, 60000);
+      expect(mapped.spendEur, checkpoint.spend);
+      expect(mapped.remainingBudgetEur, checkpoint.remaining);
+      expect(mapped.billableMinutes, checkpoint.billable);
+      expect(mapped.dayLabel, 'Day 2');
+      expect(mapped.timeLabel, checkpoint.timeLabel);
+      expect(mapped.actions.single.id, checkpoint.actionId);
+      expect(action['cost_eur'], checkpoint.actionCost);
+      expect(action['time_cost_minutes'], checkpoint.actionTime);
+      expect(mapped.actions.single.costEur, checkpoint.actionCost);
+      expect(mapped.actions.single.timeLabel, checkpoint.actionTimeLabel);
+    }
   });
 
   test('EN and RU map identical authoritative opening Dossier state', () {
@@ -314,6 +416,7 @@ Map<String, dynamic> _openingSnapshot(MobileCaseDefinition definition) {
     'resolved_outcome': null,
     'terminal': false,
     'flags': <String, bool>{},
+    'resources': _object(scenario['initial_resources']),
     'facts': facts
         .map(
           (Map<String, dynamic> item) => <String, dynamic>{
@@ -358,13 +461,7 @@ Map<String, dynamic> _openingSnapshot(MobileCaseDefinition definition) {
         )
         .toList(growable: false),
     'available_actions': <Map<String, dynamic>>[
-      <String, dynamic>{
-        'id': openingAction['id'],
-        'title': openingAction['title'],
-        'description': openingAction['description'],
-        'time_cost_minutes': openingAction['time_cost_minutes'],
-        'cost_eur': openingAction['cost_eur'],
-      },
+      _actionSnapshot(openingAction),
     ],
     'fired_event_ids': <String>[],
     'outcome': null,
@@ -420,6 +517,16 @@ Map<String, dynamic> _openingSnapshot(MobileCaseDefinition definition) {
     },
   };
 }
+
+Map<String, dynamic> _actionSnapshot(Map<String, dynamic> action) =>
+    <String, dynamic>{
+      'id': action['id'],
+      'title': action['title'],
+      'description': action['description'],
+      'time_cost_minutes': action['time_cost_minutes'],
+      'cost_eur': action['cost_eur'],
+      'billable_minutes': action['billable_minutes'],
+    };
 
 Map<String, dynamic> _dossierJson(DossierProjectionView dossier) {
   return <String, dynamic>{

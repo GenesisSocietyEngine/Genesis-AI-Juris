@@ -64,10 +64,10 @@ All four pre-existing catalogue entries are authoritative Rust scenarios. The
 Failed-ERP-only pre-Desert mobile bundle was 479,920 bytes with SHA-256
 `afe93194de58761fe534a1b818968bc7a2b5bd931eba597ab03a06561733baf1`.
 Adding Desert Water intentionally changes that digest. The deterministic
-combined five-case bundle is 620,529 bytes with SHA-256
-`645bcd25b9cfa915ce9d0e3b0558e480325e5a45bfc20d7eb69144aba52cb985`.
+combined five-case bundle is 622,325 bytes with SHA-256
+`58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`.
 The final Desert Water fingerprint is
-`056bfa737932a81005fb8d9a78246593d1c1908308543d4bf9c5811d73201e8d`.
+`636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af`.
 
 ## Fictional premise and disclaimer
 
@@ -98,7 +98,7 @@ evidence, file a claim, and preserve a remedy after an adverse judgment.
 |---|---|
 | `case_id` | `us_environmental_desert_water_001` |
 | scenario `metadata.id` | `desert_water_groundwater_claim` |
-| canonical fingerprint | `056bfa737932a81005fb8d9a78246593d1c1908308543d4bf9c5811d73201e8d` |
+| canonical fingerprint | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` |
 | caption | Sundial Mesa Residents Association v. Caldera Compression & Cooling Inc. |
 | EN topic | Desert Water |
 | RU topic | Вода пустыни |
@@ -116,6 +116,24 @@ evidence, file a claim, and preserve a remedy after an adverse judgment.
 | scenario schema version | `1.0` |
 | content version | `0.1.0` |
 | clock | `{ "mode": "foreground" }` |
+
+### Authoritative budget and billable resources
+
+Desert Water declares its economic state in `ScenarioDefinition` content; no
+runtime, bridge, or Flutter branch recognizes the case ID. Initial resources
+are exactly:
+
+- `authorized_budget_eur = 60000`;
+- `spend_eur = 0`;
+- `billable_minutes = 0`.
+
+The EUR 60,000 capacity covers the coordinated path's EUR 54,150 action spend
+with EUR 5,850 remaining. Every one of the 27 actions explicitly declares
+`billable_minutes` equal to its existing `time_cost_minutes`. The generic Rust
+runtime accumulates `cost_eur` and `billable_minutes` as deltas after each
+accepted action; stage transitions do not initialize, replace, or reset the
+capacity. Foreground time commands advance only the game clock and never add
+spend or billable work.
 
 EN synopsis:
 
@@ -571,10 +589,11 @@ of silently claiming this target.
 
 Target terminal state: outcome `credible_source_and_remedy`, judicial result
 `won`, decision instance `first_instance`, lifecycle closed. Target action
-spend is EUR 54,150. The canonical scenario fingerprint is
-`056bfa737932a81005fb8d9a78246593d1c1908308543d4bf9c5811d73201e8d`;
+spend is EUR 54,150, remaining authority is EUR 5,850, and billable time is
+1,545 minutes. The canonical scenario fingerprint is
+`636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af`;
 the runtime-v2 final-state digest is
-`8d9f9c5e39dcdb0dc6639d42844a3b9e5f8394702231f1d8eb0aede6be244240`.
+`432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d`.
 The simulator signature contains exactly 24 ordered transitions and its
 canonical fired-event set contains `mandate_accepted`,
 `operator_preservation_response_received`,
@@ -601,11 +620,12 @@ canonical fired-event set contains `mandate_accepted`,
 
 Target terminal state: outcome `compromised_claim_closed`, judicial result
 `lost`, decision instance `appeal`, lifecycle closed. Target action spend is
-EUR 23,350. At minute 3180, before filing the appeal, the Dossier must be
+EUR 23,350, remaining authority is EUR 36,650, and billable time is 840
+minutes. At minute 3180, before filing the appeal, the Dossier must be
 `recoverable`, expose the open appeal deadline and `file_appeal`, and expose no
 outcome. At minute 3480 the adverse appeal still does not close the matter.
 The runtime-v2 final-state digest is
-`f5a08dc13bb49b879bc0e4929fbbbb08184cc4269c463eaa4ca8b1fad162c895`.
+`a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce`.
 The simulator signature contains exactly 21 ordered transitions; its
 canonical fired-event set includes the two missed deadlines, both adverse
 judgments, `appeal_filed`, `matter_closed`, and
@@ -693,8 +713,8 @@ truth, lifecycle, remedy, decision instance, or outcome from stage/action text.
 
 ## Persistence, bridge, and ABI invariants
 
-Desert Water adds only a new scenario fingerprint and catalogue content. It
-must not change:
+The authoritative resource correction changes only Desert Water's own
+fingerprint and replayed resource projection. It must not change:
 
 - save `schema_id`: `genesis.ai-juris.command-log`;
 - envelope `schema_version`: `1`;
@@ -716,6 +736,14 @@ replays must retain identical semantics and digests. Failed ERP uses the same
 format existed and no importer was added. No new export, persistence field,
 compatibility marker, or scenario-specific bridge command is permitted.
 
+Desert Water saves produced by fingerprint
+`f93d22cd9dfe3ed34c8fbdd3f6d0faa65559e898f635fd42e19193579a5feb83`
+cannot be loaded unchanged after the resource definition changes. A preserved
+player save is migrated narrowly by replaying its exact seed and ordered
+commands against the new definition and then emitting a fresh runtime-v2
+envelope and digest. Fingerprint or digest fields are never edited manually,
+and the original save remains immutable audit evidence.
+
 ## Required implementation artifacts
 
 The four Desert implementation commits contain content, tests, generated
@@ -732,8 +760,8 @@ bundle output, and documentation following existing production templates:
 - production-native Android acceptance path.
 
 `mobile_case_bundle.json` remains bundle version 4. The combined artifact is
-620,529 bytes with SHA-256
-`645bcd25b9cfa915ce9d0e3b0558e480325e5a45bfc20d7eb69144aba52cb985`.
+622,325 bytes with SHA-256
+`58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`.
 No `apps/juris-mobile/lib/**`, engine, schema, persistence, bridge, or FFI
 production change is part of Desert Water. The validator-only correction in
 `d7a52d8` preserves conservative handling of ambiguous paths. The Android
@@ -773,7 +801,7 @@ Rust/bridge/content tests must prove:
 - JSON bridge and FFI carry the additive existing Dossier without a new
   symbol;
 - mobile bundle export is deterministic and pins the generated SHA-256
-  `645bcd25b9cfa915ce9d0e3b0558e480325e5a45bfc20d7eb69144aba52cb985`.
+  `58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`.
 
 Flutter tests must prove:
 
@@ -878,33 +906,36 @@ Before declaring local completion, run and record:
 
 Final combined local measurements:
 
-- deterministic five-case bundle: 620,529 bytes, SHA-256
-  `645bcd25b9cfa915ce9d0e3b0558e480325e5a45bfc20d7eb69144aba52cb985`;
+- deterministic five-case bundle: 622,325 bytes, SHA-256
+  `58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`;
 - generic terminal-event guard correction:
   `d7a52d836f4f51b9c510af38513bcb2722cbd6a2`;
 - Rust 1.78 locked check, formatting, current workspace check, and Clippy with
-  warnings denied passed; the full workspace ran 312 tests, all passed;
-- focused Rust totals passed: engine 100, bridge 16, FFI 14, simulator 56,
-  validator 49, diagnostics 28, and production catalogue integration 14;
-  Failed ERP formula/economic parity remained 10/10 and the lifecycle harness
-  remained 2/2 over 18 explicit paths;
-- Dart format checked 49 files with 0 changes; Flutter analysis found no
-  issues; the full unit/widget suite ran 133 tests, all passed;
+  warnings denied passed; the full workspace ran 315 tests, all passed;
+- the exact Desert Water budget regressions passed 10/10 in the engine and
+  1/1 at the JSON bridge. They replay commands 1-190, then commands 191 and
+  192 as separate sequential commands, and prove save/reload parity at all
+  three checkpoints;
+- Dart formatting and deterministic bundle checks passed; Flutter analysis
+  found no issues, and the full unit/widget suite ran 134 tests, all passed;
 - final debug APK:
   `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`,
-  187,596,640 bytes, SHA-256
-  `689b95b0da9f47bbe385bad9312a74b7625ad23860c0ea63113882f1611e3053`;
+  164,655,323 bytes, SHA-256
+  `2f85aa1a38fd881affd73f5da5ede87cb0596de0456e27810fedf7a69b219561`;
 - C ABI version remains 1. The exact stripped libraries packaged in the APK
   match the Gradle outputs, and `armeabi-v7a`, `arm64-v8a`, and `x86_64` each
   dynamically export exactly `juris_mobile_bridge_execute`,
   `juris_mobile_bridge_string_free`, and
   `juris_mobile_bridge_abi_version`;
-- Android API 37 native integration ran 7 tests, all passed; the ordinary app
-  then displayed all five cards in sort order, identified Asteron as Failed ERP
-  claimant/player, opened Desert Water without bridge/asset/mapper error, and
-  returned to the catalogue;
-- `git diff --check` passed. The working tree is clean after the local
-  documentation commit recorded by this handoff.
+- the earlier Android API 37 native integration result remains 7/7 and is
+  historical evidence for the unchanged lifecycle path. For this budget
+  correction, the ordinary production app natively loaded the replay-migrated
+  291-command Save and displayed the exact paused Day 2 17:57 state: EUR
+  60,000 authority, EUR 41,650 spend, EUR 18,350 remaining, 1,065 billable
+  minutes, and only `prepare_expert_evidence` available at 180 minutes / EUR
+  5,500. No gameplay action was dispatched during restoration;
+- `git diff --check` passed. The budget recovery remains an intentionally
+  uncommitted local checkpoint pending owner review.
 
 Separate-branch totals, APK hashes, and the earlier Desert-on-release bundle
 hash are historical inputs and must not fill these combined-result fields.

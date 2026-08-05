@@ -12784,6 +12784,11 @@
         "clock": {
           "mode": "foreground"
         },
+        "initial_resources": {
+          "authorized_budget_eur": 60000,
+          "billable_minutes": 0,
+          "spend_eur": 0
+        },
         "actors": [
           {
             "id": "player_lawyer",
@@ -14204,6 +14209,8 @@
             "title": "Environmental investigation",
             "kind": "standard",
             "exit_actions": [
+              "interview_affected_residents",
+              "map_wells_and_exposure_periods",
               "obtain_cooling_and_disposal_records",
               "retain_independent_hydrogeologist",
               "review_hydrological_source_assessment",
@@ -14302,6 +14309,7 @@
             ],
             "time_cost_minutes": 30,
             "cost_eur": 750,
+            "billable_minutes": 30,
             "repeatability": {
               "type": "once"
             }
@@ -14314,8 +14322,17 @@
               "type": "all",
               "conditions": [
                 {
-                  "type": "stage_is",
-                  "stage": "urgent_preservation"
+                  "type": "any",
+                  "conditions": [
+                    {
+                      "type": "stage_is",
+                      "stage": "urgent_preservation"
+                    },
+                    {
+                      "type": "stage_is",
+                      "stage": "environmental_investigation"
+                    }
+                  ]
                 },
                 {
                   "type": "flag_equals",
@@ -14347,6 +14364,7 @@
             ],
             "time_cost_minutes": 120,
             "cost_eur": 2400,
+            "billable_minutes": 120,
             "repeatability": {
               "type": "once"
             }
@@ -14359,8 +14377,17 @@
               "type": "all",
               "conditions": [
                 {
-                  "type": "stage_is",
-                  "stage": "urgent_preservation"
+                  "type": "any",
+                  "conditions": [
+                    {
+                      "type": "stage_is",
+                      "stage": "urgent_preservation"
+                    },
+                    {
+                      "type": "stage_is",
+                      "stage": "environmental_investigation"
+                    }
+                  ]
                 },
                 {
                   "type": "flag_equals",
@@ -14392,6 +14419,7 @@
             ],
             "time_cost_minutes": 90,
             "cost_eur": 2200,
+            "billable_minutes": 90,
             "repeatability": {
               "type": "once"
             }
@@ -14435,6 +14463,7 @@
             ],
             "time_cost_minutes": 60,
             "cost_eur": 1600,
+            "billable_minutes": 60,
             "repeatability": {
               "type": "once"
             }
@@ -14502,6 +14531,7 @@
             ],
             "time_cost_minutes": 120,
             "cost_eur": 8500,
+            "billable_minutes": 120,
             "repeatability": {
               "type": "once"
             }
@@ -14565,6 +14595,7 @@
             ],
             "time_cost_minutes": 60,
             "cost_eur": 900,
+            "billable_minutes": 60,
             "repeatability": {
               "type": "once"
             }
@@ -14619,6 +14650,7 @@
             ],
             "time_cost_minutes": 90,
             "cost_eur": 1800,
+            "billable_minutes": 90,
             "repeatability": {
               "type": "once"
             }
@@ -14668,6 +14700,7 @@
             ],
             "time_cost_minutes": 120,
             "cost_eur": 2800,
+            "billable_minutes": 120,
             "repeatability": {
               "type": "once"
             }
@@ -14708,6 +14741,7 @@
             ],
             "time_cost_minutes": 45,
             "cost_eur": 9500,
+            "billable_minutes": 45,
             "repeatability": {
               "type": "once"
             }
@@ -14756,6 +14790,7 @@
             ],
             "time_cost_minutes": 120,
             "cost_eur": 3200,
+            "billable_minutes": 120,
             "repeatability": {
               "type": "once"
             }
@@ -14810,6 +14845,7 @@
             ],
             "time_cost_minutes": 90,
             "cost_eur": 4000,
+            "billable_minutes": 90,
             "repeatability": {
               "type": "once"
             }
@@ -14860,6 +14896,7 @@
             ],
             "time_cost_minutes": 120,
             "cost_eur": 3500,
+            "billable_minutes": 120,
             "repeatability": {
               "type": "once"
             }
@@ -14908,6 +14945,7 @@
             ],
             "time_cost_minutes": 60,
             "cost_eur": 1400,
+            "billable_minutes": 60,
             "repeatability": {
               "type": "once"
             }
@@ -14978,6 +15016,7 @@
             ],
             "time_cost_minutes": 180,
             "cost_eur": 5500,
+            "billable_minutes": 180,
             "repeatability": {
               "type": "once"
             }
@@ -15032,6 +15071,7 @@
             ],
             "time_cost_minutes": 60,
             "cost_eur": 1800,
+            "billable_minutes": 60,
             "repeatability": {
               "type": "once"
             }
@@ -15090,6 +15130,7 @@
             ],
             "time_cost_minutes": 180,
             "cost_eur": 4500,
+            "billable_minutes": 180,
             "repeatability": {
               "type": "once"
             }
@@ -15154,6 +15195,7 @@
             ],
             "time_cost_minutes": 120,
             "cost_eur": 3000,
+            "billable_minutes": 120,
             "repeatability": {
               "type": "once"
             }
@@ -15233,6 +15275,7 @@
             ],
             "time_cost_minutes": 120,
             "cost_eur": 2500,
+            "billable_minutes": 120,
             "repeatability": {
               "type": "once"
             }
@@ -15282,6 +15325,7 @@
             ],
             "time_cost_minutes": 120,
             "cost_eur": 1800,
+            "billable_minutes": 120,
             "repeatability": {
               "type": "once"
             }
@@ -15327,6 +15371,7 @@
             ],
             "time_cost_minutes": 180,
             "cost_eur": 4200,
+            "billable_minutes": 180,
             "repeatability": {
               "type": "once"
             }
@@ -15384,6 +15429,7 @@
             ],
             "time_cost_minutes": 120,
             "cost_eur": 5000,
+            "billable_minutes": 120,
             "repeatability": {
               "type": "once"
             }
@@ -15477,6 +15523,7 @@
             ],
             "time_cost_minutes": 30,
             "cost_eur": 900,
+            "billable_minutes": 30,
             "repeatability": {
               "type": "once"
             }
@@ -15546,6 +15593,7 @@
             ],
             "time_cost_minutes": 180,
             "cost_eur": 6500,
+            "billable_minutes": 180,
             "repeatability": {
               "type": "once"
             }
@@ -15595,6 +15643,7 @@
             ],
             "time_cost_minutes": 180,
             "cost_eur": 6500,
+            "billable_minutes": 180,
             "repeatability": {
               "type": "once"
             }
@@ -15684,6 +15733,7 @@
             ],
             "time_cost_minutes": 30,
             "cost_eur": 1200,
+            "billable_minutes": 30,
             "repeatability": {
               "type": "once"
             }
@@ -15773,6 +15823,7 @@
             ],
             "time_cost_minutes": 30,
             "cost_eur": 900,
+            "billable_minutes": 30,
             "repeatability": {
               "type": "once"
             }
@@ -15881,6 +15932,7 @@
             ],
             "time_cost_minutes": 30,
             "cost_eur": 600,
+            "billable_minutes": 30,
             "repeatability": {
               "type": "once"
             }

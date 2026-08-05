@@ -279,10 +279,10 @@ combined catalogue is:
 | 20 | `be_commercial_logistics_001` | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` | negotiated: 270; judgment: 480 |
 | 30 | `greenfire_first_72_hours` | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` | protected: 4440; compromised: 4590 |
 | 40 | `goldenshell_recall_at_dawn` | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` | coordinated: 4545; fragmented: 4710 |
-| 50 | `desert_water_groundwater_claim` | `056bfa737932a81005fb8d9a78246593d1c1908308543d4bf9c5811d73201e8d` | coordinated: 3180; compromised: 3510 |
+| 50 | `desert_water_groundwater_claim` | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` | coordinated: 3180; compromised: 3510 |
 
-The deterministic combined bundle is 620,529 bytes with SHA-256
-`645bcd25b9cfa915ce9d0e3b0558e480325e5a45bfc20d7eb69144aba52cb985`.
+The deterministic combined bundle is 622,325 bytes with SHA-256
+`58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`.
 Neither the Failed-ERP-only hash above nor the parked Desert-on-release hash is
 the combined artifact.
 

@@ -12,12 +12,273 @@ validator_followup: d7a52d836f4f51b9c510af38513bcb2722cbd6a2
 android_followup: de7ac065d095a0e268e14961b4b74edd754cf52e
 latest_published_release_tag: v0.6.0-alpha.1
 app_version: 0.6.0+13
-last_updated: 2026-08-04
+last_updated: 2026-08-05
 ---
 
 # Current Progress
 
-## Five-case integration local validation checkpoint — 2026-08-04
+## Desert Water authoritative budget recovery checkpoint — 2026-08-05
+
+Status: complete as an uncommitted local recovery checkpoint. The running
+player Save was exported before further gameplay interaction, the first faulty
+boundary was demonstrated across Rust, bridge JSON, and Flutter before the
+production correction, and the exact 291-command session was replay-migrated,
+restored, and verified on Android API 37. No gameplay action was dispatched by
+the live-emulator restoration; commands 191 and 192 were dispatched only in
+isolated deterministic audit/replay sessions. No commit or push was made.
+
+### Preservation and first faulty boundary
+
+- before touching a control, the running Day 2 17:45 / EUR 0 of EUR 0 screen
+  was captured as `apps/juris-mobile/build/budget-live-before-preservation.png`.
+  The only subsequent live controls used for preservation were Pause and Save;
+  foreground time reached Day 2 17:57, but no additional gameplay action was
+  dispatched;
+- the exact pre-control Day 2 17:45 state was then reconstructed from the first
+  279 commands of the byte-preserved 291-command log and the untouched screen
+  timestamp. It is stored as
+  `.hotfix-backup/caldera-session-recovery/budget-live-before-control-day2-1745.command-log.json`:
+  18,883 pretty-printed bytes, SHA-256
+  `b023a9efad16a087059e5234b79176f4f2f56b4762b16a36e2e02126a518293c`,
+  fingerprint `f93d22cd...`, digest
+  `3449e3e42de0610b5ec03ea518064118586f5ac5ffc74b3151aeacd33e06df92`,
+  minute 2,025, and only `prepare_expert_evidence` available. This is an exact
+  deterministic state/log reconstruction, not a falsely claimed byte-for-byte
+  live export from before Pause;
+- the active post-action Save was exported byte-exactly to
+  `.hotfix-backup/caldera-session-recovery/budget-live-post-action-day2-1757.command-log.json`:
+  12,060 bytes, SHA-256
+  `6023f3ca49c6f6de08e5f0fdbfcf9b1b2ee0a318d54e15ce59f266f83528781d`;
+- it contains seed `20260804`, runtime marker `scenario-runtime-v2`, fingerprint
+  `f93d22cd9dfe3ed34c8fbdd3f6d0faa65559e898f635fd42e19193579a5feb83`,
+  digest `9829a636e7b78b07972f401f48758a38f088698cf36882f5d9c8d52a39b5c620`,
+  and exactly 291 commands. `interview_affected_residents` is command 191,
+  `map_wells_and_exposure_periods` is command 192, and commands 193–291 are
+  one-minute foreground advances;
+- the previously preserved 190-command migrated log was replayed without
+  modification. Before command 191, authoritative Rust already projected no
+  resources; the bridge JSON omitted `resources`; Flutter consequently mapped
+  authority and spend to zero and substituted all 1,728 elapsed clock minutes
+  as billable time;
+- command 191 advanced the clock exactly `1728 -> 1848`, made only Map
+  available, but still had no resources. Command 192 advanced exactly
+  `1848 -> 1938`, made only Prepare Expert Evidence available, and still had
+  no resources;
+- the first faulty boundary was therefore scenario definition -> Rust session
+  initialization/replay, before command 191. The definition had no
+  `initial_resources`, and all 27 actions omitted `billable_minutes`; Rust
+  correctly held no resource map, the bridge correctly serialized that
+  absence, and Flutter's zero/clock fallbacks exposed and partly masked it;
+- persistence, Interview, Map, stage transition into
+  `environmental_investigation`, resource delta/assignment effects, and a
+  resource-ID mismatch were ruled out as initiating causes. Neither action has
+  a resource effect, `SetStage` changes only the stage ID, and no capacity was
+  available to reset;
+- reproducible pre-correction evidence is retained under
+  `.hotfix-backup/caldera-session-recovery/budget-audit/before-fix-*`. It
+  includes the reconstructed fingerprint-`f93d22cd...` definition, raw Rust
+  snapshots, raw bridge responses, and the Flutter-model summary before
+  command 191 and after commands 191 and 192. The exact preserved 190-command
+  save loads against that definition; at every boundary Rust/bridge resources
+  are absent, while Flutter maps authority/spend/remaining to zero and maps
+  billable minutes to the elapsed clock (`1728`, `1848`, then `1938`).
+
+### Declarative correction and exact regression
+
+- Desert Water now declares initial `authorized_budget_eur = 60000`,
+  `spend_eur = 0`, and `billable_minutes = 0`;
+- all 27 actions explicitly declare `billable_minutes` equal to their existing
+  `time_cost_minutes`. The generic engine applies action costs and billable
+  minutes as deltas; no Flutter fallback, post-action restoration, case-ID
+  branch, runtime mutation, or Desert-specific bridge behavior was added;
+- the permanent engine regression reconstructs the exact 190-command sequence
+  as 10 dispatches plus 180 foreground advances totalling 873 minutes, then
+  proves save/reload snapshot, command-log, and digest parity at every
+  checkpoint:
+
+| State | Clock | Authority | Spend | Remaining | Billable | Only available action |
+|---|---:|---:|---:|---:|---:|---|
+| before command 191 | 1,728 | EUR 60,000 | EUR 37,050 | EUR 22,950 | 855 min | `interview_affected_residents` (120 min, EUR 2,400) |
+| after command 191 | 1,848 | EUR 60,000 | EUR 39,450 | EUR 20,550 | 975 min | `map_wells_and_exposure_periods` (90 min, EUR 2,200) |
+| after command 192 | 1,938 | EUR 60,000 | EUR 41,650 | EUR 18,350 | 1,065 min | `prepare_expert_evidence` (180 min, EUR 5,500) |
+
+- a separate JSON bridge regression replays the same sequence, asserts the raw
+  serialized resources/actions at all three boundaries, and proves bridge
+  save/load parity after each; Flutter tests pin the bundle resource contract
+  and the same three mapped `GameSnapshot` values;
+- the corrected Desert Water fingerprint is
+  `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af`;
+  canonical outcomes and minutes remain `credible_source_and_remedy` at 3,180
+  and `compromised_claim_closed` at 3,510. Their runtime-v2 digests are now
+  `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d`
+  and `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce`;
+- the deterministic five-case bundle is 622,325 bytes, SHA-256
+  `58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`.
+
+### Save migration, Android restoration, and validation
+
+- the old 291 commands were replayed against the corrected definition; no
+  fingerprint or digest field was edited. The resulting active Save is
+  `.hotfix-backup/caldera-session-recovery/budget-audit/budget-fixed-live-291.command-log.json`,
+  12,060 bytes, SHA-256
+  `328d76e392230ac47ecac4ecda6c54af83a48155f4b0d414fe07a2fecabfe019`,
+  fingerprint `636e7b78...`, and digest
+  `6ce210e4a6b55a2ec2495d3405adcd7c45ff2edee38cfee3f5c981e2a68d647c`;
+- all 291 commands and seed are retained. The replayed state is minute 2,037
+  (Day 2 at 17:57), `environmental_investigation`, authority EUR 60,000, spend
+  EUR 41,650, remaining EUR 18,350, billable 1,065 minutes, with only
+  `prepare_expert_evidence` available;
+- the original device Save remains beside it as
+  `us_environmental_desert_water_001.pre-budget-fix-6023f3ca.json`; the active
+  device Save hash is the corrected `328d76...e019` value;
+- debug APK versionCode 4015 / versionName 0.6.0 was built at
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`: 164,655,323
+  bytes, SHA-256
+  `2f85aa1a38fd881affd73f5da5ede87cb0596de0456e27810fedf7a69b219561`;
+- `adb install -r` succeeded without clearing app data. On the API 37 / Android
+  17 x86_64 emulator (`emulator-5554`, 1080x1920), native Load restored the
+  exact paused Day 2 17:57 state. Matter displayed EUR 41,650 spend, EUR 18,350
+  authority remaining, and 17.8h; the action sheet displayed only Prepare
+  Expert Evidence, 3h, EUR 5,500. It was not selected;
+- evidence is preserved at
+  `apps/juris-mobile/build/budget-fixed-restored-matter.png` and
+  `apps/juris-mobile/build/budget-fixed-restored-action.png`. The ordinary app
+  remains running on the paused restored matter for owner playtesting;
+- Rust formatting, current workspace check, Clippy across all targets with
+  warnings denied, Rust 1.78 locked workspace check, and all 315 Rust tests
+  passed with no failure;
+- deterministic bundle `--check`, Flutter analysis, and all 134 Flutter tests
+  passed with no failure;
+- the APK contains `armeabi-v7a`, `arm64-v8a`, and `x86_64` FFI libraries. Each
+  dynamically exports exactly `juris_mobile_bridge_abi_version`,
+  `juris_mobile_bridge_execute`, and `juris_mobile_bridge_string_free`; C ABI
+  version remains 1;
+- `git diff --check` passed. No tag, release, commit, push, or PR was created.
+  The next step requires an explicit publication decision after owner review.
+
+## Historical: Desert Water / Caldera day-two no-action recovery checkpoint — 2026-08-05
+
+This section records the earlier no-action softlock checkpoint. Its statement
+that budget did not cause the action softlock remains correct; the separate
+resource-authority defect discovered afterward is superseded by the current
+checkpoint above.
+
+Status: the reported no-action state has been reproduced and a narrowly scoped
+recovery change has been implemented and validated locally. The optimized
+x86_64 release APK is installed, and the explicitly migrated save restored the
+exact paused Day 2 session with the recovery action available; no gameplay
+action was dispatched. The pre-recovery save and migrated copy remain under the
+repository's gitignored `.hotfix-backup/` area. Nothing in `.hotfix-backup/` is
+part of the repository or this handoff.
+
+### Reported state and root cause
+
+- the active production Desert Water session reached Day 2 at 12:48, scenario
+  minute 1,728, in `environmental_investigation` with no available action;
+- `prepare_expert_evidence` requires `well_timeline_mapped = true`, but only
+  `map_wells_and_exposure_periods` establishes that state;
+- `obtain_regulatory_records` could move the session from
+  `urgent_preservation` to `environmental_investigation` before the player
+  interviewed residents and mapped their wells. Those two actions were
+  previously limited to `urgent_preservation`, making the required state
+  permanently unreachable after the transition;
+- budget presentation was not the cause: the generic engine did not remove the
+  actions on resource grounds. Advancing to the next workday would also not
+  restore the productive route and would eventually expose only the
+  time-barred closure path.
+
+### Recovery change and deterministic contract
+
+- `interview_affected_residents` and `map_wells_and_exposure_periods` are now
+  listed among the `environmental_investigation` exit actions;
+- each action's stage condition now accepts either `urgent_preservation` or
+  `environmental_investigation`; their existing one-time flags and ordering
+  constraints remain authoritative, so no duplicate interview or mapping can
+  occur;
+- the focused regression reproduces the skipped-mapping route at minute 1,646,
+  proves that interview then mapping becomes available in order, and proves
+  that `prepare_expert_evidence` advances the still-open matter to
+  `claim_preparation` at minute 2,036;
+- no generic runtime, persistence envelope, bridge, FFI, ABI, catalogue
+  identity, action cost, deadline, outcome, or trace command was changed;
+- the canonical trace outcomes and final minutes remain unchanged:
+  `credible_source_and_remedy` at minute 3,180 and
+  `compromised_claim_closed` at minute 3,510;
+- the content change intentionally updates the Desert Water fingerprint to
+  `f93d22cd9dfe3ed34c8fbdd3f6d0faa65559e898f635fd42e19193579a5feb83`;
+- the coordinated digest is now
+  `3b4976b349f3a98a59340f8ffc48c2aeb52efb6edcf0d593c7124c1f91879f20`;
+  the compromised digest is now
+  `25ee383bd277cdcc8c2eacf123a420dc18f074bd41173f80b6bdf4a7f0cc686a`.
+
+### Preserved save and migration proof
+
+- pre-recovery save:
+  `.hotfix-backup/caldera-session-recovery/caldera-desert-water-day2-1248-pre-recovery.command-log.json`;
+- original file SHA-256:
+  `6c1824a31cbece95d0076993d50285e46dc7c14d1ee2cca3acaf0e13bd21f66c`;
+- migrated local copy:
+  `.hotfix-backup/caldera-session-recovery/caldera-desert-water-day2-1248-migrated.command-log.json`;
+- all 190 commands were retained. Replay under the pre-recovery scenario
+  produced digest
+  `dc0516fc83900fe8126fbffdf997b1a26397fcee935855bf5f6cde71f1206b92`;
+  replay under the recovered definition produced digest
+  `446630a1557349ff487107c470265b7063d92b42a182c380c31ff7884ae47bdb`;
+- migrated file SHA-256:
+  `436a9f4bfe31d032d0754631b1f33dcdcbe4d3e88803c19114b03d9234480128`;
+- the migration is a one-session recovery artifact, not a generic relaxation
+  of scenario-fingerprint validation. The untouched pre-recovery save remains
+  the audit source.
+
+### Session consequence and final local validation
+
+- installing the recovered release APK ended the old in-memory process, as
+  expected; repository asset changes did not silently mutate that process, and
+  the old save remains unloadable unchanged after the fingerprint change;
+- the optimized x86_64 release APK built successfully at
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-x86_64-release.apk`:
+  22,539,755 bytes, SHA-256
+  `8f37b844f4c8dc05bd22358baad3050ae2e4641a4b55deb336b280bbf4f28581`;
+- this is a release-mode emulator artifact using the repository's current
+  debug signing configuration, not a signed production-distribution APK;
+- its native entries are restricted to x86_64 and contain exactly
+  `libapp.so`, `libdartjni.so`, `libflutter.so`, and
+  `libjuris_mobile_ffi.so`; no ARM native entry is packaged in this emulator
+  artifact;
+- the packaged stripped `libjuris_mobile_ffi.so` was extracted and audited with
+  `llvm-nm -D --defined-only`; it exports exactly
+  `juris_mobile_bridge_abi_version`, `juris_mobile_bridge_execute`, and
+  `juris_mobile_bridge_string_free`. ABI version remains 1, confirmed by the
+  accepting native client and the passing Rust C ABI test;
+- the APK embeds the regenerated five-case bundle byte-exactly: 621,197 bytes,
+  SHA-256
+  `3d8a142e951d8cb40ed431574f2ddaa01593afe1718b7e3544990fea41108ce8`;
+- `adb install -r` completed with `Success`;
+- native `Load` accepted the migrated runtime-v2 save and restored the exact
+  paused state: Day 2 at 12:48, seed `20260804`, zero required Inbox items, and
+  one available action. The action sheet exposes only
+  `Interview affected residents`, duration 2 hours, cost EUR 2,400; no gameplay
+  action was dispatched;
+- restoration evidence is preserved locally at
+  `apps/juris-mobile/build/caldera-release-restored.png` and
+  `apps/juris-mobile/build/caldera-release-recovery-action.png`;
+- Rust 1.78 locked workspace check, current workspace check, formatting, and
+  Clippy across all targets with warnings denied passed;
+- `cargo test --workspace` passed exactly 313 tests with no failure;
+- deterministic five-case mobile-bundle export and `--check` passed: 621,197
+  bytes, SHA-256
+  `3d8a142e951d8cb40ed431574f2ddaa01593afe1718b7e3544990fea41108ce8`;
+- Flutter analysis passed with no issues in 190.6 seconds; the Flutter
+  unit/widget suite passed exactly 133 tests with no failure;
+- the initial `am start -S -W` returned `Status: timeout` with a 12,875 ms wait,
+  but the catalogue rendered and native loading/restoration subsequently
+  succeeded. Slow emulator startup remains a performance risk rather than a
+  functional failure;
+- next step: preserve the restored paused session for owner review. The player
+  may resume through `Interview affected residents`; any commit or publication
+  still requires a separate explicit decision.
+
+## Historical: Five-case integration local validation checkpoint — 2026-08-04
 
 Status: complete locally and stopped for owner playtesting. Failed ERP was
 published through PR #14, merged normally, and validated remotely. Desert Water

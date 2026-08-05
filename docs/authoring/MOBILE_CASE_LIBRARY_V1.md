@@ -59,9 +59,9 @@ deterministic sort order:
 5. `desert_water_groundwater_claim`.
 
 Their canonical scenario JSON is embedded in bundle v4 and validated again
-when Rust creates the session. The combined five-case bundle is 620,529 bytes
+when Rust creates the session. The combined five-case bundle is 622,325 bytes
 with SHA-256
-`645bcd25b9cfa915ce9d0e3b0558e480325e5a45bfc20d7eb69144aba52cb985`.
+`58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`.
 `DemoGameRepository` is retained only for historical Failed ERP
 characterization tests and is never selected by the production factory.
 

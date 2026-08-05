@@ -45,6 +45,114 @@ fn run(session: &mut ScenarioSession, commands: &[ScenarioCommand]) {
     }
 }
 
+fn advance(minutes: u32) -> ScenarioCommand {
+    ScenarioCommand::AdvanceTime { minutes }
+}
+
+fn dispatch(action_id: &str) -> ScenarioCommand {
+    ScenarioCommand::Dispatch {
+        action_id: action_id.to_owned(),
+    }
+}
+
+/// Reconstructs the preserved player session exactly through command 190.
+///
+/// Keeping this as executable test data avoids committing a private player save
+/// while retaining its command ordering, including every one-minute foreground
+/// tick. The aggregate assertions protect the fixture from accidental edits.
+fn migrated_player_commands_through_190() -> Vec<ScenarioCommand> {
+    let mut commands = vec![advance(1); 5];
+    commands.extend([
+        dispatch("accept_residents_mandate"),
+        advance(1),
+        dispatch("demand_plant_record_preservation"),
+        advance(1),
+        dispatch("commission_defensible_sampling"),
+        advance(1),
+        advance(1),
+        advance(1),
+        dispatch("obtain_regulatory_records"),
+        dispatch("protect_limitation_period"),
+        dispatch("obtain_cooling_and_disposal_records"),
+        dispatch("retain_independent_hydrogeologist"),
+        dispatch("investigate_corporate_notice"),
+        dispatch("test_alternative_source_defence"),
+        advance(1),
+        advance(694),
+        advance(1),
+        dispatch("review_hydrological_source_assessment"),
+    ]);
+    commands.extend((0..167).map(|_| advance(1)));
+
+    assert_eq!(commands.len(), 190);
+    assert_eq!(
+        commands
+            .iter()
+            .filter(|command| matches!(command, ScenarioCommand::Dispatch { .. }))
+            .count(),
+        10
+    );
+    assert_eq!(
+        commands
+            .iter()
+            .filter_map(|command| match command {
+                ScenarioCommand::AdvanceTime { minutes } => Some(u64::from(*minutes)),
+                ScenarioCommand::Dispatch { .. } => None,
+            })
+            .sum::<u64>(),
+        873
+    );
+    commands
+}
+
+struct BudgetCheckpoint<'a> {
+    clock_minutes: u64,
+    spend_eur: i64,
+    remaining_budget_eur: i64,
+    billable_minutes: i64,
+    action_id: &'a str,
+    action_cost_eur: u32,
+    action_time_minutes: u32,
+}
+
+fn assert_budget_checkpoint(snapshot: &MobileScenarioSnapshot, expected: BudgetCheckpoint<'_>) {
+    const AUTHORIZED_BUDGET_EUR: i64 = 60_000;
+    let resources = snapshot
+        .resources
+        .as_ref()
+        .expect("Desert Water must project authoritative resources");
+    assert_eq!(snapshot.clock_minutes, expected.clock_minutes);
+    assert_eq!(resources["authorized_budget_eur"], AUTHORIZED_BUDGET_EUR);
+    assert_eq!(resources["spend_eur"], expected.spend_eur);
+    assert_eq!(resources["billable_minutes"], expected.billable_minutes);
+    assert_eq!(
+        AUTHORIZED_BUDGET_EUR - expected.spend_eur,
+        expected.remaining_budget_eur
+    );
+
+    let action = snapshot
+        .available_actions
+        .iter()
+        .find(|action| action.id == expected.action_id)
+        .unwrap_or_else(|| panic!("expected available action {}", expected.action_id));
+    assert_eq!(snapshot.available_actions.len(), 1);
+    assert_eq!(action.cost_eur, expected.action_cost_eur);
+    assert_eq!(action.time_cost_minutes, expected.action_time_minutes);
+    assert_eq!(action.billable_minutes, expected.action_time_minutes);
+}
+
+fn assert_save_reload_parity(session: &ScenarioSession) {
+    let encoded = session.save_json().unwrap();
+    let restored =
+        ScenarioSession::from_save_json(definition(DESERT_WATER_SCENARIO), &encoded).unwrap();
+    assert_eq!(restored.snapshot(), session.snapshot());
+    assert_eq!(restored.command_log(), session.command_log());
+    assert_eq!(
+        restored.final_state_digest().unwrap(),
+        session.final_state_digest().unwrap()
+    );
+}
+
 fn deadline_status<'a>(snapshot: &'a MobileScenarioSnapshot, deadline_id: &str) -> Option<&'a str> {
     snapshot
         .deadlines
@@ -131,7 +239,7 @@ fn released_rust_scenario_fingerprints_remain_byte_exact() {
     assert_eq!(first, second);
     assert_eq!(
         first,
-        "056bfa737932a81005fb8d9a78246593d1c1908308543d4bf9c5811d73201e8d"
+        "636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af"
     );
 }
 
@@ -187,6 +295,122 @@ fn dossier_omits_hidden_desert_water_content_until_authoritative_reveal() {
 }
 
 #[test]
+fn skipped_well_mapping_can_be_recovered_after_entering_environmental_investigation() {
+    let mut session = ScenarioSession::new(definition(DESERT_WATER_SCENARIO), 20260804).unwrap();
+
+    // Reproduce the reported route: move into investigation before interviewing
+    // residents or mapping their wells, then exhaust every other productive
+    // investigation action and wait until the observed minute 1,646.
+    for action in [
+        "accept_residents_mandate",
+        "commission_defensible_sampling",
+        "demand_plant_record_preservation",
+        "obtain_regulatory_records",
+        "obtain_cooling_and_disposal_records",
+        "retain_independent_hydrogeologist",
+        "test_alternative_source_defence",
+        "investigate_corporate_notice",
+        "protect_limitation_period",
+    ] {
+        session.dispatch(action).unwrap();
+    }
+    session.advance_time(450).unwrap();
+    session
+        .dispatch("review_hydrological_source_assessment")
+        .unwrap();
+    session.advance_time(341).unwrap();
+
+    let stranded_route = session.snapshot();
+    assert_eq!(stranded_route.clock_minutes, 1_646);
+    assert_eq!(stranded_route.stage_id, "environmental_investigation");
+    assert_eq!(
+        stranded_route
+            .available_actions
+            .iter()
+            .map(|action| action.id.as_str())
+            .collect::<Vec<_>>(),
+        ["interview_affected_residents"]
+    );
+
+    session.dispatch("interview_affected_residents").unwrap();
+    assert_eq!(
+        session
+            .snapshot()
+            .available_actions
+            .iter()
+            .map(|action| action.id.as_str())
+            .collect::<Vec<_>>(),
+        ["map_wells_and_exposure_periods"]
+    );
+
+    session.dispatch("map_wells_and_exposure_periods").unwrap();
+    assert!(session
+        .snapshot()
+        .available_actions
+        .iter()
+        .any(|action| action.id == "prepare_expert_evidence"));
+
+    let recovered = session.dispatch("prepare_expert_evidence").unwrap();
+    assert_eq!(recovered.clock_minutes, 2_036);
+    assert_eq!(recovered.stage_id, "claim_preparation");
+    assert!(!recovered.is_closed);
+}
+
+#[test]
+fn migrated_player_budget_remains_authoritative_across_commands_191_and_192() {
+    let commands = migrated_player_commands_through_190();
+    let mut session = ScenarioSession::new(definition(DESERT_WATER_SCENARIO), 20260804).unwrap();
+    run(&mut session, &commands);
+
+    assert_eq!(session.command_log(), commands.as_slice());
+    assert_budget_checkpoint(
+        &session.snapshot(),
+        BudgetCheckpoint {
+            clock_minutes: 1_728,
+            spend_eur: 37_050,
+            remaining_budget_eur: 22_950,
+            billable_minutes: 855,
+            action_id: "interview_affected_residents",
+            action_cost_eur: 2_400,
+            action_time_minutes: 120,
+        },
+    );
+    assert_save_reload_parity(&session);
+
+    session.dispatch("interview_affected_residents").unwrap();
+    assert_eq!(session.command_log().len(), 191);
+    assert_budget_checkpoint(
+        &session.snapshot(),
+        BudgetCheckpoint {
+            clock_minutes: 1_848,
+            spend_eur: 39_450,
+            remaining_budget_eur: 20_550,
+            billable_minutes: 975,
+            action_id: "map_wells_and_exposure_periods",
+            action_cost_eur: 2_200,
+            action_time_minutes: 90,
+        },
+    );
+    assert_save_reload_parity(&session);
+
+    session.dispatch("map_wells_and_exposure_periods").unwrap();
+    assert_eq!(session.command_log().len(), 192);
+    assert_budget_checkpoint(
+        &session.snapshot(),
+        BudgetCheckpoint {
+            clock_minutes: 1_938,
+            spend_eur: 41_650,
+            remaining_budget_eur: 18_350,
+            billable_minutes: 1_065,
+            action_id: "prepare_expert_evidence",
+            action_cost_eur: 5_500,
+            action_time_minutes: 180,
+        },
+    );
+    assert_save_reload_parity(&session);
+}
+
+#[test]
 fn coordinated_trace_runs_through_engine_and_round_trips_after_closure() {
     let commands = trace(COORDINATED_TRACE);
     let mut session = ScenarioSession::new(definition(DESERT_WATER_SCENARIO), 20260804).unwrap();
@@ -221,7 +445,7 @@ fn coordinated_trace_runs_through_engine_and_round_trips_after_closure() {
     assert!(snapshot.available_actions.is_empty());
     assert_eq!(
         session.final_state_digest().unwrap(),
-        "8d9f9c5e39dcdb0dc6639d42844a3b9e5f8394702231f1d8eb0aede6be244240"
+        "432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d"
     );
     assert_eq!(session.command_log(), commands.as_slice());
 
@@ -318,7 +542,7 @@ fn loss_remains_recoverable_then_appealable_and_explicitly_closed() {
     );
     assert_eq!(
         restored.final_state_digest().unwrap(),
-        "f5a08dc13bb49b879bc0e4929fbbbb08184cc4269c463eaa4ca8b1fad162c895"
+        "a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce"
     );
     assert_eq!(restored.command_log(), commands.as_slice());
 
