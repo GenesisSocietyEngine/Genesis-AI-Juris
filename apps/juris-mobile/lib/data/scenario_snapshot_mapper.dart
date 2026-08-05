@@ -27,12 +27,6 @@ abstract final class ScenarioSnapshotMapper {
     final List<Map<String, dynamic>> evidence = _objectList(source, 'evidence');
     final List<Map<String, dynamic>> availableActions =
         _objectList(source, 'available_actions');
-    final Set<String> availableActionIds = availableActions
-        .map((Map<String, dynamic> action) => _string(action, 'id'))
-        .toSet();
-    final List<Map<String, dynamic>> availableEvidence = evidence
-        .where((Map<String, dynamic> item) => _bool(item, 'available'))
-        .toList(growable: false);
     final Map<String, int> numericMetrics =
         _optionalIntegerMap(source, 'numeric_metrics');
     final Map<String, int> resources = _optionalIntegerMap(source, 'resources');
@@ -43,9 +37,12 @@ abstract final class ScenarioSnapshotMapper {
                     _factStatusScore(_string(fact, 'status')))
                 .reduce((int left, int right) => left + right) ~/
             facts.length;
-    final int evidenceScore = evidence.isEmpty
-        ? 0
-        : ((availableEvidence.length / evidence.length) * 100).round();
+    // Rust owns player visibility. The legacy visible/total ratio disclosed
+    // the hidden definition count. For scenarios without an authored numeric
+    // metric this is deliberately a player-safe presence score: zero means no
+    // evidence is visible and 100 means at least one item is visible. It is a
+    // presentation summary, not evidence completeness or gameplay state.
+    final int evidencePresenceScore = evidence.isEmpty ? 0 : 100;
     final Map<String, dynamic>? outcome = _nullableObject(source['outcome']);
 
     return GameSnapshot(
@@ -70,9 +67,9 @@ abstract final class ScenarioSnapshotMapper {
           isClosed ? EngagementStatus.completed : EngagementStatus.active,
       matterTitle: _scenarioTitle(caseDefinition, locale),
       caseStrength: numericMetrics['case_strength'] ??
-          ((factScore + evidenceScore) / 2).round(),
+          ((factScore + evidencePresenceScore) / 2).round(),
       merits: numericMetrics['merits'] ?? factScore,
-      evidenceScore: numericMetrics['evidence'] ?? evidenceScore,
+      evidenceScore: numericMetrics['evidence'] ?? evidencePresenceScore,
       procedure:
           numericMetrics['procedure'] ?? _stageProgress(source, caseDefinition),
       leverage: numericMetrics['leverage'] ?? factScore,
@@ -98,7 +95,6 @@ abstract final class ScenarioSnapshotMapper {
       juniorReviewDueDay: 0,
       juniorReviewDueMinute: 0,
       inbox: _objectList(source, 'inbox')
-          .where((Map<String, dynamic> item) => _bool(item, 'visible'))
           .map(
             (Map<String, dynamic> item) => InboxItemView(
               id: _string(item, 'id'),
@@ -135,7 +131,6 @@ abstract final class ScenarioSnapshotMapper {
           )
           .toList(growable: false),
       deadlines: _objectList(source, 'deadlines')
-          .where((Map<String, dynamic> item) => item['status'] != null)
           .map(
             (Map<String, dynamic> item) => DeadlineView(
               id: _string(item, 'id'),
@@ -151,14 +146,14 @@ abstract final class ScenarioSnapshotMapper {
               detail: locale == 'ru'
                   ? 'Обязательный срок авторитетного сценария.'
                   : 'Authoritative scenario deadline.',
-              relatedActionId: _firstAvailableString(
-                item['completion_action_ids'],
-                availableActionIds,
+              relatedActionId: _firstString(
+                item,
+                'completion_action_ids',
               ),
             ),
           )
           .toList(growable: false),
-      evidence: availableEvidence
+      evidence: evidence
           .map(
             (Map<String, dynamic> item) => EvidenceView(
               id: _string(item, 'id'),
@@ -874,27 +869,12 @@ abstract final class ScenarioSnapshotMapper {
     return _stringList(source, field);
   }
 
-  static String? _firstAvailableString(
-    dynamic value,
-    Set<String> available,
+  static String? _firstString(
+    Map<String, dynamic> source,
+    String field,
   ) {
-    if (value == null) {
-      return null;
-    }
-    if (value is! List<dynamic>) {
-      throw const FormatException('completion_action_ids must be an array');
-    }
-    for (final dynamic item in value) {
-      if (item is! String) {
-        throw const FormatException(
-          'completion_action_ids entries must be strings',
-        );
-      }
-      if (available.contains(item)) {
-        return item;
-      }
-    }
-    return null;
+    final List<String> values = _optionalStringList(source, field);
+    return values.isEmpty ? null : values.first;
   }
 
   static bool _bool(Map<String, dynamic> source, String field) {

@@ -595,9 +595,14 @@ fn repeated_remedy_load_does_not_duplicate_generated_events() {
 
     assert_eq!(first.snapshot(), second.snapshot());
     assert_eq!(
-        first.snapshot().fired_event_ids,
-        vec!["adverse_judgment_delivered", "hearing_scheduled"]
+        first
+            .diagnostic_fired_event_ids()
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
+        ["adverse_judgment_delivered", "hearing_scheduled"]
     );
+    assert!(first.snapshot().fired_event_ids.is_empty());
     assert_eq!(first.command_log().len(), 2);
     assert_eq!(second.command_log().len(), 2);
 }
@@ -620,9 +625,9 @@ fn async_completion_replays_across_advance_time() {
         ScenarioSession::from_save_json(definition(GREENFIRE_SCENARIO), &before).unwrap();
     restored.advance_time(360).unwrap();
     assert!(restored
-        .snapshot()
-        .fired_event_ids
-        .contains(&"expert_assessment_completed".to_owned()));
+        .diagnostic_fired_event_ids()
+        .contains("expert_assessment_completed"));
+    assert!(restored.snapshot().fired_event_ids.is_empty());
     assert_round_trip(&restored, definition(GREENFIRE_SCENARIO));
 }
 
@@ -815,10 +820,10 @@ fn repeated_load_does_not_duplicate_generated_events() {
         .commands
         .iter()
         .all(|command| matches!(command, ScenarioCommand::Dispatch { .. })));
-    assert_eq!(
-        original.snapshot().fired_event_ids,
-        vec!["judgment_for_velmont"]
-    );
+    assert!(original
+        .diagnostic_fired_event_ids()
+        .contains("judgment_for_velmont"));
+    assert!(original.snapshot().fired_event_ids.is_empty());
     let encoded = original.save_json().unwrap();
     let mut registry = ScenarioSessionRegistry::new();
     let first = registry
@@ -830,7 +835,8 @@ fn repeated_load_does_not_duplicate_generated_events() {
     let first_snapshot = registry.snapshot(first).unwrap();
     let second_snapshot = registry.snapshot(second).unwrap();
     assert_eq!(first_snapshot, second_snapshot);
-    assert_eq!(first_snapshot.fired_event_ids, vec!["judgment_for_velmont"]);
+    assert!(first_snapshot.fired_event_ids.is_empty());
+    assert!(second_snapshot.fired_event_ids.is_empty());
 }
 
 #[test]

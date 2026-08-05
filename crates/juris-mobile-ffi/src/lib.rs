@@ -143,6 +143,35 @@ mod tests {
     const DOSSIER_SCENARIO: &str =
         include_str!("../../../content/fixtures/authoring/dossier_projection_v1.json");
 
+    const PRE_REVEAL_SNAPSHOT_SENTINELS: &[&str] = &[
+        "sentinel_unknown_fact",
+        "SENTINEL UNKNOWN FACT MUST NOT LEAK",
+        "СКРЫТЫЙ ФАКТ RU",
+        "sentinel_unavailable_evidence",
+        "SENTINEL UNAVAILABLE EVIDENCE MUST NOT LEAK",
+        "SENTINEL UNAVAILABLE DESCRIPTION MUST NOT LEAK",
+        "СКРЫТОЕ ДОКАЗАТЕЛЬСТВО RU",
+    ];
+
+    const ALWAYS_HIDDEN_SNAPSHOT_SENTINELS: &[&str] = &[
+        "sentinel_inactive_deadline",
+        "SENTINEL INACTIVE DEADLINE MUST NOT LEAK",
+        "СКРЫТЫЙ СРОК RU",
+        "sentinel_inactive_deadline_missed",
+        "SENTINEL INACTIVE MISSED EVENT MUST NOT LEAK",
+        "sentinel_unfired_event",
+        "SENTINEL UNFIRED EVENT MUST NOT LEAK",
+        "sentinel_private_flag",
+        "sentinel_future_gate",
+        "sentinel_future_activation_action",
+        "SENTINEL FUTURE ACTION MUST NOT LEAK",
+        "SENTINEL FUTURE ACTION DESCRIPTION MUST NOT LEAK",
+        "sentinel_future_remedy_action",
+        "SENTINEL FUTURE REMEDY MUST NOT LEAK",
+        "SENTINEL HIDDEN LOSS OUTCOME",
+        "SENTINEL HIDDEN OUTCOME SUMMARY MUST NOT LEAK BEFORE CLOSURE",
+    ];
+
     fn execute_request(request: Value) -> Value {
         let request = CString::new(request.to_string()).expect("request must be a C string");
         // SAFETY: `request` remains a valid C string for the complete call.
@@ -154,6 +183,65 @@ mod tests {
         // SAFETY: `response` is released exactly once after decoding.
         unsafe { juris_mobile_bridge_string_free(response) };
         serde_json::from_str(&decoded).expect("FFI response must be valid JSON")
+    }
+
+    fn assert_snapshot_omits(snapshot: &Value, phase: &str, sentinels: &[&str]) {
+        let raw_snapshot = snapshot.to_string();
+        for sentinel in sentinels {
+            assert!(
+                !raw_snapshot.contains(sentinel),
+                "{phase} raw FFI snapshot leaked `{sentinel}`: {raw_snapshot}"
+            );
+        }
+    }
+
+    fn assert_projection_ids(projection: &Value, key: &str, expected: &[&str], phase: &str) {
+        let mut actual = projection[key]
+            .as_array()
+            .unwrap_or_else(|| panic!("{phase} `{key}` projection must be an array"))
+            .iter()
+            .map(|item| {
+                item["id"]
+                    .as_str()
+                    .unwrap_or_else(|| panic!("{phase} `{key}` item must expose an ID"))
+                    .to_owned()
+            })
+            .collect::<Vec<_>>();
+        actual.sort();
+
+        let mut expected = expected
+            .iter()
+            .map(|id| (*id).to_owned())
+            .collect::<Vec<_>>();
+        expected.sort();
+        assert_eq!(actual, expected, "unexpected {phase} `{key}` projection");
+    }
+
+    fn assert_player_snapshot_ids(
+        snapshot: &Value,
+        phase: &str,
+        facts: &[&str],
+        evidence: &[&str],
+        deadlines: &[&str],
+        actions: &[&str],
+    ) {
+        assert_projection_ids(snapshot, "facts", facts, phase);
+        assert_projection_ids(snapshot, "evidence", evidence, phase);
+        assert_projection_ids(snapshot, "deadlines", deadlines, phase);
+        assert_projection_ids(snapshot, "available_actions", actions, phase);
+        assert_projection_ids(&snapshot["dossier"], "facts", facts, phase);
+        assert_projection_ids(&snapshot["dossier"], "evidence", evidence, phase);
+        assert_projection_ids(&snapshot["dossier"], "deadlines", deadlines, phase);
+        assert_eq!(
+            snapshot["flags"],
+            json!({}),
+            "{phase} flags must be private"
+        );
+        assert_eq!(
+            snapshot["fired_event_ids"],
+            json!([]),
+            "{phase} event IDs must be private"
+        );
     }
 
     #[test]
@@ -279,11 +367,8 @@ mod tests {
         assert_eq!(advanced["type"], "snapshot");
         assert_eq!(advanced["snapshot"]["clock_minutes"], 120);
         assert_eq!(advanced["snapshot"]["clock_mode"], "foreground");
-        assert!(advanced["snapshot"]["fired_event_ids"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|event| event == "regulator_request_received"));
+        assert_eq!(advanced["snapshot"]["flags"], json!({}));
+        assert_eq!(advanced["snapshot"]["fired_event_ids"], json!([]));
 
         let disposed = execute_request(json!({
             "command": "dispose_session",
@@ -387,13 +472,19 @@ mod tests {
     }
 
     #[test]
-    fn filtered_dossier_uses_the_existing_execute_symbol() {
+    fn filtered_snapshot_survives_the_existing_execute_symbol_and_replay() {
         assert_eq!(juris_mobile_bridge_abi_version(), 1);
-        let scenario: Value =
+        let mut scenario: Value =
             serde_json::from_str(DOSSIER_SCENARIO).expect("dossier fixture must be valid JSON");
+        scenario["facts"][1]["statement"] =
+            json!("SENTINEL UNKNOWN FACT MUST NOT LEAK / СКРЫТЫЙ ФАКТ RU");
+        scenario["evidence"][1]["title"] =
+            json!("SENTINEL UNAVAILABLE EVIDENCE MUST NOT LEAK / СКРЫТОЕ ДОКАЗАТЕЛЬСТВО RU");
+        scenario["deadlines"][1]["title"] =
+            json!("SENTINEL INACTIVE DEADLINE MUST NOT LEAK / СКРЫТЫЙ СРОК RU");
         let created = execute_request(json!({
             "command": "create_session",
-            "scenario": scenario,
+            "scenario": scenario.clone(),
             "seed": 20260803
         }));
 
@@ -406,28 +497,161 @@ mod tests {
             created["snapshot"]["dossier"]["procedure"]["matter_status"],
             "open"
         );
-        let dossier = created["snapshot"]["dossier"].to_string();
-        for sentinel in [
-            "sentinel_unknown_fact",
-            "sentinel_unavailable_evidence",
-            "sentinel_inactive_deadline",
-            "sentinel_unfired_event",
-            "sentinel_private_flag",
-            "sentinel_future_activation_action",
-            "sentinel_future_remedy_action",
-            "final_loss",
-        ] {
+        let session_id = created["session_id"].as_u64().unwrap();
+        assert_snapshot_omits(
+            &created["snapshot"],
+            "FFI create",
+            PRE_REVEAL_SNAPSHOT_SENTINELS,
+        );
+        assert_snapshot_omits(
+            &created["snapshot"],
+            "FFI create",
+            ALWAYS_HIDDEN_SNAPSHOT_SENTINELS,
+        );
+        assert_player_snapshot_ids(
+            &created["snapshot"],
+            "FFI create",
+            &["a_known_fact", "z_known_fact"],
+            &["a_visible_evidence", "z_visible_evidence"],
+            &[],
+            &["a_receive_adverse_decision", "z_reveal_record"],
+        );
+
+        let revealed = execute_request(json!({
+            "command": "dispatch",
+            "session_id": session_id,
+            "action_id": "z_reveal_record"
+        }));
+        assert_eq!(revealed["type"], "snapshot");
+        assert_snapshot_omits(
+            &revealed["snapshot"],
+            "FFI reveal",
+            ALWAYS_HIDDEN_SNAPSHOT_SENTINELS,
+        );
+        assert_player_snapshot_ids(
+            &revealed["snapshot"],
+            "FFI reveal",
+            &["a_known_fact", "sentinel_unknown_fact", "z_known_fact"],
+            &[
+                "a_visible_evidence",
+                "sentinel_unavailable_evidence",
+                "z_visible_evidence",
+            ],
+            &[],
+            &["a_receive_adverse_decision"],
+        );
+        let revealed_raw_snapshot = revealed["snapshot"].to_string();
+        for disclosed in PRE_REVEAL_SNAPSHOT_SENTINELS {
             assert!(
-                !dossier.contains(sentinel),
-                "FFI dossier leaked `{sentinel}`: {dossier}"
+                revealed_raw_snapshot.contains(disclosed),
+                "FFI reveal snapshot omitted disclosed `{disclosed}`: {revealed_raw_snapshot}"
             );
         }
 
-        let disposed = execute_request(json!({
-            "command": "dispose_session",
-            "session_id": created["session_id"]
+        let snapshot = execute_request(json!({
+            "command": "snapshot",
+            "session_id": session_id
         }));
-        assert_eq!(disposed["disposed"], true);
+        assert_eq!(snapshot["type"], "snapshot");
+        assert_snapshot_omits(
+            &snapshot["snapshot"],
+            "explicit FFI revealed snapshot",
+            ALWAYS_HIDDEN_SNAPSHOT_SENTINELS,
+        );
+        assert_player_snapshot_ids(
+            &snapshot["snapshot"],
+            "explicit FFI revealed snapshot",
+            &["a_known_fact", "sentinel_unknown_fact", "z_known_fact"],
+            &[
+                "a_visible_evidence",
+                "sentinel_unavailable_evidence",
+                "z_visible_evidence",
+            ],
+            &[],
+            &["a_receive_adverse_decision"],
+        );
+
+        let saved = execute_request(json!({
+            "command": "save_session",
+            "session_id": session_id
+        }));
+        assert_eq!(saved["type"], "session_saved");
+        let encoded_save = saved["encoded_save"].as_str().unwrap();
+        for sentinel in ALWAYS_HIDDEN_SNAPSHOT_SENTINELS {
+            assert!(
+                !encoded_save.contains(sentinel),
+                "FFI command-log save leaked private `{sentinel}`: {encoded_save}"
+            );
+        }
+
+        let loaded = execute_request(json!({
+            "command": "load_session",
+            "scenario": scenario,
+            "encoded_save": encoded_save
+        }));
+        assert_eq!(loaded["type"], "session_loaded");
+        let loaded_session_id = loaded["session_id"].as_u64().unwrap();
+        assert_ne!(loaded_session_id, session_id);
+        assert_snapshot_omits(
+            &loaded["snapshot"],
+            "loaded FFI revealed snapshot",
+            ALWAYS_HIDDEN_SNAPSHOT_SENTINELS,
+        );
+        assert_player_snapshot_ids(
+            &loaded["snapshot"],
+            "loaded FFI revealed snapshot",
+            &["a_known_fact", "sentinel_unknown_fact", "z_known_fact"],
+            &[
+                "a_visible_evidence",
+                "sentinel_unavailable_evidence",
+                "z_visible_evidence",
+            ],
+            &[],
+            &["a_receive_adverse_decision"],
+        );
+
+        let adverse = execute_request(json!({
+            "command": "dispatch",
+            "session_id": loaded_session_id,
+            "action_id": "a_receive_adverse_decision"
+        }));
+        assert_eq!(
+            adverse["snapshot"]["dossier"]["procedure"]["matter_status"],
+            "recoverable"
+        );
+        assert_snapshot_omits(
+            &adverse["snapshot"],
+            "post-adverse FFI snapshot",
+            ALWAYS_HIDDEN_SNAPSHOT_SENTINELS,
+        );
+        assert_snapshot_omits(
+            &adverse["snapshot"],
+            "post-adverse FFI snapshot",
+            &["adverse_decision_delivered"],
+        );
+        assert_player_snapshot_ids(
+            &adverse["snapshot"],
+            "post-adverse FFI snapshot",
+            &["a_known_fact", "sentinel_unknown_fact", "z_known_fact"],
+            &[
+                "a_visible_evidence",
+                "sentinel_unavailable_evidence",
+                "z_visible_evidence",
+            ],
+            &["a_review_deadline", "z_appeal_deadline"],
+            &["accept_final_loss", "file_appeal", "preserve_review_rights"],
+        );
+
+        let disposed_original = execute_request(json!({
+            "command": "dispose_session",
+            "session_id": session_id
+        }));
+        assert_eq!(disposed_original["disposed"], true);
+        let disposed_loaded = execute_request(json!({
+            "command": "dispose_session",
+            "session_id": loaded_session_id
+        }));
+        assert_eq!(disposed_loaded["disposed"], true);
     }
 
     #[test]

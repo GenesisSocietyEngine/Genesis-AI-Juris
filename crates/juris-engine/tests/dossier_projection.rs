@@ -15,6 +15,236 @@ fn definition() -> ScenarioDefinition {
     serde_json::from_str(DOSSIER_SCENARIO).expect("dossier fixture must parse")
 }
 
+fn visibility_definition() -> ScenarioDefinition {
+    let mut value: serde_json::Value =
+        serde_json::from_str(DOSSIER_SCENARIO).expect("dossier fixture must parse");
+
+    value["actors"] = serde_json::json!([
+        {
+            "id": "sentinel_known_actor",
+            "name": "Known actor EN / Известный участник RU",
+            "role": "client",
+            "description": "Known actor metadata EN / Известные данные участника RU"
+        },
+        {
+            "id": "sentinel_hidden_actor",
+            "name": "SENTINEL HIDDEN ACTOR EN / СКРЫТЫЙ УЧАСТНИК RU",
+            "role": "witness",
+            "description": "SENTINEL HIDDEN ACTOR DESCRIPTION / СКРЫТОЕ ОПИСАНИЕ"
+        }
+    ]);
+    value["facts"][0]["related_actors"] = serde_json::json!(["sentinel_known_actor"]);
+    value["facts"][1]["related_actors"] = serde_json::json!(["sentinel_hidden_actor"]);
+    value["facts"][1]["statement"] =
+        serde_json::json!("SENTINEL UNKNOWN FACT EN / СКРЫТЫЙ ФАКТ RU");
+    value["evidence"][1]["title"] =
+        serde_json::json!("SENTINEL UNAVAILABLE EVIDENCE EN / СКРЫТОЕ ДОКАЗАТЕЛЬСТВО RU");
+    value["deadlines"][1]["title"] =
+        serde_json::json!("SENTINEL INACTIVE DEADLINE EN / СКРЫТЫЙ СРОК RU");
+
+    value["inbox_items"] = serde_json::json!([
+        {
+            "id": "sentinel_visible_inbox",
+            "sender": "Known sender EN / Известный отправитель RU",
+            "subject": "Known message EN / Известное сообщение RU",
+            "body": "Known body EN / Известный текст RU",
+            "initially_visible": true,
+            "action_required": true,
+            "resolution_actions": ["z_reveal_record"]
+        },
+        {
+            "id": "sentinel_hidden_inbox",
+            "sender": "SENTINEL HIDDEN SENDER / СКРЫТЫЙ ОТПРАВИТЕЛЬ",
+            "subject": "SENTINEL HIDDEN SUBJECT / СКРЫТАЯ ТЕМА",
+            "body": "SENTINEL HIDDEN BODY / СКРЫТЫЙ ТЕКСТ",
+            "created_by_event": "sentinel_inbox_revealed",
+            "action_required": false,
+            "resolution_actions": ["sentinel_future_activation_action"]
+        }
+    ]);
+    value["async_tasks"] = serde_json::json!([
+        {
+            "id": "sentinel_started_task",
+            "title": "SENTINEL STARTED TASK EN / ЗАПУЩЕННАЯ ЗАДАЧА RU",
+            "start_action": "z_reveal_record",
+            "completion_event": "sentinel_started_task_completed",
+            "duration_minutes": 5
+        },
+        {
+            "id": "sentinel_hidden_task",
+            "title": "SENTINEL HIDDEN TASK EN / СКРЫТАЯ ЗАДАЧА RU",
+            "start_action": "sentinel_future_activation_action",
+            "completion_event": "sentinel_hidden_task_completed",
+            "duration_minutes": 5
+        }
+    ]);
+
+    let reveal = value["actions"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|action| action["id"] == "z_reveal_record")
+        .unwrap();
+    reveal["available_when"] = serde_json::json!({
+        "type": "all",
+        "conditions": [
+            {"type": "stage_is", "stage": "investigation"},
+            {
+                "type": "async_task_status_is",
+                "task": "sentinel_started_task",
+                "status": "not_started"
+            }
+        ]
+    });
+    let reveal_effects = reveal["effects"].as_array_mut().unwrap();
+    reveal_effects.push(serde_json::json!({
+        "type": "start_async_task",
+        "task": "sentinel_started_task"
+    }));
+    reveal_effects.push(serde_json::json!({
+        "type": "resolve_inbox_item",
+        "item": "sentinel_visible_inbox"
+    }));
+    reveal_effects.push(serde_json::json!({
+        "type": "trigger_event",
+        "event": "sentinel_inbox_revealed"
+    }));
+
+    let future_action = value["actions"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|action| action["id"] == "sentinel_future_activation_action")
+        .unwrap();
+    future_action["effects"]
+        .as_array_mut()
+        .unwrap()
+        .push(serde_json::json!({
+            "type": "start_async_task",
+            "task": "sentinel_hidden_task"
+        }));
+
+    value["actions"]
+        .as_array_mut()
+        .unwrap()
+        .push(serde_json::json!({
+                "id": "review_started_task",
+                "title": "Review disclosed work",
+                "available_when": {
+                    "type": "all",
+                    "conditions": [
+                        {"type": "stage_is", "stage": "investigation"},
+                        {
+                            "type": "async_task_status_is",
+                            "task": "sentinel_started_task",
+                            "status": "ready"
+                        }
+                    ]
+                },
+            "effects": [{"type": "review_async_task", "task": "sentinel_started_task"}],
+            "time_cost_minutes": 1
+        }));
+    value["actions"]
+        .as_array_mut()
+        .unwrap()
+        .push(serde_json::json!({
+            "id": "review_hidden_task",
+            "title": "SENTINEL HIDDEN TASK REVIEW MUST NOT LEAK",
+            "available_when": {
+                "type": "all",
+                "conditions": [
+                    {"type": "stage_is", "stage": "post_judgment"},
+                    {
+                        "type": "async_task_status_is",
+                        "task": "sentinel_hidden_task",
+                        "status": "ready"
+                    }
+                ]
+            },
+            "effects": [{"type": "review_async_task", "task": "sentinel_hidden_task"}],
+            "time_cost_minutes": 1
+        }));
+    let investigation_actions = value["stages"][0]["exit_actions"].as_array_mut().unwrap();
+    investigation_actions.push(serde_json::json!("review_started_task"));
+    value["stages"][1]["exit_actions"]
+        .as_array_mut()
+        .unwrap()
+        .push(serde_json::json!("review_hidden_task"));
+
+    for terminal_action_id in [
+        "accept_final_loss",
+        "close_after_expiry",
+        "resolve_appeal_and_close",
+    ] {
+        let terminal_action = value["actions"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|action| action["id"] == terminal_action_id)
+            .unwrap();
+        let effects = terminal_action["effects"].as_array_mut().unwrap();
+        effects.insert(
+            0,
+            serde_json::json!({
+                "type": "resolve_inbox_item",
+                "item": "sentinel_visible_inbox"
+            }),
+        );
+        effects.insert(
+            0,
+            serde_json::json!({
+                "type": "expire_async_task",
+                "task": "sentinel_hidden_task"
+            }),
+        );
+        effects.insert(
+            0,
+            serde_json::json!({
+                "type": "expire_async_task",
+                "task": "sentinel_started_task"
+            }),
+        );
+    }
+
+    value["events"].as_array_mut().unwrap().extend([
+        serde_json::json!({
+            "id": "sentinel_inbox_revealed",
+            "title": "Reveal message internally",
+            "kind": "generic",
+            "trigger": {"type": "by_effect"},
+            "effects": [{"type": "create_inbox_item", "item": "sentinel_hidden_inbox"}]
+        }),
+        serde_json::json!({
+            "id": "sentinel_started_task_completed",
+            "title": "Started work completed internally",
+            "kind": "generic",
+            "trigger": {
+                "type": "async_task_completed",
+                "task": "sentinel_started_task"
+            },
+            "effects": [{
+                "type": "mark_async_task_ready",
+                "task": "sentinel_started_task"
+            }]
+        }),
+        serde_json::json!({
+            "id": "sentinel_hidden_task_completed",
+            "title": "Hidden work completed internally",
+            "kind": "generic",
+            "trigger": {
+                "type": "async_task_completed",
+                "task": "sentinel_hidden_task"
+            },
+            "effects": [{
+                "type": "mark_async_task_ready",
+                "task": "sentinel_hidden_task"
+            }]
+        }),
+    ]);
+
+    serde_json::from_value(value).expect("synthetic visibility definition must parse")
+}
+
 fn adverse_session(seed: u64) -> ScenarioSession {
     let mut session = ScenarioSession::new(definition(), seed).expect("fixture must validate");
     session.dispatch("z_reveal_record").unwrap();
@@ -395,4 +625,250 @@ fn save_load_rederives_the_exact_dossier_without_digest_or_duplicate_effects() {
     assert_eq!(fact_ids.len(), first_dossier.facts.len());
     assert_eq!(evidence_ids.len(), first_dossier.evidence.len());
     assert_eq!(deadline_ids.len(), first_dossier.deadlines.len());
+}
+
+#[test]
+fn complete_player_snapshot_is_visibility_safe_and_replay_stable() {
+    let definition = visibility_definition();
+    let report = juris_scenario_validator::validate_scenario(&definition);
+    assert!(
+        report.is_valid(),
+        "visibility fixture diagnostics: {:#?}",
+        report.diagnostics
+    );
+
+    let mut session = ScenarioSession::new(definition.clone(), 107).unwrap();
+    let initial = session.snapshot();
+    let initial_bytes = serde_json::to_vec(&initial).unwrap();
+    let initial_digest = session.final_state_digest().unwrap();
+
+    assert_eq!(
+        initial
+            .facts
+            .iter()
+            .map(|fact| fact.id.as_str())
+            .collect::<Vec<_>>(),
+        ["z_known_fact", "a_known_fact"]
+    );
+    assert_eq!(
+        initial
+            .evidence
+            .iter()
+            .map(|evidence| evidence.id.as_str())
+            .collect::<Vec<_>>(),
+        ["z_visible_evidence", "a_visible_evidence"]
+    );
+    assert!(initial.deadlines.is_empty());
+    assert_eq!(
+        initial
+            .inbox
+            .iter()
+            .map(|item| item.id.as_str())
+            .collect::<Vec<_>>(),
+        ["sentinel_visible_inbox"]
+    );
+    assert_eq!(initial.inbox[0].resolution_action_ids, ["z_reveal_record"]);
+    assert!(initial.flags.is_empty());
+    assert!(initial.fired_event_ids.is_empty());
+
+    let initial_json = String::from_utf8(initial_bytes.clone()).unwrap();
+    for hidden in [
+        "sentinel_unknown_fact",
+        "СКРЫТЫЙ ФАКТ RU",
+        "sentinel_unavailable_evidence",
+        "СКРЫТОЕ ДОКАЗАТЕЛЬСТВО RU",
+        "sentinel_inactive_deadline",
+        "СКРЫТЫЙ СРОК RU",
+        "sentinel_hidden_inbox",
+        "СКРЫТАЯ ТЕМА",
+        "sentinel_hidden_actor",
+        "СКРЫТЫЙ УЧАСТНИК RU",
+        "sentinel_known_actor",
+        "Известный участник RU",
+        "sentinel_hidden_task",
+        "СКРЫТАЯ ЗАДАЧА RU",
+        "sentinel_started_task",
+        "ЗАПУЩЕННАЯ ЗАДАЧА RU",
+        "sentinel_future_activation_action",
+        "sentinel_unfired_event",
+        "sentinel_private_flag",
+    ] {
+        assert!(
+            !initial_json.contains(hidden),
+            "initial player snapshot leaked `{hidden}`: {initial_json}"
+        );
+    }
+
+    assert_eq!(
+        serde_json::to_vec(&session.snapshot()).unwrap(),
+        initial_bytes
+    );
+    assert_eq!(session.final_state_digest().unwrap(), initial_digest);
+
+    let initial_save = session.save_json().unwrap();
+    let restored_initial =
+        ScenarioSession::from_save_json(definition.clone(), &initial_save).unwrap();
+    assert_eq!(
+        serde_json::to_vec(&restored_initial.snapshot()).unwrap(),
+        initial_bytes
+    );
+    assert_eq!(
+        restored_initial.final_state_digest().unwrap(),
+        initial_digest
+    );
+
+    let revealed = session.dispatch("z_reveal_record").unwrap();
+    let revealed_bytes = serde_json::to_vec(&revealed).unwrap();
+    let revealed_digest = session.final_state_digest().unwrap();
+    assert_eq!(
+        revealed
+            .facts
+            .iter()
+            .map(|fact| fact.id.as_str())
+            .collect::<Vec<_>>(),
+        ["z_known_fact", "sentinel_unknown_fact", "a_known_fact"]
+    );
+    assert_eq!(
+        revealed
+            .evidence
+            .iter()
+            .map(|evidence| evidence.id.as_str())
+            .collect::<Vec<_>>(),
+        [
+            "z_visible_evidence",
+            "sentinel_unavailable_evidence",
+            "a_visible_evidence"
+        ]
+    );
+    assert_eq!(
+        revealed
+            .inbox
+            .iter()
+            .map(|item| item.id.as_str())
+            .collect::<Vec<_>>(),
+        ["sentinel_visible_inbox", "sentinel_hidden_inbox"]
+    );
+    assert!(revealed.inbox[1].resolution_action_ids.is_empty());
+    assert!(revealed.flags.is_empty());
+    assert!(revealed.fired_event_ids.is_empty());
+
+    let revealed_json = String::from_utf8(revealed_bytes.clone()).unwrap();
+    for disclosed in [
+        "sentinel_unknown_fact",
+        "СКРЫТЫЙ ФАКТ RU",
+        "sentinel_unavailable_evidence",
+        "СКРЫТОЕ ДОКАЗАТЕЛЬСТВО RU",
+        "sentinel_hidden_inbox",
+        "СКРЫТАЯ ТЕМА",
+    ] {
+        assert!(
+            revealed_json.contains(disclosed),
+            "authoritative reveal omitted `{disclosed}`: {revealed_json}"
+        );
+    }
+    for still_hidden in [
+        "sentinel_hidden_actor",
+        "СКРЫТЫЙ УЧАСТНИК RU",
+        "sentinel_known_actor",
+        "Известный участник RU",
+        "sentinel_hidden_task",
+        "СКРЫТАЯ ЗАДАЧА RU",
+        "sentinel_started_task",
+        "ЗАПУЩЕННАЯ ЗАДАЧА RU",
+        "sentinel_future_activation_action",
+        "sentinel_unfired_event",
+        "sentinel_private_flag",
+        "sentinel_inactive_deadline",
+    ] {
+        assert!(
+            !revealed_json.contains(still_hidden),
+            "revealed player snapshot leaked `{still_hidden}`: {revealed_json}"
+        );
+    }
+
+    assert_eq!(
+        serde_json::to_vec(&session.snapshot()).unwrap(),
+        revealed_bytes
+    );
+    assert_eq!(session.final_state_digest().unwrap(), revealed_digest);
+
+    let revealed_save = session.save_json().unwrap();
+    let mut restored_revealed =
+        ScenarioSession::from_save_json(definition, &revealed_save).unwrap();
+    assert_eq!(restored_revealed.command_log(), session.command_log());
+    assert_eq!(
+        serde_json::to_vec(&restored_revealed.snapshot()).unwrap(),
+        revealed_bytes
+    );
+    assert_eq!(
+        restored_revealed.final_state_digest().unwrap(),
+        revealed_digest
+    );
+
+    let activated = restored_revealed
+        .dispatch("a_receive_adverse_decision")
+        .unwrap();
+    let activated_bytes = serde_json::to_vec(&activated).unwrap();
+    let activated_digest = restored_revealed.final_state_digest().unwrap();
+    assert_eq!(
+        activated
+            .deadlines
+            .iter()
+            .map(|deadline| (
+                deadline.id.as_str(),
+                deadline.status.as_deref(),
+                deadline.due_at_minutes,
+                deadline.completion_action_ids.clone(),
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                "z_appeal_deadline",
+                Some("open"),
+                300,
+                vec!["file_appeal".to_owned()],
+            ),
+            (
+                "a_review_deadline",
+                Some("open"),
+                240,
+                vec![
+                    "preserve_review_rights".to_owned(),
+                    "file_appeal".to_owned(),
+                ],
+            ),
+        ]
+    );
+    assert_eq!(
+        activated
+            .dossier
+            .deadlines
+            .iter()
+            .map(|deadline| deadline.id.as_str())
+            .collect::<Vec<_>>(),
+        ["a_review_deadline", "z_appeal_deadline"]
+    );
+    let activated_json = String::from_utf8(activated_bytes.clone()).unwrap();
+    assert!(!activated_json.contains("sentinel_inactive_deadline"));
+    assert!(!activated_json.contains("SENTINEL INACTIVE DEADLINE"));
+    assert_eq!(
+        serde_json::to_vec(&restored_revealed.snapshot()).unwrap(),
+        activated_bytes
+    );
+    assert_eq!(
+        restored_revealed.final_state_digest().unwrap(),
+        activated_digest
+    );
+
+    let activated_save = restored_revealed.save_json().unwrap();
+    let restored_activated =
+        ScenarioSession::from_save_json(visibility_definition(), &activated_save).unwrap();
+    assert_eq!(
+        serde_json::to_vec(&restored_activated.snapshot()).unwrap(),
+        activated_bytes
+    );
+    assert_eq!(
+        restored_activated.final_state_digest().unwrap(),
+        activated_digest
+    );
 }
