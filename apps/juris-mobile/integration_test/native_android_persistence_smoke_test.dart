@@ -782,6 +782,134 @@ void main() {
   );
 
   testWidgets(
+    'native raw snapshot visibility survives Desert Water save restart load',
+    (WidgetTester tester) async {
+      const String hiddenFactId = 'chromium_detected_in_residential_wells';
+      const String hiddenFactText =
+          'Testing detected hexavalent chromium in identified residential wells.';
+      final Map<String, dynamic> scenario = desertWater.scenario!;
+      final NativeScenarioBridgeClient bridge = NativeScenarioBridgeClient();
+      int? activeSessionId;
+
+      ScenarioBridgeResponse execute(String request) {
+        return ScenarioBridgeResponse.parse(bridge.execute(request));
+      }
+
+      void expectHidden(String raw, ScenarioBridgeResponse response) {
+        expect(response.isError, isFalse);
+        expect(raw, isNot(contains(hiddenFactId)));
+        expect(raw, isNot(contains(hiddenFactText)));
+        expect(
+          response.snapshot!['facts'] as List<dynamic>,
+          isNot(
+            contains(
+              isA<Map<String, dynamic>>().having(
+                (Map<String, dynamic> item) => item['id'],
+                'id',
+                hiddenFactId,
+              ),
+            ),
+          ),
+        );
+      }
+
+      void expectRevealed(String raw, ScenarioBridgeResponse response) {
+        expect(response.isError, isFalse);
+        expect(raw, contains(hiddenFactId));
+        expect(raw, contains(hiddenFactText));
+        final Map<String, dynamic> snapshot = response.snapshot!;
+        final List<dynamic> facts = snapshot['facts'] as List<dynamic>;
+        expect(
+          facts.where(
+            (dynamic item) =>
+                (item as Map<String, dynamic>)['id'] == hiddenFactId,
+          ),
+          hasLength(1),
+        );
+        final Map<String, dynamic> dossier =
+            snapshot['dossier'] as Map<String, dynamic>;
+        final List<dynamic> dossierFacts = dossier['facts'] as List<dynamic>;
+        expect(
+          dossierFacts.where(
+            (dynamic item) =>
+                (item as Map<String, dynamic>)['id'] == hiddenFactId,
+          ),
+          hasLength(1),
+        );
+      }
+
+      try {
+        final String createdRaw = bridge.execute(
+          ScenarioBridgeCommand.createSession(
+            scenario: scenario,
+            seed: desertWater.seed,
+          ),
+        );
+        final ScenarioBridgeResponse created =
+            ScenarioBridgeResponse.parse(createdRaw);
+        final int createdSessionId = created.sessionId!;
+        activeSessionId = createdSessionId;
+        expectHidden(createdRaw, created);
+
+        final String acceptedRaw = bridge.execute(
+          ScenarioBridgeCommand.dispatch(
+            sessionId: createdSessionId,
+            actionId: 'accept_residents_mandate',
+          ),
+        );
+        final ScenarioBridgeResponse accepted =
+            ScenarioBridgeResponse.parse(acceptedRaw);
+        expectHidden(acceptedRaw, accepted);
+
+        final String revealedRaw = bridge.execute(
+          ScenarioBridgeCommand.dispatch(
+            sessionId: createdSessionId,
+            actionId: 'commission_defensible_sampling',
+          ),
+        );
+        final ScenarioBridgeResponse revealed =
+            ScenarioBridgeResponse.parse(revealedRaw);
+        expectRevealed(revealedRaw, revealed);
+        final String revealedSnapshot = jsonEncode(revealed.snapshot);
+
+        final ScenarioBridgeResponse saved = execute(
+          ScenarioBridgeCommand.saveSession(createdSessionId),
+        );
+        expect(saved.isError, isFalse);
+        expect(saved.encodedSave, isNotNull);
+
+        final ScenarioBridgeResponse disposed = execute(
+          ScenarioBridgeCommand.disposeSession(createdSessionId),
+        );
+        expect(disposed.isError, isFalse);
+        activeSessionId = null;
+
+        // Restart only the isolated native session. This test never clears or
+        // writes application storage, so the ordinary app session is intact.
+        final String loadedRaw = bridge.execute(
+          ScenarioBridgeCommand.loadSession(
+            scenario: scenario,
+            encodedSave: saved.encodedSave!,
+          ),
+        );
+        final ScenarioBridgeResponse loaded =
+            ScenarioBridgeResponse.parse(loadedRaw);
+        activeSessionId = loaded.sessionId;
+        expect(activeSessionId, isNotNull);
+        expectRevealed(loadedRaw, loaded);
+        expect(jsonEncode(loaded.snapshot), revealedSnapshot);
+      } finally {
+        if (activeSessionId case final int sessionId) {
+          final ScenarioBridgeResponse disposed = execute(
+            ScenarioBridgeCommand.disposeSession(sessionId),
+          );
+          expect(disposed.isError, isFalse);
+        }
+      }
+    },
+  );
+
+  testWidgets(
     'production Desert Water reveals, restores, appeals, and closes natively',
     (WidgetTester tester) async {
       MobileCaseDefinition? selectedCase;
