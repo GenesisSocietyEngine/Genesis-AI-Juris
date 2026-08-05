@@ -161,14 +161,86 @@ fn validate_terminal_transition(
         source_event.map(|event| event.as_str()),
     );
     for transition_path in transition_paths {
+        let effective_condition =
+            terminal_effective_condition(scenario, condition, effects, &transition_path);
         validate_terminal_effect_path(
             scenario,
-            condition,
+            &effective_condition,
             &transition_path,
             source_action,
             path,
             report,
         );
+    }
+}
+
+/// Returns the conditions that necessarily guard a terminal transition.
+///
+/// Runtime event effects execute only when the event's own condition is true.
+/// The effect-path expansion follows those effects, so terminal closure may be
+/// proven by that condition as well as by the root action/event condition. We
+/// borrow an event guard only when the root does not itself enter a terminal
+/// stage and exactly one event in the correlated path owns that transition;
+/// ambiguous multi-terminal paths remain conservatively root-guarded.
+fn terminal_effective_condition(
+    scenario: &ScenarioDefinition,
+    root_condition: &Condition,
+    root_effects: &[Effect],
+    transition_path: &EffectPath<'_>,
+) -> Condition {
+    if !terminal_stage_targets(scenario, root_effects).is_empty() {
+        return root_condition.clone();
+    }
+
+    let terminal_effects = transition_path
+        .effects()
+        .iter()
+        .copied()
+        .filter(|effect| {
+            let Effect::SetStage { stage } = effect else {
+                return false;
+            };
+            scenario
+                .stages
+                .iter()
+                .find(|candidate| candidate.id == *stage)
+                .is_some_and(is_terminal_stage)
+        })
+        .collect::<Vec<_>>();
+    let terminal_events = transition_path
+        .event_ids()
+        .filter_map(|event_id| {
+            scenario
+                .events
+                .iter()
+                .find(|event| event.id.as_str() == event_id)
+                .filter(|event| {
+                    terminal_effects.iter().any(|effect| {
+                        event
+                            .effects
+                            .iter()
+                            .any(|candidate| std::ptr::eq(*effect, candidate))
+                    })
+                })
+        })
+        .collect::<Vec<_>>();
+
+    if terminal_events.len() != 1 {
+        return root_condition.clone();
+    }
+    let terminal_event = terminal_events[0];
+    let event_owns_every_terminal_effect = terminal_effects.iter().all(|effect| {
+        terminal_event
+            .effects
+            .iter()
+            .any(|candidate| std::ptr::eq(*effect, candidate))
+    });
+    if !event_owns_every_terminal_effect {
+        return root_condition.clone();
+    }
+
+    Condition::All {
+        conditions: vec![root_condition.clone(), terminal_event.condition.clone()],
     }
 }
 

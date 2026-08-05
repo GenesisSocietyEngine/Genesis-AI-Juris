@@ -80,6 +80,117 @@ fn decision_and_triggered_event_closure_satisfies_generic_validators() {
     );
 }
 
+fn guarded_terminal_value(terminal_condition: Value) -> Value {
+    let mut value = minimal_value();
+    value["actions"][0]["effects"] = json!([{
+        "type": "trigger_event",
+        "event": "guarded_terminal"
+    }]);
+    value["deadlines"] = json!([{
+        "id": "guarded_terminal_deadline",
+        "title": "Guarded terminal deadline",
+        "due_at": {"day": 1, "minute_of_day": 0},
+        "completion_actions": ["close-matter"],
+        "missed_event": "guarded_terminal_deadline_missed"
+    }]);
+    value["events"]
+        .as_array_mut()
+        .expect("events must be an array")
+        .extend([
+            json!({
+                "id": "guarded_terminal",
+                "title": "Guarded terminal transition",
+                "kind": "generic",
+                "trigger": {"type": "by_effect"},
+                "condition": terminal_condition,
+                "effects": [
+                    {"type": "set_stage", "stage": "resolved"},
+                    {"type": "trigger_event", "event": "matter-closed"}
+                ]
+            }),
+            json!({
+                "id": "guarded_terminal_deadline_missed",
+                "title": "Guarded terminal deadline missed",
+                "kind": "generic",
+                "trigger": {
+                    "type": "deadline_missed",
+                    "deadline": "guarded_terminal_deadline"
+                },
+                "effects": [{
+                    "type": "miss_deadline",
+                    "deadline": "guarded_terminal_deadline"
+                }]
+            }),
+        ]);
+
+    value
+}
+
+fn guarded_deadline_closed_condition() -> Value {
+    json!({
+        "type": "any",
+        "conditions": [
+            {
+                "type": "deadline_status_is",
+                "deadline": "guarded_terminal_deadline",
+                "status": "completed"
+            },
+            {
+                "type": "deadline_status_is",
+                "deadline": "guarded_terminal_deadline",
+                "status": "missed"
+            }
+        ]
+    })
+}
+
+#[test]
+fn triggered_terminal_event_condition_proves_deadline_is_closed() {
+    let value = guarded_terminal_value(guarded_deadline_closed_condition());
+
+    let report = validate_scenario(&parse(value));
+    assert!(
+        report.is_valid(),
+        "a terminal event may rely on its own authoritative condition: {:#?}",
+        report.diagnostics
+    );
+}
+
+#[test]
+fn terminal_event_without_deadline_guard_remains_invalid() {
+    let value = guarded_terminal_value(json!({"type": "always"}));
+    let report = validate_scenario(&parse(value));
+
+    assert!(report
+        .error_codes()
+        .contains(&DiagnosticCode::ResolvedWithOpenDeadline));
+}
+
+#[test]
+fn terminal_event_cannot_borrow_a_sibling_event_guard() {
+    let mut value = guarded_terminal_value(json!({"type": "always"}));
+    value["actions"][0]["effects"] = json!([
+        {"type": "trigger_event", "event": "sibling_guard"},
+        {"type": "trigger_event", "event": "guarded_terminal"}
+    ]);
+    value["events"]
+        .as_array_mut()
+        .expect("events must be an array")
+        .push(json!({
+            "id": "sibling_guard",
+            "title": "Sibling guard",
+            "kind": "generic",
+            "trigger": {"type": "by_effect"},
+            "condition": guarded_deadline_closed_condition(),
+            "effects": [{"type": "set_flag", "flag": "sibling_seen", "value": true}]
+        }));
+
+    let report = validate_scenario(&parse(value));
+    assert!(report
+        .error_codes()
+        .contains(&DiagnosticCode::ResolvedWithOpenDeadline));
+}
+
 #[test]
 fn invalid_decision_cycle_is_traversed_defensively() {
     let mut value = minimal_value();

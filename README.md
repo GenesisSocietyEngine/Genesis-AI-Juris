@@ -1,14 +1,22 @@
-# GENESIS: AI Juris v0.5.0
+# GENESIS: JURIS
 
-A deterministic, AI-native legal-career simulation with a Rust engine and its first smartphone-first Flutter interface.
+A deterministic, AI-native legal-career simulation with an authoritative Rust
+engine and a smartphone-first Flutter interface.
 
-v0.5.0 is the **Mobile Shell milestone**. The existing terminal game remains available, while `apps/juris-mobile` introduces the product surface intended for Android and iPhone: active Inbox, matter dashboard, calendar, AI associate, career view, and reviewed player actions.
+The local production catalogue contains five declarative, Rust-backed cases.
+The combined Desert Water branch has passed its local gates and owner
+playtest. Publication proceeds through a Draft PR and the mandatory hosted
+Rust, Flutter, MSRV, and iOS gates.
 
-## Current vertical slice
+## Current production catalogue
 
-**Matter:** The Failed ERP Implementation  
-**Jurisdiction:** Belgium  
-**Practice area:** Commercial disputes
+| Sort | Scenario | Public case | Canonical fingerprint |
+| ---: | --- | --- | --- |
+| 10 | `be_commercial_failed_erp_001` | Failed ERP Implementation | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` |
+| 20 | `be_commercial_logistics_001` | Unpaid Logistics Invoices | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` |
+| 30 | `greenfire_first_72_hours` | The First 72 Hours | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` |
+| 40 | `goldenshell_recall_at_dawn` | Contaminated Egg Supply Chain | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` |
+| 50 | `desert_water_groundwater_claim` | Desert Water | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` |
 
 The Rust engine models:
 
@@ -48,7 +56,8 @@ apps/
 
 Only `juris-engine` may mutate authoritative `MatterState`.
 
-The v0.5.0 Flutter application uses a small deterministic demo repository solely to validate interaction design. It is not a second production simulation. The generic engine-side scenario session and transport-neutral JSON command protocol now implement the narrow v0.5.1 contract:
+All production cases use the generic engine-side scenario session and the
+transport-neutral JSON command protocol:
 
 ```text
 Flutter action ID
@@ -60,10 +69,11 @@ juris-engine
 immutable mobile snapshot
 ```
 
-The Android/iOS C ABI transport and snapshot mapper now connect canonical
-scenarios to Flutter. Logistics is the first engine-backed mobile case; its
-scenario JSON is bundled, validated by Rust at session creation, and executed
-without case-specific transition code in Flutter.
+The Android/iOS C ABI transport and snapshot mapper connect canonical scenarios
+to Flutter. Each scenario JSON is bundled, validated by Rust at session
+creation, and executed without case-specific transition code in Flutter.
+`DemoGameRepository` remains only as historical Failed ERP characterization
+infrastructure and is not reachable from the production runtime factory.
 
 ## Run the Rust game
 
@@ -120,7 +130,7 @@ flutter analyze
 flutter test
 ```
 
-GitHub Actions runs both Rust and Flutter quality gates.
+GitHub Actions runs Rust, Flutter, and native iOS quality gates.
 
 ## Documentation
 
@@ -133,6 +143,6 @@ GitHub Actions runs both Rust and Flutter quality gates.
 
 ## Status
 
-This remains a vertical prototype, not legal advice. Failed ERP still uses the
-temporary Dart demo runtime, while Logistics is executed by the authoritative
-Rust engine through the v0.5.1 native bridge.
+This remains an alpha simulation, not legal advice. All five production cases
+execute through the authoritative Rust runtime and the version-1 native bridge.
+The local Desert Water integration is not a published release.

@@ -39,15 +39,16 @@ void main() {
     );
 
     expect(bundle.bundleVersion, 4);
-    expect(bundle.cases, hasLength(4));
+    expect(bundle.cases, hasLength(5));
     expect(
       bundle.cases.map((MobileCaseDefinition item) => item.caseId),
-      containsAll(<String>[
+      <String>[
         'be_commercial_failed_erp_001',
         'be_commercial_logistics_001',
         'greenfire_first_72_hours',
         'nl_food_safety_goldenshell_001',
-      ]),
+        'us_environmental_desert_water_001',
+      ],
     );
     expect(
       bundle.cases.map((MobileCaseDefinition item) => item.scenarioId),
@@ -146,6 +147,32 @@ void main() {
       ),
       isTrue,
     );
+
+    final MobileCaseDefinition desertWater = bundle.cases.singleWhere(
+      (MobileCaseDefinition item) =>
+          item.caseId == 'us_environmental_desert_water_001',
+    );
+    expect(desertWater.scenarioId, 'desert_water_groundwater_claim');
+    expect(desertWater.sortOrder, 50);
+    expect(desertWater.seed, 20260804);
+    expect(desertWater.status, MobileCaseStatus.playable);
+    expect(desertWater.scenarioAvailable, isTrue);
+    expect(desertWater.scenario?['clock'], <String, dynamic>{
+      'mode': 'foreground',
+    });
+    expect(desertWater.scenario?['actions'], hasLength(27));
+    expect(desertWater.runtimeAdapter, 'rust_scenario_v1');
+    expect(desertWater.scenarioLocalizations, contains('ru'));
+    expect(
+      (desertWater.scenario?['actions'] as List<dynamic>).every(
+        (dynamic action) =>
+            (action as Map<String, dynamic>)['cost_eur'] is int &&
+            (action['cost_eur'] as int) > 0,
+      ),
+      isTrue,
+    );
+    expect(desertWater.localized('en', 'en').topic, 'Desert Water');
+    expect(desertWater.localized('ru', 'en').topic, 'Вода пустыни');
   });
 
   test('Failed ERP EN and RU overlays preserve canonical authority', () {
@@ -313,6 +340,20 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Contaminated Egg Supply Chain'), findsOneWidget);
+
+    await tester.drag(
+      find.byKey(const PageStorageKey<String>('case-catalog')),
+      const Offset(0, -550),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Sundial Mesa Residents Association v. Caldera Compression & Cooling Inc.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Desert Water'), findsOneWidget);
   });
 
   testWidgets(
@@ -342,9 +383,17 @@ void main() {
     }
 
     expect(find.text('Загрязнение цепочки поставок яиц'), findsOneWidget);
+
+    await tester.drag(
+      find.byKey(const PageStorageKey<String>('case-catalog')),
+      const Offset(0, -550),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Вода пустыни'), findsOneWidget);
     expect(
       find.text(
-        'GoldenShell Producers Cooperative U.A. v. MiteGuard Services V.O.F.',
+        'Sundial Mesa Residents Association v. Caldera Compression & Cooling Inc.',
       ),
       findsOneWidget,
     );

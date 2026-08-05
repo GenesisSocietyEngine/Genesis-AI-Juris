@@ -19,7 +19,8 @@ The current mobile scope includes:
 - matter metrics, budget, evidence, deadlines, workload, AI work product, and career views;
 - action review and confirmation;
 - widget-testable immutable snapshots;
-- four Rust-backed production cases with EN/RU presentation;
+- five Rust-backed production cases in deterministic sort order 10-50, with
+  EN/RU presentation;
 - native Android/iOS transport using C ABI version 1;
 - replay-based save/load with atomic failure handling.
 

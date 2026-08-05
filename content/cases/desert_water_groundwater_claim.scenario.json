@@ -1,0 +1,896 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "id": "desert_water_groundwater_claim",
+    "title": "Desert Water",
+    "summary": "Residents of Sundial Mesa suspect that hexavalent chromium from Caldera's cooling and compressor facility reached their wells. Preserve evidence, build a defensible source chain, protect filing deadlines, and keep an adverse judgment open for appeal before explicitly closing the matter.",
+    "content_version": "0.1.0",
+    "author": "GENESIS: AI Juris",
+    "tags": ["environmental_litigation", "groundwater", "mass_claims", "appeal", "united_states", "fictional"]
+  },
+  "jurisdiction": {"code": "US", "pack_version": "0.1.0"},
+  "initial_stage": "community_intake",
+  "clock": {"mode": "foreground"},
+  "initial_resources": {
+    "authorized_budget_eur": 60000,
+    "billable_minutes": 0,
+    "spend_eur": 0
+  },
+  "actors": [
+    {"id": "player_lawyer", "name": "Player", "role": "player", "description": "Claimants' counsel responsible for the Sundial Mesa residents' matter."},
+    {"id": "sundial_mesa_residents_association", "name": "Sundial Mesa Residents Association", "role": "client", "description": "The fictional association representing residents who rely on the affected wells."},
+    {"id": "caldera_compression_and_cooling", "name": "Caldera Compression & Cooling Inc.", "role": "opposing_party", "description": "The fictional industrial operator alleged to be the source of groundwater contamination."},
+    {"id": "caldera_environmental_counsel", "name": "Caldera Environmental Counsel", "role": "opposing_counsel", "description": "Counsel defending Caldera's source, notice, and liability position."},
+    {"id": "arroyo_state_water_quality_board", "name": "Arroyo State Water Quality Board", "role": "other", "description": "The fictional state regulator responsible for water-quality monitoring records."},
+    {"id": "arroyo_county_superior_court", "name": "Arroyo County Superior Court", "role": "court", "description": "The fictional court hearing the residents' first-instance claim."},
+    {"id": "dr_nia_okafor", "name": "Dr Nia Okafor", "role": "expert", "description": "An independent hydrogeologist retained to assess groundwater source attribution."},
+    {"id": "dr_lena_ortiz", "name": "Dr Lena Ortiz", "role": "witness", "description": "A local physician and witness to the reported exposure chronology, without deciding individual medical causation."},
+    {"id": "caldera_operations_manager", "name": "Marcus Vale", "role": "witness", "description": "Caldera's operations manager with knowledge of cooling treatment and disposal practices."}
+  ],
+  "deadlines": [
+    {"id": "sampling_chain_deadline", "title": "Commission defensible sampling", "due_at": {"day": 0, "minute_of_day": 360}, "completion_actions": ["commission_defensible_sampling", "rely_on_unverified_samples"], "missed_event": "sampling_chain_missed"},
+    {"id": "plant_record_preservation_deadline", "title": "Demand preservation of plant records", "due_at": {"day": 0, "minute_of_day": 720}, "completion_actions": ["demand_plant_record_preservation"], "missed_event": "plant_record_preservation_missed"},
+    {"id": "limitation_protection_deadline", "title": "Protect the limitation period", "due_at": {"day": 1, "minute_of_day": 0}, "completion_actions": ["protect_limitation_period"], "missed_event": "limitation_protection_missed"},
+    {"id": "claim_filing_deadline", "title": "File the protected residents' claim", "due_at": {"day": 3, "minute_of_day": 0}, "activation_event": "claim_window_opened", "completion_actions": ["file_evidence_backed_claim"], "missed_event": "claim_filing_missed"},
+    {"id": "appeal_deadline", "title": "File the appeal", "due_at": {"day": 5, "minute_of_day": 0}, "activation_event": "adverse_first_instance_judgment_delivered", "completion_actions": ["file_appeal"], "missed_event": "appeal_missed"}
+  ],
+  "async_tasks": [
+    {
+      "id": "independent_hydrogeology_assessment",
+      "title": "Independent hydrogeology assessment",
+      "start_action": "retain_independent_hydrogeologist",
+      "completion_event": "hydrogeology_assessment_completed",
+      "duration_minutes": 720,
+      "usable_until_event": "matter_closed",
+      "expiry_event": "hydrogeology_assessment_expired"
+    }
+  ],
+  "inbox_items": [
+    {
+      "id": "community_intake_request",
+      "subject": "Residents request urgent representation",
+      "body": "Sundial Mesa residents report a shared pattern of private-well exposure and ask counsel to preserve their legal position without overstating individual medical causation.",
+      "initially_visible": true, "action_required": true,
+      "resolution_actions": ["accept_residents_mandate"]
+    },
+    {
+      "id": "sampling_chain_warning",
+      "subject": "Sampling chain must be defensible",
+      "body": "Residential-well results require documented collection, custody, transfer, and laboratory handling before the sampling deadline.",
+      "initially_visible": true, "action_required": true,
+      "resolution_actions": ["commission_defensible_sampling", "rely_on_unverified_samples"],
+      "expiry_event": "sampling_chain_missed"
+    },
+    {
+      "id": "plant_record_preservation_warning",
+      "subject": "Preserve plant records immediately",
+      "body": "Cooling-treatment, disposal, compressor, monitoring, and notice records may be altered or lost unless preservation is demanded promptly.",
+      "initially_visible": true, "action_required": true,
+      "resolution_actions": ["demand_plant_record_preservation"],
+      "expiry_event": "plant_record_preservation_missed"
+    },
+    {
+      "id": "limitation_review_warning",
+      "subject": "Review the limitation period",
+      "body": "The residents' filing position requires an authoritative protective step before the limitation deadline.",
+      "initially_visible": true, "action_required": true,
+      "resolution_actions": ["protect_limitation_period"],
+      "expiry_event": "limitation_protection_missed"
+    },
+    {
+      "id": "operator_source_denial",
+      "subject": "Caldera denies being the groundwater source",
+      "body": "Caldera accepts that the facility uses industrial cooling systems but disputes plume attribution and points to possible alternative sources.",
+      "created_by_event": "operator_preservation_response_received",
+      "initially_visible": false, "action_required": true,
+      "resolution_actions": ["test_alternative_source_defence"],
+      "expiry_event": "matter_closed"
+    },
+    {
+      "id": "hydrogeology_assessment_ready",
+      "subject": "Hydrogeology assessment is ready",
+      "body": "The independent hydrogeologist has completed the commissioned work. Review is required before any report or source conclusion enters the matter record.",
+      "created_by_event": "hydrogeology_assessment_completed",
+      "initially_visible": false, "action_required": true,
+      "resolution_actions": ["review_hydrological_source_assessment"],
+      "expiry_event": "hydrogeology_assessment_expired"
+    },
+    {
+      "id": "claim_window_instruction",
+      "subject": "Protected claim-filing window is open",
+      "body": "The limitation position is protected and the authoritative claim-filing deadline is now open.",
+      "created_by_event": "claim_window_opened",
+      "initially_visible": false, "action_required": true,
+      "resolution_actions": ["file_evidence_backed_claim"],
+      "expiry_event": "claim_filing_missed"
+    },
+    {
+      "id": "adverse_judgment_notice",
+      "subject": "Adverse judgment: appeal remains available",
+      "body": "The first-instance result is adverse, but the matter remains open and the appeal deadline now exposes an immediate filing remedy.",
+      "created_by_event": "adverse_first_instance_judgment_delivered",
+      "initially_visible": false, "action_required": true,
+      "resolution_actions": ["file_appeal", "waive_appeal_and_close"],
+      "expiry_event": "appeal_missed"
+    },
+    {
+      "id": "appeal_hearing_instruction",
+      "subject": "Appeal record requires a source decision",
+      "body": "The appeal is filed. The tribunal must decide the source record before the player can assess or close the appellate result.",
+      "created_by_event": "appeal_filed",
+      "initially_visible": false, "action_required": true,
+      "resolution_actions": ["receive_favorable_appeal_judgment", "receive_adverse_appeal_judgment"]
+    },
+    {
+      "id": "matter_closure_report",
+      "subject": "Matter closure report",
+      "body": "The matter has been explicitly closed and no further dispatch or foreground-time command is available.",
+      "created_by_event": "matter_closed",
+      "initially_visible": false, "action_required": false,
+      "resolution_actions": []
+    }
+  ],
+  "events": [
+    {"id": "mandate_accepted", "title": "Residents' mandate accepted", "kind": "generic", "trigger": {"type": "by_effect"}, "effects": []},
+    {
+      "id": "operator_preservation_response_received", "title": "Operator responds to preservation demand", "kind": "generic", "trigger": {"type": "by_effect"},
+      "effects": [{"type": "create_inbox_item", "item": "operator_source_denial"}]
+    },
+    {
+      "id": "claim_window_opened", "title": "Protected claim window opened", "kind": "generic",
+      "trigger": {"type": "at_time", "at": {"day": 2, "minute_of_day": 0}},
+      "condition": {"type": "flag_equals", "flag": "limitation_period_protected", "value": true},
+      "effects": [{"type": "create_inbox_item", "item": "claim_window_instruction"}]
+    },
+    {
+      "id": "sampling_chain_missed", "title": "Sampling deadline missed", "kind": "generic",
+      "trigger": {"type": "deadline_missed", "deadline": "sampling_chain_deadline"},
+      "effects": [{"type": "miss_deadline", "deadline": "sampling_chain_deadline"}, {"type": "set_flag", "flag": "sampling_chain_missed", "value": true}]
+    },
+    {
+      "id": "plant_record_preservation_missed", "title": "Plant-record preservation deadline missed", "kind": "generic",
+      "trigger": {"type": "deadline_missed", "deadline": "plant_record_preservation_deadline"},
+      "effects": [{"type": "miss_deadline", "deadline": "plant_record_preservation_deadline"}, {"type": "set_flag", "flag": "plant_record_preservation_missed", "value": true}]
+    },
+    {
+      "id": "limitation_protection_missed", "title": "Limitation-protection deadline missed", "kind": "generic",
+      "trigger": {"type": "deadline_missed", "deadline": "limitation_protection_deadline"},
+      "effects": [{"type": "miss_deadline", "deadline": "limitation_protection_deadline"}, {"type": "set_flag", "flag": "limitation_protection_missed", "value": true}]
+    },
+    {
+      "id": "claim_filing_missed", "title": "Claim-filing deadline missed", "kind": "generic",
+      "trigger": {"type": "deadline_missed", "deadline": "claim_filing_deadline"},
+      "effects": [{"type": "miss_deadline", "deadline": "claim_filing_deadline"}, {"type": "set_flag", "flag": "claim_filing_missed", "value": true}]
+    },
+    {
+      "id": "appeal_missed", "title": "Appeal deadline missed", "kind": "generic",
+      "trigger": {"type": "deadline_missed", "deadline": "appeal_deadline"},
+      "effects": [{"type": "miss_deadline", "deadline": "appeal_deadline"}, {"type": "set_flag", "flag": "appeal_missed", "value": true}]
+    },
+    {
+      "id": "hydrogeology_assessment_completed", "title": "Hydrogeology assessment ready", "kind": "generic",
+      "trigger": {"type": "async_task_completed", "task": "independent_hydrogeology_assessment"},
+      "effects": [{"type": "mark_async_task_ready", "task": "independent_hydrogeology_assessment"}, {"type": "create_inbox_item", "item": "hydrogeology_assessment_ready"}]
+    },
+    {
+      "id": "hydrogeology_assessment_expired", "title": "Hydrogeology assessment expired", "kind": "generic",
+      "trigger": {"type": "after_event", "event": "matter_closed"},
+      "condition": {"type": "any", "conditions": [
+        {"type": "async_task_status_is", "task": "independent_hydrogeology_assessment", "status": "not_started"},
+        {"type": "async_task_status_is", "task": "independent_hydrogeology_assessment", "status": "in_progress"},
+        {"type": "async_task_status_is", "task": "independent_hydrogeology_assessment", "status": "ready"}
+      ]},
+      "effects": [{"type": "expire_async_task", "task": "independent_hydrogeology_assessment"}]
+    },
+    {
+      "id": "first_instance_hearing_scheduled", "title": "First-instance hearing scheduled", "kind": "hearing_scheduled", "trigger": {"type": "by_effect"},
+      "condition": {"type": "all", "conditions": [{"type": "stage_is", "stage": "claim_preparation"}, {"type": "flag_equals", "flag": "claim_filed", "value": true}]},
+      "effects": [{"type": "set_stage", "stage": "first_instance_hearing"}]
+    },
+    {
+      "id": "favorable_first_instance_judgment_delivered", "title": "Favorable first-instance judgment delivered", "kind": "hearing_closed", "trigger": {"type": "by_effect"},
+      "condition": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "first_instance_hearing"},
+        {"type": "flag_equals", "flag": "supported_first_instance_closure", "value": true},
+        {"type": "async_task_status_is", "task": "independent_hydrogeology_assessment", "status": "reviewed"},
+        {"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "completed"},
+        {"type": "deadline_status_is", "deadline": "plant_record_preservation_deadline", "status": "completed"},
+        {"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "completed"},
+        {"type": "deadline_status_is", "deadline": "claim_filing_deadline", "status": "completed"}
+      ]},
+      "effects": [
+        {"type": "resolve_inbox_item", "item": "community_intake_request"},
+        {"type": "resolve_inbox_item", "item": "sampling_chain_warning"},
+        {"type": "resolve_inbox_item", "item": "plant_record_preservation_warning"},
+        {"type": "resolve_inbox_item", "item": "limitation_review_warning"},
+        {"type": "resolve_inbox_item", "item": "operator_source_denial"},
+        {"type": "resolve_inbox_item", "item": "hydrogeology_assessment_ready"},
+        {"type": "resolve_inbox_item", "item": "claim_window_instruction"},
+        {"type": "resolve_inbox_item", "item": "adverse_judgment_notice"},
+        {"type": "resolve_inbox_item", "item": "appeal_hearing_instruction"},
+        {"type": "create_inbox_item", "item": "matter_closure_report"},
+        {"type": "set_stage", "stage": "resolved"},
+        {"type": "resolve_outcome", "outcome": "credible_source_and_remedy"}
+      ]
+    },
+    {
+      "id": "adverse_first_instance_judgment_delivered", "title": "Adverse first-instance judgment delivered", "kind": "hearing_closed", "trigger": {"type": "by_effect"},
+      "condition": {"type": "all", "conditions": [{"type": "stage_is", "stage": "first_instance_hearing"}, {"type": "flag_equals", "flag": "adverse_first_instance_received", "value": true}, {"type": "judicial_result_is", "result": "lost"}]},
+      "effects": [{"type": "create_inbox_item", "item": "adverse_judgment_notice"}, {"type": "set_stage", "stage": "post_judgment_remedies"}]
+    },
+    {
+      "id": "appeal_filed", "title": "Appeal filed", "kind": "appeal", "trigger": {"type": "by_effect"},
+      "condition": {"type": "all", "conditions": [{"type": "stage_is", "stage": "post_judgment_remedies"}, {"type": "flag_equals", "flag": "appeal_filed", "value": true}]},
+      "effects": [{"type": "create_inbox_item", "item": "appeal_hearing_instruction"}, {"type": "set_stage", "stage": "appeal"}]
+    },
+    {
+      "id": "favorable_appeal_judgment_delivered", "title": "Favorable appeal judgment delivered", "kind": "appeal", "trigger": {"type": "by_effect"},
+      "condition": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "appeal"},
+        {"type": "flag_equals", "flag": "favorable_appeal_closure", "value": true},
+        {"type": "async_task_status_is", "task": "independent_hydrogeology_assessment", "status": "reviewed"},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "missed"}]},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "plant_record_preservation_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "plant_record_preservation_deadline", "status": "missed"}]},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "missed"}]},
+        {"type": "deadline_status_is", "deadline": "appeal_deadline", "status": "completed"}
+      ]},
+      "effects": [
+        {"type": "resolve_inbox_item", "item": "appeal_hearing_instruction"},
+        {"type": "resolve_inbox_item", "item": "community_intake_request"},
+        {"type": "resolve_inbox_item", "item": "sampling_chain_warning"},
+        {"type": "resolve_inbox_item", "item": "plant_record_preservation_warning"},
+        {"type": "resolve_inbox_item", "item": "limitation_review_warning"},
+        {"type": "resolve_inbox_item", "item": "operator_source_denial"},
+        {"type": "resolve_inbox_item", "item": "hydrogeology_assessment_ready"},
+        {"type": "resolve_inbox_item", "item": "claim_window_instruction"},
+        {"type": "resolve_inbox_item", "item": "adverse_judgment_notice"},
+        {"type": "create_inbox_item", "item": "matter_closure_report"},
+        {"type": "set_stage", "stage": "resolved"},
+        {"type": "resolve_outcome", "outcome": "credible_source_and_remedy"}
+      ]
+    },
+    {
+      "id": "adverse_appeal_judgment_delivered", "title": "Adverse appeal judgment delivered", "kind": "appeal", "trigger": {"type": "by_effect"},
+      "condition": {"type": "all", "conditions": [{"type": "stage_is", "stage": "appeal"}, {"type": "flag_equals", "flag": "adverse_appeal_received", "value": true}, {"type": "judicial_result_is", "result": "lost"}]},
+      "effects": [{"type": "resolve_inbox_item", "item": "appeal_hearing_instruction"}]
+    },
+    {
+      "id": "matter_closed", "title": "Matter explicitly closed", "kind": "matter_closed", "trigger": {"type": "by_effect"},
+      "condition": {"type": "all", "conditions": [
+        {"type": "any", "conditions": [
+          {"type": "all", "conditions": [
+            {"type": "flag_equals", "flag": "appeal_waived", "value": true},
+            {"type": "flag_equals", "flag": "appeal_expiry_closed", "value": false},
+            {"type": "flag_equals", "flag": "adverse_appeal_closed", "value": false},
+            {"type": "flag_equals", "flag": "time_bar_closed", "value": false}
+          ]},
+          {"type": "all", "conditions": [
+            {"type": "flag_equals", "flag": "appeal_waived", "value": false},
+            {"type": "flag_equals", "flag": "appeal_expiry_closed", "value": true},
+            {"type": "flag_equals", "flag": "adverse_appeal_closed", "value": false},
+            {"type": "flag_equals", "flag": "time_bar_closed", "value": false}
+          ]},
+          {"type": "all", "conditions": [
+            {"type": "flag_equals", "flag": "appeal_waived", "value": false},
+            {"type": "flag_equals", "flag": "appeal_expiry_closed", "value": false},
+            {"type": "flag_equals", "flag": "adverse_appeal_closed", "value": true},
+            {"type": "flag_equals", "flag": "time_bar_closed", "value": false}
+          ]},
+          {"type": "all", "conditions": [
+            {"type": "flag_equals", "flag": "appeal_waived", "value": false},
+            {"type": "flag_equals", "flag": "appeal_expiry_closed", "value": false},
+            {"type": "flag_equals", "flag": "adverse_appeal_closed", "value": false},
+            {"type": "flag_equals", "flag": "time_bar_closed", "value": true}
+          ]}
+        ]},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "missed"}]},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "plant_record_preservation_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "plant_record_preservation_deadline", "status": "missed"}]},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "missed"}]}
+      ]},
+      "effects": [
+        {"type": "resolve_inbox_item", "item": "community_intake_request"},
+        {"type": "resolve_inbox_item", "item": "sampling_chain_warning"},
+        {"type": "resolve_inbox_item", "item": "plant_record_preservation_warning"},
+        {"type": "resolve_inbox_item", "item": "limitation_review_warning"},
+        {"type": "resolve_inbox_item", "item": "operator_source_denial"},
+        {"type": "resolve_inbox_item", "item": "hydrogeology_assessment_ready"},
+        {"type": "resolve_inbox_item", "item": "claim_window_instruction"},
+        {"type": "resolve_inbox_item", "item": "adverse_judgment_notice"},
+        {"type": "resolve_inbox_item", "item": "appeal_hearing_instruction"},
+        {"type": "create_inbox_item", "item": "matter_closure_report"},
+        {"type": "set_stage", "stage": "resolved"},
+        {"type": "resolve_outcome", "outcome": "compromised_claim_closed"}
+      ]
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "credible_source_and_remedy",
+      "title": "Credible source and remedy",
+      "summary": "The residents close with a defensible source chain, protected procedure, and a favorable judicial result.",
+      "terminal_stage": "resolved",
+      "condition": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "resolved"},
+        {"type": "any", "conditions": [
+          {"type": "flag_equals", "flag": "supported_first_instance_closure", "value": true},
+          {"type": "flag_equals", "flag": "favorable_appeal_closure", "value": true}
+        ]}
+      ]}
+    },
+    {
+      "id": "compromised_claim_closed",
+      "title": "Compromised claim closed",
+      "summary": "The matter closes after a missed procedural opportunity, waived remedy, or final adverse appellate position.",
+      "terminal_stage": "resolved",
+      "condition": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "resolved"},
+        {"type": "any", "conditions": [
+          {"type": "all", "conditions": [
+            {"type": "flag_equals", "flag": "appeal_waived", "value": true},
+            {"type": "flag_equals", "flag": "appeal_expiry_closed", "value": false},
+            {"type": "flag_equals", "flag": "adverse_appeal_closed", "value": false},
+            {"type": "flag_equals", "flag": "time_bar_closed", "value": false}
+          ]},
+          {"type": "all", "conditions": [
+            {"type": "flag_equals", "flag": "appeal_waived", "value": false},
+            {"type": "flag_equals", "flag": "appeal_expiry_closed", "value": true},
+            {"type": "flag_equals", "flag": "adverse_appeal_closed", "value": false},
+            {"type": "flag_equals", "flag": "time_bar_closed", "value": false}
+          ]},
+          {"type": "all", "conditions": [
+            {"type": "flag_equals", "flag": "appeal_waived", "value": false},
+            {"type": "flag_equals", "flag": "appeal_expiry_closed", "value": false},
+            {"type": "flag_equals", "flag": "adverse_appeal_closed", "value": true},
+            {"type": "flag_equals", "flag": "time_bar_closed", "value": false}
+          ]},
+          {"type": "all", "conditions": [
+            {"type": "flag_equals", "flag": "appeal_waived", "value": false},
+            {"type": "flag_equals", "flag": "appeal_expiry_closed", "value": false},
+            {"type": "flag_equals", "flag": "adverse_appeal_closed", "value": false},
+            {"type": "flag_equals", "flag": "time_bar_closed", "value": true}
+          ]}
+        ]}
+      ]}
+    }
+  ],
+  "facts": [
+    {"id": "community_reports_shared_exposure", "statement": "Residents report a shared pattern of well-water exposure and related symptoms.", "initial_status": "alleged", "related_actors": ["sundial_mesa_residents_association", "dr_lena_ortiz"]},
+    {"id": "medical_causation_requires_individual_proof", "statement": "Individual medical causation requires proof beyond community exposure alone.", "initial_status": "admitted", "related_actors": ["sundial_mesa_residents_association", "dr_lena_ortiz"]},
+    {"id": "chromium_detected_in_residential_wells", "statement": "Testing detected hexavalent chromium in identified residential wells.", "initial_status": "unknown", "related_actors": ["sundial_mesa_residents_association"]},
+    {"id": "sampling_chain_is_defensible", "statement": "The sampling chain of custody is sufficiently documented and defensible.", "initial_status": "unknown", "related_actors": ["sundial_mesa_residents_association"]},
+    {"id": "facility_used_chromium_treatment", "statement": "Caldera used chromium-based treatment in facility cooling operations.", "initial_status": "unknown", "related_actors": ["caldera_compression_and_cooling", "caldera_operations_manager"]},
+    {"id": "groundwater_plume_links_facility_to_wells", "statement": "The groundwater plume links the Caldera facility to the affected wells.", "initial_status": "unknown", "related_actors": ["caldera_compression_and_cooling", "sundial_mesa_residents_association", "dr_nia_okafor"]},
+    {"id": "operator_received_prior_contamination_notice", "statement": "Caldera received notice of possible contamination before the residents' claim.", "initial_status": "unknown", "related_actors": ["caldera_compression_and_cooling", "caldera_operations_manager"]},
+    {"id": "no_alternative_source_explains_plume", "statement": "No tested alternative source adequately explains the observed plume.", "initial_status": "unknown", "related_actors": ["caldera_compression_and_cooling", "dr_nia_okafor"]},
+    {"id": "exposure_periods_match_affected_wells", "statement": "Reported exposure periods correspond to use of the affected wells.", "initial_status": "unknown", "related_actors": ["sundial_mesa_residents_association", "dr_lena_ortiz"]},
+    {"id": "limitation_period_is_protected", "statement": "The residents took an authoritative step protecting the limitation period.", "initial_status": "unknown", "related_actors": ["sundial_mesa_residents_association"]}
+  ],
+  "evidence": [
+    {"id": "public_facility_permit", "title": "Public facility permit", "kind": "contract", "description": "Identifies the facility and permitted cooling activity but does not itself prove chromium use.", "initially_available": true},
+    {"id": "community_well_register", "title": "Community well register", "kind": "document", "description": "Identifies community wells relevant to the residents' reported shared exposure.", "supports_facts": ["community_reports_shared_exposure"], "initially_available": true},
+    {"id": "resident_exposure_interviews", "title": "Resident exposure interviews", "kind": "witness_statement", "description": "Records reported exposure histories without treating community exposure as proof of individual medical causation.", "supports_facts": ["community_reports_shared_exposure", "exposure_periods_match_affected_wells"], "initially_available": false},
+    {"id": "well_exposure_timeline", "title": "Well and exposure timeline", "kind": "document", "description": "Maps identified wells against reported periods of use and exposure.", "supports_facts": ["exposure_periods_match_affected_wells"], "initially_available": false},
+    {"id": "sampling_chain_record", "title": "Sampling chain-of-custody record", "kind": "document", "description": "Documents collection, custody, transfer, and laboratory handling of the residential-well samples.", "supports_facts": ["sampling_chain_is_defensible"], "initially_available": false},
+    {"id": "independent_lab_results", "title": "Independent laboratory results", "kind": "expert_report", "description": "Records detected chromium in sampled wells but does not itself establish the contamination source.", "supports_facts": ["chromium_detected_in_residential_wells"], "initially_available": false},
+    {"id": "regulatory_monitoring_records", "title": "Regulatory monitoring records", "kind": "system_record", "description": "Provides regulator-held monitoring and notice records relevant to facility use and prior knowledge.", "supports_facts": ["facility_used_chromium_treatment", "operator_received_prior_contamination_notice"], "initially_available": false},
+    {"id": "cooling_treatment_logs", "title": "Cooling-treatment logs", "kind": "system_record", "description": "Records treatment materials used in Caldera's cooling operations.", "supports_facts": ["facility_used_chromium_treatment"], "initially_available": false},
+    {"id": "disposal_and_compressor_records", "title": "Disposal and compressor records", "kind": "document", "description": "Records disposal and operational pathways relevant to, but not conclusive of, groundwater migration.", "supports_facts": ["groundwater_plume_links_facility_to_wells"], "initially_available": false},
+    {"id": "hydrogeology_source_assessment", "title": "Hydrogeological source assessment", "kind": "expert_report", "description": "Assesses whether the groundwater plume links Caldera's facility to the affected wells; available only after review.", "supports_facts": ["groundwater_plume_links_facility_to_wells"], "initially_available": false},
+    {"id": "alternative_source_assessment", "title": "Alternative-source assessment", "kind": "expert_report", "description": "Tests whether another identified source adequately explains the observed plume.", "supports_facts": ["no_alternative_source_explains_plume"], "initially_available": false},
+    {"id": "internal_notice_correspondence", "title": "Internal contamination-notice correspondence", "kind": "email", "description": "Documents whether Caldera received a possible-contamination warning before the residents' claim.", "supports_facts": ["operator_received_prior_contamination_notice"], "initially_available": false},
+    {"id": "limitation_protection_filing", "title": "Limitation-protection filing", "kind": "document", "description": "Records the authoritative procedural step used to protect the limitation period.", "supports_facts": ["limitation_period_is_protected"], "initially_available": false}
+  ],
+  "stages": [
+    {"id": "community_intake", "title": "Community intake", "kind": "standard", "exit_actions": ["accept_residents_mandate"], "terminal": false},
+    {"id": "urgent_preservation", "title": "Urgent preservation", "kind": "standard", "entry_event": "mandate_accepted", "exit_actions": ["interview_affected_residents", "map_wells_and_exposure_periods", "demand_plant_record_preservation", "commission_defensible_sampling", "rely_on_unverified_samples", "obtain_regulatory_records", "prepare_incomplete_claim", "acknowledge_time_bar_and_close"], "terminal": false},
+    {"id": "environmental_investigation", "title": "Environmental investigation", "kind": "standard", "exit_actions": ["interview_affected_residents", "map_wells_and_exposure_periods", "obtain_cooling_and_disposal_records", "retain_independent_hydrogeologist", "review_hydrological_source_assessment", "test_alternative_source_defence", "investigate_corporate_notice", "protect_limitation_period", "prepare_expert_evidence", "prepare_incomplete_claim", "acknowledge_time_bar_and_close"], "terminal": false},
+    {"id": "claim_preparation", "title": "Claim preparation", "kind": "hearing_preparation", "exit_actions": ["file_evidence_backed_claim", "file_underdeveloped_claim", "acknowledge_time_bar_and_close"], "terminal": false},
+    {"id": "first_instance_hearing", "title": "First-instance hearing", "kind": "hearing", "entry_event": "first_instance_hearing_scheduled", "exit_actions": ["receive_supported_first_instance_judgment", "receive_adverse_first_instance_judgment"], "terminal": false},
+    {"id": "post_judgment_remedies", "title": "Post-judgment remedies", "kind": "post_judgment", "entry_event": "adverse_first_instance_judgment_delivered", "exit_actions": ["preserve_source_issue_for_appeal", "file_appeal", "waive_appeal_and_close", "close_after_appeal_expiry"], "terminal": false},
+    {"id": "appeal", "title": "Appeal", "kind": "appeal", "entry_event": "appeal_filed", "exit_actions": ["receive_favorable_appeal_judgment", "receive_adverse_appeal_judgment", "close_after_adverse_appeal"], "terminal": false},
+    {"id": "resolved", "title": "Matter resolved", "kind": "resolved", "entry_event": "matter_closed", "exit_actions": [], "terminal": true}
+  ],
+  "actions": [
+    {
+      "id": "accept_residents_mandate",
+      "title": "Accept the residents' mandate",
+      "description": "Confirm the residents' limited litigation mandate and open a privileged evidence-preservation channel.",
+      "available_when": {"type": "stage_is", "stage": "community_intake"},
+      "effects": [
+        {"type": "set_flag", "flag": "mandate_accepted", "value": true},
+        {"type": "resolve_inbox_item", "item": "community_intake_request"},
+        {"type": "trigger_event", "event": "mandate_accepted"},
+        {"type": "set_stage", "stage": "urgent_preservation"}
+      ],
+      "time_cost_minutes": 30, "cost_eur": 750, "billable_minutes": 30, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "interview_affected_residents",
+      "title": "Interview affected residents",
+      "description": "Record reported well use, exposure periods, and symptoms without treating shared exposure as proof of individual medical causation.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "any", "conditions": [
+          {"type": "stage_is", "stage": "urgent_preservation"},
+          {"type": "stage_is", "stage": "environmental_investigation"}
+        ]},
+        {"type": "flag_equals", "flag": "residents_interviewed", "value": false}
+      ]},
+      "effects": [
+        {"type": "make_evidence_available", "evidence": "resident_exposure_interviews"},
+        {"type": "set_fact_status", "fact": "community_reports_shared_exposure", "status": "alleged"},
+        {"type": "set_fact_status", "fact": "exposure_periods_match_affected_wells", "status": "alleged"},
+        {"type": "set_flag", "flag": "residents_interviewed", "value": true}
+      ],
+      "time_cost_minutes": 120, "cost_eur": 2400, "billable_minutes": 120, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "map_wells_and_exposure_periods",
+      "title": "Map wells and exposure periods",
+      "description": "Map the residents' accounts against the community well register and preserve uncertainty where the chronology remains disputed.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "any", "conditions": [
+          {"type": "stage_is", "stage": "urgent_preservation"},
+          {"type": "stage_is", "stage": "environmental_investigation"}
+        ]},
+        {"type": "flag_equals", "flag": "residents_interviewed", "value": true},
+        {"type": "flag_equals", "flag": "well_timeline_mapped", "value": false}
+      ]},
+      "effects": [
+        {"type": "make_evidence_available", "evidence": "well_exposure_timeline"},
+        {"type": "set_fact_status", "fact": "exposure_periods_match_affected_wells", "status": "disputed"},
+        {"type": "set_flag", "flag": "well_timeline_mapped", "value": true}
+      ],
+      "time_cost_minutes": 90, "cost_eur": 2200, "billable_minutes": 90, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "demand_plant_record_preservation",
+      "title": "Demand preservation of plant records",
+      "description": "Demand preservation of cooling, disposal, compressor, monitoring, and notice records before the plant-record deadline expires.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "urgent_preservation"},
+        {"type": "deadline_status_is", "deadline": "plant_record_preservation_deadline", "status": "open"}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "plant_preservation_demanded", "value": true},
+        {"type": "complete_deadline", "deadline": "plant_record_preservation_deadline"},
+        {"type": "resolve_inbox_item", "item": "plant_record_preservation_warning"},
+        {"type": "trigger_event", "event": "operator_preservation_response_received"}
+      ],
+      "time_cost_minutes": 60, "cost_eur": 1600, "billable_minutes": 60, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "commission_defensible_sampling",
+      "title": "Commission defensible sampling",
+      "description": "Commission independent sampling with a documented chain of custody, preserving both detection evidence and its defensibility.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "urgent_preservation"},
+        {"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "open"},
+        {"type": "flag_equals", "flag": "sampling_choice_made", "value": false}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "sampling_choice_made", "value": true},
+        {"type": "set_flag", "flag": "defensible_sampling_commissioned", "value": true},
+        {"type": "complete_deadline", "deadline": "sampling_chain_deadline"},
+        {"type": "resolve_inbox_item", "item": "sampling_chain_warning"},
+        {"type": "make_evidence_available", "evidence": "sampling_chain_record"},
+        {"type": "make_evidence_available", "evidence": "independent_lab_results"},
+        {"type": "set_fact_status", "fact": "chromium_detected_in_residential_wells", "status": "proven"},
+        {"type": "set_fact_status", "fact": "sampling_chain_is_defensible", "status": "proven"}
+      ],
+      "time_cost_minutes": 120, "cost_eur": 8500, "billable_minutes": 120, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "rely_on_unverified_samples",
+      "title": "Rely on unverified samples",
+      "description": "Use available laboratory results without a defensible custody record, preserving detection allegations but weakening admissibility and source proof.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "urgent_preservation"},
+        {"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "open"},
+        {"type": "flag_equals", "flag": "sampling_choice_made", "value": false}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "sampling_choice_made", "value": true},
+        {"type": "set_flag", "flag": "unverified_sampling_relied_on", "value": true},
+        {"type": "complete_deadline", "deadline": "sampling_chain_deadline"},
+        {"type": "resolve_inbox_item", "item": "sampling_chain_warning"},
+        {"type": "make_evidence_available", "evidence": "independent_lab_results"},
+        {"type": "set_fact_status", "fact": "chromium_detected_in_residential_wells", "status": "alleged"},
+        {"type": "set_fact_status", "fact": "sampling_chain_is_defensible", "status": "disputed"}
+      ],
+      "time_cost_minutes": 60, "cost_eur": 900, "billable_minutes": 60, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "obtain_regulatory_records",
+      "title": "Obtain regulatory records",
+      "description": "Obtain regulator-held monitoring and notice material, treating it as an investigative lead rather than conclusive source proof.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "urgent_preservation"},
+        {"type": "flag_equals", "flag": "mandate_accepted", "value": true},
+        {"type": "flag_equals", "flag": "sampling_choice_made", "value": true}
+      ]},
+      "effects": [
+        {"type": "make_evidence_available", "evidence": "regulatory_monitoring_records"},
+        {"type": "set_fact_status", "fact": "facility_used_chromium_treatment", "status": "alleged"},
+        {"type": "set_fact_status", "fact": "operator_received_prior_contamination_notice", "status": "alleged"},
+        {"type": "set_flag", "flag": "regulatory_records_obtained", "value": true},
+        {"type": "set_stage", "stage": "environmental_investigation"}
+      ],
+      "time_cost_minutes": 90, "cost_eur": 1800, "billable_minutes": 90, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "obtain_cooling_and_disposal_records",
+      "title": "Obtain cooling and disposal records",
+      "description": "Collect facility treatment, disposal, and compressor records to establish use while preserving the separate source-attribution question.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "environmental_investigation"},
+        {"type": "flag_equals", "flag": "plant_preservation_demanded", "value": true},
+        {"type": "flag_equals", "flag": "plant_records_obtained", "value": false}
+      ]},
+      "effects": [
+        {"type": "make_evidence_available", "evidence": "cooling_treatment_logs"},
+        {"type": "make_evidence_available", "evidence": "disposal_and_compressor_records"},
+        {"type": "set_fact_status", "fact": "facility_used_chromium_treatment", "status": "proven"},
+        {"type": "set_flag", "flag": "plant_records_obtained", "value": true}
+      ],
+      "time_cost_minutes": 120, "cost_eur": 2800, "billable_minutes": 120, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "retain_independent_hydrogeologist",
+      "title": "Retain an independent hydrogeologist",
+      "description": "Commission a privileged, independent assessment of plume direction, source attribution, and alternative explanations.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "environmental_investigation"},
+        {"type": "async_task_status_is", "task": "independent_hydrogeology_assessment", "status": "not_started"},
+        {"type": "flag_equals", "flag": "defensible_sampling_commissioned", "value": true}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "hydrogeologist_retained", "value": true},
+        {"type": "start_async_task", "task": "independent_hydrogeology_assessment"}
+      ],
+      "time_cost_minutes": 45, "cost_eur": 9500, "billable_minutes": 45, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "review_hydrological_source_assessment",
+      "title": "Review the hydrological source assessment",
+      "description": "Review the completed expert work before revealing its report and source-attribution conclusion to the matter record.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "environmental_investigation"},
+        {"type": "async_task_status_is", "task": "independent_hydrogeology_assessment", "status": "ready"}
+      ]},
+      "effects": [
+        {"type": "review_async_task", "task": "independent_hydrogeology_assessment"},
+        {"type": "resolve_inbox_item", "item": "hydrogeology_assessment_ready"},
+        {"type": "make_evidence_available", "evidence": "hydrogeology_source_assessment"},
+        {"type": "set_fact_status", "fact": "groundwater_plume_links_facility_to_wells", "status": "proven"},
+        {"type": "set_flag", "flag": "hydro_assessment_reviewed", "value": true}
+      ],
+      "time_cost_minutes": 120, "cost_eur": 3200, "billable_minutes": 120, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "test_alternative_source_defence",
+      "title": "Test the alternative-source defence",
+      "description": "Test identified alternative sources against the regulatory and plant record instead of assuming facility attribution.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "environmental_investigation"},
+        {"type": "flag_equals", "flag": "regulatory_records_obtained", "value": true},
+        {"type": "flag_equals", "flag": "plant_records_obtained", "value": true},
+        {"type": "flag_equals", "flag": "alternative_source_tested", "value": false}
+      ]},
+      "effects": [
+        {"type": "make_evidence_available", "evidence": "alternative_source_assessment"},
+        {"type": "set_fact_status", "fact": "no_alternative_source_explains_plume", "status": "proven"},
+        {"type": "resolve_inbox_item", "item": "operator_source_denial"},
+        {"type": "set_flag", "flag": "alternative_source_tested", "value": true}
+      ],
+      "time_cost_minutes": 90, "cost_eur": 4000, "billable_minutes": 90, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "investigate_corporate_notice",
+      "title": "Investigate prior corporate notice",
+      "description": "Trace regulator and internal correspondence to determine whether Caldera received a contamination warning before the claim.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "environmental_investigation"},
+        {"type": "flag_equals", "flag": "regulatory_records_obtained", "value": true},
+        {"type": "flag_equals", "flag": "plant_records_obtained", "value": true},
+        {"type": "flag_equals", "flag": "corporate_notice_investigated", "value": false}
+      ]},
+      "effects": [
+        {"type": "make_evidence_available", "evidence": "internal_notice_correspondence"},
+        {"type": "set_fact_status", "fact": "operator_received_prior_contamination_notice", "status": "proven"},
+        {"type": "set_flag", "flag": "corporate_notice_investigated", "value": true}
+      ],
+      "time_cost_minutes": 120, "cost_eur": 3500, "billable_minutes": 120, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "protect_limitation_period",
+      "title": "Protect the limitation period",
+      "description": "Take and document the authoritative procedural step protecting the residents' limitation position before the deadline.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "environmental_investigation"},
+        {"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "open"}
+      ]},
+      "effects": [
+        {"type": "make_evidence_available", "evidence": "limitation_protection_filing"},
+        {"type": "set_fact_status", "fact": "limitation_period_is_protected", "status": "proven"},
+        {"type": "complete_deadline", "deadline": "limitation_protection_deadline"},
+        {"type": "resolve_inbox_item", "item": "limitation_review_warning"},
+        {"type": "set_flag", "flag": "limitation_period_protected", "value": true}
+      ],
+      "time_cost_minutes": 60, "cost_eur": 1400, "billable_minutes": 60, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "prepare_expert_evidence",
+      "title": "Prepare expert evidence",
+      "description": "Integrate the reviewed hydrogeology, defensible samples, well chronology, plant records, alternatives, notice, and protected limitation position into the claim record.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "environmental_investigation"},
+        {"type": "async_task_status_is", "task": "independent_hydrogeology_assessment", "status": "reviewed"},
+        {"type": "flag_equals", "flag": "defensible_sampling_commissioned", "value": true},
+        {"type": "flag_equals", "flag": "well_timeline_mapped", "value": true},
+        {"type": "flag_equals", "flag": "plant_records_obtained", "value": true},
+        {"type": "flag_equals", "flag": "alternative_source_tested", "value": true},
+        {"type": "flag_equals", "flag": "limitation_period_protected", "value": true},
+        {"type": "flag_equals", "flag": "claim_preparation_choice_made", "value": false}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "expert_evidence_prepared", "value": true},
+        {"type": "set_flag", "flag": "claim_preparation_choice_made", "value": true},
+        {"type": "set_stage", "stage": "claim_preparation"}
+      ],
+      "time_cost_minutes": 180, "cost_eur": 5500, "billable_minutes": 180, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "prepare_incomplete_claim",
+      "title": "Prepare an incomplete claim",
+      "description": "Prepare a procedurally viable but evidentially incomplete claim after the limitation position has already been compromised.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "any", "conditions": [
+          {"type": "stage_is", "stage": "urgent_preservation"},
+          {"type": "stage_is", "stage": "environmental_investigation"}
+        ]},
+        {"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "missed"},
+        {"type": "flag_equals", "flag": "claim_preparation_choice_made", "value": false}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "incomplete_claim_prepared", "value": true},
+        {"type": "set_flag", "flag": "claim_preparation_choice_made", "value": true},
+        {"type": "set_stage", "stage": "claim_preparation"}
+      ],
+      "time_cost_minutes": 60, "cost_eur": 1800, "billable_minutes": 60, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "file_evidence_backed_claim",
+      "title": "File the evidence-backed claim",
+      "description": "File the protected claim with the reviewed expert and source record before the active claim-filing deadline.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "claim_preparation"},
+        {"type": "flag_equals", "flag": "expert_evidence_prepared", "value": true},
+        {"type": "deadline_status_is", "deadline": "claim_filing_deadline", "status": "open"},
+        {"type": "flag_equals", "flag": "claim_filed", "value": false}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "claim_filed", "value": true},
+        {"type": "set_flag", "flag": "evidence_backed_claim_filed", "value": true},
+        {"type": "complete_deadline", "deadline": "claim_filing_deadline"},
+        {"type": "resolve_inbox_item", "item": "claim_window_instruction"},
+        {"type": "trigger_event", "event": "first_instance_hearing_scheduled"}
+      ],
+      "time_cost_minutes": 180, "cost_eur": 4500, "billable_minutes": 180, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "file_underdeveloped_claim",
+      "title": "File the underdeveloped claim",
+      "description": "File the incomplete record after the limitation failure, preserving access to a hearing without inventing a protected filing deadline.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "claim_preparation"},
+        {"type": "flag_equals", "flag": "incomplete_claim_prepared", "value": true},
+        {"type": "any", "conditions": [
+          {"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "missed"},
+          {"type": "deadline_status_is", "deadline": "claim_filing_deadline", "status": "open"}
+        ]},
+        {"type": "flag_equals", "flag": "claim_filed", "value": false}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "claim_filed", "value": true},
+        {"type": "set_flag", "flag": "underdeveloped_claim_filed", "value": true},
+        {"type": "resolve_inbox_item", "item": "claim_window_instruction"},
+        {"type": "trigger_event", "event": "first_instance_hearing_scheduled"}
+      ],
+      "time_cost_minutes": 120, "cost_eur": 3000, "billable_minutes": 120, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "receive_supported_first_instance_judgment",
+      "title": "Receive a supported first-instance judgment",
+      "description": "Record a first-instance win on the complete evidence record and explicitly close the matter with the credible remedy outcome.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "first_instance_hearing"},
+        {"type": "flag_equals", "flag": "evidence_backed_claim_filed", "value": true},
+        {"type": "flag_equals", "flag": "expert_evidence_prepared", "value": true},
+        {"type": "flag_equals", "flag": "first_instance_decision_received", "value": false},
+        {"type": "async_task_status_is", "task": "independent_hydrogeology_assessment", "status": "reviewed"},
+        {"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "completed"},
+        {"type": "deadline_status_is", "deadline": "plant_record_preservation_deadline", "status": "completed"},
+        {"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "completed"},
+        {"type": "deadline_status_is", "deadline": "claim_filing_deadline", "status": "completed"}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "first_instance_decision_received", "value": true},
+        {"type": "set_flag", "flag": "supported_first_instance_closure", "value": true},
+        {"type": "set_judicial_result", "result": "won"},
+        {"type": "trigger_event", "event": "favorable_first_instance_judgment_delivered"}
+      ],
+      "time_cost_minutes": 120, "cost_eur": 2500, "billable_minutes": 120, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "receive_adverse_first_instance_judgment",
+      "title": "Receive an adverse first-instance judgment",
+      "description": "Record a first-instance loss while leaving the matter open and activating the authoritative appeal remedy.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "first_instance_hearing"},
+        {"type": "flag_equals", "flag": "claim_filed", "value": true},
+        {"type": "flag_equals", "flag": "first_instance_decision_received", "value": false}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "first_instance_decision_received", "value": true},
+        {"type": "set_flag", "flag": "adverse_first_instance_received", "value": true},
+        {"type": "set_judicial_result", "result": "lost"},
+        {"type": "trigger_event", "event": "adverse_first_instance_judgment_delivered"}
+      ],
+      "time_cost_minutes": 120, "cost_eur": 1800, "billable_minutes": 120, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "preserve_source_issue_for_appeal",
+      "title": "Preserve the source issue for appeal",
+      "description": "Preserve the hydrological source issue and supporting record for a stronger appellate position without delaying immediate access to filing.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "post_judgment_remedies"},
+        {"type": "flag_equals", "flag": "adverse_first_instance_received", "value": true},
+        {"type": "judicial_result_is", "result": "lost"},
+        {"type": "deadline_status_is", "deadline": "appeal_deadline", "status": "open"},
+        {"type": "flag_equals", "flag": "source_issue_preserved_for_appeal", "value": false}
+      ]},
+      "effects": [{"type": "set_flag", "flag": "source_issue_preserved_for_appeal", "value": true}],
+      "time_cost_minutes": 180, "cost_eur": 4200, "billable_minutes": 180, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "file_appeal",
+      "title": "File the appeal",
+      "description": "File the available appeal within the open deadline; source preservation remains separately outcome-relevant rather than blocking this remedy.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "post_judgment_remedies"},
+        {"type": "flag_equals", "flag": "adverse_first_instance_received", "value": true},
+        {"type": "judicial_result_is", "result": "lost"},
+        {"type": "deadline_status_is", "deadline": "appeal_deadline", "status": "open"},
+        {"type": "flag_equals", "flag": "appeal_filed", "value": false}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "appeal_filed", "value": true},
+        {"type": "complete_deadline", "deadline": "appeal_deadline"},
+        {"type": "resolve_inbox_item", "item": "adverse_judgment_notice"},
+        {"type": "trigger_event", "event": "appeal_filed"}
+      ],
+      "time_cost_minutes": 120, "cost_eur": 5000, "billable_minutes": 120, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "waive_appeal_and_close",
+      "title": "Waive appeal and close",
+      "description": "Explicitly waive the open appellate remedy and close the matter without altering the first-instance loss.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "post_judgment_remedies"},
+        {"type": "flag_equals", "flag": "adverse_first_instance_received", "value": true},
+        {"type": "judicial_result_is", "result": "lost"},
+        {"type": "deadline_status_is", "deadline": "appeal_deadline", "status": "open"},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "missed"}]},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "plant_record_preservation_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "plant_record_preservation_deadline", "status": "missed"}]},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "missed"}]}
+      ]},
+      "effects": [
+        {"type": "complete_deadline", "deadline": "appeal_deadline"},
+        {"type": "set_flag", "flag": "appeal_waived", "value": true},
+        {"type": "trigger_event", "event": "matter_closed"}
+      ],
+      "time_cost_minutes": 30, "cost_eur": 900, "billable_minutes": 30, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "receive_favorable_appeal_judgment",
+      "title": "Receive a favorable appeal judgment",
+      "description": "Record an appellate win on the preserved source record, then explicitly close with the credible remedy outcome.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "appeal"},
+        {"type": "flag_equals", "flag": "appeal_filed", "value": true},
+        {"type": "flag_equals", "flag": "source_issue_preserved_for_appeal", "value": true},
+        {"type": "flag_equals", "flag": "expert_evidence_prepared", "value": true},
+        {"type": "flag_equals", "flag": "hydro_assessment_reviewed", "value": true},
+        {"type": "flag_equals", "flag": "alternative_source_tested", "value": true},
+        {"type": "flag_equals", "flag": "appeal_decision_received", "value": false}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "appeal_decision_received", "value": true},
+        {"type": "set_flag", "flag": "favorable_appeal_closure", "value": true},
+        {"type": "set_judicial_result", "result": "won"},
+        {"type": "trigger_event", "event": "favorable_appeal_judgment_delivered"}
+      ],
+      "time_cost_minutes": 180, "cost_eur": 6500, "billable_minutes": 180, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "receive_adverse_appeal_judgment",
+      "title": "Receive an adverse appeal judgment",
+      "description": "Record an appellate loss while leaving the matter open for the player's separate closure decision.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "appeal"},
+        {"type": "flag_equals", "flag": "appeal_filed", "value": true},
+        {"type": "flag_equals", "flag": "appeal_decision_received", "value": false}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "appeal_decision_received", "value": true},
+        {"type": "set_flag", "flag": "adverse_appeal_received", "value": true},
+        {"type": "set_judicial_result", "result": "lost"},
+        {"type": "trigger_event", "event": "adverse_appeal_judgment_delivered"}
+      ],
+      "time_cost_minutes": 180, "cost_eur": 6500, "billable_minutes": 180, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "close_after_adverse_appeal",
+      "title": "Close after the adverse appeal",
+      "description": "Explicitly close the matter after the appellate loss while preserving the Rust-owned appeal decision instance.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "appeal"},
+        {"type": "flag_equals", "flag": "adverse_appeal_received", "value": true},
+        {"type": "judicial_result_is", "result": "lost"},
+        {"type": "deadline_status_is", "deadline": "appeal_deadline", "status": "completed"},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "missed"}]},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "plant_record_preservation_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "plant_record_preservation_deadline", "status": "missed"}]},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "missed"}]}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "adverse_appeal_closed", "value": true},
+        {"type": "trigger_event", "event": "matter_closed"}
+      ],
+      "time_cost_minutes": 30, "cost_eur": 1200, "billable_minutes": 30, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "close_after_appeal_expiry",
+      "title": "Close after appeal expiry",
+      "description": "Explicitly close the adverse first-instance matter after the appellate deadline has been missed.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "stage_is", "stage": "post_judgment_remedies"},
+        {"type": "flag_equals", "flag": "adverse_first_instance_received", "value": true},
+        {"type": "judicial_result_is", "result": "lost"},
+        {"type": "deadline_status_is", "deadline": "appeal_deadline", "status": "missed"},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "missed"}]},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "plant_record_preservation_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "plant_record_preservation_deadline", "status": "missed"}]},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "missed"}]}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "appeal_expiry_closed", "value": true},
+        {"type": "trigger_event", "event": "matter_closed"}
+      ],
+      "time_cost_minutes": 30, "cost_eur": 900, "billable_minutes": 30, "repeatability": {"type": "once"}
+    },
+    {
+      "id": "acknowledge_time_bar_and_close",
+      "title": "Acknowledge the time bar and close",
+      "description": "Explicitly close the unfiled matter after the limitation or protected claim-filing deadline has been missed, without fabricating a judicial result.",
+      "available_when": {"type": "all", "conditions": [
+        {"type": "any", "conditions": [
+          {"type": "stage_is", "stage": "urgent_preservation"},
+          {"type": "stage_is", "stage": "environmental_investigation"},
+          {"type": "stage_is", "stage": "claim_preparation"}
+        ]},
+        {"type": "flag_equals", "flag": "claim_filed", "value": false},
+        {"type": "any", "conditions": [
+          {"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "missed"},
+          {"type": "deadline_status_is", "deadline": "claim_filing_deadline", "status": "missed"}
+        ]},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "sampling_chain_deadline", "status": "missed"}]},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "plant_record_preservation_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "plant_record_preservation_deadline", "status": "missed"}]},
+        {"type": "any", "conditions": [{"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "completed"}, {"type": "deadline_status_is", "deadline": "limitation_protection_deadline", "status": "missed"}]}
+      ]},
+      "effects": [
+        {"type": "set_flag", "flag": "time_bar_closed", "value": true},
+        {"type": "trigger_event", "event": "matter_closed"}
+      ],
+      "time_cost_minutes": 30, "cost_eur": 600, "billable_minutes": 30, "repeatability": {"type": "once"}
+    }
+  ]
+}

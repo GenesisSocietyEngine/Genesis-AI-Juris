@@ -8,14 +8,17 @@ const GREENFIRE_SCENARIO: &str =
 const GOLDENSHELL_SCENARIO: &str =
     include_str!("../../../content/cases/goldenshell_recall_at_dawn.scenario.json");
 const FAILED_ERP_SCENARIO: &str = include_str!("../../../content/cases/failed_erp.scenario.json");
+const DESERT_WATER_SCENARIO: &str =
+    include_str!("../../../content/cases/desert_water_groundwater_claim.scenario.json");
 
 #[test]
 fn playable_catalog_scenarios_pass_authoring_diagnostics() {
     for (name, encoded) in [
+        ("Failed ERP", FAILED_ERP_SCENARIO),
         ("Logistics", LOGISTICS_SCENARIO),
         ("GreenFire", GREENFIRE_SCENARIO),
         ("GoldenShell", GOLDENSHELL_SCENARIO),
-        ("Failed ERP", FAILED_ERP_SCENARIO),
+        ("Desert Water", DESERT_WATER_SCENARIO),
     ] {
         let scenario: ScenarioDefinition =
             serde_json::from_str(encoded).expect("scenario JSON must deserialize");

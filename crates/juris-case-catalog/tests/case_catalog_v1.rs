@@ -15,6 +15,10 @@ fn load_reference_bundle() -> CatalogBundle {
         .expect("reference catalog and identities must load")
 }
 
+fn json(encoded: &str) -> serde_json::Value {
+    serde_json::from_str(encoded).expect("production JSON fixture must deserialize")
+}
+
 #[test]
 fn repository_catalog_and_identities_are_valid() {
     let bundle = load_reference_bundle();
@@ -136,12 +140,27 @@ fn catalog_json_round_trip_preserves_case_order() {
 fn reference_library_exposes_all_mobile_playable_scenarios() {
     let bundle = load_reference_bundle();
 
-    assert_eq!(bundle.catalog.cases.len(), 4);
+    assert_eq!(bundle.catalog.cases.len(), 5);
     assert!(bundle
         .catalog
         .cases
         .iter()
         .all(|case| case.scenario_file.is_some() && case.status == CatalogStatus::Playable));
+    assert_eq!(
+        bundle
+            .catalog
+            .cases
+            .iter()
+            .map(|case| case.case_id.as_str())
+            .collect::<Vec<_>>(),
+        vec![
+            "be_commercial_failed_erp_001",
+            "be_commercial_logistics_001",
+            "greenfire_first_72_hours",
+            "nl_food_safety_goldenshell_001",
+            "us_environmental_desert_water_001",
+        ]
+    );
     assert_eq!(
         bundle
             .identities
@@ -153,8 +172,123 @@ fn reference_library_exposes_all_mobile_playable_scenarios() {
             "velmont_logistics",
             "greenfire_industrial_solutions",
             "goldenshell_producers_cooperative",
+            "sundial_mesa_residents_association",
         ]
     );
+}
+
+#[test]
+fn four_pre_desert_water_catalogue_identities_remain_exact() {
+    const LOCALIZATION: &str = include_str!("../../../content/localization/case_catalog.v1.json");
+    const FAILED_ERP: &str = include_str!("../../../content/cases/failed_erp.scenario.json");
+    const LOGISTICS: &str =
+        include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
+    const GREENFIRE: &str =
+        include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json");
+    const GOLDENSHELL: &str =
+        include_str!("../../../content/cases/goldenshell_recall_at_dawn.scenario.json");
+
+    struct ExpectedCase<'a> {
+        case_id: &'a str,
+        scenario_id: &'a str,
+        sort_order: u64,
+        runtime_adapter: &'a str,
+        en_topic: &'a str,
+        ru_topic: &'a str,
+        en_short_title: &'a str,
+        ru_short_title: &'a str,
+        scenario: &'a str,
+    }
+
+    let expected = [
+        ExpectedCase {
+            case_id: "be_commercial_failed_erp_001",
+            scenario_id: "be_commercial_failed_erp_001",
+            sort_order: 10,
+            runtime_adapter: "rust_scenario_v1",
+            en_topic: "Failed ERP Implementation",
+            ru_topic: "Неудачное внедрение ERP",
+            en_short_title: "Failed ERP",
+            ru_short_title: "Провал ERP-проекта",
+            scenario: FAILED_ERP,
+        },
+        ExpectedCase {
+            case_id: "be_commercial_logistics_001",
+            scenario_id: "be_commercial_logistics_001",
+            sort_order: 20,
+            runtime_adapter: "rust_scenario_v1",
+            en_topic: "Unpaid Logistics Invoices",
+            ru_topic: "Неоплаченные логистические счета",
+            en_short_title: "Unpaid Logistics Invoices",
+            ru_short_title: "Логистические счета",
+            scenario: LOGISTICS,
+        },
+        ExpectedCase {
+            case_id: "greenfire_first_72_hours",
+            scenario_id: "greenfire_first_72_hours",
+            sort_order: 30,
+            runtime_adapter: "rust_scenario_v1",
+            en_topic: "The First 72 Hours",
+            ru_topic: "Первые 72 часа",
+            en_short_title: "GreenFire",
+            ru_short_title: "GreenFire",
+            scenario: GREENFIRE,
+        },
+        ExpectedCase {
+            case_id: "nl_food_safety_goldenshell_001",
+            scenario_id: "goldenshell_recall_at_dawn",
+            sort_order: 40,
+            runtime_adapter: "rust_scenario_v1",
+            en_topic: "Contaminated Egg Supply Chain",
+            ru_topic: "Загрязнение цепочки поставок яиц",
+            en_short_title: "Recall at Dawn",
+            ru_short_title: "Отзыв на рассвете",
+            scenario: GOLDENSHELL,
+        },
+    ];
+
+    let bundle = load_reference_bundle();
+    assert_eq!(
+        bundle.catalog.cases[..4]
+            .iter()
+            .map(|entry| entry.case_id.as_str())
+            .collect::<Vec<_>>(),
+        expected
+            .iter()
+            .map(|entry| entry.case_id)
+            .collect::<Vec<_>>()
+    );
+
+    let localization = json(LOCALIZATION);
+    for expected_case in expected {
+        let case = &localization["cases"][expected_case.case_id];
+        assert_eq!(case["sort_order"].as_u64(), Some(expected_case.sort_order));
+        assert_eq!(
+            case["runtime_adapter"].as_str(),
+            Some(expected_case.runtime_adapter)
+        );
+        assert_eq!(
+            case["locales"]["en"]["topic"].as_str(),
+            Some(expected_case.en_topic)
+        );
+        assert_eq!(
+            case["locales"]["ru"]["topic"].as_str(),
+            Some(expected_case.ru_topic)
+        );
+        assert_eq!(
+            case["locales"]["en"]["short_title"].as_str(),
+            Some(expected_case.en_short_title)
+        );
+        assert_eq!(
+            case["locales"]["ru"]["short_title"].as_str(),
+            Some(expected_case.ru_short_title)
+        );
+
+        let scenario = json(expected_case.scenario);
+        // All four pre-Desert production scenarios use ScenarioDefinition v1 metadata IDs.
+        let actual_id = scenario["metadata"]["id"].as_str();
+        assert_eq!(actual_id, Some(expected_case.scenario_id));
+    }
 }
 
 #[test]

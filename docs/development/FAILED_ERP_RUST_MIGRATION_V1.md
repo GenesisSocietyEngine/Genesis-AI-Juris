@@ -2,10 +2,13 @@
 document_type: development_checkpoint
 project: "GENESIS: JURIS"
 checkpoint: failed_erp_authoritative_rust_v1
-status: local_review
+status: merged
 branch: refactor/failed-erp-authoritative-rust
 base_commit: 3c27eb2782a61662d7ceffbd19e5434bce389470
 implementation_head: 6a27e53549b06911e81fe8c9a61eae3e814fca30
+publication_pr: 14
+published_head: 0aa393096f1e9be4458070d3d53d739c1f8483c0
+merge_commit: 3cfa3066b64f36b92f3a77a30ec4a070e74860ed
 scenario_id: be_commercial_failed_erp_001
 scenario_fingerprint: ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8
 last_updated: 2026-08-04
@@ -15,20 +18,21 @@ last_updated: 2026-08-04
 
 ## Status and stop boundary
 
-Failed ERP is implementation-complete and locally validated as the first case
-in the four-case production catalogue. Production gameplay now uses the same
-generic `ScenarioDefinition v1` Rust runtime as Logistics, GreenFire, and
-GoldenShell. The branch is intentionally stopped for local review.
+Failed ERP is implementation-complete, published through PR #14 at exact head
+`0aa393096f1e9be4458070d3d53d739c1f8483c0`, and merged into `main` by
+`3cfa3066b64f36b92f3a77a30ec4a070e74860ed`. It is catalogue position 1 in
+the combined five-case production catalogue and uses the same generic
+`ScenarioDefinition v1` Rust runtime as Logistics, GreenFire, GoldenShell, and
+Desert Water.
 
-Nothing from this checkpoint has been pushed. No pull request, tag, release,
-or merge was created. PR #4 was not modified or closed. Snapshot Visibility
-Hardening, Pressure & Countermove Runtime, Legal Theory, and later roadmap
-work were not started.
+No tag, release, or APK asset was created for the Failed ERP merge. PR #4 was
+not modified or closed. Snapshot Visibility Hardening, Pressure & Countermove
+Runtime, Legal Theory, and later roadmap work were not started.
 
-Desert Water remains parked and unpublished on
-`feat/desert-water-case` at exact HEAD
-`44e565b22c52a4c3a3e69b2c137353b7771fcf77`. Its four commits remain
-reachable and no remote branch contains that HEAD.
+Desert Water is rebased locally on the PR #14 merge and remains unpublished on
+`feat/desert-water-case`. The recovery ref
+`backup/desert-water-pre-failed-erp` still points exactly to original head
+`44e565b22c52a4c3a3e69b2c137353b7771fcf77`.
 
 ## Repository and intentional commits
 
@@ -40,10 +44,7 @@ The migration branch and merge base are:
 - implementation HEAD before this documentation commit:
   `6a27e53549b06911e81fe8c9a61eae3e814fca30`.
 
-The implementation is split into the six completed commits below. The seventh
-and final commit contains this checkpoint and the cumulative handoff; its exact
-object ID is reported after the commit because a Git commit cannot contain its
-own stable hash.
+The migration consists of seven completed commits:
 
 1. `f898d09232b51aa1d7bdcce0208ed7a93a76462b` —
    `docs/test: characterize legacy Failed ERP behavior`.
@@ -57,8 +58,11 @@ own stable hash.
    `refactor(mobile): remove Failed ERP Dart gameplay authority`.
 6. `6a27e53549b06911e81fe8c9a61eae3e814fca30` —
    `test: cover Failed ERP replay dossier persistence and Android lifecycle`.
-7. `docs: record Failed ERP Rust migration checkpoint` — this documentation
-   commit.
+7. `0aa393096f1e9be4458070d3d53d739c1f8483c0` —
+   `docs: record Failed ERP Rust migration checkpoint`.
+
+PR #14 preserved all seven intentional commits and merged them normally in
+`3cfa3066b64f36b92f3a77a30ec4a070e74860ed`.
 
 ## Behavioral authority and approved corrections
 
@@ -242,9 +246,10 @@ JSON, corrupted digest, and unsupported runtime markers return controlled
 errors before a new session is published; the existing Rust registry and
 Flutter `GameSnapshot` remain usable and unchanged.
 
-## Existing production compatibility
+## Existing production compatibility at the migration checkpoint
 
-The three pre-existing Rust scenario identities remain byte-exact:
+The three Rust scenario identities that pre-dated this migration remained
+byte-exact:
 
 | Catalogue position | Scenario | Fingerprint | Canonical paths |
 | ---: | --- | --- | --- |
@@ -255,7 +260,7 @@ The three pre-existing Rust scenario identities remain byte-exact:
 Their definitions, fingerprints, traces, outcomes, costs, deadlines, final
 minutes, digests, and relative catalogue order are unchanged.
 
-The generated production bundle changed as expected:
+The Failed-ERP-only four-case production bundle changed as expected:
 
 - previous SHA-256:
   `8d9db2e75c5cac14df95073843cc5a0775df8d17323fb434c688a8854a012835`;
@@ -263,7 +268,59 @@ The generated production bundle changed as expected:
   `afe93194de58761fe534a1b818968bc7a2b5bd931eba597ab03a06561733baf1`;
 - current size: 479,920 bytes.
 
-## Local validation evidence
+## Later combined five-case state
+
+After PR #14 merged, the preserved Desert Water work was rebased locally. The
+combined catalogue is:
+
+| Sort | Scenario | Fingerprint | Canonical paths |
+| ---: | --- | --- | --- |
+| 10 | `be_commercial_failed_erp_001` | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` | settlement: 570; prepared litigation: 8640; remittal open: 10080 |
+| 20 | `be_commercial_logistics_001` | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` | negotiated: 270; judgment: 480 |
+| 30 | `greenfire_first_72_hours` | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` | protected: 4440; compromised: 4590 |
+| 40 | `goldenshell_recall_at_dawn` | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` | coordinated: 4545; fragmented: 4710 |
+| 50 | `desert_water_groundwater_claim` | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` | coordinated: 3180; compromised: 3510 |
+
+The deterministic combined bundle is 622,325 bytes with SHA-256
+`58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`.
+Neither the Failed-ERP-only hash above nor the parked Desert-on-release hash is
+the combined artifact.
+
+Rebase validation exposed a validator analysis defect, not a scenario/runtime
+defect. Commit `d7a52d836f4f51b9c510af38513bcb2722cbd6a2` preserves the condition of the
+single event that owns an expanded terminal transition while keeping ambiguous
+multi-terminal chains conservative. It changes no production scenario,
+runtime execution, persistence, digest, bridge, FFI, or ABI contract.
+
+Android acceptance then exposed stale x86_64 native output because Gradle did
+not track changes in transitive Rust crates. Commit
+`de7ac065d095a0e268e14961b4b74edd754cf52e` tracks workspace crate
+manifests/sources and the native build script, and corrects Desert UI clock
+assertions to the shared 08:00 presentation baseline. It changes no scenario,
+runtime, persistence, digest, bridge, FFI, or ABI contract.
+
+Final combined local results:
+
+- Rust 1.78, formatting, current workspace check, and Clippy with warnings
+  denied passed; full Rust workspace 312/312; focused engine 100, bridge 16,
+  FFI 14, simulator 56, validator 49, diagnostics 28, and production catalogue
+  integration 14 all passed;
+- Dart format checked 49 files with 0 changes; Flutter analysis found no
+  issues; Flutter unit/widget suite 133/133;
+- final debug APK:
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`,
+  187,596,640 bytes, SHA-256
+  `689b95b0da9f47bbe385bad9312a74b7625ad23860c0ea63113882f1611e3053`;
+- Android 17 / API 37 (`Pixel`, `emulator-5554`, x86_64, 1080x1920) native
+  integration 7/7, including Failed ERP and production Desert Water; the
+  ordinary app displayed the five-case catalogue, opened Desert Water, returned
+  to the catalogue, and remained running for owner playtesting;
+- C ABI version 1; the exact stripped APK libraries for `armeabi-v7a`,
+  `arm64-v8a`, and `x86_64` each dynamically export only
+  `juris_mobile_bridge_execute`, `juris_mobile_bridge_string_free`, and
+  `juris_mobile_bridge_abi_version`.
+
+## Failed ERP checkpoint local validation evidence
 
 All gates were run on the frozen scenario and implementation:
 
@@ -282,7 +339,7 @@ All gates were run on the frozen scenario and implementation:
 - full Flutter unit/widget suite: 130 passed, 0 failed;
 - `git diff --check` passed.
 
-## Android and native ABI evidence
+## Failed ERP checkpoint Android and native ABI evidence
 
 The Failed ERP production acceptance test passed 1/1 on `emulator-5554`,
 Android 17 / API 37. It exercised the real mobile asset, Rust Android library,
@@ -330,14 +387,22 @@ No fourth native symbol or Failed ERP-specific native function was added.
 - The existing top-level snapshot arrays retain their compatibility behavior.
   Only the nested Dossier has the disclosure-safe absence contract; Snapshot
   Visibility Hardening remains deferred.
-- Local Windows validation cannot run hosted iOS. Publication, hosted Rust,
-  Flutter, and iOS CI require separate explicit authorization.
-- Desert Water must be rebased on the eventual merged Failed ERP checkpoint,
-  regenerated as catalogue position 5, and fully revalidated before it may be
-  published.
+- PR #14 publication supplied the separate hosted Rust, Flutter, and iOS
+  validation for exact Failed ERP head `0aa3930`. The unpublished combined
+  Desert branch has no later hosted result.
+- Desert Water is rebased as catalogue position 5 and the fresh combined local
+  Rust/Flutter/APK/Android results above are complete. The branch remains
+  unpublished during owner playtesting.
+- The API 37 AVD showed slow post-install startup, one transient ADB offline
+  state during recovery, and one Android `system` ANR dialog after repeated
+  native runs. Choosing `Wait` recovered without an app crash or data wipe; AVD
+  performance remains an environmental risk, not a waived product gate.
 
 ## Next authorized decision point
 
-Review this local checkpoint and its seven commits. Do not push, open a PR,
-merge, tag, release, modify PR #4, publish Desert Water, or start a later
-roadmap phase without explicit authorization.
+The combined branch is at its clean local-review stop and the ordinary
+production application and Android API 37 emulator are running for owner
+playtesting. The next action requires explicit publication authorization. Do
+not push or open a PR for Desert Water, create a tag or release, delete the
+backup ref, modify PR #4, or start a later roadmap phase without explicit
+authorization.

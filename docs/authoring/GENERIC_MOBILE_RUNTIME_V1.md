@@ -47,9 +47,10 @@ small audited unsafe boundary required to exchange owned UTF-8 C strings.
 
 ## Flutter boundary
 
-Flutter screens now depend on `GameRuntimeRepository`. The current
-`DemoGameRepository` implements that interface for Failed ERP without making
-the UI depend on demo-specific mutation.
+Flutter screens depend on `GameRuntimeRepository`. `CaseRuntimeFactory` routes
+all five production cases through `RustScenarioRepository`; the UI therefore
+has no production path to case-specific Dart mutation. `DemoGameRepository`
+remains only as historical Failed ERP characterization infrastructure.
 
 `NativeScenarioBridgeClient` loads `libjuris_mobile_ffi.so` on Android and
 resolves the statically linked symbols from the Runner process on iOS.
@@ -58,7 +59,8 @@ resolves the statically linked symbols from the Runner process on iOS.
 `GameSnapshot`. The mapper consumes the authoritative
 `judicial_decision_instance` value (`first_instance`, `appeal`, or
 `cassation`) and never infers it from stage IDs, outcome IDs, or localized
-text. Logistics is registered through `rust_scenario_v1`.
+text. Failed ERP, Logistics, GreenFire, GoldenShell, and Desert Water are all
+registered through `rust_scenario_v1`.
 
 ## Persistence compatibility boundary
 

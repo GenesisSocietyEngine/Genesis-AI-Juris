@@ -1,19 +1,435 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: refactor/failed-erp-authoritative-rust
-base_commit: 3c27eb2782a61662d7ceffbd19e5434bce389470
-implementation_head: 6a27e53549b06911e81fe8c9a61eae3e814fca30
+branch: feat/desert-water-case
+base_commit: 3cfa3066b64f36b92f3a77a30ec4a070e74860ed
+failed_erp_pr: 14
+failed_erp_head: 0aa393096f1e9be4458070d3d53d739c1f8483c0
+failed_erp_merge_commit: 3cfa3066b64f36b92f3a77a30ec4a070e74860ed
+original_desert_head: 44e565b22c52a4c3a3e69b2c137353b7771fcf77
+desert_recovery_ref: backup/desert-water-pre-failed-erp
+validator_followup: d7a52d836f4f51b9c510af38513bcb2722cbd6a2
+android_followup: de7ac065d095a0e268e14961b4b74edd754cf52e
 latest_published_release_tag: v0.6.0-alpha.1
 app_version: 0.6.0+13
-last_updated: 2026-08-04
+last_updated: 2026-08-05
 ---
 
 # Current Progress
 
-## Failed ERP authoritative Rust migration local checkpoint — 2026-08-04
+## Desert Water authoritative budget recovery checkpoint — 2026-08-05
 
-Status: implementation and full local validation are complete. Failed ERP is
+Status: complete in implementation commit
+`aae66104b6bf0df8626898d34ff50f21cf80e8dc`. The running player Save was
+exported before further gameplay interaction, the first faulty boundary was
+demonstrated across Rust, bridge JSON, and Flutter before the production
+correction, and the exact 291-command session was replay-migrated, restored,
+and verified on Android API 37. No gameplay action was dispatched by the
+live-emulator restoration; commands 191 and 192 were dispatched only in
+isolated deterministic audit/replay sessions. Owner playtest passed and
+publication through a Draft PR, hosted gates, and a green-only merge is
+explicitly authorized.
+
+### Preservation and first faulty boundary
+
+- before touching a control, the running Day 2 17:45 / EUR 0 of EUR 0 screen
+  was captured as `apps/juris-mobile/build/budget-live-before-preservation.png`.
+  The only subsequent live controls used for preservation were Pause and Save;
+  foreground time reached Day 2 17:57, but no additional gameplay action was
+  dispatched;
+- the exact pre-control Day 2 17:45 state was then reconstructed from the first
+  279 commands of the byte-preserved 291-command log and the untouched screen
+  timestamp. It is stored as
+  `.hotfix-backup/caldera-session-recovery/budget-live-before-control-day2-1745.command-log.json`:
+  18,883 pretty-printed bytes, SHA-256
+  `b023a9efad16a087059e5234b79176f4f2f56b4762b16a36e2e02126a518293c`,
+  fingerprint `f93d22cd...`, digest
+  `3449e3e42de0610b5ec03ea518064118586f5ac5ffc74b3151aeacd33e06df92`,
+  minute 2,025, and only `prepare_expert_evidence` available. This is an exact
+  deterministic state/log reconstruction, not a falsely claimed byte-for-byte
+  live export from before Pause;
+- the active post-action Save was exported byte-exactly to
+  `.hotfix-backup/caldera-session-recovery/budget-live-post-action-day2-1757.command-log.json`:
+  12,060 bytes, SHA-256
+  `6023f3ca49c6f6de08e5f0fdbfcf9b1b2ee0a318d54e15ce59f266f83528781d`;
+- it contains seed `20260804`, runtime marker `scenario-runtime-v2`, fingerprint
+  `f93d22cd9dfe3ed34c8fbdd3f6d0faa65559e898f635fd42e19193579a5feb83`,
+  digest `9829a636e7b78b07972f401f48758a38f088698cf36882f5d9c8d52a39b5c620`,
+  and exactly 291 commands. `interview_affected_residents` is command 191,
+  `map_wells_and_exposure_periods` is command 192, and commands 193–291 are
+  one-minute foreground advances;
+- the previously preserved 190-command migrated log was replayed without
+  modification. Before command 191, authoritative Rust already projected no
+  resources; the bridge JSON omitted `resources`; Flutter consequently mapped
+  authority and spend to zero and substituted all 1,728 elapsed clock minutes
+  as billable time;
+- command 191 advanced the clock exactly `1728 -> 1848`, made only Map
+  available, but still had no resources. Command 192 advanced exactly
+  `1848 -> 1938`, made only Prepare Expert Evidence available, and still had
+  no resources;
+- the first faulty boundary was therefore scenario definition -> Rust session
+  initialization/replay, before command 191. The definition had no
+  `initial_resources`, and all 27 actions omitted `billable_minutes`; Rust
+  correctly held no resource map, the bridge correctly serialized that
+  absence, and Flutter's zero/clock fallbacks exposed and partly masked it;
+- persistence, Interview, Map, stage transition into
+  `environmental_investigation`, resource delta/assignment effects, and a
+  resource-ID mismatch were ruled out as initiating causes. Neither action has
+  a resource effect, `SetStage` changes only the stage ID, and no capacity was
+  available to reset;
+- reproducible pre-correction evidence is retained under
+  `.hotfix-backup/caldera-session-recovery/budget-audit/before-fix-*`. It
+  includes the reconstructed fingerprint-`f93d22cd...` definition, raw Rust
+  snapshots, raw bridge responses, and the Flutter-model summary before
+  command 191 and after commands 191 and 192. The exact preserved 190-command
+  save loads against that definition; at every boundary Rust/bridge resources
+  are absent, while Flutter maps authority/spend/remaining to zero and maps
+  billable minutes to the elapsed clock (`1728`, `1848`, then `1938`).
+
+### Declarative correction and exact regression
+
+- Desert Water now declares initial `authorized_budget_eur = 60000`,
+  `spend_eur = 0`, and `billable_minutes = 0`;
+- all 27 actions explicitly declare `billable_minutes` equal to their existing
+  `time_cost_minutes`. The generic engine applies action costs and billable
+  minutes as deltas; no Flutter fallback, post-action restoration, case-ID
+  branch, runtime mutation, or Desert-specific bridge behavior was added;
+- the permanent engine regression reconstructs the exact 190-command sequence
+  as 10 dispatches plus 180 foreground advances totalling 873 minutes, then
+  proves save/reload snapshot, command-log, and digest parity at every
+  checkpoint:
+
+| State | Clock | Authority | Spend | Remaining | Billable | Only available action |
+|---|---:|---:|---:|---:|---:|---|
+| before command 191 | 1,728 | EUR 60,000 | EUR 37,050 | EUR 22,950 | 855 min | `interview_affected_residents` (120 min, EUR 2,400) |
+| after command 191 | 1,848 | EUR 60,000 | EUR 39,450 | EUR 20,550 | 975 min | `map_wells_and_exposure_periods` (90 min, EUR 2,200) |
+| after command 192 | 1,938 | EUR 60,000 | EUR 41,650 | EUR 18,350 | 1,065 min | `prepare_expert_evidence` (180 min, EUR 5,500) |
+
+- a separate JSON bridge regression replays the same sequence, asserts the raw
+  serialized resources/actions at all three boundaries, and proves bridge
+  save/load parity after each; Flutter tests pin the bundle resource contract
+  and the same three mapped `GameSnapshot` values;
+- the corrected Desert Water fingerprint is
+  `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af`;
+  canonical outcomes and minutes remain `credible_source_and_remedy` at 3,180
+  and `compromised_claim_closed` at 3,510. Their runtime-v2 digests are now
+  `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d`
+  and `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce`;
+- the deterministic five-case bundle is 622,325 bytes, SHA-256
+  `58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`.
+
+### Save migration, Android restoration, and validation
+
+- the old 291 commands were replayed against the corrected definition; no
+  fingerprint or digest field was edited. The resulting active Save is
+  `.hotfix-backup/caldera-session-recovery/budget-audit/budget-fixed-live-291.command-log.json`,
+  12,060 bytes, SHA-256
+  `328d76e392230ac47ecac4ecda6c54af83a48155f4b0d414fe07a2fecabfe019`,
+  fingerprint `636e7b78...`, and digest
+  `6ce210e4a6b55a2ec2495d3405adcd7c45ff2edee38cfee3f5c981e2a68d647c`;
+- all 291 commands and seed are retained. The replayed state is minute 2,037
+  (Day 2 at 17:57), `environmental_investigation`, authority EUR 60,000, spend
+  EUR 41,650, remaining EUR 18,350, billable 1,065 minutes, with only
+  `prepare_expert_evidence` available;
+- the original device Save remains beside it as
+  `us_environmental_desert_water_001.pre-budget-fix-6023f3ca.json`; the active
+  device Save hash is the corrected `328d76...e019` value;
+- debug APK versionCode 4015 / versionName 0.6.0 was built at
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`: 164,655,323
+  bytes, SHA-256
+  `2f85aa1a38fd881affd73f5da5ede87cb0596de0456e27810fedf7a69b219561`;
+- `adb install -r` succeeded without clearing app data. On the API 37 / Android
+  17 x86_64 emulator (`emulator-5554`, 1080x1920), native Load restored the
+  exact paused Day 2 17:57 state. Matter displayed EUR 41,650 spend, EUR 18,350
+  authority remaining, and 17.8h; the action sheet displayed only Prepare
+  Expert Evidence, 3h, EUR 5,500. It was not selected;
+- evidence is preserved at
+  `apps/juris-mobile/build/budget-fixed-restored-matter.png` and
+  `apps/juris-mobile/build/budget-fixed-restored-action.png`. The ordinary app
+  remains running on the paused restored matter as recovery evidence; owner
+  playtest passed;
+- Rust formatting, current workspace check, Clippy across all targets with
+  warnings denied, Rust 1.78 locked workspace check, and all 315 Rust tests
+  passed with no failure;
+- deterministic bundle `--check`, Flutter analysis, and all 134 Flutter tests
+  passed with no failure;
+- the APK contains `armeabi-v7a`, `arm64-v8a`, and `x86_64` FFI libraries. Each
+  dynamically exports exactly `juris_mobile_bridge_abi_version`,
+  `juris_mobile_bridge_execute`, and `juris_mobile_bridge_string_free`; C ABI
+  version remains 1;
+- `git diff --check` passed. The validated resource-model hotfix is commit
+  `aae66104b6bf0df8626898d34ff50f21cf80e8dc`; publication is authorized
+  without a tag, release, or APK asset, while PR #4 and recovery refs remain
+  untouched.
+
+## Historical: Desert Water / Caldera day-two no-action recovery checkpoint — 2026-08-05
+
+This section records the earlier no-action softlock checkpoint. Its statement
+that budget did not cause the action softlock remains correct; the separate
+resource-authority defect discovered afterward is superseded by the current
+checkpoint above.
+
+Status: the reported no-action state has been reproduced and a narrowly scoped
+recovery change has been implemented and validated locally. The optimized
+x86_64 release APK is installed, and the explicitly migrated save restored the
+exact paused Day 2 session with the recovery action available; no gameplay
+action was dispatched. The pre-recovery save and migrated copy remain under the
+repository's gitignored `.hotfix-backup/` area. Nothing in `.hotfix-backup/` is
+part of the repository or this handoff.
+
+### Reported state and root cause
+
+- the active production Desert Water session reached Day 2 at 12:48, scenario
+  minute 1,728, in `environmental_investigation` with no available action;
+- `prepare_expert_evidence` requires `well_timeline_mapped = true`, but only
+  `map_wells_and_exposure_periods` establishes that state;
+- `obtain_regulatory_records` could move the session from
+  `urgent_preservation` to `environmental_investigation` before the player
+  interviewed residents and mapped their wells. Those two actions were
+  previously limited to `urgent_preservation`, making the required state
+  permanently unreachable after the transition;
+- budget presentation was not the cause: the generic engine did not remove the
+  actions on resource grounds. Advancing to the next workday would also not
+  restore the productive route and would eventually expose only the
+  time-barred closure path.
+
+### Recovery change and deterministic contract
+
+- `interview_affected_residents` and `map_wells_and_exposure_periods` are now
+  listed among the `environmental_investigation` exit actions;
+- each action's stage condition now accepts either `urgent_preservation` or
+  `environmental_investigation`; their existing one-time flags and ordering
+  constraints remain authoritative, so no duplicate interview or mapping can
+  occur;
+- the focused regression reproduces the skipped-mapping route at minute 1,646,
+  proves that interview then mapping becomes available in order, and proves
+  that `prepare_expert_evidence` advances the still-open matter to
+  `claim_preparation` at minute 2,036;
+- no generic runtime, persistence envelope, bridge, FFI, ABI, catalogue
+  identity, action cost, deadline, outcome, or trace command was changed;
+- the canonical trace outcomes and final minutes remain unchanged:
+  `credible_source_and_remedy` at minute 3,180 and
+  `compromised_claim_closed` at minute 3,510;
+- the content change intentionally updates the Desert Water fingerprint to
+  `f93d22cd9dfe3ed34c8fbdd3f6d0faa65559e898f635fd42e19193579a5feb83`;
+- the coordinated digest is now
+  `3b4976b349f3a98a59340f8ffc48c2aeb52efb6edcf0d593c7124c1f91879f20`;
+  the compromised digest is now
+  `25ee383bd277cdcc8c2eacf123a420dc18f074bd41173f80b6bdf4a7f0cc686a`.
+
+### Preserved save and migration proof
+
+- pre-recovery save:
+  `.hotfix-backup/caldera-session-recovery/caldera-desert-water-day2-1248-pre-recovery.command-log.json`;
+- original file SHA-256:
+  `6c1824a31cbece95d0076993d50285e46dc7c14d1ee2cca3acaf0e13bd21f66c`;
+- migrated local copy:
+  `.hotfix-backup/caldera-session-recovery/caldera-desert-water-day2-1248-migrated.command-log.json`;
+- all 190 commands were retained. Replay under the pre-recovery scenario
+  produced digest
+  `dc0516fc83900fe8126fbffdf997b1a26397fcee935855bf5f6cde71f1206b92`;
+  replay under the recovered definition produced digest
+  `446630a1557349ff487107c470265b7063d92b42a182c380c31ff7884ae47bdb`;
+- migrated file SHA-256:
+  `436a9f4bfe31d032d0754631b1f33dcdcbe4d3e88803c19114b03d9234480128`;
+- the migration is a one-session recovery artifact, not a generic relaxation
+  of scenario-fingerprint validation. The untouched pre-recovery save remains
+  the audit source.
+
+### Session consequence and final local validation
+
+- installing the recovered release APK ended the old in-memory process, as
+  expected; repository asset changes did not silently mutate that process, and
+  the old save remains unloadable unchanged after the fingerprint change;
+- the optimized x86_64 release APK built successfully at
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-x86_64-release.apk`:
+  22,539,755 bytes, SHA-256
+  `8f37b844f4c8dc05bd22358baad3050ae2e4641a4b55deb336b280bbf4f28581`;
+- this is a release-mode emulator artifact using the repository's current
+  debug signing configuration, not a signed production-distribution APK;
+- its native entries are restricted to x86_64 and contain exactly
+  `libapp.so`, `libdartjni.so`, `libflutter.so`, and
+  `libjuris_mobile_ffi.so`; no ARM native entry is packaged in this emulator
+  artifact;
+- the packaged stripped `libjuris_mobile_ffi.so` was extracted and audited with
+  `llvm-nm -D --defined-only`; it exports exactly
+  `juris_mobile_bridge_abi_version`, `juris_mobile_bridge_execute`, and
+  `juris_mobile_bridge_string_free`. ABI version remains 1, confirmed by the
+  accepting native client and the passing Rust C ABI test;
+- the APK embeds the regenerated five-case bundle byte-exactly: 621,197 bytes,
+  SHA-256
+  `3d8a142e951d8cb40ed431574f2ddaa01593afe1718b7e3544990fea41108ce8`;
+- `adb install -r` completed with `Success`;
+- native `Load` accepted the migrated runtime-v2 save and restored the exact
+  paused state: Day 2 at 12:48, seed `20260804`, zero required Inbox items, and
+  one available action. The action sheet exposes only
+  `Interview affected residents`, duration 2 hours, cost EUR 2,400; no gameplay
+  action was dispatched;
+- restoration evidence is preserved locally at
+  `apps/juris-mobile/build/caldera-release-restored.png` and
+  `apps/juris-mobile/build/caldera-release-recovery-action.png`;
+- Rust 1.78 locked workspace check, current workspace check, formatting, and
+  Clippy across all targets with warnings denied passed;
+- `cargo test --workspace` passed exactly 313 tests with no failure;
+- deterministic five-case mobile-bundle export and `--check` passed: 621,197
+  bytes, SHA-256
+  `3d8a142e951d8cb40ed431574f2ddaa01593afe1718b7e3544990fea41108ce8`;
+- Flutter analysis passed with no issues in 190.6 seconds; the Flutter
+  unit/widget suite passed exactly 133 tests with no failure;
+- the initial `am start -S -W` returned `Status: timeout` with a 12,875 ms wait,
+  but the catalogue rendered and native loading/restoration subsequently
+  succeeded. Slow emulator startup remains a performance risk rather than a
+  functional failure;
+- next step: preserve the restored paused session for owner review. The player
+  may resume through `Interview affected residents`; any commit or publication
+  still requires a separate explicit decision.
+
+## Historical: Five-case integration local validation checkpoint — 2026-08-04
+
+Status: complete locally and stopped for owner playtesting. Failed ERP was
+published through PR #14, merged normally, and validated remotely. Desert Water
+was then rebased locally, combined with Failed ERP, and passed the complete
+host, Android API 37, APK, and ABI checkpoint. `feat/desert-water-case` remains
+unpublished; no Desert PR, tag, release, or APK asset was created.
+
+### Failed ERP publication and hosted gates
+
+- PR: `#14`, title `refactor: migrate Failed ERP to authoritative Rust`;
+- exact PR head: `0aa393096f1e9be4458070d3d53d739c1f8483c0`;
+- exact merge commit and new Desert base:
+  `3cfa3066b64f36b92f3a77a30ec4a070e74860ed`;
+- all push runs succeeded on exact PR head: Rust `30914773696`, Flutter
+  `30914772361`, iOS native/FFI `30914772343`;
+- all pull-request runs succeeded: Rust `30914820927`, Flutter `30914822595`,
+  iOS native/FFI `30914821159`;
+- all post-merge runs succeeded on exact merge commit: Rust `30917034321`,
+  Flutter `30917034285`, iOS native/FFI `30917034226`; the hosted iOS build,
+  static-library export audit, simulator boot, and native Logistics lifecycle
+  all passed;
+- PR #4 remained open and untouched.
+
+### Desert recovery, rebase, and local commits
+
+- recovery ref `backup/desert-water-pre-failed-erp` still points exactly to
+  original unpublished Desert HEAD
+  `44e565b22c52a4c3a3e69b2c137353b7771fcf77` and was not published;
+- old-to-new rebase mapping:
+  - `c0ad5a369caf85bcb4aa24a53e6b125d1d6fa25b` ->
+    `57caf237a86d39a2c21b3fe37cf33971fb5f2af4`;
+  - `18f65ceb52d87b9d3c8fc944c48a308b7643cc67` ->
+    `6d510738eced7552469b99cbc462382e395e9179`;
+  - `7ca533ca986cb90511114fd11e4ce70afe3a7794` ->
+    `14ed61ce6a8a14a9fe2e76a8508b6c10c7740541`;
+  - `44e565b22c52a4c3a3e69b2c137353b7771fcf77` ->
+    `6a5006e4da0a807f84ea439ef3b716939704e324`;
+- conflicts were resolved semantically in the production catalogue, validator
+  and diagnostics catalogue tests, Android integration harness, generated
+  bundle, engine fingerprint regression, and cumulative documentation. Failed
+  ERP remained sort 10/Rust-owned; Desert Water remained sort 50; no runtime,
+  persistence, digest, bridge, FFI, ABI, balance, or existing scenario contract
+  was changed by the rebase;
+- `d7a52d836f4f51b9c510af38513bcb2722cbd6a2` fixes validator provenance for
+  the sole terminal event's guard while keeping ambiguous paths conservative;
+- `de7ac065d095a0e268e14961b4b74edd754cf52e` makes Android Gradle native tasks
+  track transitive Rust workspace sources/manifests and the build script, and
+  corrects Desert integration labels to the shared 08:00 UI baseline. It was
+  required because the first x86_64 acceptance attempt packaged a stale
+  pre-validator-fix library;
+- neither follow-up changes production scenario semantics, fingerprints,
+  persistence, digests, bridge commands, FFI behavior, or ABI version/shape.
+
+### Final authoritative five-case catalogue
+
+| Sort | Case / scenario identity | Public EN / RU title | Fingerprint | Canonical paths: final minute / digest |
+|---:|---|---|---|---|
+| 10 | `be_commercial_failed_erp_001` | Failed ERP Implementation / Неудачное внедрение ERP | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` | settlement `settlement_64500`: 570 / `fd77a45422e4abd7f141fc7b1db767524ebf48d9674bd25c21354fb7a2b8c029`; prepared `judgment_preserved_after_cassation`: 8640 / `f25604fc0225d7ac5a7e98d192ce3b82114970158a3662aee7575b128430ca0c`; remittal open: 10080 / `268f27867fd1f45a417c0e999819165bd79f76a74f3ab2e65ee075e193cbc34a` |
+| 20 | `be_commercial_logistics_001` | Unpaid Logistics Invoices / Неоплаченные логистические счета | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` | negotiated: 270 / `139239e001417ae563e270128864a512e88c0ff535a498e15b000731b8ca5bfe`; judgment: 480 / `e25e1eeb36249c1b7da0fe7a947f29ed3363ce7dac0357a110951c49bb738ac3` |
+| 30 | `greenfire_first_72_hours` | The First 72 Hours / Первые 72 часа | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` | protected: 4440 / `17f58f95551abacb445ce6d886fc059bcbd7a7660c3f089d9509e7a25f01a216`; compromised: 4590 / `432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec` |
+| 40 | case `nl_food_safety_goldenshell_001`; scenario `goldenshell_recall_at_dawn` | Contaminated Egg Supply Chain / Загрязнение цепочки поставок яиц | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` | coordinated: 4545 / `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b`; fragmented: 4710 / `846c96ed8ba240bb392daead67e03bd4b9a7cbe1b23bdd6d412314e582c13503` |
+| 50 | case `us_environmental_desert_water_001`; scenario `desert_water_groundwater_claim` | Desert Water / Вода пустыни | `056bfa737932a81005fb8d9a78246593d1c1908308543d4bf9c5811d73201e8d` | coordinated `credible_source_and_remedy`: 3180 / `8d9f9c5e39dcdb0dc6639d42844a3b9e5f8394702231f1d8eb0aede6be244240`; compromised `compromised_claim_closed`: 3510 / `f5a08dc13bb49b879bc0e4929fbbbb08184cc4269c463eaa4ca8b1fad162c895` |
+
+All five use `rust_scenario_v1`. The four pre-existing fingerprints, canonical
+traces, outcomes, costs, deadlines, final minutes, save digests, and relative
+ordering remain unchanged.
+
+### Combined artifacts and host gates
+
+- deterministic mobile bundle: version 4, exactly five Rust cases, 620,529
+  bytes, SHA-256
+  `645bcd25b9cfa915ce9d0e3b0558e480325e5a45bfc20d7eb69144aba52cb985`;
+- Rust 1.78 locked check, formatting, current workspace check, and Clippy with
+  warnings denied passed;
+- full Rust workspace: 312 passed, 0 failed, 0 ignored; focused totals passed:
+  engine 100, bridge 16, FFI 14, simulator 56, validator 49, diagnostics 28,
+  production catalogue integration 14; Failed ERP formula/economic parity
+  10/10; lifecycle harness 2/2 over 18 explicit paths;
+- Dart format: 49 files, 0 changed; Flutter analysis: no issues; Flutter
+  unit/widget suite: 133 passed, 0 failed;
+- final ordinary three-ABI debug APK:
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`,
+  187,596,640 bytes, SHA-256
+  `689b95b0da9f47bbe385bad9312a74b7625ad23860c0ea63113882f1611e3053`;
+- C ABI remains version 1. The exact stripped libraries inside the APK match
+  Gradle outputs; `armeabi-v7a`, `arm64-v8a`, and `x86_64` each dynamically
+  export exactly `juris_mobile_bridge_execute`,
+  `juris_mobile_bridge_string_free`, and
+  `juris_mobile_bridge_abi_version`;
+- `git diff --check` passed. The branch is clean after the local documentation
+  commit containing this handoff.
+
+### Android API 37 automated and interactive evidence
+
+- explicit target: AVD `Pixel`, device `emulator-5554`, model
+  `sdk_gphone64_x86_64`, Android 17 / API 37, `x86_64`, 1080x1920,
+  `boot_completed=1`;
+- complete native integration suite: 7 passed, 0 failed in 5:42:
+  1. GreenFire RU save/actions/foreground time;
+  2. GoldenShell RU replay across a deadline boundary;
+  3. terminal Logistics save/load;
+  4. corrupted platform save atomicity;
+  5. Failed ERP RU claimant save/load/corruption;
+  6. debug-only lost-but-open lifecycle fixture;
+  7. production Desert Water reveal/save/load/appeal/explicit closure;
+- Failed ERP closed as `settlement_64500` at minute 570. Desert Water proved
+  initial Dossier omission and reveal, lost-but-open first instance at minute
+  3180, repeated atomic restore without duplicates, adverse appeal still open
+  at minute 3480, explicit `compromised_claim_closed` at minute 3510, and
+  immutable rejection of dispatch/time advance after closure;
+- ordinary production app verification found all five catalogue cards in sort
+  order, confirmed `Asteron Systems NV` as Failed ERP player claimant, opened
+  Desert Water at `Community intake` without bridge/asset/mapper error, and
+  returned to the catalogue without executing a player action;
+- final presentation evidence:
+  `apps/juris-mobile/build/five-case-catalog-api37.png` and
+  `apps/juris-mobile/build/desert-water-open-api37.png`;
+- the emulator and ordinary app remain running for owner playtesting, with the
+  catalogue foreground. The last verified app PID was `17672`.
+
+### Known issues and stop boundary
+
+- the API 37 AVD showed slow post-install startup. One launch recovery required
+  an ADB server restart and bounded reconnect after a transient `device
+  offline`; after repeated native runs Android also displayed one `system` ANR
+  dialog. Selecting `Wait` recovered without wiping data or crashing the app;
+  emulator performance remains an environmental risk;
+- the combined branch has no hosted CI result because Desert publication is
+  forbidden at this checkpoint. The hosted records above cover exact Failed
+  ERP PR/merge commits, while all combined evidence is local;
+- screenshot/APK files under `apps/juris-mobile/build/` are local, ignored
+  evidence rather than published release assets;
+- Desert Water was not pushed and no PR/tag/release was created; the backup ref
+  remains; PR #4 was not modified or closed; later architecture phases were not
+  started;
+- next step: owner playtesting, followed only by an explicit publication
+  decision. Do not push/open a Desert PR, tag/release, delete the backup ref, or
+  start a later roadmap checkpoint without authorization.
+
+The two sections immediately below are retained as historical checkpoint
+evidence and must not be interpreted as combined-tree results.
+
+## Historical: Failed ERP authoritative Rust migration local checkpoint — 2026-08-04
+
+Historical status: implementation and full local validation were complete. Failed ERP is
 now a production `ScenarioDefinition v1` on the generic authoritative Rust
 runtime, with Rust-owned metrics/resources, timing, decisions, lifecycle,
 Dossier, replay, and persistence. The branch is stopped for local review; it
@@ -39,9 +455,8 @@ Repository state:
     generic snapshot presentation;
   - `6a27e53549b06911e81fe8c9a61eae3e814fca30` — replay, Dossier,
     persistence, FFI, and Android lifecycle coverage;
-- the final seventh commit is
-  `docs: record Failed ERP Rust migration checkpoint`; its exact SHA is
-  reported after creation because a commit cannot embed its own stable hash;
+- `0aa393096f1e9be4458070d3d53d739c1f8483c0` —
+  `docs: record Failed ERP Rust migration checkpoint`;
 - PR #4 remains untouched;
 - Desert Water remains preserved and unpublished on
   `feat/desert-water-case` at
@@ -142,6 +557,181 @@ Known limitations and next step:
 - only after explicit authorization may this branch be pushed and a Draft PR
   opened; Desert Water may be rebased and revalidated only after the Failed
   ERP checkpoint is separately published and merged.
+## Historical: parked Desert Water fifth production case checkpoint — 2026-08-04
+
+Historical status: Desert Water was implemented locally as catalogue position five, and
+the Rust workspace, Flutter unit/widget suite, deterministic content gates,
+debug APK build, and three-ABI symbol audit pass. The final post-fix Android
+native integration rerun is not yet proven: the Flutter host stalled before
+launching the app or Dart tests and the run was stopped. This branch is
+therefore not ready for external playtesting or publication.
+
+Repository state:
+
+- branch: `feat/desert-water-case`;
+- exact release/base commit:
+  `3c27eb2782a61662d7ceffbd19e5434bce389470`, published as annotated tag
+  `v0.6.0-alpha.1`;
+- Dossier PR #12 was merged normally at
+  `9d1ad87961cabd61571fa59e1432d5c70c6d450c`; release-preparation PR #13 was
+  merged normally at the exact release/base commit above;
+- GitHub pre-release:
+  `https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/releases/tag/v0.6.0-alpha.1`;
+- all Rust, Flutter, and hosted iOS workflows passed both after PR #13 merge
+  (runs `30863611634`, `30863611643`, `30863611624`) and on the annotated tag
+  (runs `30864783884`, `30864783874`, `30864783869`); no unsigned APK was
+  attached to the source pre-release;
+- exact implementation HEAD before this uncommitted cumulative handoff edit:
+  `7ca533ca986cb90511114fd11e4ce70afe3a7794`;
+- intentional local commits:
+  - `c0ad5a369caf85bcb4aa24a53e6b125d1d6fa25b` —
+    `docs: define Desert Water case contract`;
+  - `18f65ceb52d87b9d3c8fc944c48a308b7643cc67` —
+    `feat: add Desert Water production scenario`;
+  - `7ca533ca986cb90511114fd11e4ce70afe3a7794` —
+    `test: cover Desert Water runtime and dossier`;
+- `44e565b22c52a4c3a3e69b2c137353b7771fcf77` is the fourth original local
+  commit, `docs: record Desert Water validation checkpoint`; its rebased
+  equivalent is `6a5006e4da0a807f84ea439ef3b716939704e324`.
+
+Cumulative commit records:
+
+- `c0ad5a369caf85bcb4aa24a53e6b125d1d6fa25b` defined the spec-first
+  identity, catalogue baseline, declarative inventory, visibility boundary,
+  lifecycle paths, test plan, and explicit exclusions. It changed no runtime
+  or production scenario and left content implementation as the next step.
+- `18f65ceb52d87b9d3c8fc944c48a308b7643cc67` added the production scenario,
+  identity, EN/RU catalogue/localization, both canonical command files, and
+  deterministic five-case bundle. Validator, diagnostics, simulator, and
+  focused runtime checks passed; complete cross-layer and device evidence was
+  the next step.
+- `7ca533ca986cb90511114fd11e4ce70afe3a7794` added Rust engine/simulator/
+  validator/diagnostics/catalogue, bridge/FFI, Flutter mapper/widget/catalogue,
+  and Android native acceptance coverage. Full host gates are green; the
+  post-fix Android device rerun remains the known issue and next step.
+- `44e565b22c52a4c3a3e69b2c137353b7771fcf77` records the completed gates, exact hashes,
+  unchanged compatibility contracts, pending Android evidence, and stop
+  boundary. It changes no gameplay or production source.
+- no Desert Water commit has been pushed and no PR, tag, or release has been
+  created from this branch;
+- PR #4 was not modified or closed;
+- Dossier follow-on work, Snapshot Visibility Hardening, Pressure &
+  Countermove Runtime, Legal Theory, and other later phases were not started.
+
+Authoritative production catalogue after the local addition:
+
+| Position | Stable identity | Public EN / RU title | Canonical fingerprint | Deterministic canonical traces |
+|---:|---|---|---|---|
+| 1 / sort 10 | case `be_commercial_failed_erp_001`; legacy scenario `failed-erp-implementation`; adapter `demo_failed_erp` | Asteron Systems NV v. Northbridge Consulting BV — Failed ERP Implementation / Asteron Systems NV v. Northbridge Consulting BV — Неудачное внедрение ERP | Not applicable: this is the legacy Dart case, not a Rust `ScenarioDefinition`; no fingerprint was invented | Not applicable: no authoritative Rust outcome or final minute |
+| 2 / sort 20 | case and scenario `be_commercial_logistics_001` | Velmont Logistics SA v. Orbis Retail Belgium NV — Unpaid Logistics Invoices / Velmont Logistics SA v. Orbis Retail Belgium NV — Неоплаченные логистические счета | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` | `negotiated_recovery` at minute 270; `judgment_recovery` at minute 480 |
+| 3 / sort 30 | case and scenario `greenfire_first_72_hours` | Port Haven Environmental Authority v. GreenFire Industrial Solutions B.V. — The First 72 Hours / Port Haven Environmental Authority v. GreenFire Industrial Solutions B.V. — Первые 72 часа | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` | `protected_crisis_position` at minute 4440; `compromised_crisis_position` at minute 4590 |
+| 4 / sort 40 | case `nl_food_safety_goldenshell_001`; scenario `goldenshell_recall_at_dawn` | GoldenShell Producers Cooperative U.A. v. MiteGuard Services V.O.F. — Contaminated Egg Supply Chain / GoldenShell Producers Cooperative U.A. v. MiteGuard Services V.O.F. — Загрязнение цепочки поставок яиц | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` | `coordinated_claim_position` at minute 4545; `fragmented_claim_position` at minute 4710 |
+| 5 / sort 50 | case `us_environmental_desert_water_001`; scenario `desert_water_groundwater_claim` | Sundial Mesa Residents Association v. Caldera Compression & Cooling Inc. — Desert Water / Sundial Mesa Residents Association v. Caldera Compression & Cooling Inc. — Вода пустыни | `056bfa737932a81005fb8d9a78246593d1c1908308543d4bf9c5811d73201e8d` | `credible_source_and_remedy` at minute 3180; `compromised_claim_closed` at minute 3510 |
+
+The four pre-existing catalogue identities and their relative ordering are
+unchanged. The three pre-existing Rust fingerprints and canonical
+outcome/minute pairs remain pinned exactly; the legacy Failed ERP case remains
+truthfully fingerprint-less. No existing case content, balance, costs,
+actions, deadlines, outcomes, or traces changed.
+
+Desert Water content and deterministic results:
+
+- identity: fictional resident-side US environmental-litigation matter,
+  `us_environmental_desert_water_001` /
+  `desert_water_groundwater_claim`, seed `20260804`, foreground clock;
+- exact inventory: 9 actors, 8 stages, 10 facts, 13 evidence items, 27 actions,
+  5 deadlines, 1 asynchronous task, 10 inbox items, 17 events, and 2
+  outcomes;
+- every one of the 27 actions has a positive euro cost;
+- canonical fingerprint:
+  `056bfa737932a81005fb8d9a78246593d1c1908308543d4bf9c5811d73201e8d`;
+- coordinated trace: `credible_source_and_remedy`, final minute `3180`, total
+  cost EUR `54,150`, final-state digest
+  `8d9f9c5e39dcdb0dc6639d42844a3b9e5f8394702231f1d8eb0aede6be244240`;
+- compromised trace: `compromised_claim_closed`, final minute `3510`, total
+  cost EUR `23,350`, final-state digest
+  `f5a08dc13bb49b879bc0e4929fbbbb08184cc4269c463eaa4ca8b1fad162c895`;
+- the EN/RU catalogue card and stable-ID presentation overlay cover every
+  Desert Water stage, action, deadline, inbox item, fact, evidence item, and
+  outcome without changing authoritative IDs or ordering;
+- the generated bundle remains schema version 4 and now contains exactly five
+  cases. Its SHA-256 intentionally changed from
+  `8d9db2e75c5cac14df95073843cc5a0775df8d17323fb434c688a8854a012835`
+  to
+  `fa3a2556e5baec0303f2fb8b8fe4b8e51fca6419da606cf000810d8643821644`.
+
+Local validation completed:
+
+- `cargo +1.78.0 check --workspace --locked`: passed;
+- `cargo fmt --all -- --check`: passed;
+- `cargo check --workspace`: passed;
+- `cargo clippy --workspace --all-targets -- -D warnings`: passed;
+- `cargo test --workspace`: 233 passed, 0 failed;
+- validator and diagnostics catalogue/Desert Water gates: passed;
+- simulator CLI replayed both canonical command files and reproduced their
+  exact outcomes and minutes; focused simulator/engine tests pin transition
+  order, command-log equality, and deterministic final-state digests, while
+  the frozen action inventory pins the recorded costs;
+- deterministic generated mobile-bundle check: passed;
+- `flutter analyze`: passed with no issues;
+- `flutter test`: 116 passed, 0 failed;
+- unsigned three-ABI debug APK: built successfully, 187,596,640 bytes,
+  SHA-256
+  `633b1ea2a6bba0f25e72de568d01961303fdf182a5b4520644c735a128ac8200`;
+- C ABI remains version 1. For each production APK ABI — `armeabi-v7a`,
+  `arm64-v8a`, and `x86_64` — the audit found exactly these three exported
+  Juris symbols and no additional Juris C ABI symbol:
+  `juris_mobile_bridge_execute`, `juris_mobile_bridge_string_free`, and
+  `juris_mobile_bridge_abi_version`.
+
+Compatibility and implementation boundaries:
+
+- generic Rust runtime, bridge, FFI, schema, persistence, lifecycle, Dossier,
+  digest, and compatibility implementation sources are unchanged;
+- generic Flutter production sources are unchanged; changes are limited to
+  declarative production content/catalogue/localization, the generated mobile
+  bundle, focused Rust/Flutter tests, the Android acceptance test, and
+  documentation;
+- C ABI version and export surface are unchanged;
+- existing save digests and `scenario-runtime-v1`/`scenario-runtime-v2`
+  persistence compatibility are unchanged;
+- Desert Water behavior is expressed through existing generic declarative
+  stages, conditions, effects, events, deadlines, async tasks, outcomes,
+  lifecycle, persistence, and Dossier contracts; there is no case-specific
+  production runtime branch.
+
+Android API 37 acceptance status and known issue:
+
+- the first full native run passed all five pre-existing Android integration
+  tests, then the new Desert Water test failed because its test harness looked
+  passed the catalogue `CustomScrollView` itself to an API requiring its
+  descendant `Scrollable` state widget;
+- after that harness selector was corrected, the second run reached Desert
+  Water but failed on an offscreen catalogue-card tap;
+- commit `7ca533ca986cb90511114fd11e4ce70afe3a7794` contains both narrowly scoped
+  harness fixes: selecting the descendant `Scrollable` and scrolling the
+  fifth card's Start button into the physical viewport before tapping;
+- a subsequent post-fix rerun did not provide acceptance evidence because the
+  Flutter host launch stalled before the app or Dart test suite started; it
+  was stopped rather than reported as a pass;
+- consequently the required complete post-fix Android API 37 lifecycle path —
+  catalogue position-five selection, initial Dossier omission, stable-ID
+  reveal, save/reset/load, adverse-but-open judgment, remedy/appeal, explicit
+  closure, duplicate-free restore, and post-closure rejection — remains
+  pending as one terminal full native rerun;
+- this pending Android gate is a release blocker for external playtesting.
+  No hosted iOS or other remote CI result is claimed for this unpushed branch.
+
+Next step:
+
+- rerun the complete Android API 37 native integration suite from a healthy
+  Flutter/emulator host and require all six tests, including Desert Water, to
+  reach a successful terminal result;
+- capture catalogue, initial Dossier, revealed Dossier, lost-but-open appeal,
+  and explicit-closure evidence after that successful run;
+- recheck the cumulative diff and local repository state, then stop for local
+  review; do not push, open a PR, create a tag/release, or begin a later roadmap
+  phase without explicit authorization.
 
 ## v0.6.0-alpha.1 release preparation — 2026-08-04
 
