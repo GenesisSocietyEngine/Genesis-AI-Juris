@@ -1,12 +1,17 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: feat/snapshot-visibility-hardening-v1
-base_commit: e9812a475dedbb47911bb4a746c81d6f280f2349
+branch: docs/snapshot-visibility-publication-checkpoint
+base_commit: 4766526e5007ddb12d3e54421c8733c27c9235dd
 snapshot_visibility_contract_commit: 7d8d086ff2a639e9d32f058fdd4351d67b787b15
 snapshot_visibility_implementation_commit: 7f013ade23b27f1e4ca491b433f91bb8bc0b3cb6
 snapshot_visibility_mobile_test_commit: eec4f7f60a2d5c8444d49960e5bf2c857a09637f
 snapshot_visibility_review_commit: e155ffa430b440707e8d0ffe8dfacd1f5ade9a07
+snapshot_visibility_pr: 16
+snapshot_visibility_pr_head: d3b49da445ab4af15afd065526fb80610f98e960
+snapshot_visibility_synthetic_merge: dff534a8856e6d20ed4f49b8fb401482ba39d853
+snapshot_visibility_product_merge: 4766526e5007ddb12d3e54421c8733c27c9235dd
+snapshot_visibility_merged_at_utc: 2026-08-05T21:35:16Z
 failed_erp_pr: 14
 failed_erp_head: 0aa393096f1e9be4458070d3d53d739c1f8483c0
 failed_erp_merge_commit: 3cfa3066b64f36b92f3a77a30ec4a070e74860ed
@@ -20,6 +25,138 @@ last_updated: 2026-08-05
 ---
 
 # Current Progress
+
+## Snapshot Visibility Hardening v1 publication checkpoint - 2026-08-05
+
+Status: owner review passed, PR #16 was published through the repository's
+normal merge-commit workflow, and all product post-merge gates passed. The
+accepted PR head was
+`d3b49da445ab4af15afd065526fb80610f98e960`, based exactly on
+`e9812a475dedbb47911bb4a746c81d6f280f2349`. GitHub's pre-merge synthetic
+commit was `dff534a8856e6d20ed4f49b8fb401482ba39d853`. The product merge commit is
+`4766526e5007ddb12d3e54421c8733c27c9235dd`, created by merge commit at
+`2026-08-05T21:35:16Z` with the accepted base and PR head as its two parents.
+
+### Published contract and root cause
+
+- the first faulty boundary was the authoritative Rust
+  `ScenarioSession::snapshot()` projection. The scenario definition and
+  authoritative reveal state were correct, but the player snapshot exposed
+  authored facts, evidence, deadlines and inbox records before reveal. The
+  JSON bridge serialized that over-broad snapshot unchanged, so later Flutter
+  filtering could not protect raw JSON, parsed models, EN/RU text, counts or
+  nested action references;
+- Rust now owns the player projection boundary. Facts, evidence, deadlines and
+  inbox records enter the snapshot only when their authoritative runtime state
+  makes them visible. Ordering remains deterministic, and projected references
+  are intersected with the available action set;
+- internal flags and fired-event IDs retain their version-1 JSON keys but are
+  emitted empty. Rust-only diagnostics remain available without crossing the
+  player boundary. Flutter maps the Rust-projected arrays directly and does
+  not infer, restore or case-filter visibility;
+- the evidence fallback no longer reveals the full authored inventory count.
+  An authored `numeric_metrics.evidence` value still wins; otherwise the UI
+  reports only visible-evidence presence (`0` or `100`), not completeness or
+  evidential quality;
+- no production scenario definition, catalogue entry, balance, action, cost,
+  deadline, outcome, canonical trace, persistence schema, bridge command,
+  public response key, C ABI, app version or release metadata changed.
+
+The full scenario definitions and EN/RU localization remain inspectable in the
+packaged deterministic mobile asset. Snapshot hardening protects the runtime
+player projection; hiding authored definitions from asset inspection requires
+a separate content-delivery architecture and is explicitly outside this
+checkpoint.
+
+### Hosted publication evidence
+
+Every accepted push and pull-request run completed successfully on exact PR
+head `d3b49da445ab4af15afd065526fb80610f98e960`:
+
+| Trigger | Workflow | Run | Conclusion | Tested SHA |
+|---|---|---:|---|---|
+| push | Rust CI | `31039524447` | success | `d3b49da445ab4af15afd065526fb80610f98e960` |
+| pull request | Rust CI | `31039609606` | success | `d3b49da445ab4af15afd065526fb80610f98e960` |
+| push | Flutter Mobile UI | `31039524313` | success | `d3b49da445ab4af15afd065526fb80610f98e960` |
+| pull request | Flutter Mobile UI | `31039609710` | success | `d3b49da445ab4af15afd065526fb80610f98e960` |
+| push | iOS Native FFI | `31039524390` | success | `d3b49da445ab4af15afd065526fb80610f98e960` |
+| pull request | iOS Native FFI | `31039609630` | success | `d3b49da445ab4af15afd065526fb80610f98e960` |
+
+The normal post-merge workflows also completed successfully on exact product
+merge `4766526e5007ddb12d3e54421c8733c27c9235dd`:
+
+| Workflow | Run | Conclusion | Tested SHA |
+|---|---:|---|---|
+| Rust CI | `31049281860` | success | `4766526e5007ddb12d3e54421c8733c27c9235dd` |
+| Flutter Mobile UI | `31049282746` | success | `4766526e5007ddb12d3e54421c8733c27c9235dd` |
+| iOS Native FFI | `31049283054` | success | `4766526e5007ddb12d3e54421c8733c27c9235dd` |
+
+The Rust run passed formatting, workspace check, Clippy for all targets with
+warnings denied, all tests and the locked Rust 1.78 MSRV check. Flutter passed
+dependency resolution, analysis and all tests. Hosted iOS built the Runner and
+Rust static library, found the three required exports, booted the iPhone
+Simulator and passed `RunnerTests.testNativeLogisticsLifecycle()` with
+`TEST SUCCEEDED`. Hosted iOS checks required-symbol presence; the exact
+no-additional-symbol result is supplied by the local three-ABI NDK audit below.
+
+### Exact deterministic scenario baselines
+
+All five production fingerprints and all 11 canonical path results remain
+unchanged:
+
+| Scenario | Fingerprint | Canonical path | Final minute | Outcome | Final digest |
+|---|---|---|---:|---|---|
+| Failed ERP | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` | settlement | 570 | `settlement_64500` | `fd77a45422e4abd7f141fc7b1db767524ebf48d9674bd25c21354fb7a2b8c029` |
+| Failed ERP | same | prepared judgment | 8,640 | `judgment_preserved_after_cassation` | `f25604fc0225d7ac5a7e98d192ce3b82114970158a3662aee7575b128430ca0c` |
+| Failed ERP | same | remittal/open | 10,080 | none | `268f27867fd1f45a417c0e999819165bd79f76a74f3ab2e65ee075e193cbc34a` |
+| Logistics | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` | negotiated | 270 | `negotiated_recovery` | `139239e001417ae563e270128864a512e88c0ff535a498e15b000731b8ca5bfe` |
+| Logistics | same | judgment | 480 | `judgment_recovery` | `e25e1eeb36249c1b7da0fe7a947f29ed3363ce7dac0357a110951c49bb738ac3` |
+| GreenFire | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` | protected | 4,440 | `protected_crisis_position` | `17f58f95551abacb445ce6d886fc059bcbd7a7660c3f089d9509e7a25f01a216` |
+| GreenFire | same | compromised | 4,590 | `compromised_crisis_position` | `432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec` |
+| GoldenShell | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` | coordinated | 4,545 | `coordinated_claim_position` | `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b` |
+| GoldenShell | same | fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd6b9a7cbe1b23bdd6d412314e582c13503` |
+| Desert Water | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` | coordinated | 3,180 | `credible_source_and_remedy` | `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d` |
+| Desert Water | same | compromised | 3,510 | `compromised_claim_closed` | `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce` |
+
+### Local acceptance, artifacts and compatibility
+
+- all 317 Rust tests and all 138 Flutter tests passed;
+- the Android API 37 / Android 17 x86_64 acceptance suite passed 8/8 without
+  a gameplay action after restoration;
+- deterministic mobile bundle: 622,325 bytes, SHA-256
+  `58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`;
+- ordinary debug APK: 164,654,867 bytes, SHA-256
+  `3bc639583f8ea8ccfb300010694f5015bfd8a70f86887c8d7128950b126da919`;
+- C ABI remains version 1. `armeabi-v7a`, `arm64-v8a` and `x86_64` each export
+  exactly `juris_mobile_bridge_abi_version`,
+  `juris_mobile_bridge_execute` and `juris_mobile_bridge_string_free`, with no
+  fourth Juris C ABI symbol;
+- persistence remains `genesis.ai-juris.command-log`, envelope schema version
+  1 and `scenario-runtime-v2`; the eight-field envelope and digest profiles
+  are unchanged. Existing representative saves, final saves, canonical replay
+  logs and the corrected 291-command Desert Water recovery save retain
+  snapshot/digest compatibility. The restored device save SHA-256 remains
+  `328d76e392230ac47ecac4ecda6c54af83a48155f4b0d414fe07a2fecabfe019`.
+
+### Preserved state, limitations and stop boundary
+
+- owner review and publication were explicitly approved before PR #16 was
+  marked Ready and merged;
+- Failed ERP's `hearing_missed_notice` remains unchanged content-reachability
+  debt: the action-driven hearing stage has no valid command that crosses its
+  relative missed-deadline boundary without completing attendance;
+- PR #4 remains open and unchanged. Recovery ref
+  `backup/desert-water-pre-failed-erp` remains
+  `44e565b22c52a4c3a3e69b2c137353b7771fcf77`; Dossier ref
+  `feat/dossier-projection-v1` remains
+  `62111ddef1623f0211149c70617564f2aa622dd4`; protected untracked
+  `docs/development/CURRENT_PROGRESS.zip` remains untouched;
+- the latest release remains `v0.6.0-alpha.1`, and the app version remains
+  `0.6.0+13`;
+- no tag was created or moved, no GitHub Release was created, no APK asset was
+  uploaded and no version was bumped. Training Debrief, Pressure &
+  Countermove, Legal Theory, another scenario and release work were not
+  started.
 
 ## Snapshot Visibility Hardening v1 local checkpoint - 2026-08-05
 
