@@ -48,6 +48,9 @@ At every accepted command, replay position and repeated snapshot call:
 - evidence-to-fact relationships in the Dossier contain only visible fact IDs;
 - unavailable actions, unresolved outcomes and unfired events are not exposed
   through entity arrays or their nested references;
+- the existing `flags` and `fired_event_ids` response keys remain present for
+  JSON compatibility but are always empty in player snapshots; Rust-only,
+  documentation-hidden accessors preserve authoring and simulator diagnostics;
 - emitted array lengths describe only emitted, visible entities;
 - no redacted placeholder is emitted for hidden content.
 
@@ -75,6 +78,16 @@ clock, keep a case-specific allowlist or replace a missing hidden entity with a
 zero/default placeholder. Stable ordering is inherited from definition order
 for already-visible top-level entities; Dossier ordering remains its existing
 deterministic ID/due-time ordering.
+
+The legacy Flutter evidence summary divided visible evidence by the complete
+authored evidence count. That denominator itself disclosed hidden inventory.
+For a scenario with an authoritative `numeric_metrics.evidence` value, that
+value remains unchanged and takes precedence. Otherwise the presentation now
+uses a player-safe visible-evidence presence score: `0` means that no evidence
+item is visible and `100` means that at least one item is visible. This is not
+an evidence-completeness ratio, reliability assessment or gameplay resource;
+it is the only deliberate presentation-semantic consequence of removing the
+hidden denominator from Flutter.
 
 ## Compatibility invariants
 
@@ -114,6 +127,12 @@ Tests must also prove:
 - bundle bytes remain unchanged;
 - Android and hosted iOS continue through the same native ABI.
 
+Production coverage combines the 11 canonical outcome paths with focused
+valid-command paths for missed deadlines, inactivity, rescheduling, appeal and
+cassation. IDs with an authored reveal effect must be absent before that effect
+and present afterward. Initial hidden definitions that have no reveal effect
+remain pinned absent at every tested position.
+
 ## Explicit limitation
 
 This is a player-snapshot boundary, not an encrypted-content or anti-tamper
@@ -124,9 +143,16 @@ assets can discover authored content. Removing definitions from the client
 would require a separate content-delivery architecture and is outside this
 checkpoint.
 
-The snapshot also retains existing player/diagnostic fields such as seed,
-flags, numeric metrics, resources and fired event IDs. They are audited for
-direct hidden entity IDs and text, but this checkpoint does not introduce a
-new presentation allowlist or split an internal diagnostics protocol. Such a
-split would be a separate versioned contract; it must not be smuggled into the
-entity-visibility fix.
+The snapshot retains the seed, numeric metrics and resources because they are
+existing player/runtime contracts. Their keys are not definition-backed entity
+arrays, and changing their presentation policy would require a separate
+allowlist/schema decision. Internal flags and fired event IDs no longer cross
+the player boundary: their version-1 response fields are structurally retained
+as empty values. Complete validator/simulator diagnostics remain Rust-side.
+
+The production-content audit also identifies one pre-existing unreachable
+presentation record: Failed ERP's `hearing_missed_notice` is attached to a
+relative missed-deadline event, but the action-driven hearing stage has no
+valid command that can cross that boundary without completing attendance. It
+therefore remains pinned absent and is reported as content reachability debt;
+this checkpoint does not change scenario content to manufacture a reveal.

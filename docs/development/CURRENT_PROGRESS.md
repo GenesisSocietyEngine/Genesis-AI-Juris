@@ -1,8 +1,12 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: feat/desert-water-case
-base_commit: 3cfa3066b64f36b92f3a77a30ec4a070e74860ed
+branch: feat/snapshot-visibility-hardening-v1
+base_commit: e9812a475dedbb47911bb4a746c81d6f280f2349
+snapshot_visibility_contract_commit: 7d8d086ff2a639e9d32f058fdd4351d67b787b15
+snapshot_visibility_implementation_commit: 7f013ade23b27f1e4ca491b433f91bb8bc0b3cb6
+snapshot_visibility_mobile_test_commit: eec4f7f60a2d5c8444d49960e5bf2c857a09637f
+snapshot_visibility_review_commit: e155ffa430b440707e8d0ffe8dfacd1f5ade9a07
 failed_erp_pr: 14
 failed_erp_head: 0aa393096f1e9be4458070d3d53d739c1f8483c0
 failed_erp_merge_commit: 3cfa3066b64f36b92f3a77a30ec4a070e74860ed
@@ -16,6 +20,163 @@ last_updated: 2026-08-05
 ---
 
 # Current Progress
+
+## Snapshot Visibility Hardening v1 local checkpoint - 2026-08-05
+
+Status: implementation and local acceptance are complete on
+`feat/snapshot-visibility-hardening-v1`, based exactly on merged Desert Water
+`e9812a475dedbb47911bb4a746c81d6f280f2349`. Publication is the next step; the
+checkpoint must remain a Draft PR for owner review and must not be marked
+Ready or merged automatically.
+
+### Root cause and player-projection contract
+
+- the first faulty boundary was `ScenarioSession::snapshot()`: the full
+  definition and authoritative reveal state were correct, but the player
+  snapshot serialized all facts, evidence, deadlines and inbox records. The
+  real JSON bridge transported those records unchanged. Flutter removed some
+  rows only after JSON parsing, so raw payloads, Dart input models, IDs, EN/RU
+  strings, counts and nested action references could already disclose hidden
+  inventory;
+- the generic Rust projection now emits facts only after their authoritative
+  status leaves `unknown`, evidence only when authoritative availability is
+  set, deadlines only while authoritative lifecycle state exists, and inbox
+  items only when authoritative visibility is set. Definition order is
+  retained. Deadline completion and inbox resolution references are
+  intersected with the currently available action set so a visible record
+  cannot point to a hidden action;
+- internal flag names and fired event IDs no longer cross the player boundary.
+  Their existing version-1 JSON keys remain present as `{}` and `[]` to retain
+  the response shape; Rust-only diagnostic accessors keep validator,
+  simulator and parity coverage available without exposing them to the bridge;
+- actors and async tasks have no player-snapshot arrays or Flutter model keys
+  in the current contract. The audit and synthetic tests prove that their IDs
+  and sentinel EN/RU text remain absent before and after related task state
+  changes. Dossier Projection already omitted hidden facts/evidence and remains
+  byte-deterministic;
+- Flutter now maps Rust-projected arrays directly. No case-specific rule,
+  bridge-side filter, production Flutter visibility filter, local-clock
+  inference, redacted placeholder, reveal mutation or fallback restoration was
+  introduced;
+- the former Flutter evidence-completeness ratio used the full authored count
+  and therefore leaked hidden inventory. Authored `numeric_metrics.evidence`
+  still wins unchanged; otherwise the UI now deliberately presents a
+  visible-evidence presence score (`0` for none, `100` for one or more). It is
+  not a completeness, reliability or gameplay metric;
+- the full five-case definitions and localization remain packaged in the
+  deterministic mobile asset. A user inspecting application assets can still
+  discover authored content; removing definitions from the client requires a
+  separate content-delivery architecture and is outside this snapshot-boundary
+  checkpoint. Seed, numeric metrics and resources also remain existing
+  player/runtime fields pending any separate allowlist/schema decision.
+
+The normative contract and boundary audit are recorded in
+`docs/development/SNAPSHOT_VISIBILITY_HARDENING_V1.md`.
+
+### Regression and compatibility evidence
+
+- a synthetic Rust scenario covers hidden/visible actors, facts, evidence,
+  deadlines, async tasks, inbox records, cross references and unique EN/RU
+  sentinels. It proves omission before reveal, exactly-once/idempotent reveal,
+  visible-only counts and references, stable definition ordering,
+  byte-equivalent repeated snapshots, no snapshot mutation, before/after
+  save-load parity and command-log replay parity;
+- the authoritative test replays all 11 canonical paths across all five
+  production scenarios and checks visibility after every command. Five
+  additional valid Failed ERP paths cover inactivity, preservation and
+  settlement expiry, procedural default, hearing reschedule, appeal expiry and
+  cassation expiry. Every reachable reveal-governed entity is absent before
+  its reveal and present afterward; definitions with no reveal effect remain
+  pinned absent. No duplicate or dangling projected reference occurs; all
+  canonical outcomes, final minutes and runtime-v2 digests remain exact;
+- the real JSON bridge and C FFI tests cover create, reveal, explicit snapshot,
+  deadline activation, save, dispose and load. Hidden sentinel IDs and EN/RU
+  strings are absent from raw response bytes before reveal, and only the
+  intended entity appears afterward;
+- Flutter mapper, repository and widget tests cover EN/RU Matter, Inbox and
+  Calendar presentation before and after authoritative reveal without adding
+  presentation-side visibility filtering;
+- persistence remains `genesis.ai-juris.command-log`, envelope schema version
+  1 and `scenario-runtime-v2`. The eight-field envelope and digest profiles are
+  unchanged. Representative pre-existing saves, final saves, canonical replay
+  logs and the corrected 291-command Desert Water recovery log load with
+  snapshot/digest parity;
+- C ABI remains version 1. There are still exactly three exports:
+  `juris_mobile_bridge_abi_version`, `juris_mobile_bridge_execute` and
+  `juris_mobile_bridge_string_free`. No bridge command or response key was
+  added or removed.
+
+| Scenario | Fingerprint | Canonical path | Final minute | Outcome | Final digest |
+|---|---|---|---:|---|---|
+| Failed ERP | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` | settlement | 570 | `settlement_64500` | `fd77a454...8c029` |
+| Failed ERP | same | prepared judgment | 8,640 | `judgment_preserved_after_cassation` | `f25604fc...ca0c` |
+| Failed ERP | same | remittal/open | 10,080 | none | `268f2786...34a` |
+| Logistics | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` | negotiated | 270 | canonical negotiated outcome unchanged | `139239e0...5bfe` |
+| Logistics | same | judgment | 480 | canonical judgment outcome unchanged | `e25e1eeb...8ac3` |
+| GreenFire | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` | protected | 4,440 | `protected_crisis_position` | `17f58f95...a216` |
+| GreenFire | same | compromised | 4,590 | `compromised_crisis_position` | `432a3ca4...28ec` |
+| GoldenShell | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` | coordinated | 4,545 | canonical coordinated outcome unchanged | `72986eeb...c53b` |
+| GoldenShell | same | fragmented | 4,710 | canonical fragmented outcome unchanged | `846c96ed...503` |
+| Desert Water | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` | coordinated | 3,180 | `credible_source_and_remedy` | `432df44a...e2d` |
+| Desert Water | same | compromised | 3,510 | `compromised_claim_closed` | `a8ce4971...41ce` |
+
+Full digests remain in their canonical fixtures and the preceding Desert Water
+checkpoint; abbreviated table values are identifiers for the unchanged
+baselines, not replacement fixture values.
+
+### Local gates, Android and artifacts
+
+- Rust 1.78 locked workspace check, `cargo fmt --all -- --check`, workspace
+  check, Clippy for all targets with warnings denied, diagnostics and all 317
+  Rust tests passed;
+- deterministic bundle `--check`, Dart format, Flutter analysis and all 138
+  Flutter tests passed. `git diff --check` passed;
+- the mobile bundle is byte-identical: 622,325 bytes, SHA-256
+  `58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`;
+- the complete native Android API 37 / Android 17 x86_64 suite passed 8/8. It
+  covers GreenFire RU, GoldenShell RU, Logistics lifecycle, corruption
+  atomicity, Failed ERP RU lifecycle, debug lifecycle, the new raw Desert
+  Water visibility/save-restart-load path, and the full production Desert
+  Water lifecycle;
+- a clean multi-ABI debug APK was built after the integration runner at
+  `apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`: 164,654,867
+  bytes, SHA-256
+  `3bc639583f8ea8ccfb300010694f5015bfd8a70f86887c8d7128950b126da919`;
+- the APK contains `armeabi-v7a`, `arm64-v8a` and `x86_64`. NDK symbol audit
+  found exactly the three version-1 exports in every architecture. The
+  corresponding unstripped library hashes are respectively
+  `838fc7625f64790ab787bc0d3d98e609262fecf1b299645baf0195f6f2f9403a`,
+  `637acb3b43c9c6893c38ba50ff59f5cc2ed3e0098cb36315432f9a5daaed8ed7`
+  and `5676e2614ed94a4d1ed589eb7e36a9d848fd43d28c46cc2245caaed3da2288c1`;
+- non-committed visual evidence is
+  `apps/juris-mobile/build/snapshot-visibility-final-api37.png`. The native test
+  asserts the captured raw bridge JSON directly; generated screenshots and
+  logs remain excluded from Git;
+- the Android test installer encountered the pre-existing versionCode 4015
+  owner build and automatically uninstalled it before installing versionCode
+  13, temporarily clearing the app sandbox. The preserved recovery files and
+  refs were never changed. The corrected 291-command save was restored from
+  `.hotfix-backup/caldera-session-recovery/budget-audit/budget-fixed-live-291.command-log.json`;
+  its device SHA-256 is again exactly
+  `328d76e392230ac47ecac4ecda6c54af83a48155f4b0d414fe07a2fecabfe019`.
+  The integration runner removed its test package after the suite. The final
+  clean APK was therefore installed again, the exact recovery save was restored
+  into the new debug sandbox, and the ordinary app was launched to Case Library
+  without executing a gameplay command.
+
+No scenario definition, catalogue, balance, action, cost, deadline, outcome,
+trace, persistence schema, C ABI, application version or release metadata was
+changed. PR #4, `backup/desert-water-pre-failed-erp`,
+`feat/dossier-projection-v1`, the latest tag and the protected untracked
+`docs/development/CURRENT_PROGRESS.zip` remain untouched. Hosted Draft-PR CI
+is still pending at this local checkpoint.
+
+Known production-content reachability debt: Failed ERP's
+`hearing_missed_notice` is wired to a relative missed-deadline event, but its
+action-driven hearing stage offers no valid command that can cross the boundary
+without completing attendance. The player projection keeps it absent and the
+regression pins that absence. Correcting the content path is outside this
+no-content-change checkpoint.
 
 ## Desert Water authoritative budget recovery checkpoint — 2026-08-05
 
