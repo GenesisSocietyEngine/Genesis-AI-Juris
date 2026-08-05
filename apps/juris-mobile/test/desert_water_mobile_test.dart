@@ -400,6 +400,9 @@ Map<String, dynamic> _openingSnapshot(MobileCaseDefinition definition) {
   final Map<String, dynamic> openingAction = actions.singleWhere(
     (Map<String, dynamic> item) => item['id'] == 'accept_residents_mandate',
   );
+  final Set<String> availableActionIds = <String>{
+    openingAction['id']! as String,
+  };
 
   return <String, dynamic>{
     'snapshot_schema_version': 1,
@@ -453,7 +456,10 @@ Map<String, dynamic> _openingSnapshot(MobileCaseDefinition definition) {
             'title': item['title'],
             'due_at_minutes': _dueMinutes(_object(item['due_at'])),
             'status': 'open',
-            'completion_action_ids': item['completion_actions'],
+            'completion_action_ids':
+                (item['completion_actions'] as List<dynamic>)
+                    .where((dynamic id) => availableActionIds.contains(id))
+                    .toList(growable: false),
           },
         )
         .toList(growable: false),

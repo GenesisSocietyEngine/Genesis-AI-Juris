@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use juris_engine::{ScenarioCommand, ScenarioSession};
-use juris_scenario_schema::ScenarioDefinition;
+use juris_scenario_schema::{Effect, FactStatus, ScenarioDefinition};
 
 const FAILED_ERP: &str = include_str!("../../../content/cases/failed_erp.scenario.json");
 const LOGISTICS: &str =
@@ -55,6 +55,194 @@ struct CanonicalCase {
     digest: &'static str,
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+struct PlayerVisibility {
+    facts: BTreeSet<String>,
+    evidence: BTreeSet<String>,
+    deadlines: BTreeSet<String>,
+    inbox: BTreeSet<String>,
+}
+
+impl PlayerVisibility {
+    fn count(&self) -> usize {
+        self.facts.len() + self.evidence.len() + self.deadlines.len() + self.inbox.len()
+    }
+
+    fn assert_monotonic_from(&self, previous: &Self, case_name: &str) {
+        assert!(
+            previous.facts.is_subset(&self.facts),
+            "{case_name} hid a previously revealed fact"
+        );
+        assert!(
+            previous.evidence.is_subset(&self.evidence),
+            "{case_name} hid previously available evidence"
+        );
+        assert!(
+            previous.deadlines.is_subset(&self.deadlines),
+            "{case_name} hid a previously activated deadline"
+        );
+        assert!(
+            previous.inbox.is_subset(&self.inbox),
+            "{case_name} hid a previously created inbox item"
+        );
+    }
+
+    fn extend_from(&mut self, other: &Self) {
+        self.facts.extend(other.facts.iter().cloned());
+        self.evidence.extend(other.evidence.iter().cloned());
+        self.deadlines.extend(other.deadlines.iter().cloned());
+        self.inbox.extend(other.inbox.iter().cloned());
+    }
+
+    fn visible_subset(&self, governed: &Self) -> Self {
+        Self {
+            facts: self.facts.intersection(&governed.facts).cloned().collect(),
+            evidence: self
+                .evidence
+                .intersection(&governed.evidence)
+                .cloned()
+                .collect(),
+            deadlines: self
+                .deadlines
+                .intersection(&governed.deadlines)
+                .cloned()
+                .collect(),
+            inbox: self.inbox.intersection(&governed.inbox).cloned().collect(),
+        }
+    }
+
+    fn difference(&self, other: &Self) -> Self {
+        Self {
+            facts: self.facts.difference(&other.facts).cloned().collect(),
+            evidence: self.evidence.difference(&other.evidence).cloned().collect(),
+            deadlines: self
+                .deadlines
+                .difference(&other.deadlines)
+                .cloned()
+                .collect(),
+            inbox: self.inbox.difference(&other.inbox).cloned().collect(),
+        }
+    }
+
+    fn assert_disjoint(&self, other: &Self, case_name: &str) {
+        assert!(
+            self.facts.is_disjoint(&other.facts),
+            "{case_name} exposed an initially unknown fact"
+        );
+        assert!(
+            self.evidence.is_disjoint(&other.evidence),
+            "{case_name} exposed initially unavailable evidence"
+        );
+        assert!(
+            self.deadlines.is_disjoint(&other.deadlines),
+            "{case_name} exposed an inactive deadline"
+        );
+        assert!(
+            self.inbox.is_disjoint(&other.inbox),
+            "{case_name} exposed an event-created inbox item"
+        );
+    }
+}
+
+fn initially_hidden_visibility(definition: &ScenarioDefinition) -> PlayerVisibility {
+    PlayerVisibility {
+        facts: definition
+            .facts
+            .iter()
+            .filter(|fact| fact.initial_status == FactStatus::Unknown)
+            .map(|fact| fact.id.as_str().to_owned())
+            .collect(),
+        evidence: definition
+            .evidence
+            .iter()
+            .filter(|evidence| !evidence.initially_available)
+            .map(|evidence| evidence.id.as_str().to_owned())
+            .collect(),
+        deadlines: definition
+            .deadlines
+            .iter()
+            .filter(|deadline| deadline.activation_event.is_some())
+            .map(|deadline| deadline.id.as_str().to_owned())
+            .collect(),
+        inbox: definition
+            .inbox_items
+            .iter()
+            .filter(|item| !item.initially_visible && item.created_by_event.is_some())
+            .map(|item| item.id.as_str().to_owned())
+            .collect(),
+    }
+}
+
+fn governed_visibility(definition: &ScenarioDefinition) -> PlayerVisibility {
+    let effects = definition
+        .actions
+        .iter()
+        .flat_map(|action| action.effects.iter())
+        .chain(
+            definition
+                .events
+                .iter()
+                .flat_map(|event| event.effects.iter()),
+        )
+        .chain(
+            definition
+                .deterministic_decisions
+                .iter()
+                .flat_map(|decision| &decision.branches)
+                .flat_map(|branch| branch.effects.iter()),
+        )
+        .collect::<Vec<_>>();
+    let revealed_fact_ids = effects
+        .iter()
+        .filter_map(|effect| match effect {
+            Effect::SetFactStatus { fact, status } if *status != FactStatus::Unknown => {
+                Some(fact.as_str().to_owned())
+            }
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
+    let revealed_evidence_ids = effects
+        .iter()
+        .filter_map(|effect| match effect {
+            Effect::MakeEvidenceAvailable { evidence } => Some(evidence.as_str().to_owned()),
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
+
+    PlayerVisibility {
+        facts: definition
+            .facts
+            .iter()
+            .filter(|fact| {
+                fact.initial_status == FactStatus::Unknown
+                    && revealed_fact_ids.contains(fact.id.as_str())
+            })
+            .map(|fact| fact.id.as_str().to_owned())
+            .collect(),
+        evidence: definition
+            .evidence
+            .iter()
+            .filter(|evidence| {
+                !evidence.initially_available
+                    && revealed_evidence_ids.contains(evidence.id.as_str())
+            })
+            .map(|evidence| evidence.id.as_str().to_owned())
+            .collect(),
+        deadlines: definition
+            .deadlines
+            .iter()
+            .filter(|deadline| deadline.activation_event.is_some())
+            .map(|deadline| deadline.id.as_str().to_owned())
+            .collect(),
+        inbox: definition
+            .inbox_items
+            .iter()
+            .filter(|item| !item.initially_visible && item.created_by_event.is_some())
+            .map(|item| item.id.as_str().to_owned())
+            .collect(),
+    }
+}
+
 fn parse_definition(encoded: &str) -> ScenarioDefinition {
     serde_json::from_str(encoded).expect("production scenario must deserialize")
 }
@@ -63,7 +251,10 @@ fn parse_commands(encoded: &str) -> Vec<ScenarioCommand> {
     serde_json::from_str(encoded).expect("canonical trace must deserialize")
 }
 
-fn assert_player_projection(session: &ScenarioSession, definition: &ScenarioDefinition) -> usize {
+fn assert_player_projection(
+    session: &ScenarioSession,
+    definition: &ScenarioDefinition,
+) -> PlayerVisibility {
     let snapshot = session.snapshot();
     let encoded = serde_json::to_string(&snapshot).unwrap();
     let value = serde_json::to_value(&snapshot).unwrap();
@@ -261,24 +452,40 @@ fn assert_player_projection(session: &ScenarioSession, definition: &ScenarioDefi
         );
     }
 
-    snapshot.facts.len() + snapshot.evidence.len() + snapshot.deadlines.len() + snapshot.inbox.len()
+    PlayerVisibility {
+        facts: visible_fact_ids.into_iter().map(str::to_owned).collect(),
+        evidence: visible_evidence_ids
+            .into_iter()
+            .map(str::to_owned)
+            .collect(),
+        deadlines: visible_deadline_ids
+            .into_iter()
+            .map(str::to_owned)
+            .collect(),
+        inbox: expected_inbox_ids.into_iter().map(str::to_owned).collect(),
+    }
 }
 
-fn run_case(case: &CanonicalCase) {
+fn run_case(case: &CanonicalCase) -> (String, PlayerVisibility, PlayerVisibility) {
     let definition = parse_definition(case.definition);
     let commands = parse_commands(case.commands);
     let mut session = ScenarioSession::new(definition.clone(), case.seed)
         .unwrap_or_else(|error| panic!("{} must initialize: {error}", case.name));
 
     assert_eq!(session.scenario_fingerprint().unwrap(), case.fingerprint);
-    let initial_visible_count = assert_player_projection(&session, &definition);
+    let initial_visibility = assert_player_projection(&session, &definition);
+    let governed = governed_visibility(&definition);
+    let permanently_hidden = initially_hidden_visibility(&definition).difference(&governed);
+    governed.assert_disjoint(&initial_visibility, case.name);
+    permanently_hidden.assert_disjoint(&initial_visibility, case.name);
+    let mut revealed = PlayerVisibility::default();
     let total_reveal_governed = definition.facts.len()
         + definition.evidence.len()
         + definition.deadlines.len()
         + definition.inbox_items.len();
-    let had_hidden_entities = initial_visible_count < total_reveal_governed;
+    let had_hidden_entities = initial_visibility.count() < total_reveal_governed;
     let mut visibility_grew = false;
-    let mut previous_visible_count = initial_visible_count;
+    let mut previous_visibility = initial_visibility;
 
     for command in &commands {
         match command {
@@ -293,9 +500,12 @@ fn run_case(case: &CanonicalCase) {
                 });
             }
         }
-        let visible_count = assert_player_projection(&session, &definition);
-        visibility_grew |= visible_count > previous_visible_count;
-        previous_visible_count = visible_count;
+        let visibility = assert_player_projection(&session, &definition);
+        visibility.assert_monotonic_from(&previous_visibility, case.name);
+        permanently_hidden.assert_disjoint(&visibility, case.name);
+        revealed.extend_from(&visibility.visible_subset(&governed));
+        visibility_grew |= visibility.count() > previous_visibility.count();
+        previous_visibility = visibility;
     }
 
     if had_hidden_entities {
@@ -335,11 +545,58 @@ fn run_case(case: &CanonicalCase) {
         "{}",
         case.name
     );
+
+    (case.fingerprint.to_owned(), governed, revealed)
+}
+
+fn run_focused_visibility_path(
+    name: &str,
+    definition: &str,
+    seed: u64,
+    actions: &[&str],
+) -> (String, PlayerVisibility, PlayerVisibility) {
+    let definition = parse_definition(definition);
+    let mut session = ScenarioSession::new(definition.clone(), seed)
+        .unwrap_or_else(|error| panic!("{name} must initialize: {error}"));
+    let governed = governed_visibility(&definition);
+    let permanently_hidden = initially_hidden_visibility(&definition).difference(&governed);
+    let mut previous_visibility = assert_player_projection(&session, &definition);
+    governed.assert_disjoint(&previous_visibility, name);
+    permanently_hidden.assert_disjoint(&previous_visibility, name);
+    let mut revealed = PlayerVisibility::default();
+
+    for action_id in actions {
+        session
+            .dispatch(action_id)
+            .unwrap_or_else(|error| panic!("{name} action `{action_id}` must execute: {error}"));
+        let visibility = assert_player_projection(&session, &definition);
+        visibility.assert_monotonic_from(&previous_visibility, name);
+        permanently_hidden.assert_disjoint(&visibility, name);
+        revealed.extend_from(&visibility.visible_subset(&governed));
+        previous_visibility = visibility;
+    }
+
+    (session.scenario_fingerprint().unwrap(), governed, revealed)
+}
+
+fn merge_visibility_coverage(
+    coverage: &mut std::collections::BTreeMap<String, (PlayerVisibility, PlayerVisibility)>,
+    result: (String, PlayerVisibility, PlayerVisibility),
+) {
+    let (fingerprint, governed, revealed) = result;
+    let entry = coverage
+        .entry(fingerprint)
+        .or_insert_with(|| (governed.clone(), PlayerVisibility::default()));
+    assert_eq!(
+        entry.0, governed,
+        "scenario visibility contract changed by path"
+    );
+    entry.1.extend_from(&revealed);
 }
 
 #[test]
 fn all_five_production_scenarios_keep_visibility_and_canonical_invariants() {
-    for case in [
+    let cases = [
         CanonicalCase {
             name: "Failed ERP settlement",
             definition: FAILED_ERP,
@@ -450,7 +707,113 @@ fn all_five_production_scenarios_keep_visibility_and_canonical_invariants() {
             final_minutes: 3_510,
             digest: "a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce",
         },
-    ] {
-        run_case(&case);
+    ];
+    let mut coverage =
+        std::collections::BTreeMap::<String, (PlayerVisibility, PlayerVisibility)>::new();
+    for case in &cases {
+        merge_visibility_coverage(&mut coverage, run_case(case));
+    }
+
+    let failed_erp_focused_paths: [(&str, &[&str]); 5] = [
+        (
+            "Failed ERP permanent inactivity and preservation miss",
+            &["run-conflict-check", "rest", "rest", "rest", "rest"],
+        ),
+        (
+            "Failed ERP hearing reschedule",
+            &[
+                "run-conflict-check",
+                "request-documents",
+                "reject-settlement",
+                "commence-proceedings",
+                "prepare-statement-of-claim",
+                "prepare-evidence-bundle",
+                "request-hearing-reschedule",
+            ],
+        ),
+        (
+            "Failed ERP settlement expiry and procedural default",
+            &[
+                "run-conflict-check",
+                "request-documents",
+                "rest",
+                "rest",
+                "commence-proceedings",
+                "rest",
+                "rest",
+            ],
+        ),
+        (
+            "Failed ERP expired appeal remedy",
+            &[
+                "run-conflict-check",
+                "request-documents",
+                "reject-settlement",
+                "commence-proceedings",
+                "prepare-statement-of-claim",
+                "prepare-evidence-bundle",
+                "wait-until-hearing",
+                "attend-hearing",
+                "rest",
+                "inform-client-judgment",
+                "prepare-appeal-advice",
+                "seek-client-appeal-authorization",
+                "rest",
+                "rest",
+                "rest",
+                "rest",
+            ],
+        ),
+        (
+            "Failed ERP expired cassation remedy",
+            &[
+                "run-conflict-check",
+                "request-documents",
+                "reject-settlement",
+                "commence-proceedings",
+                "prepare-statement-of-claim",
+                "prepare-evidence-bundle",
+                "wait-until-hearing",
+                "attend-hearing",
+                "rest",
+                "inform-client-judgment",
+                "prepare-appeal-advice",
+                "seek-client-appeal-authorization",
+                "file-appeal",
+                "await-appeal-decision",
+                "assess-cassation-grounds",
+                "seek-client-cassation-authorization",
+                "rest",
+                "rest",
+                "rest",
+                "rest",
+            ],
+        ),
+    ];
+    for (name, actions) in failed_erp_focused_paths {
+        merge_visibility_coverage(
+            &mut coverage,
+            run_focused_visibility_path(name, FAILED_ERP, 0, actions),
+        );
+    }
+    for (fingerprint, (governed, revealed)) in coverage {
+        // Production authoring audit: the Failed ERP hearing-missed event has
+        // no valid action-driven path that can cross its relative deadline
+        // without completing attendance. Keep its Inbox item pinned absent
+        // instead of weakening visibility checks for reachable entities.
+        let known_unreachable =
+            if fingerprint == "ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8" {
+                PlayerVisibility {
+                    inbox: BTreeSet::from(["hearing_missed_notice".to_owned()]),
+                    ..PlayerVisibility::default()
+                }
+            } else {
+                PlayerVisibility::default()
+            };
+        let expected_revealed = governed.difference(&known_unreachable);
+        assert_eq!(
+            revealed, expected_revealed,
+            "canonical and focused production paths did not reveal every governed entity for {fingerprint}"
+        );
     }
 }

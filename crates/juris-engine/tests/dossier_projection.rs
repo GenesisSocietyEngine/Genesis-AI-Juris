@@ -793,7 +793,8 @@ fn complete_player_snapshot_is_visibility_safe_and_replay_stable() {
     assert_eq!(session.final_state_digest().unwrap(), revealed_digest);
 
     let revealed_save = session.save_json().unwrap();
-    let restored_revealed = ScenarioSession::from_save_json(definition, &revealed_save).unwrap();
+    let mut restored_revealed =
+        ScenarioSession::from_save_json(definition, &revealed_save).unwrap();
     assert_eq!(restored_revealed.command_log(), session.command_log());
     assert_eq!(
         serde_json::to_vec(&restored_revealed.snapshot()).unwrap(),
@@ -802,5 +803,72 @@ fn complete_player_snapshot_is_visibility_safe_and_replay_stable() {
     assert_eq!(
         restored_revealed.final_state_digest().unwrap(),
         revealed_digest
+    );
+
+    let activated = restored_revealed
+        .dispatch("a_receive_adverse_decision")
+        .unwrap();
+    let activated_bytes = serde_json::to_vec(&activated).unwrap();
+    let activated_digest = restored_revealed.final_state_digest().unwrap();
+    assert_eq!(
+        activated
+            .deadlines
+            .iter()
+            .map(|deadline| (
+                deadline.id.as_str(),
+                deadline.status.as_deref(),
+                deadline.due_at_minutes,
+                deadline.completion_action_ids.clone(),
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                "z_appeal_deadline",
+                Some("open"),
+                300,
+                vec!["file_appeal".to_owned()],
+            ),
+            (
+                "a_review_deadline",
+                Some("open"),
+                240,
+                vec![
+                    "preserve_review_rights".to_owned(),
+                    "file_appeal".to_owned(),
+                ],
+            ),
+        ]
+    );
+    assert_eq!(
+        activated
+            .dossier
+            .deadlines
+            .iter()
+            .map(|deadline| deadline.id.as_str())
+            .collect::<Vec<_>>(),
+        ["a_review_deadline", "z_appeal_deadline"]
+    );
+    let activated_json = String::from_utf8(activated_bytes.clone()).unwrap();
+    assert!(!activated_json.contains("sentinel_inactive_deadline"));
+    assert!(!activated_json.contains("SENTINEL INACTIVE DEADLINE"));
+    assert_eq!(
+        serde_json::to_vec(&restored_revealed.snapshot()).unwrap(),
+        activated_bytes
+    );
+    assert_eq!(
+        restored_revealed.final_state_digest().unwrap(),
+        activated_digest
+    );
+
+    let activated_save = restored_revealed.save_json().unwrap();
+    let restored_activated =
+        ScenarioSession::from_save_json(visibility_definition(), &activated_save).unwrap();
+    assert_eq!(
+        serde_json::to_vec(&restored_activated.snapshot()).unwrap(),
+        activated_bytes
+    );
+    assert_eq!(
+        restored_activated.final_state_digest().unwrap(),
+        activated_digest
     );
 }

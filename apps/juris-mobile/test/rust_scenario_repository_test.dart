@@ -955,6 +955,10 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
   String _response(String type) {
     final Map<String, dynamic> stage = _stageDefinitions[_stage]!;
     final Map<String, dynamic>? outcome = _outcomeDefinitions[_outcome];
+    final List<Map<String, dynamic>> availableActions = _actions();
+    final Set<String> availableActionIds = availableActions
+        .map((Map<String, dynamic> action) => action['id']! as String)
+        .toSet();
     return jsonEncode(<String, dynamic>{
       'type': type,
       'session_id': _sessionId,
@@ -1023,12 +1027,15 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
                         ((value['due_at']
                             as Map<String, dynamic>)['minute_of_day'] as int),
                 'status': 'open',
-                'completion_action_ids': value['completion_actions'],
+                'completion_action_ids':
+                    (value['completion_actions'] as List<dynamic>)
+                        .where((dynamic id) => availableActionIds.contains(id))
+                        .toList(growable: false),
               },
             )
             .toList(growable: false),
         'inbox': const <Map<String, dynamic>>[],
-        'available_actions': _actions(),
+        'available_actions': availableActions,
         'fired_event_ids': <String>[
           if (_stage == 'post_judgment' || _outcome == 'judgment_recovery')
             'judgment_for_velmont',
