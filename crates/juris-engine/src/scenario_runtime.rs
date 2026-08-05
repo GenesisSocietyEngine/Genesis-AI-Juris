@@ -158,7 +158,11 @@ pub struct MobileEvidenceSnapshot {
     pub available: bool,
 }
 
-/// Presentation-safe deadline state. Inactive deadlines use `null` status.
+/// Presentation-safe active deadline state.
+///
+/// The optional status field is retained for the version-1 JSON shape, but the
+/// player projection omits inactive deadlines and therefore always emits a
+/// concrete status.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct MobileDeadlineSnapshot {
     pub id: String,
@@ -212,6 +216,8 @@ pub struct MobileScenarioSnapshot {
     /// Backward-compatible alias for `is_closed`.
     pub terminal: bool,
     pub dossier: DossierProjection,
+    /// Structurally retained version-1 diagnostic field. Player snapshots
+    /// always emit an empty map; Rust tests use explicit diagnostic accessors.
     pub flags: BTreeMap<String, bool>,
 
     /// Optional canonical generic state. Existing scenarios that do not opt
@@ -226,6 +232,8 @@ pub struct MobileScenarioSnapshot {
     pub deadlines: Vec<MobileDeadlineSnapshot>,
     pub inbox: Vec<MobileInboxSnapshot>,
     pub available_actions: Vec<MobileActionSnapshot>,
+    /// Structurally retained version-1 diagnostic field. Player snapshots
+    /// always emit an empty list.
     pub fired_event_ids: Vec<String>,
     pub outcome: Option<MobileOutcomeSnapshot>,
 }
@@ -439,81 +447,93 @@ impl ScenarioSession {
             .iter()
             .find(|item| item.id.as_str() == self.state.stage_id)
             .expect("validated current stage must exist");
+        let available_actions = self.available_actions();
+        let available_action_ids = available_actions
+            .iter()
+            .map(|action| action.id.clone())
+            .collect::<BTreeSet<_>>();
 
         let facts = self
             .definition
             .facts
             .iter()
-            .map(|fact| MobileFactSnapshot {
-                id: fact.id.as_str().to_owned(),
-                statement: fact.statement.clone(),
-                status: fact_status_name(
-                    *self
-                        .state
-                        .fact_statuses
-                        .get(fact.id.as_str())
-                        .expect("validated fact state must exist"),
-                )
-                .to_owned(),
+            .filter_map(|fact| {
+                let status = *self
+                    .state
+                    .fact_statuses
+                    .get(fact.id.as_str())
+                    .expect("validated fact state must exist");
+                (status != FactStatus::Unknown).then(|| MobileFactSnapshot {
+                    id: fact.id.as_str().to_owned(),
+                    statement: fact.statement.clone(),
+                    status: fact_status_name(status).to_owned(),
+                })
             })
             .collect();
         let evidence = self
             .definition
             .evidence
             .iter()
+            .filter(|item| self.state.available_evidence.contains(item.id.as_str()))
             .map(|item| MobileEvidenceSnapshot {
                 id: item.id.as_str().to_owned(),
                 title: item.title.clone(),
                 kind: format!("{:?}", item.kind).to_lowercase(),
-                available: self.state.available_evidence.contains(item.id.as_str()),
+                available: true,
             })
             .collect();
         let deadlines = self
             .definition
             .deadlines
             .iter()
-            .map(|deadline| MobileDeadlineSnapshot {
-                id: deadline.id.as_str().to_owned(),
-                title: deadline.title.clone(),
-                due_at_minutes: self
-                    .state
-                    .deadline_due_minutes
-                    .get(deadline.id.as_str())
-                    .copied()
-                    .or_else(|| {
-                        authored_time_to_elapsed(deadline.due_at, self.definition.initial_clock)
-                    })
-                    .expect("validated deadline must have a presentation due minute"),
-                status: self
+            .filter_map(|deadline| {
+                let status = self
                     .state
                     .deadline_statuses
                     .get(deadline.id.as_str())
                     .copied()
-                    .flatten()
-                    .map(deadline_status_name)
-                    .map(str::to_owned),
-                completion_action_ids: deadline
-                    .completion_actions
-                    .iter()
-                    .map(|action| action.as_str().to_owned())
-                    .collect(),
+                    .flatten()?;
+                let completion_action_ids = if status == DeadlineStatus::Open {
+                    deadline
+                        .completion_actions
+                        .iter()
+                        .filter(|action| available_action_ids.contains(action.as_str()))
+                        .map(|action| action.as_str().to_owned())
+                        .collect()
+                } else {
+                    Vec::new()
+                };
+                Some(MobileDeadlineSnapshot {
+                    id: deadline.id.as_str().to_owned(),
+                    title: deadline.title.clone(),
+                    due_at_minutes: self
+                        .state
+                        .deadline_due_minutes
+                        .get(deadline.id.as_str())
+                        .copied()
+                        .expect("active deadline must have a stored due minute"),
+                    status: Some(deadline_status_name(status).to_owned()),
+                    completion_action_ids,
+                })
             })
             .collect();
         let inbox = self
             .definition
             .inbox_items
             .iter()
+            .filter(|item| self.state.visible_inbox.contains(item.id.as_str()))
             .map(|item| MobileInboxSnapshot {
                 id: item.id.as_str().to_owned(),
                 sender: item.sender.clone(),
                 subject: item.subject.clone(),
                 body: item.body.clone(),
-                visible: self.state.visible_inbox.contains(item.id.as_str()),
+                visible: true,
                 action_required: item.action_required,
                 resolved: self.state.resolved_inbox.contains(item.id.as_str()),
                 resolution_action_ids: item
                     .resolution_actions
                     .iter()
+                    .filter(|action| available_action_ids.contains(action.as_str()))
                     .map(|action| action.as_str().to_owned())
                     .collect(),
             })
@@ -533,7 +553,6 @@ impl ScenarioSession {
         });
         let matter_lifecycle = MatterLifecycleStatus::from_stage(stage.kind, stage.terminal);
         let is_closed = matter_lifecycle.is_closed();
-        let available_actions = self.available_actions();
         let dossier = dossier::project_dossier(
             self,
             stage,
@@ -558,7 +577,9 @@ impl ScenarioSession {
             resolved_outcome: self.state.outcome_id.clone(),
             terminal: is_closed,
             dossier,
-            flags: self.state.flags.clone(),
+            // Preserve the version-1 response shape without exposing internal
+            // diagnostic identifiers through the player projection.
+            flags: BTreeMap::new(),
             numeric_metrics: (!self.definition.numeric_metrics.is_empty())
                 .then(|| self.state.numeric_metrics.clone()),
             resources: (!self.definition.initial_resources.is_empty())
@@ -568,9 +589,37 @@ impl ScenarioSession {
             deadlines,
             inbox,
             available_actions,
-            fired_event_ids: self.state.fired_events.iter().cloned().collect(),
+            fired_event_ids: Vec::new(),
             outcome,
         }
+    }
+
+    /// Rust-only diagnostic access for parity and authoring tests.
+    ///
+    /// Internal flags are deliberately excluded from the player snapshot and
+    /// are never serialized by the mobile bridge.
+    #[doc(hidden)]
+    #[must_use]
+    pub fn diagnostic_flags(&self) -> &BTreeMap<String, bool> {
+        &self.state.flags
+    }
+
+    /// Rust-only fired-event access for parity and authoring tests.
+    ///
+    /// Event identifiers are runtime diagnostics, not player-visible content.
+    #[doc(hidden)]
+    #[must_use]
+    pub fn diagnostic_fired_event_ids(&self) -> &BTreeSet<String> {
+        &self.state.fired_events
+    }
+
+    /// Rust-only visible-Inbox access for projection-contract tests.
+    ///
+    /// The bridge receives only the definition-ordered player projection.
+    #[doc(hidden)]
+    #[must_use]
+    pub fn diagnostic_visible_inbox_ids(&self) -> &BTreeSet<String> {
+        &self.state.visible_inbox
     }
 
     /// Applies one stable action ID and returns the resulting snapshot.

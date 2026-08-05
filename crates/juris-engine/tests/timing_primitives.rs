@@ -253,7 +253,11 @@ fn legacy_deadline_policy_misses_at_the_due_minute() {
 
     let snapshot = session.advance_time(420).unwrap();
     assert_eq!(snapshot.deadlines[0].status.as_deref(), Some("missed"));
-    assert_eq!(snapshot.flags.get("deadline_missed"), Some(&true));
+    assert!(snapshot.flags.is_empty());
+    assert_eq!(
+        session.diagnostic_flags().get("deadline_missed"),
+        Some(&true)
+    );
 }
 
 #[test]
@@ -266,7 +270,11 @@ fn legacy_deadline_at_elapsed_zero_is_processed_during_session_creation() {
     let snapshot = session.snapshot();
     assert_eq!(snapshot.clock_minutes, 0);
     assert_eq!(snapshot.deadlines[0].status.as_deref(), Some("missed"));
-    assert_eq!(snapshot.flags.get("deadline_missed"), Some(&true));
+    assert!(snapshot.flags.is_empty());
+    assert_eq!(
+        session.diagnostic_flags().get("deadline_missed"),
+        Some(&true)
+    );
 }
 
 #[test]
@@ -335,11 +343,14 @@ fn advance_to_multiple_open_deadlines_completes_only_the_earliest_target() {
         deadline_status(&session, "later_deadline").as_deref(),
         Some("open")
     );
+    assert!(snapshot.flags.is_empty());
     assert_eq!(
-        snapshot.flags.get("deadline_open_during_effects"),
+        session
+            .diagnostic_flags()
+            .get("deadline_open_during_effects"),
         Some(&true)
     );
-    assert!(!snapshot.flags.contains_key("deadline_missed"));
+    assert!(!session.diagnostic_flags().contains_key("deadline_missed"));
 }
 
 #[test]
@@ -514,10 +525,16 @@ fn async_completion_honors_forward_calendar_target() {
     let mut session = ScenarioSession::new(definition(value), 1).unwrap();
     assert_eq!(session.dispatch("start_task").unwrap().clock_minutes, 10);
     let before = session.advance_time(1_429).unwrap();
-    assert!(!before.fired_event_ids.iter().any(|id| id == "report_ready"));
+    assert!(before.fired_event_ids.is_empty());
+    assert!(!session
+        .diagnostic_fired_event_ids()
+        .contains("report_ready"));
     let ready = session.advance_time(1).unwrap();
     assert_eq!(ready.clock_minutes, 1_440);
-    assert!(ready.fired_event_ids.iter().any(|id| id == "report_ready"));
+    assert!(ready.fired_event_ids.is_empty());
+    assert!(session
+        .diagnostic_fired_event_ids()
+        .contains("report_ready"));
     assert!(ready
         .available_actions
         .iter()
@@ -544,6 +561,10 @@ fn civil_at_time_event_precedes_legacy_deadline_miss_at_same_elapsed_minute() {
 
     let mut session = ScenarioSession::new(definition(value), 1).unwrap();
     let snapshot = session.advance_time(420).unwrap();
-    assert_eq!(snapshot.flags.get("at_time_seen"), Some(&true));
-    assert_eq!(snapshot.flags.get("deadline_missed"), Some(&true));
+    assert!(snapshot.flags.is_empty());
+    assert_eq!(session.diagnostic_flags().get("at_time_seen"), Some(&true));
+    assert_eq!(
+        session.diagnostic_flags().get("deadline_missed"),
+        Some(&true)
+    );
 }

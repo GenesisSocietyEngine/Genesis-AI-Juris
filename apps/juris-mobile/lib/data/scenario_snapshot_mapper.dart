@@ -30,9 +30,6 @@ abstract final class ScenarioSnapshotMapper {
     final Set<String> availableActionIds = availableActions
         .map((Map<String, dynamic> action) => _string(action, 'id'))
         .toSet();
-    final List<Map<String, dynamic>> availableEvidence = evidence
-        .where((Map<String, dynamic> item) => _bool(item, 'available'))
-        .toList(growable: false);
     final Map<String, int> numericMetrics =
         _optionalIntegerMap(source, 'numeric_metrics');
     final Map<String, int> resources = _optionalIntegerMap(source, 'resources');
@@ -43,9 +40,10 @@ abstract final class ScenarioSnapshotMapper {
                     _factStatusScore(_string(fact, 'status')))
                 .reduce((int left, int right) => left + right) ~/
             facts.length;
-    final int evidenceScore = evidence.isEmpty
-        ? 0
-        : ((availableEvidence.length / evidence.length) * 100).round();
+    // Rust owns player visibility. Every row in these arrays has already
+    // crossed the authoritative player-projection boundary, so Flutter maps
+    // the rows directly and never infers visibility from row fields.
+    final int evidenceScore = evidence.isEmpty ? 0 : 100;
     final Map<String, dynamic>? outcome = _nullableObject(source['outcome']);
 
     return GameSnapshot(
@@ -98,7 +96,6 @@ abstract final class ScenarioSnapshotMapper {
       juniorReviewDueDay: 0,
       juniorReviewDueMinute: 0,
       inbox: _objectList(source, 'inbox')
-          .where((Map<String, dynamic> item) => _bool(item, 'visible'))
           .map(
             (Map<String, dynamic> item) => InboxItemView(
               id: _string(item, 'id'),
@@ -135,7 +132,6 @@ abstract final class ScenarioSnapshotMapper {
           )
           .toList(growable: false),
       deadlines: _objectList(source, 'deadlines')
-          .where((Map<String, dynamic> item) => item['status'] != null)
           .map(
             (Map<String, dynamic> item) => DeadlineView(
               id: _string(item, 'id'),
@@ -158,7 +154,7 @@ abstract final class ScenarioSnapshotMapper {
             ),
           )
           .toList(growable: false),
-      evidence: availableEvidence
+      evidence: evidence
           .map(
             (Map<String, dynamic> item) => EvidenceView(
               id: _string(item, 'id'),

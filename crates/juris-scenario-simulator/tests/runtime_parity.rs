@@ -7,13 +7,19 @@ use juris_scenario_simulator::{
 };
 use serde_json::{json, Value};
 
+struct AuthoritativeParity {
+    snapshot: juris_engine::MobileScenarioSnapshot,
+    flags: std::collections::BTreeMap<String, bool>,
+    fired_event_ids: Vec<String>,
+}
+
 fn run_both(
     value: Value,
     seed: u64,
     commands: &[ScenarioTraceCommand],
 ) -> (
     juris_scenario_simulator::SimulationResult,
-    juris_engine::MobileScenarioSnapshot,
+    AuthoritativeParity,
 ) {
     let definition: ScenarioDefinition =
         serde_json::from_value(value.clone()).expect("typed scenario must parse");
@@ -40,32 +46,45 @@ fn run_both(
             }
         }
     }
-    (simulated, authoritative.snapshot())
+    let flags = authoritative.diagnostic_flags().clone();
+    let fired_event_ids = authoritative
+        .diagnostic_fired_event_ids()
+        .iter()
+        .cloned()
+        .collect();
+    (
+        simulated,
+        AuthoritativeParity {
+            snapshot: authoritative.snapshot(),
+            flags,
+            fired_event_ids,
+        },
+    )
 }
 
 fn assert_core_parity(
     simulated: &juris_scenario_simulator::SimulationResult,
-    authoritative: &juris_engine::MobileScenarioSnapshot,
+    authoritative: &AuthoritativeParity,
 ) {
-    assert_eq!(simulated.final_state.stage, authoritative.stage_id);
-    assert_eq!(
-        simulated.final_state.clock_minutes,
-        authoritative.clock_minutes
-    );
+    let snapshot = &authoritative.snapshot;
+    assert_eq!(simulated.final_state.stage, snapshot.stage_id);
+    assert_eq!(simulated.final_state.clock_minutes, snapshot.clock_minutes);
     assert_eq!(simulated.final_state.flags, authoritative.flags);
     assert_eq!(
         simulated.final_state.numeric_metrics,
-        authoritative.numeric_metrics.clone().unwrap_or_default()
+        snapshot.numeric_metrics.clone().unwrap_or_default()
     );
     assert_eq!(
         simulated.final_state.resources,
-        authoritative.resources.clone().unwrap_or_default()
+        snapshot.resources.clone().unwrap_or_default()
     );
     assert_eq!(simulated.fired_events, authoritative.fired_event_ids);
     assert_eq!(
         simulated.final_state.resolved_outcome,
-        authoritative.resolved_outcome
+        snapshot.resolved_outcome
     );
+    assert!(snapshot.flags.is_empty());
+    assert!(snapshot.fired_event_ids.is_empty());
 }
 
 fn parity_scenario() -> Value {
@@ -612,11 +631,11 @@ fn exact_due_action_precompletes_only_the_selected_deadline() {
         Some("open")
     );
     assert_eq!(
-        deadline_status(&authoritative, "a_exact_deadline"),
+        deadline_status(&authoritative.snapshot, "a_exact_deadline"),
         Some("completed")
     );
     assert_eq!(
-        deadline_status(&authoritative, "z_relative_deadline"),
+        deadline_status(&authoritative.snapshot, "z_relative_deadline"),
         Some("open")
     );
     assert!(simulated.final_state.flags["civil_clock_event_fired"]);
@@ -643,7 +662,7 @@ fn completion_at_due_policy_and_due_plus_one_boundary_match_the_engine() {
         Some("open")
     );
     assert_eq!(
-        deadline_status(&authoritative, "a_exact_deadline"),
+        deadline_status(&authoritative.snapshot, "a_exact_deadline"),
         Some("open")
     );
 
@@ -655,7 +674,7 @@ fn completion_at_due_policy_and_due_plus_one_boundary_match_the_engine() {
         Some("missed")
     );
     assert_eq!(
-        deadline_status(&authoritative, "a_exact_deadline"),
+        deadline_status(&authoritative.snapshot, "a_exact_deadline"),
         Some("missed")
     );
     assert!(simulated.final_state.flags["exact_deadline_missed"]);
@@ -713,7 +732,7 @@ fn elapsed_zero_deadline_boundary_is_processed_at_session_start() {
         Some("missed")
     );
     assert_eq!(
-        deadline_status(&authoritative, "a_exact_deadline"),
+        deadline_status(&authoritative.snapshot, "a_exact_deadline"),
         Some("missed")
     );
     assert!(simulated.final_state.flags["exact_deadline_missed"]);
@@ -766,7 +785,7 @@ fn next_workday_and_relative_async_targets_match_the_engine() {
         Some("open")
     );
     assert_eq!(
-        deadline_status(&authoritative, "activated_relative_deadline"),
+        deadline_status(&authoritative.snapshot, "activated_relative_deadline"),
         Some("open")
     );
 
@@ -785,7 +804,7 @@ fn next_workday_and_relative_async_targets_match_the_engine() {
         Some("missed")
     );
     assert_eq!(
-        deadline_status(&authoritative, "activated_relative_deadline"),
+        deadline_status(&authoritative.snapshot, "activated_relative_deadline"),
         Some("missed")
     );
 }

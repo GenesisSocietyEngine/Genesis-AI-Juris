@@ -158,9 +158,7 @@ fn deadline_status<'a>(snapshot: &'a MobileScenarioSnapshot, deadline_id: &str) 
         .deadlines
         .iter()
         .find(|deadline| deadline.id == deadline_id)
-        .unwrap_or_else(|| panic!("missing deadline {deadline_id}"))
-        .status
-        .as_deref()
+        .and_then(|deadline| deadline.status.as_deref())
 }
 
 fn advance_to(session: &mut ScenarioSession, target_minute: u64) {

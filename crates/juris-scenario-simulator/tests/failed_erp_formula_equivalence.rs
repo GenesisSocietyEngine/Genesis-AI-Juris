@@ -74,6 +74,7 @@ fn assert_terminal_action_parity(
     authoritative
         .dispatch(terminal_action)
         .expect("authoritative terminal action must execute");
+    let authoritative_flags = authoritative.diagnostic_flags().clone();
     let authoritative = authoritative.snapshot();
     assert_eq!(
         authoritative.clock_minutes - clock_before,
@@ -94,7 +95,8 @@ fn assert_terminal_action_parity(
         simulated.final_state.resolved_outcome,
         authoritative.resolved_outcome
     );
-    assert_eq!(simulated.final_state.flags, authoritative.flags);
+    assert_eq!(simulated.final_state.flags, authoritative_flags);
+    assert!(authoritative.flags.is_empty());
     assert_eq!(
         simulated.final_state.numeric_metrics,
         authoritative
@@ -533,6 +535,12 @@ fn prepared_litigation_trace_matches_authoritative_engine_at_exact_due_boundarie
             }
         }
     }
+    let authoritative_flags = authoritative.diagnostic_flags().clone();
+    let authoritative_fired_event_ids = authoritative
+        .diagnostic_fired_event_ids()
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>();
     let authoritative = authoritative.snapshot();
 
     assert_eq!(simulated.status, SimulationStatus::Completed);
@@ -557,7 +565,8 @@ fn prepared_litigation_trace_matches_authoritative_engine_at_exact_due_boundarie
         simulated.final_state.clock_minutes,
         authoritative.clock_minutes
     );
-    assert_eq!(simulated.final_state.flags, authoritative.flags);
+    assert_eq!(simulated.final_state.flags, authoritative_flags);
+    assert!(authoritative.flags.is_empty());
     assert_eq!(
         simulated.final_state.numeric_metrics,
         authoritative
@@ -570,7 +579,8 @@ fn prepared_litigation_trace_matches_authoritative_engine_at_exact_due_boundarie
             .resources
             .expect("resources must be projected")
     );
-    assert_eq!(simulated.fired_events, authoritative.fired_event_ids);
+    assert_eq!(simulated.fired_events, authoritative_fired_event_ids);
+    assert!(authoritative.fired_event_ids.is_empty());
     assert_eq!(
         simulated.final_state.resolved_outcome,
         authoritative.resolved_outcome

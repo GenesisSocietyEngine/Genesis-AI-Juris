@@ -345,8 +345,9 @@ fn score_terms_clamp_and_stable_seed_decisions_materialize_once() {
 
     let decided = first.dispatch("decide").unwrap();
     assert_eq!(decided.numeric_metrics.as_ref().unwrap()["evidence"], 55);
-    assert_eq!(decided.flags.get("favorable"), Some(&true));
-    assert_eq!(decided.flags.get("adverse"), None);
+    assert_eq!(first.diagnostic_flags().get("favorable"), Some(&true));
+    assert_eq!(first.diagnostic_flags().get("adverse"), None);
+    assert!(decided.flags.is_empty());
 
     // Legacy `seed % range` arithmetic is not a persistence contract. The
     // generic runtime derives the roll from seed + fingerprint + stable
@@ -364,7 +365,8 @@ fn score_terms_clamp_and_stable_seed_decisions_materialize_once() {
 
     let seeded = first.dispatch("seeded_decide").unwrap();
     let expected_flag = if expected_roll <= 49 { "low" } else { "high" };
-    assert_eq!(seeded.flags.get(expected_flag), Some(&true));
+    assert_eq!(first.diagnostic_flags().get(expected_flag), Some(&true));
+    assert!(seeded.flags.is_empty());
     second.dispatch("decide").unwrap();
     second.dispatch("seeded_decide").unwrap();
     assert_eq!(first.snapshot(), second.snapshot());
@@ -401,10 +403,11 @@ fn foreground_threshold_edges_rearm_after_reset_and_ignore_action_time() {
         second_warning.numeric_metrics.as_ref().unwrap()["trust"],
         80
     );
-    assert!(!second_warning
-        .fired_event_ids
+    assert!(!session
+        .diagnostic_fired_event_ids()
         .iter()
         .any(|id| id == "idle_warning"));
+    assert!(second_warning.fired_event_ids.is_empty());
 }
 
 #[test]
@@ -436,7 +439,8 @@ fn every_foreground_threshold_fires_only_on_its_exact_crossing_edge() {
     assert_eq!(terminal.clock_minutes, 480);
     assert_eq!(terminal.numeric_metrics.as_ref().unwrap()["warnings"], 3);
     assert_eq!(terminal.numeric_metrics.as_ref().unwrap()["trust"], 70);
-    assert_eq!(terminal.flags.get("idle_closed"), Some(&true));
+    assert_eq!(session.diagnostic_flags().get("idle_closed"), Some(&true));
+    assert!(terminal.flags.is_empty());
     assert_eq!(terminal.resolved_outcome.as_deref(), Some("idle_closed"));
     assert!(terminal.is_closed);
 }
@@ -451,10 +455,11 @@ fn repeatable_after_action_events_do_not_implicitly_trigger_metric_edges() {
     assert_eq!(metrics["inactivity_minutes"], 240);
     assert_eq!(metrics["warnings"], 0);
     assert_eq!(metrics["trust"], 100);
-    assert!(!snapshot
-        .fired_event_ids
+    assert!(!session
+        .diagnostic_fired_event_ids()
         .iter()
         .any(|id| id == "passive_wait_elapsed"));
+    assert!(snapshot.fired_event_ids.is_empty());
 }
 
 #[test]
@@ -473,10 +478,11 @@ fn repeatable_trigger_event_self_cycle_is_guarded_per_command() {
     let mut session = ScenarioSession::new(definition(), 1).unwrap();
     let snapshot = session.dispatch("trigger_repeatable_loop").unwrap();
     assert!(!snapshot.is_closed);
-    assert!(!snapshot
-        .fired_event_ids
+    assert!(!session
+        .diagnostic_fired_event_ids()
         .iter()
         .any(|id| id == "repeatable_self_loop"));
+    assert!(snapshot.fired_event_ids.is_empty());
 }
 
 #[test]
@@ -512,7 +518,11 @@ fn deadline_consequences_precede_metric_thresholds_at_the_same_minute() {
     let snapshot = session.advance_time(180).unwrap();
     assert!(snapshot.is_closed);
     assert_eq!(snapshot.resolved_outcome.as_deref(), Some("closed"));
-    assert_eq!(snapshot.flags.get("deadline_closed"), Some(&true));
+    assert_eq!(
+        session.diagnostic_flags().get("deadline_closed"),
+        Some(&true)
+    );
+    assert!(snapshot.flags.is_empty());
     assert_eq!(snapshot.numeric_metrics.as_ref().unwrap()["warnings"], 0);
     assert_eq!(snapshot.numeric_metrics.as_ref().unwrap()["trust"], 100);
 }

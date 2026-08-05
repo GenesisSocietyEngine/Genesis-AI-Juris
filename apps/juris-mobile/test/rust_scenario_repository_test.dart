@@ -980,6 +980,11 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
         'terminal': _outcome != null,
         'flags': <String, bool>{},
         'facts': (_scenario['facts'] as List<dynamic>)
+            .where(
+              (dynamic value) =>
+                  (value as Map<String, dynamic>)['initial_status'] !=
+                  'unknown',
+            )
             .map(
               (dynamic value) => <String, dynamic>{
                 'id': (value as Map<String, dynamic>)['id'],
@@ -989,6 +994,11 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
             )
             .toList(growable: false),
         'evidence': (_scenario['evidence'] as List<dynamic>)
+            .where(
+              (dynamic value) =>
+                  (value as Map<String, dynamic>)['initially_available'] ==
+                  true,
+            )
             .map(
               (dynamic value) => <String, dynamic>{
                 'id': (value as Map<String, dynamic>)['id'],
@@ -999,6 +1009,10 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
             )
             .toList(growable: false),
         'deadlines': (_scenario['deadlines'] as List<dynamic>)
+            .where(
+              (dynamic value) =>
+                  (value as Map<String, dynamic>)['activation_event'] == null,
+            )
             .map(
               (dynamic value) => <String, dynamic>{
                 'id': (value as Map<String, dynamic>)['id'],
@@ -1008,7 +1022,7 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
                             1440 +
                         ((value['due_at']
                             as Map<String, dynamic>)['minute_of_day'] as int),
-                'status': value['activation_event'] == null ? 'open' : null,
+                'status': 'open',
                 'completion_action_ids': value['completion_actions'],
               },
             )

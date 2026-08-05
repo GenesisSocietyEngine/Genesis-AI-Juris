@@ -136,12 +136,13 @@ fn action_cost_and_foreground_time_share_temporal_boundaries() {
 
     assert_eq!(action_snapshot, foreground_snapshot);
     assert_eq!(foreground_snapshot.clock_minutes, 390);
-    assert!(foreground_snapshot
-        .fired_event_ids
-        .contains(&"regulator_request_received".to_owned()));
-    assert!(foreground_snapshot
-        .fired_event_ids
-        .contains(&"legal_hold_missed".to_owned()));
+    assert!(foreground
+        .diagnostic_fired_event_ids()
+        .contains("regulator_request_received"));
+    assert!(foreground
+        .diagnostic_fired_event_ids()
+        .contains("legal_hold_missed"));
+    assert!(foreground_snapshot.fired_event_ids.is_empty());
 }
 
 #[test]
@@ -192,9 +193,10 @@ fn temporal_categories_use_deterministic_same_minute_priority() {
     let snapshot = session.advance_time(150).unwrap();
 
     assert_eq!(snapshot.clock_minutes, 180);
-    assert_eq!(snapshot.flags.get("at_time_seen"), Some(&true));
-    assert_eq!(snapshot.flags.get("async_seen"), Some(&true));
-    assert_eq!(snapshot.flags.get("deadline_seen"), Some(&true));
+    assert_eq!(session.diagnostic_flags().get("at_time_seen"), Some(&true));
+    assert_eq!(session.diagnostic_flags().get("async_seen"), Some(&true));
+    assert_eq!(session.diagnostic_flags().get("deadline_seen"), Some(&true));
+    assert!(snapshot.flags.is_empty());
 }
 
 #[test]
@@ -369,7 +371,15 @@ fn logistics_judgment_path_fires_one_event_and_enforces_the_outcome() {
     }
     let post_judgment = session.snapshot();
     assert_eq!(post_judgment.stage_id, "post_judgment");
-    assert_eq!(post_judgment.fired_event_ids, vec!["judgment_for_velmont"]);
+    assert!(post_judgment.fired_event_ids.is_empty());
+    assert_eq!(
+        session
+            .diagnostic_fired_event_ids()
+            .iter()
+            .cloned()
+            .collect::<Vec<_>>(),
+        vec!["judgment_for_velmont"]
+    );
 
     let resolved = session
         .dispatch("enforce_judgment")
@@ -483,10 +493,10 @@ fn greenfire_protected_path_runs_through_the_authoritative_engine() {
         snapshot.outcome.as_ref().map(|item| item.id.as_str()),
         Some("protected_crisis_position")
     );
-    assert!(!snapshot
-        .fired_event_ids
-        .iter()
-        .any(|event| event == "expert_assessment_expired"));
+    assert!(snapshot.fired_event_ids.is_empty());
+    assert!(!session
+        .diagnostic_fired_event_ids()
+        .contains("expert_assessment_expired"));
 }
 
 #[test]
@@ -500,10 +510,10 @@ fn greenfire_compromised_path_expires_unreviewed_expert_work() {
         session.advance_time(360).unwrap();
     }
     let before_handoff = session.snapshot();
-    assert!(before_handoff
-        .fired_event_ids
-        .iter()
-        .any(|event| event == "expert_assessment_expired"));
+    assert!(before_handoff.fired_event_ids.is_empty());
+    assert!(session
+        .diagnostic_fired_event_ids()
+        .contains("expert_assessment_expired"));
     let result = session
         .dispatch("complete_compromised_handoff")
         .expect("compromised handoff must succeed");

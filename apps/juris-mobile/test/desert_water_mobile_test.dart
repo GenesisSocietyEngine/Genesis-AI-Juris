@@ -418,6 +418,9 @@ Map<String, dynamic> _openingSnapshot(MobileCaseDefinition definition) {
     'flags': <String, bool>{},
     'resources': _object(scenario['initial_resources']),
     'facts': facts
+        .where(
+          (Map<String, dynamic> item) => item['initial_status'] != 'unknown',
+        )
         .map(
           (Map<String, dynamic> item) => <String, dynamic>{
             'id': item['id'],
@@ -427,6 +430,9 @@ Map<String, dynamic> _openingSnapshot(MobileCaseDefinition definition) {
         )
         .toList(growable: false),
     'evidence': evidence
+        .where(
+          (Map<String, dynamic> item) => item['initially_available'] == true,
+        )
         .map(
           (Map<String, dynamic> item) => <String, dynamic>{
             'id': item['id'],
@@ -438,17 +444,23 @@ Map<String, dynamic> _openingSnapshot(MobileCaseDefinition definition) {
         )
         .toList(growable: false),
     'deadlines': deadlines
+        .where(
+          (Map<String, dynamic> item) => item['activation_event'] == null,
+        )
         .map(
           (Map<String, dynamic> item) => <String, dynamic>{
             'id': item['id'],
             'title': item['title'],
             'due_at_minutes': _dueMinutes(_object(item['due_at'])),
-            'status': item['activation_event'] == null ? 'open' : null,
+            'status': 'open',
             'completion_action_ids': item['completion_actions'],
           },
         )
         .toList(growable: false),
     'inbox': inbox
+        .where(
+          (Map<String, dynamic> item) => item['initially_visible'] == true,
+        )
         .map(
           (Map<String, dynamic> item) => <String, dynamic>{
             'id': item['id'],

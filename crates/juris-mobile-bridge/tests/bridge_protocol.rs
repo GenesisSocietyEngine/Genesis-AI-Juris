@@ -17,6 +17,94 @@ const REMEDIES_SCENARIO: &str =
 const DOSSIER_SCENARIO: &str =
     include_str!("../../../content/fixtures/authoring/dossier_projection_v1.json");
 
+const PRE_REVEAL_SNAPSHOT_SENTINELS: &[&str] = &[
+    "sentinel_unknown_fact",
+    "SENTINEL UNKNOWN FACT MUST NOT LEAK",
+    "СКРЫТЫЙ ФАКТ RU",
+    "sentinel_unavailable_evidence",
+    "SENTINEL UNAVAILABLE EVIDENCE MUST NOT LEAK",
+    "SENTINEL UNAVAILABLE DESCRIPTION MUST NOT LEAK",
+    "СКРЫТОЕ ДОКАЗАТЕЛЬСТВО RU",
+];
+
+const ALWAYS_HIDDEN_SNAPSHOT_SENTINELS: &[&str] = &[
+    "sentinel_inactive_deadline",
+    "SENTINEL INACTIVE DEADLINE MUST NOT LEAK",
+    "СКРЫТЫЙ СРОК RU",
+    "sentinel_inactive_deadline_missed",
+    "SENTINEL INACTIVE MISSED EVENT MUST NOT LEAK",
+    "sentinel_unfired_event",
+    "SENTINEL UNFIRED EVENT MUST NOT LEAK",
+    "sentinel_private_flag",
+    "sentinel_future_gate",
+    "sentinel_future_activation_action",
+    "SENTINEL FUTURE ACTION MUST NOT LEAK",
+    "SENTINEL FUTURE ACTION DESCRIPTION MUST NOT LEAK",
+    "sentinel_future_remedy_action",
+    "SENTINEL FUTURE REMEDY MUST NOT LEAK",
+    "SENTINEL HIDDEN LOSS OUTCOME",
+    "SENTINEL HIDDEN OUTCOME SUMMARY MUST NOT LEAK BEFORE CLOSURE",
+];
+
+fn assert_snapshot_omits(snapshot: &Value, phase: &str, sentinels: &[&str]) {
+    let raw_snapshot = snapshot.to_string();
+    for sentinel in sentinels {
+        assert!(
+            !raw_snapshot.contains(sentinel),
+            "{phase} raw snapshot leaked `{sentinel}`: {raw_snapshot}"
+        );
+    }
+}
+
+fn assert_projection_ids(projection: &Value, key: &str, expected: &[&str], phase: &str) {
+    let mut actual = projection[key]
+        .as_array()
+        .unwrap_or_else(|| panic!("{phase} `{key}` projection must be an array"))
+        .iter()
+        .map(|item| {
+            item["id"]
+                .as_str()
+                .unwrap_or_else(|| panic!("{phase} `{key}` item must expose an ID"))
+                .to_owned()
+        })
+        .collect::<Vec<_>>();
+    actual.sort();
+
+    let mut expected = expected
+        .iter()
+        .map(|id| (*id).to_owned())
+        .collect::<Vec<_>>();
+    expected.sort();
+    assert_eq!(actual, expected, "unexpected {phase} `{key}` projection");
+}
+
+fn assert_player_snapshot_ids(
+    snapshot: &Value,
+    phase: &str,
+    facts: &[&str],
+    evidence: &[&str],
+    deadlines: &[&str],
+    actions: &[&str],
+) {
+    assert_projection_ids(snapshot, "facts", facts, phase);
+    assert_projection_ids(snapshot, "evidence", evidence, phase);
+    assert_projection_ids(snapshot, "deadlines", deadlines, phase);
+    assert_projection_ids(snapshot, "available_actions", actions, phase);
+    assert_projection_ids(&snapshot["dossier"], "facts", facts, phase);
+    assert_projection_ids(&snapshot["dossier"], "evidence", evidence, phase);
+    assert_projection_ids(&snapshot["dossier"], "deadlines", deadlines, phase);
+    assert_eq!(
+        snapshot["flags"],
+        json!({}),
+        "{phase} flags must be private"
+    );
+    assert_eq!(
+        snapshot["fired_event_ids"],
+        json!([]),
+        "{phase} event IDs must be private"
+    );
+}
+
 fn logistics_definition() -> ScenarioDefinition {
     serde_json::from_str(LOGISTICS_SCENARIO).expect("Logistics scenario must parse")
 }
@@ -195,12 +283,8 @@ fn decoded_protocol_advances_foreground_time_across_boundaries() {
 
     assert_eq!(snapshot.clock_minutes, 390);
     assert_eq!(snapshot.clock_mode, "foreground");
-    assert!(snapshot
-        .fired_event_ids
-        .contains(&"regulator_request_received".to_owned()));
-    assert!(snapshot
-        .fired_event_ids
-        .contains(&"legal_hold_missed".to_owned()));
+    assert!(snapshot.flags.is_empty());
+    assert!(snapshot.fired_event_ids.is_empty());
 }
 
 #[test]
@@ -732,14 +816,20 @@ fn json_protocol_runs_the_goldenshell_coordinated_path() {
 }
 
 #[test]
-fn json_protocol_carries_the_filtered_authoritative_dossier_additively() {
+fn json_protocol_filters_the_entire_snapshot_through_reveal_and_reload() {
     let mut bridge = MobileBridge::new();
-    let scenario: Value = serde_json::from_str(DOSSIER_SCENARIO).unwrap();
+    let mut scenario: Value = serde_json::from_str(DOSSIER_SCENARIO).unwrap();
+    scenario["facts"][1]["statement"] =
+        json!("SENTINEL UNKNOWN FACT MUST NOT LEAK / СКРЫТЫЙ ФАКТ RU");
+    scenario["evidence"][1]["title"] =
+        json!("SENTINEL UNAVAILABLE EVIDENCE MUST NOT LEAK / СКРЫТОЕ ДОКАЗАТЕЛЬСТВО RU");
+    scenario["deadlines"][1]["title"] =
+        json!("SENTINEL INACTIVE DEADLINE MUST NOT LEAK / СКРЫТЫЙ СРОК RU");
     let created: Value = serde_json::from_str(
         &bridge.execute_json(
             &json!({
                 "command": "create_session",
-                "scenario": scenario,
+                "scenario": scenario.clone(),
                 "seed": 20260803
             })
             .to_string(),
@@ -755,24 +845,56 @@ fn json_protocol_carries_the_filtered_authoritative_dossier_additively() {
         created["snapshot"]["dossier"]["procedure"]["matter_status"],
         "open"
     );
-    let initial_dossier = created["snapshot"]["dossier"].to_string();
-    for sentinel in [
-        "sentinel_unknown_fact",
-        "sentinel_unavailable_evidence",
-        "sentinel_inactive_deadline",
-        "sentinel_unfired_event",
-        "sentinel_private_flag",
-        "sentinel_future_activation_action",
-        "sentinel_future_remedy_action",
-        "final_loss",
-    ] {
-        assert!(
-            !initial_dossier.contains(sentinel),
-            "bridge dossier leaked `{sentinel}`: {initial_dossier}"
-        );
-    }
-
     let session_id = created["session_id"].as_u64().unwrap();
+    assert_snapshot_omits(
+        &created["snapshot"],
+        "create",
+        PRE_REVEAL_SNAPSHOT_SENTINELS,
+    );
+    assert_snapshot_omits(
+        &created["snapshot"],
+        "create",
+        ALWAYS_HIDDEN_SNAPSHOT_SENTINELS,
+    );
+    assert_player_snapshot_ids(
+        &created["snapshot"],
+        "create",
+        &["a_known_fact", "z_known_fact"],
+        &["a_visible_evidence", "z_visible_evidence"],
+        &[],
+        &["a_receive_adverse_decision", "z_reveal_record"],
+    );
+
+    let initial_snapshot: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "snapshot",
+                "session_id": session_id
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(initial_snapshot["type"], "snapshot");
+    assert_snapshot_omits(
+        &initial_snapshot["snapshot"],
+        "explicit pre-reveal snapshot",
+        PRE_REVEAL_SNAPSHOT_SENTINELS,
+    );
+    assert_snapshot_omits(
+        &initial_snapshot["snapshot"],
+        "explicit pre-reveal snapshot",
+        ALWAYS_HIDDEN_SNAPSHOT_SENTINELS,
+    );
+    assert_player_snapshot_ids(
+        &initial_snapshot["snapshot"],
+        "explicit pre-reveal snapshot",
+        &["a_known_fact", "z_known_fact"],
+        &["a_visible_evidence", "z_visible_evidence"],
+        &[],
+        &["a_receive_adverse_decision", "z_reveal_record"],
+    );
+
     let revealed: Value = serde_json::from_str(
         &bridge.execute_json(
             &json!({
@@ -784,17 +906,144 @@ fn json_protocol_carries_the_filtered_authoritative_dossier_additively() {
         ),
     )
     .unwrap();
-    let revealed_dossier = revealed["snapshot"]["dossier"].to_string();
-    assert!(revealed_dossier.contains("sentinel_unknown_fact"));
-    assert!(revealed_dossier.contains("sentinel_unavailable_evidence"));
-    assert!(!revealed_dossier.contains("sentinel_private_flag"));
-    assert!(!revealed_dossier.contains("sentinel_unfired_event"));
+    assert_eq!(revealed["type"], "snapshot");
+    assert_snapshot_omits(
+        &revealed["snapshot"],
+        "reveal",
+        ALWAYS_HIDDEN_SNAPSHOT_SENTINELS,
+    );
+    assert_player_snapshot_ids(
+        &revealed["snapshot"],
+        "reveal",
+        &["a_known_fact", "sentinel_unknown_fact", "z_known_fact"],
+        &[
+            "a_visible_evidence",
+            "sentinel_unavailable_evidence",
+            "z_visible_evidence",
+        ],
+        &[],
+        &["a_receive_adverse_decision"],
+    );
+    let revealed_raw_snapshot = revealed["snapshot"].to_string();
+    for disclosed in PRE_REVEAL_SNAPSHOT_SENTINELS {
+        assert!(
+            revealed_raw_snapshot.contains(disclosed),
+            "reveal snapshot omitted disclosed `{disclosed}`: {revealed_raw_snapshot}"
+        );
+    }
+
+    let explicit_revealed: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "snapshot",
+                "session_id": session_id
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_snapshot_omits(
+        &explicit_revealed["snapshot"],
+        "explicit revealed snapshot",
+        ALWAYS_HIDDEN_SNAPSHOT_SENTINELS,
+    );
+    assert_player_snapshot_ids(
+        &explicit_revealed["snapshot"],
+        "explicit revealed snapshot",
+        &["a_known_fact", "sentinel_unknown_fact", "z_known_fact"],
+        &[
+            "a_visible_evidence",
+            "sentinel_unavailable_evidence",
+            "z_visible_evidence",
+        ],
+        &[],
+        &["a_receive_adverse_decision"],
+    );
+
+    let saved: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "save_session",
+                "session_id": session_id
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(saved["type"], "session_saved");
+    let encoded_save = saved["encoded_save"].as_str().unwrap();
+    for sentinel in ALWAYS_HIDDEN_SNAPSHOT_SENTINELS {
+        assert!(
+            !encoded_save.contains(sentinel),
+            "command-log save leaked private `{sentinel}`: {encoded_save}"
+        );
+    }
+
+    let loaded: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "load_session",
+                "scenario": scenario,
+                "encoded_save": encoded_save
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(loaded["type"], "session_loaded");
+    let loaded_session_id = loaded["session_id"].as_u64().unwrap();
+    assert_ne!(loaded_session_id, session_id);
+    assert_snapshot_omits(
+        &loaded["snapshot"],
+        "loaded revealed snapshot",
+        ALWAYS_HIDDEN_SNAPSHOT_SENTINELS,
+    );
+    assert_player_snapshot_ids(
+        &loaded["snapshot"],
+        "loaded revealed snapshot",
+        &["a_known_fact", "sentinel_unknown_fact", "z_known_fact"],
+        &[
+            "a_visible_evidence",
+            "sentinel_unavailable_evidence",
+            "z_visible_evidence",
+        ],
+        &[],
+        &["a_receive_adverse_decision"],
+    );
+
+    let loaded_snapshot: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "snapshot",
+                "session_id": loaded_session_id
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_snapshot_omits(
+        &loaded_snapshot["snapshot"],
+        "explicit loaded snapshot",
+        ALWAYS_HIDDEN_SNAPSHOT_SENTINELS,
+    );
+    assert_player_snapshot_ids(
+        &loaded_snapshot["snapshot"],
+        "explicit loaded snapshot",
+        &["a_known_fact", "sentinel_unknown_fact", "z_known_fact"],
+        &[
+            "a_visible_evidence",
+            "sentinel_unavailable_evidence",
+            "z_visible_evidence",
+        ],
+        &[],
+        &["a_receive_adverse_decision"],
+    );
 
     let adverse: Value = serde_json::from_str(
         &bridge.execute_json(
             &json!({
                 "command": "dispatch",
-                "session_id": session_id,
+                "session_id": loaded_session_id,
                 "action_id": "a_receive_adverse_decision"
             })
             .to_string(),
@@ -810,8 +1059,26 @@ fn json_protocol_carries_the_filtered_authoritative_dossier_additively() {
         adverse["snapshot"]["dossier"]["judicial_decision_instance"],
         "first_instance"
     );
-    assert_eq!(
-        adverse["snapshot"]["dossier"]["deadlines"][0]["id"],
-        "a_review_deadline"
+    assert_snapshot_omits(
+        &adverse["snapshot"],
+        "post-adverse snapshot",
+        ALWAYS_HIDDEN_SNAPSHOT_SENTINELS,
+    );
+    assert_snapshot_omits(
+        &adverse["snapshot"],
+        "post-adverse snapshot",
+        &["adverse_decision_delivered"],
+    );
+    assert_player_snapshot_ids(
+        &adverse["snapshot"],
+        "post-adverse snapshot",
+        &["a_known_fact", "sentinel_unknown_fact", "z_known_fact"],
+        &[
+            "a_visible_evidence",
+            "sentinel_unavailable_evidence",
+            "z_visible_evidence",
+        ],
+        &["a_review_deadline", "z_appeal_deadline"],
+        &["accept_final_loss", "file_appeal", "preserve_review_rights"],
     );
 }
