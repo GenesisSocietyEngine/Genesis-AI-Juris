@@ -943,9 +943,20 @@ void main() {
           scrollable: find.byType(Scrollable).last,
           maxScrolls: 30,
         );
+        // On the API 37 phone viewport, scrollUntilVisible can stop while the
+        // button's center is still behind HomeShell's bottom navigation bar.
+        // Center this exact element in its nearest scrollable and require a
+        // real hit-test target before asserting command-free navigation.
+        await Scrollable.ensureVisible(
+          tester.element(openDebrief),
+          alignment: 0.5,
+          duration: Duration.zero,
+        );
+        await tester.pumpAndSettle();
+        expect(openDebrief.hitTestable(), findsOneWidget);
         final int dispatchesBeforeNavigation = bridge.commandCount('dispatch');
         final int requestsBeforeNavigation = bridge.requests.length;
-        await tester.tap(openDebrief);
+        await tester.tap(openDebrief.hitTestable());
         await tester.pumpAndSettle();
 
         expect(
