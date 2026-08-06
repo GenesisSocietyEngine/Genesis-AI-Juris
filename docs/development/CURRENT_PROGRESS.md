@@ -1,8 +1,10 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: docs/snapshot-visibility-publication-checkpoint
-base_commit: 4766526e5007ddb12d3e54421c8733c27c9235dd
+branch: feat/training-debrief-v1
+base_commit: 19c1c23f2e95c5fb1a98d485913fac3afdf36b63
+training_debrief_status: architecture_decision_required
+training_debrief_contract: docs/development/TRAINING_DEBRIEF_V1.md
 snapshot_visibility_contract_commit: 7d8d086ff2a639e9d32f058fdd4351d67b787b15
 snapshot_visibility_implementation_commit: 7f013ade23b27f1e4ca491b433f91bb8bc0b3cb6
 snapshot_visibility_mobile_test_commit: eec4f7f60a2d5c8444d49960e5bf2c857a09637f
@@ -21,10 +23,93 @@ validator_followup: d7a52d836f4f51b9c510af38513bcb2722cbd6a2
 android_followup: de7ac065d095a0e268e14961b4b74edd754cf52e
 latest_published_release_tag: v0.6.0-alpha.1
 app_version: 0.6.0+13
-last_updated: 2026-08-05
+last_updated: 2026-08-06
 ---
 
 # Current Progress
+
+## Training Debrief v1 architecture stop checkpoint - 2026-08-06
+
+Status: evidence-led design stopped before production implementation because
+the current authoritative runtime does not retain the completion minute for
+each historically executed action. The controlling checkpoint explicitly
+requires owner review at this boundary. No Rust, bridge, FFI, Flutter,
+scenario, persistence, bundle, test, APK, version, tag, release, push, or PR
+change has been made.
+
+### Verified starting checkpoint
+
+- local `HEAD`, `main`, remote `origin/main`, and merge base are exactly
+  `19c1c23f2e95c5fb1a98d485913fac3afdf36b63`;
+- Snapshot Visibility product merge remains
+  `4766526e5007ddb12d3e54421c8733c27c9235dd`; accepted PR #16 head remains
+  `d3b49da445ab4af15afd065526fb80610f98e960` on exact base
+  `e9812a475dedbb47911bb4a746c81d6f280f2349`;
+- PR #4 remains open at
+  `7aa6927e8ebfd6e205bfd12478ba28d52c40248a`;
+- recovery ref `backup/desert-water-pre-failed-erp` remains
+  `44e565b22c52a4c3a3e69b2c137353b7771fcf77`, and Dossier ref
+  `feat/dossier-projection-v1` remains
+  `62111ddef1623f0211149c70617564f2aa622dd4`;
+- the owner confirmed a new protected untracked
+  `docs/development/CURRENT_PROGRESS.zip` baseline: 47,579 bytes, SHA-256
+  `2e5f03f003a7d227cb4ce765e338a8f335d92879862e53bd1c27d65e116de3b6`;
+- latest release remains `v0.6.0-alpha.1`; app version remains `0.6.0+13`;
+- accepted baseline totals remain 317 Rust tests, 138 Flutter tests, and
+  Android API 37 acceptance 8/8;
+- deterministic bundle remains 622,325 bytes, SHA-256
+  `58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`;
+- existing ordinary debug APK remains 164,654,867 bytes, SHA-256
+  `3bc639583f8ea8ccfb300010694f5015bfd8a70f86887c8d7128950b126da919`;
+- local `armeabi-v7a`, `arm64-v8a`, and `x86_64` libraries retain C ABI
+  version 1 and exactly `juris_mobile_bridge_abi_version`,
+  `juris_mobile_bridge_execute`, and `juris_mobile_bridge_string_free`.
+
+The corrected 291-command recovery save and installed application were not
+read, rewritten, reset, or advanced. No gameplay action or device test ran.
+
+### Evidence and missing authority
+
+- resolved-outcome eligibility, final clock, lifecycle, Dossier matter status,
+  accepted action IDs/order, action definitions, and initial/current resources
+  all have existing Rust-owned sources;
+- `ScenarioSession::command_log` retains accepted `Dispatch` action IDs in
+  order, but the public command stores no completion minute;
+- runtime `action_uses` retains only counts. Prospective
+  `available_actions[].completion_at_minutes` disappears after execution;
+- completion time depends on then-current clock, explicit foreground advances,
+  deadline targeting, relative activation anchors, and temporal/event
+  boundaries. It cannot be truthfully recovered by subtracting or summing
+  declared durations from the final clock;
+- rebuilding it inside every snapshot would require the explicitly prohibited
+  full command-log replay.
+
+The full evidence, disclosure contract, rejected alternatives, and proposed
+wire shape are recorded in
+`docs/development/TRAINING_DEBRIEF_V1.md`.
+
+### Smallest proposed follow-up
+
+Pending explicit approval, add a non-serialized
+`dispatch_completion_minutes: Vec<u64>` to `ScenarioSession`. The accepted
+command log remains the sole source for action ID/order. The vector stores only
+the resulting authoritative clock minute for each successful dispatch, is
+updated transactionally, and is rebuilt by the existing normal save replay.
+It must not enter `ScenarioCommand`, the eight-field save envelope, scenario
+fingerprints, v1/v2 digest projections, bridge commands, or C ABI.
+
+This avoids both a second persisted action ledger and O(n) replay during each
+snapshot. Production implementation is intentionally paused until the owner
+approves this exact internal metadata design or revises the completion-minute
+requirement.
+
+### Stop boundary
+
+No focused or full test gate was rerun because no executable code, scenario,
+bundle, or test changed. The only permitted local work at this stop boundary is
+the architecture note and this cumulative handoff entry. Nothing was pushed,
+no PR was opened or modified, no tag/release/asset/version change occurred,
+and no later roadmap phase started.
 
 ## Snapshot Visibility Hardening v1 publication checkpoint - 2026-08-05
 
