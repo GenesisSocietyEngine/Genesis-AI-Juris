@@ -9,6 +9,7 @@ training_debrief_architecture_commit: 3c33f92c7cd07f0f2970314535ee368421cb207e
 training_debrief_runtime_commit: cdff459f9da8d208bad7f2779ea154563e50e872
 training_debrief_mobile_commit: 1a1e2933f6d236be4c4ff14333931cb65b46c475
 training_debrief_native_test_commit: 5278f1a930ab4eb55174a161766c06ceec720dbe
+training_debrief_checkpoint_commit: 6f311a7a01fbbd923d5a83273d1f08156ed71317
 snapshot_visibility_contract_commit: 7d8d086ff2a639e9d32f058fdd4351d67b787b15
 snapshot_visibility_implementation_commit: 7f013ade23b27f1e4ca491b433f91bb8bc0b3cb6
 snapshot_visibility_mobile_test_commit: eec4f7f60a2d5c8444d49960e5bf2c857a09637f
@@ -50,7 +51,9 @@ version change was created.
 - Flutter models, mapper, screen, navigation, and tests:
   `1a1e2933f6d236be4c4ff14333931cb65b46c475`;
 - Android native navigation harness hardening:
-  `5278f1a930ab4eb55174a161766c06ceec720dbe`.
+  `5278f1a930ab4eb55174a161766c06ceec720dbe`;
+- cumulative implementation checkpoint:
+  `6f311a7a01fbbd923d5a83273d1f08156ed71317`.
 
 The Rust scope is confined to `juris-engine` scenario runtime/projection and
 tests plus existing bridge/FFI contract tests. The Flutter scope is confined
