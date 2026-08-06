@@ -1,4 +1,5 @@
-use juris_engine::ScenarioSession;
+use juris_engine::{DossierMatterStatus, ScenarioSession};
+use juris_scenario_schema::MatterLifecycleStatus;
 use juris_scenario_schema::{Effect, MetricId, ScenarioDefinition, ScenarioTime};
 use serde_json::json;
 use sha2::{Digest, Sha256};
@@ -336,6 +337,128 @@ fn ordered_metrics_resources_and_sender_are_projected_after_accepted_action() {
     assert_eq!(resources["authorized_budget_eur"], 1_000);
     assert_eq!(resources["spend_eur"], 100);
     assert_eq!(resources["billable_minutes"], 45);
+}
+
+#[test]
+fn resolved_training_debrief_is_ordered_atomic_and_replay_derived() {
+    let definition = definition();
+    let mut session = ScenarioSession::new(definition.clone(), 71).unwrap();
+    let initial = session.snapshot();
+    assert!(initial.training_debrief.is_none());
+    assert!(!serde_json::to_value(&initial)
+        .unwrap()
+        .as_object()
+        .unwrap()
+        .contains_key("training_debrief"));
+
+    session.dispatch("paid_work").unwrap();
+    session.dispatch("passive_wait").unwrap();
+    session.advance_time(30).unwrap();
+    session.dispatch("passive_wait").unwrap();
+    assert!(session.snapshot().training_debrief.is_none());
+
+    let before_rejection = session.snapshot();
+    let before_rejection_log = session.command_log().to_vec();
+    let before_rejection_save = session.save_json().unwrap();
+    assert!(session.dispatch("not_an_action").is_err());
+    assert_eq!(session.snapshot(), before_rejection);
+    assert_eq!(session.command_log(), before_rejection_log);
+    assert_eq!(session.save_json().unwrap(), before_rejection_save);
+
+    let resolved = session.dispatch("close").unwrap();
+    let debrief = resolved
+        .training_debrief
+        .as_ref()
+        .expect("resolved outcome must project a training debrief");
+    assert_eq!(debrief.projection_schema_version, 1);
+    assert_eq!(debrief.scenario_id, "runtime-primitives");
+    assert_eq!(debrief.resolved_outcome_id, "closed");
+    assert_eq!(debrief.final_scenario_minute, 90);
+    assert_eq!(debrief.matter_lifecycle, MatterLifecycleStatus::Closed);
+    assert_eq!(debrief.matter_status, DossierMatterStatus::Closed);
+    assert_eq!(
+        debrief.reflection_prompt_ids,
+        [
+            "decisive_fact_or_evidence",
+            "deadline_or_procedural_pressure",
+            "time_or_budget_tradeoff",
+            "alternative_replay_strategy",
+        ]
+    );
+
+    let actions = debrief
+        .executed_actions
+        .iter()
+        .map(|action| {
+            (
+                action.action_id.as_str(),
+                action.sequence,
+                action.completion_minute,
+                action.time_cost_minutes,
+                action.cost_eur,
+                action.billable_minutes,
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        actions,
+        [
+            ("paid_work", 1, 60, 60, 100, 45),
+            ("passive_wait", 2, 60, 0, 0, 0),
+            ("passive_wait", 3, 90, 0, 0, 0),
+            ("close", 4, 90, 0, 0, 0),
+        ]
+    );
+
+    let resources = debrief
+        .resources
+        .iter()
+        .map(|resource| {
+            (
+                resource.resource_id.as_str(),
+                resource.initial_value,
+                resource.current_value,
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        resources,
+        [
+            ("authorized_budget_eur", 1_000, 1_000),
+            ("billable_minutes", 0, 45),
+            ("spend_eur", 0, 100),
+        ]
+    );
+
+    let expected_bytes = serde_json::to_string(&resolved).unwrap();
+    let expected_digest = session.final_state_digest().unwrap();
+    assert_eq!(
+        serde_json::to_string(&session.snapshot()).unwrap(),
+        expected_bytes
+    );
+    assert_eq!(
+        serde_json::to_string(&session.snapshot()).unwrap(),
+        expected_bytes
+    );
+    assert_eq!(session.final_state_digest().unwrap(), expected_digest);
+
+    let encoded_save = session.save_json().unwrap();
+    let save_value: serde_json::Value = serde_json::from_str(&encoded_save).unwrap();
+    assert_eq!(save_value.as_object().unwrap().len(), 8);
+    assert!(save_value.get("training_debrief").is_none());
+    assert!(!encoded_save.contains("training_debrief"));
+    assert!(!encoded_save.contains("dispatch_completion_minutes"));
+    let restored = ScenarioSession::from_save_json(definition.clone(), &encoded_save).unwrap();
+    let replayed = ScenarioSession::from_save_json(definition, &encoded_save).unwrap();
+    assert_eq!(restored.snapshot(), resolved);
+    assert_eq!(replayed.snapshot(), resolved);
+    assert_eq!(restored.command_log(), session.command_log());
+    assert_eq!(restored.final_state_digest().unwrap(), expected_digest);
+    assert_eq!(replayed.final_state_digest().unwrap(), expected_digest);
+
+    let before_terminal_rejection = session.snapshot();
+    assert!(session.dispatch("paid_work").is_err());
+    assert_eq!(session.snapshot(), before_terminal_rejection);
 }
 
 #[test]

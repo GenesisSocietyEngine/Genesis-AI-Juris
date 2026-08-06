@@ -109,6 +109,50 @@ fn logistics_definition() -> ScenarioDefinition {
     serde_json::from_str(LOGISTICS_SCENARIO).expect("Logistics scenario must parse")
 }
 
+fn expected_logistics_training_debrief() -> Value {
+    json!({
+        "projection_schema_version": 1,
+        "scenario_id": "be_commercial_logistics_001",
+        "resolved_outcome_id": "negotiated_recovery",
+        "final_scenario_minute": 270,
+        "matter_lifecycle": "closed",
+        "matter_status": "closed",
+        "executed_actions": [
+            {
+                "action_id": "audit_claim_file",
+                "sequence": 1,
+                "completion_minute": 120,
+                "time_cost_minutes": 120,
+                "cost_eur": 0,
+                "billable_minutes": 0
+            },
+            {
+                "action_id": "issue_formal_demand",
+                "sequence": 2,
+                "completion_minute": 180,
+                "time_cost_minutes": 60,
+                "cost_eur": 0,
+                "billable_minutes": 0
+            },
+            {
+                "action_id": "accept_negotiated_payment",
+                "sequence": 3,
+                "completion_minute": 270,
+                "time_cost_minutes": 90,
+                "cost_eur": 0,
+                "billable_minutes": 0
+            }
+        ],
+        "resources": [],
+        "reflection_prompt_ids": [
+            "decisive_fact_or_evidence",
+            "deadline_or_procedural_pressure",
+            "time_or_budget_tradeoff",
+            "alternative_replay_strategy"
+        ]
+    })
+}
+
 fn greenfire_definition() -> ScenarioDefinition {
     serde_json::from_str(GREENFIRE_SCENARIO).expect("GreenFire scenario must parse")
 }
@@ -598,6 +642,150 @@ fn json_protocol_saves_and_loads_a_fresh_replayed_session() {
 }
 
 #[test]
+fn json_protocol_training_debrief_is_terminal_deterministic_and_replay_safe() {
+    let mut bridge = MobileBridge::new();
+    let created_raw = bridge.execute_json(
+        &json!({
+            "command": "create_session",
+            "scenario": serde_json::from_str::<Value>(LOGISTICS_SCENARIO).unwrap(),
+            "seed": 20260725
+        })
+        .to_string(),
+    );
+    assert!(!created_raw.contains("\"training_debrief\""));
+    let created: Value = serde_json::from_str(&created_raw).unwrap();
+    let original_id = created["session_id"].as_u64().unwrap();
+
+    for action_id in ["audit_claim_file", "issue_formal_demand"] {
+        let response_raw = bridge.execute_json(
+            &json!({
+                "command": "dispatch",
+                "session_id": original_id,
+                "action_id": action_id
+            })
+            .to_string(),
+        );
+        assert!(!response_raw.contains("\"training_debrief\""));
+        let response: Value = serde_json::from_str(&response_raw).unwrap();
+        assert_eq!(response["type"], "snapshot", "{response}");
+    }
+
+    let closed_raw = bridge.execute_json(
+        &json!({
+            "command": "dispatch",
+            "session_id": original_id,
+            "action_id": "accept_negotiated_payment"
+        })
+        .to_string(),
+    );
+    assert!(closed_raw.contains("\"training_debrief\""));
+    let closed: Value = serde_json::from_str(&closed_raw).unwrap();
+    assert_eq!(
+        closed["snapshot"]["training_debrief"],
+        expected_logistics_training_debrief()
+    );
+    let expected_snapshot = closed["snapshot"].clone();
+
+    let snapshot_request = json!({
+        "command": "snapshot",
+        "session_id": original_id
+    })
+    .to_string();
+    let first_snapshot_raw = bridge.execute_json(&snapshot_request);
+    let second_snapshot_raw = bridge.execute_json(&snapshot_request);
+    assert_eq!(first_snapshot_raw, second_snapshot_raw);
+    let first_snapshot: Value = serde_json::from_str(&first_snapshot_raw).unwrap();
+    assert_eq!(first_snapshot["snapshot"], expected_snapshot);
+
+    let saved: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "save_session",
+                "session_id": original_id
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    let encoded_save = saved["encoded_save"].as_str().unwrap().to_owned();
+    let disposed: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "dispose_session",
+                "session_id": original_id
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(disposed["disposed"], true);
+
+    let loaded: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "load_session",
+                "scenario": serde_json::from_str::<Value>(LOGISTICS_SCENARIO).unwrap(),
+                "encoded_save": encoded_save.clone()
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(loaded["type"], "session_loaded");
+    assert_eq!(loaded["snapshot"], expected_snapshot);
+    let loaded_id = loaded["session_id"].as_u64().unwrap();
+    assert_ne!(loaded_id, original_id);
+    assert_eq!(bridge.session_count(), 1);
+
+    let mut incompatible_save: Value = serde_json::from_str(&encoded_save).unwrap();
+    incompatible_save["runtime_compatibility"] = json!("scenario-runtime-v999");
+    for (candidate, expected_code) in [
+        ("{truncated".to_owned(), "invalid_save_json"),
+        (incompatible_save.to_string(), "incompatible_runtime"),
+    ] {
+        let rejected: Value = serde_json::from_str(
+            &bridge.execute_json(
+                &json!({
+                    "command": "load_session",
+                    "scenario": serde_json::from_str::<Value>(LOGISTICS_SCENARIO).unwrap(),
+                    "encoded_save": candidate
+                })
+                .to_string(),
+            ),
+        )
+        .unwrap();
+        assert_eq!(rejected["type"], "error");
+        assert_eq!(rejected["code"], expected_code);
+        assert_eq!(bridge.session_count(), 1);
+
+        let active: Value = serde_json::from_str(
+            &bridge.execute_json(
+                &json!({
+                    "command": "snapshot",
+                    "session_id": loaded_id
+                })
+                .to_string(),
+            ),
+        )
+        .unwrap();
+        assert_eq!(active["snapshot"], expected_snapshot);
+    }
+
+    let disposed: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "dispose_session",
+                "session_id": loaded_id
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(disposed["disposed"], true);
+    assert_eq!(bridge.session_count(), 0);
+}
+
+#[test]
 fn failed_json_load_keeps_the_existing_session_intact() {
     let mut bridge = MobileBridge::new();
     let BridgeResponse::SessionCreated { session_id, .. } =
@@ -661,16 +849,15 @@ fn json_protocol_keeps_remedies_available_after_adverse_judgment() {
         assert_ne!(response["type"], "error");
     }
 
-    let snapshot: Value = serde_json::from_str(
-        &bridge.execute_json(
-            &json!({
-                "command": "snapshot",
-                "session_id": session_id
-            })
-            .to_string(),
-        ),
-    )
-    .unwrap();
+    let snapshot_raw = bridge.execute_json(
+        &json!({
+            "command": "snapshot",
+            "session_id": session_id
+        })
+        .to_string(),
+    );
+    assert!(!snapshot_raw.contains("\"training_debrief\""));
+    let snapshot: Value = serde_json::from_str(&snapshot_raw).unwrap();
     assert_eq!(snapshot["snapshot"]["judicial_result"], "lost");
     assert_eq!(
         snapshot["snapshot"]["judicial_decision_instance"],

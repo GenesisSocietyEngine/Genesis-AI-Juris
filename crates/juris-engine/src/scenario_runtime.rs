@@ -21,6 +21,7 @@ use thiserror::Error;
 
 mod dossier;
 mod persistence;
+mod training_debrief;
 
 pub use dossier::{
     DossierDeadlineProjection, DossierEvidenceProjection, DossierFactProjection,
@@ -30,6 +31,10 @@ pub use dossier::{
 
 pub use persistence::{
     ScenarioCommand, ScenarioSaveEnvelope, ScenarioSaveError, SAVE_SCHEMA_ID, SAVE_SCHEMA_VERSION,
+};
+pub use training_debrief::{
+    TrainingDebriefActionProjection, TrainingDebriefProjection, TrainingDebriefResourceProjection,
+    TRAINING_DEBRIEF_PROJECTION_SCHEMA_VERSION,
 };
 
 const SNAPSHOT_SCHEMA_VERSION: u32 = 1;
@@ -216,6 +221,10 @@ pub struct MobileScenarioSnapshot {
     /// Backward-compatible alias for `is_closed`.
     pub terminal: bool,
     pub dossier: DossierProjection,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub training_debrief: Option<TrainingDebriefProjection>,
+
     /// Structurally retained version-1 diagnostic field. Player snapshots
     /// always emit an empty map; Rust tests use explicit diagnostic accessors.
     pub flags: BTreeMap<String, bool>,
@@ -274,6 +283,10 @@ pub struct ScenarioSession {
     definition: ScenarioDefinition,
     state: ScenarioRuntimeState,
     command_log: Vec<ScenarioCommand>,
+    /// Completion minute for each accepted Dispatch command, in command-log
+    /// dispatch order. This projection metadata is rebuilt by ordinary replay
+    /// and is never persisted or included in the final-state digest.
+    dispatch_completion_minutes: Vec<u64>,
     /// Ephemeral causal anchor used while one accepted action applies effects.
     /// It is reconstructed by replay and is never persisted or projected.
     effect_time_anchor: Option<u64>,
@@ -411,6 +424,7 @@ impl ScenarioSession {
             },
             definition,
             command_log: Vec::new(),
+            dispatch_completion_minutes: Vec::new(),
             effect_time_anchor: None,
         };
 
@@ -561,6 +575,11 @@ impl ScenarioSession {
             &available_actions,
             outcome.as_ref(),
         );
+        let training_debrief = training_debrief::project_training_debrief(
+            self,
+            matter_lifecycle,
+            dossier.procedure.matter_status,
+        );
 
         MobileScenarioSnapshot {
             snapshot_schema_version: SNAPSHOT_SCHEMA_VERSION,
@@ -577,6 +596,7 @@ impl ScenarioSession {
             resolved_outcome: self.state.outcome_id.clone(),
             terminal: is_closed,
             dossier,
+            training_debrief,
             // Preserve the version-1 response shape without exposing internal
             // diagnostic identifiers through the player projection.
             flags: BTreeMap::new(),
@@ -696,6 +716,9 @@ impl ScenarioSession {
             false,
             selected_advance_deadline.as_deref(),
         )?;
+
+        self.dispatch_completion_minutes
+            .push(self.state.clock_minutes);
 
         Ok(self.snapshot())
     }
