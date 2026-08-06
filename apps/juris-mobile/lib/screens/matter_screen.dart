@@ -11,12 +11,14 @@ class MatterScreen extends StatelessWidget {
     required this.snapshot,
     required this.onShowActions,
     required this.onShowDossier,
+    required this.onShowTrainingDebrief,
     super.key,
   });
 
   final GameSnapshot snapshot;
   final VoidCallback onShowActions;
   final VoidCallback onShowDossier;
+  final VoidCallback onShowTrainingDebrief;
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +57,31 @@ class MatterScreen extends StatelessWidget {
                   snapshot.outcomeSummary != null) ...<Widget>[
                 const SizedBox(height: 16),
                 _OutcomeCard(summary: snapshot.outcomeSummary!),
+              ],
+              if (snapshot.trainingDebrief != null) ...<Widget>[
+                const SizedBox(height: 16),
+                Semantics(
+                  button: true,
+                  label: GameplayLocale.text(
+                    context,
+                    'Open the authoritative Training Debrief',
+                    'Открыть авторитетный разбор прохождения',
+                  ),
+                  child: FilledButton.tonalIcon(
+                    key: const ValueKey<String>(
+                      'open-training-debrief-button',
+                    ),
+                    onPressed: onShowTrainingDebrief,
+                    icon: const Icon(Icons.school_outlined),
+                    label: Text(
+                      GameplayLocale.text(
+                        context,
+                        'Open Training Debrief',
+                        'Открыть разбор прохождения',
+                      ),
+                    ),
+                  ),
+                ),
               ],
               const SizedBox(height: 16),
               _MetricGrid(snapshot: snapshot),

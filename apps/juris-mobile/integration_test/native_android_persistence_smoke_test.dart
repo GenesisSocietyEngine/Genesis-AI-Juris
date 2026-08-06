@@ -14,6 +14,7 @@ import 'package:juris_mobile/data/scenario_bridge_client.dart';
 import 'package:juris_mobile/models/case_catalog.dart';
 import 'package:juris_mobile/models/dossier_projection.dart';
 import 'package:juris_mobile/models/game_snapshot.dart';
+import 'package:juris_mobile/models/training_debrief.dart';
 import 'package:juris_mobile/screens/case_catalog_screen.dart';
 
 import 'support/historical_v1_counterexample.dart';
@@ -782,6 +783,218 @@ void main() {
   );
 
   testWidgets(
+    'native Training Debrief appears only after resolution and restores exactly',
+    (WidgetTester tester) async {
+      final ApplicationSupportGameSaveStore store =
+          ApplicationSupportGameSaveStore();
+      final _RecordingNativeBridge bridge = _RecordingNativeBridge();
+      final RustScenarioRepository repository = _repository(
+        lifecycle,
+        saveStore: store,
+        bridgeClient: bridge,
+        locale: 'en',
+      );
+
+      try {
+        expect(
+          bridge.latestSnapshotResponseJson,
+          isNot(contains('"training_debrief"')),
+        );
+        expect(
+          bridge.latestSnapshot.containsKey('training_debrief'),
+          isFalse,
+        );
+        expect(repository.snapshot.trainingDebrief, isNull);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: HomeShell(repository: repository, locale: 'en'),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Matter'));
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(
+            const ValueKey<String>('open-training-debrief-button'),
+          ),
+          findsNothing,
+        );
+
+        expect(repository.applyAction('request_judgment').isRisky, isFalse);
+        expect(
+          repository.applyAction('adverse_trial_judgment').isRisky,
+          isFalse,
+        );
+        await tester.pumpAndSettle();
+        expect(repository.snapshot.judicialResult, JudicialResult.lost);
+        expect(
+          repository.snapshot.dossier!.procedure.matterStatus,
+          DossierMatterStatus.recoverable,
+        );
+        expect(repository.snapshot.isClosed, isFalse);
+        expect(repository.snapshot.trainingDebrief, isNull);
+        expect(
+          bridge.latestSnapshotResponseJson,
+          isNot(contains('"training_debrief"')),
+        );
+        expect(
+          bridge.latestSnapshot.containsKey('training_debrief'),
+          isFalse,
+        );
+        expect(
+          find.byKey(
+            const ValueKey<String>('open-training-debrief-button'),
+          ),
+          findsNothing,
+        );
+
+        expect(repository.applyAction('waive_appeal').isRisky, isFalse);
+        await tester.pumpAndSettle();
+        expect(repository.snapshot.isClosed, isTrue);
+        expect(repository.snapshot.outcomeSummary?.finalStatus, 'final_loss');
+
+        final Map<String, dynamic> resolvedRawSnapshot = bridge.latestSnapshot;
+        final Map<String, dynamic> resolvedRawDebrief =
+            resolvedRawSnapshot['training_debrief'] as Map<String, dynamic>;
+        final TrainingDebriefView resolvedDebrief =
+            repository.snapshot.trainingDebrief!;
+        _expectRawTrainingDebriefMatches(
+          raw: resolvedRawDebrief,
+          mapped: resolvedDebrief,
+        );
+        expect(resolvedDebrief.projectionSchemaVersion, 1);
+        expect(
+          resolvedDebrief.scenarioId,
+          'integration_adverse_judgment_with_remedies',
+        );
+        expect(resolvedDebrief.resolvedOutcomeId, 'final_loss');
+        expect(resolvedDebrief.finalScenarioMinute, 65);
+        expect(
+          resolvedDebrief.matterLifecycle,
+          TrainingDebriefMatterLifecycle.closed,
+        );
+        expect(
+          resolvedDebrief.matterStatus,
+          TrainingDebriefMatterStatus.closed,
+        );
+        expect(
+          resolvedDebrief.executedActions.map(
+            (TrainingDebriefActionView action) => <Object?>[
+              action.actionId,
+              action.sequence,
+              action.completionMinute,
+              action.timeCostMinutes,
+              action.costEur,
+              action.billableMinutes,
+            ],
+          ),
+          <List<Object?>>[
+            <Object?>['request_judgment', 1, 15, 15, 250, 0],
+            <Object?>['adverse_trial_judgment', 2, 60, 45, 500, 0],
+            <Object?>['waive_appeal', 3, 65, 5, 200, 0],
+          ],
+        );
+        expect(resolvedDebrief.resources, isEmpty);
+        expect(
+          resolvedDebrief.reflectionPromptIds,
+          <String>[
+            'decisive_fact_or_evidence',
+            'deadline_or_procedural_pressure',
+            'time_or_budget_tradeoff',
+            'alternative_replay_strategy',
+          ],
+        );
+
+        final String resolvedRawDebriefJson = jsonEncode(resolvedRawDebrief);
+        final List<Object?> resolvedMappedState = _trainingDebriefState(
+          resolvedDebrief,
+        );
+        await repository.saveGame();
+        repository.reset();
+        await tester.pumpAndSettle();
+        expect(repository.snapshot.trainingDebrief, isNull);
+        expect(
+          find.byKey(
+            const ValueKey<String>('open-training-debrief-button'),
+          ),
+          findsNothing,
+        );
+
+        await repository.loadGame();
+        await tester.pumpAndSettle();
+        final Map<String, dynamic> restoredRawDebrief =
+            bridge.latestSnapshot['training_debrief'] as Map<String, dynamic>;
+        final TrainingDebriefView restoredDebrief =
+            repository.snapshot.trainingDebrief!;
+        expect(jsonEncode(restoredRawDebrief), resolvedRawDebriefJson);
+        expect(_trainingDebriefState(restoredDebrief), resolvedMappedState);
+        _expectRawTrainingDebriefMatches(
+          raw: restoredRawDebrief,
+          mapped: restoredDebrief,
+        );
+
+        final Finder openDebrief = find.byKey(
+          const ValueKey<String>('open-training-debrief-button'),
+        );
+        await tester.scrollUntilVisible(
+          openDebrief,
+          240,
+          scrollable: find.byType(Scrollable).last,
+          maxScrolls: 30,
+        );
+        final int dispatchesBeforeNavigation = bridge.commandCount('dispatch');
+        final int requestsBeforeNavigation = bridge.requests.length;
+        await tester.tap(openDebrief);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey<String>('training-debrief-screen')),
+          findsOneWidget,
+        );
+        expect(find.text('Training debrief'), findsOneWidget);
+        expect(find.text('Final loss'), findsOneWidget);
+        expect(
+          find.text('3 executed actions in authoritative order'),
+          findsOneWidget,
+        );
+        for (final TrainingDebriefActionView action
+            in restoredDebrief.executedActions) {
+          expect(
+            find.byKey(
+              ValueKey<String>(
+                'training-debrief-action-${action.sequence}-${action.actionId}',
+              ),
+            ),
+            findsOneWidget,
+          );
+        }
+        expect(
+          find.byKey(
+            const ValueKey<String>(
+              'training-debrief-reflection-decisive_fact_or_evidence',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(bridge.commandCount('dispatch'), dispatchesBeforeNavigation);
+        expect(bridge.requests, hasLength(requestsBeforeNavigation));
+
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey<String>('training-debrief-screen')),
+          findsNothing,
+        );
+        expect(bridge.commandCount('dispatch'), dispatchesBeforeNavigation);
+        expect(bridge.requests, hasLength(requestsBeforeNavigation));
+      } finally {
+        repository.dispose();
+      }
+    },
+  );
+
+  testWidgets(
     'native raw snapshot visibility survives Desert Water save restart load',
     (WidgetTester tester) async {
       const String hiddenFactId = 'chromium_detected_in_residential_wells';
@@ -1289,6 +1502,98 @@ List<Object?> _inboxState(InboxItemView item) => <Object?>[
       item.status,
     ];
 
+List<Object?> _trainingDebriefState(TrainingDebriefView debrief) => <Object?>[
+      debrief.projectionSchemaVersion,
+      debrief.scenarioId,
+      debrief.scenarioTitle,
+      debrief.resolvedOutcomeId,
+      debrief.resolvedOutcomeTitle,
+      debrief.finalScenarioMinute,
+      debrief.matterLifecycle,
+      debrief.matterStatus,
+      debrief.executedActions
+          .map(
+            (TrainingDebriefActionView action) => <Object?>[
+              action.actionId,
+              action.title,
+              action.sequence,
+              action.completionMinute,
+              action.timeCostMinutes,
+              action.costEur,
+              action.billableMinutes,
+            ],
+          )
+          .toList(growable: false),
+      debrief.resources
+          .map(
+            (TrainingDebriefResourceView resource) => <Object?>[
+              resource.resourceId,
+              resource.label,
+              resource.initialValue,
+              resource.currentValue,
+            ],
+          )
+          .toList(growable: false),
+      debrief.reflectionPromptIds,
+    ];
+
+void _expectRawTrainingDebriefMatches({
+  required Map<String, dynamic> raw,
+  required TrainingDebriefView mapped,
+}) {
+  expect(raw['projection_schema_version'], mapped.projectionSchemaVersion);
+  expect(raw['scenario_id'], mapped.scenarioId);
+  expect(raw['resolved_outcome_id'], mapped.resolvedOutcomeId);
+  expect(raw['final_scenario_minute'], mapped.finalScenarioMinute);
+  expect(raw['matter_lifecycle'], mapped.matterLifecycle.name);
+  expect(raw['matter_status'], mapped.matterStatus.name);
+  expect(
+    (raw['executed_actions'] as List<dynamic>).map(
+      (dynamic item) {
+        final Map<String, dynamic> action = item as Map<String, dynamic>;
+        return <Object?>[
+          action['action_id'],
+          action['sequence'],
+          action['completion_minute'],
+          action['time_cost_minutes'],
+          action['cost_eur'],
+          action['billable_minutes'],
+        ];
+      },
+    ),
+    mapped.executedActions.map(
+      (TrainingDebriefActionView action) => <Object?>[
+        action.actionId,
+        action.sequence,
+        action.completionMinute,
+        action.timeCostMinutes,
+        action.costEur,
+        action.billableMinutes,
+      ],
+    ),
+  );
+  expect(
+    (raw['resources'] as List<dynamic>).map(
+      (dynamic item) {
+        final Map<String, dynamic> resource = item as Map<String, dynamic>;
+        return <Object?>[
+          resource['resource_id'],
+          resource['initial_value'],
+          resource['current_value'],
+        ];
+      },
+    ),
+    mapped.resources.map(
+      (TrainingDebriefResourceView resource) => <Object?>[
+        resource.resourceId,
+        resource.initialValue,
+        resource.currentValue,
+      ],
+    ),
+  );
+  expect(raw['reflection_prompt_ids'], mapped.reflectionPromptIds);
+}
+
 List<Object?> _actionState(GameActionView action) => <Object?>[
       action.id,
       action.title,
@@ -1336,6 +1641,36 @@ final class _HistoricalV1RejectingNativeBridge implements ScenarioBridgeClient {
       if (!response.isError) {
         lastSuccessfulLoadSessionId = response.sessionId;
       }
+    }
+    return encodedResponse;
+  }
+}
+
+/// Records the exact native JSON boundary while delegating every command to
+/// the production Android FFI transport.
+final class _RecordingNativeBridge implements ScenarioBridgeClient {
+  final NativeScenarioBridgeClient _delegate = NativeScenarioBridgeClient();
+  final List<Map<String, dynamic>> requests = <Map<String, dynamic>>[];
+  final List<Map<String, dynamic>> _snapshotResponses =
+      <Map<String, dynamic>>[];
+  final List<String> _snapshotResponseJson = <String>[];
+
+  Map<String, dynamic> get latestSnapshot => _snapshotResponses.last;
+  String get latestSnapshotResponseJson => _snapshotResponseJson.last;
+
+  int commandCount(String command) => requests
+      .where((Map<String, dynamic> request) => request['command'] == command)
+      .length;
+
+  @override
+  String execute(String encodedRequest) {
+    requests.add(jsonDecode(encodedRequest) as Map<String, dynamic>);
+    final String encodedResponse = _delegate.execute(encodedRequest);
+    final Map<String, dynamic> response =
+        jsonDecode(encodedResponse) as Map<String, dynamic>;
+    if (response['snapshot'] case final Map<String, dynamic> snapshot) {
+      _snapshotResponses.add(snapshot);
+      _snapshotResponseJson.add(encodedResponse);
     }
     return encodedResponse;
   }

@@ -1,6 +1,7 @@
 import '../models/case_catalog.dart';
 import '../models/dossier_projection.dart';
 import '../models/game_snapshot.dart';
+import '../models/training_debrief.dart';
 
 /// Converts the stable Rust mobile snapshot into the current Flutter read
 /// model. All values are presentation projections; scenario mutation remains
@@ -210,6 +211,11 @@ abstract final class ScenarioSnapshotMapper {
         caseDefinition: caseDefinition,
         locale: locale,
       ),
+      trainingDebrief: _trainingDebriefProjection(
+        source: source,
+        caseDefinition: caseDefinition,
+        locale: locale,
+      ),
       numericMetrics: Map<String, int>.unmodifiable(numericMetrics),
       resources: Map<String, int>.unmodifiable(resources),
       outcomeSummary: !isClosed || outcome == null
@@ -242,6 +248,119 @@ abstract final class ScenarioSnapshotMapper {
               missedOpportunities: const <String>[],
             ),
     );
+  }
+
+  static TrainingDebriefView? _trainingDebriefProjection({
+    required Map<String, dynamic> source,
+    required MobileCaseDefinition caseDefinition,
+    required String locale,
+  }) {
+    if (!source.containsKey('training_debrief') ||
+        source['training_debrief'] == null) {
+      return null;
+    }
+    final Map<String, dynamic> debrief = _requiredObjectValue(
+      source['training_debrief'],
+      'training_debrief',
+    );
+    final String scenarioId = _string(debrief, 'scenario_id');
+    final String resolvedOutcomeId = _string(
+      debrief,
+      'resolved_outcome_id',
+    );
+
+    final List<TrainingDebriefActionView> executedActions = _objectList(
+      debrief,
+      'executed_actions',
+    ).map((Map<String, dynamic> action) {
+      final String actionId = _string(action, 'action_id');
+      return TrainingDebriefActionView(
+        actionId: actionId,
+        title: _scenarioEntityText(
+          definition: caseDefinition,
+          locale: locale,
+          section: 'actions',
+          id: actionId,
+          field: 'title',
+        ),
+        sequence: _int(action, 'sequence'),
+        completionMinute: _int(action, 'completion_minute'),
+        timeCostMinutes: _int(action, 'time_cost_minutes'),
+        costEur: _int(action, 'cost_eur'),
+        billableMinutes: _int(action, 'billable_minutes'),
+      );
+    }).toList(growable: false);
+
+    final List<TrainingDebriefResourceView> resources = _objectList(
+      debrief,
+      'resources',
+    ).map((Map<String, dynamic> resource) {
+      final String resourceId = _string(resource, 'resource_id');
+      return TrainingDebriefResourceView(
+        resourceId: resourceId,
+        label: caseDefinition.scenarioText(
+          locale: locale,
+          section: 'resources',
+          id: resourceId,
+          field: 'label',
+          fallback: _resourceLabel(resourceId, locale),
+        ),
+        initialValue: _int(resource, 'initial_value'),
+        currentValue: _int(resource, 'current_value'),
+      );
+    }).toList(growable: false);
+
+    return TrainingDebriefView(
+      projectionSchemaVersion: _int(debrief, 'projection_schema_version'),
+      scenarioId: scenarioId,
+      scenarioTitle: _scenarioTitle(caseDefinition, locale),
+      resolvedOutcomeId: resolvedOutcomeId,
+      resolvedOutcomeTitle: _scenarioEntityText(
+        definition: caseDefinition,
+        locale: locale,
+        section: 'outcomes',
+        id: resolvedOutcomeId,
+        field: 'title',
+      ),
+      finalScenarioMinute: _int(debrief, 'final_scenario_minute'),
+      matterLifecycle: _trainingDebriefLifecycle(
+        _string(debrief, 'matter_lifecycle'),
+      ),
+      matterStatus: _trainingDebriefMatterStatus(
+        _string(debrief, 'matter_status'),
+      ),
+      executedActions: executedActions,
+      resources: resources,
+      reflectionPromptIds: _stringList(
+        debrief,
+        'reflection_prompt_ids',
+      ),
+    );
+  }
+
+  static TrainingDebriefMatterLifecycle _trainingDebriefLifecycle(
+    String value,
+  ) {
+    return switch (value) {
+      'active' => TrainingDebriefMatterLifecycle.active,
+      'post_judgment' => TrainingDebriefMatterLifecycle.postJudgment,
+      'appeal' => TrainingDebriefMatterLifecycle.appeal,
+      'cassation' => TrainingDebriefMatterLifecycle.cassation,
+      'enforcement' => TrainingDebriefMatterLifecycle.enforcement,
+      'closed' => TrainingDebriefMatterLifecycle.closed,
+      _ => TrainingDebriefMatterLifecycle.unknown,
+    };
+  }
+
+  static TrainingDebriefMatterStatus _trainingDebriefMatterStatus(
+    String value,
+  ) {
+    return switch (value) {
+      'open' => TrainingDebriefMatterStatus.open,
+      'recoverable' => TrainingDebriefMatterStatus.recoverable,
+      'closed' => TrainingDebriefMatterStatus.closed,
+      _ => TrainingDebriefMatterStatus.unknown,
+    };
   }
 
   static DossierProjectionView? _dossierProjection({
@@ -504,6 +623,49 @@ abstract final class ScenarioSnapshotMapper {
       );
     }
     return definition.localized('en', 'en').caption;
+  }
+
+  static String _scenarioEntityText({
+    required MobileCaseDefinition definition,
+    required String locale,
+    required String section,
+    required String id,
+    required String field,
+  }) {
+    String fallback = id;
+    final dynamic rawEntries = definition.scenario?[section];
+    if (rawEntries is List<dynamic>) {
+      for (final dynamic rawEntry in rawEntries) {
+        if (rawEntry is Map<String, dynamic> && rawEntry['id'] == id) {
+          final dynamic rawText = rawEntry[field];
+          if (rawText is String && rawText.isNotEmpty) {
+            fallback = rawText;
+          }
+          break;
+        }
+      }
+    }
+    return definition.scenarioText(
+      locale: locale,
+      section: section,
+      id: id,
+      field: field,
+      fallback: fallback,
+    );
+  }
+
+  static String _resourceLabel(String resourceId, String locale) {
+    final bool russian = locale == 'ru';
+    return switch (resourceId) {
+      'authorized_budget_eur' =>
+        russian ? 'Утверждённый бюджет' : 'Authorized budget',
+      'spend_eur' => russian ? 'Расходы' : 'Spend',
+      'billable_minutes' => russian ? 'Учтённое время' : 'Billable time',
+      'award_eur' => russian ? 'Присуждённая сумма' : 'Award',
+      'outcome_costs_eur' =>
+        russian ? 'Расходы по результату' : 'Outcome costs',
+      _ => resourceId.replaceAll('_', ' '),
+    };
   }
 
   static int _stageProgress(

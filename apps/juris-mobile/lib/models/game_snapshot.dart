@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import 'dossier_projection.dart';
+import 'training_debrief.dart';
 
 /// Lifecycle states used by the mobile Inbox.
 ///
@@ -454,6 +455,7 @@ class GameSnapshot {
     this.settlementOffer,
     this.outcomeSummary,
     this.dossier,
+    this.trainingDebrief,
     this.numericMetrics = const <String, int>{},
     this.resources = const <String, int>{},
   }) : _authoritativeIsClosed = isClosed;
@@ -546,6 +548,13 @@ class GameSnapshot {
   /// substitute projection from its older presentation metrics.
   final DossierProjectionView? dossier;
 
+  /// Read-only post-case review projected by the authoritative Rust runtime.
+  ///
+  /// Legacy and unresolved snapshots omit this additive field. Flutter never
+  /// reconstructs it from top-level actions, resources, lifecycle, or outcome
+  /// presentation fields.
+  final TrainingDebriefView? trainingDebrief;
+
   /// Optional ID-agnostic integer metrics projected by the authoritative
   /// scenario runtime. Existing scenarios may omit the projection and retain
   /// their established presentation fallbacks.
@@ -615,6 +624,8 @@ class GameSnapshot {
     bool clearOutcomeSummary = false,
     DossierProjectionView? dossier,
     bool clearDossier = false,
+    TrainingDebriefView? trainingDebrief,
+    bool clearTrainingDebrief = false,
     Map<String, int>? numericMetrics,
     Map<String, int>? resources,
   }) {
@@ -673,6 +684,8 @@ class GameSnapshot {
       outcomeSummary:
           clearOutcomeSummary ? null : outcomeSummary ?? this.outcomeSummary,
       dossier: clearDossier ? null : dossier ?? this.dossier,
+      trainingDebrief:
+          clearTrainingDebrief ? null : trainingDebrief ?? this.trainingDebrief,
       numericMetrics: numericMetrics ?? this.numericMetrics,
       resources: resources ?? this.resources,
     );
