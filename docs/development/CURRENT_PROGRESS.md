@@ -43,8 +43,8 @@ last_updated: 2026-08-07
 
 Status: the reviewed Training Debrief v1 history was published unchanged in
 PR #18 and merged through the repository's established merge-commit workflow.
-All exact-head push and pull-request acceptance gates and all product
-post-merge gates completed successfully. This separate branch is
+All direct-head push gates, all synthetic-merge pull-request gates, and all
+product post-merge gates completed successfully. This separate branch is
 documentation-only and is based exactly on the product merge.
 
 ### Product PR and merge topology
@@ -87,10 +87,13 @@ history. The branch supplied the required push-triggered evidence on the same
 reviewed SHA and is retained only until this publication checkpoint and its
 final-main acceptance complete.
 
-### Accepted exact-head hosted runs
+### Accepted hosted runs
 
-All feature acceptance runs tested exact SHA
-`920db9e2bdef873feaa1984eaf3c981f163ec1d6`:
+The push-recovery runs checked out exact reviewed PR head
+`920db9e2bdef873feaa1984eaf3c981f163ec1d6`. The pull-request runs checked
+out GitHub's synthetic `refs/pull/18/merge` candidate
+`590cd560e7cb75bf27057d49611b188ebdce0759`, merging approved base
+`19c1c23f2e95c5fb1a98d485913fac3afdf36b63` with the reviewed head:
 
 | Trigger | Workflow | Run | Job IDs | Conclusion |
 |---|---|---:|---|---|
