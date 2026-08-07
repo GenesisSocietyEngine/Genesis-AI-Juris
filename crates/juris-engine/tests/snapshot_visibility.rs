@@ -262,6 +262,10 @@ fn assert_player_projection(
 
     assert!(!object.contains_key("actors"));
     assert!(!object.contains_key("async_tasks"));
+    assert_eq!(
+        object.contains_key("training_debrief"),
+        snapshot.resolved_outcome.is_some()
+    );
     assert!(snapshot.flags.is_empty());
     assert!(snapshot.fired_event_ids.is_empty());
 
@@ -473,6 +477,7 @@ fn run_case(case: &CanonicalCase) -> (String, PlayerVisibility, PlayerVisibility
         .unwrap_or_else(|error| panic!("{} must initialize: {error}", case.name));
 
     assert_eq!(session.scenario_fingerprint().unwrap(), case.fingerprint);
+    assert!(session.snapshot().training_debrief.is_none());
     let initial_visibility = assert_player_projection(&session, &definition);
     let governed = governed_visibility(&definition);
     let permanently_hidden = initially_hidden_visibility(&definition).difference(&governed);
@@ -500,6 +505,13 @@ fn run_case(case: &CanonicalCase) -> (String, PlayerVisibility, PlayerVisibility
                 });
             }
         }
+        let snapshot = session.snapshot();
+        assert_eq!(
+            snapshot.training_debrief.is_some(),
+            snapshot.resolved_outcome.is_some(),
+            "{} debrief eligibility drifted from resolved_outcome",
+            case.name
+        );
         let visibility = assert_player_projection(&session, &definition);
         visibility.assert_monotonic_from(&previous_visibility, case.name);
         permanently_hidden.assert_disjoint(&visibility, case.name);
@@ -528,6 +540,56 @@ fn run_case(case: &CanonicalCase) -> (String, PlayerVisibility, PlayerVisibility
         "{}",
         case.name
     );
+    match case.outcome {
+        Some(outcome_id) => {
+            let debrief = final_snapshot
+                .training_debrief
+                .as_ref()
+                .unwrap_or_else(|| panic!("{} must expose a debrief", case.name));
+            assert_eq!(debrief.resolved_outcome_id, outcome_id, "{}", case.name);
+            assert_eq!(
+                debrief.final_scenario_minute, case.final_minutes,
+                "{}",
+                case.name
+            );
+            let expected_actions = commands
+                .iter()
+                .filter_map(|command| match command {
+                    ScenarioCommand::Dispatch { action_id } => Some(action_id.as_str()),
+                    ScenarioCommand::AdvanceTime { .. } => None,
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(
+                debrief
+                    .executed_actions
+                    .iter()
+                    .map(|action| action.action_id.as_str())
+                    .collect::<Vec<_>>(),
+                expected_actions,
+                "{}",
+                case.name
+            );
+            assert_eq!(
+                debrief
+                    .executed_actions
+                    .iter()
+                    .map(|action| action.sequence)
+                    .collect::<Vec<_>>(),
+                (1..=u64::try_from(expected_actions.len()).unwrap()).collect::<Vec<_>>(),
+                "{}",
+                case.name
+            );
+            assert!(debrief
+                .executed_actions
+                .windows(2)
+                .all(|pair| pair[0].completion_minute <= pair[1].completion_minute));
+        }
+        None => assert!(
+            final_snapshot.training_debrief.is_none(),
+            "{} must not expose a debrief without an outcome",
+            case.name
+        ),
+    }
     assert_eq!(
         session.final_state_digest().unwrap(),
         case.digest,

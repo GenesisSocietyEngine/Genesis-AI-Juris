@@ -172,7 +172,7 @@ mod tests {
         "SENTINEL HIDDEN OUTCOME SUMMARY MUST NOT LEAK BEFORE CLOSURE",
     ];
 
-    fn execute_request(request: Value) -> Value {
+    fn execute_request_raw(request: Value) -> (String, Value) {
         let request = CString::new(request.to_string()).expect("request must be a C string");
         // SAFETY: `request` remains a valid C string for the complete call.
         let response = unsafe { juris_mobile_bridge_execute(request.as_ptr()) };
@@ -182,7 +182,56 @@ mod tests {
             .into_owned();
         // SAFETY: `response` is released exactly once after decoding.
         unsafe { juris_mobile_bridge_string_free(response) };
-        serde_json::from_str(&decoded).expect("FFI response must be valid JSON")
+        let parsed = serde_json::from_str(&decoded).expect("FFI response must be valid JSON");
+        (decoded, parsed)
+    }
+
+    fn execute_request(request: Value) -> Value {
+        execute_request_raw(request).1
+    }
+
+    fn expected_logistics_training_debrief() -> Value {
+        json!({
+            "projection_schema_version": 1,
+            "scenario_id": "be_commercial_logistics_001",
+            "resolved_outcome_id": "negotiated_recovery",
+            "final_scenario_minute": 270,
+            "matter_lifecycle": "closed",
+            "matter_status": "closed",
+            "executed_actions": [
+                {
+                    "action_id": "audit_claim_file",
+                    "sequence": 1,
+                    "completion_minute": 120,
+                    "time_cost_minutes": 120,
+                    "cost_eur": 0,
+                    "billable_minutes": 0
+                },
+                {
+                    "action_id": "issue_formal_demand",
+                    "sequence": 2,
+                    "completion_minute": 180,
+                    "time_cost_minutes": 60,
+                    "cost_eur": 0,
+                    "billable_minutes": 0
+                },
+                {
+                    "action_id": "accept_negotiated_payment",
+                    "sequence": 3,
+                    "completion_minute": 270,
+                    "time_cost_minutes": 90,
+                    "cost_eur": 0,
+                    "billable_minutes": 0
+                }
+            ],
+            "resources": [],
+            "reflection_prompt_ids": [
+                "decisive_fact_or_evidence",
+                "deadline_or_procedural_pressure",
+                "time_or_budget_tradeoff",
+                "alternative_replay_strategy"
+            ]
+        })
     }
 
     fn assert_snapshot_omits(snapshot: &Value, phase: &str, sentinels: &[&str]) {
@@ -434,6 +483,100 @@ mod tests {
     }
 
     #[test]
+    fn training_debrief_uses_existing_c_abi_and_is_replay_safe() {
+        assert_eq!(juris_mobile_bridge_abi_version(), 1);
+        let scenario: Value =
+            serde_json::from_str(LOGISTICS_SCENARIO).expect("scenario fixture must be valid JSON");
+        let (created_raw, created) = execute_request_raw(json!({
+            "command": "create_session",
+            "scenario": scenario.clone(),
+            "seed": 20260725
+        }));
+        assert!(!created_raw.contains("\"training_debrief\""));
+        let original_id = created["session_id"].as_u64().unwrap();
+
+        for action_id in ["audit_claim_file", "issue_formal_demand"] {
+            let (response_raw, response) = execute_request_raw(json!({
+                "command": "dispatch",
+                "session_id": original_id,
+                "action_id": action_id
+            }));
+            assert!(!response_raw.contains("\"training_debrief\""));
+            assert_eq!(response["type"], "snapshot");
+        }
+
+        let (closed_raw, closed) = execute_request_raw(json!({
+            "command": "dispatch",
+            "session_id": original_id,
+            "action_id": "accept_negotiated_payment"
+        }));
+        assert!(closed_raw.contains("\"training_debrief\""));
+        assert_eq!(
+            closed["snapshot"]["training_debrief"],
+            expected_logistics_training_debrief()
+        );
+        let expected_snapshot = closed["snapshot"].clone();
+
+        let snapshot_request = json!({
+            "command": "snapshot",
+            "session_id": original_id
+        });
+        let (first_raw, first) = execute_request_raw(snapshot_request.clone());
+        let (second_raw, second) = execute_request_raw(snapshot_request);
+        assert_eq!(first_raw, second_raw);
+        assert_eq!(first["snapshot"], expected_snapshot);
+        assert_eq!(second["snapshot"], expected_snapshot);
+
+        let saved = execute_request(json!({
+            "command": "save_session",
+            "session_id": original_id
+        }));
+        let encoded_save = saved["encoded_save"].as_str().unwrap().to_owned();
+        let disposed = execute_request(json!({
+            "command": "dispose_session",
+            "session_id": original_id
+        }));
+        assert_eq!(disposed["disposed"], true);
+
+        let loaded = execute_request(json!({
+            "command": "load_session",
+            "scenario": scenario.clone(),
+            "encoded_save": encoded_save.clone()
+        }));
+        assert_eq!(loaded["type"], "session_loaded");
+        assert_eq!(loaded["snapshot"], expected_snapshot);
+        let loaded_id = loaded["session_id"].as_u64().unwrap();
+        assert_ne!(loaded_id, original_id);
+
+        let mut incompatible_save: Value = serde_json::from_str(&encoded_save).unwrap();
+        incompatible_save["runtime_compatibility"] = json!("scenario-runtime-v999");
+        for (candidate, expected_code) in [
+            ("{truncated".to_owned(), "invalid_save_json"),
+            (incompatible_save.to_string(), "incompatible_runtime"),
+        ] {
+            let rejected = execute_request(json!({
+                "command": "load_session",
+                "scenario": scenario.clone(),
+                "encoded_save": candidate
+            }));
+            assert_eq!(rejected["type"], "error");
+            assert_eq!(rejected["code"], expected_code);
+
+            let active = execute_request(json!({
+                "command": "snapshot",
+                "session_id": loaded_id
+            }));
+            assert_eq!(active["snapshot"], expected_snapshot);
+        }
+
+        let disposed = execute_request(json!({
+            "command": "dispose_session",
+            "session_id": loaded_id
+        }));
+        assert_eq!(disposed["disposed"], true);
+    }
+
+    #[test]
     fn adverse_judgment_snapshot_remains_open_over_ffi() {
         let scenario: Value = serde_json::from_str(REMEDIES_SCENARIO).unwrap();
         let created = execute_request(json!({
@@ -452,10 +595,11 @@ mod tests {
             assert_eq!(response["type"], "snapshot");
         }
 
-        let snapshot = execute_request(json!({
+        let (snapshot_raw, snapshot) = execute_request_raw(json!({
             "command": "snapshot",
             "session_id": session_id
         }));
+        assert!(!snapshot_raw.contains("\"training_debrief\""));
         assert_eq!(snapshot["snapshot"]["judicial_result"], "lost");
         assert_eq!(
             snapshot["snapshot"]["judicial_decision_instance"],

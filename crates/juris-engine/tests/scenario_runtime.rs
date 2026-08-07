@@ -261,6 +261,7 @@ fn lost_is_not_closed_and_appeal_remains_executable() {
     assert!(!snapshot.is_closed);
     assert!(!snapshot.terminal);
     assert_eq!(snapshot.resolved_outcome, None);
+    assert!(snapshot.training_debrief.is_none());
     assert!(snapshot
         .available_actions
         .iter()
@@ -275,6 +276,7 @@ fn lost_is_not_closed_and_appeal_remains_executable() {
         .expect("appeal must remain available");
     assert_eq!(appeal.matter_lifecycle, MatterLifecycleStatus::Appeal);
     assert!(!appeal.is_closed);
+    assert!(appeal.training_debrief.is_none());
 }
 
 #[test]
@@ -313,6 +315,13 @@ fn waiver_and_remedies_exhaustion_close_the_matter() {
     let waived = waived.dispatch("waive_appeal").unwrap();
     assert!(waived.is_closed);
     assert_eq!(waived.resolved_outcome.as_deref(), Some("final_loss"));
+    assert_eq!(
+        waived
+            .training_debrief
+            .as_ref()
+            .map(|debrief| debrief.resolved_outcome_id.as_str()),
+        Some("final_loss")
+    );
 
     let mut exhausted = adverse_judgment_session();
     for action in [

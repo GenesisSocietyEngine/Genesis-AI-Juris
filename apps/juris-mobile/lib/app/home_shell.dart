@@ -10,6 +10,7 @@ import '../screens/career_screen.dart';
 import '../screens/dossier_screen.dart';
 import '../screens/inbox_screen.dart';
 import '../screens/matter_screen.dart';
+import '../screens/training_debrief_screen.dart';
 import '../widgets/action_picker_sheet.dart';
 import '../widgets/case_report_sheet.dart';
 import '../widgets/inbox_message_sheet.dart';
@@ -502,6 +503,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           snapshot: snapshot,
           onShowActions: () => _showActions(snapshot),
           onShowDossier: () => _showDossier(snapshot),
+          onShowTrainingDebrief: () => _showTrainingDebrief(snapshot),
         ),
       2 => CalendarScreen(
           snapshot: snapshot,
@@ -700,6 +702,32 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       widget.repository.snapshot,
       onlyActionId: actionId,
     );
+  }
+
+  Future<void> _showTrainingDebrief(GameSnapshot snapshot) async {
+    final debrief = snapshot.trainingDebrief;
+    if (debrief == null) {
+      return;
+    }
+
+    final TrainingDebriefNavigationAction? result =
+        await _whileClockSuspended<TrainingDebriefNavigationAction>(
+      () => Navigator.of(context).push<TrainingDebriefNavigationAction>(
+        MaterialPageRoute<TrainingDebriefNavigationAction>(
+          builder: (BuildContext routeContext) => GameplayLocale(
+            locale: widget.locale,
+            child: TrainingDebriefScreen(
+              debrief: debrief,
+              locale: widget.locale,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (result == TrainingDebriefNavigationAction.replay && mounted) {
+      await _confirmReset();
+    }
   }
 
   Future<void> _showActions(

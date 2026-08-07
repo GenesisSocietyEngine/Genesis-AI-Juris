@@ -1,8 +1,15 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: docs/snapshot-visibility-publication-checkpoint
-base_commit: 4766526e5007ddb12d3e54421c8733c27c9235dd
+branch: feat/training-debrief-v1
+base_commit: 19c1c23f2e95c5fb1a98d485913fac3afdf36b63
+training_debrief_status: local_review_complete
+training_debrief_contract: docs/development/TRAINING_DEBRIEF_V1.md
+training_debrief_architecture_commit: 3c33f92c7cd07f0f2970314535ee368421cb207e
+training_debrief_runtime_commit: cdff459f9da8d208bad7f2779ea154563e50e872
+training_debrief_mobile_commit: 1a1e2933f6d236be4c4ff14333931cb65b46c475
+training_debrief_native_test_commit: 5278f1a930ab4eb55174a161766c06ceec720dbe
+training_debrief_checkpoint_commit: 6f311a7a01fbbd923d5a83273d1f08156ed71317
 snapshot_visibility_contract_commit: 7d8d086ff2a639e9d32f058fdd4351d67b787b15
 snapshot_visibility_implementation_commit: 7f013ade23b27f1e4ca491b433f91bb8bc0b3cb6
 snapshot_visibility_mobile_test_commit: eec4f7f60a2d5c8444d49960e5bf2c857a09637f
@@ -21,10 +28,305 @@ validator_followup: d7a52d836f4f51b9c510af38513bcb2722cbd6a2
 android_followup: de7ac065d095a0e268e14961b4b74edd754cf52e
 latest_published_release_tag: v0.6.0-alpha.1
 app_version: 0.6.0+13
-last_updated: 2026-08-05
+last_updated: 2026-08-06
 ---
 
 # Current Progress
+
+## Training Debrief v1 local review checkpoint - 2026-08-06
+
+Status: the owner approved the non-persistent, replay-derived
+`dispatch_completion_minutes` design. Training Debrief v1 is implemented and
+verified locally on branch `feat/training-debrief-v1`, based exactly on
+`19c1c23f2e95c5fb1a98d485913fac3afdf36b63`. Publication is not authorized:
+nothing was pushed, no PR was opened, and no tag, release, APK asset, or
+version change was created.
+
+### Intentional local commits and scope
+
+- architecture decision:
+  `3c33f92c7cd07f0f2970314535ee368421cb207e`;
+- authoritative runtime projection, bridge, and FFI tests:
+  `cdff459f9da8d208bad7f2779ea154563e50e872`;
+- Flutter models, mapper, screen, navigation, and tests:
+  `1a1e2933f6d236be4c4ff14333931cb65b46c475`;
+- Android native navigation harness hardening:
+  `5278f1a930ab4eb55174a161766c06ceec720dbe`;
+- cumulative implementation checkpoint:
+  `6f311a7a01fbbd923d5a83273d1f08156ed71317`.
+
+The Rust scope is confined to `juris-engine` scenario runtime/projection and
+tests plus existing bridge/FFI contract tests. The Flutter scope is confined
+to immutable debrief models, the existing snapshot mapper and Home/Matter
+navigation, the new debrief screen, focused widget/repository tests, and the
+existing Android persistence integration suite. Documentation is confined to
+this cumulative handoff and `TRAINING_DEBRIEF_V1.md`.
+
+No production scenario definition, catalogue record, localized scenario
+content, balance, action, cost, deadline, outcome, canonical trace, generated
+mobile bundle, persistence fixture, or release/version file changed.
+
+### Authoritative Rust projection
+
+- `MobileScenarioSnapshot.training_debrief` is optional and is serialized
+  only after Rust owns a non-null resolved outcome. It remains absent before
+  outcome and for adverse-but-open, recoverable, missed-deadline, and Failed
+  ERP remittal/open states;
+- the projection contains schema version, scenario and outcome stable IDs,
+  final minute, lifecycle, Dossier matter status, executed actions, initial
+  and current resources, and neutral reflection prompt IDs;
+- the accepted `ScenarioCommand::Dispatch` sequence remains the sole authority
+  for action identity and order. Declared time, cost, and billable values come
+  from the authoritative action definition;
+- private `ScenarioSession::dispatch_completion_minutes` stores only the
+  resulting authoritative clock minute after each successful dispatch
+  boundary. Candidate cloning keeps rejected dispatches atomic;
+- `snapshot()` pairs the dispatch commands with this vector and never replays
+  the command log. Normal save loading already replays accepted commands and
+  therefore reconstructs the vector once;
+- the exact stable reflection prompt order is
+  `decisive_fact_or_evidence`, `deadline_or_procedural_pressure`,
+  `time_or_budget_tradeoff`, `alternative_replay_strategy`;
+- the projection is factual only. It does not score, grade, recommend a legal
+  answer, enumerate unexecuted inventory, calculate a counterfactual, invoke
+  AI, or create another state machine.
+
+### Persistence, replay, and digest compatibility
+
+- technical save identity remains `genesis.ai-juris.command-log`;
+- envelope schema version remains 1, runtime compatibility remains
+  `scenario-runtime-v2`, and the envelope remains exactly eight fields;
+- `dispatch_completion_minutes` and `training_debrief` are not persisted and
+  are absent from both v1 and v2 final-state digest profiles;
+- save/dispose/load rebuilds byte-equivalent debrief semantics from the normal
+  authoritative command replay;
+- malformed and incompatible loads preserve the active Rust and Flutter
+  session. No candidate session leak or partial replacement was observed;
+- historical saves, corrected Desert Water recovery data, fingerprints,
+  canonical final digests, and the deterministic bundle remain compatible.
+
+### Flutter presentation contract
+
+- the mapper consumes only the nested Rust `training_debrief`; it does not
+  reconstruct history from top-level fields or a Flutter ledger;
+- missing/null projection means no model and no Matter entry. Malformed
+  required nested values produce `FormatException`; future enum and stable-ID
+  values have safe unknown/fallback presentation;
+- the EN/RU accessible, scrollable screen presents Result, Decision trail,
+  Time/resources, and Reflection. Existing localization overlays resolve
+  action and resource stable IDs;
+- entry appears only for an eligible snapshot. Opening and closing run through
+  `_whileClockSuspended` and dispatch no gameplay command;
+- Replay routes through the existing confirmed scenario-reset flow rather
+  than creating a second reset path.
+
+### Exact local verification
+
+Focused Rust evidence:
+
+| Gate | Result |
+|---|---:|
+| debrief runtime invariant/replay test | 1/1 |
+| scenario runtime suite | 20/20 |
+| persistence suite | 23/23 |
+| JSON bridge suite | 18/18 |
+| C FFI suite | 15/15 |
+
+Focused Flutter evidence totals 11/11:
+
+| Area | Result |
+|---|---:|
+| nested-only mapper and malformed/future values | 4/4 |
+| screen, visibility, navigation, EN/RU and replay | 5/5 |
+| repository replay and load atomicity | 2/2 |
+
+Full host and native gates:
+
+| Gate | Result |
+|---|---|
+| `cargo +1.78.0 check --workspace --locked` | passed |
+| `cargo fmt --all -- --check` | passed |
+| `cargo check --workspace` | passed |
+| `cargo clippy --workspace --all-targets -- -D warnings` | passed |
+| `cargo test --workspace` | 320/320 passed |
+| Dart formatting for lib/test/integration_test/tool | passed, 55 files unchanged |
+| deterministic mobile-bundle exporter `--check` | passed |
+| `flutter analyze --no-pub` | passed, no issues |
+| `flutter test --no-pub` | 149/149 passed |
+| Android 17 / API 37 x86_64 native integration | 9/9 passed |
+| `git diff --check` | passed |
+
+The Rust increase is three tests over the accepted 317 baseline. The Flutter
+increase is 11 tests over the accepted 138 baseline. Hosted iOS was not run
+locally because this checkpoint was verified on Windows; that remote gate is
+deferred until publication is separately authorized.
+
+### Unchanged five-case deterministic baseline
+
+| Scenario | Fingerprint | Canonical path | Final minute | Outcome | Final digest |
+|---|---|---|---:|---|---|
+| Failed ERP | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` | settlement | 570 | `settlement_64500` | `fd77a45422e4abd7f141fc7b1db767524ebf48d9674bd25c21354fb7a2b8c029` |
+| Failed ERP | same | prepared judgment | 8,640 | `judgment_preserved_after_cassation` | `f25604fc0225d7ac5a7e98d192ce3b82114970158a3662aee7575b128430ca0c` |
+| Failed ERP | same | remittal/open | 10,080 | none | `268f27867fd1f45a417c0e999819165bd79f76a74f3ab2e65ee075e193cbc34a` |
+| Logistics | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` | negotiated | 270 | `negotiated_recovery` | `139239e001417ae563e270128864a512e88c0ff535a498e15b000731b8ca5bfe` |
+| Logistics | same | judgment | 480 | `judgment_recovery` | `e25e1eeb36249c1b7da0fe7a947f29ed3363ce7dac0357a110951c49bb738ac3` |
+| GreenFire | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` | protected | 4,440 | `protected_crisis_position` | `17f58f95551abacb445ce6d886fc059bcbd7a7660c3f089d9509e7a25f01a216` |
+| GreenFire | same | compromised | 4,590 | `compromised_crisis_position` | `432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec` |
+| GoldenShell | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` | coordinated | 4,545 | `coordinated_claim_position` | `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b` |
+| GoldenShell | same | fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd6b9a7cbe1b23bdd6d412314e582c13503` |
+| Desert Water | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` | coordinated | 3,180 | `credible_source_and_remedy` | `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d` |
+| Desert Water | same | compromised | 3,510 | `compromised_claim_closed` | `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce` |
+
+### Android acceptance and restored owner state
+
+The final clean run used Android 17 / API 37, x86_64, and passed all nine
+existing native lifecycle tests, including real native transport, raw Rust
+JSON versus mapped/UI debrief parity, save/reset/load parity, and command-free
+debrief navigation.
+
+Earlier attempts established product correctness but exposed test
+infrastructure geometry: the previous eight tests passed while the new button
+center remained behind the bottom navigation bar. A focused animated
+`ensureVisible` attempt waited on widget time, so the exact test runner was
+stopped without deleting app data. The final test-only fix uses zero-duration
+centering plus an explicit hit-test assertion. Its focused run passed 1/1. A
+later install/start attempt hung before an app or instrumentation process
+appeared and produced no crash or assertion; after stopping only that runner,
+the clean full retry passed 9/9.
+
+Before testing, the installed corrected Desert Water save was copied byte
+exactly to
+`apps/juris-mobile/build/training_debrief_device_backup/pre_acceptance/`.
+After the integration runner, the ordinary three-ABI application was
+reinstalled and the same save was restored without launching gameplay:
+
+- 12,060 bytes;
+- SHA-256
+  `328d76e392230ac47ecac4ecda6c54af83a48155f4b0d414fe07a2fecabfe019`;
+- 291 commands, eight envelope fields, `scenario-runtime-v2`;
+- scenario `desert_water_groundwater_claim`;
+- final-state digest
+  `6ce210e4a6b55a2ec2495d3405adcd7c45ff2edee38cfee3f5c981e2a68d647c`.
+
+No gameplay action was executed after restoration.
+
+### Artifacts and C ABI
+
+- deterministic mobile bundle is unchanged at 622,325 bytes, SHA-256
+  `58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`;
+- rebuilt ordinary debug APK is 203,489,120 bytes, SHA-256
+  `4f8934a085a87f2ed5e29622289f205694da8ba6b7e86b1986d62342ff667071`;
+- C ABI remains version 1. NDK `llvm-nm` found exactly three Juris exports in
+  each of `armeabi-v7a`, `arm64-v8a`, and `x86_64`:
+  `juris_mobile_bridge_abi_version`, `juris_mobile_bridge_execute`, and
+  `juris_mobile_bridge_string_free`.
+
+### Protected state, limitations, and stop boundary
+
+- protected untracked `docs/development/CURRENT_PROGRESS.zip` remains 47,579
+  bytes with SHA-256
+  `2e5f03f003a7d227cb4ce765e338a8f335d92879862e53bd1c27d65e116de3b6`;
+- PR #4 remains open and unchanged at
+  `7aa6927e8ebfd6e205bfd12478ba28d52c40248a`; recovery ref
+  `backup/desert-water-pre-failed-erp` remains
+  `44e565b22c52a4c3a3e69b2c137353b7771fcf77`; Dossier ref
+  `feat/dossier-projection-v1` remains
+  `62111ddef1623f0211149c70617564f2aa622dd4`;
+- latest release remains `v0.6.0-alpha.1`; app version remains `0.6.0+13`;
+- full production scenario definitions remain inspectable in the packaged
+  asset, and Failed ERP `hearing_missed_notice` remains unchanged
+  content-reachability debt;
+- the completion-minute cache is available only after creation or normal
+  authoritative replay; it is intentionally not a persisted ledger;
+- Training Debrief v1 contains no scoring, comparison against an ideal trace,
+  counterfactual simulation, generative AI, content change, or balance change.
+
+The local review checkpoint is complete. Do not push, open a PR, create a tag
+or release, publish an APK asset, or start a later roadmap phase without new
+explicit owner authorization.
+
+## Training Debrief v1 historical architecture stop checkpoint - 2026-08-06
+
+Status: evidence-led design stopped before production implementation because
+the current authoritative runtime does not retain the completion minute for
+each historically executed action. The controlling checkpoint explicitly
+requires owner review at this boundary. No Rust, bridge, FFI, Flutter,
+scenario, persistence, bundle, test, APK, version, tag, release, push, or PR
+change has been made.
+
+### Verified starting checkpoint
+
+- local `HEAD`, `main`, remote `origin/main`, and merge base are exactly
+  `19c1c23f2e95c5fb1a98d485913fac3afdf36b63`;
+- Snapshot Visibility product merge remains
+  `4766526e5007ddb12d3e54421c8733c27c9235dd`; accepted PR #16 head remains
+  `d3b49da445ab4af15afd065526fb80610f98e960` on exact base
+  `e9812a475dedbb47911bb4a746c81d6f280f2349`;
+- PR #4 remains open at
+  `7aa6927e8ebfd6e205bfd12478ba28d52c40248a`;
+- recovery ref `backup/desert-water-pre-failed-erp` remains
+  `44e565b22c52a4c3a3e69b2c137353b7771fcf77`, and Dossier ref
+  `feat/dossier-projection-v1` remains
+  `62111ddef1623f0211149c70617564f2aa622dd4`;
+- the owner confirmed a new protected untracked
+  `docs/development/CURRENT_PROGRESS.zip` baseline: 47,579 bytes, SHA-256
+  `2e5f03f003a7d227cb4ce765e338a8f335d92879862e53bd1c27d65e116de3b6`;
+- latest release remains `v0.6.0-alpha.1`; app version remains `0.6.0+13`;
+- accepted baseline totals remain 317 Rust tests, 138 Flutter tests, and
+  Android API 37 acceptance 8/8;
+- deterministic bundle remains 622,325 bytes, SHA-256
+  `58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`;
+- existing ordinary debug APK remains 164,654,867 bytes, SHA-256
+  `3bc639583f8ea8ccfb300010694f5015bfd8a70f86887c8d7128950b126da919`;
+- local `armeabi-v7a`, `arm64-v8a`, and `x86_64` libraries retain C ABI
+  version 1 and exactly `juris_mobile_bridge_abi_version`,
+  `juris_mobile_bridge_execute`, and `juris_mobile_bridge_string_free`.
+
+The corrected 291-command recovery save and installed application were not
+read, rewritten, reset, or advanced. No gameplay action or device test ran.
+
+### Evidence and missing authority
+
+- resolved-outcome eligibility, final clock, lifecycle, Dossier matter status,
+  accepted action IDs/order, action definitions, and initial/current resources
+  all have existing Rust-owned sources;
+- `ScenarioSession::command_log` retains accepted `Dispatch` action IDs in
+  order, but the public command stores no completion minute;
+- runtime `action_uses` retains only counts. Prospective
+  `available_actions[].completion_at_minutes` disappears after execution;
+- completion time depends on then-current clock, explicit foreground advances,
+  deadline targeting, relative activation anchors, and temporal/event
+  boundaries. It cannot be truthfully recovered by subtracting or summing
+  declared durations from the final clock;
+- rebuilding it inside every snapshot would require the explicitly prohibited
+  full command-log replay.
+
+The full evidence, disclosure contract, rejected alternatives, and proposed
+wire shape are recorded in
+`docs/development/TRAINING_DEBRIEF_V1.md`.
+
+### Smallest proposed follow-up
+
+Pending explicit approval, add a non-serialized
+`dispatch_completion_minutes: Vec<u64>` to `ScenarioSession`. The accepted
+command log remains the sole source for action ID/order. The vector stores only
+the resulting authoritative clock minute for each successful dispatch, is
+updated transactionally, and is rebuilt by the existing normal save replay.
+It must not enter `ScenarioCommand`, the eight-field save envelope, scenario
+fingerprints, v1/v2 digest projections, bridge commands, or C ABI.
+
+This avoids both a second persisted action ledger and O(n) replay during each
+snapshot. Production implementation is intentionally paused until the owner
+approves this exact internal metadata design or revises the completion-minute
+requirement.
+
+### Stop boundary
+
+No focused or full test gate was rerun because no executable code, scenario,
+bundle, or test changed. The only permitted local work at this stop boundary is
+the architecture note and this cumulative handoff entry. Nothing was pushed,
+no PR was opened or modified, no tag/release/asset/version change occurred,
+and no later roadmap phase started.
 
 ## Snapshot Visibility Hardening v1 publication checkpoint - 2026-08-05
 

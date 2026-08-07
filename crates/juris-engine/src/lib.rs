@@ -33,8 +33,10 @@ pub use scenario_runtime::{
     DossierRemedyProjection, MobileActionSnapshot, MobileDeadlineSnapshot, MobileEvidenceSnapshot,
     MobileFactSnapshot, MobileInboxSnapshot, MobileOutcomeSnapshot, MobileScenarioSnapshot,
     ScenarioCommand, ScenarioRuntimeError, ScenarioSaveEnvelope, ScenarioSaveError,
-    ScenarioSession, ScenarioSessionId, ScenarioSessionRegistry, DOSSIER_PROJECTION_SCHEMA_VERSION,
-    SAVE_SCHEMA_ID, SAVE_SCHEMA_VERSION,
+    ScenarioSession, ScenarioSessionId, ScenarioSessionRegistry, TrainingDebriefActionProjection,
+    TrainingDebriefProjection, TrainingDebriefResourceProjection,
+    DOSSIER_PROJECTION_SCHEMA_VERSION, SAVE_SCHEMA_ID, SAVE_SCHEMA_VERSION,
+    TRAINING_DEBRIEF_PROJECTION_SCHEMA_VERSION,
 };
 
 /// Errors returned when a presentation layer submits an invalid intention.
