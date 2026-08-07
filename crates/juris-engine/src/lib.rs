@@ -28,15 +28,16 @@ use thiserror::Error;
 mod scenario_runtime;
 
 pub use scenario_runtime::{
-    DossierDeadlineProjection, DossierEvidenceProjection, DossierFactProjection,
-    DossierMatterStatus, DossierOutcomeProjection, DossierProcedureProjection, DossierProjection,
-    DossierRemedyProjection, MobileActionSnapshot, MobileDeadlineSnapshot, MobileEvidenceSnapshot,
-    MobileFactSnapshot, MobileInboxSnapshot, MobileOutcomeSnapshot, MobileScenarioSnapshot,
+    ActivePressureProjection, DossierDeadlineProjection, DossierEvidenceProjection,
+    DossierFactProjection, DossierMatterStatus, DossierOutcomeProjection,
+    DossierProcedureProjection, DossierProjection, DossierRemedyProjection, MobileActionSnapshot,
+    MobileDeadlineSnapshot, MobileEvidenceSnapshot, MobileFactSnapshot, MobileInboxSnapshot,
+    MobileOutcomeSnapshot, MobileScenarioSnapshot, PressureAndCountermoveProjection,
     ScenarioCommand, ScenarioRuntimeError, ScenarioSaveEnvelope, ScenarioSaveError,
     ScenarioSession, ScenarioSessionId, ScenarioSessionRegistry, TrainingDebriefActionProjection,
     TrainingDebriefProjection, TrainingDebriefResourceProjection,
-    DOSSIER_PROJECTION_SCHEMA_VERSION, SAVE_SCHEMA_ID, SAVE_SCHEMA_VERSION,
-    TRAINING_DEBRIEF_PROJECTION_SCHEMA_VERSION,
+    DOSSIER_PROJECTION_SCHEMA_VERSION, PRESSURE_COUNTERMOVE_PROJECTION_SCHEMA_VERSION,
+    SAVE_SCHEMA_ID, SAVE_SCHEMA_VERSION, TRAINING_DEBRIEF_PROJECTION_SCHEMA_VERSION,
 };
 
 /// Errors returned when a presentation layer submits an invalid intention.

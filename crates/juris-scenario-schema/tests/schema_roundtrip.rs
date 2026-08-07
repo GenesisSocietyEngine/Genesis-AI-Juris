@@ -198,6 +198,7 @@ fn absent_runtime_extensions_do_not_change_serialized_definition_shape() {
         "foreground_metric_rates",
         "initial_resources",
         "deterministic_decisions",
+        "pressure_windows",
     ] {
         assert!(!object.contains_key(key), "unexpected additive key {key}");
     }
@@ -212,6 +213,32 @@ fn absent_runtime_extensions_do_not_change_serialized_definition_shape() {
     ] {
         assert!(!action.contains_key(key), "unexpected additive key {key}");
     }
+}
+
+#[test]
+fn pressure_window_definition_round_trips_additively() {
+    let mut scenario: ScenarioDefinition =
+        serde_yaml::from_str(MINIMAL_SCENARIO).expect("minimal YAML must deserialize");
+    scenario.pressure_windows = serde_json::from_value(json!([{
+        "id": "urgent-demand",
+        "source_actor_id": "claimant",
+        "activation_event_id": "claim-filed",
+        "response_deadline_id": "response-due",
+        "countermove_event_id": "default-entered",
+        "response_action_ids": ["file-response"]
+    }]))
+    .expect("pressure window must deserialize");
+
+    let encoded = serde_json::to_value(&scenario).expect("scenario must serialize");
+    assert_eq!(encoded["pressure_windows"][0]["id"], "urgent-demand");
+    assert_eq!(
+        encoded["pressure_windows"][0]["response_action_ids"],
+        json!(["file-response"])
+    );
+
+    let restored: ScenarioDefinition =
+        serde_json::from_value(encoded).expect("scenario must deserialize");
+    assert_eq!(restored.pressure_windows, scenario.pressure_windows);
 }
 
 #[test]

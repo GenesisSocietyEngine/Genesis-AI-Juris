@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app/gameplay_locale.dart';
 import '../models/game_snapshot.dart';
+import '../models/pressure_countermove.dart';
 import '../widgets/metric_tile.dart';
 import '../widgets/section_card.dart';
 
@@ -12,6 +13,7 @@ class MatterScreen extends StatelessWidget {
     required this.onShowActions,
     required this.onShowDossier,
     required this.onShowTrainingDebrief,
+    this.onShowPressureResponses,
     super.key,
   });
 
@@ -19,6 +21,7 @@ class MatterScreen extends StatelessWidget {
   final VoidCallback onShowActions;
   final VoidCallback onShowDossier;
   final VoidCallback onShowTrainingDebrief;
+  final ValueChanged<List<String>>? onShowPressureResponses;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +33,20 @@ class MatterScreen extends StatelessWidget {
           sliver: SliverList.list(
             children: <Widget>[
               _MatterHeader(snapshot: snapshot),
+              if (snapshot.pressureAndCountermove != null)
+                ...snapshot.pressureAndCountermove!.activePressures.expand(
+                  (ActivePressureView pressure) => <Widget>[
+                    const SizedBox(height: 16),
+                    _ActivePressureCard(
+                      pressure: pressure,
+                      onReviewResponses: onShowPressureResponses == null
+                          ? null
+                          : () => onShowPressureResponses!(
+                                pressure.availableResponseActionIds,
+                              ),
+                    ),
+                  ],
+                ),
               if (snapshot.dossier != null) ...<Widget>[
                 const SizedBox(height: 16),
                 Semantics(
@@ -106,6 +123,86 @@ class MatterScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ActivePressureCard extends StatelessWidget {
+  const _ActivePressureCard({
+    required this.pressure,
+    required this.onReviewResponses,
+  });
+
+  final ActivePressureView pressure;
+  final VoidCallback? onReviewResponses;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final bool hasResponses = pressure.availableResponseActionIds.isNotEmpty;
+    return SectionCard(
+      title: GameplayLocale.text(
+        context,
+        'Active pressure',
+        'Активное давление',
+      ),
+      subtitle:
+          '${GameplayLocale.text(context, 'Source', 'Источник')}: ${pressure.sourceActorName}',
+      trailing: Icon(Icons.timer_outlined, color: colors.tertiary),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            '${GameplayLocale.text(context, 'Due at game minute', 'Срок на игровой минуте')} '
+            '${pressure.dueAtMinute}',
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${pressure.remainingMinutes} '
+            '${GameplayLocale.text(context, 'game minutes remaining', 'игровых минут осталось')}',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            hasResponses
+                ? '${pressure.availableResponseActionIds.length} '
+                    '${GameplayLocale.text(context, 'response actions available', 'ответных действий доступно')}'
+                : GameplayLocale.text(
+                    context,
+                    'No response action is currently available.',
+                    'Ответные действия сейчас недоступны.',
+                  ),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+          ),
+          if (hasResponses && onReviewResponses != null) ...<Widget>[
+            const SizedBox(height: 12),
+            Semantics(
+              button: true,
+              label: GameplayLocale.text(
+                context,
+                'Review available pressure responses',
+                'Просмотреть доступные ответы на давление',
+              ),
+              child: FilledButton.tonalIcon(
+                key: ValueKey<String>(
+                  'review-pressure-responses-${pressure.pressureId}',
+                ),
+                onPressed: onReviewResponses,
+                icon: const Icon(Icons.reply_all_outlined),
+                label: Text(
+                  GameplayLocale.text(
+                    context,
+                    'Review responses',
+                    'Просмотреть ответы',
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

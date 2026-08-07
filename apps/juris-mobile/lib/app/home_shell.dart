@@ -504,6 +504,10 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           onShowActions: () => _showActions(snapshot),
           onShowDossier: () => _showDossier(snapshot),
           onShowTrainingDebrief: () => _showTrainingDebrief(snapshot),
+          onShowPressureResponses: (List<String> actionIds) => _showActions(
+            snapshot,
+            onlyActionIds: actionIds,
+          ),
         ),
       2 => CalendarScreen(
           snapshot: snapshot,
@@ -734,22 +738,31 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     GameSnapshot snapshot, {
     bool aiOnly = false,
     String? onlyActionId,
+    List<String>? onlyActionIds,
   }) async {
-    final List<GameActionView> actions = onlyActionId != null
-        ? snapshot.actions
-            .where(
-              (GameActionView action) => action.id == onlyActionId,
+    final List<GameActionView> actions = onlyActionIds != null
+        ? onlyActionIds
+            .expand(
+              (String actionId) => snapshot.actions
+                  .where((GameActionView action) => action.id == actionId)
+                  .take(1),
             )
             .toList(growable: false)
-        : aiOnly
+        : onlyActionId != null
             ? snapshot.actions
                 .where(
-                  (GameActionView action) =>
-                      action.presentationTags.contains('ai') ||
-                      action.title.toLowerCase().contains('ai associate'),
+                  (GameActionView action) => action.id == onlyActionId,
                 )
                 .toList(growable: false)
-            : snapshot.actions;
+            : aiOnly
+                ? snapshot.actions
+                    .where(
+                      (GameActionView action) =>
+                          action.presentationTags.contains('ai') ||
+                          action.title.toLowerCase().contains('ai associate'),
+                    )
+                    .toList(growable: false)
+                : snapshot.actions;
 
     if (actions.isEmpty) {
       if (!mounted) {

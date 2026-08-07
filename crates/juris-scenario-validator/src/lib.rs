@@ -9,6 +9,7 @@ mod diagnostic;
 mod effect_closure;
 mod index;
 mod lifecycle;
+mod pressure;
 mod reachability;
 mod references;
 mod structural;
@@ -19,6 +20,7 @@ pub use diagnostic::{Diagnostic, DiagnosticCode, Severity, ValidationReport};
 use index::ScenarioIndex;
 use juris_scenario_schema::ScenarioDefinition;
 use lifecycle::validate_lifecycle;
+use pressure::validate_pressure_windows;
 use reachability::validate_reachability;
 use references::validate_references;
 use structural::validate_structural;
@@ -33,6 +35,7 @@ pub fn validate_scenario(scenario: &ScenarioDefinition) -> ValidationReport {
     let mut report = ValidationReport::default();
 
     validate_structural(scenario, &index, &mut report);
+    validate_pressure_windows(scenario, &index, &mut report);
     validate_references(scenario, &index, &mut report);
     validate_lifecycle(scenario, &mut report);
     validate_reachability(scenario, &mut report);

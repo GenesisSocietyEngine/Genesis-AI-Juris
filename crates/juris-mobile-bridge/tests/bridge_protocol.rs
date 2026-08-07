@@ -16,6 +16,8 @@ const REMEDIES_SCENARIO: &str =
     include_str!("../../../content/fixtures/authoring/adverse_judgment_with_remedies.json");
 const DOSSIER_SCENARIO: &str =
     include_str!("../../../content/fixtures/authoring/dossier_projection_v1.json");
+const PRESSURE_COUNTERMOVE_SCENARIO: &str =
+    include_str!("../../juris-engine/tests/fixtures/pressure_countermove_runtime.json");
 
 const PRE_REVEAL_SNAPSHOT_SENTINELS: &[&str] = &[
     "sentinel_unknown_fact",
@@ -264,6 +266,71 @@ fn execute_trace(bridge: &mut MobileBridge, session_id: u64, encoded: &str) {
             serde_json::from_str(&bridge.execute_json(&command.to_string())).unwrap();
         assert_ne!(response["type"], "error", "failed command {command}");
     }
+}
+
+#[test]
+fn existing_json_protocol_carries_optional_pressure_projection() {
+    let mut bridge = MobileBridge::new();
+    let scenario: Value = serde_json::from_str(PRESSURE_COUNTERMOVE_SCENARIO).unwrap();
+    let created: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "create_session",
+                "scenario": scenario,
+                "seed": 41
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(created["type"], "session_created");
+    assert!(created["snapshot"]
+        .get("pressure_and_countermove")
+        .is_none());
+    let session_id = created["session_id"].as_u64().unwrap();
+
+    let activated: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "dispatch",
+                "session_id": session_id,
+                "action_id": "receive-demand"
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(
+        activated["snapshot"]["pressure_and_countermove"],
+        json!({
+            "projection_schema_version": 1,
+            "active_pressures": [{
+                "pressure_id": "urgent-demand",
+                "source_actor_id": "opposing-counsel",
+                "due_at_minute": 60,
+                "remaining_minutes": 60,
+                "available_response_action_ids": [
+                    "file-documented-response",
+                    "negotiate-extension"
+                ]
+            }]
+        })
+    );
+
+    let responded: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "dispatch",
+                "session_id": session_id,
+                "action_id": "negotiate-extension"
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert!(responded["snapshot"]
+        .get("pressure_and_countermove")
+        .is_none());
 }
 
 #[test]

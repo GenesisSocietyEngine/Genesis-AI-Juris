@@ -29,6 +29,7 @@ void main() {
   late MobileCaseDefinition failedErp;
   late MobileCaseDefinition desertWater;
   late MobileCaseDefinition lifecycle;
+  late MobileCaseDefinition pressureCountermove;
   late CaseCatalogBundle productionBundle;
 
   setUpAll(() async {
@@ -58,7 +59,59 @@ void main() {
           item.caseId == 'us_environmental_desert_water_001',
     );
     lifecycle = matterLifecycleAndroidTestCase();
+    pressureCountermove = pressureCountermoveAndroidTestCase();
   });
+
+  testWidgets(
+    'debug pressure fixture activates, restores, responds, and countermoves',
+    (WidgetTester tester) async {
+      final RustScenarioRepository response = _repository(
+        pressureCountermove,
+        locale: 'ru',
+      );
+      expect(response.snapshot.pressureAndCountermove, isNull);
+      response.applyAction('request_judgment');
+      response.applyAction('adverse_trial_judgment');
+      final active = response.snapshot.pressureAndCountermove!;
+      expect(active.projectionSchemaVersion, 1);
+      expect(active.activePressures.single.pressureId,
+          'adverse_judgment_pressure');
+      expect(
+        active.activePressures.single.sourceActorName,
+        'Представитель противоположной стороны',
+      );
+      expect(
+        active.activePressures.single.availableResponseActionIds,
+        <String>['file_appeal', 'waive_appeal'],
+      );
+      final int remaining = active.activePressures.single.remainingMinutes;
+      await response.saveGame();
+      response.advanceTimeByMinutes(10);
+      await response.loadGame();
+      expect(
+        response.snapshot.pressureAndCountermove!.activePressures.single
+            .remainingMinutes,
+        remaining,
+      );
+      response.applyAction('file_appeal');
+      expect(response.snapshot.pressureAndCountermove, isNull);
+      expect(
+          _deadline(response, 'appeal_deadline').status, DeadlineStatus.done);
+      response.dispose();
+
+      final RustScenarioRepository missed = _repository(
+        pressureCountermove,
+        locale: 'en',
+      );
+      missed.applyAction('request_judgment');
+      missed.applyAction('adverse_trial_judgment');
+      missed.advanceTimeByMinutes(240);
+      expect(missed.snapshot.pressureAndCountermove, isNull);
+      expect(
+          _deadline(missed, 'appeal_deadline').status, DeadlineStatus.missed);
+      missed.dispose();
+    },
+  );
 
   testWidgets('GreenFire RU saves actions and foreground time', (
     WidgetTester tester,

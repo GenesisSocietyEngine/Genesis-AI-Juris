@@ -1,8 +1,10 @@
 //! Regression tests for structural and reference validation.
 
 use juris_scenario_schema::{
-    ActionId, DeadlineDefinition, DeadlineId, Effect, EventDefinition, EventId, EventKind,
-    EventTrigger, MetricId, RelativeTimeDefinition, ScenarioDefinition, ScenarioTime, StageId,
+    ActionId, ActorDefinition, ActorId, ActorRole, DeadlineDefinition, DeadlineId, Effect,
+    EventDefinition, EventId, EventKind, EventTrigger, MetricId, OutcomeId,
+    PressureWindowDefinition, PressureWindowId, RelativeTimeDefinition, ScenarioDefinition,
+    ScenarioTime, StageId,
 };
 use juris_scenario_validator::{validate_scenario, DiagnosticCode};
 use serde_json::json;
@@ -47,6 +49,69 @@ fn load_timing_scenario() -> ScenarioDefinition {
     scenario
 }
 
+fn load_pressure_scenario() -> ScenarioDefinition {
+    let mut scenario = load_minimal_scenario();
+    scenario.actors.push(ActorDefinition {
+        id: ActorId::from("opposing-counsel"),
+        name: "Opposing counsel".to_owned(),
+        role: ActorRole::OpposingCounsel,
+        description: None,
+    });
+    scenario.actions[0]
+        .completion_deadlines
+        .push(DeadlineId::from("response-window"));
+    scenario.events.push(EventDefinition {
+        id: EventId::from("pressure-opened"),
+        title: "Pressure opened".to_owned(),
+        kind: EventKind::Generic,
+        trigger: EventTrigger::ScenarioStart,
+        repeatable: false,
+        condition: Default::default(),
+        effects: Vec::new(),
+    });
+    scenario.events.push(EventDefinition {
+        id: EventId::from("countermove"),
+        title: "Countermove".to_owned(),
+        kind: EventKind::Generic,
+        trigger: EventTrigger::DeadlineMissed {
+            deadline: DeadlineId::from("response-window"),
+        },
+        repeatable: false,
+        condition: Default::default(),
+        effects: vec![
+            Effect::MissDeadline {
+                deadline: DeadlineId::from("response-window"),
+            },
+            Effect::SetStage {
+                stage: StageId::from("resolved"),
+            },
+            Effect::ResolveOutcome {
+                outcome: OutcomeId::from("successful-closure"),
+            },
+        ],
+    });
+    scenario.deadlines.push(DeadlineDefinition {
+        id: DeadlineId::from("response-window"),
+        title: "Response window".to_owned(),
+        due_at: ScenarioTime::new(0, 30),
+        relative_due: None,
+        completion_at_due_allowed: false,
+        activation_event: Some(EventId::from("pressure-opened")),
+        completion_actions: vec![ActionId::from("close-matter")],
+        completion_event: None,
+        missed_event: EventId::from("countermove"),
+    });
+    scenario.pressure_windows.push(PressureWindowDefinition {
+        id: PressureWindowId::from("urgent-demand"),
+        source_actor_id: ActorId::from("opposing-counsel"),
+        activation_event_id: EventId::from("pressure-opened"),
+        response_deadline_id: DeadlineId::from("response-window"),
+        countermove_event_id: EventId::from("countermove"),
+        response_action_ids: vec![ActionId::from("close-matter")],
+    });
+    scenario
+}
+
 #[test]
 fn minimal_scenario_passes_phase_one_validation() {
     let scenario = load_minimal_scenario();
@@ -57,6 +122,52 @@ fn minimal_scenario_passes_phase_one_validation() {
         "expected valid scenario, got diagnostics: {:#?}",
         report.diagnostics
     );
+}
+
+#[test]
+fn composed_pressure_window_passes_validation() {
+    let report = validate_scenario(&load_pressure_scenario());
+
+    assert!(
+        report.is_valid(),
+        "expected valid pressure contract, got diagnostics: {:#?}",
+        report.diagnostics
+    );
+}
+
+#[test]
+fn pressure_window_rejects_dangling_references() {
+    let mut scenario = load_pressure_scenario();
+    let window = &mut scenario.pressure_windows[0];
+    window.source_actor_id = ActorId::from("missing-actor");
+    window.activation_event_id = EventId::from("missing-activation");
+    window.response_deadline_id = DeadlineId::from("missing-deadline");
+    window.countermove_event_id = EventId::from("missing-countermove");
+    window.response_action_ids = vec![ActionId::from("missing-response")];
+
+    let codes = validate_scenario(&scenario).error_codes();
+    assert!(codes.contains(&DiagnosticCode::UnknownActorReference));
+    assert!(codes.contains(&DiagnosticCode::UnknownEventReference));
+    assert!(codes.contains(&DiagnosticCode::UnknownDeadlineReference));
+    assert!(codes.contains(&DiagnosticCode::UnknownActionReference));
+}
+
+#[test]
+fn pressure_window_rejects_ambiguous_or_unbound_composition() {
+    let mut scenario = load_pressure_scenario();
+    scenario.pressure_windows[0].response_action_ids = vec![
+        ActionId::from("close-matter"),
+        ActionId::from("close-matter"),
+    ];
+    scenario.pressure_windows[0].countermove_event_id = EventId::from("pressure-opened");
+    scenario.actions[0].completion_deadlines.clear();
+
+    let report = validate_scenario(&scenario);
+    assert!(report
+        .error_codes()
+        .iter()
+        .all(|code| *code == DiagnosticCode::InvalidPressureWindowDefinition));
+    assert!(report.error_codes().len() >= 3);
 }
 
 #[test]

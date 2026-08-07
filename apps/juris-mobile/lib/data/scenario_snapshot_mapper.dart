@@ -1,6 +1,7 @@
 import '../models/case_catalog.dart';
 import '../models/dossier_projection.dart';
 import '../models/game_snapshot.dart';
+import '../models/pressure_countermove.dart';
 import '../models/training_debrief.dart';
 
 /// Converts the stable Rust mobile snapshot into the current Flutter read
@@ -211,6 +212,12 @@ abstract final class ScenarioSnapshotMapper {
         caseDefinition: caseDefinition,
         locale: locale,
       ),
+      pressureAndCountermove: _pressureAndCountermoveProjection(
+        source: source,
+        caseDefinition: caseDefinition,
+        locale: locale,
+        availableActions: availableActions,
+      ),
       trainingDebrief: _trainingDebriefProjection(
         source: source,
         caseDefinition: caseDefinition,
@@ -247,6 +254,59 @@ abstract final class ScenarioSnapshotMapper {
               ],
               missedOpportunities: const <String>[],
             ),
+    );
+  }
+
+  static PressureAndCountermoveView? _pressureAndCountermoveProjection({
+    required Map<String, dynamic> source,
+    required MobileCaseDefinition caseDefinition,
+    required String locale,
+    required List<Map<String, dynamic>> availableActions,
+  }) {
+    if (!source.containsKey('pressure_and_countermove') ||
+        source['pressure_and_countermove'] == null) {
+      return null;
+    }
+    final Map<String, dynamic> projection = _requiredObjectValue(
+      source['pressure_and_countermove'],
+      'pressure_and_countermove',
+    );
+    final int version = _int(projection, 'projection_schema_version');
+    if (version != 1) {
+      return null;
+    }
+
+    final Set<String> availableActionIds = availableActions
+        .map((Map<String, dynamic> action) => _string(action, 'id'))
+        .toSet();
+    final List<ActivePressureView> activePressures = _objectList(
+      projection,
+      'active_pressures',
+    ).map((Map<String, dynamic> pressure) {
+      final String sourceActorId = _string(pressure, 'source_actor_id');
+      return ActivePressureView(
+        pressureId: _string(pressure, 'pressure_id'),
+        sourceActorId: sourceActorId,
+        sourceActorName: _scenarioEntityText(
+          definition: caseDefinition,
+          locale: locale,
+          section: 'actors',
+          id: sourceActorId,
+          field: 'name',
+        ),
+        dueAtMinute: _int(pressure, 'due_at_minute'),
+        remainingMinutes: _int(pressure, 'remaining_minutes'),
+        availableResponseActionIds: List<String>.unmodifiable(
+          _stringList(pressure, 'available_response_action_ids').where(
+            availableActionIds.contains,
+          ),
+        ),
+      );
+    }).toList(growable: false);
+
+    return PressureAndCountermoveView(
+      projectionSchemaVersion: version,
+      activePressures: List<ActivePressureView>.unmodifiable(activePressures),
     );
   }
 
