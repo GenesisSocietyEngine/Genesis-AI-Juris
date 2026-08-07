@@ -1,15 +1,21 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: feat/training-debrief-v1
-base_commit: 19c1c23f2e95c5fb1a98d485913fac3afdf36b63
-training_debrief_status: local_review_complete
+branch: docs/training-debrief-publication-checkpoint
+base_commit: 996c9da1e554ae7ccd7906a1dfa074f97702d56c
+training_debrief_status: product_published_documentation_checkpoint
 training_debrief_contract: docs/development/TRAINING_DEBRIEF_V1.md
 training_debrief_architecture_commit: 3c33f92c7cd07f0f2970314535ee368421cb207e
 training_debrief_runtime_commit: cdff459f9da8d208bad7f2779ea154563e50e872
 training_debrief_mobile_commit: 1a1e2933f6d236be4c4ff14333931cb65b46c475
 training_debrief_native_test_commit: 5278f1a930ab4eb55174a161766c06ceec720dbe
 training_debrief_checkpoint_commit: 6f311a7a01fbbd923d5a83273d1f08156ed71317
+training_debrief_checkpoint_pin_commit: 920db9e2bdef873feaa1984eaf3c981f163ec1d6
+training_debrief_pr: 18
+training_debrief_pr_head: 920db9e2bdef873feaa1984eaf3c981f163ec1d6
+training_debrief_synthetic_merge: 590cd560e7cb75bf27057d49611b188ebdce0759
+training_debrief_product_merge: 996c9da1e554ae7ccd7906a1dfa074f97702d56c
+training_debrief_merged_at_utc: 2026-08-07T09:02:54Z
 snapshot_visibility_contract_commit: 7d8d086ff2a639e9d32f058fdd4351d67b787b15
 snapshot_visibility_implementation_commit: 7f013ade23b27f1e4ca491b433f91bb8bc0b3cb6
 snapshot_visibility_mobile_test_commit: eec4f7f60a2d5c8444d49960e5bf2c857a09637f
@@ -28,10 +34,187 @@ validator_followup: d7a52d836f4f51b9c510af38513bcb2722cbd6a2
 android_followup: de7ac065d095a0e268e14961b4b74edd754cf52e
 latest_published_release_tag: v0.6.0-alpha.1
 app_version: 0.6.0+13
-last_updated: 2026-08-06
+last_updated: 2026-08-07
 ---
 
 # Current Progress
+
+## Training Debrief v1 product publication checkpoint - 2026-08-07
+
+Status: the reviewed Training Debrief v1 history was published unchanged in
+PR #18 and merged through the repository's established merge-commit workflow.
+All exact-head push and pull-request acceptance gates and all product
+post-merge gates completed successfully. This separate branch is
+documentation-only and is based exactly on the product merge.
+
+### Product PR and merge topology
+
+- PR: #18,
+  `https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/18`;
+- approved base:
+  `19c1c23f2e95c5fb1a98d485913fac3afdf36b63`;
+- accepted six-commit PR head:
+  `920db9e2bdef873feaa1984eaf3c981f163ec1d6`;
+- pre-merge synthetic candidate:
+  `590cd560e7cb75bf27057d49611b188ebdce0759`;
+- product merge commit:
+  `996c9da1e554ae7ccd7906a1dfa074f97702d56c`;
+- merge parents, in order: approved base
+  `19c1c23f2e95c5fb1a98d485913fac3afdf36b63`, then reviewed head
+  `920db9e2bdef873feaa1984eaf3c981f163ec1d6`;
+- method: normal GitHub merge commit, not squash or rebase;
+- merged at `2026-08-07T09:02:54Z`.
+
+The PR retained exactly 22 reviewed files, 3,460 additions, 19 deletions, and
+all six original commits. Before merge it was clean and mergeable, and the
+thread-aware GraphQL audit found zero conversation comments, reviews, or
+review threads. No bot edit, requested change, or unresolved actionable
+review existed.
+
+### GitHub Actions outage and exact-SHA push recovery
+
+The initial feature push completed at `2026-08-06T22:22:32Z`, and Draft PR #18
+opened at `2026-08-06T22:22:58Z`. During an official critical GitHub Actions
+incident, webhook triggers were throttled: no original push run was created,
+and the three pull-request runs were delayed until `2026-08-06T22:52:58Z`.
+The PR remained Draft and unmerged throughout the incident.
+
+After GitHub reported all systems operational, the missing push events were
+not backfilled. With explicit owner approval, temporary remote branch
+`ci/training-debrief-v1-push-retrigger` was created at exactly the accepted PR
+head at `2026-08-07T08:40:47Z`. It introduced no commit and did not alter PR
+history. The branch supplied the required push-triggered evidence on the same
+reviewed SHA and is retained only until this publication checkpoint and its
+final-main acceptance complete.
+
+### Accepted exact-head hosted runs
+
+All feature acceptance runs tested exact SHA
+`920db9e2bdef873feaa1984eaf3c981f163ec1d6`:
+
+| Trigger | Workflow | Run | Job IDs | Conclusion |
+|---|---|---:|---|---|
+| push recovery | Rust CI | `31162705288` | quality `92816438503`; MSRV `92816438563` | success |
+| push recovery | Flutter Mobile UI | `31162705313` | analyze-and-test `92816438660` | success |
+| push recovery | iOS Native FFI | `31162705241` | simulator-smoke `92816438443` | success |
+| pull request | Rust CI | `31129292729` | MSRV `92714209953`; quality `92714210015` | success |
+| pull request | Flutter Mobile UI | `31129292689` | analyze-and-test `92714209919` | success |
+| pull request | iOS Native FFI | `31129292723` | simulator-smoke `92714210002` | success |
+
+No failed run was concealed or weakened. The outage-delayed PR runs and the
+owner-authorized push-recovery runs all succeeded on attempt 1. The only
+annotation was a non-blocking `actions/checkout@v4` Node 20-to-24 deprecation
+notice.
+
+Hosted iOS in both trigger families built the Runner and Rust static library,
+passed the required-symbol audit, booted an iPhone Simulator, and passed the
+native Logistics lifecycle. Exact no-additional-symbol evidence remains the
+local three-ABI NDK audit recorded below.
+
+### Product post-merge hosted runs
+
+Every normal post-merge run tested exact product merge
+`996c9da1e554ae7ccd7906a1dfa074f97702d56c`:
+
+| Workflow | Run | Job IDs | Conclusion |
+|---|---:|---|---|
+| Rust CI | `31164248139` | quality `92821324056`; MSRV `92821324132` | success |
+| Flutter Mobile UI | `31164249063` | analyze-and-test `92821326034` | success |
+| iOS Native FFI | `31164248256` | simulator-smoke `92821323009` | success |
+
+The Rust workflow passed formatting, workspace check, Clippy with warnings
+denied, all tests, and the locked Rust 1.78 MSRV check. Flutter passed
+dependency resolution, analysis, and all tests. Post-merge iOS again passed
+the static-library build, export audit, Simulator boot, native lifecycle, and
+cleanup without a rerun.
+
+### Published product contract
+
+- Rust owns eligibility and emits optional nested `training_debrief` only
+  after an authoritative non-null resolved outcome;
+- adverse-but-open, recoverable, missed-but-unresolved, and Failed ERP
+  remittal/open states remain ineligible;
+- accepted `Dispatch` commands remain the sole authority for action IDs and
+  execution order. Private non-serialized
+  `dispatch_completion_minutes` retains only the resulting clock boundary;
+- normal command-log replay rebuilds the completion vector once. It is not
+  persisted, included in either digest profile, or reconstructed by replay
+  inside `snapshot()`;
+- action time, cost, and billable values come from authoritative definitions;
+  initial and current resources come from authoritative Rust state;
+- Flutter maps only the nested Rust projection. The EN/RU Result, Decision
+  trail, Time/resources, and Reflection presentation is scrollable and
+  accessible; navigation is clock-suspended and command-free;
+- Replay continues through the existing confirmed reset flow;
+- the save ID, eight-field envelope, schema version 1,
+  `scenario-runtime-v2`, digest profiles, bridge command surface, and C ABI
+  version 1 remain unchanged.
+
+No production scenario, catalogue identity, content, action economics,
+balance, deadline, outcome, canonical trace, persistence fixture, generated
+bundle, release metadata, or app version changed.
+
+### Local and native acceptance retained
+
+- Rust: 320/320 tests passed;
+- Flutter: 149/149 tests passed;
+- Android 17 / API 37 x86_64 native integration: 9/9 passed;
+- deterministic mobile bundle: 622,325 bytes, SHA-256
+  `58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`;
+- reviewed ordinary debug APK: 203,489,120 bytes, SHA-256
+  `4f8934a085a87f2ed5e29622289f205694da8ba6b7e86b1986d62342ff667071`;
+- C ABI remains version 1. `armeabi-v7a`, `arm64-v8a`, and `x86_64` each
+  contain exactly `juris_mobile_bridge_abi_version`,
+  `juris_mobile_bridge_execute`, and `juris_mobile_bridge_string_free`;
+- save identity remains `genesis.ai-juris.command-log`, envelope schema 1,
+  eight fields, and `scenario-runtime-v2`. Load failure remains atomic in Rust
+  and Flutter, and debrief equality is rebuilt by normal replay.
+
+### Unchanged five-case deterministic baseline
+
+| Scenario | Fingerprint | Canonical path | Final minute | Outcome | Final digest |
+|---|---|---|---:|---|---|
+| Failed ERP | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` | settlement | 570 | `settlement_64500` | `fd77a45422e4abd7f141fc7b1db767524ebf48d9674bd25c21354fb7a2b8c029` |
+| Failed ERP | same | prepared judgment | 8,640 | `judgment_preserved_after_cassation` | `f25604fc0225d7ac5a7e98d192ce3b82114970158a3662aee7575b128430ca0c` |
+| Failed ERP | same | remittal/open | 10,080 | none | `268f27867fd1f45a417c0e999819165bd79f76a74f3ab2e65ee075e193cbc34a` |
+| Logistics | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` | negotiated | 270 | `negotiated_recovery` | `139239e001417ae563e270128864a512e88c0ff535a498e15b000731b8ca5bfe` |
+| Logistics | same | judgment | 480 | `judgment_recovery` | `e25e1eeb36249c1b7da0fe7a947f29ed3363ce7dac0357a110951c49bb738ac3` |
+| GreenFire | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` | protected | 4,440 | `protected_crisis_position` | `17f58f95551abacb445ce6d886fc059bcbd7a7660c3f089d9509e7a25f01a216` |
+| GreenFire | same | compromised | 4,590 | `compromised_crisis_position` | `432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec` |
+| GoldenShell | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` | coordinated | 4,545 | `coordinated_claim_position` | `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b` |
+| GoldenShell | same | fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd6b9a7cbe1b23bdd6d412314e582c13503` |
+| Desert Water | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` | coordinated | 3,180 | `credible_source_and_remedy` | `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d` |
+| Desert Water | same | compromised | 3,510 | `compromised_claim_closed` | `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce` |
+
+### Protected state, limitations, and publication boundary
+
+- corrected restored Desert Water save remains untouched: 12,060 bytes, 291
+  commands, eight fields, `scenario-runtime-v2`, byte SHA-256
+  `328d76e392230ac47ecac4ecda6c54af83a48155f4b0d414fe07a2fecabfe019`,
+  final-state digest
+  `6ce210e4a6b55a2ec2495d3405adcd7c45ff2edee38cfee3f5c981e2a68d647c`;
+- no ordinary app or emulator was launched and no gameplay action was
+  executed during publication;
+- protected untracked `docs/development/CURRENT_PROGRESS.zip` remains 47,579
+  bytes, SHA-256
+  `2e5f03f003a7d227cb4ce765e338a8f335d92879862e53bd1c27d65e116de3b6`;
+- PR #4 remains open at
+  `7aa6927e8ebfd6e205bfd12478ba28d52c40248a`; recovery ref
+  `backup/desert-water-pre-failed-erp` remains
+  `44e565b22c52a4c3a3e69b2c137353b7771fcf77`; Dossier ref
+  `feat/dossier-projection-v1` remains
+  `62111ddef1623f0211149c70617564f2aa622dd4`;
+- latest published prerelease remains `v0.6.0-alpha.1`; app version remains
+  `0.6.0+13`; no tag, GitHub Release, APK asset, or version change occurred;
+- full production definitions remain inspectable in the packaged asset;
+  Failed ERP `hearing_missed_notice` reachability debt remains unchanged; the
+  completion-minute cache exists only after session creation or normal replay;
+- no scoring, counterfactual, AI feedback, Pressure & Countermove, Legal
+  Theory, new scenario, release work, or later product phase started.
+
+This documentation branch changes only this cumulative handoff. Its own PR
+and final-main workflow IDs are intentionally reported in the final external
+handoff rather than creating a self-referential commit chain.
 
 ## Training Debrief v1 local review checkpoint - 2026-08-06
 
