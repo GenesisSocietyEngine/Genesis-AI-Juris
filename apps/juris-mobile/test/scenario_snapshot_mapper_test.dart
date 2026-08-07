@@ -390,6 +390,93 @@ void main() {
     expect(english.actions.single.timeLabel, 'Until Day 2 · 08:00');
     expect(russian.actions.single.timeLabel, 'До дня 2 · 08:00');
   });
+
+  test('maps pressure projection with authored order and safe ID filtering',
+      () {
+    final Map<String, dynamic> source = _snapshot(
+      judicialResult: null,
+      judicialDecisionInstance: null,
+      lifecycle: 'active',
+      isClosed: false,
+      actions: const <String>[
+        'negotiate-extension',
+        'file-documented-response',
+      ],
+    );
+    source['pressure_and_countermove'] = <String, dynamic>{
+      'projection_schema_version': 1,
+      'active_pressures': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'pressure_id': 'urgent-demand',
+          'source_actor_id': 'northbridge_counsel',
+          'due_at_minute': 120,
+          'remaining_minutes': 60,
+          'available_response_action_ids': <String>[
+            'file-documented-response',
+            'unknown-future-action',
+            'negotiate-extension',
+          ],
+        },
+      ],
+    };
+
+    final GameSnapshot mapped = ScenarioSnapshotMapper.map(
+      source: source,
+      caseDefinition: caseDefinition,
+    );
+    final pressure = mapped.pressureAndCountermove!.activePressures.single;
+    expect(pressure.pressureId, 'urgent-demand');
+    expect(pressure.sourceActorName, 'Counsel for Northbridge Consulting');
+    expect(pressure.dueAtMinute, 120);
+    expect(pressure.remainingMinutes, 60);
+    expect(pressure.availableResponseActionIds, <String>[
+      'file-documented-response',
+      'negotiate-extension',
+    ]);
+  });
+
+  test('omits unknown future pressure versions and rejects malformed v1', () {
+    final Map<String, dynamic> future = _snapshot(
+      judicialResult: null,
+      judicialDecisionInstance: null,
+      lifecycle: 'active',
+      isClosed: false,
+    )..['pressure_and_countermove'] = <String, dynamic>{
+        'projection_schema_version': 2,
+        'active_pressures': const <Map<String, dynamic>>[],
+      };
+    expect(
+      ScenarioSnapshotMapper.map(
+        source: future,
+        caseDefinition: caseDefinition,
+      ).pressureAndCountermove,
+      isNull,
+    );
+
+    final Map<String, dynamic> malformed = _snapshot(
+      judicialResult: null,
+      judicialDecisionInstance: null,
+      lifecycle: 'active',
+      isClosed: false,
+    )..['pressure_and_countermove'] = <String, dynamic>{
+        'projection_schema_version': 1,
+        'active_pressures': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'pressure_id': 'urgent-demand',
+            'source_actor_id': 'northbridge_counsel',
+            'remaining_minutes': 60,
+            'available_response_action_ids': const <String>[],
+          },
+        ],
+      };
+    expect(
+      () => ScenarioSnapshotMapper.map(
+        source: malformed,
+        caseDefinition: caseDefinition,
+      ),
+      throwsFormatException,
+    );
+  });
 }
 
 Map<String, dynamic> _snapshot({

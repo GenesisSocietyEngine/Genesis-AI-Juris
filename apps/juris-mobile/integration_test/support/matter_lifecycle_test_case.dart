@@ -127,6 +127,81 @@ MobileCaseDefinition matterLifecycleAndroidTestCase() {
   });
 }
 
+/// Debug/integration-only Pressure & Countermove content.
+///
+/// This derives a second test identity from the lifecycle fixture so the
+/// production bundle remains byte-for-byte untouched. The pressure is composed
+/// from that fixture's ordinary judgment event, appeal deadline, appeal
+/// actions, and deadline-missed event.
+MobileCaseDefinition pressureCountermoveAndroidTestCase() {
+  final MobileCaseDefinition base = matterLifecycleAndroidTestCase();
+  final Map<String, dynamic> scenario = jsonDecode(
+    jsonEncode(base.scenario),
+  ) as Map<String, dynamic>;
+  final Map<String, dynamic> metadata =
+      scenario['metadata'] as Map<String, dynamic>;
+  metadata['id'] = 'integration_pressure_countermove_runtime';
+  metadata['title'] = 'Pressure and Countermove Runtime';
+  metadata['summary'] =
+      'Android-only fixture for an urgent response window and countermove.';
+  scenario['clock'] = <String, String>{'mode': 'foreground'};
+  scenario['actors'] = <Map<String, dynamic>>[
+    <String, dynamic>{
+      'id': 'opposing_counsel',
+      'name': 'Opposing Counsel',
+      'role': 'opposing_counsel',
+    },
+  ];
+  final List<dynamic> actions = scenario['actions'] as List<dynamic>;
+  for (final dynamic rawAction in actions) {
+    final Map<String, dynamic> action = rawAction as Map<String, dynamic>;
+    if (action['id'] == 'file_appeal' || action['id'] == 'waive_appeal') {
+      action['completion_deadlines'] = <String>['appeal_deadline'];
+    }
+  }
+  scenario['pressure_windows'] = <Map<String, dynamic>>[
+    <String, dynamic>{
+      'id': 'adverse_judgment_pressure',
+      'source_actor_id': 'opposing_counsel',
+      'activation_event_id': 'adverse_judgment_delivered',
+      'response_deadline_id': 'appeal_deadline',
+      'countermove_event_id': 'appeal_deadline_missed',
+      'response_action_ids': <String>['file_appeal', 'waive_appeal'],
+    },
+  ];
+
+  final Map<String, Map<String, dynamic>> scenarioLocalizations =
+      jsonDecode(jsonEncode(base.scenarioLocalizations))
+          .cast<String, Map<String, dynamic>>();
+  final Map<String, dynamic> russian = scenarioLocalizations['ru']!;
+  russian['actors'] = <String, dynamic>{
+    'opposing_counsel': <String, String>{
+      'name': 'Представитель противоположной стороны',
+    },
+  };
+
+  return MobileCaseDefinition(
+    caseId: 'integration_pressure_countermove_runtime',
+    scenarioId: 'integration_pressure_countermove_runtime',
+    sortOrder: 1000,
+    seed: 20260807,
+    status: base.status,
+    difficulty: base.difficulty,
+    jurisdiction: base.jurisdiction,
+    practiceArea: base.practiceArea,
+    playerClientId: base.playerClientId,
+    playerRole: base.playerRole,
+    identityFile: 'integration-test-only',
+    scenarioFile: null,
+    scenarioAvailable: true,
+    scenario: scenario,
+    runtimeAdapter: base.runtimeAdapter,
+    readiness: base.readiness,
+    localizations: base.localizations,
+    scenarioLocalizations: scenarioLocalizations,
+  );
+}
+
 Map<String, dynamic> _caseText({
   required String caption,
   required String topic,
