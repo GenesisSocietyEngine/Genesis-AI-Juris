@@ -1,9 +1,15 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: docs/training-debrief-publication-checkpoint
-base_commit: 996c9da1e554ae7ccd7906a1dfa074f97702d56c
-training_debrief_status: product_published_documentation_checkpoint
+branch: feat/pressure-countermove-runtime-v1
+base_commit: 586a44800035edcd1b5c8f1457d0903ab4617dd7
+pressure_countermove_status: local_review_checkpoint
+pressure_countermove_contract: docs/development/PRESSURE_COUNTERMOVE_RUNTIME_V1.md
+pressure_countermove_architecture_commit: 1c97ec77417a1dd9c5b325c151bba1325dd3b255
+pressure_countermove_schema_commit: 2bcd782f8e86858b1d2abe193d5957a3f18a421d
+pressure_countermove_runtime_commit: 6a4e3d9655ec642678536fbb216745efcb9d8e3c
+pressure_countermove_mobile_commit: 97febf2bce2b276e1ba391690ab4b912a4cc3a42
+training_debrief_status: final_publication_accepted_cleanup_complete
 training_debrief_contract: docs/development/TRAINING_DEBRIEF_V1.md
 training_debrief_architecture_commit: 3c33f92c7cd07f0f2970314535ee368421cb207e
 training_debrief_runtime_commit: cdff459f9da8d208bad7f2779ea154563e50e872
@@ -16,6 +22,15 @@ training_debrief_pr_head: 920db9e2bdef873feaa1984eaf3c981f163ec1d6
 training_debrief_synthetic_merge: 590cd560e7cb75bf27057d49611b188ebdce0759
 training_debrief_product_merge: 996c9da1e554ae7ccd7906a1dfa074f97702d56c
 training_debrief_merged_at_utc: 2026-08-07T09:02:54Z
+training_debrief_docs_pr: 19
+training_debrief_docs_head: 143fc36120c24848899921c3b95bcc0507cc1357
+training_debrief_docs_merge: ea6038e4dfc1febb7a6dca18c82fea3f4790eb16
+training_debrief_docs_merged_at_utc: 2026-08-07T10:00:55Z
+training_debrief_correction_pr: 20
+training_debrief_correction_head: 30bf48fc4444950f4ddc06150f584c3e610b5e6a
+training_debrief_final_main: 586a44800035edcd1b5c8f1457d0903ab4617dd7
+training_debrief_final_merged_at_utc: 2026-08-07T11:58:22Z
+training_debrief_branch_cleanup: complete
 snapshot_visibility_contract_commit: 7d8d086ff2a639e9d32f058fdd4351d67b787b15
 snapshot_visibility_implementation_commit: 7f013ade23b27f1e4ca491b433f91bb8bc0b3cb6
 snapshot_visibility_mobile_test_commit: eec4f7f60a2d5c8444d49960e5bf2c857a09637f
@@ -39,13 +54,251 @@ last_updated: 2026-08-07
 
 # Current Progress
 
+## Pressure & Countermove Runtime v1 local review checkpoint - 2026-08-07
+
+Status: Pressure & Countermove Runtime v1 is implemented and verified locally
+on `feat/pressure-countermove-runtime-v1`, based exactly on accepted `main`
+commit `586a44800035edcd1b5c8f1457d0903ab4617dd7`. The work is stopped for owner
+review. Nothing was pushed; no PR, tag, release, APK publication, production
+activation, or version change was created.
+
+### Intentional local commits and scope
+
+- architecture contract and mandatory stop assessment:
+  `1c97ec77417a1dd9c5b325c151bba1325dd3b255`;
+- additive schema and validator contract:
+  `2bcd782f8e86858b1d2abe193d5957a3f18a421d`;
+- authoritative projection, deterministic fixture, bridge, and FFI coverage:
+  `6a4e3d9655ec642678536fbb216745efcb9d8e3c`;
+- Flutter mapping, Matter presentation, response routing, tests, and the
+  debug-only Android fixture:
+  `97febf2bce2b276e1ba391690ab4b912a4cc3a42`.
+
+The implementation before this cumulative handoff changes 27 tracked files,
+with 2,014 additions and 20 deletions. Production content, the generated
+five-case mobile bundle, historical persistence fixtures, canonical traces,
+release metadata, and version files are outside the change set.
+
+### Authored definition and validation contract
+
+- `ScenarioDefinition.pressure_windows` is additive, defaults empty, and is
+  omitted from serialized definitions when empty;
+- every `PressureWindowDefinition` uses a typed stable ID and references an
+  existing source actor, activation event, response deadline, countermove
+  event, and definition-ordered non-empty response-action list;
+- duplicate pressure IDs, duplicate/empty response lists, dangling references,
+  identical activation/countermove events, and mismatched event/deadline
+  composition fail deterministic validation;
+- each response must be a completion action of the named deadline and must
+  name that deadline in `completion_deadlines` or `advance_to_deadlines`. This
+  guarantees the existing completion and exact-due policy is authoritative;
+- the new stable diagnostic is
+  `SCN015_INVALID_PRESSURE_WINDOW_DEFINITION`. Existing unknown actor, event,
+  deadline, and action diagnostics remain authoritative for references.
+
+The normative architecture and ownership contract is
+`docs/development/PRESSURE_COUNTERMOVE_RUNTIME_V1.md`. Its mandatory stop
+assessment confirmed that no second clock, scheduler, lifecycle tracker,
+persistence shape, bridge command, ABI symbol, or production-content change
+was required, so implementation proceeded under the approved composition
+boundary.
+
+### Authoritative runtime behavior
+
+- Rust derives the optional nested `pressure_and_countermove` projection
+  purely from the authored pressure definition, fired activation/countermove
+  events, the ordinary deadline status and stored due minute, closure, and the
+  already-authoritative available-action projection;
+- an active pressure exists only while the session is open, activation has
+  fired, the referenced deadline is `open`, and the countermove has not fired;
+- `due_at_minute` and saturating `remaining_minutes` use deterministic game
+  time only. No wall-clock timer, polling loop, or Flutter lifecycle state was
+  added;
+- response IDs preserve authored order and are intersected with actions that
+  are actually available in the same snapshot. A zero-response projection is
+  valid and neutral;
+- a successful response uses the ordinary dispatch path, completes the
+  ordinary deadline once, and removes the projection. A missed window uses the
+  existing deadline boundary and fires the ordinary countermove event/effects;
+- exact-due completion remains controlled solely by
+  `completion_at_due_allowed`: legacy-exclusive deadlines reject completion at
+  due atomically, while inclusive deadlines accept it without firing the
+  countermove;
+- large and chunked foreground advances reach identical authoritative state.
+  Replay reconstructs the exact optional projection without replay inside
+  `snapshot()` and without any projection-owned mutable tracker.
+
+The save ID remains `genesis.ai-juris.command-log`; the envelope remains eight
+fields with schema version 1 and `scenario-runtime-v2`. No digest profile,
+scenario fingerprint algorithm, session-registry behavior, bridge request,
+FFI call shape, or ABI version changed.
+
+### Flutter and Android presentation
+
+- Flutter maps only the optional nested Rust projection. Absent projections
+  remain absent; unknown future projection versions are hidden safely;
+  malformed required v1 fields fail mapping with `FormatException`;
+- unknown future response IDs are filtered against current authoritative
+  actions. Actor names resolve from stable IDs through the existing inline
+  scenario and EN/RU overlay path, with stable-ID fallback;
+- the Matter screen shows source actor, due game minute, remaining game
+  minutes, and available-response count. Zero responses show neutral text and
+  no button;
+- `Review responses` opens the existing action picker in authored order under
+  the existing clock-suspension wrapper. The existing confirmation flow sends
+  exactly one selected stable action ID to the repository; Flutter applies no
+  gameplay effect itself;
+- the Android integration fixture is compiled only into the integration test
+  target. It composes the existing test judgment event, appeal deadline,
+  response actions, and missed-deadline event, and is absent from the
+  production catalogue and deterministic mobile bundle.
+
+### Local acceptance
+
+- stable Rust format, workspace check, and Clippy with warnings denied all
+  passed; `cargo +1.78.0 check --workspace --locked` passed the documented
+  MSRV gate;
+- `cargo test --workspace`: 333/333 tests passed, including schema omission
+  and round-trip, structural/reference rejection, activation, ordering,
+  zero-response behavior, success, miss/countermove consequences, exact-due
+  policies, closure, large/chunk parity, save/replay/digest equality, raw JSON
+  bridge, and C FFI coverage;
+- full Flutter analysis: no issues;
+- Dart formatting checked 57 files with zero changes, and the mobile bundle
+  exporter reported `PASS mobile case bundle is deterministic and current`;
+- full Flutter tests: 153/153 passed. This includes the mapped v1 projection,
+  safe future-version/ID degradation, malformed-v1 rejection, EN actor-name
+  resolution, neutral zero-response Matter state, authored response ordering,
+  clock suspension, confirmation, and one-command repository dispatch;
+- Android 17 / API 37 x86_64 native integration: 10/10 passed after the
+  debug-only fixture declared its required foreground clock policy. The first
+  complete attempt exposed that fixture-only omission while all nine legacy
+  checks passed; the corrected complete rerun passed all ten;
+- standard debug APK built from `lib/main.dart`: 203,489,120 bytes, SHA-256
+  `50d6874ba1b9148cbb3c78a459c8afd9b2db890882b29b88c433332e940b7cfd`;
+- deterministic production mobile bundle remains 622,325 bytes, SHA-256
+  `58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`;
+- C ABI remains version 1. `armeabi-v7a`, `arm64-v8a`, and `x86_64` each
+  export exactly `juris_mobile_bridge_abi_version`,
+  `juris_mobile_bridge_execute`, and `juris_mobile_bridge_string_free`.
+
+The workspace-wide released-fingerprint, production-visibility, simulator
+parity, Failed ERP formula/lifecycle, Desert Water budget/recovery, bridge,
+FFI, persistence, and Training Debrief regressions all passed. No released
+production scenario fingerprint or canonical contract changed.
+
+### Protected state and review boundary
+
+- protected untracked `docs/development/CURRENT_PROGRESS.zip` remains exactly
+  47,579 bytes with SHA-256
+  `2e5f03f003a7d227cb4ce765e338a8f335d92879862e53bd1c27d65e116de3b6`;
+- corrected Desert Water recovery save remains 12,060 bytes, 291 commands,
+  eight fields, `scenario-runtime-v2`, byte SHA-256
+  `328d76e392230ac47ecac4ecda6c54af83a48155f4b0d414fe07a2fecabfe019`,
+  and final digest
+  `6ce210e4a6b55a2ec2495d3405adcd7c45ff2edee38cfee3f5c981e2a68d647c`;
+- PR #4 remains open at
+  `7aa6927e8ebfd6e205bfd12478ba28d52c40248a`; local-only recovery ref
+  `backup/desert-water-pre-failed-erp` remains
+  `44e565b22c52a4c3a3e69b2c137353b7771fcf77`; remote Dossier ref remains
+  `62111ddef1623f0211149c70617564f2aa622dd4`;
+- repository ruleset `Main` (`19991132`) remains active for `~ALL` with no
+  exclusions or bypass actors, protecting deletion and non-fast-forward
+  updates;
+- latest published prerelease remains `v0.6.0-alpha.1`; Flutter app version
+  remains `0.6.0+13`;
+- the emulator was used only for disposable automated integration sessions.
+  No ordinary app session or protected player save was opened or mutated;
+- the standard debug APK was built locally for verification only. It was not
+  uploaded, attached to a release, installed as a production update, or
+  otherwise published.
+
+This checkpoint authorizes no publication step. The local feature branch and
+its commits are ready for owner review; `main` and `origin/main` remain at the
+accepted base until a separately authorized publication workflow begins.
+
+## Training Debrief v1 final publication and cleanup - 2026-08-07
+
+Status: Training Debrief v1, its cumulative publication handoff, and the
+follow-up checkout-evidence correction are merged into `main`. All final-main
+hosted gates passed, the temporary CI recovery branch and all three merged
+Training Debrief publication branches were removed remotely, their matching
+local branches were removed, and the repository ruleset was restored to its
+original all-branches protection.
+
+### Documentation closure and final topology
+
+- product PR #18 remains merged at
+  `996c9da1e554ae7ccd7906a1dfa074f97702d56c` as recorded below;
+- documentation PR #19 preserved its one-file reviewed head
+  `143fc36120c24848899921c3b95bcc0507cc1357` and merged at
+  `ea6038e4dfc1febb7a6dca18c82fea3f4790eb16` on
+  `2026-08-07T10:00:55Z`;
+- corrective documentation PR #20 preserved its one-file reviewed head
+  `30bf48fc4444950f4ddc06150f584c3e610b5e6a` and merged at final accepted
+  `main` commit `586a44800035edcd1b5c8f1457d0903ab4617dd7` on
+  `2026-08-07T11:58:22Z`;
+- PR #20 corrected only the distinction between exact reviewed-head
+  push-recovery runs and GitHub synthetic-merge pull-request runs. It changed
+  no workflow result, product contract, runtime, scenario, test, persistence,
+  release, or version state.
+
+### Final-main hosted acceptance
+
+All normal push workflows for exact final `main` commit
+`586a44800035edcd1b5c8f1457d0903ab4617dd7` completed successfully without a
+rerun:
+
+| Workflow | Run | Job IDs | Conclusion |
+|---|---:|---|---|
+| Rust CI | `31176238795` | MSRV `92858749946`; quality `92858750033` | success |
+| Flutter Mobile UI | `31176238896` | analyze-and-test `92858750235` | success |
+| iOS Native FFI | `31176240082` | simulator-smoke `92858755098` | success |
+
+Rust again passed the locked MSRV check, formatting, workspace check, Clippy
+with warnings denied, and tests. Flutter passed dependency resolution,
+analysis, and widget tests. Hosted iOS built the Runner and Rust static
+library, verified exports, booted an iPhone Simulator, and passed the native
+Logistics lifecycle.
+
+### Completed branch cleanup and restored protection
+
+After final-main acceptance, the owner explicitly approved deletion of these
+fully merged remote branches:
+
+- `ci/training-debrief-v1-push-retrigger` at reviewed product head
+  `920db9e2bdef873feaa1984eaf3c981f163ec1d6`;
+- `feat/training-debrief-v1` at
+  `920db9e2bdef873feaa1984eaf3c981f163ec1d6`;
+- `docs/training-debrief-publication-checkpoint` at
+  `143fc36120c24848899921c3b95bcc0507cc1357`;
+- `docs/training-debrief-publication-sha-correction` at
+  `30bf48fc4444950f4ddc06150f584c3e610b5e6a`.
+
+Repository ruleset `Main` (`19991132`) protects `~ALL` branches from deletion
+and non-fast-forward updates with no bypass actors. Each cleanup used only an
+owner-approved exact-ref exclusion. The ruleset was restored immediately
+afterward to active enforcement with `include: ["~ALL"]` and `exclude: []`.
+Remote absence was verified through GitHub. The three matching local branches
+were then deleted with Git's merged-branch safety check. Their commits remain
+reachable through `main`.
+
+### Cleanup boundary
+
+Before the Pressure & Countermove branch was created, local `main` and
+`origin/main` both resolved to
+`586a44800035edcd1b5c8f1457d0903ab4617dd7`. The protected untracked
+`docs/development/CURRENT_PROGRESS.zip` remained untouched at 47,579 bytes,
+SHA-256
+`2e5f03f003a7d227cb4ce765e338a8f335d92879862e53bd1c27d65e116de3b6`.
+
 ## Training Debrief v1 product publication checkpoint - 2026-08-07
 
 Status: the reviewed Training Debrief v1 history was published unchanged in
 PR #18 and merged through the repository's established merge-commit workflow.
 All direct-head push gates, all synthetic-merge pull-request gates, and all
-product post-merge gates completed successfully. This separate branch is
-documentation-only and is based exactly on the product merge.
+product post-merge gates completed successfully. The subsequent
+documentation-only branch was based exactly on the product merge.
 
 ### Product PR and merge topology
 
@@ -84,8 +337,8 @@ not backfilled. With explicit owner approval, temporary remote branch
 `ci/training-debrief-v1-push-retrigger` was created at exactly the accepted PR
 head at `2026-08-07T08:40:47Z`. It introduced no commit and did not alter PR
 history. The branch supplied the required push-triggered evidence on the same
-reviewed SHA and is retained only until this publication checkpoint and its
-final-main acceptance complete.
+reviewed SHA. It was retained through publication and final-main acceptance,
+then deleted during the owner-approved cleanup recorded above.
 
 ### Accepted hosted runs
 
@@ -215,9 +468,9 @@ bundle, release metadata, or app version changed.
 - no scoring, counterfactual, AI feedback, Pressure & Countermove, Legal
   Theory, new scenario, release work, or later product phase started.
 
-This documentation branch changes only this cumulative handoff. Its own PR
-and final-main workflow IDs are intentionally reported in the final external
-handoff rather than creating a self-referential commit chain.
+This historical section describes the publication branch at its review point.
+Its documentation PRs, final-main workflow IDs, and completed branch cleanup
+are recorded in the final publication section above.
 
 ## Training Debrief v1 local review checkpoint - 2026-08-06
 
