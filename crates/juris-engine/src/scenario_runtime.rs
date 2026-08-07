@@ -21,6 +21,7 @@ use thiserror::Error;
 
 mod dossier;
 mod persistence;
+mod pressure_countermove;
 mod training_debrief;
 
 pub use dossier::{
@@ -31,6 +32,10 @@ pub use dossier::{
 
 pub use persistence::{
     ScenarioCommand, ScenarioSaveEnvelope, ScenarioSaveError, SAVE_SCHEMA_ID, SAVE_SCHEMA_VERSION,
+};
+pub use pressure_countermove::{
+    ActivePressureProjection, PressureAndCountermoveProjection,
+    PRESSURE_COUNTERMOVE_PROJECTION_SCHEMA_VERSION,
 };
 pub use training_debrief::{
     TrainingDebriefActionProjection, TrainingDebriefProjection, TrainingDebriefResourceProjection,
@@ -221,6 +226,9 @@ pub struct MobileScenarioSnapshot {
     /// Backward-compatible alias for `is_closed`.
     pub terminal: bool,
     pub dossier: DossierProjection,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pressure_and_countermove: Option<PressureAndCountermoveProjection>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub training_debrief: Option<TrainingDebriefProjection>,
@@ -580,6 +588,11 @@ impl ScenarioSession {
             matter_lifecycle,
             dossier.procedure.matter_status,
         );
+        let pressure_and_countermove = pressure_countermove::project_pressure_and_countermove(
+            self,
+            is_closed,
+            &available_actions,
+        );
 
         MobileScenarioSnapshot {
             snapshot_schema_version: SNAPSHOT_SCHEMA_VERSION,
@@ -596,6 +609,7 @@ impl ScenarioSession {
             resolved_outcome: self.state.outcome_id.clone(),
             terminal: is_closed,
             dossier,
+            pressure_and_countermove,
             training_debrief,
             // Preserve the version-1 response shape without exposing internal
             // diagnostic identifiers through the player projection.
