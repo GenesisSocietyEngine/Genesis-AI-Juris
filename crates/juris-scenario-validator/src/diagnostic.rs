@@ -24,6 +24,7 @@ pub enum DiagnosticCode {
     InvalidDecisionDefinition,
     InvalidForegroundMetricRate,
     InvalidRepeatableEventTrigger,
+    InvalidPressureWindowDefinition,
 
     // Lifecycle validation.
     AsyncTaskWithoutCompletionPath,
@@ -83,6 +84,7 @@ impl DiagnosticCode {
             Self::InvalidDecisionDefinition => "SCN012_INVALID_DECISION_DEFINITION",
             Self::InvalidForegroundMetricRate => "SCN013_INVALID_FOREGROUND_METRIC_RATE",
             Self::InvalidRepeatableEventTrigger => "SCN014_INVALID_REPEATABLE_EVENT_TRIGGER",
+            Self::InvalidPressureWindowDefinition => "SCN015_INVALID_PRESSURE_WINDOW_DEFINITION",
 
             Self::UnknownStageReference => "SCN101_UNKNOWN_STAGE_REFERENCE",
             Self::UnknownActionReference => "SCN102_UNKNOWN_ACTION_REFERENCE",

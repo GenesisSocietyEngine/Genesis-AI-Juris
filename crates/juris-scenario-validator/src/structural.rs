@@ -56,6 +56,15 @@ pub(crate) fn validate_structural(
     );
 
     validate_id_collection(
+        "pressure_windows",
+        scenario
+            .pressure_windows
+            .iter()
+            .map(|item| item.id.as_str()),
+        report,
+    );
+
+    validate_id_collection(
         "async_tasks",
         scenario.async_tasks.iter().map(|item| item.id.as_str()),
         report,

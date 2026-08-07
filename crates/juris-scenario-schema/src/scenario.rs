@@ -3,8 +3,8 @@
 use crate::{
     ActionDefinition, ActorDefinition, AsyncTaskDefinition, DeadlineDefinition,
     DeterministicDecisionDefinition, EventDefinition, EvidenceDefinition, FactDefinition,
-    InboxItemDefinition, MetricId, OutcomeDefinition, ResourceId, ScenarioId, StageDefinition,
-    StageId,
+    InboxItemDefinition, MetricId, OutcomeDefinition, PressureWindowDefinition, ResourceId,
+    ScenarioId, StageDefinition, StageId,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -133,6 +133,11 @@ pub struct ScenarioDefinition {
 
     #[serde(default)]
     pub deadlines: Vec<DeadlineDefinition>,
+
+    /// Optional composed response windows projected while their referenced
+    /// deadline is open. Existing scenarios serialize without this field.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pressure_windows: Vec<PressureWindowDefinition>,
 
     #[serde(default)]
     pub async_tasks: Vec<AsyncTaskDefinition>,

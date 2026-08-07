@@ -86,3 +86,4 @@ define_string_id!(MetricId);
 define_string_id!(ResourceId);
 define_string_id!(DecisionId);
 define_string_id!(DecisionBranchId);
+define_string_id!(PressureWindowId);

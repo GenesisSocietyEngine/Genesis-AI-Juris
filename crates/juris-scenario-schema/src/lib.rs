@@ -28,6 +28,7 @@ mod inbox;
 mod integer;
 mod lifecycle;
 mod outcome;
+mod pressure;
 mod scenario;
 mod stage;
 mod timing;
@@ -46,12 +47,14 @@ pub use evidence::{EvidenceDefinition, EvidenceKind};
 pub use fact::{FactDefinition, FactStatus};
 pub use ids::{
     ActionId, ActorId, AsyncTaskId, DeadlineId, DecisionBranchId, DecisionId, EventId, EvidenceId,
-    FactId, FlagId, InboxItemId, MetricId, OutcomeId, ResourceId, ScenarioId, StageId,
+    FactId, FlagId, InboxItemId, MetricId, OutcomeId, PressureWindowId, ResourceId, ScenarioId,
+    StageId,
 };
 pub use inbox::InboxItemDefinition;
 pub use integer::{IntegerComparisonOperator, IntegerOperand};
 pub use lifecycle::{JudicialDecisionInstance, JudicialResult, MatterLifecycleStatus};
 pub use outcome::OutcomeDefinition;
+pub use pressure::PressureWindowDefinition;
 pub use scenario::{
     JurisdictionReference, ScenarioClockDefinition, ScenarioClockMode, ScenarioDefinition,
     ScenarioMetadata, ScenarioTime, RESOURCE_AUTHORIZED_BUDGET_EUR, RESOURCE_BILLABLE_MINUTES,
