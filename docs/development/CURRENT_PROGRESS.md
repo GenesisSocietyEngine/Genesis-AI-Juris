@@ -1,14 +1,19 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: feat/pressure-countermove-runtime-v1
-base_commit: 586a44800035edcd1b5c8f1457d0903ab4617dd7
-pressure_countermove_status: local_review_checkpoint
+branch: docs/pressure-countermove-runtime-publication-checkpoint
+base_commit: 951fcf2e938c94779a978cc1b88ede64ab92b564
+pressure_countermove_status: product_publication_accepted_docs_checkpoint
 pressure_countermove_contract: docs/development/PRESSURE_COUNTERMOVE_RUNTIME_V1.md
 pressure_countermove_architecture_commit: 1c97ec77417a1dd9c5b325c151bba1325dd3b255
 pressure_countermove_schema_commit: 2bcd782f8e86858b1d2abe193d5957a3f18a421d
 pressure_countermove_runtime_commit: 6a4e3d9655ec642678536fbb216745efcb9d8e3c
 pressure_countermove_mobile_commit: 97febf2bce2b276e1ba391690ab4b912a4cc3a42
+pressure_countermove_checkpoint_commit: 3d57f3c96c75d54046bdb1cad9af106364c611e0
+pressure_countermove_pr: 21
+pressure_countermove_synthetic_merge: 3cc873a02c6f4b0de35d9bf8f7188404ddc01b79
+pressure_countermove_product_merge: 951fcf2e938c94779a978cc1b88ede64ab92b564
+pressure_countermove_merged_at_utc: 2026-08-07T23:08:57Z
 training_debrief_status: final_publication_accepted_cleanup_complete
 training_debrief_contract: docs/development/TRAINING_DEBRIEF_V1.md
 training_debrief_architecture_commit: 3c33f92c7cd07f0f2970314535ee368421cb207e
@@ -49,10 +54,196 @@ validator_followup: d7a52d836f4f51b9c510af38513bcb2722cbd6a2
 android_followup: de7ac065d095a0e268e14961b4b74edd754cf52e
 latest_published_release_tag: v0.6.0-alpha.1
 app_version: 0.6.0+13
-last_updated: 2026-08-07
+last_updated: 2026-08-08
 ---
 
 # Current Progress
+
+## Pressure & Countermove Runtime v1 product publication checkpoint - 2026-08-08
+
+Status: the exact reviewed Pressure & Countermove Runtime v1 history was
+published in PR #21 and merged into `main` through the normal merge-commit
+workflow. Direct-head push gates, synthetic-merge pull-request gates, and
+product post-merge gates all completed successfully on attempt 1. No retry,
+workflow edit, retrigger branch, force push, rebase, or squash was used.
+
+### Product PR and merge topology
+
+- product PR: #21,
+  `https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/21`;
+- branch push: `2026-08-07T22:38:27Z` through
+  `2026-08-07T22:38:30Z`;
+- Draft PR created at `2026-08-07T22:39:12Z`;
+- approved base and merge base:
+  `586a44800035edcd1b5c8f1457d0903ab4617dd7`;
+- accepted five-commit feature head:
+  `3d57f3c96c75d54046bdb1cad9af106364c611e0`;
+- pre-merge synthetic candidate:
+  `3cc873a02c6f4b0de35d9bf8f7188404ddc01b79`;
+- product merge commit:
+  `951fcf2e938c94779a978cc1b88ede64ab92b564`;
+- merge parents, in order: approved base
+  `586a44800035edcd1b5c8f1457d0903ab4617dd7`, then reviewed head
+  `3d57f3c96c75d54046bdb1cad9af106364c611e0`;
+- method: normal GitHub merge commit, not squash or rebase;
+- merged at `2026-08-07T23:08:57Z`.
+
+The PR retained exactly 28 reviewed files, 2,277 additions, 30 deletions, and
+all five commits in their original order:
+
+1. `1c97ec77417a1dd9c5b325c151bba1325dd3b255` - architecture contract;
+2. `2bcd782f8e86858b1d2abe193d5957a3f18a421d` - additive schema and validator;
+3. `6a4e3d9655ec642678536fbb216745efcb9d8e3c` - Rust runtime, bridge, and FFI;
+4. `97febf2bce2b276e1ba391690ab4b912a4cc3a42` - Flutter and Android proof;
+5. `3d57f3c96c75d54046bdb1cad9af106364c611e0` - cumulative handoff.
+
+Before merge, PR #21 was clean and mergeable. It had zero issue comments,
+review submissions, inline review comments, requested reviewers, requested
+teams, or review threads. Remote `main` still matched the approved base and
+the synthetic candidate still joined that base to the exact reviewed head.
+
+### Accepted hosted runs
+
+Direct `push` runs checked out exact reviewed feature head
+`3d57f3c96c75d54046bdb1cad9af106364c611e0`:
+
+| Workflow | Run | Job IDs | Attempt | Conclusion |
+|---|---:|---|---:|---|
+| Rust CI | `31224522113` | MSRV `93015983162`; quality `93015983179` | 1 | success |
+| Flutter Mobile UI | `31224522169` | analyze-and-test `93015983464` | 1 | success |
+| iOS Native FFI | `31224522122` | simulator-smoke `93015983222` | 1 | success |
+
+Pull-request runs checked out GitHub's synthetic
+`refs/pull/21/merge` commit
+`3cc873a02c6f4b0de35d9bf8f7188404ddc01b79`, not the direct feature head:
+
+| Workflow | Run | Job IDs | Attempt | Conclusion |
+|---|---:|---|---:|---|
+| Rust CI | `31224560284` | MSRV `93016101883`; quality `93016101886` | 1 | success |
+| Flutter Mobile UI | `31224560293` | analyze-and-test `93016101918` | 1 | success |
+| iOS Native FFI | `31224560301` | simulator-smoke `93016101641` | 1 | success |
+
+Post-merge push runs checked out exact product merge
+`951fcf2e938c94779a978cc1b88ede64ab92b564`:
+
+| Workflow | Run | Job IDs | Attempt | Conclusion |
+|---|---:|---|---:|---|
+| Rust CI | `31226196027` | MSRV `93020877153`; quality `93020877213` | 1 | success |
+| Flutter Mobile UI | `31226195955` | analyze-and-test `93020877018` | 1 | success |
+| iOS Native FFI | `31226196021` | simulator-smoke `93020877160` | 1 | success |
+
+Hosted Rust covered locked Rust 1.78 MSRV, formatting, workspace check,
+Clippy with warnings denied, and tests. Hosted Flutter covered dependency
+resolution, analysis, and all tests. Every hosted iOS run built Runner and the
+Rust static library, verified required exports, booted an iPhone Simulator,
+passed the native Logistics lifecycle XCTest, and completed cleanup. There
+were no transient failures, reruns, hidden attempts, or outage workarounds.
+
+### Published runtime, schema, and UI contract
+
+- `ScenarioDefinition.pressure_windows` is additive, default-empty, and
+  omitted from serialization when empty. Stable typed references compose
+  existing actors, events, deadlines, and actions under diagnostic
+  `SCN015_INVALID_PRESSURE_WINDOW_DEFINITION`;
+- Rust alone derives the optional active-only nested
+  `pressure_and_countermove` projection from authoritative fired events,
+  deadline state and due minute, closure, available actions, deterministic
+  game clock, and the existing exact-due policy;
+- accepted responses use the existing atomic Dispatch path and deadline
+  completion. Misses use the existing deadline boundary, countermove event,
+  effects, and Inbox path. No wall-clock timer, scheduler, polling loop,
+  Flutter lifecycle state, or pressure-owned mutable tracker was introduced;
+- disclosure remains limited to the active pressure and definition-ordered
+  executable responses. Inactive/resolved definitions, hidden actions,
+  countermove effects, probabilities, conditions, ideal answers, and a
+  historical pressure ledger are not exposed;
+- Flutter maps only the nested Rust projection, resolves actor text through
+  stable IDs and overlays, displays deterministic game-time values, and uses
+  the existing clock-suspended action picker, confirmation, and one-command
+  repository dispatch flow;
+- proof content remains debug/test-only. None of the five production scenario
+  definitions, catalogue records, or the generated mobile bundle gained
+  `pressure_windows`.
+
+Local acceptance remains Rust 333/333, Flutter 153/153, and Android API 37
+native integration 10/10. The publication changed no implementation after
+that reviewed acceptance.
+
+### Deterministic compatibility baseline
+
+All five production scenario fingerprints remain unchanged:
+
+| Scenario | Fingerprint |
+|---|---|
+| Failed ERP | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` |
+| Logistics | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` |
+| GreenFire | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` |
+| GoldenShell | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` |
+| Desert Water | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` |
+
+All 11 canonical results remain exact:
+
+| Scenario / path | Final minute | Outcome | Final digest |
+|---|---:|---|---|
+| Failed ERP / settlement | 570 | `settlement_64500` | `fd77a45422e4abd7f141fc7b1db767524ebf48d9674bd25c21354fb7a2b8c029` |
+| Failed ERP / prepared judgment | 8,640 | `judgment_preserved_after_cassation` | `f25604fc0225d7ac5a7e98d192ce3b82114970158a3662aee7575b128430ca0c` |
+| Failed ERP / remittal/open | 10,080 | none | `268f27867fd1f45a417c0e999819165bd79f76a74f3ab2e65ee075e193cbc34a` |
+| Logistics / negotiated | 270 | `negotiated_recovery` | `139239e001417ae563e270128864a512e88c0ff535a498e15b000731b8ca5bfe` |
+| Logistics / judgment | 480 | `judgment_recovery` | `e25e1eeb36249c1b7da0fe7a947f29ed3363ce7dac0357a110951c49bb738ac3` |
+| GreenFire / protected | 4,440 | `protected_crisis_position` | `17f58f95551abacb445ce6d886fc059bcbd7a7660c3f089d9509e7a25f01a216` |
+| GreenFire / compromised | 4,590 | `compromised_crisis_position` | `432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec` |
+| GoldenShell / coordinated | 4,545 | `coordinated_claim_position` | `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b` |
+| GoldenShell / fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd6b9a7cbe1b23bdd6d412314e582c13503` |
+| Desert Water / coordinated | 3,180 | `credible_source_and_remedy` | `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d` |
+| Desert Water / compromised | 3,510 | `compromised_claim_closed` | `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce` |
+
+The production mobile bundle remains 622,325 bytes with SHA-256
+`58d90d7cc50b853c395e4defe43579b1c7b5d7f3ae12cb9cfe5ec2e22751c97a`.
+The reviewed standard debug APK remains local evidence only: 203,489,120
+bytes, SHA-256
+`50d6874ba1b9148cbb3c78a459c8afd9b2db890882b29b88c433332e940b7cfd`.
+It was not uploaded or attached to a release.
+
+Save identity remains `genesis.ai-juris.command-log`, with eight envelope
+fields, schema 1, `scenario-runtime-v2`, unchanged replay semantics, both
+digest profiles, scenario fingerprint algorithm, bridge commands, session
+registry behavior, and C ABI version 1. In `armeabi-v7a`, `arm64-v8a`, and
+`x86_64`, the exact exports remain `juris_mobile_bridge_abi_version`,
+`juris_mobile_bridge_execute`, and `juris_mobile_bridge_string_free`.
+
+### Protected state and scope boundary
+
+- protected `docs/development/CURRENT_PROGRESS.zip` remains untracked at
+  47,579 bytes with SHA-256
+  `2e5f03f003a7d227cb4ce765e338a8f335d92879862e53bd1c27d65e116de3b6`;
+- PR #4 remains open and unchanged at head
+  `7aa6927e8ebfd6e205bfd12478ba28d52c40248a`;
+- local recovery ref `backup/desert-water-pre-failed-erp` remains at
+  `44e565b22c52a4c3a3e69b2c137353b7771fcf77`, and remote Dossier ref
+  `feat/dossier-projection-v1` remains at
+  `62111ddef1623f0211149c70617564f2aa622dd4`;
+- ruleset `Main` (`19991132`) remains active for `~ALL`, with empty
+  exclusions, deletion/non-fast-forward protection, and no bypass actors;
+- the corrected Desert Water recovery save remains 12,060 bytes and 291
+  commands, with eight fields, schema 1, `scenario-runtime-v2`, byte SHA-256
+  `328d76e392230ac47ecac4ecda6c54af83a48155f4b0d414fe07a2fecabfe019`,
+  and final digest
+  `6ce210e4a6b55a2ec2495d3405adcd7c45ff2edee38cfee3f5c981e2a68d647c`.
+  It was not opened, loaded, migrated, advanced, or tested;
+- published tag `v0.6.0-alpha.1` and Flutter app version `0.6.0+13` remain
+  unchanged. No tag, GitHub Release, APK asset, version bump, production
+  activation, gameplay action, save mutation, or branch deletion occurred.
+
+Known limitations remain explicit: packaged scenario definitions are
+inspectable, and Failed ERP retains the documented
+`hearing_missed_notice` reachability debt. This publication does not change
+either boundary.
+
+The next product work is not part of this checkpoint. After owner review of a
+clean final publication, a separately authorized architecture iteration may
+define a one-case **Production Pressure Pilot**. No pilot branch, production
+activation, Legal Theory work, release work, or other roadmap phase has been
+started.
 
 ## Pressure & Countermove Runtime v1 local review checkpoint - 2026-08-07
 
