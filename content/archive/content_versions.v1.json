@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "scenario_id": "greenfire_first_72_hours",
+      "content_version": "0.1.0",
+      "scenario_fingerprint": "b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261",
+      "scenario_file": "content/archive/greenfire_first_72_hours/0.1.0/greenfire_first_72_hours.scenario.json",
+      "scenario_localization_files": {
+        "ru": "content/archive/greenfire_first_72_hours/0.1.0/greenfire_first_72_hours.ru.v1.json"
+      }
+    }
+  ]
+}

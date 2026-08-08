@@ -19,11 +19,15 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 
+mod content_inventory;
 mod dossier;
 mod persistence;
 mod pressure_countermove;
 mod training_debrief;
 
+pub use content_inventory::{
+    RetainedScenarioDefinition, ScenarioContentInventory, ScenarioContentInventoryError,
+};
 pub use dossier::{
     DossierDeadlineProjection, DossierEvidenceProjection, DossierFactProjection,
     DossierMatterStatus, DossierOutcomeProjection, DossierProcedureProjection, DossierProjection,

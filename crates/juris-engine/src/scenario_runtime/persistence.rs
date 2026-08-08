@@ -400,7 +400,9 @@ fn illegal_sequence(index: usize, error: ScenarioRuntimeError) -> ScenarioSaveEr
     }
 }
 
-fn scenario_fingerprint(definition: &ScenarioDefinition) -> Result<String, ScenarioSaveError> {
+pub(super) fn scenario_fingerprint(
+    definition: &ScenarioDefinition,
+) -> Result<String, ScenarioSaveError> {
     digest_serializable(definition)
 }
 
