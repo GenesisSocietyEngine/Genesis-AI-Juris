@@ -18,22 +18,23 @@ void main() {
   late MobileCaseDefinition logistics;
   late MobileCaseDefinition greenfire;
   late MobileCaseDefinition goldenshell;
+  late CaseCatalogBundle contentInventory;
 
   setUpAll(() async {
     final String encoded = await rootBundle.loadString(
       'assets/case_catalog/mobile_case_bundle.json',
     );
-    final CaseCatalogBundle bundle = CaseCatalogBundle.fromJson(
+    contentInventory = CaseCatalogBundle.fromJson(
       jsonDecode(encoded) as Map<String, dynamic>,
     );
-    logistics = bundle.cases.singleWhere(
+    logistics = contentInventory.cases.singleWhere(
       (MobileCaseDefinition item) =>
           item.caseId == 'be_commercial_logistics_001',
     );
-    greenfire = bundle.cases.singleWhere(
+    greenfire = contentInventory.cases.singleWhere(
       (MobileCaseDefinition item) => item.caseId == 'greenfire_first_72_hours',
     );
-    goldenshell = bundle.cases.singleWhere(
+    goldenshell = contentInventory.cases.singleWhere(
       (MobileCaseDefinition item) =>
           item.caseId == 'nl_food_safety_goldenshell_001',
     );
@@ -185,6 +186,79 @@ void main() {
     expect(repository.snapshot.stage, savedStage);
     expect(client.loadCount, 1);
     expect(client.disposeCount, 1);
+    repository.dispose();
+  });
+
+  test('historical exact identity routes to retained content and stays stable',
+      () async {
+    final CaseCatalogBundle futureInventory =
+        _withSyntheticFutureGreenFire(contentInventory);
+    final MobileCaseDefinition futureGreenFire =
+        futureInventory.cases.singleWhere(
+      (MobileCaseDefinition item) => item.caseId == 'greenfire_first_72_hours',
+    );
+    final ScenarioContentVersion retained =
+        futureInventory.loadOnlyScenarios.single;
+    final _MemoryGameSaveStore store = _MemoryGameSaveStore()
+      ..encodedSave = jsonEncode(<String, dynamic>{
+        'scenario_id': retained.scenarioId,
+        'scenario_fingerprint': retained.scenarioFingerprint,
+        'seed': futureGreenFire.seed,
+        'stage': retained.scenario['initial_stage'],
+        'clock_minutes': 0,
+        'outcome': null,
+      });
+    final _FakeScenarioBridgeClient client = _FakeScenarioBridgeClient();
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: futureGreenFire,
+      contentInventory: futureInventory,
+      bridgeClient: client,
+      saveStore: store,
+    );
+
+    expect(client.lastContentVersion, '0.2.0-test-only');
+    await repository.loadGame();
+    expect(client.lastContentVersion, '0.1.0');
+    expect(repository.snapshot.matterTitle, contains('GreenFire'));
+
+    await repository.saveGame();
+    final Map<String, dynamic> resaved =
+        jsonDecode(store.encodedSave!) as Map<String, dynamic>;
+    expect(resaved['scenario_fingerprint'], retained.scenarioFingerprint);
+    repository.reset();
+    await repository.loadGame();
+    expect(client.lastContentVersion, '0.1.0');
+    repository.dispose();
+  });
+
+  test('unknown content fingerprint is rejected before native load', () async {
+    final _MemoryGameSaveStore store = _MemoryGameSaveStore()
+      ..encodedSave = jsonEncode(<String, dynamic>{
+        'scenario_id': greenfire.scenarioId,
+        'scenario_fingerprint':
+            'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+      });
+    final _FakeScenarioBridgeClient client = _FakeScenarioBridgeClient();
+    final RustScenarioRepository repository = RustScenarioRepository(
+      caseDefinition: greenfire,
+      contentInventory: contentInventory,
+      bridgeClient: client,
+      saveStore: store,
+    );
+    final GameSnapshot before = repository.snapshot;
+
+    await expectLater(
+      repository.loadGame(),
+      throwsA(
+        isA<GamePersistenceException>().having(
+          (GamePersistenceException error) => error.code,
+          'code',
+          'scenario_fingerprint_mismatch',
+        ),
+      ),
+    );
+    expect(client.loadAttemptCount, 0);
+    expect(repository.snapshot, same(before));
     repository.dispose();
   });
 
@@ -649,6 +723,90 @@ void main() {
   });
 }
 
+CaseCatalogBundle _withSyntheticFutureGreenFire(CaseCatalogBundle source) {
+  final Map<String, dynamic> json = jsonDecode(jsonEncode(<String, dynamic>{
+    'bundle_version': source.bundleVersion,
+    'catalog_version': source.catalogVersion,
+    'default_locale': source.defaultLocale,
+    'supported_locales': source.supportedLocales,
+    'fictional_notice': source.fictionalNotices,
+    'ui': source.ui,
+    'cases': source.cases.map(_caseToJson).toList(growable: false),
+    'load_only_scenarios': source.loadOnlyScenarios
+        .map(
+          (ScenarioContentVersion item) => <String, dynamic>{
+            'scenario_id': item.scenarioId,
+            'content_version': item.contentVersion,
+            'scenario_fingerprint': item.scenarioFingerprint,
+            'scenario': item.scenario,
+            'scenario_localizations': item.scenarioLocalizations,
+            'load_only': item.loadOnly,
+          },
+        )
+        .toList(growable: false),
+  })) as Map<String, dynamic>;
+  final Map<String, dynamic> current =
+      (json['cases'] as List<dynamic>).cast<Map<String, dynamic>>().singleWhere(
+            (Map<String, dynamic> item) =>
+                item['case_id'] == 'greenfire_first_72_hours',
+          );
+  current['scenario_fingerprint'] =
+      '0000000000000000000000000000000000000000000000000000000000000000';
+  final Map<String, dynamic> scenario =
+      current['scenario'] as Map<String, dynamic>;
+  final Map<String, dynamic> metadata =
+      scenario['metadata'] as Map<String, dynamic>;
+  metadata['content_version'] = '0.2.0-test-only';
+  metadata['summary'] =
+      'Synthetic future current definition for routing tests.';
+  return CaseCatalogBundle.fromJson(json);
+}
+
+Map<String, dynamic> _caseToJson(MobileCaseDefinition item) {
+  return <String, dynamic>{
+    'case_id': item.caseId,
+    'scenario_id': item.scenarioId,
+    'sort_order': item.sortOrder,
+    'seed': item.seed,
+    'status': item.status.name,
+    'difficulty': item.difficulty.name,
+    'jurisdiction': item.jurisdiction,
+    'practice_area': item.practiceArea,
+    'player_client_id': item.playerClientId,
+    'player_role': item.playerRole,
+    'identity_file': item.identityFile,
+    'scenario_file': item.scenarioFile,
+    'scenario_available': item.scenarioAvailable,
+    'scenario': item.scenario,
+    'scenario_fingerprint': item.scenarioFingerprint,
+    'runtime_adapter': item.runtimeAdapter,
+    'readiness': <String, dynamic>{
+      'identity': item.readiness.identity,
+      'scenario_definition': item.readiness.scenarioDefinition,
+      'diagnostics': item.readiness.diagnostics,
+      'path_simulation': item.readiness.pathSimulation,
+      'engine_runtime': item.readiness.engineRuntime,
+      'mobile_bundle': item.readiness.mobileBundle,
+    },
+    'localizations': item.localizations.map(
+      (String locale, LocalizedCaseText text) =>
+          MapEntry<String, Map<String, dynamic>>(
+        locale,
+        <String, dynamic>{
+          'caption': text.caption,
+          'topic': text.topic,
+          'short_title': text.shortTitle,
+          'synopsis': text.synopsis,
+          'player_client_name': text.playerClientName,
+          'player_client_role': text.playerClientRole,
+          'legal_issues': text.legalIssues,
+        },
+      ),
+    ),
+    'scenario_localizations': item.scenarioLocalizations,
+  };
+}
+
 const List<Object> _goldenshellCoordinatedPath = <Object>[
   'accept_cooperative_mandate',
   'issue_coordinated_legal_hold',
@@ -728,6 +886,7 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
   String _stage = 'intake';
   String? _outcome;
   String _scenarioId = '';
+  String? _scenarioFingerprint;
   int _seed = 0;
   Map<String, dynamic> _scenario = <String, dynamic>{};
   Map<String, Map<String, dynamic>> _actionDefinitions =
@@ -741,6 +900,7 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
   String? lastScenarioId;
   int? lastSeed;
   int? lastActionCount;
+  String? lastContentVersion;
 
   @override
   String execute(String encodedRequest) {
@@ -775,6 +935,7 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
         scenario['metadata'] as Map<String, dynamic>;
     _scenario = scenario;
     _scenarioId = metadata['id'] as String;
+    _scenarioFingerprint = null;
     _seed = request['seed'] as int;
     _actionDefinitions = <String, Map<String, dynamic>>{
       for (final Map<String, dynamic> value
@@ -801,6 +962,7 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
     lastScenarioId = _scenarioId;
     lastSeed = _seed;
     lastActionCount = (scenario['actions'] as List<dynamic>).length;
+    lastContentVersion = metadata['content_version'] as String?;
     createCount += 1;
     _sessionId += 1;
     _clockMinutes = 0;
@@ -845,6 +1007,8 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
       'session_id': _sessionId,
       'encoded_save': jsonEncode(<String, dynamic>{
         'scenario_id': _scenarioId,
+        if (_scenarioFingerprint != null)
+          'scenario_fingerprint': _scenarioFingerprint,
         'seed': _seed,
         'stage': _stage,
         'clock_minutes': _clockMinutes,
@@ -888,10 +1052,12 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
     _sessionId += 1;
     _scenario = scenario;
     _scenarioId = save['scenario_id'] as String;
+    _scenarioFingerprint = save['scenario_fingerprint'] as String?;
     _seed = save['seed'] as int;
     _stage = save['stage'] as String;
     _clockMinutes = save['clock_minutes'] as int;
     _outcome = save['outcome'] as String?;
+    lastContentVersion = metadata['content_version'] as String?;
     if (loadResponseMode == _LoadResponseMode.incompleteSuccess) {
       return jsonEncode(<String, dynamic>{
         'type': 'session_loaded',

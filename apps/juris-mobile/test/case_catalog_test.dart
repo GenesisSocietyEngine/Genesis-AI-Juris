@@ -38,8 +38,9 @@ void main() {
       decoded as Map<String, dynamic>,
     );
 
-    expect(bundle.bundleVersion, 4);
+    expect(bundle.bundleVersion, 5);
     expect(bundle.cases, hasLength(5));
+    expect(bundle.loadOnlyScenarios, hasLength(1));
     expect(
       bundle.cases.map((MobileCaseDefinition item) => item.caseId),
       <String>[
@@ -113,9 +114,27 @@ void main() {
     expect(greenfire.scenarioAvailable, isTrue);
     expect(greenfire.scenario, isNotNull);
     expect(greenfire.scenario?['actions'], hasLength(13));
+    expect(
+      greenfire.scenarioFingerprint,
+      'b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261',
+    );
     expect(greenfire.scenario?['clock'], <String, dynamic>{
       'mode': 'foreground',
     });
+    final ScenarioContentVersion retained = bundle.loadOnlyScenarios.single;
+    expect(retained.scenarioId, 'greenfire_first_72_hours');
+    expect(retained.contentVersion, '0.1.0');
+    expect(
+      retained.scenarioFingerprint,
+      'b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261',
+    );
+    expect(retained.loadOnly, isTrue);
+    expect(retained.scenario.containsKey('pressure_windows'), isFalse);
+    expect(retained.scenario, greenfire.scenario);
+    expect(
+      retained.scenarioLocalizations['ru'],
+      greenfire.scenarioLocalizations['ru'],
+    );
     expect(greenfire.readiness.diagnostics, isTrue);
     expect(greenfire.readiness.pathSimulation, isTrue);
     expect(greenfire.readiness.engineRuntime, isTrue);

@@ -148,6 +148,98 @@ void main() {
     repository.dispose();
   });
 
+  testWidgets(
+    'historical GreenFire routes to retained content across native resave',
+    (WidgetTester tester) async {
+      final CaseCatalogBundle futureInventory =
+          _withSyntheticFutureGreenFire(productionBundle, greenfire);
+      final MobileCaseDefinition futureGreenFire =
+          futureInventory.cases.singleWhere(
+        (MobileCaseDefinition item) =>
+            item.caseId == 'greenfire_first_72_hours',
+      );
+      final _MemoryGameSaveStore store = _MemoryGameSaveStore()
+        ..encodedSave = _historicalGreenFireV1Save;
+      final _RecordingNativeBridge firstBridge = _RecordingNativeBridge();
+      final RustScenarioRepository first = RustScenarioRepository(
+        caseDefinition: futureGreenFire,
+        contentInventory: futureInventory,
+        locale: 'ru',
+        bridgeClient: firstBridge,
+        saveStore: store,
+      );
+
+      await first.loadGame();
+      final Map<String, dynamic> loadRequest = firstBridge.requests.lastWhere(
+        (Map<String, dynamic> request) => request['command'] == 'load_session',
+      );
+      final Map<String, dynamic> retainedScenario =
+          loadRequest['scenario'] as Map<String, dynamic>;
+      expect(
+        (retainedScenario['metadata']
+            as Map<String, dynamic>)['content_version'],
+        '0.1.0',
+      );
+      expect(retainedScenario.containsKey('pressure_windows'), isFalse);
+      expect(
+        first.snapshot.trainingDebrief?.resolvedOutcomeId,
+        'compromised_crisis_position',
+      );
+      final List<Object?> historicalState = <Object?>[
+        first.snapshot.timeLabel,
+        first.snapshot.isClosed,
+        first.snapshot.trainingDebrief?.resolvedOutcomeId,
+      ];
+
+      await first.saveGame();
+      final Map<String, dynamic> resaved =
+          jsonDecode(store.encodedSave!) as Map<String, dynamic>;
+      expect(resaved, hasLength(8));
+      expect(resaved['runtime_compatibility'], 'scenario-runtime-v2');
+      expect(
+        resaved['scenario_fingerprint'],
+        'b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261',
+      );
+      first.dispose();
+
+      final _RecordingNativeBridge secondBridge = _RecordingNativeBridge();
+      final RustScenarioRepository second = RustScenarioRepository(
+        caseDefinition: futureGreenFire,
+        contentInventory: futureInventory,
+        locale: 'en',
+        bridgeClient: secondBridge,
+        saveStore: store,
+      );
+      await second.loadGame();
+      expect(
+        <Object?>[
+          second.snapshot.timeLabel,
+          second.snapshot.isClosed,
+          second.snapshot.trainingDebrief?.resolvedOutcomeId,
+        ],
+        historicalState,
+      );
+      final GameSnapshot beforeUnknown = second.snapshot;
+      final int nativeLoadCount = secondBridge.commandCount('load_session');
+      resaved['scenario_fingerprint'] =
+          'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+      store.encodedSave = jsonEncode(resaved);
+      await expectLater(
+        second.loadGame(),
+        throwsA(
+          isA<GamePersistenceException>().having(
+            (GamePersistenceException error) => error.code,
+            'code',
+            'scenario_fingerprint_mismatch',
+          ),
+        ),
+      );
+      expect(secondBridge.commandCount('load_session'), nativeLoadCount);
+      expect(second.snapshot, same(beforeUnknown));
+      second.dispose();
+    },
+  );
+
   testWidgets('GoldenShell RU replays either side of a deadline boundary', (
     WidgetTester tester,
   ) async {
@@ -1195,7 +1287,11 @@ void main() {
         MaterialApp(
           home: CaseCatalogScreen(
             bundle: productionBundle,
-            onStartCase: (MobileCaseDefinition definition, String locale) {
+            onStartCase: (
+              MobileCaseDefinition definition,
+              String locale,
+              CaseCatalogBundle _,
+            ) {
               selectedCase = definition;
               selectedLocale = locale;
             },
@@ -1530,6 +1626,93 @@ RustScenarioRepository _repository(
     saveStore: saveStore ?? ApplicationSupportGameSaveStore(),
   );
 }
+
+CaseCatalogBundle _withSyntheticFutureGreenFire(
+  CaseCatalogBundle source,
+  MobileCaseDefinition greenfire,
+) {
+  final Map<String, dynamic> futureScenario =
+      jsonDecode(jsonEncode(greenfire.scenario)) as Map<String, dynamic>;
+  (futureScenario['metadata'] as Map<String, dynamic>)['content_version'] =
+      '0.2.0-test-only';
+  (futureScenario['metadata'] as Map<String, dynamic>)['summary'] =
+      'Synthetic future current content for Android routing proof.';
+  final MobileCaseDefinition futureGreenFire = MobileCaseDefinition(
+    caseId: greenfire.caseId,
+    scenarioId: greenfire.scenarioId,
+    sortOrder: greenfire.sortOrder,
+    seed: greenfire.seed,
+    status: greenfire.status,
+    difficulty: greenfire.difficulty,
+    jurisdiction: greenfire.jurisdiction,
+    practiceArea: greenfire.practiceArea,
+    playerClientId: greenfire.playerClientId,
+    playerRole: greenfire.playerRole,
+    identityFile: greenfire.identityFile,
+    scenarioFile: greenfire.scenarioFile,
+    scenarioAvailable: greenfire.scenarioAvailable,
+    scenario: futureScenario,
+    scenarioFingerprint:
+        '0000000000000000000000000000000000000000000000000000000000000000',
+    runtimeAdapter: greenfire.runtimeAdapter,
+    readiness: greenfire.readiness,
+    localizations: greenfire.localizations,
+    scenarioLocalizations: greenfire.scenarioLocalizations,
+  );
+  return CaseCatalogBundle(
+    bundleVersion: source.bundleVersion,
+    catalogVersion: source.catalogVersion,
+    defaultLocale: source.defaultLocale,
+    supportedLocales: source.supportedLocales,
+    fictionalNotices: source.fictionalNotices,
+    ui: source.ui,
+    cases: source.cases
+        .map(
+          (MobileCaseDefinition item) =>
+              item.caseId == greenfire.caseId ? futureGreenFire : item,
+        )
+        .toList(growable: false),
+    loadOnlyScenarios: source.loadOnlyScenarios,
+  );
+}
+
+final class _MemoryGameSaveStore implements GameSaveStore {
+  String? encodedSave;
+
+  @override
+  Future<bool> exists(String slotId) async => encodedSave != null;
+
+  @override
+  Future<String> read(String slotId) async => encodedSave!;
+
+  @override
+  Future<void> write(String slotId, String encodedSave) async {
+    this.encodedSave = encodedSave;
+  }
+}
+
+const String _historicalGreenFireV1Save =
+    '{"schema_id":"genesis.ai-juris.command-log","schema_version":1,'
+    '"runtime_compatibility":"scenario-runtime-v1",'
+    '"scenario_id":"greenfire_first_72_hours",'
+    '"scenario_fingerprint":"b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261",'
+    '"seed":20260729,"commands":['
+    '{"command":"dispatch","action_id":"accept_emergency_mandate"},'
+    '{"command":"advance_time","minutes":360},'
+    '{"command":"dispatch","action_id":"release_unreviewed_documents"},'
+    '{"command":"advance_time","minutes":360},'
+    '{"command":"advance_time","minutes":360},'
+    '{"command":"advance_time","minutes":360},'
+    '{"command":"advance_time","minutes":360},'
+    '{"command":"advance_time","minutes":360},'
+    '{"command":"advance_time","minutes":360},'
+    '{"command":"advance_time","minutes":360},'
+    '{"command":"advance_time","minutes":360},'
+    '{"command":"advance_time","minutes":360},'
+    '{"command":"advance_time","minutes":360},'
+    '{"command":"advance_time","minutes":360},'
+    '{"command":"dispatch","action_id":"complete_compromised_handoff"}],'
+    '"final_state_digest":"f048a70b6abe0cfc67682c2ac4968ce03e27dee9f647bcefc19e26b77ec7ab04"}';
 
 DeadlineView _deadline(
   RustScenarioRepository repository,
