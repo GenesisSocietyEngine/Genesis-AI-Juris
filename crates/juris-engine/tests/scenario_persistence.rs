@@ -1,6 +1,6 @@
 use juris_engine::{
-    ScenarioCommand, ScenarioSaveEnvelope, ScenarioSaveError, ScenarioSession,
-    ScenarioSessionRegistry,
+    RetainedScenarioDefinition, ScenarioCommand, ScenarioContentInventory, ScenarioSaveEnvelope,
+    ScenarioSaveError, ScenarioSession, ScenarioSessionRegistry,
 };
 use juris_scenario_schema::{
     JudicialDecisionInstance, JudicialResult, MatterLifecycleStatus, ScenarioDefinition,
@@ -11,6 +11,9 @@ const LOGISTICS_SCENARIO: &str =
     include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
 const GREENFIRE_SCENARIO: &str =
     include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json");
+const RETAINED_GREENFIRE_SCENARIO: &str = include_str!(
+    "../../../content/archive/greenfire_first_72_hours/0.1.0/greenfire_first_72_hours.scenario.json"
+);
 const GOLDENSHELL_SCENARIO: &str =
     include_str!("../../../content/cases/goldenshell_recall_at_dawn.scenario.json");
 const REMEDIES_SCENARIO: &str =
@@ -47,6 +50,20 @@ const PR10_EXPLICITLY_CLOSED: &str =
 
 fn definition(encoded: &str) -> ScenarioDefinition {
     serde_json::from_str(encoded).expect("canonical scenario must parse")
+}
+
+fn greenfire_inventory() -> ScenarioContentInventory {
+    ScenarioContentInventory::try_new(
+        vec![definition(GREENFIRE_SCENARIO)],
+        vec![RetainedScenarioDefinition {
+            scenario_id: "greenfire_first_72_hours".to_owned(),
+            content_version: "0.1.0".to_owned(),
+            scenario_fingerprint:
+                "b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261".to_owned(),
+            definition: definition(RETAINED_GREENFIRE_SCENARIO),
+        }],
+    )
+    .expect("retained GreenFire inventory must be valid")
 }
 
 fn assert_round_trip(session: &ScenarioSession, definition: ScenarioDefinition) {
@@ -157,8 +174,11 @@ fn real_pre_lifecycle_v1_golden_saves_migrate_and_resave_as_v2() {
             v2_digest,
         );
     }
+    let inventory = greenfire_inventory();
+    let historical = ScenarioSaveEnvelope::from_json(V1_LOSING_TERMINAL_OUTCOME).unwrap();
+    let retained_definition = inventory.resolve_envelope(&historical).unwrap().clone();
     let losing = assert_v1_migrates(
-        definition(GREENFIRE_SCENARIO),
+        retained_definition,
         V1_LOSING_TERMINAL_OUTCOME,
         "f048a70b6abe0cfc67682c2ac4968ce03e27dee9f647bcefc19e26b77ec7ab04",
         "432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec",
@@ -168,6 +188,17 @@ fn real_pre_lifecycle_v1_golden_saves_migrate_and_resave_as_v2() {
         losing.snapshot().resolved_outcome.as_deref(),
         Some("compromised_crisis_position")
     );
+    let migrated = losing.save_envelope().unwrap();
+    assert_eq!(
+        migrated.scenario_fingerprint,
+        historical.scenario_fingerprint
+    );
+    let reloaded = ScenarioSession::from_save_envelope(
+        inventory.resolve_envelope(&migrated).unwrap().clone(),
+        migrated,
+    )
+    .expect("runtime-v2 resave must resolve the same retained definition");
+    assert_eq!(reloaded.snapshot(), losing.snapshot());
 }
 
 #[test]

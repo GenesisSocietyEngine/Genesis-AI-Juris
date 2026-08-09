@@ -84,6 +84,7 @@ class MobileCaseDefinition {
     required this.scenarioFile,
     required this.scenarioAvailable,
     required this.scenario,
+    this.scenarioFingerprint,
     required this.runtimeAdapter,
     required this.readiness,
     required this.localizations,
@@ -111,6 +112,7 @@ class MobileCaseDefinition {
       scenario: json['scenario'] == null
           ? null
           : _asObject(json['scenario'], 'scenario'),
+      scenarioFingerprint: json['scenario_fingerprint'] as String?,
       runtimeAdapter: json['runtime_adapter'] as String?,
       readiness: CaseReadiness.fromJson(_requiredObject(json, 'readiness')),
       localizations: rawLocalizations.map(
@@ -146,10 +148,58 @@ class MobileCaseDefinition {
   final String? scenarioFile;
   final bool scenarioAvailable;
   final Map<String, dynamic>? scenario;
+  final String? scenarioFingerprint;
   final String? runtimeAdapter;
   final CaseReadiness readiness;
   final Map<String, LocalizedCaseText> localizations;
   final Map<String, Map<String, dynamic>> scenarioLocalizations;
+
+  ScenarioContentVersion get currentScenarioContent {
+    final Map<String, dynamic>? currentScenario = scenario;
+    final String? currentFingerprint = scenarioFingerprint;
+    if (currentScenario == null || currentFingerprint == null) {
+      throw StateError('$caseId has no complete current scenario identity');
+    }
+    final Map<String, dynamic> metadata =
+        _asObject(currentScenario['metadata'], '$caseId.scenario.metadata');
+    return ScenarioContentVersion(
+      scenarioId: scenarioId,
+      contentVersion: _requiredString(metadata, 'content_version'),
+      scenarioFingerprint: currentFingerprint,
+      scenario: currentScenario,
+      scenarioLocalizations: scenarioLocalizations,
+      loadOnly: false,
+    );
+  }
+
+  MobileCaseDefinition withScenarioContent(ScenarioContentVersion content) {
+    if (content.scenarioId != scenarioId) {
+      throw StateError(
+        'Scenario content ${content.scenarioId} cannot render case $scenarioId',
+      );
+    }
+    return MobileCaseDefinition(
+      caseId: caseId,
+      scenarioId: scenarioId,
+      sortOrder: sortOrder,
+      seed: seed,
+      status: status,
+      difficulty: difficulty,
+      jurisdiction: jurisdiction,
+      practiceArea: practiceArea,
+      playerClientId: playerClientId,
+      playerRole: playerRole,
+      identityFile: identityFile,
+      scenarioFile: scenarioFile,
+      scenarioAvailable: scenarioAvailable,
+      scenario: content.scenario,
+      scenarioFingerprint: content.scenarioFingerprint,
+      runtimeAdapter: runtimeAdapter,
+      readiness: readiness,
+      localizations: localizations,
+      scenarioLocalizations: content.scenarioLocalizations,
+    );
+  }
 
   LocalizedCaseText localized(String locale, String fallbackLocale) {
     final LocalizedCaseText? selected = localizations[locale];
@@ -189,6 +239,65 @@ class MobileCaseDefinition {
   }
 }
 
+/// One exact current or load-only scenario content identity.
+@immutable
+class ScenarioContentVersion {
+  const ScenarioContentVersion({
+    required this.scenarioId,
+    required this.contentVersion,
+    required this.scenarioFingerprint,
+    required this.scenario,
+    required this.scenarioLocalizations,
+    required this.loadOnly,
+  });
+
+  factory ScenarioContentVersion.fromLoadOnlyJson(Map<String, dynamic> json) {
+    final String fingerprint = _requiredString(json, 'scenario_fingerprint');
+    if (!RegExp(r'^[0-9a-f]{64}$').hasMatch(fingerprint)) {
+      throw const FormatException(
+        'scenario_fingerprint must be 64 lowercase hex characters',
+      );
+    }
+    return ScenarioContentVersion(
+      scenarioId: _requiredString(json, 'scenario_id'),
+      contentVersion: _requiredString(json, 'content_version'),
+      scenarioFingerprint: fingerprint,
+      scenario: _requiredObject(json, 'scenario'),
+      scenarioLocalizations:
+          (json['scenario_localizations'] as Map<String, dynamic>? ??
+                  const <String, dynamic>{})
+              .map(
+        (String locale, dynamic value) =>
+            MapEntry<String, Map<String, dynamic>>(
+          locale,
+          _asObject(value, 'scenario_localizations.$locale'),
+        ),
+      ),
+      loadOnly: true,
+    );
+  }
+
+  final String scenarioId;
+  final String contentVersion;
+  final String scenarioFingerprint;
+  final Map<String, dynamic> scenario;
+  final Map<String, Map<String, dynamic>> scenarioLocalizations;
+  final bool loadOnly;
+}
+
+final class ScenarioContentResolutionException implements Exception {
+  const ScenarioContentResolutionException({
+    required this.code,
+    required this.message,
+  });
+
+  final String code;
+  final String message;
+
+  @override
+  String toString() => '$code: $message';
+}
+
 @immutable
 class CaseCatalogBundle {
   const CaseCatalogBundle({
@@ -199,6 +308,7 @@ class CaseCatalogBundle {
     required this.fictionalNotices,
     required this.ui,
     required this.cases,
+    required this.loadOnlyScenarios,
   });
 
   factory CaseCatalogBundle.fromJson(Map<String, dynamic> json) {
@@ -227,6 +337,38 @@ class CaseCatalogBundle {
         'default_locale must be present in supported_locales',
       );
     }
+    final dynamic rawLoadOnlyScenarios = json['load_only_scenarios'];
+    if (rawLoadOnlyScenarios != null &&
+        rawLoadOnlyScenarios is! List<dynamic>) {
+      throw const FormatException('load_only_scenarios must be an array');
+    }
+    final List<ScenarioContentVersion> loadOnlyScenarios =
+        (rawLoadOnlyScenarios as List<dynamic>? ?? const <dynamic>[])
+            .map((dynamic value) {
+      return ScenarioContentVersion.fromLoadOnlyJson(
+        _asObject(value, 'load_only_scenario'),
+      );
+    }).toList(growable: false);
+    final Set<String> currentIdentities = <String>{};
+    for (final MobileCaseDefinition item in cases) {
+      if (item.scenario == null || item.scenarioFingerprint == null) {
+        continue;
+      }
+      final ScenarioContentVersion content = item.currentScenarioContent;
+      final String identity =
+          '${content.scenarioId}\u0000${content.scenarioFingerprint}';
+      if (!currentIdentities.add(identity)) {
+        throw FormatException('duplicate current scenario identity $identity');
+      }
+    }
+    final Set<String> retainedIdentities = <String>{};
+    for (final ScenarioContentVersion content in loadOnlyScenarios) {
+      final String identity =
+          '${content.scenarioId}\u0000${content.scenarioFingerprint}';
+      if (!retainedIdentities.add(identity)) {
+        throw FormatException('duplicate retained scenario identity $identity');
+      }
+    }
 
     return CaseCatalogBundle(
       bundleVersion: _requiredInt(json, 'bundle_version'),
@@ -241,6 +383,7 @@ class CaseCatalogBundle {
         ),
       ),
       cases: cases,
+      loadOnlyScenarios: loadOnlyScenarios,
     );
   }
 
@@ -251,6 +394,43 @@ class CaseCatalogBundle {
   final Map<String, String> fictionalNotices;
   final Map<String, Map<String, String>> ui;
   final List<MobileCaseDefinition> cases;
+  final List<ScenarioContentVersion> loadOnlyScenarios;
+
+  ScenarioContentVersion resolveForLoad({
+    required String scenarioId,
+    required String scenarioFingerprint,
+  }) {
+    final bool knownScenario = cases.any(
+          (MobileCaseDefinition item) => item.scenarioId == scenarioId,
+        ) ||
+        loadOnlyScenarios.any(
+          (ScenarioContentVersion item) => item.scenarioId == scenarioId,
+        );
+    if (!knownScenario) {
+      throw ScenarioContentResolutionException(
+        code: 'unknown_save_scenario',
+        message: 'The save targets unknown scenario `$scenarioId`.',
+      );
+    }
+    for (final MobileCaseDefinition item in cases) {
+      if (item.scenario != null &&
+          item.scenarioFingerprint != null &&
+          item.scenarioId == scenarioId &&
+          item.scenarioFingerprint == scenarioFingerprint) {
+        return item.currentScenarioContent;
+      }
+    }
+    for (final ScenarioContentVersion item in loadOnlyScenarios) {
+      if (item.scenarioId == scenarioId &&
+          item.scenarioFingerprint == scenarioFingerprint) {
+        return item;
+      }
+    }
+    throw const ScenarioContentResolutionException(
+      code: 'scenario_fingerprint_mismatch',
+      message: 'No exact retained scenario definition matches this save.',
+    );
+  }
 
   String text(String locale, String key) {
     return ui[locale]?[key] ?? ui[defaultLocale]?[key] ?? key;

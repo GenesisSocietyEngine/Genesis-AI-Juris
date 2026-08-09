@@ -88,12 +88,17 @@ class _JurisAppState extends State<JurisApp> {
     );
   }
 
-  void _startCase(MobileCaseDefinition caseDefinition, String locale) {
+  void _startCase(
+    MobileCaseDefinition caseDefinition,
+    String locale,
+    CaseCatalogBundle contentInventory,
+  ) {
     final GameRuntimeRepository repository = CaseRuntimeFactory.create(
       caseDefinition,
       locale: locale,
       scenarioBridgeClient: widget.scenarioBridgeClient,
       gameSaveStore: widget.gameSaveStore,
+      contentInventory: contentInventory,
     );
     setState(() {
       _activeRepository = repository;

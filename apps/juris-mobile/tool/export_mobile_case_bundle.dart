@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
+
 void main(List<String> arguments) {
   final _Arguments parsed = _Arguments.parse(arguments);
   final Directory repository = Directory(parsed.repositoryRoot).absolute;
@@ -8,6 +10,8 @@ void main(List<String> arguments) {
       File(_join(repository.path, 'content/catalog/catalog.json'));
   final File localizationFile =
       File(_join(repository.path, 'content/localization/case_catalog.v1.json'));
+  final File archiveManifestFile =
+      File(_join(repository.path, 'content/archive/content_versions.v1.json'));
   final File outputFile = File(_join(
     repository.path,
     'apps/juris-mobile/assets/case_catalog/mobile_case_bundle.json',
@@ -15,6 +19,7 @@ void main(List<String> arguments) {
 
   final Map<String, dynamic> catalog = _readObject(catalogFile);
   final Map<String, dynamic> localization = _readObject(localizationFile);
+  final Map<String, dynamic> archiveManifest = _readObject(archiveManifestFile);
 
   _requireInt(catalog, 'catalog_version');
   _requireInt(localization, 'schema_version');
@@ -31,6 +36,28 @@ void main(List<String> arguments) {
       _object(localization['cases'], 'cases');
   final List<dynamic> catalogCases = _list(catalog['cases'], 'catalog.cases');
   final List<Map<String, dynamic>> exportedCases = <Map<String, dynamic>>[];
+  final Map<String, Map<String, dynamic>> currentIdentities =
+      <String, Map<String, dynamic>>{};
+  for (final dynamic rawIdentity in _list(
+    archiveManifest['current_identities'],
+    'archive.current_identities',
+  )) {
+    final Map<String, dynamic> identity =
+        _object(rawIdentity, 'archive current identity');
+    final String scenarioFile = _requireString(identity, 'scenario_file');
+    if (currentIdentities.putIfAbsent(scenarioFile, () => identity) !=
+        identity) {
+      throw FormatException('duplicate current identity path: $scenarioFile');
+    }
+    final String sourceHash = _requireSha256(identity, 'source_sha256');
+    _requireEqual(
+      sourceHash,
+      _fileSha256(File(_join(repository.path, scenarioFile))),
+      'current identity source_sha256',
+    );
+    _requireSha256(identity, 'scenario_fingerprint');
+  }
+  final Set<String> usedCurrentIdentities = <String>{};
 
   for (final dynamic rawEntry in catalogCases) {
     final Map<String, dynamic> entry = _object(rawEntry, 'catalog case');
@@ -99,6 +126,24 @@ void main(List<String> arguments) {
             'id',
           );
     _validateStableId(scenarioId, '$caseId.scenario_id');
+    final Map<String, dynamic>? currentIdentity =
+        scenarioRelative == null ? null : currentIdentities[scenarioRelative];
+    if (scenarioDefinition != null && currentIdentity == null) {
+      throw FormatException(
+        '$caseId has no pinned current scenario identity for $scenarioRelative',
+      );
+    }
+    if (currentIdentity != null) {
+      usedCurrentIdentities.add(scenarioRelative!);
+      _requireEqual(
+        scenarioId,
+        _requireString(currentIdentity, 'scenario_id'),
+        '$caseId current scenario_id',
+      );
+    }
+    final String? scenarioFingerprint = currentIdentity == null
+        ? null
+        : _requireSha256(currentIdentity, 'scenario_fingerprint');
     final Map<String, dynamic> localeSource =
         _object(caseConfig['locales'], '$caseId.locales');
     final Map<String, dynamic> localizedOutput = <String, dynamic>{};
@@ -194,6 +239,7 @@ void main(List<String> arguments) {
       'scenario_file': scenarioRelative,
       'scenario_available': scenarioAvailable,
       'scenario': scenarioDefinition,
+      'scenario_fingerprint': scenarioFingerprint,
       'runtime_adapter': runtimeAdapter,
       'readiness': <String, dynamic>{
         'identity': true,
@@ -216,15 +262,153 @@ void main(List<String> arguments) {
     }
     return (left['case_id'] as String).compareTo(right['case_id'] as String);
   });
+  final Set<String> unusedCurrentIdentities =
+      currentIdentities.keys.toSet().difference(usedCurrentIdentities);
+  if (unusedCurrentIdentities.isNotEmpty) {
+    throw FormatException(
+      'current identity entries are not catalogue scenarios: '
+      '${unusedCurrentIdentities.toList()..sort()}',
+    );
+  }
+
+  _requireEqual(
+    '1',
+    _requireInt(archiveManifest, 'schema_version').toString(),
+    'content archive schema_version',
+  );
+  final List<Map<String, dynamic>> loadOnlyScenarios = <Map<String, dynamic>>[];
+  final Set<String> archiveIdentities = <String>{};
+  for (final dynamic rawEntry
+      in _list(archiveManifest['entries'], 'archive.entries')) {
+    final Map<String, dynamic> entry = _object(rawEntry, 'archive entry');
+    final String scenarioId = _requireString(entry, 'scenario_id');
+    final String contentVersion = _requireString(entry, 'content_version');
+    final String declaredFingerprint =
+        _requireSha256(entry, 'scenario_fingerprint');
+    _validateStableId(scenarioId, 'archive.scenario_id');
+    final String identity = '$scenarioId\u0000$declaredFingerprint';
+    if (!archiveIdentities.add(identity)) {
+      throw FormatException(
+        'duplicate archived scenario identity: $scenarioId/$declaredFingerprint',
+      );
+    }
+
+    final String scenarioRelative = _requireString(entry, 'scenario_file');
+    if (!scenarioRelative
+        .replaceAll('\\', '/')
+        .startsWith('content/archive/')) {
+      throw FormatException(
+        'archive scenario_file must stay under content/archive: $scenarioRelative',
+      );
+    }
+    final Map<String, dynamic> scenario =
+        _readObject(File(_join(repository.path, scenarioRelative)));
+    _requireEqual(
+      _requireSha256(entry, 'source_sha256'),
+      _fileSha256(File(_join(repository.path, scenarioRelative))),
+      'archive source_sha256',
+    );
+    final Map<String, dynamic> metadata =
+        _object(scenario['metadata'], 'archive.scenario.metadata');
+    _requireEqual(
+      scenarioId,
+      _requireString(metadata, 'id'),
+      'archive scenario_id',
+    );
+    _requireEqual(
+      contentVersion,
+      _requireString(metadata, 'content_version'),
+      'archive content_version',
+    );
+    final Map<String, dynamic> localizedOutput = <String, dynamic>{};
+    final Map<String, dynamic> localizationFiles = _object(
+      entry['scenario_localization_files'] ?? <String, dynamic>{},
+      'archive.scenario_localization_files',
+    );
+    final Map<String, dynamic> localizationHashes = _object(
+      entry['scenario_localization_sha256'] ?? <String, dynamic>{},
+      'archive.scenario_localization_sha256',
+    );
+    if (localizationHashes.keys
+            .toSet()
+            .difference(localizationFiles.keys.toSet())
+            .isNotEmpty ||
+        localizationFiles.keys
+            .toSet()
+            .difference(localizationHashes.keys.toSet())
+            .isNotEmpty) {
+      throw const FormatException(
+        'archive localization paths and SHA-256 keys must match',
+      );
+    }
+    for (final MapEntry<String, dynamic> localization
+        in localizationFiles.entries) {
+      if (!supportedLocales.contains(localization.key) ||
+          localization.value is! String) {
+        throw FormatException(
+          'archive localization ${localization.key} must be a supported locale path',
+        );
+      }
+      final String relative = localization.value as String;
+      if (!relative.replaceAll('\\', '/').startsWith('content/archive/')) {
+        throw FormatException(
+          'archive localization must stay under content/archive: $relative',
+        );
+      }
+      final Map<String, dynamic> overlay =
+          _readObject(File(_join(repository.path, relative)));
+      _requireEqual(
+        _requireSha256(localizationHashes, localization.key),
+        _fileSha256(File(_join(repository.path, relative))),
+        'archive localization ${localization.key} SHA-256',
+      );
+      _requireEqual(
+        scenarioId,
+        _requireString(overlay, 'scenario_id'),
+        'archive localization scenario_id',
+      );
+      _requireEqual(
+        localization.key,
+        _requireString(overlay, 'locale'),
+        'archive localization locale',
+      );
+      _validateScenarioLocalization(
+        overlay,
+        scenario,
+        'archive.scenario_localizations.${localization.key}',
+      );
+      localizedOutput[localization.key] = overlay;
+    }
+
+    loadOnlyScenarios.add(<String, dynamic>{
+      'scenario_id': scenarioId,
+      'content_version': contentVersion,
+      'scenario_fingerprint': declaredFingerprint,
+      'scenario_file': scenarioRelative,
+      'scenario': scenario,
+      'scenario_localizations': localizedOutput,
+    });
+  }
+  loadOnlyScenarios
+      .sort((Map<String, dynamic> left, Map<String, dynamic> right) {
+    final int scenarioOrder = (left['scenario_id'] as String)
+        .compareTo(right['scenario_id'] as String);
+    if (scenarioOrder != 0) {
+      return scenarioOrder;
+    }
+    return (left['scenario_fingerprint'] as String)
+        .compareTo(right['scenario_fingerprint'] as String);
+  });
 
   final Map<String, dynamic> output = <String, dynamic>{
-    'bundle_version': 4,
+    'bundle_version': 5,
     'catalog_version': catalog['catalog_version'],
     'default_locale': defaultLocale,
     'supported_locales': supportedLocales,
     'fictional_notice': localization['fictional_notice'],
     'ui': localization['ui'],
     'cases': exportedCases,
+    'load_only_scenarios': loadOnlyScenarios,
   };
   final String encoded =
       '${const JsonEncoder.withIndent('  ').convert(output)}\n';
@@ -250,8 +434,16 @@ void main(List<String> arguments) {
   outputFile.parent.createSync(recursive: true);
   outputFile.writeAsStringSync(encoded, flush: true);
   stdout.writeln(
-    'Wrote ${exportedCases.length} cases to ${outputFile.path}',
+    'Wrote ${exportedCases.length} cases and '
+    '${loadOnlyScenarios.length} load-only definitions to ${outputFile.path}',
   );
+}
+
+String _fileSha256(File file) {
+  if (!file.existsSync()) {
+    throw FileSystemException('Required file not found', file.path);
+  }
+  return sha256.convert(file.readAsBytesSync()).toString();
 }
 
 String _clientRole(Map<String, dynamic> playerParty) {
@@ -299,6 +491,14 @@ String _requireString(Map<String, dynamic> value, String field) {
     return candidate;
   }
   throw FormatException('$field must be a non-empty string');
+}
+
+String _requireSha256(Map<String, dynamic> value, String field) {
+  final String candidate = _requireString(value, field);
+  if (!RegExp(r'^[0-9a-f]{64}$').hasMatch(candidate)) {
+    throw FormatException('$field must be 64 lowercase hex characters');
+  }
+  return candidate;
 }
 
 int _requireInt(Map<String, dynamic> value, String field) {

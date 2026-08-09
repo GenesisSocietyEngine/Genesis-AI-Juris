@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../models/case_catalog.dart';
 import '../models/game_snapshot.dart';
 import 'game_runtime_repository.dart';
@@ -11,17 +13,22 @@ final class RustScenarioRepository extends GameRuntimeRepository {
     required this.caseDefinition,
     required ScenarioBridgeClient bridgeClient,
     GameSaveStore? saveStore,
+    this.contentInventory,
     this.locale = 'en',
   })  : _bridgeClient = bridgeClient,
         _saveStore = saveStore ?? ApplicationSupportGameSaveStore() {
+    _activeCaseDefinition = caseDefinition;
     _createSession();
   }
 
   final MobileCaseDefinition caseDefinition;
   final String locale;
+  final CaseCatalogBundle? contentInventory;
   final ScenarioBridgeClient _bridgeClient;
   final GameSaveStore _saveStore;
   final Set<String> _locallyReadInboxIds = <String>{};
+
+  late MobileCaseDefinition _activeCaseDefinition;
 
   late int _sessionId;
   late Map<String, dynamic> _rawSnapshot;
@@ -87,7 +94,12 @@ final class RustScenarioRepository extends GameRuntimeRepository {
         message: error.message,
       );
     }
-    final Map<String, dynamic>? scenario = caseDefinition.scenario;
+    final MobileCaseDefinition loadDefinition = contentInventory == null
+        ? caseDefinition
+        : caseDefinition.withScenarioContent(
+            _resolveContentForLoad(encodedSave),
+          );
+    final Map<String, dynamic>? scenario = loadDefinition.scenario;
     if (scenario == null) {
       throw const GamePersistenceException(
         code: 'scenario_unavailable',
@@ -123,7 +135,7 @@ final class RustScenarioRepository extends GameRuntimeRepository {
     try {
       nextSnapshot = ScenarioSnapshotMapper.map(
         source: nextRawSnapshot,
-        caseDefinition: caseDefinition,
+        caseDefinition: loadDefinition,
         locale: locale,
         locallyReadInboxIds: const <String>{},
       );
@@ -138,6 +150,7 @@ final class RustScenarioRepository extends GameRuntimeRepository {
     }
 
     _sessionId = nextSessionId;
+    _activeCaseDefinition = loadDefinition;
     _rawSnapshot = nextRawSnapshot;
     _snapshot = nextSnapshot;
     _locallyReadInboxIds.clear();
@@ -225,6 +238,7 @@ final class RustScenarioRepository extends GameRuntimeRepository {
     _disposeNativeSession();
     _locallyReadInboxIds.clear();
     _clockErrorMessage = null;
+    _activeCaseDefinition = caseDefinition;
     _createSession();
     notifyListeners();
   }
@@ -237,7 +251,7 @@ final class RustScenarioRepository extends GameRuntimeRepository {
   }
 
   void _createSession() {
-    final Map<String, dynamic>? scenario = caseDefinition.scenario;
+    final Map<String, dynamic>? scenario = _activeCaseDefinition.scenario;
     if (scenario == null) {
       throw StateError(
         '${caseDefinition.caseId} has no bundled scenario definition',
@@ -285,10 +299,48 @@ final class RustScenarioRepository extends GameRuntimeRepository {
   void _remap() {
     _snapshot = ScenarioSnapshotMapper.map(
       source: _rawSnapshot,
-      caseDefinition: caseDefinition,
+      caseDefinition: _activeCaseDefinition,
       locale: locale,
       locallyReadInboxIds: _locallyReadInboxIds,
     );
+  }
+
+  ScenarioContentVersion _resolveContentForLoad(String encodedSave) {
+    final CaseCatalogBundle inventory = contentInventory!;
+    final dynamic decoded;
+    try {
+      decoded = jsonDecode(encodedSave);
+    } on FormatException catch (error) {
+      throw GamePersistenceException(
+        code: 'invalid_save_json',
+        message: 'The saved game is malformed: $error',
+      );
+    }
+    if (decoded is! Map<String, dynamic>) {
+      throw const GamePersistenceException(
+        code: 'invalid_save_json',
+        message: 'The saved game must be a JSON object.',
+      );
+    }
+    final dynamic rawScenarioId = decoded['scenario_id'];
+    final dynamic rawFingerprint = decoded['scenario_fingerprint'];
+    if (rawScenarioId is! String ||
+        rawScenarioId.isEmpty ||
+        rawFingerprint is! String ||
+        rawFingerprint.isEmpty) {
+      throw const GamePersistenceException(
+        code: 'invalid_save_json',
+        message: 'The saved game has no complete scenario identity.',
+      );
+    }
+    try {
+      return inventory.resolveForLoad(
+        scenarioId: rawScenarioId,
+        scenarioFingerprint: rawFingerprint,
+      );
+    } on ScenarioContentResolutionException catch (error) {
+      throw GamePersistenceException(code: error.code, message: error.message);
+    }
   }
 
   void _stopClockWithError(String message) {

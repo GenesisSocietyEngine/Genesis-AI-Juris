@@ -9,6 +9,7 @@ enum _CaseFilter { all, playable, authoring }
 typedef CaseStartCallback = void Function(
   MobileCaseDefinition caseDefinition,
   String locale,
+  CaseCatalogBundle contentInventory,
 );
 
 class CaseCatalogLoaderScreen extends StatefulWidget {
@@ -220,7 +221,11 @@ class _CaseCatalogScreenState extends State<CaseCatalogScreen> {
                     bundle: widget.bundle,
                     locale: _locale,
                     caseDefinition: caseDefinition,
-                    onStart: () => widget.onStartCase(caseDefinition, _locale),
+                    onStart: () => widget.onStartCase(
+                      caseDefinition,
+                      _locale,
+                      widget.bundle,
+                    ),
                     onConversionPlan: () => _showConversionPlan(
                       caseDefinition,
                     ),

@@ -1,8 +1,14 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: docs/pressure-countermove-runtime-publication-checkpoint
-base_commit: 951fcf2e938c94779a978cc1b88ede64ab92b564
+branch: feat/immutable-content-version-retention-v1
+base_commit: 2390c69d27d866e8b8d360e8bdcc71919d3f105c
+immutable_content_retention_status: local_review_checkpoint_complete
+immutable_content_retention_contract: docs/development/IMMUTABLE_CONTENT_VERSION_RETENTION_V1.md
+immutable_content_retention_architecture_commit: abb2db0e9fc617e3de726cb879e57dbd08caf23c
+immutable_content_retention_archive_commit: c07d1c6294f42de1bdb25ba9164cb60ace7221e7
+immutable_content_retention_runtime_commit: 1f1603cab31f03f01c0c538b2f3e37308d48996f
+immutable_content_retention_mobile_commit: ee518878e8b6f61525b87064955dd7959610309c
 pressure_countermove_status: product_publication_accepted_docs_checkpoint
 pressure_countermove_contract: docs/development/PRESSURE_COUNTERMOVE_RUNTIME_V1.md
 pressure_countermove_architecture_commit: 1c97ec77417a1dd9c5b325c151bba1325dd3b255
@@ -58,6 +64,222 @@ last_updated: 2026-08-08
 ---
 
 # Current Progress
+
+## Immutable Content Version Retention v1 local review checkpoint - 2026-08-08
+
+Status: the generic immutable current/load-only content inventory is
+implemented and accepted locally on
+`feat/immutable-content-version-retention-v1`, based exactly on published
+`main` `2390c69d27d866e8b8d360e8bdcc71919d3f105c`. The merge base remains that
+exact SHA. This checkpoint is local only: nothing was pushed, no PR was
+opened or modified, and no merge, tag, release, asset upload, version bump,
+branch cleanup, or GreenFire Pressure activation occurred.
+
+### Decision, topology, and changed layers
+
+This is content retention, not content migration. A save is resolved by the
+exact tuple `(scenario_id, scenario_fingerprint)`. `content_version` remains
+human-readable metadata and is never an integrity or selection key. New games
+use only the single current definition; resume/import may select an explicit
+load-only definition. The selected definition and untouched save then cross
+the existing `load_session` request, where Rust recomputes the definition
+fingerprint and runs the unchanged header, command, replay, and final-digest
+validation before inserting a registry session. There is no fallback to
+current/latest/nearest content and no command-log or fingerprint rewrite.
+
+The four implementation commits before this cumulative handoff are:
+
+1. `abb2db0e9fc617e3de726cb879e57dbd08caf23c` -
+   `docs: define immutable content retention v1`;
+2. `c07d1c6294f42de1bdb25ba9164cb60ace7221e7` -
+   `feat(content): retain immutable scenario definitions`;
+3. `1f1603cab31f03f01c0c538b2f3e37308d48996f` -
+   `test(runtime): resolve saves by exact content identity`;
+4. `ee518878e8b6f61525b87064955dd7959610309c` -
+   `feat(mobile): route historical saves to retained content`.
+
+The exact implementation head is
+`ee518878e8b6f61525b87064955dd7959610309c`. The local checkpoint commit that
+contains this cumulative section is the final local HEAD at the stop boundary
+and is reported by exact SHA in the owner handoff (`git rev-parse HEAD`); a
+Git commit cannot embed its own content-addressed SHA.
+
+Changed layers are limited to:
+
+- architecture and archive contract in
+  `docs/development/IMMUTABLE_CONTENT_VERSION_RETENTION_V1.md`;
+- the generic Rust `ScenarioContentInventory`, its exact resolution errors,
+  and focused persistence/inventory tests;
+- immutable archive manifest and first retained product definition under
+  `content/archive/greenfire_first_72_hours/0.1.0/`;
+- deterministic mobile bundle v5 with a separate `load_only_scenarios`
+  section, current identity pins, and no duplicate catalogue case;
+- Flutter identity-only routing, retained localization mapping, controlled
+  errors, and live-session atomicity;
+- raw bridge, C FFI, Flutter, and Android native acceptance tests.
+
+No production scenario, canonical trace, historical save fixture, save
+schema, digest profile, fingerprint algorithm, bridge command, C ABI source,
+catalogue identity, or version file changed.
+
+### Retained identity, archive, and load behavior
+
+The first retained production identity is exact:
+
+- scenario ID: `greenfire_first_72_hours`;
+- content version: `0.1.0`;
+- fingerprint:
+  `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261`;
+- role: load-only historical (temporarily byte-identical to current);
+- Pressure runtime: absent; the definition has no `pressure_windows`;
+- definition:
+  `content/archive/greenfire_first_72_hours/0.1.0/greenfire_first_72_hours.scenario.json`;
+- RU overlay:
+  `content/archive/greenfire_first_72_hours/0.1.0/greenfire_first_72_hours.ru.v1.json`;
+- inventory manifest: `content/archive/content_versions.v1.json`.
+
+The archived definition and overlay are byte-exact copies of their published
+base sources. The manifest pins source hashes, current fingerprints, archive
+fingerprint, content version, role, and localization hash. Rust recomputes and
+pins the authoritative archive fingerprint. The exporter checks every raw
+source hash, schema/metadata relationship, supported localization, duplicate
+identity, catalogue membership, and deterministic ordering before emitting
+the pinned Rust fingerprint.
+
+The real `06e566a_losing_terminal_outcome.json` runtime-v1 GreenFire fixture
+loads through the generic retained inventory, replays its complete compromised
+path, preserves integrity and outcome, resaves as the same eight-field schema
+1 envelope using `scenario-runtime-v2`, retains the historical `b585...`
+fingerprint, and reloads to the exact state. No fixture byte was edited.
+
+A synthetic future-current proof uses two valid definitions with the same
+scenario ID and different fingerprints. New-session creation selects only the
+new current role; a historical save selects only old `0.1.0`; reversed archive
+order is identical; a wrong candidate still fails Rust validation; and an
+unknown third fingerprint returns a controlled error without registry or
+Flutter live-session mutation. Historical EN/RU rendering uses the retained
+overlay and a resave/reload remains bound to `b585...`.
+
+### Complete local acceptance
+
+All required local gates passed:
+
+- `cargo +1.78.0 check --workspace --locked`: passed;
+- `cargo +1.78.0 fmt --all -- --check`: passed;
+- `cargo check --workspace`: passed;
+- `cargo clippy --workspace --all-targets -- -D warnings`: passed;
+- `cargo test --workspace`: **340/340** passed;
+- `dart format --output=none --set-exit-if-changed lib test integration_test tool`:
+  57 files, zero changes;
+- `dart run tool/export_mobile_case_bundle.dart --repo-root
+  C:\\PROJECTS\\Genesis-AI-Juris --check`: passed;
+- two consecutive ordinary exports were byte-identical;
+- `flutter analyze --no-pub`: no issues;
+- `flutter test --no-pub`: **155/155** passed;
+- `flutter test --no-pub
+  integration_test/native_android_persistence_smoke_test.dart -d
+  emulator-5554`: **11/11** passed on Android 17 / API 37;
+- `flutter build apk --debug --no-pub`: passed for
+  `android-arm`, `android-arm64`, and `android-x64`;
+- `git diff --check`: passed.
+
+Focused proof additionally passed 5/5 Rust inventory tests, 23/23 Rust
+persistence tests, raw bridge 1/1, C FFI 1/1, and the 42-test Flutter catalogue
+and repository subset. Android used only in-memory/test application state for
+the historical GreenFire fixture. It loaded retained `0.1.0` through the real
+native bridge, verified no `pressure_windows`, resaved as runtime v2 with the
+historical fingerprint, disposed/reloaded, reproduced the exact authoritative
+outcome, and rejected an unknown fingerprint before a native load without
+replacing the live session.
+
+Hosted iOS was not run at this local checkpoint; it is explicitly deferred to
+the separately authorized publication and remote-acceptance phase.
+
+### Deterministic compatibility invariants
+
+All five production fingerprints remain exact:
+
+| Scenario | Fingerprint |
+|---|---|
+| Failed ERP | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` |
+| Logistics | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` |
+| GreenFire | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` |
+| GoldenShell | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` |
+| Desert Water | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` |
+
+All 11 canonical results remain exact:
+
+| Scenario / path | Final minute | Outcome | Final digest |
+|---|---:|---|---|
+| Failed ERP / settlement | 570 | `settlement_64500` | `fd77a45422e4abd7f141fc7b1db767524ebf48d9674bd25c21354fb7a2b8c029` |
+| Failed ERP / prepared judgment | 8,640 | `judgment_preserved_after_cassation` | `f25604fc0225d7ac5a7e98d192ce3b82114970158a3662aee7575b128430ca0c` |
+| Failed ERP / remittal/open | 10,080 | none | `268f27867fd1f45a417c0e999819165bd79f76a74f3ab2e65ee075e193cbc34a` |
+| Logistics / negotiated | 270 | `negotiated_recovery` | `139239e001417ae563e270128864a512e88c0ff535a498e15b000731b8ca5bfe` |
+| Logistics / judgment | 480 | `judgment_recovery` | `e25e1eeb36249c1b7da0fe7a947f29ed3363ce7dac0357a110951c49bb738ac3` |
+| GreenFire / protected | 4,440 | `protected_crisis_position` | `17f58f95551abacb445ce6d886fc059bcbd7a7660c3f089d9509e7a25f01a216` |
+| GreenFire / compromised | 4,590 | `compromised_crisis_position` | `432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec` |
+| GoldenShell / coordinated | 4,545 | `coordinated_claim_position` | `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b` |
+| GoldenShell / fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd6b9a7cbe1b23bdd6d412314e582c13503` |
+| Desert Water / coordinated | 3,180 | `credible_source_and_remedy` | `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d` |
+| Desert Water / compromised | 3,510 | `compromised_claim_closed` | `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce` |
+
+The deterministic bundle v5 contains the same five cases once and one
+load-only definition. It is 683,325 bytes with SHA-256
+`3db4fd16204be377ee09010a39032fc7ed4a1a0b8c7bc024d6db3bd4806fa96b`.
+The ordinary debug APK is 203,489,120 bytes with SHA-256
+`9ca54415dfc326e5dc2ed06ac36c54ab73fd52207d3927be2e415adc8681e00d`.
+Its drift is limited to the embedded inventory and generic routing code; it
+was not uploaded or attached to a release.
+
+C ABI remains version 1. Fresh NDK `llvm-nm -D --defined-only` audits of the
+ordinary APK found exactly these three Juris exports in `armeabi-v7a`,
+`arm64-v8a`, and `x86_64`:
+`juris_mobile_bridge_abi_version`, `juris_mobile_bridge_execute`, and
+`juris_mobile_bridge_string_free`.
+
+### Protected state, remote audit, deviations, and stop boundary
+
+- protected `docs/development/CURRENT_PROGRESS.zip` remains the sole
+  untracked file: 47,579 bytes, SHA-256
+  `2e5f03f003a7d227cb4ce765e338a8f335d92879862e53bd1c27d65e116de3b6`;
+- the corrected Desert Water save was hashed without parsing or loading and
+  remains 12,060 bytes with SHA-256
+  `328d76e392230ac47ecac4ecda6c54af83a48155f4b0d414fe07a2fecabfe019`;
+- local `main` and remote `main` remain
+  `2390c69d27d866e8b8d360e8bdcc71919d3f105c`;
+- stopped `feat/greenfire-regulatory-pressure-pilot-v1` remains untouched at
+  `c97e66a7d35ac8e5a60f78e2369a332508a2cca6`;
+- recovery ref `backup/desert-water-pre-failed-erp` remains
+  `44e565b22c52a4c3a3e69b2c137353b7771fcf77`;
+- remote `feat/dossier-projection-v1` remains
+  `62111ddef1623f0211149c70617564f2aa622dd4`;
+- PR #4 remains open at
+  `7aa6927e8ebfd6e205bfd12478ba28d52c40248a`;
+- ruleset `Main` (`19991132`) remains active for `~ALL`, with empty
+  exclusions, deletion/non-fast-forward protection, and no bypass actors;
+- prerelease `v0.6.0-alpha.1` and application version `0.6.0+13` remain
+  unchanged;
+- the retention branch is absent remotely.
+
+Two non-product deviations were recorded. An attempted non-normative Clippy
+run under Cargo 1.78 could not parse dependency `indexmap 2.14.0` because that
+old Cargo lacks edition-2024 support; the required locked MSRV check passed,
+and the repository's required current-toolchain Clippy gate passed with
+warnings denied. The first configured API 37 AVD remained offline, so the
+alternate configured API 37 Pixel AVD was used. One initial Android build
+exceeded its wrapper timeout while its orphaned Gradle child completed native
+compilation; only those orphaned processes were stopped. The next full run
+exposed a test-only EN-versus-RU headline expectation while all other ten
+tests passed. Replacing that assertion with the locale-neutral authoritative
+outcome ID produced the final clean 11/11 run. No product behavior or
+acceptance boundary was weakened.
+
+At the final stop, tracked state is clean and the protected ZIP is the only
+untracked path. GreenFire production content is still `0.1.0` without
+Pressure. No publication, remote acceptance, pilot implementation, release,
+or branch cleanup is authorized or performed. The next possible work is a
+separate **Immutable Content Version Retention v1 - Publication & Remote
+Acceptance** instruction set after owner review.
 
 ## Pressure & Countermove Runtime v1 product publication checkpoint - 2026-08-08
 

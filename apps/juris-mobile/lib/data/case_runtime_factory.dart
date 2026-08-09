@@ -27,6 +27,7 @@ abstract final class CaseRuntimeFactory {
     String locale = 'en',
     ScenarioBridgeClient? scenarioBridgeClient,
     GameSaveStore? gameSaveStore,
+    CaseCatalogBundle? contentInventory,
   }) {
     if (!supports(caseDefinition)) {
       throw StateError(
@@ -38,6 +39,7 @@ abstract final class CaseRuntimeFactory {
       locale: locale,
       bridgeClient: scenarioBridgeClient ?? NativeScenarioBridgeClient(),
       saveStore: gameSaveStore,
+      contentInventory: contentInventory,
     );
   }
 }
