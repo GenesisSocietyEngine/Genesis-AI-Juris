@@ -166,7 +166,9 @@ normal new-game inventory operation.
 
 ### Save load/import/resume
 
-1. Parse the encoded save with the existing controlled envelope parser.
+1. Parse the encoded save with the existing controlled Rust envelope parser.
+   Mobile invokes that parser through the read-only `inspect_save` bridge
+   command before attempting inventory lookup.
 2. Read its `scenario_id` and `scenario_fingerprint` without executing a
    command or allocating a registry session.
 3. If the scenario ID is unknown to both roles, return `UnknownScenario`.
@@ -188,18 +190,22 @@ unchanged Rust fingerprint comparison.
 
 ## Bridge, FFI and registry ownership
 
-The existing bridge inventory remains:
+The transport-neutral JSON bridge inventory is:
 
 - `create_session { scenario, seed }`;
 - `snapshot { session_id }`;
 - `dispatch { session_id, action_id }`;
 - `advance_time { session_id, minutes }`;
 - `save_session { session_id }`;
+- `inspect_save { encoded_save }`;
 - `load_session { scenario, encoded_save }`;
 - `dispose_session { session_id }`.
 
-`load_session` already carries the selected definition, so no command or
-request field is needed. `MobileBridge` continues to own one
+`inspect_save` is a read-only retention-hardening command. It calls
+`ScenarioSaveEnvelope::from_json`, returns only the validated scenario ID and
+fingerprint, and cannot replay a command, allocate a registry session, or
+replace live state. `load_session` continues to carry the exact selected
+definition and the untouched envelope. `MobileBridge` continues to own one
 `ScenarioSessionRegistry`, and FFI continues to expose ABI v1 through only
 `juris_mobile_bridge_abi_version`, `juris_mobile_bridge_execute`, and
 `juris_mobile_bridge_string_free`.
@@ -222,8 +228,11 @@ creation continues to use the current case definition. Archive entries have
 no case-card identity, sort order, status, readiness or new-game adapter.
 
 Exporter validation checks manifest shape, stable identities, unique tuples,
-file metadata agreement, and localization coverage. Rust tests recompute and
-pin the authoritative fingerprint. Bundle export remains deterministic and
+file metadata agreement, and localization coverage. Before either writing the
+bundle or accepting `--check`, it invokes one Rust verifier process covering
+every current and retained declaration. The verifier parses each typed
+`ScenarioDefinition`, recomputes the engine-authoritative fingerprint, and
+compares it with the manifest pin. Bundle export remains deterministic and
 `--check` capable; two consecutive exports must be byte-identical.
 
 ## Flutter routing and rendering
@@ -233,12 +242,13 @@ It will expose exact identity resolution without exposing archived entries to
 catalogue iteration.
 
 `RustScenarioRepository` starts with the current case definition. On load it
-parses only the save identity needed for routing, resolves an exact candidate,
-and sends that candidate through the existing `load_session`. It maps a
-successful historical snapshot with the retained definition and overlays,
-then keeps that presentation definition active for later snapshots. Reset/new
-game returns to current content. Failed resolution or Rust validation leaves
-the live session and navigation unchanged.
+first asks Rust to inspect the complete controlled envelope, then resolves the
+returned exact identity and sends that candidate through the existing
+`load_session`. It never parses compatibility or command semantics in Dart.
+It maps a successful historical snapshot with the retained definition and
+overlays, then keeps that presentation definition active for later snapshots.
+Reset/new game returns to current content. Failed inspection, resolution, or
+Rust validation leaves the live session and navigation unchanged.
 
 The retained English labels come from the archived canonical definition. RU
 labels come from its archived RU overlay. GreenFire `0.1.0` has no
@@ -290,6 +300,9 @@ No current-content fallback is permitted for a failed exact lookup.
 
 ### Bridge and FFI
 
+- inspect the complete envelope before mobile identity resolution while
+  preserving schema/runtime/command error precedence;
+- prove inspection allocates no session and cannot replace live state;
 - route a production-shaped historical load through the existing request;
 - prove deterministic snapshot/resave/reload and no Pressure;
 - prove malformed/wrong identities do not leak a session;
@@ -347,7 +360,8 @@ This design rejects:
 - lookup by content version, semver range or scenario ID alone;
 - exposing archived content in catalogue/new game;
 - a GreenFire-specific loader branch;
-- a new save field/schema, runtime marker, bridge command or ABI symbol;
+- a new save field/schema, runtime marker, mutating or inventory-specific
+  bridge command, or ABI symbol;
 - network archives, accounts, database migration or remote content services;
 - Pressure activation or any production scenario edit;
 - app version, release, tag, asset, PR, push, merge, ruleset or branch-cleanup
@@ -355,8 +369,12 @@ This design rejects:
 
 ## Architecture assessment
 
-No stop condition is required by the smallest implementation. The existing
-save envelope already contains the exact tuple; the existing bridge already
-carries a candidate definition; the existing Rust loader already provides the
-strict trust boundary and atomic replay. The missing capability is limited to
-an explicit immutable inventory and exact pre-loader selection.
+The save envelope already contains the exact tuple, and the existing Rust
+loader provides strict candidate validation and atomic replay. The complete
+mobile trust path additionally requires the read-only Rust inspection step so
+compatibility and command errors are classified before Flutter selects that
+candidate. The publishing path likewise requires the Rust verifier to bind
+every manifest pin to its typed definition before bundle generation. Together
+with the explicit immutable inventory, those two checks close the pre-loader
+and pre-publication trust boundaries without changing the save schema or C
+ABI.

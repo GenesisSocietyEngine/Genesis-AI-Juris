@@ -257,10 +257,52 @@ void main() {
         ),
       ),
     );
+    expect(client.inspectCount, 1);
     expect(client.loadAttemptCount, 0);
     expect(repository.snapshot, same(before));
     repository.dispose();
   });
+
+  for (final String code in <String>[
+    'incompatible_runtime',
+    'unknown_save_command',
+  ]) {
+    test('$code wins over unresolved content identity without native load',
+        () async {
+      final _MemoryGameSaveStore store = _MemoryGameSaveStore()
+        ..encodedSave = jsonEncode(<String, dynamic>{
+          'scenario_id': 'absent_scenario',
+          'scenario_fingerprint':
+              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        });
+      final _FakeScenarioBridgeClient client = _FakeScenarioBridgeClient(
+        rejectInspectCode: code,
+      );
+      final RustScenarioRepository repository = RustScenarioRepository(
+        caseDefinition: greenfire,
+        contentInventory: contentInventory,
+        bridgeClient: client,
+        saveStore: store,
+      );
+      final GameSnapshot before = repository.snapshot;
+
+      await expectLater(
+        repository.loadGame(),
+        throwsA(
+          isA<GamePersistenceException>().having(
+            (GamePersistenceException error) => error.code,
+            'code',
+            code,
+          ),
+        ),
+      );
+      expect(client.inspectCount, 1);
+      expect(client.loadAttemptCount, 0);
+      expect(client.disposeCount, 0);
+      expect(repository.snapshot, same(before));
+      repository.dispose();
+    });
+  }
 
   test('failed load preserves the existing active snapshot', () async {
     final _MemoryGameSaveStore store = _MemoryGameSaveStore()
@@ -864,6 +906,7 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
     this.rejectAdvance = false,
     this.judicialResult,
     this.judicialDecisionInstance,
+    this.rejectInspectCode,
     this.rejectLoadCode,
     this.loadResponseMode = _LoadResponseMode.normal,
   });
@@ -871,10 +914,12 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
   final bool rejectAdvance;
   final String? judicialResult;
   final String? judicialDecisionInstance;
+  final String? rejectInspectCode;
   final String? rejectLoadCode;
   final _LoadResponseMode loadResponseMode;
   int createCount = 0;
   int disposeCount = 0;
+  int inspectCount = 0;
   int loadCount = 0;
   int loadAttemptCount = 0;
   int advanceCount = 0;
@@ -917,6 +962,7 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
           request['minutes'] as int,
         ),
       'save_session' => _save(),
+      'inspect_save' => _inspect(request),
       'load_session' => _load(request),
       'snapshot' => _response('snapshot'),
       'dispose_session' => _dispose(request['session_id'] as int),
@@ -1014,6 +1060,45 @@ final class _FakeScenarioBridgeClient implements ScenarioBridgeClient {
         'clock_minutes': _clockMinutes,
         'outcome': _outcome,
       }),
+    });
+  }
+
+  String _inspect(Map<String, dynamic> request) {
+    inspectCount += 1;
+    if (rejectInspectCode case final String code) {
+      return jsonEncode(<String, dynamic>{
+        'type': 'error',
+        'code': code,
+        'message': 'The save envelope is incompatible.',
+      });
+    }
+    final Map<String, dynamic> save;
+    try {
+      save =
+          jsonDecode(request['encoded_save'] as String) as Map<String, dynamic>;
+    } on Object {
+      return jsonEncode(<String, dynamic>{
+        'type': 'error',
+        'code': 'invalid_save_json',
+        'message': 'The save is corrupted.',
+      });
+    }
+    final dynamic scenarioId = save['scenario_id'];
+    final dynamic scenarioFingerprint = save['scenario_fingerprint'];
+    if (scenarioId is! String ||
+        scenarioId.isEmpty ||
+        scenarioFingerprint is! String ||
+        scenarioFingerprint.isEmpty) {
+      return jsonEncode(<String, dynamic>{
+        'type': 'error',
+        'code': 'invalid_save_json',
+        'message': 'The save has no complete identity.',
+      });
+    }
+    return jsonEncode(<String, dynamic>{
+      'type': 'save_inspected',
+      'scenario_id': scenarioId,
+      'scenario_fingerprint': scenarioFingerprint,
     });
   }
 

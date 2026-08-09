@@ -52,6 +52,13 @@ void main() {
       },
     );
     expect(
+      jsonDecode(ScenarioBridgeCommand.inspectSave('{"schema_version":1}')),
+      <String, dynamic>{
+        'command': 'inspect_save',
+        'encoded_save': '{"schema_version":1}',
+      },
+    );
+    expect(
       jsonDecode(
         ScenarioBridgeCommand.loadSession(
           scenario: <String, dynamic>{
@@ -89,6 +96,23 @@ void main() {
       '{"type":"session_saved","session_id":3,"encoded_save":"{}"}',
     );
     expect(saved.encodedSave, '{}');
+
+    final ScenarioBridgeResponse inspected = ScenarioBridgeResponse.parse(
+      '{"type":"save_inspected","scenario_id":"scenario_001",'
+      '"scenario_fingerprint":"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}',
+    );
+    expect(inspected.scenarioId, 'scenario_001');
+    expect(
+      inspected.scenarioFingerprint,
+      'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+    );
+    final ScenarioBridgeResponse incompleteInspection =
+        ScenarioBridgeResponse.parse(
+      '{"type":"save_inspected","scenario_id":7,'
+      '"scenario_fingerprint":false}',
+    );
+    expect(incompleteInspection.scenarioId, isNull);
+    expect(incompleteInspection.scenarioFingerprint, isNull);
 
     final ScenarioBridgeResponse error = ScenarioBridgeResponse.parse(
       '{"type":"error","code":"action_unavailable","message":"No"}',

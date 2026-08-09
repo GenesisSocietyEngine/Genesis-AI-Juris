@@ -36,6 +36,8 @@ void main(List<String> arguments) {
       _object(localization['cases'], 'cases');
   final List<dynamic> catalogCases = _list(catalog['cases'], 'catalog.cases');
   final List<Map<String, dynamic>> exportedCases = <Map<String, dynamic>>[];
+  final List<_ScenarioFingerprintPin> scenarioFingerprintPins =
+      <_ScenarioFingerprintPin>[];
   final Map<String, Map<String, dynamic>> currentIdentities =
       <String, Map<String, dynamic>>{};
   for (final dynamic rawIdentity in _list(
@@ -55,7 +57,12 @@ void main(List<String> arguments) {
       _fileSha256(File(_join(repository.path, scenarioFile))),
       'current identity source_sha256',
     );
-    _requireSha256(identity, 'scenario_fingerprint');
+    final String declaredFingerprint =
+        _requireSha256(identity, 'scenario_fingerprint');
+    scenarioFingerprintPins.add(_ScenarioFingerprintPin(
+      scenarioFile: scenarioFile,
+      declaredFingerprint: declaredFingerprint,
+    ));
   }
   final Set<String> usedCurrentIdentities = <String>{};
 
@@ -301,6 +308,10 @@ void main(List<String> arguments) {
         'archive scenario_file must stay under content/archive: $scenarioRelative',
       );
     }
+    scenarioFingerprintPins.add(_ScenarioFingerprintPin(
+      scenarioFile: scenarioRelative,
+      declaredFingerprint: declaredFingerprint,
+    ));
     final Map<String, dynamic> scenario =
         _readObject(File(_join(repository.path, scenarioRelative)));
     _requireEqual(
@@ -400,6 +411,8 @@ void main(List<String> arguments) {
         .compareTo(right['scenario_fingerprint'] as String);
   });
 
+  _verifyScenarioFingerprints(repository, scenarioFingerprintPins);
+
   final Map<String, dynamic> output = <String, dynamic>{
     'bundle_version': 5,
     'catalog_version': catalog['catalog_version'],
@@ -444,6 +457,56 @@ String _fileSha256(File file) {
     throw FileSystemException('Required file not found', file.path);
   }
   return sha256.convert(file.readAsBytesSync()).toString();
+}
+
+void _verifyScenarioFingerprints(
+  Directory repository,
+  List<_ScenarioFingerprintPin> pins,
+) {
+  if (pins.isEmpty) {
+    throw const FormatException(
+      'at least one current or archived scenario fingerprint is required',
+    );
+  }
+  final List<String> arguments = <String>[
+    'run',
+    '--quiet',
+    '--locked',
+    '-p',
+    'juris-engine',
+    '--bin',
+    'juris-scenario-fingerprint',
+    '--',
+    for (final _ScenarioFingerprintPin pin in pins) ...<String>[
+      '--expect',
+      pin.declaredFingerprint,
+      pin.scenarioFile,
+    ],
+  ];
+
+  final ProcessResult result;
+  try {
+    result = Process.runSync(
+      'cargo',
+      arguments,
+      workingDirectory: repository.path,
+      runInShell: false,
+      stdoutEncoding: utf8,
+      stderrEncoding: utf8,
+    );
+  } on ProcessException catch (error) {
+    throw StateError(
+      'Unable to run the authoritative Rust scenario fingerprint verifier: '
+      '$error',
+    );
+  }
+  if (result.exitCode != 0) {
+    final String details = (result.stderr as String).trim();
+    throw FormatException(
+      'Authoritative Rust scenario fingerprint verification failed'
+      '${details.isEmpty ? '' : ': $details'}',
+    );
+  }
 }
 
 String _clientRole(Map<String, dynamic> playerParty) {
@@ -665,4 +728,14 @@ class _Arguments {
       checkOnly: checkOnly,
     );
   }
+}
+
+class _ScenarioFingerprintPin {
+  const _ScenarioFingerprintPin({
+    required this.scenarioFile,
+    required this.declaredFingerprint,
+  });
+
+  final String scenarioFile;
+  final String declaredFingerprint;
 }

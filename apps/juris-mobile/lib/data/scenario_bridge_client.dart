@@ -58,6 +58,13 @@ abstract final class ScenarioBridgeCommand {
     });
   }
 
+  static String inspectSave(String encodedSave) {
+    return jsonEncode(<String, dynamic>{
+      'command': 'inspect_save',
+      'encoded_save': encodedSave,
+    });
+  }
+
   static String loadSession({
     required Map<String, dynamic> scenario,
     required String encodedSave,
@@ -114,4 +121,14 @@ class ScenarioBridgeResponse {
   String? get errorMessage => payload['message'] as String?;
 
   String? get encodedSave => payload['encoded_save'] as String?;
+
+  String? get scenarioId {
+    final dynamic value = payload['scenario_id'];
+    return value is String ? value : null;
+  }
+
+  String? get scenarioFingerprint {
+    final dynamic value = payload['scenario_fingerprint'];
+    return value is String ? value : null;
+  }
 }
