@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import '../models/case_catalog.dart';
 import '../models/game_snapshot.dart';
 import 'game_runtime_repository.dart';
@@ -307,36 +305,31 @@ final class RustScenarioRepository extends GameRuntimeRepository {
 
   ScenarioContentVersion _resolveContentForLoad(String encodedSave) {
     final CaseCatalogBundle inventory = contentInventory!;
-    final dynamic decoded;
-    try {
-      decoded = jsonDecode(encodedSave);
-    } on FormatException catch (error) {
+    final ScenarioBridgeResponse response = _execute(
+      ScenarioBridgeCommand.inspectSave(encodedSave),
+    );
+    if (response.isError) {
       throw GamePersistenceException(
-        code: 'invalid_save_json',
-        message: 'The saved game is malformed: $error',
+        code: response.errorCode ?? 'load_failed',
+        message: response.errorMessage ?? 'The saved game could not be read.',
       );
     }
-    if (decoded is! Map<String, dynamic>) {
+    final String? scenarioId = response.scenarioId;
+    final String? scenarioFingerprint = response.scenarioFingerprint;
+    if (response.type != 'save_inspected' ||
+        scenarioId == null ||
+        scenarioId.isEmpty ||
+        scenarioFingerprint == null ||
+        scenarioFingerprint.isEmpty) {
       throw const GamePersistenceException(
-        code: 'invalid_save_json',
-        message: 'The saved game must be a JSON object.',
-      );
-    }
-    final dynamic rawScenarioId = decoded['scenario_id'];
-    final dynamic rawFingerprint = decoded['scenario_fingerprint'];
-    if (rawScenarioId is! String ||
-        rawScenarioId.isEmpty ||
-        rawFingerprint is! String ||
-        rawFingerprint.isEmpty) {
-      throw const GamePersistenceException(
-        code: 'invalid_save_json',
-        message: 'The saved game has no complete scenario identity.',
+        code: 'invalid_save_response',
+        message: 'The runtime returned an incomplete save inspection.',
       );
     }
     try {
       return inventory.resolveForLoad(
-        scenarioId: rawScenarioId,
-        scenarioFingerprint: rawFingerprint,
+        scenarioId: scenarioId,
+        scenarioFingerprint: scenarioFingerprint,
       );
     } on ScenarioContentResolutionException catch (error) {
       throw GamePersistenceException(code: error.code, message: error.message);

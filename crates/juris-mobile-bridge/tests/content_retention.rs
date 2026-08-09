@@ -22,6 +22,68 @@ fn definition(encoded: &str) -> Value {
 }
 
 #[test]
+fn save_inspection_preserves_parser_precedence_without_allocating_a_session() {
+    let mut bridge = MobileBridge::new();
+    let current = execute(
+        &mut bridge,
+        json!({
+            "command": "create_session",
+            "scenario": definition(CURRENT_GREENFIRE),
+            "seed": 20260729
+        }),
+    );
+    let current_id = current["session_id"].as_u64().unwrap();
+    let current_snapshot = current["snapshot"].clone();
+    assert_eq!(bridge.session_count(), 1);
+
+    let inspected = execute(
+        &mut bridge,
+        json!({
+            "command": "inspect_save",
+            "encoded_save": HISTORICAL_SAVE
+        }),
+    );
+    assert_eq!(inspected["type"], "save_inspected");
+    assert_eq!(inspected["scenario_id"], "greenfire_first_72_hours");
+    assert_eq!(inspected["scenario_fingerprint"], HISTORICAL_FINGERPRINT);
+    assert_eq!(bridge.session_count(), 1);
+
+    let mut unsupported: Value = serde_json::from_str(HISTORICAL_SAVE).unwrap();
+    unsupported["runtime_compatibility"] = json!("scenario-runtime-future");
+    unsupported["scenario_id"] = json!("absent_scenario");
+    unsupported["scenario_fingerprint"] = json!("f".repeat(64));
+    unsupported["commands"][0]["command"] = json!("future_command");
+
+    for (encoded_save, code) in [
+        (unsupported.to_string(), "incompatible_runtime"),
+        (
+            {
+                unsupported["runtime_compatibility"] = json!("scenario-runtime-v1");
+                unsupported.to_string()
+            },
+            "unknown_save_command",
+        ),
+        ("{malformed".to_owned(), "invalid_save_json"),
+    ] {
+        let rejected = execute(
+            &mut bridge,
+            json!({
+                "command": "inspect_save",
+                "encoded_save": encoded_save
+            }),
+        );
+        assert_eq!(rejected["type"], "error");
+        assert_eq!(rejected["code"], code);
+        assert_eq!(bridge.session_count(), 1);
+        let active = execute(
+            &mut bridge,
+            json!({"command": "snapshot", "session_id": current_id}),
+        );
+        assert_eq!(active["snapshot"], current_snapshot);
+    }
+}
+
+#[test]
 fn raw_bridge_loads_retained_content_and_rejects_unknown_identity_atomically() {
     let mut bridge = MobileBridge::new();
     assert!(definition(ARCHIVED_GREENFIRE)

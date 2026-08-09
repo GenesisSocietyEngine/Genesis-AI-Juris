@@ -8,8 +8,8 @@
 #![forbid(unsafe_code)]
 
 use juris_engine::{
-    MobileScenarioSnapshot, ScenarioRuntimeError, ScenarioSaveError, ScenarioSessionId,
-    ScenarioSessionRegistry,
+    MobileScenarioSnapshot, ScenarioRuntimeError, ScenarioSaveEnvelope, ScenarioSaveError,
+    ScenarioSessionId, ScenarioSessionRegistry,
 };
 use juris_scenario_schema::ScenarioDefinition;
 use serde::{Deserialize, Serialize};
@@ -36,6 +36,9 @@ pub enum BridgeRequest {
     SaveSession {
         session_id: u64,
     },
+    InspectSave {
+        encoded_save: String,
+    },
     LoadSession {
         scenario: Box<ScenarioDefinition>,
         encoded_save: String,
@@ -60,6 +63,10 @@ pub enum BridgeResponse {
     SessionSaved {
         session_id: u64,
         encoded_save: String,
+    },
+    SaveInspected {
+        scenario_id: String,
+        scenario_fingerprint: String,
     },
     SessionLoaded {
         session_id: u64,
@@ -132,6 +139,15 @@ impl MobileBridge {
                     Ok(encoded_save) => BridgeResponse::SessionSaved {
                         session_id,
                         encoded_save,
+                    },
+                    Err(error) => save_error_response(error),
+                }
+            }
+            BridgeRequest::InspectSave { encoded_save } => {
+                match ScenarioSaveEnvelope::from_json(&encoded_save) {
+                    Ok(envelope) => BridgeResponse::SaveInspected {
+                        scenario_id: envelope.scenario_id,
+                        scenario_fingerprint: envelope.scenario_fingerprint,
                     },
                     Err(error) => save_error_response(error),
                 }

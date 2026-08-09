@@ -50,6 +50,27 @@ fn c_abi_v1_round_trips_a_historical_definition_without_identity_promotion() {
     assert!(loaded["snapshot"].get("pressure_windows").is_none());
     let session_id = loaded["session_id"].as_u64().unwrap();
 
+    let inspected = execute(json!({
+        "command": "inspect_save",
+        "encoded_save": HISTORICAL_SAVE
+    }));
+    assert_eq!(inspected["type"], "save_inspected");
+    assert_eq!(inspected["scenario_id"], "greenfire_first_72_hours");
+    assert_eq!(inspected["scenario_fingerprint"], HISTORICAL_FINGERPRINT);
+
+    let mut unsupported: Value = serde_json::from_str(HISTORICAL_SAVE).unwrap();
+    unsupported["runtime_compatibility"] = json!("scenario-runtime-future");
+    unsupported["scenario_id"] = json!("absent_scenario");
+    unsupported["scenario_fingerprint"] = json!("f".repeat(64));
+    unsupported["commands"][0]["command"] = json!("future_command");
+    let rejected = execute(json!({
+        "command": "inspect_save",
+        "encoded_save": unsupported.to_string()
+    }));
+    assert_eq!(rejected["code"], "incompatible_runtime");
+    let active_after_inspection = execute(json!({"command": "snapshot", "session_id": session_id}));
+    assert_eq!(active_after_inspection["snapshot"], loaded["snapshot"]);
+
     let saved = execute(json!({"command": "save_session", "session_id": session_id}));
     let encoded_save = saved["encoded_save"].as_str().unwrap().to_owned();
     let envelope: Value = serde_json::from_str(&encoded_save).unwrap();
