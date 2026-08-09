@@ -1,14 +1,19 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: feat/immutable-content-version-retention-v1
-base_commit: 2390c69d27d866e8b8d360e8bdcc71919d3f105c
-immutable_content_retention_status: local_review_checkpoint_complete
+branch: docs/immutable-content-retention-publication-checkpoint
+base_commit: a44842229d41e69a621f2da232a5eb359ee31162
+immutable_content_retention_status: product_publication_accepted_docs_checkpoint
 immutable_content_retention_contract: docs/development/IMMUTABLE_CONTENT_VERSION_RETENTION_V1.md
 immutable_content_retention_architecture_commit: abb2db0e9fc617e3de726cb879e57dbd08caf23c
 immutable_content_retention_archive_commit: c07d1c6294f42de1bdb25ba9164cb60ace7221e7
 immutable_content_retention_runtime_commit: 1f1603cab31f03f01c0c538b2f3e37308d48996f
 immutable_content_retention_mobile_commit: ee518878e8b6f61525b87064955dd7959610309c
+immutable_content_retention_checkpoint_commit: ffd372b963c6fa8166cf2512243393a4306222e3
+immutable_content_retention_pr: 23
+immutable_content_retention_synthetic_merge: 930445dd5fc7f409becfcc76e23800c87647434c
+immutable_content_retention_product_merge: a44842229d41e69a621f2da232a5eb359ee31162
+immutable_content_retention_merged_at_utc: 2026-08-09T11:39:43Z
 pressure_countermove_status: product_publication_accepted_docs_checkpoint
 pressure_countermove_contract: docs/development/PRESSURE_COUNTERMOVE_RUNTIME_V1.md
 pressure_countermove_architecture_commit: 1c97ec77417a1dd9c5b325c151bba1325dd3b255
@@ -60,10 +65,240 @@ validator_followup: d7a52d836f4f51b9c510af38513bcb2722cbd6a2
 android_followup: de7ac065d095a0e268e14961b4b74edd754cf52e
 latest_published_release_tag: v0.6.0-alpha.1
 app_version: 0.6.0+13
-last_updated: 2026-08-08
+last_updated: 2026-08-09
 ---
 
 # Current Progress
+
+## Immutable Content Version Retention v1 product publication checkpoint - 2026-08-09
+
+Status: the exact reviewed Immutable Content Version Retention v1 history was
+published unchanged in PR #23 and merged into `main` through the normal
+merge-commit workflow. Direct-head push gates, synthetic-merge pull-request
+gates, and product post-merge gates completed successfully on attempt 1. No
+retry, workflow edit, retrigger branch, update-branch action, force push,
+rebase, squash, or branch deletion was used.
+
+### Product PR and merge topology
+
+- product PR: #23,
+  `https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/23`;
+- feature push workflow event: `2026-08-09T11:17:44Z`;
+- Draft PR created at `2026-08-09T11:18:36Z` and marked Ready only after all
+  direct-head and synthetic-merge gates were green;
+- approved base and merge base:
+  `2390c69d27d866e8b8d360e8bdcc71919d3f105c`;
+- accepted five-commit feature head:
+  `ffd372b963c6fa8166cf2512243393a4306222e3`;
+- pre-merge synthetic candidate:
+  `930445dd5fc7f409becfcc76e23800c87647434c`;
+- product merge commit:
+  `a44842229d41e69a621f2da232a5eb359ee31162`;
+- merge parents, in order: approved base
+  `2390c69d27d866e8b8d360e8bdcc71919d3f105c`, then reviewed head
+  `ffd372b963c6fa8166cf2512243393a4306222e3`;
+- method: normal GitHub merge commit, not squash or rebase;
+- merged at `2026-08-09T11:39:43Z`.
+
+The PR retained exactly 23 reviewed files, 4,363 additions, 22 deletions, and
+all five commits in their original order:
+
+1. `abb2db0e9fc617e3de726cb879e57dbd08caf23c` - immutable-retention
+   architecture contract;
+2. `c07d1c6294f42de1bdb25ba9164cb60ace7221e7` - immutable archive and
+   current/load-only inventory;
+3. `1f1603cab31f03f01c0c538b2f3e37308d48996f` - exact-tuple Rust
+   resolution and persistence proof;
+4. `ee518878e8b6f61525b87064955dd7959610309c` - deterministic bundle v5,
+   Flutter, bridge/FFI, and native integration;
+5. `ffd372b963c6fa8166cf2512243393a4306222e3` - cumulative local
+   checkpoint.
+
+Before merge, remote `main` still matched the approved base, the synthetic
+candidate joined that exact base to the reviewed head, and the PR had no
+review request, requested change, comment, unresolved thread, bot edit, or
+unexpected commit.
+
+### Accepted hosted runs
+
+Direct `push` runs checked out exact reviewed feature head
+`ffd372b963c6fa8166cf2512243393a4306222e3`:
+
+| Trigger | Workflow | Run | Job IDs | Tested SHA | Identity type | Attempt | Conclusion |
+|---|---|---:|---|---|---|---:|---|
+| push | Rust CI | `31310434517` | quality `93237323312`; MSRV `93237323355` | `ffd372b963c6fa8166cf2512243393a4306222e3` | reviewed feature HEAD | 1 | success |
+| push | Flutter Mobile UI | `31310434497` | analyze-and-test `93237323202` | `ffd372b963c6fa8166cf2512243393a4306222e3` | reviewed feature HEAD | 1 | success |
+| push | iOS Native FFI | `31310434505` | simulator-smoke `93237323345` | `ffd372b963c6fa8166cf2512243393a4306222e3` | reviewed feature HEAD | 1 | success |
+
+Pull-request runs checked out GitHub's synthetic `refs/pull/23/merge`
+candidate `930445dd5fc7f409becfcc76e23800c87647434c`, not the direct feature
+head:
+
+| Trigger | Workflow | Run | Job IDs | Tested SHA | Identity type | Attempt | Conclusion |
+|---|---|---:|---|---|---|---:|---|
+| pull request | Rust CI | `31310469304` | MSRV `93237408770`; quality `93237408795` | `930445dd5fc7f409becfcc76e23800c87647434c` | GitHub synthetic merge | 1 | success |
+| pull request | Flutter Mobile UI | `31310469333` | analyze-and-test `93237408882` | `930445dd5fc7f409becfcc76e23800c87647434c` | GitHub synthetic merge | 1 | success |
+| pull request | iOS Native FFI | `31310469315` | simulator-smoke `93237408854` | `930445dd5fc7f409becfcc76e23800c87647434c` | GitHub synthetic merge | 1 | success |
+
+Post-merge `push` runs checked out exact product merge
+`a44842229d41e69a621f2da232a5eb359ee31162`:
+
+| Trigger | Workflow | Run | Job IDs | Tested SHA | Identity type | Attempt | Conclusion |
+|---|---|---:|---|---|---|---:|---|
+| push on `main` | Rust CI | `31311344517` | MSRV `93239527331`; quality `93239527302` | `a44842229d41e69a621f2da232a5eb359ee31162` | product merge commit | 1 | success |
+| push on `main` | Flutter Mobile UI | `31311344541` | analyze-and-test `93239527346` | `a44842229d41e69a621f2da232a5eb359ee31162` | product merge commit | 1 | success |
+| push on `main` | iOS Native FFI | `31311344524` | simulator-smoke `93239527350` | `a44842229d41e69a621f2da232a5eb359ee31162` | product merge commit | 1 | success |
+
+Hosted Rust covered locked Rust 1.78 MSRV, formatting, workspace check, current
+Clippy with warnings denied, and all tests. Hosted Flutter covered dependency
+resolution, analysis, and all tests. Hosted iOS built Runner and the Rust
+static library, audited required symbols, booted an iPhone Simulator, passed
+the native XCTest lifecycle, and completed cleanup. No transient failure or
+rerun occurred; the checkout action's Node-runtime deprecation annotation was
+advisory and did not affect acceptance.
+
+### Published retention and trust-boundary contract
+
+- authoritative content identity is exactly
+  `(scenario_id, scenario_fingerprint)`; `content_version` remains
+  human-readable metadata and is never a selection or integrity substitute;
+- the generic inventory has one current, catalogue-visible definition per
+  scenario ID and zero or more immutable load-only definitions. New sessions
+  select only current content; resume/import may route to retained content
+  only by exact tuple;
+- unknown identities fail deterministically without
+  current/latest/nearest/semantic-version fallback. Resolution occurs before
+  the unchanged strict Rust loader, which recomputes the supplied definition
+  fingerprint and validates the save header, command log, replay, and final
+  digest;
+- failed resolution or loading remains atomic: it inserts no Rust registry
+  session and does not replace the Flutter live session through Rust,
+  bridge/FFI, Flutter, or native integration boundaries;
+- no command, stable ID, effect, fingerprint, digest, outcome, cost, or
+  duration is translated between content versions;
+- a retained historical save may resave under `scenario-runtime-v2` but
+  remains bound to its historical fingerprint and historical definition;
+- retained definitions remain excluded from the catalogue and cannot start a
+  new game. Historical EN/RU sessions render from retained content and do not
+  expose Pressure.
+
+The first retained identity is GreenFire `0.1.0`, load-only, fingerprint
+`b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261`.
+Its scenario definition and RU overlay are byte-exact immutable copies. The
+current catalogue-visible GreenFire remains unchanged at `0.1.0` with that
+same fingerprint. This shared identity is intentional at this checkpoint:
+content bytes and identity are the same, while inventory role and catalogue
+membership differ. No GreenFire `0.2.0` exists.
+
+The real pre-lifecycle GreenFire fixture still migrates runtime v1 to v2,
+preserves the compromised outcome and historical fingerprint, and reloads
+exactly. The deterministic bundle v5 contains the five current catalogue cases
+exactly once plus one explicitly load-only GreenFire definition and matching
+localization; it creates no duplicate catalogue card or new-game route.
+
+### Local acceptance and deterministic artifacts
+
+The reviewed local acceptance remains:
+
+- Rust: **340/340** tests passed;
+- Flutter: **155/155** tests passed, with analysis clean;
+- Android 17 / API 37 native integration: **11/11** tests passed;
+- deterministic mobile bundle v5: 683,325 bytes, SHA-256
+  `3db4fd16204be377ee09010a39032fc7ed4a1a0b8c7bc024d6db3bd4806fa96b`;
+- standard debug APK: 203,489,120 bytes, SHA-256
+  `9ca54415dfc326e5dc2ed06ac36c54ab73fd52207d3927be2e415adc8681e00d`.
+
+The APK remains local-only acceptance evidence. It was not rebuilt during
+publication, uploaded, attached to a PR or release, or otherwise published.
+
+### Unchanged production fingerprints and canonical results
+
+All five current production fingerprints remain exact:
+
+| Scenario | Fingerprint |
+|---|---|
+| Failed ERP | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` |
+| Logistics | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` |
+| GreenFire current `0.1.0` | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` |
+| GoldenShell | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` |
+| Desert Water | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` |
+
+All 11 canonical results remain exact:
+
+| Scenario / path | Final minute | Outcome | Final digest |
+|---|---:|---|---|
+| Failed ERP / settlement | 570 | `settlement_64500` | `fd77a45422e4abd7f141fc7b1db767524ebf48d9674bd25c21354fb7a2b8c029` |
+| Failed ERP / prepared judgment | 8,640 | `judgment_preserved_after_cassation` | `f25604fc0225d7ac5a7e98d192ce3b82114970158a3662aee7575b128430ca0c` |
+| Failed ERP / remittal/open | 10,080 | none | `268f27867fd1f45a417c0e999819165bd79f76a74f3ab2e65ee075e193cbc34a` |
+| Logistics / negotiated | 270 | `negotiated_recovery` | `139239e001417ae563e270128864a512e88c0ff535a498e15b000731b8ca5bfe` |
+| Logistics / judgment | 480 | `judgment_recovery` | `e25e1eeb36249c1b7da0fe7a947f29ed3363ce7dac0357a110951c49bb738ac3` |
+| GreenFire / protected | 4,440 | `protected_crisis_position` | `17f58f95551abacb445ce6d886fc059bcbd7a7660c3f089d9509e7a25f01a216` |
+| GreenFire / compromised | 4,590 | `compromised_crisis_position` | `432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec` |
+| GoldenShell / coordinated | 4,545 | `coordinated_claim_position` | `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b` |
+| GoldenShell / fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd6b9a7cbe1b23bdd6d412314e582c13503` |
+| Desert Water / coordinated | 3,180 | `credible_source_and_remedy` | `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d` |
+| Desert Water / compromised | 3,510 | `compromised_claim_closed` | `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce` |
+
+No current production definition gained `pressure_windows`.
+
+### Persistence, bridge, and ABI invariants
+
+Save identity remains `genesis.ai-juris.command-log`; the envelope remains
+exactly eight fields with schema version 1. The existing
+`scenario-runtime-v1` and `scenario-runtime-v2` compatibility profiles,
+migration/resave rules, replay order, and digest projections remain unchanged.
+Scenario fingerprints and final-state digests continue to use the existing
+canonical-JSON SHA-256 algorithms. The bridge command surface remains exactly
+`create_session`, `dispatch`, `advance_time`, `snapshot`, `save_session`,
+`load_session`, and `dispose_session`; FFI call shape and C ABI version 1 are
+unchanged.
+
+In `armeabi-v7a`, `arm64-v8a`, and `x86_64`, the exact Juris symbol set
+remains:
+
+- `juris_mobile_bridge_abi_version`;
+- `juris_mobile_bridge_execute`;
+- `juris_mobile_bridge_string_free`.
+
+### Protected state, limitations, and next boundary
+
+- protected `docs/development/CURRENT_PROGRESS.zip` remains the sole untracked
+  path: 47,579 bytes, SHA-256
+  `2e5f03f003a7d227cb4ce765e338a8f335d92879862e53bd1c27d65e116de3b6`;
+- the corrected Desert Water save remains the accepted 291-command artifact;
+  this publication rechecked only its 12,060-byte size and SHA-256
+  `328d76e392230ac47ecac4ecda6c54af83a48155f4b0d414fe07a2fecabfe019`,
+  without opening, parsing, loading, replaying, or rewriting it. Its accepted
+  final digest remains
+  `6ce210e4a6b55a2ec2495d3405adcd7c45ff2edee38cfee3f5c981e2a68d647c`;
+- PR #4 remains open and unchanged at head
+  `7aa6927e8ebfd6e205bfd12478ba28d52c40248a`;
+- recovery ref `backup/desert-water-pre-failed-erp` remains
+  `44e565b22c52a4c3a3e69b2c137353b7771fcf77`, and Dossier ref
+  `feat/dossier-projection-v1` remains
+  `62111ddef1623f0211149c70617564f2aa622dd4`;
+- the pre-existing stopped, local-only
+  `feat/greenfire-regulatory-pressure-pilot-v1` branch remains untouched at
+  `c97e66a7d35ac8e5a60f78e2369a332508a2cca6`;
+- ruleset `Main` (`19991132`) remains active for `~ALL`, with empty
+  exclusions, deletion/non-fast-forward protection, and no bypass actors;
+- published prerelease/tag `v0.6.0-alpha.1` and Flutter app version
+  `0.6.0+13` remain unchanged.
+
+No fresh GreenFire pilot branch or implementation, production Pressure, tag,
+release, asset, version bump, gameplay action, save mutation, branch cleanup,
+Legal Theory work, new scenario, or later roadmap phase occurred. The product
+and documentation branches are retained.
+
+Known limitations remain explicit: packaged scenario definitions are
+inspectable, and Failed ERP retains the documented `hearing_missed_notice`
+reachability debt.
+
+The next boundary is owner review after the documentation merge and final-main
+hosted acceptance. Any subsequent work requires a separately authorized fresh
+**GreenFire Production Pressure Pilot v1** branch created from that exact
+final published `main`; the stopped architecture branch remains historical
+evidence and must not be modified.
 
 ## Immutable Content Version Retention v1 local review checkpoint - 2026-08-08
 
