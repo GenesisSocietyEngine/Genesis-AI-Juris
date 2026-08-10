@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juris_mobile/app/gameplay_locale.dart';
 import 'package:juris_mobile/app/home_shell.dart';
 import 'package:juris_mobile/data/demo_game_repository.dart';
 import 'package:juris_mobile/data/game_runtime_repository.dart';
@@ -53,6 +54,125 @@ void main() {
     expect(find.text('Review responses'), findsNothing);
   });
 
+  testWidgets(
+    'generic Matter pressure renders GreenFire accessibly in EN and RU',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      final List<List<String>> reviewed = <List<String>>[];
+
+      Future<void> pumpLocale(String locale, String actorName) async {
+        final GameSnapshot snapshot =
+            DemoGameRepository(seed: 20260729).snapshot.copyWith(
+                  pressureAndCountermove: PressureAndCountermoveView(
+                    projectionSchemaVersion: 1,
+                    activePressures: <ActivePressureView>[
+                      ActivePressureView(
+                        pressureId: 'regulator_document_request_pressure',
+                        sourceActorId: 'port_haven_environment_authority',
+                        sourceActorName: actorName,
+                        dueAtMinute: 2160,
+                        remainingMinutes: 1980,
+                        availableResponseActionIds: const <String>[
+                          'submit_initial_regulatory_response',
+                          'release_unreviewed_documents',
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: (BuildContext context, Widget? child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                accessibleNavigation: true,
+                disableAnimations: true,
+                textScaler: const TextScaler.linear(1.35),
+              ),
+              child: GameplayLocale(locale: locale, child: child!),
+            ),
+            home: Scaffold(
+              body: MatterScreen(
+                snapshot: snapshot,
+                onShowActions: () {},
+                onShowDossier: () {},
+                onShowTrainingDebrief: () {},
+                onShowPressureResponses: (List<String> actionIds) {
+                  reviewed.add(actionIds);
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final Finder review = find.byKey(
+          const ValueKey<String>(
+            'review-pressure-responses-regulator_document_request_pressure',
+          ),
+        );
+        await tester.scrollUntilVisible(
+          review,
+          200,
+          scrollable: find.byType(Scrollable).last,
+          maxScrolls: 30,
+        );
+        await tester.pumpAndSettle();
+        expect(find.textContaining(actorName), findsOneWidget);
+        expect(find.textContaining('2160'), findsOneWidget);
+        expect(find.textContaining('1980'), findsOneWidget);
+        expect(review, findsOneWidget);
+        await tester.tap(review);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+
+      await pumpLocale('en', 'Port Haven Environmental Authority');
+      expect(find.text('Active pressure'), findsOneWidget);
+      expect(
+        find.text('Source: Port Haven Environmental Authority'),
+        findsOneWidget,
+      );
+      expect(find.text('Due at game minute 2160'), findsOneWidget);
+      expect(find.text('1980 game minutes remaining'), findsOneWidget);
+      expect(find.text('2 response actions available'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          RegExp('Review available pressure responses'),
+        ),
+        findsOneWidget,
+      );
+      expect(reviewed.single, <String>[
+        'submit_initial_regulatory_response',
+        'release_unreviewed_documents',
+      ]);
+
+      reviewed.clear();
+      await pumpLocale('ru', 'Экологический орган Порт-Хейвена');
+      expect(find.text('Активное давление'), findsOneWidget);
+      expect(
+        find.text('Источник: Экологический орган Порт-Хейвена'),
+        findsOneWidget,
+      );
+      expect(find.text('Срок на игровой минуте 2160'), findsOneWidget);
+      expect(find.text('1980 игровых минут осталось'), findsOneWidget);
+      expect(find.text('2 ответных действий доступно'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          RegExp('Просмотреть доступные ответы на давление'),
+        ),
+        findsOneWidget,
+      );
+      expect(reviewed.single, <String>[
+        'submit_initial_regulatory_response',
+        'release_unreviewed_documents',
+      ]);
+      semantics.dispose();
+    },
+  );
+
   testWidgets('HomeShell suspends clock and dispatches one selected response', (
     WidgetTester tester,
   ) async {
@@ -84,6 +204,7 @@ void main() {
     await tester.tap(review);
     await tester.pumpAndSettle();
 
+    expect(repository.appliedActionIds, isEmpty);
     expect(find.text('Available actions'), findsOneWidget);
     expect(find.text('File documented response'), findsOneWidget);
     expect(find.text('Negotiate extension'), findsOneWidget);
@@ -93,9 +214,14 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 8));
     expect(repository.advanceCount, 0);
+    expect(repository.appliedActionIds, isEmpty);
 
     await tester.tap(find.text('File documented response'));
     await tester.pumpAndSettle();
+    expect(repository.appliedActionIds, isEmpty);
+    expect(repository.advanceCount, 0);
+    expect(find.textContaining('incorrect', findRichText: true), findsNothing);
+    expect(find.textContaining('wrong', findRichText: true), findsNothing);
     await tester.tap(find.text('Yes'));
     await tester.pumpAndSettle();
     expect(repository.appliedActionIds, <String>['file-documented-response']);

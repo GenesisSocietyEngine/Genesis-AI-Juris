@@ -115,8 +115,13 @@ void main() {
     expect(greenfire.scenario, isNotNull);
     expect(greenfire.scenario?['actions'], hasLength(13));
     expect(
+      (greenfire.scenario?['metadata']
+          as Map<String, dynamic>)['content_version'],
+      '0.2.0',
+    );
+    expect(
       greenfire.scenarioFingerprint,
-      'b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261',
+      '173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438',
     );
     expect(greenfire.scenario?['clock'], <String, dynamic>{
       'mode': 'foreground',
@@ -130,10 +135,77 @@ void main() {
     );
     expect(retained.loadOnly, isTrue);
     expect(retained.scenario.containsKey('pressure_windows'), isFalse);
-    expect(retained.scenario, greenfire.scenario);
+    expect(retained.scenario, isNot(greenfire.scenario));
+    final List<dynamic> pressureWindows =
+        greenfire.scenario?['pressure_windows'] as List<dynamic>;
+    expect(pressureWindows, hasLength(1));
+    expect(pressureWindows.single, <String, dynamic>{
+      'id': 'regulator_document_request_pressure',
+      'source_actor_id': 'port_haven_environment_authority',
+      'activation_event_id': 'regulator_request_received',
+      'response_deadline_id': 'initial_regulatory_response_deadline',
+      'response_action_ids': <String>[
+        'submit_initial_regulatory_response',
+        'release_unreviewed_documents',
+      ],
+      'countermove_event_id': 'regulatory_response_missed',
+    });
+    final List<Map<String, dynamic>> greenfireActions =
+        (greenfire.scenario?['actions'] as List<dynamic>)
+            .cast<Map<String, dynamic>>();
+    for (final String actionId in <String>[
+      'submit_initial_regulatory_response',
+      'release_unreviewed_documents',
+    ]) {
+      final Map<String, dynamic> action = greenfireActions.singleWhere(
+        (Map<String, dynamic> item) => item['id'] == actionId,
+      );
+      expect(action['completion_deadlines'], <String>[
+        'initial_regulatory_response_deadline',
+      ]);
+    }
+    expect(
+      bundle.cases
+          .where(
+            (MobileCaseDefinition item) =>
+                item.scenarioId == 'greenfire_first_72_hours',
+          )
+          .length,
+      1,
+    );
+    for (final MobileCaseDefinition item in bundle.cases.where(
+      (MobileCaseDefinition item) =>
+          item.scenarioId != 'greenfire_first_72_hours',
+    )) {
+      expect(
+        item.scenario?.containsKey('pressure_windows'),
+        isFalse,
+        reason: '${item.scenarioId} must remain outside this pilot',
+      );
+    }
+    final ScenarioContentVersion current = bundle.resolveForLoad(
+      scenarioId: greenfire.scenarioId,
+      scenarioFingerprint: greenfire.scenarioFingerprint!,
+    );
+    final ScenarioContentVersion historical = bundle.resolveForLoad(
+      scenarioId: retained.scenarioId,
+      scenarioFingerprint: retained.scenarioFingerprint,
+    );
+    expect(current.contentVersion, '0.2.0');
+    expect(current.loadOnly, isFalse);
+    expect(historical.contentVersion, '0.1.0');
+    expect(historical.loadOnly, isTrue);
     expect(
       retained.scenarioLocalizations['ru'],
-      greenfire.scenarioLocalizations['ru'],
+      isNot(greenfire.scenarioLocalizations['ru']),
+    );
+    expect(
+        retained.scenarioLocalizations['ru']?.containsKey('actors'), isFalse);
+    expect(
+      ((greenfire.scenarioLocalizations['ru']?['actors']
+              as Map<String, dynamic>)['port_haven_environment_authority']
+          as Map<String, dynamic>)['name'],
+      'Экологический орган Порт-Хейвена',
     );
     expect(greenfire.readiness.diagnostics, isTrue);
     expect(greenfire.readiness.pathSimulation, isTrue);

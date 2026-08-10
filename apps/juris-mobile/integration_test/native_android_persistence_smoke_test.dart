@@ -149,21 +149,281 @@ void main() {
   });
 
   testWidgets(
+    'production GreenFire pressure survives native save load and UI response',
+    (WidgetTester tester) async {
+      const String currentFingerprint =
+          '173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438';
+      final Map<String, dynamic> currentScenario = greenfire.scenario!;
+      expect(
+        (currentScenario['metadata']
+            as Map<String, dynamic>)['content_version'],
+        '0.2.0',
+      );
+      expect(greenfire.scenarioFingerprint, currentFingerprint);
+
+      final _MemoryGameSaveStore store = _MemoryGameSaveStore();
+      final _RecordingNativeBridge bridge = _RecordingNativeBridge();
+      final RustScenarioRepository repository = RustScenarioRepository(
+        caseDefinition: greenfire,
+        contentInventory: productionBundle,
+        locale: 'en',
+        bridgeClient: bridge,
+        saveStore: store,
+      );
+
+      List<Object?> mappedState(GameSnapshot snapshot) {
+        final pressure = snapshot.pressureAndCountermove;
+        return <Object?>[
+          snapshot.stage,
+          snapshot.dayLabel,
+          snapshot.timeLabel,
+          snapshot.actions.map(_actionState).toList(growable: false),
+          snapshot.inbox.map(_inboxState).toList(growable: false),
+          snapshot.deadlines.map(_deadlineState).toList(growable: false),
+          pressure?.projectionSchemaVersion,
+          pressure?.activePressures
+              .map(
+                (item) => <Object?>[
+                  item.pressureId,
+                  item.sourceActorId,
+                  item.sourceActorName,
+                  item.dueAtMinute,
+                  item.remainingMinutes,
+                  item.availableResponseActionIds,
+                ],
+              )
+              .toList(growable: false),
+        ];
+      }
+
+      try {
+        expect(repository.snapshot.pressureAndCountermove, isNull);
+        expect(
+          bridge.latestSnapshot.containsKey('pressure_and_countermove'),
+          isFalse,
+        );
+
+        expect(
+          repository.applyAction('accept_emergency_mandate').isRisky,
+          isFalse,
+        );
+        expect(repository.snapshot.pressureAndCountermove, isNull);
+        repository.advanceTimeByMinutes(90);
+        final activeAtMinute120 =
+            repository.snapshot.pressureAndCountermove!.activePressures.single;
+        expect(activeAtMinute120.pressureId,
+            'regulator_document_request_pressure');
+        expect(activeAtMinute120.availableResponseActionIds,
+            <String>['release_unreviewed_documents']);
+        expect(
+          repository.snapshot.actions
+              .where(
+                (GameActionView action) =>
+                    action.id == 'submit_initial_regulatory_response',
+              )
+              .isEmpty,
+          isTrue,
+        );
+        expect(
+          repository.snapshot.actions.map((GameActionView action) => action.id),
+          contains('release_unreviewed_documents'),
+        );
+
+        expect(
+          repository.applyAction('open_controlled_regulator_channel').isRisky,
+          isFalse,
+        );
+        final activeAtMinute180 =
+            repository.snapshot.pressureAndCountermove!.activePressures.single;
+        expect(activeAtMinute180.sourceActorId,
+            'port_haven_environment_authority');
+        expect(activeAtMinute180.sourceActorName,
+            'Port Haven Environmental Authority');
+        expect(activeAtMinute180.dueAtMinute, 2160);
+        expect(activeAtMinute180.remainingMinutes, 1980);
+        expect(activeAtMinute180.availableResponseActionIds, <String>[
+          'submit_initial_regulatory_response',
+          'release_unreviewed_documents',
+        ]);
+
+        final String savedRawSnapshot = jsonEncode(bridge.latestSnapshot);
+        final List<Object?> savedMappedState = mappedState(repository.snapshot);
+        await repository.saveGame();
+        final Map<String, dynamic> encodedSave =
+            jsonDecode(store.encodedSave!) as Map<String, dynamic>;
+        expect(encodedSave['scenario_fingerprint'], currentFingerprint);
+
+        repository.advanceTimeByMinutes(10);
+        expect(mappedState(repository.snapshot), isNot(savedMappedState));
+        await repository.loadGame();
+        final Map<String, dynamic> loadRequest = bridge.requests.lastWhere(
+          (Map<String, dynamic> request) =>
+              request['command'] == 'load_session',
+        );
+        final Map<String, dynamic> loadedScenario =
+            loadRequest['scenario'] as Map<String, dynamic>;
+        expect(
+          (loadedScenario['metadata']
+              as Map<String, dynamic>)['content_version'],
+          '0.2.0',
+        );
+        expect(jsonEncode(bridge.latestSnapshot), savedRawSnapshot);
+        expect(mappedState(repository.snapshot), savedMappedState);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: HomeShell(
+              repository: repository,
+              locale: 'en',
+              enableLiveClockInTests: true,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Matter'));
+        await tester.pumpAndSettle();
+        final Finder review = find.byKey(
+          const ValueKey<String>(
+            'review-pressure-responses-regulator_document_request_pressure',
+          ),
+        );
+        await tester.scrollUntilVisible(
+          review,
+          240,
+          scrollable: find.byType(Scrollable).last,
+          maxScrolls: 30,
+        );
+        await tester.pumpAndSettle();
+
+        final int dispatchesBeforeReview = bridge.commandCount('dispatch');
+        final int advancesBeforeReview = bridge.commandCount('advance_time');
+        final int requestsBeforeReview = bridge.requests.length;
+        await tester.tap(review);
+        await tester.pumpAndSettle();
+        expect(bridge.commandCount('dispatch'), dispatchesBeforeReview);
+        expect(find.text('Available actions'), findsOneWidget);
+        expect(
+            find.text('Submit the reviewed initial response'), findsOneWidget);
+        expect(find.text('Release the requested files without review'),
+            findsOneWidget);
+        expect(
+          tester
+              .getTopLeft(find.text('Submit the reviewed initial response'))
+              .dy,
+          lessThan(
+            tester
+                .getTopLeft(
+                  find.text('Release the requested files without review'),
+                )
+                .dy,
+          ),
+        );
+        await tester.pump(const Duration(seconds: 8));
+        expect(bridge.commandCount('advance_time'), advancesBeforeReview);
+        expect(bridge.commandCount('dispatch'), dispatchesBeforeReview);
+        expect(bridge.requests, hasLength(requestsBeforeReview));
+
+        Navigator.of(tester.element(find.text('Available actions'))).pop();
+        await tester.pumpAndSettle();
+        expect(find.text('Available actions'), findsNothing);
+        expect(bridge.commandCount('dispatch'), dispatchesBeforeReview);
+        expect(bridge.requests, hasLength(requestsBeforeReview));
+
+        await tester.tap(review);
+        await tester.pumpAndSettle();
+        expect(find.text('Available actions'), findsOneWidget);
+        expect(bridge.commandCount('dispatch'), dispatchesBeforeReview);
+        expect(bridge.requests, hasLength(requestsBeforeReview));
+
+        await tester.tap(find.text('Submit the reviewed initial response'));
+        await tester.pumpAndSettle();
+        expect(find.text('Yes'), findsOneWidget);
+        expect(bridge.commandCount('dispatch'), dispatchesBeforeReview);
+        await tester.pump(const Duration(seconds: 8));
+        expect(bridge.commandCount('advance_time'), advancesBeforeReview);
+        expect(bridge.commandCount('dispatch'), dispatchesBeforeReview);
+
+        await tester.tap(find.text('Yes'));
+        await tester.pumpAndSettle();
+        expect(bridge.commandCount('dispatch'), dispatchesBeforeReview + 1);
+        final List<Map<String, dynamic>> dispatches = bridge.requests
+            .where(
+              (Map<String, dynamic> request) =>
+                  request['command'] == 'dispatch',
+            )
+            .toList(growable: false);
+        expect(
+          dispatches.last['action_id'],
+          'submit_initial_regulatory_response',
+        );
+        expect(
+          _deadline(repository, 'initial_regulatory_response_deadline').status,
+          DeadlineStatus.done,
+        );
+        expect(
+          repository.snapshot.inbox
+              .singleWhere(
+                (InboxItemView item) => item.id == 'regulator_document_request',
+              )
+              .status,
+          InboxStatus.resolved,
+        );
+        expect(repository.snapshot.pressureAndCountermove, isNull);
+        expect(
+          bridge.latestSnapshot.containsKey('pressure_and_countermove'),
+          isFalse,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        final _RecordingNativeBridge missedBridge = _RecordingNativeBridge();
+        final RustScenarioRepository missed = RustScenarioRepository(
+          caseDefinition: greenfire,
+          contentInventory: productionBundle,
+          locale: 'en',
+          bridgeClient: missedBridge,
+          saveStore: _MemoryGameSaveStore(),
+        );
+        try {
+          expect(
+            missed.applyAction('accept_emergency_mandate').isRisky,
+            isFalse,
+          );
+          missed.advanceTimeByMinutes(90);
+          expect(
+            missed.snapshot.pressureAndCountermove!.activePressures.single
+                .pressureId,
+            'regulator_document_request_pressure',
+          );
+          missed.advanceTimeByMinutes(1440);
+          missed.advanceTimeByMinutes(600);
+          expect(
+            _deadline(missed, 'initial_regulatory_response_deadline').status,
+            DeadlineStatus.missed,
+          );
+          expect(missed.snapshot.pressureAndCountermove, isNull);
+          expect(
+            missedBridge.latestSnapshot.containsKey('pressure_and_countermove'),
+            isFalse,
+          );
+        } finally {
+          missed.dispose();
+        }
+      } finally {
+        await tester.pumpWidget(const SizedBox.shrink());
+        repository.dispose();
+      }
+    },
+  );
+
+  testWidgets(
     'historical GreenFire routes to retained content across native resave',
     (WidgetTester tester) async {
-      final CaseCatalogBundle futureInventory =
-          _withSyntheticFutureGreenFire(productionBundle, greenfire);
-      final MobileCaseDefinition futureGreenFire =
-          futureInventory.cases.singleWhere(
-        (MobileCaseDefinition item) =>
-            item.caseId == 'greenfire_first_72_hours',
-      );
       final _MemoryGameSaveStore store = _MemoryGameSaveStore()
         ..encodedSave = _historicalGreenFireV1Save;
       final _RecordingNativeBridge firstBridge = _RecordingNativeBridge();
       final RustScenarioRepository first = RustScenarioRepository(
-        caseDefinition: futureGreenFire,
-        contentInventory: futureInventory,
+        caseDefinition: greenfire,
+        contentInventory: productionBundle,
         locale: 'ru',
         bridgeClient: firstBridge,
         saveStore: store,
@@ -204,8 +464,8 @@ void main() {
 
       final _RecordingNativeBridge secondBridge = _RecordingNativeBridge();
       final RustScenarioRepository second = RustScenarioRepository(
-        caseDefinition: futureGreenFire,
-        contentInventory: futureInventory,
+        caseDefinition: greenfire,
+        contentInventory: productionBundle,
         locale: 'en',
         bridgeClient: secondBridge,
         saveStore: store,
@@ -1624,55 +1884,6 @@ RustScenarioRepository _repository(
         (definition.caseId == 'be_commercial_logistics_001' ? 'en' : 'ru'),
     bridgeClient: bridgeClient ?? NativeScenarioBridgeClient(),
     saveStore: saveStore ?? ApplicationSupportGameSaveStore(),
-  );
-}
-
-CaseCatalogBundle _withSyntheticFutureGreenFire(
-  CaseCatalogBundle source,
-  MobileCaseDefinition greenfire,
-) {
-  final Map<String, dynamic> futureScenario =
-      jsonDecode(jsonEncode(greenfire.scenario)) as Map<String, dynamic>;
-  (futureScenario['metadata'] as Map<String, dynamic>)['content_version'] =
-      '0.2.0-test-only';
-  (futureScenario['metadata'] as Map<String, dynamic>)['summary'] =
-      'Synthetic future current content for Android routing proof.';
-  final MobileCaseDefinition futureGreenFire = MobileCaseDefinition(
-    caseId: greenfire.caseId,
-    scenarioId: greenfire.scenarioId,
-    sortOrder: greenfire.sortOrder,
-    seed: greenfire.seed,
-    status: greenfire.status,
-    difficulty: greenfire.difficulty,
-    jurisdiction: greenfire.jurisdiction,
-    practiceArea: greenfire.practiceArea,
-    playerClientId: greenfire.playerClientId,
-    playerRole: greenfire.playerRole,
-    identityFile: greenfire.identityFile,
-    scenarioFile: greenfire.scenarioFile,
-    scenarioAvailable: greenfire.scenarioAvailable,
-    scenario: futureScenario,
-    scenarioFingerprint:
-        '0000000000000000000000000000000000000000000000000000000000000000',
-    runtimeAdapter: greenfire.runtimeAdapter,
-    readiness: greenfire.readiness,
-    localizations: greenfire.localizations,
-    scenarioLocalizations: greenfire.scenarioLocalizations,
-  );
-  return CaseCatalogBundle(
-    bundleVersion: source.bundleVersion,
-    catalogVersion: source.catalogVersion,
-    defaultLocale: source.defaultLocale,
-    supportedLocales: source.supportedLocales,
-    fictionalNotices: source.fictionalNotices,
-    ui: source.ui,
-    cases: source.cases
-        .map(
-          (MobileCaseDefinition item) =>
-              item.caseId == greenfire.caseId ? futureGreenFire : item,
-        )
-        .toList(growable: false),
-    loadOnlyScenarios: source.loadOnlyScenarios,
   );
 }
 

@@ -10,6 +10,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MobileCaseDefinition caseDefinition;
+  late MobileCaseDefinition greenfireDefinition;
 
   setUpAll(() async {
     final String encoded = await rootBundle.loadString(
@@ -19,6 +20,10 @@ void main() {
       jsonDecode(encoded) as Map<String, dynamic>,
     );
     caseDefinition = bundle.cases.first;
+    greenfireDefinition = bundle.cases.singleWhere(
+      (MobileCaseDefinition item) =>
+          item.scenarioId == 'greenfire_first_72_hours',
+    );
   });
 
   test('maps lost post-judgment as open with remedy actions', () {
@@ -433,6 +438,135 @@ void main() {
       'file-documented-response',
       'negotiate-extension',
     ]);
+  });
+
+  test('maps production GreenFire pressure in EN and RU without inference', () {
+    final Map<String, dynamic> source = _snapshot(
+      judicialResult: null,
+      judicialDecisionInstance: null,
+      lifecycle: 'active',
+      isClosed: false,
+      actions: const <String>[
+        'release_unreviewed_documents',
+        'submit_initial_regulatory_response',
+      ],
+    )
+      ..['scenario_id'] = 'greenfire_first_72_hours'
+      ..['stage_id'] = 'immediate_response'
+      ..['stage_title'] = 'Immediate response'
+      ..['clock_minutes'] = 180
+      ..['available_actions'] = <Map<String, dynamic>>[
+        <String, dynamic>{
+          'id': 'release_unreviewed_documents',
+          'title': 'Release the requested files without review',
+          'description': 'Release the requested files.',
+          'time_cost_minutes': 180,
+        },
+        <String, dynamic>{
+          'id': 'submit_initial_regulatory_response',
+          'title': 'Submit the reviewed initial response',
+          'description': 'Submit the reviewed response.',
+          'time_cost_minutes': 180,
+        },
+      ]
+      ..['pressure_and_countermove'] = <String, dynamic>{
+        'projection_schema_version': 1,
+        'active_pressures': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'pressure_id': 'regulator_document_request_pressure',
+            'source_actor_id': 'port_haven_environment_authority',
+            'due_at_minute': 2160,
+            'remaining_minutes': 1980,
+            'available_response_action_ids': <String>[
+              'submit_initial_regulatory_response',
+              'unknown_future_response',
+              'release_unreviewed_documents',
+            ],
+          },
+        ],
+      };
+
+    final GameSnapshot english = ScenarioSnapshotMapper.map(
+      source: source,
+      caseDefinition: greenfireDefinition,
+      locale: 'en',
+    );
+    final GameSnapshot russian = ScenarioSnapshotMapper.map(
+      source: source,
+      caseDefinition: greenfireDefinition,
+      locale: 'ru',
+    );
+    final englishPressure =
+        english.pressureAndCountermove!.activePressures.single;
+    final russianPressure =
+        russian.pressureAndCountermove!.activePressures.single;
+
+    expect(englishPressure.pressureId, 'regulator_document_request_pressure');
+    expect(englishPressure.sourceActorId, 'port_haven_environment_authority');
+    expect(
+      englishPressure.sourceActorName,
+      'Port Haven Environmental Authority',
+    );
+    expect(
+      russianPressure.sourceActorName,
+      'Экологический орган Порт-Хейвена',
+    );
+    expect(englishPressure.dueAtMinute, 2160);
+    expect(englishPressure.remainingMinutes, 1980);
+    expect(englishPressure.availableResponseActionIds, <String>[
+      'submit_initial_regulatory_response',
+      'release_unreviewed_documents',
+    ]);
+    expect(
+      russianPressure.availableResponseActionIds,
+      englishPressure.availableResponseActionIds,
+    );
+    expect(
+      english.actions
+          .singleWhere(
+            (GameActionView action) =>
+                action.id == 'submit_initial_regulatory_response',
+          )
+          .title,
+      'Submit the reviewed initial response',
+    );
+    expect(
+      english.actions
+          .singleWhere(
+            (GameActionView action) =>
+                action.id == 'release_unreviewed_documents',
+          )
+          .title,
+      'Release the requested files without review',
+    );
+    expect(
+      russian.actions
+          .singleWhere(
+            (GameActionView action) =>
+                action.id == 'submit_initial_regulatory_response',
+          )
+          .title,
+      'Направить проверенный первоначальный ответ',
+    );
+    expect(
+      russian.actions
+          .singleWhere(
+            (GameActionView action) =>
+                action.id == 'release_unreviewed_documents',
+          )
+          .title,
+      'Передать запрошенные документы без проверки',
+    );
+
+    final Map<String, dynamic> absent = Map<String, dynamic>.from(source)
+      ..remove('pressure_and_countermove');
+    expect(
+      ScenarioSnapshotMapper.map(
+        source: absent,
+        caseDefinition: greenfireDefinition,
+      ).pressureAndCountermove,
+      isNull,
+    );
   });
 
   test('omits unknown future pressure versions and rejects malformed v1', () {

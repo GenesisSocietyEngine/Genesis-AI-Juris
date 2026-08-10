@@ -108,6 +108,11 @@ void main() {
     expect(client.lastScenarioId, 'greenfire_first_72_hours');
     expect(client.lastSeed, 20260729);
     expect(client.lastActionCount, 13);
+    expect(client.lastContentVersion, '0.2.0');
+    expect(
+      greenfire.scenarioFingerprint,
+      '173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438',
+    );
     expect(repository.supportsLiveClock, isTrue);
     final String before = repository.snapshot.timeLabel;
     repository.advanceTimeByMinutes(1);
@@ -191,32 +196,26 @@ void main() {
 
   test('historical exact identity routes to retained content and stays stable',
       () async {
-    final CaseCatalogBundle futureInventory =
-        _withSyntheticFutureGreenFire(contentInventory);
-    final MobileCaseDefinition futureGreenFire =
-        futureInventory.cases.singleWhere(
-      (MobileCaseDefinition item) => item.caseId == 'greenfire_first_72_hours',
-    );
     final ScenarioContentVersion retained =
-        futureInventory.loadOnlyScenarios.single;
+        contentInventory.loadOnlyScenarios.single;
     final _MemoryGameSaveStore store = _MemoryGameSaveStore()
       ..encodedSave = jsonEncode(<String, dynamic>{
         'scenario_id': retained.scenarioId,
         'scenario_fingerprint': retained.scenarioFingerprint,
-        'seed': futureGreenFire.seed,
+        'seed': greenfire.seed,
         'stage': retained.scenario['initial_stage'],
         'clock_minutes': 0,
         'outcome': null,
       });
     final _FakeScenarioBridgeClient client = _FakeScenarioBridgeClient();
     final RustScenarioRepository repository = RustScenarioRepository(
-      caseDefinition: futureGreenFire,
-      contentInventory: futureInventory,
+      caseDefinition: greenfire,
+      contentInventory: contentInventory,
       bridgeClient: client,
       saveStore: store,
     );
 
-    expect(client.lastContentVersion, '0.2.0-test-only');
+    expect(client.lastContentVersion, '0.2.0');
     await repository.loadGame();
     expect(client.lastContentVersion, '0.1.0');
     expect(repository.snapshot.matterTitle, contains('GreenFire'));
@@ -763,90 +762,6 @@ void main() {
       repository.dispose();
     }
   });
-}
-
-CaseCatalogBundle _withSyntheticFutureGreenFire(CaseCatalogBundle source) {
-  final Map<String, dynamic> json = jsonDecode(jsonEncode(<String, dynamic>{
-    'bundle_version': source.bundleVersion,
-    'catalog_version': source.catalogVersion,
-    'default_locale': source.defaultLocale,
-    'supported_locales': source.supportedLocales,
-    'fictional_notice': source.fictionalNotices,
-    'ui': source.ui,
-    'cases': source.cases.map(_caseToJson).toList(growable: false),
-    'load_only_scenarios': source.loadOnlyScenarios
-        .map(
-          (ScenarioContentVersion item) => <String, dynamic>{
-            'scenario_id': item.scenarioId,
-            'content_version': item.contentVersion,
-            'scenario_fingerprint': item.scenarioFingerprint,
-            'scenario': item.scenario,
-            'scenario_localizations': item.scenarioLocalizations,
-            'load_only': item.loadOnly,
-          },
-        )
-        .toList(growable: false),
-  })) as Map<String, dynamic>;
-  final Map<String, dynamic> current =
-      (json['cases'] as List<dynamic>).cast<Map<String, dynamic>>().singleWhere(
-            (Map<String, dynamic> item) =>
-                item['case_id'] == 'greenfire_first_72_hours',
-          );
-  current['scenario_fingerprint'] =
-      '0000000000000000000000000000000000000000000000000000000000000000';
-  final Map<String, dynamic> scenario =
-      current['scenario'] as Map<String, dynamic>;
-  final Map<String, dynamic> metadata =
-      scenario['metadata'] as Map<String, dynamic>;
-  metadata['content_version'] = '0.2.0-test-only';
-  metadata['summary'] =
-      'Synthetic future current definition for routing tests.';
-  return CaseCatalogBundle.fromJson(json);
-}
-
-Map<String, dynamic> _caseToJson(MobileCaseDefinition item) {
-  return <String, dynamic>{
-    'case_id': item.caseId,
-    'scenario_id': item.scenarioId,
-    'sort_order': item.sortOrder,
-    'seed': item.seed,
-    'status': item.status.name,
-    'difficulty': item.difficulty.name,
-    'jurisdiction': item.jurisdiction,
-    'practice_area': item.practiceArea,
-    'player_client_id': item.playerClientId,
-    'player_role': item.playerRole,
-    'identity_file': item.identityFile,
-    'scenario_file': item.scenarioFile,
-    'scenario_available': item.scenarioAvailable,
-    'scenario': item.scenario,
-    'scenario_fingerprint': item.scenarioFingerprint,
-    'runtime_adapter': item.runtimeAdapter,
-    'readiness': <String, dynamic>{
-      'identity': item.readiness.identity,
-      'scenario_definition': item.readiness.scenarioDefinition,
-      'diagnostics': item.readiness.diagnostics,
-      'path_simulation': item.readiness.pathSimulation,
-      'engine_runtime': item.readiness.engineRuntime,
-      'mobile_bundle': item.readiness.mobileBundle,
-    },
-    'localizations': item.localizations.map(
-      (String locale, LocalizedCaseText text) =>
-          MapEntry<String, Map<String, dynamic>>(
-        locale,
-        <String, dynamic>{
-          'caption': text.caption,
-          'topic': text.topic,
-          'short_title': text.shortTitle,
-          'synopsis': text.synopsis,
-          'player_client_name': text.playerClientName,
-          'player_client_role': text.playerClientRole,
-          'legal_issues': text.legalIssues,
-        },
-      ),
-    ),
-    'scenario_localizations': item.scenarioLocalizations,
-  };
 }
 
 const List<Object> _goldenshellCoordinatedPath = <Object>[
