@@ -215,7 +215,7 @@ fn released_rust_scenario_fingerprints_remain_byte_exact() {
         ),
         (
             GREENFIRE_SCENARIO,
-            "b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261",
+            "173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438",
         ),
         (
             GOLDENSHELL_SCENARIO,

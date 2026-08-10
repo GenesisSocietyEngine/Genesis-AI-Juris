@@ -4,7 +4,7 @@
     "id": "greenfire_first_72_hours",
     "title": "GreenFire — The First 72 Hours",
     "summary": "An industrial fire places a chemical-storage company under simultaneous criminal, regulatory, environmental, insurance, and insolvency pressure. Preserve evidence, control communications, protect coverage, manage conflicts, and hand over a defensible crisis position within 72 hours.",
-    "content_version": "0.1.0",
+    "content_version": "0.2.0",
     "author": "GENESIS: AI Juris",
     "tags": ["crisis_management", "environmental", "corporate_crime", "insurance", "netherlands", "fictional"]
   },
@@ -209,6 +209,7 @@
         {"type": "resolve_inbox_item", "item": "regulator_document_request"}
       ],
       "time_cost_minutes": 180,
+      "completion_deadlines": ["initial_regulatory_response_deadline"],
       "repeatability": {"type": "once"}
     },
     {
@@ -226,6 +227,7 @@
         {"type": "resolve_inbox_item", "item": "regulator_document_request"}
       ],
       "time_cost_minutes": 180,
+      "completion_deadlines": ["initial_regulatory_response_deadline"],
       "repeatability": {"type": "once"}
     },
     {
@@ -341,6 +343,19 @@
     {"id": "legal_hold_deadline", "title": "Issue the evidence-preservation hold", "due_at": {"day": 0, "minute_of_day": 180}, "completion_actions": ["issue_legal_hold"], "missed_event": "legal_hold_missed"},
     {"id": "insurance_notice_deadline", "title": "Notify potentially responsive insurers", "due_at": {"day": 0, "minute_of_day": 720}, "completion_actions": ["notify_insurers"], "missed_event": "insurance_notice_missed"},
     {"id": "initial_regulatory_response_deadline", "title": "Submit the initial regulatory response", "due_at": {"day": 1, "minute_of_day": 720}, "activation_event": "regulator_request_received", "completion_actions": ["submit_initial_regulatory_response", "release_unreviewed_documents"], "missed_event": "regulatory_response_missed"}
+  ],
+  "pressure_windows": [
+    {
+      "id": "regulator_document_request_pressure",
+      "source_actor_id": "port_haven_environment_authority",
+      "activation_event_id": "regulator_request_received",
+      "response_deadline_id": "initial_regulatory_response_deadline",
+      "response_action_ids": [
+        "submit_initial_regulatory_response",
+        "release_unreviewed_documents"
+      ],
+      "countermove_event_id": "regulatory_response_missed"
+    }
   ],
   "async_tasks": [
     {"id": "preliminary_fire_assessment", "title": "Preliminary independent fire assessment", "start_action": "retain_independent_fire_expert", "completion_event": "expert_assessment_completed", "duration_minutes": 360, "usable_until_event": "handoff_window_opened", "expiry_event": "expert_assessment_expired"}

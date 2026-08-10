@@ -4,6 +4,7 @@ use juris_engine::{
     ScenarioSessionRegistry,
 };
 use juris_scenario_schema::ScenarioDefinition;
+use sha2::{Digest, Sha256};
 
 const CURRENT_GREENFIRE: &str =
     include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json");
@@ -14,8 +15,12 @@ const LOGISTICS: &str =
     include_str!("../../../content/cases/unpaid_logistics_invoices.scenario.json");
 const HISTORICAL_GREENFIRE_SAVE: &str =
     include_str!("fixtures/persistence/06e566a_losing_terminal_outcome.json");
-const GREENFIRE_FINGERPRINT: &str =
+const CURRENT_GREENFIRE_FINGERPRINT: &str =
+    "173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438";
+const ARCHIVED_GREENFIRE_FINGERPRINT: &str =
     "b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261";
+const ARCHIVED_GREENFIRE_SOURCE_SHA256: &str =
+    "a0237b3260d184d114eb79ad3fcf019d9b4cf540012e2fefb7478002162ef82c";
 
 fn definition(encoded: &str) -> ScenarioDefinition {
     serde_json::from_str(encoded).expect("scenario fixture must parse")
@@ -25,7 +30,7 @@ fn retained(definition: ScenarioDefinition) -> RetainedScenarioDefinition {
     RetainedScenarioDefinition {
         scenario_id: "greenfire_first_72_hours".to_owned(),
         content_version: "0.1.0".to_owned(),
-        scenario_fingerprint: GREENFIRE_FINGERPRINT.to_owned(),
+        scenario_fingerprint: ARCHIVED_GREENFIRE_FINGERPRINT.to_owned(),
         definition,
     }
 }
@@ -40,18 +45,33 @@ fn production_inventory() -> ScenarioContentInventory {
 
 #[test]
 fn archived_greenfire_is_byte_exact_and_recomputes_the_pinned_identity() {
-    assert_eq!(ARCHIVED_GREENFIRE.as_bytes(), CURRENT_GREENFIRE.as_bytes());
+    let current = definition(CURRENT_GREENFIRE);
+    let archived = definition(ARCHIVED_GREENFIRE);
+    assert_ne!(ARCHIVED_GREENFIRE.as_bytes(), CURRENT_GREENFIRE.as_bytes());
+    assert_eq!(current.metadata.content_version, "0.2.0");
+    assert_eq!(current.pressure_windows.len(), 1);
+    assert_eq!(archived.metadata.content_version, "0.1.0");
+    assert!(archived.pressure_windows.is_empty());
+    assert_eq!(
+        format!("{:x}", Sha256::digest(ARCHIVED_GREENFIRE.as_bytes())),
+        ARCHIVED_GREENFIRE_SOURCE_SHA256
+    );
+
     let inventory = production_inventory();
     assert_eq!(inventory.current_count(), 1);
     assert_eq!(inventory.retained_count(), 1);
 
     let envelope = ScenarioSaveEnvelope::from_json(HISTORICAL_GREENFIRE_SAVE).unwrap();
-    assert_eq!(envelope.scenario_fingerprint, GREENFIRE_FINGERPRINT);
+    assert_eq!(
+        envelope.scenario_fingerprint,
+        ARCHIVED_GREENFIRE_FINGERPRINT
+    );
     let resolved = inventory.resolve_envelope(&envelope).unwrap();
+    assert_eq!(resolved, &archived);
     let session = ScenarioSession::new(resolved.clone(), envelope.seed).unwrap();
     assert_eq!(
         session.scenario_fingerprint().unwrap(),
-        GREENFIRE_FINGERPRINT
+        ARCHIVED_GREENFIRE_FINGERPRINT
     );
 }
 
@@ -79,9 +99,35 @@ fn exact_lookup_is_order_independent_and_current_creation_uses_current_role() {
     let id = first
         .create_current(&mut sessions, "greenfire_first_72_hours", 20260729)
         .unwrap();
-    let saved = ScenarioSaveEnvelope::from_json(&sessions.save_json(id).unwrap()).unwrap();
-    assert_eq!(saved.scenario_fingerprint, GREENFIRE_FINGERPRINT);
+    sessions.dispatch(id, "accept_emergency_mandate").unwrap();
+    let active = sessions.dispatch(id, "issue_legal_hold").unwrap();
+    let pressure = active
+        .pressure_and_countermove
+        .as_ref()
+        .expect("current GreenFire must project active production pressure");
+    assert_eq!(pressure.active_pressures.len(), 1);
+    assert_eq!(
+        pressure.active_pressures[0].pressure_id,
+        "regulator_document_request_pressure"
+    );
+    assert_eq!(pressure.active_pressures[0].due_at_minute, 2_160);
+    assert_eq!(pressure.active_pressures[0].remaining_minutes, 2_040);
+
+    let encoded = sessions.save_json(id).unwrap();
+    let saved = ScenarioSaveEnvelope::from_json(&encoded).unwrap();
+    assert_eq!(saved.runtime_compatibility, "scenario-runtime-v2");
+    assert_eq!(saved.scenario_fingerprint, CURRENT_GREENFIRE_FINGERPRINT);
     assert_eq!(sessions.len(), 1);
+    assert!(sessions.dispose(id));
+    assert!(sessions.is_empty());
+
+    let restored = first.load_from_json(&mut sessions, &encoded).unwrap();
+    assert_eq!(sessions.snapshot(restored).unwrap(), active);
+    let responded = sessions
+        .dispatch(restored, "release_unreviewed_documents")
+        .unwrap();
+    assert!(responded.pressure_and_countermove.is_none());
+
     assert_eq!(
         first.create_current(&mut sessions, "retained_only", 1),
         Err(ScenarioContentInventoryError::UnknownCurrentScenario(
@@ -174,7 +220,7 @@ fn synthetic_future_current_never_replays_an_old_save_under_new_content() {
         .unwrap()
         .scenario_fingerprint()
         .unwrap();
-    assert_ne!(newer_fingerprint, GREENFIRE_FINGERPRINT);
+    assert_ne!(newer_fingerprint, ARCHIVED_GREENFIRE_FINGERPRINT);
 
     let inventory = ScenarioContentInventory::try_new(vec![newer], vec![retained(old)]).unwrap();
     let mut sessions = ScenarioSessionRegistry::new();
@@ -191,7 +237,7 @@ fn synthetic_future_current_never_replays_an_old_save_under_new_content() {
         ScenarioSaveEnvelope::from_json(&sessions.save_json(historical_id).unwrap()).unwrap();
     assert_eq!(
         historical_resave.scenario_fingerprint,
-        GREENFIRE_FINGERPRINT
+        ARCHIVED_GREENFIRE_FINGERPRINT
     );
     assert_eq!(historical_resave.commands, Vec::<ScenarioCommand>::new());
 
