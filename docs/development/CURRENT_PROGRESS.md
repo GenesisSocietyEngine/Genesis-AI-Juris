@@ -1,9 +1,23 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: feat/visual-identity-catalogue-v1
-base_commit: addc2849574e8f08529da0fd9b7a4b52b50484aa
-visual_identity_catalogue_status: local_review_checkpoint
+branch: docs/visual-identity-catalogue-v1-publication
+base_commit: 920077c29b8578727ca6cb61b0de3c99c4c6bb5c
+ios_per_slice_export_audit_status: merged_and_corrected_main_accepted
+ios_per_slice_export_audit_pr: 30
+ios_per_slice_export_audit_initial_commit: 23c12822a2e6f7e8940663bf2b3a877032ffcc3c
+ios_per_slice_export_audit_fix_commit: 4b04ff233c0f8da5a53db434ba0c9703fe649218
+ios_per_slice_export_audit_synthetic_merge: c07a14374719768f5c8e94f5034705ab2bcfd05d
+ios_per_slice_export_audit_merge: 920077c29b8578727ca6cb61b0de3c99c4c6bb5c
+ios_per_slice_export_audit_push_run: 31426528762
+ios_per_slice_export_audit_pr_run: 31426532035
+ios_per_slice_export_audit_checks: pass_8_of_8
+ios_per_slice_export_audit_review_boundary: exact_head_codex_review_clean
+ios_per_slice_export_audit_corrected_main_ios_run: 31438503135
+ios_per_slice_export_audit_corrected_main_ios_job: 93617982221
+ios_per_slice_export_audit_historical_thread: PRRT_kwDOTiwDjc6X5Xpc
+ios_per_slice_export_audit_historical_thread_status: factually_replied_and_resolved
+visual_identity_catalogue_status: product_accepted_docs_publication_candidate
 visual_identity_catalogue_contract: docs/development/VISUAL_IDENTITY_FOUNDATION_V1.md
 visual_identity_catalogue_base_commit: addc2849574e8f08529da0fd9b7a4b52b50484aa
 visual_identity_catalogue_base_tree: 36a25abfe8c0447ddff9522152b9d13c9b0869ee
@@ -15,7 +29,11 @@ visual_identity_catalogue_foundation_goldens_commit: 1dffcc26d95299b4b4a0173e182
 visual_identity_catalogue_redesign_commit: e05bc05635fe03a0d6a25e651dd0a9dbba7d9252
 visual_identity_catalogue_acceptance_commit: 45a114a03c512f61667c7082a8f1f54bf3ccfb3c
 visual_identity_catalogue_acceptance_tree: fa3f219b951106a65f88a65ecee97047bd70bdda
-visual_identity_catalogue_publication_boundary: local_only
+visual_identity_catalogue_pr: 28
+visual_identity_catalogue_head: dee066245a2098dec94d5e04caf5883d590b2f94
+visual_identity_catalogue_synthetic_merge: 3d4db3650fd450e2990075a83f066b0a696205f7
+visual_identity_catalogue_product_merge: 7152b368a64f208abfbe88d61c136a01191df33a
+visual_identity_catalogue_publication_boundary: one_file_docs_candidate
 greenfire_pressure_pilot_status: product_publication_accepted_docs_checkpoint
 greenfire_pressure_pilot_contract: docs/development/GREENFIRE_PRODUCTION_PRESSURE_PILOT_V1.md
 greenfire_pressure_pilot_architecture_commit: 5500ebe3c93520f0aaaf101765ca3df36eb2f714
@@ -90,10 +108,228 @@ validator_followup: d7a52d836f4f51b9c510af38513bcb2722cbd6a2
 android_followup: de7ac065d095a0e268e14961b4b74edd754cf52e
 latest_published_release_tag: v0.6.0-alpha.1
 app_version: 0.6.0+13
-last_updated: 2026-08-10
+last_updated: 2026-08-11
 ---
 
 # Current Progress
+
+## Visual publication and iOS per-slice correction accepted boundary - 2026-08-11
+
+### Status, topology, and exact identity
+
+PR [#30](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/30),
+`ci(ios): verify bridge exports in every Mach-O slice`, was reviewed at exact
+head `4b04ff233c0f8da5a53db434ba0c9703fe649218`, moved out of Draft only after
+that clean review, and merged normally without deleting
+`fix/ios-per-slice-exact-three-export-audit-v1`. Its exact product base is
+`7152b368a64f208abfbe88d61c136a01191df33a`, the merge of Visual Identity
+Foundation v1. The retained local and remote correction heads are identical at
+`4b04ff233c0f8da5a53db434ba0c9703fe649218`.
+
+The PR contains two commits:
+
+1. `23c12822a2e6f7e8940663bf2b3a877032ffcc3c` — adds per-Mach-O-slice
+   exact-three export discovery, verification, fake coverage, real universal
+   fixtures, and hosted workflow integration;
+2. `4b04ff233c0f8da5a53db434ba0c9703fe649218` — accepts only the exact benign
+   Rust archive-member `llvm-nm` notice form while retaining fail-closed
+   handling for all other diagnostics.
+
+The complete PR changes only these established CI audit paths:
+
+- `.github/scripts/verify_ios_ffi_exports.sh`;
+- `.github/scripts/test_verify_ios_ffi_exports.sh`;
+- `.github/workflows/ios-native.yml`.
+
+There is no ABI, Rust FFI implementation, native product integration, mobile
+product, content, save, golden, version, release, tag, ruleset, or protected-ref
+change. The branch must be retained.
+
+### Original failure and accepted correction
+
+The first hosted executions on `23c1282` passed the fake matrix and all three
+real universal fixtures, then rejected the actual Rust product archive. Rust's
+matching `llvm-nm` returned status zero and the required symbols, but also wrote
+ordinary per-member notices such as
+`<archive>:<member>: no symbols` to stderr. The verifier treated every nonempty
+stderr stream as untrusted, so both iOS `simulator-smoke` checks failed before
+Simulator boot and XCTest.
+
+The correction at `4b04ff2` is deliberately narrow:
+
+- the reader must still return status zero;
+- every stderr line must start with the exact audited archive path;
+- every line must contain one nonempty, colon-free archive member name;
+- every line must end exactly in `: no symbols`;
+- the accepted notices are counted and acknowledged per architecture;
+- any additional, malformed, unknown, or error diagnostic rejects that slice;
+- nonzero reader status, invalid bridge namespace symbols, missing exports,
+  fourth exports, unsafe architecture output, and inspector diagnostics remain
+  fail-closed;
+- symbols are still evaluated independently per slice and are never unioned.
+
+Two regression cases were added: a benign `no symbols` notice with an otherwise
+exact slice must pass, while a benign notice followed by an error diagnostic
+must fail. The deterministic fake verifier matrix therefore increased from
+17/17 to 19/19.
+
+### Local acceptance on Windows/Git Bash
+
+The exact fixed head passed the available local acceptance:
+
+- `bash -n .github/scripts/verify_ios_ffi_exports.sh`: PASS;
+- `bash -n .github/scripts/test_verify_ios_ffi_exports.sh`: PASS;
+- `.github/scripts/test_verify_ios_ffi_exports.sh`: PASS 19/19;
+- selector contract, exact argv/call counts, architecture coverage, cleanup,
+  and negative aggregate-marker assertions: PASS;
+- `git diff --check`: PASS;
+- real macOS universal fixture matrix: correctly SKIPPED on non-Darwin.
+
+The local and remote branch refs both resolve to full SHA
+`4b04ff233c0f8da5a53db434ba0c9703fe649218`.
+
+### Hosted acceptance on exact fixed head
+
+All eight fresh required checks passed on the exact fixed identity:
+
+- direct-head push Rust run
+  [31426528169](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/31426528169):
+  `msrv` PASS and `quality` PASS;
+- direct-head push Flutter run
+  [31426528175](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/31426528175):
+  `analyze-and-test` PASS;
+- direct-head push iOS run
+  [31426528762](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/31426528762):
+  `simulator-smoke` PASS;
+- PR-synthetic Rust run
+  [31426532039](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/31426532039):
+  `msrv` PASS and `quality` PASS;
+- PR-synthetic Flutter run
+  [31426532293](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/31426532293):
+  `analyze-and-test` PASS;
+- PR-synthetic iOS run
+  [31426532035](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/31426532035):
+  `simulator-smoke` PASS.
+
+Both completed iOS logs independently show:
+
+- fake inspector/reader matrix: PASS 19/19;
+- real macOS universal fixture matrix: PASS 3/3;
+- actual product archive architectures: `arm64 x86_64`;
+- accepted product-archive notices: 7 on `arm64`, 11 on `x86_64`;
+- exactly `juris_mobile_bridge_abi_version`,
+  `juris_mobile_bridge_execute`, and `juris_mobile_bridge_string_free` in each
+  architecture slice;
+- per-slice exact export set PASS for `arm64` and `x86_64`;
+- `all 2 architecture slices exact export set: PASS`;
+- successful Runner build, iPhone Simulator boot, native Logistics lifecycle
+  XCTest (`** TEST SUCCEEDED **`), and post-job cleanup.
+
+The PR description was updated to pin the corrected 19/19 matrix, both hosted
+iOS run identities, exact accepted head, per-slice evidence, and final 8/8
+check result.
+
+### Exact-head review, normal merge, and corrected-main acceptance
+
+The fresh Codex review was requested in
+[the exact-head review comment](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/30#issuecomment-5246709178)
+with the full accepted SHA. `chatgpt-codex-connector` completed the review in
+[its result](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/30#issuecomment-5246739107),
+named reviewed commit `4b04ff233c`, and reported no major issues. The subsequent
+thread-aware audit proved zero submitted review records, zero inline comments,
+zero review threads, and therefore zero unresolved actionable findings. The
+accepted PR-event synthetic merge was
+`c07a14374719768f5c8e94f5034705ab2bcfd05d`, with ordered parents
+`7152b368a64f208abfbe88d61c136a01191df33a` and
+`4b04ff233c0f8da5a53db434ba0c9703fe649218` and tree
+`fcd4a7985d21178ee8ac79af6ad1a90e2efeca14`.
+
+PR #30 merged at `2026-08-10T22:29:20Z` by normal two-parent merge commit
+`920077c29b8578727ca6cb61b0de3c99c4c6bb5c`. Its ordered parents are the Visual
+product merge `7152b368a64f208abfbe88d61c136a01191df33a` and the exact reviewed
+correction head `4b04ff233c0f8da5a53db434ba0c9703fe649218`; its tree is
+`fcd4a7985d21178ee8ac79af6ad1a90e2efeca14`, and GitHub records a valid
+signature. The merge changes exactly the same three CI audit paths listed
+above.
+
+Fresh corrected-main push workflows on exact merge SHA `920077c2` all passed:
+
+- Rust CI [31438503103](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/31438503103):
+  `msrv` and `quality` PASS;
+- Flutter Mobile UI [31438503190](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/31438503190):
+  `analyze-and-test` PASS;
+- iOS Native FFI [31438503135](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/31438503135),
+  job `93617982221`: `simulator-smoke` PASS.
+
+The corrected-main iOS log again proves 19/19 fake cases, 3/3 real asymmetric
+universal fixtures, product `arm64 x86_64`, accepted notices 7/11, the exact
+three ABI exports independently in both slices, all-slices PASS, Runner build,
+Simulator boot, native Logistics lifecycle XCTest success, and cleanup.
+
+### Historical PR #29 closure
+
+PR [#29](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/29),
+`ci(ios): harden exact bridge export audit`, comprised commits
+`3f71348e1a52b79a00c84d1c5ca15c5fefe97b07` and
+`6b242983a2029234b2d1594c06cbccc6608941b6`, then merged normally as
+`62a1994f77a8066bc6219caadd94e47176734afa`. Its original exact-set gate was
+fail-closed for diagnostics but inspected only the default Mach-O architecture.
+The late P1 review at
+[discussion `r3750139461`](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/29#discussion_r3750139461)
+correctly identified that per-slice gap.
+
+Only after corrected-main acceptance, the factual inline
+[correction reply](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/29#discussion_r3753974747)
+named PR #30, merge `920077c2`, corrected-main run `31438503135`, the exact
+per-slice and asymmetric-fixture evidence, Simulator/XCTest success, and the
+unchanged ABI/product boundary. Exact thread node `PRRT_kwDOTiwDjc6X5Xpc` was
+then resolved and re-queried with `isResolved == true`; the original review and
+discussion remain preserved.
+
+### Visual PR #28 product publication evidence
+
+Visual Identity Foundation v1 and Cinematic Catalogue v1 were published by
+[PR #28](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/28),
+`feat(mobile): add visual identity and cinematic case catalogue`. Its hardened
+base is PR #29 merge `62a1994f77a8066bc6219caadd94e47176734afa`; its accepted
+head is `dee066245a2098dec94d5e04caf5883d590b2f94`; and its normal product merge
+is `7152b368a64f208abfbe88d61c136a01191df33a`. The accepted synthetic merge is
+`3d4db3650fd450e2990075a83f066b0a696205f7`, with ordered base/head parents and
+tree `7412246e32043baff3f2a20aed62b7c8b03b48f3`.
+
+The exact direct-head workflows passed as Rust `31397193833`, Flutter
+`31397193937`, and iOS `31397193954`. The exact PR-event workflows passed as
+Rust `31397199384`, Flutter `31397199332`, and iOS `31397199411`. Fresh
+product-main workflows on `7152b368` passed as Rust `31400070326`, Flutter
+`31400073639`, and iOS `31400070289`. The exact base-to-head published scope
+remains 63 files, 8,544 additions, and 611 deletions, including the
+original eight reviewed Visual commits followed by the one authorized
+hardening merge.
+
+### Unchanged publication boundary and next phase
+
+The licensed font binaries and licenses, presentation manifest, twelve exact
+Foundation/Catalogue goldens, canonical Windows/Flutter profile, bundle v5
+(684,266 bytes; SHA-256
+`e90f856cbb0f4625f7612a99db2f527ac3b090619019b7a83c21140f78f1984a`),
+five current scenario fingerprints, retained GreenFire F0 fingerprint, all 11
+canonical minute/outcome/digest paths, current F1 and historical F0 save
+behavior, eight generic JSON bridge commands, C ABI version 1, and the exact
+three exported names remain unchanged. The established exact hashes and full
+tables remain recorded in the historical Visual checkpoint below.
+
+The app version remains `0.6.0+13`; latest published tag/release remains
+`v0.6.0-alpha.1`; ruleset `Main` / `19991132`, PR #4, recovery/Dossier refs,
+and unrelated retained branches remain unchanged. The correction and Visual
+remote branches remain retained. The protected untracked
+`docs/development/CURRENT_PROGRESS.zip` remains exactly 47,579 bytes with
+SHA-256 `2e5f03f003a7d227cb4ce765e338a8f335d92879862e53bd1c27d65e116de3b6`
+and was not used as input, modified, staged, committed, or deleted.
+
+GreenFire Living Case Visual Slice v1 work had **not yet begun** at this
+publication boundary. This Markdown file is the only intended docs change; its
+not-yet-created commit, PR, synthetic merge, product merge, and final-main SHA
+are intentionally absent because they do not yet exist.
 
 ## Visual Identity Foundation v1 and Cinematic Catalogue local checkpoint - 2026-08-10
 
