@@ -30,7 +30,7 @@ jobs:
       - name: Build Runner and Rust static library for iOS Simulator
         run: flutter build ios --simulator --debug --no-codesign
 
-      - name: Verify exact native static-library exports (fail closed)
+      - name: Verify exact native static-library exports per Mach-O slice (fail closed)
         shell: bash
         run: |
           set -euo pipefail
@@ -41,15 +41,34 @@ jobs:
           host="$(rustc +stable -vV | sed -n 's/^host: //p')"
           sysroot="$(rustc +stable --print sysroot)"
           llvm_nm="$sysroot/lib/rustlib/$host/bin/llvm-nm"
+          lipo="$(xcrun --find lipo)"
+          clang="$(xcrun --sdk macosx --find clang)"
+          libtool="$(xcrun --sdk macosx --find libtool)"
 
           test -n "$host"
           test -n "$sysroot"
           test -x "$llvm_nm"
+          test -x "$lipo"
+          test -x "$clang"
+          test -x "$libtool"
 
           rustc_version="$(rustc +stable -vV)"
           llvm_nm_version="$("$llvm_nm" --version)"
+          llvm_nm_help="$("$llvm_nm" --help)"
           printf '%s\n' "$rustc_version"
           printf '%s\n' "$llvm_nm_version"
+
+          echo "Xcode developer directory: $(xcode-select -p)"
+          xcodebuild -version
+          echo "architecture inspector: $lipo"
+          echo "fixture compiler: $clang"
+          echo "fixture archive tool: $libtool"
+
+          if ! grep -Eq -- '(^|[[:space:]])--arch=' <<<"$llvm_nm_help"; then
+            echo "llvm-nm does not advertise the required --arch= selector" >&2
+            exit 1
+          fi
+          echo "llvm-nm explicit Mach-O architecture selector: supported"
 
           rust_llvm_version="$(
             printf '%s\n' "$rustc_version" \
@@ -86,11 +105,16 @@ jobs:
           echo "matched LLVM major: $rust_llvm_major"
 
           bash \
-            "$GITHUB_WORKSPACE/.github/scripts/test_verify_ios_ffi_exports.sh"
+            "$GITHUB_WORKSPACE/.github/scripts/test_verify_ios_ffi_exports.sh" \
+            "$llvm_nm" \
+            "$lipo" \
+            "$clang" \
+            "$libtool"
           bash \
             "$GITHUB_WORKSPACE/.github/scripts/verify_ios_ffi_exports.sh" \
             "$archive" \
-            "$llvm_nm"
+            "$llvm_nm" \
+            "$lipo"
 
       - name: Boot an available iPhone Simulator
         id: simulator
