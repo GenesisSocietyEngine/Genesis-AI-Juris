@@ -1,12 +1,65 @@
 # GreenFire Production Pressure Pilot v1
 
-Status: **architecture stop — owner decision required before implementation**
+Status: **architecture resolved — implementation authorized by the owner**
 
-Date: 2026-08-08
+Resolution date: 2026-08-10
 
-Authoritative base: `2390c69d27d866e8b8d360e8bdcc71919d3f105c`
+Authoritative base (`RETENTION_FINAL_MAIN`):
+`f0ef69b97c3846ed3dfc95ee5b65e08927acdcbd`
 
-Local review branch: `feat/greenfire-regulatory-pressure-pilot-v1`
+Historical stop date: 2026-08-08
+
+Historical stop base: `2390c69d27d866e8b8d360e8bdcc71919d3f105c`
+
+Implementation branch: `feat/greenfire-production-pressure-pilot-v1`
+
+Historical stopped branch: `feat/greenfire-regulatory-pressure-pilot-v1`
+
+## Current architecture resolution
+
+The owner has explicitly authorized implementation of the GreenFire Production
+Pressure Pilot from `RETENTION_FINAL_MAIN`. The architecture stop recorded
+below remains the historical explanation of the original blocker; it is not a
+current implementation stop.
+
+The generic Immutable Content Version Retention work published through PRs
+#23 and #24, together with the retention hardening published through PR #25,
+resolves the blocker without weakening save integrity or adding a GreenFire
+special case:
+
+- current catalogue content resolves only its exact scenario ID/fingerprint
+  tuple, while immutable load-only content can retain the exact historical
+  tuple required by a published save;
+- the resolved target state assigns GreenFire `0.2.0` to the current catalogue
+  and retains the byte-exact GreenFire `0.1.0` definition as an immutable
+  load-only archive for old saves;
+- Rust validates the save envelope through the read-only `inspect_save`
+  command before Flutter performs exact-tuple resolution, so compatibility and
+  command validation remain authoritative and precede content lookup;
+- the bundle exporter invokes the authoritative Rust fingerprint verifier for
+  both current and archived definitions before either writing a bundle or
+  accepting `--check`.
+
+The authorized product delta remains exactly one ordered pressure window:
+`regulator_document_request_pressure`. It activates with
+`regulator_request_received` at absolute minute 120 and uses
+`initial_regulatory_response_deadline`, due at absolute minute 2,160. Both
+ordered responses keep their authored 180-minute duration and gain the same
+finish-by declaration. Because completion at due is excluded, a start at
+minute 1,979 may finish at 2,159, while a start at minute 1,980 must be rejected
+atomically. The protected and compromised canonical paths must continue to end
+at minutes 4,440 and 4,590 respectively.
+
+The accepted `RETENTION_FINAL_MAIN` baseline is Rust 345/345, Flutter 157/157,
+and Android API 37 native integration 11/11. The generic bridge protocol now
+has eight commands, including read-only `inspect_save`; its C ABI remains
+unchanged at version 1 with exactly the existing three exported symbols.
+
+Implementation is now authorized subject to the exact contract, exclusions,
+local and hosted acceptance gates, and publication requirements in the
+governing instruction set.
+
+## Historical architecture stop (preserved)
 
 ## Decision summary
 
