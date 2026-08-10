@@ -30,9 +30,9 @@ Windows PNGs are not treated as Linux or macOS evidence, and the pixel tests
 report an explicit skip on non-Windows hosts. Cross-host structural tests still
 run normally.
 
-## Baseline contract
+## Baseline contracts
 
-The profile directory contains exactly six PNGs:
+The foundation profile directory contains exactly six PNGs:
 
 1. English semantic typography and representative controls;
 2. long representative Russian typography;
@@ -40,6 +40,16 @@ The profile directory contains exactly six PNGs:
 4. the standard accessibility probe at a controlled 110 ms frame;
 5. the same probe in high contrast;
 6. the same probe with reduced motion, which resolves immediately.
+
+The catalogue profile directory separately contains exactly six PNGs:
+
+1. `360x800` English with the first authoritative case selected;
+2. `360x800` Russian with the representative long-title case selected;
+3. `412x915` English with GreenFire selected;
+4. `800x1280` Russian with the complete wide index;
+5. `1024x768` English with the complete wide index;
+6. compact English at 200% text and reduced motion, scrolled until the
+   explicit actions are reachable.
 
 ## Compare
 
@@ -55,6 +65,13 @@ Or use the guarded verifier, which also prints exact sizes and SHA-256 hashes:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tool\verify_visual_goldens_windows.ps1
 ```
 
+The catalogue matrix has its own exact-set verifier:
+
+```powershell
+flutter test test\cinematic_case_catalog_golden_test.dart
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tool\verify_catalogue_goldens_windows.ps1
+```
+
 ## Regenerate and prove repeatability
 
 Do not invoke `--update-goldens` casually. The guarded command rejects any host
@@ -67,6 +84,12 @@ first-run PNGs are preserved in the reported temporary directory.
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tool\verify_visual_goldens_windows.ps1 -Regenerate
 ```
 
+For the catalogue matrix, run the equivalent guarded two-render command:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tool\verify_catalogue_goldens_windows.ps1 -Regenerate
+```
+
 Byte-identical repeat generation is necessary but not sufficient. Inspect all
 six images before staging them. A changed baseline needs an explained visual
 review; never hide instability with a permissive comparator.
@@ -77,7 +100,7 @@ Codex should open each baseline with the local image viewer. On Windows, file
 identities can be listed without another dependency:
 
 ```powershell
-Get-ChildItem .\test\goldens\visual_identity\foundation -Recurse -Filter *.png |
+Get-ChildItem .\test\goldens\visual_identity -Recurse -Filter *.png |
   Sort-Object FullName |
   Select-Object FullName, Length,
     @{Name='SHA256';Expression={(Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}}
@@ -87,7 +110,7 @@ To list pixel dimensions using the Windows runtime:
 
 ```powershell
 Add-Type -AssemblyName System.Drawing
-Get-ChildItem .\test\goldens\visual_identity\foundation -Recurse -Filter *.png | ForEach-Object {
+Get-ChildItem .\test\goldens\visual_identity -Recurse -Filter *.png | ForEach-Object {
   $visualImage = [System.Drawing.Image]::FromFile($_.FullName)
   try { "$($_.Name)`t$($visualImage.Width)x$($visualImage.Height)`t$($_.Length)" }
   finally { $visualImage.Dispose() }

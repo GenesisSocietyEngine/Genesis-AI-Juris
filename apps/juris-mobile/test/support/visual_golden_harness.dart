@@ -2,11 +2,16 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juris_mobile/app/app_theme.dart';
 
 const String canonicalVisualGoldenDirectory =
     'goldens/visual_identity/foundation/'
+    'windows_x64_flutter_3_44_8_engine_0cd6107';
+
+const String canonicalCatalogueGoldenDirectory =
+    'goldens/visual_identity/catalogue/'
     'windows_x64_flutter_3_44_8_engine_0cd6107';
 
 const Key visualGoldenBoundaryKey = ValueKey<String>('visual-golden-boundary');
@@ -35,6 +40,7 @@ final class VisualGoldenConfiguration {
 }
 
 Future<void>? _fontLoad;
+Future<void>? _catalogueFontLoad;
 
 Future<void> loadJurisGoldenFonts() {
   return _fontLoad ??= Future.wait<void>(<Future<void>>[
@@ -52,6 +58,21 @@ Future<void> loadJurisGoldenFonts() {
     _loadFontFamily(
       'JurisPlexMono',
       const <String>['assets/fonts/IBMPlexMono-Medium.ttf'],
+    ),
+  ]);
+}
+
+/// Adds Flutter's bundled Material icon font for catalogue screenshots.
+///
+/// Foundation baselines intentionally retain their established font-load
+/// boundary; catalogue screens render production icon controls and therefore
+/// load the exact test-bundle MaterialIcons asset as well.
+Future<void> loadCatalogueGoldenFonts() {
+  return _catalogueFontLoad ??= Future.wait<void>(<Future<void>>[
+    loadJurisGoldenFonts(),
+    _loadFontFamily(
+      'MaterialIcons',
+      const <String>['fonts/MaterialIcons-Regular.otf'],
     ),
   ]);
 }
@@ -92,6 +113,12 @@ Future<void> pumpVisualGolden(
     MaterialApp(
       debugShowCheckedModeBanner: false,
       locale: configuration.locale,
+      supportedLocales: const <Locale>[Locale('en'), Locale('ru')],
+      localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: JurisTheme.dark().copyWith(platform: TargetPlatform.windows),
       builder: (BuildContext context, Widget? appChild) {
         final MediaQueryData media = MediaQuery.of(context).copyWith(
@@ -130,12 +157,13 @@ Future<void> pumpVisualGolden(
 
 Future<void> expectVisualGolden(
   WidgetTester tester,
-  String fileName,
-) async {
+  String fileName, {
+  String directory = canonicalVisualGoldenDirectory,
+}) async {
   final Finder boundary = find.byKey(visualGoldenBoundaryKey);
   expect(boundary, findsOneWidget);
   await expectLater(
     boundary,
-    matchesGoldenFile('$canonicalVisualGoldenDirectory/$fileName'),
+    matchesGoldenFile('$directory/$fileName'),
   );
 }
