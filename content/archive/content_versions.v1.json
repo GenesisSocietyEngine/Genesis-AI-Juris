@@ -15,9 +15,9 @@
     },
     {
       "scenario_id": "greenfire_first_72_hours",
-      "scenario_fingerprint": "b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261",
+      "scenario_fingerprint": "173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438",
       "scenario_file": "content/cases/greenfire_first_72_hours.scenario.json",
-      "source_sha256": "a0237b3260d184d114eb79ad3fcf019d9b4cf540012e2fefb7478002162ef82c"
+      "source_sha256": "d6bd5e4d8605fe97673e1f6626d8b7b2bb78d82c396336146a997a891f518876"
     },
     {
       "scenario_id": "goldenshell_recall_at_dawn",

@@ -14,7 +14,7 @@ Rust, Flutter, MSRV, and iOS gates.
 | ---: | --- | --- | --- |
 | 10 | `be_commercial_failed_erp_001` | Failed ERP Implementation | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` |
 | 20 | `be_commercial_logistics_001` | Unpaid Logistics Invoices | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` |
-| 30 | `greenfire_first_72_hours` | The First 72 Hours | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` |
+| 30 | `greenfire_first_72_hours` | The First 72 Hours | `173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438` |
 | 40 | `goldenshell_recall_at_dawn` | Contaminated Egg Supply Chain | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` |
 | 50 | `desert_water_groundwater_claim` | Desert Water | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` |
 

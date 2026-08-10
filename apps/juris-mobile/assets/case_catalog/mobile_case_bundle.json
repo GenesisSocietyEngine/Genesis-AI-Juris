@@ -8802,7 +8802,7 @@
           "id": "greenfire_first_72_hours",
           "title": "GreenFire — The First 72 Hours",
           "summary": "An industrial fire places a chemical-storage company under simultaneous criminal, regulatory, environmental, insurance, and insolvency pressure. Preserve evidence, control communications, protect coverage, manage conflicts, and hand over a defensible crisis position within 72 hours.",
-          "content_version": "0.1.0",
+          "content_version": "0.2.0",
           "author": "GENESIS: AI Juris",
           "tags": [
             "crisis_management",
@@ -9379,6 +9379,9 @@
               }
             ],
             "time_cost_minutes": 180,
+            "completion_deadlines": [
+              "initial_regulatory_response_deadline"
+            ],
             "repeatability": {
               "type": "once"
             }
@@ -9422,6 +9425,9 @@
               }
             ],
             "time_cost_minutes": 180,
+            "completion_deadlines": [
+              "initial_regulatory_response_deadline"
+            ],
             "repeatability": {
               "type": "once"
             }
@@ -9838,6 +9844,19 @@
             "missed_event": "regulatory_response_missed"
           }
         ],
+        "pressure_windows": [
+          {
+            "id": "regulator_document_request_pressure",
+            "source_actor_id": "port_haven_environment_authority",
+            "activation_event_id": "regulator_request_received",
+            "response_deadline_id": "initial_regulatory_response_deadline",
+            "response_action_ids": [
+              "submit_initial_regulatory_response",
+              "release_unreviewed_documents"
+            ],
+            "countermove_event_id": "regulatory_response_missed"
+          }
+        ],
         "async_tasks": [
           {
             "id": "preliminary_fire_assessment",
@@ -10243,7 +10262,7 @@
           }
         ]
       },
-      "scenario_fingerprint": "b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261",
+      "scenario_fingerprint": "173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438",
       "runtime_adapter": "rust_scenario_v1",
       "readiness": {
         "identity": true,
@@ -10293,6 +10312,11 @@
           "metadata": {
             "title": "GreenFire — Первые 72 часа",
             "summary": "Экстренная юридическая работа после промышленного пожара: доказательства, конфликт интересов, страхование, регулятор и защищённая передача дела."
+          },
+          "actors": {
+            "port_haven_environment_authority": {
+              "name": "Экологический орган Порт-Хейвена"
+            }
           },
           "stages": {
             "emergency_intake": {
