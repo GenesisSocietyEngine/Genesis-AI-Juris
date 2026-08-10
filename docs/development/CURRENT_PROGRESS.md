@@ -1,8 +1,21 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: docs/greenfire-pressure-pilot-publication-checkpoint
-base_commit: 929eff11bdd36c0ee64c26a4de68b9fd8d7dcb61
+branch: feat/visual-identity-catalogue-v1
+base_commit: addc2849574e8f08529da0fd9b7a4b52b50484aa
+visual_identity_catalogue_status: local_review_checkpoint
+visual_identity_catalogue_contract: docs/development/VISUAL_IDENTITY_FOUNDATION_V1.md
+visual_identity_catalogue_base_commit: addc2849574e8f08529da0fd9b7a4b52b50484aa
+visual_identity_catalogue_base_tree: 36a25abfe8c0447ddff9522152b9d13c9b0869ee
+visual_identity_catalogue_architecture_commit: 5bc3cb61189cdc9c9c22ae78849c4a91273d942f
+visual_identity_catalogue_typography_tokens_commit: 009365e960b4cdb31e4bbacc20585aaf7dc94371
+visual_identity_catalogue_manifest_commit: 6fa220c8f32774c5e9ccb66127d19d8c6d8ed2b0
+visual_identity_catalogue_primitives_commit: c1426202660648c2c5227079b627fd8df9f1db8b
+visual_identity_catalogue_foundation_goldens_commit: 1dffcc26d95299b4b4a0173e182f2e5697bfc7c6
+visual_identity_catalogue_redesign_commit: e05bc05635fe03a0d6a25e651dd0a9dbba7d9252
+visual_identity_catalogue_acceptance_commit: 45a114a03c512f61667c7082a8f1f54bf3ccfb3c
+visual_identity_catalogue_acceptance_tree: fa3f219b951106a65f88a65ecee97047bd70bdda
+visual_identity_catalogue_publication_boundary: local_only
 greenfire_pressure_pilot_status: product_publication_accepted_docs_checkpoint
 greenfire_pressure_pilot_contract: docs/development/GREENFIRE_PRODUCTION_PRESSURE_PILOT_V1.md
 greenfire_pressure_pilot_architecture_commit: 5500ebe3c93520f0aaaf101765ca3df36eb2f714
@@ -81,6 +94,339 @@ last_updated: 2026-08-10
 ---
 
 # Current Progress
+
+## Visual Identity Foundation v1 and Cinematic Catalogue local checkpoint - 2026-08-10
+
+### Status, base, and local boundary
+
+Visual Identity Foundation v1 and the Cinematic Catalogue v1 are complete as
+one local-only presentation checkpoint on
+`feat/visual-identity-catalogue-v1`. The exact `VISUAL_BASE` and merge base are
+`addc2849574e8f08529da0fd9b7a4b52b50484aa`, with tree
+`36a25abfe8c0447ddff9522152b9d13c9b0869ee`. This is the accepted final
+GreenFire publication merge, not the older Retention-era observed SHA.
+
+The reviewed implementation and acceptance head is
+`45a114a03c512f61667c7082a8f1f54bf3ccfb3c`, with tree
+`fa3f219b951106a65f88a65ecee97047bd70bdda`. Through that head the exact
+scope is 62 files, 8,189 additions, and 602 deletions. The visual branch has
+not been pushed; no remote branch, commit, or PR exists for it. No merge,
+release, tag, version bump, branch cleanup, protected-ref change, or workflow
+change occurred.
+
+This document is the eighth, docs-only checkpoint commit. Its content-addressed
+SHA cannot truthfully be embedded in itself and is reported in the final local
+handoff after commit creation.
+
+### Ordered implementation history and exact scope
+
+The seven implementation and acceptance commits are linear, contain no merge,
+and preserve the required semantic order:
+
+1. `5bc3cb61189cdc9c9c22ae78849c4a91273d942f` - visual architecture
+   contract;
+2. `009365e960b4cdb31e4bbacc20585aaf7dc94371` - licensed typography and
+   typed design tokens;
+3. `6fa220c8f32774c5e9ccb66127d19d8c6d8ed2b0` - strict presentation-only
+   visual manifest;
+4. `c1426202660648c2c5227079b627fd8df9f1db8b` - deterministic art, motion,
+   contrast, focus, semantics, and target primitives;
+5. `1dffcc26d95299b4b4a0173e182f2e5697bfc7c6` - pinned foundation golden
+   infrastructure;
+6. `e05bc05635fe03a0d6a25e651dd0a9dbba7d9252` - cinematic catalogue
+   production consumer;
+7. `45a114a03c512f61667c7082a8f1f54bf3ccfb3c` - EN/RU, viewport,
+   semantics, fallback, and golden acceptance.
+
+The diff is confined to the visual architecture document, exact upstream font
+binaries and licences, the Flutter design/presentation layer, one separate
+visual manifest, the catalogue presentation/loading path, test-only Android
+catalogue adaptation, Flutter tests, twelve golden PNGs, and their guarded
+verification tools. Rust, content, authoritative bundle generation, native
+production code, workflows, release files, and deployment files are unchanged.
+
+### Typography, licensing, and semantic design system
+
+Four unmodified upstream font binaries are bundled locally; there is no runtime
+font fetch and no `google_fonts` dependency:
+
+| Alias / weight | Upstream | Bytes | SHA-256 |
+|---|---|---:|---|
+| `JurisLiterata` 600 | Literata 3.103, commit `0c2761b727a1b3a7cffd313c37f0f5163dfc7a63` | 329,068 | `ee8f9413ebc974e1c1cfc76f6bdb9d08ddaadc66eeddd7320a65f8c581284d6d` |
+| `JurisPlexSans` 400 | IBM Plex Sans 1.1.0, commit `1da12f02587b630c07e92692d21492d722f53614` | 200,500 | `975dcda37d80f038dcd143c22e33ca2d97a0cc5a929aace1c749153b0fe1afa5` |
+| `JurisPlexSans` 600 | IBM Plex Sans 1.1.0, commit `1da12f02587b630c07e92692d21492d722f53614` | 202,632 | `a20caf8286023a6a7a85e40b1d2a4ae9fc3e3b1f9eda8f4c542dd4986af67bb1` |
+| `JurisPlexMono` 500 | IBM Plex Mono 2.5.0, commit `2f9ba1b25957d958db71a849e85d72e3ecfb845a` | 174,008 | `98fbd727aae340b236955879dabed4d991aac9e8e90b3b2a67ce4a59221cc97c` |
+
+All four fonts passed an exact 173-character printable Latin, Cyrillic, and
+typographic `cmap` audit, including `Ё`, `ё`, and `№`, and rendered
+representative EN/RU text in Flutter. Both projects use SIL Open Font License
+1.1. The retained exact licence hashes are Literata
+`8742963604cd89dc81437811a850018fc03b2bfad686d7422c8235967c87614e`
+and IBM Plex
+`7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da`.
+
+`JurisTheme` remains the single Material 3 theme. Typed theme extensions own
+brand/surface roles, high-contrast roles, eight semantic type roles, spacing,
+radii, borders, scrims, motion, and 48-logical-pixel targets. The existing
+gameplay screens inherit only the global body hierarchy; their information
+architecture and authority flow were not redesigned.
+
+### Presentation-only visual manifest and deterministic primitives
+
+`assets/visual_identity/case_visual_manifest.v1.json` is 1,611 bytes with
+SHA-256
+`baf6466a5867cc87adc11fd593e7dd3ab73eb6726a7f7c2a3df4730e40f8e4af`.
+It is independent of the authoritative case bundle and is never fingerprinted,
+saved, replayed, or parsed by Rust. Schema v1 uses exact allow-listed keys,
+opaque `#RRGGBB` roles, a finite motif enum, and seeds bounded to 0-65,535;
+unknown keys, versions, motifs, colours, duplicate IDs, and gameplay or
+localization fields are rejected.
+
+| Identity | Motif | Seed |
+|---|---|---:|
+| safe default | `institutional_grid` | 14,248 |
+| `be_commercial_failed_erp_001` | `systems_grid` | 19,996 |
+| `be_commercial_logistics_001` | `freight_routes` | 40,872 |
+| `greenfire_first_72_hours` | `industrial_haze` | 38,495 |
+| `nl_food_safety_goldenshell_001` | `supply_chain` | 11,766 |
+| `us_environmental_desert_water_001` | `aquifer_contours` | 7,176 |
+
+The repository caches one load future. Missing, corrupt, or future-schema
+assets and missing/future case IDs diagnose in debug/test and resolve to the
+immutable safe default without blocking the library or changing case data.
+Generic painters receive only motif, four resolved colours, and bounded seed;
+they contain no case-ID, locale, clock, random, device, or gameplay branch.
+Equal typed inputs produce equal paint operations, and repaint decisions compare
+the complete immutable specification.
+
+`CaseHeroArt`, `DossierFrame`, `CaseIndexMark`, `JurisdictionStamp`,
+`CinematicScrim`, and `CaseTreatmentScope` are reusable presentation
+primitives. Decorative art is excluded from semantics. Either
+`disableAnimations` or `accessibleNavigation` collapses all motion to zero;
+normal motion uses the centralized 120/220/340 ms tokens. Contrast, high
+contrast, focus visibility, and minimum target size are asserted against the
+actual theme pairs.
+
+### Cinematic catalogue behaviour and accessibility
+
+The catalogue now presents one dominant selected case and a separate stable
+case index. Compact layouts use a horizontal index; widths at or above the
+exact 700-pixel breakpoint use a bounded 248-pixel vertical index and one main
+dossier composition. The first selected ID is identical at 699 and 700 pixels.
+The committed matrix covers 360x800, 412x915, 800x1280, and 1024x768, plus EN
+and RU at 200% text scale.
+
+Selection is stored only as stable `case_id`. Filtering preserves it when
+visible and otherwise selects the first authoritative sorted case. Locale and
+resize preserve it. Focus, hover, arrows, animation, and details do not launch
+a game; Enter/Space selects, and only the existing Start callback launches.
+That callback still receives the exact `MobileCaseDefinition`, locale, and
+`CaseCatalogBundle`, and `CaseRuntimeFactory.create` remains the sole runtime
+route. Tests independently prove that motif, palette, localized copy, and
+case-ID wording cannot infer gameplay availability or replace launch data.
+
+Official Flutter EN/RU Material delegates now follow the selected catalogue
+locale. Language autonyms, selected semantics, contextual Start/Details labels,
+ordered focus, visible focus, 48-pixel targets, high contrast, reduced motion,
+all filters, empty authoring, details, loading, retry, and safe manifest fallback
+are covered. No important action is tooltip-only, decorative art is absent from
+the semantics tree, and 200% text remains scrollable with both actions reachable.
+These are specific automated assertions, not a claim of full WCAG certification.
+
+### Deterministic golden evidence
+
+The canonical pixel profile is Windows x64, Flutter 3.44.8 framework
+`058e0af2c2b57e369d905a03ac9748b0ebf543c6`, engine
+`0cd610717bde95fd88343c64f81c11ba4e5c0010`, Dart 3.12.2, dark theme,
+DPR 1.0, fixed locale/media/view settings, and exact locally loaded fonts.
+
+Foundation baselines:
+
+| PNG | Dimensions | Bytes | SHA-256 |
+|---|---:|---:|---|
+| `accessibility_high_contrast_en_800x600_dpr1_ts100_hc1_rm0_frame110ms.png` | 800x600 | 40,214 | `dca60b0d268ce2fd5fbf55f1ef62ee666028d17f91acd756aef87691a9f1551a` |
+| `accessibility_reduced_motion_en_800x600_dpr1_ts100_hc0_rm1_frame110ms.png` | 800x600 | 37,118 | `3f2d25513fcb860ef5a9b17296ebcf5cb83d7a8d950651dc641636edfff05711` |
+| `accessibility_standard_en_800x600_dpr1_ts100_hc0_rm0_frame110ms.png` | 800x600 | 37,256 | `74731ba84666e827322574ed283a2d1c035d89f938ea553b3df0ab20f78bd80c` |
+| `motifs_en_1024x768_dpr1_ts100_hc0_rm0.png` | 1024x768 | 61,577 | `996265bb8ca615a66e9038ea0b71d391b7c5f647c24ef3ed049c326c222af843` |
+| `typography_controls_en_800x720_dpr1_ts100_hc0_rm0.png` | 800x720 | 45,739 | `3813fdaba62d464b1814d6c74bd47733d54aa4fcc57abd00379c4c484da20064` |
+| `typography_long_ru_800x720_dpr1_ts100_hc0_rm0.png` | 800x720 | 51,285 | `9c2836dff750f7fba3013960d20547803641a2f8c2dc6affed0240c636da7bc2` |
+
+Catalogue baselines:
+
+| PNG | Dimensions | Bytes | SHA-256 |
+|---|---:|---:|---|
+| `catalogue_compact_actions_en_412x915_dpr1_ts200_hc0_rm1.png` | 412x915 | 60,646 | `89a99687a65ceb78643f93e77a7f7b2ce2b8351ce0ce68946aba6569be502114` |
+| `catalogue_compact_first_en_360x800_dpr1_ts100_hc0_rm0.png` | 360x800 | 34,975 | `cb75d86fef42121d9c642cf735476ec4db7b5817ed56f2799c1212f0f5a226c6` |
+| `catalogue_compact_greenfire_en_412x915_dpr1_ts100_hc0_rm0.png` | 412x915 | 53,197 | `5e5ed9924d09693a99fe53a1f2931320337bc117ba19c214ddb8b4f8b3cb23d5` |
+| `catalogue_compact_long_title_ru_360x800_dpr1_ts100_hc0_rm0.png` | 360x800 | 48,474 | `4d40152cd78af1aa31f89e4616cff2823e922a741873d2520404e56eba715d21` |
+| `catalogue_wide_complete_index_en_1024x768_dpr1_ts100_hc0_rm0.png` | 1024x768 | 84,135 | `619b8ad7ce110bf3265afd69a8a994d5af4921f963618b04c8f1a7f45e37e494` |
+| `catalogue_wide_complete_index_ru_800x1280_dpr1_ts100_hc0_rm0.png` | 800x1280 | 116,634 | `d7a170394fd03c1d311ebda41466f334c881c4bcfb1f0cc44d461415a6c6133f` |
+
+Each six-image set was generated in two separate clean Flutter processes and
+was byte-identical by path, size, and SHA-256. Compare-only verification passed
+for both sets on the accepted head. All twelve PNGs were opened at original
+resolution and inspected; no tolerance comparator or blind baseline update was
+used.
+
+### Local compatibility acceptance
+
+The complete accepted gate on
+`45a114a03c512f61667c7082a8f1f54bf3ccfb3c` is:
+
+- Rust 1.78 locked workspace check, Rust formatting, current locked workspace
+  check, and Clippy across all targets with warnings denied: pass;
+- Rust workspace tests: **352/352**; all five production authoring diagnostics
+  return empty diagnostics; the seed-aware Failed ERP parity suite is 10/10,
+  and the authoritative all-five/all-11 fingerprint/outcome/minute/digest
+  invariant is 1/1;
+- mobile bundle exporter: two normal exports are byte-identical to each other
+  and `VISUAL_BASE`, then authoritative `--check` passes;
+- Dart formatting: 83 files, zero changes; Flutter analysis: no issues; full
+  Flutter unit/widget/golden suite: **222/222**;
+- Android 17 / API 37 `sdk_gphone64_x86_64` integration: **12/12**;
+- ordinary fat debug APK: 203,489,653 bytes, SHA-256
+  `c32e78b1c6a4267f16c2fef1b416c9cbb2c5d08beb31074dea6cc4a271fac530`.
+
+The accepted ordinary APK contains exactly one Juris library for each production
+ABI. `llvm-readelf` confirms ELF32 ARM, ELF64 AArch64, and ELF64 x86-64. Each
+library exposes exactly these three names and no fourth:
+
+- `juris_mobile_bridge_abi_version`;
+- `juris_mobile_bridge_execute`;
+- `juris_mobile_bridge_string_free`.
+
+The extracted libraries were audited and then the validated disposable
+extraction directory was removed:
+
+| ABI | Bytes | SHA-256 |
+|---|---:|---|
+| `armeabi-v7a` | 2,452,672 | `e5c5a13cebcf34671378b3a4b397440f03be0fb1c35e50cc12d2552488085b37` |
+| `arm64-v8a` | 4,467,144 | `ff8a31aeafdc2e6e72625549426e46a9194d31eb6e8d26fea27ffffbc1f59889` |
+| `x86_64` | 5,509,472 | `128d373fcf802cc1036df7cb33856fa6b8ac1377e5db8d21352b9e188843c02e` |
+
+The closest available performance gate used the successful x86-64 profile APK,
+43,046,039 bytes with SHA-256
+`d90c6368d1d967c14d84167c914b121f4499bf834632f7b94e5c5ebde615e58c`,
+on the same Pixel emulator. An 8-second settled window produced zero
+SurfaceFlinger frame rows and zero missed-vsync/slow counters, supporting the
+absence of a continuous ticker. A bounded selection-and-scroll sequence
+produced 30 SurfaceFlinger rows, kept the app foreground, and emitted zero
+`Flutter:E` or `AndroidRuntime:E` lines. Android `gfxinfo` did not attribute
+Flutter SurfaceView frames even during interaction, so no FPS or jank-percent
+claim is made.
+
+The accepted ignored review screenshot is
+`apps/juris-mobile/build/visual-review/catalogue-api37-profile-compact-en-1080x1920.png`:
+1080x1920, 145,540 bytes, SHA-256
+`97ce05cb37c244f349a870f4052dcb99d6f6ae45bdb2f719fc0516044970c573`.
+It was visually inspected and is not committed. The emulator also presented a
+`System UI isn't responding` environment dialog during profile startup; it was
+not an app ANR, choosing Wait recovered, and no app error followed. Its separate
+diagnostic screenshot is not accepted as product visual evidence. A tablet
+emulator screenshot was not completed; all display overrides were reset and
+physical 1080x1920 at 420 dpi was reverified. The committed 800x1280 RU and
+1024x768 EN goldens are the accepted tablet evidence.
+
+The pre-visual ordinary APK baseline was 203,489,120 bytes with SHA-256
+`ff1b59a4a4d226cf4b56beed06588add6021630015bceee73f018da9971dfa69`.
+The new ordinary APK drift is expected from locally bundled fonts, manifest,
+and Flutter presentation code; no authoritative content or ABI drift accompanies
+it.
+
+### Authority and protected-state invariants
+
+The entire Rust `crates/` tree, complete `content/` tree including canonical
+traces, workflows, exporter, generated authoritative bundle blob, Android/iOS
+production trees, and authoritative Flutter catalogue model/repository have the
+same Git objects as `VISUAL_BASE`. Bundle v5 remains exactly five current cases
+plus one load-only definition, 684,266 bytes, SHA-256
+`e90f856cbb0f4625f7612a99db2f527ac3b090619019b7a83c21140f78f1984a`.
+
+The five current fingerprints remain:
+
+| Scenario | Version | Fingerprint |
+|---|---|---|
+| Failed ERP | `1.0.0` | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` |
+| Logistics | `1.0.0` | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` |
+| GreenFire current | `0.2.0` | `173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438` |
+| GoldenShell | `0.1.0` | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` |
+| Desert Water | `0.1.0` | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` |
+
+The one load-only definition remains GreenFire `0.1.0/F0` at fingerprint
+`b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261`.
+Historical saves still resolve only through F0; current new games and saves use
+GreenFire `0.2.0/F1`. All 11 canonical contracts remain:
+
+| Scenario / path | Final minute | Outcome | Accepted digest |
+|---|---:|---|---|
+| Failed ERP / settlement | 570 | `settlement_64500` | `fd77a45422e4abd7f141fc7b1db767524ebf48d9674bd25c21354fb7a2b8c029` |
+| Failed ERP / prepared judgment | 8,640 | `judgment_preserved_after_cassation` | `f25604fc0225d7ac5a7e98d192ce3b82114970158a3662aee7575b128430ca0c` |
+| Failed ERP / remittal/open | 10,080 | none | `268f27867fd1f45a417c0e999819165bd79f76a74f3ab2e65ee075e193cbc34a` |
+| Logistics / negotiated | 270 | `negotiated_recovery` | `139239e001417ae563e270128864a512e88c0ff535a498e15b000731b8ca5bfe` |
+| Logistics / judgment | 480 | `judgment_recovery` | `e25e1eeb36249c1b7da0fe7a947f29ed3363ce7dac0357a110951c49bb738ac3` |
+| GreenFire / protected | 4,440 | `protected_crisis_position` | `524078c5a72296b9b6549b2dca88cf2d727d0b28cb7c69012500b320919cdd58` |
+| GreenFire / compromised | 4,590 | `compromised_crisis_position` | `3b9d4a3776d65678a0318730d3d366f9279d318c197300c792b10d89a14f8aec` |
+| GoldenShell / coordinated | 4,545 | `coordinated_claim_position` | `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b` |
+| GoldenShell / fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd4b9a7cbe1b23bdd6d412314e582c13503` |
+| Desert Water / coordinated | 3,180 | `credible_source_and_remedy` | `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d` |
+| Desert Water / compromised | 3,510 | `compromised_claim_closed` | `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce` |
+
+Save schema ID/version, the eight-field envelope, runtime-v1/v2 compatibility,
+replay order, eight generic JSON bridge commands including read-only
+`inspect_save`, C ABI version 1, and the exact three exported names remain
+unchanged. No historical GreenFire or current pressure behavior was touched.
+
+The protected ZIP remains untracked at 47,579 bytes with SHA-256
+`2e5f03f003a7d227cb4ce765e338a8f335d92879862e53bd1c27d65e116de3b6`.
+The corrected Desert Water save remains 12,060 bytes with SHA-256
+`328d76e392230ac47ecac4ecda6c54af83a48155f4b0d414fe07a2fecabfe019`;
+it was checked by path, size, and hash only and was not parsed or loaded.
+
+Live GitHub `main` remains exact protected `VISUAL_BASE`. PR #4 remains open at
+`7aa6927e8ebfd6e205bfd12478ba28d52c40248a`; recovery remains local-only at
+`44e565b22c52a4c3a3e69b2c137353b7771fcf77`; Dossier remains local/remote at
+`62111ddef1623f0211149c70617564f2aa622dd4`; and the stopped GreenFire branch
+remains local-only at `c97e66a7d35ac8e5a60f78e2369a332508a2cca6`. Ruleset
+`19991132` remains active for all branches with no exclusions or bypass and
+only deletion/non-fast-forward protections. Annotated tag object
+`ed4c0544a690a9d117233e6f0ab730c5b207bfca` still targets
+`3c27eb2782a61662d7ceffbd19e5434bce389470`; prerelease
+`v0.6.0-alpha.1` remains the sole release, with zero assets. App version remains
+`0.6.0+13`.
+
+### Documentation-only digest correction
+
+The final invariant test exposed a pre-existing transcription error in seven
+older `CURRENT_PROGRESS.md` rows: GoldenShell fragmented was written with
+`...bd6b9...`. This checkpoint corrects those seven copies to the authoritative
+`...bd4b9...` digest shown above, matching
+`crates/juris-engine/tests/snapshot_visibility.rs` and the already-correct
+cumulative inventory row. This is documentation-only; Rust, content, traces,
+fingerprints, minutes, outcomes, and digests did not change. The separately
+published historical GreenFire contract is outside this local visual diff and
+is left untouched.
+
+### Limitations, exclusions, and next owner decision
+
+Exact pixel goldens are canonical only on the pinned Windows/Flutter profile;
+other hosts run structural tests but make no cross-host pixel claim. Android
+evidence is from one local API 37 emulator, not a physical-device or store
+certification. The tablet states are accepted through committed deterministic
+goldens because the attempted emulator tablet capture did not complete. Hosted
+iOS is explicitly not claimed in this local phase. Contrast, semantics,
+large-text, focus, and reduced-motion assertions are precise but do not claim
+full WCAG certification, and no FPS figure is claimed.
+
+No Rust, scenario, trace, fingerprint, bridge, FFI, persistence, gameplay,
+Pressure UI, Dossier, Training Debrief, or evidence-document redesign occurred.
+No portrait or character art, Living Case Visual Slice, sound, haptics, native
+launcher/store asset work, marketing work, push, PR, merge, release, tag,
+version bump, or branch cleanup occurred.
+
+Stop for owner visual review. The next separately authorized action is either
+targeted correction of this local checkpoint or Visual Identity + Cinematic
+Catalogue Publication & Remote Acceptance. Do not start GreenFire Living Case
+Visual Slice or expand the redesign to other screens under this authorization.
 
 ## GreenFire Production Pressure Pilot v1 product publication checkpoint - 2026-08-10
 
@@ -242,7 +588,7 @@ definition-bound GreenFire digests changed:
 | GreenFire / protected | 4,440 | `protected_crisis_position` | `524078c5a72296b9b6549b2dca88cf2d727d0b28cb7c69012500b320919cdd58` |
 | GreenFire / compromised | 4,590 | `compromised_crisis_position` | `3b9d4a3776d65678a0318730d3d366f9279d318c197300c792b10d89a14f8aec` |
 | GoldenShell / coordinated | 4,545 | `coordinated_claim_position` | `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b` |
-| GoldenShell / fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd6b9a7cbe1b23bdd6d412314e582c13503` |
+| GoldenShell / fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd4b9a7cbe1b23bdd6d412314e582c13503` |
 | Desert Water / coordinated | 3,180 | `credible_source_and_remedy` | `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d` |
 | Desert Water / compromised | 3,510 | `compromised_claim_closed` | `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce` |
 
@@ -477,7 +823,7 @@ All 11 canonical results remain exact:
 | GreenFire / protected | 4,440 | `protected_crisis_position` | `17f58f95551abacb445ce6d886fc059bcbd7a7660c3f089d9509e7a25f01a216` |
 | GreenFire / compromised | 4,590 | `compromised_crisis_position` | `432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec` |
 | GoldenShell / coordinated | 4,545 | `coordinated_claim_position` | `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b` |
-| GoldenShell / fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd6b9a7cbe1b23bdd6d412314e582c13503` |
+| GoldenShell / fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd4b9a7cbe1b23bdd6d412314e582c13503` |
 | Desert Water / coordinated | 3,180 | `credible_source_and_remedy` | `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d` |
 | Desert Water / compromised | 3,510 | `compromised_claim_closed` | `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce` |
 
@@ -696,7 +1042,7 @@ All 11 canonical results remain exact:
 | GreenFire / protected | 4,440 | `protected_crisis_position` | `17f58f95551abacb445ce6d886fc059bcbd7a7660c3f089d9509e7a25f01a216` |
 | GreenFire / compromised | 4,590 | `compromised_crisis_position` | `432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec` |
 | GoldenShell / coordinated | 4,545 | `coordinated_claim_position` | `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b` |
-| GoldenShell / fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd6b9a7cbe1b23bdd6d412314e582c13503` |
+| GoldenShell / fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd4b9a7cbe1b23bdd6d412314e582c13503` |
 | Desert Water / coordinated | 3,180 | `credible_source_and_remedy` | `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d` |
 | Desert Water / compromised | 3,510 | `compromised_claim_closed` | `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce` |
 
@@ -892,7 +1238,7 @@ All 11 canonical results remain exact:
 | GreenFire / protected | 4,440 | `protected_crisis_position` | `17f58f95551abacb445ce6d886fc059bcbd7a7660c3f089d9509e7a25f01a216` |
 | GreenFire / compromised | 4,590 | `compromised_crisis_position` | `432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec` |
 | GoldenShell / coordinated | 4,545 | `coordinated_claim_position` | `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b` |
-| GoldenShell / fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd6b9a7cbe1b23bdd6d412314e582c13503` |
+| GoldenShell / fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd4b9a7cbe1b23bdd6d412314e582c13503` |
 | Desert Water / coordinated | 3,180 | `credible_source_and_remedy` | `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d` |
 | Desert Water / compromised | 3,510 | `compromised_claim_closed` | `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce` |
 
@@ -1328,7 +1674,7 @@ bundle, release metadata, or app version changed.
 | GreenFire | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` | protected | 4,440 | `protected_crisis_position` | `17f58f95551abacb445ce6d886fc059bcbd7a7660c3f089d9509e7a25f01a216` |
 | GreenFire | same | compromised | 4,590 | `compromised_crisis_position` | `432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec` |
 | GoldenShell | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` | coordinated | 4,545 | `coordinated_claim_position` | `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b` |
-| GoldenShell | same | fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd6b9a7cbe1b23bdd6d412314e582c13503` |
+| GoldenShell | same | fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd4b9a7cbe1b23bdd6d412314e582c13503` |
 | Desert Water | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` | coordinated | 3,180 | `credible_source_and_remedy` | `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d` |
 | Desert Water | same | compromised | 3,510 | `compromised_claim_closed` | `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce` |
 
@@ -1502,7 +1848,7 @@ deferred until publication is separately authorized.
 | GreenFire | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` | protected | 4,440 | `protected_crisis_position` | `17f58f95551abacb445ce6d886fc059bcbd7a7660c3f089d9509e7a25f01a216` |
 | GreenFire | same | compromised | 4,590 | `compromised_crisis_position` | `432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec` |
 | GoldenShell | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` | coordinated | 4,545 | `coordinated_claim_position` | `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b` |
-| GoldenShell | same | fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd6b9a7cbe1b23bdd6d412314e582c13503` |
+| GoldenShell | same | fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd4b9a7cbe1b23bdd6d412314e582c13503` |
 | Desert Water | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` | coordinated | 3,180 | `credible_source_and_remedy` | `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d` |
 | Desert Water | same | compromised | 3,510 | `compromised_claim_closed` | `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce` |
 
@@ -1745,7 +2091,7 @@ unchanged:
 | GreenFire | `b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261` | protected | 4,440 | `protected_crisis_position` | `17f58f95551abacb445ce6d886fc059bcbd7a7660c3f089d9509e7a25f01a216` |
 | GreenFire | same | compromised | 4,590 | `compromised_crisis_position` | `432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec` |
 | GoldenShell | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` | coordinated | 4,545 | `coordinated_claim_position` | `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b` |
-| GoldenShell | same | fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd6b9a7cbe1b23bdd6d412314e582c13503` |
+| GoldenShell | same | fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd4b9a7cbe1b23bdd6d412314e582c13503` |
 | Desert Water | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` | coordinated | 3,180 | `credible_source_and_remedy` | `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d` |
 | Desert Water | same | compromised | 3,510 | `compromised_claim_closed` | `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce` |
 

@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   ffi: ^2.2.0
   path_provider: ^2.1.6
 
@@ -24,3 +26,19 @@ flutter:
   assets:
     - assets/branding/genesis_ai_juris_logo.png
     - assets/case_catalog/
+    - assets/visual_identity/
+  fonts:
+    - family: JurisLiterata
+      fonts:
+        - asset: assets/fonts/Literata-SemiBold.ttf
+          weight: 600
+    - family: JurisPlexSans
+      fonts:
+        - asset: assets/fonts/IBMPlexSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSans-SemiBold.ttf
+          weight: 600
+    - family: JurisPlexMono
+      fonts:
+        - asset: assets/fonts/IBMPlexMono-Medium.ttf
+          weight: 500

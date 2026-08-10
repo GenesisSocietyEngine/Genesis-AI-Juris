@@ -3,5 +3,7 @@
 *.jpg binary
 *.jpeg binary
 *.webp binary
+*.ttf binary
 *.zip binary
 *.gz binary
+apps/juris-mobile/assets/fonts/licenses/*.txt binary
