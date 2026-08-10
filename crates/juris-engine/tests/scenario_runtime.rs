@@ -225,6 +225,8 @@ fn terminal_boundary_stops_a_larger_foreground_advance() {
     let snapshot = session.advance_time(1_000).unwrap();
 
     assert!(snapshot.terminal);
+    assert!(snapshot.pressure_and_countermove.is_none());
+    assert!(snapshot.available_actions.is_empty());
     assert_eq!(snapshot.clock_minutes, 120);
     assert_eq!(
         snapshot.outcome.as_ref().map(|outcome| outcome.id.as_str()),
@@ -506,6 +508,10 @@ fn greenfire_protected_path_runs_through_the_authoritative_engine() {
     assert!(!session
         .diagnostic_fired_event_ids()
         .contains("expert_assessment_expired"));
+    assert_eq!(
+        session.advance_time(1),
+        Err(ScenarioRuntimeError::ScenarioResolved)
+    );
 }
 
 #[test]
@@ -530,6 +536,13 @@ fn greenfire_compromised_path_expires_unreviewed_expert_work() {
     assert_eq!(
         result.outcome.as_ref().map(|item| item.id.as_str()),
         Some("compromised_crisis_position")
+    );
+    assert!(result.terminal);
+    assert!(result.pressure_and_countermove.is_none());
+    assert!(result.available_actions.is_empty());
+    assert_eq!(
+        session.advance_time(1),
+        Err(ScenarioRuntimeError::ScenarioResolved)
     );
 }
 

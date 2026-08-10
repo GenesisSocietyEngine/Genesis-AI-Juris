@@ -421,6 +421,25 @@ fn assert_player_projection(
         }
     }
 
+    let projected_actor_ids = snapshot
+        .pressure_and_countermove
+        .as_ref()
+        .into_iter()
+        .flat_map(|projection| &projection.active_pressures)
+        .map(|pressure| {
+            let authored = definition
+                .pressure_windows
+                .iter()
+                .find(|window| window.id.as_str() == pressure.pressure_id.as_str())
+                .expect("every projected pressure must be definition-authorized");
+            assert_eq!(
+                authored.source_actor_id.as_str(),
+                pressure.source_actor_id.as_str()
+            );
+            pressure.source_actor_id.as_str()
+        })
+        .collect::<BTreeSet<_>>();
+
     for hidden_id in definition
         .facts
         .iter()
@@ -447,7 +466,13 @@ fn assert_player_projection(
                 .map(|item| item.id.as_str())
                 .filter(|id| !expected_inbox_ids.contains(id)),
         )
-        .chain(definition.actors.iter().map(|actor| actor.id.as_str()))
+        .chain(
+            definition
+                .actors
+                .iter()
+                .map(|actor| actor.id.as_str())
+                .filter(|id| !projected_actor_ids.contains(id)),
+        )
         .chain(definition.async_tasks.iter().map(|task| task.id.as_str()))
     {
         assert!(
@@ -714,20 +739,20 @@ fn all_five_production_scenarios_keep_visibility_and_canonical_invariants() {
             definition: GREENFIRE,
             seed: 20_260_729,
             commands: GREENFIRE_PROTECTED,
-            fingerprint: "b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261",
+            fingerprint: "173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438",
             outcome: Some("protected_crisis_position"),
             final_minutes: 4_440,
-            digest: "17f58f95551abacb445ce6d886fc059bcbd7a7660c3f089d9509e7a25f01a216",
+            digest: "524078c5a72296b9b6549b2dca88cf2d727d0b28cb7c69012500b320919cdd58",
         },
         CanonicalCase {
             name: "GreenFire compromised",
             definition: GREENFIRE,
             seed: 20_260_729,
             commands: GREENFIRE_COMPROMISED,
-            fingerprint: "b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261",
+            fingerprint: "173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438",
             outcome: Some("compromised_crisis_position"),
             final_minutes: 4_590,
-            digest: "432a3ca4688f2d452a96326872e2058d9a1b2109c4b5f3be24b6b9666cc428ec",
+            digest: "3b9d4a3776d65678a0318730d3d366f9279d318c197300c792b10d89a14f8aec",
         },
         CanonicalCase {
             name: "GoldenShell coordinated",

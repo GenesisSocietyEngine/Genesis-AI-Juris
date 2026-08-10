@@ -672,7 +672,7 @@ fn existing_production_fingerprints_remain_byte_exact() {
         ),
         (
             include_str!("../../../content/cases/greenfire_first_72_hours.scenario.json"),
-            "b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261",
+            "173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438",
         ),
         (
             include_str!("../../../content/cases/goldenshell_recall_at_dawn.scenario.json"),
