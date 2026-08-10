@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "default_treatment": {
+    "motif": "institutional_grid",
+    "palette": {
+      "background": "#07111F",
+      "surface": "#0E1B2B",
+      "accent": "#C7A35B",
+      "signal": "#57B7D9"
+    },
+    "art_seed": 14248
+  },
+  "case_treatments": [
+    {
+      "case_id": "be_commercial_failed_erp_001",
+      "motif": "systems_grid",
+      "palette": {
+        "background": "#07131F",
+        "surface": "#102639",
+        "accent": "#57B7D9",
+        "signal": "#D6A84F"
+      },
+      "art_seed": 19996
+    },
+    {
+      "case_id": "be_commercial_logistics_001",
+      "motif": "freight_routes",
+      "palette": {
+        "background": "#07161B",
+        "surface": "#0E2A30",
+        "accent": "#3FA7A1",
+        "signal": "#C7A35B"
+      },
+      "art_seed": 40872
+    },
+    {
+      "case_id": "greenfire_first_72_hours",
+      "motif": "industrial_haze",
+      "palette": {
+        "background": "#0A1714",
+        "surface": "#172A22",
+        "accent": "#7A9F55",
+        "signal": "#D8763E"
+      },
+      "art_seed": 38495
+    },
+    {
+      "case_id": "nl_food_safety_goldenshell_001",
+      "motif": "supply_chain",
+      "palette": {
+        "background": "#17140B",
+        "surface": "#2A2412",
+        "accent": "#C69A43",
+        "signal": "#A94A42"
+      },
+      "art_seed": 11766
+    },
+    {
+      "case_id": "us_environmental_desert_water_001",
+      "motif": "aquifer_contours",
+      "palette": {
+        "background": "#071820",
+        "surface": "#102C34",
+        "accent": "#48B6C6",
+        "signal": "#D1A15D"
+      },
+      "art_seed": 7176
+    }
+  ]
+}

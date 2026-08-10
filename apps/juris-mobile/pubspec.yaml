@@ -24,6 +24,7 @@ flutter:
   assets:
     - assets/branding/genesis_ai_juris_logo.png
     - assets/case_catalog/
+    - assets/visual_identity/
   fonts:
     - family: JurisLiterata
       fonts:
