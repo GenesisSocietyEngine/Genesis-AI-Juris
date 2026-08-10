@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../data/case_catalog_repository.dart';
 import '../data/case_runtime_factory.dart';
@@ -7,6 +8,7 @@ import '../data/game_save_store.dart';
 import '../data/scenario_bridge_client.dart';
 import '../models/case_catalog.dart';
 import '../screens/case_catalog_screen.dart';
+import '../visual_identity/case_visual_manifest_repository.dart';
 import 'app_theme.dart';
 import 'home_shell.dart';
 
@@ -21,11 +23,13 @@ class JurisApp extends StatefulWidget {
     required this.repository,
     super.key,
   })  : catalogRepository = null,
+        visualManifestRepository = null,
         scenarioBridgeClient = null,
         gameSaveStore = null;
 
   const JurisApp.catalog({
     this.catalogRepository = const CaseCatalogRepository(),
+    this.visualManifestRepository,
     this.scenarioBridgeClient,
     this.gameSaveStore,
     super.key,
@@ -33,6 +37,7 @@ class JurisApp extends StatefulWidget {
 
   final GameRuntimeRepository? repository;
   final CaseCatalogRepository? catalogRepository;
+  final CaseVisualManifestRepository? visualManifestRepository;
   final ScenarioBridgeClient? scenarioBridgeClient;
   final GameSaveStore? gameSaveStore;
 
@@ -42,6 +47,7 @@ class JurisApp extends StatefulWidget {
 
 class _JurisAppState extends State<JurisApp> {
   GameRuntimeRepository? _activeRepository;
+  CaseVisualManifestRepository? _visualManifestRepository;
   String? _activeCaseId;
   String _activeLocale = 'en';
 
@@ -51,6 +57,23 @@ class _JurisAppState extends State<JurisApp> {
   void initState() {
     super.initState();
     _activeRepository = widget.repository;
+    if (_usesCatalog) {
+      _visualManifestRepository =
+          widget.visualManifestRepository ?? CaseVisualManifestRepository();
+    }
+  }
+
+  @override
+  void didUpdateWidget(JurisApp oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final bool previouslyUsedCatalog = oldWidget.repository == null;
+    if (!_usesCatalog) {
+      _visualManifestRepository = null;
+    } else if (!previouslyUsedCatalog ||
+        oldWidget.visualManifestRepository != widget.visualManifestRepository) {
+      _visualManifestRepository =
+          widget.visualManifestRepository ?? CaseVisualManifestRepository();
+    }
   }
 
   @override
@@ -67,6 +90,12 @@ class _JurisAppState extends State<JurisApp> {
       debugShowCheckedModeBanner: false,
       title: 'GENESIS: AI Juris',
       theme: JurisTheme.dark(),
+      locale: Locale(_activeLocale),
+      supportedLocales: const <Locale>[
+        Locale('en'),
+        Locale('ru'),
+      ],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       home: _buildHome(),
     );
   }
@@ -84,8 +113,18 @@ class _JurisAppState extends State<JurisApp> {
 
     return CaseCatalogLoaderScreen(
       repository: widget.catalogRepository!,
+      visualManifestRepository: _visualManifestRepository!,
+      locale: _activeLocale,
+      onLocaleChanged: _setCatalogLocale,
       onStartCase: _startCase,
     );
+  }
+
+  void _setCatalogLocale(String locale) {
+    if (locale == _activeLocale) {
+      return;
+    }
+    setState(() => _activeLocale = locale);
   }
 
   void _startCase(

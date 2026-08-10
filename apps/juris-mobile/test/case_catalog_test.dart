@@ -8,15 +8,20 @@ import 'package:juris_mobile/data/case_catalog_repository.dart';
 import 'package:juris_mobile/data/case_runtime_factory.dart';
 import 'package:juris_mobile/data/scenario_bridge_client.dart';
 import 'package:juris_mobile/models/case_catalog.dart';
+import 'package:juris_mobile/visual_identity/case_visual_manifest_repository.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late String generatedBundle;
+  late String generatedManifest;
 
   setUpAll(() async {
     generatedBundle = await rootBundle.loadString(
       'assets/case_catalog/mobile_case_bundle.json',
+    );
+    generatedManifest = await rootBundle.loadString(
+      'assets/visual_identity/case_visual_manifest.v1.json',
     );
   });
 
@@ -26,10 +31,20 @@ void main() {
         catalogRepository: CaseCatalogRepository(
           assetLoader: (_) async => generatedBundle,
         ),
+        visualManifestRepository: CaseVisualManifestRepository(
+          assetLoader: (_) async => generatedManifest,
+        ),
         scenarioBridgeClient: _CatalogScenarioBridgeClient(),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(
+      find.byKey(const ValueKey<String>('selected-case-panel')),
+      findsOneWidget,
+    );
+    expect(find.byType(CircularProgressIndicator), findsNothing);
   }
 
   test('generated mobile bundle contains multiple stable case IDs', () async {
@@ -387,64 +402,49 @@ void main() {
   ) async {
     await pumpCatalog(tester);
 
-    expect(
-      find.text('Asteron Systems NV v. Northbridge Consulting BV'),
-      findsOneWidget,
-    );
-    expect(find.text('Playable demo'), findsWidgets);
-
-    await tester.drag(
-      find.byKey(const PageStorageKey<String>('case-catalog')),
-      const Offset(0, -550),
-    );
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text('Velmont Logistics SA v. Orbis Retail Belgium NV'),
-      findsOneWidget,
-    );
-    expect(find.text('Playable demo'), findsWidgets);
-
-    await tester.drag(
-      find.byKey(const PageStorageKey<String>('case-catalog')),
-      const Offset(0, -550),
-    );
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text(
+    const List<(String, String, String)> expectedCases =
+        <(String, String, String)>[
+      (
+        'be_commercial_failed_erp_001',
+        'Asteron Systems NV v. Northbridge Consulting BV',
+        'Failed ERP Implementation',
+      ),
+      (
+        'be_commercial_logistics_001',
+        'Velmont Logistics SA v. Orbis Retail Belgium NV',
+        'Unpaid Logistics Invoices',
+      ),
+      (
+        'greenfire_first_72_hours',
         'Port Haven Environmental Authority v. GreenFire Industrial Solutions B.V.',
+        'The First 72 Hours',
       ),
-      findsOneWidget,
-    );
-
-    await tester.drag(
-      find.byKey(const PageStorageKey<String>('case-catalog')),
-      const Offset(0, -550),
-    );
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text(
+      (
+        'nl_food_safety_goldenshell_001',
         'GoldenShell Producers Cooperative U.A. v. MiteGuard Services V.O.F.',
+        'Contaminated Egg Supply Chain',
       ),
-      findsOneWidget,
-    );
-    expect(find.text('Contaminated Egg Supply Chain'), findsOneWidget);
-
-    await tester.drag(
-      find.byKey(const PageStorageKey<String>('case-catalog')),
-      const Offset(0, -550),
-    );
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text(
+      (
+        'us_environmental_desert_water_001',
         'Sundial Mesa Residents Association v. Caldera Compression & Cooling Inc.',
+        'Desert Water',
       ),
-      findsOneWidget,
-    );
-    expect(find.text('Desert Water'), findsOneWidget);
+    ];
+    for (final (String caseId, String caption, String topic) in expectedCases) {
+      await _selectCatalogCase(tester, caseId);
+      final Finder panel = find.byKey(
+        const ValueKey<String>('selected-case-panel'),
+      );
+      expect(
+        find.descendant(of: panel, matching: find.text(caption)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: panel, matching: find.text(topic)),
+        findsOneWidget,
+      );
+      expect(find.text('Playable demo'), findsWidgets);
+    }
   });
 
   testWidgets(
@@ -455,33 +455,49 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.language));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('RU'));
+    await tester.tap(
+      find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is PopupMenuItem<String> && widget.value == 'ru',
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Библиотека дел'), findsWidgets);
-    expect(find.text('Неудачное внедрение ERP'), findsOneWidget);
+    final Finder selectedPanel = find.byKey(
+      const ValueKey<String>('selected-case-panel'),
+    );
+    expect(
+      find.descendant(
+        of: selectedPanel,
+        matching: find.text('Неудачное внедрение ERP'),
+      ),
+      findsOneWidget,
+    );
     expect(
       find.text('Asteron Systems NV v. Northbridge Consulting BV'),
       findsOneWidget,
     );
 
-    for (int index = 0; index < 3; index += 1) {
-      await tester.drag(
-        find.byKey(const PageStorageKey<String>('case-catalog')),
-        const Offset(0, -550),
-      );
-      await tester.pumpAndSettle();
-    }
+    await _selectCatalogCase(tester, 'nl_food_safety_goldenshell_001');
 
-    expect(find.text('Загрязнение цепочки поставок яиц'), findsOneWidget);
-
-    await tester.drag(
-      find.byKey(const PageStorageKey<String>('case-catalog')),
-      const Offset(0, -550),
+    expect(
+      find.descendant(
+        of: selectedPanel,
+        matching: find.text('Загрязнение цепочки поставок яиц'),
+      ),
+      findsOneWidget,
     );
-    await tester.pumpAndSettle();
 
-    expect(find.text('Вода пустыни'), findsOneWidget);
+    await _selectCatalogCase(tester, 'us_environmental_desert_water_001');
+
+    expect(
+      find.descendant(
+        of: selectedPanel,
+        matching: find.text('Вода пустыни'),
+      ),
+      findsOneWidget,
+    );
     expect(
       find.text(
         'Sundial Mesa Residents Association v. Caldera Compression & Cooling Inc.',
@@ -495,10 +511,12 @@ void main() {
   ) async {
     await pumpCatalog(tester);
 
-    final Finder startButtons = find.widgetWithText(FilledButton, 'Start case');
-    await tester.ensureVisible(startButtons.first);
+    final Finder startButton = find.byKey(
+      const ValueKey<String>('start-case-action'),
+    );
+    await tester.ensureVisible(startButton);
     await tester.pumpAndSettle();
-    await tester.tap(startButtons.first);
+    await tester.tap(startButton);
     await tester.pumpAndSettle();
 
     expect(
@@ -506,9 +524,14 @@ void main() {
     expect(find.byTooltip('Back to case library'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Back to case library'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('Case Library'), findsWidgets);
+    expect(
+      find.byKey(const ValueKey<String>('selected-case-panel')),
+      findsOneWidget,
+    );
     expect(
       find.text('Asteron Systems NV v. Northbridge Consulting BV'),
       findsOneWidget,
@@ -523,18 +546,14 @@ void main() {
     await tester.tap(find.text('Playable'));
     await tester.pumpAndSettle();
 
-    await tester.drag(
-      find.byKey(const PageStorageKey<String>('case-catalog')),
-      const Offset(0, -550),
-    );
-    await tester.pumpAndSettle();
+    await _selectCatalogCase(tester, 'be_commercial_logistics_001');
 
     expect(
       find.text('Velmont Logistics SA v. Orbis Retail Belgium NV'),
       findsOneWidget,
     );
     final FilledButton logisticsStart = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Start case').last,
+      find.byKey(const ValueKey<String>('start-case-action')),
     );
     expect(logisticsStart.onPressed, isNotNull);
   });
@@ -610,6 +629,19 @@ void main() {
     expect(bundle.cases.single.scenarioId, 'test_scenario_001');
     expect(bundle.cases.single.scenarioAvailable, isFalse);
   });
+}
+
+Future<void> _selectCatalogCase(
+  WidgetTester tester,
+  String caseId,
+) async {
+  final Finder indexItem = find.byKey(
+    ValueKey<String>('case-index-item-$caseId'),
+  );
+  await tester.ensureVisible(indexItem);
+  await tester.pump();
+  await tester.tap(indexItem);
+  await tester.pumpAndSettle();
 }
 
 final class _CatalogScenarioBridgeClient implements ScenarioBridgeClient {

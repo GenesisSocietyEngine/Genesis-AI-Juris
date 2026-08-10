@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:juris_mobile/app/app_theme.dart';
 import 'package:juris_mobile/app/home_shell.dart';
 import 'package:juris_mobile/data/game_runtime_repository.dart';
 import 'package:juris_mobile/data/game_save_store.dart';
@@ -1545,6 +1546,7 @@ void main() {
       String? selectedLocale;
       await tester.pumpWidget(
         MaterialApp(
+          theme: JurisTheme.dark(),
           home: CaseCatalogScreen(
             bundle: productionBundle,
             onStartCase: (
@@ -1560,29 +1562,24 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final Finder catalog = find.byKey(
-        const PageStorageKey<String>('case-catalog'),
+      final Finder desertIndexItem = find.byKey(
+        const ValueKey<String>(
+          'case-index-item-us_environmental_desert_water_001',
+        ),
       );
-      final Finder catalogScrollable = find.descendant(
-        of: catalog,
-        matching: find.byType(Scrollable),
+      await tester.ensureVisible(desertIndexItem);
+      await tester.pumpAndSettle();
+      await tester.tap(desertIndexItem);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Sundial Mesa Residents Association v. Caldera Compression & Cooling Inc.',
+        ),
+        findsOneWidget,
       );
-      final Finder caption = find.text(
-        'Sundial Mesa Residents Association v. Caldera Compression & Cooling Inc.',
-      );
-      await tester.scrollUntilVisible(
-        caption,
-        550,
-        scrollable: catalogScrollable,
-        maxScrolls: 20,
-      );
-      final Finder desertCard = find.ancestor(
-        of: caption,
-        matching: find.byType(Card),
-      );
-      final Finder start = find.descendant(
-        of: desertCard,
-        matching: find.widgetWithText(FilledButton, 'Start case'),
+      final Finder start = find.byKey(
+        const ValueKey<String>('start-case-action'),
       );
       expect(start, findsOneWidget);
       await tester.ensureVisible(start);

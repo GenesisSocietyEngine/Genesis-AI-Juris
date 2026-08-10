@@ -161,15 +161,16 @@ final class CaseIndexMark extends StatelessWidget {
               horizontal: spacing.md,
               vertical: spacing.sm,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            child: Wrap(
+              spacing: spacing.sm,
+              runSpacing: spacing.xs,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: <Widget>[
                 Text(
                   indexLabel,
                   style: typography.caseIndex.copyWith(color: activeColor),
                 ),
                 if (fileReference case final String reference) ...<Widget>[
-                  SizedBox(width: spacing.sm),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 180),
                     child: Text(
