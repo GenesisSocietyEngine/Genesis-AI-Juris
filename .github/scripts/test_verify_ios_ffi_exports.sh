@@ -161,6 +161,19 @@ case "$FAKE_NM_CASE" in
       echo 'llvm-nm: error: synthetic reader failure' >&2
     fi
     ;;
+  universal_reader_no_symbols_notice_arm64)
+    print_exact
+    if [[ "$architecture" == "arm64" ]]; then
+      echo "$FAKE_NM_ARCHIVE:synthetic.arm64.o: no symbols" >&2
+    fi
+    ;;
+  universal_reader_no_symbols_and_error_x86_64)
+    print_exact
+    if [[ "$architecture" == "x86_64" ]]; then
+      echo "$FAKE_NM_ARCHIVE:synthetic.x86_64.o: no symbols" >&2
+      echo 'llvm-nm: error: synthetic reader failure after notice' >&2
+    fi
+    ;;
   universal_no_symbols_x86_64)
     if [[ "$architecture" == "x86_64" ]]; then
       printf '%s\n' _main unrelated_export
@@ -332,6 +345,14 @@ run_case() {
       report_case_failure "$case_name" \
         "missing or duplicate aggregate PASS" "$stdout_file" "$stderr_file"
     fi
+    if [[ "$case_name" == "universal_reader_no_symbols_notice_arm64" ]] && \
+      ! grep -Fxq \
+        'architecture arm64: accepted 1 llvm-nm no-symbol member notice(s)' \
+        "$stdout_file"; then
+      report_case_failure "$case_name" \
+        "benign no-symbol notice was not acknowledged" \
+        "$stdout_file" "$stderr_file"
+    fi
 
     echo "case $case_name: PASS"
     return
@@ -420,6 +441,10 @@ run_case universal_reader_nonzero_x86_64 fail 'arm64 x86_64' 0 '' 2 \
   'arm64 x86_64' 'x86_64'
 run_case universal_reader_diagnostic_x86_64 fail 'x86_64 arm64' 0 '' 2 \
   'arm64 x86_64' 'x86_64'
+run_case universal_reader_no_symbols_notice_arm64 pass 'x86_64 arm64' 0 '' 2 \
+  'arm64 x86_64' ''
+run_case universal_reader_no_symbols_and_error_x86_64 fail 'arm64 x86_64' 0 '' 2 \
+  'arm64 x86_64' 'x86_64'
 run_case universal_no_symbols_x86_64 fail 'arm64 x86_64' 0 '' 2 \
   'arm64 x86_64' 'x86_64'
 run_case inspector_nonzero fail 'x86_64 arm64' 43 \
@@ -432,7 +457,7 @@ run_case universal_malformed_arm64 fail 'x86_64 arm64' 0 '' 1 'arm64' 'arm64'
 run_case inspector_diagnostic fail 'x86_64' 0 \
   'lipo: error: zero-status synthetic diagnostic' 0 '' ''
 
-echo 'fake verifier matrix: PASS (17/17)'
+echo 'fake verifier matrix: PASS (19/19)'
 
 if [[ "$#" -eq 0 ]]; then
   echo 'real macOS universal fixture matrix: SKIP (non-Darwin fake-only run)'

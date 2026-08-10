@@ -69,6 +69,41 @@ contains_error_diagnostic() {
     "$diagnostics_file"
 }
 
+contains_only_no_symbols_member_notices() {
+  local diagnostics_file="$1"
+  local archive_path="$2"
+
+  awk -v archive_path="$archive_path" '
+    BEGIN {
+      prefix = archive_path ":"
+      suffix = ": no symbols"
+      seen = 0
+    }
+    {
+      seen = 1
+      if (index($0, prefix) != 1) {
+        exit 1
+      }
+
+      remainder = substr($0, length(prefix) + 1)
+      if (length(remainder) <= length(suffix) ||
+          substr(remainder, length(remainder) - length(suffix) + 1) != suffix) {
+        exit 1
+      }
+
+      member = substr(remainder, 1, length(remainder) - length(suffix))
+      if (member == "" || index(member, ":") != 0) {
+        exit 1
+      }
+    }
+    END {
+      if (!seen) {
+        exit 1
+      }
+    }
+  ' "$diagnostics_file"
+}
+
 expected="$temporary_directory/expected.txt"
 architecture_stdout="$temporary_directory/architectures.stdout"
 architecture_diagnostics="$temporary_directory/architectures.stderr"
@@ -211,17 +246,23 @@ for architecture in "${architectures[@]}"; do
   fi
 
   if [[ -s "$diagnostics" ]]; then
-    emit_bounded_diagnostics "$diagnostics"
-    if contains_error_diagnostic "$diagnostics"; then
+    if contains_only_no_symbols_member_notices "$diagnostics" "$archive"; then
+      notice_count="$(wc -l <"$diagnostics" | tr -d '[:space:]')"
       echo \
-        "architecture $architecture: llvm-nm emitted an error diagnostic; export set is untrusted" \
-        >&2
+        "architecture $architecture: accepted $notice_count llvm-nm no-symbol member notice(s)"
     else
-      echo \
-        "architecture $architecture: llvm-nm emitted a diagnostic; export set is untrusted" \
-        >&2
+      emit_bounded_diagnostics "$diagnostics"
+      if contains_error_diagnostic "$diagnostics"; then
+        echo \
+          "architecture $architecture: llvm-nm emitted an error diagnostic; export set is untrusted" \
+          >&2
+      else
+        echo \
+          "architecture $architecture: llvm-nm emitted a diagnostic; export set is untrusted" \
+          >&2
+      fi
+      exit 1
     fi
-    exit 1
   fi
 
   : >"$invalid"
