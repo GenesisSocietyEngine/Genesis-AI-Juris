@@ -1,6 +1,6 @@
 # GreenFire Production Pressure Pilot v1
 
-Status: **architecture resolved — implementation authorized by the owner**
+Status: **local implementation accepted — publication pending**
 
 Resolution date: 2026-08-10
 
@@ -58,6 +58,165 @@ unchanged at version 1 with exactly the existing three exported symbols.
 Implementation is now authorized subject to the exact contract, exclusions,
 local and hosted acceptance gates, and publication requirements in the
 governing instruction set.
+
+## Local implementation checkpoint
+
+The production implementation and its complete local acceptance are now
+finished on the fresh branch based on exact `RETENTION_FINAL_MAIN`. The
+pre-checkpoint implementation HEAD is
+`2334a6cdd3663a8e67fa41983b353e9ef2bc7537`; this document is the sixth and
+final intentional product-branch commit. Publication, hosted iOS acceptance,
+product merge, and the separate one-file `CURRENT_PROGRESS.md` evidence PR
+remain pending.
+
+The implementation history before this checkpoint is linear and preserves the
+historical cherry-pick as a distinct commit:
+
+1. `5500ebe3c93520f0aaaf101765ca3df36eb2f714` — historical architecture
+   checkpoint, cherry-picked with `-x` from
+   `c97e66a7d35ac8e5a60f78e2369a332508a2cca6`;
+2. `dab42bfd0dd2f636c6a1b8d6d915a547a40b02e1` — compatibility resolution;
+3. `e26b88e3fe8885765bee1f99a459105373ddd40f` — current content activation;
+4. `4702c8333e89119342c32282279793ba95a7d0d8` — Rust, bridge, FFI, validator,
+   inventory, persistence, visibility, and canonical coverage;
+5. `2334a6cdd3663a8e67fa41983b353e9ef2bc7537` — Flutter and Android native
+   acceptance coverage.
+
+### Accepted deterministic drift
+
+Current GreenFire is now `0.2.0` with authoritative fingerprint
+`173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438`.
+Its canonical source is 29,969 bytes with SHA-256
+`d6bd5e4d8605fe97673e1f6626d8b7b2bb78d82c396336146a997a891f518876`;
+the current Russian overlay is 10,708 bytes with SHA-256
+`f8ae379a93b5fcdddabded929329209f5f1c6cecd3f5f6ff2d4fc6de4777f120`.
+
+The current definition has exactly one pressure window, and both response
+actions carry exactly
+`completion_deadlines: [initial_regulatory_response_deadline]`. The other
+four production definitions preserve default key omission and their exact
+fingerprints:
+
+| Scenario | Accepted current fingerprint |
+|---|---|
+| Failed ERP | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` |
+| Logistics | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` |
+| GreenFire `0.2.0` | `173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438` |
+| GoldenShell | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` |
+| Desert Water | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` |
+
+The generated bundle v5 contains five current cases and exactly one load-only
+definition. Two normal exports reproduced the committed 684,266-byte file
+byte-for-byte; its SHA-256 is
+`e90f856cbb0f4625f7612a99db2f527ac3b090619019b7a83c21140f78f1984a`,
+and the authoritative exporter `--check` passes.
+
+Archived GreenFire remains the exact immutable `0.1.0/F0` identity. Its
+scenario blob is unchanged at 29,359 bytes, SHA-256
+`a0237b3260d184d114eb79ad3fcf019d9b4cf540012e2fefb7478002162ef82c`,
+fingerprint
+`b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261`.
+Its Russian overlay is unchanged at 10,563 bytes, SHA-256
+`af176bb2610e6602bf3b2d411a90e175f17c17e90391315c0999b50ee5c88cf5`.
+The real pre-pilot runtime-v1 save resolves through that archive, replays,
+resaves as runtime v2 with F0, and reloads identically. Current active saves
+resolve only through F1; unknown identities fail before live-session
+replacement.
+
+All 11 canonical outcome/minute contracts remain exact. Only the two
+definition-bound GreenFire digests changed:
+
+| Scenario / path | Final minute | Outcome | Accepted digest |
+|---|---:|---|---|
+| Failed ERP / settlement | 570 | `settlement_64500` | `fd77a45422e4abd7f141fc7b1db767524ebf48d9674bd25c21354fb7a2b8c029` |
+| Failed ERP / prepared judgment | 8,640 | `judgment_preserved_after_cassation` | `f25604fc0225d7ac5a7e98d192ce3b82114970158a3662aee7575b128430ca0c` |
+| Failed ERP / remittal/open | 10,080 | none | `268f27867fd1f45a417c0e999819165bd79f76a74f3ab2e65ee075e193cbc34a` |
+| Logistics / negotiated | 270 | `negotiated_recovery` | `139239e001417ae563e270128864a512e88c0ff535a498e15b000731b8ca5bfe` |
+| Logistics / judgment | 480 | `judgment_recovery` | `e25e1eeb36249c1b7da0fe7a947f29ed3363ce7dac0357a110951c49bb738ac3` |
+| GreenFire / protected | 4,440 | `protected_crisis_position` | `524078c5a72296b9b6549b2dca88cf2d727d0b28cb7c69012500b320919cdd58` |
+| GreenFire / compromised | 4,590 | `compromised_crisis_position` | `3b9d4a3776d65678a0318730d3d366f9279d318c197300c792b10d89a14f8aec` |
+| GoldenShell / coordinated | 4,545 | `coordinated_claim_position` | `72986eeb4a3a690b775ea86c6ac5c9da02027ef5a0ca03292736b5e805f8c53b` |
+| GoldenShell / fragmented | 4,710 | `fragmented_claim_position` | `846c96ed8ba240bb392daead67e03bd6b9a7cbe1b23bdd6d412314e582c13503` |
+| Desert Water / coordinated | 3,180 | `credible_source_and_remedy` | `432df44aa3f9039ea3970298a0c2dbfe111f0ddfbf76713c75c1cc92261e0e2d` |
+| Desert Water / compromised | 3,510 | `compromised_claim_closed` | `a8ce4971e6898c5e020697733288cae4fc142cdb28f599551c7bfa0405c141ce` |
+
+### Complete local acceptance
+
+All gates ran against committed implementation HEAD
+`2334a6cdd3663a8e67fa41983b353e9ef2bc7537` before this documentation-only
+checkpoint:
+
+| Gate | Result |
+|---|---|
+| Rust 1.78 locked workspace check | pass |
+| Rust format, current workspace check, Clippy `-D warnings` | pass |
+| Full Rust workspace tests | `352/352` pass |
+| Bundle normal export twice and `--check` | pass; byte-identical |
+| Dart format | 57 files, zero changes |
+| Flutter analysis | no issues |
+| Full Flutter tests | `159/159` pass |
+| Android native integration | Android 17 / API 37, `12/12` pass |
+| Ordinary debug APK | pass; 203,489,120 bytes; SHA-256 `ff1b59a4a4d226cf4b56beed06588add6021630015bceee73f018da9971dfa69` |
+| Three-ABI `llvm-nm` audit | pass; exact approved three symbols in `armeabi-v7a`, `arm64-v8a`, and `x86_64` |
+| `git diff --check` and tracked/index audit | pass |
+
+The native lifecycle covers preactivation, the minute-120 projection,
+definition-ordered responses after the controlled channel opens, active F1
+save/load parity, command-free review cancellation, one confirmed controlled
+Dispatch, and a disposable miss at minute 2,160. The generic runtime tests
+also prove both responses, minute 1,979/1,980 exclusivity, rejected-command
+atomicity, large/chunk parity, one-shot miss, terminal omission, and
+post-closure rejection. No GreenFire-specific production code path was added.
+
+The C ABI remains version 1 with exactly
+`juris_mobile_bridge_abi_version`, `juris_mobile_bridge_execute`, and
+`juris_mobile_bridge_string_free`. Save identity, eight-field envelope,
+schema 1, runtime compatibility rules, digest profiles, bridge command
+inventory, app version `0.6.0+13`, tag/release state, and hosted workflows are
+unchanged.
+
+### Local transient record
+
+- The first sandboxed bundle export stalled without product/test output and
+  timed out after 180 seconds. The single permitted elevated retry succeeded;
+  a second normal export and `--check` then proved byte identity.
+- Two wrapper-based Dart formatter invocations stalled on the host. Direct SDK
+  formatting completed; one sandboxed invocation then reported only denied
+  telemetry-session timestamp access after formatting. The elevated final
+  format check completed normally with zero changes.
+- The first focused Flutter run exposed two new-test assertion defects: an EN
+  fallback title did not use production source prose, and an exact semantics
+  finder did not account for merged semantics. Both tests were corrected;
+  focused reruns and the full `159/159` suite pass.
+- An independent review prompted stronger unavailable-action, terminal,
+  raw-omission, and visibility assertions. The first focused compile of the
+  strengthened visibility assertion found a typed-ID/String comparison; it
+  was corrected before the final focused and full Rust passes.
+- The first `llvm-nm` invocation was denied sandbox execution access to the
+  installed NDK. The same already extracted APK libraries were audited once
+  with approved elevated access; no rebuild or byte change occurred.
+
+### Protected state and publication boundary
+
+The sole untracked file remains protected
+`docs/development/CURRENT_PROGRESS.zip`, 47,579 bytes, SHA-256
+`2e5f03f003a7d227cb4ce765e338a8f335d92879862e53bd1c27d65e116de3b6`.
+The corrected Desert Water save was hashed only and remains 12,060 bytes,
+SHA-256
+`328d76e392230ac47ecac4ecda6c54af83a48155f4b0d414fe07a2fecabfe019`.
+It was not parsed, loaded, replayed, migrated, reset, or opened in gameplay.
+
+The historical stopped branch remains exact at
+`c97e66a7d35ac8e5a60f78e2369a332508a2cca6`; recovery and Dossier refs,
+PR #4, ruleset, version, annotated tag, prerelease, and release assets remain
+protected. No release, tag, asset, version bump, branch cleanup, second
+production pressure activation, visual work, Legal Theory work, or later
+roadmap phase occurred.
+
+Hosted Rust, Flutter, and iOS acceptance is not inferred from these local
+results. The next authorized action is publication of the exact reviewed
+feature HEAD through a Draft PR, normal merge commit, post-merge hosted gates,
+and then a separate one-file publication-evidence PR.
 
 ## Historical architecture stop (preserved)
 
@@ -403,7 +562,7 @@ The following were considered and rejected:
 - version, tag, release, asset, PR, ruleset, protected ref, or branch cleanup
   work.
 
-## Stop boundary
+## Historical stop boundary (superseded)
 
 The branch contains documentation only. Production GreenFire, generated
 bundle, APK, persistence fixtures, tests, `CURRENT_PROGRESS.md`, protected
