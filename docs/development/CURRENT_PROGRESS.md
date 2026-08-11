@@ -1,8 +1,18 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: docs/visual-identity-catalogue-v1-publication
-base_commit: 920077c29b8578727ca6cb61b0de3c99c4c6bb5c
+branch: feat/greenfire-living-case-visual-slice-v1
+base_commit: 39b856320ed5dc397562068706c4cea7d703899c
+greenfire_living_case_status: local_acceptance_complete_android_native_feature_capture_pending
+greenfire_living_case_contract: docs/development/GREENFIRE_LIVING_CASE_VISUAL_SLICE_V1.md
+greenfire_living_case_contract_commit: 5c533367475d1bd7d7b34b0653edeeb1cd67bf37
+greenfire_living_case_manifest_commit: 9d8090f8b0fbabf702d85260ff594057a4863355
+greenfire_living_case_workspace_commit: a860638c7be5a6ffdadf7cf4e21157e41191a19e
+greenfire_living_case_pressure_commit: d94b3cfcc09053a8885adb37f173727e35c11001
+greenfire_living_case_dossier_commit: 5147642b18950986e50a1453da76a15e67d59857
+greenfire_living_case_outcome_commit: 82896c66cca11e87a37df45ae04b62a2cf87928b
+greenfire_living_case_visual_acceptance_commit: e2dc5f58e57e98d689fd09c4fb796b976ba24a17
+greenfire_living_case_remote_state: local_only_no_push_no_pr
 ios_per_slice_export_audit_status: merged_and_corrected_main_accepted
 ios_per_slice_export_audit_pr: 30
 ios_per_slice_export_audit_initial_commit: 23c12822a2e6f7e8940663bf2b3a877032ffcc3c
@@ -112,6 +122,121 @@ last_updated: 2026-08-11
 ---
 
 # Current Progress
+
+## GreenFire Living Case Visual Slice v1 local checkpoint - 2026-08-11
+
+### Status, topology, and exact identity
+
+The presentation-only GreenFire Living Case slice is implemented and locally
+accepted on local-only branch `feat/greenfire-living-case-visual-slice-v1`.
+Its exact base and merge base are final published `main` commit
+`39b856320ed5dc397562068706c4cea7d703899c`. The branch has not been pushed, no
+pull request was opened, and no tag, release, version, ruleset, or protected ref
+was changed.
+
+The semantic implementation sequence is:
+
+1. `5c533367475d1bd7d7b34b0653edeeb1cd67bf37` - presentation contract and
+   authority inventory;
+2. `9d8090f8b0fbabf702d85260ff594057a4863355` - strict Living Case visual
+   manifest and fail-safe repository;
+3. `a860638c7be5a6ffdadf7cf4e21157e41191a19e` - case-gated workspace,
+   finite opening, and generic fallback;
+4. `d94b3cfcc09053a8885adb37f173727e35c11001` - strict projection adapter,
+   deadline canvas, and controlled/disclosed-risk response framing;
+5. `5147642b18950986e50a1453da76a15e67d59857` - read-only Dossier and
+   actor-correlated communication treatment;
+6. `82896c66cca11e87a37df45ae04b62a2cf87928b` - exact protected and
+   compromised Outcome Dossiers;
+7. `e2dc5f58e57e98d689fd09c4fb796b976ba24a17` - accessibility, interaction,
+   fallback, and fourteen-golden visual acceptance.
+
+### Implemented presentation boundary
+
+`JurisApp` retains the selected `MobileCaseDefinition` and asynchronously loads
+the optional Living Case manifest. `HomeShell` still owns the same one runtime
+repository. The specialized surface activates only when the selected case and
+manifest both match `greenfire_first_72_hours`; a missing, invalid, unknown, or
+unsupported manifest keeps the existing generic Matter, Dossier, and Training
+Debrief screens.
+
+The view adapter correlates only the exact authored case, Pressure, actor,
+request, deadline, response, and outcome IDs recorded in the contract. It
+filters responses through both Rust-projected availability and the strict
+presentation manifest, preserves projection order, and clamps only the
+displayed deadline arc. It does not infer availability, lateness,
+countermoves, consequences, or outcomes. Regulator identity appears only when
+the configured request is visible and the active Pressure exposes the exact
+configured actor. Historical F0 and unknown projection versions remain
+neutral and do not invent F1 Pressure.
+
+All response selection still opens the existing `ActionPickerSheet`, requires
+the existing explicit confirmation, and sends only the returned stable action
+ID to `GameRuntimeRepository.applyAction`. Dossier remedies return through the
+same route. Dossier, communications, and outcome screens consume only their
+existing player-visible projections. Rust runtime, scenario content,
+localization overlays, saves, bridge, FFI, C ABI, and native production code
+are unchanged.
+
+### Visual and accessibility acceptance
+
+The separate Living Case canonical profile contains exactly fourteen new PNGs,
+`GF-01` through `GF-14`, covering opening, EN/RU Pressure, 200% text,
+high-contrast missed state, Dossier material and selected evidence,
+actor-correlated regulator request, both exact outcomes, compact/wide layouts,
+and historical-F0 fallback. Two clean canonical Windows renders passed 14/14
+and retained an identical fourteen-file SHA-256 set. Representative compact,
+wide, and high-contrast outcome images were visually inspected.
+
+The pre-existing six Foundation and six Catalogue baselines compared 12/12
+without modification. Focused Living Case acceptance passed 29/29 tests,
+including strict manifest failure fallback, immutable maps, actor-correlation,
+projection filtering and ordering, malformed deadline clamps, action
+confirmation/dispatch, generic fallback, EN/RU, semantics, keyboard focus,
+48-pixel targets, 200% text, Dossier selection, and both outcome treatments.
+
+### Full local acceptance
+
+The exact local implementation head `e2dc5f5` passed:
+
+- Dart format check: 97 files checked, zero changes;
+- deterministic mobile case bundle check: PASS and unchanged;
+- `flutter analyze`: no issues;
+- full `flutter test`: 251/251 PASS, including all 26 visual goldens;
+- `cargo test --workspace`: PASS across the complete Rust workspace,
+  including current/retained fingerprints, all-five/all-11 invariants,
+  Pressure, saves, bridge protocol, and exact-three ABI coverage;
+- Android debug APK build with Flutter `3.44.8`: PASS.
+
+### Android evidence boundary still pending
+
+The already-running port-5554 Flutter session was preserved. It was created
+from the earlier publication sources and therefore correctly continued to show
+the older generic GreenFire Matter screen; that screenshot is not claimed as
+Living Case feature evidence. A non-destructive `flutter attach` hot-reload
+attempt did not acquire the session and was stopped without terminating the
+app. A separate headless, read-only port-5556 AVD was then launched to isolate
+installation, but remained offline past the bounded boot checks; only that
+exact temporary process was stopped. The original port-5554 app remained
+connected and untouched.
+
+Consequently, canonical visual acceptance and the APK build are complete, but
+a native Android screenshot of the new Living Case runtime remains the sole
+open acceptance item. Completion requires either permission to replace the
+package in the preserved emulator session or a separately bootable Android
+target. No push or PR should occur before that evidence is captured and this
+checkpoint is updated.
+
+### Preserved invariants
+
+The app version remains `0.6.0+13`; latest published tag/release remains
+`v0.6.0-alpha.1`; the five-case current catalogue, retained GreenFire F0,
+bundle v5, eleven canonical paths, save/load contracts, eight generic bridge
+commands, C ABI version 1, and exact three exports remain unchanged. The
+protected untracked `docs/development/CURRENT_PROGRESS.zip` remains exactly
+47,579 bytes with SHA-256
+`2e5f03f003a7d227cb4ce765e338a8f335d92879862e53bd1c27d65e116de3b6`; it was
+not used as input, modified, staged, committed, or deleted.
 
 ## Visual publication and iOS per-slice correction accepted boundary - 2026-08-11
 
