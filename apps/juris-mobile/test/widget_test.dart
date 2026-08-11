@@ -29,7 +29,7 @@ void main() {
       JurisApp(repository: DemoGameRepository(seed: 20260724)),
     );
 
-    await tester.tap(find.textContaining('Actions ·'));
+    await tester.tap(find.textContaining('Decisions ·'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Run conflict check'));
     await tester.pumpAndSettle();

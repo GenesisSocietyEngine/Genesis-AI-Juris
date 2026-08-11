@@ -9,6 +9,7 @@ import '../living_case/greenfire_living_case_workspace.dart';
 import '../living_case/living_case_visual_manifest.dart';
 import '../models/case_catalog.dart';
 import '../models/game_snapshot.dart';
+import '../presentation/inbox_presentation.dart';
 import '../screens/ai_associate_screen.dart';
 import '../screens/calendar_screen.dart';
 import '../screens/career_screen.dart';
@@ -235,13 +236,18 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       listenable: widget.repository,
       builder: (BuildContext context, Widget? child) {
         final GameSnapshot snapshot = widget.repository.snapshot;
+        final InboxPresentation inboxPresentation =
+            InboxPresentation.from(snapshot.inbox);
         return GameplayLocale(
           locale: widget.locale,
           child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
               final List<_Destination> destinations = _destinationsFor(context);
               final bool useRail = constraints.maxWidth >= 700;
-              final Widget content = _buildContent(snapshot);
+              final Widget content = _buildContent(
+                snapshot,
+                inboxPresentation,
+              );
 
               return Scaffold(
                 appBar: AppBar(
@@ -430,18 +436,22 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                               labelType: NavigationRailLabelType.all,
                               leading: Padding(
                                 padding: const EdgeInsets.only(bottom: 16),
-                                child: _MatterMonogram(
-                                  requiredMessages:
-                                      snapshot.unhandledRequiredMessages,
-                                ),
+                                child: const _MatterMonogram(),
                               ),
                               destinations: destinations
                                   .map(
                                     (_Destination destination) =>
                                         NavigationRailDestination(
-                                      icon: Icon(destination.icon),
-                                      selectedIcon:
-                                          Icon(destination.selectedIcon),
+                                      icon: _navigationIcon(
+                                        destination.icon,
+                                        destination.id,
+                                        inboxPresentation.attentionRequiredCount,
+                                      ),
+                                      selectedIcon: _navigationIcon(
+                                        destination.selectedIcon,
+                                        destination.id,
+                                        inboxPresentation.attentionRequiredCount,
+                                      ),
                                       label: Text(destination.label),
                                     ),
                                   )
@@ -466,12 +476,12 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                                 icon: _navigationIcon(
                                   destination.icon,
                                   destination.id,
-                                  snapshot,
+                                  inboxPresentation.attentionRequiredCount,
                                 ),
                                 selectedIcon: _navigationIcon(
                                   destination.selectedIcon,
                                   destination.id,
-                                  snapshot,
+                                  inboxPresentation.attentionRequiredCount,
                                 ),
                                 label: destination.label,
                               ),
@@ -482,11 +492,19 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                     snapshot.actions.isEmpty || _persistenceInProgress
                         ? null
                         : FloatingActionButton.extended(
+                            key: const ValueKey<String>(
+                              'available-decisions-control',
+                            ),
+                            tooltip: GameplayLocale.text(
+                              context,
+                              'Available decisions: ${snapshot.actions.length}',
+                              'Доступно решений: ${snapshot.actions.length}',
+                            ),
                             onPressed: () => _showActions(snapshot),
                             icon: const Icon(
                                 Icons.playlist_add_check_circle_outlined),
                             label: Text(
-                              '${GameplayLocale.text(context, 'Actions', 'Действия')}'
+                              '${GameplayLocale.text(context, 'Decisions', 'Решения')}'
                               ' · ${snapshot.actions.length}',
                             ),
                           ),
@@ -498,13 +516,17 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildContent(GameSnapshot snapshot) {
+  Widget _buildContent(
+    GameSnapshot snapshot,
+    InboxPresentation inboxPresentation,
+  ) {
     // Build only the visible destination. The screens use PageStorage keys for
     // scroll restoration, while avoiding eager decoding of the branding image
     // and other off-screen content on memory-constrained phones.
     return switch (_selectedIndex) {
       0 => InboxScreen(
           snapshot: snapshot,
+          presentation: inboxPresentation,
           onMessageTap: _showInboxMessage,
           onCaseReportTap: () => _showCaseReport(snapshot),
         ),
@@ -569,13 +591,13 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   Widget _navigationIcon(
     IconData icon,
     String destinationId,
-    GameSnapshot snapshot,
+    int attentionRequiredCount,
   ) {
-    if (destinationId != 'inbox' || snapshot.unhandledRequiredMessages == 0) {
+    if (destinationId != 'inbox' || attentionRequiredCount == 0) {
       return Icon(icon);
     }
     return Badge(
-      label: Text('${snapshot.unhandledRequiredMessages}'),
+      label: Text('$attentionRequiredCount'),
       child: Icon(icon),
     );
   }
@@ -1097,20 +1119,14 @@ class _Destination {
 }
 
 class _MatterMonogram extends StatelessWidget {
-  const _MatterMonogram({required this.requiredMessages});
-
-  final int requiredMessages;
+  const _MatterMonogram();
 
   @override
   Widget build(BuildContext context) {
-    return Badge(
-      isLabelVisible: requiredMessages > 0,
-      label: Text('$requiredMessages'),
-      child: CircleAvatar(
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        child: const Text('AJ'),
-      ),
+    return CircleAvatar(
+      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+      foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+      child: const Text('AJ'),
     );
   }
 }

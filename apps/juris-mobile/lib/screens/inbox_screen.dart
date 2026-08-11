@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app/gameplay_locale.dart';
 import '../models/game_snapshot.dart';
+import '../presentation/inbox_presentation.dart';
 import '../widgets/section_card.dart';
 import '../widgets/status_badge.dart';
 
@@ -15,33 +16,19 @@ class InboxScreen extends StatelessWidget {
     required this.snapshot,
     required this.onMessageTap,
     required this.onCaseReportTap,
+    this.presentation,
     super.key,
   });
 
   final GameSnapshot snapshot;
   final ValueChanged<InboxItemView> onMessageTap;
   final VoidCallback onCaseReportTap;
+  final InboxPresentation? presentation;
 
   @override
   Widget build(BuildContext context) {
-    final List<MapEntry<int, InboxItemView>> ordered =
-        snapshot.inbox.asMap().entries.toList(growable: false)
-          ..sort(
-            (
-              MapEntry<int, InboxItemView> left,
-              MapEntry<int, InboxItemView> right,
-            ) {
-              final int momentComparison = _messageMoment(
-                right.value.receivedAt,
-              ).compareTo(_messageMoment(left.value.receivedAt));
-              if (momentComparison != 0) {
-                return momentComparison;
-              }
-
-              // Later insertions win when two world events share a timestamp.
-              return right.key.compareTo(left.key);
-            },
-          );
+    final InboxPresentation inbox =
+        presentation ?? InboxPresentation.from(snapshot.inbox);
 
     return CustomScrollView(
       key: const PageStorageKey<String>('inbox-scroll'),
@@ -50,7 +37,10 @@ class InboxScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
           sliver: SliverList.list(
             children: <Widget>[
-              _InboxSummary(snapshot: snapshot),
+              _InboxSummary(
+                snapshot: snapshot,
+                attentionRequiredCount: inbox.attentionRequiredCount,
+              ),
               if (snapshot.outcomeSummary != null) ...<Widget>[
                 const SizedBox(height: 16),
                 _CaseClosedCard(
@@ -60,7 +50,7 @@ class InboxScreen extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 16),
-              if (ordered.isEmpty)
+              if (inbox.displayedEntries.isEmpty)
                 SectionCard(
                   child: Text(
                     GameplayLocale.text(
@@ -71,12 +61,12 @@ class InboxScreen extends StatelessWidget {
                   ),
                 )
               else
-                ...ordered.map(
-                  (MapEntry<int, InboxItemView> entry) => Padding(
+                ...inbox.displayedEntries.map(
+                  (DisplayedInboxEntry entry) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: _InboxMessageCard(
-                      item: entry.value,
-                      onTap: () => onMessageTap(entry.value),
+                      entry: entry,
+                      onTap: () => onMessageTap(entry.item),
                     ),
                   ),
                 ),
@@ -87,25 +77,16 @@ class InboxScreen extends StatelessWidget {
     );
   }
 
-  int _messageMoment(String label) {
-    final RegExpMatch? match = RegExp(
-      r'^(?:Day|День)\s+(\d+)\s+·\s+(\d{1,2}):(\d{2})$',
-    ).firstMatch(label);
-    if (match == null) {
-      return 0;
-    }
-
-    final int day = int.tryParse(match.group(1) ?? '') ?? 0;
-    final int hour = int.tryParse(match.group(2) ?? '') ?? 0;
-    final int minute = int.tryParse(match.group(3) ?? '') ?? 0;
-    return (day * 24 * 60) + (hour * 60) + minute;
-  }
 }
 
 class _InboxSummary extends StatelessWidget {
-  const _InboxSummary({required this.snapshot});
+  const _InboxSummary({
+    required this.snapshot,
+    required this.attentionRequiredCount,
+  });
 
   final GameSnapshot snapshot;
+  final int attentionRequiredCount;
 
   @override
   Widget build(BuildContext context) {
@@ -121,10 +102,17 @@ class _InboxSummary extends StatelessWidget {
         child: Row(
           children: <Widget>[
             CircleAvatar(
+              key: const ValueKey<String>('inbox-attention-summary-mark'),
               radius: 24,
-              backgroundColor: colors.primary,
-              foregroundColor: colors.onPrimary,
-              child: Text('${snapshot.unhandledRequiredMessages}'),
+              backgroundColor: attentionRequiredCount == 0
+                  ? colors.surfaceContainerHighest
+                  : colors.primary,
+              foregroundColor: attentionRequiredCount == 0
+                  ? colors.onSurfaceVariant
+                  : colors.onPrimary,
+              child: attentionRequiredCount == 0
+                  ? const Icon(Icons.check_outlined)
+                  : Text('$attentionRequiredCount'),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -132,13 +120,7 @@ class _InboxSummary extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    GameplayLocale.of(context) == 'ru'
-                        ? _russianAttentionLabel(
-                            snapshot.unhandledRequiredMessages,
-                          )
-                        : snapshot.unhandledRequiredMessages == 1
-                            ? '1 response requires attention'
-                            : '${snapshot.unhandledRequiredMessages} responses require attention',
+                    _attentionLabel(context, attentionRequiredCount),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 4),
@@ -228,16 +210,17 @@ class _CaseClosedCard extends StatelessWidget {
 
 class _InboxMessageCard extends StatelessWidget {
   const _InboxMessageCard({
-    required this.item,
+    required this.entry,
     required this.onTap,
   });
 
-  final InboxItemView item;
+  final DisplayedInboxEntry entry;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final bool urgent = item.status == InboxStatus.actionRequired;
+    final InboxItemView item = entry.item;
+    final bool urgent = entry.requiresAttention;
     final ColorScheme colors = Theme.of(context).colorScheme;
 
     return Semantics(
@@ -253,7 +236,12 @@ class _InboxMessageCard extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            StatusBadge.inbox(item.status),
+            StatusBadge.inbox(
+              item.status,
+              key: urgent
+                  ? ValueKey<String>('inbox-attention-status-${item.id}')
+                  : null,
+            ),
             const SizedBox(width: 6),
             Icon(
               Icons.chevron_right,
@@ -302,4 +290,20 @@ String _russianAttentionLabel(int count) {
     return '$count ответа требуют внимания';
   }
   return '$count ответов требуют внимания';
+}
+
+String _attentionLabel(BuildContext context, int count) {
+  if (count == 0) {
+    return GameplayLocale.text(
+      context,
+      'No responses require attention',
+      'Нет ответов, требующих внимания',
+    );
+  }
+  if (GameplayLocale.of(context) == 'ru') {
+    return _russianAttentionLabel(count);
+  }
+  return count == 1
+      ? '1 response requires attention'
+      : '$count responses require attention';
 }
