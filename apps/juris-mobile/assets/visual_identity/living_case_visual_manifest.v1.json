@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "case_id": "greenfire_first_72_hours",
+  "case_treatment": {
+    "motif": "industrial_haze",
+    "palette": {
+      "background": "#0A1714",
+      "surface": "#172A22",
+      "accent": "#7A9F55",
+      "signal": "#D8763E"
+    },
+    "art_seed": 38495
+  },
+  "pressure": {
+    "pressure_id": "regulator_document_request_pressure",
+    "source_actor_id": "port_haven_environment_authority",
+    "request_inbox_item_id": "regulator_document_request",
+    "deadline_id": "initial_regulatory_response_deadline",
+    "responses": [
+      {
+        "action_id": "submit_initial_regulatory_response",
+        "treatment": "controlled"
+      },
+      {
+        "action_id": "release_unreviewed_documents",
+        "treatment": "disclosed_risk"
+      }
+    ]
+  },
+  "outcomes": [
+    {
+      "outcome_id": "protected_crisis_position",
+      "treatment": "protected"
+    },
+    {
+      "outcome_id": "compromised_crisis_position",
+      "treatment": "compromised"
+    }
+  ]
+}
