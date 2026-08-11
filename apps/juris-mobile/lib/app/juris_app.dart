@@ -6,6 +6,8 @@ import '../data/case_runtime_factory.dart';
 import '../data/game_runtime_repository.dart';
 import '../data/game_save_store.dart';
 import '../data/scenario_bridge_client.dart';
+import '../living_case/living_case_visual_manifest.dart';
+import '../living_case/living_case_visual_manifest_repository.dart';
 import '../models/case_catalog.dart';
 import '../screens/case_catalog_screen.dart';
 import '../visual_identity/case_visual_manifest_repository.dart';
@@ -24,12 +26,14 @@ class JurisApp extends StatefulWidget {
     super.key,
   })  : catalogRepository = null,
         visualManifestRepository = null,
+        livingCaseVisualManifestRepository = null,
         scenarioBridgeClient = null,
         gameSaveStore = null;
 
   const JurisApp.catalog({
     this.catalogRepository = const CaseCatalogRepository(),
     this.visualManifestRepository,
+    this.livingCaseVisualManifestRepository,
     this.scenarioBridgeClient,
     this.gameSaveStore,
     super.key,
@@ -38,6 +42,7 @@ class JurisApp extends StatefulWidget {
   final GameRuntimeRepository? repository;
   final CaseCatalogRepository? catalogRepository;
   final CaseVisualManifestRepository? visualManifestRepository;
+  final LivingCaseVisualManifestRepository? livingCaseVisualManifestRepository;
   final ScenarioBridgeClient? scenarioBridgeClient;
   final GameSaveStore? gameSaveStore;
 
@@ -48,6 +53,9 @@ class JurisApp extends StatefulWidget {
 class _JurisAppState extends State<JurisApp> {
   GameRuntimeRepository? _activeRepository;
   CaseVisualManifestRepository? _visualManifestRepository;
+  LivingCaseVisualManifestRepository? _livingCaseVisualManifestRepository;
+  Future<LivingCaseVisualManifest?>? _livingCaseVisualManifestLoad;
+  MobileCaseDefinition? _activeCaseDefinition;
   String? _activeCaseId;
   String _activeLocale = 'en';
 
@@ -60,6 +68,7 @@ class _JurisAppState extends State<JurisApp> {
     if (_usesCatalog) {
       _visualManifestRepository =
           widget.visualManifestRepository ?? CaseVisualManifestRepository();
+      _configureLivingCaseManifestRepository();
     }
   }
 
@@ -69,10 +78,18 @@ class _JurisAppState extends State<JurisApp> {
     final bool previouslyUsedCatalog = oldWidget.repository == null;
     if (!_usesCatalog) {
       _visualManifestRepository = null;
+      _livingCaseVisualManifestRepository = null;
+      _livingCaseVisualManifestLoad = null;
     } else if (!previouslyUsedCatalog ||
         oldWidget.visualManifestRepository != widget.visualManifestRepository) {
       _visualManifestRepository =
           widget.visualManifestRepository ?? CaseVisualManifestRepository();
+    }
+    if (_usesCatalog &&
+        (!previouslyUsedCatalog ||
+            oldWidget.livingCaseVisualManifestRepository !=
+                widget.livingCaseVisualManifestRepository)) {
+      _configureLivingCaseManifestRepository();
     }
   }
 
@@ -103,12 +120,28 @@ class _JurisAppState extends State<JurisApp> {
   Widget _buildHome() {
     final GameRuntimeRepository? activeRepository = _activeRepository;
     if (activeRepository != null) {
-      return HomeShell(
-        key: ValueKey<String?>(_activeCaseId),
-        repository: activeRepository,
-        locale: _activeLocale,
-        onExitToCaseCatalog: _usesCatalog ? _exitToCatalog : null,
-      );
+      final Widget Function(LivingCaseVisualManifest?) buildShell =
+          (LivingCaseVisualManifest? manifest) => HomeShell(
+                key: ValueKey<String?>(_activeCaseId),
+                repository: activeRepository,
+                locale: _activeLocale,
+                caseDefinition: _activeCaseDefinition,
+                livingCaseVisualManifest: manifest,
+                onExitToCaseCatalog: _usesCatalog ? _exitToCatalog : null,
+              );
+      final Future<LivingCaseVisualManifest?>? manifestLoad =
+          _livingCaseVisualManifestLoad;
+      if (_activeCaseDefinition != null && manifestLoad != null) {
+        return FutureBuilder<LivingCaseVisualManifest?>(
+          future: manifestLoad,
+          builder: (
+            BuildContext context,
+            AsyncSnapshot<LivingCaseVisualManifest?> manifestSnapshot,
+          ) =>
+              buildShell(manifestSnapshot.data),
+        );
+      }
+      return buildShell(null);
     }
 
     return CaseCatalogLoaderScreen(
@@ -142,6 +175,7 @@ class _JurisAppState extends State<JurisApp> {
     setState(() {
       _activeRepository = repository;
       _activeCaseId = caseDefinition.caseId;
+      _activeCaseDefinition = caseDefinition;
       _activeLocale = locale;
     });
   }
@@ -151,8 +185,16 @@ class _JurisAppState extends State<JurisApp> {
     setState(() {
       _activeRepository = null;
       _activeCaseId = null;
+      _activeCaseDefinition = null;
       _activeLocale = 'en';
     });
     previous?.dispose();
+  }
+
+  void _configureLivingCaseManifestRepository() {
+    _livingCaseVisualManifestRepository =
+        widget.livingCaseVisualManifestRepository ??
+            LivingCaseVisualManifestRepository();
+    _livingCaseVisualManifestLoad = _livingCaseVisualManifestRepository!.load();
   }
 }

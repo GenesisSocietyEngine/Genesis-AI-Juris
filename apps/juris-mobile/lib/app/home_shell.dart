@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/game_runtime_repository.dart';
+import '../living_case/greenfire_living_case_workspace.dart';
+import '../living_case/living_case_visual_manifest.dart';
+import '../models/case_catalog.dart';
 import '../models/game_snapshot.dart';
 import '../screens/ai_associate_screen.dart';
 import '../screens/calendar_screen.dart';
@@ -24,12 +27,16 @@ class HomeShell extends StatefulWidget {
   const HomeShell(
       {required this.repository,
       this.locale = 'en',
+      this.caseDefinition,
+      this.livingCaseVisualManifest,
       this.onExitToCaseCatalog,
       this.enableLiveClockInTests = false,
       super.key});
 
   final GameRuntimeRepository repository;
   final String locale;
+  final MobileCaseDefinition? caseDefinition;
+  final LivingCaseVisualManifest? livingCaseVisualManifest;
   final VoidCallback? onExitToCaseCatalog;
   final bool enableLiveClockInTests;
 
@@ -499,16 +506,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           onMessageTap: _showInboxMessage,
           onCaseReportTap: () => _showCaseReport(snapshot),
         ),
-      1 => MatterScreen(
-          snapshot: snapshot,
-          onShowActions: () => _showActions(snapshot),
-          onShowDossier: () => _showDossier(snapshot),
-          onShowTrainingDebrief: () => _showTrainingDebrief(snapshot),
-          onShowPressureResponses: (List<String> actionIds) => _showActions(
-            snapshot,
-            onlyActionIds: actionIds,
-          ),
-        ),
+      1 => _buildMatterContent(snapshot),
       2 => CalendarScreen(
           snapshot: snapshot,
           onRestUntilNextWorkday: widget.repository.supportsLiveClock &&
@@ -532,6 +530,38 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           onCaseReportTap: () => _showCaseReport(snapshot),
         ),
     };
+  }
+
+  Widget _buildMatterContent(GameSnapshot snapshot) {
+    final MobileCaseDefinition? caseDefinition = widget.caseDefinition;
+    final LivingCaseVisualManifest? manifest = widget.livingCaseVisualManifest;
+    if (caseDefinition != null &&
+        manifest != null &&
+        manifest.supportsCase(caseDefinition.caseId)) {
+      return GreenFireLivingCaseWorkspace(
+        snapshot: snapshot,
+        caseDefinition: caseDefinition,
+        manifest: manifest,
+        locale: widget.locale,
+        onShowActions: () => _showActions(snapshot),
+        onShowDossier: () => _showDossier(snapshot),
+        onShowTrainingDebrief: () => _showTrainingDebrief(snapshot),
+        onShowPressureResponses: (List<String> actionIds) => _showActions(
+          snapshot,
+          onlyActionIds: actionIds,
+        ),
+      );
+    }
+    return MatterScreen(
+      snapshot: snapshot,
+      onShowActions: () => _showActions(snapshot),
+      onShowDossier: () => _showDossier(snapshot),
+      onShowTrainingDebrief: () => _showTrainingDebrief(snapshot),
+      onShowPressureResponses: (List<String> actionIds) => _showActions(
+        snapshot,
+        onlyActionIds: actionIds,
+      ),
+    );
   }
 
   Widget _navigationIcon(
