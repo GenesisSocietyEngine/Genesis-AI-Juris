@@ -188,7 +188,7 @@ GameSnapshot _snapshot({
 final class _StaticRepository extends GameRuntimeRepository {
   _StaticRepository(this._snapshot);
 
-  GameSnapshot _snapshot;
+  final GameSnapshot _snapshot;
 
   @override
   GameSnapshot get snapshot => _snapshot;
