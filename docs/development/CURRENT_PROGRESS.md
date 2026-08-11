@@ -3,7 +3,7 @@ document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
 branch: feat/greenfire-living-case-visual-slice-v1
 base_commit: 39b856320ed5dc397562068706c4cea7d703899c
-greenfire_living_case_status: local_acceptance_complete_android_native_feature_capture_pending
+greenfire_living_case_status: local_acceptance_complete_android_native_feature_capture_accepted
 greenfire_living_case_contract: docs/development/GREENFIRE_LIVING_CASE_VISUAL_SLICE_V1.md
 greenfire_living_case_contract_commit: 5c533367475d1bd7d7b34b0653edeeb1cd67bf37
 greenfire_living_case_manifest_commit: 9d8090f8b0fbabf702d85260ff594057a4863355
@@ -12,6 +12,9 @@ greenfire_living_case_pressure_commit: d94b3cfcc09053a8885adb37f173727e35c11001
 greenfire_living_case_dossier_commit: 5147642b18950986e50a1453da76a15e67d59857
 greenfire_living_case_outcome_commit: 82896c66cca11e87a37df45ae04b62a2cf87928b
 greenfire_living_case_visual_acceptance_commit: e2dc5f58e57e98d689fd09c4fb796b976ba24a17
+greenfire_living_case_checkpoint_commit: 8606cc2570160e44ee0f47a17496263337dfc289
+greenfire_living_case_android_evidence: accepted_emulator_5554_android_17_api_37_x86_64
+greenfire_living_case_android_apk_sha256: bf0edeaaa3f599d6b4cb2a4cbf46708a97ebbb76d7673be3ba341fd7a9eb66e8
 greenfire_living_case_remote_state: local_only_no_push_no_pr
 ios_per_slice_export_audit_status: merged_and_corrected_main_accepted
 ios_per_slice_export_audit_pr: 30
@@ -208,24 +211,40 @@ The exact local implementation head `e2dc5f5` passed:
   Pressure, saves, bridge protocol, and exact-three ABI coverage;
 - Android debug APK build with Flutter `3.44.8`: PASS.
 
-### Android evidence boundary still pending
+### Android native visual evidence accepted
 
-The already-running port-5554 Flutter session was preserved. It was created
-from the earlier publication sources and therefore correctly continued to show
-the older generic GreenFire Matter screen; that screenshot is not claimed as
-Living Case feature evidence. A non-destructive `flutter attach` hot-reload
-attempt did not acquire the session and was stopped without terminating the
-app. A separate headless, read-only port-5556 AVD was then launched to isolate
-installation, but remained offline past the bounded boot checks; only that
-exact temporary process was stopped. The original port-5554 app remained
-connected and untouched.
+The owner explicitly authorized replacing the earlier app package on the
+already-running `emulator-5554` session. The current debug APK was installed
+with package replacement and launched as
+`com.genesissocietyengine.juris_mobile`. The live process was confirmed on an
+Android 17 / API 37 x86-64 emulator at its physical 1080x1920 resolution. The
+installed APK is 203,489,779 bytes with SHA-256
+`bf0edeaaa3f599d6b4cb2a4cbf46708a97ebbb76d7673be3ba341fd7a9eb66e8`.
 
-Consequently, canonical visual acceptance and the APK build are complete, but
-a native Android screenshot of the new Living Case runtime remains the sole
-open acceptance item. Completion requires either permission to replace the
-package in the preserved emulator session or a separately bootable Android
-target. No push or PR should occur before that evidence is captured and this
-checkpoint is updated.
+Native feature evidence was captured locally under the ignored Flutter build
+directory:
+
+- `greenfire-living-case-android-start.png`: 1080x1920, 214,510 bytes,
+  SHA-256
+  `8cec1f4eb085a543122a0562960a1da794072f90dd0da086137a91beb5aa6853`;
+- `greenfire-living-case-android-workspace.png`: 1080x1920, 155,407 bytes,
+  SHA-256
+  `ad4f47be0ca478ad534b469812b19552cd5b083717d6d5ebac8a1e092ee7ecc8`;
+- `greenfire-living-case-android-dossier.png`: 1080x1920, 147,115 bytes,
+  SHA-256
+  `f77e4c5d301112d0f5957780636026e6d11f09f69f3f31c51c577063e8dc3769`.
+
+The start panel visibly identifies GreenFire, its fictional NL posture, player
+client, procedural role, and playable status. The launched compact Matter view
+visibly renders the specialized `CRISIS DESK` spine and the honest opening
+state, `No configured regulatory pressure is active`; no F1 Pressure was
+invented before its authoritative activation time. The dossier view visibly
+renders the specialized `GreenFire dossier`, authoritative player-visible
+projection label, and opening evidence inventory. Visual inspection found no
+overflow, clipping, unintended generic fallback, or stale-package surface in
+these feature views. The canonical, host, APK-build, and native visual gates
+are therefore complete; no acceptance item remains open. The branch remains
+local-only, and no push or PR is authorized by this evidence capture.
 
 ### Preserved invariants
 
