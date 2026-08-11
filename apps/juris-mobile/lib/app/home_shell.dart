@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/game_runtime_repository.dart';
 import '../living_case/greenfire_living_case_dossier_screen.dart';
+import '../living_case/greenfire_living_case_outcome_screen.dart';
 import '../living_case/greenfire_living_case_workspace.dart';
 import '../living_case/living_case_visual_manifest.dart';
 import '../models/case_catalog.dart';
@@ -762,13 +763,32 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         await _whileClockSuspended<TrainingDebriefNavigationAction>(
       () => Navigator.of(context).push<TrainingDebriefNavigationAction>(
         MaterialPageRoute<TrainingDebriefNavigationAction>(
-          builder: (BuildContext routeContext) => GameplayLocale(
-            locale: widget.locale,
-            child: TrainingDebriefScreen(
-              debrief: debrief,
+          builder: (BuildContext routeContext) {
+            final MobileCaseDefinition? definition = widget.caseDefinition;
+            final LivingCaseVisualManifest? manifest =
+                widget.livingCaseVisualManifest;
+            final LivingCaseOutcomeTreatment? outcomeTreatment =
+                definition != null &&
+                        manifest != null &&
+                        manifest.supportsCase(definition.caseId) &&
+                        debrief.scenarioId == definition.scenarioId
+                    ? manifest.outcomeTreatment(debrief.resolvedOutcomeId)
+                    : null;
+            return GameplayLocale(
               locale: widget.locale,
-            ),
-          ),
+              child: outcomeTreatment == null
+                  ? TrainingDebriefScreen(
+                      debrief: debrief,
+                      locale: widget.locale,
+                    )
+                  : GreenFireLivingCaseOutcomeScreen(
+                      debrief: debrief,
+                      treatment: manifest!.caseTreatment,
+                      outcomeTreatment: outcomeTreatment,
+                      locale: widget.locale,
+                    ),
+            );
+          },
         ),
       ),
     );
