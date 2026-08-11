@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/game_runtime_repository.dart';
+import '../living_case/greenfire_living_case_dossier_screen.dart';
 import '../living_case/greenfire_living_case_workspace.dart';
 import '../living_case/living_case_visual_manifest.dart';
 import '../models/case_catalog.dart';
@@ -718,13 +719,26 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     final String? actionId = await _whileClockSuspended<String>(
       () => Navigator.of(context).push<String>(
         MaterialPageRoute<String>(
-          builder: (BuildContext routeContext) => GameplayLocale(
-            locale: widget.locale,
-            child: DossierScreen(
-              dossier: dossier,
+          builder: (BuildContext routeContext) {
+            final MobileCaseDefinition? definition = widget.caseDefinition;
+            final LivingCaseVisualManifest? manifest =
+                widget.livingCaseVisualManifest;
+            return GameplayLocale(
               locale: widget.locale,
-            ),
-          ),
+              child: definition != null &&
+                      manifest != null &&
+                      manifest.supportsCase(definition.caseId)
+                  ? GreenFireLivingCaseDossierScreen(
+                      dossier: dossier,
+                      treatment: manifest.caseTreatment,
+                      locale: widget.locale,
+                    )
+                  : DossierScreen(
+                      dossier: dossier,
+                      locale: widget.locale,
+                    ),
+            );
+          },
         ),
       ),
     );
