@@ -4,6 +4,7 @@ import '../design/case_treatment_scope.dart';
 import '../models/training_debrief.dart';
 import '../screens/training_debrief_screen.dart';
 import '../visual_identity/case_visual_manifest.dart';
+import 'living_case_palette.dart';
 import 'living_case_strings.dart';
 import 'living_case_visual_manifest.dart';
 
@@ -31,7 +32,7 @@ class GreenFireLivingCaseOutcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CaseTreatmentScope(
-      treatment: treatment,
+      treatment: resolveLivingCaseTreatment(context, treatment),
       child: Scaffold(
         key: const ValueKey<String>('greenfire-outcome-dossier-screen'),
         appBar: AppBar(

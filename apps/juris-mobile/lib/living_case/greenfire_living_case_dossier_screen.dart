@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../design/case_treatment_scope.dart';
 import '../models/dossier_projection.dart';
 import '../visual_identity/case_visual_manifest.dart';
+import 'living_case_palette.dart';
 import 'living_case_strings.dart';
 
 /// Read-only GreenFire dossier composed exclusively from the Rust projection.
@@ -33,7 +34,7 @@ class _GreenFireLivingCaseDossierScreenState
   @override
   Widget build(BuildContext context) {
     return CaseTreatmentScope(
-      treatment: widget.treatment,
+      treatment: resolveLivingCaseTreatment(context, widget.treatment),
       child: Scaffold(
         key: const ValueKey<String>('greenfire-dossier-screen'),
         appBar: AppBar(

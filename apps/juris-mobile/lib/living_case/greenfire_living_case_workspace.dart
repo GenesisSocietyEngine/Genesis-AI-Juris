@@ -5,6 +5,7 @@ import '../design/juris_accessibility.dart';
 import '../design/juris_surfaces.dart';
 import '../models/case_catalog.dart';
 import '../models/game_snapshot.dart';
+import 'living_case_palette.dart';
 import 'living_case_strings.dart';
 import 'living_case_view_model.dart';
 import 'living_case_visual_manifest.dart';
@@ -45,7 +46,7 @@ class GreenFireLivingCaseWorkspace extends StatelessWidget {
       locale: locale,
     );
     return CaseTreatmentScope(
-      treatment: manifest.caseTreatment,
+      treatment: resolveLivingCaseTreatment(context, manifest.caseTreatment),
       child: _FiniteOpening(
         locale: locale,
         title: caseText.shortTitle,
@@ -211,7 +212,7 @@ class _PressurePanel extends StatelessWidget {
                         LivingCaseStrings.quietDesk(locale),
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
-                  const Spacer(),
+                  const SizedBox(height: 80),
                   if (pressure != null) ...<Widget>[
                     Text(
                       '${pressure.remainingMinutes}',
@@ -589,6 +590,29 @@ class _FiniteOpeningState extends State<_FiniteOpening>
     if (_dismissed) {
       return widget.child;
     }
+    return GreenFireLivingCaseOpeningFrame(
+      locale: widget.locale,
+      title: widget.title,
+      onEnter: () => setState(() => _dismissed = true),
+    );
+  }
+}
+
+/// Deterministic first frame used by the finite, non-persisted opening.
+class GreenFireLivingCaseOpeningFrame extends StatelessWidget {
+  const GreenFireLivingCaseOpeningFrame({
+    required this.locale,
+    required this.title,
+    this.onEnter,
+    super.key,
+  });
+
+  final String locale;
+  final String title;
+  final VoidCallback? onEnter;
+
+  @override
+  Widget build(BuildContext context) {
     final treatment = CaseTreatmentScope.of(context);
     return ColoredBox(
       key: const ValueKey<String>('greenfire-opening'),
@@ -603,7 +627,7 @@ class _FiniteOpeningState extends State<_FiniteOpening>
                   size: 52, color: treatment.palette.signal),
               const SizedBox(height: 16),
               Text(
-                LivingCaseStrings.openingEyebrow(widget.locale),
+                LivingCaseStrings.openingEyebrow(locale),
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: treatment.palette.accent,
                       letterSpacing: 2,
@@ -611,15 +635,15 @@ class _FiniteOpeningState extends State<_FiniteOpening>
               ),
               const SizedBox(height: 8),
               Text(
-                widget.title,
+                title,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
               const SizedBox(height: 20),
               TextButton(
                 key: const ValueKey<String>('greenfire-opening-enter'),
-                onPressed: () => setState(() => _dismissed = true),
-                child: Text(LivingCaseStrings.enterCase(widget.locale)),
+                onPressed: onEnter,
+                child: Text(LivingCaseStrings.enterCase(locale)),
               ),
             ],
           ),

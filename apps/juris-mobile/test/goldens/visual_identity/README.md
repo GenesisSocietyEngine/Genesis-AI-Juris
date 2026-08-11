@@ -51,6 +51,14 @@ The catalogue profile directory separately contains exactly six PNGs:
 6. compact English at 200% text and reduced motion, scrolled until the
    explicit actions are reachable.
 
+The Living Case profile directory separately contains exactly fourteen PNGs,
+`GF-01` through `GF-14`: opening, active request workspace, RU Pressure,
+200%-text actions, high-contrast missed state, RU Dossier, selected evidence,
+actor-correlated regulator request, protected outcome, RU high-contrast
+compromised outcome, wide workspace, portrait Dossier, wide protected outcome,
+and the historical-F0 neutral fallback. The matrix is presentation-only and
+uses fixed projected fixtures; it does not encode runtime authority.
+
 ## Compare
 
 From `apps/juris-mobile`, run:
@@ -72,6 +80,12 @@ flutter test test\cinematic_case_catalog_golden_test.dart
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tool\verify_catalogue_goldens_windows.ps1
 ```
 
+Compare the Living Case matrix with:
+
+```powershell
+flutter test test\greenfire_living_case_golden_test.dart
+```
+
 ## Regenerate and prove repeatability
 
 Do not invoke `--update-goldens` casually. The guarded command rejects any host
@@ -88,6 +102,15 @@ For the catalogue matrix, run the equivalent guarded two-render command:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tool\verify_catalogue_goldens_windows.ps1 -Regenerate
+```
+
+The Living Case matrix is regenerated only on the same canonical profile and
+must pass two clean comparisons with an unchanged fourteen-file SHA-256 set:
+
+```powershell
+flutter test --update-goldens test\greenfire_living_case_golden_test.dart
+flutter test test\greenfire_living_case_golden_test.dart
+flutter test test\greenfire_living_case_golden_test.dart
 ```
 
 Byte-identical repeat generation is necessary but not sufficient. Inspect all

@@ -14,6 +14,10 @@ const String canonicalCatalogueGoldenDirectory =
     'goldens/visual_identity/catalogue/'
     'windows_x64_flutter_3_44_8_engine_0cd6107';
 
+const String canonicalLivingCaseGoldenDirectory =
+    'goldens/visual_identity/living_case/'
+    'windows_x64_flutter_3_44_8_engine_0cd6107';
+
 const Key visualGoldenBoundaryKey = ValueKey<String>('visual-golden-boundary');
 
 /// Pixel tests are intentionally skipped outside the documented canonical
