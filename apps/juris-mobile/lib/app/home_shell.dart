@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/game_runtime_repository.dart';
+import '../design/juris_design.dart';
 import '../living_case/greenfire_living_case_dossier_screen.dart';
 import '../living_case/greenfire_living_case_outcome_screen.dart';
 import '../living_case/greenfire_living_case_workspace.dart';
@@ -20,26 +21,30 @@ import '../screens/training_debrief_screen.dart';
 import '../widgets/action_picker_sheet.dart';
 import '../widgets/case_report_sheet.dart';
 import '../widgets/inbox_message_sheet.dart';
+import 'app_theme.dart';
 import 'gameplay_locale.dart';
 
 /// Adaptive application shell shared by phone, tablet, and desktop previews.
 ///
-/// Below 700 logical pixels it uses a Material 3 [NavigationBar]. Wider
-/// windows switch to [NavigationRail] without changing the destination state.
+/// Below 700 logical pixels it uses a horizontally revealable destination bar.
+/// Wider windows switch to [NavigationRail] without changing destination state.
 class HomeShell extends StatefulWidget {
-  const HomeShell(
-      {required this.repository,
-      this.locale = 'en',
-      this.caseDefinition,
-      this.livingCaseVisualManifest,
-      this.onExitToCaseCatalog,
-      this.enableLiveClockInTests = false,
-      super.key});
+  const HomeShell({
+    required this.repository,
+    this.locale = 'en',
+    this.caseDefinition,
+    this.livingCaseVisualManifest,
+    this.visualModeController,
+    this.onExitToCaseCatalog,
+    this.enableLiveClockInTests = false,
+    super.key,
+  });
 
   final GameRuntimeRepository repository;
   final String locale;
   final MobileCaseDefinition? caseDefinition;
   final LivingCaseVisualManifest? livingCaseVisualManifest;
+  final JurisVisualModeController? visualModeController;
   final VoidCallback? onExitToCaseCatalog;
   final bool enableLiveClockInTests;
 
@@ -51,17 +56,20 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   static const bool _runningUnderFlutterTest =
       bool.fromEnvironment('FLUTTER_TEST');
 
-  int _selectedIndex = 0;
+  String _selectedDestinationId = 'inbox';
   Timer? _liveClockTimer;
   bool _clockPaused = false;
   bool _clockTickInProgress = false;
   bool _persistenceInProgress = false;
   int _openModalCount = 0;
   SimulationClockSpeed _clockSpeed = SimulationClockSpeed.standard;
+  late JurisVisualModeController _visualModeController;
+  late bool _ownsVisualModeController;
 
   @override
   void initState() {
     super.initState();
+    _configureVisualModeController();
     WidgetsBinding.instance.addObserver(this);
     _startLiveClock();
   }
@@ -69,6 +77,12 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   @override
   void didUpdateWidget(covariant HomeShell oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.visualModeController != widget.visualModeController) {
+      if (_ownsVisualModeController) {
+        _visualModeController.dispose();
+      }
+      _configureVisualModeController();
+    }
     if (oldWidget.repository != widget.repository) {
       _startLiveClock();
     }
@@ -88,7 +102,16 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   void dispose() {
     _liveClockTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
+    if (_ownsVisualModeController) {
+      _visualModeController.dispose();
+    }
     super.dispose();
+  }
+
+  void _configureVisualModeController() {
+    final JurisVisualModeController? injected = widget.visualModeController;
+    _ownsVisualModeController = injected == null;
+    _visualModeController = injected ?? JurisVisualModeController();
   }
 
   void _startLiveClock() {
@@ -197,363 +220,331 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     }
   }
 
-  List<_Destination> _destinationsFor(BuildContext context) => <_Destination>[
+  List<_Destination> _destinationsFor(
+    BuildContext context,
+    GameSnapshot snapshot,
+    InboxPresentation inboxPresentation,
+  ) =>
+      <_Destination>[
         _Destination(
-          'inbox',
-          GameplayLocale.text(context, 'Inbox', 'Входящие'),
-          Icons.inbox_outlined,
-          Icons.inbox,
+          id: 'inbox',
+          label: GameplayLocale.text(context, 'Inbox', 'Входящие'),
+          semanticPurpose: GameplayLocale.text(
+            context,
+            'Review projected messages and required responses',
+            'Просмотр сообщений и требуемых ответов',
+          ),
+          icon: Icons.inbox_outlined,
+          selectedIcon: Icons.inbox,
+          builder: () => InboxScreen(
+            snapshot: snapshot,
+            presentation: inboxPresentation,
+            onMessageTap: _showInboxMessage,
+            onCaseReportTap: () => _showCaseReport(snapshot),
+          ),
         ),
         _Destination(
-          'matter',
-          GameplayLocale.text(context, 'Matter', 'Дело'),
-          Icons.gavel_outlined,
-          Icons.gavel,
+          id: 'matter',
+          label: GameplayLocale.text(context, 'Matter', 'Дело'),
+          semanticPurpose: GameplayLocale.text(
+            context,
+            'Open the current matter workspace',
+            'Открыть рабочее пространство текущего дела',
+          ),
+          icon: Icons.gavel_outlined,
+          selectedIcon: Icons.gavel,
+          builder: () => _buildMatterContent(snapshot),
         ),
         _Destination(
-          'calendar',
-          GameplayLocale.text(context, 'Calendar', 'Календарь'),
-          Icons.event_outlined,
-          Icons.event,
-        ),
-        const _Destination(
-          'ai',
-          'AI',
-          Icons.auto_awesome_outlined,
-          Icons.auto_awesome,
+          id: 'calendar',
+          label: GameplayLocale.text(context, 'Calendar', 'Календарь'),
+          semanticPurpose: GameplayLocale.text(
+            context,
+            'Review projected deadlines and work periods',
+            'Просмотр сроков и рабочих периодов',
+          ),
+          icon: Icons.event_outlined,
+          selectedIcon: Icons.event,
+          builder: () => CalendarScreen(
+            snapshot: snapshot,
+            onRestUntilNextWorkday: widget.repository.supportsLiveClock &&
+                    !widget.repository.isTerminal
+                ? _restUntilNextWorkday
+                : null,
+            onModalVisibilityChanged: _setModalVisible,
+            onOpenRelatedAction: (String actionId) => _showActions(
+              snapshot,
+              onlyActionId: actionId,
+            ),
+          ),
         ),
         _Destination(
-          'career',
-          GameplayLocale.text(context, 'Career', 'Карьера'),
-          Icons.account_circle_outlined,
-          Icons.account_circle,
+          id: 'ai',
+          label: 'AI',
+          semanticPurpose: GameplayLocale.text(
+            context,
+            'Open the AI associate workspace',
+            'Открыть рабочее пространство ИИ-ассистента',
+          ),
+          icon: Icons.auto_awesome_outlined,
+          selectedIcon: Icons.auto_awesome,
+          builder: () => AiAssociateScreen(
+            snapshot: snapshot,
+            onShowActions: () => _showActions(snapshot, aiOnly: true),
+          ),
+        ),
+        _Destination(
+          id: 'career',
+          label: GameplayLocale.text(context, 'Career', 'Карьера'),
+          semanticPurpose: GameplayLocale.text(
+            context,
+            'Review projected career progress',
+            'Просмотр прогресса карьеры',
+          ),
+          icon: Icons.account_circle_outlined,
+          selectedIcon: Icons.account_circle,
+          builder: () => CareerScreen(snapshot: snapshot),
         ),
       ];
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<JurisVisualModeSelection>(
+      valueListenable: _visualModeController,
+      builder: (
+        BuildContext context,
+        JurisVisualModeSelection selection,
+        Widget? child,
+      ) {
+        return _buildShell(context, selection);
+      },
+    );
+  }
+
+  Widget _buildShell(
+    BuildContext context,
+    JurisVisualModeSelection selection,
+  ) {
     return ListenableBuilder(
       listenable: widget.repository,
       builder: (BuildContext context, Widget? child) {
         final GameSnapshot snapshot = widget.repository.snapshot;
         final InboxPresentation inboxPresentation =
             InboxPresentation.from(snapshot.inbox);
-        return GameplayLocale(
-          locale: widget.locale,
-          child: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final List<_Destination> destinations = _destinationsFor(context);
-              final bool useRail = constraints.maxWidth >= 700;
-              final Widget content = _buildContent(
-                snapshot,
-                inboxPresentation,
-              );
+        final JurisVisualMode resolvedMode = JurisVisualModeResolver.resolve(
+          selection: selection,
+          projectedTimeLabel: snapshot.timeLabel,
+        );
+        return Theme(
+          data: JurisTheme.forMode(
+            resolvedMode,
+            highContrast: MediaQuery.highContrastOf(context),
+          ),
+          child: GameplayLocale(
+            locale: widget.locale,
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final List<_Destination> destinations = _destinationsFor(
+                  context,
+                  snapshot,
+                  inboxPresentation,
+                );
+                final int selectedIndex = destinations.indexWhere(
+                  (_Destination destination) =>
+                      destination.id == _selectedDestinationId,
+                );
+                final int effectiveSelectedIndex =
+                    selectedIndex < 0 ? 0 : selectedIndex;
+                final _Destination selectedDestination =
+                    destinations[effectiveSelectedIndex];
+                final bool useRail = constraints.maxWidth >= 700;
+                final Widget content = selectedDestination.builder();
 
-              return Scaffold(
-                appBar: AppBar(
-                  leading: widget.onExitToCaseCatalog == null
-                      ? null
-                      : IconButton(
-                          tooltip: GameplayLocale.text(
-                            context,
-                            'Back to case library',
-                            'Назад в библиотеку дел',
+                return Scaffold(
+                  appBar: AppBar(
+                    leading: widget.onExitToCaseCatalog == null
+                        ? null
+                        : IconButton(
+                            tooltip: GameplayLocale.text(
+                              context,
+                              'Back to case library',
+                              'Назад в библиотеку дел',
+                            ),
+                            onPressed: _persistenceInProgress
+                                ? null
+                                : widget.onExitToCaseCatalog,
+                            icon: const Icon(Icons.arrow_back),
                           ),
-                          onPressed: _persistenceInProgress
-                              ? null
-                              : widget.onExitToCaseCatalog,
-                          icon: const Icon(Icons.arrow_back),
+                    title: const Text(
+                      'GENESIS: JURIS',
+                      maxLines: 1,
+                    ),
+                    actions: <Widget>[
+                      IconButton(
+                        key: const ValueKey<String>('session-controls-button'),
+                        tooltip: GameplayLocale.text(
+                          context,
+                          'Session controls',
+                          'Управление сеансом',
                         ),
-                  title: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(destinations[_selectedIndex].label),
-                      Text(
-                        '${snapshot.dayLabel} · ${snapshot.timeLabel} · ${snapshot.stage}',
-                        style:
-                            Theme.of(context).textTheme.labelMedium?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
+                        onPressed: _persistenceInProgress
+                            ? null
+                            : () => _showSessionControls(snapshot),
+                        icon: _persistenceInProgress
+                            ? const Icon(Icons.hourglass_top)
+                            : const Icon(Icons.tune),
                       ),
+                      const SizedBox(width: 8),
                     ],
                   ),
-                  actions: <Widget>[
-                    PopupMenuButton<SimulationClockSpeed>(
-                      key: const ValueKey<String>('simulation-speed-menu'),
-                      tooltip: GameplayLocale.of(context) == 'ru'
-                          ? 'Скорость симуляции: ${_clockSpeed.label} · '
-                              '${_clockSpeed.gameMinutesPerRealMinute} игровых мин / реальную мин'
-                          : 'Simulation speed: ${_clockSpeed.label} · '
-                              '${_clockSpeed.gameMinutesPerRealMinute} game min / real min',
-                      initialValue: _clockSpeed,
-                      enabled: widget.repository.supportsLiveClock &&
-                          !_persistenceInProgress &&
-                          !widget.repository.isTerminal,
-                      onSelected: _selectClockSpeed,
-                      itemBuilder: (BuildContext context) =>
-                          SimulationClockSpeed.values
+                  body: AbsorbPointer(
+                    absorbing: _persistenceInProgress,
+                    child: useRail
+                        ? Row(
+                            children: <Widget>[
+                              NavigationRail(
+                                key: const ValueKey<String>(
+                                  'professional-wide-navigation',
+                                ),
+                                selectedIndex: effectiveSelectedIndex,
+                                onDestinationSelected: _persistenceInProgress
+                                    ? null
+                                    : (int index) => _selectDestination(
+                                          destinations[index].id,
+                                        ),
+                                labelType: NavigationRailLabelType.all,
+                                destinations: destinations
+                                    .map(
+                                      (_Destination destination) =>
+                                          NavigationRailDestination(
+                                        icon: _NavigationRailFocusIndicator(
+                                          key: ValueKey<String>(
+                                            'wide-destination-focus-${destination.id}',
+                                          ),
+                                          child: _navigationIcon(
+                                            destination.icon,
+                                            destination.id,
+                                            inboxPresentation
+                                                .attentionRequiredCount,
+                                          ),
+                                        ),
+                                        selectedIcon:
+                                            _NavigationRailFocusIndicator(
+                                          key: ValueKey<String>(
+                                            'wide-destination-focus-${destination.id}',
+                                          ),
+                                          child: _navigationIcon(
+                                            destination.selectedIcon,
+                                            destination.id,
+                                            inboxPresentation
+                                                .attentionRequiredCount,
+                                          ),
+                                        ),
+                                        label: Semantics(
+                                          key: ValueKey<String>(
+                                            'wide-destination-${destination.id}',
+                                          ),
+                                          label: destination.label,
+                                          hint: destination.semanticPurpose,
+                                          selected: destination.id ==
+                                              _selectedDestinationId,
+                                          child: ExcludeSemantics(
+                                            child: Text(destination.label),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(growable: false),
+                              ),
+                              const VerticalDivider(width: 1),
+                              Expanded(
+                                child: Column(
+                                  children: <Widget>[
+                                    _SessionIdentityHeader(
+                                      destinationLabel:
+                                          selectedDestination.label,
+                                      matterTitle: snapshot.matterTitle,
+                                      dayLabel: snapshot.dayLabel,
+                                      timeLabel: snapshot.timeLabel,
+                                      stage: snapshot.stage,
+                                      clockLabel: _sessionClockLabel(context),
+                                    ),
+                                    const Divider(height: 1),
+                                    Expanded(child: content),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            children: <Widget>[
+                              _SessionIdentityHeader(
+                                destinationLabel: selectedDestination.label,
+                                matterTitle: snapshot.matterTitle,
+                                dayLabel: snapshot.dayLabel,
+                                timeLabel: snapshot.timeLabel,
+                                stage: snapshot.stage,
+                                clockLabel: _sessionClockLabel(context),
+                              ),
+                              const Divider(height: 1),
+                              Expanded(child: content),
+                            ],
+                          ),
+                  ),
+                  bottomNavigationBar: useRail
+                      ? null
+                      : _CompactDestinationBar(
+                          key: const ValueKey<String>(
+                            'professional-compact-navigation',
+                          ),
+                          selectedDestinationId: _selectedDestinationId,
+                          enabled: !_persistenceInProgress,
+                          destinations: destinations
                               .map(
-                                (SimulationClockSpeed speed) =>
-                                    PopupMenuItem<SimulationClockSpeed>(
-                                  value: speed,
-                                  height: 64,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: <Widget>[
-                                      Text(
-                                        speed.label,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelLarge,
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        GameplayLocale.of(context) == 'ru'
-                                            ? '${speed.gameMinutesPerRealMinute} '
-                                                'игровых мин / реальную мин'
-                                            : '${speed.gameMinutesPerRealMinute} '
-                                                'game min / real min',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall,
-                                      ),
-                                    ],
+                                (_Destination destination) =>
+                                    _CompactDestination(
+                                  id: destination.id,
+                                  label: destination.label,
+                                  semanticPurpose: destination.semanticPurpose,
+                                  icon: _navigationIcon(
+                                    destination.id == _selectedDestinationId
+                                        ? destination.selectedIcon
+                                        : destination.icon,
+                                    destination.id,
+                                    inboxPresentation.attentionRequiredCount,
                                   ),
                                 ),
                               )
                               .toList(growable: false),
-                      icon: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          const Icon(Icons.speed),
-                          const SizedBox(width: 2),
-                          Text(_clockSpeed.label),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      key: const ValueKey<String>('simulation-pause-toggle'),
-                      tooltip: _clockPaused
-                          ? GameplayLocale.text(
-                              context,
-                              'Resume simulation clock',
-                              'Продолжить игровые часы',
-                            )
-                          : GameplayLocale.text(
-                              context,
-                              'Pause simulation clock',
-                              'Приостановить игровые часы',
-                            ),
-                      onPressed: widget.repository.supportsLiveClock &&
-                              !_persistenceInProgress &&
-                              !widget.repository.isTerminal
-                          ? _toggleClock
-                          : null,
-                      icon: Icon(
-                        _clockPaused
-                            ? Icons.play_circle_outline
-                            : Icons.pause_circle_outline,
-                      ),
-                    ),
-                    PopupMenuButton<_PersistenceAction>(
-                      key: const ValueKey<String>('save-load-menu'),
-                      tooltip: GameplayLocale.text(
-                        context,
-                        'Saved game',
-                        'Сохранённая игра',
-                      ),
-                      enabled: widget.repository.supportsPersistence &&
-                          !_persistenceInProgress,
-                      onSelected: (_PersistenceAction action) {
-                        switch (action) {
-                          case _PersistenceAction.save:
-                            _saveGame();
-                            break;
-                          case _PersistenceAction.load:
-                            _confirmLoadGame();
-                            break;
-                        }
-                      },
-                      itemBuilder: (BuildContext context) =>
-                          <PopupMenuEntry<_PersistenceAction>>[
-                        PopupMenuItem<_PersistenceAction>(
-                          key: const ValueKey<String>('save-game-action'),
-                          value: _PersistenceAction.save,
-                          child: ListTile(
-                            leading: const Icon(Icons.save_outlined),
-                            title: Text(
-                              GameplayLocale.text(
-                                context,
-                                'Save game',
-                                'Сохранить игру',
-                              ),
-                            ),
-                          ),
+                          onSelected: _selectDestination,
                         ),
-                        PopupMenuItem<_PersistenceAction>(
-                          key: const ValueKey<String>('load-game-action'),
-                          value: _PersistenceAction.load,
-                          child: ListTile(
-                            leading: const Icon(Icons.restore_page_outlined),
-                            title: Text(
-                              GameplayLocale.text(
+                  floatingActionButton:
+                      snapshot.actions.isEmpty || _persistenceInProgress
+                          ? null
+                          : FloatingActionButton.extended(
+                              key: const ValueKey<String>(
+                                'available-decisions-control',
+                              ),
+                              tooltip: GameplayLocale.text(
                                 context,
-                                'Load game',
-                                'Загрузить игру',
+                                'Available decisions: ${snapshot.actions.length}',
+                                'Доступно решений: ${snapshot.actions.length}',
+                              ),
+                              onPressed: () => _showActions(snapshot),
+                              icon: const Icon(
+                                  Icons.playlist_add_check_circle_outlined),
+                              label: Text(
+                                '${GameplayLocale.text(context, 'Decisions', 'Решения')}'
+                                ' · ${snapshot.actions.length}',
                               ),
                             ),
-                          ),
-                        ),
-                      ],
-                      icon: _persistenceInProgress
-                          ? const Icon(Icons.hourglass_top)
-                          : const Icon(Icons.save_outlined),
-                    ),
-                    IconButton(
-                      tooltip: GameplayLocale.text(
-                        context,
-                        'Reset deterministic demo',
-                        'Сбросить прохождение',
-                      ),
-                      onPressed: _persistenceInProgress ? null : _confirmReset,
-                      icon: const Icon(Icons.restart_alt),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                ),
-                body: AbsorbPointer(
-                  absorbing: _persistenceInProgress,
-                  child: useRail
-                      ? Row(
-                          children: <Widget>[
-                            NavigationRail(
-                              selectedIndex: _selectedIndex,
-                              onDestinationSelected: _selectDestination,
-                              labelType: NavigationRailLabelType.all,
-                              leading: Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: const _MatterMonogram(),
-                              ),
-                              destinations: destinations
-                                  .map(
-                                    (_Destination destination) =>
-                                        NavigationRailDestination(
-                                      icon: _navigationIcon(
-                                        destination.icon,
-                                        destination.id,
-                                        inboxPresentation.attentionRequiredCount,
-                                      ),
-                                      selectedIcon: _navigationIcon(
-                                        destination.selectedIcon,
-                                        destination.id,
-                                        inboxPresentation.attentionRequiredCount,
-                                      ),
-                                      label: Text(destination.label),
-                                    ),
-                                  )
-                                  .toList(growable: false),
-                            ),
-                            const VerticalDivider(width: 1),
-                            Expanded(child: content),
-                          ],
-                        )
-                      : content,
-                ),
-                bottomNavigationBar: useRail
-                    ? null
-                    : NavigationBar(
-                        selectedIndex: _selectedIndex,
-                        onDestinationSelected:
-                            _persistenceInProgress ? null : _selectDestination,
-                        destinations: destinations
-                            .map(
-                              (_Destination destination) =>
-                                  NavigationDestination(
-                                icon: _navigationIcon(
-                                  destination.icon,
-                                  destination.id,
-                                  inboxPresentation.attentionRequiredCount,
-                                ),
-                                selectedIcon: _navigationIcon(
-                                  destination.selectedIcon,
-                                  destination.id,
-                                  inboxPresentation.attentionRequiredCount,
-                                ),
-                                label: destination.label,
-                              ),
-                            )
-                            .toList(growable: false),
-                      ),
-                floatingActionButton:
-                    snapshot.actions.isEmpty || _persistenceInProgress
-                        ? null
-                        : FloatingActionButton.extended(
-                            key: const ValueKey<String>(
-                              'available-decisions-control',
-                            ),
-                            tooltip: GameplayLocale.text(
-                              context,
-                              'Available decisions: ${snapshot.actions.length}',
-                              'Доступно решений: ${snapshot.actions.length}',
-                            ),
-                            onPressed: () => _showActions(snapshot),
-                            icon: const Icon(
-                                Icons.playlist_add_check_circle_outlined),
-                            label: Text(
-                              '${GameplayLocale.text(context, 'Decisions', 'Решения')}'
-                              ' · ${snapshot.actions.length}',
-                            ),
-                          ),
-              );
-            },
+                );
+              },
+            ),
           ),
         );
       },
     );
-  }
-
-  Widget _buildContent(
-    GameSnapshot snapshot,
-    InboxPresentation inboxPresentation,
-  ) {
-    // Build only the visible destination. The screens use PageStorage keys for
-    // scroll restoration, while avoiding eager decoding of the branding image
-    // and other off-screen content on memory-constrained phones.
-    return switch (_selectedIndex) {
-      0 => InboxScreen(
-          snapshot: snapshot,
-          presentation: inboxPresentation,
-          onMessageTap: _showInboxMessage,
-          onCaseReportTap: () => _showCaseReport(snapshot),
-        ),
-      1 => _buildMatterContent(snapshot),
-      2 => CalendarScreen(
-          snapshot: snapshot,
-          onRestUntilNextWorkday: widget.repository.supportsLiveClock &&
-                  !widget.repository.isTerminal
-              ? _restUntilNextWorkday
-              : null,
-          onModalVisibilityChanged: _setModalVisible,
-          onOpenRelatedAction: (String actionId) => _showActions(
-            snapshot,
-            onlyActionId: actionId,
-          ),
-        ),
-      3 => AiAssociateScreen(
-          snapshot: snapshot,
-          onShowActions: () => _showActions(snapshot, aiOnly: true),
-        ),
-      4 => CareerScreen(snapshot: snapshot),
-      _ => InboxScreen(
-          snapshot: snapshot,
-          onMessageTap: _showInboxMessage,
-          onCaseReportTap: () => _showCaseReport(snapshot),
-        ),
-    };
   }
 
   Widget _buildMatterContent(GameSnapshot snapshot) {
@@ -602,8 +593,76 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     );
   }
 
-  void _selectDestination(int index) {
-    setState(() => _selectedIndex = index);
+  void _selectDestination(String destinationId) {
+    if (destinationId == _selectedDestinationId) {
+      return;
+    }
+    setState(() => _selectedDestinationId = destinationId);
+  }
+
+  String _sessionClockLabel(BuildContext context) {
+    if (!widget.repository.supportsLiveClock || widget.repository.isTerminal) {
+      return GameplayLocale.text(
+        context,
+        'Action-driven clock',
+        'Часы по действиям',
+      );
+    }
+    final String state = _clockPaused
+        ? GameplayLocale.text(context, 'Paused', 'Пауза')
+        : GameplayLocale.text(context, 'Running', 'Идут');
+    return '$state · ${_clockSpeed.label}';
+  }
+
+  Future<void> _showSessionControls(GameSnapshot snapshot) async {
+    final JurisVisualMode resolvedMode = JurisVisualModeResolver.resolve(
+      selection: _visualModeController.selection,
+      projectedTimeLabel: snapshot.timeLabel,
+    );
+    final Object? result = await _whileClockSuspended<Object>(
+      () => showModalBottomSheet<Object>(
+        context: context,
+        useSafeArea: true,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (BuildContext sheetContext) => GameplayLocale(
+          locale: widget.locale,
+          child: _SessionControlsSurface(
+            dayLabel: snapshot.dayLabel,
+            timeLabel: snapshot.timeLabel,
+            stage: snapshot.stage,
+            clockSupported: widget.repository.supportsLiveClock &&
+                !widget.repository.isTerminal,
+            persistenceSupported: widget.repository.supportsPersistence,
+            persistenceInProgress: _persistenceInProgress,
+            clockPaused: _clockPaused,
+            clockSpeed: _clockSpeed,
+            visualModeSelection: _visualModeController.selection,
+            resolvedVisualMode: resolvedMode,
+          ),
+        ),
+      ),
+    );
+
+    if (result == null || !mounted) {
+      return;
+    }
+    switch (result) {
+      case final SimulationClockSpeed speed:
+        _selectClockSpeed(speed);
+      case final JurisVisualModeSelection selection:
+        _visualModeController.selection = selection;
+      case _SessionCommand.toggleClock:
+        _toggleClock();
+      case _SessionCommand.reset:
+        await _confirmReset();
+      case _PersistenceAction.save:
+        await _saveGame();
+      case _PersistenceAction.load:
+        await _confirmLoadGame();
+      default:
+        break;
+    }
   }
 
   Future<void> _showInboxMessage(InboxItemView item) async {
@@ -1109,24 +1168,718 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
 enum _PersistenceAction { save, load }
 
+enum _SessionCommand { toggleClock, reset }
+
 class _Destination {
-  const _Destination(this.id, this.label, this.icon, this.selectedIcon);
+  const _Destination({
+    required this.id,
+    required this.label,
+    required this.semanticPurpose,
+    required this.icon,
+    required this.selectedIcon,
+    required this.builder,
+  });
 
   final String id;
   final String label;
+  final String semanticPurpose;
   final IconData icon;
   final IconData selectedIcon;
+  final Widget Function() builder;
 }
 
-class _MatterMonogram extends StatelessWidget {
-  const _MatterMonogram();
+class _NavigationRailFocusIndicator extends StatelessWidget {
+  const _NavigationRailFocusIndicator({
+    required this.child,
+    super.key,
+  });
+
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return CircleAvatar(
-      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-      foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-      child: const Text('AJ'),
+    final bool focused = Focus.of(context).hasFocus;
+    return JurisFocusOutline(
+      focused: focused,
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _SessionIdentityHeader extends StatelessWidget {
+  const _SessionIdentityHeader({
+    required this.destinationLabel,
+    required this.matterTitle,
+    required this.dayLabel,
+    required this.timeLabel,
+    required this.stage,
+    required this.clockLabel,
+  });
+
+  final String destinationLabel;
+  final String matterTitle;
+  final String dayLabel;
+  final String timeLabel;
+  final String stage;
+  final String clockLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final JurisSpacing spacing =
+        theme.extension<JurisSpacing>() ?? JurisSpacing.standard;
+    final JurisDensity density =
+        theme.extension<JurisDensity>() ?? JurisDensity.standard;
+    final JurisTypography typography =
+        theme.extension<JurisTypography>() ?? JurisTypography.standard;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final JurisDensityMetrics metrics = density.resolve(
+          constraints.maxWidth >= 700
+              ? JurisDensityMode.comfortable
+              : JurisDensityMode.compact,
+        );
+        return Semantics(
+          container: true,
+          header: true,
+          excludeSemantics: true,
+          label: '$destinationLabel. $matterTitle. '
+              '$dayLabel, $timeLabel, $stage. $clockLabel.',
+          child: Padding(
+            key: const ValueKey<String>('professional-session-header'),
+            padding: EdgeInsets.symmetric(
+              horizontal: constraints.maxWidth >= 700
+                  ? spacing.wideGutter
+                  : spacing.compactGutter,
+              vertical: metrics.contentInset,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  destinationLabel,
+                  style: typography.screenDisplay.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                SizedBox(height: metrics.sectionRhythm / 2),
+                Text(
+                  matterTitle,
+                  style: typography.bodyCompact.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: metrics.sectionRhythm),
+                Wrap(
+                  spacing: spacing.md,
+                  runSpacing: spacing.xs,
+                  children: <Widget>[
+                    _SessionMetadataLabel(
+                      icon: Icons.calendar_today_outlined,
+                      label: dayLabel,
+                    ),
+                    _SessionMetadataLabel(
+                      icon: Icons.schedule,
+                      label: timeLabel,
+                    ),
+                    _SessionMetadataLabel(
+                      icon: Icons.account_tree_outlined,
+                      label: stage,
+                    ),
+                    _SessionMetadataLabel(
+                      icon: Icons.speed,
+                      label: clockLabel,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SessionMetadataLabel extends StatelessWidget {
+  const _SessionMetadataLabel({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final JurisTypography typography =
+        theme.extension<JurisTypography>() ?? JurisTypography.standard;
+    return Semantics(
+      label: label,
+      child: ExcludeSemantics(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                label,
+                style: typography.timestamp.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactDestination {
+  const _CompactDestination({
+    required this.id,
+    required this.label,
+    required this.semanticPurpose,
+    required this.icon,
+  });
+
+  final String id;
+  final String label;
+  final String semanticPurpose;
+  final Widget icon;
+}
+
+class _CompactDestinationBar extends StatefulWidget {
+  const _CompactDestinationBar({
+    required this.destinations,
+    required this.selectedDestinationId,
+    required this.enabled,
+    required this.onSelected,
+    super.key,
+  });
+
+  final List<_CompactDestination> destinations;
+  final String selectedDestinationId;
+  final bool enabled;
+  final ValueChanged<String> onSelected;
+
+  @override
+  State<_CompactDestinationBar> createState() => _CompactDestinationBarState();
+}
+
+class _CompactDestinationBarState extends State<_CompactDestinationBar> {
+  final Map<String, GlobalKey> _destinationKeys = <String, GlobalKey>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleSelectedReveal();
+  }
+
+  @override
+  void didUpdateWidget(covariant _CompactDestinationBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedDestinationId != widget.selectedDestinationId) {
+      _scheduleSelectedReveal();
+    }
+  }
+
+  void _scheduleSelectedReveal() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final BuildContext? selectedContext =
+          _destinationKeys[widget.selectedDestinationId]?.currentContext;
+      if (!mounted || selectedContext == null) {
+        return;
+      }
+      Scrollable.ensureVisible(
+        selectedContext,
+        alignment: 0.5,
+        duration: Duration.zero,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final JurisSpacing spacing =
+        theme.extension<JurisSpacing>() ?? JurisSpacing.standard;
+    return Material(
+      color: theme.colorScheme.surfaceContainerLow,
+      child: SafeArea(
+        top: false,
+        child: Semantics(
+          container: true,
+          label: GameplayLocale.text(
+            context,
+            'Primary destinations',
+            'Основные разделы',
+          ),
+          child: FocusTraversalGroup(
+            policy: OrderedTraversalPolicy(),
+            child: SingleChildScrollView(
+              key: const ValueKey<String>('compact-destination-scroll'),
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: spacing.xs),
+              child: Row(
+                children: <Widget>[
+                  for (int index = 0;
+                      index < widget.destinations.length;
+                      index++)
+                    FocusTraversalOrder(
+                      order: NumericFocusOrder(index.toDouble()),
+                      child: KeyedSubtree(
+                        key: _destinationKeys.putIfAbsent(
+                          widget.destinations[index].id,
+                          GlobalKey.new,
+                        ),
+                        child: _CompactDestinationButton(
+                          destination: widget.destinations[index],
+                          selected: widget.destinations[index].id ==
+                              widget.selectedDestinationId,
+                          enabled: widget.enabled,
+                          onSelected: widget.onSelected,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactDestinationButton extends StatelessWidget {
+  const _CompactDestinationButton({
+    required this.destination,
+    required this.selected,
+    required this.enabled,
+    required this.onSelected,
+  });
+
+  final _CompactDestination destination;
+  final bool selected;
+  final bool enabled;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final JurisSpacing spacing =
+        theme.extension<JurisSpacing>() ?? JurisSpacing.standard;
+    final JurisTypography typography =
+        theme.extension<JurisTypography>() ?? JurisTypography.standard;
+    return Builder(
+      builder: (BuildContext itemContext) => Semantics(
+        key: ValueKey<String>('compact-destination-${destination.id}'),
+        button: true,
+        selected: selected,
+        enabled: enabled,
+        label: destination.label,
+        hint: destination.semanticPurpose,
+        child: Tooltip(
+          message: destination.semanticPurpose,
+          child: InkWell(
+            onTap: enabled ? () => onSelected(destination.id) : null,
+            onFocusChange: (bool focused) {
+              if (!focused) {
+                return;
+              }
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (itemContext.mounted) {
+                  Scrollable.ensureVisible(
+                    itemContext,
+                    alignment: 0.5,
+                    duration: Duration.zero,
+                  );
+                }
+              });
+            },
+            child: ExcludeSemantics(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: 72,
+                  minHeight: 64,
+                ),
+                child: Builder(
+                  builder: (BuildContext focusContext) => JurisFocusOutline(
+                    key: ValueKey<String>(
+                      'compact-destination-focus-${destination.id}',
+                    ),
+                    focused: Focus.of(focusContext).hasFocus,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: spacing.md,
+                        vertical: spacing.sm,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          IconTheme(
+                            data: IconThemeData(
+                              color: selected
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
+                            child: destination.icon,
+                          ),
+                          SizedBox(height: spacing.xs),
+                          Text(
+                            destination.label,
+                            softWrap: false,
+                            style: typography.controlLabel.copyWith(
+                              color: selected
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SessionControlsSurface extends StatelessWidget {
+  const _SessionControlsSurface({
+    required this.dayLabel,
+    required this.timeLabel,
+    required this.stage,
+    required this.clockSupported,
+    required this.persistenceSupported,
+    required this.persistenceInProgress,
+    required this.clockPaused,
+    required this.clockSpeed,
+    required this.visualModeSelection,
+    required this.resolvedVisualMode,
+  });
+
+  final String dayLabel;
+  final String timeLabel;
+  final String stage;
+  final bool clockSupported;
+  final bool persistenceSupported;
+  final bool persistenceInProgress;
+  final bool clockPaused;
+  final SimulationClockSpeed clockSpeed;
+  final JurisVisualModeSelection visualModeSelection;
+  final JurisVisualMode resolvedVisualMode;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final JurisSpacing spacing =
+        theme.extension<JurisSpacing>() ?? JurisSpacing.standard;
+    final JurisTypography typography =
+        theme.extension<JurisTypography>() ?? JurisTypography.standard;
+    final bool russian = GameplayLocale.of(context) == 'ru';
+    final String resolvedModeLabel =
+        resolvedVisualMode == JurisVisualMode.office ? 'OFFICE' : 'AFTER HOURS';
+    return SafeArea(
+      top: false,
+      child: Semantics(
+        container: true,
+        label: GameplayLocale.text(
+          context,
+          'Session controls',
+          'Управление сеансом',
+        ),
+        child: SingleChildScrollView(
+          key: const ValueKey<String>('session-controls-surface'),
+          padding: EdgeInsets.fromLTRB(
+            spacing.lg,
+            spacing.sm,
+            spacing.lg,
+            spacing.xxl,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      GameplayLocale.text(
+                        context,
+                        'Session controls',
+                        'Управление сеансом',
+                      ),
+                      style: typography.sectionTitle,
+                    ),
+                  ),
+                  IconButton(
+                    key: const ValueKey<String>('session-controls-close'),
+                    tooltip: GameplayLocale.text(context, 'Close', 'Закрыть'),
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              SizedBox(height: spacing.xs),
+              Text(
+                '$dayLabel · $timeLabel · $stage',
+                style: typography.timestamp.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              SizedBox(height: spacing.lg),
+              _SessionSectionLabel(
+                label: GameplayLocale.text(
+                  context,
+                  'Simulation clock',
+                  'Игровые часы',
+                ),
+              ),
+              PopupMenuButton<SimulationClockSpeed>(
+                key: const ValueKey<String>('simulation-speed-menu'),
+                tooltip: russian
+                    ? 'Скорость симуляции: ${clockSpeed.label}'
+                    : 'Simulation speed: ${clockSpeed.label}',
+                initialValue: clockSpeed,
+                enabled: clockSupported && !persistenceInProgress,
+                onSelected: (SimulationClockSpeed speed) =>
+                    Navigator.pop(context, speed),
+                itemBuilder: (BuildContext context) =>
+                    SimulationClockSpeed.values
+                        .map(
+                          (SimulationClockSpeed speed) =>
+                              PopupMenuItem<SimulationClockSpeed>(
+                            value: speed,
+                            height: 64,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(speed.label),
+                                Text(
+                                  russian
+                                      ? '${speed.gameMinutesPerRealMinute} '
+                                          'игровых мин / реальную мин'
+                                      : '${speed.gameMinutesPerRealMinute} '
+                                          'game min / real min',
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                        .toList(growable: false),
+                child: ListTile(
+                  minTileHeight: 48,
+                  leading: const Icon(Icons.speed),
+                  title: Text(
+                    GameplayLocale.text(
+                      context,
+                      'Simulation speed',
+                      'Скорость симуляции',
+                    ),
+                  ),
+                  subtitle: Text(clockSpeed.label),
+                  trailing: const Icon(Icons.arrow_drop_down),
+                ),
+              ),
+              Tooltip(
+                message: clockPaused
+                    ? GameplayLocale.text(
+                        context,
+                        'Resume simulation clock',
+                        'Продолжить игровые часы',
+                      )
+                    : GameplayLocale.text(
+                        context,
+                        'Pause simulation clock',
+                        'Приостановить игровые часы',
+                      ),
+                child: ListTile(
+                  key: const ValueKey<String>('simulation-pause-toggle'),
+                  minTileHeight: 48,
+                  enabled: clockSupported && !persistenceInProgress,
+                  leading: Icon(
+                    clockPaused
+                        ? Icons.play_circle_outline
+                        : Icons.pause_circle_outline,
+                  ),
+                  title: Text(
+                    clockPaused
+                        ? GameplayLocale.text(context, 'Resume', 'Продолжить')
+                        : GameplayLocale.text(context, 'Pause', 'Пауза'),
+                  ),
+                  onTap: () =>
+                      Navigator.pop(context, _SessionCommand.toggleClock),
+                ),
+              ),
+              const Divider(),
+              _SessionSectionLabel(
+                label: GameplayLocale.text(
+                  context,
+                  'Appearance',
+                  'Оформление',
+                ),
+              ),
+              for (final JurisVisualModeSelection selection
+                  in JurisVisualModeSelection.values)
+                _VisualModeOption(
+                  selection: selection,
+                  selected: selection == visualModeSelection,
+                  resolvedModeLabel: resolvedModeLabel,
+                ),
+              const Divider(),
+              _SessionSectionLabel(
+                label: GameplayLocale.text(
+                  context,
+                  'Saved session',
+                  'Сохранённый сеанс',
+                ),
+              ),
+              PopupMenuButton<_PersistenceAction>(
+                key: const ValueKey<String>('save-load-menu'),
+                tooltip: GameplayLocale.text(
+                  context,
+                  'Saved game',
+                  'Сохранённая игра',
+                ),
+                enabled: persistenceSupported && !persistenceInProgress,
+                onSelected: (_PersistenceAction action) =>
+                    Navigator.pop(context, action),
+                itemBuilder: (BuildContext context) =>
+                    <PopupMenuEntry<_PersistenceAction>>[
+                  PopupMenuItem<_PersistenceAction>(
+                    key: const ValueKey<String>('save-game-action'),
+                    value: _PersistenceAction.save,
+                    child: ListTile(
+                      leading: const Icon(Icons.save_outlined),
+                      title: Text(
+                        GameplayLocale.text(
+                          context,
+                          'Save game',
+                          'Сохранить игру',
+                        ),
+                      ),
+                    ),
+                  ),
+                  PopupMenuItem<_PersistenceAction>(
+                    key: const ValueKey<String>('load-game-action'),
+                    value: _PersistenceAction.load,
+                    child: ListTile(
+                      leading: const Icon(Icons.restore_page_outlined),
+                      title: Text(
+                        GameplayLocale.text(
+                          context,
+                          'Load game',
+                          'Загрузить игру',
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                child: ListTile(
+                  minTileHeight: 48,
+                  enabled: persistenceSupported && !persistenceInProgress,
+                  leading: const Icon(Icons.save_outlined),
+                  title: Text(
+                    GameplayLocale.text(
+                      context,
+                      'Save or load game',
+                      'Сохранить или загрузить игру',
+                    ),
+                  ),
+                  trailing: const Icon(Icons.arrow_drop_down),
+                ),
+              ),
+              ListTile(
+                key: const ValueKey<String>('reset-demo-action'),
+                minTileHeight: 48,
+                enabled: !persistenceInProgress,
+                leading: const Icon(Icons.restart_alt),
+                title: Text(
+                  GameplayLocale.text(
+                    context,
+                    'Reset deterministic demo',
+                    'Сбросить прохождение',
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, _SessionCommand.reset),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SessionSectionLabel extends StatelessWidget {
+  const _SessionSectionLabel({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final JurisTypography typography =
+        Theme.of(context).extension<JurisTypography>() ??
+            JurisTypography.standard;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Text(label, style: typography.statusStamp),
+    );
+  }
+}
+
+class _VisualModeOption extends StatelessWidget {
+  const _VisualModeOption({
+    required this.selection,
+    required this.selected,
+    required this.resolvedModeLabel,
+  });
+
+  final JurisVisualModeSelection selection;
+  final bool selected;
+  final String resolvedModeLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final String label = switch (selection) {
+      JurisVisualModeSelection.automatic =>
+        GameplayLocale.text(context, 'Automatic', 'Автоматически'),
+      JurisVisualModeSelection.office => 'OFFICE',
+      JurisVisualModeSelection.afterHours => 'AFTER HOURS',
+    };
+    final String? subtitle = selection == JurisVisualModeSelection.automatic
+        ? '${GameplayLocale.text(context, 'Current', 'Сейчас')}: '
+            '$resolvedModeLabel'
+        : null;
+    return Semantics(
+      key: ValueKey<String>('visual-mode-${selection.name}'),
+      button: true,
+      selected: selected,
+      excludeSemantics: true,
+      label: subtitle == null ? label : '$label. $subtitle',
+      onTap: () => Navigator.pop(context, selection),
+      child: ListTile(
+        minTileHeight: 48,
+        selected: selected,
+        leading: Icon(
+          selected ? Icons.radio_button_checked : Icons.radio_button_off,
+        ),
+        title: Text(label),
+        subtitle: subtitle == null ? null : Text(subtitle),
+        trailing: selected ? const Icon(Icons.check) : null,
+        onTap: () => Navigator.pop(context, selection),
+      ),
     );
   }
 }

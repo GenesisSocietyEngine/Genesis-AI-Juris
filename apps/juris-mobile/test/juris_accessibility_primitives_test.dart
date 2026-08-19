@@ -105,6 +105,96 @@ void main() {
     }
   });
 
+  test('both professional modes preserve text and boundary contrast', () {
+    for (final JurisVisualMode mode in JurisVisualMode.values) {
+      final ThemeData theme = JurisTheme.forMode(mode);
+      final JurisSurfaces surfaces = theme.extension<JurisSurfaces>()!;
+      for (final Color foreground in <Color>[
+        surfaces.ink,
+        surfaces.mutedInk,
+        surfaces.danger,
+        surfaces.success,
+      ]) {
+        expect(
+          JurisContrast.meetsNormalText(foreground, surfaces.baseSurface),
+          isTrue,
+          reason: '$mode $foreground on ${surfaces.baseSurface}',
+        );
+      }
+      for (final MapEntry<Color, Color> pair in <MapEntry<Color, Color>>[
+        MapEntry<Color, Color>(
+          theme.colorScheme.onPrimary,
+          theme.colorScheme.primary,
+        ),
+        MapEntry<Color, Color>(
+          theme.colorScheme.onSecondary,
+          theme.colorScheme.secondary,
+        ),
+        MapEntry<Color, Color>(
+          theme.colorScheme.onTertiary,
+          theme.colorScheme.tertiary,
+        ),
+        MapEntry<Color, Color>(
+          theme.colorScheme.onError,
+          theme.colorScheme.error,
+        ),
+      ]) {
+        expect(
+          JurisContrast.meetsNormalText(pair.key, pair.value),
+          isTrue,
+          reason: '$mode ${pair.key} on ${pair.value}',
+        );
+      }
+      expect(
+        JurisContrast.meetsUiBoundary(surfaces.focus, surfaces.canvas),
+        isTrue,
+        reason: '$mode focus',
+      );
+
+      final JurisSurfaces highContrast =
+          surfaces.resolveHighContrast(highContrast: true);
+      for (final Color boundary in <Color>[
+        highContrast.brass,
+        highContrast.cyan,
+        highContrast.focus,
+        highContrast.rule,
+      ]) {
+        expect(
+          JurisContrast.meetsUiBoundary(boundary, highContrast.canvas),
+          isTrue,
+          reason: '$mode high contrast $boundary',
+        );
+      }
+
+      const CaseVisualPalette casePalette = CaseVisualPalette(
+        background: Color(0xFF102030),
+        surface: Color(0xFF304050),
+        accent: Color(0xFFB09050),
+        signal: Color(0xFF50B0C0),
+      );
+      final CaseVisualPalette resolved = JurisCasePaletteResolver.resolve(
+        palette: casePalette,
+        surfaces: surfaces,
+        highContrast: true,
+      );
+      expect(resolved.background, surfaces.canvas);
+      expect(resolved.surface, surfaces.highContrastInk);
+      expect(resolved.accent, surfaces.highContrastBrass);
+      expect(resolved.signal, surfaces.highContrastCyan);
+      for (final Color foreground in <Color>[
+        resolved.surface,
+        resolved.accent,
+        resolved.signal,
+      ]) {
+        expect(
+          JurisContrast.meetsUiBoundary(foreground, resolved.background),
+          isTrue,
+          reason: '$mode case palette $foreground',
+        );
+      }
+    }
+  });
+
   test('contrast resolves alpha and rejects an unresolved background', () {
     expect(
       JurisContrast.ratio(

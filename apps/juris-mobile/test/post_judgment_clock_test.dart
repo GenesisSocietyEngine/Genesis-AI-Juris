@@ -5,6 +5,13 @@ import 'package:juris_mobile/app/juris_app.dart';
 import 'package:juris_mobile/data/demo_game_repository.dart';
 import 'package:juris_mobile/models/game_snapshot.dart';
 
+Future<void> _openSessionControls(WidgetTester tester) async {
+  await tester.tap(
+    find.byKey(const ValueKey<String>('session-controls-button')),
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
   test('clock speeds map to 15, 30, and 60 game minutes per real minute', () {
     expect(
@@ -33,12 +40,18 @@ void main() {
     final DemoGameRepository repository = DemoGameRepository(seed: 20260724);
     await tester.pumpWidget(JurisApp(repository: repository));
 
+    await _openSessionControls(tester);
     await tester.tap(
       find.byKey(const ValueKey<String>('simulation-pause-toggle')),
     );
     await tester.pumpAndSettle();
 
+    await _openSessionControls(tester);
     expect(find.byTooltip('Resume simulation clock'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey<String>('session-controls-close')),
+    );
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Urgent: ERP supplier termination notice'));
     await tester.pumpAndSettle();
@@ -53,6 +66,7 @@ void main() {
     final DemoGameRepository repository = DemoGameRepository(seed: 20260724);
     await tester.pumpWidget(JurisApp(repository: repository));
 
+    await _openSessionControls(tester);
     await tester.tap(
       find.byKey(const ValueKey<String>('simulation-speed-menu')),
     );
@@ -121,7 +135,12 @@ void main() {
     await tester.pump(const Duration(seconds: 4));
     expect(repository.advanceCalls, 1);
     expect(find.text('Controlled clock failure'), findsOneWidget);
+    await _openSessionControls(tester);
     expect(find.byTooltip('Resume simulation clock'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey<String>('session-controls-close')),
+    );
+    await tester.pumpAndSettle();
 
     await tester.pump(const Duration(seconds: 12));
     expect(repository.advanceCalls, 1);

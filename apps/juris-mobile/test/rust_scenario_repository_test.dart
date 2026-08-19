@@ -12,6 +12,29 @@ import 'package:juris_mobile/data/scenario_bridge_client.dart';
 import 'package:juris_mobile/models/case_catalog.dart';
 import 'package:juris_mobile/models/game_snapshot.dart';
 
+Future<void> _openSessionControls(WidgetTester tester) async {
+  await tester.tap(
+    find.byKey(const ValueKey<String>('session-controls-button')),
+  );
+  await tester.pumpAndSettle();
+}
+
+Future<void> _openSaveLoadMenu(WidgetTester tester) async {
+  await _openSessionControls(tester);
+  final Finder surface =
+      find.byKey(const ValueKey<String>('session-controls-surface'));
+  final Finder menu = find.byKey(const ValueKey<String>('save-load-menu'));
+  await tester.scrollUntilVisible(
+    menu,
+    240,
+    scrollable:
+        find.descendant(of: surface, matching: find.byType(Scrollable)).first,
+    maxScrolls: 10,
+  );
+  await tester.tap(menu);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -584,7 +607,7 @@ void main() {
     expect(find.text('Входящие'), findsWidgets);
     expect(find.text('Дело'), findsOneWidget);
     expect(find.textContaining('Экстренный приём кооператива'), findsOneWidget);
-    await tester.tap(find.text('Действия · 1'));
+    await tester.tap(find.text('Решения · 1'));
     await tester.pumpAndSettle();
 
     expect(find.text('Доступные действия'), findsOneWidget);
@@ -610,8 +633,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byKey(const ValueKey<String>('save-load-menu')));
-    await tester.pumpAndSettle();
+    await _openSaveLoadMenu(tester);
     expect(find.text('Сохранить игру'), findsOneWidget);
     expect(find.text('Загрузить игру'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey<String>('save-game-action')));
@@ -622,8 +644,7 @@ void main() {
     await tester.pump();
     expect(repository.snapshot.stage, isNot(savedStage));
 
-    await tester.tap(find.byKey(const ValueKey<String>('save-load-menu')));
-    await tester.pumpAndSettle();
+    await _openSaveLoadMenu(tester);
     await tester.tap(find.byKey(const ValueKey<String>('load-game-action')));
     await tester.pumpAndSettle();
     expect(find.text('Загрузить сохранённую игру?'), findsOneWidget);
@@ -632,8 +653,7 @@ void main() {
     expect(client.loadCount, 0);
     expect(repository.snapshot.stage, isNot(savedStage));
 
-    await tester.tap(find.byKey(const ValueKey<String>('save-load-menu')));
-    await tester.pumpAndSettle();
+    await _openSaveLoadMenu(tester);
     await tester.tap(find.byKey(const ValueKey<String>('load-game-action')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey<String>('confirm-load-game')));
@@ -663,8 +683,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byKey(const ValueKey<String>('save-load-menu')));
-    await tester.pumpAndSettle();
+    await _openSaveLoadMenu(tester);
     await tester.tap(find.byKey(const ValueKey<String>('save-game-action')));
     await tester.pump();
     await tester.pump(const Duration(seconds: 8));
@@ -693,8 +712,7 @@ void main() {
       MaterialApp(home: HomeShell(repository: repository)),
     );
 
-    await tester.tap(find.byKey(const ValueKey<String>('save-load-menu')));
-    await tester.pumpAndSettle();
+    await _openSaveLoadMenu(tester);
     await tester.tap(find.byKey(const ValueKey<String>('load-game-action')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey<String>('confirm-load-game')));

@@ -198,9 +198,13 @@ class _ProgressRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Row(
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 4,
           children: <Widget>[
-            Expanded(child: Text(label)),
+            Text(label),
             Text(value),
           ],
         ),

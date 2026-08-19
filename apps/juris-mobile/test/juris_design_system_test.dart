@@ -19,9 +19,11 @@ void main() {
     expect(theme.colorScheme.surface, const Color(0xFF0B1726));
     expect(theme.scaffoldBackgroundColor, const Color(0xFF07111F));
     expect(theme.textTheme.bodyMedium?.fontFamily, JurisFontFamilies.plexSans);
+    expect(theme.focusColor, JurisSurfaces.dark.focusRing);
 
     expect(theme.extension<JurisSurfaces>(), JurisSurfaces.dark);
     expect(theme.extension<JurisSpacing>(), JurisSpacing.standard);
+    expect(theme.extension<JurisDensity>(), JurisDensity.standard);
     expect(theme.extension<JurisRadii>(), JurisRadii.standard);
     expect(theme.extension<JurisBorders>(), JurisBorders.standardWeights);
     expect(theme.extension<JurisScrims>(), JurisScrims.dark);
@@ -34,13 +36,187 @@ void main() {
     expect(buttonMinimum, const Size.square(48));
   });
 
+  test('projected clock resolves strict deterministic semantic modes', () {
+    for (final String officeTime in <String>[
+      '08:00',
+      '08:01',
+      '12:30',
+      '17:59',
+    ]) {
+      expect(
+        JurisVisualModeResolver.fromProjectedTimeLabel(officeTime),
+        JurisVisualMode.office,
+        reason: officeTime,
+      );
+    }
+    for (final String? afterHoursTime in <String?>[
+      null,
+      '',
+      '00:00',
+      '07:59',
+      '18:00',
+      '23:59',
+      '8:00',
+      '08:0',
+      '24:00',
+      '12:60',
+      ' 08:00',
+      '08:00 ',
+      '08.00',
+      '٠٨:٠٠',
+    ]) {
+      expect(
+        JurisVisualModeResolver.fromProjectedTimeLabel(afterHoursTime),
+        JurisVisualMode.afterHours,
+        reason: '$afterHoursTime',
+      );
+    }
+    expect(
+      JurisVisualModeResolver.resolve(
+        selection: JurisVisualModeSelection.office,
+        projectedTimeLabel: '23:59',
+      ),
+      JurisVisualMode.office,
+    );
+    expect(
+      JurisVisualModeResolver.resolve(
+        injectedMode: JurisVisualMode.afterHours,
+        selection: JurisVisualModeSelection.office,
+        projectedTimeLabel: '09:00',
+      ),
+      JurisVisualMode.afterHours,
+    );
+  });
+
+  test('visual-mode controller notifies only for effective presentation', () {
+    final JurisVisualModeController controller = JurisVisualModeController(
+      projectedTimeLabel: '08:00',
+    );
+    int notifications = 0;
+    controller.addListener(() => notifications += 1);
+
+    expect(controller.selection, JurisVisualModeSelection.automatic);
+    expect(controller.resolvedMode, JurisVisualMode.office);
+    controller.updateProjectedTimeLabel('12:00');
+    expect(notifications, 0);
+    controller.updateProjectedTimeLabel('18:00');
+    expect(controller.resolvedMode, JurisVisualMode.afterHours);
+    expect(notifications, 1);
+
+    controller.selection = JurisVisualModeSelection.office;
+    expect(controller.resolvedMode, JurisVisualMode.office);
+    expect(notifications, 2);
+    controller.updateProjectedTimeLabel('09:00');
+    expect(notifications, 2);
+    controller.selection = JurisVisualModeSelection.afterHours;
+    expect(controller.resolvedMode, JurisVisualMode.afterHours);
+    expect(notifications, 3);
+    controller.clearProjectedTime();
+    expect(controller.projectedTimeLabel, isNull);
+    expect(notifications, 3);
+    controller.selection = JurisVisualModeSelection.automatic;
+    expect(notifications, 4);
+    controller.updateProjectedTimeLabel('09:00');
+    expect(controller.resolvedMode, JurisVisualMode.office);
+    expect(notifications, 5);
+    controller.clearProjectedTime();
+    expect(controller.resolvedMode, JurisVisualMode.afterHours);
+    expect(notifications, 6);
+    controller.dispose();
+
+    final JurisVisualModeController fixed =
+        JurisVisualModeController.fixed(JurisVisualMode.office);
+    expect(fixed.selection, JurisVisualModeSelection.office);
+    expect(fixed.resolvedMode, JurisVisualMode.office);
+    fixed.dispose();
+  });
+
+  test('OFFICE and AFTER HOURS themes expose one semantic token model', () {
+    final ThemeData office = JurisTheme.office();
+    final ThemeData afterHours = JurisTheme.afterHours();
+    final ThemeData highContrastOffice = JurisTheme.office(highContrast: true);
+
+    expect(JurisTheme.office(), same(office));
+    expect(JurisTheme.afterHours(), same(afterHours));
+    expect(JurisTheme.office(highContrast: true), same(highContrastOffice));
+    expect(office.brightness, Brightness.light);
+    expect(office.scaffoldBackgroundColor, JurisSurfaces.office.canvas);
+    expect(office.colorScheme.surface, JurisSurfaces.office.baseSurface);
+    expect(office.colorScheme.onSurface, JurisSurfaces.office.ink);
+    expect(office.colorScheme.error, JurisSurfaces.office.danger);
+    expect(office.colorScheme.tertiary, JurisSurfaces.office.success);
+    expect(
+      office.focusColor,
+      JurisSurfaces.office.focus.withValues(alpha: 0.12),
+    );
+    expect(office.extension<JurisSurfaces>(), same(JurisSurfaces.office));
+    expect(office.extension<JurisScrims>(), same(JurisScrims.office));
+
+    expect(afterHours.brightness, Brightness.dark);
+    expect(
+      afterHours.scaffoldBackgroundColor,
+      JurisSurfaces.afterHours.canvas,
+    );
+    expect(
+      afterHours.colorScheme.surface,
+      JurisSurfaces.afterHours.baseSurface,
+    );
+    expect(afterHours.colorScheme.onSurface, JurisSurfaces.afterHours.ink);
+    expect(afterHours.colorScheme.error, JurisSurfaces.afterHours.danger);
+    expect(afterHours.colorScheme.tertiary, JurisSurfaces.afterHours.success);
+    expect(
+      afterHours.focusColor,
+      JurisSurfaces.afterHours.focus.withValues(alpha: 0.12),
+    );
+    expect(
+      afterHours.extension<JurisSurfaces>(),
+      same(JurisSurfaces.afterHours),
+    );
+    expect(
+      afterHours.extension<JurisScrims>(),
+      same(JurisScrims.afterHours),
+    );
+
+    final JurisSurfaces highContrast =
+        highContrastOffice.extension<JurisSurfaces>()!;
+    expect(highContrast.brass, JurisSurfaces.office.highContrastBrass);
+    expect(highContrast.cyan, JurisSurfaces.office.highContrastCyan);
+    expect(highContrast.focus, JurisSurfaces.office.highContrastFocus);
+    expect(highContrast.rule, JurisSurfaces.office.highContrastFocus);
+    expect(highContrast.mutedInk, JurisSurfaces.office.highContrastInk);
+    expect(
+      highContrastOffice.focusColor,
+      JurisSurfaces.office.highContrastFocus.withValues(alpha: 0.18),
+    );
+    final RoundedRectangleBorder highContrastCardShape =
+        highContrastOffice.cardTheme.shape! as RoundedRectangleBorder;
+    expect(highContrastCardShape.side.color.a, 1);
+    expect(
+      JurisContrast.meetsUiBoundary(
+        highContrastCardShape.side.color,
+        highContrastOffice.cardTheme.color!,
+      ),
+      isTrue,
+    );
+    expect(
+      JurisTheme.forMode(JurisVisualMode.office).colorScheme.surface,
+      office.colorScheme.surface,
+    );
+    expect(
+      JurisTheme.forMode(JurisVisualMode.afterHours).colorScheme.surface,
+      afterHours.colorScheme.surface,
+    );
+  });
+
   test('semantic type roles use only the four bundled font faces', () {
     const JurisTypography type = JurisTypography.standard;
 
     expect(
       <String?>[
         type.caseDisplay.fontFamily,
+        type.screenDisplay.fontFamily,
         type.sectionTitle.fontFamily,
+        type.documentTitle.fontFamily,
       ],
       everyElement(JurisFontFamilies.literata),
     );
@@ -54,24 +230,51 @@ void main() {
       everyElement(JurisFontFamilies.plexSans),
     );
     expect(
-      <String?>[type.caseIndex.fontFamily, type.metadata.fontFamily],
+      <String?>[
+        type.caseIndex.fontFamily,
+        type.metadata.fontFamily,
+        type.timestamp.fontFamily,
+        type.statusStamp.fontFamily,
+      ],
       everyElement(JurisFontFamilies.plexMono),
     );
     expect(type.caseDisplay.fontWeight, FontWeight.w600);
+    expect(type.screenDisplay.fontWeight, FontWeight.w600);
     expect(type.sectionTitle.fontWeight, FontWeight.w600);
+    expect(type.documentTitle.fontWeight, FontWeight.w600);
     expect(type.bodyReading.fontWeight, FontWeight.w400);
     expect(type.bodyCompact.fontWeight, FontWeight.w400);
     expect(type.controlLabel.fontWeight, FontWeight.w600);
     expect(type.caseIndex.fontWeight, FontWeight.w500);
     expect(type.metadata.fontWeight, FontWeight.w500);
+    expect(type.timestamp.fontWeight, FontWeight.w500);
+    expect(type.statusStamp.fontWeight, FontWeight.w500);
     expect(type.caption.fontWeight, FontWeight.w400);
     expect(type.resolveCaseDisplay(wide: false).fontSize, 36);
     expect(type.resolveCaseDisplay(wide: true).fontSize, 48);
+    expect(type.screenDisplay.fontSize, 32);
+    expect(type.documentTitle.fontSize, 20);
   });
 
   test('layout, motion, and interaction values remain centralized', () {
     expect(JurisSpacing.standard.compactGutter, 16);
     expect(JurisSpacing.standard.wideGutter, 32);
+    expect(
+      JurisDensity.standard.resolve(JurisDensityMode.compact).contentInset,
+      12,
+    );
+    expect(
+      JurisDensity.standard.resolve(JurisDensityMode.compact).sectionRhythm,
+      8,
+    );
+    expect(
+      JurisDensity.standard.resolve(JurisDensityMode.comfortable).contentInset,
+      16,
+    );
+    expect(
+      JurisDensity.standard.resolve(JurisDensityMode.comfortable).sectionRhythm,
+      12,
+    );
     expect(JurisRadii.standard.panel, 20);
     expect(JurisBorders.standardWeights.focus, 2);
     expect(JurisTargets.accessible.minimumInteractiveExtent, 48);
@@ -89,6 +292,16 @@ void main() {
     expect(spacing.xs, 12);
     expect(spacing.sm, JurisSpacing.standard.sm);
     expect(JurisSpacing.standard.lerp(spacing, 0.5).xs, 8);
+
+    final JurisDensity density = JurisDensity.standard.copyWith(
+      compact: JurisDensity.standard.compact.copyWith(contentInset: 16),
+    );
+    expect(density.compact.contentInset, 16);
+    expect(density.comfortable, same(JurisDensity.standard.comfortable));
+    expect(
+      JurisDensity.standard.lerp(density, 0.5).compact.contentInset,
+      14,
+    );
 
     final JurisRadii radii = JurisRadii.standard.copyWith(panel: 28);
     expect(radii.panel, 28);
@@ -142,6 +355,25 @@ void main() {
         JurisSurfaces.dark.copyWith(overlayElevation: 10);
     expect(surfaces.brandGold, JurisSurfaces.dark.brandGold);
     expect(JurisSurfaces.dark.lerp(surfaces, 0.5).overlayElevation, 8);
+    expect(JurisSurfaces.dark.brandGold, JurisSurfaces.dark.brass);
+    expect(JurisSurfaces.dark.brandNavy, JurisSurfaces.dark.canvas);
+    expect(JurisSurfaces.dark.circuitCyan, JurisSurfaces.dark.cyan);
+    expect(
+      JurisSurfaces.dark.evidenceNeutral,
+      JurisSurfaces.dark.highContrastInk,
+    );
+    expect(
+      JurisSurfaces.forMode(JurisVisualMode.office),
+      same(JurisSurfaces.office),
+    );
+    expect(
+      JurisSurfaces.forMode(JurisVisualMode.afterHours),
+      same(JurisSurfaces.afterHours),
+    );
+    expect(
+      JurisScrims.forMode(JurisVisualMode.office),
+      same(JurisScrims.office),
+    );
 
     final JurisTypography typography = JurisTypography.standard.copyWith(
       caption: JurisTypography.standard.caption.copyWith(fontSize: 14),

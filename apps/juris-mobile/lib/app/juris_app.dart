@@ -6,6 +6,7 @@ import '../data/case_runtime_factory.dart';
 import '../data/game_runtime_repository.dart';
 import '../data/game_save_store.dart';
 import '../data/scenario_bridge_client.dart';
+import '../design/juris_design.dart';
 import '../living_case/living_case_visual_manifest.dart';
 import '../living_case/living_case_visual_manifest_repository.dart';
 import '../models/case_catalog.dart';
@@ -23,6 +24,7 @@ import 'home_shell.dart';
 class JurisApp extends StatefulWidget {
   const JurisApp({
     required this.repository,
+    this.visualModeController,
     super.key,
   })  : catalogRepository = null,
         visualManifestRepository = null,
@@ -36,6 +38,7 @@ class JurisApp extends StatefulWidget {
     this.livingCaseVisualManifestRepository,
     this.scenarioBridgeClient,
     this.gameSaveStore,
+    this.visualModeController,
     super.key,
   }) : repository = null;
 
@@ -45,6 +48,7 @@ class JurisApp extends StatefulWidget {
   final LivingCaseVisualManifestRepository? livingCaseVisualManifestRepository;
   final ScenarioBridgeClient? scenarioBridgeClient;
   final GameSaveStore? gameSaveStore;
+  final JurisVisualModeController? visualModeController;
 
   @override
   State<JurisApp> createState() => _JurisAppState();
@@ -58,13 +62,18 @@ class _JurisAppState extends State<JurisApp> {
   MobileCaseDefinition? _activeCaseDefinition;
   String? _activeCaseId;
   String _activeLocale = 'en';
+  late JurisVisualModeController _visualModeController;
+  late bool _ownsVisualModeController;
 
   bool get _usesCatalog => widget.repository == null;
 
   @override
   void initState() {
     super.initState();
+    _configureVisualModeController();
     _activeRepository = widget.repository;
+    _activeRepository?.addListener(_handleActiveRepositoryChanged);
+    _syncProjectedTime();
     if (_usesCatalog) {
       _visualManifestRepository =
           widget.visualManifestRepository ?? CaseVisualManifestRepository();
@@ -76,6 +85,29 @@ class _JurisAppState extends State<JurisApp> {
   void didUpdateWidget(JurisApp oldWidget) {
     super.didUpdateWidget(oldWidget);
     final bool previouslyUsedCatalog = oldWidget.repository == null;
+    if (oldWidget.visualModeController != widget.visualModeController) {
+      if (_ownsVisualModeController) {
+        _visualModeController.dispose();
+      }
+      _configureVisualModeController();
+      _syncProjectedTime();
+    }
+    if (!_usesCatalog && oldWidget.repository != widget.repository) {
+      final GameRuntimeRepository? previousActive = _activeRepository;
+      _activeRepository?.removeListener(_handleActiveRepositoryChanged);
+      _activeRepository = widget.repository;
+      _activeRepository?.addListener(_handleActiveRepositoryChanged);
+      _syncProjectedTime();
+      if (previouslyUsedCatalog &&
+          previousActive != null &&
+          previousActive != _activeRepository) {
+        previousActive.dispose();
+      }
+    } else if (_usesCatalog && !previouslyUsedCatalog) {
+      _activeRepository?.removeListener(_handleActiveRepositoryChanged);
+      _activeRepository = null;
+      _visualModeController.clearProjectedTime();
+    }
     if (!_usesCatalog) {
       _visualManifestRepository = null;
       _livingCaseVisualManifestRepository = null;
@@ -95,25 +127,45 @@ class _JurisAppState extends State<JurisApp> {
 
   @override
   void dispose() {
+    _activeRepository?.removeListener(_handleActiveRepositoryChanged);
     if (_usesCatalog) {
       _activeRepository?.dispose();
+    }
+    if (_ownsVisualModeController) {
+      _visualModeController.dispose();
     }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'GENESIS: AI Juris',
-      theme: JurisTheme.dark(),
-      locale: Locale(_activeLocale),
-      supportedLocales: const <Locale>[
-        Locale('en'),
-        Locale('ru'),
-      ],
-      localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      home: _buildHome(),
+    return ValueListenableBuilder<JurisVisualModeSelection>(
+      valueListenable: _visualModeController,
+      builder: (
+        BuildContext context,
+        JurisVisualModeSelection selection,
+        Widget? child,
+      ) {
+        final JurisVisualMode mode = _visualModeController.resolvedMode;
+        final ThemeData highContrastTheme = JurisTheme.forMode(
+          mode,
+          highContrast: true,
+        );
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'GENESIS: AI Juris',
+          theme: JurisTheme.forMode(mode),
+          highContrastTheme: highContrastTheme,
+          highContrastDarkTheme: highContrastTheme,
+          locale: Locale(_activeLocale),
+          supportedLocales: const <Locale>[
+            Locale('en'),
+            Locale('ru'),
+          ],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          home: _buildHome(),
+        );
+      },
     );
   }
 
@@ -127,6 +179,7 @@ class _JurisAppState extends State<JurisApp> {
                 locale: _activeLocale,
                 caseDefinition: _activeCaseDefinition,
                 livingCaseVisualManifest: manifest,
+                visualModeController: _visualModeController,
                 onExitToCaseCatalog: _usesCatalog ? _exitToCatalog : null,
               );
       final Future<LivingCaseVisualManifest?>? manifestLoad =
@@ -173,20 +226,25 @@ class _JurisAppState extends State<JurisApp> {
       contentInventory: contentInventory,
     );
     setState(() {
+      _activeRepository?.removeListener(_handleActiveRepositoryChanged);
       _activeRepository = repository;
+      _activeRepository!.addListener(_handleActiveRepositoryChanged);
       _activeCaseId = caseDefinition.caseId;
       _activeCaseDefinition = caseDefinition;
       _activeLocale = locale;
+      _syncProjectedTime();
     });
   }
 
   void _exitToCatalog() {
     final GameRuntimeRepository? previous = _activeRepository;
+    previous?.removeListener(_handleActiveRepositoryChanged);
     setState(() {
       _activeRepository = null;
       _activeCaseId = null;
       _activeCaseDefinition = null;
       _activeLocale = 'en';
+      _visualModeController.clearProjectedTime();
     });
     previous?.dispose();
   }
@@ -196,5 +254,21 @@ class _JurisAppState extends State<JurisApp> {
         widget.livingCaseVisualManifestRepository ??
             LivingCaseVisualManifestRepository();
     _livingCaseVisualManifestLoad = _livingCaseVisualManifestRepository!.load();
+  }
+
+  void _configureVisualModeController() {
+    final JurisVisualModeController? injected = widget.visualModeController;
+    _ownsVisualModeController = injected == null;
+    _visualModeController = injected ?? JurisVisualModeController();
+  }
+
+  void _handleActiveRepositoryChanged() {
+    _syncProjectedTime();
+  }
+
+  void _syncProjectedTime() {
+    _visualModeController.updateProjectedTimeLabel(
+      _activeRepository?.snapshot.timeLabel,
+    );
   }
 }
