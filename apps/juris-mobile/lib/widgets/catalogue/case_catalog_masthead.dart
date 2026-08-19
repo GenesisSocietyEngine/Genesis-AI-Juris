@@ -15,6 +15,9 @@ final class CaseCatalogMasthead extends StatelessWidget {
     required this.selectedFilter,
     required this.onLocaleSelected,
     required this.onFilterSelected,
+    required this.visualModeSelection,
+    required this.resolvedVisualMode,
+    required this.onVisualModeSelected,
   });
 
   final CaseCatalogBundle bundle;
@@ -22,6 +25,9 @@ final class CaseCatalogMasthead extends StatelessWidget {
   final CaseCatalogFilter selectedFilter;
   final ValueChanged<String> onLocaleSelected;
   final ValueChanged<CaseCatalogFilter> onFilterSelected;
+  final JurisVisualModeSelection visualModeSelection;
+  final JurisVisualMode resolvedVisualMode;
+  final ValueChanged<JurisVisualModeSelection> onVisualModeSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -46,27 +52,39 @@ final class CaseCatalogMasthead extends StatelessWidget {
           spacing: spacing.lg,
           runSpacing: spacing.sm,
           children: <Widget>[
-            Semantics(
-              header: true,
-              child: Text(
-                chrome.applicationName.toUpperCase(),
-                style: typography.caseIndex.copyWith(
-                  color: surfaces.brandGold,
-                ),
+            Text(
+              chrome.applicationName.toUpperCase(),
+              style: typography.caseIndex.copyWith(
+                color: surfaces.brandGold,
               ),
             ),
-            _LanguageControl(
-              locale: locale,
-              supportedLocales: bundle.supportedLocales,
-              tooltip: bundle.text(locale, 'language'),
-              onSelected: onLocaleSelected,
+            Wrap(
+              spacing: spacing.sm,
+              runSpacing: spacing.sm,
+              children: <Widget>[
+                _VisualModeControl(
+                  selection: visualModeSelection,
+                  resolvedMode: resolvedVisualMode,
+                  chrome: chrome,
+                  onSelected: onVisualModeSelected,
+                ),
+                _LanguageControl(
+                  locale: locale,
+                  supportedLocales: bundle.supportedLocales,
+                  tooltip: bundle.text(locale, 'language'),
+                  onSelected: onLocaleSelected,
+                ),
+              ],
             ),
           ],
         ),
-        SizedBox(height: spacing.lg),
-        Text(
-          bundle.text(locale, 'library_title'),
-          style: typography.sectionTitle,
+        SizedBox(height: spacing.xl),
+        Semantics(
+          header: true,
+          child: Text(
+            bundle.text(locale, 'library_title'),
+            style: typography.screenDisplay,
+          ),
         ),
         SizedBox(height: spacing.sm),
         ConstrainedBox(
@@ -128,6 +146,107 @@ final class CaseCatalogMasthead extends StatelessWidget {
   }
 }
 
+final class _VisualModeControl extends StatelessWidget {
+  const _VisualModeControl({
+    required this.selection,
+    required this.resolvedMode,
+    required this.chrome,
+    required this.onSelected,
+  });
+
+  final JurisVisualModeSelection selection;
+  final JurisVisualMode resolvedMode;
+  final CinematicCatalogueStrings chrome;
+  final ValueChanged<JurisVisualModeSelection> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final JurisTypography typography =
+        Theme.of(context).extension<JurisTypography>()!;
+    final String resolvedLabel = _visualModeLabel(resolvedMode);
+    final String selectionLabel = switch (selection) {
+      JurisVisualModeSelection.automatic => chrome.automaticMode,
+      JurisVisualModeSelection.office => 'OFFICE',
+      JurisVisualModeSelection.afterHours => 'AFTER HOURS',
+    };
+    final String semanticLabel = '${chrome.appearance}: $selectionLabel. '
+        '${chrome.currentMode}: $resolvedLabel';
+    return PopupMenuButton<JurisVisualModeSelection>(
+      key: const ValueKey<String>('catalog-visual-mode-action'),
+      tooltip: semanticLabel,
+      initialValue: selection,
+      onSelected: onSelected,
+      itemBuilder: (BuildContext context) => JurisVisualModeSelection.values
+          .map(
+            (JurisVisualModeSelection candidate) =>
+                CheckedPopupMenuItem<JurisVisualModeSelection>(
+              key: ValueKey<String>(
+                'catalog-visual-mode-${candidate.name}',
+              ),
+              value: candidate,
+              checked: candidate == selection,
+              child: Text(
+                switch (candidate) {
+                  JurisVisualModeSelection.automatic => chrome.automaticMode,
+                  JurisVisualModeSelection.office => 'OFFICE',
+                  JurisVisualModeSelection.afterHours => 'AFTER HOURS',
+                },
+              ),
+            ),
+          )
+          .toList(growable: false),
+      child: Semantics(
+        button: true,
+        label: semanticLabel,
+        excludeSemantics: true,
+        child: Builder(
+          builder: (BuildContext focusContext) => JurisFocusOutline(
+            key: const ValueKey<String>('catalog-visual-mode-focus'),
+            focused: Focus.of(focusContext).hasFocus,
+            child: JurisMinimumTarget(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const Icon(Icons.contrast_outlined, size: 20),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(selectionLabel),
+                          if (selection == JurisVisualModeSelection.automatic)
+                            Text(
+                              resolvedLabel,
+                              style: typography.statusStamp.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_drop_down, size: 20),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _visualModeLabel(JurisVisualMode mode) => switch (mode) {
+      JurisVisualMode.office => 'OFFICE',
+      JurisVisualMode.afterHours => 'AFTER HOURS',
+    };
+
 final class _LanguageControl extends StatelessWidget {
   const _LanguageControl({
     required this.locale,
@@ -159,18 +278,29 @@ final class _LanguageControl extends StatelessWidget {
             )
             .toList(growable: false);
       },
-      child: JurisMinimumTarget(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              const Icon(Icons.language, size: 20),
-              const SizedBox(width: 8),
-              Text(_languageAutonym(locale)),
-              const SizedBox(width: 4),
-              const Icon(Icons.arrow_drop_down, size: 20),
-            ],
+      child: Semantics(
+        button: true,
+        label: '$tooltip: ${_languageAutonym(locale)}',
+        excludeSemantics: true,
+        child: Builder(
+          builder: (BuildContext focusContext) => JurisFocusOutline(
+            key: const ValueKey<String>('catalog-language-focus'),
+            focused: Focus.of(focusContext).hasFocus,
+            child: JurisMinimumTarget(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const Icon(Icons.language, size: 20),
+                    const SizedBox(width: 8),
+                    Text(_languageAutonym(locale)),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_drop_down, size: 20),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),

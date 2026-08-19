@@ -183,6 +183,12 @@ void main() {
     _expectSelectedCase(bundle, _desertWaterId, 'en');
     expect(FocusManager.instance.primaryFocus?.debugLabel,
         'selected-case-heading');
+    _expectFocusOutlineVisible(
+      tester,
+      find.byKey(
+        const ValueKey<String>('selected-case-heading-focus'),
+      ),
+    );
     expect(find.text('05 / 05'), findsWidgets);
     _expectSelectedSemantics(tester, _desertWaterId, selected: true);
     final CaseVisualTreatment desertTreatment = manifest.resolve(
@@ -211,6 +217,101 @@ void main() {
     expect(tester.binding.transientCallbackCount, 0);
     semantics.dispose();
   });
+
+  testWidgets(
+    'catalog visual modes preserve one loaded stable selection without launch',
+    (WidgetTester tester) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      final JurisVisualModeController controller = JurisVisualModeController();
+      addTearDown(controller.dispose);
+      int catalogueLoads = 0;
+      int manifestLoads = 0;
+      int launchCount = 0;
+      await _pumpLoader(
+        tester,
+        catalogRepository: CaseCatalogRepository(
+          assetLoader: (_) async {
+            catalogueLoads += 1;
+            return encodedBundle;
+          },
+        ),
+        visualRepository: CaseVisualManifestRepository(
+          assetLoader: (_) async {
+            manifestLoads += 1;
+            return encodedManifest;
+          },
+        ),
+        visualModeController: controller,
+        onStartCase: (_, __, ___) => launchCount += 1,
+      );
+
+      final Finder modeAction = find.byKey(
+        const ValueKey<String>('catalog-visual-mode-action'),
+      );
+      expect(modeAction.hitTestable(), findsOneWidget);
+      expect(tester.getSize(modeAction).height, greaterThanOrEqualTo(48));
+      expect(
+        tester.getSemantics(modeAction).label,
+        contains('Appearance: Automatic'),
+      );
+      expect(
+        find.descendant(of: modeAction, matching: find.text('AFTER HOURS')),
+        findsOneWidget,
+      );
+      _expectCatalogueMode(tester, JurisVisualMode.afterHours);
+
+      await _tabTo(tester, modeAction);
+      await tester.pumpAndSettle();
+      _expectFocusOutlineVisible(
+        tester,
+        find.byKey(
+          const ValueKey<String>('catalog-visual-mode-focus'),
+        ),
+      );
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+
+      await _selectCatalogueVisualMode(
+        tester,
+        JurisVisualModeSelection.office,
+      );
+      _expectCatalogueMode(tester, JurisVisualMode.office);
+      expect(controller.selection, JurisVisualModeSelection.office);
+
+      await _selectCase(tester, _goldenShellId);
+      _expectSelectedCase(bundle, _goldenShellId, 'en');
+      expect(
+        tester.widget<CaseIndex>(find.byType(CaseIndex)).selectedCaseId,
+        _goldenShellId,
+      );
+
+      await _revealMastheadControl(tester, modeAction);
+      await _selectCatalogueVisualMode(
+        tester,
+        JurisVisualModeSelection.afterHours,
+      );
+      _expectCatalogueMode(tester, JurisVisualMode.afterHours);
+      expect(
+        tester.widget<CaseIndex>(find.byType(CaseIndex)).selectedCaseId,
+        _goldenShellId,
+      );
+
+      await _selectCatalogueVisualMode(
+        tester,
+        JurisVisualModeSelection.automatic,
+      );
+      _expectCatalogueMode(tester, JurisVisualMode.afterHours);
+      expect(
+        tester.widget<CaseIndex>(find.byType(CaseIndex)).selectedCaseId,
+        _goldenShellId,
+      );
+      expect(catalogueLoads, 1);
+      expect(manifestLoads, 1);
+      expect(launchCount, 0);
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+  );
 
   testWidgets('wide arrows Home End and activation never launch a case', (
     WidgetTester tester,
@@ -1020,16 +1121,16 @@ void main() {
       );
 
       final CaseVisualTreatment treatment = manifest.resolve(_failedErpId);
+      final BuildContext panelContext = tester.element(
+        find.byKey(const ValueKey<String>('selected-case-panel')),
+      );
       expect(
         _selectedHeroPainter().spec.palette,
         JurisCasePaletteResolver.resolve(
           palette: treatment.palette,
-          surfaces: JurisSurfaces.dark,
+          surfaces: Theme.of(panelContext).extension<JurisSurfaces>()!,
           highContrast: true,
         ),
-      );
-      final BuildContext panelContext = tester.element(
-        find.byKey(const ValueKey<String>('selected-case-panel')),
       );
       final JurisMotion motion = JurisMotionPolicy.of(panelContext);
       expect(motion.immediate, Duration.zero);
@@ -1048,51 +1149,83 @@ void main() {
     },
   );
 
-  const List<({String name, Size size, String locale, double textScale})>
-      accessibilityMatrix =
-      <({String name, Size size, String locale, double textScale})>[
+  const List<
+      ({
+        String name,
+        Size size,
+        String locale,
+        double textScale,
+        JurisVisualMode mode,
+      })> accessibilityMatrix = <({
+    String name,
+    Size size,
+    String locale,
+    double textScale,
+    JurisVisualMode mode,
+  })>[
     (
       name:
           'en at 100 percent has complete compact navigation and reachable actions',
       size: Size(360, 800),
       locale: 'en',
       textScale: 1,
+      mode: JurisVisualMode.office,
     ),
     (
       name: 'en at 200 percent has no overflow and both actions stay reachable',
       size: Size(360, 800),
       locale: 'en',
       textScale: 2,
+      mode: JurisVisualMode.office,
     ),
     (
       name: 'ru at 200 percent has no overflow and both actions stay reachable',
       size: Size(360, 800),
       locale: 'ru',
       textScale: 2,
+      mode: JurisVisualMode.office,
     ),
     (
       name: '412 phone en at 200 percent remains reachable',
       size: Size(412, 915),
       locale: 'en',
       textScale: 2,
+      mode: JurisVisualMode.afterHours,
     ),
     (
       name: '412 phone ru at 200 percent remains reachable',
       size: Size(412, 915),
       locale: 'ru',
       textScale: 2,
+      mode: JurisVisualMode.afterHours,
     ),
     (
       name: '699 compact boundary at 200 percent remains reachable',
       size: Size(699, 1000),
       locale: 'ru',
       textScale: 2,
+      mode: JurisVisualMode.office,
     ),
     (
       name: '700 wide boundary at 200 percent remains reachable',
       size: Size(700, 1000),
       locale: 'en',
       textScale: 2,
+      mode: JurisVisualMode.afterHours,
+    ),
+    (
+      name: '800 tablet portrait ru in office mode remains reachable',
+      size: Size(800, 1280),
+      locale: 'ru',
+      textScale: 1,
+      mode: JurisVisualMode.office,
+    ),
+    (
+      name: '1024 tablet landscape en after hours remains reachable',
+      size: Size(1024, 768),
+      locale: 'en',
+      textScale: 1,
+      mode: JurisVisualMode.afterHours,
     ),
   ];
   for (final state in accessibilityMatrix) {
@@ -1101,6 +1234,9 @@ void main() {
       (WidgetTester tester) async {
         final SemanticsHandle semantics = tester.ensureSemantics();
         int launchCount = 0;
+        final JurisVisualModeController visualModeController =
+            JurisVisualModeController.fixed(state.mode);
+        addTearDown(visualModeController.dispose);
         await _pumpCatalogue(
           tester,
           size: state.size,
@@ -1109,7 +1245,16 @@ void main() {
           initialLocale: state.locale,
           textScale: state.textScale,
           reducedMotion: true,
+          visualModeController: visualModeController,
           onStartCase: (_, __, ___) => launchCount += 1,
+        );
+
+        final BuildContext catalogueContext = tester.element(
+          find.byKey(const ValueKey<String>('catalog-visual-mode-action')),
+        );
+        expect(
+          Theme.of(catalogueContext).extension<JurisSurfaces>()!.canvas,
+          JurisSurfaces.forMode(state.mode).canvas,
         );
 
         final CaseIndex selector = await _revealCaseIndex(tester);
@@ -1132,6 +1277,7 @@ void main() {
           final Finder lastRow = find.byKey(
             const ValueKey<String>('case-index-item-$_desertWaterId'),
           );
+          await _revealSelectorControl(tester, lastRow);
           expect(lastRow.hitTestable(), findsOneWidget);
           expect(_primaryFocusIsWithin(lastRow), isTrue);
         } else {
@@ -1205,6 +1351,7 @@ Future<void> _pumpCatalogue(
   bool reducedMotion = false,
   CaseStartCallback? onStartCase,
   ValueChanged<String>? onLocaleChanged,
+  JurisVisualModeController? visualModeController,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = size;
@@ -1228,6 +1375,7 @@ Future<void> _pumpCatalogue(
         reducedMotion: reducedMotion,
         onStartCase: onStartCase ?? _ignoreStart,
         onLocaleChanged: onLocaleChanged,
+        visualModeController: visualModeController,
       ),
     );
     await tester.pumpAndSettle();
@@ -1249,6 +1397,8 @@ Future<void> _pumpLoader(
   WidgetTester tester, {
   required CaseCatalogRepository catalogRepository,
   required CaseVisualManifestRepository visualRepository,
+  JurisVisualModeController? visualModeController,
+  CaseStartCallback onStartCase = _ignoreStart,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(800, 900);
@@ -1261,8 +1411,9 @@ Future<void> _pumpLoader(
         repository: catalogRepository,
         visualManifestRepository: visualRepository,
         locale: 'en',
+        visualModeController: visualModeController,
         onLocaleChanged: (_) {},
-        onStartCase: _ignoreStart,
+        onStartCase: onStartCase,
       ),
     ),
   );
@@ -1427,6 +1578,97 @@ Future<void> _scrollCatalogueToTop(WidgetTester tester) async {
   );
   scrollable.position.jumpTo(scrollable.position.minScrollExtent);
   await tester.pump();
+}
+
+void _expectCatalogueMode(
+  WidgetTester tester,
+  JurisVisualMode expected,
+) {
+  final BuildContext panelContext = tester.element(
+    find.byKey(const ValueKey<String>('selected-case-panel')),
+  );
+  expect(
+    Theme.of(panelContext).extension<JurisSurfaces>()!.canvas,
+    JurisSurfaces.forMode(expected).canvas,
+  );
+}
+
+Future<void> _selectCatalogueVisualMode(
+  WidgetTester tester,
+  JurisVisualModeSelection selection,
+) async {
+  final Finder action = find.byKey(
+    const ValueKey<String>('catalog-visual-mode-action'),
+  );
+  expect(action.hitTestable(), findsOneWidget);
+  await tester.tap(action);
+  await tester.pumpAndSettle();
+  final Finder option = find.byKey(
+    ValueKey<String>('catalog-visual-mode-${selection.name}'),
+  );
+  expect(option.hitTestable(), findsOneWidget);
+  await tester.tap(option);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _revealMastheadControl(
+  WidgetTester tester,
+  Finder target,
+) async {
+  final Finder viewport = find.byKey(
+    const PageStorageKey<String>('case-catalog'),
+  );
+  final ScrollableState scrollable = tester.state<ScrollableState>(
+    _catalogueScrollable(),
+  );
+  for (int gesture = 0; gesture <= _catalogueRevealMaximumSteps; gesture++) {
+    if (target.evaluate().length == 1 &&
+        target.hitTestable().evaluate().length == 1) {
+      return;
+    }
+    if (gesture == _catalogueRevealMaximumSteps) {
+      break;
+    }
+    final double before = scrollable.position.pixels;
+    await tester.drag(
+      viewport,
+      const Offset(0, _catalogueRevealGestureDistance),
+    );
+    await tester.pumpAndSettle();
+    if (target.evaluate().length == 1 &&
+        target.hitTestable().evaluate().length == 1) {
+      return;
+    }
+    if (scrollable.position.pixels >= before - 0.5 &&
+        scrollable.position.pixels <= scrollable.position.minScrollExtent) {
+      break;
+    }
+  }
+  fail(
+    'Could not reveal masthead control through public scrolling; '
+    'built=${target.evaluate().length} '
+    'hitTestable=${target.hitTestable().evaluate().length} '
+    'pixels=${scrollable.position.pixels} '
+    'min=${scrollable.position.minScrollExtent}.',
+  );
+}
+
+void _expectFocusOutlineVisible(WidgetTester tester, Finder outline) {
+  expect(outline, findsOneWidget);
+  final Finder animatedContainer = find.descendant(
+    of: outline,
+    matching: find.byType(AnimatedContainer),
+  );
+  expect(animatedContainer, findsOneWidget);
+  final AnimatedContainer widget = tester.widget<AnimatedContainer>(
+    animatedContainer,
+  );
+  final BoxDecoration decoration = widget.decoration! as BoxDecoration;
+  final Border border = decoration.border! as Border;
+  final JurisSurfaces surfaces =
+      Theme.of(tester.element(outline)).extension<JurisSurfaces>()!;
+  expect(border.top.color, surfaces.focusRing);
+  expect(border.top.width, JurisBorders.standardWeights.focus);
 }
 
 Future<void> _revealSelectorControl(
@@ -2331,6 +2573,7 @@ final class _CatalogueTestHost extends StatefulWidget {
     required this.reducedMotion,
     required this.onStartCase,
     this.onLocaleChanged,
+    this.visualModeController,
   });
 
   final CaseCatalogBundle bundle;
@@ -2341,6 +2584,7 @@ final class _CatalogueTestHost extends StatefulWidget {
   final bool reducedMotion;
   final CaseStartCallback onStartCase;
   final ValueChanged<String>? onLocaleChanged;
+  final JurisVisualModeController? visualModeController;
 
   @override
   State<_CatalogueTestHost> createState() => _CatalogueTestHostState();
@@ -2379,6 +2623,7 @@ final class _CatalogueTestHostState extends State<_CatalogueTestHost> {
           widget.onLocaleChanged?.call(locale);
         },
         onStartCase: widget.onStartCase,
+        visualModeController: widget.visualModeController,
       ),
     );
   }

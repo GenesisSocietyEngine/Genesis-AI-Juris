@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../app/app_theme.dart';
 import '../data/case_catalog_repository.dart';
 import '../data/case_runtime_factory.dart';
+import '../design/juris_design.dart';
 import '../models/case_catalog.dart';
 import '../visual_identity/case_visual_manifest.dart';
 import '../visual_identity/case_visual_manifest_repository.dart';
@@ -28,6 +30,7 @@ class CaseCatalogLoaderScreen extends StatefulWidget {
     required this.locale,
     required this.onLocaleChanged,
     required this.onStartCase,
+    this.visualModeController,
     super.key,
   });
 
@@ -36,6 +39,7 @@ class CaseCatalogLoaderScreen extends StatefulWidget {
   final String locale;
   final ValueChanged<String> onLocaleChanged;
   final CaseStartCallback onStartCase;
+  final JurisVisualModeController? visualModeController;
 
   @override
   State<CaseCatalogLoaderScreen> createState() =>
@@ -139,6 +143,7 @@ class _CaseCatalogLoaderScreenState extends State<CaseCatalogLoaderScreen> {
           initialLocale: widget.locale,
           onLocaleChanged: widget.onLocaleChanged,
           onStartCase: widget.onStartCase,
+          visualModeController: widget.visualModeController,
         );
       },
     );
@@ -159,6 +164,7 @@ class CaseCatalogScreen extends StatefulWidget {
     this.visualManifest,
     this.initialLocale,
     this.onLocaleChanged,
+    this.visualModeController,
     super.key,
   });
 
@@ -166,6 +172,7 @@ class CaseCatalogScreen extends StatefulWidget {
   final CaseVisualManifest? visualManifest;
   final String? initialLocale;
   final ValueChanged<String>? onLocaleChanged;
+  final JurisVisualModeController? visualModeController;
   final CaseStartCallback onStartCase;
 
   @override
@@ -179,10 +186,13 @@ class _CaseCatalogScreenState extends State<CaseCatalogScreen> {
   final FocusNode _selectedCaseHeadingFocus = FocusNode(
     debugLabel: 'selected-case-heading',
   );
+  late JurisVisualModeController _visualModeController;
+  late bool _ownsVisualModeController;
 
   @override
   void initState() {
     super.initState();
+    _configureVisualModeController();
     _locale = _supportedLocale(
       widget.initialLocale ?? widget.bundle.defaultLocale,
     );
@@ -193,6 +203,12 @@ class _CaseCatalogScreenState extends State<CaseCatalogScreen> {
   @override
   void didUpdateWidget(CaseCatalogScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.visualModeController != widget.visualModeController) {
+      if (_ownsVisualModeController) {
+        _visualModeController.dispose();
+      }
+      _configureVisualModeController();
+    }
     if (oldWidget.initialLocale != widget.initialLocale &&
         widget.initialLocale != null) {
       _locale = _supportedLocale(widget.initialLocale!);
@@ -209,11 +225,40 @@ class _CaseCatalogScreenState extends State<CaseCatalogScreen> {
   @override
   void dispose() {
     _selectedCaseHeadingFocus.dispose();
+    if (_ownsVisualModeController) {
+      _visualModeController.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<JurisVisualModeSelection>(
+      valueListenable: _visualModeController,
+      builder: (
+        BuildContext context,
+        JurisVisualModeSelection selection,
+        Widget? child,
+      ) {
+        final JurisVisualMode resolvedMode = JurisVisualModeResolver.resolve(
+          selection: selection,
+        );
+        return Theme(
+          data: JurisTheme.forMode(
+            resolvedMode,
+            highContrast: MediaQuery.highContrastOf(context),
+          ),
+          child: _buildCatalogue(context, selection, resolvedMode),
+        );
+      },
+    );
+  }
+
+  Widget _buildCatalogue(
+    BuildContext context,
+    JurisVisualModeSelection visualModeSelection,
+    JurisVisualMode resolvedVisualMode,
+  ) {
     final List<MobileCaseDefinition> visibleCases = _visibleCases(
       filter: _filter,
     );
@@ -229,6 +274,9 @@ class _CaseCatalogScreenState extends State<CaseCatalogScreen> {
           selectedFilter: _filter,
           onLocaleSelected: _setLocale,
           onFilterSelected: _setFilter,
+          visualModeSelection: visualModeSelection,
+          resolvedVisualMode: resolvedVisualMode,
+          onVisualModeSelected: _setVisualMode,
         ),
         indexBuilder: (BuildContext context, bool wide) {
           if (visibleCases.isEmpty) {
@@ -271,6 +319,16 @@ class _CaseCatalogScreenState extends State<CaseCatalogScreen> {
         },
       ),
     );
+  }
+
+  void _configureVisualModeController() {
+    final JurisVisualModeController? injected = widget.visualModeController;
+    _ownsVisualModeController = injected == null;
+    _visualModeController = injected ?? JurisVisualModeController();
+  }
+
+  void _setVisualMode(JurisVisualModeSelection selection) {
+    _visualModeController.selection = selection;
   }
 
   String _supportedLocale(String candidate) {

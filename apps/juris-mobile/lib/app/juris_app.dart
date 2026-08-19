@@ -201,6 +201,7 @@ class _JurisAppState extends State<JurisApp> {
       repository: widget.catalogRepository!,
       visualManifestRepository: _visualManifestRepository!,
       locale: _activeLocale,
+      visualModeController: _visualModeController,
       onLocaleChanged: _setCatalogLocale,
       onStartCase: _startCase,
     );

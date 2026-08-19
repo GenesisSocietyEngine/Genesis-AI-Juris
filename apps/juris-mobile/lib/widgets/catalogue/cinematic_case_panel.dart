@@ -6,6 +6,10 @@ import '../../models/case_catalog.dart';
 import '../../visual_identity/case_visual_manifest.dart';
 import '../../visual_identity/cinematic_catalogue_strings.dart';
 
+const double _expansivePanelWidth = 620;
+const double _maximumSplitArtworkTextScale = 1.3;
+const double _representativeBodyFontSize = 16;
+
 /// The single selected matter shown by the cinematic catalogue.
 ///
 /// All narrative and launchability data comes from [caseDefinition] and
@@ -41,6 +45,7 @@ final class CinematicCasePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final JurisSpacing spacing = theme.extension<JurisSpacing>()!;
+    final JurisDensity density = theme.extension<JurisDensity>()!;
     final JurisTypography typography = theme.extension<JurisTypography>()!;
     final CinematicCatalogueStrings chrome =
         CinematicCatalogueStrings.of(locale);
@@ -60,146 +65,262 @@ final class CinematicCasePanel extends StatelessWidget {
           child: ColoredBox(
             color: theme.colorScheme.surfaceContainerLow,
             child: Padding(
-              padding: EdgeInsets.all(wide ? spacing.xl : spacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  RepaintBoundary(
-                    child: AspectRatio(
-                      aspectRatio: wide ? 16 / 7 : 16 / 9,
-                      child: CinematicScrim(
-                        child: CaseHeroArt(treatment: treatment),
+              padding: EdgeInsets.all(
+                density.resolve(JurisDensityMode.comfortable).contentInset,
+              ),
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final double effectiveTextScale =
+                      MediaQuery.textScalerOf(context)
+                              .scale(_representativeBodyFontSize) /
+                          _representativeBodyFontSize;
+                  final bool splitArtwork = wide &&
+                      constraints.maxWidth >= _expansivePanelWidth &&
+                      effectiveTextScale <= _maximumSplitArtworkTextScale;
+                  final Widget artwork = ExcludeSemantics(
+                    child: RepaintBoundary(
+                      key: const ValueKey<String>('selected-case-art'),
+                      child: AspectRatio(
+                        aspectRatio: splitArtwork ? 4 / 3 : 16 / 7,
+                        child: CinematicScrim(
+                          child: CaseHeroArt(treatment: treatment),
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: spacing.lg),
-                  Wrap(
-                    spacing: spacing.sm,
-                    runSpacing: spacing.sm,
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
+                  );
+                  final Widget actions = _CaseActions(
+                    launchable: launchable,
+                    startLabel: bundle.text(locale, 'start_case'),
+                    startSemanticLabel: chrome.startCaseLabel(
+                      bundle.text(locale, 'start_case'),
+                      text.topic,
+                    ),
+                    detailsLabel: chrome.details,
+                    detailsSemanticLabel: chrome.detailsLabel(text.topic),
+                    onStart: onStart,
+                    onDetails: onDetails,
+                  );
+                  final Widget details = Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      CaseIndexMark(
-                        indexLabel: position,
-                        fileReference: caseDefinition.caseId,
-                        selected: true,
-                        semanticLabel: chrome.selectedCaseLabel(text.topic),
+                      Text(text.synopsis, style: typography.bodyReading),
+                      SizedBox(height: spacing.xl),
+                      Wrap(
+                        spacing: spacing.sm,
+                        runSpacing: spacing.sm,
+                        children: <Widget>[
+                          _CaseFact(
+                            icon: launchable
+                                ? Icons.play_circle_outline
+                                : Icons.construction_outlined,
+                            label: launchable
+                                ? bundle.text(locale, 'playable')
+                                : bundle.text(
+                                    locale,
+                                    caseDefinition.status.name,
+                                  ),
+                          ),
+                          _CaseFact(
+                            icon: Icons.signal_cellular_alt,
+                            label: bundle.text(
+                              locale,
+                              caseDefinition.difficulty.name,
+                            ),
+                          ),
+                        ],
                       ),
-                      JurisdictionStamp(
-                        label:
-                            '${caseDefinition.jurisdiction} · ${chrome.fictionalMark}',
-                        semanticLabel: chrome.jurisdictionLabel(
-                          caseDefinition.jurisdiction,
-                        ),
+                      SizedBox(height: spacing.lg),
+                      Divider(color: theme.colorScheme.outlineVariant),
+                      SizedBox(height: spacing.md),
+                      _MetadataLine(
+                        icon: Icons.business_outlined,
+                        label: bundle.text(locale, 'player_client'),
+                        value: text.playerClientName,
+                      ),
+                      SizedBox(height: spacing.sm),
+                      _MetadataLine(
+                        icon: Icons.balance_outlined,
+                        label: bundle.text(locale, 'player_role'),
+                        value: bundle.text(locale, caseDefinition.playerRole),
                       ),
                     ],
-                  ),
-                  SizedBox(height: spacing.xl),
-                  Focus(
-                    focusNode: headingFocusNode,
-                    child: Semantics(
-                      key: const ValueKey<String>('selected-case-heading'),
-                      header: true,
-                      child: Text(
-                        text.topic,
-                        style: typography.resolveCaseDisplay(wide: wide),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: spacing.sm),
-                  Text(
-                    text.caption,
-                    style: typography.sectionTitle.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  SizedBox(height: spacing.lg),
-                  Text(text.synopsis, style: typography.bodyReading),
-                  SizedBox(height: spacing.xl),
-                  Wrap(
-                    spacing: spacing.sm,
-                    runSpacing: spacing.sm,
+                  );
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      _CaseFact(
-                        icon: launchable
-                            ? Icons.play_circle_outline
-                            : Icons.construction_outlined,
-                        label: launchable
-                            ? bundle.text(locale, 'playable')
-                            : bundle.text(locale, caseDefinition.status.name),
+                      Wrap(
+                        spacing: spacing.sm,
+                        runSpacing: spacing.sm,
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: <Widget>[
+                          CaseIndexMark(
+                            indexLabel: position,
+                            fileReference: caseDefinition.caseId,
+                            selected: true,
+                            semanticLabel:
+                                '$position. ${caseDefinition.caseId}',
+                          ),
+                          JurisdictionStamp(
+                            label: '${caseDefinition.jurisdiction} · '
+                                '${chrome.fictionalMark}',
+                            semanticLabel: chrome.jurisdictionLabel(
+                              caseDefinition.jurisdiction,
+                            ),
+                          ),
+                        ],
                       ),
-                      _CaseFact(
-                        icon: Icons.signal_cellular_alt,
-                        label: bundle.text(
-                          locale,
-                          caseDefinition.difficulty.name,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: spacing.lg),
-                  _MetadataLine(
-                    icon: Icons.business_outlined,
-                    label: bundle.text(locale, 'player_client'),
-                    value: text.playerClientName,
-                  ),
-                  SizedBox(height: spacing.sm),
-                  _MetadataLine(
-                    icon: Icons.balance_outlined,
-                    label: bundle.text(locale, 'player_role'),
-                    value: bundle.text(locale, caseDefinition.playerRole),
-                  ),
-                  SizedBox(height: spacing.xl),
-                  Wrap(
-                    spacing: spacing.md,
-                    runSpacing: spacing.md,
-                    children: <Widget>[
-                      Semantics(
-                        button: true,
-                        enabled: launchable,
-                        onTap: launchable ? onStart : null,
-                        label: chrome.startCaseLabel(
-                          bundle.text(locale, 'start_case'),
-                          text.topic,
-                        ),
-                        child: ExcludeSemantics(
-                          child: JurisMinimumTarget(
-                            child: FilledButton.icon(
+                      SizedBox(height: spacing.xl),
+                      Focus(
+                        focusNode: headingFocusNode,
+                        skipTraversal: true,
+                        child: Builder(
+                          builder: (BuildContext focusContext) =>
+                              JurisFocusOutline(
+                            key: const ValueKey<String>(
+                              'selected-case-heading-focus',
+                            ),
+                            focused: Focus.of(focusContext).hasFocus,
+                            child: Semantics(
                               key: const ValueKey<String>(
-                                'start-case-action',
+                                'selected-case-heading',
                               ),
-                              onPressed: launchable ? onStart : null,
-                              icon: const Icon(Icons.play_arrow),
-                              label: Text(bundle.text(locale, 'start_case')),
+                              header: true,
+                              child: Text(
+                                text.topic,
+                                style: typography.resolveCaseDisplay(
+                                  wide: constraints.maxWidth >=
+                                      _expansivePanelWidth,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                      Semantics(
-                        button: true,
-                        onTap: onDetails,
-                        label: chrome.detailsLabel(text.topic),
-                        child: ExcludeSemantics(
-                          child: JurisMinimumTarget(
-                            child: OutlinedButton.icon(
-                              key: const ValueKey<String>(
-                                'case-details-action',
-                              ),
-                              onPressed: onDetails,
-                              icon: const Icon(Icons.description_outlined),
-                              label: Text(chrome.details),
-                            ),
-                          ),
+                      SizedBox(height: spacing.sm),
+                      Text(
+                        text.caption,
+                        style: typography.sectionTitle.copyWith(
+                          color: theme.colorScheme.primary,
                         ),
                       ),
+                      SizedBox(height: spacing.xl),
+                      if (splitArtwork)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Expanded(flex: 7, child: details),
+                            SizedBox(width: spacing.xl),
+                            Expanded(
+                              flex: 4,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: <Widget>[
+                                  artwork,
+                                  SizedBox(height: spacing.lg),
+                                  actions,
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      else ...<Widget>[
+                        artwork,
+                        SizedBox(height: spacing.xl),
+                        details,
+                        SizedBox(height: spacing.xl),
+                        actions,
+                      ],
                     ],
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+final class _CaseActions extends StatelessWidget {
+  const _CaseActions({
+    required this.launchable,
+    required this.startLabel,
+    required this.startSemanticLabel,
+    required this.detailsLabel,
+    required this.detailsSemanticLabel,
+    required this.onStart,
+    required this.onDetails,
+  });
+
+  final bool launchable;
+  final String startLabel;
+  final String startSemanticLabel;
+  final String detailsLabel;
+  final String detailsSemanticLabel;
+  final VoidCallback onStart;
+  final VoidCallback onDetails;
+
+  @override
+  Widget build(BuildContext context) {
+    final JurisSpacing spacing = Theme.of(context).extension<JurisSpacing>()!;
+    final Widget start = Semantics(
+      button: true,
+      enabled: launchable,
+      onTap: launchable ? onStart : null,
+      label: startSemanticLabel,
+      child: ExcludeSemantics(
+        child: JurisMinimumTarget(
+          child: FilledButton.icon(
+            key: const ValueKey<String>('start-case-action'),
+            onPressed: launchable ? onStart : null,
+            icon: const Icon(Icons.play_arrow),
+            label: Text(startLabel),
+          ),
+        ),
+      ),
+    );
+    final Widget details = Semantics(
+      button: true,
+      onTap: onDetails,
+      label: detailsSemanticLabel,
+      child: ExcludeSemantics(
+        child: JurisMinimumTarget(
+          child: OutlinedButton.icon(
+            key: const ValueKey<String>('case-details-action'),
+            onPressed: onDetails,
+            icon: const Icon(Icons.description_outlined),
+            label: Text(detailsLabel),
+          ),
+        ),
+      ),
+    );
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double effectiveTextScale = MediaQuery.textScalerOf(context)
+                .scale(_representativeBodyFontSize) /
+            _representativeBodyFontSize;
+        final bool stacked = constraints.maxWidth < 440 ||
+            effectiveTextScale > _maximumSplitArtworkTextScale;
+        if (stacked) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              start,
+              SizedBox(height: spacing.sm),
+              details,
+            ],
+          );
+        }
+        return Wrap(
+          spacing: spacing.md,
+          runSpacing: spacing.md,
+          children: <Widget>[start, details],
+        );
+      },
     );
   }
 }

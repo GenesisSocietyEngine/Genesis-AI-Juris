@@ -33,8 +33,9 @@ void main() {
   });
 
   Future<_CatalogScenarioBridgeClient> pumpCatalog(
-    WidgetTester tester,
-  ) async {
+    WidgetTester tester, {
+    JurisVisualModeController? visualModeController,
+  }) async {
     final _CatalogScenarioBridgeClient bridgeClient =
         _CatalogScenarioBridgeClient();
     await tester.pumpWidget(
@@ -46,6 +47,7 @@ void main() {
           assetLoader: (_) async => generatedManifest,
         ),
         scenarioBridgeClient: bridgeClient,
+        visualModeController: visualModeController,
       ),
     );
     await tester.pump();
@@ -536,7 +538,23 @@ void main() {
   testWidgets('playable Rust case opens and returns to library', (
     WidgetTester tester,
   ) async {
-    await pumpCatalog(tester);
+    final JurisVisualModeController visualModeController =
+        JurisVisualModeController(
+      selection: JurisVisualModeSelection.office,
+    );
+    addTearDown(visualModeController.dispose);
+    await pumpCatalog(
+      tester,
+      visualModeController: visualModeController,
+    );
+
+    BuildContext panelContext = tester.element(
+      find.byKey(const ValueKey<String>('selected-case-panel')),
+    );
+    expect(
+      Theme.of(panelContext).extension<JurisSurfaces>()!.canvas,
+      JurisSurfaces.office.canvas,
+    );
 
     final Finder startButton = find.byKey(
       const ValueKey<String>('start-case-action'),
@@ -562,6 +580,17 @@ void main() {
     expect(
       find.text('Asteron Systems NV v. Northbridge Consulting BV'),
       findsOneWidget,
+    );
+    expect(
+      visualModeController.selection,
+      JurisVisualModeSelection.office,
+    );
+    panelContext = tester.element(
+      find.byKey(const ValueKey<String>('selected-case-panel')),
+    );
+    expect(
+      Theme.of(panelContext).extension<JurisSurfaces>()!.canvas,
+      JurisSurfaces.office.canvas,
     );
   });
 

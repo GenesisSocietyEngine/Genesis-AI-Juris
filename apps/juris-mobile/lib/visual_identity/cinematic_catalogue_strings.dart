@@ -25,6 +25,9 @@ final class CinematicCatalogueStrings {
     required this.playableState,
     required this.authoringState,
     required this.selectedState,
+    required this.appearance,
+    required this.automaticMode,
+    required this.currentMode,
   });
 
   static const CinematicCatalogueStrings english = CinematicCatalogueStrings._(
@@ -45,6 +48,9 @@ final class CinematicCatalogueStrings {
     playableState: 'Playable',
     authoringState: 'In authoring',
     selectedState: 'Selected',
+    appearance: 'Appearance',
+    automaticMode: 'Automatic',
+    currentMode: 'Current',
   );
 
   static const CinematicCatalogueStrings russian = CinematicCatalogueStrings._(
@@ -65,6 +71,9 @@ final class CinematicCatalogueStrings {
     playableState: 'Доступно для игры',
     authoringState: 'В разработке',
     selectedState: 'Выбрано',
+    appearance: 'Оформление',
+    automaticMode: 'Автоматически',
+    currentMode: 'Сейчас',
   );
 
   static CinematicCatalogueStrings of(String locale) {
@@ -90,6 +99,9 @@ final class CinematicCatalogueStrings {
   final String playableState;
   final String authoringState;
   final String selectedState;
+  final String appearance;
+  final String automaticMode;
+  final String currentMode;
 
   String casePosition(int index, int total) {
     return '${index.toString().padLeft(2, '0')} / '
