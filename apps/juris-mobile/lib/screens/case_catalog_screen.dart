@@ -176,6 +176,9 @@ class _CaseCatalogScreenState extends State<CaseCatalogScreen> {
   late String _locale;
   CaseCatalogFilter _filter = CaseCatalogFilter.all;
   String? _selectedCaseId;
+  final FocusNode _selectedCaseHeadingFocus = FocusNode(
+    debugLabel: 'selected-case-heading',
+  );
 
   @override
   void initState() {
@@ -201,6 +204,12 @@ class _CaseCatalogScreenState extends State<CaseCatalogScreen> {
         _selectedCaseId,
       );
     }
+  }
+
+  @override
+  void dispose() {
+    _selectedCaseHeadingFocus.dispose();
+    super.dispose();
   }
 
   @override
@@ -232,6 +241,7 @@ class _CaseCatalogScreenState extends State<CaseCatalogScreen> {
             selectedCaseId: _selectedCaseId,
             vertical: wide,
             onSelected: _selectCase,
+            onBrowseAll: () => _showBrowseAllCases(visibleCases),
           );
         },
         panelBuilder: (BuildContext context, bool wide) {
@@ -250,6 +260,7 @@ class _CaseCatalogScreenState extends State<CaseCatalogScreen> {
             index: index,
             total: visibleCases.length,
             wide: wide,
+            headingFocusNode: _selectedCaseHeadingFocus,
             onStart: () => widget.onStartCase(
               selected,
               _locale,
@@ -352,6 +363,55 @@ class _CaseCatalogScreenState extends State<CaseCatalogScreen> {
         );
       },
     );
+  }
+
+  Future<void> _showBrowseAllCases(
+    List<MobileCaseDefinition> visibleCases,
+  ) async {
+    final CinematicCatalogueStrings chrome =
+        CinematicCatalogueStrings.of(_locale);
+    final String? selectedCaseId = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (BuildContext context) => Semantics(
+        container: true,
+        label: chrome.allCases,
+        child: ListView.builder(
+          key: const ValueKey<String>('browse-all-case-list'),
+          shrinkWrap: true,
+          itemCount: visibleCases.length,
+          itemBuilder: (BuildContext context, int index) {
+            final MobileCaseDefinition definition = visibleCases[index];
+            final LocalizedCaseText text = definition.localized(
+              _locale,
+              widget.bundle.defaultLocale,
+            );
+            final bool selected = definition.caseId == _selectedCaseId;
+            return ListTile(
+              key: ValueKey<String>('browse-case-${definition.caseId}'),
+              selected: selected,
+              leading:
+                  Text(chrome.casePosition(index + 1, visibleCases.length)),
+              title: Text(text.shortTitle),
+              subtitle: Text('${definition.jurisdiction} · ${text.topic}'),
+              trailing: selected ? const Icon(Icons.check_circle) : null,
+              onTap: () => Navigator.pop(context, definition.caseId),
+            );
+          },
+        ),
+      ),
+    );
+    if (selectedCaseId == null || !mounted) {
+      return;
+    }
+    _selectCase(selectedCaseId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _selectedCaseHeadingFocus.requestFocus();
+      }
+    });
   }
 }
 

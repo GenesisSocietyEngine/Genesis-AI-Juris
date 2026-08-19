@@ -18,6 +18,13 @@ final class CinematicCatalogueStrings {
     required this.selectCase,
     required this.fictionalMark,
     required this.jurisdictionStamp,
+    required this.previousCase,
+    required this.nextCase,
+    required this.browseAllCases,
+    required this.allCases,
+    required this.playableState,
+    required this.authoringState,
+    required this.selectedState,
   });
 
   static const CinematicCatalogueStrings english = CinematicCatalogueStrings._(
@@ -31,6 +38,13 @@ final class CinematicCatalogueStrings {
     selectCase: 'Select case',
     fictionalMark: 'FICTIONAL',
     jurisdictionStamp: 'Fictional jurisdiction',
+    previousCase: 'Previous case',
+    nextCase: 'Next case',
+    browseAllCases: 'Browse all cases',
+    allCases: 'All cases',
+    playableState: 'Playable',
+    authoringState: 'In authoring',
+    selectedState: 'Selected',
   );
 
   static const CinematicCatalogueStrings russian = CinematicCatalogueStrings._(
@@ -44,6 +58,13 @@ final class CinematicCatalogueStrings {
     selectCase: 'Выбрать дело',
     fictionalMark: 'ВЫМЫШЛЕНО',
     jurisdictionStamp: 'Вымышленная юрисдикция',
+    previousCase: 'Предыдущее дело',
+    nextCase: 'Следующее дело',
+    browseAllCases: 'Все дела',
+    allCases: 'Список дел',
+    playableState: 'Доступно для игры',
+    authoringState: 'В разработке',
+    selectedState: 'Выбрано',
   );
 
   static CinematicCatalogueStrings of(String locale) {
@@ -62,6 +83,13 @@ final class CinematicCatalogueStrings {
   final String selectCase;
   final String fictionalMark;
   final String jurisdictionStamp;
+  final String previousCase;
+  final String nextCase;
+  final String browseAllCases;
+  final String allCases;
+  final String playableState;
+  final String authoringState;
+  final String selectedState;
 
   String casePosition(int index, int total) {
     return '${index.toString().padLeft(2, '0')} / '
@@ -78,5 +106,18 @@ final class CinematicCatalogueStrings {
 
   String jurisdictionLabel(String jurisdiction) {
     return '$jurisdictionStamp: $jurisdiction';
+  }
+
+  String caseSemanticsLabel({
+    required int index,
+    required int total,
+    required String title,
+    required String jurisdiction,
+    required bool playable,
+    required bool selected,
+  }) {
+    return '${casePosition(index, total)}. $title. $jurisdiction. '
+        '${playable ? playableState : authoringState}'
+        '${selected ? '. $selectedState' : ''}';
   }
 }

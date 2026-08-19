@@ -23,6 +23,7 @@ final class CinematicCasePanel extends StatelessWidget {
     required this.wide,
     required this.onStart,
     required this.onDetails,
+    this.headingFocusNode,
   });
 
   final CaseCatalogBundle bundle;
@@ -34,6 +35,7 @@ final class CinematicCasePanel extends StatelessWidget {
   final bool wide;
   final VoidCallback onStart;
   final VoidCallback onDetails;
+  final FocusNode? headingFocusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -93,9 +95,16 @@ final class CinematicCasePanel extends StatelessWidget {
                     ],
                   ),
                   SizedBox(height: spacing.xl),
-                  Text(
-                    text.topic,
-                    style: typography.resolveCaseDisplay(wide: wide),
+                  Focus(
+                    focusNode: headingFocusNode,
+                    child: Semantics(
+                      key: const ValueKey<String>('selected-case-heading'),
+                      header: true,
+                      child: Text(
+                        text.topic,
+                        style: typography.resolveCaseDisplay(wide: wide),
+                      ),
+                    ),
                   ),
                   SizedBox(height: spacing.sm),
                   Text(

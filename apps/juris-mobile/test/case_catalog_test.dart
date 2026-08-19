@@ -7,14 +7,18 @@ import 'package:juris_mobile/app/juris_app.dart';
 import 'package:juris_mobile/data/case_catalog_repository.dart';
 import 'package:juris_mobile/data/case_runtime_factory.dart';
 import 'package:juris_mobile/data/scenario_bridge_client.dart';
+import 'package:juris_mobile/design/juris_design.dart';
 import 'package:juris_mobile/models/case_catalog.dart';
+import 'package:juris_mobile/visual_identity/case_visual_manifest.dart';
 import 'package:juris_mobile/visual_identity/case_visual_manifest_repository.dart';
+import 'package:juris_mobile/widgets/catalogue/case_index.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late String generatedBundle;
   late String generatedManifest;
+  late CaseVisualManifest visualManifest;
 
   setUpAll(() async {
     generatedBundle = await rootBundle.loadString(
@@ -23,9 +27,16 @@ void main() {
     generatedManifest = await rootBundle.loadString(
       'assets/visual_identity/case_visual_manifest.v1.json',
     );
+    visualManifest = CaseVisualManifest.fromJson(
+      jsonDecode(generatedManifest) as Map<String, dynamic>,
+    );
   });
 
-  Future<void> pumpCatalog(WidgetTester tester) async {
+  Future<_CatalogScenarioBridgeClient> pumpCatalog(
+    WidgetTester tester,
+  ) async {
+    final _CatalogScenarioBridgeClient bridgeClient =
+        _CatalogScenarioBridgeClient();
     await tester.pumpWidget(
       JurisApp.catalog(
         catalogRepository: CaseCatalogRepository(
@@ -34,7 +45,7 @@ void main() {
         visualManifestRepository: CaseVisualManifestRepository(
           assetLoader: (_) async => generatedManifest,
         ),
-        scenarioBridgeClient: _CatalogScenarioBridgeClient(),
+        scenarioBridgeClient: bridgeClient,
       ),
     );
     await tester.pump();
@@ -45,6 +56,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(CircularProgressIndicator), findsNothing);
+    return bridgeClient;
   }
 
   test('generated mobile bundle contains multiple stable case IDs', () async {
@@ -400,7 +412,7 @@ void main() {
   testWidgets('case library renders all catalog scenarios', (
     WidgetTester tester,
   ) async {
-    await pumpCatalog(tester);
+    final _CatalogScenarioBridgeClient bridgeClient = await pumpCatalog(tester);
 
     const List<(String, String, String)> expectedCases =
         <(String, String, String)>[
@@ -431,7 +443,12 @@ void main() {
       ),
     ];
     for (final (String caseId, String caption, String topic) in expectedCases) {
-      await _selectCatalogCase(tester, caseId);
+      await _selectCatalogCase(
+        tester,
+        caseId,
+        manifest: visualManifest,
+        bridgeClient: bridgeClient,
+      );
       final Finder panel = find.byKey(
         const ValueKey<String>('selected-case-panel'),
       );
@@ -451,7 +468,7 @@ void main() {
       'language switch localizes case text without changing stable names', (
     WidgetTester tester,
   ) async {
-    await pumpCatalog(tester);
+    final _CatalogScenarioBridgeClient bridgeClient = await pumpCatalog(tester);
 
     await tester.tap(find.byIcon(Icons.language));
     await tester.pumpAndSettle();
@@ -479,7 +496,12 @@ void main() {
       findsOneWidget,
     );
 
-    await _selectCatalogCase(tester, 'nl_food_safety_goldenshell_001');
+    await _selectCatalogCase(
+      tester,
+      'nl_food_safety_goldenshell_001',
+      manifest: visualManifest,
+      bridgeClient: bridgeClient,
+    );
 
     expect(
       find.descendant(
@@ -489,7 +511,12 @@ void main() {
       findsOneWidget,
     );
 
-    await _selectCatalogCase(tester, 'us_environmental_desert_water_001');
+    await _selectCatalogCase(
+      tester,
+      'us_environmental_desert_water_001',
+      manifest: visualManifest,
+      bridgeClient: bridgeClient,
+    );
 
     expect(
       find.descendant(
@@ -541,12 +568,17 @@ void main() {
   testWidgets('playable filter includes the Rust logistics scenario', (
     WidgetTester tester,
   ) async {
-    await pumpCatalog(tester);
+    final _CatalogScenarioBridgeClient bridgeClient = await pumpCatalog(tester);
 
     await tester.tap(find.text('Playable'));
     await tester.pumpAndSettle();
 
-    await _selectCatalogCase(tester, 'be_commercial_logistics_001');
+    await _selectCatalogCase(
+      tester,
+      'be_commercial_logistics_001',
+      manifest: visualManifest,
+      bridgeClient: bridgeClient,
+    );
 
     expect(
       find.text('Velmont Logistics SA v. Orbis Retail Belgium NV'),
@@ -633,19 +665,205 @@ void main() {
 
 Future<void> _selectCatalogCase(
   WidgetTester tester,
-  String caseId,
-) async {
-  final Finder indexItem = find.byKey(
+  String caseId, {
+  required CaseVisualManifest manifest,
+  required _CatalogScenarioBridgeClient bridgeClient,
+}) async {
+  final Finder indexFinder = find.byType(CaseIndex);
+  expect(indexFinder, findsOneWidget);
+  CaseIndex index = tester.widget<CaseIndex>(indexFinder);
+  expect(index.vertical, isTrue);
+  final List<String> visibleIds = index.cases
+      .map((MobileCaseDefinition item) => item.caseId)
+      .toList(growable: false);
+  final int targetIndex = visibleIds.indexOf(caseId);
+  expect(
+    targetIndex,
+    greaterThanOrEqualTo(0),
+    reason: 'Target $caseId must be in the player-visible case index.',
+  );
+  expect(bridgeClient.createdSessionCount, 0);
+
+  final Finder selector = find.byKey(
+    const ValueKey<String>('case-index'),
+  );
+  expect(selector, findsOneWidget);
+  await tester.ensureVisible(selector);
+  await tester.pumpAndSettle();
+
+  index = tester.widget<CaseIndex>(indexFinder);
+  final String currentId = index.selectedCaseId ?? visibleIds.first;
+  final Finder currentRow = find.byKey(
+    ValueKey<String>('case-index-item-$currentId'),
+  );
+  expect(currentRow, findsOneWidget);
+  expect(currentRow.hitTestable(), findsOneWidget);
+  await _tabToCatalogRow(tester, currentRow);
+
+  final List<String> visitedIds = <String>[];
+  await tester.sendKeyEvent(LogicalKeyboardKey.home);
+  await tester.pumpAndSettle();
+  String selectedId = _selectedCatalogCaseId(tester);
+  visitedIds.add(selectedId);
+  if (selectedId != visibleIds.first) {
+    fail(
+      'Catalogue Home navigation did not reach the first case. '
+      'current=$selectedId target=$caseId visited=$visitedIds',
+    );
+  }
+  _expectCatalogSelection(
+    tester,
+    visibleIds.first,
+    manifest: manifest,
+    bridgeClient: bridgeClient,
+  );
+
+  for (int position = 1; position <= targetIndex; position += 1) {
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    selectedId = _selectedCatalogCaseId(tester);
+    visitedIds.add(selectedId);
+    if (selectedId != visibleIds[position]) {
+      fail(
+        'Bounded catalogue navigation diverged. current=$selectedId '
+        'target=$caseId visited=$visitedIds',
+      );
+    }
+    _expectCatalogSelection(
+      tester,
+      visibleIds[position],
+      manifest: manifest,
+      bridgeClient: bridgeClient,
+    );
+  }
+
+  if (selectedId != caseId) {
+    fail(
+      'Catalogue target was not reached within ${visibleIds.length} steps. '
+      'current=$selectedId target=$caseId visited=$visitedIds',
+    );
+  }
+}
+
+String _selectedCatalogCaseId(WidgetTester tester) {
+  final CaseIndex index = tester.widget<CaseIndex>(find.byType(CaseIndex));
+  final String? selectedCaseId = index.selectedCaseId;
+  if (selectedCaseId == null) {
+    fail('The public catalogue selector has no selected stable case ID.');
+  }
+  return selectedCaseId;
+}
+
+void _expectCatalogSelection(
+  WidgetTester tester,
+  String caseId, {
+  required CaseVisualManifest manifest,
+  required _CatalogScenarioBridgeClient bridgeClient,
+}) {
+  final CaseIndex index = tester.widget<CaseIndex>(find.byType(CaseIndex));
+  expect(index.selectedCaseId, caseId);
+  final MobileCaseDefinition definition = index.cases.singleWhere(
+    (MobileCaseDefinition item) => item.caseId == caseId,
+  );
+  final LocalizedCaseText text = definition.localized(
+    index.locale,
+    index.bundle.defaultLocale,
+  );
+
+  final Finder row = find.byKey(
     ValueKey<String>('case-index-item-$caseId'),
   );
-  await tester.ensureVisible(indexItem);
-  await tester.pump();
-  await tester.tap(indexItem);
-  await tester.pumpAndSettle();
+  expect(row, findsOneWidget);
+  expect(row.hitTestable(), findsOneWidget);
+  expect(_primaryFocusIsWithin(row), isTrue);
+  final Semantics rowSemantics = tester.widget<Semantics>(row);
+  expect(rowSemantics.properties.selected, isTrue);
+
+  final Finder panel = find.byKey(
+    const ValueKey<String>('selected-case-panel'),
+  );
+  expect(panel, findsOneWidget);
+  expect(
+    find.descendant(of: panel, matching: find.text(text.topic)),
+    findsOneWidget,
+  );
+  expect(
+    find.descendant(of: panel, matching: find.text(text.caption)),
+    findsOneWidget,
+  );
+
+  final CaseVisualTreatment expectedTreatment = manifest.resolve(caseId);
+  final Finder treatmentScope = find.descendant(
+    of: panel,
+    matching: find.byType(CaseTreatmentScope),
+  );
+  expect(treatmentScope, findsOneWidget);
+  expect(
+    tester.widget<CaseTreatmentScope>(treatmentScope).treatment,
+    expectedTreatment,
+  );
+  final List<CaseHeroPainter> heroPainters = find
+      .descendant(of: panel, matching: find.byType(CustomPaint))
+      .evaluate()
+      .map((Element element) => element.widget as CustomPaint)
+      .map((CustomPaint paint) => paint.painter)
+      .whereType<CaseHeroPainter>()
+      .toList(growable: false);
+  expect(heroPainters, hasLength(1));
+  expect(
+    heroPainters.single.spec,
+    CaseArtSpec.fromTreatment(
+      expectedTreatment,
+      palette: expectedTreatment.palette,
+    ),
+  );
+  expect(bridgeClient.createdSessionCount, 0);
+  expect(find.byTooltip('Back to case library'), findsNothing);
+}
+
+Future<void> _tabToCatalogRow(
+  WidgetTester tester,
+  Finder target,
+) async {
+  const int maximumTabPresses = 24;
+  for (int attempt = 0; attempt < maximumTabPresses; attempt += 1) {
+    if (_primaryFocusIsWithin(target)) {
+      return;
+    }
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+  }
+  fail('Tab traversal did not reach the selected catalogue row.');
+}
+
+bool _primaryFocusIsWithin(Finder target) {
+  if (target.evaluate().length != 1) {
+    return false;
+  }
+  final BuildContext? focusContext =
+      FocusManager.instance.primaryFocus?.context;
+  if (focusContext == null) {
+    return false;
+  }
+  final Element targetElement = target.evaluate().single;
+  if (identical(focusContext, targetElement)) {
+    return true;
+  }
+  bool found = false;
+  focusContext.visitAncestorElements((Element ancestor) {
+    if (identical(ancestor, targetElement)) {
+      found = true;
+      return false;
+    }
+    return true;
+  });
+  return found;
 }
 
 final class _CatalogScenarioBridgeClient implements ScenarioBridgeClient {
   int _nextSessionId = 0;
+
+  int get createdSessionCount => _nextSessionId;
 
   @override
   String execute(String encodedRequest) {

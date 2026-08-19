@@ -1,9 +1,10 @@
 import 'dart:convert';
-import 'dart:ui' show SemanticsAction, Tristate;
+import 'dart:math' as math;
+import 'dart:ui' show SemanticsAction, TextHeightBehavior, Tristate;
 
 import 'package:flutter/foundation.dart' show FlutterExceptionHandler;
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +15,7 @@ import 'package:juris_mobile/models/case_catalog.dart';
 import 'package:juris_mobile/screens/case_catalog_screen.dart';
 import 'package:juris_mobile/visual_identity/case_visual_manifest.dart';
 import 'package:juris_mobile/visual_identity/case_visual_manifest_repository.dart';
+import 'package:juris_mobile/widgets/catalogue/case_index.dart';
 
 const String _failedErpId = 'be_commercial_failed_erp_001';
 const String _logisticsId = 'be_commercial_logistics_001';
@@ -87,6 +89,169 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'compact previous and next controls select first middle and last without launch',
+    (WidgetTester tester) async {
+      int launchCount = 0;
+      await _pumpCatalogue(
+        tester,
+        size: const Size(412, 915),
+        bundle: bundle,
+        manifest: manifest,
+        onStartCase: (_, __, ___) => launchCount += 1,
+      );
+
+      expect(_boundaryButton(tester, 'case-index-previous').onPressed, isNull);
+      expect(_boundaryButton(tester, 'case-index-next').onPressed, isNotNull);
+      expect(find.text('01 / 05'), findsWidgets);
+      _expectSelectedCase(bundle, _failedErpId, 'en');
+
+      await _tapBoundary(tester, 'case-index-next');
+      await _tapBoundary(tester, 'case-index-next');
+      _expectSelectedCase(bundle, _greenFireId, 'en');
+      expect(find.text('03 / 05'), findsWidgets);
+
+      await _tapBoundary(tester, 'case-index-next');
+      await _tapBoundary(tester, 'case-index-next');
+      _expectSelectedCase(bundle, _desertWaterId, 'en');
+      expect(_boundaryButton(tester, 'case-index-next').onPressed, isNull);
+      expect(
+        _boundaryButton(tester, 'case-index-previous').onPressed,
+        isNotNull,
+      );
+      expect(launchCount, 0);
+    },
+  );
+
+  testWidgets('compact horizontal swipe snaps one case without launching', (
+    WidgetTester tester,
+  ) async {
+    int launchCount = 0;
+    await _pumpCatalogue(
+      tester,
+      size: const Size(412, 915),
+      bundle: bundle,
+      manifest: manifest,
+      onStartCase: (_, __, ___) => launchCount += 1,
+    );
+
+    await tester.drag(
+      find.byKey(const ValueKey<String>('compact-case-pages')),
+      const Offset(-320, 0),
+    );
+    await tester.pumpAndSettle();
+
+    _expectSelectedCase(bundle, _logisticsId, 'en');
+    expect(find.text('02 / 05'), findsWidgets);
+    expect(launchCount, 0);
+  });
+
+  testWidgets('Browse all directly selects by stable ID and focuses heading', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    int launchCount = 0;
+    await _pumpCatalogue(
+      tester,
+      size: const Size(412, 915),
+      bundle: bundle,
+      manifest: manifest,
+      onStartCase: (_, __, ___) => launchCount += 1,
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('browse-all-cases')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey<String>('browse-all-case-list')),
+      findsOneWidget,
+    );
+    for (final String caseId in _authoritativeCaseIds) {
+      expect(
+        find.byKey(ValueKey<String>('browse-case-$caseId')),
+        findsOneWidget,
+      );
+    }
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('browse-case-$_desertWaterId')),
+    );
+    await tester.pumpAndSettle();
+
+    _expectSelectedCase(bundle, _desertWaterId, 'en');
+    expect(FocusManager.instance.primaryFocus?.debugLabel,
+        'selected-case-heading');
+    expect(find.text('05 / 05'), findsWidgets);
+    _expectSelectedSemantics(tester, _desertWaterId, selected: true);
+    final CaseVisualTreatment desertTreatment = manifest.resolve(
+      _desertWaterId,
+    );
+    expect(_selectedTreatment(), desertTreatment);
+    expect(
+      _selectedHeroPainter().spec,
+      CaseArtSpec.fromTreatment(
+        desertTreatment,
+        palette: desertTreatment.palette,
+      ),
+    );
+    expect(launchCount, 0);
+
+    await tester.drag(
+      find.byKey(const ValueKey<String>('compact-case-pages')),
+      const Offset(320, 0),
+    );
+    await tester.pumpAndSettle();
+    _expectSelectedCase(bundle, _goldenShellId, 'en');
+    expect(find.text('04 / 05'), findsWidgets);
+    expect(FocusManager.instance.primaryFocus?.debugLabel,
+        'selected-case-heading');
+    expect(launchCount, 0);
+    expect(tester.binding.transientCallbackCount, 0);
+    semantics.dispose();
+  });
+
+  testWidgets('wide arrows Home End and activation never launch a case', (
+    WidgetTester tester,
+  ) async {
+    int launchCount = 0;
+    await _pumpCatalogue(
+      tester,
+      size: const Size(800, 1000),
+      bundle: bundle,
+      manifest: manifest,
+      onStartCase: (_, __, ___) => launchCount += 1,
+    );
+
+    final Finder first = find.byKey(
+      const ValueKey<String>('case-index-item-$_failedErpId'),
+    );
+    await _tabTo(tester, first);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    _expectSelectedCase(bundle, _failedErpId, 'en');
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    _expectSelectedCase(bundle, _logisticsId, 'en');
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.end);
+    await tester.pumpAndSettle();
+    _expectSelectedCase(bundle, _desertWaterId, 'en');
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    _expectSelectedCase(bundle, _desertWaterId, 'en');
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.home);
+    await tester.pumpAndSettle();
+    _expectSelectedCase(bundle, _failedErpId, 'en');
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pumpAndSettle();
+    _expectSelectedCase(bundle, _failedErpId, 'en');
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(launchCount, 0);
+  });
 
   testWidgets(
     'filters preserve visible selection and reselect deterministically',
@@ -261,12 +426,13 @@ void main() {
       expect(launches, isEmpty);
 
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-      await tester.pump();
+      await tester.pumpAndSettle();
       final Finder secondItem = find.byKey(
         const ValueKey<String>('case-index-item-be_commercial_logistics_001'),
       );
       expect(_primaryFocusIsWithin(secondItem), isTrue);
-      _expectSelectedCase(bundle, _failedErpId, 'en');
+      _expectSelectedCase(bundle, _logisticsId, 'en');
+      expect(find.text('02 / 05'), findsWidgets);
       expect(launches, isEmpty);
 
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
@@ -274,11 +440,62 @@ void main() {
       _expectSelectedCase(bundle, _logisticsId, 'en');
       expect(launches, isEmpty);
 
+      await tester.sendKeyEvent(LogicalKeyboardKey.end);
+      await tester.pumpAndSettle();
+      _expectSelectedCase(bundle, _desertWaterId, 'en');
+      expect(find.text('05 / 05'), findsWidgets);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      _expectSelectedCase(bundle, _desertWaterId, 'en');
+      expect(launches, isEmpty);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.home);
+      await tester.pumpAndSettle();
+      _expectSelectedCase(bundle, _failedErpId, 'en');
+      expect(find.text('01 / 05'), findsWidgets);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pumpAndSettle();
+      _expectSelectedCase(bundle, _failedErpId, 'en');
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pumpAndSettle();
+      _expectSelectedCase(bundle, _failedErpId, 'en');
+      expect(launches, isEmpty);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      _expectSelectedCase(bundle, _logisticsId, 'en');
+
       final Finder startAction = find.byKey(
         const ValueKey<String>('start-case-action'),
       );
+      final Finder detailsAction = find.byKey(
+        const ValueKey<String>('case-details-action'),
+      );
       await _tabTo(tester, startAction);
+      expect(_primaryFocusIsWithin(startAction), isTrue);
       expect(launches, isEmpty);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      _expectSelectedCase(bundle, _logisticsId, 'en');
+      expect(launches, isEmpty);
+
+      final List<String> visitedActionFocus =
+          await _restoreStartFocusThroughVisibleActions(
+        tester,
+        startAction: startAction,
+        detailsAction: detailsAction,
+      );
+      expect(
+        _primaryFocusIsWithin(startAction),
+        isTrue,
+        reason:
+            'Start must own focus before Enter. visited=$visitedActionFocus',
+      );
+      expect(
+        _primaryFocusIsWithin(detailsAction),
+        isFalse,
+        reason: 'Details must not own focus. visited=$visitedActionFocus',
+      );
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
 
@@ -299,7 +516,7 @@ void main() {
         bundle: bundle,
         manifest: manifest,
       );
-      await _revealCatalogueFinder(
+      await _revealCatalogueAction(
         tester,
         find.byKey(const ValueKey<String>('start-case-action')),
       );
@@ -336,7 +553,7 @@ void main() {
         manifest: manifest,
         hostKey: const ValueKey<String>('unsupported-catalogue'),
       );
-      await _revealCatalogueFinder(
+      await _revealCatalogueAction(
         tester,
         find.byKey(const ValueKey<String>('start-case-action')),
       );
@@ -375,7 +592,7 @@ void main() {
       final Finder start = find.byKey(
         const ValueKey<String>('start-case-action'),
       );
-      await _revealCatalogueFinder(tester, start);
+      await _revealCatalogueAction(tester, start);
       await tester.tap(start);
       await tester.pump();
 
@@ -405,7 +622,7 @@ void main() {
       final Finder details = find.byKey(
         const ValueKey<String>('case-details-action'),
       );
-      await _revealCatalogueFinder(tester, details);
+      await _revealCatalogueAction(tester, details);
       await tester.tap(details);
       await tester.pumpAndSettle();
 
@@ -641,7 +858,7 @@ void main() {
       final Finder startAction = find.byKey(
         const ValueKey<String>('start-case-action'),
       );
-      await _revealCatalogueFinder(tester, startAction);
+      await _revealCatalogueAction(tester, startAction);
       await tester.tap(startAction);
       await tester.pump();
 
@@ -712,7 +929,7 @@ void main() {
       final Finder startAction = find.byKey(
         const ValueKey<String>('start-case-action'),
       );
-      await _revealCatalogueFinder(tester, startAction);
+      await _revealCatalogueAction(tester, startAction);
       await tester.tap(startAction);
       await tester.pump();
 
@@ -779,7 +996,7 @@ void main() {
       final Finder startAction = find.byKey(
         const ValueKey<String>('start-case-action'),
       );
-      await _revealCatalogueFinder(tester, startAction);
+      await _revealCatalogueAction(tester, startAction);
       await tester.tap(startAction);
       await tester.pump();
 
@@ -831,32 +1048,135 @@ void main() {
     },
   );
 
-  for (final String locale in <String>['en', 'ru']) {
+  const List<({String name, Size size, String locale, double textScale})>
+      accessibilityMatrix =
+      <({String name, Size size, String locale, double textScale})>[
+    (
+      name:
+          'en at 100 percent has complete compact navigation and reachable actions',
+      size: Size(360, 800),
+      locale: 'en',
+      textScale: 1,
+    ),
+    (
+      name: 'en at 200 percent has no overflow and both actions stay reachable',
+      size: Size(360, 800),
+      locale: 'en',
+      textScale: 2,
+    ),
+    (
+      name: 'ru at 200 percent has no overflow and both actions stay reachable',
+      size: Size(360, 800),
+      locale: 'ru',
+      textScale: 2,
+    ),
+    (
+      name: '412 phone en at 200 percent remains reachable',
+      size: Size(412, 915),
+      locale: 'en',
+      textScale: 2,
+    ),
+    (
+      name: '412 phone ru at 200 percent remains reachable',
+      size: Size(412, 915),
+      locale: 'ru',
+      textScale: 2,
+    ),
+    (
+      name: '699 compact boundary at 200 percent remains reachable',
+      size: Size(699, 1000),
+      locale: 'ru',
+      textScale: 2,
+    ),
+    (
+      name: '700 wide boundary at 200 percent remains reachable',
+      size: Size(700, 1000),
+      locale: 'en',
+      textScale: 2,
+    ),
+  ];
+  for (final state in accessibilityMatrix) {
     testWidgets(
-      '$locale at 200 percent has no overflow and both actions stay reachable',
+      state.name,
       (WidgetTester tester) async {
+        final SemanticsHandle semantics = tester.ensureSemantics();
+        int launchCount = 0;
         await _pumpCatalogue(
           tester,
-          size: const Size(360, 800),
+          size: state.size,
           bundle: bundle,
           manifest: manifest,
-          initialLocale: locale,
-          textScale: 2,
+          initialLocale: state.locale,
+          textScale: state.textScale,
           reducedMotion: true,
+          onStartCase: (_, __, ___) => launchCount += 1,
         );
+
+        final CaseIndex selector = await _revealCaseIndex(tester);
+        _expectBuiltCaseIndexGeometryParity(
+          tester,
+          locale: state.locale,
+        );
+        expect(tester.takeException(), isNull);
+        if (selector.vertical) {
+          final Finder firstRow = find.byKey(
+            const ValueKey<String>('case-index-item-$_failedErpId'),
+          );
+          expect(firstRow, findsOneWidget);
+          await _revealSelectorControl(tester, firstRow);
+          expect(tester.getSize(firstRow).height, greaterThanOrEqualTo(48));
+          await _tabTo(tester, firstRow);
+          await tester.sendKeyEvent(LogicalKeyboardKey.end);
+          await tester.pumpAndSettle();
+          _expectSelectedCase(bundle, _desertWaterId, state.locale);
+          final Finder lastRow = find.byKey(
+            const ValueKey<String>('case-index-item-$_desertWaterId'),
+          );
+          expect(lastRow.hitTestable(), findsOneWidget);
+          expect(_primaryFocusIsWithin(lastRow), isTrue);
+        } else {
+          final Finder previous = find.byKey(
+            const ValueKey<String>('case-index-previous'),
+          );
+          final Finder next = find.byKey(
+            const ValueKey<String>('case-index-next'),
+          );
+          final Finder browse = find.byKey(
+            const ValueKey<String>('browse-all-cases'),
+          );
+          for (final Finder target in <Finder>[previous, next]) {
+            expect(tester.getSize(target).height, greaterThanOrEqualTo(48));
+            expect(tester.getSize(target).width, greaterThanOrEqualTo(48));
+            expect(tester.getSemantics(target).label, isNotEmpty);
+          }
+          expect(find.text('01 / 05'), findsWidgets);
+          await _revealSelectorControl(tester, next);
+          await tester.tap(
+            find.descendant(of: next, matching: find.byType(IconButton)),
+          );
+          await tester.pumpAndSettle();
+          _expectSelectedCase(bundle, _logisticsId, state.locale);
+          expect(find.text('02 / 05'), findsWidgets);
+          await _revealSelectorControl(tester, browse);
+          expect(browse.hitTestable(), findsOneWidget);
+          expect(tester.getSize(browse).height, greaterThanOrEqualTo(48));
+          expect(tester.getSemantics(browse).label, isNotEmpty);
+        }
 
         for (final String keyValue in <String>[
           'start-case-action',
           'case-details-action',
         ]) {
           final Finder action = find.byKey(ValueKey<String>(keyValue));
-          await _revealCatalogueFinder(tester, action);
+          await _revealCatalogueAction(tester, action);
           expect(action.hitTestable(), findsOneWidget);
           expect(tester.getSize(action).height, greaterThanOrEqualTo(48));
           expect(tester.getSize(action).width, greaterThanOrEqualTo(48));
           expect(tester.takeException(), isNull);
         }
+        expect(launchCount, 0);
         expect(tester.binding.transientCallbackCount, 0);
+        semantics.dispose();
       },
     );
   }
@@ -952,12 +1272,137 @@ Future<void> _pumpLoader(
 }
 
 Future<void> _selectCase(WidgetTester tester, String caseId) async {
+  final CaseIndex selector = await _revealCaseIndex(tester);
+  if (selector.vertical) {
+    await _selectWideCase(tester, caseId, selector);
+    return;
+  }
   final Finder item = find.byKey(
     ValueKey<String>('case-index-item-$caseId'),
   );
-  await tester.ensureVisible(item);
-  await tester.pump();
-  await tester.tap(item);
+  if (item.evaluate().length == 1 &&
+      item.hitTestable().evaluate().length == 1) {
+    await tester.tap(item);
+  } else if (find
+      .byKey(const ValueKey<String>('browse-all-cases'))
+      .evaluate()
+      .isNotEmpty) {
+    final Finder browse = find.byKey(
+      const ValueKey<String>('browse-all-cases'),
+    );
+    await tester.ensureVisible(browse);
+    await tester.pump();
+    await tester.tap(browse);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ValueKey<String>('browse-case-$caseId')));
+  } else {
+    await tester.ensureVisible(item);
+    await tester.pump();
+    await tester.tap(item);
+  }
+  await tester.pumpAndSettle();
+}
+
+Future<void> _selectWideCase(
+  WidgetTester tester,
+  String caseId,
+  CaseIndex selector,
+) async {
+  final List<String> visibleIds = selector.cases
+      .map((MobileCaseDefinition item) => item.caseId)
+      .toList(growable: false);
+  final int targetIndex = visibleIds.indexOf(caseId);
+  expect(
+    targetIndex,
+    greaterThanOrEqualTo(0),
+    reason: 'Target $caseId must be in the player-visible wide index.',
+  );
+
+  final String currentId = selector.selectedCaseId ?? visibleIds.first;
+  final Finder currentRow = find.byKey(
+    ValueKey<String>('case-index-item-$currentId'),
+  );
+  expect(currentRow, findsOneWidget);
+  expect(currentRow.hitTestable(), findsOneWidget);
+  await _tabTo(tester, currentRow);
+
+  final List<String> visitedIds = <String>[];
+  await tester.sendKeyEvent(LogicalKeyboardKey.home);
+  await tester.pumpAndSettle();
+  String selectedId = _selectedCaseId();
+  visitedIds.add(selectedId);
+  if (selectedId != visibleIds.first) {
+    fail(
+      'Wide Home navigation did not reach the first case. '
+      'current=$selectedId target=$caseId visited=$visitedIds',
+    );
+  }
+  _expectWideSelection(tester, selector.bundle, visibleIds.first);
+
+  for (int position = 1; position <= targetIndex; position += 1) {
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    selectedId = _selectedCaseId();
+    visitedIds.add(selectedId);
+    if (selectedId != visibleIds[position]) {
+      fail(
+        'Bounded wide navigation diverged. current=$selectedId '
+        'target=$caseId visited=$visitedIds',
+      );
+    }
+    _expectWideSelection(tester, selector.bundle, visibleIds[position]);
+  }
+
+  if (selectedId != caseId) {
+    fail(
+      'Wide target was not reached within ${visibleIds.length} steps. '
+      'current=$selectedId target=$caseId visited=$visitedIds',
+    );
+  }
+}
+
+String _selectedCaseId() {
+  final CaseIndex selector =
+      find.byType(CaseIndex).evaluate().single.widget as CaseIndex;
+  final String? selectedCaseId = selector.selectedCaseId;
+  if (selectedCaseId == null) {
+    fail('The player-visible case index has no selected stable case ID.');
+  }
+  return selectedCaseId;
+}
+
+void _expectWideSelection(
+  WidgetTester tester,
+  CaseCatalogBundle bundle,
+  String caseId,
+) {
+  final CaseIndex selector = tester.widget<CaseIndex>(find.byType(CaseIndex));
+  expect(selector.selectedCaseId, caseId);
+  final Finder row = find.byKey(
+    ValueKey<String>('case-index-item-$caseId'),
+  );
+  expect(row, findsOneWidget);
+  expect(row.hitTestable(), findsOneWidget);
+  expect(_primaryFocusIsWithin(row), isTrue);
+  _expectSelectedCase(bundle, caseId, selector.locale);
+}
+
+IconButton _boundaryButton(WidgetTester tester, String key) {
+  return tester.widget<IconButton>(
+    find.descendant(
+      of: find.byKey(ValueKey<String>(key)),
+      matching: find.byType(IconButton),
+    ),
+  );
+}
+
+Future<void> _tapBoundary(WidgetTester tester, String key) async {
+  await tester.tap(
+    find.descendant(
+      of: find.byKey(ValueKey<String>(key)),
+      matching: find.byType(IconButton),
+    ),
+  );
   await tester.pumpAndSettle();
 }
 
@@ -984,28 +1429,664 @@ Future<void> _scrollCatalogueToTop(WidgetTester tester) async {
   await tester.pump();
 }
 
-Future<void> _revealCatalogueFinder(
+Future<void> _revealSelectorControl(
   WidgetTester tester,
   Finder target,
 ) async {
-  for (int attempt = 0; attempt < 30; attempt += 1) {
-    if (target.evaluate().length == 1 &&
-        target.hitTestable().evaluate().length == 1) {
+  await _boundedCatalogueReveal(
+    tester,
+    description: target.toString(),
+    isVisible: () =>
+        target.evaluate().length == 1 &&
+        target.hitTestable().evaluate().length == 1,
+    finderState: () => 'built=${target.evaluate().length} '
+        'hitTestable=${target.hitTestable().evaluate().length}',
+  );
+  expect(target, findsOneWidget);
+  expect(target.hitTestable(), findsOneWidget);
+}
+
+const int _catalogueRevealMaximumSteps = 12;
+const double _catalogueRevealGestureDistance = 240;
+const Offset _catalogueRevealGesture = Offset(
+  0,
+  -_catalogueRevealGestureDistance,
+);
+
+Future<void> _revealCatalogueAction(
+  WidgetTester tester,
+  Finder target,
+) async {
+  final Finder viewport = find.byKey(
+    const PageStorageKey<String>('case-catalog'),
+  );
+  final Finder scrollableFinder = _catalogueScrollable();
+  if (viewport.evaluate().length != 1 ||
+      scrollableFinder.evaluate().length != 1) {
+    fail(
+      'Cannot reveal catalogue action: '
+      'viewport=${viewport.evaluate().length} '
+      'outerScrollable=${scrollableFinder.evaluate().length}.',
+    );
+  }
+  final ScrollableState scrollable =
+      tester.state<ScrollableState>(scrollableFinder);
+  final ScrollPosition initialPosition = scrollable.position;
+  if (!initialPosition.hasContentDimensions) {
+    fail('Catalogue action reveal requires complete outer scroll dimensions.');
+  }
+  final double initialRemaining =
+      initialPosition.maxScrollExtent > initialPosition.pixels
+          ? initialPosition.maxScrollExtent - initialPosition.pixels
+          : 0;
+  final int maximumGestures =
+      (initialRemaining / _catalogueRevealGestureDistance).ceil();
+  final int maximumChecks = maximumGestures + 1;
+
+  for (int check = 0; check < maximumChecks; check += 1) {
+    final int built = target.evaluate().length;
+    final int hitTestable = target.hitTestable().evaluate().length;
+    if (built > 1 || hitTestable > 1) {
+      fail(
+        'Catalogue action identity is ambiguous. '
+        '${_actionRevealDiagnostics(
+          scrollable,
+          target,
+          initialRemaining: initialRemaining,
+          maximumGestures: maximumGestures,
+          completedGestures: check,
+          completedChecks: check + 1,
+        )}',
+      );
+    }
+    if (_isExactHitTestable(target)) {
       return;
     }
-    final ScrollableState scrollable = tester.state<ScrollableState>(
-      _catalogueScrollable(),
-    );
-    final double current = scrollable.position.pixels;
-    final double maximum = scrollable.position.maxScrollExtent;
-    if (current >= maximum) {
+    if (check == maximumGestures) {
       break;
     }
-    final double next = current + 320 > maximum ? maximum : current + 320;
-    scrollable.position.jumpTo(next);
-    await tester.pump();
+    final double before = scrollable.position.pixels;
+    await tester.drag(viewport, _catalogueRevealGesture);
+    await tester.pumpAndSettle();
+    if (_isExactHitTestable(target)) {
+      return;
+    }
+    final double after = scrollable.position.pixels;
+    if (after <= before + 0.5) {
+      fail(
+        'Player-visible action reveal stalled. '
+        '${_actionRevealDiagnostics(
+          scrollable,
+          target,
+          initialRemaining: initialRemaining,
+          maximumGestures: maximumGestures,
+          completedGestures: check + 1,
+          completedChecks: check + 2,
+        )}',
+      );
+    }
   }
-  fail('The requested catalogue control could not be made reachable.');
+
+  fail(
+    'Player-visible action reveal exhausted its ScrollPosition-derived bound. '
+    '${_actionRevealDiagnostics(
+      scrollable,
+      target,
+      initialRemaining: initialRemaining,
+      maximumGestures: maximumGestures,
+      completedGestures: maximumGestures,
+      completedChecks: maximumChecks,
+    )}',
+  );
+}
+
+bool _isExactHitTestable(Finder target) {
+  return target.evaluate().length == 1 &&
+      target.hitTestable().evaluate().length == 1;
+}
+
+String _actionRevealDiagnostics(
+  ScrollableState scrollable,
+  Finder target, {
+  required double initialRemaining,
+  required int maximumGestures,
+  required int completedGestures,
+  required int completedChecks,
+}) {
+  final ScrollPosition position = scrollable.position;
+  final double remaining = position.maxScrollExtent > position.pixels
+      ? position.maxScrollExtent - position.pixels
+      : 0;
+  return '${_catalogueRevealEnvironment(scrollable)} '
+      'remaining=${remaining.toStringAsFixed(1)} '
+      'initialRemaining=${initialRemaining.toStringAsFixed(1)} '
+      'gestures=$completedGestures/$maximumGestures '
+      'checks=$completedChecks/${maximumGestures + 1} '
+      'built=${target.evaluate().length} '
+      'hitTestable=${target.hitTestable().evaluate().length}';
+}
+
+Future<CaseIndex> _revealCaseIndex(WidgetTester tester) async {
+  final Finder selectorWidget = find.byType(CaseIndex);
+  final Finder selectorRoot = find.byKey(
+    const ValueKey<String>('case-index'),
+  );
+  final Finder publicSurfaces = find.descendant(
+    of: selectorRoot,
+    matching: find.byWidgetPredicate((Widget widget) {
+      final Key? key = widget.key;
+      if (key is! ValueKey<String>) {
+        return false;
+      }
+      final String value = key.value;
+      return value.startsWith('case-index-item-') ||
+          value == 'case-index-previous' ||
+          value == 'case-index-next' ||
+          value == 'browse-all-cases';
+    }),
+  );
+
+  await _boundedCatalogueReveal(
+    tester,
+    description: 'public case selector',
+    isVisible: () =>
+        selectorWidget.evaluate().length == 1 &&
+        selectorRoot.evaluate().length == 1 &&
+        publicSurfaces.hitTestable().evaluate().isNotEmpty,
+    finderState: () => 'CaseIndex=${selectorWidget.evaluate().length} '
+        'selectorRoot=${selectorRoot.evaluate().length} '
+        'publicSurfaces=${publicSurfaces.evaluate().length} '
+        'hitTestable=${publicSurfaces.hitTestable().evaluate().length}',
+  );
+
+  expect(selectorWidget, findsOneWidget);
+  expect(selectorRoot, findsOneWidget);
+  expect(publicSurfaces.hitTestable(), findsAtLeastNWidgets(1));
+  return tester.widget<CaseIndex>(selectorWidget);
+}
+
+Future<void> _boundedCatalogueReveal(
+  WidgetTester tester, {
+  required String description,
+  required bool Function() isVisible,
+  required String Function() finderState,
+}) async {
+  final Finder viewport = find.byKey(
+    const PageStorageKey<String>('case-catalog'),
+  );
+  final Finder scrollableFinder = _catalogueScrollable();
+  if (viewport.evaluate().length != 1 ||
+      scrollableFinder.evaluate().length != 1) {
+    fail(
+      'Cannot reveal $description: viewport=${viewport.evaluate().length} '
+      'outerScrollable=${scrollableFinder.evaluate().length}.',
+    );
+  }
+  final ScrollableState scrollable =
+      tester.state<ScrollableState>(scrollableFinder);
+
+  for (int step = 0; step <= _catalogueRevealMaximumSteps; step += 1) {
+    if (isVisible()) {
+      return;
+    }
+    final String diagnostic = '${_catalogueRevealEnvironment(scrollable)} '
+        'step=$step/$_catalogueRevealMaximumSteps ${finderState()}';
+    if (step == _catalogueRevealMaximumSteps) {
+      fail('Bounded reveal exhausted for $description. $diagnostic');
+    }
+
+    final double before = scrollable.position.pixels;
+    await tester.drag(viewport, _catalogueRevealGesture);
+    await tester.pumpAndSettle();
+    final double after = scrollable.position.pixels;
+    if (isVisible()) {
+      return;
+    }
+    if (after <= before + 0.5) {
+      fail(
+        'Player-visible scrolling stalled while revealing $description. '
+        'before=$before after=$after $diagnostic',
+      );
+    }
+  }
+}
+
+String _catalogueRevealEnvironment(ScrollableState scrollable) {
+  final MediaQueryData media = MediaQuery.of(scrollable.context);
+  final ScrollPosition position = scrollable.position;
+  final String locale =
+      Localizations.localeOf(scrollable.context).toLanguageTag();
+  final double effectiveTextScale = media.textScaler.scale(16) / 16;
+  return 'viewport=${media.size.width.toStringAsFixed(0)}x'
+      '${media.size.height.toStringAsFixed(0)} locale=$locale '
+      'textScale=${effectiveTextScale.toStringAsFixed(2)} '
+      'scroll=${position.pixels.toStringAsFixed(1)}/'
+      '${position.maxScrollExtent.toStringAsFixed(1)}';
+}
+
+void _expectBuiltCaseIndexGeometryParity(
+  WidgetTester tester, {
+  required String locale,
+}) {
+  for (final String caseId in _authoritativeCaseIds) {
+    final Finder itemFinder = find.byKey(
+      ValueKey<String>('case-index-item-$caseId'),
+    );
+    if (itemFinder.evaluate().length == 1) {
+      _expectCaseIndexCardGeometryParity(
+        tester,
+        caseId: caseId,
+        locale: locale,
+      );
+    }
+  }
+}
+
+void _expectCaseIndexCardGeometryParity(
+  WidgetTester tester, {
+  required String caseId,
+  required String locale,
+}) {
+  final Finder itemFinder = find.byKey(
+    ValueKey<String>('case-index-item-$caseId'),
+  );
+  final Finder contentFinder = find.byKey(
+    ValueKey<String>('case-index-content-$caseId'),
+  );
+  final Finder markFinder = find.byKey(
+    ValueKey<String>('case-index-mark-$caseId'),
+  );
+  final Finder titleFinder = find.byKey(
+    ValueKey<String>('case-index-title-$caseId'),
+  );
+  final Finder topicFinder = find.byKey(
+    ValueKey<String>('case-index-topic-$caseId'),
+  );
+  for (final Finder finder in <Finder>[
+    itemFinder,
+    contentFinder,
+    markFinder,
+    titleFinder,
+    topicFinder,
+  ]) {
+    if (finder.evaluate().length != 1) {
+      fail(
+        'Full-card diagnostic requires one presentation role for $finder; '
+        'found ${finder.evaluate().length}.',
+      );
+    }
+  }
+
+  final RenderBox itemBox = tester.renderObject<RenderBox>(itemFinder);
+  final Semantics itemSemantics = tester.widget<Semantics>(itemFinder);
+  final bool selected = itemSemantics.properties.selected ?? false;
+  final RenderBox contentBox = tester.renderObject<RenderBox>(contentFinder);
+  final RenderBox markBox = tester.renderObject<RenderBox>(markFinder);
+  final RenderParagraph titleParagraph =
+      tester.renderObject<RenderParagraph>(titleFinder);
+  final RenderParagraph topicParagraph =
+      tester.renderObject<RenderParagraph>(topicFinder);
+  final List<RenderParagraph> markParagraphs = find
+      .descendant(of: markFinder, matching: find.byType(RichText))
+      .evaluate()
+      .map((Element element) => element.renderObject)
+      .whereType<RenderParagraph>()
+      .toList(growable: false);
+  if (markParagraphs.length != 2) {
+    fail(
+      'Full-card diagnostic requires two mark paragraphs; '
+      'found ${markParagraphs.length}.',
+    );
+  }
+  final RenderParagraph positionParagraph = markParagraphs.first;
+  final RenderParagraph jurisdictionParagraph = markParagraphs.last;
+
+  final BuildContext context = tester.element(titleFinder);
+  final ThemeData theme = Theme.of(context);
+  final JurisSpacing spacing = theme.extension<JurisSpacing>()!;
+  final JurisBorders borders = theme.extension<JurisBorders>()!;
+  final JurisTypography typography = theme.extension<JurisTypography>()!;
+  final TextScaler textScaler = MediaQuery.textScalerOf(context);
+  final TextDirection textDirection = Directionality.of(context);
+  final Locale? resolvedLocale = Localizations.maybeLocaleOf(context);
+  final double maximumBorderInset = borders.focus + borders.emphasis;
+  final double estimatorContentWidth = math.max(
+    1,
+    itemBox.size.width - (2 * maximumBorderInset) - (2 * spacing.md),
+  );
+  final double estimatorMarkInnerWidth = math.max(
+    1,
+    estimatorContentWidth - (2 * spacing.md),
+  );
+
+  final _DiagnosticParagraphGeometry actualPosition =
+      _diagnoseRenderParagraph(positionParagraph);
+  final _DiagnosticParagraphGeometry actualJurisdiction =
+      _diagnoseRenderParagraph(jurisdictionParagraph);
+  final _DiagnosticParagraphGeometry actualTitle =
+      _diagnoseRenderParagraph(titleParagraph);
+  final _DiagnosticParagraphGeometry actualTopic =
+      _diagnoseRenderParagraph(topicParagraph);
+  final _DiagnosticParagraphGeometry estimatedPosition =
+      _diagnoseEstimatedParagraph(
+    actualPosition.text,
+    typography.caseIndex,
+    textScaler: textScaler,
+    textDirection: textDirection,
+    locale: resolvedLocale,
+    maxWidth: estimatorMarkInnerWidth,
+  );
+  final _DiagnosticParagraphGeometry estimatedJurisdiction =
+      _diagnoseEstimatedParagraph(
+    actualJurisdiction.text,
+    typography.metadata,
+    textScaler: textScaler,
+    textDirection: textDirection,
+    locale: resolvedLocale,
+    maxWidth: math.min(180, estimatorMarkInnerWidth),
+    maxLines: 1,
+    ellipsis: '\u2026',
+  );
+  final _DiagnosticParagraphGeometry estimatedTitle =
+      _diagnoseEstimatedParagraph(
+    actualTitle.text,
+    theme.textTheme.titleMedium ?? const TextStyle(),
+    textScaler: textScaler,
+    textDirection: textDirection,
+    locale: resolvedLocale,
+    maxWidth: estimatorContentWidth,
+  );
+  final _DiagnosticParagraphGeometry estimatedTopic =
+      _diagnoseEstimatedParagraph(
+    actualTopic.text,
+    theme.textTheme.bodySmall ?? const TextStyle(),
+    textScaler: textScaler,
+    textDirection: textDirection,
+    locale: resolvedLocale,
+    maxWidth: estimatorContentWidth,
+  );
+
+  final double requiredMarkRunWidth =
+      estimatedPosition.size.width.ceilToDouble() +
+          spacing.sm +
+          estimatedJurisdiction.size.width.ceilToDouble();
+  final double availableMarkRunWidth = math
+      .max(
+        0,
+        estimatorMarkInnerWidth - 0.5,
+      )
+      .floorToDouble();
+  final bool estimatedMarkWraps = requiredMarkRunWidth > availableMarkRunWidth;
+  final double estimatedMarkTextHeight = estimatedMarkWraps
+      ? estimatedPosition.size.height +
+          spacing.xs +
+          estimatedJurisdiction.size.height
+      : math.max(
+          estimatedPosition.size.height,
+          estimatedJurisdiction.size.height,
+        );
+  final double estimatedMarkHeight = (2 * spacing.sm) + estimatedMarkTextHeight;
+  final double actualCardBorder =
+      selected ? borders.emphasis : borders.standard;
+  final double actualNaturalExtent = (2 * (borders.focus + actualCardBorder)) +
+      (2 * spacing.md) +
+      markBox.size.height +
+      spacing.sm +
+      titleParagraph.size.height +
+      spacing.xs +
+      topicParagraph.size.height;
+  final double estimatedSelectedExtent = (2 * maximumBorderInset) +
+      (2 * spacing.md) +
+      estimatedMarkHeight +
+      spacing.sm +
+      estimatedTitle.size.height +
+      spacing.xs +
+      estimatedTopic.size.height;
+  final String firstDivergence = _firstGeometryDivergence(
+    actualMarkHeight: markBox.size.height,
+    estimatedMarkHeight: estimatedMarkHeight,
+    actualTitle: actualTitle,
+    estimatedTitle: estimatedTitle,
+    actualTopic: actualTopic,
+    estimatedTopic: estimatedTopic,
+    estimatorTitleWidth: estimatorContentWidth,
+    estimatorTopicWidth: estimatorContentWidth,
+    actualNaturalExtent: actualNaturalExtent,
+    measuredItemExtent: itemBox.size.height,
+  );
+  const double tolerance = 0.01;
+  expect(
+    estimatorContentWidth,
+    lessThanOrEqualTo(titleParagraph.constraints.maxWidth + tolerance),
+    reason: '$locale/$caseId title estimator width must be conservative.',
+  );
+  expect(
+    estimatorContentWidth,
+    lessThanOrEqualTo(topicParagraph.constraints.maxWidth + tolerance),
+    reason: '$locale/$caseId topic estimator width must be conservative.',
+  );
+  expect(
+    estimatedMarkHeight + tolerance,
+    greaterThanOrEqualTo(markBox.size.height),
+    reason: '$locale/$caseId mark estimator must contain rendered mark.',
+  );
+  expect(
+    estimatedTitle.lineHeights.length,
+    greaterThanOrEqualTo(actualTitle.lineHeights.length),
+    reason: '$locale/$caseId title estimator cannot lose rendered lines.',
+  );
+  expect(
+    estimatedTitle.size.height + tolerance,
+    greaterThanOrEqualTo(actualTitle.renderSize.height),
+    reason: '$locale/$caseId title estimator must contain rendered text.',
+  );
+  expect(
+    estimatedTopic.lineHeights.length,
+    greaterThanOrEqualTo(actualTopic.lineHeights.length),
+    reason: '$locale/$caseId topic estimator cannot lose rendered lines.',
+  );
+  expect(
+    estimatedTopic.size.height + tolerance,
+    greaterThanOrEqualTo(actualTopic.renderSize.height),
+    reason: '$locale/$caseId topic estimator must contain rendered text.',
+  );
+  expect(
+    estimatedSelectedExtent + tolerance,
+    greaterThanOrEqualTo(actualNaturalExtent),
+    reason: '$locale/$caseId estimated card must contain natural geometry.',
+  );
+  expect(
+    itemBox.size.height + tolerance,
+    greaterThanOrEqualTo(actualNaturalExtent),
+    reason: '$locale/$caseId fixed item extent must contain natural geometry.',
+  );
+  expect(
+    contentBox.constraints.maxWidth,
+    greaterThanOrEqualTo(estimatorContentWidth),
+  );
+  expect(firstDivergence, 'OTHER',
+      reason: '$locale/$caseId geometry diverged.');
+}
+
+_DiagnosticParagraphGeometry _diagnoseRenderParagraph(
+  RenderParagraph paragraph,
+) {
+  final double layoutMaxWidth =
+      paragraph.softWrap || paragraph.overflow == TextOverflow.ellipsis
+          ? paragraph.constraints.maxWidth
+          : double.infinity;
+  final TextPainter painter = TextPainter(
+    text: paragraph.text,
+    textAlign: paragraph.textAlign,
+    textDirection: paragraph.textDirection,
+    textScaler: paragraph.textScaler,
+    maxLines: paragraph.maxLines,
+    ellipsis: paragraph.overflow == TextOverflow.ellipsis ? '\u2026' : null,
+    locale: paragraph.locale,
+    strutStyle: paragraph.strutStyle,
+    textWidthBasis: paragraph.textWidthBasis,
+    textHeightBehavior: paragraph.textHeightBehavior,
+  )..layout(
+      minWidth: paragraph.constraints.minWidth,
+      maxWidth: layoutMaxWidth,
+    );
+  final _DiagnosticParagraphGeometry geometry = _DiagnosticParagraphGeometry(
+    text: paragraph.text.toPlainText(),
+    size: painter.size,
+    renderSize: paragraph.size,
+    maxWidth: paragraph.constraints.maxWidth,
+    lineHeights: painter
+        .computeLineMetrics()
+        .map((line) => line.height)
+        .toList(growable: false),
+    style: paragraph.text.style,
+    textScaler: paragraph.textScaler,
+    locale: paragraph.locale,
+    textDirection: paragraph.textDirection,
+    maxLines: paragraph.maxLines,
+    softWrap: paragraph.softWrap,
+    overflow: paragraph.overflow,
+    textWidthBasis: paragraph.textWidthBasis,
+    textHeightBehavior: paragraph.textHeightBehavior,
+    strutStyle: paragraph.strutStyle,
+  );
+  painter.dispose();
+  return geometry;
+}
+
+_DiagnosticParagraphGeometry _diagnoseEstimatedParagraph(
+  String text,
+  TextStyle style, {
+  required TextScaler textScaler,
+  required TextDirection textDirection,
+  required Locale? locale,
+  required double maxWidth,
+  int? maxLines,
+  String? ellipsis,
+}) {
+  final TextPainter painter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textDirection: textDirection,
+    textScaler: textScaler,
+    locale: locale,
+    maxLines: maxLines,
+    ellipsis: ellipsis,
+  )..layout(maxWidth: maxWidth);
+  final _DiagnosticParagraphGeometry geometry = _DiagnosticParagraphGeometry(
+    text: text,
+    size: painter.size,
+    renderSize: painter.size,
+    maxWidth: maxWidth,
+    lineHeights: painter
+        .computeLineMetrics()
+        .map((line) => line.height)
+        .toList(growable: false),
+    style: style,
+    textScaler: textScaler,
+    locale: locale,
+    textDirection: textDirection,
+    maxLines: maxLines,
+    softWrap: true,
+    overflow: ellipsis == null ? TextOverflow.clip : TextOverflow.ellipsis,
+    textWidthBasis: TextWidthBasis.parent,
+    textHeightBehavior: null,
+    strutStyle: null,
+  );
+  painter.dispose();
+  return geometry;
+}
+
+String _firstGeometryDivergence({
+  required double actualMarkHeight,
+  required double estimatedMarkHeight,
+  required _DiagnosticParagraphGeometry actualTitle,
+  required _DiagnosticParagraphGeometry estimatedTitle,
+  required _DiagnosticParagraphGeometry actualTopic,
+  required _DiagnosticParagraphGeometry estimatedTopic,
+  required double estimatorTitleWidth,
+  required double estimatorTopicWidth,
+  required double actualNaturalExtent,
+  required double measuredItemExtent,
+}) {
+  const double tolerance = 0.01;
+  if ((actualMarkHeight - estimatedMarkHeight).abs() > tolerance) {
+    return 'MARK_HEIGHT';
+  }
+  if (estimatorTitleWidth > actualTitle.maxWidth + tolerance) {
+    return 'TITLE_WIDTH';
+  }
+  if (!_sameMetricStyle(actualTitle.style, estimatedTitle.style)) {
+    return 'TITLE_STYLE';
+  }
+  if (actualTitle.lineHeights.length != estimatedTitle.lineHeights.length) {
+    return 'TITLE_LINE_COUNT';
+  }
+  if ((actualTitle.renderSize.height - estimatedTitle.size.height).abs() >
+      tolerance) {
+    return 'TITLE_HEIGHT';
+  }
+  if (estimatorTopicWidth > actualTopic.maxWidth + tolerance) {
+    return 'TOPIC_WIDTH';
+  }
+  if (!_sameMetricStyle(actualTopic.style, estimatedTopic.style)) {
+    return 'TOPIC_STYLE';
+  }
+  if (actualTopic.lineHeights.length != estimatedTopic.lineHeights.length) {
+    return 'TOPIC_LINE_COUNT';
+  }
+  if ((actualTopic.renderSize.height - estimatedTopic.size.height).abs() >
+      tolerance) {
+    return 'TOPIC_HEIGHT';
+  }
+  if (actualNaturalExtent > measuredItemExtent + tolerance) {
+    return 'PADDING_OR_GAP';
+  }
+  return 'OTHER';
+}
+
+bool _sameMetricStyle(TextStyle? actual, TextStyle? estimated) {
+  return actual?.fontFamily == estimated?.fontFamily &&
+      actual?.fontSize == estimated?.fontSize &&
+      actual?.height == estimated?.height &&
+      actual?.fontWeight == estimated?.fontWeight &&
+      actual?.letterSpacing == estimated?.letterSpacing &&
+      actual?.inherit == estimated?.inherit;
+}
+
+final class _DiagnosticParagraphGeometry {
+  const _DiagnosticParagraphGeometry({
+    required this.text,
+    required this.size,
+    required this.renderSize,
+    required this.maxWidth,
+    required this.lineHeights,
+    required this.style,
+    required this.textScaler,
+    required this.locale,
+    required this.textDirection,
+    required this.maxLines,
+    required this.softWrap,
+    required this.overflow,
+    required this.textWidthBasis,
+    required this.textHeightBehavior,
+    required this.strutStyle,
+  });
+
+  final String text;
+  final Size size;
+  final Size renderSize;
+  final double maxWidth;
+  final List<double> lineHeights;
+  final TextStyle? style;
+  final TextScaler textScaler;
+  final Locale? locale;
+  final TextDirection textDirection;
+  final int? maxLines;
+  final bool softWrap;
+  final TextOverflow overflow;
+  final TextWidthBasis textWidthBasis;
+  final TextHeightBehavior? textHeightBehavior;
+  final StrutStyle? strutStyle;
 }
 
 Finder _catalogueScrollable() {
@@ -1029,6 +2110,85 @@ Future<void> _tabTo(WidgetTester tester, Finder target) async {
     await tester.pump();
   }
   fail('Tab traversal did not reach the requested target.');
+}
+
+Future<List<String>> _restoreStartFocusThroughVisibleActions(
+  WidgetTester tester, {
+  required Finder startAction,
+  required Finder detailsAction,
+}) async {
+  final Map<String, Finder> candidates = <String, Finder>{
+    'start-case-action': startAction,
+    'case-details-action': detailsAction,
+  };
+  final Map<String, Finder> visibleActions = <String, Finder>{};
+  for (final MapEntry<String, Finder> entry in candidates.entries) {
+    final int built = entry.value.evaluate().length;
+    final int hitTestable = entry.value.hitTestable().evaluate().length;
+    if (built > 1 || hitTestable > 1) {
+      fail(
+        'Action ${entry.key} is ambiguous: '
+        'built=$built hitTestable=$hitTestable.',
+      );
+    }
+    if (built == 1 && hitTestable == 1) {
+      visibleActions[entry.key] = entry.value;
+    }
+  }
+  if (!visibleActions.containsKey('start-case-action')) {
+    fail(
+      'Start is not player-visible before focus restoration. '
+      'visible=${visibleActions.keys.toList(growable: false)} '
+      'primary=${_primaryFocusDescription()}',
+    );
+  }
+
+  final int maximumTraversalKeys = visibleActions.length + 1;
+  final List<String> visitedOwners = <String>[
+    _visibleActionFocusOwner(visibleActions),
+  ];
+  for (int traversalCount = 0;
+      traversalCount < maximumTraversalKeys;
+      traversalCount += 1) {
+    if (_primaryFocusIsWithin(startAction)) {
+      return List<String>.unmodifiable(visitedOwners);
+    }
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    try {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    } finally {
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    }
+    await tester.pumpAndSettle();
+    visitedOwners.add(_visibleActionFocusOwner(visibleActions));
+    if (_primaryFocusIsWithin(startAction)) {
+      return List<String>.unmodifiable(visitedOwners);
+    }
+  }
+
+  fail(
+    'Start focus was not restored within $maximumTraversalKeys public '
+    'reverse-traversal keys. current=${_primaryFocusDescription()} '
+    'visited=$visitedOwners '
+    'visible=${visibleActions.keys.toList(growable: false)}',
+  );
+}
+
+String _visibleActionFocusOwner(Map<String, Finder> visibleActions) {
+  for (final MapEntry<String, Finder> entry in visibleActions.entries) {
+    if (_primaryFocusIsWithin(entry.value)) {
+      return entry.key;
+    }
+  }
+  return _primaryFocusDescription();
+}
+
+String _primaryFocusDescription() {
+  final FocusNode? focus = FocusManager.instance.primaryFocus;
+  final Widget? owner = focus?.context?.widget;
+  return 'outside-actions('
+      'debugLabel=${focus?.debugLabel ?? '<none>'}, '
+      'widget=${owner?.runtimeType ?? '<none>'})';
 }
 
 bool _primaryFocusIsWithin(Finder target) {
@@ -1081,23 +2241,12 @@ CaseHeroPainter _selectedHeroPainter() {
 }
 
 void _expectExactIndexOrder() {
-  final Finder index = find.byKey(const ValueKey<String>('case-index'));
-  expect(index, findsOneWidget);
-  final List<String> renderedIds = find
-      .descendant(
-        of: index,
-        matching: find.byWidgetPredicate((Widget widget) {
-          final Key? key = widget.key;
-          return key is ValueKey<String> &&
-              key.value.startsWith('case-index-item-');
-        }),
-      )
-      .evaluate()
-      .map((Element element) {
-    final ValueKey<String> key = element.widget.key! as ValueKey<String>;
-    return key.value.substring('case-index-item-'.length);
-  }).toList(growable: false);
-  expect(renderedIds, _authoritativeCaseIds);
+  final CaseIndex index =
+      find.byType(CaseIndex).evaluate().single.widget as CaseIndex;
+  expect(
+    index.cases.map((MobileCaseDefinition item) => item.caseId),
+    _authoritativeCaseIds,
+  );
 }
 
 void _expectSelectedCase(
