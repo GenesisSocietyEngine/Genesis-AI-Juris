@@ -279,7 +279,7 @@ export default function JurisApp() {
       </header>
 
       {view === "library" && <LibraryView locale={locale} text={text} featured={featured} setFeaturedId={setFeaturedId} startScenario={startScenario} />}
-      {view === "play" && activeScenario && stage && <PlayView locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} decisionLog={decisionLog} dossierRef={dossierRef} setDossierRef={setDossierRef} setSelectedOption={setSelectedOption} outcome={outcome} returnLibrary={() => navigate("library")} />}
+      {view === "play" && activeScenario && stage && <PlayView locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} decisionLog={decisionLog} dossierRef={dossierRef} setDossierRef={setDossierRef} setSelectedOption={setSelectedOption} outcome={outcome} replayCase={() => startScenario(activeScenario)} returnLibrary={() => navigate("library")} />}
       {view === "studio" && <StudioView locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={setDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} checks={checks} generateDraft={generateDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} updateNode={updateNode} addNode={addNode} deleteNode={deleteNode} moveNode={moveNode} resetDraft={() => { setDraft(defaultDraft); setPrompt(defaultPrompt); setSelectedNodeId("decision-1"); }} />}
       {(selectedOption || resultOption) && activeScenario && stage && <DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} close={() => { setSelectedOption(null); setResultOption(null); }} dispatch={dispatchDecision} advance={advanceStage} finalStage={stageIndex === activeScenario.stages.length - 1} />}
     </div>
@@ -295,7 +295,7 @@ function LibraryView({ locale, text, featured, setFeaturedId, startScenario }: {
   </main>;
 }
 
-function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decisionLog, dossierRef, setDossierRef, setSelectedOption, outcome, returnLibrary }: { locale: Locale; text: UiText; scenario: Scenario; stage: Scenario["stages"][number]; stageIndex: number; metrics: Record<MetricKey, number>; decisionLog: Array<{ stage: string; option: DecisionOption }>; dossierRef: string | null; setDossierRef: (ref: string) => void; setSelectedOption: (option: DecisionOption) => void; outcome: "strong" | "mixed" | "weak" | null; returnLibrary: () => void }) {
+function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decisionLog, dossierRef, setDossierRef, setSelectedOption, outcome, replayCase, returnLibrary }: { locale: Locale; text: UiText; scenario: Scenario; stage: Scenario["stages"][number]; stageIndex: number; metrics: Record<MetricKey, number>; decisionLog: Array<{ stage: string; option: DecisionOption }>; dossierRef: string | null; setDossierRef: (ref: string) => void; setSelectedOption: (option: DecisionOption) => void; outcome: "strong" | "mixed" | "weak" | null; replayCase: () => void; returnLibrary: () => void }) {
   const activeMaterial = scenario.materials.find((material) => material.ref === dossierRef) ?? scenario.materials[0];
   const [inboxOpen, setInboxOpen] = useState(false);
   const [selectedInboxIndex, setSelectedInboxIndex] = useState(0);
@@ -328,7 +328,7 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decision
       decisionRef.current?.querySelector<HTMLButtonElement>(".decision-options button")?.focus();
     }, 380);
   }
-  if (outcome) return <main className="debrief-view page-width"><div className="debrief-mark"><span>CASE CLOSED</span><b>{String(scenario.order / 10).padStart(2, "0")}</b></div><div className="eyebrow"><span className="live-dot"/>{text.complete}</div><h1>{scenario.title[locale]}</h1><p className={`outcome-label outcome-${outcome}`}>{scenario.outcomes[outcome][locale]}</p><div className="debrief-grid"><section><h2>{text.actionLog}</h2>{decisionLog.map((entry, index) => <article key={`${entry.option.id}-${index}`} className="log-entry"><span>{String(index + 1).padStart(2, "0")}</span><div><small>{entry.stage}</small><b>{entry.option.label[locale]}</b><p>{entry.option.result[locale]}</p></div></article>)}</section><aside><h2>{locale === "en" ? "Final posture" : "Итоговая позиция"}</h2><MetricPanel locale={locale} metrics={metrics}/><div className="canonical-note"><Icon name="file"/><p>{text.canonNote}</p></div></aside></div><button className="primary-cta" onClick={returnLibrary}>{text.returnLibrary}<Icon name="arrow"/></button></main>;
+  if (outcome) return <DebriefView locale={locale} text={text} scenario={scenario} metrics={metrics} decisionLog={decisionLog} outcome={outcome} replayCase={replayCase} returnLibrary={returnLibrary}/>;
   return <main className="operations-view"><aside className="case-rail"><button className="rail-back" onClick={returnLibrary}><span>←</span>{text.library}</button><div className="rail-case"><small>ACTIVE MATTER</small><b>{scenario.title[locale]}</b><span>{scenario.jurisdiction}</span></div><ol className="stage-list">{scenario.stages.map((item, index) => <li key={item.id} className={index === stageIndex ? "active" : index < stageIndex ? "done" : ""}><span>{index < stageIndex ? "✓" : index + 1}</span><div><b>{item.phase[locale]}</b><small>{text.day} {item.day} · {item.time}</small></div></li>)}</ol><div className="rail-version">CONTENT v{scenario.version}<br/><code>{scenario.fingerprint}</code></div></aside>
     <section className="command-center">
       <div className="command-header">
@@ -398,6 +398,98 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decision
       )}
     </section>
     <aside className="dossier-pane"><div className="pane-heading"><span>{text.dossier}</span><b>{scenario.materials.length}</b></div><p className="pane-intro">{text.visibleMaterial} · {text.provenance}</p><div className="material-tabs">{scenario.materials.map((material) => <button key={material.ref} className={material.ref === activeMaterial.ref ? "active" : ""} onClick={() => setDossierRef(material.ref)}><code>{material.ref}</code><span>{material.title[locale]}</span></button>)}</div><article className="material-sheet"><div className="sheet-punch"/><div className="sheet-reg">{activeMaterial.ref}</div><span className="document-type">{activeMaterial.type[locale]}</span><h3>{activeMaterial.title[locale]}</h3><dl><div><dt>SOURCE</dt><dd>{activeMaterial.source[locale]}</dd></div><div><dt>DATE / TIME</dt><dd>{activeMaterial.date}</dd></div><div><dt>CASE</dt><dd>{scenario.caseId}</dd></div></dl><p>{locale === "en" ? "Visible case material. Source identity remains attached; opening this record does not recommend a decision." : "Видимый материал дела. Идентичность источника сохранена; открытие записи не рекомендует решение."}</p><div className="sheet-status"><Icon name="check"/> PROVENANCE ATTACHED</div></article>{decisionLog.length > 0 && <section className="mini-log"><h3>{text.actionLog}</h3>{decisionLog.map((entry,index) => <div key={entry.option.id}><span>0{index+1}</span><p>{entry.option.label[locale]}</p></div>)}</section>}</aside></main>;
+}
+
+function DebriefView({ locale, text, scenario, metrics, decisionLog, outcome, replayCase, returnLibrary }: { locale: Locale; text: UiText; scenario: Scenario; metrics: Record<MetricKey, number>; decisionLog: Array<{ stage: string; option: DecisionOption }>; outcome: "strong" | "mixed" | "weak"; replayCase: () => void; returnLibrary: () => void }) {
+  const presentation = {
+    strong: {
+      classLabel: locale === "en" ? "FAVORABLE OUTCOME" : "БЛАГОПРИЯТНЫЙ ИСХОД",
+      posture: locale === "en" ? "Position protected" : "Позиция защищена",
+      explanation: locale === "en"
+        ? "Evidence integrity, institutional trust and the legal position outweighed the remaining exposure."
+        : "Целостность доказательств, институциональное доверие и правовая позиция перевесили оставшуюся экспозицию.",
+      icon: "check",
+    },
+    mixed: {
+      classLabel: locale === "en" ? "MIXED OUTCOME" : "СМЕШАННЫЙ ИСХОД",
+      posture: locale === "en" ? "Position remains contested" : "Позиция остаётся спорной",
+      explanation: locale === "en"
+        ? "Material strengths were offset by unresolved exposure. The matter remains defensible, but not fully controlled."
+        : "Сильные стороны были уравновешены нерешённой экспозицией. Дело остаётся защищаемым, но не полностью контролируемым.",
+      icon: "file",
+    },
+    weak: {
+      classLabel: locale === "en" ? "ADVERSE OUTCOME" : "НЕБЛАГОПРИЯТНЫЙ ИСХОД",
+      posture: locale === "en" ? "Position compromised" : "Позиция ослаблена",
+      explanation: locale === "en"
+        ? "Accumulated exposure and institutional weaknesses outweighed the position preserved by individual decisions."
+        : "Накопленная экспозиция и институциональные слабости перевесили позицию, сохранённую отдельными решениями.",
+      icon: "alert",
+    },
+  }[outcome];
+
+  return (
+    <main className="debrief-view page-width">
+      <div className="debrief-mark"><span>CASE CLOSED</span><b>{String(scenario.order / 10).padStart(2, "0")}</b></div>
+      <div className="eyebrow"><span className="live-dot"/>{text.complete}</div>
+      <h1>{scenario.title[locale]}</h1>
+
+      <section className={`outcome-verdict outcome-${outcome}`}>
+        <div className="verdict-classification">
+          <span className="verdict-icon"><Icon name={presentation.icon} size={27}/></span>
+          <small>{presentation.classLabel}</small>
+          <b>{presentation.posture}</b>
+        </div>
+        <div className="verdict-narrative">
+          <span>{locale === "en" ? "FINAL CASE OUTCOME" : "ИТОГОВЫЙ РЕЗУЛЬТАТ ДЕЛА"}</span>
+          <h2>{scenario.outcomes[outcome][locale]}</h2>
+          <p>{presentation.explanation}</p>
+        </div>
+      </section>
+
+      <section className="final-posture">
+        <div className="final-posture-heading">
+          <span>{locale === "en" ? "Final institutional posture" : "Итоговая институциональная позиция"}</span>
+          <small>{locale === "en" ? "Values after all three decisions" : "Значения после всех трёх решений"}</small>
+        </div>
+        <MetricPanel locale={locale} metrics={metrics} compact/>
+      </section>
+
+      <div className="debrief-grid">
+        <section>
+          <h2>{text.actionLog}</h2>
+          {decisionLog.map((entry, index) => (
+            <article key={`${entry.option.id}-${index}`} className="log-entry">
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <div>
+                <small>{entry.stage}</small>
+                <b>{entry.option.label[locale]}</b>
+                <p>{entry.option.result[locale]}</p>
+                <div className="log-effects">
+                  {(Object.entries(entry.option.effects) as Array<[MetricKey, number]>).map(([key, value]) => (
+                    <i key={key} className={value >= 0 ? "positive" : "negative"}>{metricLabels[locale][key]} {value >= 0 ? "+" : ""}{value}</i>
+                  ))}
+                </div>
+              </div>
+            </article>
+          ))}
+        </section>
+        <aside className="outcome-reasons">
+          <h2>{locale === "en" ? "Why this outcome" : "Почему получен этот исход"}</h2>
+          <p>{locale === "en" ? "Each confirmed response changed the final posture. These were the decisive consequences:" : "Каждый подтверждённый ответ изменял итоговую позицию. Определяющими стали следующие последствия:"}</p>
+          <ol>
+            {decisionLog.map((entry, index) => <li key={entry.option.id}><span>{String(index + 1).padStart(2, "0")}</span><p>{entry.option.result[locale]}</p></li>)}
+          </ol>
+          <div className="canonical-note"><Icon name="file"/><p>{text.canonNote}</p></div>
+        </aside>
+      </div>
+
+      <div className="debrief-actions">
+        <button className="secondary-cta" onClick={returnLibrary}>{text.returnLibrary}</button>
+        <button className="primary-cta" onClick={replayCase}><Icon name="reset"/>{locale === "en" ? "Replay this case" : "Пройти кейс заново"}</button>
+      </div>
+    </main>
+  );
 }
 
 function InboxPanel({ locale, entries, selectedIndex, selectEntry, close, openMaterial }: { locale: Locale; entries: InboxEntry[]; selectedIndex: number; selectEntry: (index: number) => void; close: () => void; openMaterial: (ref: string) => void }) {
