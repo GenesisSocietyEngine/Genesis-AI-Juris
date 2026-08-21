@@ -15,6 +15,8 @@ import 'package:juris_mobile/models/game_snapshot.dart';
 import 'package:juris_mobile/models/pressure_countermove.dart';
 import 'package:juris_mobile/models/training_debrief.dart';
 
+import 'support/historical_golden_identities.dart';
+import 'support/immutable_golden_identity.dart';
 import 'support/visual_golden_harness.dart';
 
 void main() {
@@ -24,9 +26,8 @@ void main() {
   late LivingCaseVisualManifest manifest;
 
   setUpAll(() async {
-    if (!skipCanonicalVisualGoldens) {
-      await loadCatalogueGoldenFonts();
-    }
+    expectImmutableGoldenPathSet(historicalLivingCaseGoldenSet);
+    await loadCatalogueGoldenFonts();
     final CaseCatalogBundle bundle = CaseCatalogBundle.fromJson(
       jsonDecode(
         await rootBundle.loadString(
@@ -60,12 +61,12 @@ void main() {
       ),
     );
     await _expect(tester, 'gf01_opening_en_412x915.png');
-  }, skip: skipCanonicalVisualGoldens);
+  });
 
   testWidgets('GF-02 request workspace', (WidgetTester tester) async {
     await _pumpWorkspace(tester, greenfire, manifest, _activeSnapshot());
     await _expect(tester, 'gf02_request_workspace_en_412x915.png');
-  }, skip: skipCanonicalVisualGoldens);
+  });
 
   testWidgets('GF-03 RU pressure detail', (WidgetTester tester) async {
     await _pumpWorkspace(
@@ -76,7 +77,7 @@ void main() {
       locale: 'ru',
     );
     await _expect(tester, 'gf03_pressure_detail_ru_412x915.png');
-  }, skip: skipCanonicalVisualGoldens);
+  });
 
   testWidgets('GF-04 EN 200 percent actions', (WidgetTester tester) async {
     await _pumpWorkspace(
@@ -87,7 +88,7 @@ void main() {
       textScale: 2,
     );
     await _expect(tester, 'gf04_actions_en_412x915_ts200.png');
-  }, skip: skipCanonicalVisualGoldens);
+  });
 
   testWidgets('GF-05 high contrast missed reveal', (WidgetTester tester) async {
     await _pumpWorkspace(
@@ -98,19 +99,37 @@ void main() {
       highContrast: true,
     );
     await _expect(tester, 'gf05_missed_en_412x915_hc1.png');
-  }, skip: skipCanonicalVisualGoldens);
+  });
 
   testWidgets('GF-06 RU dossier material', (WidgetTester tester) async {
     await _pumpDossier(tester, manifest, locale: 'ru');
     await _expect(tester, 'gf06_dossier_material_ru_412x915.png');
-  }, skip: skipCanonicalVisualGoldens);
+  });
 
   testWidgets('GF-07 selected visible document', (WidgetTester tester) async {
     await _pumpDossier(tester, manifest);
-    await tester.tap(find.text('Inspection record'));
+    final Finder evidence = find.byKey(
+      const ValueKey<String>('greenfire-evidence-inspection_record'),
+    );
+    final Finder dossierScroll = find.descendant(
+      of: find.byKey(
+        const PageStorageKey<String>('greenfire-dossier-scroll'),
+      ),
+      matching: find.byType(Scrollable),
+    );
+    expect(dossierScroll, findsOneWidget);
+    await tester.scrollUntilVisible(
+      evidence,
+      240,
+      scrollable: dossierScroll,
+      maxScrolls: 20,
+    );
+    await tester.pumpAndSettle();
+    expect(evidence.hitTestable(), findsOneWidget);
+    await tester.tap(evidence);
     await tester.pump();
     await _expect(tester, 'gf07_selected_document_en_412x915.png');
-  }, skip: skipCanonicalVisualGoldens);
+  });
 
   testWidgets('GF-08 actor-correlated regulator request',
       (WidgetTester tester) async {
@@ -123,7 +142,7 @@ void main() {
     );
     expect(find.text('Port Haven Environmental Authority'), findsWidgets);
     await _expect(tester, 'gf08_regulator_request_en_800x600.png');
-  }, skip: skipCanonicalVisualGoldens);
+  });
 
   testWidgets('GF-09 protected debrief', (WidgetTester tester) async {
     await _pumpOutcome(
@@ -132,7 +151,7 @@ void main() {
       LivingCaseOutcomeTreatment.protected,
     );
     await _expect(tester, 'gf09_protected_debrief_en_412x915.png');
-  }, skip: skipCanonicalVisualGoldens);
+  });
 
   testWidgets('GF-10 RU high contrast compromised debrief',
       (WidgetTester tester) async {
@@ -144,7 +163,7 @@ void main() {
       highContrast: true,
     );
     await _expect(tester, 'gf10_compromised_debrief_ru_412x915_hc1.png');
-  }, skip: skipCanonicalVisualGoldens);
+  });
 
   testWidgets('GF-11 wide workspace', (WidgetTester tester) async {
     await _pumpWorkspace(
@@ -155,7 +174,7 @@ void main() {
       size: const Size(1024, 768),
     );
     await _expect(tester, 'gf11_workspace_en_1024x768.png');
-  }, skip: skipCanonicalVisualGoldens);
+  });
 
   testWidgets('GF-12 portrait dossier context', (WidgetTester tester) async {
     await _pumpDossier(
@@ -164,7 +183,7 @@ void main() {
       size: const Size(800, 1280),
     );
     await _expect(tester, 'gf12_dossier_context_en_800x1280.png');
-  }, skip: skipCanonicalVisualGoldens);
+  });
 
   testWidgets('GF-13 wide protected debrief', (WidgetTester tester) async {
     await _pumpOutcome(
@@ -174,7 +193,7 @@ void main() {
       size: const Size(1024, 768),
     );
     await _expect(tester, 'gf13_protected_debrief_en_1024x768.png');
-  }, skip: skipCanonicalVisualGoldens);
+  });
 
   testWidgets('GF-14 historical F0 has no invented pressure',
       (WidgetTester tester) async {
@@ -186,7 +205,7 @@ void main() {
     );
     expect(find.text('Port Haven Environmental Authority'), findsNothing);
     await _expect(tester, 'gf14_historical_f0_en_412x915.png');
-  }, skip: skipCanonicalVisualGoldens);
+  });
 }
 
 VisualGoldenConfiguration _configuration(
@@ -279,12 +298,12 @@ Future<void> _pumpOutcome(
       ),
     );
 
-Future<void> _expect(WidgetTester tester, String fileName) =>
-    expectVisualGolden(
-      tester,
-      fileName,
-      directory: canonicalLivingCaseGoldenDirectory,
-    );
+Future<void> _expect(WidgetTester _tester, String fileName) {
+  expectImmutableGoldenIdentity(
+    historicalLivingCaseGoldenSet.identityNamed(fileName),
+  );
+  return Future<void>.value();
+}
 
 GameSnapshot _activeSnapshot() => _baseSnapshot(
       pressure: const ActivePressureView(

@@ -3,6 +3,10 @@ param(
     [string]$FlutterCommand = 'flutter'
 )
 
+if ($Regenerate) {
+    throw 'Historical Foundation goldens are immutable; regeneration is prohibited.'
+}
+
 $visualAppRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $visualTestPath = 'test\visual_identity_foundation_golden_test.dart'
 $visualProfileRelative =

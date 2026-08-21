@@ -3,6 +3,10 @@ param(
     [string]$FlutterCommand = 'flutter'
 )
 
+if ($Regenerate) {
+    throw 'Historical Catalogue goldens are immutable; regeneration is prohibited.'
+}
+
 $catalogueAppRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $catalogueTestPath = 'test\cinematic_case_catalog_golden_test.dart'
 $catalogueProfileRelative =

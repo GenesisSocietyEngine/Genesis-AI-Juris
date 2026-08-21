@@ -827,13 +827,16 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Matter'));
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey<String>('open-dossier-button')),
-        240,
-        scrollable: find.byType(Scrollable).last,
-      );
       await tester.tap(
-        find.byKey(const ValueKey<String>('open-dossier-button')),
+        await _revealWithPublicDrags(
+          tester,
+          viewportKey: const PageStorageKey<String>('matter-scroll'),
+          target: find.byKey(
+            const ValueKey<String>('open-dossier-button'),
+          ),
+          gesture: const Offset(0, -240),
+          description: 'opening dossier control',
+        ),
       );
       await tester.pumpAndSettle();
       expect(find.text('Matter dossier'), findsOneWidget);
@@ -959,11 +962,13 @@ void main() {
       final List<List<Object?>> liveActions =
           repository.snapshot.actions.map(_actionState).toList(growable: false);
 
-      await tester.scrollUntilVisible(
-        find.text('Decision: Lost'),
-        -240,
-        scrollable: find.byType(Scrollable).last,
-        maxScrolls: 30,
+      await _revealWithPublicDrags(
+        tester,
+        viewportKey: const PageStorageKey<String>('matter-scroll'),
+        target: find.text('Decision: Lost'),
+        gesture: const Offset(0, 240),
+        description: 'restored adverse decision header',
+        requireHitTestable: false,
       );
       await tester.pumpAndSettle();
       expect(find.text('Decision: Lost'), findsOneWidget);
@@ -973,11 +978,16 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.ensureVisible(
-        find.byKey(const ValueKey<String>('open-dossier-button')),
-      );
       await tester.tap(
-        find.byKey(const ValueKey<String>('open-dossier-button')),
+        await _revealWithPublicDrags(
+          tester,
+          viewportKey: const PageStorageKey<String>('matter-scroll'),
+          target: find.byKey(
+            const ValueKey<String>('open-dossier-button'),
+          ),
+          gesture: const Offset(0, -240),
+          description: 'recoverable dossier control',
+        ),
       );
       await tester.pumpAndSettle();
       expect(find.text('Recoverable — remedy available'), findsOneWidget);
@@ -993,11 +1003,13 @@ void main() {
       );
       await tester.pageBack();
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.text('Decision: Lost'),
-        -240,
-        scrollable: find.byType(Scrollable).last,
-        maxScrolls: 30,
+      await _revealWithPublicDrags(
+        tester,
+        viewportKey: const PageStorageKey<String>('matter-scroll'),
+        target: find.text('Decision: Lost'),
+        gesture: const Offset(0, 240),
+        description: 'post-dossier adverse decision header',
+        requireHitTestable: false,
       );
       await tester.pumpAndSettle();
 
@@ -1092,14 +1104,16 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Matter'));
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey<String>('open-dossier-button')),
-        240,
-        scrollable: find.byType(Scrollable).last,
-        maxScrolls: 30,
-      );
       await tester.tap(
-        find.byKey(const ValueKey<String>('open-dossier-button')),
+        await _revealWithPublicDrags(
+          tester,
+          viewportKey: const PageStorageKey<String>('matter-scroll'),
+          target: find.byKey(
+            const ValueKey<String>('open-dossier-button'),
+          ),
+          gesture: const Offset(0, -240),
+          description: 'reloaded completed dossier control',
+        ),
       );
       await tester.pumpAndSettle();
       expect(
@@ -1167,14 +1181,16 @@ void main() {
       expect(repository.snapshot, same(closedSnapshot));
       expect(_dossierState(repository.snapshot.dossier!), closedDossier);
 
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey<String>('open-dossier-button')),
-        240,
-        scrollable: find.byType(Scrollable).last,
-        maxScrolls: 30,
-      );
       await tester.tap(
-        find.byKey(const ValueKey<String>('open-dossier-button')),
+        await _revealWithPublicDrags(
+          tester,
+          viewportKey: const PageStorageKey<String>('matter-scroll'),
+          target: find.byKey(
+            const ValueKey<String>('open-dossier-button'),
+          ),
+          gesture: const Offset(0, -240),
+          description: 'closed dossier control',
+        ),
       );
       await tester.pumpAndSettle();
       expect(find.text('Closed matter'), findsOneWidget);
@@ -1343,26 +1359,17 @@ void main() {
         final Finder openDebrief = find.byKey(
           const ValueKey<String>('open-training-debrief-button'),
         );
-        await tester.scrollUntilVisible(
-          openDebrief,
-          240,
-          scrollable: find.byType(Scrollable).last,
-          maxScrolls: 30,
+        final Finder visibleDebrief = await _revealWithPublicDrags(
+          tester,
+          viewportKey: const PageStorageKey<String>('matter-scroll'),
+          target: openDebrief,
+          gesture: const Offset(0, -240),
+          description: 'Training Debrief control',
         );
-        // On the API 37 phone viewport, scrollUntilVisible can stop while the
-        // button's center is still behind HomeShell's bottom navigation bar.
-        // Center this exact element in its nearest scrollable and require a
-        // real hit-test target before asserting command-free navigation.
-        await Scrollable.ensureVisible(
-          tester.element(openDebrief),
-          alignment: 0.5,
-          duration: Duration.zero,
-        );
-        await tester.pumpAndSettle();
-        expect(openDebrief.hitTestable(), findsOneWidget);
+        expect(visibleDebrief, findsOneWidget);
         final int dispatchesBeforeNavigation = bridge.commandCount('dispatch');
         final int requestsBeforeNavigation = bridge.requests.length;
-        await tester.tap(openDebrief.hitTestable());
+        await tester.tap(visibleDebrief);
         await tester.pumpAndSettle();
 
         expect(
@@ -1562,14 +1569,34 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final Finder desertIndexItem = find.byKey(
-        const ValueKey<String>(
-          'case-index-item-us_environmental_desert_water_001',
+      final Finder browseAll = find.byKey(
+        const ValueKey<String>('browse-all-cases'),
+      );
+      await tester.tap(
+        await _revealWithPublicDrags(
+          tester,
+          viewportKey: const PageStorageKey<String>('case-catalog'),
+          target: browseAll,
+          gesture: const Offset(0, -240),
+          description: 'Browse All cases control',
         ),
       );
-      await tester.ensureVisible(desertIndexItem);
       await tester.pumpAndSettle();
-      await tester.tap(desertIndexItem);
+
+      final Finder desertIndexItem = find.byKey(
+        const ValueKey<String>(
+          'browse-case-us_environmental_desert_water_001',
+        ),
+      );
+      await tester.tap(
+        await _revealWithPublicDrags(
+          tester,
+          viewportKey: const ValueKey<String>('browse-all-case-list'),
+          target: desertIndexItem,
+          gesture: const Offset(0, -240),
+          description: 'Desert Water Browse All row',
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(
@@ -1582,9 +1609,15 @@ void main() {
         const ValueKey<String>('start-case-action'),
       );
       expect(start, findsOneWidget);
-      await tester.ensureVisible(start);
-      await tester.pumpAndSettle();
-      await tester.tap(start);
+      await tester.tap(
+        await _revealWithPublicDrags(
+          tester,
+          viewportKey: const PageStorageKey<String>('case-catalog'),
+          target: start,
+          gesture: const Offset(0, -240),
+          description: 'Desert Water Start control',
+        ),
+      );
       await tester.pump();
 
       expect(selectedCase?.caseId, desertWater.caseId);
@@ -1619,13 +1652,16 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Matter'));
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey<String>('open-dossier-button')),
-        240,
-        scrollable: find.byType(Scrollable).last,
-      );
       await tester.tap(
-        find.byKey(const ValueKey<String>('open-dossier-button')),
+        await _revealWithPublicDrags(
+          tester,
+          viewportKey: const PageStorageKey<String>('matter-scroll'),
+          target: find.byKey(
+            const ValueKey<String>('open-dossier-button'),
+          ),
+          gesture: const Offset(0, -240),
+          description: 'Desert Water dossier control',
+        ),
       );
       await tester.pumpAndSettle();
       expect(find.text('Matter dossier'), findsOneWidget);
@@ -1807,6 +1843,82 @@ void main() {
       repository.dispose();
     },
   );
+}
+
+Finder _verticalScrollableWithin(Key viewportKey) {
+  return find.descendant(
+    of: find.byKey(viewportKey),
+    matching: find.byWidgetPredicate(
+      (Widget widget) =>
+          widget is Scrollable &&
+          axisDirectionToAxis(widget.axisDirection) == Axis.vertical,
+    ),
+  );
+}
+
+Future<Finder> _revealWithPublicDrags(
+  WidgetTester tester, {
+  required Key viewportKey,
+  required Finder target,
+  required Offset gesture,
+  required String description,
+  bool requireHitTestable = true,
+  int maximumGestures = 30,
+}) async {
+  final Finder viewport = find.byKey(viewportKey);
+  expect(viewport, findsOneWidget, reason: '$description viewport');
+  final Finder scrollable = _verticalScrollableWithin(viewportKey);
+  expect(scrollable, findsOneWidget, reason: '$description scrollable');
+  final ScrollableState state = tester.state<ScrollableState>(scrollable);
+
+  for (int step = 0; step <= maximumGestures; step += 1) {
+    final int targetCount = target.evaluate().length;
+    if (!requireHitTestable && targetCount == 1) {
+      return target;
+    }
+    if (targetCount > 1) {
+      fail('$description resolved to $targetCount built targets.');
+    }
+    final Finder hitTarget = target.hitTestable();
+    final int hitCount = hitTarget.evaluate().length;
+    if (hitCount == 1) {
+      return hitTarget;
+    }
+    if (hitCount > 1) {
+      fail('$description resolved to $hitCount hit-testable targets.');
+    }
+    if (step == maximumGestures) {
+      fail(
+        'Could not reveal $description after $maximumGestures public drags; '
+        'built=${target.evaluate().length}, pixels=${state.position.pixels}, '
+        'min=${state.position.minScrollExtent}, '
+        'max=${state.position.maxScrollExtent}.',
+      );
+    }
+
+    final double before = state.position.pixels;
+    await tester.drag(scrollable, gesture);
+    await tester.pumpAndSettle();
+    final double after = state.position.pixels;
+    if ((after - before).abs() < 0.5) {
+      final int settledTargetCount = target.evaluate().length;
+      if (!requireHitTestable && settledTargetCount == 1) {
+        return target;
+      }
+      final Finder settledHitTarget = target.hitTestable();
+      if (settledHitTarget.evaluate().length == 1) {
+        return settledHitTarget;
+      }
+      fail(
+        'No scroll progress while revealing $description; '
+        'built=$settledTargetCount, pixels=$after, '
+        'min=${state.position.minScrollExtent}, '
+        'max=${state.position.maxScrollExtent}.',
+      );
+    }
+  }
+
+  throw StateError('Unreachable reveal loop for $description.');
 }
 
 List<Object?> _dossierState(DossierProjectionView dossier) {

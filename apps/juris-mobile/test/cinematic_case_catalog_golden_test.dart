@@ -6,7 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:juris_mobile/models/case_catalog.dart';
 import 'package:juris_mobile/screens/case_catalog_screen.dart';
 import 'package:juris_mobile/visual_identity/case_visual_manifest.dart';
+import 'package:juris_mobile/visual_identity/cinematic_catalogue_strings.dart';
+import 'package:juris_mobile/widgets/catalogue/case_index.dart';
 
+import 'support/historical_golden_identities.dart';
+import 'support/immutable_golden_identity.dart';
 import 'support/visual_golden_harness.dart';
 
 const String _failedErpId = 'be_commercial_failed_erp_001';
@@ -21,9 +25,8 @@ void main() {
   late CaseVisualManifest manifest;
 
   setUpAll(() async {
-    if (!skipCanonicalVisualGoldens) {
-      await loadCatalogueGoldenFonts();
-    }
+    expectImmutableGoldenPathSet(historicalCatalogueGoldenSet);
+    await loadCatalogueGoldenFonts();
     bundle = CaseCatalogBundle.fromJson(
       jsonDecode(
         await rootBundle.loadString(
@@ -57,13 +60,12 @@ void main() {
         find.text(bundle.cases.first.localized('en', 'en').caption),
         findsOneWidget,
       );
-      await expectVisualGolden(
-        tester,
-        'catalogue_compact_first_en_360x800_dpr1_ts100_hc0_rm0.png',
-        directory: canonicalCatalogueGoldenDirectory,
+      expectImmutableGoldenIdentity(
+        historicalCatalogueGoldenSet.identityNamed(
+          'catalogue_compact_first_en_360x800_dpr1_ts100_hc0_rm0.png',
+        ),
       );
     },
-    skip: skipCanonicalVisualGoldens,
   );
 
   testWidgets(
@@ -94,13 +96,12 @@ void main() {
         ),
         findsOneWidget,
       );
-      await expectVisualGolden(
-        tester,
-        'catalogue_compact_long_title_ru_360x800_dpr1_ts100_hc0_rm0.png',
-        directory: canonicalCatalogueGoldenDirectory,
+      expectImmutableGoldenIdentity(
+        historicalCatalogueGoldenSet.identityNamed(
+          'catalogue_compact_long_title_ru_360x800_dpr1_ts100_hc0_rm0.png',
+        ),
       );
     },
-    skip: skipCanonicalVisualGoldens,
   );
 
   testWidgets(
@@ -117,13 +118,12 @@ void main() {
         selectedCaseId: _greenFireId,
       );
 
-      await expectVisualGolden(
-        tester,
-        'catalogue_compact_greenfire_en_412x915_dpr1_ts100_hc0_rm0.png',
-        directory: canonicalCatalogueGoldenDirectory,
+      expectImmutableGoldenIdentity(
+        historicalCatalogueGoldenSet.identityNamed(
+          'catalogue_compact_greenfire_en_412x915_dpr1_ts100_hc0_rm0.png',
+        ),
       );
     },
-    skip: skipCanonicalVisualGoldens,
   );
 
   testWidgets(
@@ -140,14 +140,13 @@ void main() {
         selectedCaseId: _goldenShellId,
       );
 
-      _expectCompleteIndex(bundle);
-      await expectVisualGolden(
-        tester,
-        'catalogue_wide_complete_index_ru_800x1280_dpr1_ts100_hc0_rm0.png',
-        directory: canonicalCatalogueGoldenDirectory,
+      _expectCompleteIndex(tester, bundle);
+      expectImmutableGoldenIdentity(
+        historicalCatalogueGoldenSet.identityNamed(
+          'catalogue_wide_complete_index_ru_800x1280_dpr1_ts100_hc0_rm0.png',
+        ),
       );
     },
-    skip: skipCanonicalVisualGoldens,
   );
 
   testWidgets(
@@ -165,14 +164,13 @@ void main() {
         ensureCompleteIndex: true,
       );
 
-      _expectCompleteIndex(bundle);
-      await expectVisualGolden(
-        tester,
-        'catalogue_wide_complete_index_en_1024x768_dpr1_ts100_hc0_rm0.png',
-        directory: canonicalCatalogueGoldenDirectory,
+      _expectCompleteIndex(tester, bundle);
+      expectImmutableGoldenIdentity(
+        historicalCatalogueGoldenSet.identityNamed(
+          'catalogue_wide_complete_index_en_1024x768_dpr1_ts100_hc0_rm0.png',
+        ),
       );
     },
-    skip: skipCanonicalVisualGoldens,
   );
 
   testWidgets(
@@ -205,13 +203,12 @@ void main() {
       expect(detailsAction.hitTestable(), findsOneWidget);
       expect(tester.binding.transientCallbackCount, 0);
 
-      await expectVisualGolden(
-        tester,
-        'catalogue_compact_actions_en_412x915_dpr1_ts200_hc0_rm1.png',
-        directory: canonicalCatalogueGoldenDirectory,
+      expectImmutableGoldenIdentity(
+        historicalCatalogueGoldenSet.identityNamed(
+          'catalogue_compact_actions_en_412x915_dpr1_ts200_hc0_rm1.png',
+        ),
       );
     },
-    skip: skipCanonicalVisualGoldens,
   );
 }
 
@@ -235,15 +232,11 @@ Future<void> _pumpCatalogueGolden(
   );
 
   if (selectedCaseId case final String caseId) {
-    final Finder indexItem = find.byKey(
-      ValueKey<String>('case-index-item-$caseId'),
+    await _selectCatalogueCase(
+      tester,
+      bundle: bundle,
+      caseId: caseId,
     );
-    await tester.ensureVisible(indexItem);
-    await tester.pump();
-    final Semantics semantics = tester.widget<Semantics>(indexItem);
-    semantics.properties.onTap!();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
   }
   if (ensureCompleteIndex) {
     await tester.ensureVisible(
@@ -251,19 +244,110 @@ Future<void> _pumpCatalogueGolden(
     );
     await tester.pump();
   }
+  _expectSelectedCaseAuthority(
+    tester,
+    bundle: bundle,
+    locale: configuration.locale.languageCode,
+    caseId: selectedCaseId ?? bundle.cases.first.caseId,
+  );
   expect(find.byKey(const ValueKey<String>('selected-case-panel')), findsOne);
   expect(tester.takeException(), isNull);
   expect(tester.binding.transientCallbackCount, 0);
 }
 
-void _expectCompleteIndex(CaseCatalogBundle bundle) {
-  expect(find.byKey(const ValueKey<String>('case-index')), findsOneWidget);
-  for (final MobileCaseDefinition item in bundle.cases) {
-    expect(
-      find.byKey(ValueKey<String>('case-index-item-${item.caseId}')),
-      findsOneWidget,
+Future<void> _selectCatalogueCase(
+  WidgetTester tester, {
+  required CaseCatalogBundle bundle,
+  required String caseId,
+}) async {
+  final int targetIndex = bundle.cases.indexWhere(
+    (MobileCaseDefinition item) => item.caseId == caseId,
+  );
+  expect(targetIndex, greaterThanOrEqualTo(0));
+
+  final Finder wideList = find.byKey(
+    const ValueKey<String>('wide-case-list'),
+  );
+  if (wideList.evaluate().isNotEmpty) {
+    final Finder target = find.byKey(
+      ValueKey<String>('case-index-item-$caseId'),
     );
+    final Finder scrollable = find.descendant(
+      of: wideList,
+      matching: find.byType(Scrollable),
+    );
+    expect(scrollable, findsOneWidget);
+    await tester.scrollUntilVisible(
+      target,
+      180,
+      scrollable: scrollable,
+      maxScrolls: bundle.cases.length * 4,
+    );
+    await tester.pumpAndSettle();
+    expect(target.hitTestable(), findsOneWidget);
+    await tester.tap(target);
+    await tester.pumpAndSettle();
+    return;
   }
+
+  final Finder next = find.byKey(
+    const ValueKey<String>('case-index-next'),
+  );
+  for (int index = 0; index < targetIndex; index += 1) {
+    expect(next.hitTestable(), findsOneWidget);
+    await tester.tap(next);
+    await tester.pumpAndSettle();
+  }
+}
+
+void _expectSelectedCaseAuthority(
+  WidgetTester tester, {
+  required CaseCatalogBundle bundle,
+  required String locale,
+  required String caseId,
+}) {
+  final int selectedIndex = bundle.cases.indexWhere(
+    (MobileCaseDefinition item) => item.caseId == caseId,
+  );
+  expect(selectedIndex, greaterThanOrEqualTo(0));
+  final MobileCaseDefinition selected = bundle.cases[selectedIndex];
+  final LocalizedCaseText text = selected.localized(
+    locale,
+    bundle.defaultLocale,
+  );
+  final String position = CinematicCatalogueStrings.of(
+    locale,
+  ).casePosition(selectedIndex + 1, bundle.cases.length);
+
+  final Finder selectedItem = find.byKey(
+    ValueKey<String>('case-index-item-$caseId'),
+  );
+  expect(selectedItem, findsOneWidget);
+  final Semantics semantics = tester.widget<Semantics>(selectedItem);
+  expect(semantics.properties.selected, isTrue);
+  expect(semantics.properties.label, contains(position));
+  expect(semantics.properties.label, contains(text.shortTitle));
+
+  final Finder selectedHeading = find.byKey(
+    const ValueKey<String>('selected-case-heading'),
+  );
+  expect(selectedHeading, findsOneWidget);
+  expect(
+    find.descendant(of: selectedHeading, matching: find.text(text.topic)),
+    findsOneWidget,
+  );
+}
+
+void _expectCompleteIndex(WidgetTester tester, CaseCatalogBundle bundle) {
+  expect(find.byKey(const ValueKey<String>('case-index')), findsOneWidget);
+  expect(find.byKey(const ValueKey<String>('wide-case-list')), findsOneWidget);
+  final CaseIndex index = tester.widget<CaseIndex>(find.byType(CaseIndex));
+  expect(
+    index.cases.map((MobileCaseDefinition item) => item.caseId),
+    orderedEquals(
+      bundle.cases.map((MobileCaseDefinition item) => item.caseId),
+    ),
+  );
 }
 
 void _ignoreStart(

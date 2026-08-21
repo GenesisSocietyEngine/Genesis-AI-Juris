@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:juris_mobile/design/juris_design.dart';
 import 'package:juris_mobile/visual_identity/case_visual_manifest.dart';
 
+import 'support/historical_golden_identities.dart';
+import 'support/immutable_golden_identity.dart';
 import 'support/visual_golden_harness.dart';
 
 const CaseVisualPalette _foundationPalette = CaseVisualPalette(
@@ -18,9 +20,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
-    if (!skipCanonicalVisualGoldens) {
-      await loadJurisGoldenFonts();
-    }
+    expectImmutableGoldenPathSet(historicalFoundationGoldenSet);
+    await loadJurisGoldenFonts();
   });
 
   testWidgets(
@@ -35,12 +36,12 @@ void main() {
         subject: const _EnglishTypographyGallery(),
       );
 
-      await expectVisualGolden(
-        tester,
-        'typography_controls_en_800x720_dpr1_ts100_hc0_rm0.png',
+      expectImmutableGoldenIdentity(
+        historicalFoundationGoldenSet.identityNamed(
+          'typography_controls_en_800x720_dpr1_ts100_hc0_rm0.png',
+        ),
       );
     },
-    skip: skipCanonicalVisualGoldens,
   );
 
   testWidgets(
@@ -55,12 +56,12 @@ void main() {
         subject: const _RussianTypographyGallery(),
       );
 
-      await expectVisualGolden(
-        tester,
-        'typography_long_ru_800x720_dpr1_ts100_hc0_rm0.png',
+      expectImmutableGoldenIdentity(
+        historicalFoundationGoldenSet.identityNamed(
+          'typography_long_ru_800x720_dpr1_ts100_hc0_rm0.png',
+        ),
       );
     },
-    skip: skipCanonicalVisualGoldens,
   );
 
   testWidgets(
@@ -75,12 +76,12 @@ void main() {
         subject: const _MotifGallery(),
       );
 
-      await expectVisualGolden(
-        tester,
-        'motifs_en_1024x768_dpr1_ts100_hc0_rm0.png',
+      expectImmutableGoldenIdentity(
+        historicalFoundationGoldenSet.identityNamed(
+          'motifs_en_1024x768_dpr1_ts100_hc0_rm0.png',
+        ),
       );
     },
-    skip: skipCanonicalVisualGoldens,
   );
 
   const List<_AccessibilityVariant> variants = <_AccessibilityVariant>[
@@ -121,12 +122,13 @@ void main() {
         await tester.tap(find.byKey(_motionToggleKey));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 110));
-        await expectVisualGolden(tester, variant.fileName);
+        expectImmutableGoldenIdentity(
+          historicalFoundationGoldenSet.identityNamed(variant.fileName),
+        );
 
         await tester.pump(const Duration(milliseconds: 200));
         expect(tester.binding.transientCallbackCount, 0);
       },
-      skip: skipCanonicalVisualGoldens,
     );
   }
 }

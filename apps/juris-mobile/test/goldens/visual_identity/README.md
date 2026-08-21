@@ -24,11 +24,11 @@ The committed foundation baselines were generated on 2026-08-10 with:
 - Flutter's automated test binding with shadows disabled.
 
 Flutter documents that custom-font goldens can differ across operating systems
-and Flutter versions. The default `LocalFileComparator` remains unchanged and
-performs an exact decoded-pixel comparison. No tolerance is permitted. These
-Windows PNGs are not treated as Linux or macOS evidence, and the pixel tests
-report an explicit skip on non-Windows hosts. Cross-host structural tests still
-run normally.
+and Flutter versions. These historical Windows PNGs are immutable review
+artifacts: their migrated suites verify the exact repository-relative path,
+byte length, and SHA-256 on every host while retaining the associated widget
+and authority probes. They are never compared with redesigned live pixels and
+no tolerance or replacement renderer is used to bless a redesign.
 
 ## Baseline contracts
 
@@ -59,7 +59,7 @@ compromised outcome, wide workspace, portrait Dossier, wide protected outcome,
 and the historical-F0 neutral fallback. The matrix is presentation-only and
 uses fixed projected fixtures; it does not encode runtime authority.
 
-## Compare
+## Verify immutable identities
 
 From `apps/juris-mobile`, run:
 
@@ -67,7 +67,8 @@ From `apps/juris-mobile`, run:
 flutter test test\visual_identity_foundation_golden_test.dart
 ```
 
-Or use the guarded verifier, which also prints exact sizes and SHA-256 hashes:
+Or use the guarded verifier, which also prints the protected sizes and SHA-256
+hashes:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tool\verify_visual_goldens_windows.ps1
@@ -86,36 +87,13 @@ Compare the Living Case matrix with:
 flutter test test\greenfire_living_case_golden_test.dart
 ```
 
-## Regenerate and prove repeatability
+## Historical regeneration is prohibited
 
-Do not invoke `--update-goldens` casually. The guarded command rejects any host
-or Flutter/Dart/engine identity other than the canonical profile. It starts two
-separate test processes, requires the exact six-file path set after each run,
-and compares every PNG's byte length and SHA-256 hash. A mismatch is a stop; the
-first-run PNGs are preserved in the reported temporary directory.
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tool\verify_visual_goldens_windows.ps1 -Regenerate
-```
-
-For the catalogue matrix, run the equivalent guarded two-render command:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tool\verify_catalogue_goldens_windows.ps1 -Regenerate
-```
-
-The Living Case matrix is regenerated only on the same canonical profile and
-must pass two clean comparisons with an unchanged fourteen-file SHA-256 set:
-
-```powershell
-flutter test --update-goldens test\greenfire_living_case_golden_test.dart
-flutter test test\greenfire_living_case_golden_test.dart
-flutter test test\greenfire_living_case_golden_test.dart
-```
-
-Byte-identical repeat generation is necessary but not sufficient. Inspect all
-six images before staging them. A changed baseline needs an explained visual
-review; never hide instability with a permissive comparator.
+Never run `--update-goldens` for the Foundation, Catalogue, or Living Case
+historical suites. Their paths and bytes are protected by literal identities in
+the test source. The legacy verifier scripts reject `-Regenerate` explicitly.
+Fresh live-pixel baselines belong only to a separately versioned profile and
+its exact dedicated test target.
 
 ## Inspect images and failures
 
