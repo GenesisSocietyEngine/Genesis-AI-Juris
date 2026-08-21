@@ -1,4 +1,4 @@
-import type { DecisionOption, Scenario } from "./types";
+import type { DecisionOption, Scenario, ScenarioStage } from "./types";
 import { canonicalFingerprint, isRecord } from "./case-integrity";
 import { stageClockMinute } from "./game-engine";
 
@@ -21,6 +21,9 @@ export function normalizePlayableScenario(value: unknown): Scenario {
   const stages = value.stages.map((stageValue) => {
     if (!isRecord(stageValue) || !Array.isArray(stageValue.options) || stageValue.options.length > 50) throw new Error("Invalid stage");
     const options = stageValue.options.map(normalizeOption);
+    const terminal = stageValue.terminal === true;
+    const terminalOutcome: ScenarioStage["terminalOutcome"] = stageValue.terminalOutcome === "strong" || stageValue.terminalOutcome === "mixed" || stageValue.terminalOutcome === "weak" ? stageValue.terminalOutcome : undefined;
+    if (terminalOutcome && !terminal) throw new Error("Only terminal stages can select an outcome class");
     return {
       id: identifier(stageValue.id, "stage ID"),
       day: integer(stageValue.day, 1, 10_000),
@@ -32,7 +35,8 @@ export function normalizePlayableScenario(value: unknown): Scenario {
       pressure: stageValue.pressure === undefined ? undefined : localText(stageValue.pressure, "stage pressure"),
       materialRefs: stringArray(stageValue.materialRefs, 100, 160),
       options,
-      terminal: stageValue.terminal === true,
+      terminal,
+      terminalOutcome,
     };
   });
   const stageIds = new Set(stages.map((stage) => stage.id));

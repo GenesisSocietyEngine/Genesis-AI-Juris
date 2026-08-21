@@ -8,6 +8,7 @@ const taxPurposes = new Set<TaxCasePurpose>(["lawful_planning", "compliance_revi
 const editActions = new Set<StudioEditAction>([
   "prompt_submitted", "prompt_applied", "graph_rebuilt", "case_updated", "node_added", "node_updated",
   "node_moved", "node_deleted", "link_added", "link_relinked", "link_deleted",
+  "undo_applied", "redo_applied", "revision_restored", "compiled_for_play",
   "history_compacted",
 ]);
 const taxPracticePattern = /tax|налог|transfer\s*pricing|трансферт|offshore|офшор|treaty|cfc|beps|dac6|pillar\s*(?:two|2)|withholding|permanent\s+establishment/i;

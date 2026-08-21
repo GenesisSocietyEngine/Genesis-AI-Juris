@@ -32,6 +32,7 @@ export type ScenarioStage = {
   materialRefs: string[];
   options: DecisionOption[];
   terminal?: boolean;
+  terminalOutcome?: "strong" | "mixed" | "weak";
 };
 
 export type ScenarioDeadline = {
@@ -128,6 +129,10 @@ export type StudioEditAction =
   | "link_added"
   | "link_relinked"
   | "link_deleted"
+  | "undo_applied"
+  | "redo_applied"
+  | "revision_restored"
+  | "compiled_for_play"
   | "history_compacted";
 
 export type StudioEditEntry = {

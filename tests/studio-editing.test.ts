@@ -131,7 +131,8 @@ test("iterative prompt appends turns and graph operations without replacing manu
   assert.equal(result.addedLinkIds.length, 1);
   assert.deepEqual(result.draft.links.at(-1), { id: "link-2", from: "actor-1", to: "decision-1" });
   assert.deepEqual(result.draft.editHistory.map((entry) => entry.action), ["node_updated", "prompt_submitted", "prompt_applied"]);
-  assert.match(result.draft.premise, /Add a deadline/);
+  assert.equal(result.draft.premise, base.premise, "editing commands stay in prompt history instead of leaking into the playable premise");
+  assert.match(result.draft.editHistory.find((entry) => entry.action === "prompt_submitted")?.message ?? "", /Add a deadline/);
 
   const blank = applyStudioPromptIteration(result.draft, { instruction: "   ", locale: "en", nodeLabels, createdAt: at });
   assert.equal(blank.changed, false);
