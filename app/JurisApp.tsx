@@ -2,17 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { caseFingerprint, isRecord, isTaxClassification, normalizeStudioDraft, slugifyCaseId } from "./case-integrity";
+import { caseFingerprint, isRecord, isTaxClassification, normalizeStudioDraft, slugifyCaseId, studioStructuralIssues } from "./case-integrity";
 import { resolveDecisionTiming, resolveLegacyDecisionTiming } from "./game-engine";
 import { legacyScenarios } from "./legacy-scenarios";
 import { normalizePlayableScenario, playableFingerprint } from "./playable-integrity";
 import { initialMetrics, scenarios } from "./scenarios";
+import { addStudioLink, appendStudioHistory, applyStudioPromptIteration, deleteStudioLink, nextStudioLinkId, nextStudioNodeId, nextStudioNodePosition, relinkStudioLink } from "./studio-editing";
 import type {
   DecisionOption,
   LocalText,
   MetricKey,
   Scenario,
   StudioDraft,
+  StudioEditAction,
   StudioLink,
   StudioNode,
   StudioNodeType,
@@ -60,7 +62,7 @@ type PlayedCaseFile = {
 
 type CustomCaseFile = {
   format: "genesis-juris-custom-case";
-  schemaVersion: 1;
+  schemaVersion: 2;
   exportedAt: string;
   case: {
     id: string;
@@ -171,6 +173,9 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
 
 function local(value: LocalText, locale: Locale) { return value[locale]; }
 function clamp(value: number) { return Math.max(0, Math.min(100, value)); }
+function numberedStudioLinks(pairs: Array<[string, string]>): StudioLink[] {
+  return pairs.map(([from, to], index) => ({ id: `link-${index + 1}`, from, to }));
+}
 async function readJsonResponse<T>(response: Response): Promise<T | null> {
   if (!response.ok) return null;
   return await response.json() as T;
@@ -208,11 +213,14 @@ const defaultDraft: StudioDraft = {
     { id: "outcome-1", type: "outcome", title: "Credible corrected process", detail: "The record is repaired and participation restored.", x: 750, y: 180 },
     { id: "outcome-2", type: "outcome", title: "Compromised permit position", detail: "The omission undermines procedural confidence.", x: 750, y: 390 },
   ],
-  links: [
-    { from: "trigger-1", to: "actor-1" }, { from: "trigger-1", to: "evidence-1" },
-    { from: "actor-1", to: "deadline-1" }, { from: "evidence-1", to: "decision-1" },
-    { from: "deadline-1", to: "decision-1" }, { from: "decision-1", to: "outcome-1" },
-    { from: "decision-1", to: "outcome-2" },
+  links: numberedStudioLinks([
+    ["trigger-1", "actor-1"], ["trigger-1", "evidence-1"], ["actor-1", "deadline-1"],
+    ["evidence-1", "decision-1"], ["deadline-1", "decision-1"], ["decision-1", "outcome-1"],
+    ["decision-1", "outcome-2"],
+  ]),
+  editHistory: [
+    { id: "edit-initial-author", role: "author", source: "prompt", action: "prompt_submitted", message: defaultPrompt, createdAt: "2026-08-21T00:00:00.000Z" },
+    { id: "edit-initial-studio", role: "studio", source: "prompt", action: "prompt_applied", message: "Created the initial seven-node scenario graph. Future prompt iterations will preserve manual graph edits.", createdAt: "2026-08-21T00:00:00.000Z" },
   ],
 };
 
@@ -234,13 +242,13 @@ export default function JurisApp() {
   const [actionUseCounts, setActionUseCounts] = useState<Record<string, number>>({});
   const [completedDeadlineIds, setCompletedDeadlineIds] = useState<string[]>([]);
   const [missedDeadlineIds, setMissedDeadlineIds] = useState<string[]>([]);
-  const [prompt, setPrompt] = useState(defaultPrompt);
+  const [prompt, setPrompt] = useState("");
   const [draft, setDraft] = useState<StudioDraft>(defaultDraft);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>("decision-1");
   const [savedFlash, setSavedFlash] = useState(false);
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const [feedbackTarget, setFeedbackTarget] = useState<FeedbackTarget | null>(null);
-  const [dragging, setDragging] = useState<{ id: string; dx: number; dy: number } | null>(null);
+  const [dragging, setDragging] = useState<{ id: string; dx: number; dy: number; startX: number; startY: number; lastX: number; lastY: number } | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const playedCaseImportRef = useRef<HTMLInputElement>(null);
   const text = ui[locale];
@@ -471,7 +479,9 @@ export default function JurisApp() {
     reader.readAsText(file);
   }
   function generateDraft() {
-    const clean = prompt.trim(); const sentences = clean.split(/(?<=[.!?])\s+/).filter(Boolean);
+    const clean = prompt.trim();
+    if (!clean) return;
+    const sentences = clean.split(/(?<=[.!?])\s+/).filter(Boolean);
     const titleSeed = (sentences[0] ?? "Untitled legal scenario").replace(/[.!?]$/, "");
     const shortTitle = titleSeed.split(" ").slice(0, 6).join(" ");
     const deadlineMatch = clean.match(/(?:within|in|за|через)\s+([\d]+\s*(?:hours?|days?|час(?:а|ов)?|дн(?:я|ей)))/i);
@@ -486,13 +496,25 @@ export default function JurisApp() {
       { id: "outcome-1", type: "outcome", title: "Position protected", detail: "Evidence and institutional process remain credible.", x: 760, y: 150 },
       { id: "outcome-2", type: "outcome", title: "Position compromised", detail: sentences.at(-1) ?? "The decision creates an open risk.", x: 760, y: 390 },
     ];
-    const links: StudioLink[] = [
-      { from: "trigger-1", to: "actor-1" }, { from: "trigger-1", to: "actor-2" }, { from: "trigger-1", to: "evidence-1" },
-      { from: "actor-1", to: "deadline-1" }, { from: "evidence-1", to: "decision-1" }, { from: "deadline-1", to: "decision-1" },
-      { from: "decision-1", to: "outcome-1" }, { from: "decision-1", to: "outcome-2" },
-    ];
-    setDraft({ caseId: slugifyCaseId(shortTitle), version: "1.0.0", parent: null, title: shortTitle, jurisdiction: "Set jurisdiction", role: "Scenario counsel", premise: clean, classification: { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }, nodes, links, updatedAt: new Date().toISOString() });
+    const links = numberedStudioLinks([
+      ["trigger-1", "actor-1"], ["trigger-1", "actor-2"], ["trigger-1", "evidence-1"],
+      ["actor-1", "deadline-1"], ["evidence-1", "decision-1"], ["deadline-1", "decision-1"],
+      ["decision-1", "outcome-1"], ["decision-1", "outcome-2"],
+    ]);
+    const createdAt = new Date().toISOString();
+    let rebuilt: StudioDraft = { caseId: slugifyCaseId(shortTitle), version: "1.0.0", parent: null, title: shortTitle, jurisdiction: "Set jurisdiction", role: "Scenario counsel", premise: clean, classification: { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }, nodes, links, editHistory: [], updatedAt: createdAt };
+    rebuilt = appendStudioHistory(rebuilt, { role: "author", source: "prompt", action: "prompt_submitted", message: clean }, createdAt);
+    rebuilt = appendStudioHistory(rebuilt, { role: "studio", source: "prompt", action: "graph_rebuilt", message: locale === "en" ? `Built a new ${nodes.length}-node graph from this prompt. The previous draft was replaced by explicit author request.` : `По явной команде автора построен новый граф из ${nodes.length} узлов; предыдущий черновик заменён.` }, createdAt);
+    setDraft(rebuilt);
+    setPrompt("");
     setSelectedNodeId("decision-1");
+  }
+  function applyPromptIteration() {
+    const clean = prompt.trim();
+    if (!clean) return;
+    const createdAt = new Date().toISOString();
+    setDraft((current) => applyStudioPromptIteration(current, { instruction: clean, locale, nodeLabels: text.nodeTypes, selectedNodeId, createdAt }).draft);
+    setPrompt("");
   }
   function saveDraft() {
     const next = { ...draft, updatedAt: new Date().toISOString() }; setDraft(next);
@@ -503,7 +525,7 @@ export default function JurisApp() {
     const normalized = normalizeStudioDraft(draft);
     const payload: CustomCaseFile = {
       format: "genesis-juris-custom-case",
-      schemaVersion: 1,
+      schemaVersion: 2,
       exportedAt: new Date().toISOString(),
       case: {
         id: normalized.caseId,
@@ -524,7 +546,7 @@ export default function JurisApp() {
       try {
         const parsed: unknown = JSON.parse(String(reader.result));
         let imported: StudioDraft;
-        if (isRecord(parsed) && parsed.format === "genesis-juris-custom-case" && parsed.schemaVersion === 1 && isRecord(parsed.case)) {
+        if (isRecord(parsed) && parsed.format === "genesis-juris-custom-case" && (parsed.schemaVersion === 1 || parsed.schemaVersion === 2) && isRecord(parsed.case)) {
           imported = normalizeStudioDraft(parsed.draft);
           if (parsed.case.id !== imported.caseId || parsed.case.version !== imported.version || parsed.case.fingerprint !== caseFingerprint(imported)) {
             throw new Error("Custom case identity or fingerprint mismatch");
@@ -534,7 +556,7 @@ export default function JurisApp() {
         }
         const restored = { ...imported, updatedAt: new Date().toISOString() };
         setDraft(restored);
-        setPrompt(restored.premise);
+        setPrompt("");
         setSelectedNodeId(restored.nodes[0]?.id ?? null);
         navigate("studio");
         showSessionNotice(locale === "en" ? "Custom case loaded in the visual editor" : "Custom-кейс открыт в визуальном редакторе");
@@ -542,21 +564,52 @@ export default function JurisApp() {
     }; reader.readAsText(file);
   }
   function createChildVersion() {
-    setDraft((current) => ({
+    const createdAt = new Date().toISOString();
+    setDraft((current) => appendStudioHistory({
       ...current,
       parent: { caseId: current.caseId, version: current.version, fingerprint: caseFingerprint(current) },
       version: bumpPatchVersion(current.version),
-      updatedAt: new Date().toISOString(),
-    }));
+    }, { role: "studio", source: "visual", action: "case_updated", message: locale === "en" ? `Created child version from ${current.caseId} v${current.version}.` : `Создана дочерняя версия от ${current.caseId} v${current.version}.` }, createdAt));
     showSessionNotice(locale === "en" ? "Child version created with parent trace" : "Дочерняя версия создана со ссылкой на родителя");
+  }
+  function recordVisualEdit(action: StudioEditAction, message: string) {
+    const createdAt = new Date().toISOString();
+    setDraft((current) => appendStudioHistory(current, { role: "studio", source: "visual", action, message }, createdAt));
   }
   function updateNode(change: Partial<StudioNode>) {
     if (!selectedNodeId) return;
     setDraft((current) => ({ ...current, nodes: current.nodes.map((node) => node.id === selectedNodeId ? { ...node, ...change } : node) }));
   }
   function addNode(type: StudioNodeType) {
-    const id = `${type}-${Date.now()}`;
-    setDraft((current) => ({ ...current, nodes: [...current.nodes, { id, type, title: text.nodeTypes[type], detail: "", x: 430, y: 220 }] })); setSelectedNodeId(id);
+    if (draft.nodes.length >= 200) return;
+    const id = nextStudioNodeId(draft.nodes, type);
+    const position = nextStudioNodePosition(draft.nodes, selectedNode);
+    const createdAt = new Date().toISOString();
+    setDraft((current) => appendStudioHistory({ ...current, nodes: [...current.nodes, { id, type, title: text.nodeTypes[type], detail: "", ...position }] }, { role: "studio", source: "visual", action: "node_added", message: locale === "en" ? `Visual edit: added ${text.nodeTypes[type]} node “${text.nodeTypes[type]}”.` : `Визуальная правка: добавлен узел «${text.nodeTypes[type]}».` }, createdAt));
+    setSelectedNodeId(id);
+  }
+  function addLink(from: string, to: string) {
+    const createdAt = new Date().toISOString();
+    setDraft((current) => {
+      const fromNode = current.nodes.find((node) => node.id === from);
+      const toNode = current.nodes.find((node) => node.id === to);
+      const link = { id: nextStudioLinkId(current.links), from, to };
+      return addStudioLink(current, link, { role: "studio", source: "visual", action: "link_added", message: locale === "en" ? `Visual edit: created relation “${fromNode?.title ?? from}” → “${toNode?.title ?? to}”.` : `Визуальная правка: создана связь «${fromNode?.title ?? from}» → «${toNode?.title ?? to}».` }, createdAt).draft;
+    });
+  }
+  function relinkLink(previous: StudioLink, next: StudioLink) {
+    const createdAt = new Date().toISOString();
+    setDraft((current) => {
+      const label = (id: string) => current.nodes.find((node) => node.id === id)?.title ?? id;
+      return relinkStudioLink(current, previous, next, { role: "studio", source: "visual", action: "link_relinked", message: locale === "en" ? `Visual edit: relinked “${label(previous.from)}” → “${label(previous.to)}” to “${label(next.from)}” → “${label(next.to)}”.` : `Визуальная правка: связь «${label(previous.from)}» → «${label(previous.to)}» перепривязана на «${label(next.from)}» → «${label(next.to)}».` }, createdAt).draft;
+    });
+  }
+  function deleteLink(link: StudioLink) {
+    const createdAt = new Date().toISOString();
+    setDraft((current) => {
+      const label = (id: string) => current.nodes.find((node) => node.id === id)?.title ?? id;
+      return deleteStudioLink(current, link, { role: "studio", source: "visual", action: "link_deleted", message: locale === "en" ? `Visual edit: deleted relation “${label(link.from)}” → “${label(link.to)}”.` : `Визуальная правка: удалена связь «${label(link.from)}» → «${label(link.to)}».` }, createdAt).draft;
+    });
   }
   function loadTaxTemplate() {
     const taxPrompt = "A Belgian-headed group is considering a cross-border IP and financing structure involving Belgium, the Netherlands and the UAE. Model the cash flows, treaty access, beneficial ownership, transfer pricing, substance, CFC, permanent establishment, withholding tax, DAC6 and Pillar Two implications. Require documented commercial purpose and compare compliant alternatives; exclude concealment, sham arrangements and tax evasion.";
@@ -579,28 +632,44 @@ export default function JurisApp() {
         { id: "outcome-1", type: "outcome", title: "Defensible planning position", detail: "Commercial purpose, governance and tax treatment align.", x: 1010, y: 150 },
         { id: "outcome-2", type: "outcome", title: "Redesign or abandon", detail: "Anti-abuse, substance or reporting risks outweigh projected benefit.", x: 1010, y: 390 },
       ],
-      links: [
-        { from: "trigger-1", to: "actor-1" }, { from: "actor-1", to: "entity-1" }, { from: "actor-1", to: "entity-2" },
-        { from: "entity-1", to: "cash_flow-1" }, { from: "entity-2", to: "cash_flow-1" },
-        { from: "cash_flow-1", to: "tax_rule-1" }, { from: "tax_rule-1", to: "evidence-1" },
-        { from: "evidence-1", to: "decision-1" }, { from: "decision-1", to: "outcome-1" }, { from: "decision-1", to: "outcome-2" },
+      links: numberedStudioLinks([
+        ["trigger-1", "actor-1"], ["actor-1", "entity-1"], ["actor-1", "entity-2"],
+        ["entity-1", "cash_flow-1"], ["entity-2", "cash_flow-1"], ["cash_flow-1", "tax_rule-1"],
+        ["tax_rule-1", "evidence-1"], ["evidence-1", "decision-1"], ["decision-1", "outcome-1"],
+        ["decision-1", "outcome-2"],
+      ]),
+      editHistory: [
+        { id: "edit-tax-author", role: "author", source: "prompt", action: "prompt_submitted", message: taxPrompt, createdAt: new Date().toISOString() },
+        { id: "edit-tax-studio", role: "studio", source: "prompt", action: "prompt_applied", message: "Loaded the compliance-first international tax graph. Future iterations preserve its entities, flows, rules and manual edits.", createdAt: new Date().toISOString() },
       ],
     });
+    setPrompt("");
     setSelectedNodeId("decision-1");
     navigate("studio");
   }
   function deleteNode() {
     if (!selectedNodeId) return;
-    setDraft((current) => ({ ...current, nodes: current.nodes.filter((node) => node.id !== selectedNodeId), links: current.links.filter((link) => link.from !== selectedNodeId && link.to !== selectedNodeId) })); setSelectedNodeId(null);
+    const createdAt = new Date().toISOString();
+    setDraft((current) => {
+      const node = current.nodes.find((item) => item.id === selectedNodeId);
+      const relationCount = current.links.filter((link) => link.from === selectedNodeId || link.to === selectedNodeId).length;
+      return appendStudioHistory({ ...current, nodes: current.nodes.filter((item) => item.id !== selectedNodeId), links: current.links.filter((link) => link.from !== selectedNodeId && link.to !== selectedNodeId) }, { role: "studio", source: "visual", action: "node_deleted", message: locale === "en" ? `Visual edit: deleted “${node?.title ?? selectedNodeId}” and ${relationCount} connected relation(s).` : `Визуальная правка: удалён узел «${node?.title ?? selectedNodeId}» и связанных связей: ${relationCount}.` }, createdAt);
+    });
+    setSelectedNodeId(null);
   }
   function moveNode(event: React.PointerEvent<HTMLButtonElement>, node: StudioNode) {
-    const canvas = event.currentTarget.parentElement; if (!canvas) return; const rect = canvas.getBoundingClientRect();
-    if (event.type === "pointerdown") { event.currentTarget.setPointerCapture(event.pointerId); setDragging({ id: node.id, dx: event.clientX - rect.left - node.x, dy: event.clientY - rect.top - node.y }); setSelectedNodeId(node.id); }
+    const canvas = event.currentTarget.closest(".graph-canvas"); if (!(canvas instanceof HTMLElement)) return; const rect = canvas.getBoundingClientRect();
+    if (event.type === "pointerdown") { event.currentTarget.setPointerCapture(event.pointerId); setDragging({ id: node.id, dx: event.clientX - rect.left - node.x, dy: event.clientY - rect.top - node.y, startX: node.x, startY: node.y, lastX: node.x, lastY: node.y }); setSelectedNodeId(node.id); }
     else if (event.type === "pointermove" && dragging?.id === node.id) {
       const x = Math.max(12, Math.min(rect.width - 178, event.clientX - rect.left - dragging.dx));
       const y = Math.max(12, Math.min(rect.height - 92, event.clientY - rect.top - dragging.dy));
       setDraft((current) => ({ ...current, nodes: current.nodes.map((item) => item.id === node.id ? { ...item, x, y } : item) }));
-    } else if (event.type === "pointerup" || event.type === "pointercancel") setDragging(null);
+      setDragging((current) => current?.id === node.id ? { ...current, lastX: x, lastY: y } : current);
+    } else if (event.type === "pointerup" || event.type === "pointercancel") {
+      const completed = dragging;
+      setDragging(null);
+      if (completed?.id === node.id && (Math.round(completed.startX) !== Math.round(completed.lastX) || Math.round(completed.startY) !== Math.round(completed.lastY))) recordVisualEdit("node_moved", locale === "en" ? `Visual edit: moved “${node.title}” to (${Math.round(completed.lastX)}, ${Math.round(completed.lastY)}).` : `Визуальная правка: узел «${node.title}» перемещён в (${Math.round(completed.lastX)}, ${Math.round(completed.lastY)}).`);
+    }
   }
 
   return (
@@ -641,7 +710,7 @@ export default function JurisApp() {
 
       {view === "library" && <LibraryView locale={locale} text={text} cases={catalogueScenarios} featured={featured} setFeaturedId={setFeaturedId} startScenario={startScenario} requestFeedback={setFeedbackTarget} openTaxTemplate={loadTaxTemplate} />}
       {view === "play" && activeScenario && stage && <PlayView locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} decisionLog={decisionLog} caseMinute={caseMinute} actionUseCounts={actionUseCounts} completedDeadlineIds={completedDeadlineIds} missedDeadlineIds={missedDeadlineIds} dossierRef={dossierRef} setDossierRef={setDossierRef} setSelectedOption={setSelectedOption} outcome={outcome} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario)} returnLibrary={() => navigate("library")} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })} />}
-      {view === "studio" && <StudioView locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={setDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} generateDraft={generateDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} addNode={addNode} deleteNode={deleteNode} moveNode={moveNode} resetDraft={() => { setDraft(defaultDraft); setPrompt(defaultPrompt); setSelectedNodeId("decision-1"); }} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id })} />}
+      {view === "studio" && <StudioView locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={setDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={() => { setDraft(defaultDraft); setPrompt(""); setSelectedNodeId("decision-1"); }} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id })} />}
       {view === "community" && <CommunityView locale={locale} cases={catalogueScenarios} />}
       {view === "help" && <HelpView locale={locale} openCommunity={() => navigate("community")} openStudio={() => navigate("studio")} />}
       {(selectedOption || resultOption) && activeScenario && stage && <DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} close={() => { setSelectedOption(null); setResultOption(null); }} dispatch={dispatchDecision} advance={advanceStage} finalStage={Boolean(activeScenario.stages.find((item) => item.id === (selectedOption ?? resultOption)?.nextStageId)?.terminal)} />}
@@ -1006,13 +1075,40 @@ function DecisionModal({ locale, text, scenario, stageHeadline, option, isResult
   return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !isResult) close(); }}><section className={`decision-modal ${isResult ? "result" : ""}`} role="dialog" aria-modal="true" aria-labelledby="decision-title">{!isResult && <button className="modal-close" onClick={close} aria-label={text.cancel}><Icon name="close"/></button>}<div className="modal-register">{isResult ? "DISPATCH RECORD" : "RESPONSE REVIEW"}<span>{scenario.caseId}</span></div><div className="modal-icon"><Icon name={isResult ? "check" : "file"} size={30}/></div><span className="modal-kicker">{isResult ? text.consequence : text.review}</span><h2 id="decision-title">{option.label[locale]}</h2><p className="modal-context">{isResult ? option.result[locale] : option.detail[locale]}</p>{!isResult && <><div className="modal-source"><small>CURRENT SITUATION</small><p>{stageHeadline}</p></div><dl className="decision-cost"><div><dt>{text.cost}</dt><dd>EUR {option.cost.toLocaleString()}</dd></div><div><dt>{text.duration}</dt><dd>{option.minutes} min</dd></div></dl><div className="effect-preview">{(Object.entries(option.effects) as Array<[MetricKey, number]>).map(([key,value]) => <span key={key} className={value >= 0 ? "positive" : "negative"}>{metricLabels[locale][key]} {value >= 0 ? "+" : ""}{value}</span>)}</div></>}<div className="modal-actions">{!isResult && <button className="secondary-cta" onClick={close}>{text.cancel}</button>}<button className="primary-cta" onClick={isResult ? advance : dispatch}>{isResult ? (finalStage ? text.debrief : text.continueCase) : text.confirm}<Icon name="arrow"/></button></div></section></div>;
 }
 
-function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, generateDraft, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, addNode, deleteNode, moveNode, resetDraft, loadTaxTemplate, requestFeedback }: { locale: Locale; text: UiText; prompt: string; setPrompt: (value: string) => void; draft: StudioDraft; setDraft: React.Dispatch<React.SetStateAction<StudioDraft>>; selectedNode: StudioNode | null; selectedNodeId: string | null; selectNode: (id: string | null) => void; checks: Array<{ level: "ok" | "warn"; text: string }>; generateDraft: () => void; saveDraft: () => void; savedFlash: boolean; exportDraft: () => void; importRef: React.RefObject<HTMLInputElement | null>; importDraft: (file: File) => void; createChildVersion: () => void; updateNode: (change: Partial<StudioNode>) => void; addNode: (type: StudioNodeType) => void; deleteNode: () => void; moveNode: (event: React.PointerEvent<HTMLButtonElement>, node: StudioNode) => void; resetDraft: () => void; loadTaxTemplate: () => void; requestFeedback: () => void }) {
+type StudioViewProps = {
+  locale: Locale; text: UiText; prompt: string; setPrompt: (value: string) => void; draft: StudioDraft;
+  setDraft: React.Dispatch<React.SetStateAction<StudioDraft>>; selectedNode: StudioNode | null; selectedNodeId: string | null;
+  selectNode: (id: string | null) => void; checks: Array<{ level: "ok" | "warn"; text: string }>;
+  generateDraft: () => void; applyPromptIteration: () => void; saveDraft: () => void; savedFlash: boolean;
+  exportDraft: () => void; importRef: React.RefObject<HTMLInputElement | null>; importDraft: (file: File) => void;
+  createChildVersion: () => void; updateNode: (change: Partial<StudioNode>) => void;
+  recordVisualEdit: (action: StudioEditAction, message: string) => void; addNode: (type: StudioNodeType) => void;
+  addLink: (from: string, to: string) => void; relinkLink: (previous: StudioLink, next: StudioLink) => void;
+  deleteLink: (link: StudioLink) => void; deleteNode: () => void;
+  moveNode: (event: React.PointerEvent<HTMLButtonElement>, node: StudioNode) => void; resetDraft: () => void;
+  loadTaxTemplate: () => void; requestFeedback: () => void;
+};
+
+function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, generateDraft, applyPromptIteration, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadTaxTemplate, requestFeedback }: StudioViewProps) {
   const router = useRouter();
   const [previewLive, setPreviewLive] = useState(false);
   const [previewOutcome, setPreviewOutcome] = useState<StudioNode | null>(null);
   const [workspaceState, setWorkspaceState] = useState<"idle" | "saving" | "saved" | "submitted" | "error">("idle");
+  const [linkSourceId, setLinkSourceId] = useState<string | null>(null);
+  const [relationStatus, setRelationStatus] = useState("");
+  const fieldBefore = useRef("");
   const previewDecision = draft.nodes.find((node) => node.type === "decision");
   const previewOutcomes = draft.nodes.filter((node) => node.type === "outcome").slice(0, 2);
+
+  useEffect(() => {
+    function cancelRelation(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setLinkSourceId(null);
+      setRelationStatus("");
+    }
+    document.addEventListener("keydown", cancelRelation);
+    return () => document.removeEventListener("keydown", cancelRelation);
+  }, []);
 
   async function shareDraft(action: "save" | "submit") {
     setWorkspaceState("saving");
@@ -1022,6 +1118,47 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     setWorkspaceState(action === "submit" ? "submitted" : "saved");
   }
 
+  function beginFieldEdit(value: string) { fieldBefore.current = value; }
+  function commitNodeField(label: string, value: string) {
+    if (!selectedNode || fieldBefore.current === value) return;
+    recordVisualEdit("node_updated", locale === "en" ? `Visual edit: changed ${label} on “${selectedNode.title}”.` : `Визуальная правка: изменено поле «${label}» узла «${selectedNode.title}».`);
+  }
+  function commitCaseField(label: string, value: string) {
+    if (fieldBefore.current === value) return;
+    recordVisualEdit("case_updated", locale === "en" ? `Visual edit: changed case ${label}.` : `Визуальная правка: изменено поле кейса «${label}».`);
+  }
+  function canUseRelation(from: string, to: string, ignoredLinkId = "") {
+    if (!ignoredLinkId && draft.links.length >= 500) return locale === "en" ? "The 500-relation draft limit has been reached." : "Достигнут лимит черновика: 500 связей.";
+    if (from === to) return locale === "en" ? "A node cannot link to itself." : "Узел нельзя связать с самим собой.";
+    if (!draft.nodes.some((node) => node.id === from) || !draft.nodes.some((node) => node.id === to)) return locale === "en" ? "One endpoint is no longer available." : "Один из узлов больше недоступен.";
+    if (draft.links.some((link) => link.id !== ignoredLinkId && link.from === from && link.to === to)) return locale === "en" ? "That directed relation already exists." : "Такая направленная связь уже существует.";
+    return "";
+  }
+  function armLinkSource(nodeId: string) {
+    setLinkSourceId(nodeId);
+    const node = draft.nodes.find((item) => item.id === nodeId);
+    setRelationStatus(locale === "en" ? `Source selected: ${node?.title ?? nodeId}. Choose an input port.` : `Выбран источник: ${node?.title ?? nodeId}. Выберите входной порт.`);
+  }
+  function completeLink(targetId: string) {
+    if (!linkSourceId) {
+      setRelationStatus(locale === "en" ? "Choose an output port first." : "Сначала выберите выходной порт.");
+      return;
+    }
+    const issue = canUseRelation(linkSourceId, targetId);
+    if (issue) { setRelationStatus(issue); return; }
+    addLink(linkSourceId, targetId);
+    const target = draft.nodes.find((node) => node.id === targetId);
+    setRelationStatus(locale === "en" ? `Relation created to ${target?.title ?? targetId}.` : `Связь создана с узлом ${target?.title ?? targetId}.`);
+    setLinkSourceId(null);
+  }
+  function changeRelation(link: StudioLink, endpoint: "from" | "to", value: string) {
+    const next = { ...link, [endpoint]: value };
+    const issue = canUseRelation(next.from, next.to, link.id);
+    if (issue) { setRelationStatus(issue); return; }
+    relinkLink(link, next);
+    setRelationStatus(locale === "en" ? "Relation endpoint updated." : "Конец связи перепривязан.");
+  }
+
   function nudgeNode(event: React.KeyboardEvent<HTMLButtonElement>, node: StudioNode) {
     const direction = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key];
     if (!direction) return;
@@ -1029,12 +1166,14 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     const step = event.shiftKey ? 20 : 5;
     selectNode(node.id);
     setDraft((current) => ({ ...current, nodes: current.nodes.map((item) => item.id === node.id ? { ...item, x: Math.max(0, Math.min(5_000, item.x + direction[0] * step)), y: Math.max(0, Math.min(5_000, item.y + direction[1] * step)) } : item) }));
+    recordVisualEdit("node_moved", locale === "en" ? `Visual edit: nudged “${node.title}” ${event.key.replace("Arrow", "").toLowerCase()} by ${step}px.` : `Визуальная правка: узел «${node.title}» сдвинут на ${step}px.`);
   }
 
   return <main className="studio-view"><section className="studio-hero page-width"><div><div className="eyebrow"><span className="live-dot"/>AUTHORING LAB · VISUAL + PROMPT</div><h1>{text.author}</h1><p>{text.authorLead}</p></div><div className="studio-actions"><button className="secondary-cta" onClick={resetDraft}><Icon name="reset"/>{text.newDraft}</button><button className="secondary-cta" onClick={loadTaxTemplate}><Icon name="spark"/>{locale === "en" ? "Tax template" : "Налоговый шаблон"}</button><button className="secondary-cta" onClick={requestFeedback}><Icon name="file"/>{text.feedback}</button><button className="secondary-cta" onClick={() => importRef.current?.click()}><Icon name="upload"/>{text.importCustom}</button><button className="secondary-cta" onClick={exportDraft}><Icon name="download"/>{text.exportCustom}</button><button className="secondary-cta" onClick={() => shareDraft("save")} disabled={workspaceState === "saving"}><Icon name="save"/>{locale === "en" ? "Save to workspace" : "Сохранить в workspace"}</button><button className="primary-cta" onClick={() => shareDraft("submit")} disabled={workspaceState === "saving" || checks.some((check) => check.level === "warn")}><Icon name="check"/>{locale === "en" ? "Submit for review" : "Отправить на рецензию"}</button><button className="secondary-cta" onClick={saveDraft}><Icon name="save"/>{text.save}</button><input ref={importRef} className="visually-hidden" type="file" accept=".json,application/json" onChange={(event) => { const file=event.target.files?.[0]; if(file) importDraft(file); event.target.value=""; }}/></div>{savedFlash && <div className="save-toast"><Icon name="check"/>{text.saved}</div>}{workspaceState !== "idle" && workspaceState !== "saving" && <div className={`workspace-toast ${workspaceState}`} role="status">{workspaceState === "saved" ? (locale === "en" ? "Workspace draft saved." : "Черновик сохранён в workspace.") : workspaceState === "submitted" ? (locale === "en" ? "Submitted to the expert review queue." : "Отправлено в очередь экспертной рецензии.") : (locale === "en" ? "Sign in and complete your profile, then try again." : "Войдите и заполните профиль, затем повторите.")}</div>}</section>
     <aside className="confidentiality-notice page-width"><Icon name="alert"/><p>{locale === "en" ? "Confidentiality: do not enter client-identifiable, privileged, personal or secret information. Use synthetic or de-identified facts and public legal sources." : "Конфиденциальность: не вводите сведения, идентифицирующие клиента, адвокатскую тайну, персональные данные или секреты. Используйте синтетические или обезличенные факты и публичные источники права."}</p></aside>
-    <section className="prompt-deck page-width"><div className="prompt-label"><span>{text.prompt}</span><code>GENERATOR / STRUCTURE V1</code></div><textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} aria-label={text.prompt}/><button className="generate-button" onClick={generateDraft}><Icon name="spark" size={24}/><span>{text.generate}<small>{locale === "en" ? "Extract trigger, actors, evidence, deadline, decision and outcome branches" : "Выделить триггер, акторов, доказательства, срок, решение и ветви исхода"}</small></span><Icon name="arrow"/></button></section>
-    <section className="studio-meta page-width"><label><span>{text.title}</span><input value={draft.title} onChange={(event) => setDraft((current) => ({...current,title:event.target.value}))}/></label><label><span>{text.jurisdiction}</span><input value={draft.jurisdiction} onChange={(event) => setDraft((current) => ({...current,jurisdiction:event.target.value}))}/></label><label><span>{text.role}</span><input value={draft.role} onChange={(event) => setDraft((current) => ({...current,role:event.target.value}))}/></label></section>
+    <section className="studio-history page-width" aria-labelledby="studio-history-title"><header><div><span>{locale === "en" ? "Prompt & edit history" : "История промпта и правок"}</span><h2 id="studio-history-title">{locale === "en" ? "One case, one continuous authoring record" : "Один кейс — единая история редактирования"}</h2></div><b>{draft.editHistory.length.toString().padStart(2,"0")}</b></header>{draft.editHistory.length ? <ol>{draft.editHistory.map((entry) => <li key={entry.id} className={`history-entry ${entry.role} source-${entry.source}`}><div><span>{entry.source === "prompt" ? "PROMPT" : locale === "en" ? "VISUAL EDIT" : "ВИЗУАЛЬНАЯ ПРАВКА"}</span><time dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleString(locale === "en" ? "en-GB" : "ru-RU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</time></div><p>{entry.message}</p></li>)}</ol> : <p className="history-empty">{locale === "en" ? "Legacy draft: no authoring history was stored. Your next instruction or visual edit starts the record." : "Legacy-черновик: история редактирования отсутствует. Следующая инструкция или визуальная правка начнёт журнал."}</p>}</section>
+    <section className="prompt-deck page-width"><div className="prompt-label"><span>{locale === "en" ? "Next prompt iteration" : "Следующая итерация промпта"}</span><code>ITERATIVE · NON-DESTRUCTIVE</code></div><textarea value={prompt} maxLength={2000} placeholder={locale === "en" ? "Add the next instruction. Existing nodes, links, positions, version and parent lineage will be preserved…" : "Добавьте следующую инструкцию. Существующие узлы, связи, позиции, версия и родительская линия будут сохранены…"} onChange={(event) => setPrompt(event.target.value)} aria-label={text.prompt}/><div className="prompt-actions"><button className="generate-button" disabled={!prompt.trim()} onClick={applyPromptIteration}><Icon name="spark" size={24}/><span>{locale === "en" ? "Apply iteration" : "Применить итерацию"}<small>{locale === "en" ? "Add context and recognised graph operations without replacing manual edits" : "Добавить контекст и распознанные операции, не заменяя ручные правки"}</small></span><Icon name="arrow"/></button><button className="rebuild-button" disabled={!prompt.trim()} onClick={() => { if (window.confirm(locale === "en" ? "Replace the current draft graph and lineage with a new graph built from this prompt?" : "Заменить текущий граф и родительскую линию новым графом из этого промпта?")) generateDraft(); }}><Icon name="reset"/>{locale === "en" ? "Build as new graph" : "Построить новый граф"}</button></div></section>
+    <section className="studio-meta page-width"><label><span>{text.title}</span><input value={draft.title} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({...current,title:event.target.value}))} onBlur={(event)=>commitCaseField(text.title,event.currentTarget.value)}/></label><label><span>{text.jurisdiction}</span><input value={draft.jurisdiction} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({...current,jurisdiction:event.target.value}))} onBlur={(event)=>commitCaseField(text.jurisdiction,event.currentTarget.value)}/></label><label><span>{text.role}</span><input value={draft.role} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({...current,role:event.target.value}))} onBlur={(event)=>commitCaseField(text.role,event.currentTarget.value)}/></label></section>
     <section className="studio-classification page-width">
       <label><span>{locale === "en" ? "Case domain" : "Домен кейса"}</span><select value={draft.classification?.domain ?? (isTaxClassification(draft.classification) ? "tax" : "general")} onChange={(event) => setDraft((current) => ({ ...current, classification: { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), domain: event.target.value === "tax" ? "tax" : "general" } }))}><option value="general">General legal</option><option value="tax">Tax / cross-border structuring</option></select></label>
       <label><span>{locale === "en" ? "Practice area" : "Область практики"}</span><select value={draft.classification?.practiceArea ?? "General legal"} onChange={(event) => setDraft((current) => ({ ...current, classification: { ...(current.classification ?? { difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), practiceArea: event.target.value } }))}><option>General legal</option><option>International tax planning</option><option>Corporate tax</option><option>Transfer pricing</option><option>Commercial disputes</option><option>AI regulation</option><option>Privacy & cybersecurity</option></select></label>
@@ -1053,9 +1192,24 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       <div className="version-value"><span>{text.fingerprint}</span><code>{caseFingerprint(draft)}</code></div>
       <div className="parent-trace"><span>{text.parentCase}</span>{draft.parent ? <><b>{draft.parent.caseId}</b><code>v{draft.parent.version} · {draft.parent.fingerprint}</code></> : <em>{locale === "en" ? "Root case · no parent" : "Корневой кейс · родителя нет"}</em>}</div>
     </section>
-    <section className="studio-workspace"><aside className="node-palette"><div className="pane-heading"><span>{text.addNode}</span><b>{String(Object.keys(typeColors).length).padStart(2,"0")}</b></div>{(Object.keys(typeColors) as StudioNodeType[]).map((type) => <button key={type} onClick={() => addNode(type)}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "Add a node, then connect meaning through the generated flow. Drag nodes to reshape the map." : "Добавьте узел, затем свяжите смысл через сгенерированный поток. Перетаскивайте узлы по карте."}</p></aside>
-      <section className="graph-deck"><div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></div></div><div className="graph-canvas"><svg className="graph-links" aria-hidden="true">{draft.links.map((link,index) => { const from=draft.nodes.find((node)=>node.id===link.from); const to=draft.nodes.find((node)=>node.id===link.to); if(!from||!to)return null; return <g key={`${link.from}-${link.to}-${index}`}><path d={`M ${from.x+165} ${from.y+38} C ${from.x+205} ${from.y+38}, ${to.x-38} ${to.y+38}, ${to.x} ${to.y+38}`}/><circle cx={to.x} cy={to.y+38} r="3"/></g>; })}</svg>{draft.nodes.map((node) => <button key={node.id} className={`graph-node type-${node.type} ${node.id===selectedNodeId?"selected":""}`} style={{left:node.x,top:node.y,"--node-color":typeColors[node.type]} as React.CSSProperties} onFocus={() => selectNode(node.id)} onKeyDown={(event) => nudgeNode(event, node)} onPointerDown={(event)=>moveNode(event,node)} onPointerMove={(event)=>moveNode(event,node)} onPointerUp={(event)=>moveNode(event,node)} onPointerCancel={(event)=>moveNode(event,node)} aria-label={`${text.nodeTypes[node.type]}: ${node.title}. ${locale === "en" ? "Use arrow keys to reposition." : "Используйте стрелки для перемещения."}`}><span><i/>{text.nodeTypes[node.type]}<code>{node.id.split("-").at(-1)}</code></span><b>{node.title}</b></button>)}</div><div className="graph-legend">{(Object.keys(typeColors) as StudioNodeType[]).map((type)=><span key={type}><i style={{background:typeColors[type]}}/>{text.nodeTypes[type]}</span>)}</div><details className="graph-relations"><summary>{locale === "en" ? "Accessible relationship list" : "Доступный список связей"} · {draft.links.length}</summary><ol>{draft.links.map((link, index) => { const from = draft.nodes.find((node) => node.id === link.from); const to = draft.nodes.find((node) => node.id === link.to); return <li key={`${link.from}-${link.to}-${index}`}><b>{from?.title ?? link.from}</b><span>→</span><b>{to?.title ?? link.to}</b></li>; })}</ol></details></section>
-      <aside className="node-inspector"><div className="pane-heading"><span>{text.inspector}</span><b>{selectedNode?"01":"00"}</b></div>{selectedNode?<div className="inspector-form"><div className="selected-type"><i style={{background:typeColors[selectedNode.type]}}/><span>{text.nodeTypes[selectedNode.type]}</span><code>{selectedNode.id}</code></div><label><span>{text.nodeType}</span><select value={selectedNode.type} onChange={(event)=>updateNode({type:event.target.value as StudioNodeType})}>{(Object.keys(typeColors) as StudioNodeType[]).map((type)=><option key={type} value={type}>{text.nodeTypes[type]}</option>)}</select></label><label><span>{text.title}</span><input value={selectedNode.title} onChange={(event)=>updateNode({title:event.target.value})}/></label><label><span>{text.detail}</span><textarea value={selectedNode.detail} onChange={(event)=>updateNode({detail:event.target.value})}/></label><label><span>{locale === "en" ? "Connect selected node to" : "Связать выбранный узел с"}</span><select value="" onChange={(event) => { const target=event.target.value; if(!target)return; setDraft((current)=>current.links.some((link)=>link.from===selectedNode.id&&link.to===target)?current:{...current,links:[...current.links,{from:selectedNode.id,to:target}]}); }}><option value="">{locale === "en" ? "Choose destination…" : "Выберите узел…"}</option>{draft.nodes.filter((node)=>node.id!==selectedNode.id).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}</option>)}</select></label><button className="danger-button" onClick={deleteNode}><Icon name="trash"/>{text.deleteNode}</button></div>:<p className="empty-inspector">{text.noSelection}</p>}</aside></section>
+    <section className="studio-workspace">
+      <aside className="node-palette"><div className="pane-heading"><span>{text.addNode}</span><b>{String(Object.keys(typeColors).length).padStart(2,"0")}</b></div>{(Object.keys(typeColors) as StudioNodeType[]).map((type) => <button key={type} disabled={draft.nodes.length >= 200} onClick={() => addNode(type)}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "Add nodes here. On the graph, choose an output dot and then an input dot to create a relation. Every completed edit is added to the history." : "Добавляйте узлы здесь. На графе выберите выходную, затем входную точку, чтобы создать связь. Каждая завершённая правка попадёт в историю."}</p></aside>
+      <section className="graph-deck">
+        <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></div></div>
+        <div className="graph-connect-status" role="status" aria-live="polite"><span className={linkSourceId ? "armed" : ""}/>{relationStatus || (locale === "en" ? "Relation mode ready · OUT → IN" : "Режим связей готов · ВЫХОД → ВХОД")}{linkSourceId && <button onClick={() => { setLinkSourceId(null); setRelationStatus(""); }}>{locale === "en" ? "Cancel" : "Отмена"}</button>}</div>
+        <div className="graph-canvas">
+          <svg className="graph-links" aria-hidden="true">{draft.links.map((link) => { const from=draft.nodes.find((node)=>node.id===link.from); const to=draft.nodes.find((node)=>node.id===link.to); if(!from||!to)return null; return <g key={link.id}><path d={`M ${from.x+165} ${from.y+38} C ${from.x+205} ${from.y+38}, ${to.x-38} ${to.y+38}, ${to.x} ${to.y+38}`}/><circle cx={to.x} cy={to.y+38} r="3"/></g>; })}</svg>
+          {draft.nodes.map((node) => <div key={node.id} className={`graph-node-shell ${node.id===selectedNodeId?"selected":""} ${node.id===linkSourceId?"link-source":""}`} style={{left:node.x,top:node.y,"--node-color":typeColors[node.type]} as React.CSSProperties}>
+            <button className="node-port node-port-in" onClick={() => completeLink(node.id)} aria-label={locale === "en" ? `Use ${node.title} as relation destination` : `Использовать ${node.title} как назначение связи`}><span/></button>
+            <button className="graph-node" onFocus={() => selectNode(node.id)} onKeyDown={(event) => nudgeNode(event, node)} onPointerDown={(event)=>moveNode(event,node)} onPointerMove={(event)=>moveNode(event,node)} onPointerUp={(event)=>moveNode(event,node)} onPointerCancel={(event)=>moveNode(event,node)} aria-label={`${text.nodeTypes[node.type]}: ${node.title}. ${locale === "en" ? "Use arrow keys to reposition." : "Используйте стрелки для перемещения."}`}><span><i/>{text.nodeTypes[node.type]}<code>{node.id.split("-").at(-1)}</code></span><b>{node.title}</b></button>
+            <button className="node-port node-port-out" aria-pressed={node.id===linkSourceId} onClick={() => armLinkSource(node.id)} aria-label={locale === "en" ? `Start relation from ${node.title}` : `Начать связь от ${node.title}`}><span/></button>
+          </div>)}
+        </div>
+        <div className="graph-legend">{(Object.keys(typeColors) as StudioNodeType[]).map((type)=><span key={type}><i style={{background:typeColors[type]}}/>{text.nodeTypes[type]}</span>)}</div>
+        <details className="graph-relations" open><summary>{locale === "en" ? "Relationship editor" : "Редактор связей"} · {draft.links.length}</summary>{draft.links.length ? <ol>{draft.links.map((link, index) => <li key={link.id}><code>{String(index + 1).padStart(2,"0")}</code><label><span>{locale === "en" ? "Source" : "Источник"}</span><select aria-label={locale === "en" ? `Source for relation ${index + 1}` : `Источник связи ${index + 1}`} value={link.from} onChange={(event) => changeRelation(link, "from", event.target.value)}>{draft.nodes.map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}</option>)}</select></label><span className="relation-arrow">→</span><label><span>{locale === "en" ? "Destination" : "Назначение"}</span><select aria-label={locale === "en" ? `Destination for relation ${index + 1}` : `Назначение связи ${index + 1}`} value={link.to} onChange={(event) => changeRelation(link, "to", event.target.value)}>{draft.nodes.map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}</option>)}</select></label><button className="relation-delete" onClick={() => { deleteLink(link); setRelationStatus(locale === "en" ? "Relation deleted." : "Связь удалена."); }} aria-label={locale === "en" ? `Delete relation ${index + 1}` : `Удалить связь ${index + 1}`}><Icon name="trash" size={15}/></button></li>)}</ol> : <p>{locale === "en" ? "No relations yet. Use node ports or the inspector to create one." : "Связей пока нет. Используйте порты узлов или инспектор."}</p>}</details>
+      </section>
+      <aside className="node-inspector"><div className="pane-heading"><span>{text.inspector}</span><b>{selectedNode?"01":"00"}</b></div>{selectedNode?<div className="inspector-form"><div className="selected-type"><i style={{background:typeColors[selectedNode.type]}}/><span>{text.nodeTypes[selectedNode.type]}</span><code>{selectedNode.id}</code></div><label><span>{text.nodeType}</span><select value={selectedNode.type} onChange={(event)=>{ const type=event.target.value as StudioNodeType; if(type!==selectedNode.type){ updateNode({type}); recordVisualEdit("node_updated", locale === "en" ? `Visual edit: changed “${selectedNode.title}” from ${text.nodeTypes[selectedNode.type]} to ${text.nodeTypes[type]}.` : `Визуальная правка: тип узла «${selectedNode.title}» изменён на «${text.nodeTypes[type]}».`); } }}>{(Object.keys(typeColors) as StudioNodeType[]).map((type)=><option key={type} value={type}>{text.nodeTypes[type]}</option>)}</select></label><label><span>{text.title}</span><input value={selectedNode.title} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event)=>updateNode({title:event.target.value})} onBlur={(event)=>commitNodeField(text.title,event.currentTarget.value)}/></label><label><span>{text.detail}</span><textarea value={selectedNode.detail} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event)=>updateNode({detail:event.target.value})} onBlur={(event)=>commitNodeField(text.detail,event.currentTarget.value)}/></label><label><span>{locale === "en" ? "Connect selected node to" : "Связать выбранный узел с"}</span><select value="" onChange={(event) => { const target=event.target.value; if(!target)return; const issue=canUseRelation(selectedNode.id,target); if(issue){setRelationStatus(issue);return;} addLink(selectedNode.id,target); setRelationStatus(locale === "en" ? "Relation created." : "Связь создана."); }}><option value="">{locale === "en" ? "Choose destination…" : "Выберите узел…"}</option>{draft.nodes.filter((node)=>node.id!==selectedNode.id).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}</option>)}</select></label><button className="danger-button" onClick={() => { const relations=draft.links.filter((link)=>link.from===selectedNode.id||link.to===selectedNode.id).length; if(!relations || window.confirm(locale === "en" ? `Delete this node and ${relations} connected relation(s)?` : `Удалить узел и связанные связи (${relations})?`)) deleteNode(); }}><Icon name="trash"/>{text.deleteNode}</button></div>:<p className="empty-inspector">{text.noSelection}</p>}</aside>
+    </section>
     <section className="studio-bottom page-width"><div className="checks-panel"><div className="panel-title"><span>{text.checks}</span><b>{checks.filter((check)=>check.level==="warn").length.toString().padStart(2,"0")}</b></div>{checks.map((check,index)=><div key={index} className={`check-row ${check.level}`}><Icon name={check.level==="ok"?"check":"alert"}/><span>{check.text}</span></div>)}<p>{text.localNote}</p></div><div className="preview-panel"><div className="panel-title"><span>{text.preview}</span><b>{previewLive ? "RUNNING" : "LIVE"}</b></div><div className="preview-card"><div className="preview-index">DRAFT / {draft.nodes.length}</div><h2>{draft.title||"Untitled matter"}</h2>{previewLive ? <div className="draft-playback">{previewOutcome ? <><span>{locale === "en" ? "Prototype consequence" : "Последствие прототипа"}</span><h3>{previewOutcome.title}</h3><p>{previewOutcome.detail}</p><button className="secondary-cta" onClick={()=>setPreviewOutcome(null)}>{locale === "en" ? "Try another path" : "Проверить другой путь"}</button></> : <><span>{locale === "en" ? "Decision review" : "Проверка решения"}</span><h3>{previewDecision?.title}</h3><p>{previewDecision?.detail}</p><div>{previewOutcomes.map((item)=><button key={item.id} onClick={()=>setPreviewOutcome(item)}>{item.title}<Icon name="arrow"/></button>)}</div></>}</div> : <><p>{draft.premise}</p><dl><div><dt>{text.jurisdiction}</dt><dd>{draft.jurisdiction}</dd></div><div><dt>{text.role}</dt><dd>{draft.role}</dd></div></dl><button className="primary-cta" disabled={checks.some((check)=>check.level==="warn")} onClick={()=>setPreviewLive(true)}><Icon name="play"/>{locale === "en" ? "Compile playable prototype" : "Собрать игровой прототип"}</button></>}</div></div></section>
   </main>;
 }
@@ -1270,6 +1424,8 @@ function validateDraft(draft: StudioDraft, locale: Locale) {
   warnings.push(count("outcome")>=2?{level:"ok",text:label("Multiple outcome paths preserve uncertainty","Несколько исходов сохраняют неопределённость")}:{level:"warn",text:label("Add at least two non-recommending outcomes","Добавьте хотя бы два исхода без рекомендации")});
   const orphaned=draft.nodes.filter((node)=>node.type!=="trigger"&&!incoming.has(node.id)&&!outgoing.has(node.id));
   warnings.push(orphaned.length===0?{level:"ok",text:label("No orphaned nodes","Изолированных узлов нет")}:{level:"warn",text:label(`${orphaned.length} orphaned node(s) need a relationship`,`Изолированных узлов: ${orphaned.length}`)});
+  const serverGraphIssues=studioStructuralIssues(draft).filter((issue)=>["invalid_relationship","disconnected_graph","outcome_not_reachable_from_decision","decision_branch_required"].includes(issue));
+  warnings.push(serverGraphIssues.length===0?{level:"ok",text:label("All nodes are reachable and decision branches terminate","Все узлы достижимы, а ветви решений ведут к исходам")}:{level:"warn",text:label("Reconnect the graph so every node is reachable from a trigger and every outcome from a decision","Перепривяжите граф: каждый узел должен быть достижим от триггера, а каждый исход — от решения")});
   warnings.push(draft.jurisdiction&&draft.role?{level:"ok",text:label("Jurisdiction and player role are explicit","Юрисдикция и роль игрока определены")}:{level:"warn",text:label("Set jurisdiction and player role","Укажите юрисдикцию и роль игрока")});
   if (isTaxClassification(draft.classification)) {
     const hasEntity = count("entity") >= 1;

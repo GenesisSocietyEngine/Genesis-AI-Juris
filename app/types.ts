@@ -109,8 +109,34 @@ export type StudioNode = {
 };
 
 export type StudioLink = {
+  id: string;
   from: string;
   to: string;
+};
+
+export type StudioEditSource = "prompt" | "visual";
+
+export type StudioEditAction =
+  | "prompt_submitted"
+  | "prompt_applied"
+  | "graph_rebuilt"
+  | "case_updated"
+  | "node_added"
+  | "node_updated"
+  | "node_moved"
+  | "node_deleted"
+  | "link_added"
+  | "link_relinked"
+  | "link_deleted"
+  | "history_compacted";
+
+export type StudioEditEntry = {
+  id: string;
+  role: "author" | "studio";
+  source: StudioEditSource;
+  action: StudioEditAction;
+  message: string;
+  createdAt: string;
 };
 
 export type TaxCasePurpose = "lawful_planning" | "compliance_review" | "audit_defence" | "evasion_detection";
@@ -140,5 +166,6 @@ export type StudioDraft = {
   };
   nodes: StudioNode[];
   links: StudioLink[];
+  editHistory: StudioEditEntry[];
   updatedAt: string;
 };

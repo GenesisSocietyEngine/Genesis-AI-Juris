@@ -1,9 +1,15 @@
-import type { StudioDraft, StudioLink, StudioNode, StudioNodeType, TaxCasePurpose } from "./types";
+import type { StudioDraft, StudioEditAction, StudioEditEntry, StudioLink, StudioNode, StudioNodeType, TaxCasePurpose } from "./types";
+import { STUDIO_HISTORY_LIMIT } from "./studio-editing";
 
 const nodeTypes = new Set<StudioNodeType>([
   "trigger", "actor", "fact", "evidence", "deadline", "decision", "outcome", "entity", "tax_rule", "cash_flow",
 ]);
 const taxPurposes = new Set<TaxCasePurpose>(["lawful_planning", "compliance_review", "audit_defence", "evasion_detection"]);
+const editActions = new Set<StudioEditAction>([
+  "prompt_submitted", "prompt_applied", "graph_rebuilt", "case_updated", "node_added", "node_updated",
+  "node_moved", "node_deleted", "link_added", "link_relinked", "link_deleted",
+  "history_compacted",
+]);
 const taxPracticePattern = /tax|налог|transfer\s*pricing|трансферт|offshore|офшор|treaty|cfc|beps|dac6|pillar\s*(?:two|2)|withholding|permanent\s+establishment/i;
 
 export function isTaxClassification(classification: StudioDraft["classification"]) {
@@ -64,8 +70,12 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
   const nodes = value.nodes.map(normalizeNode);
   const ids = new Set(nodes.map((node) => node.id));
   if (ids.size !== nodes.length) throw new Error("Duplicate node IDs");
-  const links = value.links.map((item) => normalizeLink(item, ids));
+  const links = value.links.map((item, index) => normalizeLink(item, ids, index));
+  if (new Set(links.map((link) => link.id)).size !== links.length) throw new Error("Duplicate node relationship ID");
   if (new Set(links.map((link) => `${link.from}\u0000${link.to}`)).size !== links.length) throw new Error("Duplicate node relationship");
+  if (Array.isArray(value.editHistory) && value.editHistory.length > STUDIO_HISTORY_LIMIT) throw new Error("Studio edit history limit exceeded");
+  const editHistory = Array.isArray(value.editHistory) ? value.editHistory.map(normalizeEditEntry) : [];
+  if (new Set(editHistory.map((entry) => entry.id)).size !== editHistory.length) throw new Error("Duplicate Studio edit history ID");
 
   const rawClassification = isRecord(value.classification) ? value.classification : {};
   const practiceArea = safeString(rawClassification.practiceArea, "General legal", 100);
@@ -105,6 +115,7 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
     },
     nodes,
     links,
+    editHistory,
     updatedAt: typeof value.updatedAt === "string" && Number.isFinite(Date.parse(value.updatedAt))
       ? new Date(value.updatedAt).toISOString()
       : new Date().toISOString(),
@@ -161,11 +172,29 @@ function normalizeNode(value: unknown): StudioNode {
   };
 }
 
-function normalizeLink(value: unknown, ids: Set<string>): StudioLink {
+function normalizeLink(value: unknown, ids: Set<string>, index: number): StudioLink {
   if (!isRecord(value) || typeof value.from !== "string" || typeof value.to !== "string" || value.from === value.to || !ids.has(value.from) || !ids.has(value.to)) {
     throw new Error("Invalid node relationship");
   }
-  return { from: value.from, to: value.to };
+  const id = typeof value.id === "string" ? value.id : `link-${index + 1}`;
+  if (!/^[a-z0-9][a-z0-9_-]{0,79}$/.test(id)) throw new Error("Invalid node relationship ID");
+  return { id, from: value.from, to: value.to };
+}
+
+function normalizeEditEntry(value: unknown): StudioEditEntry {
+  if (!isRecord(value) || typeof value.id !== "string" || !/^[a-z0-9][a-z0-9_-]{0,119}$/.test(value.id)) throw new Error("Invalid Studio edit history ID");
+  if (value.role !== "author" && value.role !== "studio") throw new Error("Invalid Studio edit history role");
+  if (value.source !== "prompt" && value.source !== "visual") throw new Error("Invalid Studio edit history source");
+  if (typeof value.action !== "string" || !editActions.has(value.action as StudioEditAction)) throw new Error("Invalid Studio edit history action");
+  if (typeof value.createdAt !== "string" || !Number.isFinite(Date.parse(value.createdAt))) throw new Error("Invalid Studio edit history timestamp");
+  return {
+    id: value.id,
+    role: value.role,
+    source: value.source,
+    action: value.action as StudioEditAction,
+    message: boundedString(value.message, "Studio edit history message", 1, 2_000),
+    createdAt: new Date(value.createdAt).toISOString(),
+  };
 }
 
 function boundedString(value: unknown, label: string, min: number, max: number) {

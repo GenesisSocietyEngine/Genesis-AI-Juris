@@ -6,6 +6,7 @@ import { normalizePlayableScenario, playableFingerprint } from "../../../playabl
 import { getChatGPTUser } from "../../../chatgpt-auth";
 import { isSameOriginMutation, readJsonObject } from "../../../request-security";
 import { isPlatformAdmin } from "../../../server-authorization";
+import { toPublicStudioDraft } from "../../../studio-editing";
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +68,8 @@ export async function POST(request: Request) {
   const fingerprint = playableFingerprint(playable);
   playable = { ...playable, fingerprint };
   const now = new Date().toISOString();
-  const versionInsert = db.insert(caseVersions).values({ caseId: draft.caseId, version: draft.version, fingerprint, studioFingerprint, parentCaseId: draft.parent?.caseId ?? null, parentVersion: draft.parent?.version ?? null, parentFingerprint: draft.parent?.fingerprint ?? null, changeSummary: text(payload.changeSummary, 2_000), payload: { kind: "playable-scenario-v1", scenario: playable, studioDraft: draft, reviewEvidence: reviewEvidence ? { submissionId: reviewEvidence.submissionId, reviewerName, reviewedAt: reviewEvidence.reviewedAt } : null } as unknown as Record<string, unknown>, publishedAt: now });
+  const publicStudioDraft = toPublicStudioDraft(draft);
+  const versionInsert = db.insert(caseVersions).values({ caseId: draft.caseId, version: draft.version, fingerprint, studioFingerprint, parentCaseId: draft.parent?.caseId ?? null, parentVersion: draft.parent?.version ?? null, parentFingerprint: draft.parent?.fingerprint ?? null, changeSummary: text(payload.changeSummary, 2_000), payload: { kind: "playable-scenario-v1", scenario: playable, studioDraft: publicStudioDraft, reviewEvidence: reviewEvidence ? { submissionId: reviewEvidence.submissionId, reviewerName, reviewedAt: reviewEvidence.reviewedAt } : null } as unknown as Record<string, unknown>, publishedAt: now });
   const caseUpsert = db.insert(cases).values({
     id: draft.caseId, currentVersion: draft.version, fingerprint, title: draft.title, jurisdiction: draft.jurisdiction,
     practiceArea: classification.practiceArea, sector: text(payload.sector, 120) || classification.practiceArea,

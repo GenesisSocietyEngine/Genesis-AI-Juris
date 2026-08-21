@@ -149,6 +149,8 @@ test("critical API sources retain exact-version and review-evidence checks", () 
   assert.match(catalogue, /requestedVersion/);
   assert.match(publication, /independent verified practitioner review/);
   assert.match(publication, /currently published version/);
+  assert.match(publication, /toPublicStudioDraft\(draft\)/);
+  assert.doesNotMatch(publication, /studioDraft:\s*draft\b/);
 });
 
 function taxDraft(): StudioDraft {
@@ -173,10 +175,11 @@ function taxDraft(): StudioDraft {
       { id: "outcome-2", type: "outcome", title: "No-go", detail: "", x: 700, y: 100 },
     ],
     links: [
-      { from: "trigger-1", to: "actor-1" }, { from: "actor-1", to: "entity-1" }, { from: "entity-1", to: "cash-1" },
-      { from: "cash-1", to: "rule-1" }, { from: "rule-1", to: "evidence-1" }, { from: "evidence-1", to: "decision-1" },
-      { from: "decision-1", to: "outcome-1" }, { from: "decision-1", to: "outcome-2" },
+      { id: "link-1", from: "trigger-1", to: "actor-1" }, { id: "link-2", from: "actor-1", to: "entity-1" }, { id: "link-3", from: "entity-1", to: "cash-1" },
+      { id: "link-4", from: "cash-1", to: "rule-1" }, { id: "link-5", from: "rule-1", to: "evidence-1" }, { id: "link-6", from: "evidence-1", to: "decision-1" },
+      { id: "link-7", from: "decision-1", to: "outcome-1" }, { id: "link-8", from: "decision-1", to: "outcome-2" },
     ],
+    editHistory: [],
     updatedAt: "2026-08-21T00:00:00.000Z",
   };
 }
