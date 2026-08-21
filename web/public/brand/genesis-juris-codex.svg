@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
+  <title id="title">Genesis Juris Codex</title>
+  <desc id="desc">A blue, gold and graphite identity for the legal simulation platform.</desc>
+  <rect width="1200" height="420" rx="32" fill="#071522"/>
+  <g transform="translate(70 66) scale(2.25)">
+    <path d="M21 22h35v59c0 16-12 25-27 25H21V93h8c8 0 13-4 13-12V35H21V22Z" fill="#E8EDF1"/>
+    <path d="M107 22H72v59c0 16 12 25 27 25h8V93h-8c-8 0-13-4-13-12V35h21V22Z" fill="#E8EDF1"/>
+    <path d="M56 22h16v70c0 9-3 17-8 23-5-6-8-14-8-23V22Z" fill="#163C62"/>
+    <path d="M28 42h14M28 55h14M86 42h14M86 55h14" stroke="#CDAA5A" stroke-width="4"/>
+    <circle cx="64" cy="74" r="10" fill="#CDAA5A"/><circle cx="64" cy="74" r="4" fill="#071522"/>
+    <path d="M22 107h84" stroke="#CDAA5A" stroke-width="3"/>
+  </g>
+  <path d="M393 92v236" stroke="#CDAA5A" stroke-width="2" opacity=".55"/>
+  <text x="440" y="174" fill="#F2F3F0" font-family="Georgia, 'Times New Roman', serif" font-size="68" letter-spacing="3">GENESIS: JURIS</text>
+  <text x="444" y="239" fill="#CDAA5A" font-family="Arial, sans-serif" font-size="31" font-weight="700" letter-spacing="15">CODEX</text>
+  <path d="M444 278h575" stroke="#163C62" stroke-width="4"/>
+  <text x="444" y="320" fill="#9EABB4" font-family="Arial, sans-serif" font-size="17" letter-spacing="5">CASES · EVIDENCE · CONSEQUENCES</text>
+</svg>
