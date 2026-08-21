@@ -2,12 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GENESIS: JURIS — Legal Scenario System",
+  metadataBase: new URL("https://genesis-juris-web.maxim-hayan.chatgpt.site"),
+  title: "GENESIS: JURIS Web",
   description:
     "Play five institutional legal scenarios and create new cases with a visual, prompt-driven authoring studio.",
-  other: {
-    "codex-preview": "development",
-  },
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
@@ -19,12 +17,18 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/genesis-juris-social.png",
+        url: "/og.png",
         width: 1200,
         height: 630,
         alt: "GENESIS: JURIS — Cases, Evidence, Consequences",
       },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "GENESIS: JURIS",
+    description: "Cases. Evidence. Consequences.",
+    images: ["/og.png"],
   },
 };
 
