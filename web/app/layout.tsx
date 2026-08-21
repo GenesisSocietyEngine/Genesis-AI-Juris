@@ -3,12 +3,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://genesis-juris-web.maxim-hayan.chatgpt.site"),
-  title: "GENESIS: JURIS Web",
+  title: "GENESIS: JURIS CODEX",
   description:
     "Build, review and play branching legal simulations for professional judgment, including compliant international tax-planning scenarios.",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: "/brand/genesis-juris-codex-mark.svg",
+    shortcut: "/brand/genesis-juris-codex-mark.svg",
   },
   openGraph: {
     title: "GENESIS: JURIS",

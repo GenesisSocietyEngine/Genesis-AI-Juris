@@ -64,6 +64,7 @@ export type Scenario = {
   sector: LocalText;
   urgency: "critical" | "elevated" | "standard";
   fingerprint: string;
+  sourceFingerprint?: string;
   accent: string;
   actors: LocalText[];
   materials: Array<{
@@ -112,6 +113,8 @@ export type StudioLink = {
   to: string;
 };
 
+export type TaxCasePurpose = "lawful_planning" | "compliance_review" | "audit_defence" | "evasion_detection";
+
 export type StudioDraft = {
   caseId: string;
   version: string;
@@ -125,11 +128,15 @@ export type StudioDraft = {
   role: string;
   premise: string;
   classification?: {
+    domain?: "general" | "tax";
     practiceArea: string;
     difficulty: string;
     tags: string[];
     taxTopics: string[];
     complianceOnly: boolean;
+    purpose?: TaxCasePurpose;
+    legalAsOf?: string;
+    sourceUrls?: string[];
   };
   nodes: StudioNode[];
   links: StudioLink[];

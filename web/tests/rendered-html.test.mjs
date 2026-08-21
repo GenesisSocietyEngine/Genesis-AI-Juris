@@ -9,7 +9,7 @@ test("build contains the GENESIS: JURIS product metadata and worker entry", asyn
     readFile(new URL("../dist/.openai/hosting.json", import.meta.url), "utf8"),
   ]);
 
-  assert.match(layout, /GENESIS: JURIS Web/);
+  assert.match(layout, /GENESIS: JURIS CODEX/);
   assert.match(layout, /professional judgment/i);
   assert.match(worker, /\bfetch\b/);
   assert.equal(JSON.parse(hosting).d1, "DB");
