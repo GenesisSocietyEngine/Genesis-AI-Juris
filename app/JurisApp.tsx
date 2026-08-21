@@ -17,6 +17,7 @@ type Locale = "en" | "ru";
 type View = "library" | "play" | "studio";
 type Theme = "office" | "after-hours";
 type OutcomeClass = "strong" | "mixed" | "weak";
+type DecisionRecord = { stageId: string; stage: string; option: DecisionOption };
 
 type InboxEntry = {
   id: string;
@@ -29,7 +30,7 @@ type InboxEntry = {
 
 type PlayedCaseFile = {
   format: "genesis-juris-played-case";
-  schemaVersion: 1;
+  schemaVersion: 2;
   exportedAt: string;
   scenario: {
     id: string;
@@ -40,6 +41,7 @@ type PlayedCaseFile = {
   playthrough: {
     status: "in_progress" | "completed";
     currentStageId: string;
+    clockMinute: number;
     decisions: Array<{
       sequence: number;
       stageId: string;
@@ -160,6 +162,19 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
 
 function local(value: LocalText, locale: Locale) { return value[locale]; }
 function clamp(value: number) { return Math.max(0, Math.min(100, value)); }
+function formatCaseClock(totalMinutes: number) {
+  const safe = Math.max(0, totalMinutes);
+  const day = Math.floor(safe / 1440) + 1;
+  const minuteOfDay = safe % 1440;
+  return { day, time: `${String(Math.floor(minuteOfDay / 60)).padStart(2, "0")}:${String(minuteOfDay % 60).padStart(2, "0")}` };
+}
+function actionCompletionMinute(currentMinute: number, option: DecisionOption) {
+  const elapsedTarget = currentMinute + option.minutes;
+  if (option.completionDayOffset === undefined || option.completionMinuteOfDay === undefined) return elapsedTarget;
+  const currentDay = Math.floor(currentMinute / 1440);
+  const calendarTarget = (currentDay + option.completionDayOffset) * 1440 + option.completionMinuteOfDay;
+  return Math.max(elapsedTarget, calendarTarget);
+}
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -244,9 +259,13 @@ export default function JurisApp() {
   const [metrics, setMetrics] = useState({ ...initialMetrics });
   const [selectedOption, setSelectedOption] = useState<DecisionOption | null>(null);
   const [resultOption, setResultOption] = useState<DecisionOption | null>(null);
-  const [decisionLog, setDecisionLog] = useState<Array<{ stage: string; option: DecisionOption }>>([]);
+  const [decisionLog, setDecisionLog] = useState<DecisionRecord[]>([]);
   const [outcome, setOutcome] = useState<"strong" | "mixed" | "weak" | null>(null);
   const [dossierRef, setDossierRef] = useState<string | null>(null);
+  const [caseMinute, setCaseMinute] = useState(0);
+  const [actionUseCounts, setActionUseCounts] = useState<Record<string, number>>({});
+  const [completedDeadlineIds, setCompletedDeadlineIds] = useState<string[]>([]);
+  const [missedDeadlineIds, setMissedDeadlineIds] = useState<string[]>([]);
   const [prompt, setPrompt] = useState(defaultPrompt);
   const [draft, setDraft] = useState<StudioDraft>(defaultDraft);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>("decision-1");
@@ -278,20 +297,48 @@ export default function JurisApp() {
 
   function navigate(next: View) { setView(next); window.scrollTo({ top: 0, behavior: "smooth" }); }
   function startScenario(scenario: Scenario) {
-    setActiveScenario(scenario); setStageIndex(0); setMetrics({ ...initialMetrics }); setDecisionLog([]);
+    const initialIndex = Math.max(0, scenario.stages.findIndex((item) => item.id === scenario.initialStageId));
+    setActiveScenario(scenario); setStageIndex(initialIndex); setMetrics({ ...initialMetrics }); setDecisionLog([]);
+    setCaseMinute(scenario.initialClockMinute); setActionUseCounts({}); setCompletedDeadlineIds([]); setMissedDeadlineIds([]);
     setOutcome(null); setSelectedOption(null); setResultOption(null); setDossierRef(scenario.materials[0]?.ref ?? null); navigate("play");
   }
   function dispatchDecision() {
     if (!selectedOption || !stage || !activeScenario) return;
     const updated = { ...metrics };
     (Object.keys(selectedOption.effects) as MetricKey[]).forEach((key) => { updated[key] = clamp(updated[key] + (selectedOption.effects[key] ?? 0)); });
-    setMetrics(updated); setDecisionLog((current) => [...current, { stage: local(stage.headline, locale), option: selectedOption }]);
-    setResultOption(selectedOption); setSelectedOption(null);
+    const updatedMinute = actionCompletionMinute(caseMinute, selectedOption);
+    const newlyCompleted = activeScenario.deadlines.filter((deadline) => deadline.completionActions.includes(selectedOption.id)).map((deadline) => deadline.id);
+    const allCompleted = Array.from(new Set([...completedDeadlineIds, ...newlyCompleted]));
+    const newlyMissedDeadlines = activeScenario.deadlines.filter((deadline) => !allCompleted.includes(deadline.id) && updatedMinute > deadline.dueAtMinute && !missedDeadlineIds.includes(deadline.id));
+    if (newlyMissedDeadlines.length > 0) {
+      updated.exposure = clamp(updated.exposure + newlyMissedDeadlines.length * 8);
+      updated.trust = clamp(updated.trust - newlyMissedDeadlines.length * 4);
+    }
+    const forcedStageId = newlyMissedDeadlines.find((deadline) => deadline.missedNextStageId)?.missedNextStageId;
+    const dispatchedOption: DecisionOption = forcedStageId ? {
+      ...selectedOption,
+      nextStageId: forcedStageId,
+      result: {
+        en: `${selectedOption.result.en} A controlling deadline expired and the matter was routed to ${activeScenario.stages.find((item) => item.id === forcedStageId)?.headline.en ?? forcedStageId}.`,
+        ru: `${selectedOption.result.ru} Контрольный срок истёк; дело переведено на стадию «${activeScenario.stages.find((item) => item.id === forcedStageId)?.headline.ru ?? forcedStageId}».`,
+      },
+    } : selectedOption;
+    setMetrics(updated);
+    setCaseMinute(updatedMinute);
+    setCompletedDeadlineIds(allCompleted);
+    setMissedDeadlineIds((current) => Array.from(new Set([...current, ...newlyMissedDeadlines.map((deadline) => deadline.id)])));
+    setActionUseCounts((current) => ({ ...current, [selectedOption.id]: (current[selectedOption.id] ?? 0) + 1 }));
+    setDecisionLog((current) => [...current, { stageId: stage.id, stage: local(stage.headline, locale), option: dispatchedOption }]);
+    setResultOption(dispatchedOption); setSelectedOption(null);
   }
   function advanceStage() {
     if (!activeScenario) return; setResultOption(null);
-    if (stageIndex < activeScenario.stages.length - 1) { setStageIndex((current) => current + 1); return; }
-    setOutcome(classifyOutcome(metrics));
+    const nextStageId = resultOption?.nextStageId;
+    if (!nextStageId) return;
+    const nextIndex = activeScenario.stages.findIndex((item) => item.id === nextStageId);
+    if (nextIndex < 0) return;
+    setStageIndex(nextIndex);
+    if (activeScenario.stages[nextIndex].terminal) setOutcome(classifyOutcome(metrics));
   }
   function showSessionNotice(message: string) {
     setSessionNotice(message);
@@ -300,14 +347,14 @@ export default function JurisApp() {
   function exportPlayedCase() {
     if (!activeScenario) return;
     const decisions = decisionLog.map((entry, index) => {
-      const sourceStage = activeScenario.stages[index];
+      const sourceStage = activeScenario.stages.find((item) => item.id === entry.stageId);
       const sourceOption = sourceStage?.options.find((option) => option.id === entry.option.id);
       if (!sourceStage || !sourceOption) throw new Error("The current decision log does not match the scenario catalogue.");
       return { sequence: index + 1, stageId: sourceStage.id, optionId: sourceOption.id };
     });
     const payload: PlayedCaseFile = {
       format: "genesis-juris-played-case",
-      schemaVersion: 1,
+      schemaVersion: 2,
       exportedAt: new Date().toISOString(),
       scenario: {
         id: activeScenario.id,
@@ -318,6 +365,7 @@ export default function JurisApp() {
       playthrough: {
         status: outcome ? "completed" : "in_progress",
         currentStageId: activeScenario.stages[stageIndex].id,
+        clockMinute: caseMinute,
         decisions,
         derivedMetrics: metrics,
         outcome,
@@ -336,7 +384,7 @@ export default function JurisApp() {
     reader.onload = () => {
       try {
         const parsed: unknown = JSON.parse(String(reader.result));
-        if (!isRecord(parsed) || parsed.format !== "genesis-juris-played-case" || parsed.schemaVersion !== 1) throw new Error("Unsupported played-case schema");
+        if (!isRecord(parsed) || parsed.format !== "genesis-juris-played-case" || (parsed.schemaVersion !== 1 && parsed.schemaVersion !== 2)) throw new Error("Unsupported played-case schema");
         if (!isRecord(parsed.scenario) || !isRecord(parsed.playthrough)) throw new Error("Missing played-case sections");
 
         const importedScenario = scenarios.find((scenario) => scenario.id === parsed.scenario.id);
@@ -350,33 +398,57 @@ export default function JurisApp() {
         if (!Array.isArray(importedDecisions) || (importedStatus !== "in_progress" && importedStatus !== "completed") || typeof currentStageId !== "string") {
           throw new Error("Invalid playthrough state");
         }
-        if (importedDecisions.length > importedScenario.stages.length) throw new Error("Too many decisions");
-
         const restoredMetrics = { ...initialMetrics };
-        const restoredLog = importedDecisions.map((decision, index) => {
+        const restoredLog: DecisionRecord[] = [];
+        const restoredActionUses: Record<string, number> = {};
+        const restoredCompletedDeadlines: string[] = [];
+        const restoredMissedDeadlines: string[] = [];
+        let restoredMinute = importedScenario.initialClockMinute;
+        let restoredStageId = importedScenario.initialStageId;
+
+        importedDecisions.forEach((decision, index) => {
           if (!isRecord(decision) || decision.sequence !== index + 1) throw new Error("Invalid decision sequence");
-          const sourceStage = importedScenario.stages[index];
+          const sourceStage = importedScenario.stages.find((item) => item.id === restoredStageId);
           if (!sourceStage || decision.stageId !== sourceStage.id || typeof decision.optionId !== "string") throw new Error("Decision stage mismatch");
           const sourceOption = sourceStage.options.find((option) => option.id === decision.optionId);
           if (!sourceOption) throw new Error("Decision option is not in the current catalogue");
+          const priorUses = restoredActionUses[sourceOption.id] ?? 0;
+          if (sourceOption.repeatability === "once" && priorUses > 0) throw new Error("Single-use action was repeated");
+          if (sourceOption.repeatability === "limited" && priorUses >= (sourceOption.maxUses ?? 1)) throw new Error("Action use limit exceeded");
+          restoredActionUses[sourceOption.id] = priorUses + 1;
           (Object.keys(sourceOption.effects) as MetricKey[]).forEach((key) => {
             restoredMetrics[key] = clamp(restoredMetrics[key] + (sourceOption.effects[key] ?? 0));
           });
-          return { stage: local(sourceStage.headline, locale), option: sourceOption };
+          restoredMinute = actionCompletionMinute(restoredMinute, sourceOption);
+          importedScenario.deadlines.forEach((deadline) => {
+            if (deadline.completionActions.includes(sourceOption.id) && !restoredCompletedDeadlines.includes(deadline.id)) restoredCompletedDeadlines.push(deadline.id);
+          });
+          const newlyMissed = importedScenario.deadlines.filter((deadline) => !restoredCompletedDeadlines.includes(deadline.id) && !restoredMissedDeadlines.includes(deadline.id) && restoredMinute > deadline.dueAtMinute);
+          newlyMissed.forEach((deadline) => restoredMissedDeadlines.push(deadline.id));
+          if (newlyMissed.length > 0) {
+            restoredMetrics.exposure = clamp(restoredMetrics.exposure + newlyMissed.length * 8);
+            restoredMetrics.trust = clamp(restoredMetrics.trust - newlyMissed.length * 4);
+          }
+          const forcedStageId = newlyMissed.find((deadline) => deadline.missedNextStageId)?.missedNextStageId;
+          const restoredOption = forcedStageId ? { ...sourceOption, nextStageId: forcedStageId } : sourceOption;
+          restoredLog.push({ stageId: sourceStage.id, stage: local(sourceStage.headline, locale), option: restoredOption });
+          restoredStageId = restoredOption.nextStageId ?? restoredStageId;
         });
 
-        const restoredStageIndex = importedScenario.stages.findIndex((item) => item.id === currentStageId);
+        const restoredStageIndex = importedScenario.stages.findIndex((item) => item.id === restoredStageId);
         if (restoredStageIndex < 0) throw new Error("Current stage is not in the scenario");
         const completed = importedStatus === "completed";
-        if ((completed && importedDecisions.length !== importedScenario.stages.length) || (!completed && (importedDecisions.length !== restoredStageIndex || restoredStageIndex >= importedScenario.stages.length))) {
-          throw new Error("Playthrough progress is inconsistent");
-        }
+        if (currentStageId !== restoredStageId || (completed && !importedScenario.stages[restoredStageIndex].terminal) || (!completed && importedScenario.stages[restoredStageIndex].terminal)) throw new Error("Playthrough progress is inconsistent");
 
         setActiveScenario(importedScenario);
         setFeaturedId(importedScenario.id);
-        setStageIndex(completed ? importedScenario.stages.length - 1 : restoredStageIndex);
+        setStageIndex(restoredStageIndex);
         setMetrics(restoredMetrics);
         setDecisionLog(restoredLog);
+        setCaseMinute(restoredMinute);
+        setActionUseCounts(restoredActionUses);
+        setCompletedDeadlineIds(restoredCompletedDeadlines);
+        setMissedDeadlineIds(restoredMissedDeadlines);
         setOutcome(completed ? classifyOutcome(restoredMetrics) : null);
         setSelectedOption(null);
         setResultOption(null);
@@ -519,9 +591,9 @@ export default function JurisApp() {
       </header>
 
       {view === "library" && <LibraryView locale={locale} text={text} featured={featured} setFeaturedId={setFeaturedId} startScenario={startScenario} />}
-      {view === "play" && activeScenario && stage && <PlayView locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} decisionLog={decisionLog} dossierRef={dossierRef} setDossierRef={setDossierRef} setSelectedOption={setSelectedOption} outcome={outcome} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario)} returnLibrary={() => navigate("library")} />}
+      {view === "play" && activeScenario && stage && <PlayView locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} decisionLog={decisionLog} caseMinute={caseMinute} actionUseCounts={actionUseCounts} completedDeadlineIds={completedDeadlineIds} missedDeadlineIds={missedDeadlineIds} dossierRef={dossierRef} setDossierRef={setDossierRef} setSelectedOption={setSelectedOption} outcome={outcome} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario)} returnLibrary={() => navigate("library")} />}
       {view === "studio" && <StudioView locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={setDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} checks={checks} generateDraft={generateDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} addNode={addNode} deleteNode={deleteNode} moveNode={moveNode} resetDraft={() => { setDraft(defaultDraft); setPrompt(defaultPrompt); setSelectedNodeId("decision-1"); }} />}
-      {(selectedOption || resultOption) && activeScenario && stage && <DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} close={() => { setSelectedOption(null); setResultOption(null); }} dispatch={dispatchDecision} advance={advanceStage} finalStage={stageIndex === activeScenario.stages.length - 1} />}
+      {(selectedOption || resultOption) && activeScenario && stage && <DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} close={() => { setSelectedOption(null); setResultOption(null); }} dispatch={dispatchDecision} advance={advanceStage} finalStage={Boolean(activeScenario.stages.find((item) => item.id === (selectedOption ?? resultOption)?.nextStageId)?.terminal)} />}
       {sessionNotice && <div className="session-toast" role="status"><Icon name="check" />{sessionNotice}</div>}
     </div>
   );
@@ -530,18 +602,22 @@ export default function JurisApp() {
 function LibraryView({ locale, text, featured, setFeaturedId, startScenario }: { locale: Locale; text: UiText; featured: Scenario; setFeaturedId: (id: string) => void; startScenario: (scenario: Scenario) => void }) {
   return <main className="library-view">
     <section className="library-hero page-width"><div className="hero-copy"><div className="eyebrow"><span className="live-dot" />{text.catalogue} · 05 CASES</div><h1>{text.library}</h1><p className="hero-deck">{locale === "en" ? "Enter a living legal crisis. Read the record, preserve provenance and make the decision that changes the institutional position." : "Войдите в живой юридический кризис. Изучайте материалы, сохраняйте происхождение доказательств и принимайте решения, меняющие институциональную позицию."}</p><div className="hero-facts"><span>05 {locale === "en" ? "jurisdictions" : "юрисдикций"}</span><span>11 {locale === "en" ? "canonical paths" : "канонических путей"}</span><span>EN / RU</span></div></div><div className="hero-index" aria-label="Catalogue index"><span>CASE INDEX</span><b>{String(featured.order / 10).padStart(2, "0")}</b><small>/ 05</small></div></section>
-    <section className="featured-case" style={{ "--case-accent": featured.accent } as React.CSSProperties}><div className="case-visual" aria-hidden="true"><div className="case-grid" /><div className="case-orbit orbit-one"/><div className="case-orbit orbit-two"/><div className="case-signal"><span/>{featured.id === "greenfire_first_72_hours" ? "72H" : `0${featured.order / 10}`}</div><div className="file-stamp">LIVE MATTER<br/><b>{featured.version}</b></div></div><div className="featured-content"><div className="case-kicker"><span>{featured.jurisdiction}</span><span>{featured.sector[locale]}</span></div><h2>{featured.title[locale]}</h2><p className="case-subtitle">{featured.subtitle[locale]}</p><p className="case-brief">{locale === "en" ? "A bounded institutional scenario with three decision moments, visible evidence provenance and multiple canonical outcome families." : "Ограниченный институциональный сценарий с тремя моментами решений, видимым происхождением доказательств и несколькими каноническими семействами исходов."}</p><dl className="case-meta"><div><dt>{text.role}</dt><dd>{featured.role[locale]}</dd></div><div><dt>{text.jurisdiction}</dt><dd>{featured.jurisdiction}</dd></div><div><dt>CONTENT</dt><dd>v{featured.version}</dd></div></dl><button className="primary-cta" onClick={() => startScenario(featured)}>{text.launch}<Icon name="arrow"/></button></div></section>
+    <section className="featured-case" style={{ "--case-accent": featured.accent } as React.CSSProperties}><div className="case-visual" aria-hidden="true"><div className="case-grid" /><div className="case-orbit orbit-one"/><div className="case-orbit orbit-two"/><div className="case-signal"><span/>{featured.id === "greenfire_first_72_hours" ? "72H" : `0${featured.order / 10}`}</div><div className="file-stamp">LIVE MATTER<br/><b>{featured.version}</b></div></div><div className="featured-content"><div className="case-kicker"><span>{featured.jurisdiction}</span><span>{featured.sector[locale]}</span></div><h2>{featured.title[locale]}</h2><p className="case-subtitle">{featured.subtitle[locale]}</p><p className="case-brief">{featured.opening[locale]}</p><div className="case-depth"><span>{featured.stages.length} {locale === "en" ? "workflow stages" : "стадий процесса"}</span><span>{featured.stages.reduce((sum, item) => sum + item.options.length, 0)} {locale === "en" ? "actions" : "действий"}</span><span>{featured.deadlines.length} {locale === "en" ? "deadlines" : "дедлайнов"}</span></div><dl className="case-meta"><div><dt>{text.role}</dt><dd>{featured.role[locale]}</dd></div><div><dt>{text.jurisdiction}</dt><dd>{featured.jurisdiction}</dd></div><div><dt>CONTENT</dt><dd>v{featured.version}</dd></div></dl><button className="primary-cta" onClick={() => startScenario(featured)}>{text.launch}<Icon name="arrow"/></button></div></section>
     <section className="case-strip page-width"><div className="section-heading"><div><span>01 — 05</span><h2>{locale === "en" ? "Choose the matter" : "Выберите дело"}</h2></div><p>{locale === "en" ? "Five current catalogue definitions. Select any row to launch that scenario." : "Пять актуальных определений каталога. Нажмите на любую строку, чтобы запустить сценарий."}</p></div><div className="case-list">{scenarios.map((scenario, index) => <button key={scenario.id} className={`case-row ${scenario.id === featured.id ? "selected" : ""}`} onClick={() => { setFeaturedId(scenario.id); startScenario(scenario); }} aria-label={`${text.launch}: ${scenario.title[locale]}`}><span className="row-number">{String(index + 1).padStart(2, "0")}</span><span className="row-main"><b>{scenario.title[locale]}</b><small>{scenario.subtitle[locale]}</small></span><span className="row-meta"><i>{scenario.jurisdiction}</i><i>{scenario.role[locale]}</i></span><span className={`urgency ${scenario.urgency}`}>{scenario.urgency}</span><Icon name="arrow"/></button>)}</div></section>
     <section className="authority-note page-width"><span className="authority-seal">A</span><div><b>{text.adaptation}</b><p>{text.canonNote}</p></div><code>CATALOGUE / BUNDLE V5</code></section>
   </main>;
 }
 
-function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decisionLog, dossierRef, setDossierRef, setSelectedOption, outcome, exportSession, replayCase, returnLibrary }: { locale: Locale; text: UiText; scenario: Scenario; stage: Scenario["stages"][number]; stageIndex: number; metrics: Record<MetricKey, number>; decisionLog: Array<{ stage: string; option: DecisionOption }>; dossierRef: string | null; setDossierRef: (ref: string) => void; setSelectedOption: (option: DecisionOption) => void; outcome: OutcomeClass | null; exportSession: () => void; replayCase: () => void; returnLibrary: () => void }) {
+function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decisionLog, caseMinute, actionUseCounts, completedDeadlineIds, missedDeadlineIds, dossierRef, setDossierRef, setSelectedOption, outcome, exportSession, replayCase, returnLibrary }: { locale: Locale; text: UiText; scenario: Scenario; stage: Scenario["stages"][number]; stageIndex: number; metrics: Record<MetricKey, number>; decisionLog: DecisionRecord[]; caseMinute: number; actionUseCounts: Record<string, number>; completedDeadlineIds: string[]; missedDeadlineIds: string[]; dossierRef: string | null; setDossierRef: (ref: string) => void; setSelectedOption: (option: DecisionOption) => void; outcome: OutcomeClass | null; exportSession: () => void; replayCase: () => void; returnLibrary: () => void }) {
   const activeMaterial = scenario.materials.find((material) => material.ref === dossierRef) ?? scenario.materials[0];
   const [inboxOpen, setInboxOpen] = useState(false);
   const [selectedInboxIndex, setSelectedInboxIndex] = useState(0);
   const decisionRef = useRef<HTMLElement>(null);
-  const attentionCount = Math.max(1, 4 - stageIndex);
+  const clock = formatCaseClock(caseMinute);
+  const activeActionIds = new Set(stage.options.map((option) => option.id));
+  const visitedStageIds = new Set(decisionLog.map((entry) => entry.stageId));
+  const workflowInbox = scenario.workflowInbox.filter((item) => item.initiallyVisible || item.resolutionActions.some((action) => activeActionIds.has(action)));
+  const unresolvedWorkflowInbox = workflowInbox.filter((item) => !item.resolutionActions.some((action) => (actionUseCounts[action] ?? 0) > 0));
   const inboxEntries: InboxEntry[] = [
     {
       id: `${stage.id}-situation`,
@@ -550,18 +626,34 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decision
       source: stage.source[locale],
       body: stage.brief[locale],
     },
-    ...scenario.materials.slice(0, attentionCount - 1).map((material) => ({
-      id: `${stage.id}-${material.ref}`,
-      status: locale === "en" ? "MATERIAL UPDATE" : "ОБНОВЛЕНИЕ МАТЕРИАЛА",
-      title: material.title[locale],
-      source: `${material.source[locale]} · ${material.date}`,
-      body:
-        locale === "en"
-          ? `New visible material ${material.ref} is attached to the current situation. Review its provenance before dispatching a response.`
-          : `К текущей ситуации прикреплён новый видимый материал ${material.ref}. Проверьте его происхождение до отправки ответа.`,
-      materialRef: material.ref,
+    ...unresolvedWorkflowInbox.map((item) => ({
+      id: item.id,
+      status: item.actionRequired ? (locale === "en" ? "ACTION REQUIRED" : "ТРЕБУЕТСЯ ДЕЙСТВИЕ") : (locale === "en" ? "CASE UPDATE" : "ОБНОВЛЕНИЕ ДЕЛА"),
+      title: item.subject[locale],
+      source: locale === "en" ? "Canonical case inbox" : "Канонический Inbox дела",
+      body: item.body[locale],
     })),
   ];
+  const deadlineRows = scenario.deadlines.map((deadline) => {
+    const completed = completedDeadlineIds.includes(deadline.id);
+    const missed = missedDeadlineIds.includes(deadline.id);
+    const remaining = deadline.dueAtMinute - caseMinute;
+    return { deadline, completed, missed, remaining };
+  }).sort((left, right) => left.deadline.dueAtMinute - right.deadline.dueAtMinute);
+  const nextDeadline = deadlineRows.find((row) => !row.completed && !row.missed);
+  const availableCount = stage.options.filter((option) => {
+    const uses = actionUseCounts[option.id] ?? 0;
+    return !(option.repeatability === "once" && uses > 0) && !(option.repeatability === "limited" && uses >= (option.maxUses ?? 1));
+  }).length;
+
+  function remainingLabel(minutes: number) {
+    const absolute = Math.abs(minutes);
+    const days = Math.floor(absolute / 1440);
+    const hours = Math.floor((absolute % 1440) / 60);
+    const mins = absolute % 60;
+    const value = [days ? `${days}d` : "", hours ? `${hours}h` : "", `${mins}m`].filter(Boolean).join(" ");
+    return minutes < 0 ? (locale === "en" ? `${value} overdue` : `просрочено на ${value}`) : (locale === "en" ? `${value} remaining` : `осталось ${value}`);
+  }
 
   function revealDecisions() {
     decisionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -570,17 +662,21 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decision
     }, 380);
   }
   if (outcome) return <DebriefView locale={locale} text={text} scenario={scenario} metrics={metrics} decisionLog={decisionLog} outcome={outcome} exportSession={exportSession} replayCase={replayCase} returnLibrary={returnLibrary}/>;
-  return <main className="operations-view"><aside className="case-rail"><button className="rail-back" onClick={returnLibrary}><span>←</span>{text.library}</button><div className="rail-case"><small>ACTIVE MATTER</small><b>{scenario.title[locale]}</b><span>{scenario.jurisdiction}</span></div><ol className="stage-list">{scenario.stages.map((item, index) => <li key={item.id} className={index === stageIndex ? "active" : index < stageIndex ? "done" : ""}><span>{index < stageIndex ? "✓" : index + 1}</span><div><b>{item.phase[locale]}</b><small>{text.day} {item.day} · {item.time}</small></div></li>)}</ol><div className="rail-version">CONTENT v{scenario.version}<br/><code>{scenario.fingerprint}</code></div></aside>
+  return <main className="operations-view"><aside className="case-rail"><button className="rail-back" onClick={returnLibrary}><span>←</span>{text.library}</button><div className="rail-case"><small>ACTIVE MATTER</small><b>{scenario.title[locale]}</b><span>{scenario.jurisdiction}</span></div><div className="workflow-depth"><span>{scenario.stages.length} STAGES</span><span>{scenario.stages.reduce((sum, item) => sum + item.options.length, 0)} ACTIONS</span></div><ol className="stage-list">{scenario.stages.map((item, index) => <li key={item.id} className={index === stageIndex ? "active" : visitedStageIds.has(item.id) ? "done" : ""}><span>{visitedStageIds.has(item.id) && index !== stageIndex ? "✓" : index + 1}</span><div><b>{item.phase[locale]}</b><small>{item.terminal ? "TERMINAL" : item.id.replaceAll("_", " ")}</small></div></li>)}</ol><div className="rail-version">CONTENT v{scenario.version}<br/><code>{scenario.fingerprint}</code></div></aside>
     <section className="command-center">
       <div className="command-header">
         <div>
-          <div className="eyebrow"><span className="live-dot"/>LIVE OPERATION · {text.day.toUpperCase()} {stage.day}</div>
+          <div className="eyebrow"><span className="live-dot"/>LIVE OPERATION · {text.day.toUpperCase()} {clock.day}</div>
           <h1>{scenario.title[locale]}</h1>
-          <p>{stage.phase[locale]} <span>·</span> {stage.time}</p>
+          <p>{stage.phase[locale]} <span>·</span> {clock.time}</p>
         </div>
-        <div className="command-clock"><span>{stage.time}</span><small>{text.day} {stage.day} / 03</small></div>
+        <div className="command-clock"><span>{clock.time}</span><small>{text.day} {clock.day} · FOREGROUND</small></div>
       </div>
       <MetricPanel locale={locale} metrics={metrics} compact/>
+      <article className="engagement-brief">
+        <div><span>{locale === "en" ? "INITIAL SITUATION / MANDATE" : "НАЧАЛЬНАЯ СИТУАЦИЯ / ПОРУЧЕНИЕ"}</span><code>{scenario.caseId}</code></div>
+        <p>{scenario.opening[locale]}</p>
+      </article>
       <div className="ops-ledger">
         <button
           className="ledger-control ledger-inbox"
@@ -596,31 +692,35 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decision
         <button
           className="ledger-control ledger-decisions"
           onClick={revealDecisions}
-          aria-label={`${text.decisions}: ${stage.options.length}`}
+          aria-label={`${text.decisions}: ${availableCount}`}
         >
           <span>{text.decisions}</span>
-          <b>{stage.options.length}</b>
+          <b>{availableCount}</b>
           <small>RESPONSE WINDOW OPEN</small>
           <Icon name="arrow"/>
         </button>
       </div>
+      <section className="deadline-ledger" aria-label={locale === "en" ? "Case deadlines" : "Дедлайны дела"}>
+        <div className="deadline-heading"><div><span>{locale === "en" ? "DEADLINE CONTROL" : "КОНТРОЛЬ СРОКОВ"}</span><h2>{locale === "en" ? "Time changes the case" : "Время изменяет дело"}</h2></div><code>{scenario.deadlines.length.toString().padStart(2,"0")} DEADLINES</code></div>
+        {deadlineRows.length === 0 ? <p className="no-deadlines">{locale === "en" ? "No authored deadline is active in this introductory matter." : "В этом вводном деле нет настроенных дедлайнов."}</p> : <div className="deadline-list">{deadlineRows.map(({deadline,completed,missed,remaining}) => <div key={deadline.id} className={`deadline-row ${completed ? "complete" : missed ? "missed" : remaining <= 180 ? "urgent" : ""}`}><span className="deadline-state">{completed ? "✓" : missed ? "!" : "◷"}</span><div><b>{deadline.title[locale]}</b><small>{completed ? (locale === "en" ? "Completed" : "Выполнено") : missed ? remainingLabel(remaining) : remainingLabel(remaining)}</small></div><time>D{Math.floor(deadline.dueAtMinute/1440)+1} · {formatCaseClock(deadline.dueAtMinute).time}</time></div>)}</div>}
+      </section>
       <article className="situation-panel">
         <div className="situation-top"><span>{text.situation}</span><code>{stage.source[locale]}</code></div>
         <h2>{stage.headline[locale]}</h2>
         <p>{stage.brief[locale]}</p>
-        <div className={`pressure-band ${stage.pressure ? "active" : ""}`}>
-          <Icon name={stage.pressure ? "alert" : "check"}/>
-          <div><small>{text.pressure}</small><b>{stage.pressure?.[locale] ?? text.noPressure}</b></div>
+        <div className={`pressure-band ${nextDeadline && nextDeadline.remaining <= 180 ? "active" : ""}`}>
+          <Icon name={nextDeadline && nextDeadline.remaining <= 180 ? "alert" : "check"}/>
+          <div><small>{text.pressure}</small><b>{nextDeadline ? `${nextDeadline.deadline.title[locale]} · ${remainingLabel(nextDeadline.remaining)}` : text.noPressure}</b></div>
         </div>
       </article>
       <section className="decision-entry" ref={decisionRef} tabIndex={-1}>
         <div>
-          <span>DECISION {String(stageIndex+1).padStart(2,"0")}</span>
-          <h2>{locale === "en" ? "What is the institutional response?" : "Каков институциональный ответ?"}</h2>
-          <p>{locale === "en" ? "Review every response before dispatch. Consequences remain hidden until confirmation." : "Проверьте каждый ответ перед отправкой. Последствия скрыты до подтверждения."}</p>
+          <span>STAGE {String(stageIndex+1).padStart(2,"0")} / {String(scenario.stages.length).padStart(2,"0")}</span>
+          <h2>{locale === "en" ? "Analysis, engagement and available work" : "Анализ, принятие поручения и доступная работа"}</h2>
+          <p>{locale === "en" ? "Every authored action for the current canonical stage is shown. Time and cost are applied only after confirmation." : "Показаны все действия текущей канонической стадии. Время и стоимость учитываются только после подтверждения."}</p>
         </div>
         <div className="decision-options">
-          {stage.options.map((option) => <button key={option.id} onClick={() => setSelectedOption(option)}><span>{option.label[locale]}</span><small>€ {option.cost.toLocaleString()} · {option.minutes} MIN</small><Icon name="arrow"/></button>)}
+          {stage.options.map((option) => { const uses=actionUseCounts[option.id]??0; const exhausted=(option.repeatability==="once"&&uses>0)||(option.repeatability==="limited"&&uses>=(option.maxUses??1)); return <button key={option.id} disabled={exhausted} onClick={() => setSelectedOption(option)}><span>{option.label[locale]}</span><small>{exhausted ? (locale === "en" ? "COMPLETED" : "ВЫПОЛНЕНО") : `€ ${option.cost.toLocaleString()} · ${option.minutes} MIN${option.repeatability==="limited" ? ` · ${uses}/${option.maxUses}` : ""}`}</small><Icon name={exhausted ? "check" : "arrow"}/></button>;})}
         </div>
       </section>
       {inboxOpen && (
@@ -638,10 +738,10 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decision
         />
       )}
     </section>
-    <aside className="dossier-pane"><div className="pane-heading"><span>{text.dossier}</span><b>{scenario.materials.length}</b></div><p className="pane-intro">{text.visibleMaterial} · {text.provenance}</p><div className="material-tabs">{scenario.materials.map((material) => <button key={material.ref} className={material.ref === activeMaterial.ref ? "active" : ""} onClick={() => setDossierRef(material.ref)}><code>{material.ref}</code><span>{material.title[locale]}</span></button>)}</div><article className="material-sheet"><div className="sheet-punch"/><div className="sheet-reg">{activeMaterial.ref}</div><span className="document-type">{activeMaterial.type[locale]}</span><h3>{activeMaterial.title[locale]}</h3><dl><div><dt>SOURCE</dt><dd>{activeMaterial.source[locale]}</dd></div><div><dt>DATE / TIME</dt><dd>{activeMaterial.date}</dd></div><div><dt>CASE</dt><dd>{scenario.caseId}</dd></div></dl><p>{locale === "en" ? "Visible case material. Source identity remains attached; opening this record does not recommend a decision." : "Видимый материал дела. Идентичность источника сохранена; открытие записи не рекомендует решение."}</p><div className="sheet-status"><Icon name="check"/> PROVENANCE ATTACHED</div></article>{decisionLog.length > 0 && <section className="mini-log"><h3>{text.actionLog}</h3>{decisionLog.map((entry,index) => <div key={entry.option.id}><span>0{index+1}</span><p>{entry.option.label[locale]}</p></div>)}</section>}</aside></main>;
+    <aside className="dossier-pane"><div className="pane-heading"><span>{text.dossier}</span><b>{scenario.materials.length}</b></div><p className="pane-intro">{text.visibleMaterial} · {text.provenance}</p><div className="material-tabs">{scenario.materials.map((material) => <button key={material.ref} className={material.ref === activeMaterial.ref ? "active" : ""} onClick={() => setDossierRef(material.ref)}><code>{material.ref}</code><span>{material.title[locale]}</span></button>)}</div><article className="material-sheet"><div className="sheet-punch"/><div className="sheet-reg">{activeMaterial.ref}</div><span className="document-type">{activeMaterial.type[locale]}</span><h3>{activeMaterial.title[locale]}</h3><dl><div><dt>SOURCE</dt><dd>{activeMaterial.source[locale]}</dd></div><div><dt>DATE / TIME</dt><dd>{activeMaterial.date}</dd></div><div><dt>CASE</dt><dd>{scenario.caseId}</dd></div></dl><p>{locale === "en" ? "Visible case material. Source identity remains attached; opening this record does not recommend a decision." : "Видимый материал дела. Идентичность источника сохранена; открытие записи не рекомендует решение."}</p><div className="sheet-status"><Icon name="check"/> PROVENANCE ATTACHED</div></article>{decisionLog.length > 0 && <section className="mini-log"><h3>{text.actionLog}</h3>{decisionLog.map((entry,index) => <div key={`${entry.option.id}-${index}`}><span>{String(index+1).padStart(2,"0")}</span><p>{entry.option.label[locale]}</p></div>)}</section>}</aside></main>;
 }
 
-function DebriefView({ locale, text, scenario, metrics, decisionLog, outcome, exportSession, replayCase, returnLibrary }: { locale: Locale; text: UiText; scenario: Scenario; metrics: Record<MetricKey, number>; decisionLog: Array<{ stage: string; option: DecisionOption }>; outcome: OutcomeClass; exportSession: () => void; replayCase: () => void; returnLibrary: () => void }) {
+function DebriefView({ locale, text, scenario, metrics, decisionLog, outcome, exportSession, replayCase, returnLibrary }: { locale: Locale; text: UiText; scenario: Scenario; metrics: Record<MetricKey, number>; decisionLog: DecisionRecord[]; outcome: OutcomeClass; exportSession: () => void; replayCase: () => void; returnLibrary: () => void }) {
   const presentation = {
     strong: {
       classLabel: locale === "en" ? "FAVORABLE OUTCOME" : "БЛАГОПРИЯТНЫЙ ИСХОД",

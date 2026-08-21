@@ -13,6 +13,11 @@ export type DecisionOption = {
   cost: number;
   minutes: number;
   effects: Partial<Record<MetricKey, number>>;
+  nextStageId?: string;
+  completionDayOffset?: number;
+  completionMinuteOfDay?: number;
+  repeatability?: "once" | "repeatable" | "limited";
+  maxUses?: number;
 };
 
 export type ScenarioStage = {
@@ -26,6 +31,25 @@ export type ScenarioStage = {
   pressure?: LocalText;
   materialRefs: string[];
   options: DecisionOption[];
+  terminal?: boolean;
+};
+
+export type ScenarioDeadline = {
+  id: string;
+  title: LocalText;
+  dueAtMinute: number;
+  completionActions: string[];
+  activationEvent?: string;
+  missedNextStageId?: string;
+};
+
+export type ScenarioInboxItem = {
+  id: string;
+  subject: LocalText;
+  body: LocalText;
+  initiallyVisible: boolean;
+  actionRequired: boolean;
+  resolutionActions: string[];
 };
 
 export type Scenario = {
@@ -50,6 +74,11 @@ export type Scenario = {
     date: string;
   }>;
   stages: ScenarioStage[];
+  opening: LocalText;
+  initialStageId: string;
+  initialClockMinute: number;
+  deadlines: ScenarioDeadline[];
+  workflowInbox: ScenarioInboxItem[];
   outcomes: {
     strong: LocalText;
     mixed: LocalText;
