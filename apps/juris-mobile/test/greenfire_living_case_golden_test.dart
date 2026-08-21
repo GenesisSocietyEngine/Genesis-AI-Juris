@@ -246,6 +246,7 @@ Future<void> _pumpDossier(
       configuration: _configuration(size, locale: locale),
       subject: GreenFireLivingCaseDossierScreen(
         dossier: _dossier(DossierDeadlineStatus.open),
+        matterTitle: 'GreenFire: The First 72 Hours',
         treatment: manifest.caseTreatment,
         locale: locale,
       ),

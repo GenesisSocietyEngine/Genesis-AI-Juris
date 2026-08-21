@@ -848,6 +848,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                       manifest.supportsCase(definition.caseId)
                   ? GreenFireLivingCaseDossierScreen(
                       dossier: dossier,
+                      matterTitle: snapshot.matterTitle,
                       treatment: manifest.caseTreatment,
                       locale: widget.locale,
                     )
