@@ -81,6 +81,13 @@ export type StudioLink = {
 };
 
 export type StudioDraft = {
+  caseId: string;
+  version: string;
+  parent: {
+    caseId: string;
+    version: string;
+    fingerprint: string;
+  } | null;
   title: string;
   jurisdiction: string;
   role: string;

@@ -16,6 +16,7 @@ import type {
 type Locale = "en" | "ru";
 type View = "library" | "play" | "studio";
 type Theme = "office" | "after-hours";
+type OutcomeClass = "strong" | "mixed" | "weak";
 
 type InboxEntry = {
   id: string;
@@ -24,6 +25,42 @@ type InboxEntry = {
   source: string;
   body: string;
   materialRef?: string;
+};
+
+type PlayedCaseFile = {
+  format: "genesis-juris-played-case";
+  schemaVersion: 1;
+  exportedAt: string;
+  scenario: {
+    id: string;
+    caseId: string;
+    contentVersion: string;
+    fingerprint: string;
+  };
+  playthrough: {
+    status: "in_progress" | "completed";
+    currentStageId: string;
+    decisions: Array<{
+      sequence: number;
+      stageId: string;
+      optionId: string;
+    }>;
+    derivedMetrics: Record<MetricKey, number>;
+    outcome: OutcomeClass | null;
+  };
+};
+
+type CustomCaseFile = {
+  format: "genesis-juris-custom-case";
+  schemaVersion: 1;
+  exportedAt: string;
+  case: {
+    id: string;
+    version: string;
+    fingerprint: string;
+    parent: StudioDraft["parent"];
+  };
+  draft: StudioDraft;
 };
 
 const ui = {
@@ -45,6 +82,10 @@ const ui = {
     authorLead: "Describe a legal crisis in plain language, then shape its actors, evidence, deadlines, decisions and outcomes on the visual graph.",
     prompt: "Case prompt", generate: "Generate case graph", save: "Save draft", saved: "Draft saved on this device",
     export: "Export JSON", import: "Import JSON", newDraft: "New draft", graph: "Scenario graph",
+    importCustom: "Import custom case", exportCustom: "Export custom case", childVersion: "Create child version",
+    customCase: "Custom case", caseId: "Case ID", version: "Version", parentCase: "Parent case", fingerprint: "Content fingerprint",
+    exportPlay: "Export play JSON", importPlay: "Import played case", importedPlay: "Played case restored",
+    invalidPlay: "This file is not a valid or compatible GENESIS: JURIS played case.",
     inspector: "Node inspector", checks: "Integrity checks", preview: "Playable preview", addNode: "Add node",
     deleteNode: "Delete node", title: "Title", detail: "Detail", nodeType: "Node type",
     noSelection: "Select a node in the graph to edit it.", allClear: "Draft passes structural checks.",
@@ -69,6 +110,10 @@ const ui = {
     authorLead: "Опишите юридический кризис обычным языком, затем соберите акторов, доказательства, сроки, решения и исходы на визуальном графе.",
     prompt: "Промпт кейса", generate: "Построить граф кейса", save: "Сохранить черновик", saved: "Черновик сохранён на этом устройстве",
     export: "Экспорт JSON", import: "Импорт JSON", newDraft: "Новый черновик", graph: "Граф сценария",
+    importCustom: "Импорт custom-кейса", exportCustom: "Экспорт custom-кейса", childVersion: "Создать дочернюю версию",
+    customCase: "Custom-кейс", caseId: "ID кейса", version: "Версия", parentCase: "Родительский кейс", fingerprint: "Отпечаток содержимого",
+    exportPlay: "Экспорт прохождения", importPlay: "Импорт прохождения", importedPlay: "Прохождение восстановлено",
+    invalidPlay: "Файл не является корректным или совместимым прохождением GENESIS: JURIS.",
     inspector: "Инспектор узла", checks: "Проверки целостности", preview: "Игровой предпросмотр", addNode: "Добавить узел",
     deleteNode: "Удалить узел", title: "Название", detail: "Описание", nodeType: "Тип узла",
     noSelection: "Выберите узел на графе, чтобы отредактировать его.", allClear: "Черновик прошёл структурные проверки.",
@@ -115,10 +160,61 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
 
 function local(value: LocalText, locale: Locale) { return value[locale]; }
 function clamp(value: number) { return Math.max(0, Math.min(100, value)); }
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function slugifyCaseId(value: string) {
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || `custom_case_${Date.now()}`;
+}
+function caseFingerprint(draft: StudioDraft) {
+  const content = JSON.stringify({
+    title: draft.title,
+    jurisdiction: draft.jurisdiction,
+    role: draft.role,
+    premise: draft.premise,
+    nodes: draft.nodes,
+    links: draft.links,
+  });
+  let hash = 2166136261;
+  for (let index = 0; index < content.length; index += 1) {
+    hash ^= content.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `fnv1a-${(hash >>> 0).toString(16).padStart(8, "0")}`;
+}
+function bumpPatchVersion(version: string) {
+  const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/);
+  return match ? `${match[1]}.${match[2]}.${Number(match[3]) + 1}` : "1.0.1";
+}
+function normalizeStudioDraft(value: unknown): StudioDraft {
+  if (!isRecord(value) || typeof value.title !== "string" || !Array.isArray(value.nodes) || !Array.isArray(value.links)) {
+    throw new Error("Invalid custom case draft");
+  }
+  const parent = isRecord(value.parent) && typeof value.parent.caseId === "string" && typeof value.parent.version === "string" && typeof value.parent.fingerprint === "string"
+    ? { caseId: value.parent.caseId, version: value.parent.version, fingerprint: value.parent.fingerprint }
+    : null;
+  return {
+    ...(value as unknown as StudioDraft),
+    caseId: typeof value.caseId === "string" && value.caseId.trim() ? value.caseId : slugifyCaseId(value.title),
+    version: typeof value.version === "string" && value.version.trim() ? value.version : "1.0.0",
+    parent,
+    jurisdiction: typeof value.jurisdiction === "string" ? value.jurisdiction : "",
+    role: typeof value.role === "string" ? value.role : "",
+    premise: typeof value.premise === "string" ? value.premise : "",
+    updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString(),
+  };
+}
+function classifyOutcome(metrics: Record<MetricKey, number>): OutcomeClass {
+  const resilience = metrics.position + metrics.evidence + metrics.trust - metrics.exposure;
+  return resilience >= 150 ? "strong" : resilience >= 112 ? "mixed" : "weak";
+}
 
 const defaultPrompt = `A renewable-energy developer discovers that its community consultation map omitted two households before a permit hearing. The planning authority requests a corrected record within 36 hours. Create a case for counsel to preserve evidence, coordinate the developer and mapping contractor, decide whether to seek an adjournment, and reach either a credible corrected process or a compromised permit position.`;
 
 const defaultDraft: StudioDraft = {
+  caseId: "the_missing_boundary",
+  version: "1.0.0",
+  parent: null,
   title: "The Missing Boundary", jurisdiction: "UK · Planning", role: "Project counsel",
   premise: "A consultation map omitted two households before a permit hearing.", updatedAt: new Date(0).toISOString(),
   nodes: [
@@ -155,8 +251,10 @@ export default function JurisApp() {
   const [draft, setDraft] = useState<StudioDraft>(defaultDraft);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>("decision-1");
   const [savedFlash, setSavedFlash] = useState(false);
+  const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const [dragging, setDragging] = useState<{ id: string; dx: number; dy: number } | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
+  const playedCaseImportRef = useRef<HTMLInputElement>(null);
   const text = ui[locale];
 
   useEffect(() => {
@@ -164,7 +262,7 @@ export default function JurisApp() {
       const stored = window.localStorage.getItem("genesis-juris-studio-draft");
       if (stored) {
         try {
-          setDraft(JSON.parse(stored) as StudioDraft);
+          setDraft(normalizeStudioDraft(JSON.parse(stored)));
         } catch {
           // Keep the bundled draft when local storage contains invalid data.
         }
@@ -193,8 +291,103 @@ export default function JurisApp() {
   function advanceStage() {
     if (!activeScenario) return; setResultOption(null);
     if (stageIndex < activeScenario.stages.length - 1) { setStageIndex((current) => current + 1); return; }
-    const resilience = metrics.position + metrics.evidence + metrics.trust - metrics.exposure;
-    setOutcome(resilience >= 150 ? "strong" : resilience >= 112 ? "mixed" : "weak");
+    setOutcome(classifyOutcome(metrics));
+  }
+  function showSessionNotice(message: string) {
+    setSessionNotice(message);
+    window.setTimeout(() => setSessionNotice(null), 3200);
+  }
+  function exportPlayedCase() {
+    if (!activeScenario) return;
+    const decisions = decisionLog.map((entry, index) => {
+      const sourceStage = activeScenario.stages[index];
+      const sourceOption = sourceStage?.options.find((option) => option.id === entry.option.id);
+      if (!sourceStage || !sourceOption) throw new Error("The current decision log does not match the scenario catalogue.");
+      return { sequence: index + 1, stageId: sourceStage.id, optionId: sourceOption.id };
+    });
+    const payload: PlayedCaseFile = {
+      format: "genesis-juris-played-case",
+      schemaVersion: 1,
+      exportedAt: new Date().toISOString(),
+      scenario: {
+        id: activeScenario.id,
+        caseId: activeScenario.caseId,
+        contentVersion: activeScenario.version,
+        fingerprint: activeScenario.fingerprint,
+      },
+      playthrough: {
+        status: outcome ? "completed" : "in_progress",
+        currentStageId: activeScenario.stages[stageIndex].id,
+        decisions,
+        derivedMetrics: metrics,
+        outcome,
+      },
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${activeScenario.id}-played-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+  function importPlayedCase(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed: unknown = JSON.parse(String(reader.result));
+        if (!isRecord(parsed) || parsed.format !== "genesis-juris-played-case" || parsed.schemaVersion !== 1) throw new Error("Unsupported played-case schema");
+        if (!isRecord(parsed.scenario) || !isRecord(parsed.playthrough)) throw new Error("Missing played-case sections");
+
+        const importedScenario = scenarios.find((scenario) => scenario.id === parsed.scenario.id);
+        if (!importedScenario || parsed.scenario.caseId !== importedScenario.caseId || parsed.scenario.contentVersion !== importedScenario.version || parsed.scenario.fingerprint !== importedScenario.fingerprint) {
+          throw new Error("Scenario identity or content version does not match the current catalogue");
+        }
+
+        const importedDecisions = parsed.playthrough.decisions;
+        const importedStatus = parsed.playthrough.status;
+        const currentStageId = parsed.playthrough.currentStageId;
+        if (!Array.isArray(importedDecisions) || (importedStatus !== "in_progress" && importedStatus !== "completed") || typeof currentStageId !== "string") {
+          throw new Error("Invalid playthrough state");
+        }
+        if (importedDecisions.length > importedScenario.stages.length) throw new Error("Too many decisions");
+
+        const restoredMetrics = { ...initialMetrics };
+        const restoredLog = importedDecisions.map((decision, index) => {
+          if (!isRecord(decision) || decision.sequence !== index + 1) throw new Error("Invalid decision sequence");
+          const sourceStage = importedScenario.stages[index];
+          if (!sourceStage || decision.stageId !== sourceStage.id || typeof decision.optionId !== "string") throw new Error("Decision stage mismatch");
+          const sourceOption = sourceStage.options.find((option) => option.id === decision.optionId);
+          if (!sourceOption) throw new Error("Decision option is not in the current catalogue");
+          (Object.keys(sourceOption.effects) as MetricKey[]).forEach((key) => {
+            restoredMetrics[key] = clamp(restoredMetrics[key] + (sourceOption.effects[key] ?? 0));
+          });
+          return { stage: local(sourceStage.headline, locale), option: sourceOption };
+        });
+
+        const restoredStageIndex = importedScenario.stages.findIndex((item) => item.id === currentStageId);
+        if (restoredStageIndex < 0) throw new Error("Current stage is not in the scenario");
+        const completed = importedStatus === "completed";
+        if ((completed && importedDecisions.length !== importedScenario.stages.length) || (!completed && (importedDecisions.length !== restoredStageIndex || restoredStageIndex >= importedScenario.stages.length))) {
+          throw new Error("Playthrough progress is inconsistent");
+        }
+
+        setActiveScenario(importedScenario);
+        setFeaturedId(importedScenario.id);
+        setStageIndex(completed ? importedScenario.stages.length - 1 : restoredStageIndex);
+        setMetrics(restoredMetrics);
+        setDecisionLog(restoredLog);
+        setOutcome(completed ? classifyOutcome(restoredMetrics) : null);
+        setSelectedOption(null);
+        setResultOption(null);
+        setDossierRef(importedScenario.materials[0]?.ref ?? null);
+        navigate("play");
+        showSessionNotice(text.importedPlay);
+      } catch {
+        window.alert(text.invalidPlay);
+      }
+    };
+    reader.readAsText(file);
   }
   function generateDraft() {
     const clean = prompt.trim(); const sentences = clean.split(/(?<=[.!?])\s+/).filter(Boolean);
@@ -217,7 +410,7 @@ export default function JurisApp() {
       { from: "actor-1", to: "deadline-1" }, { from: "evidence-1", to: "decision-1" }, { from: "deadline-1", to: "decision-1" },
       { from: "decision-1", to: "outcome-1" }, { from: "decision-1", to: "outcome-2" },
     ];
-    setDraft({ title: shortTitle, jurisdiction: "Set jurisdiction", role: "Scenario counsel", premise: clean, nodes, links, updatedAt: new Date().toISOString() });
+    setDraft({ caseId: slugifyCaseId(shortTitle), version: "1.0.0", parent: null, title: shortTitle, jurisdiction: "Set jurisdiction", role: "Scenario counsel", premise: clean, nodes, links, updatedAt: new Date().toISOString() });
     setSelectedNodeId("decision-1");
   }
   function saveDraft() {
@@ -226,19 +419,53 @@ export default function JurisApp() {
     window.setTimeout(() => setSavedFlash(false), 2200);
   }
   function exportDraft() {
-    const blob = new Blob([JSON.stringify(draft, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob);
+    const payload: CustomCaseFile = {
+      format: "genesis-juris-custom-case",
+      schemaVersion: 1,
+      exportedAt: new Date().toISOString(),
+      case: {
+        id: draft.caseId,
+        version: draft.version,
+        fingerprint: caseFingerprint(draft),
+        parent: draft.parent,
+      },
+      draft: { ...draft, updatedAt: new Date().toISOString() },
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob);
     const link = document.createElement("a"); link.href = url;
-    link.download = `${draft.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "juris-case"}.json`;
+    link.download = `${draft.caseId}-v${draft.version}.juris-case.json`;
     link.click(); URL.revokeObjectURL(url);
   }
   function importDraft(file: File) {
     const reader = new FileReader(); reader.onload = () => {
       try {
-        const parsed = JSON.parse(String(reader.result)) as StudioDraft;
-        if (!parsed.title || !Array.isArray(parsed.nodes) || !Array.isArray(parsed.links)) throw new Error("Invalid draft");
-        setDraft({ ...parsed, updatedAt: new Date().toISOString() }); setSelectedNodeId(parsed.nodes[0]?.id ?? null);
+        const parsed: unknown = JSON.parse(String(reader.result));
+        let imported: StudioDraft;
+        if (isRecord(parsed) && parsed.format === "genesis-juris-custom-case" && parsed.schemaVersion === 1 && isRecord(parsed.case)) {
+          imported = normalizeStudioDraft(parsed.draft);
+          if (parsed.case.id !== imported.caseId || parsed.case.version !== imported.version || parsed.case.fingerprint !== caseFingerprint(imported)) {
+            throw new Error("Custom case identity or fingerprint mismatch");
+          }
+        } else {
+          imported = normalizeStudioDraft(parsed);
+        }
+        const restored = { ...imported, updatedAt: new Date().toISOString() };
+        setDraft(restored);
+        setPrompt(restored.premise);
+        setSelectedNodeId(restored.nodes[0]?.id ?? null);
+        navigate("studio");
+        showSessionNotice(locale === "en" ? "Custom case loaded in the visual editor" : "Custom-кейс открыт в визуальном редакторе");
       } catch { window.alert(locale === "en" ? "This file is not a valid GENESIS: JURIS case draft." : "Файл не является корректным черновиком GENESIS: JURIS."); }
     }; reader.readAsText(file);
+  }
+  function createChildVersion() {
+    setDraft((current) => ({
+      ...current,
+      parent: { caseId: current.caseId, version: current.version, fingerprint: caseFingerprint(current) },
+      version: bumpPatchVersion(current.version),
+      updatedAt: new Date().toISOString(),
+    }));
+    showSessionNotice(locale === "en" ? "Child version created with parent trace" : "Дочерняя версия создана со ссылкой на родителя");
   }
   function updateNode(change: Partial<StudioNode>) {
     if (!selectedNodeId) return;
@@ -273,15 +500,29 @@ export default function JurisApp() {
           <button className={view === "studio" ? "active" : ""} onClick={() => navigate("studio")}><Icon name="studio" />{text.studio}<span className="nav-new">LAB</span></button>
         </nav>
         <div className="top-actions">
+          <input
+            ref={playedCaseImportRef}
+            className="visually-hidden"
+            type="file"
+            accept=".json,application/json"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) importPlayedCase(file);
+              event.target.value = "";
+            }}
+          />
+          <button className="utility-button" onClick={() => playedCaseImportRef.current?.click()} aria-label={text.importPlay} title={text.importPlay}><Icon name="upload" /><span>{text.importPlay}</span></button>
+          {activeScenario && <button className="utility-button" onClick={exportPlayedCase} aria-label={text.exportPlay} title={text.exportPlay}><Icon name="download" /><span>{text.exportPlay}</span></button>}
           <button className="utility-button" onClick={() => setLocale(locale === "en" ? "ru" : "en")} aria-label="Switch language"><Icon name="globe" /><span>{locale.toUpperCase()}</span></button>
           <button className="utility-button" onClick={() => setTheme(theme === "office" ? "after-hours" : "office")} aria-label="Switch atmosphere"><Icon name={theme === "office" ? "sun" : "moon"} /><span>{theme === "office" ? text.office : text.night}</span></button>
         </div>
       </header>
 
       {view === "library" && <LibraryView locale={locale} text={text} featured={featured} setFeaturedId={setFeaturedId} startScenario={startScenario} />}
-      {view === "play" && activeScenario && stage && <PlayView locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} decisionLog={decisionLog} dossierRef={dossierRef} setDossierRef={setDossierRef} setSelectedOption={setSelectedOption} outcome={outcome} replayCase={() => startScenario(activeScenario)} returnLibrary={() => navigate("library")} />}
-      {view === "studio" && <StudioView locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={setDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} checks={checks} generateDraft={generateDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} updateNode={updateNode} addNode={addNode} deleteNode={deleteNode} moveNode={moveNode} resetDraft={() => { setDraft(defaultDraft); setPrompt(defaultPrompt); setSelectedNodeId("decision-1"); }} />}
+      {view === "play" && activeScenario && stage && <PlayView locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} decisionLog={decisionLog} dossierRef={dossierRef} setDossierRef={setDossierRef} setSelectedOption={setSelectedOption} outcome={outcome} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario)} returnLibrary={() => navigate("library")} />}
+      {view === "studio" && <StudioView locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={setDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} checks={checks} generateDraft={generateDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} addNode={addNode} deleteNode={deleteNode} moveNode={moveNode} resetDraft={() => { setDraft(defaultDraft); setPrompt(defaultPrompt); setSelectedNodeId("decision-1"); }} />}
       {(selectedOption || resultOption) && activeScenario && stage && <DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} close={() => { setSelectedOption(null); setResultOption(null); }} dispatch={dispatchDecision} advance={advanceStage} finalStage={stageIndex === activeScenario.stages.length - 1} />}
+      {sessionNotice && <div className="session-toast" role="status"><Icon name="check" />{sessionNotice}</div>}
     </div>
   );
 }
@@ -295,7 +536,7 @@ function LibraryView({ locale, text, featured, setFeaturedId, startScenario }: {
   </main>;
 }
 
-function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decisionLog, dossierRef, setDossierRef, setSelectedOption, outcome, replayCase, returnLibrary }: { locale: Locale; text: UiText; scenario: Scenario; stage: Scenario["stages"][number]; stageIndex: number; metrics: Record<MetricKey, number>; decisionLog: Array<{ stage: string; option: DecisionOption }>; dossierRef: string | null; setDossierRef: (ref: string) => void; setSelectedOption: (option: DecisionOption) => void; outcome: "strong" | "mixed" | "weak" | null; replayCase: () => void; returnLibrary: () => void }) {
+function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decisionLog, dossierRef, setDossierRef, setSelectedOption, outcome, exportSession, replayCase, returnLibrary }: { locale: Locale; text: UiText; scenario: Scenario; stage: Scenario["stages"][number]; stageIndex: number; metrics: Record<MetricKey, number>; decisionLog: Array<{ stage: string; option: DecisionOption }>; dossierRef: string | null; setDossierRef: (ref: string) => void; setSelectedOption: (option: DecisionOption) => void; outcome: OutcomeClass | null; exportSession: () => void; replayCase: () => void; returnLibrary: () => void }) {
   const activeMaterial = scenario.materials.find((material) => material.ref === dossierRef) ?? scenario.materials[0];
   const [inboxOpen, setInboxOpen] = useState(false);
   const [selectedInboxIndex, setSelectedInboxIndex] = useState(0);
@@ -328,7 +569,7 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decision
       decisionRef.current?.querySelector<HTMLButtonElement>(".decision-options button")?.focus();
     }, 380);
   }
-  if (outcome) return <DebriefView locale={locale} text={text} scenario={scenario} metrics={metrics} decisionLog={decisionLog} outcome={outcome} replayCase={replayCase} returnLibrary={returnLibrary}/>;
+  if (outcome) return <DebriefView locale={locale} text={text} scenario={scenario} metrics={metrics} decisionLog={decisionLog} outcome={outcome} exportSession={exportSession} replayCase={replayCase} returnLibrary={returnLibrary}/>;
   return <main className="operations-view"><aside className="case-rail"><button className="rail-back" onClick={returnLibrary}><span>←</span>{text.library}</button><div className="rail-case"><small>ACTIVE MATTER</small><b>{scenario.title[locale]}</b><span>{scenario.jurisdiction}</span></div><ol className="stage-list">{scenario.stages.map((item, index) => <li key={item.id} className={index === stageIndex ? "active" : index < stageIndex ? "done" : ""}><span>{index < stageIndex ? "✓" : index + 1}</span><div><b>{item.phase[locale]}</b><small>{text.day} {item.day} · {item.time}</small></div></li>)}</ol><div className="rail-version">CONTENT v{scenario.version}<br/><code>{scenario.fingerprint}</code></div></aside>
     <section className="command-center">
       <div className="command-header">
@@ -400,7 +641,7 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decision
     <aside className="dossier-pane"><div className="pane-heading"><span>{text.dossier}</span><b>{scenario.materials.length}</b></div><p className="pane-intro">{text.visibleMaterial} · {text.provenance}</p><div className="material-tabs">{scenario.materials.map((material) => <button key={material.ref} className={material.ref === activeMaterial.ref ? "active" : ""} onClick={() => setDossierRef(material.ref)}><code>{material.ref}</code><span>{material.title[locale]}</span></button>)}</div><article className="material-sheet"><div className="sheet-punch"/><div className="sheet-reg">{activeMaterial.ref}</div><span className="document-type">{activeMaterial.type[locale]}</span><h3>{activeMaterial.title[locale]}</h3><dl><div><dt>SOURCE</dt><dd>{activeMaterial.source[locale]}</dd></div><div><dt>DATE / TIME</dt><dd>{activeMaterial.date}</dd></div><div><dt>CASE</dt><dd>{scenario.caseId}</dd></div></dl><p>{locale === "en" ? "Visible case material. Source identity remains attached; opening this record does not recommend a decision." : "Видимый материал дела. Идентичность источника сохранена; открытие записи не рекомендует решение."}</p><div className="sheet-status"><Icon name="check"/> PROVENANCE ATTACHED</div></article>{decisionLog.length > 0 && <section className="mini-log"><h3>{text.actionLog}</h3>{decisionLog.map((entry,index) => <div key={entry.option.id}><span>0{index+1}</span><p>{entry.option.label[locale]}</p></div>)}</section>}</aside></main>;
 }
 
-function DebriefView({ locale, text, scenario, metrics, decisionLog, outcome, replayCase, returnLibrary }: { locale: Locale; text: UiText; scenario: Scenario; metrics: Record<MetricKey, number>; decisionLog: Array<{ stage: string; option: DecisionOption }>; outcome: "strong" | "mixed" | "weak"; replayCase: () => void; returnLibrary: () => void }) {
+function DebriefView({ locale, text, scenario, metrics, decisionLog, outcome, exportSession, replayCase, returnLibrary }: { locale: Locale; text: UiText; scenario: Scenario; metrics: Record<MetricKey, number>; decisionLog: Array<{ stage: string; option: DecisionOption }>; outcome: OutcomeClass; exportSession: () => void; replayCase: () => void; returnLibrary: () => void }) {
   const presentation = {
     strong: {
       classLabel: locale === "en" ? "FAVORABLE OUTCOME" : "БЛАГОПРИЯТНЫЙ ИСХОД",
@@ -486,6 +727,7 @@ function DebriefView({ locale, text, scenario, metrics, decisionLog, outcome, re
 
       <div className="debrief-actions">
         <button className="secondary-cta" onClick={returnLibrary}>{text.returnLibrary}</button>
+        <button className="secondary-cta" onClick={exportSession}><Icon name="download"/>{text.exportPlay}</button>
         <button className="primary-cta" onClick={replayCase}><Icon name="reset"/>{locale === "en" ? "Replay this case" : "Пройти кейс заново"}</button>
       </div>
     </main>
@@ -542,15 +784,22 @@ function DecisionModal({ locale, text, scenario, stageHeadline, option, isResult
   return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !isResult) close(); }}><section className={`decision-modal ${isResult ? "result" : ""}`} role="dialog" aria-modal="true" aria-labelledby="decision-title"><button className="modal-close" onClick={close} aria-label={text.cancel}><Icon name="close"/></button><div className="modal-register">{isResult ? "DISPATCH RECORD" : "RESPONSE REVIEW"}<span>{scenario.caseId}</span></div><div className="modal-icon"><Icon name={isResult ? "check" : "file"} size={30}/></div><span className="modal-kicker">{isResult ? text.consequence : text.review}</span><h2 id="decision-title">{option.label[locale]}</h2><p className="modal-context">{isResult ? option.result[locale] : option.detail[locale]}</p>{!isResult && <><div className="modal-source"><small>CURRENT SITUATION</small><p>{stageHeadline}</p></div><dl className="decision-cost"><div><dt>{text.cost}</dt><dd>EUR {option.cost.toLocaleString()}</dd></div><div><dt>{text.duration}</dt><dd>{option.minutes} min</dd></div></dl><div className="effect-preview">{(Object.entries(option.effects) as Array<[MetricKey, number]>).map(([key,value]) => <span key={key} className={value >= 0 ? "positive" : "negative"}>{metricLabels[locale][key]} {value >= 0 ? "+" : ""}{value}</span>)}</div></>}<div className="modal-actions">{!isResult && <button className="secondary-cta" onClick={close}>{text.cancel}</button>}<button className="primary-cta" onClick={isResult ? advance : dispatch}>{isResult ? (finalStage ? text.debrief : text.continueCase) : text.confirm}<Icon name="arrow"/></button></div></section></div>;
 }
 
-function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, checks, generateDraft, saveDraft, savedFlash, exportDraft, importRef, importDraft, updateNode, addNode, deleteNode, moveNode, resetDraft }: { locale: Locale; text: UiText; prompt: string; setPrompt: (value: string) => void; draft: StudioDraft; setDraft: React.Dispatch<React.SetStateAction<StudioDraft>>; selectedNode: StudioNode | null; selectedNodeId: string | null; checks: Array<{ level: "ok" | "warn"; text: string }>; generateDraft: () => void; saveDraft: () => void; savedFlash: boolean; exportDraft: () => void; importRef: React.RefObject<HTMLInputElement | null>; importDraft: (file: File) => void; updateNode: (change: Partial<StudioNode>) => void; addNode: (type: StudioNodeType) => void; deleteNode: () => void; moveNode: (event: React.PointerEvent<HTMLButtonElement>, node: StudioNode) => void; resetDraft: () => void }) {
+function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, checks, generateDraft, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, addNode, deleteNode, moveNode, resetDraft }: { locale: Locale; text: UiText; prompt: string; setPrompt: (value: string) => void; draft: StudioDraft; setDraft: React.Dispatch<React.SetStateAction<StudioDraft>>; selectedNode: StudioNode | null; selectedNodeId: string | null; checks: Array<{ level: "ok" | "warn"; text: string }>; generateDraft: () => void; saveDraft: () => void; savedFlash: boolean; exportDraft: () => void; importRef: React.RefObject<HTMLInputElement | null>; importDraft: (file: File) => void; createChildVersion: () => void; updateNode: (change: Partial<StudioNode>) => void; addNode: (type: StudioNodeType) => void; deleteNode: () => void; moveNode: (event: React.PointerEvent<HTMLButtonElement>, node: StudioNode) => void; resetDraft: () => void }) {
   const [previewLive, setPreviewLive] = useState(false);
   const [previewOutcome, setPreviewOutcome] = useState<StudioNode | null>(null);
   const previewDecision = draft.nodes.find((node) => node.type === "decision");
   const previewOutcomes = draft.nodes.filter((node) => node.type === "outcome").slice(0, 2);
 
-  return <main className="studio-view"><section className="studio-hero page-width"><div><div className="eyebrow"><span className="live-dot"/>AUTHORING LAB · VISUAL + PROMPT</div><h1>{text.author}</h1><p>{text.authorLead}</p></div><div className="studio-actions"><button className="secondary-cta" onClick={resetDraft}><Icon name="reset"/>{text.newDraft}</button><button className="secondary-cta" onClick={() => importRef.current?.click()}><Icon name="upload"/>{text.import}</button><button className="secondary-cta" onClick={exportDraft}><Icon name="download"/>{text.export}</button><button className="primary-cta" onClick={saveDraft}><Icon name="save"/>{text.save}</button><input ref={importRef} className="visually-hidden" type="file" accept="application/json" onChange={(event) => { const file=event.target.files?.[0]; if(file) importDraft(file); }}/></div>{savedFlash && <div className="save-toast"><Icon name="check"/>{text.saved}</div>}</section>
+  return <main className="studio-view"><section className="studio-hero page-width"><div><div className="eyebrow"><span className="live-dot"/>AUTHORING LAB · VISUAL + PROMPT</div><h1>{text.author}</h1><p>{text.authorLead}</p></div><div className="studio-actions"><button className="secondary-cta" onClick={resetDraft}><Icon name="reset"/>{text.newDraft}</button><button className="secondary-cta" onClick={() => importRef.current?.click()}><Icon name="upload"/>{text.importCustom}</button><button className="secondary-cta" onClick={exportDraft}><Icon name="download"/>{text.exportCustom}</button><button className="primary-cta" onClick={saveDraft}><Icon name="save"/>{text.save}</button><input ref={importRef} className="visually-hidden" type="file" accept=".json,application/json" onChange={(event) => { const file=event.target.files?.[0]; if(file) importDraft(file); event.target.value=""; }}/></div>{savedFlash && <div className="save-toast"><Icon name="check"/>{text.saved}</div>}</section>
     <section className="prompt-deck page-width"><div className="prompt-label"><span>{text.prompt}</span><code>GENERATOR / STRUCTURE V1</code></div><textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} aria-label={text.prompt}/><button className="generate-button" onClick={generateDraft}><Icon name="spark" size={24}/><span>{text.generate}<small>{locale === "en" ? "Extract trigger, actors, evidence, deadline, decision and outcome branches" : "Выделить триггер, акторов, доказательства, срок, решение и ветви исхода"}</small></span><Icon name="arrow"/></button></section>
     <section className="studio-meta page-width"><label><span>{text.title}</span><input value={draft.title} onChange={(event) => setDraft((current) => ({...current,title:event.target.value}))}/></label><label><span>{text.jurisdiction}</span><input value={draft.jurisdiction} onChange={(event) => setDraft((current) => ({...current,jurisdiction:event.target.value}))}/></label><label><span>{text.role}</span><input value={draft.role} onChange={(event) => setDraft((current) => ({...current,role:event.target.value}))}/></label></section>
+    <section className="studio-version page-width">
+      <div className="version-heading"><span>{text.customCase}</span><button className="secondary-cta" onClick={createChildVersion}><Icon name="plus"/>{text.childVersion}</button></div>
+      <label><span>{text.caseId}</span><input value={draft.caseId} onChange={(event) => setDraft((current) => ({...current,caseId:slugifyCaseId(event.target.value)}))}/></label>
+      <label><span>{text.version}</span><input value={draft.version} onChange={(event) => setDraft((current) => ({...current,version:event.target.value}))} aria-invalid={!/^\d+\.\d+\.\d+$/.test(draft.version)}/></label>
+      <div className="version-value"><span>{text.fingerprint}</span><code>{caseFingerprint(draft)}</code></div>
+      <div className="parent-trace"><span>{text.parentCase}</span>{draft.parent ? <><b>{draft.parent.caseId}</b><code>v{draft.parent.version} · {draft.parent.fingerprint}</code></> : <em>{locale === "en" ? "Root case · no parent" : "Корневой кейс · родителя нет"}</em>}</div>
+    </section>
     <section className="studio-workspace"><aside className="node-palette"><div className="pane-heading"><span>{text.addNode}</span><b>07</b></div>{(Object.keys(typeColors) as StudioNodeType[]).map((type) => <button key={type} onClick={() => addNode(type)}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "Add a node, then connect meaning through the generated flow. Drag nodes to reshape the map." : "Добавьте узел, затем свяжите смысл через сгенерированный поток. Перетаскивайте узлы по карте."}</p></aside>
       <section className="graph-deck"><div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></div></div><div className="graph-canvas"><svg className="graph-links" aria-hidden="true">{draft.links.map((link,index) => { const from=draft.nodes.find((node)=>node.id===link.from); const to=draft.nodes.find((node)=>node.id===link.to); if(!from||!to)return null; return <g key={`${link.from}-${link.to}-${index}`}><path d={`M ${from.x+165} ${from.y+38} C ${from.x+205} ${from.y+38}, ${to.x-38} ${to.y+38}, ${to.x} ${to.y+38}`}/><circle cx={to.x} cy={to.y+38} r="3"/></g>; })}</svg>{draft.nodes.map((node) => <button key={node.id} className={`graph-node type-${node.type} ${node.id===selectedNodeId?"selected":""}`} style={{left:node.x,top:node.y,"--node-color":typeColors[node.type]} as React.CSSProperties} onPointerDown={(event)=>moveNode(event,node)} onPointerMove={(event)=>moveNode(event,node)} onPointerUp={(event)=>moveNode(event,node)} onPointerCancel={(event)=>moveNode(event,node)}><span><i/>{text.nodeTypes[node.type]}<code>{node.id.split("-").at(-1)}</code></span><b>{node.title}</b></button>)}</div><div className="graph-legend">{(Object.keys(typeColors) as StudioNodeType[]).map((type)=><span key={type}><i style={{background:typeColors[type]}}/>{text.nodeTypes[type]}</span>)}</div></section>
       <aside className="node-inspector"><div className="pane-heading"><span>{text.inspector}</span><b>{selectedNode?"01":"00"}</b></div>{selectedNode?<div className="inspector-form"><div className="selected-type"><i style={{background:typeColors[selectedNode.type]}}/><span>{text.nodeTypes[selectedNode.type]}</span><code>{selectedNode.id}</code></div><label><span>{text.nodeType}</span><select value={selectedNode.type} onChange={(event)=>updateNode({type:event.target.value as StudioNodeType})}>{(Object.keys(typeColors) as StudioNodeType[]).map((type)=><option key={type} value={type}>{text.nodeTypes[type]}</option>)}</select></label><label><span>{text.title}</span><input value={selectedNode.title} onChange={(event)=>updateNode({title:event.target.value})}/></label><label><span>{text.detail}</span><textarea value={selectedNode.detail} onChange={(event)=>updateNode({detail:event.target.value})}/></label><label><span>{locale === "en" ? "Connect selected node to" : "Связать выбранный узел с"}</span><select value="" onChange={(event) => { const target=event.target.value; if(!target)return; setDraft((current)=>current.links.some((link)=>link.from===selectedNode.id&&link.to===target)?current:{...current,links:[...current.links,{from:selectedNode.id,to:target}]}); }}><option value="">{locale === "en" ? "Choose destination…" : "Выберите узел…"}</option>{draft.nodes.filter((node)=>node.id!==selectedNode.id).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}</option>)}</select></label><button className="danger-button" onClick={deleteNode}><Icon name="trash"/>{text.deleteNode}</button></div>:<p className="empty-inspector">{text.noSelection}</p>}</aside></section>
@@ -562,6 +811,8 @@ function validateDraft(draft: StudioDraft, locale: Locale) {
   const count=(type:StudioNodeType)=>draft.nodes.filter((node)=>node.type===type).length;
   const outgoing=new Set(draft.links.map((link)=>link.from)); const incoming=new Set(draft.links.map((link)=>link.to));
   const warnings:Array<{level:"ok"|"warn";text:string}>=[]; const label=(en:string,ru:string)=>locale==="en"?en:ru;
+  warnings.push(/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(draft.caseId)?{level:"ok",text:label("Stable custom case ID is defined","Стабильный ID custom-кейса определён")}:{level:"warn",text:label("Use a lowercase snake_case case ID","Используйте ID кейса в формате snake_case")});
+  warnings.push(/^\d+\.\d+\.\d+$/.test(draft.version)?{level:"ok",text:label(`Semantic version ${draft.version} is valid`,`Семантическая версия ${draft.version} корректна`)}:{level:"warn",text:label("Use a semantic version such as 1.0.0","Укажите семантическую версию, например 1.0.0")});
   warnings.push(count("actor")>=1?{level:"ok",text:label(`${count("actor")} institutional actor(s) defined`,`Определено акторов: ${count("actor")}`)}:{level:"warn",text:label("Add at least one institutional actor","Добавьте хотя бы одного институционального актора")});
   warnings.push(count("evidence")>=1?{level:"ok",text:label("Evidence provenance node is present","Узел происхождения доказательств присутствует")}:{level:"warn",text:label("Add evidence with source provenance","Добавьте доказательство с источником происхождения")});
   warnings.push(count("decision")>=1?{level:"ok",text:label("A deliberate decision point is defined","Определена осознанная точка решения")}:{level:"warn",text:label("Add at least one decision point","Добавьте хотя бы одну точку решения")});
