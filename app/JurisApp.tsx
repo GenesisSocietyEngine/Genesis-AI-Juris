@@ -17,6 +17,15 @@ type Locale = "en" | "ru";
 type View = "library" | "play" | "studio";
 type Theme = "office" | "after-hours";
 
+type InboxEntry = {
+  id: string;
+  status: string;
+  title: string;
+  source: string;
+  body: string;
+  materialRef?: string;
+};
+
 const ui = {
   en: {
     library: "Case Library", play: "Operations", studio: "Case Studio",
@@ -288,10 +297,149 @@ function LibraryView({ locale, text, featured, setFeaturedId, startScenario }: {
 
 function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decisionLog, dossierRef, setDossierRef, setSelectedOption, outcome, returnLibrary }: { locale: Locale; text: UiText; scenario: Scenario; stage: Scenario["stages"][number]; stageIndex: number; metrics: Record<MetricKey, number>; decisionLog: Array<{ stage: string; option: DecisionOption }>; dossierRef: string | null; setDossierRef: (ref: string) => void; setSelectedOption: (option: DecisionOption) => void; outcome: "strong" | "mixed" | "weak" | null; returnLibrary: () => void }) {
   const activeMaterial = scenario.materials.find((material) => material.ref === dossierRef) ?? scenario.materials[0];
+  const [inboxOpen, setInboxOpen] = useState(false);
+  const [selectedInboxIndex, setSelectedInboxIndex] = useState(0);
+  const decisionRef = useRef<HTMLElement>(null);
+  const attentionCount = Math.max(1, 4 - stageIndex);
+  const inboxEntries: InboxEntry[] = [
+    {
+      id: `${stage.id}-situation`,
+      status: locale === "en" ? "ACTION REQUIRED" : "ТРЕБУЕТСЯ ДЕЙСТВИЕ",
+      title: stage.headline[locale],
+      source: stage.source[locale],
+      body: stage.brief[locale],
+    },
+    ...scenario.materials.slice(0, attentionCount - 1).map((material) => ({
+      id: `${stage.id}-${material.ref}`,
+      status: locale === "en" ? "MATERIAL UPDATE" : "ОБНОВЛЕНИЕ МАТЕРИАЛА",
+      title: material.title[locale],
+      source: `${material.source[locale]} · ${material.date}`,
+      body:
+        locale === "en"
+          ? `New visible material ${material.ref} is attached to the current situation. Review its provenance before dispatching a response.`
+          : `К текущей ситуации прикреплён новый видимый материал ${material.ref}. Проверьте его происхождение до отправки ответа.`,
+      materialRef: material.ref,
+    })),
+  ];
+
+  function revealDecisions() {
+    decisionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.setTimeout(() => {
+      decisionRef.current?.querySelector<HTMLButtonElement>(".decision-options button")?.focus();
+    }, 380);
+  }
   if (outcome) return <main className="debrief-view page-width"><div className="debrief-mark"><span>CASE CLOSED</span><b>{String(scenario.order / 10).padStart(2, "0")}</b></div><div className="eyebrow"><span className="live-dot"/>{text.complete}</div><h1>{scenario.title[locale]}</h1><p className={`outcome-label outcome-${outcome}`}>{scenario.outcomes[outcome][locale]}</p><div className="debrief-grid"><section><h2>{text.actionLog}</h2>{decisionLog.map((entry, index) => <article key={`${entry.option.id}-${index}`} className="log-entry"><span>{String(index + 1).padStart(2, "0")}</span><div><small>{entry.stage}</small><b>{entry.option.label[locale]}</b><p>{entry.option.result[locale]}</p></div></article>)}</section><aside><h2>{locale === "en" ? "Final posture" : "Итоговая позиция"}</h2><MetricPanel locale={locale} metrics={metrics}/><div className="canonical-note"><Icon name="file"/><p>{text.canonNote}</p></div></aside></div><button className="primary-cta" onClick={returnLibrary}>{text.returnLibrary}<Icon name="arrow"/></button></main>;
   return <main className="operations-view"><aside className="case-rail"><button className="rail-back" onClick={returnLibrary}><span>←</span>{text.library}</button><div className="rail-case"><small>ACTIVE MATTER</small><b>{scenario.title[locale]}</b><span>{scenario.jurisdiction}</span></div><ol className="stage-list">{scenario.stages.map((item, index) => <li key={item.id} className={index === stageIndex ? "active" : index < stageIndex ? "done" : ""}><span>{index < stageIndex ? "✓" : index + 1}</span><div><b>{item.phase[locale]}</b><small>{text.day} {item.day} · {item.time}</small></div></li>)}</ol><div className="rail-version">CONTENT v{scenario.version}<br/><code>{scenario.fingerprint}</code></div></aside>
-    <section className="command-center"><div className="command-header"><div><div className="eyebrow"><span className="live-dot"/>LIVE OPERATION · {text.day.toUpperCase()} {stage.day}</div><h1>{scenario.title[locale]}</h1><p>{stage.phase[locale]} <span>·</span> {stage.time}</p></div><div className="command-clock"><span>{stage.time}</span><small>{text.day} {stage.day} / 03</small></div></div><MetricPanel locale={locale} metrics={metrics} compact/><div className="ops-ledger"><button><span>{text.attention}</span><b>{Math.max(1, 4-stageIndex)}</b><small>ACTION REQUIRED</small></button><button><span>{text.decisions}</span><b>{stage.options.length}</b><small>RESPONSE WINDOW OPEN</small></button></div><article className="situation-panel"><div className="situation-top"><span>{text.situation}</span><code>{stage.source[locale]}</code></div><h2>{stage.headline[locale]}</h2><p>{stage.brief[locale]}</p><div className={`pressure-band ${stage.pressure ? "active" : ""}`}><Icon name={stage.pressure ? "alert" : "check"}/><div><small>{text.pressure}</small><b>{stage.pressure?.[locale] ?? text.noPressure}</b></div></div></article><section className="decision-entry"><div><span>DECISION {String(stageIndex+1).padStart(2,"0")}</span><h2>{locale === "en" ? "What is the institutional response?" : "Каков институциональный ответ?"}</h2><p>{locale === "en" ? "Review every response before dispatch. Consequences remain hidden until confirmation." : "Проверьте каждый ответ перед отправкой. Последствия скрыты до подтверждения."}</p></div><div className="decision-options">{stage.options.map((option) => <button key={option.id} onClick={() => setSelectedOption(option)}><span>{option.label[locale]}</span><small>€ {option.cost.toLocaleString()} · {option.minutes} MIN</small><Icon name="arrow"/></button>)}</div></section></section>
+    <section className="command-center">
+      <div className="command-header">
+        <div>
+          <div className="eyebrow"><span className="live-dot"/>LIVE OPERATION · {text.day.toUpperCase()} {stage.day}</div>
+          <h1>{scenario.title[locale]}</h1>
+          <p>{stage.phase[locale]} <span>·</span> {stage.time}</p>
+        </div>
+        <div className="command-clock"><span>{stage.time}</span><small>{text.day} {stage.day} / 03</small></div>
+      </div>
+      <MetricPanel locale={locale} metrics={metrics} compact/>
+      <div className="ops-ledger">
+        <button
+          className="ledger-control ledger-inbox"
+          onClick={() => { setSelectedInboxIndex(0); setInboxOpen(true); }}
+          aria-haspopup="dialog"
+          aria-label={`${text.attention}: ${inboxEntries.length}`}
+        >
+          <span>{text.attention}</span>
+          <b>{inboxEntries.length}</b>
+          <small>ACTION REQUIRED</small>
+          <Icon name="arrow"/>
+        </button>
+        <button
+          className="ledger-control ledger-decisions"
+          onClick={revealDecisions}
+          aria-label={`${text.decisions}: ${stage.options.length}`}
+        >
+          <span>{text.decisions}</span>
+          <b>{stage.options.length}</b>
+          <small>RESPONSE WINDOW OPEN</small>
+          <Icon name="arrow"/>
+        </button>
+      </div>
+      <article className="situation-panel">
+        <div className="situation-top"><span>{text.situation}</span><code>{stage.source[locale]}</code></div>
+        <h2>{stage.headline[locale]}</h2>
+        <p>{stage.brief[locale]}</p>
+        <div className={`pressure-band ${stage.pressure ? "active" : ""}`}>
+          <Icon name={stage.pressure ? "alert" : "check"}/>
+          <div><small>{text.pressure}</small><b>{stage.pressure?.[locale] ?? text.noPressure}</b></div>
+        </div>
+      </article>
+      <section className="decision-entry" ref={decisionRef} tabIndex={-1}>
+        <div>
+          <span>DECISION {String(stageIndex+1).padStart(2,"0")}</span>
+          <h2>{locale === "en" ? "What is the institutional response?" : "Каков институциональный ответ?"}</h2>
+          <p>{locale === "en" ? "Review every response before dispatch. Consequences remain hidden until confirmation." : "Проверьте каждый ответ перед отправкой. Последствия скрыты до подтверждения."}</p>
+        </div>
+        <div className="decision-options">
+          {stage.options.map((option) => <button key={option.id} onClick={() => setSelectedOption(option)}><span>{option.label[locale]}</span><small>€ {option.cost.toLocaleString()} · {option.minutes} MIN</small><Icon name="arrow"/></button>)}
+        </div>
+      </section>
+      {inboxOpen && (
+        <InboxPanel
+          locale={locale}
+          entries={inboxEntries}
+          selectedIndex={selectedInboxIndex}
+          selectEntry={setSelectedInboxIndex}
+          close={() => setInboxOpen(false)}
+          openMaterial={(ref) => {
+            setDossierRef(ref);
+            setInboxOpen(false);
+            window.setTimeout(() => document.querySelector(".dossier-pane")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+          }}
+        />
+      )}
+    </section>
     <aside className="dossier-pane"><div className="pane-heading"><span>{text.dossier}</span><b>{scenario.materials.length}</b></div><p className="pane-intro">{text.visibleMaterial} · {text.provenance}</p><div className="material-tabs">{scenario.materials.map((material) => <button key={material.ref} className={material.ref === activeMaterial.ref ? "active" : ""} onClick={() => setDossierRef(material.ref)}><code>{material.ref}</code><span>{material.title[locale]}</span></button>)}</div><article className="material-sheet"><div className="sheet-punch"/><div className="sheet-reg">{activeMaterial.ref}</div><span className="document-type">{activeMaterial.type[locale]}</span><h3>{activeMaterial.title[locale]}</h3><dl><div><dt>SOURCE</dt><dd>{activeMaterial.source[locale]}</dd></div><div><dt>DATE / TIME</dt><dd>{activeMaterial.date}</dd></div><div><dt>CASE</dt><dd>{scenario.caseId}</dd></div></dl><p>{locale === "en" ? "Visible case material. Source identity remains attached; opening this record does not recommend a decision." : "Видимый материал дела. Идентичность источника сохранена; открытие записи не рекомендует решение."}</p><div className="sheet-status"><Icon name="check"/> PROVENANCE ATTACHED</div></article>{decisionLog.length > 0 && <section className="mini-log"><h3>{text.actionLog}</h3>{decisionLog.map((entry,index) => <div key={entry.option.id}><span>0{index+1}</span><p>{entry.option.label[locale]}</p></div>)}</section>}</aside></main>;
+}
+
+function InboxPanel({ locale, entries, selectedIndex, selectEntry, close, openMaterial }: { locale: Locale; entries: InboxEntry[]; selectedIndex: number; selectEntry: (index: number) => void; close: () => void; openMaterial: (ref: string) => void }) {
+  const entry = entries[selectedIndex] ?? entries[0];
+  return (
+    <div className="inbox-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
+      <section className="inbox-panel" role="dialog" aria-modal="true" aria-labelledby="inbox-panel-title">
+        <header>
+          <div>
+            <span>OPERATIONAL INBOX</span>
+            <h2 id="inbox-panel-title">{locale === "en" ? "Attention required" : "Требуют внимания"}</h2>
+          </div>
+          <b>{entries.length.toString().padStart(2, "0")}</b>
+          <button onClick={close} aria-label={locale === "en" ? "Close inbox" : "Закрыть входящие"}><Icon name="close"/></button>
+        </header>
+        <div className="inbox-panel-body">
+          <nav aria-label={locale === "en" ? "Attention messages" : "Сообщения, требующие внимания"}>
+            {entries.map((item, index) => (
+              <button key={item.id} className={index === selectedIndex ? "active" : ""} onClick={() => selectEntry(index)}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <div><small>{item.status}</small><b>{item.title}</b><code>{item.source}</code></div>
+                <Icon name="arrow"/>
+              </button>
+            ))}
+          </nav>
+          <article className="inbox-message">
+            <div className="message-register"><span>{entry.status}</span><code>{entry.id}</code></div>
+            <h3>{entry.title}</h3>
+            <p>{entry.body}</p>
+            <dl>
+              <div><dt>SOURCE / TIME</dt><dd>{entry.source}</dd></div>
+              <div><dt>STATUS</dt><dd>{locale === "en" ? "Unread · visible record" : "Не прочитано · видимая запись"}</dd></div>
+            </dl>
+            <div className="message-actions">
+              <button className="secondary-cta" onClick={close}>{locale === "en" ? "Return to operation" : "Вернуться к операции"}</button>
+              {entry.materialRef && <button className="primary-cta" onClick={() => openMaterial(entry.materialRef!)}>{locale === "en" ? "Open linked material" : "Открыть связанный материал"}<Icon name="arrow"/></button>}
+            </div>
+          </article>
+        </div>
+      </section>
+    </div>
+  );
 }
 
 function MetricPanel({ locale, metrics, compact = false }: { locale: Locale; metrics: Record<MetricKey, number>; compact?: boolean }) {
