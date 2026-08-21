@@ -1,8 +1,17 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: feat/greenfire-living-case-visual-slice-v1
-base_commit: 39b856320ed5dc397562068706c4cea7d703899c
+branch: feat/professional-product-ui-redesign-pilot-v2
+base_commit: cfc9e692cc412fe11e2dd02cd693d75520b0a37f
+professional_ui_pilot_v2_status: local_acceptance_complete_genuine_demo_verified
+professional_ui_pilot_v2_starting_head: 8001acdb581a69681dc2d821880770601574ffea
+professional_ui_pilot_v2_operations_commit: 3f5288b1752b980d661d2c5a81a0ef12e640fa18
+professional_ui_pilot_v2_dossier_commit: 54b49e796e56d5fac9341d3383a66193401656f5
+professional_ui_pilot_v2_acceptance_commit: 2ff3c26415c3fcffd64ea943ad8651eccb442c9a
+professional_ui_pilot_v2_source_head: 2ff3c26415c3fcffd64ea943ad8651eccb442c9a
+professional_ui_pilot_v2_apk_sha256: 36c031ac9f418880c1634e65b35df07265c89e20955d1c9b7d96ff96b27a8b67
+professional_ui_pilot_v2_demo_sha256: ce1c50f44a2aabd872af002d642f5be8eab05c09ed32365927e5282c141fa2ec
+professional_ui_pilot_v2_remote_state: local_only_no_push_no_pr
 greenfire_living_case_status: local_acceptance_complete_android_native_feature_capture_accepted
 greenfire_living_case_contract: docs/development/GREENFIRE_LIVING_CASE_VISUAL_SLICE_V1.md
 greenfire_living_case_contract_commit: 5c533367475d1bd7d7b34b0653edeeb1cd67bf37
@@ -121,10 +130,247 @@ validator_followup: d7a52d836f4f51b9c510af38513bcb2722cbd6a2
 android_followup: de7ac065d095a0e268e14961b4b74edd754cf52e
 latest_published_release_tag: v0.6.0-alpha.1
 app_version: 0.6.0+13
-last_updated: 2026-08-11
+last_updated: 2026-08-21
 ---
 
 # Current Progress
+
+## Professional Product UI Pilot V2 local checkpoint - 2026-08-21
+
+### Status, topology, and local boundary
+
+Professional Product UI Pilot V2 is accepted on local-only branch
+`feat/professional-product-ui-redesign-pilot-v2`. Its feature base is
+`cfc9e692cc412fe11e2dd02cd693d75520b0a37f`; the resumed work started from
+accepted head `8001acdb581a69681dc2d821880770601574ffea`. No push, pull, PR,
+merge, tag, release, publication, version bump, or other remote write was
+performed.
+
+The accepted pre-resume sequence is `a191b5d5a3d1ecd881d8a880fa2c18f216373a98`
+(`docs(ui): define professional product redesign pilot`),
+`ee567d9993680a481bc8d04de4055b69e7bd9604`
+(`refactor(mobile): add professional office and after-hours shell`), and
+`8001acdb581a69681dc2d821880770601574ffea`
+(`feat(mobile): apply editorial case library composition`). The resumed source
+families are:
+
+1. `3f5288b1752b980d661d2c5a81a0ef12e640fa18` -
+   `feat(mobile): redesign GreenFire operational workspace`;
+2. `54b49e796e56d5fac9341d3383a66193401656f5` -
+   `feat(mobile): redesign GreenFire living dossier`;
+3. `2ff3c26415c3fcffd64ea943ad8651eccb442c9a` -
+   `test(mobile): add professional UI pilot acceptance`;
+4. `docs: record professional UI pilot checkpoint` - this documentation-only
+   checkpoint. Its commit identity is reported after commit because a commit
+   cannot contain its own hash.
+
+All Flutter, export, Rust, APK, ABI, Android-native, and walkthrough gates used
+exact source head `2ff3c26415c3fcffd64ea943ad8651eccb442c9a`.
+
+### Flutter and visual acceptance
+
+The pinned direct toolchain was bundled Dart `3.12.2` and Flutter `3.44.8`
+(framework `058e0af2c2b57e369d905a03ac9748b0ebf543c6`, engine
+`0cd610717bde95fd88343c64f81c11ba4e5c0010`). Formatting was idempotent
+across 110 `lib`, `test`, and `tool` files and separately across the corrected
+native integration test; `git diff --check` passed; direct-snapshot analysis
+reported no issues. Focused Operations/Inbox acceptance passed 17/17, Living
+Dossier passed 6/6, historical identity acceptance passed 26/26, and the new
+Pilot V2 suite passed 17/17. Full committed-head Flutter acceptance passed
+311/311.
+
+The historical Foundation (6), Catalogue (6), and Living Case (14) PNGs remain
+byte-immutable and passed exact path-set, byte-length, and SHA-256 identity
+guards. There were no historical navigation or atmosphere PNGs in the
+repository, base, or history; no phantom files were created. The new profile
+`test/goldens/visual_identity/professional_ui_pilot_v2/windows_x64_flutter_3_44_8_engine_0cd6107`
+contains exactly 16 PNGs totaling 851,505 bytes. Two clean renders produced the
+same paths, lengths, and SHA-256 values; all 16 were visually inspected:
+
+| Pilot V2 PNG | Dimensions | Bytes | SHA-256 |
+|---|---:|---:|---|
+| `professional_ui_pilot_v2_available_decisions_sheet_phone_office_en.png` | 412x915 | 49,225 | `cef52be15e4ee22a8e1ebd0a1443bde9b86307f2d58cc52cb490171112a2b4a0` |
+| `professional_ui_pilot_v2_catalogue_phone_office_en.png` | 360x800 | 36,750 | `582e307a85afa9825ddb31470baa26b8e3a9b5f1855e738bd4ca9666add59b40` |
+| `professional_ui_pilot_v2_catalogue_phone_office_reduced_motion_en.png` | 412x915 | 49,687 | `d3f13292b14df56e42c5fc5d17de8ca9c90d34db6e993ba7e9be19b3e1878ff1` |
+| `professional_ui_pilot_v2_catalogue_phone_office_ru_ts200.png` | 360x800 | 44,456 | `c385d2ec53443a29f148505dceef76412b8ca1c1cfb2f2816b90854026a0cb5d` |
+| `professional_ui_pilot_v2_catalogue_tablet_landscape_after_hours_en.png` | 1024x768 | 79,661 | `50bf94eae061342b100b5f52335146ca5f4b335e328fe25251415760a2e3ed70` |
+| `professional_ui_pilot_v2_decision_confirmation_phone_office_en.png` | 412x915 | 46,549 | `07167ae4db287e54016d187cab7de833aad6993706ffbcb67ac23bfc0707ca14` |
+| `professional_ui_pilot_v2_dossier_phone_office_en.png` | 412x915 | 40,587 | `509073ede0960818ec4218b038d595b573d6e36e388eeeb82d4672f7563fd2ed` |
+| `professional_ui_pilot_v2_dossier_selected_evidence_provenance_phone_office_en.png` | 412x915 | 52,449 | `9a141ee8e2f8f94189a856533076d74d08bd854295d76cac818757d495d132d3` |
+| `professional_ui_pilot_v2_dossier_tablet_portrait_after_hours_ru.png` | 800x1280 | 88,364 | `fb37bc8f34fcdebc2afd78bd5d7ef088df8099a658622470f974d529a8c272d1` |
+| `professional_ui_pilot_v2_inbox_message_scenario_response_phone_office_en.png` | 412x915 | 39,072 | `50def8c8d4730235a789f6b5eb1465e0f9dde6dd5bd43d583b99a22382c0032b` |
+| `professional_ui_pilot_v2_inbox_phone_after_hours_ru_ts200.png` | 360x800 | 40,865 | `bc1b63febd144c997b295d7e8b9551cbe6026fa122bee5d1f85d045ede25c567` |
+| `professional_ui_pilot_v2_inbox_phone_office.png` | 412x915 | 52,465 | `bb65148b457db3956c3ebc72b3eed5cbced5d1339cb36ff6f04904e34235341b` |
+| `professional_ui_pilot_v2_operations_phone_after_hours_active_pressure.png` | 412x915 | 60,638 | `59824725a7b8afd2754ee7f805c87199cab43a8b962ba9c53adfeb600408ebea` |
+| `professional_ui_pilot_v2_operations_phone_after_hours_high_contrast_en.png` | 412x915 | 62,607 | `a513c7dc761b73bb4ae1446f72bb51fc317a32e1d4496aadd95f8f7856364f95` |
+| `professional_ui_pilot_v2_operations_phone_office_inactive.png` | 360x800 | 42,723 | `89ba90eaab7640de689dc671010a3cb06a03f62a04787455a9cbed38e2fbea73` |
+| `professional_ui_pilot_v2_shell_wide_navigation_after_hours_en.png` | 1024x768 | 65,407 | `b4dcc142593c4f4d4e9c2f764b834cb061a0901e43215b1903a9058ec9572230` |
+
+### Export, fingerprints, traces, and Rust acceptance
+
+Two deterministic exports of `mobile_case_bundle.json` were byte-identical to
+`PILOT_BASE`: 684,266 bytes, SHA-256
+`e90f856cbb0f4625f7612a99db2f527ac3b090619019b7a83c21140f78f1984a`,
+Git blob `464d88b02f6cf6101dc86c04abfc3505abcfb0a6`; exporter `--check`
+passed. The current GreenFire `0.2.0` fingerprint remains
+`173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438`;
+the retained `0.1.0` archive remains
+`b585c95424169d72ac28a5d925a972e34464809a88b6a69216b88f5c65f82261`.
+GreenFire diagnostics returned no diagnostics. The protected canonical trace
+retained outcome `protected_crisis_position` at minute 4,440 with digest
+`524078c5a72296b9b6549b2dca88cf2d727d0b28cb7c69012500b320919cdd58`;
+the compromised canonical trace retained outcome
+`compromised_crisis_position` at minute 4,590 with digest
+`3b9d4a3776d65678a0318730d3d366f9279d318c197300c792b10d89a14f8aec`.
+
+Validator catalogue 2/2, diagnostics catalogue 1/1, simulator catalogue 11/11,
+the all-five invariant 1/1, and fingerprint pins 1/1 passed. Sequential
+`cargo +1.78.0 check --workspace --locked`, `cargo fmt --all -- --check`,
+`cargo check --workspace`, `cargo clippy --workspace --all-targets -- -D warnings`,
+and `cargo test --workspace` all passed.
+
+### Fresh APK, corrected ABI audit, and Android-native acceptance
+
+The ordinary fat debug APK built from source head
+`2ff3c26415c3fcffd64ea943ad8651eccb442c9a` at
+`2026-08-21T16:33:07.2352123Z` is
+`apps/juris-mobile/build/app/outputs/flutter-apk/app-debug.apk`: 203,489,779
+bytes, SHA-256
+`36c031ac9f418880c1634e65b35df07265c89e20955d1c9b7d96ff96b27a8b67`.
+AAPT reports package `com.genesissocietyengine.juris_mobile`, version name
+`0.6.0`, version code `13`, minimum SDK 24, and target SDK 36. Although its
+byte length coincides with the prohibited August 19 artifact, its SHA-256 is
+independent and does not match prohibited SHA-256
+`e27eec8bcd4248d14bc1e24d54c17af1d85e12190e6f614936387846904cc164`.
+
+| Packaged ABI | `libjuris_mobile_ffi.so` bytes | SHA-256 | ELF identity |
+|---|---:|---|---|
+| `arm64-v8a` | 4,467,144 | `ff8a31aeafdc2e6e72625549426e46a9194d31eb6e8d26fea27ffffbc1f59889` | ELF64 AArch64 |
+| `armeabi-v7a` | 2,452,672 | `e5c5a13cebcf34671378b3a4b397440f03be0fb1c35e50cc12d2552488085b37` | ELF32 ARM |
+| `x86_64` | 5,509,472 | `128d373fcf802cc1036df7cb33856fa6b8ac1377e5db8d21352b9e188843c02e` | ELF64 x86-64 |
+
+The packaged libraries matched the Gradle stripped outputs. Every ABI exported
+exactly `juris_mobile_bridge_abi_version`, `juris_mobile_bridge_execute`, and
+`juris_mobile_bridge_string_free`, with no fourth `juris_mobile_bridge_*`
+export.
+
+The single device was Pixel `emulator-5554`, Android API 37, x86_64,
+1080x1920 at 420 dpi, with `sys.boot_completed=1`. Fresh install, app-only
+state clear, and normal cold launch passed. Installed package/version identity
+and x86_64 primary ABI matched the APK; logcat contained no fatal exception,
+`UnsatisfiedLinkError`, `dlopen` failure, or platform exception. The corrected
+native Android persistence/integration suite passed 12/12 and exercised the
+real Rust bridge.
+
+### Genuine public-UI GreenFire walkthrough
+
+The capture used the freshly accepted APK and only visible public controls,
+with ADB limited to ordinary taps and swipes. The navigation prelude showed
+OFFICE Case Library, Browse All, GreenFire selection, and normal Start. A
+disclosed visible Session Reset separated that prelude from the canonical
+mission capture; the mission was then paused at Day 1 08:04 (minute 4). All
+following mission chapters were consecutive authentic states; no save editing,
+direct state injection, test hook, direct callback, or mocked screen was used.
+
+The exact mission trace was:
+
+1. open Inbox item `managing_director_emergency_call`; open
+   `accept_emergency_mandate`, choose explicit No, reopen it, and choose explicit
+   Yes: +30 minutes to Day 1 08:34/minute 34, stage `immediate_response`;
+2. dispatch `issue_legal_hold` (visible title
+   `Issue an evidence-preservation hold`): +90 minutes to Day 1 10:04/minute
+   124; the preservation deadline completed, `regulator_document_request`
+   appeared, and regulatory Pressure became active;
+3. inspect Operations and the Living Dossier, including selected `site_cctv`
+   (`Site CCTV export`) evidence and its player-visible fact-link projection;
+4. dispatch `run_conflict_assessment`: +60 minutes to Day 1 11:04/minute 184;
+5. dispatch `appoint_separate_director_counsel`: +45 minutes to Day 1
+   11:49/minute 229;
+6. dispatch `notify_insurers`: +90 minutes to Day 1 13:19/minute 319;
+7. dispatch `retain_independent_fire_expert`: +45 minutes to Day 1
+   14:04/minute 364;
+8. dispatch `open_controlled_regulator_channel`: +60 minutes to Day 1
+   15:04/minute 424;
+9. dispatch `submit_initial_regulatory_response`: +180 minutes to Day 1
+   18:04/minute 604; the deadline completed, Pressure became inactive, Inbox
+   attention reached zero, and Automatic appearance changed genuinely to
+   AFTER HOURS;
+10. use public Calendar control `rest-until-next-workday` three times, reaching
+    Day 2 08:00/minute 1,440, Day 3 08:00/minute 2,880, and Day 4
+    08:00/minute 4,320, where `seventy_two_hour_handoff` was visible;
+11. open the handoff item and dispatch `complete_compromised_handoff`: +60
+    minutes to Day 4 09:00/minute 4,380, stage `handoff_complete`, outcome
+    `compromised_crisis_position`, result Settled, matter Closed, engagement
+    completed, legal spend EUR 0, and billable time 73.0h.
+
+All selected actions visibly showed cost EUR 0. The genuine recorded outcome at
+minute 4,380 is a valid public-UI rest route and is distinct from, not a
+replacement for, the unchanged canonical compromised regression trace at
+minute 4,590. A separately captured post-outcome public-UI replay supplies the
+opening GreenFire selection and Start transition; its chronology is disclosed
+in the manifest. The genuine replay that landed on Desert Water remains in
+`raw/` as excluded evidence and does not appear in either final edit.
+
+### Verified walkthrough package and media tool identity
+
+WinGet package `Gyan.FFmpeg` 9.0 (publisher Gyan, source `winget`) supplied
+FFmpeg/FFprobe `9.0-full_build-www.gyan.dev`; the verified installer SHA-256 was
+`f42f0c4b04eae3ac918707ff66e3e0ff0cee527bfa6d322624d4bc1160d5055e`.
+The exact executable directory is
+`C:\Users\User\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-9.0-full_build\bin`.
+Within it, `ffmpeg.exe` is 222,248,960 bytes with SHA-256
+`05f4251bce9293c2ab492cb17ca7724a0ffd0d06c881ba2ee83b82a89c2fc740`,
+`ffprobe.exe` is 222,044,160 bytes with SHA-256
+`51e0780cd881f83749b029ed716cbb841c2eac6289f418050f2f2961b158896b`,
+and `ffplay.exe` is 223,774,208 bytes with SHA-256
+`d2dcb88acfdea2cf3473edf00f89d687dbf7b513a2001206f5be3e7fd229a448`.
+
+The ignored walkthrough root is
+`apps/juris-mobile/build/professional-ui-pilot-v2-walkthrough`. Its final media
+identity is:
+
+| File | Bytes | Duration | Video | Audio | SHA-256 |
+|---|---:|---:|---|---|---|
+| `genesis_juris_pilot_v2_demo_1080p.mp4` | 10,962,730 | 130.400 s | H.264 High L4.1, 1920x1080, 30 fps, yuv420p, fast-start | AAC LC, 48 kHz stereo, silent | `ce1c50f44a2aabd872af002d642f5be8eab05c09ed32365927e5282c141fa2ec` |
+| `genesis_juris_pilot_v2_teaser_30s.mp4` | 4,995,291 | 30.000 s | H.264 High L4.2, 1080x1920, 30 fps, yuv420p, fast-start | AAC LC, 48 kHz stereo, silent | `009676722f292b5590b16fd3155a72198ebfd38c3d493609b39880140ab930fd` |
+
+Both final files contain only H.264 video plus honest silent AAC-LC audio.
+FFprobe verified the tabled stream identities, exact durations, and 3,912/900
+frame counts; `moov` precedes `mdat` in both. Strict complete decode of both
+MP4s produced zero diagnostics. The English and Russian SRT and VTT files are
+strict UTF-8, have 11 aligned monotonic cues, and end at 124.200 seconds. The
+1920x1080 cover and duration-wide contact sheet were visually inspected; the
+contact sheet includes the terminal report at 123 seconds and closing card at
+128 seconds. All 15 selected master frames cover the first confirmation,
+No/reopen/Yes sequence, accepted consequence, legal hold, Operations,
+selected Dossier evidence, genuine 18:04 AFTER HOURS state, handoff, terminal
+report, and closing card. An FFplay `-autoexit` process exited, but full human
+viewing is not claimed; acceptance rests on complete decode and targeted visual
+inspection.
+
+The final package contains the master, vertical teaser, EN/RU SRT and VTT,
+`storyboard.md`, `capture_manifest.json`, `contact_sheet.png`, `cover.png`,
+`index.html`, `README.md`, both FFprobe JSON reports, `raw/`, and `frames/`.
+The offline HTML embeds the master, contains all ten chapter timestamps, the
+exact trace, and 23 valid local references with no network asset. Final
+`CHECKSUMS.sha256` covers exactly all 43 files outside transient `work/` and the
+checksum file itself, with no duplicate, missing, extra, or mismatched entry;
+it is 4,307 bytes with SHA-256
+`534e1db2169a21e24bb2da1a8b996dc397b691198dc77afd6c84f441c6b3d571`.
+
+### Preserved invariants and final worktree state
+
+The app remains `0.6.0+13`; published release/tag remains
+`v0.6.0-alpha.1`. Scenario content, costs, outcomes, persistence, bridge
+protocol, ABI version 1, and the exact three-export surface were not changed.
+The protected untracked `docs/development/CURRENT_PROGRESS.zip` remains 47,579
+bytes with SHA-256
+`2e5f03f003a7d227cb4ce765e338a8f335d92879862e53bd1c27d65e116de3b6`;
+it was never opened, extracted, modified, staged, moved, renamed, regenerated,
+or deleted. The ignored walkthrough package remains untracked by design. After
+the documentation-only commit, tracked and staged state are clean; the visible
+untracked paths remain `apps/juris-mobile/test/failures/`, the protected ZIP,
+and `error_description.md`.
 
 ## GreenFire Living Case Visual Slice v1 local checkpoint - 2026-08-11
 
