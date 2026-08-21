@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../app/gameplay_locale.dart';
+import '../design/juris_design.dart';
 import '../models/game_snapshot.dart';
 import 'status_badge.dart';
+
+const double _representativeBodyFontSize = 16;
+const double _largeTextLayoutThreshold = 1.3;
 
 /// Contextual message detail and response sheet.
 ///
@@ -25,170 +29,182 @@ class InboxMessageSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final JurisSpacing spacing =
+        theme.extension<JurisSpacing>() ?? JurisSpacing.standard;
+    final JurisDensity density =
+        theme.extension<JurisDensity>() ?? JurisDensity.standard;
+    final JurisTypography typography =
+        theme.extension<JurisTypography>() ?? JurisTypography.standard;
+    final JurisSurfaces surfaces = theme.extension<JurisSurfaces>() ??
+        (theme.brightness == Brightness.light
+            ? JurisSurfaces.office
+            : JurisSurfaces.dark);
+    final JurisRadii radii =
+        theme.extension<JurisRadii>() ?? JurisRadii.standard;
+    final JurisBorders borders =
+        theme.extension<JurisBorders>() ?? JurisBorders.standardWeights;
+    final JurisDensityMetrics metrics =
+        density.resolve(JurisDensityMode.compact);
+    final double textScale =
+        MediaQuery.textScalerOf(context).scale(_representativeBodyFontSize) /
+            _representativeBodyFontSize;
+    final bool prefersExpandedViewport = textScale > _largeTextLayoutThreshold;
+    final double sheetHeightFactor = prefersExpandedViewport
+        ? 0.92
+        : settlementOffer != null
+            ? 0.86
+            : actions.isEmpty
+                ? 0.56
+                : 0.72;
 
-    return DraggableScrollableSheet(
-      initialChildSize: settlementOffer != null
-          ? 0.86
-          : actions.isEmpty
-              ? 0.56
-              : 0.72,
-      minChildSize: 0.45,
-      maxChildSize: 0.92,
-      expand: false,
-      builder: (BuildContext context, ScrollController controller) {
-        return Column(
-          children: <Widget>[
-            Expanded(
-              child: ListView(
-                controller: controller,
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-                children: <Widget>[
-                  Row(
+    return FractionallySizedBox(
+      key: const ValueKey<String>('inbox-message-sheet'),
+      heightFactor: sheetHeightFactor,
+      alignment: Alignment.bottomCenter,
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          key: const ValueKey<String>('inbox-message-scroll'),
+          padding: EdgeInsets.fromLTRB(
+            metrics.contentInset,
+            spacing.xs,
+            metrics.contentInset,
+            spacing.lg,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final Widget metadata = Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              item.sender,
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              item.receivedAt,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: colors.onSurfaceVariant,
-                                  ),
-                            ),
-                          ],
+                      Text(item.sender, style: typography.documentTitle),
+                      SizedBox(height: spacing.xs),
+                      Text(
+                        item.receivedAt,
+                        style: typography.timestamp.copyWith(
+                          color: surfaces.mutedInk,
                         ),
                       ),
-                      StatusBadge.inbox(item.status),
                     ],
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    item.subject,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    item.body,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  if (settlementOffer != null) ...<Widget>[
-                    const SizedBox(height: 18),
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: colors.primaryContainer.withValues(alpha: 0.45),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: colors.primary.withValues(alpha: 0.35),
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              '${GameplayLocale.text(context, 'Offer', 'Предложение')} '
-                              'EUR ${_formatInt(settlementOffer!.amountEur)}',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${GameplayLocale.text(context, 'Revision', 'Редакция')} '
-                              '${settlementOffer!.revision} · '
-                              '${GameplayLocale.text(context, 'expires', 'истекает')} '
-                              '${settlementOffer!.expiresAt}',
-                            ),
-                          ],
-                        ),
-                      ),
+                  );
+                  final Widget status = StatusBadge.inbox(item.status);
+                  if (prefersExpandedViewport || constraints.maxWidth < 420) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        metadata,
+                        SizedBox(height: spacing.sm),
+                        status,
+                      ],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(child: metadata),
+                      SizedBox(width: spacing.md),
+                      status,
+                    ],
+                  );
+                },
+              ),
+              SizedBox(height: spacing.xl),
+              Semantics(
+                key: const ValueKey<String>('inbox-message-subject'),
+                header: true,
+                child: Text(item.subject, style: typography.sectionTitle),
+              ),
+              SizedBox(height: spacing.md),
+              Text(item.body, style: typography.bodyReading),
+              if (settlementOffer != null) ...<Widget>[
+                SizedBox(height: spacing.lg),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: surfaces.elevatedSurface,
+                    borderRadius: BorderRadius.circular(radii.medium),
+                    border: Border.all(
+                      color: surfaces.rule,
+                      width: borders.standard,
                     ),
-                  ],
-                ],
-              ),
-            ),
-
-            // Response controls remain visible while the message content scrolls.
-            SafeArea(
-              top: false,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colors.surface,
-                  border: Border(
-                    top: BorderSide(color: colors.outlineVariant),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(metrics.contentInset),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          '${GameplayLocale.text(context, 'Offer', 'Предложение')} '
+                          'EUR ${_formatInt(settlementOffer!.amountEur)}',
+                          style: typography.documentTitle,
+                        ),
+                        SizedBox(height: spacing.xs),
+                        Text(
+                          '${GameplayLocale.text(context, 'Revision', 'Редакция')} '
+                          '${settlementOffer!.revision} · '
+                          '${GameplayLocale.text(context, 'expires', 'истекает')} '
+                          '${settlementOffer!.expiresAt}',
+                          style: typography.bodyCompact.copyWith(
+                            color: surfaces.mutedInk,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
-                  child: actions.isEmpty
-                      ? SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text(
-                              GameplayLocale.text(
-                                context,
-                                'Close',
-                                'Закрыть',
-                              ),
-                            ),
-                          ),
+              ],
+              SizedBox(height: spacing.xl),
+              Divider(color: surfaces.rule),
+              SizedBox(height: spacing.md),
+              if (actions.isEmpty)
+                OutlinedButton(
+                  key: const ValueKey<String>('inbox-message-close'),
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    GameplayLocale.text(context, 'Close', 'Закрыть'),
+                  ),
+                )
+              else ...<Widget>[
+                Text(
+                  item.status == InboxStatus.actionRequired
+                      ? GameplayLocale.text(
+                          context,
+                          'Your response',
+                          'Ваш ответ',
                         )
-                      : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            Text(
-                              item.status == InboxStatus.actionRequired
-                                  ? GameplayLocale.text(
-                                      context,
-                                      'Your response',
-                                      'Ваш ответ',
-                                    )
-                                  : GameplayLocale.text(
-                                      context,
-                                      'Available actions',
-                                      'Доступные действия',
-                                    ),
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 10),
-                            ...actions.map(
-                              (GameActionView action) => Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: _ResponseButton(
-                                  action: action,
-                                  settlementOffer: settlementOffer,
-                                ),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: Text(
-                                GameplayLocale.text(
-                                  context,
-                                  'Not now',
-                                  'Не сейчас',
-                                ),
-                              ),
-                            ),
-                          ],
+                      : GameplayLocale.text(
+                          context,
+                          'Available actions',
+                          'Доступные действия',
                         ),
+                  style: typography.documentTitle,
                 ),
-              ),
-            ),
-          ],
-        );
-      },
+                SizedBox(height: spacing.md),
+                ...actions.map(
+                  (GameActionView action) => Padding(
+                    padding: EdgeInsets.only(bottom: spacing.sm),
+                    child: _ResponseButton(
+                      key: ValueKey<String>('inbox-response-${action.id}'),
+                      action: action,
+                      settlementOffer: settlementOffer,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  key: const ValueKey<String>('inbox-message-not-now'),
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    GameplayLocale.text(context, 'Not now', 'Не сейчас'),
+                  ),
+                ),
+              ],
+              SizedBox(height: spacing.lg),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -197,6 +213,7 @@ class _ResponseButton extends StatelessWidget {
   const _ResponseButton({
     required this.action,
     required this.settlementOffer,
+    super.key,
   });
 
   final GameActionView action;
@@ -257,6 +274,8 @@ class _ResponseButton extends StatelessWidget {
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) => AlertDialog(
+        key: ValueKey<String>('inbox-confirmation-${action.id}'),
+        scrollable: true,
         title: Text(action.title),
         content: Text(
           '${GameplayLocale.text(context, 'Response', 'Ответ')}: '
@@ -268,10 +287,12 @@ class _ResponseButton extends StatelessWidget {
         ),
         actions: <Widget>[
           TextButton(
+            key: ValueKey<String>('inbox-confirm-no-${action.id}'),
             onPressed: () => Navigator.pop(context, false),
             child: Text(GameplayLocale.text(context, 'No', 'Нет')),
           ),
           FilledButton(
+            key: ValueKey<String>('inbox-confirm-yes-${action.id}'),
             onPressed: () => Navigator.pop(context, true),
             child: Text(GameplayLocale.text(context, 'Yes', 'Да')),
           ),

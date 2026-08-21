@@ -439,9 +439,7 @@ Future<void> _selectVisualMode(
 
 void _expectVisualMode(WidgetTester tester, JurisVisualMode mode) {
   final ThemeData theme = Theme.of(
-    tester.element(
-      find.byKey(const ValueKey<String>('professional-session-header')),
-    ),
+    tester.element(find.byType(HomeShell)),
   );
   final JurisSurfaces surfaces = theme.extension<JurisSurfaces>()!;
   final JurisSurfaces expected = JurisSurfaces.forMode(mode);

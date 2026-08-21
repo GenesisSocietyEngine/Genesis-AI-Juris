@@ -239,6 +239,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           builder: () => InboxScreen(
             snapshot: snapshot,
             presentation: inboxPresentation,
+            sessionClockLabel: _sessionClockLabel(context),
+            onShowActions:
+                snapshot.actions.isEmpty ? null : () => _showActions(snapshot),
             onMessageTap: _showInboxMessage,
             onCaseReportTap: () => _showCaseReport(snapshot),
           ),
@@ -253,7 +256,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           ),
           icon: Icons.gavel_outlined,
           selectedIcon: Icons.gavel,
-          builder: () => _buildMatterContent(snapshot),
+          builder: () => _buildMatterContent(snapshot, inboxPresentation),
         ),
         _Destination(
           id: 'calendar',
@@ -359,9 +362,26 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                     destinations[effectiveSelectedIndex];
                 final bool useRail = constraints.maxWidth >= 700;
                 final Widget content = selectedDestination.builder();
+                final bool isGreenFireLivingCase =
+                    widget.caseDefinition != null &&
+                        widget.livingCaseVisualManifest != null &&
+                        widget.livingCaseVisualManifest!.supportsCase(
+                          widget.caseDefinition!.caseId,
+                        );
+                final bool contentOwnsContext =
+                    selectedDestination.id == 'inbox' ||
+                        (isGreenFireLivingCase &&
+                            selectedDestination.id == 'matter');
+                final JurisTypography typography =
+                    Theme.of(context).extension<JurisTypography>() ??
+                        JurisTypography.standard;
+                final JurisSurfaces surfaces =
+                    Theme.of(context).extension<JurisSurfaces>() ??
+                        JurisSurfaces.dark;
 
                 return Scaffold(
                   appBar: AppBar(
+                    toolbarHeight: 52,
                     leading: widget.onExitToCaseCatalog == null
                         ? null
                         : IconButton(
@@ -375,9 +395,14 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                                 : widget.onExitToCaseCatalog,
                             icon: const Icon(Icons.arrow_back),
                           ),
-                    title: const Text(
+                    title: Text(
                       'GENESIS: JURIS',
                       maxLines: 1,
+                      style: typography.controlLabel.copyWith(
+                        color: surfaces.ink,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.7,
+                      ),
                     ),
                     actions: <Widget>[
                       IconButton(
@@ -458,38 +483,43 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                               ),
                               const VerticalDivider(width: 1),
                               Expanded(
-                                child: Column(
-                                  children: <Widget>[
-                                    _SessionIdentityHeader(
-                                      destinationLabel:
-                                          selectedDestination.label,
-                                      matterTitle: snapshot.matterTitle,
-                                      dayLabel: snapshot.dayLabel,
-                                      timeLabel: snapshot.timeLabel,
-                                      stage: snapshot.stage,
-                                      clockLabel: _sessionClockLabel(context),
-                                    ),
-                                    const Divider(height: 1),
-                                    Expanded(child: content),
-                                  ],
-                                ),
+                                child: contentOwnsContext
+                                    ? content
+                                    : Column(
+                                        children: <Widget>[
+                                          _SessionIdentityHeader(
+                                            destinationLabel:
+                                                selectedDestination.label,
+                                            matterTitle: snapshot.matterTitle,
+                                            dayLabel: snapshot.dayLabel,
+                                            timeLabel: snapshot.timeLabel,
+                                            stage: snapshot.stage,
+                                            clockLabel:
+                                                _sessionClockLabel(context),
+                                          ),
+                                          const Divider(height: 1),
+                                          Expanded(child: content),
+                                        ],
+                                      ),
                               ),
                             ],
                           )
-                        : Column(
-                            children: <Widget>[
-                              _SessionIdentityHeader(
-                                destinationLabel: selectedDestination.label,
-                                matterTitle: snapshot.matterTitle,
-                                dayLabel: snapshot.dayLabel,
-                                timeLabel: snapshot.timeLabel,
-                                stage: snapshot.stage,
-                                clockLabel: _sessionClockLabel(context),
+                        : contentOwnsContext
+                            ? content
+                            : Column(
+                                children: <Widget>[
+                                  _SessionIdentityHeader(
+                                    destinationLabel: selectedDestination.label,
+                                    matterTitle: snapshot.matterTitle,
+                                    dayLabel: snapshot.dayLabel,
+                                    timeLabel: snapshot.timeLabel,
+                                    stage: snapshot.stage,
+                                    clockLabel: _sessionClockLabel(context),
+                                  ),
+                                  const Divider(height: 1),
+                                  Expanded(child: content),
+                                ],
                               ),
-                              const Divider(height: 1),
-                              Expanded(child: content),
-                            ],
-                          ),
                   ),
                   bottomNavigationBar: useRail
                       ? null
@@ -518,26 +548,27 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                               .toList(growable: false),
                           onSelected: _selectDestination,
                         ),
-                  floatingActionButton:
-                      snapshot.actions.isEmpty || _persistenceInProgress
-                          ? null
-                          : FloatingActionButton.extended(
-                              key: const ValueKey<String>(
-                                'available-decisions-control',
-                              ),
-                              tooltip: GameplayLocale.text(
-                                context,
-                                'Available decisions: ${snapshot.actions.length}',
-                                'Доступно решений: ${snapshot.actions.length}',
-                              ),
-                              onPressed: () => _showActions(snapshot),
-                              icon: const Icon(
-                                  Icons.playlist_add_check_circle_outlined),
-                              label: Text(
-                                '${GameplayLocale.text(context, 'Decisions', 'Решения')}'
-                                ' · ${snapshot.actions.length}',
-                              ),
-                            ),
+                  floatingActionButton: contentOwnsContext ||
+                          snapshot.actions.isEmpty ||
+                          _persistenceInProgress
+                      ? null
+                      : FloatingActionButton.extended(
+                          key: const ValueKey<String>(
+                            'available-decisions-control',
+                          ),
+                          tooltip: GameplayLocale.text(
+                            context,
+                            'Available decisions: ${snapshot.actions.length}',
+                            'Доступно решений: ${snapshot.actions.length}',
+                          ),
+                          onPressed: () => _showActions(snapshot),
+                          icon: const Icon(
+                              Icons.playlist_add_check_circle_outlined),
+                          label: Text(
+                            '${GameplayLocale.text(context, 'Decisions', 'Решения')}'
+                            ' · ${snapshot.actions.length}',
+                          ),
+                        ),
                 );
               },
             ),
@@ -547,7 +578,10 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildMatterContent(GameSnapshot snapshot) {
+  Widget _buildMatterContent(
+    GameSnapshot snapshot,
+    InboxPresentation inboxPresentation,
+  ) {
     final MobileCaseDefinition? caseDefinition = widget.caseDefinition;
     final LivingCaseVisualManifest? manifest = widget.livingCaseVisualManifest;
     if (caseDefinition != null &&
@@ -558,6 +592,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         caseDefinition: caseDefinition,
         manifest: manifest,
         locale: widget.locale,
+        inboxPresentation: inboxPresentation,
+        sessionClockLabel: _sessionClockLabel(context),
         onShowActions: () => _showActions(snapshot),
         onShowDossier: () => _showDossier(snapshot),
         onShowTrainingDebrief: () => _showTrainingDebrief(snapshot),

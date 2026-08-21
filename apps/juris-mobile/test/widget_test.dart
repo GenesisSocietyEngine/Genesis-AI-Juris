@@ -25,21 +25,74 @@ void main() {
   ) async {
     // This proves a player can explicitly decline a proposed action instead of
     // relying on an ambiguous Cancel button.
+    final _RecordingDemoGameRepository repository =
+        _RecordingDemoGameRepository(seed: 20260724);
     await tester.pumpWidget(
-      JurisApp(repository: DemoGameRepository(seed: 20260724)),
+      JurisApp(repository: repository),
     );
 
-    await tester.tap(find.textContaining('Decisions ·'));
+    final int availableCount = repository.snapshot.actions.length;
+    final Finder decisionControl = find.byKey(
+      const ValueKey<String>('available-decisions-control'),
+    );
+    expect(decisionControl, findsOneWidget);
+    expect(decisionControl.hitTestable(), findsOneWidget);
+    expect(
+      find.descendant(
+        of: decisionControl,
+        matching: find.text('Review available decisions'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: decisionControl,
+        matching: find.text('$availableCount'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.ancestor(
+        of: decisionControl,
+        matching: find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is Semantics &&
+              widget.properties.button == true &&
+              widget.properties.label == 'Available decisions: $availableCount',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(repository.appliedActionIds, isEmpty);
+
+    await tester.tap(decisionControl);
     await tester.pumpAndSettle();
+    expect(find.text('Available actions'), findsOneWidget);
     await tester.tap(find.text('Run conflict check'));
     await tester.pumpAndSettle();
 
+    expect(find.text('No'), findsOneWidget);
+    expect(find.text('Yes'), findsOneWidget);
+    expect(repository.appliedActionIds, isEmpty);
+
+    await tester.tap(find.text('No'));
+    await tester.pumpAndSettle();
+    expect(repository.appliedActionIds, isEmpty);
+    expect(find.text('Available actions'), findsOneWidget);
+    expect(find.text('Run conflict check'), findsOneWidget);
+
+    await tester.tap(find.text('Run conflict check'));
+    await tester.pumpAndSettle();
     expect(find.text('No'), findsOneWidget);
     expect(find.text('Yes'), findsOneWidget);
 
     await tester.tap(find.text('Yes'));
     await tester.pumpAndSettle();
 
+    expect(
+      repository.appliedActionIds,
+      equals(<String>['run-conflict-check']),
+    );
     expect(find.textContaining('Investigation'), findsWidgets);
     expect(find.text('Board expects visible action'), findsOneWidget);
   });
@@ -738,10 +791,20 @@ void main() {
   testWidgets('judgment action informs client and clears required status', (
     WidgetTester tester,
   ) async {
-    final DemoGameRepository repository = _buildMatterWithScheduledHearing();
+    final _RecordingDemoGameRepository repository =
+        _RecordingDemoGameRepository(seed: 20260724);
+    repository.applyAction('run-conflict-check');
+    repository.applyAction('prepare-partner-brief');
+    repository.applyAction('issue-preservation-notice');
+    repository.applyAction('request-documents');
+    repository.applyAction('reject-settlement');
+    repository.applyAction('commence-proceedings');
+    repository.applyAction('prepare-statement-of-claim');
+    repository.applyAction('prepare-evidence-bundle');
     repository.applyAction('wait-until-hearing');
     repository.applyAction('attend-hearing');
     repository.applyAction('rest');
+    repository.appliedActionIds.clear();
 
     final InboxItemView judgment = repository.snapshot.inbox.singleWhere(
       (InboxItemView item) => item.id.startsWith('judgment-day-'),
@@ -751,16 +814,55 @@ void main() {
 
     await tester.pumpWidget(JurisApp(repository: repository));
     final Finder judgmentSubject = find.text(judgment.subject);
-    await tester.ensureVisible(judgmentSubject);
-    await tester.tap(judgmentSubject);
+    final Finder visibleJudgmentSubject = await _revealThroughPublicScrolling(
+      tester,
+      target: judgmentSubject,
+      viewport: find.byKey(const PageStorageKey<String>('inbox-scroll')),
+      description: 'judgment Inbox row',
+    );
+    await tester.tap(visibleJudgmentSubject);
     await tester.pumpAndSettle();
 
-    expect(find.text('Inform client and explain judgment'), findsOneWidget);
-    await tester.tap(find.text('Inform client and explain judgment'));
+    final Finder judgmentAction = find.text(
+      'Inform client and explain judgment',
+    );
+    expect(judgmentAction, findsOneWidget);
+    final Finder visibleJudgmentAction = await _revealThroughPublicScrolling(
+      tester,
+      target: judgmentAction,
+      viewport: find.byKey(
+        const ValueKey<String>('inbox-message-scroll'),
+      ),
+      description: 'judgment response action',
+    );
+    await tester.tap(visibleJudgmentAction);
     await tester.pumpAndSettle();
+    expect(find.text('No'), findsOneWidget);
+    expect(find.text('Yes'), findsOneWidget);
+    expect(repository.appliedActionIds, isEmpty);
+
+    await tester.tap(find.text('No'));
+    await tester.pumpAndSettle();
+    expect(repository.appliedActionIds, isEmpty);
+    expect(judgmentAction.hitTestable(), findsOneWidget);
+
+    await tester.tap(judgmentAction.hitTestable());
+    await tester.pumpAndSettle();
+    expect(find.text('No'), findsOneWidget);
+    expect(find.text('Yes'), findsOneWidget);
     await tester.tap(find.text('Yes'));
     await tester.pumpAndSettle();
 
+    expect(
+      repository.appliedActionIds,
+      equals(<String>['inform-client-judgment']),
+    );
+    expect(
+      repository.snapshot.inbox.any(
+        (InboxItemView item) => item.id == 'client-judgment-briefed',
+      ),
+      isTrue,
+    );
     final InboxItemView resolved = repository.snapshot.inbox.singleWhere(
       (InboxItemView item) => item.id == judgment.id,
     );
@@ -1039,4 +1141,59 @@ DemoGameRepository _buildMatterWithScheduledHearing({int seed = 20260724}) {
   repository.applyAction('prepare-statement-of-claim');
   repository.applyAction('prepare-evidence-bundle');
   return repository;
+}
+
+class _RecordingDemoGameRepository extends DemoGameRepository {
+  _RecordingDemoGameRepository({required super.seed});
+
+  final List<String> appliedActionIds = <String>[];
+
+  @override
+  ActionExecutionResult applyAction(String actionId) {
+    appliedActionIds.add(actionId);
+    return super.applyAction(actionId);
+  }
+}
+
+Future<Finder> _revealThroughPublicScrolling(
+  WidgetTester tester, {
+  required Finder target,
+  required Finder viewport,
+  required String description,
+  int maximumSteps = 24,
+}) async {
+  expect(viewport, findsOneWidget);
+  final Finder scrollableFinder = find.descendant(
+    of: viewport,
+    matching: find.byType(Scrollable),
+  );
+  expect(scrollableFinder, findsOneWidget);
+  final ScrollableState scrollable = tester.state<ScrollableState>(
+    scrollableFinder,
+  );
+
+  for (int step = 0; step <= maximumSteps; step += 1) {
+    if (target.evaluate().length == 1 &&
+        target.hitTestable().evaluate().length == 1) {
+      return target.hitTestable();
+    }
+    if (step == maximumSteps) {
+      break;
+    }
+    final double before = scrollable.position.pixels;
+    await tester.drag(viewport, const Offset(0, -240));
+    await tester.pumpAndSettle();
+    final double after = scrollable.position.pixels;
+    if ((after - before).abs() <= 0.5) {
+      break;
+    }
+  }
+
+  fail(
+    'Could not reveal $description through bounded public scrolling; '
+    'built=${target.evaluate().length} '
+    'hitTestable=${target.hitTestable().evaluate().length} '
+    'pixels=${scrollable.position.pixels} '
+    'max=${scrollable.position.maxScrollExtent}.',
+  );
 }

@@ -593,11 +593,22 @@ void main() {
   testWidgets('Russian GoldenShell launch localizes shell and action sheet', (
     WidgetTester tester,
   ) async {
+    final _FakeScenarioBridgeClient client = _FakeScenarioBridgeClient();
     final RustScenarioRepository repository = RustScenarioRepository(
       caseDefinition: goldenshell,
       locale: 'ru',
-      bridgeClient: _FakeScenarioBridgeClient(),
+      bridgeClient: client,
     );
+    final GameActionView expectedAction = repository.snapshot.actions.single;
+    expect(expectedAction.id, 'accept_cooperative_mandate');
+    expect(expectedAction.title, 'Принять поручение кооператива');
+    expect(
+      expectedAction.description,
+      'Подтвердить ограниченное экстренное поручение для кооператива и '
+      'двенадцати ферм, выявить непосредственные конфликты и создать единый '
+      'защищённый канал координации.',
+    );
+    expect(expectedAction.costEur, 750);
     await tester.pumpWidget(
       MaterialApp(
         home: HomeShell(repository: repository, locale: 'ru'),
@@ -607,12 +618,71 @@ void main() {
     expect(find.text('Входящие'), findsWidgets);
     expect(find.text('Дело'), findsOneWidget);
     expect(find.textContaining('Экстренный приём кооператива'), findsOneWidget);
-    await tester.tap(find.text('Решения · 1'));
+    final Finder decisionControl = find.byKey(
+      const ValueKey<String>('available-decisions-control'),
+    );
+    expect(repository.snapshot.actions, hasLength(1));
+    expect(decisionControl, findsOneWidget);
+    expect(decisionControl.hitTestable(), findsOneWidget);
+    expect(
+      find.descendant(
+        of: decisionControl,
+        matching: find.text('Рассмотреть доступные решения'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: decisionControl, matching: find.text('1')),
+      findsOneWidget,
+    );
+    expect(
+      find.ancestor(
+        of: decisionControl,
+        matching: find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is Semantics &&
+              widget.properties.button == true &&
+              widget.properties.label == 'Доступно решений: 1',
+        ),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(decisionControl);
     await tester.pumpAndSettle();
 
     expect(find.text('Доступные действия'), findsOneWidget);
-    expect(find.text('Принять поручение кооператива'), findsOneWidget);
+    expect(
+      find.text(
+        'Каждое действие двигает мир вперёд. Перед подтверждением проверьте '
+        'время, стоимость и известный риск.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(expectedAction.title), findsOneWidget);
+    expect(find.text(expectedAction.description), findsOneWidget);
     expect(find.text('EUR 750'), findsOneWidget);
+
+    await tester.tap(find.text(expectedAction.title));
+    await tester.pumpAndSettle();
+    expect(find.text('Нет'), findsOneWidget);
+    expect(find.text('Да'), findsOneWidget);
+    expect(client.dispatchSessionIds, isEmpty);
+
+    await tester.tap(find.text('Нет'));
+    await tester.pumpAndSettle();
+    expect(client.dispatchSessionIds, isEmpty);
+    expect(find.text(expectedAction.title), findsOneWidget);
+
+    await tester.tap(find.text(expectedAction.title));
+    await tester.pumpAndSettle();
+    expect(find.text('Нет'), findsOneWidget);
+    expect(find.text('Да'), findsOneWidget);
+    await tester.tap(find.text('Да'));
+    await tester.pumpAndSettle();
+
+    expect(client.dispatchSessionIds, <int>[1]);
+    expect(repository.snapshot.stage,
+        'Немедленный отзыв и сохранение доказательств');
     repository.dispose();
   });
 
