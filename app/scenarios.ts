@@ -1,21 +1,84 @@
 import canonicalBundle from "./canonical-case-bundle.json";
 import { initialMetrics } from "./runtime-constants";
 import { normalizePlayableScenario, playableFingerprint } from "./playable-integrity";
-import type { LocalText, Scenario, ScenarioDeadline, ScenarioStage } from "./types";
+import type { DecisionOption, LocalText, MetricKey, Scenario, ScenarioDeadline, ScenarioInboxItem, ScenarioStage } from "./types";
 
 const t = (ru: string, en: string): LocalText => ({ ru, en });
 
 type BaseScenario = Omit<Scenario, "opening" | "initialStageId" | "initialClockMinute" | "deadlines" | "workflowInbox">;
+
+type CanonicalEffect = {
+  type: string;
+  metric?: string;
+  amount?: number;
+  value?: number;
+  minimum?: number;
+  maximum?: number;
+  stage?: string;
+  event?: string;
+  decision?: string;
+  outcome?: string;
+  resource?: string;
+};
+type CanonicalAction = {
+  id: string;
+  title: string;
+  description: string;
+  effects: CanonicalEffect[];
+  time_cost_minutes?: number;
+  cost_eur?: number;
+  billable_minutes?: number;
+  completion_timing?: { calendar_target?: { day_offset: number; minute_of_day: number } };
+  advance_to_deadlines?: string[];
+  repeatability?: { type?: string; max_uses?: number };
+};
+type CanonicalStage = { id: string; title: string; kind: string; exit_actions?: string[]; terminal?: boolean };
+type CanonicalEvent = { id: string; trigger?: { type?: string; action?: string }; condition?: unknown; effects?: CanonicalEffect[] };
+type CanonicalDecision = { id: string; branches?: Array<{ effects?: CanonicalEffect[] }> };
+type CanonicalDeadline = { id: string; title: string; due_at: { day: number; minute_of_day: number }; completion_actions: string[]; activation_event?: string; missed_event?: string };
+type CanonicalInbox = { id: string; sender?: string; subject: string; body: string; initially_visible?: boolean; action_required?: boolean; resolution_actions?: string[] };
+type CanonicalOutcome = { id: string; title: string; summary: string; terminal_stage: string };
+type CanonicalEvidence = { id: string; title: string; kind?: string; description?: string; initially_available?: boolean };
 
 type CanonicalCase = {
   case_id: string;
   scenario_fingerprint: string;
   scenario: {
     metadata: { title: string; summary: string; content_version: string };
+    initial_stage: string;
+    initial_clock?: { day: number; minute_of_day: number };
+    clock?: { mode?: string };
+    initial_resources?: Record<string, number>;
+    numeric_metrics?: Record<string, number>;
+    stages: CanonicalStage[];
+    actions: CanonicalAction[];
+    events?: CanonicalEvent[];
+    deterministic_decisions?: CanonicalDecision[];
+    deadlines: CanonicalDeadline[];
+    inbox_items: CanonicalInbox[];
+    evidence: CanonicalEvidence[];
+    outcomes: CanonicalOutcome[];
   };
   scenario_localizations?: Record<string, {
     metadata?: { title?: string; summary?: string };
+    stages?: Record<string, { title?: string }>;
+    actions?: Record<string, { title?: string; description?: string }>;
+    deadlines?: Record<string, { title?: string }>;
+    inbox_items?: Record<string, { sender?: string; subject?: string; body?: string }>;
+    evidence?: Record<string, { title?: string; description?: string }>;
+    outcomes?: Record<string, { title?: string; summary?: string }>;
   }>;
+};
+
+const logisticsRuTranslations: Record<string, string> = {
+  "stages:intake:title": "Приём требования", "stages:pre_action:title": "Досудебное взыскание", "stages:proceedings:title": "Производство по взысканию", "stages:post_judgment:title": "Исполнение после решения", "stages:resolved:title": "Дело завершено",
+  "actions:audit_claim_file:title": "Проверить счета и доказательственное досье", "actions:audit_claim_file:description": "Сверить основной долг, спорные надбавки и заявленный зачёт с документами периода спора.",
+  "actions:issue_formal_demand:title": "Направить документированную формальную претензию", "actions:issue_formal_demand:description": "Направить сверенное требование с условиями договора, подтверждениями доставки и сроком ответа.",
+  "actions:accept_negotiated_payment:title": "Принять согласованный платёж", "actions:accept_negotiated_payment:description": "Урегулировать спорные надбавки и зачёт согласованным платежом и окончательным соглашением.",
+  "actions:request_judgment:title": "Представить требование для вынесения решения", "actions:request_judgment:description": "Продолжить дело на документальном основании и ответить на возражения по уровню услуг и зачёту.",
+  "actions:enforce_judgment:title": "Завершить исполнение судебного решения", "actions:enforce_judgment:description": "Получить исполнительный титул, взыскать платёж и закрыть поручение клиента.",
+  "outcomes:negotiated_recovery:title": "Согласованное взыскание", "outcomes:negotiated_recovery:summary": "Velmont принимает документированный платёж, закрывающий остаток по счетам, спорные надбавки и заявленный Orbis зачёт.",
+  "outcomes:judgment_recovery:title": "Решение получено и исполнено", "outcomes:judgment_recovery:summary": "Velmont получает и исполняет решение по документированному логистическому долгу.",
 };
 
 const baseScenarios: BaseScenario[] = [
@@ -196,7 +259,7 @@ const baseScenarios: BaseScenario[] = [
 
 const canonicalCases = (canonicalBundle.cases as unknown as CanonicalCase[]);
 
-export const scenarios: Scenario[] = baseScenarios.map((base) => {
+export const archivedBundledScenarios: Scenario[] = baseScenarios.map((base) => {
   const canonicalCase = canonicalCases.find((item) => item.case_id === base.caseId);
   if (!canonicalCase) throw new Error(`Canonical case missing: ${base.caseId}`);
   const raw = canonicalCase.scenario;
@@ -244,7 +307,277 @@ export const scenarios: Scenario[] = baseScenarios.map((base) => {
   return { ...normalizedScenario, fingerprint: playableFingerprint(normalizedScenario) };
 });
 
+export const scenarios: Scenario[] = baseScenarios.map((base) => {
+  const canonicalCase = canonicalCases.find((item) => item.case_id === base.caseId);
+  if (!canonicalCase) throw new Error(`Canonical case missing: ${base.caseId}`);
+  const raw = canonicalCase.scenario;
+  const initialClockMinute = (raw.initial_clock?.day ?? 0) * 1440 + (raw.initial_clock?.minute_of_day ?? 0);
+  const materialRefs = raw.evidence.map((item) => item.id);
+  const optionIdsByCanonical = new Map<string, string[]>();
+  const stages = raw.stages.map((stage) => adaptCanonicalStage(canonicalCase, stage, initialClockMinute, materialRefs));
+  for (const stage of stages) for (const option of stage.options) {
+    if (!option.canonicalActionId) continue;
+    optionIdsByCanonical.set(option.canonicalActionId, [...(optionIdsByCanonical.get(option.canonicalActionId) ?? []), option.id]);
+  }
+  const resources = raw.initial_resources ?? {};
+  const numericMetrics = raw.numeric_metrics ?? {};
+  const scenario: Scenario = {
+    ...base,
+    version: nextParityVersion(base.version),
+    fingerprint: "",
+    sourceFingerprint: canonicalCase.scenario_fingerprint,
+    title: {
+      en: canonicalCase.scenario_localizations?.en?.metadata?.title ?? raw.metadata.title ?? base.title.en,
+      ru: canonicalCase.scenario_localizations?.ru?.metadata?.title ?? base.title.ru,
+    },
+    actors: base.actors,
+    materials: raw.evidence.map((evidence) => ({
+      ref: evidence.id,
+      type: localizedEvidenceKind(evidence.kind),
+      title: localizedText(canonicalCase, "evidence", evidence.id, "title", evidence.title),
+      source: {
+        en: evidence.description ?? "Canonical mobile case record",
+        ru: canonicalCase.scenario_localizations?.ru?.evidence?.[evidence.id]?.description ?? "Канонический материал мобильного кейса",
+      },
+      date: "CANONICAL",
+    })),
+    opening: {
+      en: canonicalCase.scenario_localizations?.en?.metadata?.summary ?? raw.metadata.summary,
+      ru: canonicalCase.scenario_localizations?.ru?.metadata?.summary ?? raw.metadata.summary,
+    },
+    initialStageId: raw.initial_stage,
+    initialClockMinute,
+    stages,
+    deadlines: raw.deadlines.map((deadline) => ({
+      id: deadline.id,
+      title: localizedText(canonicalCase, "deadlines", deadline.id, "title", deadline.title),
+      dueAtMinute: deadline.due_at.day * 1440 + deadline.due_at.minute_of_day,
+      completionActions: deadline.completion_actions.flatMap((actionId) => optionIdsByCanonical.get(actionId) ?? []),
+    })),
+    workflowInbox: adaptCanonicalInbox(canonicalCase, optionIdsByCanonical),
+    initialResources: {
+      authorizedBudgetEur: Math.max(0, resources.authorized_budget_eur ?? 0),
+      spendEur: Math.max(0, resources.spend_eur ?? 0),
+      billableMinutes: Math.max(0, resources.billable_minutes ?? 0),
+      fatigue: clampResource(numericMetrics.fatigue ?? 0),
+      cumulativeStrain: clampResource(numericMetrics.cumulative_strain ?? 0),
+      awardEur: Math.max(0, resources.award_eur ?? 0),
+      outcomeCostsEur: Math.max(0, resources.outcome_costs_eur ?? 0),
+    },
+    mobileParity: {
+      source: "canonical-mobile-bundle",
+      sourceVersion: raw.metadata.content_version,
+      stageCount: raw.stages.length,
+      actionCount: raw.actions.length,
+      foregroundClock: raw.clock?.mode === "foreground",
+    },
+  };
+  const normalizedScenario = normalizePlayableScenario(scenario);
+  return { ...normalizedScenario, fingerprint: playableFingerprint(normalizedScenario) };
+});
+
 export { initialMetrics };
+
+function adaptCanonicalStage(canonicalCase: CanonicalCase, rawStage: CanonicalStage, initialClockMinute: number, materialRefs: string[]): ScenarioStage {
+  const raw = canonicalCase.scenario;
+  const actionById = new Map(raw.actions.map((action) => [action.id, action]));
+  const clock = formatStageClock(initialClockMinute);
+  const options = (rawStage.exit_actions ?? []).flatMap((actionId): DecisionOption[] => {
+    const action = actionById.get(actionId);
+    if (!action) return [];
+    const effects = actionEffectsWithEvents(raw, action);
+    const calendarTarget = action.completion_timing?.calendar_target;
+    const resolvedOutcomeId = uniqueEffectValue(raw, action, "outcome");
+    const resolvedOutcome = resolvedOutcomeId ? raw.outcomes.find((item) => item.id === resolvedOutcomeId) : undefined;
+    const awardEur = uniqueResourceValue(raw, action, "award_eur");
+    const outcomeCostsEur = uniqueResourceValue(raw, action, "outcome_costs_eur");
+    const nextStageId = actionNextStage(raw, action) ?? rawStage.id;
+    const result = resolvedOutcome
+      ? localizedText(canonicalCase, "outcomes", resolvedOutcome.id, "summary", resolvedOutcome.summary)
+      : {
+          en: "Canonical action completed. The clock, spend and professional workload were updated.",
+          ru: "Каноническое действие выполнено. Время, расходы и рабочая нагрузка обновлены.",
+        };
+    return [{
+      id: `${rawStage.id}::${action.id}`,
+      canonicalActionId: action.id,
+      label: localizedActionText(canonicalCase, action, "title"),
+      detail: localizedActionText(canonicalCase, action, "description"),
+      result,
+      cost: action.cost_eur ?? 0,
+      costAuthored: action.cost_eur !== undefined || undefined,
+      minutes: action.time_cost_minutes ?? 0,
+      billableMinutes: action.billable_minutes,
+      fatigueDelta: sumMetricDelta(effects, "fatigue"),
+      strainDelta: sumMetricDelta(effects, "cumulative_strain"),
+      resetsFatigue: effects.some((effect) => effect.type === "set_metric" && effect.metric === "fatigue" && effect.value === 0) || undefined,
+      advanceToMinute: action.advance_to_deadlines?.map((id) => raw.deadlines.find((deadline) => deadline.id === id)).filter((deadline): deadline is CanonicalDeadline => Boolean(deadline)).map((deadline) => deadline.due_at.day * 1440 + deadline.due_at.minute_of_day).sort((left, right) => left - right)[0],
+      resolvedOutcome: resolvedOutcome ? {
+        id: resolvedOutcome.id,
+        title: localizedText(canonicalCase, "outcomes", resolvedOutcome.id, "title", resolvedOutcome.title),
+        summary: localizedText(canonicalCase, "outcomes", resolvedOutcome.id, "summary", resolvedOutcome.summary),
+        classification: classifyCanonicalOutcome(resolvedOutcome.id),
+      } : undefined,
+      awardEur,
+      outcomeCostsEur,
+      effects: canonicalMetricEffects(effects),
+      nextStageId,
+      completionDayOffset: calendarTarget?.day_offset,
+      completionMinuteOfDay: calendarTarget?.minute_of_day,
+      repeatability: action.repeatability?.type === "limited" ? "limited" : action.repeatability?.type === "once" ? "once" : "repeatable",
+      maxUses: action.repeatability?.type === "limited" ? action.repeatability.max_uses ?? 1 : undefined,
+    }];
+  });
+  const title = localizedText(canonicalCase, "stages", rawStage.id, "title", rawStage.title);
+  return {
+    id: rawStage.id,
+    day: clock.day,
+    time: clock.time,
+    phase: title,
+    headline: title,
+    brief: rawStage.id === raw.initial_stage
+      ? { en: raw.metadata.summary, ru: canonicalCase.scenario_localizations?.ru?.metadata?.summary ?? raw.metadata.summary }
+      : { en: `Canonical mobile workflow · ${rawStage.kind}`, ru: `Канонический мобильный процесс · ${rawStage.kind}` },
+    source: { en: "Authoritative mobile case bundle", ru: "Авторитетный пакет мобильного кейса" },
+    materialRefs,
+    options,
+    terminal: rawStage.terminal ?? false,
+  };
+}
+
+function localizedText(canonicalCase: CanonicalCase, section: "stages" | "actions" | "deadlines" | "inbox_items" | "evidence" | "outcomes", id: string, field: "title" | "description" | "subject" | "body" | "summary", fallback: string): LocalText {
+  const read = (locale: "en" | "ru") => {
+    const entry = canonicalCase.scenario_localizations?.[locale]?.[section]?.[id] as Record<string, string | undefined> | undefined;
+    return entry?.[field] ?? logisticsTranslation(canonicalCase.case_id, section, id, field, locale) ?? fallback;
+  };
+  return { en: read("en"), ru: read("ru") };
+}
+
+function localizedActionText(canonicalCase: CanonicalCase, action: CanonicalAction, field: "title" | "description") {
+  return localizedText(canonicalCase, "actions", action.id, field, action[field]);
+}
+
+function adaptCanonicalInbox(canonicalCase: CanonicalCase, optionIdsByCanonical: Map<string, string[]>): ScenarioInboxItem[] {
+  return canonicalCase.scenario.inbox_items.map((item) => ({
+    id: item.id,
+    subject: localizedText(canonicalCase, "inbox_items", item.id, "subject", item.subject),
+    body: localizedText(canonicalCase, "inbox_items", item.id, "body", item.body),
+    initiallyVisible: item.initially_visible ?? false,
+    actionRequired: item.action_required ?? false,
+    resolutionActions: (item.resolution_actions ?? []).flatMap((actionId) => optionIdsByCanonical.get(actionId) ?? []),
+  }));
+}
+
+function actionEffectsWithEvents(raw: CanonicalCase["scenario"], action: CanonicalAction) {
+  const effects = action.effects.flatMap((effect) => effect.type === "trigger_event" && effect.event ? [effect, ...eventEffects(raw, effect.event, new Set<string>())] : [effect]);
+  for (const event of raw.events ?? []) {
+    if (event.trigger?.type === "after_action" && event.trigger.action === action.id) {
+      effects.push(...eventEffects(raw, event.id, new Set<string>()));
+    }
+  }
+  return effects;
+}
+
+function eventEffects(raw: CanonicalCase["scenario"], eventId: string, visited: Set<string>): CanonicalEffect[] {
+  if (visited.has(eventId)) return [];
+  visited.add(eventId);
+  const event = raw.events?.find((item) => item.id === eventId);
+  if (!event) return [];
+  return (event.effects ?? []).flatMap((effect) => effect.type === "trigger_event" && effect.event ? [effect, ...eventEffects(raw, effect.event, visited)] : [effect]);
+}
+
+function candidateEffectValues(raw: CanonicalCase["scenario"], effects: CanonicalEffect[], field: "stage" | "outcome", visited: Set<string>): string[] {
+  const values: string[] = [];
+  for (const effect of effects) {
+    if (effect.type === `set_${field}` && typeof effect[field] === "string") values.push(effect[field]!);
+    if (field === "outcome" && effect.type === "resolve_outcome" && effect.outcome) values.push(effect.outcome);
+    if (effect.type === "trigger_event" && effect.event) {
+      const token = `event:${effect.event}`;
+      if (!visited.has(token)) {
+        visited.add(token);
+        const event = raw.events?.find((item) => item.id === effect.event);
+        if (event) values.push(...candidateEffectValues(raw, event.effects ?? [], field, visited));
+      }
+    }
+    if (effect.type === "resolve_deterministic_decision" && effect.decision) {
+      const token = `decision:${effect.decision}`;
+      if (!visited.has(token)) {
+        visited.add(token);
+        const branches = raw.deterministic_decisions?.find((item) => item.id === effect.decision)?.branches ?? [];
+        const branchValues = branches.map((branch) => uniqueCandidate(candidateEffectValues(raw, branch.effects ?? [], field, new Set(visited))));
+        if (branchValues.length > 0 && branchValues[0] !== undefined && branchValues.every((value) => value === branchValues[0])) values.push(branchValues[0]);
+      }
+    }
+  }
+  return values;
+}
+
+function uniqueCandidate(values: string[]) {
+  const unique = [...new Set(values)];
+  return unique.length === 1 ? unique[0] : undefined;
+}
+
+function actionNextStage(raw: CanonicalCase["scenario"], action: CanonicalAction) {
+  const effects = [...action.effects];
+  for (const event of raw.events ?? []) if (event.trigger?.type === "after_action" && event.trigger.action === action.id) effects.push(...(event.effects ?? []));
+  return uniqueCandidate(candidateEffectValues(raw, effects, "stage", new Set<string>()));
+}
+
+function uniqueEffectValue(raw: CanonicalCase["scenario"], action: CanonicalAction, field: "outcome") {
+  const effects = [...action.effects];
+  for (const event of raw.events ?? []) if (event.trigger?.type === "after_action" && event.trigger.action === action.id) effects.push(...(event.effects ?? []));
+  return uniqueCandidate(candidateEffectValues(raw, effects, field, new Set<string>()));
+}
+
+function uniqueResourceValue(raw: CanonicalCase["scenario"], action: CanonicalAction, resource: string) {
+  const values = actionEffectsWithEvents(raw, action).flatMap((effect) => effect.type === "set_resource" && effect.resource === resource && typeof effect.value === "number" ? [effect.value] : []);
+  const unique = [...new Set(values)];
+  return unique.length === 1 ? Math.max(0, unique[0]) : undefined;
+}
+
+function canonicalMetricEffects(effects: CanonicalEffect[]): Partial<Record<MetricKey, number>> {
+  const result: Partial<Record<MetricKey, number>> = {};
+  const metricMap: Record<string, MetricKey | undefined> = { merits: "position", procedure: "position", case_strength: "position", leverage: "position", evidence: "evidence", client_trust: "trust", ethics: "trust", fatigue: "exposure", cumulative_strain: "exposure" };
+  for (const effect of effects) {
+    const key = effect.metric ? metricMap[effect.metric] : undefined;
+    if (!key || typeof effect.amount !== "number") continue;
+    const direction = effect.type === "subtract_metric" ? -1 : effect.type === "add_metric" ? 1 : 0;
+    if (direction) result[key] = (result[key] ?? 0) + Math.max(-24, Math.min(24, effect.amount * direction));
+  }
+  return result;
+}
+
+function sumMetricDelta(effects: CanonicalEffect[], metric: string) {
+  const delta = effects.reduce((total, effect) => effect.metric !== metric || typeof effect.amount !== "number" ? total : total + (effect.type === "subtract_metric" ? -effect.amount : effect.type === "add_metric" ? effect.amount : 0), 0);
+  return delta === 0 ? undefined : Math.max(-100, Math.min(100, delta));
+}
+
+function classifyCanonicalOutcome(id: string): "strong" | "mixed" | "weak" {
+  if (/(dismiss|terminated|compromised|fragmented|time_bar|default|adverse|waive|lost)/i.test(id)) return "weak";
+  if (/(favorable|supported|enforced|coordinated|protected|settlement|recovery|preserved|upheld|win)/i.test(id)) return "strong";
+  return "mixed";
+}
+
+function nextParityVersion(version: string) {
+  const [major, minor] = version.split(".").map(Number);
+  return `${major}.${minor + 1}.0`;
+}
+
+function formatStageClock(totalMinutes: number) {
+  const minuteOfDay = ((totalMinutes % 1440) + 1440) % 1440;
+  return { day: Math.floor(Math.max(0, totalMinutes) / 1440) + 1, time: `${String(Math.floor(minuteOfDay / 60)).padStart(2, "0")}:${String(minuteOfDay % 60).padStart(2, "0")}` };
+}
+
+function localizedEvidenceKind(kind = "record") {
+  const normalized = kind.replaceAll("_", " ");
+  return { en: normalized, ru: normalized };
+}
+
+function clampResource(value: number) { return Math.max(0, Math.min(100, Math.trunc(value))); }
+
+function logisticsTranslation(caseId: string, section: string, id: string, field: string, locale: "en" | "ru") {
+  return caseId === "be_commercial_logistics_001" && locale === "ru" ? logisticsRuTranslations[`${section}:${id}:${field}`] : undefined;
+}
 
 function stageMinute(day: number, time: string) {
   const [hours, minutes] = time.split(":").map(Number);

@@ -1,5 +1,7 @@
 import type { DecisionOption, MetricGuard, MetricKey, Scenario, ScenarioStage } from "./types";
 
+export function actionUseKey(option: DecisionOption) { return option.canonicalActionId ?? option.id; }
+
 export function metricGuardSatisfied(guard: MetricGuard, metrics: Record<MetricKey, number>) {
   const actual = metrics[guard.metric];
   if (guard.comparison === "gte") return actual >= guard.value;
@@ -16,10 +18,11 @@ export function decisionAvailability(option: DecisionOption, metrics: Record<Met
 
 export function actionCompletionMinute(currentMinute: number, option: DecisionOption) {
   const elapsedTarget = currentMinute + option.minutes;
-  if (option.completionDayOffset === undefined || option.completionMinuteOfDay === undefined) return elapsedTarget;
   const currentDay = Math.floor(currentMinute / 1440);
-  const calendarTarget = (currentDay + option.completionDayOffset) * 1440 + option.completionMinuteOfDay;
-  return Math.max(elapsedTarget, calendarTarget);
+  const calendarTarget = option.completionDayOffset === undefined || option.completionMinuteOfDay === undefined
+    ? 0
+    : (currentDay + option.completionDayOffset) * 1440 + option.completionMinuteOfDay;
+  return Math.max(elapsedTarget, calendarTarget, option.advanceToMinute ?? 0);
 }
 
 export function stageClockMinute(stage: Pick<ScenarioStage, "day" | "time">) {

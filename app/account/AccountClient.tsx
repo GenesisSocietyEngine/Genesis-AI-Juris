@@ -100,7 +100,7 @@ export default function AccountClient({
       <Link href="/">Return to library</Link>
     </nav>
     <header className={styles.hero}>
-      <p>ACCOUNT SECURITY · v13</p>
+      <p>ACCOUNT SECURITY · v14</p>
       <h1>Professional access without hidden recovery shortcuts.</h1>
       <p>ChatGPT remains the trusted identity source. After one confirmation through ChatGPT, you can use a local password and an offline recovery code independently.</p>
     </header>

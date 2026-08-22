@@ -1,6 +1,6 @@
 import { legacyScenarios } from "../../legacy-scenarios";
 import { normalizePlayableScenario, playableFingerprint } from "../../playable-integrity";
-import { scenarios } from "../../scenarios";
+import { archivedBundledScenarios, scenarios } from "../../scenarios";
 
 /**
  * Early catalogue rows store a compact pointer instead of duplicating the
@@ -20,7 +20,7 @@ export function resolveBundledManifest(payload: Record<string, unknown>, caseId:
   }
   if (payload.bundle !== "canonical-case-bundle.json") return null;
   if (payload.runtime === "bundled") {
-    const current = scenarios.find((item) => item.caseId === caseId && item.version === version && item.fingerprint === fingerprint);
+    const current = [...scenarios, ...archivedBundledScenarios].find((item) => item.caseId === caseId && item.version === version && item.fingerprint === fingerprint);
     return current && playableFingerprint(current) === fingerprint ? { kind: "playable-scenario-v1", scenario: current } : null;
   }
 

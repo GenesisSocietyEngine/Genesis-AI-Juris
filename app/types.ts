@@ -15,11 +15,27 @@ export type LocalText = {
 
 export type DecisionOption = {
   id: string;
+  /** Stable action identity from the canonical mobile/Rust scenario. */
+  canonicalActionId?: string;
   label: LocalText;
   detail: LocalText;
   result: LocalText;
   cost: number;
+  costAuthored?: boolean;
   minutes: number;
+  billableMinutes?: number;
+  fatigueDelta?: number;
+  strainDelta?: number;
+  resetsFatigue?: boolean;
+  advanceToMinute?: number;
+  resolvedOutcome?: {
+    id: string;
+    title: LocalText;
+    summary: LocalText;
+    classification: "strong" | "mixed" | "weak";
+  };
+  awardEur?: number;
+  outcomeCostsEur?: number;
   effects: Partial<Record<MetricKey, number>>;
   nextStageId?: string;
   completionDayOffset?: number;
@@ -90,6 +106,22 @@ export type Scenario = {
   initialClockMinute: number;
   deadlines: ScenarioDeadline[];
   workflowInbox: ScenarioInboxItem[];
+  initialResources?: {
+    authorizedBudgetEur: number;
+    spendEur: number;
+    billableMinutes: number;
+    fatigue: number;
+    cumulativeStrain: number;
+    awardEur: number;
+    outcomeCostsEur: number;
+  };
+  mobileParity?: {
+    source: "canonical-mobile-bundle";
+    sourceVersion: string;
+    stageCount: number;
+    actionCount: number;
+    foregroundClock: boolean;
+  };
   outcomes: {
     strong: LocalText;
     mixed: LocalText;

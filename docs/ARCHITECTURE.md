@@ -1,6 +1,6 @@
-# GENESIS: JURIS v13 architecture
+# GENESIS: JURIS v14 architecture
 
-This document records the v13 runtime and trust boundaries. It is intentionally implementation-oriented; product positioning remains in the root README.
+This document records the v14 runtime and trust boundaries. It is intentionally implementation-oriented; product positioning remains in the root README.
 
 ## Catalogue and immutable content
 
@@ -8,11 +8,13 @@ This document records the v13 runtime and trust boundaries. It is intentionally 
 
 The full playable manifest is loaded lazily from `GET /api/catalog/:caseId?version=x.y.z` when a user opens a case. Seed rows that carry the compact canonical-bundle pointer are resolved and fingerprint-verified on the server; the browser does not import that bundle into its initial application chunk. A published version is addressed by `(caseId, version, fingerprint)`, carries an ETag derived from its fingerprint and is immutable. The `cases.current_version` row is only the mutable pointer to the latest immutable `case_versions` record. Version-pinned responses can therefore use long-lived immutable caching; the current-version response is revalidated more frequently. A dynamically imported bundled copy remains only as an offline/5xx compatibility fallback; a `4xx` response is authoritative so removed, denied or integrity-failed content cannot be reopened locally.
 
-## Execution modes
+## Execution modes and mobile parity
 
-The deterministic browser engine remains useful for anonymous demonstrations and immediate Studio previews. It is not an authoritative examination or audit record.
+The deterministic browser engine remains useful for immediate Studio previews and retained non-canonical manifests. It is not an authoritative examination or audit record. Signed-in persisted play stays server-authoritative. If that session API is unavailable, a canonical library case can still run through a dynamically loaded copy of the same typed reducer and source-fingerprint-pinned mobile bundle; the interface marks this as a local, non-audit run rather than approximating the mobile rules.
 
-Signed-in persisted play uses `play_sessions` and append-only `play_events`. The server reloads the exact published manifest, evaluates action availability, guards, clocks, deadlines, metric effects and the next stage, then advances state using an expected revision and an idempotent event ID. A stale revision returns `409` instead of silently overwriting another tab. This is the authoritative path for resumable sessions, analytics and future assessed play.
+Signed-in persisted play uses `play_sessions` and append-only `play_events`. For the five bundled cases, a typed server reducer executes the canonical mobile bundle directly: all 22 currently authored effect forms, compound conditions, deterministic decisions, async tasks, inbox/evidence visibility, deadline activation/misses, foreground time and global action repeatability share one runtime state. Only its presentation projection leaves the API; internal flags and decision rolls remain server-side. Every decision or explicit time advance uses an expected revision and an idempotent event ID. A stale revision returns `409` instead of silently overwriting another tab.
+
+The TypeScript reducer is regression-pinned to eleven mobile reference paths (nine lifecycle traces plus both Logistics outcomes), including exact terminal stages, elapsed minutes and resource projections. Moving this authority into the Rust engine compiled to WASM remains a hardening option once the deployment toolchain can build and verify that artifact; v14 does not claim a Rust/WASM binary.
 
 Real-time multi-author collaboration is intentionally out of scope. If introduced later, one coordination object per actively edited case can be added without moving ordinary catalogue or single-author traffic away from D1.
 

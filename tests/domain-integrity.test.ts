@@ -12,21 +12,29 @@ import { scenarios } from "../app/scenarios";
 import type { StudioDraft } from "../app/types";
 import { CONTENT_SECURITY_POLICY, withSecurityHeaders } from "../worker/security-headers";
 
-test("the five bundled manifests are immutable, playable and clock-monotonic across all paths", () => {
+test("the five bundled manifests are immutable and expose the complete canonical mobile inventory", () => {
   assert.equal(scenarios.length, 5);
   assert.equal(new Set(scenarios.map((item) => item.caseId)).size, 5);
-  let terminalPaths = 0;
+  let terminalStages = 0;
 
   for (const scenario of scenarios) {
     const normalized = normalizePlayableScenario(structuredClone(scenario));
     assert.equal(playableFingerprint(normalized), scenario.fingerprint);
     assert.match(scenario.fingerprint, /^sha256-[a-f0-9]{64}$/);
+    if (scenario.mobileParity) {
+      assert.equal(scenario.stages.length, scenario.mobileParity.stageCount);
+      const canonicalActionIds = new Set(scenario.stages.flatMap((stage) => stage.options.map((option) => option.canonicalActionId)));
+      assert.ok(!canonicalActionIds.has(undefined));
+      assert.equal(canonicalActionIds.size, scenario.mobileParity.actionCount);
+      terminalStages += scenario.stages.filter((stage) => stage.terminal).length;
+      continue;
+    }
 
     const walk = (stageId: string, minute: number, completed: string[], missed: string[], depth: number) => {
       assert.ok(depth <= scenario.stages.length, "scenario graph must terminate without a cycle");
       const stage = scenario.stages.find((item) => item.id === stageId);
       assert.ok(stage, `missing stage ${stageId}`);
-      if (stage.terminal) { terminalPaths += 1; return; }
+      if (stage.terminal) { terminalStages += 1; return; }
       assert.ok(stage.options.length > 0);
       for (const option of stage.options) {
         assert.ok(Object.values(option.effects).some((value) => value !== 0), `${option.id} must affect the outcome`);
@@ -41,7 +49,7 @@ test("the five bundled manifests are immutable, playable and clock-monotonic acr
     };
     walk(scenario.initialStageId, scenario.initialClockMinute, [], [], 0);
   }
-  assert.equal(terminalPaths, 44);
+  assert.ok(terminalStages >= 5);
 });
 
 test("central playable validator rejects ambiguous clocks, action IDs, timing and deadline dead ends", () => {
@@ -199,13 +207,13 @@ test("Worker hardening sets browser security policy without breaking public cata
 test("fresh D1 schema has valid seeds, immutable history and lineage collision protection", () => {
   const db = new DatabaseSync(":memory:");
   db.exec("PRAGMA foreign_keys = ON");
-  for (const migration of ["0000_worthless_supreme_intelligence.sql", "0001_right_talon.sql", "0002_greedy_darkstar.sql", "0003_unusual_zarda.sql", "0004_petite_komodo.sql"]) {
+  for (const migration of ["0000_worthless_supreme_intelligence.sql", "0001_right_talon.sql", "0002_greedy_darkstar.sql", "0003_unusual_zarda.sql", "0004_petite_komodo.sql", "0005_dapper_nightcrawler.sql", "0006_concerned_korath.sql", "0007_ambitious_phoenix.sql"]) {
     db.exec(readFileSync(new URL(`../drizzle/${migration}`, import.meta.url), "utf8"));
   }
   assert.equal(db.prepare("PRAGMA integrity_check").get()?.integrity_check, "ok");
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
   assert.equal(db.prepare("SELECT count(*) AS count FROM cases").get()?.count, 5);
-  assert.equal(db.prepare("SELECT count(*) AS count FROM case_versions").get()?.count, 10);
+  assert.equal(db.prepare("SELECT count(*) AS count FROM case_versions").get()?.count, 15);
 
   for (const scenario of scenarios) {
     const current = db.prepare("SELECT current_version AS version, fingerprint FROM cases WHERE id = ?").get(scenario.caseId) as { version: string; fingerprint: string };

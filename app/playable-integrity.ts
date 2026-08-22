@@ -77,6 +77,10 @@ export function normalizePlayableScenario(value: unknown): Scenario {
   for (const item of workflowInbox) if (item.resolutionActions.some((action) => !actionIds.has(action))) throw new Error("Inbox resolution action not found");
   const outcomesValue = value.outcomes;
   if (!isRecord(outcomesValue)) throw new Error("Invalid outcomes");
+  const initialResourcesValue = value.initialResources;
+  const initialResources = initialResourcesValue === undefined ? undefined : normalizeInitialResources(initialResourcesValue);
+  const mobileParityValue = value.mobileParity;
+  const mobileParity = mobileParityValue === undefined ? undefined : normalizeMobileParity(mobileParityValue);
   const result: Scenario = {
     id, caseId,
     order: integer(value.order, 1, 99_999),
@@ -91,6 +95,8 @@ export function normalizePlayableScenario(value: unknown): Scenario {
     materials, stages, opening, initialStageId,
     initialClockMinute: integer(value.initialClockMinute, 0, 100_000_000),
     deadlines, workflowInbox,
+    initialResources,
+    mobileParity,
     outcomes: { strong: localText(outcomesValue.strong, "strong outcome", 8_000), mixed: localText(outcomesValue.mixed, "mixed outcome", 8_000), weak: localText(outcomesValue.weak, "weak outcome", 8_000) },
   };
   const reachable = new Set<string>();
@@ -111,9 +117,10 @@ export function normalizePlayableScenario(value: unknown): Scenario {
     }
   }
   if (!canReachTerminal.has(initialStageId)) throw new Error("No reachable terminal stage");
-  for (const deadline of deadlines) if (deadline.missedNextStageId && !canReachTerminal.has(deadline.missedNextStageId)) throw new Error("A deadline route can strand the player");
+  for (const deadline of deadlines) if (deadline.missedNextStageId && !canReachTerminal.has(deadline.missedNextStageId)) throw new Error(`A deadline route can strand the player: ${deadline.id}`);
+  const canonicalMobileRuntime = isRecord(value.mobileParity) && value.mobileParity.source === "canonical-mobile-bundle";
   for (const stage of stages.filter((item) => reachable.has(item.id) && !item.terminal)) {
-    if (stage.options.length === 0 || stage.options.some((option) => !option.nextStageId || !canReachTerminal.has(option.nextStageId))) throw new Error("A playable branch can strand the player");
+    if (stage.options.length === 0 || stage.options.some((option) => !option.nextStageId || (!canonicalMobileRuntime && !canReachTerminal.has(option.nextStageId)))) throw new Error(`A playable branch can strand the player: ${stage.id}`);
   }
   return result;
 }
@@ -129,7 +136,44 @@ function normalizeOption(value: unknown): DecisionOption {
   const maxUses = optionalInteger(value.maxUses, 1, 10_000);
   if ((repeatability === "limited") !== (maxUses !== undefined)) throw new Error("Limited actions require an explicit use limit");
   const guards = value.guards === undefined ? undefined : normalizeMetricGuards(value.guards);
-  return { id: identifier(value.id, "option ID"), label: localText(value.label, "option label"), detail: localText(value.detail, "option detail", 8_000), result: localText(value.result, "option result", 8_000), cost: integer(value.cost, 0, 1_000_000_000), minutes: integer(value.minutes, 0, 100_000_000), effects, nextStageId: optionalString(value.nextStageId, 160), completionDayOffset, completionMinuteOfDay, repeatability, maxUses, guards };
+  const resolvedOutcomeValue = value.resolvedOutcome;
+  const resolvedOutcome = resolvedOutcomeValue === undefined ? undefined : normalizeResolvedOutcome(resolvedOutcomeValue);
+  return {
+    id: identifier(value.id, "option ID"),
+    canonicalActionId: optionalString(value.canonicalActionId, 160),
+    label: localText(value.label, "option label"), detail: localText(value.detail, "option detail", 8_000), result: localText(value.result, "option result", 8_000),
+    cost: integer(value.cost, 0, 1_000_000_000), costAuthored: value.costAuthored === true ? true : undefined, minutes: integer(value.minutes, 0, 100_000_000),
+    billableMinutes: optionalInteger(value.billableMinutes, 0, 100_000_000),
+    fatigueDelta: optionalSignedInteger(value.fatigueDelta, -100, 100),
+    strainDelta: optionalSignedInteger(value.strainDelta, -100, 100),
+    resetsFatigue: value.resetsFatigue === true ? true : undefined,
+    advanceToMinute: optionalInteger(value.advanceToMinute, 0, 100_000_000),
+    resolvedOutcome,
+    awardEur: optionalInteger(value.awardEur, 0, 1_000_000_000),
+    outcomeCostsEur: optionalInteger(value.outcomeCostsEur, 0, 1_000_000_000),
+    effects, nextStageId: optionalString(value.nextStageId, 160), completionDayOffset, completionMinuteOfDay, repeatability, maxUses, guards,
+  };
+}
+function normalizeResolvedOutcome(value: unknown): NonNullable<DecisionOption["resolvedOutcome"]> {
+  if (!isRecord(value)) throw new Error("Invalid resolved outcome");
+  if (value.classification !== "strong" && value.classification !== "mixed" && value.classification !== "weak") throw new Error("Invalid resolved outcome classification");
+  return { id: identifier(value.id, "outcome ID"), title: localText(value.title, "outcome title"), summary: localText(value.summary, "outcome summary", 8_000), classification: value.classification };
+}
+function normalizeInitialResources(value: unknown): NonNullable<Scenario["initialResources"]> {
+  if (!isRecord(value)) throw new Error("Invalid initial resources");
+  return {
+    authorizedBudgetEur: integer(value.authorizedBudgetEur, 0, 1_000_000_000),
+    spendEur: integer(value.spendEur, 0, 1_000_000_000),
+    billableMinutes: integer(value.billableMinutes, 0, 100_000_000),
+    fatigue: integer(value.fatigue, 0, 100),
+    cumulativeStrain: integer(value.cumulativeStrain, 0, 100),
+    awardEur: integer(value.awardEur, 0, 1_000_000_000),
+    outcomeCostsEur: integer(value.outcomeCostsEur, 0, 1_000_000_000),
+  };
+}
+function normalizeMobileParity(value: unknown): NonNullable<Scenario["mobileParity"]> {
+  if (!isRecord(value) || value.source !== "canonical-mobile-bundle") throw new Error("Invalid mobile parity marker");
+  return { source: "canonical-mobile-bundle", sourceVersion: string(value.sourceVersion, "mobile source version", 40), stageCount: integer(value.stageCount, 1, 200), actionCount: integer(value.actionCount, 1, 500), foregroundClock: value.foregroundClock === true };
 }
 function normalizeMetricGuards(value: unknown): MetricGuard[] {
   if (!Array.isArray(value) || value.length > 8) throw new Error("Invalid metric guards");
@@ -147,6 +191,7 @@ function string(value: unknown, label: string, max: number) { if (typeof value !
 function identifier(value: unknown, label: string) { const result = string(value, label, 160); if (!/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/.test(result)) throw new Error(`Invalid ${label}`); return result; }
 function integer(value: unknown, min: number, max: number) { if (typeof value !== "number" || !Number.isInteger(value) || value < min || value > max) throw new Error("Invalid integer"); return value; }
 function optionalInteger(value: unknown, min: number, max: number) { return value === undefined ? undefined : integer(value, min, max); }
+function optionalSignedInteger(value: unknown, min: number, max: number) { return value === undefined ? undefined : integer(value, min, max); }
 function optionalString(value: unknown, max: number) { return value === undefined || value === null ? undefined : string(value, "optional string", max); }
 function stringArray(value: unknown, maxItems: number, maxLength: number) { if (!Array.isArray(value) || value.length > maxItems) throw new Error("Invalid string array"); return value.map((item) => string(item, "array item", maxLength)); }
 function unique(values: string[], label: string) { if (new Set(values).size !== values.length) throw new Error(`Duplicate ${label}`); }

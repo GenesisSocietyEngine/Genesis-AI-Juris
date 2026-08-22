@@ -41,8 +41,8 @@ export async function resolvePlayedCaseScenario(identityValue: PlayedScenarioIde
   const legacy = legacyScenarios.find((scenario) => matchesPlayedIdentity(scenario, identity));
   if (legacy) return { scenario: legacy, legacyTiming: true };
   if (fallbackMode === "legacy-only") throw new Error("Published manifest failed current-runtime validation");
-  const { scenarios } = await import("./scenarios");
-  const current = scenarios.find((scenario) => matchesPlayedIdentity(scenario, identity));
+  const { archivedBundledScenarios, scenarios } = await import("./scenarios");
+  const current = [...scenarios, ...archivedBundledScenarios].find((scenario) => matchesPlayedIdentity(scenario, identity));
   if (!current || playableFingerprint(current) !== current.fingerprint) throw new Error("Played-case version is unavailable");
   return { scenario: current, legacyTiming: false };
 }

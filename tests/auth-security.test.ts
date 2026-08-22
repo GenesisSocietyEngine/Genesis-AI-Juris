@@ -86,7 +86,8 @@ test("opaque session and recovery secrets are high entropy, hashed and compared 
   assert.notEqual(sessionHash, session);
   assert.notEqual(recoveryHash, recovery);
   assert.equal(await timingSafeTokenHashMatch(session, sessionHash), true);
-  assert.equal(await timingSafeTokenHashMatch(`${session.slice(0, -1)}A`, sessionHash), false);
+  const replacement = session.endsWith("A") ? "B" : "A";
+  assert.equal(await timingSafeTokenHashMatch(`${session.slice(0, -1)}${replacement}`, sessionHash), false);
   assert.equal(timingSafeEqual(new Uint8Array([1, 2, 3]), new Uint8Array([1, 2, 3])), true);
   assert.equal(timingSafeEqual(new Uint8Array([1, 2, 3]), new Uint8Array([1, 2, 4])), false);
   assert.equal(timingSafeEqual(new Uint8Array([1]), new Uint8Array([1, 2])), false);

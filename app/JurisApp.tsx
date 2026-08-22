@@ -4,9 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { caseFingerprint, isRecord, isTaxClassification, normalizeStudioDraft, slugifyCaseId, studioStructuralIssues } from "./case-integrity";
 import { bundledCataloguePresentation, mayUseBundledCatalogueFallback } from "./catalogue-fallback";
-import { decisionAvailability, resolveDecisionTiming, resolveLegacyDecisionTiming } from "./game-engine";
+import { actionUseKey, decisionAvailability, resolveDecisionTiming, resolveLegacyDecisionTiming } from "./game-engine";
 import { normalizePlayableScenario, playableFingerprint } from "./playable-integrity";
 import { resolvePlayedCaseScenario } from "./played-case-loader";
+import { deriveRunLedger, type RunLedger } from "./run-ledger";
+import type { CanonicalRuntimeState } from "./canonical-runtime";
 import { initialMetrics } from "./runtime-constants";
 import { deviceDraftEnvelope, LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, mayPersistStudioDraftOnDevice, studioDeviceDraftKey, studioDeviceScope, unwrapDeviceDraft } from "./studio-device-storage";
 import { addStudioLink, appendStudioHistory, applyStudioPromptIteration, deleteStudioLink, describeStudioPromptOperation, nextStudioLinkId, nextStudioNodeId, nextStudioNodePosition, planStudioPromptIteration, relinkStudioLink } from "./studio-editing";
@@ -42,7 +44,7 @@ type InboxEntry = {
 
 type PlayedCaseFile = {
   format: "genesis-juris-played-case";
-  schemaVersion: 2;
+  schemaVersion: 2 | 3;
   exportedAt: string;
   scenario: {
     id: string;
@@ -61,6 +63,9 @@ type PlayedCaseFile = {
     }>;
     derivedMetrics: Record<MetricKey, number>;
     outcome: OutcomeClass | null;
+    canonicalRuntime?:
+      | { mode: "server-session"; sessionKey: string; expectedRevision: number }
+      | { mode: "local-replay"; seed: number; commands: Array<{ sequence: number; kind: "decision"; stageId: string; optionId: string } | { sequence: number; kind: "advance_time"; minutes: number }> };
   };
 };
 
@@ -72,8 +77,21 @@ type ServerPlaySessionState = {
   completedDeadlineIds: string[];
   missedDeadlineIds: string[];
   decisions: Array<{ sequence: number; stageId: string; optionId: string }>;
+  timeAdvances?: Array<{ sequence: number; minutes: number }>;
   outcome: OutcomeClass | null;
+  outcomeId?: string | null;
+  availableActionIds?: string[];
+  activeDeadlineIds?: string[];
+  visibleInboxIds?: string[];
+  resolvedInboxIds?: string[];
+  availableEvidenceIds?: string[];
+  deadlineDueMinutes?: Record<string, number>;
+  canonicalResources?: Record<string, number>;
+  canonicalNumericMetrics?: Record<string, number>;
+  canonicalOutcome?: NonNullable<DecisionOption["resolvedOutcome"]>;
 };
+type CanonicalRuntimeModule = typeof import("./canonical-runtime");
+type CanonicalPresentation = ReturnType<CanonicalRuntimeModule["canonicalPresentationState"]>;
 
 type ServerPlaySession = {
   sessionKey: string;
@@ -247,7 +265,28 @@ function normalizeServerPlaySession(value: unknown): ServerPlaySession | null {
   if (typeof value.revision !== "number" || !Number.isInteger(value.revision) || value.revision < 0) return null;
   const actionUseCounts = Object.fromEntries(Object.entries(state.actionUseCounts).filter(([, count]) => typeof count === "number" && Number.isInteger(count) && count >= 0)) as Record<string, number>;
   const decisions = state.decisions.flatMap((decision) => isRecord(decision) && typeof decision.sequence === "number" && typeof decision.stageId === "string" && typeof decision.optionId === "string" ? [{ sequence: decision.sequence, stageId: decision.stageId, optionId: decision.optionId }] : []);
+  const timeAdvances = Array.isArray(state.timeAdvances) ? state.timeAdvances.flatMap((item) => isRecord(item) && typeof item.sequence === "number" && typeof item.minutes === "number" ? [{ sequence: item.sequence, minutes: item.minutes }] : []) : [];
   const outcome = state.outcome === "strong" || state.outcome === "mixed" || state.outcome === "weak" ? state.outcome : null;
+  const canonicalOutcome = isRecord(state.canonicalOutcome)
+    && typeof state.canonicalOutcome.id === "string"
+    && isRecord(state.canonicalOutcome.title)
+    && typeof state.canonicalOutcome.title.en === "string"
+    && typeof state.canonicalOutcome.title.ru === "string"
+    && isRecord(state.canonicalOutcome.summary)
+    && typeof state.canonicalOutcome.summary.en === "string"
+    && typeof state.canonicalOutcome.summary.ru === "string"
+    && (state.canonicalOutcome.classification === "strong" || state.canonicalOutcome.classification === "mixed" || state.canonicalOutcome.classification === "weak")
+    ? {
+        id: state.canonicalOutcome.id,
+        title: { en: state.canonicalOutcome.title.en, ru: state.canonicalOutcome.title.ru },
+        summary: { en: state.canonicalOutcome.summary.en, ru: state.canonicalOutcome.summary.ru },
+        classification: state.canonicalOutcome.classification as OutcomeClass,
+      }
+    : undefined;
+  const strings = (items: unknown) => Array.isArray(items) ? items.filter((item): item is string => typeof item === "string") : undefined;
+  const numbers = (record: unknown) => isRecord(record)
+    ? Object.fromEntries(Object.entries(record).filter(([, item]) => typeof item === "number" && Number.isFinite(item))) as Record<string, number>
+    : undefined;
   return {
     sessionKey: value.sessionKey,
     caseId: value.caseId,
@@ -261,13 +300,48 @@ function normalizeServerPlaySession(value: unknown): ServerPlaySession | null {
       completedDeadlineIds: state.completedDeadlineIds.filter((item): item is string => typeof item === "string"),
       missedDeadlineIds: state.missedDeadlineIds.filter((item): item is string => typeof item === "string"),
       decisions,
+      timeAdvances,
       outcome,
+      outcomeId: typeof state.outcomeId === "string" ? state.outcomeId : null,
+      availableActionIds: strings(state.availableActionIds),
+      activeDeadlineIds: strings(state.activeDeadlineIds),
+      visibleInboxIds: strings(state.visibleInboxIds),
+      resolvedInboxIds: strings(state.resolvedInboxIds),
+      availableEvidenceIds: strings(state.availableEvidenceIds),
+      deadlineDueMinutes: numbers(state.deadlineDueMinutes),
+      canonicalResources: numbers(state.canonicalResources),
+      canonicalNumericMetrics: numbers(state.canonicalNumericMetrics),
+      canonicalOutcome,
     },
     status: value.status,
     revision: value.revision,
     startedAt: typeof value.startedAt === "string" ? value.startedAt : "",
     updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "",
     completedAt: typeof value.completedAt === "string" ? value.completedAt : null,
+  };
+}
+
+function clientCanonicalState(runtime: CanonicalRuntimeState, presentation: CanonicalPresentation, outcome: OutcomeClass | null, canonicalOutcome: ServerPlaySessionState["canonicalOutcome"], decisions: ServerPlaySessionState["decisions"] = [], timeAdvances: NonNullable<ServerPlaySessionState["timeAdvances"]> = []): ServerPlaySessionState {
+  return {
+    currentStageId: presentation.currentStageId,
+    clockMinute: presentation.clockMinute,
+    metrics: presentation.metrics,
+    actionUseCounts: presentation.actionUseCounts,
+    completedDeadlineIds: presentation.completedDeadlineIds,
+    missedDeadlineIds: presentation.missedDeadlineIds,
+    decisions,
+    timeAdvances,
+    outcome,
+    outcomeId: presentation.outcomeId,
+    availableActionIds: presentation.availableActionIds,
+    activeDeadlineIds: presentation.activeDeadlineIds,
+    visibleInboxIds: presentation.visibleInboxIds,
+    resolvedInboxIds: presentation.resolvedInboxIds,
+    availableEvidenceIds: presentation.availableEvidenceIds,
+    deadlineDueMinutes: presentation.deadlineDueMinutes,
+    canonicalResources: { ...runtime.resources },
+    canonicalNumericMetrics: { ...runtime.numericMetrics },
+    canonicalOutcome,
   };
 }
 
@@ -324,6 +398,7 @@ export default function JurisApp() {
   const [completedDeadlineIds, setCompletedDeadlineIds] = useState<string[]>([]);
   const [missedDeadlineIds, setMissedDeadlineIds] = useState<string[]>([]);
   const [serverPlaySession, setServerPlaySession] = useState<ServerPlaySession | null>(null);
+  const [localCanonicalState, setLocalCanonicalState] = useState<ServerPlaySessionState | null>(null);
   const [legacyTimingMode, setLegacyTimingMode] = useState(false);
   const [playSessionSync, setPlaySessionSync] = useState<"opening" | "server" | "local" | "stale" | "error">("local");
   const [playSessionBusy, setPlaySessionBusy] = useState(false);
@@ -348,6 +423,7 @@ export default function JurisApp() {
   const playedCaseImportRef = useRef<HTMLInputElement>(null);
   const dragBeforeRef = useRef<StudioDraft | null>(null);
   const playSessionStartRef = useRef(0);
+  const localCanonicalRuntimeRef = useRef<CanonicalRuntimeState | null>(null);
   const catalogueLaunchRef = useRef(0);
   const studioChangedBeforeRestoreRef = useRef(false);
   const text = ui[locale];
@@ -455,6 +531,19 @@ export default function JurisApp() {
   const featuredRecord = catalogueRecords.find((record) => record.id === featuredId) ?? catalogueRecords[0] ?? bundledCatalogueRecords()[0];
   const featured = catalogueScenarios.find((scenario) => scenario.caseId === featuredRecord.id && scenario.version === featuredRecord.currentVersion && scenario.fingerprint === featuredRecord.fingerprint) ?? null;
   const stage = activeScenario?.stages[stageIndex] ?? null;
+  const canonicalPlayState = activeScenario && serverPlaySession
+    && serverPlaySession.caseId === activeScenario.caseId
+    && serverPlaySession.version === activeScenario.version
+    && serverPlaySession.fingerprint === activeScenario.fingerprint
+    ? serverPlaySession.state
+    : localCanonicalState;
+  const runLedger = useMemo(() => {
+    if (!activeScenario) return null;
+    const authoritative = canonicalPlayState
+      ? { resources: canonicalPlayState.canonicalResources, numericMetrics: canonicalPlayState.canonicalNumericMetrics }
+      : undefined;
+    return deriveRunLedger(activeScenario, decisionLog, authoritative);
+  }, [activeScenario, canonicalPlayState, decisionLog]);
   const selectedNode = draft.nodes.find((node) => node.id === selectedNodeId) ?? null;
   const checks = useMemo(() => validateDraft(draft, locale), [draft, locale]);
 
@@ -538,14 +627,24 @@ export default function JurisApp() {
 
   function navigate(next: View) { setView(next); window.scrollTo({ top: 0, behavior: "smooth" }); }
   function restoreFromServerSession(session: ServerPlaySession, scenario: Scenario) {
+    const latestTimeAdvance = Math.max(0, ...(session.state.timeAdvances ?? []).map((item) => item.sequence));
     const restoredLog = session.state.decisions.flatMap((decision, index) => {
       const sourceStage = scenario.stages.find((item) => item.id === decision.stageId);
       const sourceOption = sourceStage?.options.find((option) => option.id === decision.optionId);
       if (!sourceStage || !sourceOption) return [];
       const nextStageId = session.state.decisions[index + 1]?.stageId ?? session.state.currentStageId;
-      return [{ stageId: sourceStage.id, stage: local(sourceStage.headline, locale), option: { ...sourceOption, nextStageId } }];
+      const exactOutcome = scenario.mobileParity && index === session.state.decisions.length - 1 && decision.sequence > latestTimeAdvance ? session.state.canonicalOutcome : undefined;
+      const option = scenario.mobileParity ? {
+        ...sourceOption,
+        nextStageId,
+        resolvedOutcome: exactOutcome,
+        result: exactOutcome?.summary ?? { en: "Canonical action completed. The authoritative state was updated.", ru: "Каноническое действие выполнено. Авторитетное состояние обновлено." },
+      } : { ...sourceOption, nextStageId };
+      return [{ stageId: sourceStage.id, stage: local(sourceStage.headline, locale), option }];
     });
     const restoredStageIndex = scenario.stages.findIndex((item) => item.id === session.state.currentStageId);
+    localCanonicalRuntimeRef.current = null;
+    setLocalCanonicalState(null);
     setServerPlaySession(session);
     setMetrics(session.state.metrics);
     setCaseMinute(session.state.clockMinute);
@@ -557,6 +656,42 @@ export default function JurisApp() {
     setOutcome(session.state.outcome);
     setDossierRef(scenario.stages[restoredStageIndex]?.materialRefs[0] ?? scenario.materials[0]?.ref ?? null);
   }
+  function storeLocalCanonicalRuntime(runtime: CanonicalRuntimeState, runtimeModule: CanonicalRuntimeModule, decisions = localCanonicalState?.decisions ?? [], timeAdvances = localCanonicalState?.timeAdvances ?? []) {
+    const presentation = runtimeModule.canonicalPresentationState(runtime);
+    const state = clientCanonicalState(runtime, presentation, runtimeModule.canonicalOutcomeClass(presentation.outcomeId), runtimeModule.canonicalOutcomePresentation(runtime.caseId, presentation.outcomeId), decisions, timeAdvances);
+    localCanonicalRuntimeRef.current = runtime;
+    setLocalCanonicalState(state);
+    return state;
+  }
+  function restoreLocalCanonicalView(state: ServerPlaySessionState, scenario: Scenario) {
+    setMetrics(state.metrics);
+    setCaseMinute(state.clockMinute);
+    setActionUseCounts(state.actionUseCounts);
+    setCompletedDeadlineIds(state.completedDeadlineIds);
+    setMissedDeadlineIds(state.missedDeadlineIds);
+    const nextStageIndex = scenario.stages.findIndex((item) => item.id === state.currentStageId);
+    setStageIndex(nextStageIndex >= 0 ? nextStageIndex : 0);
+    setOutcome(state.outcome);
+    const visibleMaterial = scenario.materials.find((material) => state.availableEvidenceIds?.includes(material.ref));
+    setDossierRef(visibleMaterial?.ref ?? scenario.materials[0]?.ref ?? null);
+  }
+  async function beginLocalCanonicalSession(scenario: Scenario, requestVersion: number) {
+    if (!scenario.mobileParity) return false;
+    try {
+      const runtimeModule = await import("./canonical-runtime");
+      if (requestVersion !== playSessionStartRef.current) return false;
+      const seed = crypto.getRandomValues(new Uint32Array(1))[0];
+      const runtime = runtimeModule.createCanonicalRuntime(scenario.caseId, seed);
+      const state = storeLocalCanonicalRuntime(runtime, runtimeModule, [], []);
+      setServerPlaySession(null);
+      setDecisionLog([]);
+      restoreLocalCanonicalView(state, scenario);
+      setPlaySessionSync("local");
+      return true;
+    } catch {
+      return false;
+    }
+  }
   async function beginServerPlaySession(scenario: Scenario, requestVersion: number) {
     try {
       const response = await fetch("/api/play-sessions", {
@@ -565,17 +700,21 @@ export default function JurisApp() {
         body: JSON.stringify({ action: "start", caseId: scenario.caseId, version: scenario.version, fingerprint: scenario.fingerprint }),
       });
       if (requestVersion !== playSessionStartRef.current) return;
-      if (response.status === 401 || response.status === 404) { setPlaySessionSync("local"); return; }
+      if (response.status === 401 || response.status === 404) {
+        if (await beginLocalCanonicalSession(scenario, requestVersion)) return;
+        setPlaySessionSync("local");
+        return;
+      }
       const payload = await response.json().catch(() => null) as { session?: unknown } | null;
       const session = normalizeServerPlaySession(payload?.session);
       if (!response.ok || !session || session.caseId !== scenario.caseId || session.version !== scenario.version || session.fingerprint !== scenario.fingerprint) {
-        setPlaySessionSync("error");
+        if (!await beginLocalCanonicalSession(scenario, requestVersion)) setPlaySessionSync("error");
         return;
       }
-      setServerPlaySession(session);
+      restoreFromServerSession(session, scenario);
       setPlaySessionSync("server");
     } catch {
-      if (requestVersion === playSessionStartRef.current) setPlaySessionSync("error");
+      if (requestVersion === playSessionStartRef.current && !await beginLocalCanonicalSession(scenario, requestVersion)) setPlaySessionSync("error");
     }
   }
   function startScenario(scenario: Scenario, options: { legacyTiming?: boolean } = {}) {
@@ -584,7 +723,7 @@ export default function JurisApp() {
     const initialIndex = Math.max(0, scenario.stages.findIndex((item) => item.id === scenario.initialStageId));
     setActiveScenario(scenario); setStageIndex(initialIndex); setMetrics({ ...initialMetrics }); setDecisionLog([]);
     setCaseMinute(scenario.initialClockMinute); setActionUseCounts({}); setCompletedDeadlineIds([]); setMissedDeadlineIds([]);
-    setServerPlaySession(null); setPlaySessionSync("opening"); setPlaySessionBusy(false);
+    localCanonicalRuntimeRef.current = null; setLocalCanonicalState(null); setServerPlaySession(null); setPlaySessionSync("opening"); setPlaySessionBusy(false);
     setLegacyTimingMode(options.legacyTiming === true);
     setOutcome(null); setSelectedOption(null); setResultOption(null); setDossierRef(scenario.materials[0]?.ref ?? null); navigate("play");
     void beginServerPlaySession(scenario, sessionRequestVersion);
@@ -639,7 +778,12 @@ export default function JurisApp() {
       setSelectedOption(null);
       return;
     }
-    if (!decisionAvailability(selectedOption, metrics, actionUseCounts[selectedOption.id] ?? 0).available) {
+    const selectedUseKey = actionUseKey(selectedOption);
+    const canonicalAvailable = !activeScenario.mobileParity || Boolean(
+      selectedOption.canonicalActionId
+      && canonicalPlayState?.availableActionIds?.includes(selectedOption.canonicalActionId),
+    );
+    if (!canonicalAvailable || (!activeScenario.mobileParity && !decisionAvailability(selectedOption, metrics, actionUseCounts[selectedUseKey] ?? 0).available)) {
       showSessionNotice(locale === "en" ? "This action is not available under the current rules." : "Действие недоступно при текущем состоянии правил.");
       setSelectedOption(null);
       return;
@@ -655,9 +799,17 @@ export default function JurisApp() {
     }
     const selected = selectedOption;
     const sourceStage = stage;
-    const applyTransition = (nextMetrics: Record<MetricKey, number>, transitionMinute: number, nextCompleted: string[], nextMissed: string[], nextUses: Record<string, number>, nextStageId: string) => {
+    const applyTransition = (nextMetrics: Record<MetricKey, number>, transitionMinute: number, nextCompleted: string[], nextMissed: string[], nextUses: Record<string, number>, nextStageId: string, authoritativeOutcome?: ServerPlaySessionState["canonicalOutcome"]) => {
       const deadlineReroute = nextStageId !== selected.nextStageId;
-      const dispatchedOption: DecisionOption = deadlineReroute ? {
+      const dispatchedOption: DecisionOption = activeScenario.mobileParity ? {
+        ...selected,
+        nextStageId,
+        resolvedOutcome: authoritativeOutcome,
+        result: authoritativeOutcome?.summary ?? {
+          en: "Canonical action completed. The authoritative stage, clock and resources were updated.",
+          ru: "Каноническое действие выполнено. Авторитетные стадия, время и ресурсы обновлены.",
+        },
+      } : deadlineReroute ? {
         ...selected,
         nextStageId,
         result: {
@@ -693,7 +845,7 @@ export default function JurisApp() {
         if (response.ok && authoritative) {
           setServerPlaySession(authoritative);
           setPlaySessionSync("server");
-          applyTransition(authoritative.state.metrics, authoritative.state.clockMinute, authoritative.state.completedDeadlineIds, authoritative.state.missedDeadlineIds, authoritative.state.actionUseCounts, authoritative.state.currentStageId);
+          applyTransition(authoritative.state.metrics, authoritative.state.clockMinute, authoritative.state.completedDeadlineIds, authoritative.state.missedDeadlineIds, authoritative.state.actionUseCounts, authoritative.state.currentStageId, authoritative.state.canonicalOutcome);
           return;
         }
         if (response.status === 409 && payload?.code === "stale_session" && authoritative) {
@@ -714,6 +866,29 @@ export default function JurisApp() {
       }
     }
 
+    if (activeScenario.mobileParity && localCanonicalRuntimeRef.current && selected.canonicalActionId) {
+      setPlaySessionBusy(true);
+      try {
+        const runtimeModule = await import("./canonical-runtime");
+        const runtime = runtimeModule.dispatchCanonicalAction(localCanonicalRuntimeRef.current, selected.canonicalActionId);
+        const currentDecisions = localCanonicalState?.decisions ?? [];
+        const currentAdvances = localCanonicalState?.timeAdvances ?? [];
+        const nextSequence = Math.max(0, ...currentDecisions.map((item) => item.sequence), ...currentAdvances.map((item) => item.sequence)) + 1;
+        const nextState = storeLocalCanonicalRuntime(runtime, runtimeModule, [...currentDecisions, { sequence: nextSequence, stageId: sourceStage.id, optionId: selected.id }], currentAdvances);
+        applyTransition(nextState.metrics, nextState.clockMinute, nextState.completedDeadlineIds, nextState.missedDeadlineIds, nextState.actionUseCounts, nextState.currentStageId, nextState.canonicalOutcome);
+        return;
+      } catch {
+        showSessionNotice(locale === "en" ? "The canonical action could not be applied." : "Не удалось применить каноническое действие.");
+        return;
+      } finally {
+        setPlaySessionBusy(false);
+      }
+    }
+    if (activeScenario.mobileParity) {
+      showSessionNotice(locale === "en" ? "The canonical runtime is still unavailable." : "Канонический расчёт пока недоступен.");
+      return;
+    }
+
     const localNextStageId = timing.nextStageId ?? selected.nextStageId;
     if (!localNextStageId) {
       showSessionNotice(locale === "en" ? "The authored action has no valid destination." : "Для действия не задан корректный следующий этап.");
@@ -724,9 +899,60 @@ export default function JurisApp() {
       timing.transitionMinute,
       timing.completedDeadlineIds,
       Array.from(new Set([...missedDeadlineIds, ...timing.newlyMissedDeadlineIds])),
-      { ...actionUseCounts, [selected.id]: (actionUseCounts[selected.id] ?? 0) + 1 },
+      { ...actionUseCounts, [selectedUseKey]: (actionUseCounts[selectedUseKey] ?? 0) + 1 },
       localNextStageId,
     );
+  }
+  async function advanceCaseTime(minutes: number) {
+    if (!activeScenario?.mobileParity?.foregroundClock || playSessionBusy) return;
+    if ((!serverPlaySession || serverPlaySession.status !== "active") && localCanonicalRuntimeRef.current) {
+      setPlaySessionBusy(true);
+      try {
+        const runtimeModule = await import("./canonical-runtime");
+        const runtime = runtimeModule.advanceCanonicalTime(localCanonicalRuntimeRef.current, minutes);
+        const currentDecisions = localCanonicalState?.decisions ?? [];
+        const currentAdvances = localCanonicalState?.timeAdvances ?? [];
+        const nextSequence = Math.max(0, ...currentDecisions.map((item) => item.sequence), ...currentAdvances.map((item) => item.sequence)) + 1;
+        const state = storeLocalCanonicalRuntime(runtime, runtimeModule, currentDecisions, [...currentAdvances, { sequence: nextSequence, minutes }]);
+        restoreLocalCanonicalView(state, activeScenario);
+        showSessionNotice(locale === "en" ? `Case clock advanced by ${minutes / 60}h.` : `Время дела продвинуто на ${minutes / 60} ч.`);
+      } catch {
+        showSessionNotice(locale === "en" ? "The case clock could not be advanced." : "Не удалось продвинуть время дела.");
+      } finally {
+        setPlaySessionBusy(false);
+      }
+      return;
+    }
+    if (!serverPlaySession || serverPlaySession.status !== "active") return;
+    setPlaySessionBusy(true);
+    try {
+      const response = await fetch("/api/play-sessions", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "advance_time", sessionKey: serverPlaySession.sessionKey, expectedRevision: serverPlaySession.revision, eventId: crypto.randomUUID(), minutes }),
+      });
+      const payload = await response.json().catch(() => null) as { session?: unknown; error?: string; code?: string } | null;
+      const authoritative = normalizeServerPlaySession(payload?.session);
+      if (response.ok && authoritative) {
+        restoreFromServerSession(authoritative, activeScenario);
+        setPlaySessionSync("server");
+        showSessionNotice(locale === "en" ? `Case clock advanced by ${minutes / 60}h.` : `Время дела продвинуто на ${minutes / 60} ч.`);
+        return;
+      }
+      if (response.status === 409 && payload?.code === "stale_session" && authoritative) {
+        restoreFromServerSession(authoritative, activeScenario);
+        setPlaySessionSync("stale");
+        showSessionNotice(locale === "en" ? "The server state changed and was restored." : "Состояние сервера изменилось и было восстановлено.");
+        return;
+      }
+      setPlaySessionSync("error");
+      showSessionNotice(payload?.error ?? (locale === "en" ? "The case clock could not be advanced." : "Не удалось продвинуть время дела."));
+    } catch {
+      setPlaySessionSync("error");
+      showSessionNotice(locale === "en" ? "The case clock could not be synchronised." : "Не удалось синхронизировать время дела.");
+    } finally {
+      setPlaySessionBusy(false);
+    }
   }
   function advanceStage() {
     if (!activeScenario) return; setResultOption(null);
@@ -735,7 +961,7 @@ export default function JurisApp() {
     const nextIndex = activeScenario.stages.findIndex((item) => item.id === nextStageId);
     if (nextIndex < 0) return;
     setStageIndex(nextIndex);
-    if (activeScenario.stages[nextIndex].terminal) setOutcome(activeScenario.stages[nextIndex].terminalOutcome ?? classifyOutcome(metrics));
+    if (activeScenario.stages[nextIndex].terminal) setOutcome(canonicalPlayState?.outcome ?? resultOption?.resolvedOutcome?.classification ?? activeScenario.stages[nextIndex].terminalOutcome ?? classifyOutcome(metrics));
   }
   function showSessionNotice(message: string) {
     setSessionNotice(message);
@@ -743,15 +969,35 @@ export default function JurisApp() {
   }
   function exportPlayedCase() {
     if (!activeScenario) return;
-    const decisions = decisionLog.map((entry, index) => {
+    const displayedDecisions = decisionLog.map((entry, index) => {
       const sourceStage = activeScenario.stages.find((item) => item.id === entry.stageId);
       const sourceOption = sourceStage?.options.find((option) => option.id === entry.option.id);
       if (!sourceStage || !sourceOption) throw new Error("The current decision log does not match the scenario catalogue.");
       return { sequence: index + 1, stageId: sourceStage.id, optionId: sourceOption.id };
     });
+    const canonicalRuntime = activeScenario.mobileParity
+      ? serverPlaySession?.caseId === activeScenario.caseId && serverPlaySession.version === activeScenario.version && serverPlaySession.fingerprint === activeScenario.fingerprint
+        ? { mode: "server-session" as const, sessionKey: serverPlaySession.sessionKey, expectedRevision: serverPlaySession.revision }
+        : localCanonicalRuntimeRef.current && localCanonicalState
+          ? {
+              mode: "local-replay" as const,
+              seed: localCanonicalRuntimeRef.current.seed,
+              commands: [
+                ...(localCanonicalState.decisions ?? []).map((item) => ({ ...item, kind: "decision" as const })),
+                ...(localCanonicalState.timeAdvances ?? []).map((item) => ({ ...item, kind: "advance_time" as const })),
+              ].sort((left, right) => left.sequence - right.sequence),
+            }
+          : undefined
+      : undefined;
+    if (activeScenario.mobileParity && !canonicalRuntime) {
+      showSessionNotice(locale === "en" ? "This canonical run is not available for exact export." : "Это каноническое прохождение недоступно для точного экспорта.");
+      return;
+    }
+    const decisions = activeScenario.mobileParity ? canonicalPlayState?.decisions ?? [] : displayedDecisions;
+    const exportedOutcome = activeScenario.mobileParity ? canonicalPlayState?.outcome ?? null : outcome;
     const payload: PlayedCaseFile = {
       format: "genesis-juris-played-case",
-      schemaVersion: 2,
+      schemaVersion: activeScenario.mobileParity ? 3 : 2,
       exportedAt: new Date().toISOString(),
       scenario: {
         id: activeScenario.id,
@@ -760,12 +1006,13 @@ export default function JurisApp() {
         fingerprint: activeScenario.fingerprint,
       },
       playthrough: {
-        status: outcome ? "completed" : "in_progress",
-        currentStageId: activeScenario.stages[stageIndex].id,
-        clockMinute: caseMinute,
+        status: exportedOutcome ? "completed" : "in_progress",
+        currentStageId: activeScenario.mobileParity ? canonicalPlayState?.currentStageId ?? activeScenario.stages[stageIndex].id : activeScenario.stages[stageIndex].id,
+        clockMinute: activeScenario.mobileParity ? canonicalPlayState?.clockMinute ?? caseMinute : caseMinute,
         decisions,
-        derivedMetrics: metrics,
-        outcome,
+        derivedMetrics: activeScenario.mobileParity ? canonicalPlayState?.metrics ?? metrics : metrics,
+        outcome: exportedOutcome,
+        canonicalRuntime,
       },
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -782,7 +1029,7 @@ export default function JurisApp() {
     reader.onload = async () => {
       try {
         const parsed: unknown = JSON.parse(String(reader.result));
-        if (!isRecord(parsed) || parsed.format !== "genesis-juris-played-case" || (parsed.schemaVersion !== 1 && parsed.schemaVersion !== 2)) throw new Error("Unsupported played-case schema");
+        if (!isRecord(parsed) || parsed.format !== "genesis-juris-played-case" || (parsed.schemaVersion !== 1 && parsed.schemaVersion !== 2 && parsed.schemaVersion !== 3)) throw new Error("Unsupported played-case schema");
         if (!isRecord(parsed.scenario) || !isRecord(parsed.playthrough)) throw new Error("Missing played-case sections");
         const scenarioFile = parsed.scenario;
         const playthroughFile = parsed.playthrough;
@@ -797,6 +1044,83 @@ export default function JurisApp() {
         if (!Array.isArray(importedDecisions) || (importedStatus !== "in_progress" && importedStatus !== "completed") || typeof currentStageId !== "string") {
           throw new Error("Invalid playthrough state");
         }
+        if (parsed.schemaVersion === 3 && importedScenario.mobileParity) {
+          const descriptor = playthroughFile.canonicalRuntime;
+          if (!isRecord(descriptor)) throw new Error("Missing canonical replay descriptor");
+          if (descriptor.mode === "server-session"
+            && typeof descriptor.sessionKey === "string"
+            && typeof descriptor.expectedRevision === "number"
+            && Number.isSafeInteger(descriptor.expectedRevision)
+            && descriptor.expectedRevision >= 0) {
+            const response = await fetch(`/api/play-sessions?sessionKey=${encodeURIComponent(descriptor.sessionKey)}`, { cache: "no-store" });
+            const body = await response.json().catch(() => null) as { session?: unknown } | null;
+            const session = normalizeServerPlaySession(body?.session);
+            if (!response.ok || !session || session.status === "abandoned" || session.caseId !== importedScenario.caseId || session.version !== importedScenario.version || session.fingerprint !== importedScenario.fingerprint) throw new Error("Canonical server session is unavailable");
+            if (session.revision !== descriptor.expectedRevision) throw new Error("Canonical server session has changed since this file was exported");
+            setActiveScenario(importedScenario);
+            setFeaturedId(importedScenario.caseId);
+            playSessionStartRef.current += 1;
+            setLegacyTimingMode(false);
+            setSelectedOption(null);
+            setResultOption(null);
+            restoreFromServerSession(session, importedScenario);
+            setPlaySessionSync("server");
+            navigate("play");
+            showSessionNotice(text.importedPlay);
+            return;
+          }
+          if (descriptor.mode !== "local-replay" || typeof descriptor.seed !== "number" || !Number.isSafeInteger(descriptor.seed) || descriptor.seed < 0 || !Array.isArray(descriptor.commands) || descriptor.commands.length > 1_000) throw new Error("Invalid canonical replay descriptor");
+          const runtimeModule = await import("./canonical-runtime");
+          let runtime = runtimeModule.createCanonicalRuntime(importedScenario.caseId, descriptor.seed);
+          const restoredLog: DecisionRecord[] = [];
+          const canonicalDecisions: ServerPlaySessionState["decisions"] = [];
+          const canonicalAdvances: NonNullable<ServerPlaySessionState["timeAdvances"]> = [];
+          for (const [index, command] of descriptor.commands.entries()) {
+            if (!isRecord(command) || command.sequence !== index + 1) throw new Error("Invalid canonical command sequence");
+            if (command.kind === "decision" && typeof command.stageId === "string" && typeof command.optionId === "string") {
+              const sourceStage = importedScenario.stages.find((item) => item.id === runtime.stageId);
+              const sourceOption = sourceStage?.options.find((option) => option.id === command.optionId);
+              if (!sourceStage || sourceStage.id !== command.stageId || !sourceOption?.canonicalActionId) throw new Error("Canonical decision mismatch");
+              runtime = runtimeModule.dispatchCanonicalAction(runtime, sourceOption.canonicalActionId);
+              const presentation = runtimeModule.canonicalPresentationState(runtime);
+              const exactOutcome = runtimeModule.canonicalOutcomePresentation(runtime.caseId, presentation.outcomeId);
+              restoredLog.push({
+                stageId: sourceStage.id,
+                stage: local(sourceStage.headline, locale),
+                option: {
+                  ...sourceOption,
+                  nextStageId: presentation.currentStageId,
+                  resolvedOutcome: exactOutcome,
+                  result: exactOutcome?.summary ?? { en: "Canonical action completed. The authoritative state was updated.", ru: "Каноническое действие выполнено. Авторитетное состояние обновлено." },
+                },
+              });
+              canonicalDecisions.push({ sequence: command.sequence, stageId: sourceStage.id, optionId: sourceOption.id });
+            } else if (command.kind === "advance_time" && typeof command.minutes === "number" && Number.isInteger(command.minutes) && command.minutes > 0 && command.minutes <= 1_440) {
+              runtime = runtimeModule.advanceCanonicalTime(runtime, command.minutes);
+              canonicalAdvances.push({ sequence: command.sequence, minutes: command.minutes });
+            } else {
+              throw new Error("Invalid canonical command");
+            }
+          }
+          const presentation = runtimeModule.canonicalPresentationState(runtime);
+          const restoredOutcome = runtimeModule.canonicalOutcomeClass(presentation.outcomeId);
+          const exportedOutcome = playthroughFile.outcome === "strong" || playthroughFile.outcome === "mixed" || playthroughFile.outcome === "weak" ? playthroughFile.outcome : null;
+          if (presentation.currentStageId !== currentStageId || presentation.clockMinute !== playthroughFile.clockMinute || restoredOutcome !== exportedOutcome || Boolean(restoredOutcome) !== (importedStatus === "completed")) throw new Error("Canonical replay snapshot mismatch");
+          setActiveScenario(importedScenario);
+          setFeaturedId(importedScenario.caseId);
+          playSessionStartRef.current += 1;
+          setServerPlaySession(null);
+          setLegacyTimingMode(false);
+          const state = storeLocalCanonicalRuntime(runtime, runtimeModule, canonicalDecisions, canonicalAdvances);
+          restoreLocalCanonicalView(state, importedScenario);
+          setDecisionLog(restoredLog);
+          setSelectedOption(null);
+          setResultOption(null);
+          setPlaySessionSync("local");
+          navigate("play");
+          showSessionNotice(text.importedPlay);
+          return;
+        }
         const restoredMetrics = { ...initialMetrics };
         const restoredLog: DecisionRecord[] = [];
         const restoredActionUses: Record<string, number> = {};
@@ -810,9 +1134,10 @@ export default function JurisApp() {
           if (!sourceStage || decision.stageId !== sourceStage.id || typeof decision.optionId !== "string") throw new Error("Decision stage mismatch");
           const sourceOption = sourceStage.options.find((option) => option.id === decision.optionId);
           if (!sourceOption) throw new Error("Decision option is not in the current catalogue");
-          const priorUses = restoredActionUses[sourceOption.id] ?? 0;
+          const useKey = actionUseKey(sourceOption);
+          const priorUses = restoredActionUses[useKey] ?? 0;
           if (!decisionAvailability(sourceOption, restoredMetrics, priorUses).available) throw new Error("Decision was not available under the authored rules");
-          restoredActionUses[sourceOption.id] = priorUses + 1;
+          restoredActionUses[useKey] = priorUses + 1;
           (Object.keys(sourceOption.effects) as MetricKey[]).forEach((key) => {
             restoredMetrics[key] = clamp(restoredMetrics[key] + (sourceOption.effects[key] ?? 0));
           });
@@ -839,6 +1164,8 @@ export default function JurisApp() {
         setActiveScenario(importedScenario);
         setFeaturedId(importedScenario.caseId);
         playSessionStartRef.current += 1;
+        localCanonicalRuntimeRef.current = null;
+        setLocalCanonicalState(null);
         setServerPlaySession(null);
         setPlaySessionSync("local");
         setPlaySessionBusy(false);
@@ -1202,7 +1529,14 @@ export default function JurisApp() {
       </header>
 
       {view === "library" && <LibraryView locale={locale} text={text} records={catalogueRecords} loadedScenarios={catalogueScenarios} featuredRecord={featuredRecord} featuredScenario={featured} setFeaturedId={setFeaturedId} launchCase={(record) => void launchCatalogueCase(record)} requestFeedback={setFeedbackTarget} openTaxTemplate={loadTaxTemplate} searchCatalogue={refreshCatalogue} nextCursor={catalogueNextCursor} total={catalogueTotal} loading={catalogueLoading} error={catalogueError} />}
-      {view === "play" && activeScenario && stage && <PlayView locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} decisionLog={decisionLog} caseMinute={caseMinute} actionUseCounts={actionUseCounts} completedDeadlineIds={completedDeadlineIds} missedDeadlineIds={missedDeadlineIds} dossierRef={dossierRef} setDossierRef={setDossierRef} setSelectedOption={setSelectedOption} outcome={outcome} sessionSync={playSessionSync} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario, { legacyTiming: legacyTimingMode })} returnLibrary={() => navigate("library")} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })} />}
+      {view === "play" && activeScenario && stage && runLedger && <PlayView
+        locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} ledger={runLedger}
+        decisionLog={decisionLog} caseMinute={caseMinute} actionUseCounts={actionUseCounts} completedDeadlineIds={completedDeadlineIds}
+        missedDeadlineIds={missedDeadlineIds} canonicalState={canonicalPlayState ?? undefined} dossierRef={dossierRef} setDossierRef={setDossierRef}
+        setSelectedOption={setSelectedOption} advanceTime={(minutes) => void advanceCaseTime(minutes)} timeBusy={playSessionBusy} outcome={outcome}
+        sessionSync={playSessionSync} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario, { legacyTiming: legacyTimingMode })}
+        returnLibrary={() => navigate("library")} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })}
+      />}
       {view === "studio" && <StudioView locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate} />}
       {view === "community" && <CommunityView locale={locale} cases={catalogueRecords} openCustomCase={openWorkspaceCustomCase} refreshCatalogue={() => refreshCatalogue({ force: true })} clearDeviceDraft={purgeLocalStudioState} />}
       {view === "help" && <HelpView locale={locale} openCommunity={() => navigate("community")} openStudio={() => navigate("studio")} />}
@@ -1229,11 +1563,11 @@ const fallbackCaseTaxonomy: Record<string, CaseMeta> = {
 };
 
 const fallbackCatalogueRecords: PublishedCaseSummary[] = [
-  { id: "be_commercial_failed_erp_001", currentVersion: "1.1.0", fingerprint: "sha256-2a3c1c410c8108eea6a44225589594b784eb7c5fd8e173ca564273faec695415", title: "Failed ERP Implementation", jurisdiction: "BE · Commercial", practiceArea: "Commercial disputes", sector: "Technology / implementation", difficulty: "Advanced", durationMinutes: 45, reviewLevel: "bundled_beta", authorName: "GENESIS: JURIS", reviewerName: "Expert review pending", legalAsOf: null, summary: "Asteron Systems pursues its ERP supplier after a failed implementation, while scope changes, acceptance language, causation, evidence, deadlines, and layered remedies shape the result.", tags: ["ERP", "evidence", "litigation"], updatedAt: "" },
-  { id: "be_commercial_logistics_001", currentVersion: "1.1.0", fingerprint: "sha256-6c567481bf7c79b148800226d6dc832d6e640194b7587c96b8a9f46b91fdef40", title: "Unpaid Logistics Invoices", jurisdiction: "BE · Commercial", practiceArea: "Commercial recovery", sector: "Logistics", difficulty: "Intermediate", durationMinutes: 35, reviewLevel: "bundled_beta", authorName: "GENESIS", reviewerName: "Expert review pending", legalAsOf: null, summary: "Velmont Logistics seeks recovery of unpaid freight and warehousing invoices while Orbis Retail disputes service levels, detention charges, and contractual surcharges.", tags: ["logistics", "CMR", "insolvency"], updatedAt: "" },
-  { id: "greenfire_first_72_hours", currentVersion: "0.3.0", fingerprint: "sha256-b131cace9de8bc9627e0642cc03a7ea5c9569cd536a05a6ae137ea51ce6cb279", title: "GreenFire — The First 72 Hours", jurisdiction: "NL · Corporate / Regulatory", practiceArea: "Environmental & crisis", sector: "Industrial / crisis", difficulty: "Intermediate", durationMinutes: 35, reviewLevel: "bundled_beta", authorName: "GENESIS: AI Juris", reviewerName: "Expert review pending", legalAsOf: null, summary: "An industrial fire places a chemical-storage company under simultaneous criminal, regulatory, environmental, insurance, and insolvency pressure.", tags: ["incident", "regulatory", "72h"], updatedAt: "" },
-  { id: "nl_food_safety_goldenshell_001", currentVersion: "0.2.0", fingerprint: "sha256-6ead6fc8b4f388493448d06d9e2a59b8b0efd2d0fa052c78ffaed3a133176606", title: "GoldenShell — Recall at Dawn", jurisdiction: "NL · Food safety", practiceArea: "Food safety & product recall", sector: "Food safety", difficulty: "Advanced", durationMinutes: 40, reviewLevel: "bundled_beta", authorName: "GENESIS: AI Juris", reviewerName: "Expert review pending", legalAsOf: null, summary: "A food-safety authority blocks twelve poultry farms after traces of an unauthorised pesticide are detected in eggs.", tags: ["recall", "traceability", "claims"], updatedAt: "" },
-  { id: "us_environmental_desert_water_001", currentVersion: "0.2.0", fingerprint: "sha256-67cc3c6ebc23b29940c417ef5a5692ca22c1624b2a6c9d49b18b175e5cb6c1c8", title: "Desert Water", jurisdiction: "US · Environmental", practiceArea: "Environmental mass claims", sector: "Environmental / mass claims", difficulty: "Expert", durationMinutes: 50, reviewLevel: "bundled_beta", authorName: "GENESIS: AI Juris", reviewerName: "Expert review pending", legalAsOf: null, summary: "Residents of Sundial Mesa suspect that hexavalent chromium from Caldera's cooling and compressor facility reached their wells.", tags: ["groundwater", "causation", "mass claims"], updatedAt: "" },
+  { id: "be_commercial_failed_erp_001", currentVersion: "1.2.0", fingerprint: "sha256-016544740b270af3b6e3392f190fbc8de2516435494b64ad6924ee42ca75f581", title: "Failed ERP Implementation", jurisdiction: "BE · Commercial", practiceArea: "Commercial disputes", sector: "Technology / implementation", difficulty: "Advanced", durationMinutes: 45, reviewLevel: "bundled_beta", authorName: "GENESIS: JURIS", reviewerName: "Expert review pending", legalAsOf: null, summary: "Asteron Systems pursues its ERP supplier after a failed implementation, while scope changes, acceptance language, causation, evidence, deadlines, and layered remedies shape the result.", tags: ["ERP", "evidence", "litigation"], updatedAt: "" },
+  { id: "be_commercial_logistics_001", currentVersion: "1.2.0", fingerprint: "sha256-ea8c505ee15bc582900b4093fdf82340668998510a4dc0653a623871ab2a5163", title: "Unpaid Logistics Invoices", jurisdiction: "BE · Commercial", practiceArea: "Commercial recovery", sector: "Logistics", difficulty: "Intermediate", durationMinutes: 35, reviewLevel: "bundled_beta", authorName: "GENESIS", reviewerName: "Expert review pending", legalAsOf: null, summary: "Velmont Logistics seeks recovery of unpaid freight and warehousing invoices while Orbis Retail disputes service levels, detention charges, and contractual surcharges.", tags: ["logistics", "CMR", "insolvency"], updatedAt: "" },
+  { id: "greenfire_first_72_hours", currentVersion: "0.4.0", fingerprint: "sha256-d0a07ed183269eb0c9c76a9226bcde27a878179d8a3afca4b10b794ca00f1d51", title: "GreenFire — The First 72 Hours", jurisdiction: "NL · Corporate / Regulatory", practiceArea: "Environmental & crisis", sector: "Industrial / crisis", difficulty: "Intermediate", durationMinutes: 35, reviewLevel: "bundled_beta", authorName: "GENESIS: AI Juris", reviewerName: "Expert review pending", legalAsOf: null, summary: "An industrial fire places a chemical-storage company under simultaneous criminal, regulatory, environmental, insurance, and insolvency pressure.", tags: ["incident", "regulatory", "72h"], updatedAt: "" },
+  { id: "nl_food_safety_goldenshell_001", currentVersion: "0.3.0", fingerprint: "sha256-fcd51c1425f61d28c027c3600da1702f995c8b1b9bdfffe14e4e5c1fee1564dd", title: "GoldenShell — Recall at Dawn", jurisdiction: "NL · Food safety", practiceArea: "Food safety & product recall", sector: "Food safety", difficulty: "Advanced", durationMinutes: 40, reviewLevel: "bundled_beta", authorName: "GENESIS: AI Juris", reviewerName: "Expert review pending", legalAsOf: null, summary: "A food-safety authority blocks twelve poultry farms after traces of an unauthorised pesticide are detected in eggs.", tags: ["recall", "traceability", "claims"], updatedAt: "" },
+  { id: "us_environmental_desert_water_001", currentVersion: "0.3.0", fingerprint: "sha256-20d0037ab29211858bce13618e86b17be54af5dd4e9f9c1796ddb62edd9608b2", title: "Desert Water", jurisdiction: "US · Environmental", practiceArea: "Environmental mass claims", sector: "Environmental / mass claims", difficulty: "Expert", durationMinutes: 50, reviewLevel: "bundled_beta", authorName: "GENESIS: AI Juris", reviewerName: "Expert review pending", legalAsOf: null, summary: "Residents of Sundial Mesa suspect that hexavalent chromium from Caldera's cooling and compressor facility reached their wells.", tags: ["groundwater", "causation", "mass claims"], updatedAt: "" },
 ];
 
 function bundledCatalogueRecords(): PublishedCaseSummary[] {
@@ -1356,16 +1690,31 @@ function LibraryView({ locale, text, records, loadedScenarios, featuredRecord, f
     <section className="authority-note page-width"><span className="authority-seal">β</span><div><b>{text.adaptation}</b><p>{text.canonNote}</p></div><code>WEB BETA · VERSIONED</code></section>
   </main>;
 }
-function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decisionLog, caseMinute, actionUseCounts, completedDeadlineIds, missedDeadlineIds, dossierRef, setDossierRef, setSelectedOption, outcome, sessionSync, exportSession, replayCase, returnLibrary, requestFeedback }: { locale: Locale; text: UiText; scenario: Scenario; stage: Scenario["stages"][number]; stageIndex: number; metrics: Record<MetricKey, number>; decisionLog: DecisionRecord[]; caseMinute: number; actionUseCounts: Record<string, number>; completedDeadlineIds: string[]; missedDeadlineIds: string[]; dossierRef: string | null; setDossierRef: (ref: string) => void; setSelectedOption: (option: DecisionOption) => void; outcome: OutcomeClass | null; sessionSync: "opening" | "server" | "local" | "stale" | "error"; exportSession: () => void; replayCase: () => void; returnLibrary: () => void; requestFeedback: (contextType: "case" | "stage", contextId?: string) => void }) {
-  const activeMaterial = scenario.materials.find((material) => material.ref === dossierRef) ?? scenario.materials[0];
+function PlayView({ locale, text, scenario, stage, stageIndex, metrics, ledger, decisionLog, caseMinute, actionUseCounts, completedDeadlineIds, missedDeadlineIds, canonicalState, dossierRef, setDossierRef, setSelectedOption, advanceTime, timeBusy, outcome, sessionSync, exportSession, replayCase, returnLibrary, requestFeedback }: {
+  locale: Locale; text: UiText; scenario: Scenario; stage: Scenario["stages"][number]; stageIndex: number; metrics: Record<MetricKey, number>;
+  ledger: RunLedger; decisionLog: DecisionRecord[]; caseMinute: number; actionUseCounts: Record<string, number>; completedDeadlineIds: string[];
+  missedDeadlineIds: string[]; canonicalState?: ServerPlaySessionState; dossierRef: string | null; setDossierRef: (ref: string) => void;
+  setSelectedOption: (option: DecisionOption) => void; advanceTime: (minutes: number) => void; timeBusy: boolean; outcome: OutcomeClass | null;
+  sessionSync: "opening" | "server" | "local" | "stale" | "error"; exportSession: () => void; replayCase: () => void;
+  returnLibrary: () => void; requestFeedback: (contextType: "case" | "stage", contextId?: string) => void;
+}) {
+  const visibleMaterials = canonicalState?.availableEvidenceIds
+    ? scenario.materials.filter((material) => canonicalState.availableEvidenceIds?.includes(material.ref))
+    : scenario.materials;
+  const activeMaterial = visibleMaterials.find((material) => material.ref === dossierRef) ?? visibleMaterials[0] ?? scenario.materials[0];
   const [inboxOpen, setInboxOpen] = useState(false);
   const [selectedInboxIndex, setSelectedInboxIndex] = useState(0);
   const decisionRef = useRef<HTMLElement>(null);
   const clock = formatCaseClock(caseMinute);
   const activeActionIds = new Set(stage.options.map((option) => option.id));
   const visitedStageIds = new Set(decisionLog.map((entry) => entry.stageId));
-  const workflowInbox = scenario.workflowInbox.filter((item) => item.initiallyVisible || item.resolutionActions.some((action) => activeActionIds.has(action)));
-  const unresolvedWorkflowInbox = workflowInbox.filter((item) => !item.resolutionActions.some((action) => (actionUseCounts[action] ?? 0) > 0));
+  const workflowInbox = canonicalState?.visibleInboxIds
+    ? scenario.workflowInbox.filter((item) => canonicalState.visibleInboxIds?.includes(item.id))
+    : scenario.workflowInbox.filter((item) => item.initiallyVisible || item.resolutionActions.some((action) => activeActionIds.has(action)));
+  const resolvedOptionIds = new Set(decisionLog.map((entry) => entry.option.id));
+  const unresolvedWorkflowInbox = canonicalState?.resolvedInboxIds
+    ? workflowInbox.filter((item) => !canonicalState.resolvedInboxIds?.includes(item.id))
+    : workflowInbox.filter((item) => !item.resolutionActions.some((action) => resolvedOptionIds.has(action)));
   const inboxEntries: InboxEntry[] = [
     {
       id: `${stage.id}-situation`,
@@ -1382,15 +1731,17 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decision
       body: item.body[locale],
     })),
   ];
-  const deadlineRows = scenario.deadlines.map((deadline) => {
+  const deadlineRows = scenario.deadlines.filter((deadline) => !canonicalState?.activeDeadlineIds || canonicalState.activeDeadlineIds.includes(deadline.id)).map((deadline) => {
     const completed = completedDeadlineIds.includes(deadline.id);
     const missed = missedDeadlineIds.includes(deadline.id);
-    const remaining = deadline.dueAtMinute - caseMinute;
-    return { deadline, completed, missed, remaining };
-  }).sort((left, right) => left.deadline.dueAtMinute - right.deadline.dueAtMinute);
+    const dueAtMinute = canonicalState?.deadlineDueMinutes?.[deadline.id] ?? deadline.dueAtMinute;
+    const remaining = dueAtMinute - caseMinute;
+    return { deadline, dueAtMinute, completed, missed, remaining };
+  }).sort((left, right) => left.dueAtMinute - right.dueAtMinute);
   const nextDeadline = deadlineRows.find((row) => !row.completed && !row.missed);
   const availableCount = sessionSync === "opening" ? 0 : stage.options.filter((option) => {
-    const uses = actionUseCounts[option.id] ?? 0;
+    if (scenario.mobileParity) return Boolean(option.canonicalActionId && canonicalState?.availableActionIds?.includes(option.canonicalActionId));
+    const uses = actionUseCounts[actionUseKey(option)] ?? 0;
     return decisionAvailability(option, metrics, uses).available;
   }).length;
 
@@ -1409,8 +1760,8 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decision
       decisionRef.current?.querySelector<HTMLButtonElement>(".decision-options button")?.focus();
     }, 380);
   }
-  if (outcome) return <DebriefView locale={locale} text={text} scenario={scenario} metrics={metrics} decisionLog={decisionLog} outcome={outcome} exportSession={exportSession} replayCase={replayCase} returnLibrary={returnLibrary} requestFeedback={() => requestFeedback("case")}/>;
-  return <main className="operations-view"><aside className="case-rail"><button className="rail-back" onClick={returnLibrary}><span>←</span>{text.library}</button><div className="rail-case"><small>ACTIVE MATTER</small><b>{scenario.title[locale]}</b><span>{scenario.jurisdiction}</span></div><div className="workflow-depth"><span>{scenario.stages.length} STAGES</span><span>{scenario.stages.reduce((sum, item) => sum + item.options.length, 0)} ACTIONS</span></div><div className={`run-authority ${sessionSync}`}><span>{sessionSync === "server" ? (locale === "en" ? "SERVER-AUTHORITATIVE RUN" : "РАСЧЁТ НА СЕРВЕРЕ") : sessionSync === "opening" ? (locale === "en" ? "OPENING RUN…" : "ЗАПУСК…") : sessionSync === "stale" ? (locale === "en" ? "SERVER STATE RESTORED" : "СОСТОЯНИЕ ВОССТАНОВЛЕНО") : sessionSync === "error" ? (locale === "en" ? "SYNC NEEDS RETRY" : "НУЖНА СИНХРОНИЗАЦИЯ") : (locale === "en" ? "LOCAL PREVIEW RUN" : "ЛОКАЛЬНЫЙ ПРЕДПРОСМОТР")}</span></div><ol className="stage-list">{scenario.stages.map((item, index) => <li key={item.id} className={index === stageIndex ? "active" : visitedStageIds.has(item.id) ? "done" : ""}><span>{visitedStageIds.has(item.id) && index !== stageIndex ? "✓" : index + 1}</span><div><b>{item.phase[locale]}</b><small>{item.terminal ? "TERMINAL" : item.id.replaceAll("_", " ")}</small></div></li>)}</ol><div className="rail-version">CONTENT v{scenario.version}<br/><code>{scenario.fingerprint}</code></div></aside>
+  if (outcome) return <DebriefView locale={locale} text={text} scenario={scenario} metrics={metrics} ledger={ledger} decisionLog={decisionLog} outcome={outcome} canonicalOutcome={canonicalState?.canonicalOutcome} exportSession={exportSession} replayCase={replayCase} returnLibrary={returnLibrary} requestFeedback={() => requestFeedback("case")}/>;
+  return <main className="operations-view"><aside className="case-rail"><button className="rail-back" onClick={returnLibrary}><span>←</span>{text.library}</button><div className="rail-case"><small>ACTIVE MATTER</small><b>{scenario.title[locale]}</b><span>{scenario.jurisdiction}</span></div><div className="workflow-depth"><span>{scenario.stages.length} STAGES</span><span>{scenario.mobileParity?.actionCount ?? scenario.stages.reduce((sum, item) => sum + item.options.length, 0)} ACTIONS</span></div><div className={`run-authority ${sessionSync}`}><span>{sessionSync === "server" ? (locale === "en" ? "SERVER-AUTHORITATIVE RUN" : "РАСЧЁТ НА СЕРВЕРЕ") : sessionSync === "opening" ? (locale === "en" ? "OPENING RUN…" : "ЗАПУСК…") : sessionSync === "stale" ? (locale === "en" ? "SERVER STATE RESTORED" : "СОСТОЯНИЕ ВОССТАНОВЛЕНО") : sessionSync === "error" ? (locale === "en" ? "SYNC NEEDS RETRY" : "НУЖНА СИНХРОНИЗАЦИЯ") : (locale === "en" ? "LOCAL PREVIEW RUN" : "ЛОКАЛЬНЫЙ ПРЕДПРОСМОТР")}</span></div><ol className="stage-list">{scenario.stages.map((item, index) => <li key={item.id} className={index === stageIndex ? "active" : visitedStageIds.has(item.id) ? "done" : ""}><span>{visitedStageIds.has(item.id) && index !== stageIndex ? "✓" : index + 1}</span><div><b>{item.phase[locale]}</b><small>{item.terminal ? "TERMINAL" : item.id.replaceAll("_", " ")}</small></div></li>)}</ol><div className="rail-version">CONTENT v{scenario.version}<br/><code>{scenario.fingerprint}</code></div></aside>
     <section className="command-center">
       <div className="command-header">
         <div>
@@ -1418,8 +1769,15 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decision
           <h1>{scenario.title[locale]}</h1>
           <p>{stage.phase[locale]} <span>·</span> {clock.time}</p>
         </div>
-        <div className="command-clock"><span>{clock.time}</span><small>{text.day} {clock.day} · FOREGROUND</small></div>
+        <div className="clock-controls">
+          <div className="command-clock"><span>{clock.time}</span><small>{text.day} {clock.day} · {scenario.mobileParity?.foregroundClock ? "FOREGROUND" : "CASE CLOCK"}</small></div>
+          {scenario.mobileParity?.foregroundClock && <div className="time-advance-controls" aria-label={locale === "en" ? "Advance case time" : "Продвинуть время дела"}>
+            <button disabled={timeBusy || sessionSync === "opening" || !canonicalState?.availableActionIds} onClick={() => advanceTime(60)}>+1h</button>
+            <button disabled={timeBusy || sessionSync === "opening" || !canonicalState?.availableActionIds} onClick={() => advanceTime(360)}>+6h</button>
+          </div>}
+        </div>
       </div>
+      <RunLedgerPanel locale={locale} ledger={ledger} day={clock.day} />
       <MetricPanel locale={locale} metrics={metrics} compact/>
       <article className="engagement-brief">
         <div><span>{locale === "en" ? "INITIAL SITUATION / MANDATE" : "НАЧАЛЬНАЯ СИТУАЦИЯ / ПОРУЧЕНИЕ"}</span><code>{scenario.caseId}</code></div>
@@ -1449,8 +1807,8 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decision
         </button>
       </div>
       <section className="deadline-ledger" aria-label={locale === "en" ? "Case deadlines" : "Дедлайны дела"}>
-        <div className="deadline-heading"><div><span>{locale === "en" ? "DEADLINE CONTROL" : "КОНТРОЛЬ СРОКОВ"}</span><h2>{locale === "en" ? "Time changes the case" : "Время изменяет дело"}</h2></div><code>{scenario.deadlines.length.toString().padStart(2,"0")} DEADLINES</code></div>
-        {deadlineRows.length === 0 ? <p className="no-deadlines">{locale === "en" ? "No authored deadline is active in this introductory matter." : "В этом вводном деле нет настроенных дедлайнов."}</p> : <div className="deadline-list">{deadlineRows.map(({deadline,completed,missed,remaining}) => <div key={deadline.id} className={`deadline-row ${completed ? "complete" : missed ? "missed" : remaining <= 180 ? "urgent" : ""}`}><span className="deadline-state">{completed ? "✓" : missed ? "!" : "◷"}</span><div><b>{deadline.title[locale]}</b><small>{completed ? (locale === "en" ? "Completed" : "Выполнено") : missed ? remainingLabel(remaining) : remainingLabel(remaining)}</small></div><time>D{Math.floor(deadline.dueAtMinute/1440)+1} · {formatCaseClock(deadline.dueAtMinute).time}</time></div>)}</div>}
+        <div className="deadline-heading"><div><span>{locale === "en" ? "DEADLINE CONTROL" : "КОНТРОЛЬ СРОКОВ"}</span><h2>{locale === "en" ? "Time changes the case" : "Время изменяет дело"}</h2></div><code>{deadlineRows.length.toString().padStart(2,"0")} DEADLINES</code></div>
+        {deadlineRows.length === 0 ? <p className="no-deadlines">{locale === "en" ? "No authored deadline is active in this introductory matter." : "В этом вводном деле нет настроенных дедлайнов."}</p> : <div className="deadline-list">{deadlineRows.map(({deadline,dueAtMinute,completed,missed,remaining}) => <div key={deadline.id} className={`deadline-row ${completed ? "complete" : missed ? "missed" : remaining <= 180 ? "urgent" : ""}`}><span className="deadline-state">{completed ? "✓" : missed ? "!" : "◷"}</span><div><b>{deadline.title[locale]}</b><small>{completed ? (locale === "en" ? "Completed" : "Выполнено") : missed ? remainingLabel(remaining) : remainingLabel(remaining)}</small></div><time>D{Math.floor(dueAtMinute/1440)+1} · {formatCaseClock(dueAtMinute).time}</time></div>)}</div>}
       </section>
       <article className="situation-panel">
         <div className="situation-top"><span>{text.situation}</span><code>{stage.source[locale]}</code></div>
@@ -1468,7 +1826,30 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decision
           <p>{locale === "en" ? "Every action adapted for the current web-beta stage is shown. Time advances and the quoted cost is recorded only after confirmation." : "Показаны все действия, адаптированные для текущей стадии веб-беты. После подтверждения продвигается время и фиксируется заявленная стоимость."}</p>
         </div>
         <div className="decision-options">
-          {stage.options.map((option) => { const uses=actionUseCounts[option.id]??0; const availability=decisionAvailability(option,metrics,uses); const stateLabel=sessionSync === "opening" ? (locale === "en" ? "OPENING SERVER RUN" : "ЗАПУСК СЕРВЕРНОГО РАСЧЁТА") : availability.exhausted ? (locale === "en" ? "COMPLETED" : "ВЫПОЛНЕНО") : !availability.available ? (locale === "en" ? "LOCKED BY RULE" : "ЗАБЛОКИРОВАНО ПРАВИЛОМ") : `€ ${option.cost.toLocaleString()} · ${option.minutes} MIN${option.repeatability==="limited" ? ` · ${uses}/${option.maxUses}` : ""}`; return <button key={option.id} disabled={sessionSync === "opening" || !availability.available} onClick={() => setSelectedOption(option)} title={!availability.available && !availability.exhausted ? availability.blockedGuards.map((guard)=>`${guard.metric} ${guard.comparison} ${guard.value}`).join(", ") : undefined}><span>{option.label[locale]}</span><small>{stateLabel}</small><Icon name={sessionSync === "opening" || !availability.available ? availability.exhausted ? "check" : "alert" : "arrow"}/></button>;})}
+          {stage.options.map((option) => {
+            const uses = actionUseCounts[actionUseKey(option)] ?? 0;
+            const authoredAvailability = decisionAvailability(option, metrics, uses);
+            const available = scenario.mobileParity
+              ? Boolean(option.canonicalActionId && canonicalState?.availableActionIds?.includes(option.canonicalActionId))
+              : authoredAvailability.available;
+            const exhausted = scenario.mobileParity ? uses > 0 && option.repeatability === "once" : authoredAvailability.exhausted;
+            const authoredCost = scenario.mobileParity ? option.costAuthored === true : true;
+            const economics = `${authoredCost ? `€ ${option.cost.toLocaleString()}` : (locale === "en" ? "COST NOT AUTHORED" : "ЗАТРАТЫ НЕ ЗАДАНЫ")} · ${option.minutes} MIN`;
+            const nextDay = option.completionDayOffset !== undefined && option.completionDayOffset > 0 ? (locale === "en" ? " · NEXT WORKDAY" : " · СЛЕДУЮЩИЙ РАБОЧИЙ ДЕНЬ") : "";
+            const stateLabel = sessionSync === "opening"
+              ? (locale === "en" ? "OPENING SERVER RUN" : "ЗАПУСК СЕРВЕРНОГО РАСЧЁТА")
+              : exhausted
+                ? (locale === "en" ? "COMPLETED" : "ВЫПОЛНЕНО")
+                : !available
+                  ? scenario.mobileParity
+                    ? (locale === "en" ? "LOCKED BY CANONICAL RULE" : "ЗАБЛОКИРОВАНО КАНОНИЧЕСКИМ ПРАВИЛОМ")
+                    : (locale === "en" ? "LOCKED BY RULE" : "ЗАБЛОКИРОВАНО ПРАВИЛОМ")
+                  : `${economics}${nextDay}${option.repeatability === "limited" ? ` · ${uses}/${option.maxUses}` : ""}`;
+            const title = !scenario.mobileParity && !available && !exhausted
+              ? authoredAvailability.blockedGuards.map((guard) => `${guard.metric} ${guard.comparison} ${guard.value}`).join(", ")
+              : undefined;
+            return <button key={option.id} disabled={sessionSync === "opening" || !available} onClick={() => setSelectedOption(option)} title={title}><span>{option.label[locale]}</span><small>{stateLabel}</small><Icon name={sessionSync === "opening" || !available ? exhausted ? "check" : "alert" : "arrow"}/></button>;
+          })}
         </div>
       </section>
       <button className="case-feedback-cta secondary-cta" onClick={() => requestFeedback("stage", stage.id)}><Icon name="file"/>{locale === "en" ? "Give feedback on this stage" : "Дать отзыв об этой стадии"}</button>
@@ -1487,10 +1868,11 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, decision
         />
       )}
     </section>
-    <aside className="dossier-pane"><div className="pane-heading"><span>{text.dossier}</span><b>{scenario.materials.length}</b></div><p className="pane-intro">{text.visibleMaterial} · {text.provenance}</p><div className="material-tabs">{scenario.materials.map((material) => <button key={material.ref} className={material.ref === activeMaterial.ref ? "active" : ""} onClick={() => setDossierRef(material.ref)}><code>{material.ref}</code><span>{material.title[locale]}</span></button>)}</div><article className="material-sheet"><div className="sheet-punch"/><div className="sheet-reg">{activeMaterial.ref}</div><span className="document-type">{activeMaterial.type[locale]}</span><h3>{activeMaterial.title[locale]}</h3><dl><div><dt>SOURCE</dt><dd>{activeMaterial.source[locale]}</dd></div><div><dt>DATE / TIME</dt><dd>{activeMaterial.date}</dd></div><div><dt>CASE</dt><dd>{scenario.caseId}</dd></div></dl><p>{locale === "en" ? "Visible case material. Source identity remains attached; opening this record does not recommend a decision." : "Видимый материал дела. Идентичность источника сохранена; открытие записи не рекомендует решение."}</p><div className="sheet-status"><Icon name="check"/> PROVENANCE ATTACHED</div></article>{decisionLog.length > 0 && <section className="mini-log"><h3>{text.actionLog}</h3>{decisionLog.map((entry,index) => <div key={`${entry.option.id}-${index}`}><span>{String(index+1).padStart(2,"0")}</span><p>{entry.option.label[locale]}</p></div>)}</section>}</aside></main>;
+    <aside className="dossier-pane"><div className="pane-heading"><span>{text.dossier}</span><b>{visibleMaterials.length}</b></div><p className="pane-intro">{text.visibleMaterial} · {text.provenance}</p><div className="material-tabs">{visibleMaterials.map((material) => <button key={material.ref} className={material.ref === activeMaterial?.ref ? "active" : ""} onClick={() => setDossierRef(material.ref)}><code>{material.ref}</code><span>{material.title[locale]}</span></button>)}</div>{activeMaterial ? <article className="material-sheet"><div className="sheet-punch"/><div className="sheet-reg">{activeMaterial.ref}</div><span className="document-type">{activeMaterial.type[locale]}</span><h3>{activeMaterial.title[locale]}</h3><dl><div><dt>SOURCE</dt><dd>{activeMaterial.source[locale]}</dd></div><div><dt>DATE / TIME</dt><dd>{activeMaterial.date}</dd></div><div><dt>CASE</dt><dd>{scenario.caseId}</dd></div></dl><p>{locale === "en" ? "Visible case material. Source identity remains attached; opening this record does not recommend a decision." : "Видимый материал дела. Идентичность источника сохранена; открытие записи не рекомендует решение."}</p><div className="sheet-status"><Icon name="check"/> PROVENANCE ATTACHED</div></article> : <p className="pane-intro">{locale === "en" ? "No evidence is available at this stage." : "На этой стадии материалы ещё недоступны."}</p>}{decisionLog.length > 0 && <section className="mini-log"><h3>{text.actionLog}</h3>{decisionLog.map((entry,index) => <div key={`${entry.option.id}-${index}`}><span>{String(index+1).padStart(2,"0")}</span><p>{entry.option.label[locale]}</p></div>)}</section>}</aside></main>;
 }
 
-function DebriefView({ locale, text, scenario, metrics, decisionLog, outcome, exportSession, replayCase, returnLibrary, requestFeedback }: { locale: Locale; text: UiText; scenario: Scenario; metrics: Record<MetricKey, number>; decisionLog: DecisionRecord[]; outcome: OutcomeClass; exportSession: () => void; replayCase: () => void; returnLibrary: () => void; requestFeedback: () => void }) {
+function DebriefView({ locale, text, scenario, metrics, ledger, decisionLog, outcome, canonicalOutcome, exportSession, replayCase, returnLibrary, requestFeedback }: { locale: Locale; text: UiText; scenario: Scenario; metrics: Record<MetricKey, number>; ledger: RunLedger; decisionLog: DecisionRecord[]; outcome: OutcomeClass; canonicalOutcome?: NonNullable<DecisionOption["resolvedOutcome"]>; exportSession: () => void; replayCase: () => void; returnLibrary: () => void; requestFeedback: () => void }) {
+  const exactOutcome = canonicalOutcome ?? [...decisionLog].reverse().find((entry) => entry.option.resolvedOutcome)?.option.resolvedOutcome;
   const presentation = {
     strong: {
       classLabel: locale === "en" ? "FAVORABLE OUTCOME" : "БЛАГОПРИЯТНЫЙ ИСХОД",
@@ -1532,9 +1914,25 @@ function DebriefView({ locale, text, scenario, metrics, decisionLog, outcome, ex
         </div>
         <div className="verdict-narrative">
           <span>{locale === "en" ? "FINAL CASE OUTCOME" : "ИТОГОВЫЙ РЕЗУЛЬТАТ ДЕЛА"}</span>
-          <h2>{scenario.outcomes[outcome][locale]}</h2>
-          <p>{presentation.explanation}</p>
+          <h2>{exactOutcome?.title[locale] ?? scenario.outcomes[outcome][locale]}</h2>
+          <p>{exactOutcome?.summary[locale] ?? presentation.explanation}</p>
         </div>
+      </section>
+
+      <section className="financial-result">
+        <div className="financial-heading">
+          <div><span>{locale === "en" ? "FINANCIAL RESULT" : "ФИНАНСОВЫЙ РЕЗУЛЬТАТ"}</span><h2>{locale === "en" ? "Matter economics" : "Экономика дела"}</h2></div>
+          <small>{ledger.financialOutcomeAuthored ? (locale === "en" ? "Outcome quantified by the source case" : "Исход количественно задан в исходном кейсе") : (locale === "en" ? "Outcome amount is not authored in this source case" : "Сумма исхода не задана в исходном кейсе")}</small>
+        </div>
+        <dl className="financial-grid">
+          <div><dt>{locale === "en" ? (ledger.costCoverage === "complete" || ledger.spendAuthoritative ? "Legal spend" : "Known legal spend") : (ledger.costCoverage === "complete" || ledger.spendAuthoritative ? "Юридические расходы" : "Известные юридические расходы")}</dt><dd>€ {ledger.spendEur.toLocaleString()}</dd></div>
+          <div><dt>{locale === "en" ? (ledger.billableCoverage === "complete" ? "Billable time" : "Known billable time") : (ledger.billableCoverage === "complete" ? "Учтённое время" : "Известное учтённое время")}</dt><dd>{ledger.billableCoverage === "not-authored" ? "—" : `${(ledger.billableMinutes / 60).toFixed(1)} h`}</dd></div>
+          <div><dt>{locale === "en" ? "Award / settlement" : "Присуждение / урегулирование"}</dt><dd>{ledger.financialOutcomeAuthored ? `€ ${ledger.awardEur.toLocaleString()}` : "—"}</dd></div>
+          <div><dt>{locale === "en" ? "Outcome costs" : "Расходы по исходу"}</dt><dd>{ledger.financialOutcomeAuthored ? `€ ${ledger.outcomeCostsEur.toLocaleString()}` : "—"}</dd></div>
+          <div className="financial-net"><dt>{locale === "en" ? "Net financial result" : "Чистый финансовый результат"}</dt><dd>{ledger.financialOutcomeAuthored && (ledger.costCoverage === "complete" || ledger.spendAuthoritative) ? `€ ${(ledger.awardEur - ledger.outcomeCostsEur - ledger.spendEur).toLocaleString()}` : ledger.financialOutcomeAuthored ? (locale === "en" ? "Partially quantified" : "Рассчитан частично") : (locale === "en" ? "Not quantified" : "Не рассчитан")}</dd></div>
+          {ledger.authorizedBudgetEur > 0 && <div className={ledger.spendEur > ledger.authorizedBudgetEur ? "budget-exceeded" : ""}><dt>{ledger.spendEur > ledger.authorizedBudgetEur ? (locale === "en" ? "Budget exceeded" : "Превышение бюджета") : (locale === "en" ? "Budget remaining" : "Остаток бюджета")}</dt><dd>€ {Math.abs(ledger.authorizedBudgetEur - ledger.spendEur).toLocaleString()}</dd></div>}
+        </dl>
+        {ledger.costCoverage !== "complete" && <p className="financial-caveat">{ledger.spendAuthoritative ? (locale === "en" ? "The total spend is authoritative in the canonical runtime; some individual actions do not carry a separate cost annotation." : "Итоговые расходы авторитетно рассчитаны каноническим runtime; для отдельных действий стоимость отдельно не размечена.") : (locale === "en" ? "Only action costs explicitly authored in the canonical mobile scenario are included; no missing values were invented." : "Учтены только затраты, явно заданные в каноническом мобильном сценарии; отсутствующие значения не выдумывались.")}</p>}
       </section>
 
       <section className="final-posture">
@@ -1630,8 +2028,51 @@ function MetricPanel({ locale, metrics, compact = false }: { locale: Locale; met
   return <div className={`metric-panel ${compact ? "compact" : ""}`}>{(Object.keys(metrics) as MetricKey[]).map((key) => <div key={key} className={`metric metric-${key}`}><div><span>{metricLabels[locale][key]}</span><b>{metrics[key]}</b></div><i><em style={{ width: `${metrics[key]}%` }}/></i></div>)}</div>;
 }
 
+function RunLedgerPanel({ locale, ledger, day }: { locale: Locale; ledger: RunLedger; day: number }) {
+  const remaining = ledger.authorizedBudgetEur > 0 ? ledger.authorizedBudgetEur - ledger.spendEur : null;
+  return <section className="run-ledger" aria-label={locale === "en" ? "Current case resources" : "Текущие ресурсы дела"}>
+    <div className={remaining !== null && remaining < 0 ? "resource-alert" : ""}><span>{locale === "en" ? (ledger.costCoverage === "complete" || ledger.spendAuthoritative ? "TOTAL SPEND" : "KNOWN SPEND") : (ledger.costCoverage === "complete" || ledger.spendAuthoritative ? "ВСЕГО ЗАТРАТ" : "ИЗВЕСТНЫЕ ЗАТРАТЫ")}</span><b>€ {ledger.spendEur.toLocaleString()}</b><small>{remaining === null ? (locale === "en" ? "No budget authored" : "Бюджет не задан") : remaining < 0 ? `${locale === "en" ? "Exceeded" : "Превышение"}: € ${Math.abs(remaining).toLocaleString()}` : `${locale === "en" ? "Remaining" : "Остаток"}: € ${remaining.toLocaleString()}`}</small></div>
+    <div className={ledger.staminaModelled && ledger.stamina < 35 ? "resource-alert" : ""}><span>STAMINA</span><b>{ledger.staminaModelled ? `${ledger.stamina}/100` : "—"}</b><small>{ledger.staminaModelled ? `${locale === "en" ? "Fatigue" : "Усталость"} ${ledger.fatigue} · ${locale === "en" ? "strain" : "нагрузка"} ${ledger.cumulativeStrain}` : (locale === "en" ? "Not authored for this case" : "Не задана для этого кейса")}</small></div>
+    <div><span>{locale === "en" ? "WORKING DAY" : "РАБОЧИЙ ДЕНЬ"}</span><b>{String(day).padStart(2, "0")}</b><small>{locale === "en" ? "Deadlines keep running" : "Сроки продолжают идти"}</small></div>
+    <div><span>{locale === "en" ? "BILLABLE TIME" : "УЧТЁННОЕ ВРЕМЯ"}</span><b>{ledger.billableCoverage === "not-authored" ? "—" : `${(ledger.billableMinutes / 60).toFixed(1)} h`}</b><small>{ledger.billableCoverage === "not-authored" ? (locale === "en" ? "Not authored for this case" : "Не задано для этого кейса") : `${ledger.billableMinutes.toLocaleString()} min`}</small></div>
+  </section>;
+}
+
 function DecisionModal({ locale, text, scenario, stageHeadline, option, isResult, busy, close, dispatch, advance, finalStage }: { locale: Locale; text: UiText; scenario: Scenario; stageHeadline: string; option: DecisionOption; isResult: boolean; busy: boolean; close: () => void; dispatch: () => void | Promise<void>; advance: () => void; finalStage: boolean }) {
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !isResult && !busy) close(); }}><section className={`decision-modal ${isResult ? "result" : ""}`} role="dialog" aria-modal="true" aria-labelledby="decision-title" aria-busy={busy}>{!isResult && <button className="modal-close" onClick={close} disabled={busy} aria-label={text.cancel}><Icon name="close"/></button>}<div className="modal-register">{isResult ? "DISPATCH RECORD" : "RESPONSE REVIEW"}<span>{scenario.caseId}</span></div><div className="modal-icon"><Icon name={isResult ? "check" : "file"} size={30}/></div><span className="modal-kicker">{isResult ? text.consequence : text.review}</span><h2 id="decision-title">{option.label[locale]}</h2><p className="modal-context">{isResult ? option.result[locale] : option.detail[locale]}</p>{!isResult && <><div className="modal-source"><small>CURRENT SITUATION</small><p>{stageHeadline}</p></div><dl className="decision-cost"><div><dt>{text.cost}</dt><dd>EUR {option.cost.toLocaleString()}</dd></div><div><dt>{text.duration}</dt><dd>{option.minutes} min</dd></div></dl><div className="effect-preview">{(Object.entries(option.effects) as Array<[MetricKey, number]>).map(([key,value]) => <span key={key} className={value >= 0 ? "positive" : "negative"}>{metricLabels[locale][key]} {value >= 0 ? "+" : ""}{value}</span>)}</div></>}<div className="modal-actions">{!isResult && <button className="secondary-cta" onClick={close} disabled={busy}>{text.cancel}</button>}<button className="primary-cta" disabled={busy} onClick={isResult ? advance : dispatch}>{busy ? (locale === "en" ? "Recording…" : "Фиксация…") : isResult ? (finalStage ? text.debrief : text.continueCase) : text.confirm}<Icon name="arrow"/></button></div></section></div>;
+  const completionTime = option.completionMinuteOfDay === undefined
+    ? null
+    : `${String(Math.floor(option.completionMinuteOfDay / 60)).padStart(2, "0")}:${String(option.completionMinuteOfDay % 60).padStart(2, "0")}`;
+  const nextWorkday = option.completionDayOffset !== undefined && option.completionDayOffset > 0;
+  const authoredCost = scenario.mobileParity ? option.costAuthored === true : true;
+  const workloadAuthored = option.fatigueDelta !== undefined || option.strainDelta !== undefined || option.resetsFatigue;
+  const fatigueLabel = option.resetsFatigue
+    ? (locale === "en" ? "fatigue reset" : "сброс усталости")
+    : `${locale === "en" ? "fatigue" : "усталость"} ${(option.fatigueDelta ?? 0) >= 0 ? "+" : ""}${option.fatigueDelta ?? 0}`;
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !isResult && !busy) close(); }}>
+      <section className={`decision-modal ${isResult ? "result" : ""}`} role="dialog" aria-modal="true" aria-labelledby="decision-title" aria-busy={busy}>
+        {!isResult && <button className="modal-close" onClick={close} disabled={busy} aria-label={text.cancel}><Icon name="close"/></button>}
+        <div className="modal-register">{isResult ? "DISPATCH RECORD" : "RESPONSE REVIEW"}<span>{scenario.caseId}</span></div>
+        <div className="modal-icon"><Icon name={isResult ? "check" : "file"} size={30}/></div>
+        <span className="modal-kicker">{isResult ? text.consequence : text.review}</span>
+        <h2 id="decision-title">{option.label[locale]}</h2>
+        <p className="modal-context">{isResult ? option.result[locale] : option.detail[locale]}</p>
+        {!isResult && <div className="modal-source"><small>CURRENT SITUATION</small><p>{stageHeadline}</p></div>}
+        <dl className="decision-cost">
+          <div><dt>{text.cost}</dt><dd>{authoredCost ? `EUR ${option.cost.toLocaleString()}` : (locale === "en" ? "Not authored" : "Не задана")}</dd></div>
+          <div><dt>{text.duration}</dt><dd>{option.minutes} min</dd></div>
+          <div><dt>{locale === "en" ? "Billable time" : "Учтённое время"}</dt><dd>{option.billableMinutes === undefined ? (locale === "en" ? "Not authored" : "Не задано") : `${option.billableMinutes} min`}</dd></div>
+          <div><dt>{locale === "en" ? "Workload" : "Нагрузка"}</dt><dd>{workloadAuthored ? `${fatigueLabel} · ${locale === "en" ? "strain" : "напряжение"} ${(option.strainDelta ?? 0) >= 0 ? "+" : ""}${option.strainDelta ?? 0}` : (locale === "en" ? "Not modelled" : "Не моделируется")}</dd></div>
+          {nextWorkday && <div className="decision-calendar"><dt>{locale === "en" ? "Calendar transition" : "Переход календаря"}</dt><dd>{locale === "en" ? "Next workday" : "Следующий рабочий день"}{completionTime ? ` · ${completionTime}` : ""}</dd></div>}
+        </dl>
+        <div className="effect-preview">{(Object.entries(option.effects) as Array<[MetricKey, number]>).map(([key,value]) => <span key={key} className={value >= 0 ? "positive" : "negative"}>{metricLabels[locale][key]} {value >= 0 ? "+" : ""}{value}</span>)}</div>
+        <div className="modal-actions">
+          {!isResult && <button className="secondary-cta" onClick={close} disabled={busy}>{text.cancel}</button>}
+          <button className="primary-cta" disabled={busy} onClick={isResult ? advance : dispatch}>{busy ? (locale === "en" ? "Recording…" : "Фиксация…") : isResult ? (finalStage ? text.debrief : text.continueCase) : text.confirm}<Icon name="arrow"/></button>
+        </div>
+      </section>
+    </div>
+  );
 }
 
 type StudioViewProps = {

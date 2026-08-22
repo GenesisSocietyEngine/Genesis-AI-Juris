@@ -171,8 +171,14 @@ test("play-session route binds access, publication integrity and idempotency on 
   assert.match(source, /code:\s*"stale_session"/);
   assert.match(source, /db\.update\(playSessions\)[\s\S]*db\.insert\(playEvents\)/);
   assert.match(source, /SELECT \$\{playSessions\.id\}[\s\S]*\$\{playSessions\.lastEventAt\} = \$\{now\}/);
-  assert.match(source, /decisionAvailability\(option, state\.metrics, state\.actionUseCounts\[option\.id\] \?\? 0\)/);
-  assert.match(source, /value\.decisions\.length !== revision/);
-  assert.match(source, /derivedUseCounts[\s\S]*actionUseCounts\[optionId\] !== count/);
+  assert.match(source, /decisionAvailability\(option, state\.metrics, state\.actionUseCounts\[useKey\] \?\? 0\)/);
+  assert.match(source, /dispatchCanonicalAction\(state\.canonicalRuntime, option\.canonicalActionId\)/);
+  assert.match(source, /advanceCanonicalTime\(state\.canonicalRuntime, minutes\)/);
+  assert.match(source, /createCanonicalRuntime\(scenario\.caseId, secureRuntimeSeed\(\)\)/);
+  assert.doesNotMatch(source, /sessionSeed\(sessionKey\)/);
+  assert.match(source, /commandSequences\.length !== revision/);
+  assert.match(source, /derivedUses[\s\S]*canonicalRuntime\.actionUses/);
+  assert.match(source, /delete state\.canonicalRuntime/);
+  assert.match(source, /!sameJsonValue\(replay, canonicalRuntime\)/);
   assert.match(source, /event\.payload\.optionId === optionId/);
 });

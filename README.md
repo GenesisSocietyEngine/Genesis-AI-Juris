@@ -8,7 +8,7 @@ The hosted professional beta is available at <https://genesis-juris-web.maxim-ha
 
 - Trusted ChatGPT identity plus an optional local email/password credential, offline recovery and professional profiles with opt-in communications controls.
 - Paginated metadata library with server-side search/classification and lazy loading of immutable versioned manifests.
-- Playable branching cases with deterministic rules, clocks, deadlines, consequences, resumable authoritative sessions and debrief metrics.
+- Five mobile-parity library cases with their complete canonical stages/actions, deterministic events, clocks, deadlines, visible evidence/inbox state, resumable authoritative sessions, live spend/workload ledgers and verdict economics.
 - Case Studio workspace for visual authoring, graph validation, draft submission and case/node feedback.
 - Central publication and addressed release updates with immutable version lineage and read receipts.
 - Moderated practitioner feedback tied to an exact case version and fingerprint.
@@ -26,13 +26,13 @@ flowchart TD
     API --> AUTH["ChatGPT identity / hashed local session"]
     API --> D1["Cloudflare D1"]
     UI --> PREVIEW["Deterministic browser preview"]
-    API --> SESSION["Authoritative play-session engine"]
+    API --> SESSION["Authoritative canonical reducer"]
     SESSION --> D1
     API --> GATES["Integrity and publication gates"]
     GATES --> D1
 ```
 
-The Cloudflare Worker adds CSP, HSTS and browser hardening headers while preserving public immutable caching and private/no-store APIs. Write routes enforce same-origin JSON mutations, bounded streaming bodies, server-side authorization and canonical SHA-256 fingerprints. See [the v13 architecture and trust boundaries](docs/ARCHITECTURE.md).
+The Cloudflare Worker adds CSP, HSTS and browser hardening headers while preserving public immutable caching and private/no-store APIs. Write routes enforce same-origin JSON mutations, bounded streaming bodies, server-side authorization and canonical SHA-256 fingerprints. See [the v14 architecture and trust boundaries](docs/ARCHITECTURE.md).
 
 ### Core data model
 
@@ -56,7 +56,7 @@ Migrations live in `drizzle/`. A fresh database must apply them in numeric order
 - Rules DSL v1 uses bounded declarative node runtime fields, action effects, guards and repeatability without authored code execution.
 - A saved JSON artifact can carry `case-protection-v1`: the server binds its current-version code, parent code, Studio fingerprint and copy policy with HMAC-SHA256. A locked parent makes all descendants locked; recipients receive inspection-only product access. This is tamper-evident lineage and authorization, not encryption or DRM.
 - Option IDs are globally unique; stages, clocks, timing and deadline routes are checked for ambiguity or dead ends.
-- Current bundled content and retained beta versions have stable fingerprints.
+- Current v14 bundled content and retained v13 beta versions have stable fingerprints; pinned v13 sessions continue to resolve against their archived manifests.
 - A case version can have only one child for a parent identity and only one root, preventing concurrent publication forks.
 - Studio saves use optimistic fingerprint concurrency and fail stale writers with `409` rather than silently overwriting another tab.
 - Elevated review labels require timestamped accepted review evidence bound to the exact Studio and playable fingerprints.
@@ -86,7 +86,7 @@ npm audit --omit=dev
 git diff --check
 ```
 
-`npm test` performs a production build and verifies all bundled branching paths, legacy session compatibility, tax/graph gates, request limits, D1 migrations and immutable lineage constraints.
+`npm test` performs a production build and replays eleven authoritative mobile reference paths across all five bundled cases, including exact outcomes, clocks, economics, next-workday recovery, global repeatability, legacy session compatibility, tax/graph gates, request limits, D1 migrations and immutable lineage constraints.
 
 ## Authentication and authorization
 
