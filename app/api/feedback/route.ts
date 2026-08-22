@@ -1,9 +1,11 @@
 import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { caseFeedback, cases, caseVersions } from "../../../db/schema";
+import { caseDrafts, caseFeedback, cases, caseVersions, customCaseGrants, customCases } from "../../../db/schema";
+import { canViewCustomCase, customFeedbackAudience, normalizeEmail } from "../../custom-case-access";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { isSameOriginMutation, readJsonObject } from "../../request-security";
 import { scenarios } from "../../scenarios";
+import { isPlatformAdmin } from "../../server-authorization";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +19,8 @@ export async function POST(request: Request) {
   const comment = typeof payload.comment === "string" ? payload.comment.trim().slice(0, 4000) : "";
   const caseId = typeof payload.caseId === "string" ? payload.caseId.trim().slice(0, 140) : "";
   const caseVersion = typeof payload.caseVersion === "string" ? payload.caseVersion.trim().slice(0, 40) : "";
-  const source = payload.source === "studio" || payload.source === "playable" ? payload.source : null;
+  const privacyMode = payload.privacyMode === "product_only" || payload.privacyMode === "private_note" ? payload.privacyMode : null;
+  const source = privacyMode === "product_only" ? "product" : payload.source === "studio" || payload.source === "playable" ? payload.source : null;
   const categories = new Set(["legal_accuracy", "realism", "usability", "learning_value", "technical", "other"]);
   const category = typeof payload.category === "string" && categories.has(payload.category) ? payload.category : "other";
   const studioFingerprint = typeof payload.studioFingerprint === "string" ? payload.studioFingerprint.trim().slice(0, 140) : "";
@@ -26,7 +29,7 @@ export async function POST(request: Request) {
   const severity = typeof payload.severity === "string" && ["suggestion", "material", "critical"].includes(payload.severity) ? payload.severity : "suggestion";
   const suggestedCorrection = typeof payload.suggestedCorrection === "string" ? payload.suggestedCorrection.trim().slice(0, 4000) : "";
   const citationUrl = validHttpsUrl(payload.citationUrl);
-  if (!source || !/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(caseId) || !/^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$/.test(caseVersion) || comment.length < 10 || !Number.isInteger(rating) || rating < 1 || rating > 5) {
+  if (!source || (source !== "product" && (!/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(caseId) || !/^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$/.test(caseVersion))) || comment.length < 10 || !Number.isInteger(rating) || rating < 1 || rating > 5) {
     return Response.json({ error: "Case, version, rating and comment are required." }, { status: 400 });
   }
   if (source === "studio" && !/^sha256-[a-f0-9]{64}$/.test(studioFingerprint)) {
@@ -36,27 +39,54 @@ export async function POST(request: Request) {
   if (source === "playable" && !await isPublishedCase(db, caseId, caseVersion, studioFingerprint)) {
     return Response.json({ error: "The playable case identity does not match a published catalogue version." }, { status: 409 });
   }
+  let customCaseId: number | null = null;
+  let audience = "central";
+  let feedbackStatus = "new";
+  if (source === "studio") {
+    const viewerEmail = normalizeEmail(identity.email);
+    const admin = isPlatformAdmin(viewerEmail);
+    const candidates = await db.select({ customCase: customCases, ownerEmail: caseDrafts.userEmail }).from(caseDrafts).innerJoin(customCases, eq(customCases.id, caseDrafts.customCaseId)).where(and(
+      eq(caseDrafts.caseId, caseId), eq(caseDrafts.version, caseVersion), eq(caseDrafts.fingerprint, studioFingerprint),
+    ));
+    const grants = await db.select().from(customCaseGrants).where(eq(customCaseGrants.recipientEmail, viewerEmail));
+    const granted = new Set(grants.map((grant) => grant.customCaseId));
+    const candidate = candidates.find((item) => canViewCustomCase({ viewerEmail, ownerEmail: item.customCase.ownerEmail, isPrivate: item.customCase.isPrivate, isAdmin: admin, hasGrant: granted.has(item.customCase.id) }));
+    if (!candidate) return Response.json({ error: "Save this Studio case to your workspace or request access before submitting case feedback." }, { status: 409 });
+    const resolvedAudience = customFeedbackAudience({ viewerEmail, ownerEmail: candidate.customCase.ownerEmail, isPrivate: candidate.customCase.isPrivate, isAdmin: admin, hasGrant: granted.has(candidate.customCase.id) });
+    if (!resolvedAudience) return Response.json({ error: "Custom case not found." }, { status: 404 });
+    customCaseId = candidate.customCase.id;
+    audience = resolvedAudience;
+    feedbackStatus = resolvedAudience === "owner_private" ? "private_note" : "new";
+  }
   const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(caseFeedback).where(and(
     eq(caseFeedback.userEmail, identity.email.toLowerCase()),
     sql`${caseFeedback.createdAt} >= datetime('now', '-1 hour')`,
   ));
   if (Number(count) >= 20) return Response.json({ error: "Feedback rate limit reached. Try again later." }, { status: 429 });
-  const [feedback] = await db.insert(caseFeedback).values({
-    caseId,
-    caseVersion,
-    userEmail: identity.email.toLowerCase(),
-    source,
-    category,
-    rating,
-    comment,
-    studioFingerprint: studioFingerprint || null,
-    contextType,
-    contextId: contextId || null,
-    severity,
-    suggestedCorrection,
-    citationUrl,
-  }).returning({ id: caseFeedback.id, createdAt: caseFeedback.createdAt });
-  return Response.json({ feedback }, { status: 201 });
+  let feedback: { id: number; createdAt: string } | undefined;
+  try {
+    [feedback] = await db.insert(caseFeedback).values({
+      caseId: source === "product" ? "private_case_redacted" : caseId,
+      caseVersion: source === "product" ? "0.0.0" : caseVersion,
+      userEmail: identity.email.toLowerCase(),
+      source,
+      category,
+      rating,
+      comment,
+      studioFingerprint: source === "product" ? null : studioFingerprint || null,
+      customCaseId,
+      audience,
+      contextType: source === "product" ? "case" : contextType,
+      contextId: source === "product" ? null : contextId || null,
+      severity,
+      suggestedCorrection: source === "product" ? "" : suggestedCorrection,
+      citationUrl: source === "product" ? null : citationUrl,
+      status: feedbackStatus,
+    }).returning({ id: caseFeedback.id, createdAt: caseFeedback.createdAt });
+  } catch {
+    return Response.json({ error: "Case visibility changed before feedback could be saved. Reopen the case and choose the current feedback channel." }, { status: 409 });
+  }
+  return Response.json({ feedback, audience }, { status: 201 });
 }
 
 function validHttpsUrl(value: unknown) {

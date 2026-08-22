@@ -17,6 +17,7 @@ export const users = sqliteTable("users", {
   communicationsConsentAt: text("communications_consent_at"),
   privacyNoticeVersion: text("privacy_notice_version").notNull().default("2026-08-21"),
   verifiedPractitioner: integer("verified_practitioner", { mode: "boolean" }).notNull().default(false),
+  licenseTier: text("license_tier").notNull().default("community"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [uniqueIndex("users_email_uidx").on(table.email)]);
@@ -48,6 +49,7 @@ export const cases = sqliteTable("cases", {
 export const caseVersions = sqliteTable("case_versions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   caseId: text("case_id").notNull().references(() => cases.id),
+  sourceCustomCaseId: integer("source_custom_case_id").references(() => customCases.id, { onDelete: "set null" }),
   version: text("version").notNull(),
   fingerprint: text("fingerprint").notNull(),
   studioFingerprint: text("studio_fingerprint"),
@@ -60,6 +62,7 @@ export const caseVersions = sqliteTable("case_versions", {
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   uniqueIndex("case_versions_case_version_uidx").on(table.caseId, table.version),
+  index("case_versions_source_custom_case_idx").on(table.sourceCustomCaseId),
   uniqueIndex("case_versions_parent_lineage_uidx").on(table.caseId, table.parentCaseId, table.parentVersion, table.parentFingerprint),
   uniqueIndex("case_versions_root_uidx").on(table.caseId).where(sql`${table.parentCaseId} is null`),
 ]);
@@ -86,11 +89,16 @@ export const caseFeedback = sqliteTable("case_feedback", {
   severity: text("severity").notNull().default("suggestion"),
   suggestedCorrection: text("suggested_correction").notNull().default(""),
   citationUrl: text("citation_url"),
+  customCaseId: integer("custom_case_id").references(() => customCases.id),
+  audience: text("audience").notNull().default("central"),
   status: text("status").notNull().default("new"),
   moderatorNote: text("moderator_note").notNull().default(""),
   resolvedAt: text("resolved_at"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-}, (table) => [index("case_feedback_case_idx").on(table.caseId, table.caseVersion, table.createdAt)]);
+}, (table) => [
+  index("case_feedback_case_idx").on(table.caseId, table.caseVersion, table.createdAt),
+  index("case_feedback_custom_case_idx").on(table.customCaseId, table.createdAt),
+]);
 
 export const updates = sqliteTable("updates", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -113,8 +121,39 @@ export const updateReads = sqliteTable("update_reads", {
   readAt: text("read_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [uniqueIndex("update_reads_update_user_uidx").on(table.updateId, table.userEmail)]);
 
+export const customCases = sqliteTable("custom_cases", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ownerEmail: text("owner_email").notNull(),
+  caseId: text("case_id").notNull(),
+  title: text("title").notNull(),
+  currentVersion: text("current_version").notNull(),
+  fingerprint: text("fingerprint").notNull(),
+  isPrivate: integer("is_private", { mode: "boolean" }).notNull().default(false),
+  status: text("status").notNull().default("custom"),
+  promotedAt: text("promoted_at"),
+  promotedByEmail: text("promoted_by_email"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  uniqueIndex("custom_cases_owner_case_uidx").on(table.ownerEmail, table.caseId),
+  index("custom_cases_visibility_idx").on(table.isPrivate, table.status, table.updatedAt),
+]);
+
+export const customCaseGrants = sqliteTable("custom_case_grants", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  customCaseId: integer("custom_case_id").notNull().references(() => customCases.id),
+  recipientEmail: text("recipient_email").notNull(),
+  grantedByEmail: text("granted_by_email").notNull(),
+  canReshare: integer("can_reshare", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  uniqueIndex("custom_case_grants_case_recipient_uidx").on(table.customCaseId, table.recipientEmail),
+  index("custom_case_grants_recipient_idx").on(table.recipientEmail, table.createdAt),
+]);
+
 export const caseDrafts = sqliteTable("case_drafts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  customCaseId: integer("custom_case_id").references(() => customCases.id),
   userEmail: text("user_email").notNull(),
   caseId: text("case_id").notNull(),
   version: text("version").notNull(),
@@ -131,6 +170,7 @@ export const caseDrafts = sqliteTable("case_drafts", {
 }, (table) => [
   uniqueIndex("case_drafts_user_case_version_uidx").on(table.userEmail, table.caseId, table.version),
   index("case_drafts_status_idx").on(table.status, table.updatedAt),
+  index("case_drafts_custom_case_idx").on(table.customCaseId, table.updatedAt),
 ]);
 
 export const auditEvents = sqliteTable("audit_events", {

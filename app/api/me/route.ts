@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { auditEvents, caseDrafts, caseFeedback, caseSubscriptions, updateReads, users } from "../../../db/schema";
+import { auditEvents, caseDrafts, caseFeedback, caseSubscriptions, customCaseGrants, customCases, updateReads, users } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { isSameOriginMutation, readJsonObject } from "../../request-security";
 import { isPlatformAdmin } from "../../server-authorization";
@@ -26,6 +26,7 @@ export async function GET() {
     caseUpdates: false,
     researchInvites: false,
     verifiedPractitioner: false,
+    licenseTier: "community",
   };
   return Response.json({ authenticated: true, registered: Boolean(storedProfile), profile, isAdmin: isPlatformAdmin(email) });
 }
@@ -74,10 +75,18 @@ export async function DELETE(request: Request) {
   if (!identity) return Response.json({ error: "Sign in is required." }, { status: 401 });
   const email = identity.email.toLowerCase();
   const db = getDb();
+  const ownedCustomCases = await db.select({ id: customCases.id }).from(customCases).where(eq(customCases.ownerEmail, email));
+  const ownedIds = ownedCustomCases.map((item) => item.id);
   await db.delete(caseSubscriptions).where(eq(caseSubscriptions.userEmail, email));
   await db.delete(updateReads).where(eq(updateReads.userEmail, email));
   await db.delete(caseFeedback).where(eq(caseFeedback.userEmail, email));
+  if (ownedIds.length) {
+    await db.delete(caseFeedback).where(inArray(caseFeedback.customCaseId, ownedIds));
+    await db.delete(customCaseGrants).where(inArray(customCaseGrants.customCaseId, ownedIds));
+  }
+  await db.delete(customCaseGrants).where(eq(customCaseGrants.recipientEmail, email));
   await db.delete(caseDrafts).where(eq(caseDrafts.userEmail, email));
+  if (ownedIds.length) await db.delete(customCases).where(inArray(customCases.id, ownedIds));
   await db.delete(auditEvents).where(eq(auditEvents.actorEmail, email));
   await db.delete(users).where(eq(users.email, email));
   return Response.json({ deleted: true });

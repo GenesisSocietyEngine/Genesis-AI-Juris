@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { caseFingerprint, isRecord, isTaxClassification, normalizeStudioDraft, slugifyCaseId, studioStructuralIssues } from "./case-integrity";
 import { resolveDecisionTiming, resolveLegacyDecisionTiming } from "./game-engine";
@@ -27,7 +27,7 @@ type View = "library" | "play" | "studio" | "community" | "help";
 type Theme = "office" | "after-hours";
 type OutcomeClass = "strong" | "mixed" | "weak";
 type DecisionRecord = { stageId: string; stage: string; option: DecisionOption };
-type FeedbackTarget = { caseId: string; version: string; title: string; source: "playable" | "studio"; fingerprint?: string; contextType?: "case" | "stage" | "decision" | "node"; contextId?: string };
+type FeedbackTarget = { caseId: string; version: string; title: string; source: "playable" | "studio"; fingerprint?: string; contextType?: "case" | "stage" | "decision" | "node"; contextId?: string; privateCase?: boolean };
 
 type InboxEntry = {
   id: string;
@@ -71,6 +71,7 @@ type CustomCaseFile = {
     version: string;
     fingerprint: string;
     parent: StudioDraft["parent"];
+    visibility?: "restricted" | "private";
   };
   draft: StudioDraft;
 };
@@ -246,6 +247,9 @@ export default function JurisApp() {
   const [missedDeadlineIds, setMissedDeadlineIds] = useState<string[]>([]);
   const [prompt, setPrompt] = useState("");
   const [draft, setDraftState] = useState<StudioDraft>(defaultDraft);
+  const [studioPrivate, setStudioPrivate] = useState(false);
+  const [studioCustomCaseId, setStudioCustomCaseId] = useState<number | null>(null);
+  const [studioCanManagePrivacy, setStudioCanManagePrivacy] = useState(true);
   const draftRef = useRef<StudioDraft>(defaultDraft);
   const [studioTimeline, setStudioTimelineState] = useState<StudioTimeline>(emptyStudioTimeline());
   const studioTimelineRef = useRef<StudioTimeline>(emptyStudioTimeline());
@@ -270,6 +274,9 @@ export default function JurisApp() {
           studioTimelineRef.current = emptyTimeline;
           setDraftState(restored);
           setStudioTimelineState(emptyTimeline);
+          setStudioPrivate(window.localStorage.getItem("genesis-juris-studio-private") === "true");
+          setStudioCustomCaseId(null);
+          setStudioCanManagePrivacy(true);
         } catch {
           // Keep the bundled draft when local storage contains invalid data.
         }
@@ -280,11 +287,13 @@ export default function JurisApp() {
 
   useEffect(() => { document.documentElement.lang = locale; }, [locale]);
 
-  useEffect(() => {
-    fetch("/api/catalog").then((response) => readJsonResponse<{ cases?: unknown[] }>(response)).then(async (payload) => {
+  const refreshCatalogue = useCallback(async (force = false) => {
+    const cacheBuster = force ? `?fresh=${Date.now()}` : "";
+    await fetch(`/api/catalog${cacheBuster}`, force ? { cache: "no-store" } : undefined).then((response) => readJsonResponse<{ cases?: unknown[] }>(response)).then(async (payload) => {
       if (!Array.isArray(payload?.cases)) return;
       const remoteRecords = await Promise.all(payload.cases.filter(isRecord).filter((item) => item.reviewLevel !== "bundled_beta").map(async (item) => {
-        const response = await fetch(`/api/catalog/${encodeURIComponent(String(item.id))}`);
+        const query = force ? `?version=${encodeURIComponent(String(item.currentVersion))}&fresh=${Date.now()}` : "";
+        const response = await fetch(`/api/catalog/${encodeURIComponent(String(item.id))}${query}`, force ? { cache: "no-store" } : undefined);
         return readJsonResponse<unknown>(response);
       }));
       const compiled: Scenario[] = [];
@@ -304,6 +313,8 @@ export default function JurisApp() {
       });
     }).catch(() => { /* Bundled cases keep the public beta playable during a catalogue outage. */ });
   }, []);
+
+  useEffect(() => { void refreshCatalogue(); }, [refreshCatalogue]);
 
   const featured = catalogueScenarios.find((scenario) => scenario.id === featuredId) ?? catalogueScenarios[2] ?? scenarios[2];
   const stage = activeScenario?.stages[stageIndex] ?? null;
@@ -580,6 +591,9 @@ export default function JurisApp() {
     rebuilt = appendStudioHistory(rebuilt, { role: "author", source: "prompt", action: "prompt_submitted", message: clean }, createdAt);
     rebuilt = appendStudioHistory(rebuilt, { role: "studio", source: "prompt", action: "graph_rebuilt", message: locale === "en" ? `Built a new ${nodes.length}-node graph from this prompt. The previous draft was replaced by explicit author request.` : `По явной команде автора построен новый граф из ${nodes.length} узлов; предыдущий черновик заменён.` }, createdAt);
     commitStudioDraft(rebuilt, locale === "en" ? "Built a new graph from prompt" : "Новый граф построен из промпта", "prompt", createdAt);
+    setStudioPrivate(false);
+    setStudioCustomCaseId(null);
+    setStudioCanManagePrivacy(true);
     setPrompt("");
     setSelectedNodeId("decision-1");
   }
@@ -595,7 +609,9 @@ export default function JurisApp() {
   }
   function saveDraft() {
     const next = { ...draftRef.current, updatedAt: new Date().toISOString() }; syncStudioDraft(next);
-    window.localStorage.setItem("genesis-juris-studio-draft", JSON.stringify(next)); setSavedFlash(true);
+    window.localStorage.setItem("genesis-juris-studio-draft", JSON.stringify(next));
+    window.localStorage.setItem("genesis-juris-studio-private", String(studioPrivate));
+    setSavedFlash(true);
     window.setTimeout(() => setSavedFlash(false), 2200);
   }
   function exportDraft() {
@@ -609,6 +625,7 @@ export default function JurisApp() {
         version: normalized.version,
         fingerprint: caseFingerprint(normalized),
         parent: normalized.parent,
+        visibility: studioPrivate ? "private" : "restricted",
       },
       draft: { ...normalized, updatedAt: new Date().toISOString() },
     };
@@ -623,22 +640,48 @@ export default function JurisApp() {
       try {
         const parsed: unknown = JSON.parse(String(reader.result));
         let imported: StudioDraft;
+        let importedPrivate = false;
         if (isRecord(parsed) && parsed.format === "genesis-juris-custom-case" && (parsed.schemaVersion === 1 || parsed.schemaVersion === 2) && isRecord(parsed.case)) {
           imported = normalizeStudioDraft(parsed.draft);
           if (parsed.case.id !== imported.caseId || parsed.case.version !== imported.version || parsed.case.fingerprint !== caseFingerprint(imported)) {
             throw new Error("Custom case identity or fingerprint mismatch");
           }
+          importedPrivate = parsed.case.visibility === "private";
         } else {
           imported = normalizeStudioDraft(parsed);
         }
         const restored = { ...imported, updatedAt: new Date().toISOString() };
         replaceStudioDraft(restored);
+        setStudioPrivate(importedPrivate);
+        setStudioCustomCaseId(null);
+        setStudioCanManagePrivacy(true);
         setPrompt("");
         setSelectedNodeId(restored.nodes[0]?.id ?? null);
         navigate("studio");
         showSessionNotice(locale === "en" ? "Custom case loaded in the visual editor" : "Custom-кейс открыт в визуальном редакторе");
       } catch { window.alert(locale === "en" ? "This file is not a valid GENESIS: JURIS case draft." : "Файл не является корректным черновиком GENESIS: JURIS."); }
     }; reader.readAsText(file);
+  }
+  async function openWorkspaceCustomCase(customCaseId: number) {
+    const response = await fetch(`/api/custom-cases?id=${customCaseId}`);
+    const payload = await readJsonResponse<{ customCase?: { id: number; isPrivate: boolean; canManagePrivacy: boolean }; draft?: unknown; error?: string }>(response);
+    if (!response.ok || !payload?.customCase || !payload.draft) {
+      showSessionNotice(locale === "en" ? "The custom case is no longer available" : "Custom-кейс больше недоступен");
+      return;
+    }
+    try {
+      const restored = { ...normalizeStudioDraft(payload.draft), updatedAt: new Date().toISOString() };
+      replaceStudioDraft(restored);
+      setStudioPrivate(payload.customCase.isPrivate === true);
+      setStudioCustomCaseId(payload.customCase.id);
+      setStudioCanManagePrivacy(payload.customCase.canManagePrivacy === true);
+      setPrompt("");
+      setSelectedNodeId(restored.nodes[0]?.id ?? null);
+      navigate("studio");
+      showSessionNotice(locale === "en" ? "Workspace case opened in Studio" : "Кейс из workspace открыт в Studio");
+    } catch {
+      showSessionNotice(locale === "en" ? "The stored case failed integrity validation" : "Сохранённый кейс не прошёл проверку целостности");
+    }
   }
   function createChildVersion() {
     const createdAt = new Date().toISOString();
@@ -727,6 +770,9 @@ export default function JurisApp() {
       return template;
     }, locale === "en" ? "Loaded the international tax template" : "Загружен международный налоговый шаблон", "prompt", createdAt);
     setPrompt("");
+    setStudioPrivate(false);
+    setStudioCustomCaseId(null);
+    setStudioCanManagePrivacy(true);
     setSelectedNodeId("decision-1");
     navigate("studio");
   }
@@ -770,6 +816,9 @@ export default function JurisApp() {
     const createdAt = new Date().toISOString();
     commitStudioDraft((current) => appendStudioHistory({ ...structuredClone(defaultDraft), editHistory: current.editHistory, updatedAt: createdAt }, { role: "studio", source: "visual", action: "graph_rebuilt", message: locale === "en" ? "Reset the canvas to the reversible starter case." : "Холст сброшен к обратимому начальному кейсу." }, createdAt), locale === "en" ? "Reset to the starter case" : "Сброс к начальному кейсу", "visual", createdAt);
     setPrompt("");
+    setStudioPrivate(false);
+    setStudioCustomCaseId(null);
+    setStudioCanManagePrivacy(true);
     setSelectedNodeId("decision-1");
   }
 
@@ -811,12 +860,12 @@ export default function JurisApp() {
 
       {view === "library" && <LibraryView locale={locale} text={text} cases={catalogueScenarios} featured={featured} setFeaturedId={setFeaturedId} startScenario={startScenario} requestFeedback={setFeedbackTarget} openTaxTemplate={loadTaxTemplate} />}
       {view === "play" && activeScenario && stage && <PlayView locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} decisionLog={decisionLog} caseMinute={caseMinute} actionUseCounts={actionUseCounts} completedDeadlineIds={completedDeadlineIds} missedDeadlineIds={missedDeadlineIds} dossierRef={dossierRef} setDossierRef={setDossierRef} setSelectedOption={setSelectedOption} outcome={outcome} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario)} returnLibrary={() => navigate("library")} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })} />}
-      {view === "studio" && <StudioView locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} />}
-      {view === "community" && <CommunityView locale={locale} cases={catalogueScenarios} />}
+      {view === "studio" && <StudioView locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} />}
+      {view === "community" && <CommunityView locale={locale} cases={catalogueScenarios} openCustomCase={openWorkspaceCustomCase} refreshCatalogue={() => refreshCatalogue(true)} />}
       {view === "help" && <HelpView locale={locale} openCommunity={() => navigate("community")} openStudio={() => navigate("studio")} />}
       {(selectedOption || resultOption) && activeScenario && stage && <DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} close={() => { setSelectedOption(null); setResultOption(null); }} dispatch={dispatchDecision} advance={advanceStage} finalStage={Boolean(activeScenario.stages.find((item) => item.id === (selectedOption ?? resultOption)?.nextStageId)?.terminal)} />}
       {sessionNotice && <div className="session-toast" role="status"><Icon name="check" />{sessionNotice}</div>}
-      {feedbackTarget && <FeedbackDialog locale={locale} target={feedbackTarget} close={() => setFeedbackTarget(null)} submitted={() => { setFeedbackTarget(null); showSessionNotice(locale === "en" ? "Feedback submitted for expert review." : "Отзыв отправлен на экспертную проверку."); }} />}
+      {feedbackTarget && <FeedbackDialog locale={locale} target={feedbackTarget} close={() => setFeedbackTarget(null)} submitted={(audience) => { const privateProductFeedback = feedbackTarget.privateCase && audience !== "owner_private"; setFeedbackTarget(null); showSessionNotice(audience === "owner_private" ? (locale === "en" ? "Private note saved for you only." : "Приватная заметка сохранена только для вас.") : privateProductFeedback ? (locale === "en" ? "Redacted product feedback sent to Maxim." : "Обезличенный отзыв о продукте отправлен Максиму.") : (locale === "en" ? "Feedback submitted for expert review." : "Отзыв отправлен на экспертную проверку.")); }} />}
     </div>
   );
 }
@@ -1190,9 +1239,11 @@ type StudioViewProps = {
   loadTaxTemplate: () => void; requestFeedback: () => void;
   timeline: StudioTimeline; undoDraft: () => void; redoDraft: () => void;
   restoreRevision: (revision: StudioRevision) => void; playDraft: () => void;
+  isPrivate: boolean; setPrivate: (value: boolean) => void; customCaseId: number | null; setCustomCaseId: (value: number | null) => void;
+  canManagePrivacy: boolean; setCanManagePrivacy: (value: boolean) => void;
 };
 
-function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, generateDraft, applyPromptIteration, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft }: StudioViewProps) {
+function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, generateDraft, applyPromptIteration, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy }: StudioViewProps) {
   const router = useRouter();
   const [workspaceState, setWorkspaceState] = useState<"idle" | "saving" | "saved" | "submitted" | "error">("idle");
   const [linkSourceId, setLinkSourceId] = useState<string | null>(null);
@@ -1230,10 +1281,23 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
 
   async function shareDraft(action: "save" | "submit") {
     setWorkspaceState("saving");
-    const response = await fetch("/api/submissions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, draft }) });
+    const response = await fetch("/api/submissions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, draft, isPrivate }) });
     if (response.status === 401) { router.push("/signin-with-chatgpt?return_to=%2F"); return; }
     if (!response.ok) { setWorkspaceState("error"); return; }
+    const saved = await readJsonResponse<{ customCase?: { id: number; isPrivate: boolean } }>(response);
+    if (saved?.customCase) { setCustomCaseId(saved.customCase.id); setPrivate(saved.customCase.isPrivate === true); setCanManagePrivacy(true); }
     setWorkspaceState(action === "submit" ? "submitted" : "saved");
+  }
+
+  async function changePrivacy(next: boolean) {
+    if (!canManagePrivacy) return;
+    if (next && !window.confirm(locale === "en" ? "Make this case owner-only? Saving this setting revokes every existing share and hides the case from the platform administrator." : "Сделать кейс доступным только владельцу? Сохранение настройки отзовёт все приглашения и скроет кейс от администратора платформы.")) return;
+    if (customCaseId) {
+      const response = await fetch("/api/custom-cases", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "set_privacy", id: customCaseId, isPrivate: next, caseId: draft.caseId }) });
+      if (!response.ok) { setWorkspaceState("error"); return; }
+    }
+    setPrivate(next);
+    setWorkspaceState(customCaseId ? "saved" : "idle");
   }
 
   function beginFieldEdit(value: string) { fieldBefore.current = value; fieldBeforeDraft.current = draft; }
@@ -1295,7 +1359,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     recordVisualEdit("node_moved", locale === "en" ? `Visual edit: nudged “${node.title}” ${event.key.replace("Arrow", "").toLowerCase()} by ${step}px.` : `Визуальная правка: узел «${node.title}» сдвинут на ${step}px.`, before);
   }
 
-  return <main className="studio-view"><section className="studio-hero page-width"><div><div className="eyebrow"><span className="live-dot"/>AUTHORING LAB · VISUAL + PROMPT</div><h1>{text.author}</h1><p>{text.authorLead}</p></div><div className="studio-actions"><button className="secondary-cta" onClick={resetDraft}><Icon name="reset"/>{text.newDraft}</button><button className="secondary-cta" onClick={loadTaxTemplate}><Icon name="spark"/>{locale === "en" ? "Tax template" : "Налоговый шаблон"}</button><button className="secondary-cta" onClick={requestFeedback}><Icon name="file"/>{text.feedback}</button><button className="secondary-cta" onClick={() => importRef.current?.click()}><Icon name="upload"/>{text.importCustom}</button><button className="secondary-cta" onClick={exportDraft}><Icon name="download"/>{text.exportCustom}</button><button className="secondary-cta" onClick={() => shareDraft("save")} disabled={workspaceState === "saving"}><Icon name="save"/>{locale === "en" ? "Save to workspace" : "Сохранить в workspace"}</button><button className="primary-cta" onClick={() => shareDraft("submit")} disabled={workspaceState === "saving" || checks.some((check) => check.level === "warn")}><Icon name="check"/>{locale === "en" ? "Submit for review" : "Отправить на рецензию"}</button><button className="secondary-cta" onClick={saveDraft}><Icon name="save"/>{text.save}</button><input ref={importRef} className="visually-hidden" type="file" accept=".json,application/json" onChange={(event) => { const file=event.target.files?.[0]; if(file) importDraft(file); event.target.value=""; }}/></div>{savedFlash && <div className="save-toast"><Icon name="check"/>{text.saved}</div>}{workspaceState !== "idle" && workspaceState !== "saving" && <div className={`workspace-toast ${workspaceState}`} role="status">{workspaceState === "saved" ? (locale === "en" ? "Workspace draft saved." : "Черновик сохранён в workspace.") : workspaceState === "submitted" ? (locale === "en" ? "Submitted to the expert review queue." : "Отправлено в очередь экспертной рецензии.") : (locale === "en" ? "Sign in and complete your profile, then try again." : "Войдите и заполните профиль, затем повторите.")}</div>}</section>
+    return <main className="studio-view"><section className="studio-hero page-width"><div><div className="eyebrow"><span className="live-dot"/>AUTHORING LAB · VISUAL + PROMPT</div><h1>{text.author}</h1><p>{text.authorLead}</p></div><div className="studio-actions"><button className="secondary-cta" onClick={resetDraft}><Icon name="reset"/>{text.newDraft}</button><button className="secondary-cta" onClick={loadTaxTemplate}><Icon name="spark"/>{locale === "en" ? "Tax template" : "Налоговый шаблон"}</button><button className="secondary-cta" onClick={requestFeedback}><Icon name="file"/>{text.feedback}</button><button className="secondary-cta" onClick={() => importRef.current?.click()}><Icon name="upload"/>{text.importCustom}</button><button className="secondary-cta" onClick={exportDraft}><Icon name="download"/>{text.exportCustom}</button><button className="secondary-cta" onClick={() => shareDraft("save")} disabled={workspaceState === "saving"}><Icon name="save"/>{locale === "en" ? "Save to workspace" : "Сохранить в workspace"}</button><button className="primary-cta" onClick={() => shareDraft("submit")} disabled={isPrivate || workspaceState === "saving" || checks.some((check) => check.level === "warn")} title={isPrivate ? (locale === "en" ? "Turn off Private before submitting for review" : "Отключите «Приватно» перед отправкой на рецензию") : undefined}><Icon name="check"/>{locale === "en" ? "Submit for review" : "Отправить на рецензию"}</button><button className="secondary-cta" onClick={saveDraft}><Icon name="save"/>{locale === "en" ? "Save on this device" : "Сохранить на устройстве"}</button><input ref={importRef} className="visually-hidden" type="file" accept=".json,application/json" onChange={(event) => { const file=event.target.files?.[0]; if(file) importDraft(file); event.target.value=""; }}/></div>{savedFlash && <div className="save-toast"><Icon name="check"/>{text.saved}</div>}{workspaceState !== "idle" && workspaceState !== "saving" && <div className={`workspace-toast ${workspaceState}`} role="status">{workspaceState === "saved" ? (locale === "en" ? "Workspace draft and visibility saved." : "Черновик и режим видимости сохранены в workspace.") : workspaceState === "submitted" ? (locale === "en" ? "Submitted to the expert review queue." : "Отправлено в очередь экспертной рецензии.") : (locale === "en" ? "The workspace change could not be saved. Check access, identity and case status." : "Не удалось сохранить изменение workspace. Проверьте доступ, идентификатор и статус кейса.")}</div>}</section>
     <aside className="confidentiality-notice page-width"><Icon name="alert"/><p>{locale === "en" ? "Confidentiality: do not enter client-identifiable, privileged, personal or secret information. Use synthetic or de-identified facts and public legal sources." : "Конфиденциальность: не вводите сведения, идентифицирующие клиента, адвокатскую тайну, персональные данные или секреты. Используйте синтетические или обезличенные факты и публичные источники права."}</p></aside>
     <section className="studio-history page-width" aria-labelledby="studio-history-title">
       <header>
@@ -1322,6 +1386,10 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       <label className="wide-field"><span>{locale === "en" ? "Tax topics · treaty, CFC, PE, WHT, DAC6…" : "Налоговые темы · treaty, CFC, PE, WHT, DAC6…"}</span><input value={(draft.classification?.taxTopics ?? []).join(", ")} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({ ...current, classification: { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], complianceOnly: true }), taxTopics: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) } }))} onBlur={(event)=>commitCaseField(locale === "en" ? "tax topics" : "налоговые темы", event.currentTarget.value)}/></label>
       <label className="source-field"><span>{locale === "en" ? "HTTPS legal sources · one per line" : "HTTPS-источники права · по одному в строке"}</span><textarea rows={3} value={(draft.classification?.sourceUrls ?? []).join("\n")} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({ ...current, classification: { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), sourceUrls: event.target.value.split(/\n+/).map((item) => item.trim()).filter(Boolean) } }))} onBlur={(event)=>commitCaseField(locale === "en" ? "legal sources" : "источники права", event.currentTarget.value)}/></label>
       <div className="compliance-gate"><Icon name="check"/><div><b>{locale === "en" ? "International tax safety & publication gate" : "Контроль безопасности и публикации налогового кейса"}</b><p>{locale === "en" ? "Lawful-planning, compliance, audit-defence and evasion-detection scenarios may model risky facts. Publication requires named reviewer confirmation that the case does not enable concealment, sham substance, false reporting or evasion; HTTPS sources and a legal as-of date are mandatory." : "Кейсы о законном планировании, compliance, налоговом споре и выявлении уклонения могут моделировать рискованные факты. Для публикации именная рецензия должна подтвердить, что кейс не помогает сокрытию, фиктивной substance, ложной отчётности или уклонению; HTTPS-источники и дата актуальности права обязательны."}</p></div></div>
+    </section>
+    <section className={`studio-access page-width ${isPrivate ? "private" : "restricted"}`} aria-labelledby="studio-access-title">
+      <div><span>{locale === "en" ? "Access & visibility" : "Доступ и видимость"}</span><h2 id="studio-access-title">{isPrivate ? (locale === "en" ? "Private · owner only" : "Приватно · только владелец") : (locale === "en" ? "Restricted custom case" : "Ограниченный custom-кейс")}</h2><p id="studio-private-description">{isPrivate ? (locale === "en" ? "Only you can open this workspace case. The platform administrator, reviewers and previous recipients cannot see its content or metadata." : "Только вы можете открыть этот кейс в workspace. Администратор платформы, рецензенты и ранее приглашённые пользователи не видят его содержание и метаданные.") : (locale === "en" ? "Visible to you and the platform administrator. Other registered users need an explicit share; it is not part of the General Library." : "Виден вам и администратору платформы. Другим зарегистрированным пользователям требуется явное приглашение; в Общую библиотеку кейс не входит.")}</p></div>
+      <label className={`privacy-toggle ${canManagePrivacy ? "" : "locked"}`}><input type="checkbox" checked={isPrivate} disabled={!canManagePrivacy} onChange={(event) => changePrivacy(event.target.checked)} aria-describedby="studio-private-description"/><span>{canManagePrivacy ? (locale === "en" ? "Private" : "Приватно") : (locale === "en" ? "Owner controls privacy" : "Приватность задаёт владелец")}</span><i aria-hidden="true"/></label>
     </section>
     <section className="studio-version page-width">
       <div className="version-heading"><span>{text.customCase}</span><button className="secondary-cta" onClick={createChildVersion}><Icon name="plus"/>{text.childVersion}</button></div>
@@ -1355,31 +1423,97 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
 type CommunityProfile = {
   displayName: string; professionalRole: string; organisation: string; jurisdiction: string;
   practiceAreas: string[]; experienceLevel: string; locale: Locale;
-  productUpdates: boolean; caseUpdates: boolean; researchInvites: boolean; verifiedPractitioner: boolean;
+  productUpdates: boolean; caseUpdates: boolean; researchInvites: boolean; verifiedPractitioner: boolean; licenseTier: "community" | "professional" | "enterprise";
 };
 type CommunityUpdate = { id: number; title: string; body: string; kind: string; caseId: string | null; publishedAt: string | null; read: boolean };
-type CommunitySubmission = { id: number; caseId: string; version: string; title: string; status: string; reviewerNote: string; updatedAt: string };
+type CommunitySubmission = { id: number; customCaseId?: number | null; caseId: string; version: string; title: string; status: string; reviewerNote: string; updatedAt: string; isPrivate?: boolean | null };
+type CommunityCustomCase = { id: number; caseId: string; title: string; currentVersion: string; fingerprint: string; isPrivate: boolean; status: string; access: "owner" | "admin" | "shared"; canShare: boolean; canManagePrivacy: boolean; shareCount: number; updatedAt: string; promotedAt?: string | null; ownerDisplayName?: string };
+type CommunityCustomCaseShare = { recipientEmail: string; canReshare: boolean; grantedByEmail: string; createdAt: string };
+type CommunityCustomCaseFeedback = { id: number; category: string; rating: number; comment: string; severity: string; suggestedCorrection: string; citationUrl: string | null; contextType: string; contextId: string | null; audience: string; status: string; createdAt: string };
+type AdminCommunityUser = { email: string; displayName: string; organisation: string; licenseTier: "community" | "professional" | "enterprise"; verifiedPractitioner: boolean };
 
-function CommunityView({ locale, cases }: { locale: Locale; cases: Scenario[] }) {
+function CommunityView({ locale, cases, openCustomCase, refreshCatalogue }: { locale: Locale; cases: Scenario[]; openCustomCase: (id: number) => void; refreshCatalogue: () => Promise<void> }) {
   const [profile, setProfile] = useState<CommunityProfile | null>(null);
   const [updates, setUpdates] = useState<CommunityUpdate[]>([]);
   const [subscriptions, setSubscriptions] = useState<string[]>([]);
   const [submissions, setSubmissions] = useState<CommunitySubmission[]>([]);
+  const [customCases, setCustomCases] = useState<CommunityCustomCase[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [registered, setRegistered] = useState(false);
   const [formError, setFormError] = useState("");
+  const [customMessage, setCustomMessage] = useState("");
+  const [shareEmails, setShareEmails] = useState<Record<number, string>>({});
+  const [shareReshare, setShareReshare] = useState<Record<number, boolean>>({});
+  const [caseShares, setCaseShares] = useState<Record<number, CommunityCustomCaseShare[]>>({});
+  const [caseFeedback, setCaseFeedback] = useState<Record<number, CommunityCustomCaseFeedback[]>>({});
+  const [busyCaseId, setBusyCaseId] = useState<number | null>(null);
   const [status, setStatus] = useState<"loading" | "anonymous" | "ready" | "saving">("loading");
   useEffect(() => {
     fetch("/api/me").then((response) => readJsonResponse<{ profile?: CommunityProfile; isAdmin?: boolean; registered?: boolean }>(response)).then(async (me) => {
       if (!me?.profile) { setStatus("anonymous"); return; }
       setProfile(me.profile); setIsAdmin(me.isAdmin === true); setRegistered(me.registered === true);
-      const [feed, workspace] = await Promise.all([
+      const [feed, workspace, custom] = await Promise.all([
         fetch("/api/updates").then((response) => readJsonResponse<{ updates?: CommunityUpdate[]; subscriptions?: string[] }>(response)),
         fetch("/api/submissions").then((response) => readJsonResponse<{ submissions?: CommunitySubmission[] }>(response)),
+        fetch("/api/custom-cases").then((response) => readJsonResponse<{ customCases?: CommunityCustomCase[] }>(response)),
       ]);
-      setUpdates(feed?.updates ?? []); setSubscriptions(feed?.subscriptions ?? []); setSubmissions(workspace?.submissions ?? []); setStatus("ready");
+      setUpdates(feed?.updates ?? []); setSubscriptions(feed?.subscriptions ?? []); setSubmissions(workspace?.submissions ?? []); setCustomCases(custom?.customCases ?? []); setStatus("ready");
     }).catch(() => setStatus("anonymous"));
   }, []);
+  async function reloadCustomCases() {
+    const payload = await fetch("/api/custom-cases").then((response) => readJsonResponse<{ customCases?: CommunityCustomCase[] }>(response));
+    setCustomCases(payload?.customCases ?? []);
+  }
+  async function setCustomPrivacy(item: CommunityCustomCase, isPrivate: boolean) {
+    if (isPrivate && !window.confirm(locale === "en" ? "Make this case owner-only? Existing shares will be revoked and Maxim will no longer see the case or its metadata." : "Сделать кейс доступным только владельцу? Все приглашения будут отозваны, а Максим больше не увидит кейс и его метаданные.")) return;
+    setBusyCaseId(item.id); setCustomMessage("");
+    const response = await fetch("/api/custom-cases", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "set_privacy", id: item.id, caseId: item.caseId, isPrivate }) });
+    const result = await response.json().catch(() => null) as { error?: string } | null;
+    if (response.ok) {
+      setCaseShares((current) => ({ ...current, [item.id]: [] }));
+      await reloadCustomCases();
+      setCustomMessage(isPrivate ? (locale === "en" ? "Private mode enabled; every share was revoked." : "Приватный режим включён; все приглашения отозваны.") : (locale === "en" ? "The case is restricted again: visible to you and Maxim." : "Кейс снова ограниченный: он виден вам и Максиму."));
+    } else setCustomMessage(result?.error ?? (locale === "en" ? "Visibility could not be changed." : "Не удалось изменить видимость."));
+    setBusyCaseId(null);
+  }
+  async function loadCaseShares(item: CommunityCustomCase) {
+    setBusyCaseId(item.id); setCustomMessage("");
+    const response = await fetch(`/api/custom-cases?id=${item.id}`);
+    const result = await response.json().catch(() => null) as { shares?: CommunityCustomCaseShare[]; feedback?: CommunityCustomCaseFeedback[]; error?: string } | null;
+    if (response.ok) {
+      setCaseShares((current) => ({ ...current, [item.id]: result?.shares ?? [] }));
+      if (item.access === "owner") setCaseFeedback((current) => ({ ...current, [item.id]: result?.feedback ?? [] }));
+    }
+    else setCustomMessage(result?.error ?? (locale === "en" ? "Access list could not be loaded." : "Не удалось загрузить список доступа."));
+    setBusyCaseId(null);
+  }
+  async function shareCustomCase(item: CommunityCustomCase) {
+    const recipientEmail = (shareEmails[item.id] ?? "").trim();
+    if (!recipientEmail) return;
+    setBusyCaseId(item.id); setCustomMessage("");
+    const response = await fetch("/api/custom-cases", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "share", id: item.id, recipientEmail, canReshare: shareReshare[item.id] === true }) });
+    const result = await response.json().catch(() => null) as { error?: string } | null;
+    if (response.ok) {
+      setShareEmails((current) => ({ ...current, [item.id]: "" }));
+      await Promise.all([reloadCustomCases(), loadCaseShares(item)]);
+      setCustomMessage(locale === "en" ? "Case access granted." : "Доступ к кейсу предоставлен.");
+    } else {
+      setCustomMessage(result?.error ?? (locale === "en" ? "Case access could not be granted." : "Не удалось предоставить доступ."));
+      setBusyCaseId(null);
+    }
+  }
+  async function revokeCustomShare(item: CommunityCustomCase, recipientEmail: string) {
+    setBusyCaseId(item.id); setCustomMessage("");
+    const response = await fetch("/api/custom-cases", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "revoke", id: item.id, recipientEmail }) });
+    const result = await response.json().catch(() => null) as { error?: string } | null;
+    if (response.ok) {
+      await Promise.all([reloadCustomCases(), loadCaseShares(item)]);
+      setCustomMessage(locale === "en" ? "Case access revoked." : "Доступ к кейсу отозван.");
+    } else {
+      setCustomMessage(result?.error ?? (locale === "en" ? "Access could not be revoked." : "Не удалось отозвать доступ."));
+      setBusyCaseId(null);
+    }
+  }
   async function saveProfile() {
     if (!profile) return; setStatus("saving"); setFormError("");
     const response = await fetch("/api/me", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...profile, locale }) });
@@ -1407,7 +1541,7 @@ function CommunityView({ locale, cases }: { locale: Locale; cases: Scenario[] })
   async function deleteProfile() {
     if (!window.confirm(locale === "en" ? "Delete your profile, subscriptions, drafts and feedback? This cannot be undone." : "Удалить профиль, подписки, черновики и отзывы? Это действие необратимо.")) return;
     const response = await fetch("/api/me", { method: "DELETE" });
-    if (response.ok) { setRegistered(false); setUpdates([]); setSubscriptions([]); setSubmissions([]); setFormError(locale === "en" ? "Stored community data deleted." : "Данные сообщества удалены."); }
+    if (response.ok) { setRegistered(false); setUpdates([]); setSubscriptions([]); setSubmissions([]); setCustomCases([]); setCaseShares({}); setCaseFeedback({}); setFormError(locale === "en" ? "Stored community data deleted." : "Данные сообщества удалены."); }
   }
   if (status === "loading") return <main className="community-view page-width"><div className="community-loading">Loading professional workspace…</div></main>;
   if (status === "anonymous") return <main className="community-view page-width"><section className="community-hero"><span>PRACTITIONER COMMUNITY</span><h1>{locale === "en" ? "Register your professional profile" : "Зарегистрируйте профессиональный профиль"}</h1><p>{locale === "en" ? "Sign in to submit attributed case feedback, follow selected cases and receive updates matched to your jurisdiction, practice area and role." : "Войдите, чтобы отправлять авторизованные отзывы, подписываться на кейсы и получать обновления с учётом юрисдикции, практики и роли."}</p><a className="primary-cta" href="/signin-with-chatgpt?return_to=%2F">{locale === "en" ? "Sign in with ChatGPT" : "Войти через ChatGPT"}<Icon name="arrow"/></a></section></main>;
@@ -1431,11 +1565,32 @@ function CommunityView({ locale, cases }: { locale: Locale; cases: Scenario[] })
     </section>
     <section className="subscription-panel"><div className="panel-title"><span>{locale === "en" ? "Follow individual cases" : "Подписки на отдельные кейсы"}</span><b>{subscriptions.length.toString().padStart(2, "0")}</b></div><div>{cases.map((item) => <button key={item.id} className={subscriptions.includes(item.caseId) ? "subscribed" : ""} onClick={() => toggleSubscription(item.caseId)}><span><b>{item.title[locale]}</b><small>{item.jurisdiction} · v{item.version}</small></span><em>{subscriptions.includes(item.caseId) ? (locale === "en" ? "Following" : "Подписка") : (locale === "en" ? "Follow" : "Подписаться")}</em></button>)}</div></section>
     <section className="workspace-panel"><div className="panel-title"><span>{locale === "en" ? "My Studio review workspace" : "Мои кейсы на рецензии"}</span><b>{submissions.length.toString().padStart(2, "0")}</b></div>{submissions.length ? <div className="workspace-list">{submissions.map((item) => <article key={item.id}><div><b>{item.title}</b><small>{item.caseId} · v{item.version}</small></div><span>{item.status.replaceAll("_", " ")}</span>{item.reviewerNote && <p>{item.reviewerNote}</p>}</article>)}</div> : <p>{locale === "en" ? "Save or submit a Studio draft to start the moderated practitioner workflow." : "Сохраните или отправьте черновик Studio, чтобы начать модерируемый рабочий процесс."}</p>}</section>
-    {isAdmin && <AdminDesk locale={locale} cases={cases}/>}
+    <section className="custom-access-panel" aria-labelledby="custom-access-title">
+      <div className="panel-title"><span id="custom-access-title">{isAdmin ? (locale === "en" ? "Visible custom-case register" : "Реестр видимых custom-кейсов") : (locale === "en" ? "My & shared custom cases" : "Мои и доступные custom-кейсы")}</span><b>{customCases.length.toString().padStart(2, "0")}</b></div>
+      <p className="custom-access-explainer">{locale === "en" ? "Workspace cases are never public by default. Restricted cases are visible to the owner, Maxim and invited registered users; Private cases are owner-only. Device-only saves do not appear here." : "Workspace-кейсы по умолчанию не публичны. Ограниченные кейсы видны владельцу, Максиму и приглашённым зарегистрированным пользователям; приватные — только владельцу. Локальные сохранения с устройства здесь не отображаются."}</p>
+      {customMessage && <p className="custom-access-message" role="status">{customMessage}</p>}
+      {customCases.length ? <div className="custom-case-grid">{customCases.map((item) => {
+        const shares = caseShares[item.id];
+        const feedback = caseFeedback[item.id];
+        const mayDelegateReshare = item.access === "owner" || item.access === "admin";
+        return <article className={`custom-case-card ${item.isPrivate ? "private" : "restricted"}`} key={item.id}>
+          <header><div className="custom-case-badges"><span>{item.isPrivate ? "PRIVATE · OWNER ONLY" : item.access === "shared" ? "SHARED CUSTOM" : "RESTRICTED CUSTOM"}</span>{item.status === "promoted" && <span className="library-badge">GENERAL LIBRARY SNAPSHOT</span>}</div><small>{item.access === "owner" ? (locale === "en" ? "You own this case" : "Вы владелец") : item.access === "admin" ? (locale === "en" ? `Admin view · ${item.ownerDisplayName ?? "Case author"}` : `Вид администратора · ${item.ownerDisplayName ?? "Автор кейса"}`) : (locale === "en" ? `Shared by ${item.ownerDisplayName ?? "case author"}` : `Предоставил доступ: ${item.ownerDisplayName ?? "автор кейса"}`)}</small></header>
+          <h3>{item.title}</h3><code>{item.caseId} · v{item.currentVersion}</code>
+          <p>{item.isPrivate ? (locale === "en" ? "No administrator, reviewer or previous recipient can discover this case." : "Администратор, рецензент и прежние получатели не могут обнаружить этот кейс.") : (locale === "en" ? `${item.shareCount} explicit share(s) · not in the public catalogue` : `Явных приглашений: ${item.shareCount} · не в публичном каталоге`)}</p>
+          {item.status === "promoted" && <p className="promotion-note">{locale === "en" ? "An immutable copy is public. Changing this workspace source does not rewrite that published version." : "Неизменяемая копия опубликована. Изменения этого workspace-источника не переписывают опубликованную версию."}</p>}
+          <div className="custom-case-actions"><button type="button" className="secondary-cta" onClick={() => openCustomCase(item.id)}><Icon name="studio"/>{locale === "en" ? "Open in Studio" : "Открыть в Studio"}</button>{item.canManagePrivacy && <label className="privacy-toggle compact"><input type="checkbox" checked={item.isPrivate} disabled={busyCaseId === item.id} onChange={(event) => setCustomPrivacy(item, event.target.checked)}/><span>{locale === "en" ? "Private" : "Приватно"}</span><i aria-hidden="true"/></label>}</div>
+          {!item.isPrivate && item.canShare && <form className="custom-share-form" onSubmit={(event) => { event.preventDefault(); shareCustomCase(item); }}><label><span>{locale === "en" ? "Registered recipient email" : "Email зарегистрированного получателя"}</span><input type="email" value={shareEmails[item.id] ?? ""} onChange={(event) => setShareEmails((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="colleague@example.com"/></label>{mayDelegateReshare && <label className="reshare-check"><input type="checkbox" checked={shareReshare[item.id] === true} onChange={(event) => setShareReshare((current) => ({ ...current, [item.id]: event.target.checked }))}/><span>{locale === "en" ? "Allow forwarding (recipient still needs Professional or Enterprise)" : "Разрешить пересылку (получателю всё равно нужна лицензия Professional или Enterprise)"}</span></label>}<button className="primary-cta" disabled={busyCaseId === item.id || !(shareEmails[item.id] ?? "").trim()}>{locale === "en" ? "Grant access" : "Предоставить доступ"}<Icon name="arrow"/></button></form>}
+          {!item.isPrivate && !item.canShare && <p className="license-hint">{item.access === "owner" ? (locale === "en" ? `Sharing requires Professional or Enterprise; current tier: ${profile.licenseTier}.` : `Для предоставления доступа нужна лицензия Professional или Enterprise; текущая: ${profile.licenseTier}.`) : (locale === "en" ? "Forwarding requires Professional or Enterprise plus an explicit reshare grant." : "Для пересылки нужна лицензия Professional или Enterprise и отдельное право на дальнейший доступ.")}</p>}
+          {!item.isPrivate && (item.access === "owner" || item.access === "admin") && <div className="custom-share-register"><button type="button" onClick={() => loadCaseShares(item)} disabled={busyCaseId === item.id}>{shares ? (locale === "en" ? "Refresh access list" : "Обновить список доступа") : (locale === "en" ? `Manage access (${item.shareCount})` : `Управлять доступом (${item.shareCount})`)}</button>{shares?.map((share) => <div key={share.recipientEmail}><span><b>{share.recipientEmail}</b><small>{share.canReshare ? (locale === "en" ? "may forward with licence" : "может пересылать при наличии лицензии") : (locale === "en" ? "view only" : "только просмотр")}</small></span><button type="button" onClick={() => revokeCustomShare(item, share.recipientEmail)} disabled={busyCaseId === item.id}>{locale === "en" ? "Revoke" : "Отозвать"}</button></div>)}</div>}
+          {item.access === "owner" && <div className="custom-feedback-register"><button type="button" onClick={() => loadCaseShares(item)} disabled={busyCaseId === item.id}>{feedback ? (locale === "en" ? "Refresh my case notes" : "Обновить мои заметки") : (locale === "en" ? "View my case notes" : "Мои заметки по кейсу")}</button>{feedback && (feedback.length ? feedback.map((entry) => <article key={entry.id}><span><b>{entry.audience === "owner_private" ? (locale === "en" ? "PRIVATE · OWNER ONLY" : "ПРИВАТНО · ТОЛЬКО ВЛАДЕЛЕЦ") : entry.category.replaceAll("_", " ")}</b><small>{entry.createdAt.slice(0, 10)} · {entry.rating}/5 · {entry.severity}</small></span><p>{entry.comment}</p>{entry.suggestedCorrection && <p><b>{locale === "en" ? "Suggested correction:" : "Предлагаемое исправление:"}</b> {entry.suggestedCorrection}</p>}{entry.citationUrl && <a href={entry.citationUrl} target="_blank" rel="noreferrer">{locale === "en" ? "Supporting source" : "Подтверждающий источник"}</a>}</article>) : <p>{locale === "en" ? "No notes for this case yet." : "Заметок по этому кейсу пока нет."}</p>)}</div>}
+        </article>;
+      })}</div> : <p>{locale === "en" ? "No workspace custom cases are visible to this account yet. Save a Studio case to the workspace first." : "Для аккаунта пока нет видимых workspace custom-кейсов. Сначала сохраните кейс из Studio в workspace."}</p>}
+    </section>
+    {isAdmin && <AdminDesk locale={locale} cases={cases} customCases={customCases} reloadCustomCases={reloadCustomCases} openCustomCase={openCustomCase} refreshCatalogue={refreshCatalogue}/>}
   </main>;
 }
 
-function AdminDesk({ locale, cases }: { locale: Locale; cases: Scenario[] }) {
+function AdminDesk({ locale, cases, customCases, reloadCustomCases, openCustomCase, refreshCatalogue }: { locale: Locale; cases: Scenario[]; customCases: CommunityCustomCase[]; reloadCustomCases: () => Promise<void>; openCustomCase: (id: number) => void; refreshCatalogue: () => Promise<void> }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [kind, setKind] = useState("product");
@@ -1448,13 +1603,17 @@ function AdminDesk({ locale, cases }: { locale: Locale; cases: Scenario[] }) {
   const [selectedSubmission, setSelectedSubmission] = useState<Record<string, unknown> | null>(null);
   const [reviewerNote, setReviewerNote] = useState("");
   const [message, setMessage] = useState("");
+  const [adminUsers, setAdminUsers] = useState<AdminCommunityUser[]>([]);
+  const [adminBusy, setAdminBusy] = useState("");
   useEffect(() => {
     Promise.all([
       fetch("/api/admin/submissions").then((response) => readJsonResponse<{ submissions?: Array<Record<string, unknown>> }>(response)),
       fetch("/api/admin/feedback").then((response) => readJsonResponse<{ feedback?: Array<Record<string, unknown>> }>(response)),
-    ]).then(([submissionsPayload, feedbackPayload]) => {
+      fetch("/api/admin/users").then((response) => readJsonResponse<{ users?: AdminCommunityUser[] }>(response)),
+    ]).then(([submissionsPayload, feedbackPayload, usersPayload]) => {
       setQueue(submissionsPayload?.submissions ?? []);
       setFeedbackQueue(feedbackPayload?.feedback ?? []);
+      setAdminUsers(usersPayload?.users ?? []);
     });
   }, []);
   async function publishRelease(event: React.FormEvent) {
@@ -1478,6 +1637,39 @@ function AdminDesk({ locale, cases }: { locale: Locale; cases: Scenario[] }) {
     const response = await fetch("/api/admin/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, status: "resolved", moderatorNote: "Reviewed by the editorial queue." }) });
     if (response.ok) setFeedbackQueue((current) => current.map((item) => Number(item.id) === id ? { ...item, status: "resolved" } : item));
   }
+  async function changeLicense(email: string, licenseTier: AdminCommunityUser["licenseTier"]) {
+    setAdminBusy(`license:${email}`); setMessage("");
+    const response = await fetch("/api/admin/users", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, licenseTier }) });
+    const result = await response.json().catch(() => null) as { error?: string } | null;
+    if (response.ok) {
+      setAdminUsers((current) => current.map((user) => user.email === email ? { ...user, licenseTier } : user));
+      setMessage(locale === "en" ? "Licence entitlement updated." : "Уровень лицензии обновлён.");
+    } else setMessage(result?.error ?? (locale === "en" ? "Licence could not be updated." : "Не удалось обновить лицензию."));
+    setAdminBusy("");
+  }
+  async function promoteCustomCase(item: CommunityCustomCase) {
+    if (!window.confirm(locale === "en" ? "Publish an immutable copy of this exact custom-case version to the General Library? The restricted source remains in its workspace." : "Опубликовать неизменяемую копию этой точной версии custom-кейса в Общей библиотеке? Ограниченный источник останется в workspace.")) return;
+    setAdminBusy(`promote:${item.id}`); setMessage("");
+    const detailResponse = await fetch(`/api/custom-cases?id=${item.id}`);
+    const detail = await detailResponse.json().catch(() => null) as { draft?: unknown; error?: string } | null;
+    if (!detailResponse.ok || detail?.draft === undefined) {
+      setMessage(detail?.error ?? (locale === "en" ? "The exact custom-case version could not be loaded." : "Не удалось загрузить точную версию custom-кейса.")); setAdminBusy(""); return;
+    }
+    let sourceDraft: StudioDraft;
+    try { sourceDraft = normalizeStudioDraft(detail.draft); }
+    catch { setMessage(locale === "en" ? "The custom-case draft is structurally invalid." : "Структура черновика custom-кейса некорректна."); setAdminBusy(""); return; }
+    const compiled = compileStudioDraft(sourceDraft);
+    if (!compiled.scenario) {
+      setMessage((locale === "en" ? "Promotion blocked: " : "Публикация заблокирована: ") + compiled.issues.map((issue) => issue.message).join(" ")); setAdminBusy(""); return;
+    }
+    const response = await fetch("/api/admin/cases", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ customCaseId: item.id, draft: sourceDraft, playableScenario: compiled.scenario, authorName: item.ownerDisplayName ?? "Custom case author", reviewerName: "Maxim Hayan · platform administrator", reviewLevel: "community_beta", changeSummary: "Promoted from a restricted custom workspace to the General Library as an immutable snapshot.", durationMinutes: 45, sector: sourceDraft.classification?.practiceArea ?? "General legal", taxSafetyAttestation: true }) });
+    const result = await response.json().catch(() => null) as { error?: string } | null;
+    if (response.ok) {
+      await Promise.all([reloadCustomCases(), refreshCatalogue()]);
+      setMessage(locale === "en" ? "Immutable case version published to the General Library." : "Неизменяемая версия опубликована в Общей библиотеке.");
+    } else setMessage(result?.error ?? (locale === "en" ? "Promotion failed validation." : "Кейс не прошёл проверки публикации."));
+    setAdminBusy("");
+  }
   const selectedDraft = isRecord(selectedSubmission?.payload) ? selectedSubmission.payload : null;
   const selectedClassification = isRecord(selectedDraft?.classification) ? selectedDraft.classification : null;
   const selectedNodes = Array.isArray(selectedDraft?.nodes) ? selectedDraft.nodes : [];
@@ -1491,6 +1683,8 @@ function AdminDesk({ locale, cases }: { locale: Locale; cases: Scenario[] }) {
         <section><h2>{locale === "en" ? "Feedback queue" : "Очередь отзывов"}</h2>{feedbackQueue.filter((item) => item.status !== "resolved" && item.status !== "declined").slice(0, 8).map((item) => <article key={String(item.id)}><b>{String(item.caseId)} · {String(item.category)}</b><small>{String(item.severity)} · {String(item.contextType)} {String(item.contextId ?? "")}</small><p>{String(item.comment)}</p><button onClick={() => resolveFeedback(Number(item.id))}>Resolve</button></article>)}</section>
       </div>
     </div>
+    <section className="admin-custom-register"><div className="admin-section-heading"><div><span>CUSTOM → GENERAL LIBRARY</span><h2>{locale === "en" ? "Custom case inventory" : "Реестр custom-кейсов"}</h2></div><b>{customCases.filter((item) => !item.isPrivate).length.toString().padStart(2, "0")}</b></div><p>{locale === "en" ? "Private cases are omitted at the API boundary: Maxim receives neither their content nor their metadata. Promotion creates a new immutable public snapshot and keeps the custom source." : "Приватные кейсы исключаются на границе API: Максим не получает ни содержание, ни метаданные. Продвижение создаёт новую неизменяемую публичную копию и сохраняет custom-источник."}</p><div>{customCases.filter((item) => !item.isPrivate).map((item) => <article key={item.id}><div><span>{item.status === "promoted" ? "LIBRARY SNAPSHOT CREATED" : "RESTRICTED CUSTOM"}</span><h3>{item.title}</h3><small>{item.ownerDisplayName ?? "Case author"} · {item.caseId} · v{item.currentVersion} · {item.shareCount} share(s)</small></div><div><button type="button" className="secondary-cta" onClick={() => openCustomCase(item.id)}>{locale === "en" ? "Open source" : "Открыть источник"}</button><button type="button" className="primary-cta" disabled={adminBusy === `promote:${item.id}`} onClick={() => promoteCustomCase(item)}>{item.status === "promoted" ? (locale === "en" ? "Publish next version" : "Опубликовать новую версию") : (locale === "en" ? "Promote to library" : "Перевести в библиотеку")}<Icon name="arrow"/></button></div></article>)}</div></section>
+    <section className="admin-license-register"><div className="admin-section-heading"><div><span>SERVER ENTITLEMENTS</span><h2>{locale === "en" ? "Sharing licences" : "Лицензии на пересылку"}</h2></div><b>{adminUsers.length.toString().padStart(2, "0")}</b></div><p>{locale === "en" ? "Professional and Enterprise users may share their own restricted cases. A recipient may forward somebody else’s case only when the owner or Maxim also granted a reshare permission." : "Пользователи Professional и Enterprise могут делиться собственными ограниченными кейсами. Получатель может переслать чужой кейс, только если владелец или Максим отдельно разрешил дальнейший доступ."}</p><div>{adminUsers.map((user) => <label key={user.email}><span><b>{user.displayName || user.email}</b><small>{user.email}{user.organisation ? ` · ${user.organisation}` : ""}</small></span><select value={user.licenseTier} disabled={adminBusy === `license:${user.email}`} onChange={(event) => changeLicense(user.email, event.target.value as AdminCommunityUser["licenseTier"])}><option value="community">Community</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option></select></label>)}</div></section>
     {selectedSubmission && selectedDraft && <section className="review-detail"><div><span>REVIEW RECORD</span><button onClick={() => setSelectedSubmission(null)} aria-label={locale === "en" ? "Close review record" : "Закрыть рецензию"}><Icon name="close"/></button></div><h2>{String(selectedSubmission.title)}</h2><dl><div><dt>CASE / VERSION</dt><dd>{String(selectedSubmission.caseId)} · v{String(selectedSubmission.version)}</dd></div><div><dt>FINGERPRINT</dt><dd><code>{String(selectedSubmission.fingerprint)}</code></dd></div><div><dt>DOMAIN / PRACTICE</dt><dd>{String(selectedClassification?.domain ?? "general")} · {String(selectedClassification?.practiceArea ?? "")}</dd></div><div><dt>GRAPH</dt><dd>{selectedNodes.length} nodes · {selectedLinks.length} links</dd></div></dl><p>{String(selectedDraft.premise ?? "")}</p><label><span>{locale === "en" ? "Substantive reviewer note" : "Содержательное замечание рецензента"}</span><textarea value={reviewerNote} minLength={10} maxLength={4000} onChange={(event) => setReviewerNote(event.target.value)}/></label><div><button className="secondary-cta" disabled={reviewerNote.trim().length < 10} onClick={() => reviewSubmission(Number(selectedSubmission.id), "changes_requested")}>{locale === "en" ? "Request changes" : "Запросить изменения"}</button><button className="primary-cta" disabled={reviewerNote.trim().length < 10} onClick={() => reviewSubmission(Number(selectedSubmission.id), "accepted")}>{locale === "en" ? "Accept for compilation" : "Принять для сборки"}<Icon name="check"/></button></div></section>}
     <p className="admin-publication-note">{locale === "en" ? "Accepted drafts remain non-public until an administrator compiles a playable-scenario-v1 manifest and publishes it through the immutable case-version API." : "Принятые черновики остаются непубличными, пока администратор не соберёт playable-scenario-v1 и не опубликует неизменяемую версию через API."}</p>
   </section>;
@@ -1503,12 +1697,12 @@ function HelpView({ locale, openCommunity, openStudio }: { locale: Locale; openC
     ["Choose a case", "Use search, practice filters, tags, difficulty and duration to select a relevant matter."],
     ["Work the record", "Review the opening situation, inbox, evidence provenance, deadlines and available decisions."],
     ["Inspect consequences", "Every confirmed action advances time and changes the legal, evidential and institutional position."],
-    ["Improve the library", "Give case-specific feedback or open Studio to create a versioned custom scenario."],
+    ["Control access", "Keep a case on this device, save a restricted custom case to your workspace, mark it Private, or prepare a reviewed version for the General Library."],
   ] : [
     ["Выберите кейс", "Используйте поиск, фильтры практики, теги, сложность и длительность."],
     ["Работайте с материалами", "Изучите ситуацию, Inbox, доказательства, сроки и доступные решения."],
     ["Разберите последствия", "Каждое действие продвигает время и меняет правовую и институциональную позицию."],
-    ["Улучшайте библиотеку", "Оставьте отзыв или откройте Studio для создания версионного custom-кейса."],
+    ["Управляйте доступом", "Храните кейс на устройстве, сохраняйте ограниченный custom-кейс в workspace, включайте «Приватно» или готовьте проверенную версию для Общей библиотеки."],
   ];
   const editorTranscript = locale === "en" ? [
     "Open Case Studio: prompts and visual changes share one continuous authoring record.",
@@ -1566,12 +1760,50 @@ function HelpView({ locale, openCommunity, openStudio }: { locale: Locale; openC
         </article>
       </div>
     </section>
-    <section className="help-faq"><h2>{locale === "en" ? "Short answers" : "Короткие ответы"}</h2><details open><summary>{locale === "en" ? "Do I need an account?" : "Нужна ли регистрация?"}</summary><p>{locale === "en" ? "No for public cases. Sign in to submit attributed feedback, maintain a profile, follow cases and receive targeted updates." : "Нет для публичных кейсов. Вход нужен для отзывов, профиля, подписок и адресных обновлений."}</p></details><details><summary>{locale === "en" ? "How does a practitioner draft reach the library?" : "Как черновик юриста попадает в библиотеку?"}</summary><p>{locale === "en" ? "Save it to the private workspace, submit it to moderation, address reviewer notes, then let an administrator compile and publish a new immutable playable version. Followers receive the release only under their explicit preferences." : "Сохраните кейс в личном workspace, отправьте на модерацию, учтите замечания рецензента; затем администратор собирает и публикует новую неизменяемую игровую версию. Подписчики получают релиз только по явно выбранным настройкам."}</p></details><details><summary>{locale === "en" ? "Can I create tax-planning cases?" : "Можно ли создавать налоговые кейсы?"}</summary><p>{locale === "en" ? "Yes. Studio includes entities, jurisdictions, cash flows and tax-rule nodes plus a compliance-first international tax template." : "Да. Studio поддерживает компании, юрисдикции, денежные потоки, налоговые правила и compliance-first шаблон международного планирования."}</p></details><details><summary>{locale === "en" ? "What data is stored?" : "Какие данные сохраняются?"}</summary><p>{locale === "en" ? "Your profile, explicit inbox preferences, subscriptions, attributed feedback and submitted drafts. Communications default off, and the profile centre provides sign-out and deletion controls. Never submit privileged or client-identifying facts." : "Профиль, явные настройки внутренних сообщений, подписки, авторизованные отзывы и отправленные черновики. Сообщения по умолчанию выключены; в профиле доступны выход и удаление данных. Не отправляйте адвокатскую тайну или идентифицирующие клиента факты."}</p></details><details><summary>{locale === "en" ? "Is this legal or tax advice?" : "Это юридическая или налоговая консультация?"}</summary><p>{locale === "en" ? "No. Cases are simulations for training and structured professional discussion. Verify current law and facts before real-world use." : "Нет. Это симуляции для обучения и структурированного профессионального обсуждения. Для реальной ситуации проверяйте актуальное право и факты."}</p></details></section>
+    <section className="help-faq">
+      <h2>{locale === "en" ? "Short answers" : "Короткие ответы"}</h2>
+      <details open>
+        <summary>{locale === "en" ? "Where is my Studio case saved?" : "Где сохраняется мой кейс Studio?"}</summary>
+        <p>{locale === "en" ? "“Save on this device” keeps a browser-local working copy and does not share it. “Save to workspace” stores the current custom case, version and visibility under your signed-in account so you can manage access and review status." : "«Сохранить на устройстве» создаёт локальную копию в браузере и никому её не передаёт. «Сохранить в workspace» сохраняет текущий custom-кейс, версию и режим видимости в вашей учётной записи, где можно управлять доступом и рецензированием."}</p>
+      </details>
+      <details>
+        <summary>{locale === "en" ? "Who can see a custom case?" : "Кто видит custom-кейс?"}</summary>
+        <p>{locale === "en" ? "A restricted custom case is visible to its owner, the platform administrator and registered people who receive an explicit access grant. It is not discoverable by other users and does not appear in the General Library." : "Ограниченный custom-кейс видят его владелец, администратор платформы и зарегистрированные пользователи с явно предоставленным доступом. Для остальных он недоступен и не появляется в Общей библиотеке."}</p>
+      </details>
+      <details>
+        <summary>{locale === "en" ? "What changes when I turn on Private?" : "Что меняется при включении «Приватно»?"}</summary>
+        <p>{locale === "en" ? "Only you can open the workspace case. The administrator, reviewers and previous recipients cannot see its content or metadata, and existing access grants are revoked. A Private case cannot be submitted for moderation or promoted until Private is turned off." : "Кейс в workspace можете открыть только вы. Администратор, рецензенты и ранее приглашённые пользователи не видят его содержание и метаданные; ранее выданные доступы отзываются. Приватный кейс нельзя отправить на модерацию или перевести в Общую библиотеку, пока флаг не отключён."}</p>
+      </details>
+      <details>
+        <summary>{locale === "en" ? "How is a custom case promoted to the General Library?" : "Как custom-кейс попадает в Общую библиотеку?"}</summary>
+        <p>{locale === "en" ? "After the case passes structural, provenance and any applicable legal or tax review gates, the administrator publishes an immutable playable snapshot. The published version becomes centrally managed; the custom workspace source remains separate. Making that source Private later does not withdraw or rewrite an already published snapshot." : "После структурных проверок, проверки источников и необходимых юридических или налоговых контрольных этапов администратор публикует неизменяемый игровой снимок. Опубликованная версия становится централизованно управляемой, а custom-источник остаётся отдельным. Последующее включение «Приватно» для источника не отзывает и не переписывает уже опубликованный снимок."}</p>
+      </details>
+      <details>
+        <summary>{locale === "en" ? "How does feedback work for a Private case?" : "Как работает фидбэк по приватному кейсу?"}</summary>
+        <p>{locale === "en" ? "Choose a private note to keep it owner-only, or send attributed product feedback with all case identifiers, fingerprint and node context stripped. For substantive review of the case itself, turn off Private and share or submit that exact restricted version; a private-feedback form never exposes the case indirectly." : "Выберите приватную заметку, чтобы сохранить её только для владельца, либо отправьте авторизованный продуктовый отзыв без ID кейса, версии, fingerprint и контекста узлов. Для содержательной рецензии самого кейса отключите «Приватно» и предоставьте доступ или отправьте на проверку точную ограниченную версию; форма приватного фидбэка не раскрывает кейс косвенно."}</p>
+      </details>
+      <details>
+        <summary>{locale === "en" ? "Do I need an account?" : "Нужна ли регистрация?"}</summary>
+        <p>{locale === "en" ? "No for General Library cases. Sign in to keep workspace cases, receive or grant access, submit attributed feedback, maintain a profile, follow cases and receive targeted updates." : "Нет для кейсов Общей библиотеки. Вход нужен для хранения кейсов в workspace, получения и выдачи доступа, авторизованных отзывов, профиля, подписок и адресных обновлений."}</p>
+      </details>
+      <details>
+        <summary>{locale === "en" ? "Can I create tax-planning cases?" : "Можно ли создавать налоговые кейсы?"}</summary>
+        <p>{locale === "en" ? "Yes. Studio includes entities, jurisdictions, cash flows and tax-rule nodes plus a compliance-first international tax template." : "Да. Studio поддерживает компании, юрисдикции, денежные потоки, налоговые правила и compliance-first шаблон международного планирования."}</p>
+      </details>
+      <details>
+        <summary>{locale === "en" ? "What data is stored?" : "Какие данные сохраняются?"}</summary>
+        <p>{locale === "en" ? "Your profile, explicit inbox preferences, subscriptions, workspace cases with their access settings, attributed feedback and private notes. Communications default off, and the profile centre provides sign-out and deletion controls. Never submit privileged or client-identifying facts." : "Профиль, явные настройки внутренних сообщений, подписки, кейсы workspace с настройками доступа, авторизованные отзывы и приватные заметки. Сообщения по умолчанию выключены; в профиле доступны выход и удаление данных. Не отправляйте адвокатскую тайну или идентифицирующие клиента факты."}</p>
+      </details>
+      <details>
+        <summary>{locale === "en" ? "Is this legal or tax advice?" : "Это юридическая или налоговая консультация?"}</summary>
+        <p>{locale === "en" ? "No. Cases are simulations for training and structured professional discussion. Verify current law and facts before real-world use." : "Нет. Это симуляции для обучения и структурированного профессионального обсуждения. Для реальной ситуации проверяйте актуальное право и факты."}</p>
+      </details>
+    </section>
     <div className="help-actions"><button className="secondary-cta" onClick={openCommunity}>{locale === "en" ? "Register or update profile" : "Регистрация и профиль"}</button><button className="primary-cta" onClick={openStudio}>{locale === "en" ? "Open Case Studio" : "Открыть Case Studio"}<Icon name="arrow"/></button></div>
   </main>;
 }
 
-function FeedbackDialog({ locale, target, close, submitted }: { locale: Locale; target: FeedbackTarget; close: () => void; submitted: () => void }) {
+function FeedbackDialog({ locale, target, close, submitted }: { locale: Locale; target: FeedbackTarget; close: () => void; submitted: (audience?: string) => void }) {
   const router = useRouter();
   const [rating, setRating] = useState(5);
   const [category, setCategory] = useState("legal_accuracy");
@@ -1579,6 +1811,7 @@ function FeedbackDialog({ locale, target, close, submitted }: { locale: Locale; 
   const [comment, setComment] = useState("");
   const [suggestedCorrection, setSuggestedCorrection] = useState("");
   const [citationUrl, setCitationUrl] = useState("");
+  const [privacyMode, setPrivacyMode] = useState<"private_note" | "product_only">("private_note");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const dialogRef = useRef<HTMLFormElement>(null);
@@ -1600,12 +1833,14 @@ function FeedbackDialog({ locale, target, close, submitted }: { locale: Locale; 
   }, [close]);
   async function submit(event: React.FormEvent) {
     event.preventDefault(); setSending(true); setError("");
-    const response = await fetch("/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ caseId: target.caseId, caseVersion: target.version, source: target.source, studioFingerprint: target.fingerprint, contextType: target.contextType ?? "case", contextId: target.contextId, rating, category, severity, comment, suggestedCorrection, citationUrl }) });
+    const response = await fetch("/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ caseId: target.caseId, caseVersion: target.version, source: target.source, studioFingerprint: target.fingerprint, contextType: target.contextType ?? "case", contextId: target.contextId, rating, category, severity, comment, suggestedCorrection, citationUrl, privacyMode: target.privateCase ? privacyMode : undefined }) });
     if (response.status === 401) { router.push("/signin-with-chatgpt?return_to=%2F"); return; }
-    if (!response.ok) { setError(locale === "en" ? "Please complete the rating and comment." : "Заполните оценку и комментарий."); setSending(false); return; }
-    submitted();
+    const result = await response.json().catch(() => null) as { audience?: string; error?: string } | null;
+    if (!response.ok) { setError(result?.error ?? (locale === "en" ? "Please complete the rating and comment." : "Заполните оценку и комментарий.")); setSending(false); return; }
+    submitted(result?.audience);
   }
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}><form ref={dialogRef} className="feedback-dialog" onSubmit={submit} role="dialog" aria-modal="true" aria-labelledby="feedback-title"><button type="button" className="modal-close" onClick={close} aria-label={locale === "en" ? "Close feedback dialog" : "Закрыть форму отзыва"}><Icon name="close"/></button><span>CASE-SPECIFIC FEEDBACK · {target.source.toUpperCase()}</span><h2 id="feedback-title">{locale === "en" ? "Help improve this case" : "Помогите улучшить кейс"}</h2><p><b>{target.title}</b><br/><code>{target.caseId} · v{target.version}{target.contextId ? ` · ${target.contextType}:${target.contextId}` : ""}</code></p><aside className="feedback-privacy"><Icon name="alert"/>{locale === "en" ? "Do not include client-identifiable, privileged, personal or confidential information." : "Не включайте идентифицирующие клиента, привилегированные, персональные или конфиденциальные сведения."}</aside><div className="feedback-fields"><label><span>{locale === "en" ? "Feedback category" : "Категория отзыва"}</span><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="legal_accuracy">Legal / tax accuracy</option><option value="realism">Professional realism</option><option value="learning_value">Learning value</option><option value="usability">Usability</option><option value="technical">Technical issue</option><option value="other">Other</option></select></label><label><span>{locale === "en" ? "Severity" : "Существенность"}</span><select value={severity} onChange={(event) => setSeverity(event.target.value)}><option value="suggestion">Suggestion</option><option value="material">Material correction</option><option value="critical">Critical legal/safety issue</option></select></label></div><fieldset><legend>{locale === "en" ? "Overall rating" : "Общая оценка"}</legend><div className="rating-row">{[1,2,3,4,5].map((value) => <button type="button" key={value} className={value <= rating ? "active" : ""} onClick={() => setRating(value)} aria-label={`${value} / 5`}>★</button>)}</div></fieldset><label><span>{locale === "en" ? "What should be corrected or improved?" : "Что следует исправить или улучшить?"}</span><textarea required minLength={10} value={comment} onChange={(event) => setComment(event.target.value)} placeholder={locale === "en" ? "Identify the fact, rule, stage, node or decision branch…" : "Укажите факт, правило, стадию, узел или ветвь решения…"}/></label><label><span>{locale === "en" ? "Suggested correction" : "Предлагаемое исправление"}</span><textarea value={suggestedCorrection} onChange={(event) => setSuggestedCorrection(event.target.value)} placeholder={locale === "en" ? "Optional replacement wording or branch logic" : "Необязательная новая формулировка или логика ветви"}/></label><label><span>{locale === "en" ? "Supporting HTTPS source" : "Подтверждающий HTTPS-источник"}</span><input type="url" value={citationUrl} onChange={(event) => setCitationUrl(event.target.value)} placeholder="https://…"/></label>{error && <p className="form-error" role="alert">{error}</p>}<div className="modal-actions"><button type="button" className="secondary-cta" onClick={close}>{locale === "en" ? "Cancel" : "Отмена"}</button><button className="primary-cta" disabled={sending || comment.trim().length < 10}>{sending ? "Sending…" : locale === "en" ? "Submit feedback" : "Отправить отзыв"}<Icon name="arrow"/></button></div></form></div>;
+  const productOnly = target.privateCase && privacyMode === "product_only";
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}><form ref={dialogRef} className="feedback-dialog" onSubmit={submit} role="dialog" aria-modal="true" aria-labelledby="feedback-title"><button type="button" className="modal-close" onClick={close} aria-label={locale === "en" ? "Close feedback dialog" : "Закрыть форму отзыва"}><Icon name="close"/></button><span>{target.privateCase ? "PRIVATE CASE FEEDBACK" : `CASE-SPECIFIC FEEDBACK · ${target.source.toUpperCase()}`}</span><h2 id="feedback-title">{target.privateCase ? (locale === "en" ? "Choose who can receive this note" : "Выберите, кому доступна заметка") : (locale === "en" ? "Help improve this case" : "Помогите улучшить кейс")}</h2><p><b>{target.title}</b><br/><code>{target.caseId} · v{target.version}{target.contextId ? ` · ${target.contextType}:${target.contextId}` : ""}</code></p><aside className="feedback-privacy"><Icon name="alert"/>{locale === "en" ? "Do not include client-identifiable, privileged, personal or confidential information." : "Не включайте идентифицирующие клиента, привилегированные, персональные или конфиденциальные сведения."}</aside>{target.privateCase && <fieldset className="private-feedback-options"><legend>{locale === "en" ? "Resolve the private-feedback conflict" : "Разрешение коллизии приватного фидбэка"}</legend><label className={privacyMode === "private_note" ? "selected" : ""}><input type="radio" name="privacyMode" value="private_note" checked={privacyMode === "private_note"} onChange={() => setPrivacyMode("private_note")}/><span><b>{locale === "en" ? "Private note · owner only" : "Приватная заметка · только владелец"}</b><small>{locale === "en" ? "Stored with this case for you. Maxim and the review queue cannot see it." : "Сохраняется вместе с кейсом для вас. Максим и очередь рецензий её не видят."}</small></span></label><label className={privacyMode === "product_only" ? "selected" : ""}><input type="radio" name="privacyMode" value="product_only" checked={privacyMode === "product_only"} onChange={() => setPrivacyMode("product_only")}/><span><b>{locale === "en" ? "Anonymised case context · product feedback" : "Обезличенный контекст · отзыв о продукте"}</b><small>{locale === "en" ? "Your attributed comment, rating and category go to Maxim, but case ID, version, fingerprint, node context, citation and correction fields are stripped. Do not repeat case facts in the comment." : "Максим получит ваш авторизованный комментарий, оценку и категорию, но ID, версия, fingerprint, контекст узла, источник и поле исправления будут удалены. Не повторяйте факты кейса в комментарии."}</small></span></label><p>{locale === "en" ? "For substantive review of case content, turn off Private and share or submit an exact restricted version." : "Для содержательной рецензии отключите «Приватно» и предоставьте доступ либо отправьте точную ограниченную версию."}</p></fieldset>}<div className="feedback-fields"><label><span>{locale === "en" ? "Feedback category" : "Категория отзыва"}</span><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="legal_accuracy">Legal / tax accuracy</option><option value="realism">Professional realism</option><option value="learning_value">Learning value</option><option value="usability">Usability</option><option value="technical">Technical issue</option><option value="other">Other</option></select></label><label><span>{locale === "en" ? "Severity" : "Существенность"}</span><select value={severity} onChange={(event) => setSeverity(event.target.value)}><option value="suggestion">Suggestion</option><option value="material">Material correction</option><option value="critical">Critical legal/safety issue</option></select></label></div><fieldset><legend>{locale === "en" ? "Overall rating" : "Общая оценка"}</legend><div className="rating-row">{[1,2,3,4,5].map((value) => <button type="button" key={value} className={value <= rating ? "active" : ""} onClick={() => setRating(value)} aria-label={`${value} / 5`}>★</button>)}</div></fieldset><label><span>{productOnly ? (locale === "en" ? "Product-level issue · do not include case facts" : "Проблема продукта · без фактов кейса") : (locale === "en" ? "What should be corrected or improved?" : "Что следует исправить или улучшить?")}</span><textarea required minLength={10} value={comment} onChange={(event) => setComment(event.target.value)} placeholder={productOnly ? (locale === "en" ? "Describe the interface or workflow issue without referring to this case…" : "Опишите проблему интерфейса или процесса без ссылки на этот кейс…") : (locale === "en" ? "Identify the fact, rule, stage, node or decision branch…" : "Укажите факт, правило, стадию, узел или ветвь решения…")}/></label>{!productOnly && <><label><span>{locale === "en" ? "Suggested correction" : "Предлагаемое исправление"}</span><textarea value={suggestedCorrection} onChange={(event) => setSuggestedCorrection(event.target.value)} placeholder={locale === "en" ? "Optional replacement wording or branch logic" : "Необязательная новая формулировка или логика ветви"}/></label><label><span>{locale === "en" ? "Supporting HTTPS source" : "Подтверждающий HTTPS-источник"}</span><input type="url" value={citationUrl} onChange={(event) => setCitationUrl(event.target.value)} placeholder="https://…"/></label></>}{error && <p className="form-error" role="alert">{error}</p>}<div className="modal-actions"><button type="button" className="secondary-cta" onClick={close}>{locale === "en" ? "Cancel" : "Отмена"}</button><button className="primary-cta" disabled={sending || comment.trim().length < 10}>{sending ? "Sending…" : target.privateCase && privacyMode === "private_note" ? (locale === "en" ? "Save private note" : "Сохранить приватную заметку") : locale === "en" ? "Submit feedback" : "Отправить отзыв"}<Icon name="arrow"/></button></div></form></div>;
 }
 
 function validateDraft(draft: StudioDraft, locale: Locale) {

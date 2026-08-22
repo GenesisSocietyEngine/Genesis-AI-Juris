@@ -113,7 +113,7 @@ test("request guards reject cross-origin, wrong media type and oversized JSON", 
 test("fresh D1 schema has valid seeds, immutable history and lineage collision protection", () => {
   const db = new DatabaseSync(":memory:");
   db.exec("PRAGMA foreign_keys = ON");
-  for (const migration of ["0000_worthless_supreme_intelligence.sql", "0001_right_talon.sql", "0002_greedy_darkstar.sql"]) {
+  for (const migration of ["0000_worthless_supreme_intelligence.sql", "0001_right_talon.sql", "0002_greedy_darkstar.sql", "0003_unusual_zarda.sql", "0004_petite_komodo.sql"]) {
     db.exec(readFileSync(new URL(`../drizzle/${migration}`, import.meta.url), "utf8"));
   }
   assert.equal(db.prepare("PRAGMA integrity_check").get()?.integrity_check, "ok");
@@ -133,6 +133,7 @@ test("fresh D1 schema has valid seeds, immutable history and lineage collision p
   assert.equal(defaults.find((item) => item.name === "product_updates")?.dflt_value, "false");
   assert.equal(defaults.find((item) => item.name === "case_updates")?.dflt_value, "false");
   assert.equal(defaults.find((item) => item.name === "research_invites")?.dflt_value, "false");
+  assert.equal(defaults.find((item) => item.name === "license_tier")?.dflt_value, "'community'");
 
   const insert = db.prepare("INSERT INTO case_versions (case_id,version,fingerprint,parent_case_id,parent_version,parent_fingerprint,change_summary,payload) VALUES (?,?,?,?,?,?,?,?)");
   insert.run(scenarios[0].caseId, "9.0.0", "test-a", scenarios[0].caseId, scenarios[0].version, scenarios[0].fingerprint, "test", "{}");

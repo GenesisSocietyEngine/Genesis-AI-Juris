@@ -22,6 +22,20 @@
       "when": 1787349716263,
       "tag": "0002_greedy_darkstar",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1787358388329,
+      "tag": "0003_unusual_zarda",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1787359039380,
+      "tag": "0004_petite_komodo",
+      "breakpoints": true
     }
   ]
 }
