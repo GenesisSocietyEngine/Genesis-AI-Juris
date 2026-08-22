@@ -1,6 +1,7 @@
 import { and, eq, isNotNull } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { cases, caseVersions } from "../../../../db/schema";
+import { resolveBundledManifest } from "../bundled-manifest";
 import { fingerprintEtag, ifNoneMatchMatches, manifestCacheControl } from "../catalog-query";
 
 export const dynamic = "force-dynamic";
@@ -18,11 +19,13 @@ export async function GET(request: Request, context: { params: Promise<{ caseId:
   const selectedVersion = requestedVersion ?? record.latestVersion;
   const [version] = await db.select({ fingerprint: caseVersions.fingerprint, payload: caseVersions.payload, changeSummary: caseVersions.changeSummary }).from(caseVersions).where(and(eq(caseVersions.caseId, caseId), eq(caseVersions.version, selectedVersion), isNotNull(caseVersions.publishedAt))).limit(1);
   if (!version) return Response.json({ error: "Published version not found." }, { status: 404 });
+  const payload = resolveBundledManifest(version.payload, caseId, selectedVersion, version.fingerprint);
+  if (!payload) return Response.json({ error: "Published manifest failed integrity verification." }, { status: 409, headers: { "Cache-Control": "no-store" } });
   const etag = fingerprintEtag(version.fingerprint);
   const headers = {
     "Cache-Control": manifestCacheControl(requestedVersion !== null),
     ETag: etag,
   };
   if (ifNoneMatchMatches(request.headers.get("if-none-match"), etag)) return new Response(null, { status: 304, headers });
-  return Response.json({ caseId, currentVersion: selectedVersion, latestVersion: record.latestVersion, reviewLevel: record.reviewLevel, ...version }, { headers });
+  return Response.json({ caseId, currentVersion: selectedVersion, latestVersion: record.latestVersion, reviewLevel: record.reviewLevel, ...version, payload }, { headers });
 }

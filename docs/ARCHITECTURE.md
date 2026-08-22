@@ -1,12 +1,12 @@
-# GENESIS: JURIS v12 architecture
+# GENESIS: JURIS v13 architecture
 
-This document records the v12 runtime and trust boundaries. It is intentionally implementation-oriented; product positioning remains in the root README.
+This document records the v13 runtime and trust boundaries. It is intentionally implementation-oriented; product positioning remains in the root README.
 
 ## Catalogue and immutable content
 
 `GET /api/catalog` returns paginated metadata only. Search and classification filters run in D1, and a cursor continues a stable case-ID traversal. The browser should request only the visible metadata page and must not preload every case payload.
 
-The full playable manifest is loaded lazily from `GET /api/catalog/:caseId?version=x.y.z` when a user opens a case. A published version is addressed by `(caseId, version, fingerprint)`, carries an ETag derived from its fingerprint and is immutable. The `cases.current_version` row is only the mutable pointer to the latest immutable `case_versions` record. Version-pinned responses can therefore use long-lived immutable caching; the current-version response is revalidated more frequently.
+The full playable manifest is loaded lazily from `GET /api/catalog/:caseId?version=x.y.z` when a user opens a case. Seed rows that carry the compact canonical-bundle pointer are resolved and fingerprint-verified on the server; the browser does not import that bundle into its initial application chunk. A published version is addressed by `(caseId, version, fingerprint)`, carries an ETag derived from its fingerprint and is immutable. The `cases.current_version` row is only the mutable pointer to the latest immutable `case_versions` record. Version-pinned responses can therefore use long-lived immutable caching; the current-version response is revalidated more frequently. A dynamically imported bundled copy remains only as an offline/5xx compatibility fallback; a `4xx` response is authoritative so removed, denied or integrity-failed content cannot be reopened locally.
 
 ## Execution modes
 
@@ -61,6 +61,8 @@ This protects integrity and enforces product-level copying policy; it is not con
 | Private custom | Owner only through the product API; grants are revoked and administration receives not-found |
 
 `Private` is an application-level authorization policy, not encryption, DRM or zero-knowledge storage. Draft JSON is stored in D1, an authorized browser receives the full payload, and infrastructure/database operators may be able to access stored data and backups. Users must not place privileged, client-identifiable or otherwise unsuitable secrets in a case. A future high-confidentiality tier would require separate tenant keys, encrypted payload design and an explicit key-recovery policy.
+
+Browser-only Studio persistence is a separate, fail-closed boundary. The application first resolves a signed-in identity, derives a one-way account scope and reads only a versioned envelope for that scope; anonymous sessions are never persisted. Only local, duplicable, unprotected and non-Private drafts may be written. Opening a workspace/protected/Private artifact, signing out or deleting the profile removes the scoped browser draft. Origin-wide keys from earlier releases are deleted without being read, preventing one account on a shared browser from inheriting another account's Studio draft.
 
 ## Account credentials and recovery
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, MouseEvent, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, studioDeviceDraftKey, studioDeviceScope } from "../studio-device-storage";
 import styles from "./account.module.css";
 
 type Identity = { email: string; displayName: string; authSource: "chatgpt" | "local" };
@@ -67,11 +68,29 @@ export default function AccountClient({
     try {
       const response = await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
       if (!response.ok) throw new Error("Local sign-out could not be completed.");
+      await clearDeviceStudioDraft();
       router.replace("/account");
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Local sign-out could not be completed.");
       setBusy(null);
+    }
+  }
+
+  async function clearDeviceStudioDraft() {
+    window.localStorage.removeItem(LEGACY_STUDIO_DRAFT_KEY);
+    window.localStorage.removeItem(LEGACY_STUDIO_PRIVATE_KEY);
+    const scope = await studioDeviceScope(identity?.email);
+    if (scope) window.localStorage.removeItem(studioDeviceDraftKey(scope));
+  }
+
+  async function signOutChatGPT(event: MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+    setBusy("logout");
+    try {
+      await clearDeviceStudioDraft();
+    } finally {
+      window.location.assign(chatGPTSignOutUrl);
     }
   }
 
@@ -81,7 +100,7 @@ export default function AccountClient({
       <Link href="/">Return to library</Link>
     </nav>
     <header className={styles.hero}>
-      <p>ACCOUNT SECURITY · v12</p>
+      <p>ACCOUNT SECURITY · v13</p>
       <h1>Professional access without hidden recovery shortcuts.</h1>
       <p>ChatGPT remains the trusted identity source. After one confirmation through ChatGPT, you can use a local password and an offline recovery code independently.</p>
     </header>
@@ -90,7 +109,7 @@ export default function AccountClient({
       <div><span>Current session</span><strong>{identity.displayName}</strong><small>{identity.email}</small></div>
       <b>{identity.authSource === "chatgpt" ? "CHATGPT IDENTITY" : "LOCAL SESSION"}</b>
       {identity.authSource === "local" && <button onClick={logout} disabled={busy !== null}>{busy === "logout" ? "Signing out…" : "Sign out locally"}</button>}
-      {identity.authSource === "chatgpt" && <a href={chatGPTSignOutUrl}>Sign out from ChatGPT identity</a>}
+      {identity.authSource === "chatgpt" && <a href={chatGPTSignOutUrl} onClick={signOutChatGPT}>Sign out from ChatGPT identity</a>}
     </section>}
 
     {(message || error) && <div className={error ? styles.error : styles.success} role={error ? "alert" : "status"}>{error || message}</div>}

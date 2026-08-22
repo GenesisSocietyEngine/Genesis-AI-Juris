@@ -37,7 +37,9 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .visually-hidden { position: absolute!important; width: 1px!important; height: 1px!important; overflow: hidden!important; clip: rect(0 0 0 0)!important; white-space: nowrap!important; }
 
 .app-shell { --bg: var(--ink-950); --panel: var(--surface); --strong: var(--surface-strong); --copy: var(--text); --subtle: var(--muted); min-height: 100vh; background: var(--bg); color: var(--copy); position: relative; overflow-x: hidden; transition: background .22s ease, color .22s ease; }
-.app-shell.theme-office { --bg: #e9e2d4; --panel: rgba(250, 247, 240, .92); --strong: #f4eee3; --copy: #14212c; --subtle: #53616b; --rule: rgba(41, 53, 61, .2); --surface: rgba(250,247,240,.93); --surface-strong: #f3ede2; --text: #14212c; --muted: #5e6a73; --faint: #7e898e; --shadow: 0 25px 70px rgba(43,35,24,.14); }
+.app-shell.theme-office { --bg: #e9e2d4; --panel: rgba(250, 247, 240, .92); --strong: #f4eee3; --copy: #14212c; --subtle: #53616b; --rule: rgba(41, 53, 61, .2); --surface: rgba(250,247,240,.93); --surface-strong: #f3ede2; --text: #14212c; --muted: #53616b; --faint: #59656b; --cyan: #17636b; --brass: #765618; --brass-soft: #5e430f; --red: #9a321f; --green: #2f6e58; --violet: #5e4b8a; --shadow: 0 25px 70px rgba(43,35,24,.14); }
+.theme-office .primary-cta,.theme-office .nav-new,.theme-office .session-toast,.theme-office .save-toast,.theme-office .stage-list li.done > span { color: #fff; }
+.theme-office .help-video-card { color: #edf0eb; --muted: #9eabb1; --cyan: #5bb8c4; --gold: #d2a85e; --rule: rgba(214,196,158,.2); }
 .atmosphere { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
 .atmosphere:before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(92,184,196,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(92,184,196,.025) 1px, transparent 1px); background-size: 42px 42px; mask-image: linear-gradient(to bottom, black, transparent 82%); }
 .atmosphere span { position: absolute; border-radius: 50%; filter: blur(1px); opacity: .18; }

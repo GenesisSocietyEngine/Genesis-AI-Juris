@@ -6,7 +6,8 @@ import { isRecord } from "../../case-integrity";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { normalizePlayableScenario, playableFingerprint } from "../../playable-integrity";
 import { isSameOriginMutation, readJsonObject } from "../../request-security";
-import { initialMetrics, scenarios } from "../../scenarios";
+import { initialMetrics } from "../../runtime-constants";
+import { scenarios } from "../../scenarios";
 import type { MetricKey, Scenario } from "../../types";
 
 export const dynamic = "force-dynamic";

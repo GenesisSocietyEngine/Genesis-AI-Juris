@@ -1,4 +1,5 @@
 import canonicalBundle from "./canonical-case-bundle.json";
+import { initialMetrics } from "./runtime-constants";
 import { normalizePlayableScenario, playableFingerprint } from "./playable-integrity";
 import type { LocalText, Scenario, ScenarioDeadline, ScenarioStage } from "./types";
 
@@ -243,7 +244,7 @@ export const scenarios: Scenario[] = baseScenarios.map((base) => {
   return { ...normalizedScenario, fingerprint: playableFingerprint(normalizedScenario) };
 });
 
-export const initialMetrics = { position: 52, evidence: 46, trust: 50, exposure: 38 };
+export { initialMetrics };
 
 function stageMinute(day: number, time: string) {
   const [hours, minutes] = time.split(":").map(Number);

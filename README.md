@@ -32,7 +32,7 @@ flowchart TD
     GATES --> D1
 ```
 
-The Cloudflare Worker adds CSP, HSTS and browser hardening headers while preserving public immutable caching and private/no-store APIs. Write routes enforce same-origin JSON mutations, bounded streaming bodies, server-side authorization and canonical SHA-256 fingerprints. See [the v12 architecture and trust boundaries](docs/ARCHITECTURE.md).
+The Cloudflare Worker adds CSP, HSTS and browser hardening headers while preserving public immutable caching and private/no-store APIs. Write routes enforce same-origin JSON mutations, bounded streaming bodies, server-side authorization and canonical SHA-256 fingerprints. See [the v13 architecture and trust boundaries](docs/ARCHITECTURE.md).
 
 ### Core data model
 
@@ -63,6 +63,7 @@ Migrations live in `drizzle/`. A fresh database must apply them in numeric order
 - An `expert` label additionally requires an independent verified practitioner; the author, publisher and reviewer cannot collapse into the same identity.
 - Tax cases are fail-closed to lawful/compliance scope, complete publication metadata and a named structured attestation bound to both fingerprints.
 - `Private` custom cases are owner-only at the application API; this is authorization, not encryption or DRM.
+- Browser-only Studio persistence is available to signed-in users, identity-scoped and limited to local, unprotected, non-Private drafts. It is cleared on sign-out; anonymous, workspace, protected and Private artifacts are never cached in local storage.
 
 ## Local development
 

@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { caseFingerprint, isRecord, isTaxClassification, normalizeStudioDraft, slugifyCaseId, studioStructuralIssues } from "./case-integrity";
+import { bundledCataloguePresentation, mayUseBundledCatalogueFallback } from "./catalogue-fallback";
 import { decisionAvailability, resolveDecisionTiming, resolveLegacyDecisionTiming } from "./game-engine";
-import { legacyScenarios } from "./legacy-scenarios";
 import { normalizePlayableScenario, playableFingerprint } from "./playable-integrity";
-import { initialMetrics, scenarios } from "./scenarios";
+import { resolvePlayedCaseScenario } from "./played-case-loader";
+import { initialMetrics } from "./runtime-constants";
+import { deviceDraftEnvelope, LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, mayPersistStudioDraftOnDevice, studioDeviceDraftKey, studioDeviceScope, unwrapDeviceDraft } from "./studio-device-storage";
 import { addStudioLink, appendStudioHistory, applyStudioPromptIteration, deleteStudioLink, describeStudioPromptOperation, nextStudioLinkId, nextStudioNodeId, nextStudioNodePosition, planStudioPromptIteration, relinkStudioLink } from "./studio-editing";
 import { compileStudioDraft } from "./studio-compiler";
 import { applyStudioSnapshot, diffDraftToRevision, diffStudioSnapshots, emptyStudioTimeline, recordStudioRevision, snapshotStudioDraft, stepStudioTimeline, studioSnapshotsEqual, type StudioRevision, type StudioTimeline } from "./studio-revisions";
@@ -302,13 +304,13 @@ export default function JurisApp() {
   const [locale, setLocale] = useState<Locale>("en");
   const [theme, setTheme] = useState<Theme>("after-hours");
   const [view, setView] = useState<View>("library");
-  const [featuredId, setFeaturedId] = useState(scenarios[2].caseId);
+  const [featuredId, setFeaturedId] = useState(fallbackCatalogueRecords[2].id);
   const [catalogueRecords, setCatalogueRecords] = useState<PublishedCaseSummary[]>(() => bundledCatalogueRecords());
   const [catalogueNextCursor, setCatalogueNextCursor] = useState<string | null>(null);
-  const [catalogueTotal, setCatalogueTotal] = useState(scenarios.length);
+  const [catalogueTotal, setCatalogueTotal] = useState(fallbackCatalogueRecords.length);
   const [catalogueLoading, setCatalogueLoading] = useState(false);
   const [catalogueError, setCatalogueError] = useState("");
-  const [catalogueScenarios, setCatalogueScenarios] = useState<Scenario[]>(scenarios);
+  const [catalogueScenarios, setCatalogueScenarios] = useState<Scenario[]>([]);
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(null);
   const [stageIndex, setStageIndex] = useState(0);
   const [metrics, setMetrics] = useState({ ...initialMetrics });
@@ -322,6 +324,7 @@ export default function JurisApp() {
   const [completedDeadlineIds, setCompletedDeadlineIds] = useState<string[]>([]);
   const [missedDeadlineIds, setMissedDeadlineIds] = useState<string[]>([]);
   const [serverPlaySession, setServerPlaySession] = useState<ServerPlaySession | null>(null);
+  const [legacyTimingMode, setLegacyTimingMode] = useState(false);
   const [playSessionSync, setPlaySessionSync] = useState<"opening" | "server" | "local" | "stale" | "error">("local");
   const [playSessionBusy, setPlaySessionBusy] = useState(false);
   const [prompt, setPrompt] = useState("");
@@ -332,6 +335,7 @@ export default function JurisApp() {
   const [studioServerFingerprint, setStudioServerFingerprint] = useState<string | null>(null);
   const [studioCanDuplicate, setStudioCanDuplicate] = useState(true);
   const [studioCopyProtectionLocked, setStudioCopyProtectionLocked] = useState(false);
+  const [studioStorageScope, setStudioStorageScope] = useState<string | null>(null);
   const draftRef = useRef<StudioDraft>(defaultDraft);
   const [studioTimeline, setStudioTimelineState] = useState<StudioTimeline>(emptyStudioTimeline());
   const studioTimelineRef = useRef<StudioTimeline>(emptyStudioTimeline());
@@ -344,20 +348,48 @@ export default function JurisApp() {
   const playedCaseImportRef = useRef<HTMLInputElement>(null);
   const dragBeforeRef = useRef<StudioDraft | null>(null);
   const playSessionStartRef = useRef(0);
+  const catalogueLaunchRef = useRef(0);
+  const studioChangedBeforeRestoreRef = useRef(false);
   const text = ui[locale];
 
   useEffect(() => {
+    let cancelled = false;
+    // v12 used origin-wide keys that could cross account boundaries on shared
+    // browsers. Never read them again; new drafts use an identity-scoped,
+    // versioned envelope and workspace/private artifacts are excluded entirely.
+    window.localStorage.removeItem(LEGACY_STUDIO_DRAFT_KEY);
+    window.localStorage.removeItem(LEGACY_STUDIO_PRIVATE_KEY);
+    void (async () => {
+      try {
+        const response = await fetch("/api/me", { cache: "no-store" });
+        const payload = await readJsonResponse<{ authenticated?: boolean; profile?: { email?: string } }>(response);
+        const scope = await studioDeviceScope(response.ok && payload?.authenticated ? payload.profile?.email : null);
+        if (!cancelled && scope) setStudioStorageScope(scope);
+      } catch {
+        // Fail closed: without a resolved identity scope the app does not read
+        // or persist a device draft.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!studioStorageScope) return;
     const restore = window.setTimeout(() => {
-      const stored = window.localStorage.getItem("genesis-juris-studio-draft");
+      if (studioChangedBeforeRestoreRef.current) return;
+      const stored = window.localStorage.getItem(studioDeviceDraftKey(studioStorageScope));
       if (stored) {
         try {
-          const restored = normalizeStudioDraft(JSON.parse(stored));
+          const candidate = unwrapDeviceDraft(JSON.parse(stored), studioStorageScope);
+          if (!candidate) throw new Error("Invalid device-draft envelope");
+          const restored = normalizeStudioDraft(candidate);
+          if (!mayPersistStudioDraftOnDevice({ canDuplicate: true, customCaseId: null, isPrivate: false, draft: restored })) throw new Error("Workspace or protected draft cannot be restored from device storage");
           const emptyTimeline = emptyStudioTimeline();
           draftRef.current = restored;
           studioTimelineRef.current = emptyTimeline;
           setDraftState(restored);
           setStudioTimelineState(emptyTimeline);
-          setStudioPrivate(window.localStorage.getItem("genesis-juris-studio-private") === "true");
+          setStudioPrivate(false);
           setStudioCustomCaseId(null);
           setStudioCanManagePrivacy(true);
           setStudioServerFingerprint(null);
@@ -369,7 +401,14 @@ export default function JurisApp() {
       }
     }, 0);
     return () => window.clearTimeout(restore);
-  }, []);
+  }, [studioStorageScope]);
+
+  useEffect(() => {
+    if (!studioStorageScope) return;
+    if (!mayPersistStudioDraftOnDevice({ canDuplicate: studioCanDuplicate, customCaseId: studioCustomCaseId, isPrivate: studioPrivate, draft })) {
+      window.localStorage.removeItem(studioDeviceDraftKey(studioStorageScope));
+    }
+  }, [draft, studioCanDuplicate, studioCustomCaseId, studioPrivate, studioStorageScope]);
 
   useEffect(() => { document.documentElement.lang = locale; }, [locale]);
 
@@ -420,6 +459,7 @@ export default function JurisApp() {
   const checks = useMemo(() => validateDraft(draft, locale), [draft, locale]);
 
   function syncStudioDraft(next: StudioDraft) {
+    studioChangedBeforeRestoreRef.current = true;
     draftRef.current = next;
     setDraftState(next);
   }
@@ -430,6 +470,20 @@ export default function JurisApp() {
   function replaceStudioDraft(next: StudioDraft) {
     syncStudioDraft(next);
     syncStudioTimeline(emptyStudioTimeline());
+  }
+  function enterNewLocalDraft(next: StudioDraft, nextSelectedNodeId: string | null) {
+    const isolated = structuredClone(next);
+    delete isolated.protection;
+    isolated.parent = null;
+    if (studioStorageScope) window.localStorage.removeItem(studioDeviceDraftKey(studioStorageScope));
+    replaceStudioDraft(isolated);
+    setStudioPrivate(false);
+    setStudioCustomCaseId(null);
+    setStudioCanManagePrivacy(true);
+    setStudioServerFingerprint(null);
+    setStudioCanDuplicate(true);
+    setStudioCopyProtectionLocked(false);
+    setSelectedNodeId(nextSelectedNodeId);
   }
   function updateStudioDraft(update: React.SetStateAction<StudioDraft>) {
     const current = draftRef.current;
@@ -524,35 +578,58 @@ export default function JurisApp() {
       if (requestVersion === playSessionStartRef.current) setPlaySessionSync("error");
     }
   }
-  function startScenario(scenario: Scenario) {
+  function startScenario(scenario: Scenario, options: { legacyTiming?: boolean } = {}) {
     const sessionRequestVersion = playSessionStartRef.current + 1;
     playSessionStartRef.current = sessionRequestVersion;
     const initialIndex = Math.max(0, scenario.stages.findIndex((item) => item.id === scenario.initialStageId));
     setActiveScenario(scenario); setStageIndex(initialIndex); setMetrics({ ...initialMetrics }); setDecisionLog([]);
     setCaseMinute(scenario.initialClockMinute); setActionUseCounts({}); setCompletedDeadlineIds([]); setMissedDeadlineIds([]);
     setServerPlaySession(null); setPlaySessionSync("opening"); setPlaySessionBusy(false);
+    setLegacyTimingMode(options.legacyTiming === true);
     setOutcome(null); setSelectedOption(null); setResultOption(null); setDossierRef(scenario.materials[0]?.ref ?? null); navigate("play");
     void beginServerPlaySession(scenario, sessionRequestVersion);
   }
   async function launchCatalogueCase(record: PublishedCaseSummary) {
+    const launchRequestVersion = catalogueLaunchRef.current + 1;
+    catalogueLaunchRef.current = launchRequestVersion;
     const cached = catalogueScenarios.find((scenario) => scenario.caseId === record.id && scenario.version === record.currentVersion && scenario.fingerprint === record.fingerprint);
-    if (cached) { startScenario(cached); return; }
+    if (cached) { setCatalogueLoading(false); startScenario(cached); return; }
     setCatalogueLoading(true);
+    let manifestResponseStatus: number | null = null;
     try {
       const response = await fetch(`/api/catalog/${encodeURIComponent(record.id)}?version=${encodeURIComponent(record.currentVersion)}`);
+      manifestResponseStatus = response.status;
       const item = await readJsonResponse<unknown>(response);
       if (!isRecord(item) || !isRecord(item.payload) || item.payload.kind !== "playable-scenario-v1") throw new Error("Published manifest unavailable");
       const scenario = normalizePlayableScenario(item.payload.scenario);
       if (scenario.caseId !== record.id || scenario.version !== record.currentVersion || scenario.fingerprint !== record.fingerprint || playableFingerprint(scenario) !== scenario.fingerprint) throw new Error("Published manifest identity mismatch");
+      if (launchRequestVersion !== catalogueLaunchRef.current) return;
       setCatalogueScenarios((current) => {
         const withoutVersion = current.filter((existing) => existing.caseId !== scenario.caseId || existing.version !== scenario.version);
         return [...withoutVersion, scenario].sort((left, right) => left.order - right.order);
       });
       startScenario(scenario);
     } catch {
+      if (launchRequestVersion !== catalogueLaunchRef.current) return;
+      if (mayUseBundledCatalogueFallback(manifestResponseStatus)) {
+        try {
+          const { scenarios: bundledScenarios } = await import("./scenarios");
+          if (launchRequestVersion !== catalogueLaunchRef.current) return;
+          const fallback = bundledScenarios.find((scenario) => scenario.caseId === record.id && scenario.version === record.currentVersion && scenario.fingerprint === record.fingerprint);
+          if (fallback && playableFingerprint(fallback) === fallback.fingerprint) {
+            setCatalogueScenarios((current) => [...current.filter((scenario) => scenario.caseId !== fallback.caseId || scenario.version !== fallback.version), fallback].sort((left, right) => left.order - right.order));
+            startScenario(fallback);
+            showSessionNotice(locale === "en" ? "The network manifest was unavailable; the exact bundled version was opened." : "Сетевой манифест недоступен; открыта точная встроенная версия.");
+            return;
+          }
+        } catch {
+          // Keep the case closed when neither the versioned API nor the exact
+          // integrity-checked bundled compatibility copy is available.
+        }
+      }
       showSessionNotice(locale === "en" ? "This exact published case version could not be loaded." : "Не удалось загрузить точную опубликованную версию кейса.");
     } finally {
-      setCatalogueLoading(false);
+      if (launchRequestVersion === catalogueLaunchRef.current) setCatalogueLoading(false);
     }
   }
   async function dispatchDecision() {
@@ -569,8 +646,7 @@ export default function JurisApp() {
     }
     const updated = { ...metrics };
     (Object.keys(selectedOption.effects) as MetricKey[]).forEach((key) => { updated[key] = clamp(updated[key] + (selectedOption.effects[key] ?? 0)); });
-    const legacyMode = legacyScenarios.some((item) => item.caseId === activeScenario.caseId && item.version === activeScenario.version && item.fingerprint === activeScenario.fingerprint);
-    const timing = legacyMode
+    const timing = legacyTimingMode
       ? resolveLegacyDecisionTiming(activeScenario, caseMinute, selectedOption, completedDeadlineIds, missedDeadlineIds)
       : resolveDecisionTiming(activeScenario, caseMinute, selectedOption, completedDeadlineIds, missedDeadlineIds);
     if (timing.newlyMissedDeadlineIds.length > 0) {
@@ -711,20 +787,9 @@ export default function JurisApp() {
         const scenarioFile = parsed.scenario;
         const playthroughFile = parsed.playthrough;
 
-        let importedScenario = catalogueScenarios.find((scenario) => scenario.id === scenarioFile.id && scenario.caseId === scenarioFile.caseId && scenario.version === scenarioFile.contentVersion && scenario.fingerprint === scenarioFile.fingerprint)
-          ?? scenarios.find((scenario) => scenario.id === scenarioFile.id && scenario.caseId === scenarioFile.caseId && scenario.version === scenarioFile.contentVersion && scenario.fingerprint === scenarioFile.fingerprint)
-          ?? legacyScenarios.find((scenario) => scenario.id === scenarioFile.id && scenario.caseId === scenarioFile.caseId && scenario.version === scenarioFile.contentVersion && scenario.fingerprint === scenarioFile.fingerprint);
-        if (!importedScenario && typeof scenarioFile.caseId === "string" && typeof scenarioFile.contentVersion === "string") {
-          const response = await fetch(`/api/catalog/${encodeURIComponent(scenarioFile.caseId)}?version=${encodeURIComponent(scenarioFile.contentVersion)}`);
-          const historical = await readJsonResponse<unknown>(response);
-          if (isRecord(historical) && isRecord(historical.payload) && historical.payload.kind === "playable-scenario-v1") {
-            const candidate = normalizePlayableScenario(historical.payload.scenario);
-            if (candidate.id === scenarioFile.id && candidate.caseId === scenarioFile.caseId && candidate.version === scenarioFile.contentVersion && candidate.fingerprint === scenarioFile.fingerprint && historical.fingerprint === candidate.fingerprint && playableFingerprint(candidate) === candidate.fingerprint) importedScenario = candidate;
-          }
-        }
-        if (!importedScenario) {
-          throw new Error("Scenario identity or published content version is unavailable");
-        }
+        const resolvedScenario = await resolvePlayedCaseScenario({ id: scenarioFile.id, caseId: scenarioFile.caseId, contentVersion: scenarioFile.contentVersion, fingerprint: scenarioFile.fingerprint }, catalogueScenarios);
+        const importedScenario = resolvedScenario.scenario;
+        const legacyMode = resolvedScenario.legacyTiming;
 
         const importedDecisions = playthroughFile.decisions;
         const importedStatus = playthroughFile.status;
@@ -739,8 +804,6 @@ export default function JurisApp() {
         const restoredMissedDeadlines: string[] = [];
         let restoredMinute = importedScenario.initialClockMinute;
         let restoredStageId = importedScenario.initialStageId;
-        const legacyMode = legacyScenarios.some((item) => item.caseId === importedScenario.caseId && item.version === importedScenario.version && item.fingerprint === importedScenario.fingerprint);
-
         importedDecisions.forEach((decision, index) => {
           if (!isRecord(decision) || decision.sequence !== index + 1) throw new Error("Invalid decision sequence");
           const sourceStage = importedScenario.stages.find((item) => item.id === restoredStageId);
@@ -779,6 +842,7 @@ export default function JurisApp() {
         setServerPlaySession(null);
         setPlaySessionSync("local");
         setPlaySessionBusy(false);
+        setLegacyTimingMode(legacyMode);
         setStageIndex(restoredStageIndex);
         setMetrics(restoredMetrics);
         setDecisionLog(restoredLog);
@@ -822,18 +886,11 @@ export default function JurisApp() {
       ["decision-1", "outcome-1"], ["decision-1", "outcome-2"],
     ]);
     const createdAt = new Date().toISOString();
-    let rebuilt: StudioDraft = { caseId: slugifyCaseId(shortTitle), version: "1.0.0", parent: null, title: shortTitle, jurisdiction: "Set jurisdiction", role: "Scenario counsel", premise: clean, classification: { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }, nodes, links, editHistory: draftRef.current.editHistory, updatedAt: createdAt };
+    let rebuilt: StudioDraft = { caseId: slugifyCaseId(shortTitle), version: "1.0.0", parent: null, title: shortTitle, jurisdiction: "Set jurisdiction", role: "Scenario counsel", premise: clean, classification: { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }, nodes, links, editHistory: [], updatedAt: createdAt };
     rebuilt = appendStudioHistory(rebuilt, { role: "author", source: "prompt", action: "prompt_submitted", message: clean }, createdAt);
     rebuilt = appendStudioHistory(rebuilt, { role: "studio", source: "prompt", action: "graph_rebuilt", message: locale === "en" ? `Built a new ${nodes.length}-node graph from this prompt. The previous draft was replaced by explicit author request.` : `По явной команде автора построен новый граф из ${nodes.length} узлов; предыдущий черновик заменён.` }, createdAt);
-    commitStudioDraft(rebuilt, locale === "en" ? "Built a new graph from prompt" : "Новый граф построен из промпта", "prompt", createdAt);
-    setStudioPrivate(false);
-    setStudioCustomCaseId(null);
-    setStudioCanManagePrivacy(true);
-    setStudioServerFingerprint(null);
-    setStudioCanDuplicate(true);
-    setStudioCopyProtectionLocked(false);
+    enterNewLocalDraft(rebuilt, "decision-1");
     setPrompt("");
-    setSelectedNodeId("decision-1");
   }
   function applyPromptIteration() {
     const clean = prompt.trim();
@@ -846,13 +903,16 @@ export default function JurisApp() {
     setPrompt("");
   }
   function saveDraft() {
-    if (!studioCanDuplicate) {
-      showSessionNotice(locale === "en" ? "Inspection-only access cannot be saved to this device." : "Кейс с доступом только для просмотра нельзя сохранить на устройство.");
+    if (!studioStorageScope) {
+      showSessionNotice(locale === "en" ? "Device storage is unavailable until the account boundary is verified." : "Локальное сохранение недоступно, пока не подтверждён контур аккаунта.");
+      return;
+    }
+    if (!mayPersistStudioDraftOnDevice({ canDuplicate: studioCanDuplicate, customCaseId: studioCustomCaseId, isPrivate: studioPrivate, draft: draftRef.current })) {
+      showSessionNotice(locale === "en" ? "Private, protected and workspace cases stay in the signed-in workspace and are never cached in shared browser storage." : "Приватные, защищённые и workspace-кейсы хранятся только в авторизованном workspace и не кэшируются в общем хранилище браузера.");
       return;
     }
     const next = { ...draftRef.current, updatedAt: new Date().toISOString() }; syncStudioDraft(next);
-    window.localStorage.setItem("genesis-juris-studio-draft", JSON.stringify(next));
-    window.localStorage.setItem("genesis-juris-studio-private", String(studioPrivate));
+    window.localStorage.setItem(studioDeviceDraftKey(studioStorageScope), JSON.stringify(deviceDraftEnvelope(studioStorageScope, next)));
     setSavedFlash(true);
     window.setTimeout(() => setSavedFlash(false), 2200);
   }
@@ -1013,8 +1073,7 @@ export default function JurisApp() {
     const taxPrompt = "A Belgian-headed group is considering a cross-border IP and financing structure involving Belgium, the Netherlands and the UAE. Model the cash flows, treaty access, beneficial ownership, transfer pricing, substance, CFC, permanent establishment, withholding tax, DAC6 and Pillar Two implications. Require documented commercial purpose and compare compliant alternatives; exclude concealment, sham arrangements and tax evasion.";
     setPrompt(taxPrompt);
     const createdAt = new Date().toISOString();
-    commitStudioDraft((current) => {
-      let template: StudioDraft = {
+    let template: StudioDraft = {
       caseId: "cross_border_ip_financing_review", version: "1.0.0", parent: null,
       title: "Cross-border IP & Financing Review", jurisdiction: "Belgium · EU · International",
       role: "International tax counsel", premise: taxPrompt,
@@ -1038,20 +1097,12 @@ export default function JurisApp() {
         ["tax_rule-1", "evidence-1"], ["evidence-1", "decision-1"], ["decision-1", "outcome-1"],
         ["decision-1", "outcome-2"],
       ]),
-      editHistory: current.editHistory,
-      };
-      template = appendStudioHistory(template, { role: "author", source: "prompt", action: "prompt_submitted", message: taxPrompt }, createdAt);
-      template = appendStudioHistory(template, { role: "studio", source: "prompt", action: "prompt_applied", message: "Loaded the compliance-first international tax graph. Future iterations preserve its entities, flows, rules and manual edits." }, createdAt);
-      return template;
-    }, locale === "en" ? "Loaded the international tax template" : "Загружен международный налоговый шаблон", "prompt", createdAt);
+      editHistory: [],
+    };
+    template = appendStudioHistory(template, { role: "author", source: "prompt", action: "prompt_submitted", message: taxPrompt }, createdAt);
+    template = appendStudioHistory(template, { role: "studio", source: "prompt", action: "prompt_applied", message: "Loaded the compliance-first international tax graph. Future iterations preserve its entities, flows, rules and manual edits." }, createdAt);
+    enterNewLocalDraft(template, "decision-1");
     setPrompt("");
-    setStudioPrivate(false);
-    setStudioCustomCaseId(null);
-    setStudioCanManagePrivacy(true);
-    setStudioServerFingerprint(null);
-    setStudioCanDuplicate(true);
-    setStudioCopyProtectionLocked(false);
-    setSelectedNodeId("decision-1");
     navigate("studio");
   }
   function deleteNode() {
@@ -1092,8 +1143,19 @@ export default function JurisApp() {
   }
   function resetStudioDraft() {
     const createdAt = new Date().toISOString();
-    commitStudioDraft((current) => appendStudioHistory({ ...structuredClone(defaultDraft), editHistory: current.editHistory, updatedAt: createdAt }, { role: "studio", source: "visual", action: "graph_rebuilt", message: locale === "en" ? "Reset the canvas to the reversible starter case." : "Холст сброшен к обратимому начальному кейсу." }, createdAt), locale === "en" ? "Reset to the starter case" : "Сброс к начальному кейсу", "visual", createdAt);
+    const clean = appendStudioHistory({ ...structuredClone(defaultDraft), updatedAt: createdAt }, { role: "studio", source: "visual", action: "graph_rebuilt", message: locale === "en" ? "Started a clean local draft from the starter case." : "Создан чистый локальный черновик из начального кейса." }, createdAt);
+    enterNewLocalDraft(clean, "decision-1");
     setPrompt("");
+  }
+  function purgeLocalStudioState() {
+    studioChangedBeforeRestoreRef.current = true;
+    if (studioStorageScope) window.localStorage.removeItem(studioDeviceDraftKey(studioStorageScope));
+    const clean = structuredClone(defaultDraft);
+    const cleanTimeline = emptyStudioTimeline();
+    draftRef.current = clean;
+    studioTimelineRef.current = cleanTimeline;
+    setDraftState(clean);
+    setStudioTimelineState(cleanTimeline);
     setStudioPrivate(false);
     setStudioCustomCaseId(null);
     setStudioCanManagePrivacy(true);
@@ -1114,11 +1176,11 @@ export default function JurisApp() {
           <span><b>GENESIS: JURIS</b><small><strong>CODEX</strong> · LEGAL SCENARIO SYSTEM</small></span>
         </button>
         <nav className="main-nav" aria-label="Primary navigation">
-          <button className={view === "library" ? "active" : ""} onClick={() => navigate("library")}><Icon name="library" />{text.library}</button>
-          <button className={view === "play" ? "active" : ""} onClick={() => activeScenario ? navigate("play") : void launchCatalogueCase(featuredRecord)}><Icon name="play" />{text.play}</button>
-          <button className={view === "studio" ? "active" : ""} onClick={() => navigate("studio")}><Icon name="studio" />{text.studio}<span className="nav-new">LAB</span></button>
-          <button className={view === "community" ? "active" : ""} onClick={() => navigate("community")}><Icon name="globe" />{text.community}</button>
-          <button className={view === "help" ? "active" : ""} onClick={() => navigate("help")}><Icon name="file" />{text.help}</button>
+          <button className={view === "library" ? "active" : ""} aria-current={view === "library" ? "page" : undefined} onClick={() => navigate("library")}><Icon name="library" />{text.library}</button>
+          <button className={view === "play" ? "active" : ""} aria-current={view === "play" ? "page" : undefined} onClick={() => activeScenario ? navigate("play") : void launchCatalogueCase(featuredRecord)}><Icon name="play" />{text.play}</button>
+          <button className={view === "studio" ? "active" : ""} aria-current={view === "studio" ? "page" : undefined} onClick={() => navigate("studio")}><Icon name="studio" />{text.studio}<span className="nav-new">LAB</span></button>
+          <button className={view === "community" ? "active" : ""} aria-current={view === "community" ? "page" : undefined} onClick={() => navigate("community")}><Icon name="globe" />{text.community}</button>
+          <button className={view === "help" ? "active" : ""} aria-current={view === "help" ? "page" : undefined} onClick={() => navigate("help")}><Icon name="file" />{text.help}</button>
         </nav>
         <div className="top-actions">
           <input
@@ -1140,9 +1202,9 @@ export default function JurisApp() {
       </header>
 
       {view === "library" && <LibraryView locale={locale} text={text} records={catalogueRecords} loadedScenarios={catalogueScenarios} featuredRecord={featuredRecord} featuredScenario={featured} setFeaturedId={setFeaturedId} launchCase={(record) => void launchCatalogueCase(record)} requestFeedback={setFeedbackTarget} openTaxTemplate={loadTaxTemplate} searchCatalogue={refreshCatalogue} nextCursor={catalogueNextCursor} total={catalogueTotal} loading={catalogueLoading} error={catalogueError} />}
-      {view === "play" && activeScenario && stage && <PlayView locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} decisionLog={decisionLog} caseMinute={caseMinute} actionUseCounts={actionUseCounts} completedDeadlineIds={completedDeadlineIds} missedDeadlineIds={missedDeadlineIds} dossierRef={dossierRef} setDossierRef={setDossierRef} setSelectedOption={setSelectedOption} outcome={outcome} sessionSync={playSessionSync} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario)} returnLibrary={() => navigate("library")} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })} />}
+      {view === "play" && activeScenario && stage && <PlayView locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} decisionLog={decisionLog} caseMinute={caseMinute} actionUseCounts={actionUseCounts} completedDeadlineIds={completedDeadlineIds} missedDeadlineIds={missedDeadlineIds} dossierRef={dossierRef} setDossierRef={setDossierRef} setSelectedOption={setSelectedOption} outcome={outcome} sessionSync={playSessionSync} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario, { legacyTiming: legacyTimingMode })} returnLibrary={() => navigate("library")} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })} />}
       {view === "studio" && <StudioView locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate} />}
-      {view === "community" && <CommunityView locale={locale} cases={catalogueRecords} openCustomCase={openWorkspaceCustomCase} refreshCatalogue={() => refreshCatalogue({ force: true })} />}
+      {view === "community" && <CommunityView locale={locale} cases={catalogueRecords} openCustomCase={openWorkspaceCustomCase} refreshCatalogue={() => refreshCatalogue({ force: true })} clearDeviceDraft={purgeLocalStudioState} />}
       {view === "help" && <HelpView locale={locale} openCommunity={() => navigate("community")} openStudio={() => navigate("studio")} />}
       {(selectedOption || resultOption) && activeScenario && stage && <DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} busy={playSessionBusy} close={() => { if (!playSessionBusy) { setSelectedOption(null); setResultOption(null); } }} dispatch={dispatchDecision} advance={advanceStage} finalStage={Boolean(activeScenario.stages.find((item) => item.id === (selectedOption ?? resultOption)?.nextStageId)?.terminal)} />}
       {sessionNotice && <div className="session-toast" role="status"><Icon name="check" />{sessionNotice}</div>}
@@ -1166,28 +1228,16 @@ const fallbackCaseTaxonomy: Record<string, CaseMeta> = {
   us_environmental_desert_water_001: { practice: "Environmental mass claims", difficulty: "Expert", duration: 50, tags: ["groundwater", "causation", "mass claims"], reviewLevel: "bundled_beta", authorName: "GENESIS: AI Juris", reviewerName: "Expert review pending" },
 };
 
+const fallbackCatalogueRecords: PublishedCaseSummary[] = [
+  { id: "be_commercial_failed_erp_001", currentVersion: "1.1.0", fingerprint: "sha256-2a3c1c410c8108eea6a44225589594b784eb7c5fd8e173ca564273faec695415", title: "Failed ERP Implementation", jurisdiction: "BE · Commercial", practiceArea: "Commercial disputes", sector: "Technology / implementation", difficulty: "Advanced", durationMinutes: 45, reviewLevel: "bundled_beta", authorName: "GENESIS: JURIS", reviewerName: "Expert review pending", legalAsOf: null, summary: "Asteron Systems pursues its ERP supplier after a failed implementation, while scope changes, acceptance language, causation, evidence, deadlines, and layered remedies shape the result.", tags: ["ERP", "evidence", "litigation"], updatedAt: "" },
+  { id: "be_commercial_logistics_001", currentVersion: "1.1.0", fingerprint: "sha256-6c567481bf7c79b148800226d6dc832d6e640194b7587c96b8a9f46b91fdef40", title: "Unpaid Logistics Invoices", jurisdiction: "BE · Commercial", practiceArea: "Commercial recovery", sector: "Logistics", difficulty: "Intermediate", durationMinutes: 35, reviewLevel: "bundled_beta", authorName: "GENESIS", reviewerName: "Expert review pending", legalAsOf: null, summary: "Velmont Logistics seeks recovery of unpaid freight and warehousing invoices while Orbis Retail disputes service levels, detention charges, and contractual surcharges.", tags: ["logistics", "CMR", "insolvency"], updatedAt: "" },
+  { id: "greenfire_first_72_hours", currentVersion: "0.3.0", fingerprint: "sha256-b131cace9de8bc9627e0642cc03a7ea5c9569cd536a05a6ae137ea51ce6cb279", title: "GreenFire — The First 72 Hours", jurisdiction: "NL · Corporate / Regulatory", practiceArea: "Environmental & crisis", sector: "Industrial / crisis", difficulty: "Intermediate", durationMinutes: 35, reviewLevel: "bundled_beta", authorName: "GENESIS: AI Juris", reviewerName: "Expert review pending", legalAsOf: null, summary: "An industrial fire places a chemical-storage company under simultaneous criminal, regulatory, environmental, insurance, and insolvency pressure.", tags: ["incident", "regulatory", "72h"], updatedAt: "" },
+  { id: "nl_food_safety_goldenshell_001", currentVersion: "0.2.0", fingerprint: "sha256-6ead6fc8b4f388493448d06d9e2a59b8b0efd2d0fa052c78ffaed3a133176606", title: "GoldenShell — Recall at Dawn", jurisdiction: "NL · Food safety", practiceArea: "Food safety & product recall", sector: "Food safety", difficulty: "Advanced", durationMinutes: 40, reviewLevel: "bundled_beta", authorName: "GENESIS: AI Juris", reviewerName: "Expert review pending", legalAsOf: null, summary: "A food-safety authority blocks twelve poultry farms after traces of an unauthorised pesticide are detected in eggs.", tags: ["recall", "traceability", "claims"], updatedAt: "" },
+  { id: "us_environmental_desert_water_001", currentVersion: "0.2.0", fingerprint: "sha256-67cc3c6ebc23b29940c417ef5a5692ca22c1624b2a6c9d49b18b175e5cb6c1c8", title: "Desert Water", jurisdiction: "US · Environmental", practiceArea: "Environmental mass claims", sector: "Environmental / mass claims", difficulty: "Expert", durationMinutes: 50, reviewLevel: "bundled_beta", authorName: "GENESIS: AI Juris", reviewerName: "Expert review pending", legalAsOf: null, summary: "Residents of Sundial Mesa suspect that hexavalent chromium from Caldera's cooling and compressor facility reached their wells.", tags: ["groundwater", "causation", "mass claims"], updatedAt: "" },
+];
+
 function bundledCatalogueRecords(): PublishedCaseSummary[] {
-  return scenarios.map((scenario) => {
-    const meta = fallbackCaseTaxonomy[scenario.caseId];
-    return {
-      id: scenario.caseId,
-      currentVersion: scenario.version,
-      fingerprint: scenario.fingerprint,
-      title: scenario.title.en,
-      jurisdiction: scenario.jurisdiction,
-      practiceArea: meta.practice,
-      sector: scenario.sector.en,
-      difficulty: meta.difficulty,
-      durationMinutes: meta.duration,
-      reviewLevel: meta.reviewLevel ?? "bundled_beta",
-      authorName: meta.authorName ?? "GENESIS: JURIS",
-      reviewerName: meta.reviewerName ?? "Expert review pending",
-      legalAsOf: meta.legalAsOf ?? null,
-      summary: scenario.opening.en,
-      tags: meta.tags,
-      updatedAt: meta.updatedAt ?? "",
-    };
-  });
+  return fallbackCatalogueRecords.map((record) => ({ ...record, tags: [...record.tags] }));
 }
 
 function normalizePublishedCaseSummary(value: unknown): PublishedCaseSummary {
@@ -1223,21 +1273,22 @@ function publishedRecordMatches(record: PublishedCaseSummary, filters: Catalogue
 }
 
 function summaryScenario(record: PublishedCaseSummary, index: number): Scenario {
+  const presentation = bundledCataloguePresentation[record.id];
   return {
     id: `catalogue.${record.id}.${record.currentVersion.replaceAll(".", "-")}`,
     caseId: record.id,
     order: (index + 1) * 10,
-    title: { en: record.title, ru: record.title },
-    subtitle: { en: record.summary || record.practiceArea, ru: record.summary || record.practiceArea },
+    title: { en: record.title, ru: presentation?.titleRu ?? record.title },
+    subtitle: { en: presentation?.subtitleEn ?? (record.summary || record.practiceArea), ru: presentation?.subtitleRu ?? (record.summary || record.practiceArea) },
     jurisdiction: record.jurisdiction,
     role: { en: "Scenario counsel", ru: "Юрист по сценарию" },
     version: record.currentVersion,
-    sector: { en: record.sector, ru: record.sector },
-    urgency: "standard",
+    sector: { en: record.sector, ru: presentation?.sectorRu ?? record.sector },
+    urgency: presentation?.urgency ?? "standard",
     fingerprint: record.fingerprint,
     accent: "#d2a85e",
     actors: [], materials: [], stages: [],
-    opening: { en: record.summary || "Open the exact version to load its working record.", ru: record.summary || "Откройте точную версию, чтобы загрузить материалы дела." },
+    opening: { en: record.summary || "Open the exact version to load its working record.", ru: presentation?.summaryRu ?? (record.summary || "Откройте точную версию, чтобы загрузить материалы дела.") },
     initialStageId: "", initialClockMinute: 0, deadlines: [], workflowInbox: [],
     outcomes: { strong: { en: "Strong", ru: "Сильный" }, mixed: { en: "Mixed", ru: "Смешанный" }, weak: { en: "Weak", ru: "Слабый" } },
   };
@@ -1898,7 +1949,7 @@ type CommunityCustomCaseShare = { recipientEmail: string; canReshare: boolean; g
 type CommunityCustomCaseFeedback = { id: number; category: string; rating: number; comment: string; severity: string; suggestedCorrection: string; citationUrl: string | null; contextType: string; contextId: string | null; audience: string; status: string; createdAt: string };
 type AdminCommunityUser = { email: string; displayName: string; organisation: string; licenseTier: "community" | "professional" | "enterprise"; verifiedPractitioner: boolean };
 
-function CommunityView({ locale, cases, openCustomCase, refreshCatalogue }: { locale: Locale; cases: PublishedCaseSummary[]; openCustomCase: (id: number) => void; refreshCatalogue: () => Promise<void> }) {
+function CommunityView({ locale, cases, openCustomCase, refreshCatalogue, clearDeviceDraft }: { locale: Locale; cases: PublishedCaseSummary[]; openCustomCase: (id: number) => void; refreshCatalogue: () => Promise<void>; clearDeviceDraft: () => void }) {
   const [profile, setProfile] = useState<CommunityProfile | null>(null);
   const [updates, setUpdates] = useState<CommunityUpdate[]>([]);
   const [subscriptions, setSubscriptions] = useState<string[]>([]);
@@ -2007,7 +2058,7 @@ function CommunityView({ locale, cases, openCustomCase, refreshCatalogue }: { lo
   async function deleteProfile() {
     if (!window.confirm(locale === "en" ? "Delete your profile, subscriptions, drafts and feedback? This cannot be undone." : "Удалить профиль, подписки, черновики и отзывы? Это действие необратимо.")) return;
     const response = await fetch("/api/me", { method: "DELETE" });
-    if (response.ok) { setRegistered(false); setUpdates([]); setSubscriptions([]); setSubmissions([]); setCustomCases([]); setCaseShares({}); setCaseFeedback({}); setFormError(locale === "en" ? "Stored community data deleted." : "Данные сообщества удалены."); }
+    if (response.ok) { clearDeviceDraft(); setRegistered(false); setUpdates([]); setSubscriptions([]); setSubmissions([]); setCustomCases([]); setCaseShares({}); setCaseFeedback({}); setFormError(locale === "en" ? "Stored community and device-draft data deleted." : "Данные сообщества и локальный черновик удалены."); }
   }
   if (status === "loading") return <main className="community-view page-width"><div className="community-loading">Loading professional workspace…</div></main>;
   if (status === "anonymous") return <main className="community-view page-width"><section className="community-hero"><div><span>PRACTITIONER COMMUNITY</span><h1>{locale === "en" ? "Register your professional profile" : "Зарегистрируйте профессиональный профиль"}</h1><p>{locale === "en" ? "Sign in to submit attributed case feedback, follow selected cases and receive updates matched to your jurisdiction, practice area and role." : "Войдите, чтобы отправлять авторизованные отзывы, подписываться на кейсы и получать обновления с учётом юрисдикции, практики и роли."}</p><div className="featured-actions"><a className="primary-cta" href="/signin-with-chatgpt?return_to=%2F">{locale === "en" ? "Sign in with ChatGPT" : "Войти через ChatGPT"}<Icon name="arrow"/></a><a className="secondary-cta" href="/account">{locale === "en" ? "Email & password" : "Email и пароль"}</a></div></div></section></main>;
@@ -2283,7 +2334,7 @@ function HelpView({ locale, openCommunity, openStudio }: { locale: Locale; openC
       <h2>{locale === "en" ? "Short answers" : "Короткие ответы"}</h2>
       <details open>
         <summary>{locale === "en" ? "Where is my Studio case saved?" : "Где сохраняется мой кейс Studio?"}</summary>
-        <p>{locale === "en" ? "“Save on this device” keeps a browser-local working copy and does not share it. “Save to workspace” stores the current custom case, version and visibility under your signed-in account so you can manage access and review status." : "«Сохранить на устройстве» создаёт локальную копию в браузере и никому её не передаёт. «Сохранить в workspace» сохраняет текущий custom-кейс, версию и режим видимости в вашей учётной записи, где можно управлять доступом и рецензированием."}</p>
+        <p>{locale === "en" ? "For a signed-in account, “Save on this device” is available only for a local, unprotected and non-Private draft. The browser copy is scoped to that account and cleared on sign-out; anonymous, workspace, protected and Private cases are never cached there. “Save to workspace” stores the custom case under your account for access and review management." : "Для авторизованного аккаунта «Сохранить на устройстве» доступно только для локального, незащищённого и неприватного черновика. Копия в браузере привязана к этому аккаунту и удаляется при выходе; анонимные, workspace-, защищённые и приватные кейсы там не кэшируются. «Сохранить в workspace» хранит custom-кейс в аккаунте для управления доступом и рецензированием."}</p>
       </details>
       <details>
         <summary>{locale === "en" ? "Who can see a custom case?" : "Кто видит custom-кейс?"}</summary>

@@ -266,6 +266,7 @@ test("profile deletion clears local auth data and all identity responses are no-
   assert.match(ui, /offline recovery code/);
   assert.match(ui, /trusted ChatGPT identity/);
   assert.match(ui, /never grants platform-administrator rights/);
-  assert.doesNotMatch(ui, /localStorage|sessionStorage/);
+  assert.match(ui, /localStorage\.removeItem/);
+  assert.doesNotMatch(ui, /localStorage\.(?:getItem|setItem)|sessionStorage/);
   assert.doesNotMatch(`${ui}\n${source("app/api/auth/register/route.ts")}`, /email verified|verified email/i);
 });
