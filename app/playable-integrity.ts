@@ -1,4 +1,4 @@
-import type { DecisionOption, Scenario, ScenarioStage } from "./types";
+import type { DecisionOption, MetricGuard, MetricKey, RuleComparison, Scenario, ScenarioStage } from "./types";
 import { canonicalFingerprint, isRecord } from "./case-integrity";
 import { stageClockMinute } from "./game-engine";
 
@@ -17,7 +17,7 @@ export function normalizePlayableScenario(value: unknown): Scenario {
   const role = localText(value.role, "role");
   const sector = localText(value.sector, "sector");
   const opening = localText(value.opening, "opening", 8_000);
-  if (!Array.isArray(value.stages) || value.stages.length === 0 || value.stages.length > 100) throw new Error("Invalid stages");
+  if (!Array.isArray(value.stages) || value.stages.length === 0 || value.stages.length > 200) throw new Error("Invalid stages");
   const stages = value.stages.map((stageValue) => {
     if (!isRecord(stageValue) || !Array.isArray(stageValue.options) || stageValue.options.length > 50) throw new Error("Invalid stage");
     const options = stageValue.options.map(normalizeOption);
@@ -128,7 +128,19 @@ function normalizeOption(value: unknown): DecisionOption {
   const repeatability = value.repeatability === "once" || value.repeatability === "repeatable" || value.repeatability === "limited" ? value.repeatability : undefined;
   const maxUses = optionalInteger(value.maxUses, 1, 10_000);
   if ((repeatability === "limited") !== (maxUses !== undefined)) throw new Error("Limited actions require an explicit use limit");
-  return { id: identifier(value.id, "option ID"), label: localText(value.label, "option label"), detail: localText(value.detail, "option detail", 8_000), result: localText(value.result, "option result", 8_000), cost: integer(value.cost, 0, 1_000_000_000), minutes: integer(value.minutes, 0, 100_000_000), effects, nextStageId: optionalString(value.nextStageId, 160), completionDayOffset, completionMinuteOfDay, repeatability, maxUses };
+  const guards = value.guards === undefined ? undefined : normalizeMetricGuards(value.guards);
+  return { id: identifier(value.id, "option ID"), label: localText(value.label, "option label"), detail: localText(value.detail, "option detail", 8_000), result: localText(value.result, "option result", 8_000), cost: integer(value.cost, 0, 1_000_000_000), minutes: integer(value.minutes, 0, 100_000_000), effects, nextStageId: optionalString(value.nextStageId, 160), completionDayOffset, completionMinuteOfDay, repeatability, maxUses, guards };
+}
+function normalizeMetricGuards(value: unknown): MetricGuard[] {
+  if (!Array.isArray(value) || value.length > 8) throw new Error("Invalid metric guards");
+  const metrics = new Set<MetricKey>(["position", "evidence", "trust", "exposure"]);
+  const comparisons = new Set<RuleComparison>(["gte", "lte", "eq"]);
+  return value.map((guard) => {
+    if (!isRecord(guard) || typeof guard.metric !== "string" || !metrics.has(guard.metric as MetricKey)) throw new Error("Invalid metric guard");
+    if (typeof guard.comparison !== "string" || !comparisons.has(guard.comparison as RuleComparison)) throw new Error("Invalid metric guard comparison");
+    if (typeof guard.value !== "number" || !Number.isFinite(guard.value) || guard.value < 0 || guard.value > 100) throw new Error("Invalid metric guard threshold");
+    return { metric: guard.metric as MetricKey, comparison: guard.comparison as RuleComparison, value: guard.value };
+  });
 }
 function localText(value: unknown, label: string, max = 2_000) { if (!isRecord(value)) throw new Error(`Invalid ${label}`); return { en: string(value.en, label, max), ru: string(value.ru, label, max) }; }
 function string(value: unknown, label: string, max: number) { if (typeof value !== "string" || !value.trim() || value.length > max) throw new Error(`Invalid ${label}`); return value.trim(); }

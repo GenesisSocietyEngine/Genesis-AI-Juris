@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const identity = await getChatGPTUser();
-  if (!identity || !isPlatformAdmin(identity.email)) return Response.json({ error: "Administrator access is required." }, { status: 403 });
+  if (!identity || !isPlatformAdmin(identity)) return Response.json({ error: "Administrator access is required." }, { status: 403 });
   const idParam = new URL(request.url).searchParams.get("id");
   if (idParam) {
     const id = Number(idParam);
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   if (!isSameOriginMutation(request)) return Response.json({ error: "Cross-site mutation rejected." }, { status: 403 });
   const identity = await getChatGPTUser();
-  if (!identity || !isPlatformAdmin(identity.email)) return Response.json({ error: "Administrator access is required." }, { status: 403 });
+  if (!identity || !isPlatformAdmin(identity)) return Response.json({ error: "Administrator access is required." }, { status: 403 });
   const payload = await readJsonObject(request, 48_000);
   const id = Number(payload?.id);
   const status = payload?.status;

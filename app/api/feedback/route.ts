@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   let feedbackStatus = "new";
   if (source === "studio") {
     const viewerEmail = normalizeEmail(identity.email);
-    const admin = isPlatformAdmin(viewerEmail);
+    const admin = isPlatformAdmin(identity);
     const candidates = await db.select({ customCase: customCases, ownerEmail: caseDrafts.userEmail }).from(caseDrafts).innerJoin(customCases, eq(customCases.id, caseDrafts.customCaseId)).where(and(
       eq(caseDrafts.caseId, caseId), eq(caseDrafts.version, caseVersion), eq(caseDrafts.fingerprint, studioFingerprint),
     ));

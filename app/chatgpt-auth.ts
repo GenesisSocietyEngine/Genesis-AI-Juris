@@ -1,10 +1,12 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { getLocalSessionUser } from "./local-auth";
 
 export type ChatGPTUser = {
   displayName: string;
   email: string;
   fullName: string | null;
+  authSource: "chatgpt" | "local";
 };
 
 const USER_EMAIL_HEADER = "oai-authenticated-user-email";
@@ -19,20 +21,29 @@ const CALLBACK_PATH = "/callback";
 export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
   const requestHeaders = await headers();
   const email = requestHeaders.get(USER_EMAIL_HEADER);
-  if (!email) return null;
+  if (email) {
+    const encodedFullName = requestHeaders.get(USER_FULL_NAME_HEADER);
+    const fullName =
+      encodedFullName &&
+      requestHeaders.get(USER_FULL_NAME_ENCODING_HEADER) === PERCENT_ENCODED_UTF8
+        ? safeDecodeURIComponent(encodedFullName)
+        : null;
 
-  const encodedFullName = requestHeaders.get(USER_FULL_NAME_HEADER);
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get(USER_FULL_NAME_ENCODING_HEADER) === PERCENT_ENCODED_UTF8
-      ? safeDecodeURIComponent(encodedFullName)
-      : null;
+    return {
+      displayName: fullName ?? email,
+      email,
+      fullName,
+      authSource: "chatgpt",
+    };
+  }
 
-  return {
-    displayName: fullName ?? email,
-    email,
-    fullName,
-  };
+  try {
+    return await getLocalSessionUser(requestHeaders.get("cookie"));
+  } catch {
+    // A missing or unavailable local auth store must fail closed without
+    // changing the trusted ChatGPT identity path.
+    return null;
+  }
 }
 
 export async function requireChatGPTUser(

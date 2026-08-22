@@ -36,6 +36,20 @@
       "when": 1787359039380,
       "tag": "0004_petite_komodo",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1787374721373,
+      "tag": "0005_dapper_nightcrawler",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1787376690466,
+      "tag": "0006_concerned_korath",
+      "breakpoints": true
     }
   ]
 }

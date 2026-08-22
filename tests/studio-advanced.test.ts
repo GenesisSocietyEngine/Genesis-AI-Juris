@@ -87,9 +87,18 @@ test("session timeline provides exact diff, undo, redo and branch truncation", (
 
   const undo = stepStudioTimeline(timeline, "undo");
   assert.ok(undo);
-  const restored = applyStudioSnapshot(moved, undo.snapshot, at);
+  const protection = {
+    kind: "case-protection-v1" as const,
+    copyProtected: true,
+    copyPolicy: "lineage_locked" as const,
+    parentCode: null,
+    currentCode: `sha256-${"a".repeat(64)}`,
+    seal: `hmac-sha256-${"b".repeat(64)}`,
+  };
+  const restored = applyStudioSnapshot({ ...moved, protection }, undo.snapshot, at);
   assert.equal(restored.title, base.title);
   assert.equal(restored.nodes.find((node) => node.id === "actor-1")?.x, 220);
+  assert.deepEqual(restored.protection, protection, "undo must preserve the server-attested lineage lock");
   timeline = undo.timeline;
   const redo = stepStudioTimeline(timeline, "redo");
   assert.ok(redo);

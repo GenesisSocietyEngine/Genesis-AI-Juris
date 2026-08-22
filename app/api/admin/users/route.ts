@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const identity = await getChatGPTUser();
-  if (!identity || !isPlatformAdmin(identity.email)) return privateJson({ error: "Administrator access is required." }, 403);
+  if (!identity || !isPlatformAdmin(identity)) return privateJson({ error: "Administrator access is required." }, 403);
   const rows = await getDb().select({ email: users.email, displayName: users.displayName, organisation: users.organisation, licenseTier: users.licenseTier, verifiedPractitioner: users.verifiedPractitioner }).from(users).orderBy(asc(users.displayName));
   return privateJson({ users: rows });
 }
@@ -18,7 +18,7 @@ export async function GET() {
 export async function POST(request: Request) {
   if (!isSameOriginMutation(request)) return privateJson({ error: "Cross-site mutation rejected." }, 403);
   const identity = await getChatGPTUser();
-  if (!identity || !isPlatformAdmin(identity.email)) return privateJson({ error: "Administrator access is required." }, 403);
+  if (!identity || !isPlatformAdmin(identity)) return privateJson({ error: "Administrator access is required." }, 403);
   const payload = await readJsonObject(request, 12_000);
   const email = typeof payload?.email === "string" ? normalizeEmail(payload.email).slice(0, 320) : "";
   const licenseTier = normalizeLicenseTier(payload?.licenseTier);

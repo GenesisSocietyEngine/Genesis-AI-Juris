@@ -301,6 +301,15 @@ test("API sources retain server-side privacy, licence, feedback and promotion ga
   assert.match(customCases, /db\.delete\(customCaseGrants\)/);
   assert.match(customCases, /users\.licenseTier/);
   assert.match(customCases, /Cache-Control": "private, no-store"/);
+  assert.match(customCases, /const visibleWhere = admin/);
+  assert.match(customCases, /eq\(customCases\.isPrivate, false\)/);
+  assert.match(customCases, /viewerGrantExists/);
+  assert.match(customCases, /from\(customCases\)\.where\(visibleWhere\)/);
+  assert.match(customCases, /innerJoin\(customCases, eq\(customCaseGrants\.customCaseId, customCases\.id\)\)/);
+  assert.match(customCases, /selectDistinct\(\{ email: users\.email, displayName: users\.displayName \}\)/);
+  assert.doesNotMatch(customCases, /db\.select\(\)\.from\(customCases\)\.orderBy/);
+  assert.doesNotMatch(customCases, /admin \? await db\.select\(\)\.from\(customCaseGrants\)/);
+  assert.doesNotMatch(customCases, /from\(users\);/);
 
   assert.ok((adminSubmissions.match(/eq\(customCases\.isPrivate, false\)/g) ?? []).length >= 2);
   assert.ok((adminFeedback.match(/eq\(customCases\.isPrivate, false\)/g) ?? []).length >= 2);

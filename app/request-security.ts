@@ -10,6 +10,17 @@ export function isSameOriginMutation(request: Request) {
   }
 }
 
+export function isSameOriginCredentialMutation(request: Request) {
+  if (request.headers.get("sec-fetch-site") !== "same-origin") return false;
+  const origin = request.headers.get("origin");
+  if (!origin) return false;
+  try {
+    return new URL(origin).origin === new URL(request.url).origin;
+  } catch {
+    return false;
+  }
+}
+
 export async function readJsonObject(request: Request, maxBytes = 32_768): Promise<Record<string, unknown> | null> {
   const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
   if (!contentType.startsWith("application/json")) return null;

@@ -1,4 +1,5 @@
 import { caseFingerprint } from "./case-integrity";
+import { stageClockMinute } from "./game-engine";
 import { normalizePlayableScenario, playableFingerprint } from "./playable-integrity";
 import type { LocalText, MetricKey, Scenario, StudioDraft, StudioNode, StudioNodeType } from "./types";
 
@@ -122,32 +123,35 @@ export function compileStudioDraft(draft: StudioDraft): StudioCompileResult {
     const links = draft.links.filter((link) => link.from === node.id && reachable.has(link.to));
     const options = node.type === "outcome" ? [] : links.map((link) => {
       const target = nodes.get(link.to)!;
+      const rule = link.rule;
       return {
         id: optionId(link.id),
-        label: localNodeText(target.title),
-        detail: localNodeText(target.detail || `Advance from ${node.title} to ${target.title}.`),
-        result: localNodeText(target.detail || `${target.title} is now the active part of the matter.`),
-        cost: target.type === "evidence" || target.type === "tax_rule" ? 1_500 : 0,
-        minutes: target.type === "deadline" ? 30 : 20,
-        effects: effectsForTarget(target, outcomeIndex.get(target.id) ?? 0, outcomes.length),
+        label: localNodeText(rule?.label || target.title),
+        detail: localNodeText(rule?.detail || target.detail || `Advance from ${node.title} to ${target.title}.`),
+        result: localNodeText(rule?.result || target.detail || `${target.title} is now the active part of the matter.`),
+        cost: rule?.cost ?? (target.type === "evidence" || target.type === "tax_rule" ? 1_500 : 0),
+        minutes: rule?.minutes ?? (target.type === "deadline" ? 30 : 20),
+        effects: rule?.effects ?? effectsForTarget(target, outcomeIndex.get(target.id) ?? 0, outcomes.length),
         nextStageId: stageId(target.id),
-        repeatability: "once" as const,
+        repeatability: rule?.repeatability ?? "once" as const,
+        maxUses: rule?.repeatability === "limited" ? rule.maxUses : undefined,
+        guards: rule?.guards,
       };
     });
     const ownMaterial = `material-${node.id}`;
     return {
       id: stageId(node.id),
-      day: index + 1,
-      time: "09:00",
+      day: node.runtime?.day ?? index + 1,
+      time: node.runtime?.time ?? "09:00",
       phase: typeLabels[node.type],
       headline: localNodeText(node.title),
       brief: localNodeText(node.detail || draft.premise),
       source: { en: `Compiled from ${typeLabels[node.type].en.toLowerCase()} node`, ru: `Собрано из узла «${typeLabels[node.type].ru.toLowerCase()}»` },
-      pressure: node.type === "deadline" ? { en: "A procedural clock is active.", ru: "Идёт процессуальный срок." } : undefined,
+      pressure: node.runtime?.pressure ? localNodeText(node.runtime.pressure) : node.type === "deadline" ? { en: "A procedural clock is active.", ru: "Идёт процессуальный срок." } : undefined,
       materialRefs: materialRefs.has(ownMaterial) ? [ownMaterial] : [defaultMaterial],
       options,
       terminal: node.type === "outcome",
-      terminalOutcome: node.type === "outcome" ? outcomeClass(outcomeIndex.get(node.id) ?? 0, outcomes.length) : undefined,
+      terminalOutcome: node.type === "outcome" ? node.runtime?.terminalOutcome ?? outcomeClass(outcomeIndex.get(node.id) ?? 0, outcomes.length) : undefined,
     };
   });
 
@@ -183,12 +187,16 @@ export function compileStudioDraft(draft: StudioDraft): StudioCompileResult {
   const deadlines = deadlineNodes.map((node) => {
     const stage = stages.find((item) => item.id === stageId(node.id))!;
     const completionActions = stage.options.map((option) => option.id);
+    const deadlineDay = node.runtime?.deadlineDay ?? stage.day;
+    const deadlineTime = node.runtime?.deadlineTime ?? "12:00";
+    const [deadlineHour, deadlineMinute] = deadlineTime.split(":").map(Number);
+    const explicitFallback = node.runtime?.missedOutcomeNodeId ? nodes.get(node.runtime.missedOutcomeNodeId) : undefined;
     return {
       id: `deadline-${node.id}`,
       title: localNodeText(node.title),
-      dueAtMinute: (stage.day - 1) * 1_440 + 12 * 60,
+      dueAtMinute: (deadlineDay - 1) * 1_440 + deadlineHour * 60 + deadlineMinute,
       completionActions,
-      missedNextStageId: weakestOutcome && weakestOutcome.id !== node.id ? stageId(weakestOutcome.id) : undefined,
+      missedNextStageId: explicitFallback?.type === "outcome" ? stageId(explicitFallback.id) : weakestOutcome && weakestOutcome.id !== node.id ? stageId(weakestOutcome.id) : undefined,
     };
   });
 
@@ -196,6 +204,7 @@ export function compileStudioDraft(draft: StudioDraft): StudioCompileResult {
   const middleOutcome = outcomes[Math.floor((outcomes.length - 1) / 2)] ?? firstOutcome;
   const lastOutcome = outcomes.at(-1) ?? firstOutcome;
   const initialStageId = roots.length > 1 ? "studio-root" : stageId(roots[0].id);
+  const initialClockMinute = stageClockMinute(stages.find((stage) => stage.id === initialStageId)!);
   const base: Scenario = {
     id: `${draft.caseId}.studio.${draft.version.replaceAll(".", "-")}`,
     caseId: draft.caseId,
@@ -215,7 +224,7 @@ export function compileStudioDraft(draft: StudioDraft): StudioCompileResult {
     stages,
     opening: localNodeText(draft.premise),
     initialStageId,
-    initialClockMinute: 8 * 60 + 30,
+    initialClockMinute,
     deadlines,
     workflowInbox: [],
     outcomes: {

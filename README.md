@@ -6,13 +6,13 @@ The hosted professional beta is available at <https://genesis-juris-web.maxim-ha
 
 ## Product scope
 
-- ChatGPT sign-in and professional profiles with opt-in communications controls.
-- Structured case library with jurisdiction, practice-area, difficulty, duration, tags, version and legal-as-of filters.
-- Playable branching cases with deterministic clocks, deadlines, consequences and debrief metrics.
+- Trusted ChatGPT identity plus an optional local email/password credential, offline recovery and professional profiles with opt-in communications controls.
+- Paginated metadata library with server-side search/classification and lazy loading of immutable versioned manifests.
+- Playable branching cases with deterministic rules, clocks, deadlines, consequences, resumable authoritative sessions and debrief metrics.
 - Case Studio workspace for visual authoring, graph validation, draft submission and case/node feedback.
 - Central publication and addressed release updates with immutable version lineage and read receipts.
 - Moderated practitioner feedback tied to an exact case version and fingerprint.
-- Tax / offshore tax-engineering template restricted to lawful planning and requiring jurisdiction, purpose, legal-as-of date and HTTPS source provenance.
+- Tax / offshore tax-engineering template restricted to lawful planning and requiring source provenance plus a named, structured publication attestation.
 
 Bundled cases are labelled as professional beta material unless an independent verified practitioner review is attached to the exact submitted fingerprint. The product is an educational simulation platform, not legal or tax advice.
 
@@ -20,22 +20,30 @@ Bundled cases are labelled as professional beta material unless an independent v
 
 ```mermaid
 flowchart TD
-    UI["Next.js / React UI"] --> API["Server API routes"]
-    API --> AUTH["Dispatch-owned ChatGPT identity"]
+    UI["Next.js / React UI"] --> META["Paginated catalogue metadata"]
+    UI --> MANIFEST["Lazy immutable manifest"]
+    UI --> API["Authenticated API routes"]
+    API --> AUTH["ChatGPT identity / hashed local session"]
     API --> D1["Cloudflare D1"]
-    UI --> ENGINE["Deterministic case engine"]
+    UI --> PREVIEW["Deterministic browser preview"]
+    API --> SESSION["Authoritative play-session engine"]
+    SESSION --> D1
     API --> GATES["Integrity and publication gates"]
     GATES --> D1
 ```
 
-The Cloudflare Worker adds response security headers and private/no-store caching for non-public APIs. Write routes enforce same-origin JSON mutations, bounded streaming bodies, server-side authorization and canonical SHA-256 fingerprints.
+The Cloudflare Worker adds CSP, HSTS and browser hardening headers while preserving public immutable caching and private/no-store APIs. Write routes enforce same-origin JSON mutations, bounded streaming bodies, server-side authorization and canonical SHA-256 fingerprints. See [the v12 architecture and trust boundaries](docs/ARCHITECTURE.md).
 
 ### Core data model
 
 - `users`: profile, locale, practice areas and explicit communication preferences.
+- `local_accounts`, `auth_sessions`, `account_recovery_codes`: email-bound password credentials, hashed opaque sessions and one-time offline recovery. Passwords and bearer secrets are never stored in plaintext.
+- `auth_rate_limit_events`, `auth_audit_events`: credential-abuse throttling and a security-event trail; `platform_secrets` holds server-only cryptographic material.
 - `cases`: current catalogue metadata and current immutable content identity.
 - `case_versions`: payload history, parent identity, studio fingerprint and publication record.
+- `custom_cases`, `custom_case_grants`: owner envelope, privacy state and explicit restricted-case grants.
 - `case_drafts`: per-user Studio workspace and independent review evidence.
+- `play_sessions`, `play_events`: revisioned authoritative runtime state and idempotent decision history.
 - `case_feedback`: exact-version feedback, context, severity, citations and moderation state.
 - `case_subscriptions`, `updates`, `update_reads`: addressed release communication.
 - `audit_events`: privileged publication and moderation trail.
@@ -44,13 +52,17 @@ Migrations live in `drizzle/`. A fresh database must apply them in numeric order
 
 ## Integrity and governance
 
-- Playable manifests are normalized and validated before use or publication.
+- Central publication deterministically compiles the normalized Studio graph on the server; client previews cannot replace the authoritative manifest.
+- Rules DSL v1 uses bounded declarative node runtime fields, action effects, guards and repeatability without authored code execution.
+- A saved JSON artifact can carry `case-protection-v1`: the server binds its current-version code, parent code, Studio fingerprint and copy policy with HMAC-SHA256. A locked parent makes all descendants locked; recipients receive inspection-only product access. This is tamper-evident lineage and authorization, not encryption or DRM.
 - Option IDs are globally unique; stages, clocks, timing and deadline routes are checked for ambiguity or dead ends.
 - Current bundled content and retained beta versions have stable fingerprints.
 - A case version can have only one child for a parent identity and only one root, preventing concurrent publication forks.
-- Elevated review labels require accepted review evidence for the exact Studio fingerprint.
+- Studio saves use optimistic fingerprint concurrency and fail stale writers with `409` rather than silently overwriting another tab.
+- Elevated review labels require timestamped accepted review evidence bound to the exact Studio and playable fingerprints.
 - An `expert` label additionally requires an independent verified practitioner; the author, publisher and reviewer cannot collapse into the same identity.
-- Tax cases are fail-closed to `complianceOnly`, `lawful_planning` purpose and complete publication metadata.
+- Tax cases are fail-closed to lawful/compliance scope, complete publication metadata and a named structured attestation bound to both fingerprints.
+- `Private` custom cases are owner-only at the application API; this is authorization, not encryption or DRM.
 
 ## Local development
 
@@ -79,7 +91,11 @@ git diff --check
 
 Sites dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt` and `/callback`, including OAuth cookies and trusted identity-header injection. `app/chatgpt-auth.ts` exposes safe helpers for optional sign-in and same-origin return paths.
 
-The public catalogue is anonymous-compatible. Profiles, feedback, subscriptions, Studio submissions and administration use server-side identity. SIWC establishes identity but does not itself confer administrator status; privileged routes additionally require the runtime `GENESIS_ADMIN_EMAILS` allowlist.
+After a trusted ChatGPT identity confirms the account email once, `/account` can enroll a local password. The password policy is 10–128 characters with at least one uppercase letter, one digit and one special character. The database stores PBKDF2-HMAC-SHA256 output (600,000 iterations) and a per-account random salt, never the password. Local sessions and recovery codes are high-entropy opaque values stored only as SHA-256 hashes; reset/recovery rotates the offline code and revokes earlier sessions. Because no transactional mail provider is bound, the current forgot-password paths are the display-once offline recovery code or the same trusted ChatGPT identity—not an unsafe unverified email reset.
+
+The public catalogue is anonymous-compatible. Profiles, feedback, subscriptions and Studio submissions use server-side identity. Local identity can exercise the same email-based case ACL after enrollment proved by a trusted ChatGPT identity, but never confers platform-administrator status. Administration requires both the trusted ChatGPT identity source and the runtime `GENESIS_ADMIN_EMAILS` allowlist.
+
+See [the local-authentication threat model and lifecycle](docs/AUTHENTICATION.md) for storage, recovery, deletion and operational limits.
 
 ## Deployment
 

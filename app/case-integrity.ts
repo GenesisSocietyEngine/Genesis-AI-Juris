@@ -1,10 +1,13 @@
-import type { StudioDraft, StudioEditAction, StudioEditEntry, StudioLink, StudioNode, StudioNodeType, TaxCasePurpose } from "./types";
+import type { MetricGuard, MetricKey, RuleComparison, StudioDraft, StudioEditAction, StudioEditEntry, StudioLink, StudioNode, StudioNodeType, TaxCasePurpose } from "./types";
+import { normalizeUntrustedCaseProtection } from "./case-protection";
 import { STUDIO_HISTORY_LIMIT } from "./studio-editing";
 
 const nodeTypes = new Set<StudioNodeType>([
   "trigger", "actor", "fact", "evidence", "deadline", "decision", "outcome", "entity", "tax_rule", "cash_flow",
 ]);
 const taxPurposes = new Set<TaxCasePurpose>(["lawful_planning", "compliance_review", "audit_defence", "evasion_detection"]);
+const metricKeys = new Set<MetricKey>(["position", "evidence", "trust", "exposure"]);
+const ruleComparisons = new Set<RuleComparison>(["gte", "lte", "eq"]);
 const editActions = new Set<StudioEditAction>([
   "prompt_submitted", "prompt_applied", "graph_rebuilt", "case_updated", "node_added", "node_updated",
   "node_moved", "node_deleted", "link_added", "link_relinked", "link_deleted",
@@ -51,7 +54,7 @@ export function caseFingerprint(draft: StudioDraft) {
     premise: draft.premise.trim().slice(0, 8_000),
     classification,
     nodes: draft.nodes.map((node) => ({ ...node, title: node.title.trim(), detail: node.detail.trim().slice(0, 4_000) })),
-    links: draft.links.map((link) => ({ from: link.from, to: link.to })),
+    links: draft.links.map((link) => ({ from: link.from, to: link.to, rule: link.rule })),
   };
   return canonicalFingerprint(normativeContent);
 }
@@ -71,6 +74,7 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
   const nodes = value.nodes.map(normalizeNode);
   const ids = new Set(nodes.map((node) => node.id));
   if (ids.size !== nodes.length) throw new Error("Duplicate node IDs");
+  if (nodes.some((node) => node.runtime?.missedOutcomeNodeId && !ids.has(node.runtime.missedOutcomeNodeId))) throw new Error("Studio deadline fallback is not in the graph");
   const links = value.links.map((item, index) => normalizeLink(item, ids, index));
   if (new Set(links.map((link) => link.id)).size !== links.length) throw new Error("Duplicate node relationship ID");
   if (new Set(links.map((link) => `${link.from}\u0000${link.to}`)).size !== links.length) throw new Error("Duplicate node relationship");
@@ -94,11 +98,13 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
     && /^sha256-[a-f0-9]{64}$/.test(value.parent.fingerprint)
       ? { caseId: value.parent.caseId, version: value.parent.version, fingerprint: value.parent.fingerprint }
       : null;
+  const protection = normalizeUntrustedCaseProtection(value.protection);
 
   return {
     caseId,
     version,
     parent,
+    ...(protection ? { protection } : {}),
     title,
     jurisdiction: safeString(value.jurisdiction, "", 160),
     role: safeString(value.role, "", 160),
@@ -170,6 +176,7 @@ function normalizeNode(value: unknown): StudioNode {
     detail: safeString(value.detail, "", 4_000),
     x: value.x,
     y: value.y,
+    runtime: normalizeNodeRuntime(value.runtime, value.type as StudioNodeType),
   };
 }
 
@@ -179,7 +186,58 @@ function normalizeLink(value: unknown, ids: Set<string>, index: number): StudioL
   }
   const id = typeof value.id === "string" ? value.id : `link-${index + 1}`;
   if (!/^[a-z0-9][a-z0-9_-]{0,79}$/.test(id)) throw new Error("Invalid node relationship ID");
-  return { id, from: value.from, to: value.to };
+  const rule = normalizeLinkRule(value.rule);
+  return rule ? { id, from: value.from, to: value.to, rule } : { id, from: value.from, to: value.to };
+}
+
+function normalizeNodeRuntime(value: unknown, type: StudioNodeType) {
+  if (!isRecord(value)) return undefined;
+  const day = optionalInteger(value.day, 1, 10_000);
+  const time = optionalClock(value.time);
+  const pressure = optionalSafeString(value.pressure, 2_000);
+  const terminalOutcome: NonNullable<StudioNode["runtime"]>["terminalOutcome"] = type === "outcome" && (value.terminalOutcome === "strong" || value.terminalOutcome === "mixed" || value.terminalOutcome === "weak")
+    ? value.terminalOutcome
+    : undefined;
+  const deadlineDay = type === "deadline" ? optionalInteger(value.deadlineDay, 1, 10_000) : undefined;
+  const deadlineTime = type === "deadline" ? optionalClock(value.deadlineTime) : undefined;
+  if ((deadlineDay === undefined) !== (deadlineTime === undefined)) throw new Error("A Studio deadline requires both day and time");
+  const missedOutcomeNodeId = type === "deadline" && typeof value.missedOutcomeNodeId === "string" && /^[a-z0-9][a-z0-9_-]{0,79}$/.test(value.missedOutcomeNodeId)
+    ? value.missedOutcomeNodeId
+    : undefined;
+  const runtime = { day, time, pressure, terminalOutcome, deadlineDay, deadlineTime, missedOutcomeNodeId };
+  return Object.values(runtime).some((item) => item !== undefined) ? runtime : undefined;
+}
+
+function normalizeLinkRule(value: unknown): StudioLink["rule"] {
+  if (!isRecord(value)) return undefined;
+  const repeatability: NonNullable<StudioLink["rule"]>["repeatability"] = value.repeatability === "once" || value.repeatability === "repeatable" || value.repeatability === "limited" ? value.repeatability : undefined;
+  const maxUses = optionalInteger(value.maxUses, 1, 10_000);
+  if ((repeatability === "limited") !== (maxUses !== undefined)) throw new Error("Limited Studio actions require an explicit use limit");
+  const rawEffects = isRecord(value.effects) ? value.effects : {};
+  const effects = Object.fromEntries([...metricKeys].flatMap((metric) => {
+    const effect = rawEffects[metric];
+    return typeof effect === "number" && Number.isFinite(effect) && effect >= -100 && effect <= 100 ? [[metric, effect]] : [];
+  })) as Partial<Record<MetricKey, number>>;
+  const guards = Array.isArray(value.guards) ? value.guards.slice(0, 8).map(normalizeMetricGuard) : [];
+  const rule = {
+    label: optionalSafeString(value.label, 200),
+    detail: optionalSafeString(value.detail, 4_000),
+    result: optionalSafeString(value.result, 4_000),
+    cost: optionalInteger(value.cost, 0, 1_000_000_000),
+    minutes: optionalInteger(value.minutes, 0, 100_000_000),
+    effects: Object.keys(effects).length ? effects : undefined,
+    guards: guards.length ? guards : undefined,
+    repeatability,
+    maxUses,
+  };
+  return Object.values(rule).some((item) => item !== undefined) ? rule : undefined;
+}
+
+function normalizeMetricGuard(value: unknown): MetricGuard {
+  if (!isRecord(value) || typeof value.metric !== "string" || !metricKeys.has(value.metric as MetricKey)) throw new Error("Invalid Studio metric guard");
+  if (typeof value.comparison !== "string" || !ruleComparisons.has(value.comparison as RuleComparison)) throw new Error("Invalid Studio guard comparison");
+  if (typeof value.value !== "number" || !Number.isFinite(value.value) || value.value < 0 || value.value > 100) throw new Error("Invalid Studio guard threshold");
+  return { metric: value.metric as MetricKey, comparison: value.comparison as RuleComparison, value: value.value };
 }
 
 function normalizeEditEntry(value: unknown): StudioEditEntry {
@@ -206,6 +264,21 @@ function boundedString(value: unknown, label: string, min: number, max: number) 
 }
 function safeString(value: unknown, fallback: string, max: number) {
   return typeof value === "string" ? value.trim().slice(0, max) : fallback;
+}
+function optionalSafeString(value: unknown, max: number) {
+  if (typeof value !== "string") return undefined;
+  const clean = value.trim().slice(0, max);
+  return clean || undefined;
+}
+function optionalInteger(value: unknown, min: number, max: number) {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (typeof value !== "number" || !Number.isInteger(value) || value < min || value > max) throw new Error("Invalid Studio runtime integer");
+  return value;
+}
+function optionalClock(value: unknown) {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (typeof value !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)) throw new Error("Invalid Studio runtime clock");
+  return value;
 }
 function stringList(value: unknown, maxItems: number, maxLength: number) {
   return Array.isArray(value)

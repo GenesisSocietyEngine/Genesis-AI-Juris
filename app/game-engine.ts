@@ -1,4 +1,18 @@
-import type { DecisionOption, Scenario, ScenarioStage } from "./types";
+import type { DecisionOption, MetricGuard, MetricKey, Scenario, ScenarioStage } from "./types";
+
+export function metricGuardSatisfied(guard: MetricGuard, metrics: Record<MetricKey, number>) {
+  const actual = metrics[guard.metric];
+  if (guard.comparison === "gte") return actual >= guard.value;
+  if (guard.comparison === "lte") return actual <= guard.value;
+  return actual === guard.value;
+}
+
+export function decisionAvailability(option: DecisionOption, metrics: Record<MetricKey, number>, useCount: number) {
+  const exhausted = (option.repeatability === "once" && useCount > 0)
+    || (option.repeatability === "limited" && useCount >= (option.maxUses ?? 1));
+  const blockedGuards = (option.guards ?? []).filter((guard) => !metricGuardSatisfied(guard, metrics));
+  return { available: !exhausted && blockedGuards.length === 0, exhausted, blockedGuards };
+}
 
 export function actionCompletionMinute(currentMinute: number, option: DecisionOption) {
   const elapsedTarget = currentMinute + option.minutes;

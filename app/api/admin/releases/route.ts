@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   if (!isSameOriginMutation(request)) return Response.json({ error: "Cross-site mutation rejected." }, { status: 403 });
   const identity = await getChatGPTUser();
   if (!identity) return Response.json({ error: "Sign in is required." }, { status: 401 });
-  if (!isPlatformAdmin(identity.email)) return Response.json({ error: "Platform administrator access is required." }, { status: 403 });
+  if (!isPlatformAdmin(identity)) return Response.json({ error: "Platform administrator access is required." }, { status: 403 });
 
   const payload = await readJsonObject(request, 48_000);
   if (!payload) return Response.json({ error: "A valid JSON object is required." }, { status: 400 });

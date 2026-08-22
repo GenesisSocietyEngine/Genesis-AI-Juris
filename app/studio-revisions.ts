@@ -2,7 +2,9 @@ import type { StudioDraft } from "./types";
 
 export const STUDIO_REVISION_LIMIT = 50;
 
-export type StudioSnapshot = Omit<StudioDraft, "editHistory" | "updatedAt">;
+// Server-attested lineage is an access/integrity control, not an authoring
+// revision. Undoing a graph edit must never roll it back or remove its seal.
+export type StudioSnapshot = Omit<StudioDraft, "editHistory" | "updatedAt" | "protection">;
 
 export type StudioRevision = {
   id: string;
@@ -49,6 +51,7 @@ export function snapshotStudioDraft(draft: StudioDraft): StudioSnapshot {
 export function applyStudioSnapshot(draft: StudioDraft, snapshot: StudioSnapshot, updatedAt: string): StudioDraft {
   return {
     ...structuredClone(snapshot),
+    ...(draft.protection ? { protection: structuredClone(draft.protection) } : {}),
     editHistory: draft.editHistory,
     updatedAt,
   };

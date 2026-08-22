@@ -6,9 +6,11 @@ import { canonicalFingerprint, caseFingerprint, normalizeStudioDraft, studioStru
 import { resolveDecisionTiming, resolveLegacyDecisionTiming, stageClockMinute } from "../app/game-engine";
 import { legacyScenarios } from "../app/legacy-scenarios";
 import { normalizePlayableScenario, playableFingerprint } from "../app/playable-integrity";
+import { compilePublicationPlayable, normalizeTaxPublicationAttestation, TAX_ATTESTATION_CHECKLIST_KEYS, TAX_ATTESTATION_KIND } from "../app/publication-integrity";
 import { isSameOriginMutation, readJsonObject } from "../app/request-security";
 import { scenarios } from "../app/scenarios";
 import type { StudioDraft } from "../app/types";
+import { CONTENT_SECURITY_POLICY, withSecurityHeaders } from "../worker/security-headers";
 
 test("the five bundled manifests are immutable, playable and clock-monotonic across all paths", () => {
   assert.equal(scenarios.length, 5);
@@ -97,6 +99,64 @@ test("Studio canonicalizes tax classifications and enforces server graph/publica
   assert.equal(canonicalFingerprint({ b: 2, a: 1 }), "sha256-43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777");
 });
 
+test("publication compiles on the server and rejects a divergent client preview", () => {
+  const draft = normalizeStudioDraft(taxDraft());
+  const serverOnly = compilePublicationPlayable(draft);
+  assert.equal(serverOnly.ok, true);
+  if (!serverOnly.ok) return;
+  assert.equal(serverOnly.playable.sourceFingerprint, serverOnly.binding.studioFingerprint);
+  assert.equal(serverOnly.playable.fingerprint, serverOnly.binding.playableFingerprint);
+  assert.equal(playableFingerprint(serverOnly.playable), serverOnly.binding.playableFingerprint);
+
+  const matchingPreview = compilePublicationPlayable(draft, structuredClone(serverOnly.playable));
+  assert.equal(matchingPreview.ok, true);
+
+  const divergentPreview = structuredClone(serverOnly.playable);
+  divergentPreview.title.en = "Client-only publication title";
+  divergentPreview.fingerprint = playableFingerprint(divergentPreview);
+  const rejected = compilePublicationPlayable(draft, divergentPreview);
+  assert.equal(rejected.ok, false);
+  if (!rejected.ok) {
+    assert.equal(rejected.status, 409);
+    assert.match(rejected.error, /does not match the server compilation/i);
+  }
+});
+
+test("tax publication requires a named, complete and artifact-bound attestation", () => {
+  const draft = normalizeStudioDraft(taxDraft());
+  const compilation = compilePublicationPlayable(draft);
+  assert.equal(compilation.ok, true);
+  if (!compilation.ok) return;
+  const expected = {
+    reviewerName: "Maxim Hayan · platform administrator",
+    legalAsOf: draft.classification!.legalAsOf!,
+    sourceCount: draft.classification!.sourceUrls!.length,
+    studioFingerprint: compilation.binding.studioFingerprint,
+    playableFingerprint: compilation.binding.playableFingerprint,
+    now: new Date("2026-08-22T08:30:00.000Z"),
+  };
+  const checklist = Object.fromEntries(TAX_ATTESTATION_CHECKLIST_KEYS.map((key) => [key, true]));
+  const valid = normalizeTaxPublicationAttestation({
+    kind: TAX_ATTESTATION_KIND,
+    reviewerName: expected.reviewerName,
+    reviewedAt: "2026-08-22T08:15:00.000Z",
+    legalAsOf: expected.legalAsOf,
+    sourceCount: expected.sourceCount,
+    note: "Reviewed for lawful scope, source currency and applicable anti-abuse safeguards.",
+    studioFingerprint: expected.studioFingerprint,
+    playableFingerprint: expected.playableFingerprint,
+    checklist,
+  }, expected);
+  assert.equal(valid.kind, TAX_ATTESTATION_KIND);
+  assert.equal(valid.playableFingerprint, compilation.playable.fingerprint);
+
+  assert.throws(() => normalizeTaxPublicationAttestation(true, expected), /structured tax publication attestation/i);
+  assert.throws(() => normalizeTaxPublicationAttestation({ ...valid, sourceCount: valid.sourceCount + 1 }, expected), /source count/i);
+  assert.throws(() => normalizeTaxPublicationAttestation({ ...valid, playableFingerprint: valid.studioFingerprint }, expected), /exact Studio and playable artifacts/i);
+  assert.throws(() => normalizeTaxPublicationAttestation({ ...valid, reviewedAt: "2026-08-20T08:15:00.000Z" }, expected), /cannot predate the legal-as-of date/i);
+  assert.throws(() => normalizeTaxPublicationAttestation({ ...valid, checklist: { ...valid.checklist, antiAbuseRulesReviewed: false } }, expected), /antiAbuseRulesReviewed/);
+});
+
 test("request guards reject cross-origin, wrong media type and oversized JSON", async () => {
   const sameOrigin = new Request("https://juris.example/api/feedback", { method: "POST", headers: { origin: "https://juris.example", "content-type": "application/json" }, body: "{\"ok\":true}" });
   assert.equal(isSameOriginMutation(sameOrigin), true);
@@ -108,6 +168,32 @@ test("request guards reject cross-origin, wrong media type and oversized JSON", 
   assert.equal(await readJsonObject(wrongType), null);
   const oversized = new Request("https://juris.example/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ value: "x".repeat(200) }) });
   assert.equal(await readJsonObject(oversized, 32), null);
+});
+
+test("Worker hardening sets browser security policy without breaking public catalogue caching", () => {
+  const page = withSecurityHeaders(new Response("<main>GENESIS</main>", {
+    headers: { "content-type": "text/html; charset=utf-8", "x-existing": "preserved" },
+  }), new URL("https://juris.example/library"));
+  assert.equal(page.headers.get("x-existing"), "preserved");
+  assert.equal(page.headers.get("content-security-policy"), CONTENT_SECURITY_POLICY);
+  assert.match(CONTENT_SECURITY_POLICY, /script-src 'self' 'unsafe-inline'/);
+  assert.doesNotMatch(CONTENT_SECURITY_POLICY, /unsafe-eval/);
+  assert.match(CONTENT_SECURITY_POLICY, /frame-ancestors 'none'/);
+  assert.equal(page.headers.get("strict-transport-security"), "max-age=31536000; includeSubDomains");
+  assert.equal(page.headers.get("x-content-type-options"), "nosniff");
+  assert.equal(page.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
+  assert.equal(page.headers.get("cross-origin-opener-policy"), "same-origin");
+  assert.equal(page.headers.get("x-frame-options"), "DENY");
+  assert.match(page.headers.get("permissions-policy") ?? "", /camera=\(\)/);
+
+  const privateApi = withSecurityHeaders(Response.json({ ok: true }), new URL("https://juris.example/api/me"));
+  assert.equal(privateApi.headers.get("cache-control"), "private, no-store");
+  const publicCatalogue = withSecurityHeaders(Response.json({ items: [] }, { headers: { "cache-control": "public, max-age=60" } }), new URL("https://juris.example/api/catalog?limit=24"));
+  assert.equal(publicCatalogue.headers.get("cache-control"), "public, max-age=60");
+  const catalogueLookalike = withSecurityHeaders(Response.json({ ok: false }), new URL("https://juris.example/api/catalogue-admin"));
+  assert.equal(catalogueLookalike.headers.get("cache-control"), "private, no-store");
+  const localHttp = withSecurityHeaders(new Response("ok"), new URL("http://terminal.local:4173/"));
+  assert.equal(localHttp.headers.get("strict-transport-security"), null);
 });
 
 test("fresh D1 schema has valid seeds, immutable history and lineage collision protection", () => {
@@ -150,7 +236,12 @@ test("critical API sources retain exact-version and review-evidence checks", () 
   assert.match(catalogue, /requestedVersion/);
   assert.match(publication, /independent verified practitioner review/);
   assert.match(publication, /currently published version/);
-  assert.match(publication, /toPublicStudioDraft\(draft\)/);
+  assert.match(publication, /compilePublicationPlayable\(draft, payload\.playableScenario\)/);
+  assert.match(publication, /normalizeTaxPublicationAttestation/);
+  assert.match(publication, /artifactBinding/);
+  assert.doesNotMatch(publication, /taxSafetyAttestation !== true/);
+  assert.match(publication, /toPublicStudioDraft\(protectedDraft\)/);
+  assert.match(publication, /caseProtection: protection/);
   assert.doesNotMatch(publication, /studioDraft:\s*draft\b/);
 });
 

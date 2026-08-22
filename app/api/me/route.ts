@@ -1,15 +1,18 @@
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, or } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { auditEvents, caseDrafts, caseFeedback, caseSubscriptions, customCaseGrants, customCases, updateReads, users } from "../../../db/schema";
+import { auditEvents, authAuditEvents, authRateLimitEvents, caseDrafts, caseFeedback, caseSubscriptions, customCaseGrants, customCases, localAccounts, playSessions, updateReads, users } from "../../../db/schema";
+import { clearSessionCookie } from "../../auth-crypto";
+import { authJson } from "../../auth-http";
 import { getChatGPTUser } from "../../chatgpt-auth";
-import { isSameOriginMutation, readJsonObject } from "../../request-security";
+import { authSubjectHash } from "../../local-auth";
+import { isSameOriginCredentialMutation, isSameOriginMutation, readJsonObject } from "../../request-security";
 import { isPlatformAdmin } from "../../server-authorization";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const identity = await getChatGPTUser();
-  if (!identity) return Response.json({ authenticated: false }, { status: 401 });
+  if (!identity) return authJson({ authenticated: false }, 401);
   const email = identity.email.toLowerCase();
   const db = getDb();
   const [storedProfile] = await db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -28,15 +31,15 @@ export async function GET() {
     verifiedPractitioner: false,
     licenseTier: "community",
   };
-  return Response.json({ authenticated: true, registered: Boolean(storedProfile), profile, isAdmin: isPlatformAdmin(email) });
+  return authJson({ authenticated: true, registered: Boolean(storedProfile), authSource: identity.authSource, profile, isAdmin: isPlatformAdmin(identity) });
 }
 
 export async function POST(request: Request) {
-  if (!isSameOriginMutation(request)) return Response.json({ error: "Cross-site mutation rejected." }, { status: 403 });
+  if (!isSameOriginMutation(request)) return authJson({ error: "Cross-site mutation rejected." }, 403);
   const identity = await getChatGPTUser();
-  if (!identity) return Response.json({ error: "Sign in is required." }, { status: 401 });
+  if (!identity) return authJson({ error: "Sign in is required." }, 401);
   const payload = await readJsonObject(request);
-  if (!payload) return Response.json({ error: "A valid JSON object is required." }, { status: 400 });
+  if (!payload) return authJson({ error: "A valid JSON object is required." }, 400);
   const email = identity.email.toLowerCase();
   const values = {
     email,
@@ -66,30 +69,41 @@ export async function POST(request: Request) {
     objectId: email,
     detail: { productUpdates: values.productUpdates, caseUpdates: values.caseUpdates, researchInvites: values.researchInvites, privacyNoticeVersion: values.privacyNoticeVersion },
   });
-  return Response.json({ profile, isAdmin: isPlatformAdmin(email) });
+  return authJson({ authSource: identity.authSource, profile, isAdmin: isPlatformAdmin(identity) });
 }
 
 export async function DELETE(request: Request) {
-  if (!isSameOriginMutation(request)) return Response.json({ error: "Cross-site mutation rejected." }, { status: 403 });
+  if (!isSameOriginCredentialMutation(request)) return authJson({ error: "Cross-site mutation rejected." }, 403);
   const identity = await getChatGPTUser();
-  if (!identity) return Response.json({ error: "Sign in is required." }, { status: 401 });
+  if (!identity) return authJson({ error: "Sign in is required." }, 401, clearSessionCookie());
   const email = identity.email.toLowerCase();
   const db = getDb();
+  const [localAccount] = await db.select({ id: localAccounts.id }).from(localAccounts).where(eq(localAccounts.userEmail, email)).limit(1);
+  const emailSubjectHash = await authSubjectHash(`email:${email}`);
   const ownedCustomCases = await db.select({ id: customCases.id }).from(customCases).where(eq(customCases.ownerEmail, email));
   const ownedIds = ownedCustomCases.map((item) => item.id);
-  await db.delete(caseSubscriptions).where(eq(caseSubscriptions.userEmail, email));
-  await db.delete(updateReads).where(eq(updateReads.userEmail, email));
-  await db.delete(caseFeedback).where(eq(caseFeedback.userEmail, email));
-  if (ownedIds.length) {
-    await db.delete(caseFeedback).where(inArray(caseFeedback.customCaseId, ownedIds));
-    await db.delete(customCaseGrants).where(inArray(customCaseGrants.customCaseId, ownedIds));
-  }
-  await db.delete(customCaseGrants).where(eq(customCaseGrants.recipientEmail, email));
-  await db.delete(caseDrafts).where(eq(caseDrafts.userEmail, email));
-  if (ownedIds.length) await db.delete(customCases).where(inArray(customCases.id, ownedIds));
-  await db.delete(auditEvents).where(eq(auditEvents.actorEmail, email));
-  await db.delete(users).where(eq(users.email, email));
-  return Response.json({ deleted: true });
+  const authAuditDelete = localAccount
+    ? db.delete(authAuditEvents).where(or(eq(authAuditEvents.accountId, localAccount.id), eq(authAuditEvents.subjectHash, emailSubjectHash))!)
+    : db.delete(authAuditEvents).where(eq(authAuditEvents.subjectHash, emailSubjectHash));
+  await db.batch([
+    db.delete(caseSubscriptions).where(eq(caseSubscriptions.userEmail, email)),
+    db.delete(updateReads).where(eq(updateReads.userEmail, email)),
+    db.delete(caseFeedback).where(eq(caseFeedback.userEmail, email)),
+    ...(ownedIds.length ? [
+      db.delete(caseFeedback).where(inArray(caseFeedback.customCaseId, ownedIds)),
+      db.delete(customCaseGrants).where(inArray(customCaseGrants.customCaseId, ownedIds)),
+      db.delete(caseDrafts).where(inArray(caseDrafts.customCaseId, ownedIds)),
+    ] : []),
+    db.delete(customCaseGrants).where(eq(customCaseGrants.recipientEmail, email)),
+    db.delete(caseDrafts).where(eq(caseDrafts.userEmail, email)),
+    db.delete(playSessions).where(eq(playSessions.userEmail, email)),
+    ...(ownedIds.length ? [db.delete(customCases).where(inArray(customCases.id, ownedIds))] : []),
+    db.delete(auditEvents).where(eq(auditEvents.actorEmail, email)),
+    authAuditDelete,
+    db.delete(authRateLimitEvents).where(eq(authRateLimitEvents.subjectHash, emailSubjectHash)),
+    db.delete(users).where(eq(users.email, email)),
+  ]);
+  return authJson({ deleted: true }, 200, clearSessionCookie());
 }
 
 function clean(value: unknown, fallback: string, max: number) {

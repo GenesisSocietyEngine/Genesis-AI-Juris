@@ -1,5 +1,13 @@
 export type MetricKey = "position" | "evidence" | "trust" | "exposure";
 
+export type RuleComparison = "gte" | "lte" | "eq";
+
+export type MetricGuard = {
+  metric: MetricKey;
+  comparison: RuleComparison;
+  value: number;
+};
+
 export type LocalText = {
   ru: string;
   en: string;
@@ -18,6 +26,7 @@ export type DecisionOption = {
   completionMinuteOfDay?: number;
   repeatability?: "once" | "repeatable" | "limited";
   maxUses?: number;
+  guards?: MetricGuard[];
 };
 
 export type ScenarioStage = {
@@ -107,12 +116,32 @@ export type StudioNode = {
   detail: string;
   x: number;
   y: number;
+  runtime?: {
+    day?: number;
+    time?: string;
+    pressure?: string;
+    terminalOutcome?: "strong" | "mixed" | "weak";
+    deadlineDay?: number;
+    deadlineTime?: string;
+    missedOutcomeNodeId?: string;
+  };
 };
 
 export type StudioLink = {
   id: string;
   from: string;
   to: string;
+  rule?: {
+    label?: string;
+    detail?: string;
+    result?: string;
+    cost?: number;
+    minutes?: number;
+    effects?: Partial<Record<MetricKey, number>>;
+    guards?: MetricGuard[];
+    repeatability?: "once" | "repeatable" | "limited";
+    maxUses?: number;
+  };
 };
 
 export type StudioEditSource = "prompt" | "visual";
@@ -146,6 +175,21 @@ export type StudioEditEntry = {
 
 export type TaxCasePurpose = "lawful_planning" | "compliance_review" | "audit_defence" | "evasion_detection";
 
+export type CaseCopyPolicy = "fork_allowed" | "lineage_locked";
+
+/**
+ * Public, server-attested lineage metadata. The codes and HMAC seal provide
+ * tamper evidence; they do not encrypt or conceal the Studio case content.
+ */
+export type CaseProtectionV1 = {
+  kind: "case-protection-v1";
+  copyProtected: boolean;
+  copyPolicy: CaseCopyPolicy;
+  parentCode: string | null;
+  currentCode: string;
+  seal: string;
+};
+
 export type StudioDraft = {
   caseId: string;
   version: string;
@@ -154,6 +198,7 @@ export type StudioDraft = {
     version: string;
     fingerprint: string;
   } | null;
+  protection?: CaseProtectionV1;
   title: string;
   jurisdiction: string;
   role: string;

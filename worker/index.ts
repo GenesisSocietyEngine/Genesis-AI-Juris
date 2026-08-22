@@ -1,6 +1,7 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
+import { withSecurityHeaders } from "./security-headers";
 
 interface Env {
   ASSETS: Fetcher;
@@ -43,12 +44,7 @@ const worker = {
       response = await handler.fetch(request, env, ctx);
     }
 
-    const headers = new Headers(response.headers);
-    headers.set("X-Content-Type-Options", "nosniff");
-    headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-    headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-    if (url.pathname.startsWith("/api/") && !url.pathname.startsWith("/api/catalog")) headers.set("Cache-Control", "private, no-store");
-    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+    return withSecurityHeaders(response, url);
   },
 };
 
