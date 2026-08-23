@@ -227,6 +227,10 @@ test("Worker hardening sets browser security policy without breaking public cata
   assert.equal(page.headers.get("x-frame-options"), "DENY");
   assert.match(page.headers.get("permissions-policy") ?? "", /camera=\(\)/);
 
+  const embeddedStudio = withSecurityHeaders(new Response("<main>Studio</main>"), new URL("https://juris.example/studio"));
+  assert.match(embeddedStudio.headers.get("content-security-policy") ?? "", /frame-ancestors https:\/\/falcon-merlin\.com https:\/\/www\.falcon-merlin\.com/);
+  assert.equal(embeddedStudio.headers.get("x-frame-options"), null);
+
   const privateApi = withSecurityHeaders(Response.json({ ok: true }), new URL("https://juris.example/api/me"));
   assert.equal(privateApi.headers.get("cache-control"), "private, no-store");
   const publicCatalogue = withSecurityHeaders(Response.json({ items: [] }, { headers: { "cache-control": "public, max-age=60" } }), new URL("https://juris.example/api/catalog?limit=24"));
