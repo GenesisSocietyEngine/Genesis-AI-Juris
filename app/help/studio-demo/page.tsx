@@ -29,15 +29,14 @@ export default function StudioDemoPage() {
       <a href="/help/studio-ai-guided-demo.mp4" className="secondary-cta">Open MP4</a>
     </nav>
     <section className="standalone-demo-hero">
-      <div><span>STUDIO · END-TO-END DEMO · 03:00</span><h1>Five Flats, Three Countries</h1><p>One continuous Studio-only walkthrough of the canonical Five Flats, Three Borders case. AI proposes; the professional verifies the prompt, parameters, graph and outcome before generating the PDF.</p></div>
-      <aside><b>EXPERT REVIEW CUT</b><small>English narration · English and Russian captions · Studio only</small></aside>
+      <div><span>STUDIO · END-TO-END DEMO · 03:00</span><h1>Five Flats, Three Countries</h1><p>One continuous Studio-only walkthrough of the canonical Five Flats, Three Countries case. AI proposes; the professional verifies the prompt, parameters, graph and outcome before generating the PDF.</p></div>
+      <aside><b>EXPERT REVIEW CUT</b><small>English narration · English captions · Studio only</small></aside>
     </section>
     <section className="standalone-demo-player" aria-labelledby="studio-demo-title">
       <h2 id="studio-demo-title" className="visually-hidden">GENESIS: JURIS Studio guided demonstration</h2>
       <video controls preload="metadata" playsInline poster="/help/studio-ai-guided-demo-poster.jpg">
         <source src="/help/studio-ai-guided-demo.mp4" type="video/mp4"/>
         <track kind="captions" src="/help/studio-ai-guided-demo.en.vtt" srcLang="en" label="English" default/>
-        <track kind="captions" src="/help/studio-ai-guided-demo.ru.vtt" srcLang="ru" label="Русский"/>
         Your browser does not support HTML video.
       </video>
     </section>
