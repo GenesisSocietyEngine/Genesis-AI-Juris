@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { calculateDealEconomics, inferDealEconomicsFromText, normalizeDealEconomics } from "../app/deal-economics";
 
-const propertyCase = "Chinese resident buying a UK property worth 1mGBP; 80pct financing at 7,5pct for 10years; at least 10pct annual return. Five monthly rents totalling £10,800; current gross £129,600/year. One time structure fee 15,000 GBP, 10,000 GBP for administration annually.";
+const propertyCase = "Chinese resident buying a UK property worth 1mGBP; 80pct financing at 7,5pct for 10years; at least 10pct annual return. Five monthly rents totalling £10,800; current gross £129,600/year. 1 time structure fee 15,000 GBP, 10,000 GBP for administration annually.";
 
 test("legacy labelled property text produces the expected reviewed cash-flow inputs", () => {
   const model = inferDealEconomicsFromText(propertyCase);

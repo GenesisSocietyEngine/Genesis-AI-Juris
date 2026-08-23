@@ -108,7 +108,7 @@ export function inferDealEconomicsFromText(text: string): DealEconomicsV1 | unde
   const monthlyIncome = labelledMoney(clean, /(?:monthly\s+rent|rent[^\n.;]{0,35}?(?:per\s+month|monthly)|five\s+monthly\s+rents[^\n.;]{0,35}?total(?:ling)?)[^\d£$€]{0,16}/i);
   const annualIncome = labelledMoney(clean, /(?:annual|yearly|gross)[^\n.;]{0,30}?rent[^\d£$€]{0,16}/i)
     ?? labelledMoney(clean, /(?:rent|gross)[^\n.;]{0,30}?(?:per\s+year|annually)[^\d£$€]{0,16}/i);
-  const oneOffStructureCost = labelledMoney(clean, /(?:one[- ]?(?:off|time)|setup|creation)[^\n.;]{0,55}?(?:fee|cost)?[^\d£$€]{0,16}/i);
+  const oneOffStructureCost = labelledMoney(clean, /(?:(?:one|1)[- ]?(?:off|time)|setup|creation)[^\n.;]{0,55}?(?:fee|cost)?[^\d£$€]{0,16}/i);
   const annualStructureCost = labelledMoney(clean, /(?:annual\s+(?:administration|admin|structure)|(?:administration|admin|structure)[^\n.;]{0,30}?annually)[^\d£$€]{0,16}/i)
     ?? moneyBeforeLabel(clean, /(?:administration|admin|structure)[^\n.;]{0,30}?annually/i);
   const targetAnnualReturnBps = labelledPercent(clean, /(?:target|at\s+least|reach)[^\n.;%]{0,45}?/i);
