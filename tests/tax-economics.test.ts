@@ -38,6 +38,14 @@ test("tax economics keeps downside conservative and reports no payback", () => {
   assert.ok(result.npv < 0);
 });
 
+test("tax economics derives annual tax from an entered base and percentage rates", () => {
+  const result = calculateTaxEconomics(model({ taxInputBasis: "rates", annualTaxBase: 1_000_000, baselineTaxRateBps: 3_500, optimizedTaxRateBps: 200 }));
+  assert.equal(result.baselineAnnualTaxCost, 350_000);
+  assert.equal(result.optimizedAnnualTaxCost, 20_000);
+  assert.equal(result.grossAnnualTaxSaving, 330_000);
+  assert.equal(result.netAnnualBenefit, 315_000);
+});
+
 test("tax economics validates caps, currency and zero-investment payback", () => {
   assert.equal(calculateTaxEconomics(model({ implementationCost: 0 })).paybackMonths, 0);
   assert.equal(normalizeTaxEconomics(undefined), undefined);

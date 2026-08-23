@@ -1,6 +1,8 @@
 import type { TaxEconomicsV1 } from "./types";
 
 export type TaxEconomicsResult = {
+  baselineAnnualTaxCost: number;
+  optimizedAnnualTaxCost: number;
   grossAnnualTaxSaving: number;
   recognizedAnnualTaxSaving: number;
   netAnnualBenefit: number;
@@ -15,6 +17,10 @@ export function defaultTaxEconomics(): TaxEconomicsV1 {
   return {
     kind: "tax-economics-v1",
     currency: "EUR",
+    taxInputBasis: "amounts",
+    annualTaxBase: 0,
+    baselineTaxRateBps: 0,
+    optimizedTaxRateBps: 0,
     baselineAnnualTaxCost: 0,
     optimizedAnnualTaxCost: 0,
     implementationCost: 0,
@@ -32,9 +38,14 @@ export function normalizeTaxEconomics(value: unknown): TaxEconomicsV1 | undefine
   if (!isRecord(value) || value.kind !== "tax-economics-v1") throw new Error("Invalid tax economics model");
   const currency = typeof value.currency === "string" ? value.currency.trim().toUpperCase() : "";
   if (!/^[A-Z]{3}$/.test(currency)) throw new Error("Tax economics currency must be a three-letter ISO code");
+  const taxInputBasis = value.taxInputBasis === "rates" ? "rates" : "amounts";
   return {
     kind: "tax-economics-v1",
     currency,
+    taxInputBasis,
+    annualTaxBase: optionalInteger(value.annualTaxBase, "annual tax base", 0, 1_000_000_000_000),
+    baselineTaxRateBps: optionalInteger(value.baselineTaxRateBps, "baseline tax rate", 0, 10_000),
+    optimizedTaxRateBps: optionalInteger(value.optimizedTaxRateBps, "optimized tax rate", 0, 10_000),
     baselineAnnualTaxCost: integer(value.baselineAnnualTaxCost, "baseline annual tax cost", 0, 1_000_000_000_000),
     optimizedAnnualTaxCost: integer(value.optimizedAnnualTaxCost, "optimized annual tax cost", 0, 1_000_000_000_000),
     implementationCost: integer(value.implementationCost, "implementation cost", 0, 1_000_000_000_000),
@@ -48,7 +59,9 @@ export function normalizeTaxEconomics(value: unknown): TaxEconomicsV1 | undefine
 }
 
 export function calculateTaxEconomics(model: TaxEconomicsV1): TaxEconomicsResult {
-  const grossAnnualTaxSaving = model.baselineAnnualTaxCost - model.optimizedAnnualTaxCost;
+  const baselineAnnualTaxCost = model.taxInputBasis === "rates" ? model.annualTaxBase * model.baselineTaxRateBps / 10_000 : model.baselineAnnualTaxCost;
+  const optimizedAnnualTaxCost = model.taxInputBasis === "rates" ? model.annualTaxBase * model.optimizedTaxRateBps / 10_000 : model.optimizedAnnualTaxCost;
+  const grossAnnualTaxSaving = baselineAnnualTaxCost - optimizedAnnualTaxCost;
   // Apply uncertainty only to upside. A downside is never probability-discounted away.
   const recognizedAnnualTaxSaving = grossAnnualTaxSaving >= 0
     ? grossAnnualTaxSaving * model.benefitRealizationBps / 10_000
@@ -71,7 +84,12 @@ export function calculateTaxEconomics(model: TaxEconomicsV1): TaxEconomicsResult
     npv += (netAnnualBenefit / 12) / ((1 + monthlyRate) ** month);
   }
   npv -= model.terminalTaxOrUnwindCost / ((1 + monthlyRate) ** model.analysisHorizonMonths);
-  return { grossAnnualTaxSaving, recognizedAnnualTaxSaving, netAnnualBenefit, lifecycleCost, horizonNetBenefit, lifecycleRoiPercent, paybackMonths, npv };
+  return { baselineAnnualTaxCost, optimizedAnnualTaxCost, grossAnnualTaxSaving, recognizedAnnualTaxSaving, netAnnualBenefit, lifecycleCost, horizonNetBenefit, lifecycleRoiPercent, paybackMonths, npv };
+}
+
+function optionalInteger(value: unknown, label: string, minimum: number, maximum: number) {
+  if (value === undefined || value === null) return 0;
+  return integer(value, label, minimum, maximum);
 }
 
 function integer(value: unknown, label: string, minimum: number, maximum: number) {

@@ -217,6 +217,11 @@ export type TaxEconomicsV1 = {
   kind: "tax-economics-v1";
   /** ISO 4217 presentation currency for every monetary input below. */
   currency: string;
+  /** Enter annual cash-tax amounts directly, or derive them from a tax base and rates. */
+  taxInputBasis: "amounts" | "rates";
+  annualTaxBase: number;
+  baselineTaxRateBps: number;
+  optimizedTaxRateBps: number;
   baselineAnnualTaxCost: number;
   optimizedAnnualTaxCost: number;
   implementationCost: number;

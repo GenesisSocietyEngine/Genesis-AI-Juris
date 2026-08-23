@@ -183,6 +183,8 @@ test("compiler synthetic opening IDs cannot collide with valid Studio node or re
 test("Studio UI exposes intuitive blank reset, selectable relation deletion and dark option contrast", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   const cashFlowEditorSource = readFileSync(new URL("../app/CashFlowScenarioEditor.tsx", import.meta.url), "utf8");
+  const reportDialogSource = readFileSync(new URL("../app/CaseReportDialog.tsx", import.meta.url), "utf8");
+  const taxEconomicsSource = readFileSync(new URL("../app/TaxEconomicsPanel.tsx", import.meta.url), "utf8");
   const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(appSource, /function blankStudioDraft/);
   assert.match(appSource, /nodes: \[\],\s*links: \[\],\s*editHistory: \[\]/);
@@ -194,6 +196,13 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /CashFlowScenarioEditor/, "a selected cash-flow node exposes editable model controls");
   assert.match(cashFlowEditorSource, /CASH-FLOW SCENARIO/);
   assert.match(cashFlowEditorSource, /setProbability/, "cash-flow scenario weights are directly editable");
+  assert.match(appSource, /PDF report/);
+  assert.match(appSource, /lazy\(\(\) => import\("\.\/CaseReportDialog"\)\)/, "the professional report workflow stays out of the initial client chunk");
+  assert.match(reportDialogSource, /raw AI prompt is never included/);
+  assert.match(reportDialogSource, /Client-facing report/);
+  assert.match(taxEconomicsSource, /Tax base \+ rates \(%\)/, "tax economics supports percentage-rate inputs");
+  assert.match(taxEconomicsSource, /select value=\{model\.currency\}/, "tax currency uses a controlled dropdown");
+  assert.match(taxEconomicsSource, /"EUR", "GBP", "USD", "CHF", "CNY"/);
   assert.match(appSource, /const pointerX = \(event\.clientX - rect\.left\) \/ scale/,
     "scaled graph dragging must translate pointer coordinates back into graph space");
   assert.match(appSource, /moveNode\(event,node,graphZoom\)/,

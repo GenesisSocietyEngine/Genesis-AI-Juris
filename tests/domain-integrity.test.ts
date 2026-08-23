@@ -113,6 +113,7 @@ test("Studio canonicalizes tax classifications and enforces server graph/publica
     analysisHorizonMonths: 36, annualDiscountRateBps: 800, benefitRealizationBps: 9_000, assumptions: "Documented test assumptions.",
   } });
   assert.equal(withEconomics.taxEconomics?.currency, "EUR");
+  assert.equal(withEconomics.taxEconomics?.taxInputBasis, "amounts", "legacy amount-only models normalize without migration errors");
   assert.notEqual(caseFingerprint(withEconomics), fingerprint);
   assert.throws(() => normalizeStudioDraft({ ...taxDraft(), taxEconomics: { ...withEconomics.taxEconomics, implementationCost: -1 } }), /implementation cost/);
 
