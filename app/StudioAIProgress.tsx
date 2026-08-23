@@ -9,8 +9,8 @@ export default function StudioAIProgress({ locale }: Props) {
   const estimate = Math.min(96, Math.round(6 + 90 * (1 - Math.exp(-elapsedSeconds / 95))));
   const phase = elapsedSeconds < 12 ? 0 : elapsedSeconds < 45 ? 1 : elapsedSeconds < 110 ? 2 : 3;
   const labels = locale === "en"
-    ? ["Preparing context", "Analysing facts", "Building the graph", "Validating proposal"]
-    : ["Подготовка контекста", "Анализ фактов", "Построение схемы", "Проверка плана"];
+    ? ["Preparing context", "Analysing facts", "Building the graph", "Validating or repairing"]
+    : ["Подготовка контекста", "Анализ фактов", "Построение схемы", "Проверка или исправление"];
   const elapsed = `${Math.floor(elapsedSeconds / 60)}:${String(elapsedSeconds % 60).padStart(2, "0")}`;
 
   useEffect(() => {

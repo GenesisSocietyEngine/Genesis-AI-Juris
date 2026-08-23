@@ -4,7 +4,7 @@ import test from "node:test";
 import { normalizeStudioDraft } from "../app/case-integrity";
 import { applyStudioPromptPlan, describeStudioPromptOperation, toPublicStudioDraft } from "../app/studio-editing";
 import { STUDIO_DRAFT_SERIALIZED_LIMIT, studioJsonBytes } from "../app/studio-envelope";
-import { applyValidatedAIStudioPlan, materializeAIStudioPlan, normalizeStudioAIContext, previewValidatedAIStudioPlan, studioAIBaseFingerprint, toStudioAIContext } from "../app/studio-ai-plan";
+import { applyValidatedAIStudioPlan, materializeAIStudioPlan, normalizeStudioAIContext, previewValidatedAIStudioPlan, STUDIO_AI_PLAN_SCHEMA, studioAIBaseFingerprint, toStudioAIContext } from "../app/studio-ai-plan";
 import type { StudioDraft, StudioNodeType } from "../app/types";
 
 const at = "2026-08-23T12:00:00.000Z";
@@ -178,6 +178,15 @@ test("AI plan materialization rejects unknown semantic references atomically", (
   assert.throws(() => materializeAIStudioPlan(blankDraft(), "Build it.", proposal, "en"), /invalid endpoint/i);
 });
 
+test("AI response schema mirrors the materializer text and reference bounds", () => {
+  const schema = STUDIO_AI_PLAN_SCHEMA as unknown as { properties: Record<string, any> };
+  assert.equal(schema.properties.summary.maxLength, 800);
+  assert.equal(schema.properties.case.properties.context.maxLength, 4000);
+  assert.equal(schema.properties.nodes.items.properties.detail.maxLength, 4000);
+  assert.equal(schema.properties.nodes.items.properties.ref.pattern, "^[A-Za-z][A-Za-z0-9_-]{0,79}$");
+  assert.equal(schema.properties.links.items.properties.fromRef.maxLength, 80);
+});
+
 test("AI plans that introduce cycles are review-blocked before apply", () => {
   const proposal = bhopalProposal();
   proposal.links.push(link("credible", "release", "Reopen the initial trigger"));
@@ -240,6 +249,9 @@ test("AI route keeps the key server-side and enforces auth, same-origin, limits 
   assert.match(server, /safety_identifier/);
   assert.match(server, /reasoning:\s*\{\s*effort:\s*"low"\s*\}/);
   assert.match(server, /STUDIO_AI_TIMEOUT_MS\s*=\s*300_000/);
+  assert.match(server, /STUDIO_AI_REPAIR_TIMEOUT_MS\s*=\s*120_000/);
+  assert.match(server, /SEMANTIC REPAIR PASS/);
+  assert.match(server, /reasoning:\s*\{\s*effort:\s*"none"\s*\}/);
   assert.match(server, /AbortSignal\.any/);
   assert.match(server, /text:\s*\{\s*format:\s*\{/);
   assert.doesNotMatch(`${route}\n${ui}`, /OPENAI_API_KEY|NEXT_PUBLIC_OPENAI/);

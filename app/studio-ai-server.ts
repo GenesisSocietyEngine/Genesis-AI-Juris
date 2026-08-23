@@ -6,6 +6,7 @@ import type { StudioDraft } from "./types";
 
 type StudioAIConfig = { apiKey: string; model: string };
 const STUDIO_AI_TIMEOUT_MS = 300_000;
+const STUDIO_AI_REPAIR_TIMEOUT_MS = 120_000;
 
 export type StudioAIUsage = {
   inputTokens: number | null;
@@ -21,6 +22,7 @@ export class StudioAIServiceError extends Error {
     public readonly providerFailure: StudioAIProviderFailure | null = null,
     public readonly usage: StudioAIUsage | null = null,
     public readonly incompleteReason: "max_output_tokens" | "content_filter" | null = null,
+    public readonly invalidStage: "payload" | "content" | "json" | "materialization" | "repair_materialization" | null = null,
   ) {
     super(code);
   }
@@ -89,40 +91,52 @@ export async function createAIStudioPlan(values: {
       throw new StudioAIServiceError(failure.code, failure);
     }
   }
-  if (!isRecord(payload)) throw new StudioAIServiceError("invalid_output");
-  if (payload.status !== "completed") {
-    const incompleteDetails = isRecord(payload.incomplete_details) ? payload.incomplete_details : null;
-    const incompleteReason = incompleteDetails?.reason === "max_output_tokens" || incompleteDetails?.reason === "content_filter" ? incompleteDetails.reason : null;
-    throw new StudioAIServiceError(payload.status === "incomplete" ? "incomplete" : "invalid_output", null, studioAIUsage(payload.usage), incompleteReason);
-  }
-  const output = Array.isArray(payload.output) ? payload.output : [];
-  let outputText = "";
-  for (const item of output) {
-    if (!isRecord(item) || !Array.isArray(item.content)) continue;
-    for (const content of item.content) {
-      if (!isRecord(content)) continue;
-      if (content.type === "refusal") throw new StudioAIServiceError("refused");
-      if (content.type === "output_text" && typeof content.text === "string") outputText += content.text;
-    }
-  }
-  if (!outputText) throw new StudioAIServiceError("invalid_output");
-  let proposal: unknown;
-  try { proposal = JSON.parse(outputText); } catch { throw new StudioAIServiceError("invalid_output"); }
+  const first = studioAIProposal(payload);
   let plan;
   try {
-    plan = materializeAIStudioPlan(values.draft, values.instruction, proposal, values.locale, values.selectedNodeId);
+    plan = materializeAIStudioPlan(values.draft, values.instruction, first.proposal, values.locale, values.selectedNodeId);
   } catch {
-    throw new StudioAIServiceError("invalid_output");
+    const repairBody = {
+      ...requestBody,
+      max_output_tokens: 16_000,
+      reasoning: { effort: "none" },
+      instructions: `${providerContext.instructions}\n\nSEMANTIC REPAIR PASS\n- The prior proposal matched the JSON schema but failed the graph validator. Rebuild the complete proposal from the original input; do not describe the repair.\n- Recheck all reference formats and endpoints, cross-field null rules, unique relations, reachability and acyclicity before returning the replacement JSON.`,
+    };
+    let repairResponse: Response;
+    try {
+      repairResponse = await requestStudioAIResponse(config.apiKey, repairBody, values.signal, STUDIO_AI_REPAIR_TIMEOUT_MS);
+    } catch {
+      throw new StudioAIServiceError("provider_unavailable", null, first.usage);
+    }
+    const repairPayload: unknown = await repairResponse.json().catch(() => null);
+    if (!repairResponse.ok) {
+      const repairFailure = classifyStudioAIProviderFailure(repairResponse.status, repairPayload, repairResponse.headers.get("Retry-After"));
+      throw new StudioAIServiceError(repairFailure.code, repairFailure, first.usage);
+    }
+    let repair;
+    try {
+      repair = studioAIProposal(repairPayload);
+      plan = materializeAIStudioPlan(values.draft, values.instruction, repair.proposal, values.locale, values.selectedNodeId);
+    } catch (error) {
+      if (error instanceof StudioAIServiceError) throw withMergedUsage(error, first.usage);
+      throw new StudioAIServiceError("invalid_output", null, first.usage, null, "repair_materialization");
+    }
+    return {
+      plan,
+      model: config.model,
+      requestId: repair.requestId,
+      usage: mergeStudioAIUsage(first.usage, repair.usage),
+    };
   }
   return {
     plan,
     model: config.model,
-    requestId: typeof payload.id === "string" ? payload.id.slice(0, 200) : null,
-    usage: studioAIUsage(payload.usage),
+    requestId: first.requestId,
+    usage: first.usage,
   };
 }
 
-async function requestStudioAIResponse(apiKey: string, body: unknown, signal?: AbortSignal) {
+async function requestStudioAIResponse(apiKey: string, body: unknown, signal?: AbortSignal, timeoutMs = STUDIO_AI_TIMEOUT_MS) {
   return fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
@@ -132,9 +146,51 @@ async function requestStudioAIResponse(apiKey: string, body: unknown, signal?: A
     },
     body: JSON.stringify(body),
     signal: signal
-      ? AbortSignal.any([signal, AbortSignal.timeout(STUDIO_AI_TIMEOUT_MS)])
-      : AbortSignal.timeout(STUDIO_AI_TIMEOUT_MS),
+      ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
+      : AbortSignal.timeout(timeoutMs),
   });
+}
+
+function studioAIProposal(payload: unknown) {
+  if (!isRecord(payload)) throw new StudioAIServiceError("invalid_output", null, null, null, "payload");
+  const usage = studioAIUsage(payload.usage);
+  if (payload.status !== "completed") {
+    const incompleteDetails = isRecord(payload.incomplete_details) ? payload.incomplete_details : null;
+    const incompleteReason = incompleteDetails?.reason === "max_output_tokens" || incompleteDetails?.reason === "content_filter" ? incompleteDetails.reason : null;
+    throw new StudioAIServiceError(payload.status === "incomplete" ? "incomplete" : "invalid_output", null, usage, incompleteReason, "payload");
+  }
+  const output = Array.isArray(payload.output) ? payload.output : [];
+  let outputText = "";
+  for (const item of output) {
+    if (!isRecord(item) || !Array.isArray(item.content)) continue;
+    for (const content of item.content) {
+      if (!isRecord(content)) continue;
+      if (content.type === "refusal") throw new StudioAIServiceError("refused", null, usage);
+      if (content.type === "output_text" && typeof content.text === "string") outputText += content.text;
+    }
+  }
+  if (!outputText) throw new StudioAIServiceError("invalid_output", null, usage, null, "content");
+  let proposal: unknown;
+  try { proposal = JSON.parse(outputText); }
+  catch { throw new StudioAIServiceError("invalid_output", null, usage, null, "json"); }
+  return { proposal, usage, requestId: typeof payload.id === "string" ? payload.id.slice(0, 200) : null };
+}
+
+function mergeStudioAIUsage(first: StudioAIUsage | null, second: StudioAIUsage | null): StudioAIUsage | null {
+  if (!first) return second;
+  if (!second) return first;
+  const add = (left: number | null, right: number | null) => left === null || right === null ? null : left + right;
+  return {
+    inputTokens: add(first.inputTokens, second.inputTokens),
+    cachedInputTokens: add(first.cachedInputTokens, second.cachedInputTokens),
+    outputTokens: add(first.outputTokens, second.outputTokens),
+    reasoningOutputTokens: add(first.reasoningOutputTokens, second.reasoningOutputTokens),
+    totalTokens: add(first.totalTokens, second.totalTokens),
+  };
+}
+
+function withMergedUsage(error: StudioAIServiceError, prior: StudioAIUsage | null) {
+  return new StudioAIServiceError(error.code, error.providerFailure, mergeStudioAIUsage(prior, error.usage), error.incompleteReason, error.invalidStage);
 }
 
 function studioAIUsage(value: unknown): StudioAIUsage | null {

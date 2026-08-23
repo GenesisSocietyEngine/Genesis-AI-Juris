@@ -50,8 +50,11 @@ function studioPlannerInstructions(locale: "en" | "ru") {
     `- For a blank graph, propose a coherent playable path beginning at a trigger and route each decision branch to an outcome. Use a deadline node only when a deadline is explicit in the source.\n` +
     `- For an existing graph, preserve manual work. Update only nodes or relations whose identity is unambiguous. Never delete or relink; the author handles destructive changes visually.\n` +
     `- New-node refs are temporary semantic aliases. For an update, existingNodeId must be copied exactly from currentDraft and ref may equal that same ID. Never create durable IDs or coordinates.\n` +
+    `- Every ref, fromRef and toRef must match ^[A-Za-z][A-Za-z0-9_-]{0,79}$; every ref must be unique; every relation endpoint must use a ref defined by a node in the same proposal or an exact existing node ID.\n` +
+    `- Produce a connected directed acyclic graph. Every proposed node must be reachable from the trigger, every outcome must be reachable from a decision, every decision needs an outgoing choice, and self-links or duplicate endpoint pairs are forbidden.\n` +
     `- Relation labels should be player actions; detail explains the option; result explains the consequence. Effects must be conservative and intelligible.\n` +
     `- Node and relation cost/time values must be null unless supported by the author or clearly marked as an assumption.\n` +
+    `- deadlineDay and deadlineTime must either both be null or both be sourced values on a deadline node. maxUses must be a positive integer only when repeatability is limited; otherwise maxUses must be null.\n` +
     `- For tax/cross-border cases, use entity, cash_flow and tax_rule nodes, preserve compliance-only framing, distinguish documented law from assumptions, and never suggest concealment, sham substance, false reporting or evasion. Never invent source URLs.\n` +
     `- If the input is not a legal scenario or lacks enough information to propose a safe graph, set compatible=false, leave nodes and links empty, and ask one concise clarification question.\n` +
     `- Write all human-facing text in ${locale === "ru" ? "Russian" : "English"}.`;

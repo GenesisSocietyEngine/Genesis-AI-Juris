@@ -113,6 +113,7 @@ export async function POST(request: Request) {
         providerType: providerFailure?.providerType ?? null,
         providerParam: providerFailure?.providerParam ?? null,
         incompleteReason: error instanceof StudioAIServiceError ? error.incompleteReason : null,
+        invalidStage: error instanceof StudioAIServiceError ? error.invalidStage : null,
         inputTokens: usage?.inputTokens ?? null,
         cachedInputTokens: usage?.cachedInputTokens ?? null,
         outputTokens: usage?.outputTokens ?? null,

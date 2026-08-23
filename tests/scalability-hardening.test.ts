@@ -75,7 +75,7 @@ test("tenant AI lease migration stores only pseudonymous, expiring capacity meta
 
 test("tenant AI leases cover the full provider timeout without leaking request content", () => {
   const capacity = readFileSync(new URL("../app/studio-ai-capacity.ts", import.meta.url), "utf8");
-  assert.match(capacity, /STUDIO_AI_LEASE_TTL_MS\s*=\s*330_000/);
+  assert.match(capacity, /STUDIO_AI_LEASE_TTL_MS\s*=\s*450_000/);
   assert.doesNotMatch(capacity, /instruction|authorPrompt|premise/);
 });
 
