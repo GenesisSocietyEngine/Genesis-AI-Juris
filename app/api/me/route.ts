@@ -6,7 +6,9 @@ import { authJson } from "../../auth-http";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { authSubjectHash } from "../../local-auth";
 import { isSameOriginCredentialMutation, isSameOriginMutation, readJsonObject } from "../../request-security";
+import { passwordResetMailAvailable } from "../../reset-mail";
 import { isPlatformAdmin } from "../../server-authorization";
+import { studioAIAvailable } from "../../studio-ai-server";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +33,17 @@ export async function GET() {
     verifiedPractitioner: false,
     licenseTier: "community",
   };
-  return authJson({ authenticated: true, registered: Boolean(storedProfile), authSource: identity.authSource, profile, isAdmin: isPlatformAdmin(identity) });
+  return authJson({
+    authenticated: true,
+    registered: Boolean(storedProfile),
+    authSource: identity.authSource,
+    profile,
+    isAdmin: isPlatformAdmin(identity),
+    capabilities: {
+      studioAI: studioAIAvailable(),
+      passwordResetMail: passwordResetMailAvailable(),
+    },
+  });
 }
 
 export async function POST(request: Request) {
@@ -69,7 +81,12 @@ export async function POST(request: Request) {
     objectId: email,
     detail: { productUpdates: values.productUpdates, caseUpdates: values.caseUpdates, researchInvites: values.researchInvites, privacyNoticeVersion: values.privacyNoticeVersion },
   });
-  return authJson({ authSource: identity.authSource, profile, isAdmin: isPlatformAdmin(identity) });
+  return authJson({
+    authSource: identity.authSource,
+    profile,
+    isAdmin: isPlatformAdmin(identity),
+    capabilities: { studioAI: studioAIAvailable(), passwordResetMail: passwordResetMailAvailable() },
+  });
 }
 
 export async function DELETE(request: Request) {

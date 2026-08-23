@@ -1,4 +1,4 @@
-import { and, desc, eq, exists, getTableColumns, or, sql } from "drizzle-orm";
+import { and, desc, eq, exists, getTableColumns, inArray, lt, or, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { auditEvents, caseDrafts, caseFeedback, customCaseGrants, customCases, users } from "../../../db/schema";
 import { normalizeStoredCaseProtection, verifyCaseProtection } from "../../case-protection";
@@ -19,7 +19,8 @@ export async function GET(request: Request) {
   const db = getDb();
   const [profile] = await db.select({ licenseTier: users.licenseTier }).from(users).where(eq(users.email, email)).limit(1);
   const licenseTier = normalizeLicenseTier(profile?.licenseTier);
-  const idParam = new URL(request.url).searchParams.get("id");
+  const url = new URL(request.url);
+  const idParam = url.searchParams.get("id");
 
   if (idParam) {
     const id = Number(idParam);
@@ -66,7 +67,13 @@ export async function GET(request: Request) {
     });
   }
 
-  const ownerWhere = sql<boolean>`lower(trim(${customCases.ownerEmail})) = ${email}`;
+  const requestedLimit = Number(url.searchParams.get("limit") ?? "25");
+  const limit = Number.isInteger(requestedLimit) ? Math.max(1, Math.min(50, requestedLimit)) : 25;
+  const cursorParam = url.searchParams.get("cursor");
+  const cursor = cursorParam ? decodeCursor(cursorParam) : null;
+  if (cursorParam && !cursor) return privateJson({ error: "Invalid custom-case cursor." }, 400);
+
+  const ownerWhere = eq(customCases.ownerEmail, email);
   const viewerGrantExists = exists(db.select({ id: customCaseGrants.id }).from(customCaseGrants).where(and(
     eq(customCaseGrants.customCaseId, customCases.id),
     eq(customCaseGrants.recipientEmail, email),
@@ -86,8 +93,15 @@ export async function GET(request: Request) {
     order by ${caseDrafts.updatedAt} desc
     limit 1
   ), 0)`;
-  const records = await db.select({ ...getTableColumns(customCases), copyProtected }).from(customCases).where(visibleWhere).orderBy(desc(customCases.updatedAt));
-  if (!records.length) return privateJson({ customCases: [], licenseTier, isAdmin: admin });
+  const pageWhere = cursor ? and(visibleWhere, or(
+    lt(customCases.updatedAt, cursor.updatedAt),
+    and(eq(customCases.updatedAt, cursor.updatedAt), lt(customCases.id, cursor.id)),
+  )!) : visibleWhere;
+  const page = await db.select({ ...getTableColumns(customCases), copyProtected }).from(customCases).where(pageWhere).orderBy(desc(customCases.updatedAt), desc(customCases.id)).limit(limit + 1);
+  const records = page.slice(0, limit);
+  const nextCursor = page.length > limit && records.length ? encodeCursor(records.at(-1)!) : null;
+  if (!records.length) return privateJson({ customCases: [], nextCursor: null, licenseTier, isAdmin: admin });
+  const pageIds = records.map((record) => record.id);
 
   const viewerGrantColumns = {
     id: customCaseGrants.id,
@@ -97,18 +111,20 @@ export async function GET(request: Request) {
     canReshare: customCaseGrants.canReshare,
     createdAt: customCaseGrants.createdAt,
   };
-  const shareCountScope = admin ? visibleWhere : ownerWhere;
+  const shareCountScope = admin
+    ? inArray(customCaseGrants.customCaseId, pageIds)
+    : and(inArray(customCases.id, pageIds), eq(customCases.ownerEmail, email));
   const [viewerGrants, countedGrants, ownerProfiles] = await Promise.all([
     db.select(viewerGrantColumns).from(customCaseGrants)
       .innerJoin(customCases, eq(customCaseGrants.customCaseId, customCases.id))
-      .where(and(eq(customCaseGrants.recipientEmail, email), visibleWhere)),
+      .where(and(eq(customCaseGrants.recipientEmail, email), inArray(customCases.id, pageIds))),
     db.select({ customCaseId: customCaseGrants.customCaseId, count: sql<number>`count(*)` }).from(customCaseGrants)
       .innerJoin(customCases, eq(customCaseGrants.customCaseId, customCases.id))
       .where(shareCountScope)
       .groupBy(customCaseGrants.customCaseId),
     db.selectDistinct({ email: users.email, displayName: users.displayName }).from(users)
       .innerJoin(customCases, sql<boolean>`lower(trim(${users.email})) = lower(trim(${customCases.ownerEmail}))`)
-      .where(visibleWhere),
+      .where(inArray(customCases.id, pageIds)),
   ]);
   const viewerGrantByCase = new Map(viewerGrants.map((grant) => [grant.customCaseId, grant]));
   const shareCount = new Map<number, number>(viewerGrants.map((grant) => [grant.customCaseId, 1]));
@@ -119,7 +135,7 @@ export async function GET(request: Request) {
     if (!canViewCustomCase({ viewerEmail: email, ownerEmail: record.ownerEmail, isPrivate: record.isPrivate, isAdmin: admin, hasGrant: Boolean(viewerGrant) })) return [];
     return [{ ...summarize(record, email, admin, viewerGrant, licenseTier, shareCount.get(record.id) ?? 0, Boolean(record.copyProtected)), ownerDisplayName: ownerNames.get(normalizeEmail(record.ownerEmail)) ?? "Case author" }];
   });
-  return privateJson({ customCases: visible, licenseTier, isAdmin: admin });
+  return privateJson({ customCases: visible, nextCursor, licenseTier, isAdmin: admin });
 }
 
 export async function POST(request: Request) {
@@ -170,13 +186,57 @@ export async function POST(request: Request) {
     }
     const canReshare = payload.canReshare === true && (admin || owner);
     const now = new Date().toISOString();
+    const licensedToShare = admin || normalizeLicenseTier(viewerProfile?.licenseTier) !== "community";
+    const currentShareAuthority = sql<boolean>`(
+      lower(trim(${customCases.ownerEmail})) = ${email}
+      OR ${admin ? 1 : 0} = 1
+      OR EXISTS (
+        SELECT 1 FROM ${customCaseGrants} AS current_grant
+        WHERE current_grant.custom_case_id = ${id}
+          AND current_grant.recipient_email = ${email}
+          AND current_grant.can_reshare = true
+      )
+    )`;
+    const grantWrite = db.insert(customCaseGrants).select(db.select({
+      id: sql<number | null>`NULL`.as("id"),
+      customCaseId: customCases.id,
+      recipientEmail: sql<string>`${recipientEmail}`.as("recipient_email"),
+      grantedByEmail: sql<string>`${email}`.as("granted_by_email"),
+      canReshare: sql<boolean>`${canReshare}`.as("can_reshare"),
+      createdAt: sql<string>`${now}`.as("created_at"),
+    }).from(customCases).where(and(
+      eq(customCases.id, id),
+      eq(customCases.isPrivate, false),
+      sql<boolean>`${licensedToShare ? 1 : 0} = 1`,
+      currentShareAuthority,
+    )).limit(1)).onConflictDoUpdate({
+      target: [customCaseGrants.customCaseId, customCaseGrants.recipientEmail],
+      set: { grantedByEmail: email, canReshare, createdAt: now },
+    });
+    const confirmedCaseId = sql<string>`(
+      SELECT CAST(${customCases.id} AS TEXT)
+      FROM ${customCases}
+      WHERE ${customCases.id} = ${id}
+        AND ${customCases.isPrivate} = false
+        AND EXISTS (
+          SELECT 1 FROM ${customCaseGrants}
+          WHERE ${customCaseGrants.customCaseId} = ${id}
+            AND ${customCaseGrants.recipientEmail} = ${recipientEmail}
+            AND ${customCaseGrants.grantedByEmail} = ${email}
+            AND ${customCaseGrants.canReshare} = ${canReshare}
+        )
+      LIMIT 1
+    )`;
     try {
       await db.batch([
-        db.insert(customCaseGrants).values({ customCaseId: id, recipientEmail, grantedByEmail: email, canReshare, createdAt: now }).onConflictDoUpdate({ target: [customCaseGrants.customCaseId, customCaseGrants.recipientEmail], set: { grantedByEmail: email, canReshare, createdAt: now } }),
-        db.insert(auditEvents).values({ actorEmail: email, eventType: "custom_case_shared", objectType: "custom_case", objectId: String(id), detail: { recipientEmail, canReshare } }),
+        grantWrite,
+        // objectId is NOT NULL. If privacy or sharing authority changed before
+        // this batch, the guarded grant writes no row and this scalar becomes
+        // NULL, rolling the complete D1 batch back rather than reviving access.
+        db.insert(auditEvents).values({ actorEmail: email, eventType: "custom_case_shared", objectType: "custom_case", objectId: confirmedCaseId, detail: { recipientEmail, canReshare } }),
       ]);
     } catch {
-      return privateJson({ error: "The case became Private before access could be granted." }, 409);
+      return privateJson({ error: "Case visibility or sharing authority changed before access could be granted." }, 409);
     }
     return privateJson({ grant: { customCaseId: id, recipientEmail, canReshare } }, 201);
   }
@@ -228,6 +288,29 @@ function storedParentIdentity(payload: Record<string, unknown>) {
   if (typeof record.version !== "string" || !/^\d+\.\d+\.\d+$/u.test(record.version)) return null;
   if (typeof record.fingerprint !== "string" || !/^sha256-[a-f0-9]{64}$/u.test(record.fingerprint)) return null;
   return { caseId: record.caseId, version: record.version, fingerprint: record.fingerprint };
+}
+
+function encodeCursor(record: { updatedAt: string; id: number }) {
+  return btoa(JSON.stringify([record.updatedAt, record.id])).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, "");
+}
+
+function decodeCursor(value: string) {
+  if (!/^[A-Za-z0-9_-]{4,256}$/u.test(value)) return null;
+  try {
+    const normalized = value.replaceAll("-", "+").replaceAll("_", "/");
+    const decoded: unknown = JSON.parse(atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=")));
+    if (!Array.isArray(decoded) || decoded.length !== 2) return null;
+    const [updatedAt, id] = decoded;
+    if (typeof updatedAt !== "string" || !/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d{3}Z)?$/u.test(updatedAt) || !Number.isSafeInteger(id) || Number(id) <= 0) return null;
+    const canonicalInput = updatedAt.includes(" ") ? `${updatedAt.replace(" ", "T")}Z` : updatedAt;
+    const parsedAt = new Date(canonicalInput);
+    if (!Number.isFinite(parsedAt.getTime())) return null;
+    const canonicalAt = updatedAt.includes(" ") ? parsedAt.toISOString().slice(0, 19).replace("T", " ") : parsedAt.toISOString();
+    if (canonicalAt !== updatedAt) return null;
+    return { updatedAt, id: Number(id) };
+  } catch {
+    return null;
+  }
 }
 
 function isEmail(value: string) {

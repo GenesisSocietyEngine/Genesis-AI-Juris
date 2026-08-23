@@ -35,6 +35,9 @@ export async function POST(request: Request) {
   if (source === "studio" && !/^sha256-[a-f0-9]{64}$/.test(studioFingerprint)) {
     return Response.json({ error: "A valid Studio content fingerprint is required." }, { status: 400 });
   }
+  if (privacyMode === "private_note" && source !== "studio") {
+    return Response.json({ error: "Private notes require an exact Studio workspace case." }, { status: 400 });
+  }
   const db = getDb();
   if (source === "playable" && !await isPublishedCase(db, caseId, caseVersion, studioFingerprint)) {
     return Response.json({ error: "The playable case identity does not match a published catalogue version." }, { status: 409 });
@@ -43,18 +46,39 @@ export async function POST(request: Request) {
   let audience = "central";
   let feedbackStatus = "new";
   if (source === "studio") {
+    const requestedCustomCaseId = typeof payload.customCaseId === "number" && Number.isInteger(payload.customCaseId) && payload.customCaseId > 0
+      ? payload.customCaseId
+      : null;
+    if (!requestedCustomCaseId) return Response.json({ error: "Save and reopen this exact Studio workspace case before submitting case feedback." }, { status: 409 });
     const viewerEmail = normalizeEmail(identity.email);
     const admin = isPlatformAdmin(identity);
-    const candidates = await db.select({ customCase: customCases, ownerEmail: caseDrafts.userEmail }).from(caseDrafts).innerJoin(customCases, eq(customCases.id, caseDrafts.customCaseId)).where(and(
-      eq(caseDrafts.caseId, caseId), eq(caseDrafts.version, caseVersion), eq(caseDrafts.fingerprint, studioFingerprint),
-    ));
-    const grants = await db.select().from(customCaseGrants).where(eq(customCaseGrants.recipientEmail, viewerEmail));
-    const granted = new Set(grants.map((grant) => grant.customCaseId));
-    const candidate = candidates.find((item) => canViewCustomCase({ viewerEmail, ownerEmail: item.customCase.ownerEmail, isPrivate: item.customCase.isPrivate, isAdmin: admin, hasGrant: granted.has(item.customCase.id) }));
-    if (!candidate) return Response.json({ error: "Save this Studio case to your workspace or request access before submitting case feedback." }, { status: 409 });
-    const resolvedAudience = customFeedbackAudience({ viewerEmail, ownerEmail: candidate.customCase.ownerEmail, isPrivate: candidate.customCase.isPrivate, isAdmin: admin, hasGrant: granted.has(candidate.customCase.id) });
+    const candidates = await db.select({ customCase: customCases, draftId: caseDrafts.id }).from(caseDrafts).innerJoin(customCases, eq(customCases.id, caseDrafts.customCaseId)).where(and(
+      eq(customCases.id, requestedCustomCaseId),
+      eq(customCases.caseId, caseId),
+      eq(customCases.currentVersion, caseVersion),
+      eq(customCases.fingerprint, studioFingerprint),
+      eq(caseDrafts.caseId, caseId),
+      eq(caseDrafts.version, caseVersion),
+      eq(caseDrafts.fingerprint, studioFingerprint),
+    )).limit(2);
+    if (candidates.length !== 1) return Response.json({ error: "The exact Studio workspace case is unavailable or ambiguous. Reopen it before submitting feedback." }, { status: 409 });
+    const candidate = candidates[0];
+    const [grant] = await db.select({ id: customCaseGrants.id }).from(customCaseGrants).where(and(
+      eq(customCaseGrants.customCaseId, requestedCustomCaseId),
+      eq(customCaseGrants.recipientEmail, viewerEmail),
+    )).limit(1);
+    const access = { viewerEmail, ownerEmail: candidate.customCase.ownerEmail, isPrivate: candidate.customCase.isPrivate, isAdmin: admin, hasGrant: Boolean(grant) };
+    if (!canViewCustomCase(access)) return Response.json({ error: "Custom case not found." }, { status: 404 });
+    const resolvedAudience = customFeedbackAudience(access);
     if (!resolvedAudience) return Response.json({ error: "Custom case not found." }, { status: 404 });
-    customCaseId = candidate.customCase.id;
+    const owner = viewerEmail === normalizeEmail(candidate.customCase.ownerEmail);
+    if (privacyMode === "private_note" && (!owner || !candidate.customCase.isPrivate || resolvedAudience !== "owner_private")) {
+      return Response.json({ error: "A private note can be saved only by the owner of this exact Private workspace case." }, { status: 409 });
+    }
+    if (privacyMode !== "private_note" && candidate.customCase.isPrivate) {
+      return Response.json({ error: "Choose the owner-only private-note channel or send redacted product feedback." }, { status: 409 });
+    }
+    customCaseId = requestedCustomCaseId;
     audience = resolvedAudience;
     feedbackStatus = resolvedAudience === "owner_private" ? "private_note" : "new";
   }

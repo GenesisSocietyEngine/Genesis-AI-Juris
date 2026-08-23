@@ -36,6 +36,19 @@ export function slugifyCaseId(value: string) {
 }
 
 export function caseFingerprint(draft: StudioDraft) {
+  return canonicalFingerprint(caseFingerprintContent(draft, true));
+}
+
+/**
+ * Read-only compatibility fingerprint for artifacts exported before v16.
+ * New saves and seals must always use caseFingerprint(), which binds the
+ * relationship IDs compiled into playable option IDs.
+ */
+export function legacyCaseFingerprintV15(draft: StudioDraft) {
+  return canonicalFingerprint(caseFingerprintContent(draft, false));
+}
+
+function caseFingerprintContent(draft: StudioDraft, includeRelationshipIds: boolean) {
   const rawClassification = draft.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true };
   const practiceArea = rawClassification.practiceArea.trim() || "General legal";
   const taxTopics = cleanList(rawClassification.taxTopics, 30, 100);
@@ -52,7 +65,7 @@ export function caseFingerprint(draft: StudioDraft) {
     legalAsOf: isoDate(rawClassification.legalAsOf),
     sourceUrls: urlList(rawClassification.sourceUrls, 30),
   };
-  const normativeContent = {
+  return {
     caseId: draft.caseId.trim(),
     parent: draft.parent,
     title: draft.title.trim(),
@@ -62,9 +75,13 @@ export function caseFingerprint(draft: StudioDraft) {
     classification,
     taxEconomics: isTax ? normalizeTaxEconomics(draft.taxEconomics) : undefined,
     nodes: draft.nodes.map((node) => ({ ...node, title: node.title.trim(), detail: node.detail.trim().slice(0, 4_000) })),
-    links: draft.links.map((link) => ({ from: link.from, to: link.to, rule: link.rule })),
+    // Relationship IDs become playable option IDs in studio-compiler. v16
+    // therefore treats them as runnable content. The ID-free shape exists only
+    // to recognize a v15 export before authoritative server comparison.
+    links: draft.links.map((link) => includeRelationshipIds
+      ? { id: link.id, from: link.from, to: link.to, rule: link.rule }
+      : { from: link.from, to: link.to, rule: link.rule }),
   };
-  return canonicalFingerprint(normativeContent);
 }
 
 export function canonicalFingerprint(value: unknown) { return `sha256-${sha256(canonicalJson(value))}`; }

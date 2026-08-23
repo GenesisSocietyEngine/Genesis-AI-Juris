@@ -1,0 +1,2 @@
+CREATE INDEX `custom_cases_owner_updated_idx` ON `custom_cases` (`owner_email`,`updated_at`,`id`);--> statement-breakpoint
+CREATE INDEX `custom_cases_private_updated_idx` ON `custom_cases` (`is_private`,`updated_at`,`id`);

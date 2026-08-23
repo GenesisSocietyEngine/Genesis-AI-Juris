@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { normalizeStudioDraft } from "../app/case-integrity";
-import { applyStudioPromptPlan, describeStudioPromptOperation } from "../app/studio-editing";
+import { applyStudioPromptPlan, describeStudioPromptOperation, toPublicStudioDraft } from "../app/studio-editing";
 import { STUDIO_DRAFT_SERIALIZED_LIMIT, studioJsonBytes } from "../app/studio-envelope";
-import { applyValidatedAIStudioPlan, materializeAIStudioPlan, normalizeStudioAIContext, studioAIBaseFingerprint, toStudioAIContext } from "../app/studio-ai-plan";
+import { applyValidatedAIStudioPlan, materializeAIStudioPlan, normalizeStudioAIContext, previewValidatedAIStudioPlan, studioAIBaseFingerprint, toStudioAIContext } from "../app/studio-ai-plan";
 import type { StudioDraft, StudioNodeType } from "../app/types";
 
 const at = "2026-08-23T12:00:00.000Z";
@@ -95,11 +95,13 @@ test("AI semantic intents materialize into a meaningful, collision-free, non-des
   assert.match(applied.draft.editHistory[1].message, /model=gpt-5\.6/);
 });
 
-test("AI application preserves the complete accepted prompt as blank-draft source context", () => {
-  const instruction = `Bhopal source record: ${"documented public facts and chronology. ".repeat(170)}`.slice(0, 8_000);
+test("AI keeps the raw blank-draft source private and publishes only reviewed case context", () => {
+  const privateMarker = "PRIVATE-SOURCE-TAIL-DO-NOT-PUBLISH";
+  const instruction = `Bhopal source record: ${"documented public facts and chronology. ".repeat(160)}${privateMarker}`.slice(0, 8_000);
   const plan = materializeAIStudioPlan(blankDraft(), instruction, bhopalProposal(), "en");
   const applied = applyStudioPromptPlan(blankDraft(), { plan, locale: "en", createdAt: at });
-  assert.equal(applied.draft.premise, instruction.trim());
+  assert.equal(applied.draft.premise, bhopalProposal().case.context);
+  assert.doesNotMatch(JSON.stringify(toPublicStudioDraft(applied.draft)), new RegExp(privateMarker));
   const sourceEntries = applied.draft.editHistory.filter((entry) => entry.action === "prompt_submitted");
   assert.ok(sourceEntries.length > 1);
   assert.ok(sourceEntries.every((entry) => entry.message.length <= 2_000));
@@ -107,14 +109,28 @@ test("AI application preserves the complete accepted prompt as blank-draft sourc
   assert.equal(reconstructed, instruction.trim(), "bounded private history chunks retain the complete accepted AI source");
 });
 
+test("AI preview uses the final apply trust boundary without mutating the live draft", () => {
+  const base = blankDraft();
+  const before = structuredClone(base);
+  const plan = materializeAIStudioPlan(base, "Build a playable case.", bhopalProposal(), "en");
+  const preview = previewValidatedAIStudioPlan(base, { plan, locale: "en" });
+  const applied = applyValidatedAIStudioPlan(base, { plan, locale: "en", createdAt: "2026-08-23T13:00:00.000Z" }).draft;
+  assert.deepEqual(base, before, "preview must not mutate the live draft");
+  assert.deepEqual(preview.nodes, applied.nodes);
+  assert.deepEqual(preview.links, applied.links);
+  assert.equal(preview.premise, applied.premise);
+});
+
 test("AI review descriptions expose every authored runtime and relation rule field", () => {
+  const hiddenTail = "UNIQUE-LEGAL-TAIL-MUST-BE-VISIBLE";
   const deadlineDescription = describeStudioPromptOperation({ kind: "add_node", node: {
-    id: "deadline-1", type: "deadline", title: "File the response", detail: "A sourced procedural limit.", x: 20, y: 20,
+    id: "deadline-1", type: "deadline", title: "File the response", detail: `${"A sourced procedural limit. ".repeat(8)}${hiddenTail}`, x: 20, y: 20,
     runtime: { day: 3, time: "16:30", pressure: "Escalates if counsel waits.", deadlineDay: 4, deadlineTime: "12:00", missedOutcomeNodeId: "outcome-2", budgetCostEur: 500, durationMinutes: 90 },
   } }, "en", new Map([["outcome-2", "Missed filing"]]));
   assert.match(deadlineDescription, /pressure:.*Escalates/);
   assert.match(deadlineDescription, /deadline: day 4, 12:00/);
   assert.match(deadlineDescription, /missed outcome:.*Missed filing/);
+  assert.match(deadlineDescription, new RegExp(hiddenTail), "review must disclose content after character 120 before Apply");
 
   const relationDescription = describeStudioPromptOperation({ kind: "add_link", link: {
     id: "link-1", from: "decision-1", to: "outcome-1", rule: {
@@ -126,6 +142,34 @@ test("AI review descriptions expose every authored runtime and relation rule fie
   assert.match(relationDescription, /effects: evidence \+8, exposure -3/);
   assert.match(relationDescription, /conditions: evidence gte 40/);
   assert.match(relationDescription, /repeatability: limited \(max 2\)/);
+});
+
+test("User-view AI review identifies updated nodes and relations without exposing technical IDs", () => {
+  const titles = new Map([
+    ["actor-1", "Original operator"],
+    ["decision-1", "Choose the response"],
+    ["outcome-1", "Compliant outcome"],
+  ]);
+  const updateNodeDescription = describeStudioPromptOperation({
+    kind: "update_node",
+    nodeId: "actor-1",
+    change: { title: "Renamed operator" },
+  }, "en", titles, { showIds: false });
+  assert.match(updateNodeDescription, /Original operator/);
+  assert.match(updateNodeDescription, /Renamed operator/);
+  assert.doesNotMatch(updateNodeDescription, /actor-1/);
+
+  const updateLinkDescription = describeStudioPromptOperation({
+    kind: "update_link",
+    linkId: "link-1",
+    change: { label: "Use the verified route" },
+  }, "en", titles, {
+    showIds: false,
+    linkEndpoints: new Map([["link-1", { from: "decision-1", to: "outcome-1" }]]),
+  });
+  assert.match(updateLinkDescription, /Choose the response.*→.*Compliant outcome/);
+  assert.match(updateLinkDescription, /Use the verified route/);
+  assert.doesNotMatch(updateLinkDescription, /link-1/);
 });
 
 test("AI plan materialization rejects unknown semantic references atomically", () => {
@@ -175,19 +219,28 @@ test("AI route keeps the key server-side and enforces auth, same-origin, limits 
   const route = readFileSync(new URL("../app/api/studio/ai-plan/route.ts", import.meta.url), "utf8");
   const server = readFileSync(new URL("../app/studio-ai-server.ts", import.meta.url), "utf8");
   const ui = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
+  const review = readFileSync(new URL("../app/StudioAIReview.tsx", import.meta.url), "utf8");
+  const me = readFileSync(new URL("../app/api/me/route.ts", import.meta.url), "utf8");
   assert.match(route, /isSameOriginCredentialMutation/);
   assert.match(route, /getChatGPTUser/);
   assert.match(route, /profile_required/);
   assert.match(route, /consumeAuthRateLimit/);
   assert.match(route, /studio-ai-tenant-daily/);
+  assert.match(route, /studio-ai-plan-burst/);
   assert.match(route, /GENESIS_AI_DAILY_REQUEST_LIMIT/);
   assert.match(route, /STUDIO_CASE_BODY_LIMIT/);
   assert.match(route, /baseFingerprint/);
   assert.match(server, /OPENAI_API_KEY/);
   assert.match(server, /store: false/);
+  assert.match(server, /safety_identifier/);
+  assert.match(server, /AbortSignal\.any/);
   assert.match(server, /text:\s*\{\s*format:\s*\{/);
   assert.doesNotMatch(`${route}\n${ui}`, /OPENAI_API_KEY|NEXT_PUBLIC_OPENAI/);
   assert.match(ui, /Understand with AI/);
-  assert.match(ui, /Apply .*reviewed changes/);
+  assert.match(review, /Apply all .*reviewed changes/);
+  assert.match(review, /displayed in full below/);
+  assert.match(me, /studioAIAvailable/);
+  assert.match(ui, /not_configured/);
+  assert.match(ui, /useState<"user" \| "developer">\("user"\)/);
   assert.match(ui, /maxLength=\{8000\}/);
 });

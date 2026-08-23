@@ -189,13 +189,40 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /event\.key !== "Delete" && event\.key !== "Backspace"/);
   assert.match(appSource, /target instanceof HTMLInputElement/);
   assert.match(appSource, /Press Delete to remove it/);
+  assert.match(appSource, /const pointerX = \(event\.clientX - rect\.left\) \/ scale/,
+    "scaled graph dragging must translate pointer coordinates back into graph space");
+  assert.match(appSource, /moveNode\(event,node,graphZoom\)/,
+    "graph interactions must provide their current scale");
+  assert.match(appSource, /Math\.max\(0\.85/,
+    "Fit is explicit and must retain a legible minimum scale");
+  assert.doesNotMatch(appSource, /Math\.max\(0\.45/,
+    "User view must not automatically shrink the editable graph to an illegible scale");
+  assert.match(appSource, /id="graph-connect-status"[\s\S]*tabIndex=\{-1\}/,
+    "relation deletion must have a programmatically focusable status destination");
+  assert.match(appSource, /focusRelationStatus\(\)/,
+    "relation deletion must restore keyboard focus after removing its control");
   assert.match(appSource, /Show on graph/);
   assert.match(appSource, /runtimeForNodeType\(selectedNode\.runtime,type\)/, "node type changes must strip incompatible runtime fields");
   assert.match(appSource, /parent: \{ caseId: current\.caseId, version: current\.version, fingerprint: studioServerFingerprint \}/, "child lineage must use the exact persisted parent fingerprint");
   assert.match(appSource, /Studio case envelope/);
+  assert.match(appSource, /useState<"user" \| "developer">\("user"\)/, "User view must be the default Studio surface");
+  assert.match(appSource, /Вид пользователя/);
+  assert.match(appSource, /Вид разработчика/);
+  assert.match(appSource, /studio-more-actions/, "secondary User-view commands must be grouped under More actions");
+  assert.match(appSource, /const \[userSettingsOpen, setUserSettingsOpen\] = useState\(false\)/, "advanced User-view case settings must start collapsed");
+  assert.match(appSource, /studio-settings-toggle/, "collapsed User-view case settings must remain clearly discoverable");
+  assert.match(appSource, /aria-describedby=\{submitBlocker \? "studio-submit-blocker"/, "a disabled submission must expose its concrete blocker");
+  assert.match(appSource, /inert=\{!canDuplicate\}/, "inspection-only authoring regions must be removed from keyboard interaction");
+  assert.doesNotMatch(appSource, /aria-disabled=\{!canDuplicate\}/, "generic regions must not misuse aria-disabled");
+  assert.match(appSource, /type !== "tax_rule"/, "the general User-view palette must hide the specialist tax-rule node");
+  assert.match(appSource, /displayMode === "developer" && <section className="studio-history/, "technical history stays in Developer view");
+  assert.match(appSource, /displayMode === "developer" && prompt\.trim\(\) && <details className="prompt-fallback-preview/, "exact-command DSL stays in Developer view");
+  assert.match(appSource, /displayMode === "developer" && draft\.protection/, "raw lineage seals stay in Developer view");
+  assert.match(appSource, /Publishable case context/);
   assert.match(appSource, /\{taxDraft && <><label><span>\{locale === "en" \? "Tax-case purpose"/, "tax-only controls should stay hidden for general cases");
   assert.doesNotMatch(appSource.slice(appSource.indexOf("function deleteSelectedRelation"), appSource.indexOf("async function shareDraft")), /deleteNode/);
   assert.match(css, /\.theme-after-hours \.node-inspector \.inspector-form select option\{color:#14212c;background-color:#fff\}/);
+  assert.match(css, /\.studio-submit-blocker\{/);
 });
 
 test("Help ships two local accessible walkthroughs with bilingual monotonic captions", () => {

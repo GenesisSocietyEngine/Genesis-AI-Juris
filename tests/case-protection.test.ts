@@ -10,7 +10,7 @@ import {
   verifyCaseProtection,
   type CaseProtectionBinding,
 } from "../app/case-protection";
-import { caseFingerprint, normalizeStudioDraft } from "../app/case-integrity";
+import { caseFingerprint, legacyCaseFingerprintV15, normalizeStudioDraft } from "../app/case-integrity";
 
 const key = Uint8Array.from({ length: 32 }, (_, index) => index + 1);
 const rootBinding: CaseProtectionBinding = {
@@ -111,6 +111,36 @@ test("Studio content fingerprints exclude the server attestation and avoid a cir
   assert.equal(caseFingerprint({ ...draft, protection }), fingerprint);
 });
 
+test("case seals distinguish relationship IDs that compile into different playable options", async () => {
+  const draft = normalizeStudioDraft({
+    caseId: "protected_relationship_001",
+    version: "1.0.0",
+    parent: null,
+    title: "Protected relationship",
+    jurisdiction: "BE",
+    role: "Counsel",
+    premise: "Evaluate one exact protected route.",
+    nodes: [
+      { id: "trigger-1", type: "trigger", title: "Trigger", detail: "", x: 10, y: 10 },
+      { id: "outcome-1", type: "outcome", title: "Outcome", detail: "", x: 200, y: 10 },
+    ],
+    links: [{ id: "link-1", from: "trigger-1", to: "outcome-1" }],
+    editHistory: [],
+    updatedAt: "2026-08-22T00:00:00.000Z",
+  });
+  const renamed = normalizeStudioDraft({ ...draft, links: [{ ...draft.links[0], id: "link-2" }] });
+  const first = await buildCaseProtection({ ...rootBinding, caseId: draft.caseId, studioFingerprint: caseFingerprint(draft) }, key);
+  const second = await buildCaseProtection({ ...rootBinding, caseId: renamed.caseId, studioFingerprint: caseFingerprint(renamed) }, key);
+  const legacyFingerprint = legacyCaseFingerprintV15(draft);
+  const legacySeal = await buildCaseProtection({ ...rootBinding, caseId: draft.caseId, studioFingerprint: legacyFingerprint }, key);
+  assert.notEqual(caseFingerprint(draft), caseFingerprint(renamed));
+  assert.equal(legacyFingerprint, legacyCaseFingerprintV15(renamed), "v15 compatibility alone cannot authenticate playable option identity");
+  assert.equal(await verifyCaseProtection(legacySeal, { ...rootBinding, caseId: draft.caseId, studioFingerprint: legacyFingerprint }, key), true);
+  assert.equal(await verifyCaseProtection(legacySeal, { ...rootBinding, caseId: draft.caseId, studioFingerprint: caseFingerprint(draft) }, key), false);
+  assert.notEqual(first.currentCode, second.currentCode);
+  assert.notEqual(first.seal, second.seal);
+});
+
 test("server routes retain signing-key secrecy, exact lineage checks and copy-protection ACL gates", () => {
   const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
   const serverProtection = source("app/server-case-protection.ts");
@@ -149,6 +179,9 @@ test("server routes retain signing-key secrecy, exact lineage checks and copy-pr
 
   assert.match(verification, /isSameOriginMutation/);
   assert.match(verification, /normalizeStoredCaseProtection/);
+  assert.match(verification, /legacyCaseFingerprintV15/);
+  assert.match(verification, /authoritativeCurrentFingerprint/);
+  assert.match(verification, /await authoritativeCurrentFingerprint\(db, resolved\) !== fingerprint/);
   assert.match(verification, /access === "owner" \? customCaseId : null/);
   assert.match(verification, /return privateJson\(\{ valid, copyProtected, canDuplicate, access, customCaseId: access === "owner" \? customCaseId : null, fingerprint \}\)/);
   assert.doesNotMatch(verification, /secret:/);

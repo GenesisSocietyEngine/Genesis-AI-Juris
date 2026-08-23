@@ -167,6 +167,7 @@ export async function writeAuthAudit(values: {
   networkSubjectHash?: string;
   success: boolean;
   reason?: string;
+  detail?: Record<string, string | number | boolean | null>;
 }) {
   await getDb().insert(authAuditEvents).values({
     accountId: values.accountId ?? null,
@@ -174,6 +175,7 @@ export async function writeAuthAudit(values: {
     subjectHash: values.emailSubjectHash,
     success: values.success,
     detail: {
+      ...(values.detail ?? {}),
       networkSubjectHash: values.networkSubjectHash ?? null,
       reason: values.reason ?? null,
     },

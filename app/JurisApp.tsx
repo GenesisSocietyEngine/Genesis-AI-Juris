@@ -2,7 +2,7 @@
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { canonicalFingerprint, caseFingerprint, isRecord, isTaxDraft, normalizeStudioDraft, slugifyCaseId, studioStructuralIssues } from "./case-integrity";
+import { canonicalFingerprint, caseFingerprint, isRecord, isTaxDraft, legacyCaseFingerprintV15, normalizeStudioDraft, slugifyCaseId, studioStructuralIssues } from "./case-integrity";
 import { bundledCataloguePresentation, mayUseBundledCatalogueFallback } from "./catalogue-fallback";
 import { actionUseKey, decisionAvailability, resolveDecisionTiming, resolveLegacyDecisionTiming } from "./game-engine";
 import { normalizePlayableScenario, playableFingerprint } from "./playable-integrity";
@@ -10,11 +10,13 @@ import { resolvePlayedCaseScenario } from "./played-case-loader";
 import { deriveRunLedger, type RunLedger } from "./run-ledger";
 import type { CanonicalRuntimeState } from "./canonical-runtime";
 import { initialMetrics } from "./runtime-constants";
+import { LatestRequestGate } from "./latest-request";
 import { deviceDraftEnvelope, LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, mayPersistStudioDraftOnDevice, studioDeviceDraftKey, studioDeviceScope, unwrapDeviceDraft } from "./studio-device-storage";
 import { addStudioLink, appendStudioHistory, applyStudioPromptIteration, deleteStudioLink, describeStudioPromptOperation, nextStudioLinkId, nextStudioNodeId, nextStudioNodePosition, planStudioPromptIteration, relinkStudioLink, type StudioPromptPlan } from "./studio-editing";
 import { applyValidatedAIStudioPlan, studioAIBaseFingerprint, toStudioAIContext } from "./studio-ai-plan";
 import { compileStudioDraft } from "./studio-compiler";
 import { STUDIO_DRAFT_SERIALIZED_LIMIT, studioJsonBytes } from "./studio-envelope";
+import { STUDIO_NODE_MENU_PAGE_SIZE, studioNodeMenuOptions, studioNodeMenuPage } from "./studio-node-menu";
 import { applyStudioSnapshot, diffDraftToRevision, diffStudioSnapshots, emptyStudioTimeline, recordStudioRevision, snapshotStudioDraft, stepStudioTimeline, studioSnapshotsEqual, type StudioRevision, type StudioTimeline } from "./studio-revisions";
 import { calculateTaxEconomics, defaultTaxEconomics } from "./tax-economics";
 import type {
@@ -32,11 +34,12 @@ import type {
 type Locale = "en" | "ru";
 type View = "library" | "play" | "studio" | "community" | "help";
 type Theme = "office" | "after-hours";
-type StudioAIEntitlement = "loading" | "anonymous" | "profile_required" | "ready" | "unavailable";
+type StudioAIEntitlement = "loading" | "anonymous" | "profile_required" | "ready" | "not_configured" | "unavailable";
 const HelpFaq = lazy(() => import("./HelpFaq"));
+const StudioAIReview = lazy(() => import("./StudioAIReview"));
 type OutcomeClass = "strong" | "mixed" | "weak";
 type DecisionRecord = { stageId: string; stage: string; option: DecisionOption };
-type FeedbackTarget = { caseId: string; version: string; title: string; source: "playable" | "studio"; fingerprint?: string; contextType?: "case" | "stage" | "decision" | "node"; contextId?: string; privateCase?: boolean };
+type FeedbackTarget = { caseId: string; version: string; title: string; source: "playable" | "studio"; fingerprint?: string; customCaseId?: number | null; contextType?: "case" | "stage" | "decision" | "node"; contextId?: string; privateCase?: boolean };
 
 function returnedAIStudioPlan(value: unknown, instruction: string): StudioPromptPlan | null {
   if (!isRecord(value) || value.planner !== "ai" || value.instruction !== instruction || typeof value.canApply !== "boolean"
@@ -423,6 +426,10 @@ function blankStudioDraft(updatedAt = new Date().toISOString()): StudioDraft {
   };
 }
 
+// Keep the first server/client render deterministic and genuinely empty. The
+// worked example remains available as an explicit author action.
+const initialBlankDraft = blankStudioDraft(new Date(0).toISOString());
+
 export default function JurisApp() {
   const [locale, setLocale] = useState<Locale>("en");
   const [theme, setTheme] = useState<Theme>("after-hours");
@@ -452,7 +459,8 @@ export default function JurisApp() {
   const [playSessionSync, setPlaySessionSync] = useState<"opening" | "server" | "local" | "stale" | "error">("local");
   const [playSessionBusy, setPlaySessionBusy] = useState(false);
   const [prompt, setPrompt] = useState("");
-  const [draft, setDraftState] = useState<StudioDraft>(defaultDraft);
+  const [draft, setDraftState] = useState<StudioDraft>(initialBlankDraft);
+  const [validatedDraft, setValidatedDraft] = useState<StudioDraft>(initialBlankDraft);
   const [studioPrivate, setStudioPrivate] = useState(false);
   const [studioCustomCaseId, setStudioCustomCaseId] = useState<number | null>(null);
   const [studioCanManagePrivacy, setStudioCanManagePrivacy] = useState(true);
@@ -461,10 +469,10 @@ export default function JurisApp() {
   const [studioCopyProtectionLocked, setStudioCopyProtectionLocked] = useState(false);
   const [studioStorageScope, setStudioStorageScope] = useState<string | null>(null);
   const [studioAIEntitlement, setStudioAIEntitlement] = useState<StudioAIEntitlement>("loading");
-  const draftRef = useRef<StudioDraft>(defaultDraft);
+  const draftRef = useRef<StudioDraft>(initialBlankDraft);
   const [studioTimeline, setStudioTimelineState] = useState<StudioTimeline>(emptyStudioTimeline());
   const studioTimelineRef = useRef<StudioTimeline>(emptyStudioTimeline());
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>("decision-1");
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const [feedbackTarget, setFeedbackTarget] = useState<FeedbackTarget | null>(null);
@@ -475,6 +483,7 @@ export default function JurisApp() {
   const playSessionStartRef = useRef(0);
   const localCanonicalRuntimeRef = useRef<CanonicalRuntimeState | null>(null);
   const catalogueLaunchRef = useRef(0);
+  const catalogueRequestGateRef = useRef(new LatestRequestGate());
   const studioChangedBeforeRestoreRef = useRef(false);
   const text = ui[locale];
 
@@ -488,11 +497,13 @@ export default function JurisApp() {
     const resolveIdentityBoundary = async () => {
       try {
         const response = await fetch("/api/me", { cache: "no-store" });
-        const payload = await readJsonResponse<{ authenticated?: boolean; registered?: boolean; profile?: { email?: string } }>(response);
+        const payload = await readJsonResponse<{ authenticated?: boolean; registered?: boolean; profile?: { email?: string }; capabilities?: { studioAI?: boolean } }>(response);
         const scope = await studioDeviceScope(response.ok && payload?.authenticated ? payload.profile?.email : null);
         if (!cancelled) {
           setStudioStorageScope(scope);
-          setStudioAIEntitlement(response.ok && payload?.authenticated ? (payload.registered ? "ready" : "profile_required") : "anonymous");
+          setStudioAIEntitlement(response.ok && payload?.authenticated
+            ? (payload.registered ? (payload.capabilities?.studioAI ? "ready" : "not_configured") : "profile_required")
+            : "anonymous");
         }
       } catch {
         // Fail closed: without a resolved identity scope the app does not read
@@ -552,7 +563,10 @@ export default function JurisApp() {
 
   useEffect(() => { document.documentElement.lang = locale; }, [locale]);
 
+  useEffect(() => () => catalogueRequestGateRef.current.abort(), []);
+
   const refreshCatalogue = useCallback(async ({ filters = {}, cursor = null, append = false, force = false }: { filters?: CatalogueSearchFilters; cursor?: string | null; append?: boolean; force?: boolean } = {}) => {
+    const requestTicket = catalogueRequestGateRef.current.start();
     setCatalogueLoading(true);
     setCatalogueError("");
     const params = new URLSearchParams({ limit: "24" });
@@ -564,9 +578,10 @@ export default function JurisApp() {
     if (cursor) params.set("cursor", cursor);
     if (force) params.set("fresh", String(Date.now()));
     try {
-      const response = await fetch(`/api/catalog?${params}`, force ? { cache: "no-store" } : undefined);
+      const response = await fetch(`/api/catalog?${params}`, { ...(force ? { cache: "no-store" as const } : {}), signal: requestTicket.signal });
       const payload = await readJsonResponse<{ items?: unknown[]; nextCursor?: string | null; total?: number }>(response);
       if (!response.ok || !Array.isArray(payload?.items)) throw new Error("Catalogue response is unavailable");
+      if (!catalogueRequestGateRef.current.isCurrent(requestTicket)) return;
       const records = payload.items.flatMap((item) => {
         try { return [normalizePublishedCaseSummary(item)]; } catch { return []; }
       });
@@ -580,6 +595,7 @@ export default function JurisApp() {
       setCatalogueTotal(typeof payload.total === "number" ? payload.total : records.length);
       setFeaturedId((current) => records.some((item) => item.id === current) || append ? current : records[0]?.id ?? current);
     } catch {
+      if (!catalogueRequestGateRef.current.isCurrent(requestTicket)) return;
       setCatalogueError(locale === "en" ? "The central catalogue is temporarily unavailable; bundled cases remain playable." : "Центральный каталог временно недоступен; встроенные кейсы остаются доступными.");
       if (!append) {
         const fallback = bundledCatalogueRecords().filter((record) => publishedRecordMatches(record, filters));
@@ -588,7 +604,8 @@ export default function JurisApp() {
         setCatalogueNextCursor(null);
       }
     } finally {
-      setCatalogueLoading(false);
+      if (catalogueRequestGateRef.current.isCurrent(requestTicket)) setCatalogueLoading(false);
+      catalogueRequestGateRef.current.finish(requestTicket);
     }
   }, [locale]);
 
@@ -609,7 +626,11 @@ export default function JurisApp() {
     return deriveRunLedger(activeScenario, decisionLog, authoritative);
   }, [activeScenario, canonicalPlayState, decisionLog]);
   const selectedNode = draft.nodes.find((node) => node.id === selectedNodeId) ?? null;
-  const checks = useMemo(() => validateDraft(draft, locale), [draft, locale]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setValidatedDraft(draft), 180);
+    return () => window.clearTimeout(timer);
+  }, [draft]);
+  const checks = useMemo(() => validateDraft(validatedDraft, locale), [locale, validatedDraft]);
 
   function syncStudioDraft(next: StudioDraft) {
     studioChangedBeforeRestoreRef.current = true;
@@ -639,11 +660,13 @@ export default function JurisApp() {
     setSelectedNodeId(nextSelectedNodeId);
   }
   function updateStudioDraft(update: React.SetStateAction<StudioDraft>) {
+    if (!studioCanDuplicate) return;
     const current = draftRef.current;
     const next = typeof update === "function" ? update(current) : update;
     if (next !== current) syncStudioDraft(next);
   }
   function commitStudioDraft(update: React.SetStateAction<StudioDraft>, label: string, source: "prompt" | "visual", createdAt = new Date().toISOString()) {
+    if (!studioCanDuplicate) return false;
     const before = draftRef.current;
     const after = typeof update === "function" ? update(before) : update;
     if (studioSnapshotsEqual(snapshotStudioDraft(before), snapshotStudioDraft(after))) {
@@ -655,6 +678,7 @@ export default function JurisApp() {
     return true;
   }
   function checkpointStudioDraft(before: StudioDraft, action: StudioEditAction, message: string) {
+    if (!studioCanDuplicate) return;
     const createdAt = new Date().toISOString();
     const current = draftRef.current;
     if (studioSnapshotsEqual(snapshotStudioDraft(before), snapshotStudioDraft(current))) return;
@@ -663,6 +687,7 @@ export default function JurisApp() {
     syncStudioTimeline(recordStudioRevision(studioTimelineRef.current, before, after, { label: message, source: "visual", createdAt }));
   }
   function travelStudioTimeline(direction: "undo" | "redo") {
+    if (!studioCanDuplicate) return;
     const step = stepStudioTimeline(studioTimelineRef.current, direction);
     if (!step) return;
     const createdAt = new Date().toISOString();
@@ -678,6 +703,7 @@ export default function JurisApp() {
     showSessionNotice(direction === "undo" ? (locale === "en" ? "Last Studio change undone" : "Последняя правка отменена") : (locale === "en" ? "Studio change restored" : "Правка повторена"));
   }
   function restoreStudioRevision(revision: StudioRevision) {
+    if (!studioCanDuplicate) return;
     const createdAt = new Date().toISOString();
     const before = draftRef.current;
     let after = applyStudioSnapshot(before, revision.after, createdAt);
@@ -1284,6 +1310,7 @@ export default function JurisApp() {
     setPrompt("");
   }
   function applyPromptIteration() {
+    if (!studioCanDuplicate) return;
     const clean = prompt.trim();
     if (!clean) return;
     const createdAt = new Date().toISOString();
@@ -1294,21 +1321,23 @@ export default function JurisApp() {
     setPrompt("");
   }
   function applyReviewedAIPlan(plan: StudioPromptPlan, baseFingerprint: string) {
+    if (!studioCanDuplicate) return false;
     const current = draftRef.current;
     if (plan.planner !== "ai" || studioAIBaseFingerprint(current) !== baseFingerprint) {
       showSessionNotice(locale === "en" ? "The graph changed after AI analysis. Review a fresh plan before applying it." : "После AI-анализа схема изменилась. Получите и проверьте новый план.");
-      return;
+      return false;
     }
     const createdAt = new Date().toISOString();
     let result;
     try { result = applyValidatedAIStudioPlan(current, { plan, locale, createdAt }); }
     catch {
       showSessionNotice(locale === "en" ? "The reviewed proposal failed the final graph safety check. Analyse the current graph again." : "Проверенное предложение не прошло итоговую проверку безопасности схемы. Проанализируйте текущую схему заново.");
-      return;
+      return false;
     }
-    if (!result.changed) return;
+    if (!result.changed) return false;
     commitStudioDraft(result.draft, locale === "en" ? `Reviewed AI plan: ${plan.summary?.slice(0, 80) || plan.instruction.slice(0, 80)}` : `Проверенный AI-план: ${plan.summary?.slice(0, 80) || plan.instruction.slice(0, 80)}`, "prompt", createdAt);
     setPrompt("");
+    return true;
   }
   function saveDraft() {
     if (!studioStorageScope) {
@@ -1377,7 +1406,10 @@ export default function JurisApp() {
         let importedCanDuplicate = true;
         if (isRecord(parsed) && parsed.format === "genesis-juris-custom-case" && (parsed.schemaVersion === 1 || parsed.schemaVersion === 2 || parsed.schemaVersion === 3) && isRecord(parsed.case)) {
           imported = normalizeStudioDraft(parsed.draft);
-          if (parsed.case.id !== imported.caseId || parsed.case.version !== imported.version || parsed.case.fingerprint !== caseFingerprint(imported)) {
+          const currentFingerprint = caseFingerprint(imported);
+          const legacyFingerprint = legacyCaseFingerprintV15(imported);
+          if (parsed.case.id !== imported.caseId || parsed.case.version !== imported.version
+            || (parsed.case.fingerprint !== currentFingerprint && parsed.case.fingerprint !== legacyFingerprint)) {
             throw new Error("Custom case identity or fingerprint mismatch");
           }
           if (parsed.schemaVersion === 3) {
@@ -1457,6 +1489,7 @@ export default function JurisApp() {
     showSessionNotice(locale === "en" ? "Child version created with parent trace" : "Дочерняя версия создана со ссылкой на родителя");
   }
   function recordVisualEdit(action: StudioEditAction, message: string, before?: StudioDraft) {
+    if (!studioCanDuplicate) return;
     if (before) { checkpointStudioDraft(before, action, message); return; }
     const createdAt = new Date().toISOString();
     syncStudioDraft(appendStudioHistory(draftRef.current, { role: "studio", source: "visual", action, message }, createdAt));
@@ -1545,12 +1578,17 @@ export default function JurisApp() {
     }, locale === "en" ? `Deleted node ${selectedNodeId}` : `Удалён узел ${selectedNodeId}`, "visual", createdAt);
     setSelectedNodeId(null);
   }
-  function moveNode(event: React.PointerEvent<HTMLButtonElement>, node: StudioNode) {
+  function moveNode(event: React.PointerEvent<HTMLButtonElement>, node: StudioNode, graphScale = 1) {
     const canvas = event.currentTarget.closest(".graph-canvas"); if (!(canvas instanceof HTMLElement)) return; const rect = canvas.getBoundingClientRect();
-    if (event.type === "pointerdown") { event.currentTarget.setPointerCapture(event.pointerId); dragBeforeRef.current = draftRef.current; setDragging({ id: node.id, dx: event.clientX - rect.left - node.x, dy: event.clientY - rect.top - node.y, startX: node.x, startY: node.y, lastX: node.x, lastY: node.y }); setSelectedNodeId(node.id); }
+    const scale = Number.isFinite(graphScale) && graphScale > 0 ? graphScale : 1;
+    const pointerX = (event.clientX - rect.left) / scale;
+    const pointerY = (event.clientY - rect.top) / scale;
+    const canvasWidth = rect.width / scale;
+    const canvasHeight = rect.height / scale;
+    if (event.type === "pointerdown") { event.currentTarget.setPointerCapture(event.pointerId); dragBeforeRef.current = draftRef.current; setDragging({ id: node.id, dx: pointerX - node.x, dy: pointerY - node.y, startX: node.x, startY: node.y, lastX: node.x, lastY: node.y }); setSelectedNodeId(node.id); }
     else if (event.type === "pointermove" && dragging?.id === node.id) {
-      const x = Math.max(12, Math.min(rect.width - 178, event.clientX - rect.left - dragging.dx));
-      const y = Math.max(12, Math.min(rect.height - 92, event.clientY - rect.top - dragging.dy));
+      const x = Math.max(12, Math.min(canvasWidth - 178, pointerX - dragging.dx));
+      const y = Math.max(12, Math.min(canvasHeight - 92, pointerY - dragging.dy));
       updateStudioDraft((current) => ({ ...current, nodes: current.nodes.map((item) => item.id === node.id ? { ...item, x, y } : item) }));
       setDragging((current) => current?.id === node.id ? { ...current, lastX: x, lastY: y } : current);
     } else if (event.type === "pointerup" || event.type === "pointercancel") {
@@ -1595,18 +1633,22 @@ export default function JurisApp() {
     setStudioCopyProtectionLocked(false);
     setSelectedNodeId(null);
   }
+  function loadExampleDraft() {
+    enterNewLocalDraft(defaultDraft, "decision-1");
+    setPrompt("");
+  }
 
   return (
     <div className={`app-shell theme-${theme}`}>
       <div className="atmosphere" aria-hidden="true"><span /><span /><span /></div>
       <header className="topbar">
-        <button className="brand" onClick={() => navigate("library")} aria-label="GENESIS: JURIS CODEX — Case Library">
+        <button className="brand" onClick={() => navigate("library")} aria-label={locale === "en" ? "GENESIS: JURIS CODEX — Case Library" : "GENESIS: JURIS CODEX — Библиотека кейсов"}>
           {/* The SVG is deliberately served directly; it is a tiny UI mark and does not need responsive image optimization. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="brand-mark" src="/brand/genesis-juris-codex-mark.svg" alt="" />
           <span><b>GENESIS: JURIS</b><small><strong>CODEX</strong> · LEGAL SCENARIO SYSTEM</small></span>
         </button>
-        <nav className="main-nav" aria-label="Primary navigation">
+        <nav className="main-nav" aria-label={locale === "en" ? "Primary navigation" : "Основная навигация"}>
           <button className={view === "library" ? "active" : ""} aria-current={view === "library" ? "page" : undefined} onClick={() => navigate("library")}><Icon name="library" />{text.library}</button>
           <button className={view === "play" ? "active" : ""} aria-current={view === "play" ? "page" : undefined} onClick={() => activeScenario ? navigate("play") : void launchCatalogueCase(featuredRecord)}><Icon name="play" />{text.play}</button>
           <button className={view === "studio" ? "active" : ""} aria-current={view === "studio" ? "page" : undefined} onClick={() => navigate("studio")}><Icon name="studio" />{text.studio}<span className="nav-new">LAB</span></button>
@@ -1627,8 +1669,8 @@ export default function JurisApp() {
           />
           <button className="utility-button" onClick={() => playedCaseImportRef.current?.click()} aria-label={text.importPlay} title={text.importPlay}><Icon name="upload" /><span>{text.importPlay}</span></button>
           {activeScenario && <button className="utility-button" onClick={exportPlayedCase} aria-label={text.exportPlay} title={text.exportPlay}><Icon name="download" /><span>{text.exportPlay}</span></button>}
-          <button className="utility-button" onClick={() => setLocale(locale === "en" ? "ru" : "en")} aria-label="Switch language"><Icon name="globe" /><span>{locale.toUpperCase()}</span></button>
-          <button className="utility-button" onClick={() => setTheme(theme === "office" ? "after-hours" : "office")} aria-label="Switch atmosphere"><Icon name={theme === "office" ? "sun" : "moon"} /><span>{theme === "office" ? text.office : text.night}</span></button>
+          <button className="utility-button" onClick={() => setLocale(locale === "en" ? "ru" : "en")} aria-label={locale === "en" ? "Switch language" : "Сменить язык"}><Icon name="globe" /><span>{locale.toUpperCase()}</span></button>
+          <button className="utility-button" onClick={() => setTheme(theme === "office" ? "after-hours" : "office")} aria-label={locale === "en" ? "Switch atmosphere" : "Сменить тему оформления"}><Icon name={theme === "office" ? "sun" : "moon"} /><span>{theme === "office" ? text.office : text.night}</span></button>
         </div>
       </header>
 
@@ -1641,7 +1683,7 @@ export default function JurisApp() {
         sessionSync={playSessionSync} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario, { legacyTiming: legacyTimingMode })}
         returnLibrary={() => navigate("library")} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })}
       />}
-      {view === "studio" && <StudioView locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate} aiEntitlement={studioAIEntitlement} />}
+      {view === "studio" && <StudioView locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate} aiEntitlement={studioAIEntitlement} />}
       {view === "community" && <CommunityView locale={locale} cases={catalogueRecords} openCustomCase={openWorkspaceCustomCase} refreshCatalogue={() => refreshCatalogue({ force: true })} clearDeviceDraft={purgeLocalStudioState} />}
       {view === "help" && <HelpView locale={locale} openCommunity={() => navigate("community")} openStudio={() => navigate("studio")} />}
       {(selectedOption || resultOption) && activeScenario && stage && <DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} busy={playSessionBusy} close={() => { if (!playSessionBusy) { setSelectedOption(null); setResultOption(null); } }} dispatch={dispatchDecision} advance={advanceStage} finalStage={Boolean(activeScenario.stages.find((item) => item.id === (selectedOption ?? resultOption)?.nextStageId)?.terminal)} />}
@@ -2183,14 +2225,14 @@ type StudioViewProps = {
   locale: Locale; text: UiText; prompt: string; setPrompt: (value: string) => void; draft: StudioDraft;
   setDraft: React.Dispatch<React.SetStateAction<StudioDraft>>; selectedNode: StudioNode | null; selectedNodeId: string | null;
   selectNode: (id: string | null) => void; checks: Array<{ level: "ok" | "warn"; text: string }>;
-  generateDraft: () => void; applyPromptIteration: () => void; applyReviewedAIPlan: (plan: StudioPromptPlan, baseFingerprint: string) => void; saveDraft: () => void; savedFlash: boolean;
+  generateDraft: () => void; applyPromptIteration: () => void; applyReviewedAIPlan: (plan: StudioPromptPlan, baseFingerprint: string) => boolean; saveDraft: () => void; savedFlash: boolean;
   exportDraft: () => void; importRef: React.RefObject<HTMLInputElement | null>; importDraft: (file: File) => void;
   createChildVersion: () => void; updateNode: (change: Partial<StudioNode>) => void;
   recordVisualEdit: (action: StudioEditAction, message: string, before?: StudioDraft) => void; addNode: (type: StudioNodeType) => void;
   addLink: (from: string, to: string) => void; relinkLink: (previous: StudioLink, next: StudioLink) => void;
   deleteLink: (link: StudioLink) => void; deleteNode: () => void;
-  moveNode: (event: React.PointerEvent<HTMLButtonElement>, node: StudioNode) => void; resetDraft: () => boolean | void;
-  loadTaxTemplate: () => void; requestFeedback: () => void;
+  moveNode: (event: React.PointerEvent<HTMLButtonElement>, node: StudioNode, graphScale?: number) => void; resetDraft: () => boolean | void;
+  loadExample: () => void; loadTaxTemplate: () => void; requestFeedback: () => void;
   timeline: StudioTimeline; undoDraft: () => void; redoDraft: () => void;
   restoreRevision: (revision: StudioRevision) => void; playDraft: () => void;
   isPrivate: boolean; setPrivate: (value: boolean) => void; customCaseId: number | null; setCustomCaseId: (value: number | null) => void;
@@ -2199,9 +2241,27 @@ type StudioViewProps = {
   copyProtectionLocked: boolean; setCopyProtectionLocked: (value: boolean) => void; canDuplicate: boolean; aiEntitlement: StudioAIEntitlement;
 };
 
-function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, generateDraft, applyPromptIteration, applyReviewedAIPlan, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, aiEntitlement }: StudioViewProps) {
-  const router = useRouter();
-  const [workspaceState, setWorkspaceState] = useState<"idle" | "saving" | "saved" | "submitted" | "conflict" | "error">("idle");
+type StudioDerivations = {
+  source: StudioDraft | null;
+  bytes: number;
+  aiBaseFingerprint: string;
+  caseFingerprint: string;
+  compilation: ReturnType<typeof compileStudioDraft>;
+};
+
+function computeStudioDerivations(source: StudioDraft): StudioDerivations {
+  const exactCaseFingerprint = caseFingerprint(source);
+  return {
+    source,
+    bytes: studioJsonBytes(source),
+    aiBaseFingerprint: studioAIBaseFingerprint(source),
+    caseFingerprint: exactCaseFingerprint,
+    compilation: compileStudioDraft(source, exactCaseFingerprint),
+  };
+}
+
+function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, generateDraft, applyPromptIteration, applyReviewedAIPlan, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadExample, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, aiEntitlement }: StudioViewProps) {
+  const [workspaceState, setWorkspaceState] = useState<"idle" | "saving" | "saved" | "submitted" | "conflict" | "auth_required" | "error">("idle");
   const [linkSourceId, setLinkSourceId] = useState<string | null>(null);
   const [relationStatus, setRelationStatus] = useState("");
   const fieldBefore = useRef("");
@@ -2212,32 +2272,100 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   const [aiError, setAIError] = useState("");
   const [promptLimitNotice, setPromptLimitNotice] = useState(false);
   const [aiResult, setAIResult] = useState<{ key: string; baseFingerprint: string; plan: StudioPromptPlan; model: string | null; requestId: string | null } | null>(null);
+  const [displayMode, setDisplayMode] = useState<"user" | "developer">("user");
+  const [userSettingsOpen, setUserSettingsOpen] = useState(false);
+  const [workspaceSavedFingerprint, setWorkspaceSavedFingerprint] = useState<string | null>(null);
+  const [studioDerivations, setStudioDerivations] = useState<StudioDerivations>({
+    source: null,
+    bytes: 0,
+    aiBaseFingerprint: "",
+    caseFingerprint: "",
+    compilation: { scenario: null, issues: [], warnings: [] },
+  });
+  const [derivedPrompt, setDerivedPrompt] = useState(prompt);
+  const [relationPage, setRelationPage] = useState(0);
+  const [relationNodeQuery, setRelationNodeQuery] = useState("");
+  const [relationNodePage, setRelationNodePage] = useState(0);
+  const [destinationNodeQuery, setDestinationNodeQuery] = useState("");
+  const [destinationNodePage, setDestinationNodePage] = useState(0);
+  const [graphZoom, setGraphZoom] = useState(1);
   const aiAbortRef = useRef<AbortController | null>(null);
-  const promptPlan = useMemo(() => planStudioPromptIteration(draft, { instruction: prompt, locale, nodeLabels: text.nodeTypes, selectedNodeId }), [draft, locale, prompt, selectedNodeId, text.nodeTypes]);
-  const draftBytes = useMemo(() => studioJsonBytes(draft), [draft]);
+  const graphDeckRef = useRef<HTMLElement | null>(null);
+  const derivationsSettled = studioDerivations.source === draft;
+  const promptDerivationsSettled = derivationsSettled && derivedPrompt === prompt;
+  const promptPlan = useMemo<StudioPromptPlan>(() => derivationsSettled
+    ? planStudioPromptIteration(draft, { instruction: derivedPrompt, locale, nodeLabels: text.nodeTypes, selectedNodeId })
+    : { instruction: "", operations: [], diagnostics: [], canApply: false, contextOnly: false, planner: "deterministic" }, [derivationsSettled, derivedPrompt, draft, locale, selectedNodeId, text.nodeTypes]);
+  const draftBytes = studioDerivations.bytes;
   const draftWithinEnvelope = draftBytes <= STUDIO_DRAFT_SERIALIZED_LIMIT;
-  const aiBaseFingerprint = useMemo(() => studioAIBaseFingerprint(draft), [draft]);
+  const aiBaseFingerprint = studioDerivations.aiBaseFingerprint;
+  const workspaceFingerprint = `${aiBaseFingerprint}\u0000${isPrivate ? "private" : "restricted"}`;
+  const visibleWorkspaceState = !derivationsSettled || ((workspaceState === "saved" || workspaceState === "submitted") && workspaceSavedFingerprint !== workspaceFingerprint) ? "idle" : workspaceState;
   const aiInputKey = `${aiBaseFingerprint}\u0000${locale}\u0000${selectedNodeId ?? ""}\u0000${prompt.trim()}`;
   const aiInputKeyRef = useRef(aiInputKey);
-  const activeAIResult = aiResult?.key === aiInputKey ? aiResult : null;
+  const activeAIResult = derivationsSettled && aiResult?.key === aiInputKey ? aiResult : null;
   const aiNodeTitles = useMemo(() => {
     const titles = new Map(draft.nodes.map((node) => [node.id, node.title]));
     for (const operation of activeAIResult?.plan.operations ?? []) {
       if (operation.kind === "add_node") titles.set(operation.node.id, operation.node.title);
-      if (operation.kind === "update_node" && operation.change.title) titles.set(operation.nodeId, operation.change.title);
     }
     return titles;
   }, [activeAIResult, draft.nodes]);
-  const compiledDraft = useMemo(() => compileStudioDraft(draft), [draft]);
+  const simplePlanNodeTitles = useMemo(() => {
+    const titles = new Map(draft.nodes.map((node) => [node.id, node.title]));
+    for (const operation of promptPlan.operations) {
+      if (operation.kind === "add_node") titles.set(operation.node.id, operation.node.title);
+    }
+    return titles;
+  }, [draft.nodes, promptPlan.operations]);
+  const reviewLinkEndpoints = useMemo(() => new Map(draft.links.map((link) => [link.id, { from: link.from, to: link.to }])), [draft.links]);
+  const compiledDraft = derivationsSettled ? studioDerivations.compilation : { scenario: null, issues: [], warnings: [] };
+  const nodeById = useMemo(() => new Map(draft.nodes.map((node) => [node.id, node])), [draft.nodes]);
+  const relationPageSize = 20;
+  const relationPageCount = Math.max(1, Math.ceil(draft.links.length / relationPageSize));
+  const safeRelationPage = Math.min(relationPage, relationPageCount - 1);
+  const visibleRelations = useMemo(() => draft.links.slice(safeRelationPage * relationPageSize, (safeRelationPage + 1) * relationPageSize), [draft.links, safeRelationPage]);
+  const relationNodeMenu = useMemo(() => studioNodeMenuPage(draft.nodes, relationNodeQuery, relationNodePage), [draft.nodes, relationNodePage, relationNodeQuery]);
+  const destinationNodes = useMemo(() => draft.nodes.filter((node) => node.id !== selectedNodeId), [draft.nodes, selectedNodeId]);
+  const destinationNodeMenu = useMemo(() => studioNodeMenuPage(destinationNodes, destinationNodeQuery, destinationNodePage), [destinationNodePage, destinationNodeQuery, destinationNodes]);
   const selectedRuleLink = draft.links.find((link) => link.id === selectedRuleLinkId) ?? null;
   const taxDraft = isTaxDraft(draft);
+  const paletteNodeTypes = (Object.keys(typeColors) as StudioNodeType[]).filter((type) => displayMode === "developer" || taxDraft || type !== "tax_rule");
   const taxModel = draft.taxEconomics ?? defaultTaxEconomics();
   const taxResult = useMemo(() => taxDraft ? calculateTaxEconomics(taxModel) : null, [taxDraft, taxModel]);
   const selectedRevision = timeline.revisions.find((revision) => revision.id === selectedRevisionId) ?? timeline.revisions.at(-1) ?? null;
   const selectedDiff = selectedRevision ? diffStudioSnapshots(selectedRevision.before, selectedRevision.after) : null;
   const restoreDiff = selectedRevision ? diffDraftToRevision(draft, selectedRevision) : null;
+  const userLocalFallback = (aiEntitlement !== "ready" && aiEntitlement !== "loading") || aiState === "error";
 
   useEffect(() => () => aiAbortRef.current?.abort(), []);
+
+  useEffect(() => {
+    if (studioDerivations.source === draft) return;
+    let idleHandle: number | null = null;
+    let fallbackHandle: number | null = null;
+    let cancelled = false;
+    const derive = () => {
+      if (cancelled) return;
+      const next = computeStudioDerivations(draft);
+      if (!cancelled) setStudioDerivations(next);
+    };
+    const debounceHandle = window.setTimeout(() => {
+      if ("requestIdleCallback" in window) idleHandle = window.requestIdleCallback(derive, { timeout: 900 });
+      else fallbackHandle = globalThis.setTimeout(derive, 0) as unknown as number;
+    }, 180);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(debounceHandle);
+      if (idleHandle !== null) window.cancelIdleCallback(idleHandle);
+      if (fallbackHandle !== null) window.clearTimeout(fallbackHandle);
+    };
+  }, [draft, studioDerivations.source]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDerivedPrompt(prompt), 180);
+    return () => window.clearTimeout(timer);
+  }, [prompt]);
 
   useEffect(() => { aiInputKeyRef.current = aiInputKey; }, [aiInputKey]);
 
@@ -2263,9 +2391,31 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     return () => document.removeEventListener("keydown", timelineShortcut);
   }, [redoDraft, undoDraft]);
 
+  function localizedAIError(code: unknown, fallback: unknown) {
+    const key = typeof code === "string" ? code : "";
+    const messages: Record<string, [string, string]> = {
+      ai_context_too_large: ["AI analysis accepts up to 128 KB. Shorten long details or analyse a smaller branch.", "AI-анализ принимает не более 128 КБ. Сократите длинные описания или анализируйте меньшую ветвь."],
+      stale_context: ["The graph changed before analysis began. Run analysis again.", "Схема изменилась до начала анализа. Запустите анализ снова."],
+      burst_rate_limited: ["Too many AI requests. Wait one minute or use the local builder.", "Слишком много AI-запросов. Подождите минуту или используйте локальный конструктор."],
+      rate_limited: ["Your AI planning limit is reached. Try later or use the local builder.", "Ваш лимит AI-планирования исчерпан. Попробуйте позже или используйте локальный конструктор."],
+      tenant_budget_reached: ["The daily AI pilot budget is reached. The local builder remains available.", "Дневной бюджет AI-пилота исчерпан. Локальный конструктор остаётся доступен."],
+      tenant_capacity_reached: ["AI is processing the maximum number of plans. Try again shortly.", "AI обрабатывает максимальное число планов. Повторите попытку немного позже."],
+      tenant_capacity_unavailable: ["AI capacity control is temporarily unavailable. No changes were made.", "Контроль AI-мощности временно недоступен. Изменения не внесены."],
+      not_configured: ["AI planning is not configured on this deployment. Use the local builder.", "AI-планирование ещё не настроено в этой версии. Используйте локальный конструктор."],
+      refused: ["The source could not be converted into a safe graph plan.", "Источник не удалось преобразовать в безопасный план схемы."],
+      invalid_output: ["AI returned a plan that did not pass validation. Analyse again.", "AI вернул план, который не прошёл проверку. Запустите анализ снова."],
+      incomplete: ["AI did not finish the plan. Analyse again.", "AI не завершил план. Запустите анализ снова."],
+      provider_unavailable: ["AI planning is temporarily unavailable. No changes were made.", "AI-планирование временно недоступно. Изменения не внесены."],
+    };
+    const translated = messages[key];
+    if (translated) return translated[locale === "en" ? 0 : 1];
+    if (locale === "en" && typeof fallback === "string") return fallback;
+    return locale === "en" ? "AI planning is unavailable." : "AI-планирование недоступно.";
+  }
+
   async function analysePromptWithAI() {
     const instruction = prompt.trim();
-    if (!instruction || !canDuplicate || aiEntitlement !== "ready") return;
+    if (!instruction || !canDuplicate || aiEntitlement !== "ready" || !derivationsSettled) return;
     if (!draftWithinEnvelope) {
       setAIState("error");
       setAIError(locale === "en" ? "This draft is larger than the 900 KB Studio envelope. Shorten node or relation details before AI analysis." : "Черновик превышает лимит Studio 900 КБ. Сократите описания узлов или связей перед AI-анализом.");
@@ -2278,7 +2428,6 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     const baseFingerprint = aiBaseFingerprint;
     setAIState("analysing");
     setAIError("");
-    setAIResult(null);
     try {
       const response = await fetch("/api/studio/ai-plan", {
         method: "POST",
@@ -2290,7 +2439,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       const payload: unknown = await response.json().catch(() => null);
       if (response.status === 401 || (response.status === 403 && isRecord(payload) && payload.code === "profile_required")) throw new Error(locale === "en" ? "AI access requires a signed-in, registered professional profile. Use the access action above without closing this tab." : "Для AI нужен вход и зарегистрированный профессиональный профиль. Используйте кнопку доступа выше, не закрывая эту вкладку.");
       if (!isRecord(payload)) throw new Error(locale === "en" ? "AI planning returned an unreadable response." : "AI-планировщик вернул нечитаемый ответ.");
-      if (!response.ok) throw new Error(typeof payload.error === "string" ? payload.error : (locale === "en" ? "AI planning is unavailable." : "AI-планирование недоступно."));
+      if (!response.ok) throw new Error(localizedAIError(payload.code, payload.error));
       const plan = returnedAIStudioPlan(payload.plan, instruction);
       if (!plan || payload.baseFingerprint !== baseFingerprint || requestKey !== aiInputKeyRef.current) throw new Error(locale === "en" ? "The AI plan no longer matches this graph." : "AI-план больше не соответствует этой схеме.");
       setAIResult({ key: requestKey, baseFingerprint, plan, model: typeof payload.model === "string" ? payload.model : null, requestId: typeof payload.requestId === "string" ? payload.requestId : null });
@@ -2312,10 +2461,26 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       baseFingerprint: activeAIResult.baseFingerprint,
       planFingerprint: canonicalFingerprint({ kind: "studio-ai-plan-v1", plan: activeAIResult.plan }),
     } };
-    applyReviewedAIPlan(reviewedPlan, activeAIResult.baseFingerprint);
-    setAIResult(null);
-    setAIState("idle");
-    setAIError("");
+    if (applyReviewedAIPlan(reviewedPlan, activeAIResult.baseFingerprint)) {
+      setAIResult(null);
+      setAIState("idle");
+      setAIError("");
+    }
+  }
+
+  function changeDisplayMode(mode: "user" | "developer") {
+    setDisplayMode(mode);
+  }
+
+  function fitGraph() {
+    const width = graphDeckRef.current?.clientWidth ?? 1_200;
+    setGraphZoom(Math.max(0.85, Math.min(1, (width - 20) / 1_200)));
+    graphDeckRef.current?.scrollTo({ left: 0, behavior: "smooth" });
+  }
+
+  function centerGraph() {
+    const deck = graphDeckRef.current;
+    if (deck) deck.scrollTo({ left: Math.max(0, (deck.scrollWidth - deck.clientWidth) / 2), behavior: "smooth" });
   }
 
   function clearTransientEditorSelection() {
@@ -2328,17 +2493,32 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     setSelectedRuleLinkId(null);
     setRelationStatus("");
     setSelectedRevisionId("");
+    setWorkspaceSavedFingerprint(null);
+    setWorkspaceState("idle");
   }
+
+  const focusRelationStatus = useCallback(() => {
+    window.requestAnimationFrame(() => document.getElementById("graph-connect-status")?.focus());
+  }, []);
 
   function startBlankDraft() {
     const reset = resetDraft();
-    if (reset !== false) clearTransientEditorSelection();
+    if (reset !== false) { clearTransientEditorSelection(); setUserSettingsOpen(false); }
+  }
+
+  function startExampleDraft() {
+    const hasWork = Boolean(draft.nodes.length || draft.links.length || draft.title || draft.editHistory.length || prompt.trim());
+    if (hasWork && !window.confirm(locale === "en" ? "Replace the current draft with the worked example? The current unsaved graph will be removed." : "Заменить текущий черновик учебным примером? Текущая несохранённая схема будет удалена.")) return;
+    clearTransientEditorSelection();
+    setUserSettingsOpen(false);
+    loadExample();
   }
 
   function startTaxTemplate() {
     const hasWork = Boolean(draft.nodes.length || draft.links.length || draft.title || draft.editHistory.length || prompt.trim());
     if (hasWork && !window.confirm(locale === "en" ? "Replace the current draft with the tax template? The current unsaved graph will be removed." : "Заменить текущий черновик налоговым шаблоном? Текущая несохранённая схема будет удалена.")) return;
     clearTransientEditorSelection();
+    setUserSettingsOpen(true);
     loadTaxTemplate();
   }
 
@@ -2353,32 +2533,43 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       deleteLink(link);
       setSelectedRuleLinkId(null);
       setRelationStatus(locale === "en" ? "Relation deleted. Undo is available." : "Связь удалена. Доступна отмена действия.");
+      focusRelationStatus();
     }
     document.addEventListener("keydown", deleteSelectedRelation);
     return () => document.removeEventListener("keydown", deleteSelectedRelation);
-  }, [canDuplicate, deleteLink, draft.links, locale, selectedRuleLinkId]);
+  }, [canDuplicate, deleteLink, draft.links, focusRelationStatus, locale, selectedRuleLinkId]);
 
   async function shareDraft(action: "save" | "submit") {
-    if (!canDuplicate || !draftWithinEnvelope) { setWorkspaceState("error"); return; }
+    if (!canDuplicate || !draftWithinEnvelope || !derivationsSettled) { setWorkspaceState("error"); return; }
     setWorkspaceState("saving");
-    const childFromCurrent = Boolean(serverFingerprint && draft.parent?.fingerprint === serverFingerprint && draft.parent.version !== draft.version);
-    const concurrency = serverFingerprint ? childFromCurrent ? { baseFingerprint: serverFingerprint } : { expectedFingerprint: serverFingerprint } : {};
-    const response = await fetch("/api/submissions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, draft, isPrivate, ...concurrency }) });
-    if (response.status === 401) { router.push("/signin-with-chatgpt?return_to=%2F"); return; }
-    if (!response.ok) {
-      const failed = await response.json().catch(() => null) as { code?: string } | null;
-      setWorkspaceState(response.status === 409 && failed?.code === "stale_draft" ? "conflict" : "error");
-      return;
-    }
-    const saved = await readJsonResponse<{ customCase?: { id: number; isPrivate: boolean; fingerprint: string; protection?: StudioDraft["protection"] } }>(response);
-    if (saved?.customCase) {
-      setCustomCaseId(saved.customCase.id); setPrivate(saved.customCase.isPrivate === true); setCanManagePrivacy(true); setServerFingerprint(saved.customCase.fingerprint);
-      if (saved.customCase.protection) {
-        setDraft((current) => ({ ...current, protection: saved.customCase!.protection }));
-        setCopyProtectionLocked(saved.customCase.protection.copyProtected === true);
+    try {
+      const childFromCurrent = Boolean(serverFingerprint && draft.parent?.fingerprint === serverFingerprint && draft.parent.version !== draft.version);
+      const concurrency = serverFingerprint ? childFromCurrent ? { baseFingerprint: serverFingerprint } : { expectedFingerprint: serverFingerprint } : {};
+      const response = await fetch("/api/submissions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, draft, isPrivate, ...concurrency }) });
+      if (response.status === 401) {
+        setWorkspaceState("auth_required");
+        window.open("/signin-with-chatgpt?return_to=%2F%3Fview%3Dstudio", "_blank", "noopener,noreferrer");
+        return;
       }
+      if (!response.ok) {
+        const failed = await response.json().catch(() => null) as { code?: string } | null;
+        setWorkspaceState(response.status === 409 && failed?.code === "stale_draft" ? "conflict" : "error");
+        return;
+      }
+      const saved = await readJsonResponse<{ customCase?: { id: number; isPrivate: boolean; fingerprint: string; protection?: StudioDraft["protection"] } }>(response);
+      if (saved?.customCase) {
+        setCustomCaseId(saved.customCase.id); setPrivate(saved.customCase.isPrivate === true); setCanManagePrivacy(true); setServerFingerprint(saved.customCase.fingerprint);
+        if (saved.customCase.protection) {
+          setDraft((current) => ({ ...current, protection: saved.customCase!.protection }));
+          setCopyProtectionLocked(saved.customCase.protection.copyProtected === true);
+        }
+      }
+      const savedPrivate = saved?.customCase?.isPrivate ?? isPrivate;
+      setWorkspaceSavedFingerprint(`${aiBaseFingerprint}\u0000${savedPrivate ? "private" : "restricted"}`);
+      setWorkspaceState(action === "submit" ? "submitted" : "saved");
+    } catch {
+      setWorkspaceState("error");
     }
-    setWorkspaceState(action === "submit" ? "submitted" : "saved");
   }
 
   async function changePrivacy(next: boolean) {
@@ -2389,6 +2580,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       if (!response.ok) { setWorkspaceState("error"); return; }
     }
     setPrivate(next);
+    setWorkspaceSavedFingerprint(`${aiBaseFingerprint}\u0000${next ? "private" : "restricted"}`);
     setWorkspaceState(customCaseId ? "saved" : "idle");
   }
 
@@ -2453,12 +2645,14 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   function selectGraphLink(link: StudioLink) {
     selectNode(null);
     setSelectedRuleLinkId(link.id);
-    const from = draft.nodes.find((node) => node.id === link.from)?.title ?? link.from;
-    const to = draft.nodes.find((node) => node.id === link.to)?.title ?? link.to;
+    const relationIndex = draft.links.findIndex((item) => item.id === link.id);
+    if (relationIndex >= 0) setRelationPage(Math.floor(relationIndex / relationPageSize));
+    const from = nodeById.get(link.from)?.title ?? link.from;
+    const to = nodeById.get(link.to)?.title ?? link.to;
     setRelationStatus(locale === "en" ? `Selected relation: ${from} → ${to}. Press Delete to remove it.` : `Выбрана связь: ${from} → ${to}. Нажмите Delete для удаления.`);
   }
   function compilerIssueText(issue: (typeof compiledDraft.issues)[number]) {
-    const names = issue.nodeIds.map((id) => draft.nodes.find((node) => node.id === id)?.title).filter((title): title is string => Boolean(title));
+    const names = issue.nodeIds.map((id) => nodeById.get(id)?.title).filter((title): title is string => Boolean(title));
     const suffix = names.length ? `: ${names.join(", ")}` : "";
     if (locale === "en") {
       if (issue.code === "missing_start") return "Add a Trigger node to define where the case starts.";
@@ -2525,6 +2719,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   }
 
   function nudgeNode(event: React.KeyboardEvent<HTMLButtonElement>, node: StudioNode) {
+    if (!canDuplicate) return;
     const direction = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key];
     if (!direction) return;
     event.preventDefault();
@@ -2535,16 +2730,58 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     recordVisualEdit("node_moved", locale === "en" ? `Visual edit: nudged “${node.title}” ${event.key.replace("Arrow", "").toLowerCase()} by ${step}px.` : `Визуальная правка: узел «${node.title}» сдвинут на ${step}px.`, before);
   }
 
-    return <main className="studio-view"><section className="studio-hero page-width"><div><div className="eyebrow"><span className="live-dot"/>AUTHORING LAB · VISUAL + PROMPT</div><h1>{text.author}</h1><p>{text.authorLead}</p></div><div className="studio-actions"><button className="secondary-cta" onClick={startBlankDraft}><Icon name="reset"/>{text.newDraft}</button><button className="secondary-cta" onClick={startTaxTemplate}><Icon name="spark"/>{locale === "en" ? "Tax template" : "Налоговый шаблон"}</button><button className="secondary-cta" onClick={requestFeedback}><Icon name="file"/>{text.feedback}</button><button className="secondary-cta" onClick={() => importRef.current?.click()} disabled={!canDuplicate}><Icon name="upload"/>{text.importCustom}</button><button className="secondary-cta" onClick={exportDraft} disabled={!canDuplicate}><Icon name="download"/>{text.exportCustom}</button><button className="secondary-cta" onClick={() => shareDraft("save")} disabled={!canDuplicate || !draftWithinEnvelope || workspaceState === "saving"}><Icon name="save"/>{locale === "en" ? "Save to workspace" : "Сохранить в workspace"}</button><button className="primary-cta" onClick={() => shareDraft("submit")} disabled={!canDuplicate || !draftWithinEnvelope || isPrivate || workspaceState === "saving" || checks.some((check) => check.level === "warn")} title={isPrivate ? (locale === "en" ? "Turn off Private before submitting for review" : "Отключите «Приватно» перед отправкой на рецензию") : undefined}><Icon name="check"/>{locale === "en" ? "Submit for review" : "Отправить на рецензию"}</button><button className="secondary-cta" onClick={saveDraft} disabled={!canDuplicate}><Icon name="save"/>{locale === "en" ? "Save on this device" : "Сохранить на устройстве"}</button><input ref={importRef} className="visually-hidden" type="file" accept=".json,application/json" onChange={(event) => { const file=event.target.files?.[0]; if(file){ clearTransientEditorSelection(); importDraft(file); } event.target.value=""; }}/></div>{savedFlash && <div className="save-toast"><Icon name="check"/>{text.saved}</div>}{workspaceState !== "idle" && workspaceState !== "saving" && <div className={`workspace-toast ${workspaceState}`} role="status">{workspaceState === "saved" ? (locale === "en" ? "Workspace draft and visibility saved." : "Черновик и режим видимости сохранены в workspace.") : workspaceState === "submitted" ? (locale === "en" ? "Submitted to the expert review queue." : "Отправлено в очередь экспертной рецензии.") : workspaceState === "conflict" ? (locale === "en" ? "A newer workspace version exists. Reopen the case before saving." : "В workspace уже есть более новая версия. Переоткройте кейс перед сохранением.") : !canDuplicate ? (locale === "en" ? "Inspection-only access: save, export and copy are disabled." : "Доступ только для просмотра: сохранение, экспорт и копирование отключены.") : !draftWithinEnvelope ? (locale === "en" ? "The draft exceeds the 900 KB Studio envelope. Shorten node or relation details." : "Черновик превышает лимит Studio 900 КБ. Сократите описания узлов или связей.") : (locale === "en" ? "The workspace change could not be saved. Check access, identity and case status." : "Не удалось сохранить изменение workspace. Проверьте доступ, идентификатор и статус кейса.")}</div>}</section>
+  const firstSubmissionWarning = checks.find((check) => check.level === "warn")?.text ?? "";
+  const submitBlocker = !canDuplicate
+    ? (locale === "en" ? "This protected case is available for inspection only." : "Этот защищённый кейс доступен только для просмотра.")
+    : !derivationsSettled
+      ? (locale === "en" ? "Wait while Studio finishes checking the latest edit." : "Подождите, пока Студия завершит проверку последней правки.")
+      : !draftWithinEnvelope
+        ? (locale === "en" ? "Shorten the case to the 900 KB Studio limit." : "Сократите кейс до лимита Studio 900 КБ.")
+        : isPrivate
+          ? (locale === "en" ? "Turn off Private before submitting for expert review." : "Отключите «Приватно» перед отправкой на экспертную рецензию.")
+          : firstSubmissionWarning;
+  const extraStudioActions = <>
+    <button className="secondary-cta" onClick={startExampleDraft}><Icon name="play"/>{locale === "en" ? "Worked example" : "Учебный пример"}</button>
+    <button className="secondary-cta" onClick={startTaxTemplate}><Icon name="spark"/>{locale === "en" ? "Tax template" : "Налоговый шаблон"}</button>
+    <button className="secondary-cta" onClick={requestFeedback}><Icon name="file"/>{text.feedback}</button>
+    <button className="secondary-cta" onClick={() => importRef.current?.click()} disabled={!canDuplicate}><Icon name="upload"/>{text.importCustom}</button>
+    <button className="secondary-cta" onClick={exportDraft} disabled={!canDuplicate}><Icon name="download"/>{text.exportCustom}</button>
+    <button className="secondary-cta" onClick={saveDraft} disabled={!canDuplicate}><Icon name="save"/>{locale === "en" ? "Save on this device" : "Сохранить на устройстве"}</button>
+  </>;
+
+    return <main className={`studio-view studio-${displayMode}-view ${canDuplicate ? "" : "studio-inspection-view"}`} data-readonly={!canDuplicate || undefined}>
+      <section className="studio-hero page-width">
+        <div>
+          <div className="eyebrow"><span className="live-dot"/>{displayMode === "user" ? (locale === "en" ? "CASE STUDIO · GUIDED AUTHORING" : "СТУДИЯ КЕЙСОВ · ПОШАГОВОЕ СОЗДАНИЕ") : "AUTHORING LAB · VISUAL + PROMPT"}</div>
+          <h1>{displayMode === "user" ? (locale === "en" ? "Build your case" : "Создайте свой кейс") : text.author}</h1>
+          <p>{displayMode === "user" ? (locale === "en" ? "Describe the situation, review the proposed scheme, adjust it visually and test the result." : "Опишите ситуацию, проверьте предложенную схему, скорректируйте её визуально и протестируйте результат.") : text.authorLead}</p>
+          <div className="studio-display-mode" role="group" aria-label={locale === "en" ? "Studio interface mode" : "Режим интерфейса Студии"}>
+            <button type="button" className={displayMode === "user" ? "active" : ""} aria-pressed={displayMode === "user"} onClick={() => changeDisplayMode("user")}><Icon name="person"/>{locale === "en" ? "User view" : "Вид пользователя"}</button>
+            <button type="button" className={displayMode === "developer" ? "active" : ""} aria-pressed={displayMode === "developer"} onClick={() => changeDisplayMode("developer")}><Icon name="studio"/>{locale === "en" ? "Developer view" : "Вид разработчика"}</button>
+          </div>
+        </div>
+        <div className="studio-actions">
+          <button className="secondary-cta" onClick={startBlankDraft}><Icon name="reset"/>{text.newDraft}</button>
+          <button className="secondary-cta" onClick={() => shareDraft("save")} disabled={!canDuplicate || !draftWithinEnvelope || !derivationsSettled || workspaceState === "saving"}><Icon name="save"/>{workspaceState === "saving" ? (locale === "en" ? "Saving…" : "Сохранение…") : (locale === "en" ? "Save to workspace" : "Сохранить в workspace")}</button>
+          <button className="primary-cta" onClick={() => shareDraft("submit")} disabled={Boolean(submitBlocker) || workspaceState === "saving"} title={submitBlocker || undefined} aria-describedby={submitBlocker ? "studio-submit-blocker" : undefined}><Icon name="check"/>{locale === "en" ? "Submit for review" : "Отправить на рецензию"}</button>
+          {displayMode === "developer" ? extraStudioActions : <details className="studio-more-actions"><summary><Icon name="plus"/>{locale === "en" ? "More actions" : "Другие действия"}</summary><div>{extraStudioActions}</div></details>}
+          <input ref={importRef} className="visually-hidden" type="file" accept=".json,application/json" onChange={(event) => { const file=event.target.files?.[0]; if(file){ clearTransientEditorSelection(); importDraft(file); } event.target.value=""; }}/>
+        </div>
+        {submitBlocker && <p id="studio-submit-blocker" className="studio-submit-blocker"><Icon name="alert"/><span>{submitBlocker}</span>{isPrivate && submitBlocker !== firstSubmissionWarning && <button type="button" onClick={() => setUserSettingsOpen(true)}>{locale === "en" ? "Change visibility" : "Изменить видимость"}</button>}{firstSubmissionWarning && submitBlocker === firstSubmissionWarning && <button type="button" onClick={() => document.getElementById("studio-checks")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{locale === "en" ? "Review issue" : "Перейти к замечанию"}</button>}</p>}
+        {savedFlash && <div className="save-toast"><Icon name="check"/>{text.saved}</div>}
+        {visibleWorkspaceState !== "idle" && <div className={`workspace-toast ${visibleWorkspaceState}`} role="status">{visibleWorkspaceState === "saving" ? (locale === "en" ? "Saving the current draft and visibility…" : "Сохраняются текущий черновик и режим видимости…") : visibleWorkspaceState === "auth_required" ? (locale === "en" ? "Sign-in opened in another tab. Complete it, return here and save again." : "Вход открыт в новой вкладке. Завершите его, вернитесь сюда и повторите сохранение.") : visibleWorkspaceState === "saved" ? (locale === "en" ? "Workspace draft and visibility saved." : "Черновик и режим видимости сохранены в workspace.") : visibleWorkspaceState === "submitted" ? (locale === "en" ? "Submitted to the expert review queue." : "Отправлено в очередь экспертной рецензии.") : visibleWorkspaceState === "conflict" ? (locale === "en" ? "A newer workspace version exists. Reopen the case before saving." : "В workspace уже есть более новая версия. Переоткройте кейс перед сохранением.") : !canDuplicate ? (locale === "en" ? "Inspection-only access: save, export and copy are disabled." : "Доступ только для просмотра: сохранение, экспорт и копирование отключены.") : !draftWithinEnvelope ? (locale === "en" ? "The draft exceeds the 900 KB Studio envelope. Shorten node or relation details." : "Черновик превышает лимит Studio 900 КБ. Сократите описания узлов или связей.") : (locale === "en" ? "The workspace change could not be saved. Check access, identity and case status." : "Не удалось сохранить изменение workspace. Проверьте доступ, идентификатор и статус кейса.")}</div>}
+      </section>
+    {!canDuplicate && <aside className="studio-readonly-notice page-width" role="status"><Icon name="file"/><div><b>{locale === "en" ? "Inspection-only case" : "Кейс только для просмотра"}</b><p>{locale === "en" ? "You can inspect the graph and rules, but this protected case cannot be edited, copied, exported or saved. Start a blank draft or open the worked example to author a separate case." : "Вы можете изучать схему и правила, но этот защищённый кейс нельзя редактировать, копировать, экспортировать или сохранять. Создайте новый черновик или откройте учебный пример для отдельной работы."}</p></div></aside>}
     <aside className="confidentiality-notice page-width"><Icon name="alert"/><p>{locale === "en" ? "Confidentiality: do not enter client-identifiable, privileged, personal or secret information. Use synthetic or de-identified facts and public legal sources." : "Конфиденциальность: не вводите сведения, идентифицирующие клиента, адвокатскую тайну, персональные данные или секреты. Используйте синтетические или обезличенные факты и публичные источники права."}</p></aside>
-    <div className={`draft-envelope page-width ${draftWithinEnvelope ? "" : "limit"}`} role={draftWithinEnvelope ? undefined : "alert"}><span>{locale === "en" ? "Studio case envelope" : "Объём кейса Studio"}</span><progress max={STUDIO_DRAFT_SERIALIZED_LIMIT} value={Math.min(draftBytes, STUDIO_DRAFT_SERIALIZED_LIMIT)}/><b>{Math.ceil(draftBytes / 1_000).toLocaleString()} / 900 KB</b>{!draftWithinEnvelope && <em>{locale === "en" ? "Shorten node or relation details before AI, workspace save or submission." : "Сократите описания узлов или связей перед AI-анализом, сохранением или отправкой."}</em>}</div>
+    {(displayMode === "developer" || !draftWithinEnvelope) && <div className={`draft-envelope page-width ${draftWithinEnvelope ? "" : "limit"}`} role={draftWithinEnvelope ? undefined : "alert"}><span>{locale === "en" ? "Studio case envelope" : "Объём кейса Studio"}</span><progress max={STUDIO_DRAFT_SERIALIZED_LIMIT} value={Math.min(draftBytes, STUDIO_DRAFT_SERIALIZED_LIMIT)}/><b>{Math.ceil(draftBytes / 1_000).toLocaleString()} / 900 KB</b>{!draftWithinEnvelope && <em>{locale === "en" ? "Shorten node or relation details before AI, workspace save or submission." : "Сократите описания узлов или связей перед AI-анализом, сохранением или отправкой."}</em>}</div>}
     <nav className="studio-guide page-width" aria-label={locale === "en" ? "Case authoring steps" : "Этапы создания кейса"}>
       <div className={draft.nodes.length === 0 ? "current" : "done"}><b>1</b><span>{locale === "en" ? "Describe" : "Опишите"}<small>{locale === "en" ? "Enter a prompt or add the first node" : "Введите промпт или первый узел"}</small></span></div>
       <div className={draft.nodes.length > 0 && !compiledDraft.scenario ? "current" : draft.nodes.length > 0 ? "done" : ""}><b>2</b><span>{locale === "en" ? "Build the graph" : "Соберите схему"}<small>{locale === "en" ? "Connect decisions to outcomes" : "Свяжите решения с исходами"}</small></span></div>
       <div className={compiledDraft.scenario ? "done" : ""}><b>3</b><span>{locale === "en" ? "Check" : "Проверьте"}<small>{locale === "en" ? "Resolve the plain-language prompts" : "Устраните понятные замечания"}</small></span></div>
       <div className={compiledDraft.scenario ? "current" : ""}><b>4</b><span>{locale === "en" ? "Test & submit" : "Тест и отправка"}<small>{locale === "en" ? "Play exactly what you authored" : "Пройдите созданный сценарий"}</small></span></div>
     </nav>
-    <section className="studio-history page-width" aria-labelledby="studio-history-title">
+    {displayMode === "user" && <section className="studio-user-undo page-width" aria-label={locale === "en" ? "Recent changes" : "Последние изменения"} inert={!canDuplicate}><div><Icon name="file"/><span>{locale === "en" ? `${timeline.cursor} saved change${timeline.cursor === 1 ? "" : "s"} in this session` : `Изменений в этой сессии: ${timeline.cursor}`}</span></div><div><button onClick={undoDraft} disabled={timeline.cursor === 0 || !canDuplicate}><Icon name="arrow"/>{locale === "en" ? "Undo" : "Отменить"}</button><button onClick={redoDraft} disabled={timeline.cursor >= timeline.revisions.length || !canDuplicate}>{locale === "en" ? "Redo" : "Повторить"}<Icon name="arrow"/></button></div></section>}
+    {displayMode === "developer" && <section className="studio-history page-width" aria-labelledby="studio-history-title" inert={!canDuplicate}>
       <header>
         <div><span>{locale === "en" ? "Prompt & edit history" : "История промпта и правок"}</span><h2 id="studio-history-title">{locale === "en" ? "One case, one continuous authoring record" : "Один кейс — единая история редактирования"}</h2></div>
         <div className="history-toolbar"><button onClick={undoDraft} disabled={timeline.cursor === 0} aria-label={locale === "en" ? "Undo last Studio change" : "Отменить последнюю правку"}><Icon name="arrow"/>{locale === "en" ? "Undo" : "Отменить"}</button><button onClick={redoDraft} disabled={timeline.cursor >= timeline.revisions.length} aria-label={locale === "en" ? "Redo Studio change" : "Повторить правку"}>{locale === "en" ? "Redo" : "Повторить"}<Icon name="arrow"/></button><b>{draft.editHistory.length.toString().padStart(2,"0")}</b></div>
@@ -2555,41 +2792,43 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
         <button className="secondary-cta" disabled={!selectedRevision || !restoreDiff || [...restoreDiff.fields, ...restoreDiff.nodesAdded, ...restoreDiff.nodesRemoved, ...restoreDiff.nodesChanged, ...restoreDiff.linksAdded, ...restoreDiff.linksRemoved].length === 0} onClick={() => { if (selectedRevision && window.confirm(locale === "en" ? "Restore the state after this revision as a new reversible change?" : "Восстановить состояние после этой версии как новую обратимую правку?")) restoreRevision(selectedRevision); }}><Icon name="reset"/>{locale === "en" ? "Restore revision" : "Восстановить"}</button>
       </div>}
       {draft.editHistory.length ? <ol>{draft.editHistory.map((entry) => <li key={entry.id} className={`history-entry ${entry.role} source-${entry.source}`}><div><span>{entry.source === "prompt" ? "PROMPT" : locale === "en" ? "VISUAL EDIT" : "ВИЗУАЛЬНАЯ ПРАВКА"}</span><time dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleString(locale === "en" ? "en-GB" : "ru-RU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</time></div><p>{entry.message}</p></li>)}</ol> : <p className="history-empty">{locale === "en" ? "Legacy draft: no authoring history was stored. Your next instruction or visual edit starts the record." : "Legacy-черновик: история редактирования отсутствует. Следующая инструкция или визуальная правка начнёт журнал."}</p>}
-    </section>
-    <section className="prompt-deck page-width">
-      <div className="prompt-label"><span>{locale === "en" ? "Describe the case or the change you need" : "Опишите кейс или нужное изменение"}</span><code>AI PLAN · REVIEW · APPLY</code></div>
+    </section>}
+    <section className="prompt-deck page-width" inert={!canDuplicate}>
+      <div className="prompt-label"><span>{locale === "en" ? "Describe the case or the change you need" : "Опишите кейс или нужное изменение"}</span>{displayMode === "developer" && <code>AI PLAN · REVIEW · APPLY</code>}</div>
       <textarea value={prompt} maxLength={8000} placeholder={locale === "en" ? "Describe the situation in ordinary language: the actors, facts, evidence, decisions and possible consequences. You can also ask to enrich the current graph without replacing it." : "Опишите ситуацию обычным языком: участников, факты, доказательства, решения и возможные последствия. Можно попросить дополнить текущую схему без её замены."} onPaste={(event) => { const input=event.currentTarget; const finalLength=input.value.length-(input.selectionEnd-input.selectionStart)+event.clipboardData.getData("text").length; if(finalLength>8000)setPromptLimitNotice(true); }} onChange={(event) => { aiAbortRef.current?.abort(); setAIState("idle"); setAIResult(null); setAIError(""); if(event.target.value.length<8000)setPromptLimitNotice(false); setPrompt(event.target.value); }} aria-label={text.prompt}/>
-      <div className={`prompt-counter ${promptLimitNotice ? "limit" : ""}`} role={promptLimitNotice ? "alert" : undefined}><span>{prompt.length.toLocaleString()} / 8,000</span>{promptLimitNotice && <b>{locale === "en" ? "The pasted text was longer than the Studio limit. Shorten and de-identify it before analysis." : "Вставленный текст превышал лимит Studio. Сократите и обезличьте его перед анализом."}</b>}</div>
+      {(displayMode === "developer" || promptLimitNotice) && <div className={`prompt-counter ${promptLimitNotice ? "limit" : ""}`} role={promptLimitNotice ? "alert" : undefined}><span>{prompt.length.toLocaleString()} / 8,000</span>{promptLimitNotice && <b>{locale === "en" ? "The pasted text was longer than the Studio limit. Shorten and de-identify it before analysis." : "Вставленный текст превышал лимит Studio. Сократите и обезличьте его перед анализом."}</b>}</div>}
       <div className="prompt-actions">
         {activeAIResult
           ? <button className="generate-button" onClick={() => document.getElementById("ai-plan-review")?.scrollIntoView({ behavior: "smooth", block: "start" })}><Icon name="file" size={24}/><span>{locale === "en" ? "Review the AI proposal below" : "Проверьте AI-предложение ниже"}<small>{locale === "en" ? "Applying is available only after the complete operation list" : "Кнопка применения находится после полного списка операций"}</small></span><Icon name="arrow"/></button>
           : aiEntitlement === "ready"
-            ? <button className="generate-button" disabled={!prompt.trim() || aiState === "analysing" || !canDuplicate || !draftWithinEnvelope} onClick={analysePromptWithAI}><Icon name="spark" size={24}/><span>{aiState === "analysing" ? (locale === "en" ? "AI is mapping the case…" : "AI строит смысловую схему…") : (locale === "en" ? "Understand with AI" : "Понять и структурировать с AI")}<small>{locale === "en" ? "First create a reviewable proposal; nothing is changed yet" : "Сначала создаётся план для проверки; схема пока не меняется"}</small></span><Icon name="arrow"/></button>
+            ? <button className="generate-button" disabled={!prompt.trim() || aiState === "analysing" || !canDuplicate || !draftWithinEnvelope || !derivationsSettled} onClick={analysePromptWithAI}><Icon name="spark" size={24}/><span>{aiState === "analysing" ? (locale === "en" ? "AI is mapping the case…" : "AI строит смысловую схему…") : !derivationsSettled ? (locale === "en" ? "Finishing the latest edit…" : "Завершается последняя правка…") : (locale === "en" ? "Understand with AI" : "Понять и структурировать с AI")}<small>{locale === "en" ? "First create a reviewable proposal; nothing is changed yet" : "Сначала создаётся план для проверки; схема пока не меняется"}</small></span><Icon name="arrow"/></button>
             : aiEntitlement === "anonymous"
               ? <a className="generate-button" href="/signin-with-chatgpt?return_to=%2F%3Fview%3Dstudio" target="_blank" rel="noreferrer"><Icon name="person" size={24}/><span>{locale === "en" ? "Sign in to use AI" : "Войдите для работы с AI"}<small>{locale === "en" ? "Opens a separate tab so this unsaved prompt and graph remain here" : "Вход откроется отдельно: несохранённые промпт и схема останутся в этой вкладке"}</small></span><Icon name="arrow"/></a>
               : aiEntitlement === "profile_required"
                 ? <a className="generate-button" href="/?view=community" target="_blank" rel="noreferrer"><Icon name="person" size={24}/><span>{locale === "en" ? "Complete your profile to use AI" : "Заполните профиль для работы с AI"}<small>{locale === "en" ? "Registration opens separately; return here when the profile is saved" : "Регистрация откроется отдельно; после сохранения профиля вернитесь сюда"}</small></span><Icon name="arrow"/></a>
-                : <button className="generate-button" disabled><Icon name="spark" size={24}/><span>{locale === "en" ? "Checking AI access…" : "Проверка доступа к AI…"}<small>{locale === "en" ? "Exact commands remain available below" : "Режим точных команд доступен ниже"}</small></span><Icon name="arrow"/></button>}
+                : aiEntitlement === "not_configured"
+                  ? <button className="generate-button" disabled><Icon name="spark" size={24}/><span>{locale === "en" ? "AI assistant is awaiting activation" : "AI-ассистент ожидает активации"}<small>{locale === "en" ? "The safe rule-based builder remains available; no data is sent" : "Безопасный локальный конструктор доступен; данные никуда не отправляются"}</small></span><Icon name="arrow"/></button>
+                  : <button className="generate-button" disabled><Icon name="spark" size={24}/><span>{aiEntitlement === "loading" ? (locale === "en" ? "Checking AI access…" : "Проверка доступа к AI…") : (locale === "en" ? "AI access status is unavailable" : "Статус AI временно недоступен")}<small>{locale === "en" ? "The local case builder remains available" : "Локальный конструктор кейса остаётся доступен"}</small></span><Icon name="arrow"/></button>}
         {activeAIResult && <button className="rebuild-button" onClick={analysePromptWithAI} disabled={aiState === "analysing"}><Icon name="spark"/>{locale === "en" ? "Analyse again" : "Проанализировать снова"}</button>}
-        <button className="rebuild-button" disabled={!promptPlan.canApply || !canDuplicate} onClick={applyPromptIteration}><Icon name="file"/>{locale === "en" ? "Use exact commands" : "Применить точные команды"}</button>
-        {draft.nodes.length === 0 && <button className="rebuild-button" disabled={!prompt.trim() || !canDuplicate} onClick={() => { if (window.confirm(locale === "en" ? "Use the rule-based eight-node fallback instead of AI?" : "Использовать шаблон из восьми узлов вместо AI?")){ clearTransientEditorSelection(); generateDraft(); } }}><Icon name="reset"/>{locale === "en" ? "Quick rule-based template" : "Быстрый шаблон по правилам"}</button>}
+        {(displayMode === "developer" || userLocalFallback) && <button className="rebuild-button" disabled={!promptDerivationsSettled || !promptPlan.canApply || !canDuplicate} onClick={applyPromptIteration}><Icon name="file"/>{displayMode === "developer" ? (locale === "en" ? "Use exact commands" : "Применить точные команды") : promptPlan.contextOnly ? (locale === "en" ? "Add this text to case context" : "Добавить текст в контекст кейса") : (locale === "en" ? "Apply locally interpreted changes" : "Применить локально распознанные изменения")}</button>}
+        {draft.nodes.length === 0 && (displayMode === "developer" || userLocalFallback) && <button className="rebuild-button" disabled={!prompt.trim() || !canDuplicate} onClick={() => { if (window.confirm(locale === "en" ? "Use the rule-based eight-node fallback instead of AI?" : "Использовать шаблон из восьми узлов вместо AI?")){ clearTransientEditorSelection(); generateDraft(); } }}><Icon name="reset"/>{locale === "en" ? "Quick rule-based template" : "Быстрый шаблон по правилам"}</button>}
       </div>
-      <p className="ai-privacy-note"><Icon name="alert"/>{locale === "en" ? "AI analysis is explicit: clicking the AI button sends the prompt and current graph you provide to the configured OpenAI API with response storage disabled. De-identify them first; do not enter privileged, personal or secret information." : "AI-анализ запускается явно: после нажатия введённый промпт и текущая схема отправляются в настроенный OpenAI API с отключённым хранением ответа. Сначала обезличьте их; не вводите адвокатскую тайну, персональные данные или секреты."}</p>
+      <p className="ai-privacy-note"><Icon name="alert"/>{locale === "en" ? "AI analysis is explicit: clicking the AI button sends the prompt and current graph to the configured OpenAI API with response storage disabled. API abuse-monitoring logs may still retain content for up to 30 days unless approved retention controls apply. De-identify first; never enter privileged, personal or secret information." : "AI-анализ запускается явно: после нажатия промпт и текущая схема отправляются в настроенный OpenAI API с отключённым хранением ответа. При этом журналы контроля злоупотреблений API могут хранить данные до 30 дней, если для аккаунта не действуют специальные ограничения хранения. Сначала обезличьте данные; не вводите адвокатскую тайну, персональные данные или секреты."}</p>
     </section>
+    {displayMode === "user" && userLocalFallback && !activeAIResult && prompt.trim() && promptDerivationsSettled && <section className={`simple-plan-preview page-width ${promptPlan.canApply ? "ready" : "blocked"}`}><header><div><span>{locale === "en" ? "Local fallback · review before applying" : "Локальный резервный режим · проверьте перед применением"}</span><b>{promptPlan.contextOnly ? (locale === "en" ? "This will only add text to the case context; it will not create nodes" : "Будет дополнен только контекст кейса; новые узлы не появятся") : (locale === "en" ? `${promptPlan.operations.length} proposed change${promptPlan.operations.length === 1 ? "" : "s"}` : `Предложено изменений: ${promptPlan.operations.length}`)}</b></div><small>{locale === "en" ? "No information is sent outside the application" : "Информация не отправляется за пределы приложения"}</small></header>{promptPlan.operations.length > 0 && <ol>{promptPlan.operations.map((operation,index)=><li key={`${operation.kind}-${index}`}><span aria-hidden="true">{index+1}</span><p>{describeStudioPromptOperation(operation,locale,simplePlanNodeTitles,{showIds:false,linkEndpoints:reviewLinkEndpoints})}</p></li>)}</ol>}{promptPlan.diagnostics.length > 0 && <ul>{promptPlan.diagnostics.map((diagnostic,index)=><li key={`${diagnostic.level}-${index}`} className={diagnostic.level}>{diagnostic.message}</li>)}</ul>}</section>}
     {prompt.trim() && aiState === "analysing" && <section className="prompt-ai-status page-width analysing" role="status"><Icon name="spark"/><div><b>{locale === "en" ? "Reading meaning, not keywords" : "Анализируется смысл, а не ключевые слова"}</b><p>{locale === "en" ? "Identifying supported actors, facts, evidence, decisions and complete outcome paths." : "Выделяются подтверждённые участники, факты, доказательства, решения и завершённые пути к исходам."}</p></div></section>}
-    {prompt.trim() && aiState === "error" && <section className="prompt-ai-status page-width error" role="alert"><Icon name="alert"/><div><b>{locale === "en" ? "No changes were made" : "Изменения не внесены"}</b><p>{aiError}</p><small>{locale === "en" ? "You can retry AI analysis or use the exact-command preview below." : "Можно повторить AI-анализ или использовать точный командный план ниже."}</small></div></section>}
-    {activeAIResult && <section id="ai-plan-review" className={`prompt-plan ai-plan page-width ${activeAIResult.plan.canApply ? "ready" : "blocked"}`} aria-live="polite">
-      <header><div><span>{locale === "en" ? "AI-assisted graph proposal" : "AI-предложение схемы"}</span><h2>{activeAIResult.plan.summary || (locale === "en" ? `${activeAIResult.plan.operations.length} proposed changes` : `Предложено изменений: ${activeAIResult.plan.operations.length}`)}</h2></div><b>{activeAIResult.plan.canApply ? (locale === "en" ? "REVIEW" : "ПРОВЕРЬТЕ") : "CLARIFY"}</b></header>
-      {activeAIResult.plan.operations.length > 0 && <ol>{activeAIResult.plan.operations.map((operation, index) => <li key={`${operation.kind}-${index}`}><code>{String(index + 1).padStart(2,"0")}</code><span>{describeStudioPromptOperation(operation, locale, aiNodeTitles)}</span></li>)}</ol>}
-      {(activeAIResult.plan.assumptions?.length ?? 0) > 0 && <div className="ai-plan-notes assumptions"><b>{locale === "en" ? "Assumptions to verify" : "Допущения для проверки"}</b><ul>{activeAIResult.plan.assumptions!.map((item, index) => <li key={`assumption-${index}`}>{item}</li>)}</ul></div>}
-      {(activeAIResult.plan.warnings?.length ?? 0) > 0 && <div className="ai-plan-notes warnings"><b>{locale === "en" ? "Review warnings" : "Предупреждения"}</b><ul>{activeAIResult.plan.warnings!.map((item, index) => <li key={`warning-${index}`}>{item}</li>)}</ul></div>}
-      {activeAIResult.plan.diagnostics.length > 0 && <ul className="ai-plan-diagnostics">{activeAIResult.plan.diagnostics.map((diagnostic, index) => <li key={`${diagnostic.level}-${index}`} className={diagnostic.level}><Icon name={diagnostic.level === "error" ? "alert" : "check"}/>{diagnostic.message}</li>)}</ul>}
-      <p className="ai-plan-footnote">{locale === "en" ? "AI proposes structure; it does not verify law or evidence. Apply only after checking every node, relation, assumption and consequence." : "AI предлагает структуру, но не проверяет право и доказательства. Применяйте план только после проверки каждого узла, связи, допущения и последствия."}</p>
-      <div className="ai-plan-actions"><button className="primary-cta" disabled={!activeAIResult.plan.canApply || !canDuplicate} onClick={applyActiveAIPlan}><Icon name="check"/>{locale === "en" ? `Apply ${activeAIResult.plan.operations.length} reviewed changes` : `Применить проверенные изменения: ${activeAIResult.plan.operations.length}`}</button><small>{locale === "en" ? "One undoable revision; lineage and the existing graph are preserved." : "Одна отменяемая ревизия; линия версий и существующая схема сохраняются."}</small></div>
-    </section>}
-    {prompt.trim() && <details className="prompt-fallback-preview page-width"><summary>{locale === "en" ? "Exact-command fallback preview" : "План точных команд — резервный режим"}</summary><section className={`prompt-plan ${promptPlan.canApply ? "ready" : "blocked"}`}><header><div><span>{locale === "en" ? "Rule-based interpretation" : "Интерпретация по правилам"}</span><h2>{promptPlan.contextOnly ? (locale === "en" ? "Context-only turn" : "Только контекст") : (locale === "en" ? `${promptPlan.operations.length} exact operation${promptPlan.operations.length === 1 ? "" : "s"}` : `Точных операций: ${promptPlan.operations.length}`)}</h2></div><b>{promptPlan.canApply ? "READY" : "REVIEW"}</b></header>{promptPlan.operations.length > 0 && <ol>{promptPlan.operations.map((operation, index) => <li key={`${operation.kind}-${index}`}><code>{String(index + 1).padStart(2,"0")}</code><span>{describeStudioPromptOperation(operation, locale)}</span></li>)}</ol>}{promptPlan.diagnostics.length > 0 && <ul>{promptPlan.diagnostics.map((diagnostic, index) => <li key={`${diagnostic.level}-${index}`} className={diagnostic.level}><Icon name={diagnostic.level === "error" ? "alert" : "check"}/>{diagnostic.message}</li>)}</ul>}</section></details>}
-    <section className="studio-meta page-width"><label><span>{text.title}</span><input value={draft.title} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({...current,title:event.target.value}))} onBlur={(event)=>commitCaseField(text.title,event.currentTarget.value)}/></label><label><span>{text.jurisdiction}</span><input value={draft.jurisdiction} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({...current,jurisdiction:event.target.value}))} onBlur={(event)=>commitCaseField(text.jurisdiction,event.currentTarget.value)}/></label><label><span>{text.role}</span><input value={draft.role} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({...current,role:event.target.value}))} onBlur={(event)=>commitCaseField(text.role,event.currentTarget.value)}/></label></section>
-    <section className="studio-classification page-width">
+    {prompt.trim() && aiState === "error" && <section className="prompt-ai-status page-width error" role="alert"><Icon name="alert"/><div><b>{locale === "en" ? "No changes were made" : "Изменения не внесены"}</b><p>{aiError}</p><small>{displayMode === "developer" ? (locale === "en" ? "Retry AI analysis or inspect the exact-command preview below." : "Повторите AI-анализ или проверьте точный командный план ниже.") : (locale === "en" ? "Retry AI analysis or apply a simple described change without AI." : "Повторите AI-анализ или примените простое описанное изменение без AI.")}</small></div></section>}
+    {activeAIResult && <Suspense fallback={<section className="prompt-ai-status page-width" role="status"><Icon name="spark"/><div><b>{locale === "en" ? "Preparing the proposed scheme…" : "Подготавливается предлагаемая схема…"}</b></div></section>}><StudioAIReview locale={locale} draft={draft} plan={activeAIResult.plan} nodeTitles={aiNodeTitles} linkEndpoints={reviewLinkEndpoints} nodeLabels={text.nodeTypes} applyEnabled={canDuplicate && aiState !== "analysing"} showTechnicalIds={displayMode === "developer"} onApply={applyActiveAIPlan}/></Suspense>}
+    {displayMode === "developer" && prompt.trim() && <details className="prompt-fallback-preview page-width"><summary>{locale === "en" ? "Exact-command fallback preview" : "План точных команд — резервный режим"}</summary>{promptDerivationsSettled && <section className={`prompt-plan ${promptPlan.canApply ? "ready" : "blocked"}`}><header><div><span>{locale === "en" ? "Rule-based interpretation" : "Интерпретация по правилам"}</span><h2>{promptPlan.contextOnly ? (locale === "en" ? "Context-only turn" : "Только контекст") : (locale === "en" ? `${promptPlan.operations.length} exact operation${promptPlan.operations.length === 1 ? "" : "s"}` : `Точных операций: ${promptPlan.operations.length}`)}</h2></div><b>{promptPlan.canApply ? "READY" : "REVIEW"}</b></header>{promptPlan.operations.length > 0 && <ol>{promptPlan.operations.map((operation, index) => <li key={`${operation.kind}-${index}`}><code>{String(index + 1).padStart(2,"0")}</code><span>{describeStudioPromptOperation(operation, locale)}</span></li>)}</ol>}{promptPlan.diagnostics.length > 0 && <ul>{promptPlan.diagnostics.map((diagnostic, index) => <li key={`${diagnostic.level}-${index}`} className={diagnostic.level}><Icon name={diagnostic.level === "error" ? "alert" : "check"}/>{diagnostic.message}</li>)}</ul>}</section>}</details>}
+    {displayMode === "user" && <button type="button" className="studio-settings-toggle page-width" aria-expanded={userSettingsOpen} aria-controls="studio-case-settings" onClick={() => setUserSettingsOpen((current) => !current)}><span><Icon name="file"/><span><b>{locale === "en" ? "Case details, access and economics" : "Детали кейса, доступ и экономика"}</b><small>{locale === "en" ? "Optional classification, visibility, version and tax assumptions" : "Классификация, видимость, версия и налоговые допущения"}</small></span></span><em>{userSettingsOpen ? (locale === "en" ? "Hide" : "Скрыть") : (locale === "en" ? "Open settings" : "Открыть настройки")}</em></button>}
+    <div id="studio-case-settings" className={`studio-settings-stack ${displayMode === "developer" || userSettingsOpen ? "open" : ""}`} hidden={displayMode === "user" && !userSettingsOpen}>
+    <section className="studio-meta page-width" inert={!canDuplicate}>
+      <label><span>{text.title}</span><input value={draft.title} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({...current,title:event.target.value}))} onBlur={(event)=>commitCaseField(text.title,event.currentTarget.value)}/></label>
+      <label><span>{text.jurisdiction}</span><input value={draft.jurisdiction} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({...current,jurisdiction:event.target.value}))} onBlur={(event)=>commitCaseField(text.jurisdiction,event.currentTarget.value)}/></label>
+      <label><span>{text.role}</span><input value={draft.role} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({...current,role:event.target.value}))} onBlur={(event)=>commitCaseField(text.role,event.currentTarget.value)}/></label>
+      <label className="studio-context-field"><span>{locale === "en" ? "Publishable case context" : "Публикуемый контекст кейса"}</span><textarea maxLength={8000} value={draft.premise} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({...current,premise:event.target.value}))} onBlur={(event)=>commitCaseField(locale === "en" ? "case context" : "контекст кейса",event.currentTarget.value)}/><small>{locale === "en" ? "This text appears in the playable case and may become catalogue copy. Verify it before submission; the raw AI prompt is kept out of published artifacts." : "Этот текст используется в игровом кейсе и может войти в описание каталога. Проверьте его перед отправкой; исходный AI-промпт не публикуется."}</small></label>
+    </section>
+    <section className="studio-classification page-width" inert={!canDuplicate}>
       <label><span>{locale === "en" ? "Case domain" : "Домен кейса"}</span><select value={taxDraft ? "tax" : "general"} onChange={(event) => {
         const tax = event.target.value === "tax";
         if (!tax && draft.nodes.some((node) => node.type === "entity" || node.type === "tax_rule" || node.type === "cash_flow")) {
@@ -2603,62 +2842,65 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
             : { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), domain: "general", practiceArea: "General legal", taxTopics: [], purpose: "compliance_review" },
           ...(tax ? { taxEconomics: current.taxEconomics ?? defaultTaxEconomics() } : { taxEconomics: undefined }),
         }));
-      }}><option value="general">General legal</option><option value="tax">Tax / cross-border structuring</option></select></label>
-      <label><span>{locale === "en" ? "Practice area" : "Область практики"}</span><select value={draft.classification?.practiceArea ?? "General legal"} onChange={(event) => applyCaseChange(locale === "en" ? "practice area" : "область практики", (current) => ({ ...current, classification: { ...(current.classification ?? { difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), practiceArea: event.target.value } }))}><option>General legal</option><option>International tax planning</option><option>Corporate tax</option><option>Transfer pricing</option><option>Commercial disputes</option><option>AI regulation</option><option>Privacy & cybersecurity</option></select></label>
-      <label><span>{locale === "en" ? "Difficulty" : "Сложность"}</span><select value={draft.classification?.difficulty ?? "Intermediate"} onChange={(event) => applyCaseChange(locale === "en" ? "difficulty" : "сложность", (current) => ({ ...current, classification: { ...(current.classification ?? { practiceArea: "General legal", tags: [], taxTopics: [], complianceOnly: true }), difficulty: event.target.value } }))}><option>Foundation</option><option>Intermediate</option><option>Advanced</option><option>Expert</option></select></label>
-      {taxDraft && <><label><span>{locale === "en" ? "Tax-case purpose" : "Цель налогового кейса"}</span><select value={draft.classification?.purpose ?? "compliance_review"} onChange={(event) => applyCaseChange(locale === "en" ? "tax-case purpose" : "цель налогового кейса", (current) => ({ ...current, classification: { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), purpose: event.target.value as NonNullable<StudioDraft["classification"]>["purpose"] } }))}><option value="lawful_planning">Lawful planning</option><option value="compliance_review">Compliance review</option><option value="audit_defence">Audit defence</option><option value="evasion_detection">Evasion detection</option></select></label>
+      }}><option value="general">{locale === "en" ? "General legal" : "Общеправовой"}</option><option value="tax">{locale === "en" ? "Tax / cross-border structuring" : "Налоги / трансграничное структурирование"}</option></select></label>
+      <label><span>{locale === "en" ? "Practice area" : "Область практики"}</span><select value={draft.classification?.practiceArea ?? "General legal"} onChange={(event) => applyCaseChange(locale === "en" ? "practice area" : "область практики", (current) => ({ ...current, classification: { ...(current.classification ?? { difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), practiceArea: event.target.value } }))}><option value="General legal">{locale === "en" ? "General legal" : "Общая юридическая практика"}</option><option value="International tax planning">{locale === "en" ? "International tax planning" : "Международное налоговое планирование"}</option><option value="Corporate tax">{locale === "en" ? "Corporate tax" : "Корпоративные налоги"}</option><option value="Transfer pricing">{locale === "en" ? "Transfer pricing" : "Трансфертное ценообразование"}</option><option value="Commercial disputes">{locale === "en" ? "Commercial disputes" : "Коммерческие споры"}</option><option value="AI regulation">{locale === "en" ? "AI regulation" : "Регулирование ИИ"}</option><option value="Privacy & cybersecurity">{locale === "en" ? "Privacy & cybersecurity" : "Приватность и кибербезопасность"}</option></select></label>
+      <label><span>{locale === "en" ? "Difficulty" : "Сложность"}</span><select value={draft.classification?.difficulty ?? "Intermediate"} onChange={(event) => applyCaseChange(locale === "en" ? "difficulty" : "сложность", (current) => ({ ...current, classification: { ...(current.classification ?? { practiceArea: "General legal", tags: [], taxTopics: [], complianceOnly: true }), difficulty: event.target.value } }))}><option value="Foundation">{locale === "en" ? "Foundation" : "Базовый"}</option><option value="Intermediate">{locale === "en" ? "Intermediate" : "Средний"}</option><option value="Advanced">{locale === "en" ? "Advanced" : "Продвинутый"}</option><option value="Expert">{locale === "en" ? "Expert" : "Экспертный"}</option></select></label>
+      {taxDraft && <><label><span>{locale === "en" ? "Tax-case purpose" : "Цель налогового кейса"}</span><select value={draft.classification?.purpose ?? "compliance_review"} onChange={(event) => applyCaseChange(locale === "en" ? "tax-case purpose" : "цель налогового кейса", (current) => ({ ...current, classification: { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), purpose: event.target.value as NonNullable<StudioDraft["classification"]>["purpose"] } }))}><option value="lawful_planning">{locale === "en" ? "Lawful planning" : "Законное планирование"}</option><option value="compliance_review">{locale === "en" ? "Compliance review" : "Проверка соответствия"}</option><option value="audit_defence">{locale === "en" ? "Audit defence" : "Защита при проверке"}</option><option value="evasion_detection">{locale === "en" ? "Evasion detection" : "Выявление уклонения"}</option></select></label>
       <label><span>{locale === "en" ? "Law / guidance as of" : "Право / guidance на дату"}</span><input type="date" value={draft.classification?.legalAsOf ?? ""} onChange={(event) => applyCaseChange(locale === "en" ? "legal as-of date" : "дату актуальности права", (current) => ({ ...current, classification: { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), legalAsOf: event.target.value } }))}/></label></>}
       <label className="wide-field"><span>{locale === "en" ? "Tags · comma separated" : "Теги · через запятую"}</span><input value={(draft.classification?.tags ?? []).join(", ")} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({ ...current, classification: { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", taxTopics: [], complianceOnly: true }), tags: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) } }))} onBlur={(event)=>commitCaseField(locale === "en" ? "tags" : "теги", event.currentTarget.value)}/></label>
       {taxDraft && <><label className="wide-field"><span>{locale === "en" ? "Tax topics · treaty, CFC, PE, WHT, DAC6…" : "Налоговые темы · treaty, CFC, PE, WHT, DAC6…"}</span><input value={(draft.classification?.taxTopics ?? []).join(", ")} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({ ...current, classification: { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], complianceOnly: true }), taxTopics: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) } }))} onBlur={(event)=>commitCaseField(locale === "en" ? "tax topics" : "налоговые темы", event.currentTarget.value)}/></label>
       <label className="source-field"><span>{locale === "en" ? "HTTPS legal sources · one per line" : "HTTPS-источники права · по одному в строке"}</span><textarea rows={3} value={(draft.classification?.sourceUrls ?? []).join("\n")} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({ ...current, classification: { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), sourceUrls: event.target.value.split(/\n+/).map((item) => item.trim()).filter(Boolean) } }))} onBlur={(event)=>commitCaseField(locale === "en" ? "legal sources" : "источники права", event.currentTarget.value)}/></label>
       <div className="compliance-gate"><Icon name="check"/><div><b>{locale === "en" ? "International tax safety & publication gate" : "Контроль безопасности и публикации налогового кейса"}</b><p>{locale === "en" ? "Lawful-planning, compliance, audit-defence and evasion-detection scenarios may model risky facts. Publication requires named reviewer confirmation that the case does not enable concealment, sham substance, false reporting or evasion; HTTPS sources and a legal as-of date are mandatory." : "Кейсы о законном планировании, compliance, налоговом споре и выявлении уклонения могут моделировать рискованные факты. Для публикации именная рецензия должна подтвердить, что кейс не помогает сокрытию, фиктивной substance, ложной отчётности или уклонению; HTTPS-источники и дата актуальности права обязательны."}</p></div></div></>}
     </section>
-    {taxDraft && taxResult && <TaxEconomicsPanel key={JSON.stringify(taxModel)} locale={locale} model={taxModel} result={taxResult} onChange={applyTaxEconomicsChange}/>}
-    <section className={`studio-access page-width ${isPrivate ? "private" : "restricted"}`} aria-labelledby="studio-access-title">
+    {taxDraft && taxResult && <TaxEconomicsPanel key={JSON.stringify(taxModel)} locale={locale} model={taxModel} result={taxResult} disabled={!canDuplicate} onChange={applyTaxEconomicsChange}/>}
+    <section className={`studio-access page-width ${isPrivate ? "private" : "restricted"}`} aria-labelledby="studio-access-title" inert={!canDuplicate}>
       <div><span>{locale === "en" ? "Access & visibility" : "Доступ и видимость"}</span><h2 id="studio-access-title">{isPrivate ? (locale === "en" ? "Private · owner only" : "Приватно · только владелец") : (locale === "en" ? "Restricted custom case" : "Ограниченный custom-кейс")}</h2><p id="studio-private-description">{isPrivate ? (locale === "en" ? "Only you can open this workspace case. The platform administrator, reviewers and previous recipients cannot see its content or metadata." : "Только вы можете открыть этот кейс в workspace. Администратор платформы, рецензенты и ранее приглашённые пользователи не видят его содержание и метаданные.") : (locale === "en" ? "Visible to you and the platform administrator. Other registered users need an explicit share; it is not part of the General Library." : "Виден вам и администратору платформы. Другим зарегистрированным пользователям требуется явное приглашение; в Общую библиотеку кейс не входит.")}</p></div>
       <label className={`privacy-toggle ${canManagePrivacy ? "" : "locked"}`}><input type="checkbox" checked={isPrivate} disabled={!canManagePrivacy} onChange={(event) => changePrivacy(event.target.checked)} aria-describedby="studio-private-description"/><span>{canManagePrivacy ? (locale === "en" ? "Private" : "Приватно") : (locale === "en" ? "Owner controls privacy" : "Приватность задаёт владелец")}</span><i aria-hidden="true"/></label>
-      <div className="copy-protection-control"><div><span>{locale === "en" ? "JSON lineage protection" : "Защита JSON-линии"}</span><b>{draft.protection?.copyProtected ? (copyProtectionLocked ? (locale === "en" ? "Copy-protected · inherited" : "Копирование защищено · наследуется") : (locale === "en" ? "Protection pending save" : "Защита ожидает сохранения")) : (locale === "en" ? "Forks allowed" : "Форки разрешены")}</b><p>{locale === "en" ? "A server HMAC seal binds the current and parent codes. Once a saved lineage is locked, child versions cannot remove the policy." : "Серверная HMAC-печать связывает коды текущей и родительской версий. После фиксации защиты дочерние версии не могут её снять."}</p></div><label className={`privacy-toggle compact ${canManagePrivacy ? "" : "locked"}`}><input type="checkbox" checked={draft.protection?.copyProtected === true} disabled={!canManagePrivacy || (copyProtectionLocked && draft.protection?.copyProtected === true)} onChange={(event) => changeCopyProtection(event.target.checked)}/><span>{draft.protection?.copyProtected ? (locale === "en" ? "Protected" : "Защищено") : (locale === "en" ? "Protect" : "Защитить")}</span><i aria-hidden="true"/></label></div>
-      {draft.protection && <dl className="protection-register"><div><dt>{locale === "en" ? "Parent code" : "Код родителя"}</dt><dd><code>{draft.protection.parentCode ?? (locale === "en" ? "Root · no parent" : "Корень · без родителя")}</code></dd></div><div><dt>{locale === "en" ? "Current version code" : "Код текущей версии"}</dt><dd><code>{draft.protection.currentCode || (locale === "en" ? "Pending workspace seal" : "Ожидает печати workspace")}</code></dd></div><div><dt>HMAC SEAL</dt><dd><code>{draft.protection.seal || (locale === "en" ? "Save to workspace to seal" : "Сохраните в workspace для печати")}</code></dd></div></dl>}
+      <div className="copy-protection-control"><div><span>{displayMode === "developer" ? (locale === "en" ? "JSON lineage protection" : "Защита JSON-линии") : (locale === "en" ? "Copy protection" : "Защита от копирования")}</span><b>{draft.protection?.copyProtected ? (copyProtectionLocked ? (locale === "en" ? "Copy-protected · inherited" : "Копирование защищено · наследуется") : (locale === "en" ? "Protection pending save" : "Защита ожидает сохранения")) : (locale === "en" ? "Forks allowed" : "Форки разрешены")}</b><p>{displayMode === "developer" ? (locale === "en" ? "A server HMAC seal binds the current and parent codes. Once a saved lineage is locked, child versions cannot remove the policy." : "Серверная HMAC-печать связывает коды текущей и родительской версий. После фиксации защиты дочерние версии не могут её снять.") : (locale === "en" ? "When enabled, this protection is inherited by every later version and cannot be removed from that lineage." : "После включения защита наследуется всеми последующими версиями и не может быть снята в этой линии кейса.")}</p></div><label className={`privacy-toggle compact ${canManagePrivacy ? "" : "locked"}`}><input type="checkbox" checked={draft.protection?.copyProtected === true} disabled={!canManagePrivacy || (copyProtectionLocked && draft.protection?.copyProtected === true)} onChange={(event) => changeCopyProtection(event.target.checked)}/><span>{draft.protection?.copyProtected ? (locale === "en" ? "Protected" : "Защищено") : (locale === "en" ? "Protect" : "Защитить")}</span><i aria-hidden="true"/></label></div>
+      {displayMode === "developer" && draft.protection && <dl className="protection-register"><div><dt>{locale === "en" ? "Parent code" : "Код родителя"}</dt><dd><code>{draft.protection.parentCode ?? (locale === "en" ? "Root · no parent" : "Корень · без родителя")}</code></dd></div><div><dt>{locale === "en" ? "Current version code" : "Код текущей версии"}</dt><dd><code>{draft.protection.currentCode || (locale === "en" ? "Pending workspace seal" : "Ожидает печати workspace")}</code></dd></div><div><dt>HMAC SEAL</dt><dd><code>{draft.protection.seal || (locale === "en" ? "Save to workspace to seal" : "Сохраните в workspace для печати")}</code></dd></div></dl>}
     </section>
-    <section className="studio-version page-width">
+    {displayMode === "developer" ? <section className="studio-version page-width" inert={!canDuplicate}>
       <div className="version-heading"><span>{text.customCase}</span><button className="secondary-cta" disabled={!canDuplicate} onClick={createChildVersion}><Icon name="plus"/>{text.childVersion}</button></div>
       <label><span>{text.caseId}</span><input value={draft.caseId} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({...current,caseId:slugifyCaseId(event.target.value)}))} onBlur={(event)=>commitCaseField(text.caseId,event.currentTarget.value)}/></label>
       <label><span>{text.version}</span><input value={draft.version} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({...current,version:event.target.value}))} onBlur={(event)=>commitCaseField(text.version,event.currentTarget.value)} aria-invalid={!/^\d+\.\d+\.\d+$/.test(draft.version)}/></label>
-      <div className="version-value"><span>{text.fingerprint}</span><code>{caseFingerprint(draft)}</code></div>
+      <div className="version-value"><span>{text.fingerprint}</span><code>{derivationsSettled ? studioDerivations.caseFingerprint : (locale === "en" ? "checking latest edit…" : "проверяется последняя правка…")}</code></div>
       <div className="parent-trace"><span>{text.parentCase}</span>{draft.parent ? <><b>{draft.parent.caseId}</b><code>v{draft.parent.version} · {draft.parent.fingerprint}</code></> : <em>{locale === "en" ? "Root case · no parent" : "Корневой кейс · родителя нет"}</em>}</div>
-    </section>
+    </section> : <section className="studio-version-simple page-width" inert={!canDuplicate}><div><span>{locale === "en" ? "Current version" : "Текущая версия"}</span><b>v{draft.version}</b><small>{draft.parent ? (locale === "en" ? `Child version of v${draft.parent.version}` : `Дочерняя версия от v${draft.parent.version}`) : (locale === "en" ? "Original case" : "Исходный кейс")}</small></div><button className="secondary-cta" disabled={!canDuplicate} onClick={createChildVersion}><Icon name="plus"/>{text.childVersion}</button></section>}
+    </div>
     <section className="studio-workspace">
-      <aside className="node-palette"><div className="pane-heading"><span>{text.addNode}</span><b>{String(Object.keys(typeColors).length).padStart(2,"0")}</b></div>{(Object.keys(typeColors) as StudioNodeType[]).map((type) => <button key={type} disabled={draft.nodes.length >= 200} onClick={() => addNode(type)}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "Add nodes here. On the graph, choose an output dot and then an input dot to create a relation. Every completed edit is added to the history." : "Добавляйте узлы здесь. На графе выберите выходную, затем входную точку, чтобы создать связь. Каждая завершённая правка попадёт в историю."}</p></aside>
-      <section className="graph-deck">
-        <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></div></div>
-        <div className="graph-connect-status" role="status" aria-live="polite"><span className={linkSourceId || selectedRuleLinkId ? "armed" : ""}/>{relationStatus || (locale === "en" ? "Connect: select OUT on the first node, then IN on the destination. Select a line and press Delete to remove it." : "Связь: нажмите ВЫХОД первого узла, затем ВХОД целевого. Выделите линию и нажмите Delete для удаления.")}{linkSourceId && <button onClick={() => { setLinkSourceId(null); setRelationStatus(""); }}>{locale === "en" ? "Cancel" : "Отмена"}</button>}</div>
-        <div className="graph-canvas">
-          <svg className="graph-links" aria-label={locale === "en" ? "Case relationships" : "Связи кейса"}>{draft.links.map((link) => { const from=draft.nodes.find((node)=>node.id===link.from); const to=draft.nodes.find((node)=>node.id===link.to); if(!from||!to)return null; const path=`M ${from.x+165} ${from.y+38} C ${from.x+205} ${from.y+38}, ${to.x-38} ${to.y+38}, ${to.x} ${to.y+38}`; const selected=selectedRuleLinkId===link.id; return <g key={link.id} className={`graph-link ${selected?"selected":""}`} role="button" tabIndex={0} aria-pressed={selected} aria-label={locale === "en" ? `Relation from ${from.title} to ${to.title}. Press Delete to remove.` : `Связь от «${from.title}» к «${to.title}». Нажмите Delete для удаления.`} onClick={() => selectGraphLink(link)} onKeyDown={(event) => { if(event.key==="Enter"||event.key===" "){event.preventDefault();selectGraphLink(link);} }}><title>{from.title} → {to.title}</title><path className="graph-link-hit" d={path}/><path className="graph-link-visible" d={path}/><circle cx={to.x} cy={to.y+38} r="3"/></g>; })}</svg>
+      <aside className="node-palette" inert={!canDuplicate}><div className="pane-heading"><span>{text.addNode}</span><b>{String(paletteNodeTypes.length).padStart(2,"0")}</b></div>{paletteNodeTypes.map((type) => <button key={type} disabled={!canDuplicate || draft.nodes.length >= 200} onClick={() => addNode(type)}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "Add nodes here. On the graph, choose an output dot and then an input dot to create a relation. Every completed edit is added to the history." : "Добавляйте узлы здесь. На графе выберите выходную, затем входную точку, чтобы создать связь. Каждая завершённая правка попадёт в историю."}</p></aside>
+      <section className="graph-deck" ref={graphDeckRef}>
+        <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div className="graph-heading-actions"><div>{displayMode === "developer" ? <><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></> : <span className="graph-counts">{draft.nodes.length} {locale === "en" ? "nodes" : "узлов"} · {draft.links.length} {locale === "en" ? "connections" : "связей"}</span>}</div><div className="graph-zoom-controls" aria-label={locale === "en" ? "Graph view controls" : "Управление видом схемы"}><button type="button" onClick={fitGraph}>{locale === "en" ? "Fit" : "Вместить"}</button><button type="button" onClick={() => setGraphZoom(1)}>100%</button><button type="button" onClick={centerGraph}>{locale === "en" ? "Center" : "По центру"}</button></div></div></div>
+        <div id="graph-connect-status" className="graph-connect-status" role="status" aria-live="polite" tabIndex={-1}><span className={linkSourceId || selectedRuleLinkId ? "armed" : ""}/>{relationStatus || (locale === "en" ? "Connect: select OUT on the first node, then IN on the destination. Select a line and press Delete to remove it." : "Связь: нажмите ВЫХОД первого узла, затем ВХОД целевого. Выделите линию и нажмите Delete для удаления.")}{linkSourceId && <button onClick={() => { setLinkSourceId(null); setRelationStatus(""); }}>{locale === "en" ? "Cancel" : "Отмена"}</button>}</div>
+        <div className="graph-canvas" style={{ zoom: graphZoom }}>
+          <svg className="graph-links" aria-label={locale === "en" ? "Case relationships" : "Связи кейса"}>{draft.links.map((link) => { const from=nodeById.get(link.from); const to=nodeById.get(link.to); if(!from||!to)return null; const path=`M ${from.x+165} ${from.y+38} C ${from.x+205} ${from.y+38}, ${to.x-38} ${to.y+38}, ${to.x} ${to.y+38}`; const selected=selectedRuleLinkId===link.id; return <g key={link.id} className={`graph-link ${selected?"selected":""}`} role="button" tabIndex={0} aria-pressed={selected} aria-label={locale === "en" ? `Relation from ${from.title} to ${to.title}. Press Delete to remove.` : `Связь от «${from.title}» к «${to.title}». Нажмите Delete для удаления.`} onClick={() => selectGraphLink(link)} onKeyDown={(event) => { if(event.key==="Enter"||event.key===" "){event.preventDefault();selectGraphLink(link);} }}><title>{from.title} → {to.title}</title><path className="graph-link-hit" d={path}/><path className="graph-link-visible" d={path}/><circle cx={to.x} cy={to.y+38} r="3"/></g>; })}</svg>
           {draft.nodes.length === 0 && <div className="graph-empty-state"><Icon name="spark"/><h3>{locale === "en" ? "Start with a description or one node" : "Начните с описания или первого узла"}</h3><p>{locale === "en" ? "Describe the matter above and choose “Understand with AI”, or add a Trigger from the left palette." : "Опишите ситуацию выше и нажмите «Понять и структурировать с AI» либо добавьте «Триггер» в палитре слева."}</p></div>}
           {draft.nodes.map((node) => <div key={node.id} className={`graph-node-shell ${node.id===selectedNodeId?"selected":""} ${node.id===linkSourceId?"link-source":""}`} style={{left:node.x,top:node.y,"--node-color":typeColors[node.type]} as React.CSSProperties}>
-            <button className="node-port node-port-in" onClick={() => completeLink(node.id)} aria-label={locale === "en" ? `Use ${node.title} as relation destination` : `Использовать ${node.title} как назначение связи`}><span/></button>
-            <button className="graph-node" onFocus={() => selectGraphNode(node.id)} onKeyDown={(event) => nudgeNode(event, node)} onPointerDown={(event)=>{setSelectedRuleLinkId(null);moveNode(event,node);}} onPointerMove={(event)=>moveNode(event,node)} onPointerUp={(event)=>moveNode(event,node)} onPointerCancel={(event)=>moveNode(event,node)} aria-label={`${text.nodeTypes[node.type]}: ${node.title}. ${locale === "en" ? "Use arrow keys to reposition." : "Используйте стрелки для перемещения."}`}><span><i/>{text.nodeTypes[node.type]}<code>{node.id.split("-").at(-1)}</code></span><b>{node.title}</b>{(node.runtime?.budgetCostEur !== undefined || node.runtime?.durationMinutes !== undefined) && <small className="node-runtime-summary">{node.runtime?.budgetCostEur !== undefined ? `€${node.runtime.budgetCostEur.toLocaleString()}` : "€ auto"} · {node.runtime?.durationMinutes !== undefined ? `${node.runtime.durationMinutes} min` : "time auto"}</small>}</button>
-            <button className="node-port node-port-out" aria-pressed={node.id===linkSourceId} onClick={() => armLinkSource(node.id)} aria-label={locale === "en" ? `Start relation from ${node.title}` : `Начать связь от ${node.title}`}><span/></button>
+            <button className="node-port node-port-in" disabled={!canDuplicate} onClick={() => completeLink(node.id)} aria-label={locale === "en" ? `Use ${node.title} as relation destination` : `Использовать ${node.title} как назначение связи`}><span/></button>
+            <button id={`studio-node-${node.id}`} className="graph-node" onFocus={() => selectGraphNode(node.id)} onKeyDown={(event) => { if (canDuplicate) nudgeNode(event, node); }} onPointerDown={(event)=>{setSelectedRuleLinkId(null);if(canDuplicate)moveNode(event,node,graphZoom);else selectGraphNode(node.id);}} onPointerMove={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} onPointerUp={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} onPointerCancel={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} aria-label={`${text.nodeTypes[node.type]}: ${node.title}. ${canDuplicate ? (locale === "en" ? "Use arrow keys to reposition." : "Используйте стрелки для перемещения.") : (locale === "en" ? "Inspection only." : "Только просмотр.")}`}><span><i/>{text.nodeTypes[node.type]}{displayMode === "developer" && <code>{node.id.split("-").at(-1)}</code>}</span><b>{node.title}</b>{(node.runtime?.budgetCostEur !== undefined || node.runtime?.durationMinutes !== undefined) && <small className="node-runtime-summary">{node.runtime?.budgetCostEur !== undefined ? `€${node.runtime.budgetCostEur.toLocaleString()}` : (displayMode === "developer" ? "€ auto" : locale === "en" ? "cost automatic" : "стоимость автоматически")} · {node.runtime?.durationMinutes !== undefined ? `${node.runtime.durationMinutes} min` : (displayMode === "developer" ? "time auto" : locale === "en" ? "time automatic" : "время автоматически")}</small>}</button>
+            <button className="node-port node-port-out" disabled={!canDuplicate} aria-pressed={node.id===linkSourceId} onClick={() => armLinkSource(node.id)} aria-label={locale === "en" ? `Start relation from ${node.title}` : `Начать связь от ${node.title}`}><span/></button>
           </div>)}
         </div>
         <div className="graph-legend">{(Object.keys(typeColors) as StudioNodeType[]).map((type)=><span key={type}><i style={{background:typeColors[type]}}/>{text.nodeTypes[type]}</span>)}</div>
         <details className="graph-relations" open>
-          <summary>{locale === "en" ? "Relationship & Rules DSL editor" : "Редактор связей и Rules DSL"} · {draft.links.length}</summary>
+          <summary>{displayMode === "developer" ? (locale === "en" ? "Relationship & Rules DSL editor" : "Редактор связей и Rules DSL") : (locale === "en" ? "Connections and player choices" : "Связи и выборы игрока")} · {draft.links.length}</summary>
           {draft.links.length ? <>
-            <ol>{draft.links.map((link, index) => <li key={link.id} className={selectedRuleLinkId === link.id ? "rules-selected" : ""}>
-              <code>{String(index + 1).padStart(2,"0")}</code>
-              <label><span>{locale === "en" ? "Source" : "Источник"}</span><select aria-label={locale === "en" ? `Source for relation ${index + 1}` : `Источник связи ${index + 1}`} value={link.from} onChange={(event) => changeRelation(link, "from", event.target.value)}>{draft.nodes.map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}</option>)}</select></label>
+            {relationPageCount > 1 && <nav className="relation-pagination" aria-label={locale === "en" ? "Relationship pages" : "Страницы связей"}><button type="button" disabled={safeRelationPage === 0} onClick={() => setRelationPage((page) => Math.max(0, page - 1))}><Icon name="arrow"/>{locale === "en" ? "Previous" : "Назад"}</button><span>{safeRelationPage * relationPageSize + 1}–{Math.min(draft.links.length, (safeRelationPage + 1) * relationPageSize)} / {draft.links.length}</span><button type="button" disabled={safeRelationPage >= relationPageCount - 1} onClick={() => setRelationPage((page) => Math.min(relationPageCount - 1, page + 1))}>{locale === "en" ? "Next" : "Далее"}<Icon name="arrow"/></button></nav>}
+            {draft.nodes.length > STUDIO_NODE_MENU_PAGE_SIZE && <div className="relation-node-menu"><label><span>{locale === "en" ? "Find a node for endpoint menus" : "Найти узел для меню связей"}</span><input type="search" value={relationNodeQuery} disabled={!canDuplicate} placeholder={locale === "en" ? "Title, type or ID" : "Название, тип или ID"} onChange={(event) => { setRelationNodeQuery(event.target.value); setRelationNodePage(0); }}/></label><span>{relationNodeMenu.start}–{relationNodeMenu.end} / {relationNodeMenu.total}</span><button type="button" disabled={!canDuplicate || relationNodeMenu.page === 0} onClick={() => setRelationNodePage(relationNodeMenu.page - 1)} aria-label={locale === "en" ? "Previous node-menu page" : "Предыдущая страница меню узлов"}><Icon name="arrow"/></button><button type="button" disabled={!canDuplicate || relationNodeMenu.page >= relationNodeMenu.pageCount - 1} onClick={() => setRelationNodePage(relationNodeMenu.page + 1)} aria-label={locale === "en" ? "Next node-menu page" : "Следующая страница меню узлов"}><Icon name="arrow"/></button></div>}
+            <ol>{visibleRelations.map((link, pageIndex) => { const index = safeRelationPage * relationPageSize + pageIndex; return <li key={link.id} className={selectedRuleLinkId === link.id ? "rules-selected" : ""}>
+              {displayMode === "developer" ? <code>{String(index + 1).padStart(2,"0")}</code> : <span className="relation-number">{index + 1}</span>}
+              <label><span>{locale === "en" ? "Source" : "Источник"}</span><select disabled={!canDuplicate} aria-label={locale === "en" ? `Source for relation ${index + 1}` : `Источник связи ${index + 1}`} value={link.from} onChange={(event) => changeRelation(link, "from", event.target.value)}>{studioNodeMenuOptions(relationNodeMenu.nodes,nodeById,link.from).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></label>
               <span className="relation-arrow">→</span>
-              <label><span>{locale === "en" ? "Destination" : "Назначение"}</span><select aria-label={locale === "en" ? `Destination for relation ${index + 1}` : `Назначение связи ${index + 1}`} value={link.to} onChange={(event) => changeRelation(link, "to", event.target.value)}>{draft.nodes.map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}</option>)}</select></label>
-              <button className="relation-rules" onClick={() => selectedRuleLinkId === link.id ? setSelectedRuleLinkId(null) : selectGraphLink(link)} aria-expanded={selectedRuleLinkId === link.id}>{locale === "en" ? "Rules" : "Правила"}</button>
-              <button className="relation-delete" disabled={!canDuplicate} onClick={() => { deleteLink(link); if (selectedRuleLinkId === link.id) setSelectedRuleLinkId(null); setRelationStatus(locale === "en" ? "Relation deleted. Undo is available." : "Связь удалена. Доступна отмена действия."); }} aria-label={locale === "en" ? `Delete relation ${index + 1}` : `Удалить связь ${index + 1}`}><Icon name="trash" size={15}/></button>
-            </li>)}</ol>
-            {selectedRuleLink && <RelationRuleEditor locale={locale} link={selectedRuleLink} beginFieldEdit={beginFieldEdit} setRule={(change) => setRelationRule(selectedRuleLink.id, change)} applyRule={(change, label) => applyRelationRuleChange(selectedRuleLink.id, change, label)} commitField={(label, value) => commitRelationRule(selectedRuleLink.id, label, value)}/>}
+              <label><span>{locale === "en" ? "Destination" : "Назначение"}</span><select disabled={!canDuplicate} aria-label={locale === "en" ? `Destination for relation ${index + 1}` : `Назначение связи ${index + 1}`} value={link.to} onChange={(event) => changeRelation(link, "to", event.target.value)}>{studioNodeMenuOptions(relationNodeMenu.nodes,nodeById,link.to).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></label>
+              <button className="relation-rules" onClick={() => selectedRuleLinkId === link.id ? setSelectedRuleLinkId(null) : selectGraphLink(link)} aria-expanded={selectedRuleLinkId === link.id}>{displayMode === "developer" ? (locale === "en" ? "Rules" : "Правила") : (locale === "en" ? "Choice" : "Выбор")}</button>
+              <button className="relation-delete" disabled={!canDuplicate} onClick={() => { deleteLink(link); if (selectedRuleLinkId === link.id) setSelectedRuleLinkId(null); setRelationStatus(locale === "en" ? "Relation deleted. Undo is available." : "Связь удалена. Доступна отмена действия."); focusRelationStatus(); }} aria-label={locale === "en" ? `Delete relation ${index + 1}` : `Удалить связь ${index + 1}`}><Icon name="trash" size={15}/></button>
+            </li>; })}</ol>
+            {selectedRuleLink && <RelationRuleEditor locale={locale} link={selectedRuleLink} developerMode={displayMode === "developer"} disabled={!canDuplicate} beginFieldEdit={beginFieldEdit} setRule={(change) => setRelationRule(selectedRuleLink.id, change)} applyRule={(change, label) => applyRelationRuleChange(selectedRuleLink.id, change, label)} commitField={(label, value) => commitRelationRule(selectedRuleLink.id, label, value)}/>}
           </> : <p>{locale === "en" ? "No relations yet. Use node ports or the inspector to create one." : "Связей пока нет. Используйте порты узлов или инспектор."}</p>}
         </details>
       </section>
-      <aside className="node-inspector"><div className="pane-heading"><span>{text.inspector}</span><b>{selectedNode?"01":"00"}</b></div>{selectedNode?<div className="inspector-form">
-        <div className="selected-type"><i style={{background:typeColors[selectedNode.type]}}/><span>{text.nodeTypes[selectedNode.type]}</span><code>{selectedNode.id}</code></div>
+      <aside className="node-inspector"><div className="pane-heading"><span>{text.inspector}</span><b>{selectedNode?"01":"00"}</b></div>{selectedNode?<div className="inspector-form" inert={!canDuplicate}>
+        <div className="selected-type"><i style={{background:typeColors[selectedNode.type]}}/><span>{text.nodeTypes[selectedNode.type]}</span>{displayMode === "developer" && <code>{selectedNode.id}</code>}</div>
         <label><span>{text.nodeType}</span><select value={selectedNode.type} onChange={(event)=>{ const type=event.target.value as StudioNodeType; if(type!==selectedNode.type){ const before=draft; updateNode({type,runtime:runtimeForNodeType(selectedNode.runtime,type)}); recordVisualEdit("node_updated", locale === "en" ? `Visual edit: changed “${selectedNode.title}” from ${text.nodeTypes[selectedNode.type]} to ${text.nodeTypes[type]}.` : `Визуальная правка: тип узла «${selectedNode.title}» изменён на «${text.nodeTypes[type]}».`, before); } }}>{(Object.keys(typeColors) as StudioNodeType[]).map((type)=><option key={type} value={type}>{text.nodeTypes[type]}</option>)}</select></label>
         <label><span>{text.title}</span><input value={selectedNode.title} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event)=>updateNode({title:event.target.value})} onBlur={(event)=>commitNodeField(text.title,event.currentTarget.value)}/></label>
         <label><span>{text.detail}</span><textarea value={selectedNode.detail} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event)=>updateNode({detail:event.target.value})} onBlur={(event)=>commitNodeField(text.detail,event.currentTarget.value)}/></label>
@@ -2668,21 +2910,22 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
           <label><span>{locale === "en" ? "Node duration · minutes" : "Продолжительность нода · минуты"}</span><input type="number" min="0" max="100000000" step="1" value={selectedNode.runtime?.durationMinutes ?? ""} placeholder="auto" onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event)=>setNodeRuntimeChange({durationMinutes:optionalRuntimeInteger(event.target.value,100_000_000)})} onBlur={(event)=>commitNodeField(locale === "en" ? "duration" : "продолжительность",event.currentTarget.value)}/></label>
           <label><span>{locale === "en" ? "Scenario day" : "День сценария"}</span><input type="number" min="1" max="10000" value={selectedNode.runtime?.day ?? ""} placeholder="auto" onChange={(event)=>applyNodeRuntimeChange({day:event.target.value ? Number(event.target.value) : undefined},locale === "en" ? "day" : "день")}/></label>
           <label><span>{locale === "en" ? "Scenario time" : "Время сценария"}</span><input type="time" value={selectedNode.runtime?.time ?? ""} onChange={(event)=>applyNodeRuntimeChange({time:event.target.value || undefined},locale === "en" ? "time" : "время")}/></label>
-          {selectedNode.type === "outcome" && <label><span>{locale === "en" ? "Outcome class" : "Класс исхода"}</span><select value={selectedNode.runtime?.terminalOutcome ?? "auto"} onChange={(event)=>applyNodeRuntimeChange({terminalOutcome:event.target.value === "auto" ? undefined : event.target.value as "strong"|"mixed"|"weak"},locale === "en" ? "outcome class" : "класс исхода")}><option value="auto">Auto</option><option value="strong">Strong</option><option value="mixed">Mixed</option><option value="weak">Weak</option></select></label>}
-          {selectedNode.type === "deadline" && <><label><span>{locale === "en" ? "Deadline day" : "День дедлайна"}</span><input type="number" min="1" max="10000" value={selectedNode.runtime?.deadlineDay ?? ""} placeholder="auto" onChange={(event)=>applyNodeRuntimeChange({deadlineDay:event.target.value ? Number(event.target.value) : undefined},locale === "en" ? "deadline day" : "день дедлайна")}/></label><label><span>{locale === "en" ? "Deadline time" : "Время дедлайна"}</span><input type="time" value={selectedNode.runtime?.deadlineTime ?? ""} onChange={(event)=>applyNodeRuntimeChange({deadlineTime:event.target.value || undefined},locale === "en" ? "deadline time" : "время дедлайна")}/></label><label><span>{locale === "en" ? "Missed route" : "Переход при пропуске"}</span><select value={selectedNode.runtime?.missedOutcomeNodeId ?? ""} onChange={(event)=>applyNodeRuntimeChange({missedOutcomeNodeId:event.target.value || undefined},locale === "en" ? "missed-deadline route" : "переход при пропуске")}><option value="">Auto · weakest outcome</option>{draft.nodes.filter((node)=>node.type==="outcome").map((node)=><option key={node.id} value={node.id}>{node.title}</option>)}</select></label></>}
+          {selectedNode.type === "outcome" && <label><span>{locale === "en" ? "Outcome class" : "Класс исхода"}</span><select value={selectedNode.runtime?.terminalOutcome ?? "auto"} onChange={(event)=>applyNodeRuntimeChange({terminalOutcome:event.target.value === "auto" ? undefined : event.target.value as "strong"|"mixed"|"weak"},locale === "en" ? "outcome class" : "класс исхода")}><option value="auto">{locale === "en" ? "Automatic" : "Автоматически"}</option><option value="strong">{locale === "en" ? "Strong" : "Сильный"}</option><option value="mixed">{locale === "en" ? "Mixed" : "Смешанный"}</option><option value="weak">{locale === "en" ? "Weak" : "Слабый"}</option></select></label>}
+          {selectedNode.type === "deadline" && <><label><span>{locale === "en" ? "Deadline day" : "День дедлайна"}</span><input type="number" min="1" max="10000" value={selectedNode.runtime?.deadlineDay ?? ""} placeholder="auto" onChange={(event)=>applyNodeRuntimeChange({deadlineDay:event.target.value ? Number(event.target.value) : undefined},locale === "en" ? "deadline day" : "день дедлайна")}/></label><label><span>{locale === "en" ? "Deadline time" : "Время дедлайна"}</span><input type="time" value={selectedNode.runtime?.deadlineTime ?? ""} onChange={(event)=>applyNodeRuntimeChange({deadlineTime:event.target.value || undefined},locale === "en" ? "deadline time" : "время дедлайна")}/></label><label><span>{locale === "en" ? "Missed route" : "Переход при пропуске"}</span><select value={selectedNode.runtime?.missedOutcomeNodeId ?? ""} onChange={(event)=>applyNodeRuntimeChange({missedOutcomeNodeId:event.target.value || undefined},locale === "en" ? "missed-deadline route" : "переход при пропуске")}><option value="">{locale === "en" ? "Automatic · weakest outcome" : "Автоматически · самый слабый исход"}</option>{draft.nodes.filter((node)=>node.type==="outcome").map((node)=><option key={node.id} value={node.id}>{node.title}</option>)}</select></label></>}
         </fieldset>
-        <label><span>{locale === "en" ? "Connect selected node to" : "Связать выбранный узел с"}</span><select value="" onChange={(event) => { const target=event.target.value; if(!target)return; const issue=canUseRelation(selectedNode.id,target); if(issue){setRelationStatus(issue);return;} addLink(selectedNode.id,target); setRelationStatus(locale === "en" ? "Relation created." : "Связь создана."); }}><option value="">{locale === "en" ? "Choose destination…" : "Выберите узел…"}</option>{draft.nodes.filter((node)=>node.id!==selectedNode.id).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}</option>)}</select></label>
+        <div className="inspector-destination-picker">{destinationNodes.length > STUDIO_NODE_MENU_PAGE_SIZE && <label className="node-menu-search"><span>{locale === "en" ? "Find destination" : "Найти назначение"}</span><input type="search" value={destinationNodeQuery} placeholder={locale === "en" ? "Title, type or ID" : "Название, тип или ID"} onChange={(event) => { setDestinationNodeQuery(event.target.value); setDestinationNodePage(0); }}/></label>}<label><span>{locale === "en" ? "Connect selected node to" : "Связать выбранный узел с"}</span><select value="" onChange={(event) => { const target=event.target.value; if(!target)return; const issue=canUseRelation(selectedNode.id,target); if(issue){setRelationStatus(issue);return;} addLink(selectedNode.id,target); setRelationStatus(locale === "en" ? "Relation created." : "Связь создана."); }}><option value="">{locale === "en" ? "Choose destination…" : "Выберите узел…"}</option>{destinationNodeMenu.nodes.map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></label>{destinationNodeMenu.pageCount > 1 && <div className="node-menu-pagination"><span>{destinationNodeMenu.start}–{destinationNodeMenu.end} / {destinationNodeMenu.total}</span><button type="button" disabled={destinationNodeMenu.page === 0} onClick={() => setDestinationNodePage(destinationNodeMenu.page - 1)} aria-label={locale === "en" ? "Previous destinations" : "Предыдущие назначения"}><Icon name="arrow"/></button><button type="button" disabled={destinationNodeMenu.page >= destinationNodeMenu.pageCount - 1} onClick={() => setDestinationNodePage(destinationNodeMenu.page + 1)} aria-label={locale === "en" ? "Next destinations" : "Следующие назначения"}><Icon name="arrow"/></button></div>}</div>
         <button className="danger-button" onClick={() => { const relations=draft.links.filter((link)=>link.from===selectedNode.id||link.to===selectedNode.id).length; if(!relations || window.confirm(locale === "en" ? `Delete this node and ${relations} connected relation(s)?` : `Удалить узел и связанные связи (${relations})?`)) deleteNode(); }}><Icon name="trash"/>{text.deleteNode}</button>
       </div>:<p className="empty-inspector">{text.noSelection}</p>}</aside>
     </section>
-    <section className="studio-bottom page-width"><div className="checks-panel"><div className="panel-title"><span>{text.checks}</span><b>{checks.filter((check)=>check.level==="warn").length.toString().padStart(2,"0")}</b></div>{checks.map((check,index)=><div key={index} className={`check-row ${check.level}`}><Icon name={check.level==="ok"?"check":"alert"}/><span>{check.text}</span></div>)}<p>{text.localNote}</p></div><div className="preview-panel"><div className="panel-title"><span>{locale === "en" ? "Test readiness" : "Готовность к тесту"}</span><b>{draft.nodes.length === 0 ? (locale === "en" ? "START" : "СТАРТ") : compiledDraft.scenario ? (locale === "en" ? "READY" : "ГОТОВО") : `${compiledDraft.issues.length} ${locale === "en" ? "TO FIX" : "ИСПРАВИТЬ"}`}</b></div><div className="preview-card compiler-card"><div className="preview-index">{locale === "en" ? "PLAYABLE CASE PREVIEW" : "ПРЕДПРОСМОТР ИГРАБЕЛЬНОГО КЕЙСА"}</div><h2>{locale === "en" ? "Test the case you built" : "Проверьте собранный кейс"}</h2>{draft.nodes.length === 0 ? <div className="compiler-empty"><p>{locale === "en" ? "Your new draft is empty. Describe the situation in the prompt or add a Trigger node; validation will start after the first node appears." : "Новый черновик пуст. Опишите ситуацию в промпте или добавьте узел «Триггер» — проверка начнётся после появления первого узла."}</p></div> : <><p>{locale === "en" ? `Case: ${draft.title || "Untitled case"}. Before testing, every route must start clearly and finish at an Outcome.` : `Кейс: ${draft.title || "Без названия"}. Перед тестом каждый маршрут должен иметь понятное начало и завершаться узлом «Исход».`}</p>{compiledDraft.scenario ? <><dl><div><dt>{locale === "en" ? "Playable stages" : "Игровых стадий"}</dt><dd>{compiledDraft.scenario.stages.length}</dd></div><div><dt>{locale === "en" ? "Player choices" : "Вариантов действий"}</dt><dd>{compiledDraft.scenario.stages.reduce((sum, stage) => sum + stage.options.length, 0)}</dd></div></dl>{compiledDraft.warnings.map((warning) => <p className="compiler-warning" key={warning}>{warning}</p>)}<button className="primary-cta" onClick={playDraft}><Icon name="play"/>{locale === "en" ? "Test this case" : "Протестировать кейс"}</button></> : <div className="compiler-issues">{compiledDraft.issues.map((issue) => <div key={issue.code}><Icon name="alert"/><span>{compilerIssueText(issue)}</span>{issue.nodeIds[0] && <button type="button" onClick={() => { selectGraphNode(issue.nodeIds[0]); document.querySelector(".graph-canvas")?.scrollIntoView({behavior:"smooth",block:"center"}); }}>{locale === "en" ? "Show on graph" : "Показать на схеме"}</button>}</div>)}</div>}</>}</div></div></section>
+    <section className="studio-bottom page-width"><div id="studio-checks" className="checks-panel"><div className="panel-title"><span>{text.checks}</span><b>{checks.filter((check)=>check.level==="warn").length.toString().padStart(2,"0")}</b></div>{checks.map((check,index)=><div key={index} className={`check-row ${check.level}`}><Icon name={check.level==="ok"?"check":"alert"}/><span>{check.text}</span></div>)}<p>{text.localNote}</p></div><div className="preview-panel"><div className="panel-title"><span>{locale === "en" ? "Test readiness" : "Готовность к тесту"}</span><b>{draft.nodes.length === 0 ? (locale === "en" ? "START" : "СТАРТ") : !derivationsSettled ? (locale === "en" ? "CHECKING" : "ПРОВЕРКА") : compiledDraft.scenario ? (locale === "en" ? "READY" : "ГОТОВО") : `${compiledDraft.issues.length} ${locale === "en" ? "TO FIX" : "ИСПРАВИТЬ"}`}</b></div><div className="preview-card compiler-card"><div className="preview-index">{locale === "en" ? "PLAYABLE CASE PREVIEW" : "ПРЕДПРОСМОТР ИГРАБЕЛЬНОГО КЕЙСА"}</div><h2>{locale === "en" ? "Test the case you built" : "Проверьте собранный кейс"}</h2>{draft.nodes.length === 0 ? <div className="compiler-empty"><p>{locale === "en" ? "Your new draft is empty. Describe the situation in the prompt or add a Trigger node; validation will start after the first node appears." : "Новый черновик пуст. Опишите ситуацию в промпте или добавьте узел «Триггер» — проверка начнётся после появления первого узла."}</p></div> : !derivationsSettled ? <div className="compiler-empty" role="status"><p>{locale === "en" ? "Checking the latest edit in the background. Test and save will unlock when this exact graph is ready." : "Последняя правка проверяется в фоне. Тест и сохранение станут доступны для этой точной версии схемы."}</p></div> : <><p>{locale === "en" ? `Case: ${draft.title || "Untitled case"}. Before testing, every route must start clearly and finish at an Outcome.` : `Кейс: ${draft.title || "Без названия"}. Перед тестом каждый маршрут должен иметь понятное начало и завершаться узлом «Исход».`}</p>{compiledDraft.scenario ? <><dl><div><dt>{locale === "en" ? "Playable stages" : "Игровых стадий"}</dt><dd>{compiledDraft.scenario.stages.length}</dd></div><div><dt>{locale === "en" ? "Player choices" : "Вариантов действий"}</dt><dd>{compiledDraft.scenario.stages.reduce((sum, stage) => sum + stage.options.length, 0)}</dd></div></dl>{compiledDraft.warnings.map((warning) => <p className="compiler-warning" key={warning}>{warning}</p>)}<button className="primary-cta" onClick={playDraft}><Icon name="play"/>{locale === "en" ? "Test this case" : "Протестировать кейс"}</button></> : <div className="compiler-issues">{compiledDraft.issues.map((issue) => <div key={issue.code}><Icon name="alert"/><span>{compilerIssueText(issue)}</span>{issue.nodeIds[0] && <button type="button" onClick={() => { const nodeId=issue.nodeIds[0]; selectGraphNode(nodeId); const nodeButton=document.getElementById(`studio-node-${nodeId}`); nodeButton?.scrollIntoView({behavior:"smooth",block:"center",inline:"center"}); nodeButton?.focus(); }}>{locale === "en" ? "Show on graph" : "Показать на схеме"}</button>}</div>)}</div>}</>}</div></div></section>
   </main>;
 }
 
-function TaxEconomicsPanel({ locale, model, result, onChange }: {
+function TaxEconomicsPanel({ locale, model, result, disabled, onChange }: {
   locale: Locale;
   model: ReturnType<typeof defaultTaxEconomics>;
   result: ReturnType<typeof calculateTaxEconomics>;
+  disabled: boolean;
   onChange: (change: Partial<ReturnType<typeof defaultTaxEconomics>>, label: string) => void;
 }) {
   const [currencyInput, setCurrencyInput] = useState(model.currency);
@@ -2710,8 +2953,8 @@ function TaxEconomicsPanel({ locale, model, result, onChange }: {
     : result.paybackMonths > model.analysisHorizonMonths
       ? (locale === "en" ? `Beyond horizon · ${result.paybackMonths.toFixed(1)} mo` : `За горизонтом · ${result.paybackMonths.toFixed(1)} мес.`)
       : (locale === "en" ? `${result.paybackMonths.toFixed(1)} months` : `${result.paybackMonths.toFixed(1)} мес.`);
-  return <section className="tax-economics page-width" aria-labelledby="tax-economics-title">
-    <header><div><span>TAX ECONOMICS · v1</span><h2 id="tax-economics-title">{locale === "en" ? "Profitability and payback estimate" : "Оценка прибыльности и срока окупаемости"}</h2></div><label><span>{locale === "en" ? "Currency" : "Валюта"}</span><input value={currencyInput} maxLength={3} pattern="[A-Za-z]{3}" aria-invalid={!/^[A-Z]{3}$/.test(currencyInput)} onChange={(event)=>setCurrencyInput(event.target.value.toUpperCase().replace(/[^A-Z]/g,"").slice(0,3))} onBlur={() => { if (/^[A-Z]{3}$/.test(currencyInput) && currencyInput !== model.currency) onChange({currency:currencyInput},locale === "en" ? "currency" : "валюта"); else setCurrencyInput(model.currency); }}/></label></header>
+  return <section className="tax-economics page-width" aria-labelledby="tax-economics-title" inert={disabled}>
+    <header><div><span>{locale === "en" ? "TAX ECONOMICS · v1" : "ЭКОНОМИКА НАЛОГОВОЙ СТРУКТУРЫ · v1"}</span><h2 id="tax-economics-title">{locale === "en" ? "Profitability and payback estimate" : "Оценка прибыльности и срока окупаемости"}</h2></div><label><span>{locale === "en" ? "Currency" : "Валюта"}</span><input value={currencyInput} maxLength={3} pattern="[A-Za-z]{3}" aria-invalid={!/^[A-Z]{3}$/.test(currencyInput)} onChange={(event)=>setCurrencyInput(event.target.value.toUpperCase().replace(/[^A-Z]/g,"").slice(0,3))} onBlur={() => { if (/^[A-Z]{3}$/.test(currencyInput) && currencyInput !== model.currency) onChange({currency:currencyInput},locale === "en" ? "currency" : "валюта"); else setCurrencyInput(model.currency); }}/></label></header>
     <p>{locale === "en" ? "Compare documented cash-tax costs before and after a lawful structure. Include recurring substance, governance and compliance costs; terminal tax or unwind cost prevents a deferral from being presented as a permanent saving." : "Сравните документированные денежные налоговые расходы до и после законной структуры. Учтите регулярные расходы на substance, управление и compliance; конечный налог или стоимость unwind не позволяют представить отсрочку как постоянную экономию."}</p>
     <div className="tax-economics-inputs">
       <label><span>{locale === "en" ? "Baseline annual tax" : "Налог в базовом варианте за год"}</span><input type="number" min="0" step="1" value={inputs.baselineAnnualTaxCost} onKeyDown={blurOnEnter} onChange={(event)=>setInput("baselineAnnualTaxCost",event.target.value)} onBlur={()=>commitInput("baselineAnnualTaxCost","baseline annual tax",0,1_000_000_000_000)}/></label>
@@ -2734,9 +2977,11 @@ function TaxEconomicsPanel({ locale, model, result, onChange }: {
   </section>;
 }
 
-function RelationRuleEditor({ locale, link, beginFieldEdit, setRule, applyRule, commitField }: {
+function RelationRuleEditor({ locale, link, developerMode, disabled, beginFieldEdit, setRule, applyRule, commitField }: {
   locale: Locale;
   link: StudioLink;
+  developerMode: boolean;
+  disabled: boolean;
   beginFieldEdit: (value: string) => void;
   setRule: (change: NonNullable<StudioLink["rule"]>) => void;
   applyRule: (change: NonNullable<StudioLink["rule"]>, label: string) => void;
@@ -2745,20 +2990,22 @@ function RelationRuleEditor({ locale, link, beginFieldEdit, setRule, applyRule, 
   const rule = link.rule ?? {};
   const guard = rule.guards?.[0];
   const numberValue = (value: string) => value === "" ? undefined : Number(value);
-  return <section className="relation-rule-editor" aria-label={locale === "en" ? `Runtime rules for ${link.id}` : `Runtime-правила для ${link.id}`}>
-    <header><div><span>RULES DSL · {link.id}</span><h3>{locale === "en" ? "Author the action, not just the arrow" : "Настройте действие, а не только стрелку"}</h3></div><code>{link.from} → {link.to}</code></header>
-    <div className="relation-rule-grid">
+  return <section className="relation-rule-editor" aria-label={developerMode ? (locale === "en" ? `Runtime rules for ${link.id}` : `Runtime-правила для ${link.id}`) : (locale === "en" ? "Player choice settings" : "Настройки выбора игрока")}>
+    <header><div><span>{developerMode ? `RULES DSL · ${link.id}` : (locale === "en" ? "PLAYER CHOICE" : "ВЫБОР ИГРОКА")}</span><h3>{developerMode ? (locale === "en" ? "Author the action, not just the arrow" : "Настройте действие, а не только стрелку") : (locale === "en" ? "What can the player choose here?" : "Что игрок может выбрать здесь?")}</h3></div>{developerMode && <code>{link.from} → {link.to}</code>}</header>
+    <fieldset className="relation-rule-grid" disabled={disabled}>
       <label className="wide-field"><span>{locale === "en" ? "Action label" : "Название действия"}</span><input value={rule.label ?? ""} placeholder={locale === "en" ? "Defaults to destination title" : "По умолчанию — название целевого узла"} onFocus={(event) => beginFieldEdit(event.currentTarget.value)} onChange={(event) => setRule({ label: event.target.value })} onBlur={(event) => commitField(locale === "en" ? "action label" : "название действия", event.currentTarget.value)}/></label>
       <label><span>{locale === "en" ? "Cost · EUR" : "Стоимость · EUR"}</span><input type="number" min="0" max="1000000000" value={rule.cost ?? ""} placeholder="0" onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setRule({ cost: numberValue(event.target.value) })} onBlur={(event)=>commitField(locale === "en" ? "cost" : "стоимость",event.currentTarget.value)}/></label>
       <label><span>{locale === "en" ? "Duration · minutes" : "Длительность · минуты"}</span><input type="number" min="0" max="100000000" value={rule.minutes ?? ""} placeholder="20" onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setRule({ minutes: numberValue(event.target.value) })} onBlur={(event)=>commitField(locale === "en" ? "duration" : "длительность",event.currentTarget.value)}/></label>
-      {(Object.keys(metricLabels.en) as MetricKey[]).map((metric) => <label key={metric}><span>{metricLabels[locale][metric]} · Δ</span><input type="number" min="-100" max="100" value={rule.effects?.[metric] ?? ""} placeholder="auto" onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setRule({ effects: { ...(rule.effects ?? {}), [metric]: numberValue(event.target.value) } })} onBlur={(event)=>commitField(`${metric} effect`,event.currentTarget.value)}/></label>)}
-      <label><span>{locale === "en" ? "Repeatability" : "Повторяемость"}</span><select value={rule.repeatability ?? "once"} onChange={(event) => { const repeatability = event.target.value as NonNullable<StudioLink["rule"]>["repeatability"]; applyRule({ repeatability, maxUses: repeatability === "limited" ? rule.maxUses ?? 2 : undefined }, locale === "en" ? "repeatability" : "повторяемость"); }}><option value="once">Once</option><option value="repeatable">Repeatable</option><option value="limited">Limited</option></select></label>
-      {rule.repeatability === "limited" && <label><span>{locale === "en" ? "Maximum uses" : "Максимум использований"}</span><input type="number" min="1" max="10000" value={rule.maxUses ?? 2} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setRule({ maxUses: Math.max(1, Number(event.target.value) || 1) })} onBlur={(event)=>commitField(locale === "en" ? "maximum uses" : "лимит использований",event.currentTarget.value)}/></label>}
-      <label><span>{locale === "en" ? "Guard metric" : "Метрика условия"}</span><select value={guard?.metric ?? "none"} onChange={(event) => applyRule({ guards: event.target.value === "none" ? undefined : [{ metric: event.target.value as MetricKey, comparison: guard?.comparison ?? "gte", value: guard?.value ?? 50 }] }, locale === "en" ? "availability guard" : "условие доступности")}><option value="none">{locale === "en" ? "Always available" : "Всегда доступно"}</option>{(Object.keys(metricLabels.en) as MetricKey[]).map((metric) => <option key={metric} value={metric}>{metricLabels[locale][metric]}</option>)}</select></label>
-      {guard && <><label><span>{locale === "en" ? "Comparison" : "Сравнение"}</span><select value={guard.comparison} onChange={(event) => applyRule({ guards: [{ ...guard, comparison: event.target.value as "gte" | "lte" | "eq" }] }, locale === "en" ? "guard comparison" : "сравнение условия")}><option value="gte">≥</option><option value="lte">≤</option><option value="eq">=</option></select></label><label><span>{locale === "en" ? "Threshold" : "Порог"}</span><input type="number" min="0" max="100" value={guard.value} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setRule({ guards: [{ ...guard, value: Math.max(0, Math.min(100, Number(event.target.value) || 0)) }] })} onBlur={(event)=>commitField(locale === "en" ? "guard threshold" : "порог условия",event.currentTarget.value)}/></label></>}
+      {developerMode && <>
+        {(Object.keys(metricLabels.en) as MetricKey[]).map((metric) => <label key={metric}><span>{metricLabels[locale][metric]} · Δ</span><input type="number" min="-100" max="100" value={rule.effects?.[metric] ?? ""} placeholder="auto" onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setRule({ effects: { ...(rule.effects ?? {}), [metric]: numberValue(event.target.value) } })} onBlur={(event)=>commitField(`${metric} effect`,event.currentTarget.value)}/></label>)}
+        <label><span>{locale === "en" ? "Repeatability" : "Повторяемость"}</span><select value={rule.repeatability ?? "once"} onChange={(event) => { const repeatability = event.target.value as NonNullable<StudioLink["rule"]>["repeatability"]; applyRule({ repeatability, maxUses: repeatability === "limited" ? rule.maxUses ?? 2 : undefined }, locale === "en" ? "repeatability" : "повторяемость"); }}><option value="once">{locale === "en" ? "Once" : "Один раз"}</option><option value="repeatable">{locale === "en" ? "Repeatable" : "Повторяемо"}</option><option value="limited">{locale === "en" ? "Limited" : "Ограниченно"}</option></select></label>
+        {rule.repeatability === "limited" && <label><span>{locale === "en" ? "Maximum uses" : "Максимум использований"}</span><input type="number" min="1" max="10000" value={rule.maxUses ?? 2} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setRule({ maxUses: Math.max(1, Number(event.target.value) || 1) })} onBlur={(event)=>commitField(locale === "en" ? "maximum uses" : "лимит использований",event.currentTarget.value)}/></label>}
+        <label><span>{locale === "en" ? "Guard metric" : "Метрика условия"}</span><select value={guard?.metric ?? "none"} onChange={(event) => applyRule({ guards: event.target.value === "none" ? undefined : [{ metric: event.target.value as MetricKey, comparison: guard?.comparison ?? "gte", value: guard?.value ?? 50 }] }, locale === "en" ? "availability guard" : "условие доступности")}><option value="none">{locale === "en" ? "Always available" : "Всегда доступно"}</option>{(Object.keys(metricLabels.en) as MetricKey[]).map((metric) => <option key={metric} value={metric}>{metricLabels[locale][metric]}</option>)}</select></label>
+        {guard && <><label><span>{locale === "en" ? "Comparison" : "Сравнение"}</span><select value={guard.comparison} onChange={(event) => applyRule({ guards: [{ ...guard, comparison: event.target.value as "gte" | "lte" | "eq" }] }, locale === "en" ? "guard comparison" : "сравнение условия")}><option value="gte">≥</option><option value="lte">≤</option><option value="eq">=</option></select></label><label><span>{locale === "en" ? "Threshold" : "Порог"}</span><input type="number" min="0" max="100" value={guard.value} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setRule({ guards: [{ ...guard, value: Math.max(0, Math.min(100, Number(event.target.value) || 0)) }] })} onBlur={(event)=>commitField(locale === "en" ? "guard threshold" : "порог условия",event.currentTarget.value)}/></label></>}
+      </>}
       <label className="wide-field"><span>{locale === "en" ? "Consequence text" : "Текст последствия"}</span><textarea value={rule.result ?? ""} placeholder={locale === "en" ? "Defaults to destination detail" : "По умолчанию — описание целевого узла"} onFocus={(event) => beginFieldEdit(event.currentTarget.value)} onChange={(event) => setRule({ result: event.target.value })} onBlur={(event) => commitField(locale === "en" ? "consequence text" : "текст последствия", event.currentTarget.value)}/></label>
-    </div>
-    <p>{locale === "en" ? "Typed rules are validated and interpreted deterministically; no uploaded JavaScript or eval is executed." : "Типизированные правила валидируются и исполняются детерминированно; загружаемый JavaScript и eval не используются."}</p>
+    </fieldset>
+    <p>{developerMode ? (locale === "en" ? "Typed rules are validated and interpreted deterministically; no uploaded JavaScript or eval is executed." : "Типизированные правила валидируются и исполняются детерминированно; загружаемый JavaScript и eval не используются.") : (locale === "en" ? "These fields define what the player sees and the time, cost and consequence of this choice." : "Эти поля задают, что увидит игрок, а также время, стоимость и последствие выбора.")}</p>
   </section>;
 }
 
@@ -2780,6 +3027,8 @@ function CommunityView({ locale, cases, openCustomCase, refreshCatalogue, clearD
   const [subscriptions, setSubscriptions] = useState<string[]>([]);
   const [submissions, setSubmissions] = useState<CommunitySubmission[]>([]);
   const [customCases, setCustomCases] = useState<CommunityCustomCase[]>([]);
+  const [customCasesNextCursor, setCustomCasesNextCursor] = useState<string | null>(null);
+  const [customCasesLoadingMore, setCustomCasesLoadingMore] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [registered, setRegistered] = useState(false);
   const [formError, setFormError] = useState("");
@@ -2797,14 +3046,27 @@ function CommunityView({ locale, cases, openCustomCase, refreshCatalogue, clearD
       const [feed, workspace, custom] = await Promise.all([
         fetch("/api/updates").then((response) => readJsonResponse<{ updates?: CommunityUpdate[]; subscriptions?: string[] }>(response)),
         fetch("/api/submissions").then((response) => readJsonResponse<{ submissions?: CommunitySubmission[] }>(response)),
-        fetch("/api/custom-cases").then((response) => readJsonResponse<{ customCases?: CommunityCustomCase[] }>(response)),
+        fetch("/api/custom-cases?limit=25").then((response) => readJsonResponse<{ customCases?: CommunityCustomCase[]; nextCursor?: string | null }>(response)),
       ]);
-      setUpdates(feed?.updates ?? []); setSubscriptions(feed?.subscriptions ?? []); setSubmissions(workspace?.submissions ?? []); setCustomCases(custom?.customCases ?? []); setStatus("ready");
+      setUpdates(feed?.updates ?? []); setSubscriptions(feed?.subscriptions ?? []); setSubmissions(workspace?.submissions ?? []); setCustomCases(custom?.customCases ?? []); setCustomCasesNextCursor(custom?.nextCursor ?? null); setStatus("ready");
     }).catch(() => setStatus("anonymous"));
   }, []);
   async function reloadCustomCases() {
-    const payload = await fetch("/api/custom-cases").then((response) => readJsonResponse<{ customCases?: CommunityCustomCase[] }>(response));
+    const payload = await fetch("/api/custom-cases?limit=25").then((response) => readJsonResponse<{ customCases?: CommunityCustomCase[]; nextCursor?: string | null }>(response));
     setCustomCases(payload?.customCases ?? []);
+    setCustomCasesNextCursor(payload?.nextCursor ?? null);
+  }
+  async function loadMoreCustomCases() {
+    if (!customCasesNextCursor || customCasesLoadingMore) return;
+    setCustomCasesLoadingMore(true);
+    try {
+      const payload = await fetch(`/api/custom-cases?limit=25&cursor=${encodeURIComponent(customCasesNextCursor)}`).then((response) => readJsonResponse<{ customCases?: CommunityCustomCase[]; nextCursor?: string | null }>(response));
+      const incoming = payload?.customCases ?? [];
+      setCustomCases((current) => [...current, ...incoming.filter((item) => !current.some((existing) => existing.id === item.id))]);
+      setCustomCasesNextCursor(payload?.nextCursor ?? null);
+    } finally {
+      setCustomCasesLoadingMore(false);
+    }
   }
   async function setCustomPrivacy(item: CommunityCustomCase, isPrivate: boolean) {
     if (isPrivate && !window.confirm(locale === "en" ? "Make this case owner-only? Existing shares will be revoked and Maxim will no longer see the case or its metadata." : "Сделать кейс доступным только владельцу? Все приглашения будут отозваны, а Максим больше не увидит кейс и его метаданные.")) return;
@@ -2881,9 +3143,9 @@ function CommunityView({ locale, cases, openCustomCase, refreshCatalogue, clearD
     if (response.ok) setUpdates((current) => current.map((item) => item.id === updateId ? { ...item, read: true } : item));
   }
   async function deleteProfile() {
-    if (!window.confirm(locale === "en" ? "Delete your profile, subscriptions, drafts and feedback? This cannot be undone." : "Удалить профиль, подписки, черновики и отзывы? Это действие необратимо.")) return;
+    if (!window.confirm(locale === "en" ? "Delete your profile, subscriptions, workspace drafts and private feedback? This cannot be undone. Immutable versions already published to the General Library and their editorial attribution may remain as part of the public record." : "Удалить профиль, подписки, workspace-черновики и приватные отзывы? Это действие необратимо. Уже опубликованные в Общей библиотеке неизменяемые версии и их редакционная атрибуция могут сохраниться как часть публичного реестра.")) return;
     const response = await fetch("/api/me", { method: "DELETE" });
-    if (response.ok) { clearDeviceDraft(); setRegistered(false); setUpdates([]); setSubscriptions([]); setSubmissions([]); setCustomCases([]); setCaseShares({}); setCaseFeedback({}); setFormError(locale === "en" ? "Stored community and device-draft data deleted." : "Данные сообщества и локальный черновик удалены."); }
+    if (response.ok) { clearDeviceDraft(); setRegistered(false); setUpdates([]); setSubscriptions([]); setSubmissions([]); setCustomCases([]); setCustomCasesNextCursor(null); setCaseShares({}); setCaseFeedback({}); setFormError(locale === "en" ? "Stored community and device-draft data deleted." : "Данные сообщества и локальный черновик удалены."); }
   }
   if (status === "loading") return <main className="community-view page-width"><div className="community-loading">Loading professional workspace…</div></main>;
   if (status === "anonymous") return <main className="community-view page-width"><section className="community-hero"><div><span>PRACTITIONER COMMUNITY</span><h1>{locale === "en" ? "Register your professional profile" : "Зарегистрируйте профессиональный профиль"}</h1><p>{locale === "en" ? "Sign in to submit attributed case feedback, follow selected cases and receive updates matched to your jurisdiction, practice area and role." : "Войдите, чтобы отправлять авторизованные отзывы, подписываться на кейсы и получать обновления с учётом юрисдикции, практики и роли."}</p><div className="featured-actions"><a className="primary-cta" href="/signin-with-chatgpt?return_to=%2F">{locale === "en" ? "Sign in with ChatGPT" : "Войти через ChatGPT"}<Icon name="arrow"/></a><a className="secondary-cta" href="/account">{locale === "en" ? "Email & password" : "Email и пароль"}</a></div></div></section></main>;
@@ -2901,7 +3163,8 @@ function CommunityView({ locale, cases, openCustomCase, refreshCatalogue, clearD
       <p className="privacy-note">{locale === "en" ? "All communications are opt-in and appear in this in-product inbox. Your authenticated email is used for attribution and routing but is not shown publicly. Privacy notice v2026-08-21." : "Все сообщения включаются только по согласию и появляются во внутреннем центре обновлений. Email используется для авторства и маршрутизации, но не показывается публично. Privacy notice v2026-08-21."}</p>
       {formError && <p className="form-error" role="status">{formError}</p>}
       <button className="primary-cta" type="submit" disabled={status === "saving"}>{status === "saving" ? "Saving…" : locale === "en" ? "Save profile" : "Сохранить профиль"}<Icon name="check"/></button>
-      <div className="profile-data-actions"><a className="secondary-cta" href="/account">{locale === "en" ? "Account & sign-out" : "Аккаунт и выход"}</a>{registered && <button type="button" className="danger-button" onClick={deleteProfile}>{locale === "en" ? "Delete my stored data" : "Удалить мои данные"}</button>}</div>
+      <div className="profile-data-actions"><a className="secondary-cta" href="/account">{locale === "en" ? "Account & sign-out" : "Аккаунт и выход"}</a>{registered && <button type="button" className="danger-button" onClick={deleteProfile}>{locale === "en" ? "Delete private account data" : "Удалить приватные данные аккаунта"}</button>}</div>
+      {registered && <p className="privacy-note">{locale === "en" ? "Deletion removes your account profile, subscriptions, workspace drafts, access grants and private feedback. Immutable General Library versions already published after review—and the attribution embedded in that public editorial record—are not silently rewritten; contact the operator to request correction or pseudonymisation." : "Удаление убирает профиль аккаунта, подписки, workspace-черновики, права доступа и приватные отзывы. Уже опубликованные после рецензии неизменяемые версии Общей библиотеки и атрибуция в этом публичном редакционном реестре не переписываются автоматически; для исправления или псевдонимизации обратитесь к оператору."}</p>}
     </form>
     <section className="update-panel"><div className="panel-title"><span>{locale === "en" ? "Addressed update inbox" : "Адресный центр обновлений"}</span><b>{updates.filter((item) => !item.read).length.toString().padStart(2, "0")}</b></div>{updates.length ? updates.map((item) => <article key={item.id} className={item.read ? "" : "unread"}><span>{item.kind}</span><h3>{item.title}</h3><p>{item.body}</p><footer><small>{item.publishedAt?.slice(0, 10)}</small>{!item.read && <button onClick={() => markRead(item.id)}>{locale === "en" ? "Mark read" : "Прочитано"}</button>}</footer></article>) : <div className="empty-updates"><Icon name="check"/><b>{locale === "en" ? "You are up to date" : "У вас всё актуально"}</b><p>{locale === "en" ? "New releases matching your profile and explicit preferences will appear here." : "Здесь появятся релизы, соответствующие профилю и явным настройкам согласия."}</p></div>}</section>
     </section>
@@ -2911,14 +3174,14 @@ function CommunityView({ locale, cases, openCustomCase, refreshCatalogue, clearD
       <div className="panel-title"><span id="custom-access-title">{isAdmin ? (locale === "en" ? "Visible custom-case register" : "Реестр видимых custom-кейсов") : (locale === "en" ? "My & shared custom cases" : "Мои и доступные custom-кейсы")}</span><b>{customCases.length.toString().padStart(2, "0")}</b></div>
       <p className="custom-access-explainer">{locale === "en" ? "Workspace cases are never public by default. Restricted cases are visible to the owner, Maxim and invited registered users; Private cases are owner-only. Device-only saves do not appear here." : "Workspace-кейсы по умолчанию не публичны. Ограниченные кейсы видны владельцу, Максиму и приглашённым зарегистрированным пользователям; приватные — только владельцу. Локальные сохранения с устройства здесь не отображаются."}</p>
       {customMessage && <p className="custom-access-message" role="status">{customMessage}</p>}
-      {customCases.length ? <div className="custom-case-grid">{customCases.map((item) => {
+      {customCases.length ? <><div className="custom-case-grid">{customCases.map((item) => {
         const shares = caseShares[item.id];
         const feedback = caseFeedback[item.id];
         const mayDelegateReshare = item.access === "owner" || item.access === "admin";
         return <article className={`custom-case-card ${item.isPrivate ? "private" : "restricted"}`} key={item.id}>
           <header><div className="custom-case-badges"><span>{item.isPrivate ? "PRIVATE · OWNER ONLY" : item.access === "shared" ? "SHARED CUSTOM" : "RESTRICTED CUSTOM"}</span>{item.copyProtected && <span className="copy-lock-badge">LINEAGE LOCKED</span>}{item.status === "promoted" && <span className="library-badge">GENERAL LIBRARY SNAPSHOT</span>}</div><small>{item.access === "owner" ? (locale === "en" ? "You own this case" : "Вы владелец") : item.access === "admin" ? (locale === "en" ? `Admin view · ${item.ownerDisplayName ?? "Case author"}` : `Вид администратора · ${item.ownerDisplayName ?? "Автор кейса"}`) : (locale === "en" ? `Shared by ${item.ownerDisplayName ?? "case author"}` : `Предоставил доступ: ${item.ownerDisplayName ?? "автор кейса"}`)}</small></header>
           <h3>{item.title}</h3><code>{item.caseId} · v{item.currentVersion}</code>
-          <p>{item.isPrivate ? (locale === "en" ? "No administrator, reviewer or previous recipient can discover this case." : "Администратор, рецензент и прежние получатели не могут обнаружить этот кейс.") : (locale === "en" ? `${item.shareCount} explicit share(s) · not in the public catalogue` : `Явных приглашений: ${item.shareCount} · не в публичном каталоге`)}</p>
+          <p>{item.isPrivate ? (locale === "en" ? "No administrator, reviewer or previous recipient can discover this case." : "Администратор, рецензент и прежние получатели не могут обнаружить этот кейс.") : item.access === "shared" ? (locale === "en" ? "Shared with you · other recipients are not disclosed" : "Доступ предоставлен вам · другие получатели не раскрываются") : (locale === "en" ? `${item.shareCount} explicit share(s) · not in the public catalogue` : `Явных приглашений: ${item.shareCount} · не в публичном каталоге`)}</p>
           {item.status === "promoted" && <p className="promotion-note">{locale === "en" ? "An immutable copy is public. Changing this workspace source does not rewrite that published version." : "Неизменяемая копия опубликована. Изменения этого workspace-источника не переписывают опубликованную версию."}</p>}
           <div className="custom-case-actions"><button type="button" className="secondary-cta" onClick={() => openCustomCase(item.id)}><Icon name="studio"/>{locale === "en" ? "Open in Studio" : "Открыть в Studio"}</button>{item.canManagePrivacy && <label className="privacy-toggle compact"><input type="checkbox" checked={item.isPrivate} disabled={busyCaseId === item.id} onChange={(event) => setCustomPrivacy(item, event.target.checked)}/><span>{locale === "en" ? "Private" : "Приватно"}</span><i aria-hidden="true"/></label>}</div>
           {!item.isPrivate && item.canShare && <form className="custom-share-form" onSubmit={(event) => { event.preventDefault(); shareCustomCase(item); }}><label><span>{locale === "en" ? "Registered recipient email" : "Email зарегистрированного получателя"}</span><input type="email" value={shareEmails[item.id] ?? ""} onChange={(event) => setShareEmails((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="colleague@example.com"/></label>{mayDelegateReshare && <label className="reshare-check"><input type="checkbox" checked={shareReshare[item.id] === true} onChange={(event) => setShareReshare((current) => ({ ...current, [item.id]: event.target.checked }))}/><span>{locale === "en" ? "Allow forwarding (recipient still needs Professional or Enterprise)" : "Разрешить пересылку (получателю всё равно нужна лицензия Professional или Enterprise)"}</span></label>}<button className="primary-cta" disabled={busyCaseId === item.id || !(shareEmails[item.id] ?? "").trim()}>{locale === "en" ? "Grant access" : "Предоставить доступ"}<Icon name="arrow"/></button></form>}
@@ -2926,7 +3189,7 @@ function CommunityView({ locale, cases, openCustomCase, refreshCatalogue, clearD
           {!item.isPrivate && (item.access === "owner" || item.access === "admin") && <div className="custom-share-register"><button type="button" onClick={() => loadCaseShares(item)} disabled={busyCaseId === item.id}>{shares ? (locale === "en" ? "Refresh access list" : "Обновить список доступа") : (locale === "en" ? `Manage access (${item.shareCount})` : `Управлять доступом (${item.shareCount})`)}</button>{shares?.map((share) => <div key={share.recipientEmail}><span><b>{share.recipientEmail}</b><small>{share.canReshare ? (locale === "en" ? "may forward with licence" : "может пересылать при наличии лицензии") : (locale === "en" ? "view only" : "только просмотр")}</small></span><button type="button" onClick={() => revokeCustomShare(item, share.recipientEmail)} disabled={busyCaseId === item.id}>{locale === "en" ? "Revoke" : "Отозвать"}</button></div>)}</div>}
           {item.access === "owner" && <div className="custom-feedback-register"><button type="button" onClick={() => loadCaseShares(item)} disabled={busyCaseId === item.id}>{feedback ? (locale === "en" ? "Refresh my case notes" : "Обновить мои заметки") : (locale === "en" ? "View my case notes" : "Мои заметки по кейсу")}</button>{feedback && (feedback.length ? feedback.map((entry) => <article key={entry.id}><span><b>{entry.audience === "owner_private" ? (locale === "en" ? "PRIVATE · OWNER ONLY" : "ПРИВАТНО · ТОЛЬКО ВЛАДЕЛЕЦ") : entry.category.replaceAll("_", " ")}</b><small>{entry.createdAt.slice(0, 10)} · {entry.rating}/5 · {entry.severity}</small></span><p>{entry.comment}</p>{entry.suggestedCorrection && <p><b>{locale === "en" ? "Suggested correction:" : "Предлагаемое исправление:"}</b> {entry.suggestedCorrection}</p>}{entry.citationUrl && <a href={entry.citationUrl} target="_blank" rel="noreferrer">{locale === "en" ? "Supporting source" : "Подтверждающий источник"}</a>}</article>) : <p>{locale === "en" ? "No notes for this case yet." : "Заметок по этому кейсу пока нет."}</p>)}</div>}
         </article>;
-      })}</div> : <p>{locale === "en" ? "No workspace custom cases are visible to this account yet. Save a Studio case to the workspace first." : "Для аккаунта пока нет видимых workspace custom-кейсов. Сначала сохраните кейс из Studio в workspace."}</p>}
+      })}</div>{customCasesNextCursor && <button type="button" className="secondary-cta custom-cases-more" onClick={loadMoreCustomCases} disabled={customCasesLoadingMore}>{customCasesLoadingMore ? (locale === "en" ? "Loading…" : "Загрузка…") : (locale === "en" ? "Load more cases" : "Показать ещё кейсы")}</button>}</> : <p>{locale === "en" ? "No workspace custom cases are visible to this account yet. Save a Studio case to the workspace first." : "Для аккаунта пока нет видимых workspace custom-кейсов. Сначала сохраните кейс из Studio в workspace."}</p>}
     </section>
     {isAdmin && <AdminDesk locale={locale} cases={cases} customCases={customCases} reloadCustomCases={reloadCustomCases} openCustomCase={openCustomCase} refreshCatalogue={refreshCatalogue}/>}
   </main>;
@@ -3201,7 +3464,7 @@ function FeedbackDialog({ locale, target, close, submitted }: { locale: Locale; 
   }, [close]);
   async function submit(event: React.FormEvent) {
     event.preventDefault(); setSending(true); setError("");
-    const response = await fetch("/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ caseId: target.caseId, caseVersion: target.version, source: target.source, studioFingerprint: target.fingerprint, contextType: target.contextType ?? "case", contextId: target.contextId, rating, category, severity, comment, suggestedCorrection, citationUrl, privacyMode: target.privateCase ? privacyMode : undefined }) });
+    const response = await fetch("/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ caseId: target.caseId, caseVersion: target.version, source: target.source, studioFingerprint: target.fingerprint, customCaseId: target.source === "studio" && privacyMode !== "product_only" ? target.customCaseId : undefined, contextType: target.contextType ?? "case", contextId: target.contextId, rating, category, severity, comment, suggestedCorrection, citationUrl, privacyMode: target.privateCase ? privacyMode : undefined }) });
     if (response.status === 401) { router.push("/signin-with-chatgpt?return_to=%2F"); return; }
     const result = await response.json().catch(() => null) as { audience?: string; error?: string } | null;
     if (!response.ok) { setError(result?.error ?? (locale === "en" ? "Please complete the rating and comment." : "Заполните оценку и комментарий.")); setSending(false); return; }

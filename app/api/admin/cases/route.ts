@@ -36,11 +36,12 @@ export async function POST(request: Request) {
   const authorName = text(payload.authorName, 160);
   let reviewerName = text(payload.reviewerName, 160);
   const reviewLevel = typeof payload.reviewLevel === "string" && ["community_beta", "editorial_reviewed", "expert_reviewed"].includes(payload.reviewLevel) ? payload.reviewLevel : "community_beta";
-  if (!authorName || !reviewerName) return Response.json({ error: "Author and reviewer attribution are required." }, { status: 400 });
+  if (!authorName || (reviewLevel === "community_beta" && !reviewerName)) return Response.json({ error: "Author and reviewer attribution are required." }, { status: 400 });
   const db = getDb();
   const customCaseId = payload.customCaseId === undefined || payload.customCaseId === null ? null : Number(payload.customCaseId);
   if (customCaseId !== null && (!Number.isInteger(customCaseId) || customCaseId <= 0)) return Response.json({ error: "A valid custom-case source is required." }, { status: 400 });
   let customSource: typeof customCases.$inferSelect | null = null;
+  let customSourceDraftId: number | null = null;
   if (customCaseId === null) {
     const [hiddenSource] = await db.select({ id: customCases.id }).from(caseDrafts).innerJoin(customCases, eq(customCases.id, caseDrafts.customCaseId)).where(and(
       eq(caseDrafts.caseId, draft.caseId),
@@ -57,6 +58,7 @@ export async function POST(request: Request) {
     const [sourceDraft] = await db.select({ id: caseDrafts.id }).from(caseDrafts).where(and(eq(caseDrafts.customCaseId, source.id), eq(caseDrafts.version, draft.version), eq(caseDrafts.fingerprint, studioFingerprint))).limit(1);
     if (!sourceDraft) return Response.json({ error: "The exact custom-case source version is unavailable." }, { status: 409 });
     customSource = source;
+    customSourceDraftId = sourceDraft.id;
   }
   let reviewEvidence: { submissionId: number; reviewerEmail: string; reviewedAt: string } | null = null;
   if (reviewLevel !== "community_beta") {
@@ -72,12 +74,14 @@ export async function POST(request: Request) {
       eq(caseDrafts.version, draft.version),
       eq(caseDrafts.fingerprint, studioFingerprint),
       eq(caseDrafts.status, "accepted"),
+      ...(customSource ? [eq(caseDrafts.customCaseId, customSource.id)] : []),
+      ...(customSourceDraftId !== null ? [eq(caseDrafts.id, customSourceDraftId)] : []),
     )).orderBy(desc(caseDrafts.reviewedAt)).limit(1);
     if (!review?.reviewerEmail || !review.reviewedAt) return Response.json({ error: "An accepted, timestamped moderation record for this exact Studio fingerprint is required for an elevated review label." }, { status: 422 });
     if (reviewLevel === "expert_reviewed" && (!review.verifiedPractitioner || review.reviewerEmail === review.authorEmail || review.reviewerEmail === identity.email.toLowerCase())) {
       return Response.json({ error: "Expert-reviewed publication requires an independent verified practitioner review." }, { status: 422 });
     }
-    if (reviewLevel === "expert_reviewed" && review.reviewerDisplayName) reviewerName = review.reviewerDisplayName;
+    reviewerName = review.reviewerDisplayName?.trim().slice(0, 160) || "Registered case reviewer";
     reviewEvidence = { submissionId: review.submissionId, reviewerEmail: review.reviewerEmail, reviewedAt: review.reviewedAt };
   }
   const publicationInstant = new Date();

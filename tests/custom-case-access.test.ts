@@ -280,6 +280,29 @@ test("private-case feedback remains an owner-only note", () => {
   assert.equal(customFeedbackAudience({ ...base, viewerEmail: "stranger@example.com", isPrivate: false }), null);
 });
 
+test("an exact custom-case ID disambiguates a private clone from an older shared artifact", () => {
+  const db = new DatabaseSync(":memory:");
+  applyMigrations(db);
+  const insertCase = db.prepare("INSERT INTO custom_cases (owner_email, case_id, title, current_version, fingerprint, is_private) VALUES (?, 'same_case', 'Same case', '1.0.0', 'same-fingerprint', ?)");
+  const sharedId = Number(insertCase.run("attacker@example.com", 0).lastInsertRowid);
+  const privateId = Number(insertCase.run("victim@example.com", 1).lastInsertRowid);
+  const insertDraft = db.prepare("INSERT INTO case_drafts (custom_case_id, user_email, case_id, version, fingerprint, title, payload) VALUES (?, ?, 'same_case', '1.0.0', 'same-fingerprint', 'Same case', '{}')");
+  insertDraft.run(sharedId, "attacker@example.com");
+  insertDraft.run(privateId, "victim@example.com");
+  db.prepare("INSERT INTO custom_case_grants (custom_case_id, recipient_email, granted_by_email) VALUES (?, 'victim@example.com', 'attacker@example.com')").run(sharedId);
+
+  assert.equal(db.prepare("SELECT count(*) AS count FROM case_drafts WHERE case_id = 'same_case' AND version = '1.0.0' AND fingerprint = 'same-fingerprint'").get()?.count, 2);
+  assert.deepEqual(
+    { ...db.prepare(`
+      SELECT custom_cases.id, custom_cases.owner_email, custom_cases.is_private
+      FROM case_drafts JOIN custom_cases ON custom_cases.id = case_drafts.custom_case_id
+      WHERE custom_cases.id = ? AND custom_cases.case_id = case_drafts.case_id
+        AND custom_cases.current_version = case_drafts.version AND custom_cases.fingerprint = case_drafts.fingerprint
+    `).get(privateId) },
+    { id: privateId, owner_email: "victim@example.com", is_private: 1 },
+  );
+});
+
 test("API sources retain server-side privacy, licence, feedback and promotion gates", () => {
   const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
   const submissions = source("app/api/submissions/route.ts");
@@ -290,6 +313,7 @@ test("API sources retain server-side privacy, licence, feedback and promotion ga
   const publication = source("app/api/admin/cases/route.ts");
   const profile = source("app/api/me/route.ts");
   const adminUsers = source("app/api/admin/users/route.ts");
+  const client = source("app/JurisApp.tsx");
 
   assert.match(submissions, /payload\.action === "submit" && requestedPrivate/);
   assert.match(submissions, /Turn off Private before submitting/);
@@ -304,7 +328,11 @@ test("API sources retain server-side privacy, licence, feedback and promotion ga
   assert.match(customCases, /const visibleWhere = admin/);
   assert.match(customCases, /eq\(customCases\.isPrivate, false\)/);
   assert.match(customCases, /viewerGrantExists/);
-  assert.match(customCases, /from\(customCases\)\.where\(visibleWhere\)/);
+  assert.match(customCases, /from\(customCases\)\.where\(pageWhere\)/);
+  assert.match(customCases, /\.limit\(limit \+ 1\)/);
+  assert.match(customCases, /nextCursor/);
+  assert.match(customCases, /\\d\{4\}-\\d\{2\}-\\d\{2\}\[ T\]/, "cursor timestamps must use the database timestamp shapes");
+  assert.match(customCases, /const shareCountScope = admin[\s\S]*eq\(customCases\.ownerEmail, email\)/, "shared recipients must not learn the total recipient count");
   assert.match(customCases, /innerJoin\(customCases, eq\(customCaseGrants\.customCaseId, customCases\.id\)\)/);
   assert.match(customCases, /selectDistinct\(\{ email: users\.email, displayName: users\.displayName \}\)/);
   assert.doesNotMatch(customCases, /db\.select\(\)\.from\(customCases\)\.orderBy/);
@@ -317,11 +345,22 @@ test("API sources retain server-side privacy, licence, feedback and promotion ga
 
   assert.match(feedback, /caseDrafts\.fingerprint, studioFingerprint/);
   assert.match(feedback, /customFeedbackAudience/);
+  assert.match(feedback, /eq\(customCases\.id, requestedCustomCaseId\)/);
+  assert.match(feedback, /candidates\.length !== 1/);
+  assert.match(feedback, /privacyMode === "private_note" && \(!owner \|\| !candidate\.customCase\.isPrivate/);
+  assert.doesNotMatch(feedback, /candidates\.find\(/);
   assert.match(feedback, /feedbackStatus = resolvedAudience === "owner_private" \? "private_note" : "new"/);
+  assert.match(client, /customCaseId: studioCustomCaseId/);
+  assert.match(client, /customCaseId: target\.source === "studio" && privacyMode !== "product_only" \? target\.customCaseId/);
+  assert.match(client, /parsed\.case\.fingerprint !== currentFingerprint && parsed\.case\.fingerprint !== legacyFingerprint/);
 
   assert.match(publication, /source\.isPrivate/);
   assert.match(publication, /source\.fingerprint !== studioFingerprint/);
   assert.match(publication, /sourceCustomCaseId: customSource\?\.id/);
+  assert.match(publication, /customSourceDraftId/);
+  assert.match(publication, /eq\(caseDrafts\.customCaseId, customSource\.id\)/);
+  assert.match(publication, /eq\(caseDrafts\.id, customSourceDraftId\)/);
+  assert.match(publication, /reviewerName = review\.reviewerDisplayName/);
   assert.match(publication, /eq\(customCases\.isPrivate, false\)/);
   assert.match(publication, /General Library case ID already belongs to another lineage/);
 

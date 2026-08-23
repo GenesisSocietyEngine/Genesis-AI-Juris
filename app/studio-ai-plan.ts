@@ -186,11 +186,18 @@ export function materializeAIStudioPlan(draft: StudioDraft, instruction: string,
   }
   if (proposedJurisdiction && proposedJurisdiction !== draft.jurisdiction) operations.push({ kind: "set_case_field", field: "jurisdiction", value: proposedJurisdiction });
   if (proposedRole && proposedRole !== draft.role) operations.push({ kind: "set_case_field", field: "role", value: proposedRole });
-  // A blank draft keeps the author's complete accepted source (up to the
-  // Studio limit); the model's shorter context is a proposal summary, not a
-  // replacement for the source that grounded the graph.
-  const contextValue = !draft.premise.trim() ? clean : proposedContext;
+  // The publishable case premise is always the separately proposed, bounded
+  // context. The raw author source remains in private authoring history and is
+  // stripped from published artifacts; it must never silently become public
+  // catalogue copy merely because the draft was blank.
+  const contextValue = proposedContext;
   if (contextValue && !draft.premise.includes(contextValue)) operations.push({ kind: "append_context", value: contextValue.slice(0, 8_000) });
+  if (!draft.premise.trim() && !contextValue) diagnostics.push({
+    level: "error",
+    message: locale === "en"
+      ? "AI did not provide a publishable case context. Add or request a concise factual context before applying."
+      : "AI не предложил публикуемый контекст кейса. Добавьте или запросите краткое фактическое описание перед применением.",
+  });
 
   const proposedDomain = caseProposal.domain === "general" || caseProposal.domain === "tax" ? caseProposal.domain : null;
   if (caseProposal.domain !== null && !proposedDomain) throw new Error("Invalid AI case domain");
@@ -273,7 +280,7 @@ export function materializeAIStudioPlan(draft: StudioDraft, instruction: string,
     }
   }
 
-  let canApply = operations.length > 0;
+  let canApply = operations.length > 0 && !diagnostics.some((item) => item.level === "error");
   if (!canApply) diagnostics.push({ level: "error", message: locale === "en" ? "The AI proposal contains no safe changes to apply." : "AI-предложение не содержит безопасных изменений для применения." });
   const plan: StudioPromptPlan = { instruction: clean, operations, diagnostics, canApply, contextOnly: false, planner: "ai", summary, assumptions, warnings };
   if (canApply) {
@@ -364,6 +371,19 @@ export function applyValidatedAIStudioPlan(draft: StudioDraft, values: { plan: u
   if (newlyIntroducedCompileIssues(draft, normalized).length) throw new Error("AI plan no longer passes the graph safety check");
   if (caseFingerprint(normalized) === caseFingerprint(draft)) return { ...result, draft, changed: false };
   return { ...result, draft: { ...normalized, parent: draft.parent, ...(draft.protection ? { protection: draft.protection } : {}) } };
+}
+
+/**
+ * Builds the exact reviewed candidate without mutating the live draft. The
+ * same trust boundary used by Apply is reused so the visual preview cannot
+ * depict a graph that final application would reject.
+ */
+export function previewValidatedAIStudioPlan(draft: StudioDraft, values: { plan: unknown; locale: "en" | "ru" }) {
+  return applyValidatedAIStudioPlan(draft, {
+    plan: values.plan,
+    locale: values.locale,
+    createdAt: "2000-01-01T00:00:00.000Z",
+  }).draft;
 }
 
 function newlyIntroducedCompileIssues(base: StudioDraft, candidate: StudioDraft) {

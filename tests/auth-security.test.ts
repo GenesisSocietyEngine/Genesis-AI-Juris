@@ -31,6 +31,8 @@ const migrations = [
   "0006_concerned_korath.sql",
   "0007_ambitious_phoenix.sql",
   "0008_first_hitman.sql",
+  "0009_medical_princess_powerful.sql",
+  "0010_square_scalphunter.sql",
 ] as const;
 
 function migratedDatabase() {

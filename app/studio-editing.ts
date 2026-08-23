@@ -186,12 +186,53 @@ export function planStudioPromptIteration(draft: StudioDraft, options: {
   return { instruction: clean, operations, diagnostics, canApply: !hasError, contextOnly: operations.length === 0, planner: "deterministic" };
 }
 
-export function describeStudioPromptOperation(operation: StudioPromptOperation, locale: "en" | "ru", nodeTitles?: ReadonlyMap<string, string>) {
+export function describeStudioPromptOperation(operation: StudioPromptOperation, locale: "en" | "ru", nodeTitles?: ReadonlyMap<string, string>, options: { showIds?: boolean; linkEndpoints?: ReadonlyMap<string, { from: string; to: string }> } = {}) {
   const en = locale === "en";
-  const nodeName = (id: string) => nodeTitles?.get(id) ? `“${nodeTitles.get(id)}” (${id})` : id;
+  const simple = options.showIds === false;
+  const nodeTypeName = (type: StudioNodeType) => simple ? ({
+    trigger: en ? "starting event" : "начальное событие",
+    actor: en ? "participant" : "участник",
+    fact: en ? "fact" : "факт",
+    evidence: en ? "evidence" : "доказательство",
+    deadline: en ? "deadline" : "срок",
+    decision: en ? "decision" : "решение",
+    outcome: en ? "outcome" : "исход",
+    entity: en ? "organisation" : "организация",
+    tax_rule: en ? "tax rule" : "налоговое правило",
+    cash_flow: en ? "cash flow" : "денежный поток",
+  } satisfies Record<StudioNodeType, string>)[type] : type;
+  const metricName = (metric: string) => simple ? ({
+    position: en ? "legal position" : "правовая позиция",
+    evidence: en ? "evidence strength" : "сила доказательств",
+    trust: en ? "trust" : "доверие",
+    exposure: en ? "risk exposure" : "уровень риска",
+  } as Record<string, string>)[metric] ?? metric : metric;
+  const comparisonName = (comparison: string) => simple ? ({ gte: "≥", lte: "≤", eq: "=" } as Record<string, string>)[comparison] ?? comparison : comparison;
+  const repeatabilityName = (value: string) => simple ? ({
+    once: en ? "available once" : "доступно один раз",
+    repeatable: en ? "may be repeated" : "можно повторять",
+    limited: en ? "limited repetitions" : "ограниченное число повторов",
+  } as Record<string, string>)[value] ?? value : value;
+  const classificationName = (key: string) => simple ? ({
+    domain: en ? "case domain" : "домен кейса",
+    practiceArea: en ? "practice area" : "область практики",
+    difficulty: en ? "difficulty" : "сложность",
+    tags: en ? "tags" : "теги",
+    taxTopics: en ? "tax topics" : "налоговые темы",
+    purpose: en ? "tax purpose" : "цель налогового кейса",
+    complianceOnly: en ? "compliance-only scope" : "только законное применение",
+    legalAsOf: en ? "law current as of" : "актуальность права",
+    sourceUrls: en ? "legal sources" : "источники права",
+  } as Record<string, string>)[key] ?? key : key;
+  const nodeName = (id: string) => nodeTitles?.get(id)
+    ? options.showIds === false ? `“${nodeTitles.get(id)}”` : `“${nodeTitles.get(id)}” (${id})`
+    : options.showIds === false ? (en ? "the selected node" : "выбранный узел") : id;
   const compact = (value: string | undefined) => {
     const clean = value?.replace(/\s+/g, " ").trim() ?? "";
-    return clean ? `“${clean.slice(0, 120)}${clean.length > 120 ? "…" : ""}”` : "";
+    // Review text is intentionally complete. AI can author thousands of
+    // characters in a field, and hiding the tail would let unreviewed legal or
+    // tax claims pass behind an innocent-looking preview.
+    return clean ? `“${clean}”` : "";
   };
   const runtimeSummary = (runtime: StudioNode["runtime"] | null | undefined) => runtime ? [
     runtime.budgetCostEur !== undefined ? `€${runtime.budgetCostEur.toLocaleString("en")}` : "",
@@ -199,7 +240,7 @@ export function describeStudioPromptOperation(operation: StudioPromptOperation, 
     runtime.day !== undefined ? `${en ? "day" : "день"} ${runtime.day}` : "",
     runtime.time ?? "",
     runtime.pressure ? `${en ? "pressure" : "давление"}: ${compact(runtime.pressure)}` : "",
-    runtime.terminalOutcome ? `${en ? "outcome" : "исход"}: ${runtime.terminalOutcome}` : "",
+    runtime.terminalOutcome ? `${en ? "outcome" : "исход"}: ${simple ? ({ strong: en ? "strong" : "сильный", mixed: en ? "mixed" : "смешанный", weak: en ? "weak" : "слабый" } as Record<string, string>)[runtime.terminalOutcome] : runtime.terminalOutcome}` : "",
     runtime.deadlineDay !== undefined && runtime.deadlineTime
       ? `${en ? "deadline" : "срок"}: ${en ? "day" : "день"} ${runtime.deadlineDay}, ${runtime.deadlineTime}`
       : "",
@@ -212,45 +253,50 @@ export function describeStudioPromptOperation(operation: StudioPromptOperation, 
     rule.cost !== undefined ? `€${rule.cost.toLocaleString("en")}` : "",
     rule.minutes !== undefined ? `${rule.minutes} min` : "",
     rule.effects && Object.keys(rule.effects).length
-      ? `${en ? "effects" : "эффекты"}: ${Object.entries(rule.effects).map(([metric, value]) => `${metric} ${Number(value) >= 0 ? "+" : ""}${value}`).join(", ")}`
+      ? `${en ? "effects" : "эффекты"}: ${Object.entries(rule.effects).map(([metric, value]) => `${metricName(metric)} ${Number(value) >= 0 ? "+" : ""}${value}`).join(", ")}`
       : "",
     rule.guards?.length
-      ? `${en ? "conditions" : "условия"}: ${rule.guards.map((guard) => `${guard.metric} ${guard.comparison} ${guard.value}`).join(", ")}`
+      ? `${en ? "conditions" : "условия"}: ${rule.guards.map((guard) => `${metricName(guard.metric)} ${comparisonName(guard.comparison)} ${guard.value}`).join(", ")}`
       : "",
-    rule.repeatability ? `${en ? "repeatability" : "повторяемость"}: ${rule.repeatability}${rule.maxUses !== undefined ? ` (${en ? "max" : "макс."} ${rule.maxUses})` : ""}` : "",
+    rule.repeatability ? `${en ? "repeatability" : "повторяемость"}: ${repeatabilityName(rule.repeatability)}${rule.maxUses !== undefined ? ` (${en ? "max" : "макс."} ${rule.maxUses})` : ""}` : "",
   ].filter(Boolean).join("; ") : "";
   if (operation.kind === "add_node") {
     const detail = compact(operation.node.detail);
     const runtime = runtimeSummary(operation.node.runtime);
     const suffix = [detail, runtime].filter(Boolean).join("; ");
-    return `${en ? "Add" : "Добавить"} ${operation.node.type}: “${operation.node.title}”${suffix ? ` — ${suffix}` : ""}`;
+    return `${en ? "Add" : "Добавить"} ${nodeTypeName(operation.node.type)}: “${operation.node.title}”${suffix ? ` — ${suffix}` : ""}`;
   }
   if (operation.kind === "update_node") {
     const changes = [
       operation.change.title ? `${en ? "title" : "название"}: “${operation.change.title}”` : "",
-      operation.change.type ? `${en ? "type" : "тип"}: ${operation.change.type}` : "",
+      operation.change.type ? `${en ? "type" : "тип"}: ${nodeTypeName(operation.change.type)}` : "",
       operation.change.detail !== undefined ? `${en ? "detail" : "описание"}: ${compact(operation.change.detail) || (en ? "clear" : "очистить")}` : "",
       Object.hasOwn(operation.change, "runtime") ? `${en ? "runtime" : "параметры"}: ${runtimeSummary(operation.change.runtime) || (en ? "clear" : "очистить")}` : "",
     ].filter(Boolean).join("; ");
     return `${en ? "Update" : "Изменить"} ${nodeName(operation.nodeId)}${changes ? ` — ${changes}` : ""}`;
   }
-  if (operation.kind === "delete_node") return en ? `Delete ${operation.nodeId} and its relations` : `Удалить ${operation.nodeId} и его связи`;
+  if (operation.kind === "delete_node") return simple ? (en ? `Delete the selected node and its connections` : `Удалить выбранный узел и его связи`) : (en ? `Delete ${operation.nodeId} and its relations` : `Удалить ${operation.nodeId} и его связи`);
   if (operation.kind === "add_link") {
     const rule = ruleSummary(operation.link.rule);
     return `${en ? "Connect" : "Связать"} ${nodeName(operation.link.from)} → ${nodeName(operation.link.to)}${rule ? ` — ${rule}` : ""}`;
   }
   if (operation.kind === "update_link") {
     const rule = ruleSummary(operation.change);
-    return `${en ? "Update relation" : "Изменить связь"} ${operation.linkId}${rule ? ` — ${rule}` : ""}`;
+    const endpoints = options.linkEndpoints?.get(operation.linkId);
+    const relation = endpoints
+      ? `${nodeName(endpoints.from)} → ${nodeName(endpoints.to)}${simple ? "" : ` [${operation.linkId}]`}`
+      : simple ? (en ? "the selected relationship" : "выбранную связь") : operation.linkId;
+    return `${en ? "Update relation" : "Изменить связь"} ${relation}${rule ? ` — ${rule}` : ""}`;
   }
-  if (operation.kind === "relink_link") return en ? `Relink ${operation.linkId}: ${operation.from} → ${operation.to}` : `Перепривязать ${operation.linkId}: ${operation.from} → ${operation.to}`;
-  if (operation.kind === "delete_link") return en ? `Delete ${operation.linkId}` : `Удалить ${operation.linkId}`;
+  if (operation.kind === "relink_link") return simple ? (en ? "Reconnect the selected relationship" : "Перепривязать выбранную связь") : (en ? `Relink ${operation.linkId}: ${operation.from} → ${operation.to}` : `Перепривязать ${operation.linkId}: ${operation.from} → ${operation.to}`);
+  if (operation.kind === "delete_link") return simple ? (en ? "Delete the selected relationship" : "Удалить выбранную связь") : (en ? `Delete ${operation.linkId}` : `Удалить ${operation.linkId}`);
   if (operation.kind === "append_context") return `${en ? "Add to case context" : "Дополнить контекст кейса"}: ${compact(operation.value)}`;
   if (operation.kind === "set_classification") {
-    const values = Object.entries(operation.change).map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : String(value)}`).join("; ");
+    const values = Object.entries(operation.change).map(([key, value]) => `${classificationName(key)}: ${Array.isArray(value) ? value.join(", ") : String(value)}`).join("; ");
     return `${en ? "Update case classification" : "Уточнить классификацию кейса"}${values ? ` — ${values}` : ""}`;
   }
-  return en ? `Set case ${operation.field}: ${operation.value}` : `Изменить ${operation.field}: ${operation.value}`;
+  const field = simple ? ({ title: en ? "title" : "название", jurisdiction: en ? "jurisdiction" : "юрисдикция", role: en ? "player role" : "роль игрока", premise: en ? "case context" : "контекст кейса" } as Record<string, string>)[operation.field] ?? operation.field : operation.field;
+  return en ? `Set case ${field}: ${operation.value}` : `Изменить ${field}: ${operation.value}`;
 }
 
 export function applyStudioPromptIteration(draft: StudioDraft, options: {

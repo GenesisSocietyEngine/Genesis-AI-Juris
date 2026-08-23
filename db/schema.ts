@@ -104,6 +104,18 @@ export const authAuditEvents = sqliteTable("auth_audit_events", {
   index("auth_audit_account_created_idx").on(table.accountId, table.createdAt),
 ]);
 
+// Short-lived, tenant-wide leases bound concurrent provider calls. They never
+// contain prompts, graph content or raw account identifiers; subjectHash is the
+// same pseudonymous HMAC value used by the authentication audit trail.
+export const studioAILeases = sqliteTable("studio_ai_leases", {
+  id: text("id").primaryKey(),
+  subjectHash: text("subject_hash").notNull(),
+  createdAt: text("created_at").notNull(),
+  expiresAt: text("expires_at").notNull(),
+}, (table) => [
+  index("studio_ai_leases_expiry_idx").on(table.expiresAt),
+]);
+
 export const platformSecrets = sqliteTable("platform_secrets", {
   id: text("id").primaryKey(),
   secret: text("secret").notNull(),
@@ -231,6 +243,8 @@ export const customCases = sqliteTable("custom_cases", {
 }, (table) => [
   uniqueIndex("custom_cases_owner_case_uidx").on(table.ownerEmail, table.caseId),
   index("custom_cases_visibility_idx").on(table.isPrivate, table.status, table.updatedAt),
+  index("custom_cases_owner_updated_idx").on(table.ownerEmail, table.updatedAt, table.id),
+  index("custom_cases_private_updated_idx").on(table.isPrivate, table.updatedAt, table.id),
 ]);
 
 export const customCaseGrants = sqliteTable("custom_case_grants", {

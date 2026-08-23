@@ -1,7 +1,7 @@
 import { caseFingerprint } from "./case-integrity";
 import { stageClockMinute } from "./game-engine";
 import { normalizePlayableScenario, playableFingerprint } from "./playable-integrity";
-import type { LocalText, MetricKey, Scenario, StudioDraft, StudioNode, StudioNodeType } from "./types";
+import type { LocalText, MetricKey, Scenario, StudioDraft, StudioLink, StudioNode, StudioNodeType } from "./types";
 
 export type StudioCompileIssue = {
   code: "missing_start" | "missing_outcome" | "dead_end" | "cycle" | "unreachable" | "invalid_metadata";
@@ -22,16 +22,24 @@ const typeLabels: Record<StudioNodeType, LocalText> = {
   cash_flow: { en: "Cash flow", ru: "Денежный поток" },
 };
 
-export function compileStudioDraft(draft: StudioDraft): StudioCompileResult {
+export function compileStudioDraft(draft: StudioDraft, exactStudioFingerprint?: string): StudioCompileResult {
   const issues: StudioCompileIssue[] = [];
   const warnings: string[] = [];
   const nodes = new Map(draft.nodes.map((node) => [node.id, node]));
   const outgoing = new Map<string, string[]>();
   const incoming = new Map<string, string[]>();
+  const outgoingLinks = new Map<string, StudioLink[]>();
   for (const link of draft.links) {
     if (!nodes.has(link.from) || !nodes.has(link.to)) continue;
-    outgoing.set(link.from, [...(outgoing.get(link.from) ?? []), link.to]);
-    incoming.set(link.to, [...(incoming.get(link.to) ?? []), link.from]);
+    const targets = outgoing.get(link.from) ?? [];
+    targets.push(link.to);
+    outgoing.set(link.from, targets);
+    const sources = incoming.get(link.to) ?? [];
+    sources.push(link.from);
+    incoming.set(link.to, sources);
+    const links = outgoingLinks.get(link.from) ?? [];
+    links.push(link);
+    outgoingLinks.set(link.from, links);
   }
 
   const outcomes = draft.nodes.filter((node) => node.type === "outcome");
@@ -66,14 +74,13 @@ export function compileStudioDraft(draft: StudioDraft): StudioCompileResult {
   const unreachable = draft.nodes.filter((node) => !reachable.has(node.id)).map((node) => node.id);
   if (unreachable.length) issues.push({ code: "unreachable", message: "Every node must be reachable from the compiled start.", nodeIds: unreachable });
 
-  const canReachOutcome = new Set(outcomes.map((node) => node.id));
-  let expanded = true;
-  while (expanded) {
-    expanded = false;
-    for (const node of draft.nodes) if (!canReachOutcome.has(node.id) && (outgoing.get(node.id) ?? []).some((id) => canReachOutcome.has(id))) {
-      canReachOutcome.add(node.id);
-      expanded = true;
-    }
+  const canReachOutcome = new Set<string>();
+  const reversePending = outcomes.map((node) => node.id);
+  while (reversePending.length) {
+    const id = reversePending.pop()!;
+    if (canReachOutcome.has(id)) continue;
+    canReachOutcome.add(id);
+    for (const source of incoming.get(id) ?? []) if (!canReachOutcome.has(source)) reversePending.push(source);
   }
   const deadEnds = draft.nodes.filter((node) => reachable.has(node.id) && node.type !== "outcome" && !canReachOutcome.has(node.id)).map((node) => node.id);
   if (deadEnds.length) issues.push({ code: "dead_end", message: "Every playable branch must end at an outcome.", nodeIds: deadEnds });
@@ -95,7 +102,8 @@ export function compileStudioDraft(draft: StudioDraft): StudioCompileResult {
       }
     }
   }
-  const cyclic = relevant.filter((node) => !ordered.some((item) => item.id === node.id)).map((node) => node.id);
+  const orderedIds = new Set(ordered.map((node) => node.id));
+  const cyclic = relevant.filter((node) => !orderedIds.has(node.id)).map((node) => node.id);
   if (cyclic.length && !issues.some((issue) => issue.code === "cycle")) issues.push({ code: "cycle", message: "Playable compilation currently requires an acyclic case graph.", nodeIds: cyclic });
   if (issues.length) return { scenario: null, issues, warnings };
 
@@ -124,7 +132,7 @@ export function compileStudioDraft(draft: StudioDraft): StudioCompileResult {
   const outcomeIndex = new Map(outcomes.map((node, index) => [node.id, index]));
 
   const stages: Scenario["stages"] = ordered.map((node, index) => {
-    const links = draft.links.filter((link) => link.from === node.id && reachable.has(link.to));
+    const links = (outgoingLinks.get(node.id) ?? []).filter((link) => reachable.has(link.to));
     const options = node.type === "outcome" ? [] : links.map((link) => {
       const target = nodes.get(link.to)!;
       const rule = link.rule;
@@ -228,7 +236,7 @@ export function compileStudioDraft(draft: StudioDraft): StudioCompileResult {
     sector: localNodeText(draft.classification?.practiceArea || "General legal"),
     urgency: deadlineNodes.length ? "elevated" : "standard",
     fingerprint: "",
-    sourceFingerprint: caseFingerprint(draft),
+    sourceFingerprint: exactStudioFingerprint ?? caseFingerprint(draft),
     accent: "#d2a85e",
     actors: ordered.filter((node) => node.type === "actor" || node.type === "entity").map((node) => localNodeText(node.title)),
     materials,

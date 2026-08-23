@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { auditEvents, localAccounts, users } from "../../../../db/schema";
 import { normalizeEmail, normalizeLicenseTier } from "../../../custom-case-access";
@@ -25,9 +25,28 @@ export async function POST(request: Request) {
   const licenseTier = normalizeLicenseTier(payload?.licenseTier);
   if (!email) return privateJson({ error: "A registered user is required." }, 400);
   const db = getDb();
-  const [updated] = await db.update(users).set({ licenseTier, updatedAt: new Date().toISOString() }).where(eq(users.email, email)).returning({ email: users.email, licenseTier: users.licenseTier });
+  const now = new Date().toISOString();
+  const actorEmail = normalizeEmail(identity.email);
+  const auditedObjectId = sql<string>`(
+    SELECT ${users.email}
+    FROM ${users}
+    WHERE changes() = 1
+      AND ${users.email} = ${email}
+      AND ${users.licenseTier} = ${licenseTier}
+      AND ${users.updatedAt} = ${now}
+    LIMIT 1
+  )`;
+  let updated: { email: string; licenseTier: string } | undefined;
+  try {
+    const [updatedRows] = await db.batch([
+      db.update(users).set({ licenseTier, updatedAt: now }).where(eq(users.email, email)).returning({ email: users.email, licenseTier: users.licenseTier }),
+      db.insert(auditEvents).values({ actorEmail, eventType: "user_license_changed", objectType: "user", objectId: auditedObjectId, detail: { licenseTier } }),
+    ]);
+    updated = updatedRows[0];
+  } catch {
+    return privateJson({ error: "Registered user not found." }, 404);
+  }
   if (!updated) return privateJson({ error: "Registered user not found." }, 404);
-  await db.insert(auditEvents).values({ actorEmail: normalizeEmail(identity.email), eventType: "user_license_changed", objectType: "user", objectId: email, detail: { licenseTier } });
   return privateJson({ user: updated });
 }
 

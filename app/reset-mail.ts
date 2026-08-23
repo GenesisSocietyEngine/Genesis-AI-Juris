@@ -59,7 +59,7 @@ async function sendResendMessage(config: ResetMailConfig, message: { to: string;
         Authorization: `Bearer ${config.apiKey}`,
         "Content-Type": "application/json",
         "Idempotency-Key": message.idempotencyKey,
-        "User-Agent": "GENESIS-JURIS/15 password-security",
+        "User-Agent": "GENESIS-JURIS/16 password-security",
       },
       body: JSON.stringify({ from: config.from, to: [message.to], subject: message.subject, text: message.text, html: message.html }),
       signal: AbortSignal.timeout(8_000),

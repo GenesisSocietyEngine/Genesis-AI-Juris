@@ -99,6 +99,14 @@ test("Studio canonicalizes tax classifications and enforces server graph/publica
   assert.match(fingerprint, /^sha256-[a-f0-9]{64}$/);
   assert.equal(caseFingerprint(structuredClone(valid)), fingerprint);
   assert.notEqual(caseFingerprint({ ...valid, jurisdiction: "Netherlands · EU" }), fingerprint);
+  const renamedRelationship = structuredClone(valid);
+  renamedRelationship.links[0].id = `${renamedRelationship.links[0].id}-renamed`;
+  assert.notEqual(caseFingerprint(renamedRelationship), fingerprint, "playable relationship identity is part of the exact Studio artifact");
+  const originalRuntime = compilePublicationPlayable(valid);
+  const renamedRuntime = compilePublicationPlayable(renamedRelationship);
+  assert.equal(originalRuntime.ok, true);
+  assert.equal(renamedRuntime.ok, true);
+  if (originalRuntime.ok && renamedRuntime.ok) assert.notEqual(originalRuntime.playable.fingerprint, renamedRuntime.playable.fingerprint);
   const withEconomics = normalizeStudioDraft({ ...taxDraft(), taxEconomics: {
     kind: "tax-economics-v1", currency: "eur", baselineAnnualTaxCost: 250_000, optimizedAnnualTaxCost: 180_000,
     implementationCost: 85_000, annualMaintenanceCost: 15_000, terminalTaxOrUnwindCost: 5_000,
