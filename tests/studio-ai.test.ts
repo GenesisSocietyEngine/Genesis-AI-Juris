@@ -4,6 +4,7 @@ import test from "node:test";
 import { normalizeStudioDraft } from "../app/case-integrity";
 import { applyStudioPromptPlan, describeStudioPromptOperation, toPublicStudioDraft } from "../app/studio-editing";
 import { STUDIO_DRAFT_SERIALIZED_LIMIT, studioJsonBytes } from "../app/studio-envelope";
+import { STUDIO_PROMPT_CHARACTER_LIMIT } from "../app/studio-prompt-limit";
 import { applyValidatedAIStudioPlan, materializeAIStudioPlan, normalizeStudioAIContext, previewValidatedAIStudioPlan, STUDIO_AI_PLAN_SCHEMA, studioAIBaseFingerprint, toStudioAIContext } from "../app/studio-ai-plan";
 import type { StudioDraft, StudioNodeType } from "../app/types";
 
@@ -290,5 +291,6 @@ test("AI route keeps the key server-side and enforces auth, same-origin, limits 
   assert.match(me, /studioAIAvailable/);
   assert.match(ui, /not_configured/);
   assert.match(ui, /useState<"user" \| "developer">\("user"\)/);
-  assert.match(ui, /maxLength=\{8000\}/);
+  assert.equal(STUDIO_PROMPT_CHARACTER_LIMIT, 64_000);
+  assert.match(ui, /maxLength=\{STUDIO_PROMPT_CHARACTER_LIMIT\}/);
 });

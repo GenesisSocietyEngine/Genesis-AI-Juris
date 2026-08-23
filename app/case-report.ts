@@ -1,6 +1,7 @@
 import { calculateDealEconomics, estimateDealCashFlowProbabilities } from "./deal-economics";
 import { calculateTaxEconomics } from "./tax-economics";
-import type { StudioDraft, StudioNodeType } from "./types";
+import { layoutStudioNodes, studioNodeEstimatedHeight } from "./studio-layout";
+import type { StudioDraft, StudioLink, StudioNode, StudioNodeType } from "./types";
 import type { Content, ContentTable, TDocumentDefinitions, TableCell } from "pdfmake/interfaces";
 
 export type CaseReportOptions = {
@@ -58,6 +59,65 @@ function table(headers: string[], rows: TableCell[][], widths?: Array<string | n
 
 function section(title: string): Content {
   return { text: title, style: "sectionTitle", margin: [0, 16, 0, 6] };
+}
+
+const xml = (value: string) => value.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const clipped = (value: string, limit: number) => value.length <= limit ? value : `${value.slice(0,limit-1).trimEnd()}...`;
+
+function relationCondition(link: StudioLink) {
+  const rule=link.rule;
+  if(!rule)return "";
+  return [rule.label,rule.detail,rule.result,
+    rule.guards?.map((item)=>`${item.metric} ${item.comparison} ${item.value}`).join(", "),
+    rule.effects&&Object.entries(rule.effects).map(([key,value])=>`${key} ${Number(value)>=0?"+":""}${value}`).join(", "),
+    rule.cost!==undefined?`EUR ${rule.cost}`:"",rule.minutes!==undefined?`${rule.minutes} min`:"",rule.repeatability,
+    rule.maxUses!==undefined?`max ${rule.maxUses}`:"",
+  ].filter(Boolean).join("; ");
+}
+
+function nodeRuntime(node: StudioNode, language: CaseReportOptions["language"]){
+  const value=node.runtime;
+  if(!value)return "";
+  return [value.day!==undefined?`${tr(language,"day","день")} ${value.day}`:"",value.time,
+    value.pressure,value.terminalOutcome?`${tr(language,"outcome","исход")}: ${value.terminalOutcome}`:"",
+    value.deadlineDay!==undefined?`${tr(language,"deadline day","день срока")}: ${value.deadlineDay}`:"",value.deadlineTime,
+    value.budgetCostEur!==undefined?`EUR ${value.budgetCostEur}`:"",value.durationMinutes!==undefined?`${value.durationMinutes} min`:"",
+  ].filter(Boolean).join("; ");
+}
+
+function graphSvg(draft: StudioDraft, activeIds: Set<string>){
+  const nodes=layoutStudioNodes(draft.nodes,draft.links,"vertical");
+  const byId=new Map(nodes.map((node)=>[node.id,node]));
+  const numberById=new Map(nodes.map((node,index)=>[node.id,`N${String(index+1).padStart(2,"0")}`]));
+  const maxX=Math.max(1,...nodes.map((node)=>node.x+165+46));
+  const maxY=Math.max(1,...nodes.map((node)=>node.y+studioNodeEstimatedHeight(node)+86));
+  const paths=draft.links.flatMap((link)=>{const from=byId.get(link.from);const to=byId.get(link.to);if(!from||!to)return[];const x1=from.x+82.5;const y1=from.y+studioNodeEstimatedHeight(from);const x2=to.x+82.5;const y2=to.y;const bend=Math.max(45,Math.abs(y2-y1)*.42);return [`<path d="M ${x1} ${y1} C ${x1} ${y1+bend}, ${x2} ${y2-bend}, ${x2} ${y2}" fill="none" stroke="#3d9daa" stroke-width="3" opacity="0.72"/><circle cx="${x2}" cy="${y2}" r="5" fill="#3d9daa"/>`];}).join("");
+  const cards=nodes.map((node)=>{const height=studioNodeEstimatedHeight(node);const active=activeIds.has(node.id);const title=clipped(node.title,31);return `<g><rect x="${node.x}" y="${node.y}" width="165" height="${height}" rx="3" fill="#ffffff" stroke="${active?palette.gold:palette.line}" stroke-width="${active?5:2}"/><rect x="${node.x}" y="${node.y}" width="8" height="${height}" fill="${node.type==="outcome"?"#7b68a8":node.type==="decision"?palette.gold:node.type==="tax_rule"?"#c27847":palette.cyan}"/><text x="${node.x+17}" y="${node.y+24}" font-family="Roboto" font-size="15" font-weight="700" fill="#163445">${numberById.get(node.id)} ${xml(nodeNames[node.type][0].toUpperCase())}</text><text x="${node.x+17}" y="${node.y+50}" font-family="Roboto" font-size="17" fill="#10202c">${xml(title)}</text></g>`;}).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${maxX} ${maxY}"><rect width="100%" height="100%" fill="#f5f8f8"/>${paths}${cards}</svg>`;
+}
+
+function graphAppendix(draft: StudioDraft, options: CaseReportOptions, nextSectionNumber:()=>number):Content[]{
+  const {language}=options;
+  const numberById=new Map(draft.nodes.map((node,index)=>[node.id,`N${String(index+1).padStart(2,"0")}`]));
+  const titleById=new Map(draft.nodes.map((node)=>[node.id,node.title]));
+  const pages=Array.from({length:Math.ceil(draft.nodes.length/5)},(_,index)=>draft.nodes.slice(index*5,index*5+5));
+  const sectionIndex=nextSectionNumber();
+  return pages.map((pageNodes,pageIndex)=>({
+    pageBreak:"before",pageOrientation:"landscape",
+    stack:[
+      {text:`${sectionIndex}. ${tr(language,"Graph and node conditions","Граф и условия нодов")}${pages.length>1?` - ${pageIndex+1}/${pages.length}`:""}`,style:"sectionTitle",margin:[0,0,0,8]},
+      {text:tr(language,"The highlighted nodes are described in the right-hand register. Relation conditions include authored guards, effects, costs, duration and repeatability.","Выделенные ноды описаны в реестре справа. Условия связей включают заданные guards, эффекты, стоимость, длительность и повторяемость."),style:"note",margin:[0,0,0,8]},
+      {columns:[
+        {width:"58%",stack:[{svg:graphSvg(draft,new Set(pageNodes.map((node)=>node.id))),width:425,height:360}]},
+        {width:"42%",stack:pageNodes.map((node)=>{
+          const incoming=draft.links.filter((link)=>link.to===node.id).map((link)=>`${tr(language,"IN","ВХОД")} ${numberById.get(link.from)} ${clipped(titleById.get(link.from)??link.from,28)}${relationCondition(link)?`: ${clipped(relationCondition(link),105)}`:""}`);
+          const outgoing=draft.links.filter((link)=>link.from===node.id).map((link)=>`${tr(language,"OUT","ВЫХОД")} ${numberById.get(link.to)} ${clipped(titleById.get(link.to)??link.to,28)}${relationCondition(link)?`: ${clipped(relationCondition(link),105)}`:""}`);
+          const conditions=[nodeRuntime(node,language),...incoming,...outgoing].filter(Boolean);
+          return {stack:[{text:`${numberById.get(node.id)} · ${nodeNames[node.type][language==="en"?0:1]}`,style:"graphNodeType"},{text:node.title,style:"graphNodeTitle"},{text:clipped(clean(node.detail),170),style:"graphNodeDetail"},{text:conditions.length?clipped(conditions.join("\n"),420):tr(language,"No authored runtime or relation conditions.","Runtime или условия связей не заданы."),style:"graphNodeCondition"}],margin:[8,0,0,7]};
+        })},
+      ],columnGap:12},
+    ],
+  } as Content));
 }
 
 function buildEconomics(draft: StudioDraft, options: CaseReportOptions): Content[] {
@@ -245,7 +305,7 @@ export function buildCaseReportDefinition(draft: StudioDraft, options: CaseRepor
       tr(language, "Assumptions, exclusions and uncertainties are explicitly disclosed.", "Допущения, исключения и неопределённости раскрыты явно."),
       tr(language, "Economics and probability weights are independently recalculated.", "Экономика и вероятностные веса пересчитаны независимо."),
       tr(language, "Confidentiality, privilege, conflicts and circulation scope are confirmed.", "Конфиденциальность, privilege, конфликты и круг распространения подтверждены."),
-    ].map((item) => ({ text: `☐ ${item}` })), style: "checklist", margin: [6, 6, 0, 16]
+    ].map((item) => ({ text: `[ ] ${item}` })), style: "checklist", margin: [6, 6, 0, 16]
   });
   content.push(table(
     [tr(language, "Reviewer", "Рецензент"), tr(language, "Role", "Роль"), tr(language, "Date", "Дата"), tr(language, "Sign-off / qualification", "Утверждение / оговорка")],
@@ -253,6 +313,7 @@ export function buildCaseReportDefinition(draft: StudioDraft, options: CaseRepor
   ));
   content.push({ text: `${tr(language, "Current content fingerprint", "Отпечаток текущего содержания")}: ${options.currentFingerprint || tr(language, "pending", "ожидается")}`, style: "fingerprint" });
   if (options.includeTechnicalIds && draft.protection) content.push({ text: `${tr(language, "Lineage code", "Код линии версий")}: ${draft.protection.currentCode || "pending"}\n${tr(language, "Copy policy", "Политика копирования")}: ${draft.protection.copyPolicy}`, style: "fingerprint" });
+  content.push(...graphAppendix(draft,options,()=>sectionNumber++));
 
   const confidentialityLabel = options.confidentiality.toUpperCase();
   return {
@@ -283,6 +344,10 @@ export function buildCaseReportDefinition(draft: StudioDraft, options: CaseRepor
       fingerprint: { font: "Roboto", fontSize: 6.6, color: "#66777e", margin: [0, 5, 0, 0] },
       headerBrand: { fontSize: 7.5, bold: true, color: palette.cyan },
       headerMeta: { fontSize: 7.5, color: "#66777e" },
+      graphNodeType: { fontSize: 7, bold: true, color: palette.cyan, characterSpacing: .6 },
+      graphNodeTitle: { fontSize: 8.5, bold: true, color: palette.navy, margin: [0, 2, 0, 2] },
+      graphNodeDetail: { fontSize: 7.3, color: palette.ink, lineHeight: 1.18 },
+      graphNodeCondition: { fontSize: 6.5, color: "#53666e", lineHeight: 1.12, margin: [0, 2, 0, 0] },
     },
     info: {
       title: `${draft.title} - professional case report`,

@@ -2,6 +2,7 @@ import { canonicalFingerprint, caseFingerprint, isRecord, normalizeStudioDraft, 
 import { applyStudioPromptPlan, nextStudioLinkId, nextStudioNodeId, nextStudioNodePosition, type StudioPromptDiagnostic, type StudioPromptOperation, type StudioPromptPlan } from "./studio-editing";
 import { compileStudioDraft } from "./studio-compiler";
 import { DEFAULT_DEAL_SCENARIO_PROBABILITIES, normalizeDealEconomics } from "./deal-economics";
+import { STUDIO_PROMPT_CHARACTER_LIMIT } from "./studio-prompt-limit";
 import type { MetricKey, StudioDraft, StudioLink, StudioNode, StudioNodeType } from "./types";
 
 const nodeTypes = new Set<StudioNodeType>([
@@ -194,7 +195,7 @@ export function normalizeStudioAIContext(value: unknown): StudioDraft {
 }
 
 export function materializeAIStudioPlan(draft: StudioDraft, instruction: string, rawProposal: unknown, locale: "en" | "ru", selectedNodeId?: string | null): StudioPromptPlan {
-  const clean = instruction.trim().slice(0, 8_000);
+  const clean = instruction.trim().slice(0, STUDIO_PROMPT_CHARACTER_LIMIT);
   if (!clean || !isRecord(rawProposal)) throw new Error("Invalid AI Studio proposal");
   const compatible = rawProposal.compatible === true;
   if (rawProposal.compatible !== true && rawProposal.compatible !== false) throw new Error("Invalid AI compatibility result");

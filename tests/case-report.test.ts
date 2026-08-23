@@ -49,6 +49,10 @@ test("professional report contains economics, registers, sign-off and a safe aud
   assert.match(source, /Illustrative annual cash-flow probability ranges/);
   assert.match(source, /Facts, evidence and rules register/);
   assert.match(source, /Verification and sign-off/);
+  assert.match(source, /Graph and node conditions/);
+  assert.match(source, /N01/);
+  assert.match(source, /<svg/);
+  assert.match(source, /right-hand register/);
   assert.match(source, /AI-assisted revision recorded - raw prompt excluded/);
   assert.doesNotMatch(source, /SECRET RAW PROMPT CONTENT/);
 });

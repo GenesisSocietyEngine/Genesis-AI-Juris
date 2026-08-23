@@ -7,6 +7,7 @@ import { checkSuccessfulAuthEventLimit, consumeAuthRateLimit, writeAuthAudit } f
 import { isSameOriginCredentialMutation, readJsonObject } from "../../../request-security";
 import { acquireStudioAILease, releaseStudioAILease } from "../../../studio-ai-capacity";
 import { STUDIO_AI_PROVIDER_CONTEXT_LIMIT, studioAIProviderContextBytes } from "../../../studio-ai-provider-context";
+import { STUDIO_PROMPT_CHARACTER_LIMIT } from "../../../studio-prompt-limit";
 import { STUDIO_CASE_BODY_LIMIT } from "../../../studio-envelope";
 import { normalizeStudioAIContext, studioAIBaseFingerprint, type StudioAIContext } from "../../../studio-ai-plan";
 import { createAIStudioPlan, StudioAIServiceError, studioAIAvailable } from "../../../studio-ai-server";
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
   const selectedNodeId = payload?.selectedNodeId === null || payload?.selectedNodeId === undefined
     ? null
     : typeof payload.selectedNodeId === "string" && /^[a-z0-9][a-z0-9_-]{0,79}$/.test(payload.selectedNodeId) ? payload.selectedNodeId : undefined;
-  if (!payload || !instruction || instruction.length > 8_000 || !locale || selectedNodeId === undefined) return privateJson({ error: "A valid Studio prompt and graph context are required.", code: "invalid_request" }, 400);
+  if (!payload || !instruction || instruction.length > STUDIO_PROMPT_CHARACTER_LIMIT || !locale || selectedNodeId === undefined) return privateJson({ error: "A valid Studio prompt and graph context are required.", code: "invalid_request" }, 400);
 
   let draft;
   let baseFingerprint;

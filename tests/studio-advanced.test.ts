@@ -193,6 +193,11 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   const cashFlowEditorSource = readFileSync(new URL("../app/CashFlowScenarioEditor.tsx", import.meta.url), "utf8");
   const reportDialogSource = readFileSync(new URL("../app/CaseReportDialog.tsx", import.meta.url), "utf8");
+  const markdownDialogSource = readFileSync(new URL("../app/CaseMarkdownDialog.tsx", import.meta.url), "utf8");
+  const markdownActionsSource = readFileSync(new URL("../app/CaseMarkdownActions.tsx", import.meta.url), "utf8");
+  const canonicalReviewSource = readFileSync(new URL("../app/CanonicalMarkdownReview.tsx", import.meta.url), "utf8");
+  const promptAuxiliarySource = readFileSync(new URL("../app/StudioPromptAuxiliary.tsx", import.meta.url), "utf8");
+  const milestonesSource = readFileSync(new URL("../app/GraphMilestones.tsx", import.meta.url), "utf8");
   const taxEconomicsSource = readFileSync(new URL("../app/TaxEconomicsPanel.tsx", import.meta.url), "utf8");
   const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(appSource, /function blankStudioDraft/);
@@ -208,6 +213,10 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /<option value="vertical">/);
   assert.match(appSource, /<option value="horizontal">/);
   assert.match(appSource, /graphLinkGeometry\(from,to,graphOrientation\)/, "relation curves follow the chosen orientation");
+  assert.match(appSource, /GraphMilestones/, "the graph exposes temporal milestones without adding them to the initial bundle");
+  assert.match(milestonesSource, /deadlineDay/);
+  assert.match(milestonesSource, /localeCompare/);
+  assert.match(milestonesSource, /select\(node\.id\)/, "milestones navigate to their graph nodes");
   assert.match(appSource, /function focusNodeAsSource\(nodeId: string\)/);
   assert.match(appSource, /link\.from===selectedNodeId\?"active":""/, "source number tags retain the selected-node highlight");
   assert.match(appSource, /link\.to===selectedNodeId\?"active":""/, "destination number tags retain the selected-node highlight");
@@ -217,6 +226,8 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(css, /graph-orientation-vertical \.node-port\{top:auto;right:auto;left:50%;transform:translateX\(-50%\)\}/, "vertical ports are centred on the node");
   assert.match(css, /graph-orientation-vertical \.node-port-in\{top:-17px;bottom:auto\}/, "vertical inputs sit above the node");
   assert.match(css, /graph-orientation-vertical \.node-port-out\{top:auto;right:auto;bottom:-17px\}/, "vertical outputs sit below the node");
+  assert.match(appSource, /graphOrientation === "vertical" \? \{top:-17,left:"50%",right:"auto",bottom:"auto",transform:"translateX\(-50%\)"\}/, "vertical input placement is also guaranteed inline against stale or reordered stylesheets");
+  assert.match(appSource, /graphOrientation === "vertical" \? \{top:"auto",left:"50%",right:"auto",bottom:-17,transform:"translateX\(-50%\)"\}/, "vertical output placement is also guaranteed inline against stale or reordered stylesheets");
   assert.match(css, /relation-node-tag\.destination\.active/, "destination highlights persist after focus moves");
   assert.match(appSource, /press Delete to remove/, "selected nodes expose their keyboard deletion shortcut");
   assert.match(appSource, /CashFlowScenarioEditor/, "a selected cash-flow node exposes editable model controls");
@@ -226,6 +237,15 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /await import\("\.\/CaseReportDialog"\)/, "report UI loads safely before the editor is covered");
   assert.match(appSource, /setCaseReportOpen\(true\)/);
   assert.match(appSource, /PDF failed/, "a stale report chunk leaves Studio visible with a recoverable error");
+  assert.match(markdownActionsSource, /Polished case MD/);
+  assert.match(markdownActionsSource, /Load case MD/);
+  assert.match(appSource, /CanonicalPromptAction/);
+  assert.match(promptAuxiliarySource, /Verify canonical case/);
+  assert.match(appSource, /<progress className="ai-progress-fallback" max=\{100\} value=\{8\}/, "the lazy-loading fallback keeps a native activity track in every theme");
+  assert.match(markdownDialogSource, /Download \.md/);
+  assert.match(markdownDialogSource, /Final reviewed/);
+  assert.match(canonicalReviewSource, /Apply exact case/);
+  assert.match(css, /\.ai-progress-track\{position:relative;height:9px;min-height:9px/, "progress track has explicit geometry independent of theme paints");
   assert.match(reportDialogSource, /raw AI prompt is never included/);
   assert.match(reportDialogSource, /Client-facing report/);
   assert.match(taxEconomicsSource, /Tax base \+ rates \(%\)/, "tax economics supports percentage-rate inputs");
@@ -260,7 +280,7 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.doesNotMatch(appSource, /aria-disabled=\{!canDuplicate\}/, "generic regions must not misuse aria-disabled");
   assert.match(appSource, /type !== "tax_rule"/, "the general User-view palette must hide the specialist tax-rule node");
   assert.match(appSource, /displayMode === "developer" && <section className="studio-history/, "technical history stays in Developer view");
-  assert.match(appSource, /displayMode === "developer" && prompt\.trim\(\) && <details className="prompt-fallback-preview/, "exact-command DSL stays in Developer view");
+  assert.match(appSource, /displayMode === "developer" && !canonicalPrompt && prompt\.trim\(\) && <details className="prompt-fallback-preview/, "exact-command DSL stays in Developer view and out of canonical imports");
   assert.match(appSource, /displayMode === "developer" && draft\.protection/, "raw lineage seals stay in Developer view");
   assert.match(appSource, /Publishable case context/);
   assert.match(appSource, /\{taxDraft && <><label><span>\{locale === "en" \? "Tax-case purpose"/, "tax-only controls should stay hidden for general cases");

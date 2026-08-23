@@ -17,6 +17,7 @@ import { applyValidatedAIStudioPlan, studioAIBaseFingerprint, toStudioAIContext 
 import { compileStudioDraft } from "./studio-compiler";
 import { STUDIO_DRAFT_SERIALIZED_LIMIT, studioJsonBytes } from "./studio-envelope";
 import { STUDIO_NODE_MENU_PAGE_SIZE, studioNodeMenuOptions, studioNodeMenuPage } from "./studio-node-menu";
+import { STUDIO_PROMPT_CHARACTER_LIMIT } from "./studio-prompt-limit";
 import { applyStudioSnapshot, diffDraftToRevision, diffStudioSnapshots, emptyStudioTimeline, recordStudioRevision, snapshotStudioDraft, stepStudioTimeline, studioSnapshotsEqual, type StudioRevision, type StudioTimeline } from "./studio-revisions";
 import { calculateTaxEconomics, defaultTaxEconomics } from "./tax-economics";
 import { calculateDealEconomics, inferDealEconomicsFromText } from "./deal-economics";
@@ -83,7 +84,14 @@ const StudioAIProgress = lazy(() => import("./StudioAIProgress"));
 const DealOutcomePanel = lazy(() => import("./DealOutcomePanel"));
 const TaxEconomicsPanel = lazy(() => import("./TaxEconomicsPanel"));
 const CashFlowScenarioEditor = lazy(() => import("./CashFlowScenarioEditor"));
+const GraphMilestones = lazy(() => import("./GraphMilestones"));
 const CaseReportDialog = lazy(() => import("./CaseReportDialog"));
+const CaseMarkdownDialog = lazy(() => import("./CaseMarkdownDialog"));
+const CaseMarkdownActions = lazy(() => import("./CaseMarkdownActions"));
+const CanonicalMarkdownReview = lazy(() => import("./CanonicalMarkdownReview"));
+const CanonicalPromptAction = lazy(() => import("./StudioPromptAuxiliary").then((module) => ({default:module.CanonicalPromptAction})));
+const CanonicalReadyAction = lazy(() => import("./StudioPromptAuxiliary").then((module) => ({default:module.CanonicalReadyAction})));
+const StudioPromptPrivacyNote = lazy(() => import("./StudioPromptAuxiliary").then((module) => ({default:module.StudioPromptPrivacyNote})));
 type OutcomeClass = "strong" | "mixed" | "weak";
 type DecisionRecord = { stageId: string; stage: string; option: DecisionOption };
 type FeedbackTarget = { caseId: string; version: string; title: string; source: "playable" | "studio"; fingerprint?: string; customCaseId?: number | null; contextType?: "case" | "stage" | "decision" | "node"; contextId?: string; privateCase?: boolean };
@@ -1386,6 +1394,19 @@ export default function JurisApp() {
     setPrompt("");
     return true;
   }
+  function applyCanonicalMarkdownDraft(source: StudioDraft) {
+    const createdAt = new Date().toISOString();
+    const restored = appendStudioHistory(source, {
+      role: "studio",
+      source: "prompt",
+      action: "graph_rebuilt",
+      message: locale === "en"
+        ? `Restored the exact fingerprinted graph from a canonical Markdown case description.`
+        : `Точная схема восстановлена из канонического Markdown-описания с проверенным отпечатком.`,
+    }, createdAt);
+    enterNewLocalDraft(restored, restored.nodes.find((node) => node.type === "decision")?.id ?? restored.nodes[0]?.id ?? null);
+    setPrompt("");
+  }
   function saveDraft() {
     if (!studioStorageScope) {
       showSessionNotice(locale === "en" ? "Device storage is unavailable until the account boundary is verified." : "Локальное сохранение недоступно, пока не подтверждён контур аккаунта.");
@@ -1730,7 +1751,7 @@ export default function JurisApp() {
         sessionSync={playSessionSync} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario, { legacyTiming: legacyTimingMode })}
         returnLibrary={() => navigate("library")} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })}
       />}
-      {view === "studio" && <StudioView locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate} aiEntitlement={studioAIEntitlement} />}
+      {view === "studio" && <StudioView locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} applyCanonicalMarkdownDraft={applyCanonicalMarkdownDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate} aiEntitlement={studioAIEntitlement} />}
       {view === "community" && <CommunityView locale={locale} cases={catalogueRecords} openCustomCase={openWorkspaceCustomCase} refreshCatalogue={() => refreshCatalogue({ force: true })} clearDeviceDraft={purgeLocalStudioState} />}
       {view === "help" && <HelpView locale={locale} openCommunity={() => navigate("community")} openStudio={() => navigate("studio")} />}
       {(selectedOption || resultOption) && activeScenario && stage && <DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} busy={playSessionBusy} close={() => { if (!playSessionBusy) { setSelectedOption(null); setResultOption(null); } }} dispatch={dispatchDecision} advance={advanceStage} finalStage={Boolean(activeScenario.stages.find((item) => item.id === (selectedOption ?? resultOption)?.nextStageId)?.terminal)} />}
@@ -2272,7 +2293,7 @@ type StudioViewProps = {
   locale: Locale; text: UiText; prompt: string; setPrompt: (value: string) => void; draft: StudioDraft;
   setDraft: React.Dispatch<React.SetStateAction<StudioDraft>>; selectedNode: StudioNode | null; selectedNodeId: string | null;
   selectNode: (id: string | null) => void; checks: Array<{ level: "ok" | "warn"; text: string }>;
-  generateDraft: () => void; applyPromptIteration: () => void; applyReviewedAIPlan: (plan: StudioPromptPlan, baseFingerprint: string) => boolean; saveDraft: () => void; savedFlash: boolean;
+  generateDraft: () => void; applyPromptIteration: () => void; applyReviewedAIPlan: (plan: StudioPromptPlan, baseFingerprint: string) => boolean; applyCanonicalMarkdownDraft: (draft: StudioDraft) => void; saveDraft: () => void; savedFlash: boolean;
   exportDraft: () => void; importRef: React.RefObject<HTMLInputElement | null>; importDraft: (file: File) => void;
   createChildVersion: () => void; updateNode: (change: Partial<StudioNode>) => void;
   recordVisualEdit: (action: StudioEditAction, message: string, before?: StudioDraft) => void; addNode: (type: StudioNodeType, preferredPosition?: { x: number; y: number }) => void;
@@ -2307,7 +2328,7 @@ function computeStudioDerivations(source: StudioDraft): StudioDerivations {
   };
 }
 
-function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, generateDraft, applyPromptIteration, applyReviewedAIPlan, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadExample, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, aiEntitlement }: StudioViewProps) {
+function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, generateDraft, applyPromptIteration, applyReviewedAIPlan, applyCanonicalMarkdownDraft, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadExample, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, aiEntitlement }: StudioViewProps) {
   const draftRef = useRef(draft);
   draftRef.current = draft;
   const [workspaceState, setWorkspaceState] = useState<"idle" | "saving" | "saved" | "submitted" | "conflict" | "auth_required" | "error">("idle");
@@ -2346,14 +2367,19 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   const [caseReportOpen, setCaseReportOpen] = useState(false);
   const [caseReportLoading, setCaseReportLoading] = useState(false);
   const [caseReportStatus, setCaseReportStatus] = useState("");
+  const [caseMarkdownOpen, setCaseMarkdownOpen] = useState(false);
+  const [canonicalCandidate, setCanonicalCandidate] = useState<{ draft: StudioDraft; fingerprint: string; status: "amended"|"final"; language: "en"|"ru" } | null>(null);
   const aiAbortRef = useRef<AbortController | null>(null);
   const graphDeckRef = useRef<HTMLElement | null>(null);
   const graphViewportRef = useRef<HTMLDivElement | null>(null);
   const derivationsSettled = studioDerivations.source === draft;
   const promptDerivationsSettled = derivationsSettled && derivedPrompt === prompt;
-  const promptPlan = useMemo<StudioPromptPlan>(() => derivationsSettled
+  const canonicalPrompt = prompt.includes("GENESIS-JURIS-CANONICAL-V1");
+  const promptPlan = useMemo<StudioPromptPlan>(() => canonicalPrompt
+    ? { instruction: "", operations: [], diagnostics: [], canApply: false, contextOnly: false, planner: "deterministic" }
+    : derivationsSettled
     ? planStudioPromptIteration(draft, { instruction: derivedPrompt, locale, nodeLabels: text.nodeTypes, selectedNodeId })
-    : { instruction: "", operations: [], diagnostics: [], canApply: false, contextOnly: false, planner: "deterministic" }, [derivationsSettled, derivedPrompt, draft, locale, selectedNodeId, text.nodeTypes]);
+    : { instruction: "", operations: [], diagnostics: [], canApply: false, contextOnly: false, planner: "deterministic" }, [canonicalPrompt, derivationsSettled, derivedPrompt, draft, locale, selectedNodeId, text.nodeTypes]);
   const draftBytes = studioDerivations.bytes;
   const draftWithinEnvelope = draftBytes <= STUDIO_DRAFT_SERIALIZED_LIMIT;
   const aiBaseFingerprint = studioDerivations.aiBaseFingerprint;
@@ -2402,7 +2428,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   const selectedRevision = timeline.revisions.find((revision) => revision.id === selectedRevisionId) ?? timeline.revisions.at(-1) ?? null;
   const selectedDiff = selectedRevision ? diffStudioSnapshots(selectedRevision.before, selectedRevision.after) : null;
   const restoreDiff = selectedRevision ? diffDraftToRevision(draft, selectedRevision) : null;
-  const userLocalFallback = (aiEntitlement !== "ready" && aiEntitlement !== "loading") || aiState === "error";
+  const userLocalFallback = !canonicalPrompt && ((aiEntitlement !== "ready" && aiEntitlement !== "loading") || aiState === "error");
 
   useEffect(() => () => aiAbortRef.current?.abort(), []);
 
@@ -2475,39 +2501,31 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     return () => document.removeEventListener("keydown", timelineShortcut);
   }, [redoDraft, undoDraft]);
 
-  function localizedAIError(code: unknown, fallback: unknown) {
-    const key = typeof code === "string" ? code : "";
-    if (key.startsWith("provider_")) {
-      if (locale === "en" && typeof fallback === "string") return fallback;
-      return "OpenAI API отклонил запрос. Проверьте ключ, доступ к модели, биллинг и лимиты проекта.";
-    }
-    const messages: Record<string, [string, string]> = {
-      ai_context_too_large: ["AI analysis accepts up to 128 KB. Shorten long details or analyse a smaller branch.", "AI-анализ принимает не более 128 КБ. Сократите длинные описания или анализируйте меньшую ветвь."],
-      stale_context: ["The graph changed before analysis began. Run analysis again.", "Схема изменилась до начала анализа. Запустите анализ снова."],
-      burst_rate_limited: ["Too many AI requests. Wait one minute or use the local builder.", "Слишком много AI-запросов. Подождите минуту или используйте локальный конструктор."],
-      rate_limited: ["Your AI planning limit is reached. Try later or use the local builder.", "Ваш лимит AI-планирования исчерпан. Попробуйте позже или используйте локальный конструктор."],
-      tenant_budget_reached: ["The daily AI pilot budget is reached. The local builder remains available.", "Дневной бюджет AI-пилота исчерпан. Локальный конструктор остаётся доступен."],
-      tenant_capacity_reached: ["AI is processing the maximum number of plans. Try again shortly.", "AI обрабатывает максимальное число планов. Повторите попытку немного позже."],
-      tenant_capacity_unavailable: ["AI capacity control is temporarily unavailable. No changes were made.", "Контроль AI-мощности временно недоступен. Изменения не внесены."],
-      not_configured: ["AI planning is not configured on this deployment. Use the local builder.", "AI-планирование ещё не настроено в этой версии. Используйте локальный конструктор."],
-      refused: ["The source could not be converted into a safe graph plan.", "Источник не удалось преобразовать в безопасный план схемы."],
-      invalid_output: ["AI returned a plan that did not pass validation. Analyse again.", "AI вернул план, который не прошёл проверку. Запустите анализ снова."],
-      incomplete: ["AI did not finish the plan. Analyse again.", "AI не завершил план. Запустите анализ снова."],
-    };
-    const translated = messages[key];
-    if (translated) return translated[locale === "en" ? 0 : 1];
-    if (locale === "en" && typeof fallback === "string") return fallback;
-    return locale === "en" ? "AI planning is unavailable." : "AI-планирование недоступно.";
-  }
-
   async function analysePromptWithAI() {
     const instruction = prompt.trim();
-    if (!instruction || !canDuplicate || aiEntitlement !== "ready" || !derivationsSettled) return;
+    if (!instruction || !canDuplicate || !derivationsSettled) return;
     if (!draftWithinEnvelope) {
       setAIState("error");
       setAIError(locale === "en" ? "This draft is larger than the 900 KB Studio envelope. Shorten node or relation details before AI analysis." : "Черновик превышает лимит Studio 900 КБ. Сократите описания узлов или связей перед AI-анализом.");
       return;
     }
+    if (canonicalPrompt) {
+      setAIState("analysing");
+      setAIError("");
+      setCanonicalCandidate(null);
+      try {
+        const { parseCaseMarkdown } = await import("./case-markdown");
+        const candidate = await parseCaseMarkdown(instruction);
+        if (!candidate) throw new Error();
+        setCanonicalCandidate(candidate);
+        setAIState("idle");
+      } catch {
+        setAIState("error");
+        setAIError(locale === "en" ? "The canonical Markdown is incomplete or its fingerprint does not match." : "Канонический Markdown неполон либо его отпечаток не совпадает.");
+      }
+      return;
+    }
+    if (aiEntitlement !== "ready") return;
     aiAbortRef.current?.abort();
     const controller = new AbortController();
     aiAbortRef.current = controller;
@@ -2526,7 +2544,10 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       const payload: unknown = await response.json().catch(() => null);
       if (response.status === 401 || (response.status === 403 && isRecord(payload) && payload.code === "profile_required")) throw new Error(locale === "en" ? "AI access requires a signed-in, registered professional profile. Use the access action above without closing this tab." : "Для AI нужен вход и зарегистрированный профессиональный профиль. Используйте кнопку доступа выше, не закрывая эту вкладку.");
       if (!isRecord(payload)) throw new Error(locale === "en" ? "AI planning returned an unreadable response." : "AI-планировщик вернул нечитаемый ответ.");
-      if (!response.ok) throw new Error(localizedAIError(payload.code, payload.error));
+      if (!response.ok) {
+        const { localizedStudioAIError } = await import("./studio-ai-client-error");
+        throw new Error(localizedStudioAIError(locale, payload.code, payload.error));
+      }
       const plan = returnedAIStudioPlan(payload.plan, instruction);
       if (!plan || payload.baseFingerprint !== baseFingerprint || requestKey !== aiInputKeyRef.current) throw new Error(locale === "en" ? "The AI plan no longer matches this graph." : "AI-план больше не соответствует этой схеме.");
       setAIResult({ key: requestKey, baseFingerprint, plan, model: typeof payload.model === "string" ? payload.model : null, requestId: typeof payload.requestId === "string" ? payload.requestId : null });
@@ -2924,6 +2945,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     <button className="secondary-cta" onClick={requestFeedback}><Icon name="file"/>{text.feedback}</button>
     <button className="secondary-cta" onClick={() => importRef.current?.click()} disabled={!canDuplicate}><Icon name="upload"/>{text.importCustom}</button>
     <button className="secondary-cta" onClick={exportDraft} disabled={!canDuplicate}><Icon name="download"/>{text.exportCustom}</button>
+    <Suspense fallback={null}><CaseMarkdownActions locale={locale} loadDisabled={!canDuplicate} exportDisabled={!canDuplicate || !derivationsSettled || !draft.title.trim() || !draft.nodes.length} loaded={(value)=>{setCanonicalCandidate(null);setAIResult(null);setAIState("idle");setPrompt(value);}} opened={()=>{setCaseReportStatus("");setCaseMarkdownOpen(true);}} failed={setCaseReportStatus}/></Suspense>
     <button className="secondary-cta" onClick={saveDraft} disabled={!canDuplicate}><Icon name="save"/>{locale === "en" ? "Save on this device" : "Сохранить на устройстве"}</button>
   </>;
 
@@ -2975,11 +2997,15 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     </section>}
     <section className="prompt-deck page-width" inert={!canDuplicate}>
       <div className="prompt-label"><span>{locale === "en" ? "Describe the case or the change you need" : "Опишите кейс или нужное изменение"}</span>{displayMode === "developer" && <code>AI PLAN · REVIEW · APPLY</code>}</div>
-      <textarea value={prompt} maxLength={8000} placeholder={locale === "en" ? "Describe the situation in ordinary language: the actors, facts, evidence, decisions and possible consequences. You can also ask to enrich the current graph without replacing it." : "Опишите ситуацию обычным языком: участников, факты, доказательства, решения и возможные последствия. Можно попросить дополнить текущую схему без её замены."} onPaste={(event) => { const input=event.currentTarget; const finalLength=input.value.length-(input.selectionEnd-input.selectionStart)+event.clipboardData.getData("text").length; if(finalLength>8000)setPromptLimitNotice(true); }} onChange={(event) => { aiAbortRef.current?.abort(); setAIState("idle"); setAIResult(null); setAIError(""); if(event.target.value.length<8000)setPromptLimitNotice(false); setPrompt(event.target.value); }} aria-label={text.prompt}/>
-      {(displayMode === "developer" || promptLimitNotice) && <div className={`prompt-counter ${promptLimitNotice ? "limit" : ""}`} role={promptLimitNotice ? "alert" : undefined}><span>{prompt.length.toLocaleString()} / 8,000</span>{promptLimitNotice && <b>{locale === "en" ? "The pasted text was longer than the Studio limit. Shorten and de-identify it before analysis." : "Вставленный текст превышал лимит Studio. Сократите и обезличьте его перед анализом."}</b>}</div>}
+      <textarea value={prompt} maxLength={STUDIO_PROMPT_CHARACTER_LIMIT} placeholder={locale === "en" ? "Describe, paste, or load a canonical .md case." : "Опишите, вставьте или загрузите канонический .md кейс."} onPaste={(event) => { const input=event.currentTarget; const finalLength=input.value.length-(input.selectionEnd-input.selectionStart)+event.clipboardData.getData("text").length; if(finalLength>STUDIO_PROMPT_CHARACTER_LIMIT)setPromptLimitNotice(true); }} onChange={(event) => { aiAbortRef.current?.abort(); setAIState("idle"); setAIResult(null); setCanonicalCandidate(null); setAIError(""); if(event.target.value.length<STUDIO_PROMPT_CHARACTER_LIMIT)setPromptLimitNotice(false); setPrompt(event.target.value); }} aria-label={text.prompt}/>
+      {(displayMode === "developer" || promptLimitNotice) && <div className={`prompt-counter ${promptLimitNotice ? "limit" : ""}`} role={promptLimitNotice ? "alert" : undefined}><span>{prompt.length.toLocaleString()} / 64,000 {locale === "en" ? "characters" : "символов"}</span>{promptLimitNotice && <b>{locale === "en" ? "The text exceeds 64,000 characters." : "Текст превышает 64 000 символов."}</b>}</div>}
       <div className="prompt-actions">
-        {activeAIResult
-          ? <button className="generate-button" onClick={() => document.getElementById("ai-plan-review")?.scrollIntoView({ behavior: "smooth", block: "start" })}><Icon name="file" size={24}/><span>{locale === "en" ? "Review the AI proposal below" : "Проверьте AI-предложение ниже"}<small>{locale === "en" ? "Applying is available only after the complete operation list" : "Кнопка применения находится после полного списка операций"}</small></span><Icon name="arrow"/></button>
+        {canonicalCandidate
+          ? <Suspense fallback={null}><CanonicalReadyAction locale={locale} review={() => document.getElementById("canonical-case-review")?.scrollIntoView({behavior:"smooth",block:"start"})}/></Suspense>
+          : activeAIResult
+            ? <button className="generate-button" onClick={() => document.getElementById("ai-plan-review")?.scrollIntoView({ behavior: "smooth", block: "start" })}><Icon name="file" size={24}/><span>{locale === "en" ? "Review the AI proposal below" : "Проверьте AI-предложение ниже"}<small>{locale === "en" ? "Applying is available only after the complete operation list" : "Кнопка применения находится после полного списка операций"}</small></span><Icon name="arrow"/></button>
+          : canonicalPrompt
+            ? <Suspense fallback={null}><CanonicalPromptAction locale={locale} analysing={aiState === "analysing"} disabled={!prompt.trim() || aiState === "analysing" || !canDuplicate || !draftWithinEnvelope || !derivationsSettled} verify={analysePromptWithAI}/></Suspense>
           : aiEntitlement === "ready"
             ? <button className="generate-button" disabled={!prompt.trim() || aiState === "analysing" || !canDuplicate || !draftWithinEnvelope || !derivationsSettled} onClick={analysePromptWithAI}><Icon name="spark" size={24}/><span>{aiState === "analysing" ? (locale === "en" ? "AI is mapping the case…" : "AI строит смысловую схему…") : !derivationsSettled ? (locale === "en" ? "Finishing the latest edit…" : "Завершается последняя правка…") : (locale === "en" ? "Understand with AI" : "Понять и структурировать с AI")}<small>{locale === "en" ? "First create a reviewable proposal; nothing is changed yet" : "Сначала создаётся план для проверки; схема пока не меняется"}</small></span><Icon name="arrow"/></button>
             : aiEntitlement === "anonymous"
@@ -2990,16 +3016,17 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
                   ? <button className="generate-button" disabled><Icon name="spark" size={24}/><span>{locale === "en" ? "AI assistant is awaiting activation" : "AI-ассистент ожидает активации"}<small>{locale === "en" ? "The safe rule-based builder remains available; no data is sent" : "Безопасный локальный конструктор доступен; данные никуда не отправляются"}</small></span><Icon name="arrow"/></button>
                   : <button className="generate-button" disabled><Icon name="spark" size={24}/><span>{aiEntitlement === "loading" ? (locale === "en" ? "Checking AI access…" : "Проверка доступа к AI…") : (locale === "en" ? "AI access status is unavailable" : "Статус AI временно недоступен")}<small>{locale === "en" ? "The local case builder remains available" : "Локальный конструктор кейса остаётся доступен"}</small></span><Icon name="arrow"/></button>}
         {activeAIResult && <button className="rebuild-button" onClick={analysePromptWithAI} disabled={aiState === "analysing"}><Icon name="spark"/>{locale === "en" ? "Analyse again" : "Проанализировать снова"}</button>}
-        {(displayMode === "developer" || userLocalFallback) && <button className="rebuild-button" disabled={!promptDerivationsSettled || !promptPlan.canApply || !canDuplicate} onClick={applyPromptIteration}><Icon name="file"/>{displayMode === "developer" ? (locale === "en" ? "Use exact commands" : "Применить точные команды") : promptPlan.contextOnly ? (locale === "en" ? "Add this text to case context" : "Добавить текст в контекст кейса") : (locale === "en" ? "Apply locally interpreted changes" : "Применить локально распознанные изменения")}</button>}
-        {draft.nodes.length === 0 && (displayMode === "developer" || userLocalFallback) && <button className="rebuild-button" disabled={!prompt.trim() || !canDuplicate} onClick={() => { if (window.confirm(locale === "en" ? "Use the rule-based eight-node fallback instead of AI?" : "Использовать шаблон из восьми узлов вместо AI?")){ clearTransientEditorSelection(); generateDraft(); } }}><Icon name="reset"/>{locale === "en" ? "Quick rule-based template" : "Быстрый шаблон по правилам"}</button>}
+        {!canonicalPrompt && (displayMode === "developer" || userLocalFallback) && <button className="rebuild-button" disabled={!promptDerivationsSettled || !promptPlan.canApply || !canDuplicate} onClick={applyPromptIteration}><Icon name="file"/>{displayMode === "developer" ? (locale === "en" ? "Use exact commands" : "Применить точные команды") : promptPlan.contextOnly ? (locale === "en" ? "Add this text to case context" : "Добавить текст в контекст кейса") : (locale === "en" ? "Apply locally interpreted changes" : "Применить локально распознанные изменения")}</button>}
+        {!canonicalPrompt && draft.nodes.length === 0 && (displayMode === "developer" || userLocalFallback) && <button className="rebuild-button" disabled={!prompt.trim() || !canDuplicate} onClick={() => { if (window.confirm(locale === "en" ? "Use the rule-based eight-node fallback instead of AI?" : "Использовать шаблон из восьми узлов вместо AI?")){ clearTransientEditorSelection(); generateDraft(); } }}><Icon name="reset"/>{locale === "en" ? "Quick rule-based template" : "Быстрый шаблон по правилам"}</button>}
       </div>
-      <p className="ai-privacy-note"><Icon name="alert"/>{locale === "en" ? "AI analysis is explicit: clicking the AI button sends the prompt and current graph to the configured OpenAI API with response storage disabled. API abuse-monitoring logs may still retain content for up to 30 days unless approved retention controls apply. De-identify first; never enter privileged, personal or secret information." : "AI-анализ запускается явно: после нажатия промпт и текущая схема отправляются в настроенный OpenAI API с отключённым хранением ответа. При этом журналы контроля злоупотреблений API могут хранить данные до 30 дней, если для аккаунта не действуют специальные ограничения хранения. Сначала обезличьте данные; не вводите адвокатскую тайну, персональные данные или секреты."}</p>
+      <Suspense fallback={null}><StudioPromptPrivacyNote locale={locale} canonical={canonicalPrompt}/></Suspense>
     </section>
+    {canonicalCandidate && <Suspense fallback={null}><CanonicalMarkdownReview locale={locale} draft={canonicalCandidate.draft} fingerprint={canonicalCandidate.fingerprint} status={canonicalCandidate.status} apply={() => { applyCanonicalMarkdownDraft(canonicalCandidate.draft); setCanonicalCandidate(null); setAIState("idle"); setAIError(""); }}/></Suspense>}
     {displayMode === "user" && userLocalFallback && !activeAIResult && prompt.trim() && promptDerivationsSettled && <section className={`simple-plan-preview page-width ${promptPlan.canApply ? "ready" : "blocked"}`}><header><div><span>{locale === "en" ? "Local fallback · review before applying" : "Локальный резервный режим · проверьте перед применением"}</span><b>{promptPlan.contextOnly ? (locale === "en" ? "This will only add text to the case context; it will not create nodes" : "Будет дополнен только контекст кейса; новые узлы не появятся") : (locale === "en" ? `${promptPlan.operations.length} proposed change${promptPlan.operations.length === 1 ? "" : "s"}` : `Предложено изменений: ${promptPlan.operations.length}`)}</b></div><small>{locale === "en" ? "No information is sent outside the application" : "Информация не отправляется за пределы приложения"}</small></header>{promptPlan.operations.length > 0 && <ol>{promptPlan.operations.map((operation,index)=><li key={`${operation.kind}-${index}`}><span aria-hidden="true">{index+1}</span><p>{describeStudioPromptOperation(operation,locale,simplePlanNodeTitles,{showIds:false,linkEndpoints:reviewLinkEndpoints})}</p></li>)}</ol>}{promptPlan.diagnostics.length > 0 && <ul>{promptPlan.diagnostics.map((diagnostic,index)=><li key={`${diagnostic.level}-${index}`} className={diagnostic.level}>{diagnostic.message}</li>)}</ul>}</section>}
-    {prompt.trim() && aiState === "analysing" && <Suspense fallback={<section className="prompt-ai-status page-width analysing" role="status"><Icon name="spark"/><div><b>{locale === "en" ? "Preparing AI analysis…" : "Подготовка AI-анализа…"}</b></div></section>}><StudioAIProgress locale={locale}/></Suspense>}
+    {prompt.trim() && aiState === "analysing" && <Suspense fallback={<section className="prompt-ai-status prompt-ai-progress page-width analysing" role="status"><Icon name="spark"/><div className="ai-progress-body"><b>{locale === "en" ? "Reading and structuring the case…" : "Кейс анализируется и структурируется…"}</b><progress className="ai-progress-fallback" max={100} value={8}/></div></section>}><StudioAIProgress locale={locale}/></Suspense>}
     {prompt.trim() && aiState === "error" && <section className="prompt-ai-status page-width error" role="alert"><Icon name="alert"/><div><b>{locale === "en" ? "No changes were made" : "Изменения не внесены"}</b><p>{aiError}</p><small>{displayMode === "developer" ? (locale === "en" ? "Retry AI analysis or inspect the exact-command preview below." : "Повторите AI-анализ или проверьте точный командный план ниже.") : (locale === "en" ? "Retry AI analysis or apply a simple described change without AI." : "Повторите AI-анализ или примените простое описанное изменение без AI.")}</small></div></section>}
     {activeAIResult && <Suspense fallback={<section className="prompt-ai-status page-width" role="status"><Icon name="spark"/><div><b>{locale === "en" ? "Preparing the proposed scheme…" : "Подготавливается предлагаемая схема…"}</b></div></section>}><StudioAIReview locale={locale} draft={draft} plan={activeAIResult.plan} nodeTitles={aiNodeTitles} linkEndpoints={reviewLinkEndpoints} nodeLabels={text.nodeTypes} applyEnabled={canDuplicate && aiState !== "analysing"} showTechnicalIds={displayMode === "developer"} onApply={applyActiveAIPlan}/></Suspense>}
-    {displayMode === "developer" && prompt.trim() && <details className="prompt-fallback-preview page-width"><summary>{locale === "en" ? "Exact-command fallback preview" : "План точных команд — резервный режим"}</summary>{promptDerivationsSettled && <section className={`prompt-plan ${promptPlan.canApply ? "ready" : "blocked"}`}><header><div><span>{locale === "en" ? "Rule-based interpretation" : "Интерпретация по правилам"}</span><h2>{promptPlan.contextOnly ? (locale === "en" ? "Context-only turn" : "Только контекст") : (locale === "en" ? `${promptPlan.operations.length} exact operation${promptPlan.operations.length === 1 ? "" : "s"}` : `Точных операций: ${promptPlan.operations.length}`)}</h2></div><b>{promptPlan.canApply ? "READY" : "REVIEW"}</b></header>{promptPlan.operations.length > 0 && <ol>{promptPlan.operations.map((operation, index) => <li key={`${operation.kind}-${index}`}><code>{String(index + 1).padStart(2,"0")}</code><span>{describeStudioPromptOperation(operation, locale)}</span></li>)}</ol>}{promptPlan.diagnostics.length > 0 && <ul>{promptPlan.diagnostics.map((diagnostic, index) => <li key={`${diagnostic.level}-${index}`} className={diagnostic.level}><Icon name={diagnostic.level === "error" ? "alert" : "check"}/>{diagnostic.message}</li>)}</ul>}</section>}</details>}
+    {displayMode === "developer" && !canonicalPrompt && prompt.trim() && <details className="prompt-fallback-preview page-width"><summary>{locale === "en" ? "Exact-command fallback preview" : "План точных команд — резервный режим"}</summary>{promptDerivationsSettled && <section className={`prompt-plan ${promptPlan.canApply ? "ready" : "blocked"}`}><header><div><span>{locale === "en" ? "Rule-based interpretation" : "Интерпретация по правилам"}</span><h2>{promptPlan.contextOnly ? (locale === "en" ? "Context-only turn" : "Только контекст") : (locale === "en" ? `${promptPlan.operations.length} exact operation${promptPlan.operations.length === 1 ? "" : "s"}` : `Точных операций: ${promptPlan.operations.length}`)}</h2></div><b>{promptPlan.canApply ? "READY" : "REVIEW"}</b></header>{promptPlan.operations.length > 0 && <ol>{promptPlan.operations.map((operation, index) => <li key={`${operation.kind}-${index}`}><code>{String(index + 1).padStart(2,"0")}</code><span>{describeStudioPromptOperation(operation, locale)}</span></li>)}</ol>}{promptPlan.diagnostics.length > 0 && <ul>{promptPlan.diagnostics.map((diagnostic, index) => <li key={`${diagnostic.level}-${index}`} className={diagnostic.level}><Icon name={diagnostic.level === "error" ? "alert" : "check"}/>{diagnostic.message}</li>)}</ul>}</section>}</details>}
     {displayMode === "user" && <button type="button" className="studio-settings-toggle page-width" aria-expanded={userSettingsOpen} aria-controls="studio-case-settings" onClick={() => setUserSettingsOpen((current) => !current)}><span><Icon name="file"/><span><b>{locale === "en" ? "Case details, access and economics" : "Детали кейса, доступ и экономика"}</b><small>{locale === "en" ? "Optional classification, visibility, version and tax assumptions" : "Классификация, видимость, версия и налоговые допущения"}</small></span></span><em>{userSettingsOpen ? (locale === "en" ? "Hide" : "Скрыть") : (locale === "en" ? "Open settings" : "Открыть настройки")}</em></button>}
     <div id="studio-case-settings" className={`studio-settings-stack ${displayMode === "developer" || userSettingsOpen ? "open" : ""}`} hidden={displayMode === "user" && !userSettingsOpen}>
     <section className="studio-meta page-width" inert={!canDuplicate}>
@@ -3053,14 +3080,15 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       <section className="graph-deck" ref={graphDeckRef}>
         <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div className="graph-heading-actions"><div>{displayMode === "developer" ? <><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></> : <span className="graph-counts">{draft.nodes.length} {locale === "en" ? "nodes" : "узлов"} · {draft.links.length} {locale === "en" ? "connections" : "связей"}</span>}</div><div className="graph-zoom-controls" aria-label={locale === "en" ? "Graph view controls" : "Управление видом схемы"}><label className="graph-orientation-control"><span>{locale === "en" ? "Flow" : "Поток"}</span><select value={graphOrientation} onChange={(event) => { const orientation = event.target.value as GraphOrientation; setGraphOrientation(orientation); void autoLayoutGraph(orientation); }} aria-label={locale === "en" ? "Graph orientation" : "Ориентация схемы"}><option value="vertical">{locale === "en" ? "Vertical" : "Вертикально"}</option><option value="horizontal">{locale === "en" ? "Horizontal" : "Горизонтально"}</option></select></label><button type="button" disabled={!canDuplicate || draft.nodes.length < 2} onClick={() => void autoLayoutGraph()}>{locale === "en" ? "Auto-layout" : "Авто-раскладка"}</button><button type="button" onClick={fitGraph}>{locale === "en" ? "Fit" : "Вместить"}</button><button type="button" onClick={() => setGraphZoom(1)}>100%</button><button type="button" onClick={centerGraph}>{locale === "en" ? "Center" : "По центру"}</button></div></div></div>
         <div id="graph-connect-status" className="graph-connect-status" role="status" aria-live="polite" tabIndex={-1}><span className={linkSourceId || selectedRuleLinkId || selectedNodeId ? "armed" : ""}/>{relationStatus || (locale === "en" ? "Connect: select OUT then IN. Select a node or relation and press Delete to remove it." : "Связь: выберите ВЫХОД, затем ВХОД. Выделите узел или связь и нажмите Delete для удаления.")}{linkSourceId && <button onClick={() => { setLinkSourceId(null); setRelationStatus(""); }}>{locale === "en" ? "Cancel" : "Отмена"}</button>}</div>
+        <Suspense fallback={null}><GraphMilestones locale={locale} nodes={draft.nodes} select={(nodeId)=>{selectGraphNode(nodeId);requestAnimationFrame(()=>document.getElementById(`studio-node-${nodeId}`)?.focus());}}/></Suspense>
         <div className="graph-viewport" ref={graphViewportRef} aria-label={locale === "en" ? "Resizable graph viewport" : "Изменяемое окно схемы"}>
         <div className={`graph-canvas graph-orientation-${graphOrientation}`} style={{ zoom: graphZoom, width: graphBounds.width, height: graphBounds.height }}>
           <svg className="graph-links" aria-label={locale === "en" ? "Case relationships" : "Связи кейса"}>{draft.links.map((link) => { const from=nodeById.get(link.from); const to=nodeById.get(link.to); if(!from||!to)return null; const geometry=graphLinkGeometry(from,to,graphOrientation); const selected=selectedRuleLinkId===link.id; return <g key={link.id} className={`graph-link ${selected?"selected":""}`} role="button" tabIndex={0} aria-pressed={selected} aria-label={locale === "en" ? `Relation from ${from.title} to ${to.title}. Press Delete to remove.` : `Связь от «${from.title}» к «${to.title}». Нажмите Delete для удаления.`} onClick={() => selectGraphLink(link)} onKeyDown={(event) => { if(event.key==="Enter"||event.key===" "){event.preventDefault();selectGraphLink(link);} }}><title>{from.title} → {to.title}</title><path className="graph-link-hit" d={geometry.path}/><path className="graph-link-visible" d={geometry.path}/><circle cx={geometry.endX} cy={geometry.endY} r="3"/></g>; })}</svg>
           {draft.nodes.length === 0 && <div className="graph-empty-state"><Icon name="spark"/><h3>{locale === "en" ? "Start with a description or one node" : "Начните с описания или первого узла"}</h3><p>{locale === "en" ? "Describe the matter above and choose “Understand with AI”, or add a Trigger from the left palette." : "Опишите ситуацию выше и нажмите «Понять и структурировать с AI» либо добавьте «Триггер» в палитре слева."}</p></div>}
           {draft.nodes.map((node) => <div key={node.id} className={`graph-node-shell ${node.id===selectedNodeId?"selected":""} ${node.id===linkSourceId?"link-source":""}`} style={{left:node.x,top:node.y,"--node-color":typeColors[node.type]} as React.CSSProperties}>
-            <button className="node-port node-port-in" disabled={!canDuplicate} onClick={() => completeLink(node.id)} aria-label={locale === "en" ? `Use ${node.title} as relation destination` : `Использовать ${node.title} как назначение связи`}><span/></button>
+            <button className="node-port node-port-in" style={graphOrientation === "vertical" ? {top:-17,left:"50%",right:"auto",bottom:"auto",transform:"translateX(-50%)"} : undefined} disabled={!canDuplicate} onClick={() => completeLink(node.id)} aria-label={locale === "en" ? `Use ${node.title} as relation destination` : `Использовать ${node.title} как назначение связи`}><span/></button>
             <button id={`studio-node-${node.id}`} className="graph-node" onFocus={() => selectGraphNode(node.id)} onKeyDown={(event) => { if (canDuplicate) nudgeNode(event, node); }} onPointerDown={(event)=>{setSelectedRuleLinkId(null);if(canDuplicate)moveNode(event,node,graphZoom);else selectGraphNode(node.id);}} onPointerMove={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} onPointerUp={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} onPointerCancel={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} aria-label={`${text.nodeTypes[node.type]}: ${node.title}. ${canDuplicate ? (locale === "en" ? "Use arrow keys to reposition; press Delete to remove." : "Используйте стрелки для перемещения; нажмите Delete для удаления.") : (locale === "en" ? "Inspection only." : "Только просмотр.")}`}><span><i/>{text.nodeTypes[node.type]}{displayMode === "developer" && <code>{node.id.split("-").at(-1)}</code>}</span><b>{node.title}</b>{(node.runtime?.budgetCostEur !== undefined || node.runtime?.durationMinutes !== undefined) && <small className="node-runtime-summary">{node.runtime?.budgetCostEur !== undefined ? `€${node.runtime.budgetCostEur.toLocaleString()}` : (displayMode === "developer" ? "€ auto" : locale === "en" ? "cost automatic" : "стоимость автоматически")} · {node.runtime?.durationMinutes !== undefined ? `${node.runtime.durationMinutes} min` : (displayMode === "developer" ? "time auto" : locale === "en" ? "time automatic" : "время автоматически")}</small>}</button>
-            <button className="node-port node-port-out" disabled={!canDuplicate} aria-pressed={node.id===linkSourceId} onClick={() => armLinkSource(node.id)} aria-label={locale === "en" ? `Start relation from ${node.title}` : `Начать связь от ${node.title}`}><span/></button>
+            <button className="node-port node-port-out" style={graphOrientation === "vertical" ? {top:"auto",left:"50%",right:"auto",bottom:-17,transform:"translateX(-50%)"} : undefined} disabled={!canDuplicate} aria-pressed={node.id===linkSourceId} onClick={() => armLinkSource(node.id)} aria-label={locale === "en" ? `Start relation from ${node.title}` : `Начать связь от ${node.title}`}><span/></button>
           </div>)}
         </div></div>
         <div className="graph-resize-hint"><span aria-hidden="true">↕</span>{locale === "en" ? "Drag the lower edge to resize the graph window" : "Потяните нижний край, чтобы изменить высоту окна схемы"}</div>
@@ -3113,6 +3141,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
         setCaseReportStatus(locale === "en" ? "PDF downloaded." : "PDF скачан.");
       }}
     /></Suspense>}
+    {caseMarkdownOpen && <Suspense fallback={null}><CaseMarkdownDialog locale={locale} draft={draft} close={() => setCaseMarkdownOpen(false)} completed={() => setCaseReportStatus(locale === "en" ? "Markdown downloaded." : "Markdown скачан.")}/></Suspense>}
   </main>;
 }
 

@@ -374,7 +374,7 @@ function appendPromptSubmissionHistory(draft: StudioDraft, plan: StudioPromptPla
   if (plan.planner !== "ai" || plan.instruction.length <= 2_000) {
     return appendStudioHistory(draft, { role: "author", source: "prompt", action: "prompt_submitted", message: plan.instruction }, createdAt);
   }
-  // AI source prompts can reach 8k. Preserve the complete accepted source in
+  // AI source prompts can reach 64k. Preserve the complete accepted source in
   // bounded, non-public history records instead of silently retaining only the
   // first 2k or the model's shorter summary.
   const chunkSize = 1_900;
