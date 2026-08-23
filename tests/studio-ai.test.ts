@@ -249,6 +249,7 @@ test("AI route keeps the key server-side and enforces auth, same-origin, limits 
   const ui = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   const progress = readFileSync(new URL("../app/StudioAIProgress.tsx", import.meta.url), "utf8");
   const review = readFileSync(new URL("../app/StudioAIReview.tsx", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
   const me = readFileSync(new URL("../app/api/me/route.ts", import.meta.url), "utf8");
   const localAuth = readFileSync(new URL("../app/local-auth.ts", import.meta.url), "utf8");
   assert.match(route, /isSameOriginCredentialMutation/);
@@ -282,6 +283,7 @@ test("AI route keeps the key server-side and enforces auth, same-origin, limits 
   assert.match(progress, /complex case can take several minutes/);
   assert.match(review, /Apply all .*reviewed changes/);
   assert.match(review, /displayed in full below/);
+  assert.match(styles, /\.ai-plan-notes ul li\{display:block;/, "assumptions and warnings must use the full review width rather than the diagnostic icon column");
   assert.match(me, /studioAIAvailable/);
   assert.match(ui, /not_configured/);
   assert.match(ui, /useState<"user" \| "developer">\("user"\)/);
