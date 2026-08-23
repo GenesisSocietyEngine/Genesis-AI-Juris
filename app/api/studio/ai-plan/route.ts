@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { users } from "../../../../db/schema";
 import { getChatGPTUser } from "../../../chatgpt-auth";
-import { consumeAuthRateLimit, writeAuthAudit } from "../../../local-auth";
+import { checkSuccessfulAuthEventLimit, consumeAuthRateLimit, writeAuthAudit } from "../../../local-auth";
 import { isSameOriginCredentialMutation, readJsonObject } from "../../../request-security";
 import { acquireStudioAILease, releaseStudioAILease } from "../../../studio-ai-capacity";
 import { STUDIO_AI_PROVIDER_CONTEXT_LIMIT, studioAIProviderContextBytes } from "../../../studio-ai-provider-context";
@@ -53,8 +53,9 @@ export async function POST(request: Request) {
     waitUntil(writeAuthAudit({ eventType: "studio_ai_plan", emailSubjectHash: burstLimit.emailSubjectHash, networkSubjectHash: burstLimit.networkSubjectHash, success: false, reason: "burst_rate_limited" }).catch(() => undefined));
     return privateJson({ error: "AI is receiving too many requests. Wait one minute or use the local builder.", code: "burst_rate_limited" }, 429, { "Retry-After": "60" });
   }
-  const limit = await consumeAuthRateLimit(request, "studio-ai-plan", identity.email.toLowerCase(), { emailLimit: tierLimit, networkLimit: 1_000, windowSeconds: 60 * 60 });
-  if (!limit.allowed) {
+  const limit = { emailSubjectHash: burstLimit.emailSubjectHash, networkSubjectHash: burstLimit.networkSubjectHash };
+  const successfulUsage = await checkSuccessfulAuthEventLimit("studio_ai_plan", limit.emailSubjectHash, { limit: tierLimit, windowSeconds: 60 * 60 });
+  if (!successfulUsage.allowed) {
     waitUntil(writeAuthAudit({ eventType: "studio_ai_plan", emailSubjectHash: limit.emailSubjectHash, networkSubjectHash: limit.networkSubjectHash, success: false, reason: "rate_limited" }).catch(() => undefined));
     return privateJson({ error: "AI planning limit reached. Use the local builder or try later.", code: "rate_limited" }, 429, { "Retry-After": "3600" });
   }

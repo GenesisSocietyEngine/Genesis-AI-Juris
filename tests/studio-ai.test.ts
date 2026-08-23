@@ -221,12 +221,16 @@ test("AI route keeps the key server-side and enforces auth, same-origin, limits 
   const ui = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   const review = readFileSync(new URL("../app/StudioAIReview.tsx", import.meta.url), "utf8");
   const me = readFileSync(new URL("../app/api/me/route.ts", import.meta.url), "utf8");
+  const localAuth = readFileSync(new URL("../app/local-auth.ts", import.meta.url), "utf8");
   assert.match(route, /isSameOriginCredentialMutation/);
   assert.match(route, /getChatGPTUser/);
   assert.match(route, /profile_required/);
   assert.match(route, /consumeAuthRateLimit/);
   assert.match(route, /studio-ai-tenant-daily/);
   assert.match(route, /studio-ai-plan-burst/);
+  assert.match(route, /checkSuccessfulAuthEventLimit\("studio_ai_plan"/);
+  assert.doesNotMatch(route, /consumeAuthRateLimit\(request,\s*"studio-ai-plan",/);
+  assert.match(localAuth, /eq\(authAuditEvents\.success, true\)/);
   assert.match(route, /GENESIS_AI_DAILY_REQUEST_LIMIT/);
   assert.match(route, /STUDIO_CASE_BODY_LIMIT/);
   assert.match(route, /baseFingerprint/);
