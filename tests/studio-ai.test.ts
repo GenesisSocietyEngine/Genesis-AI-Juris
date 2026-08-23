@@ -200,13 +200,14 @@ test("AI plan materialization rejects unknown semantic references atomically", (
 });
 
 test("AI response schema mirrors the materializer text and reference bounds", () => {
-  const schema = STUDIO_AI_PLAN_SCHEMA as unknown as { properties: Record<string, any> };
+  type SchemaNode = { maxLength?: number; maximum?: number; pattern?: string; properties?: Record<string, SchemaNode>; items?: SchemaNode };
+  const schema = STUDIO_AI_PLAN_SCHEMA as unknown as { properties: Record<string, SchemaNode>; required: readonly string[] };
   assert.equal(schema.properties.summary.maxLength, 800);
-  assert.equal(schema.properties.case.properties.context.maxLength, 4000);
-  assert.equal(schema.properties.nodes.items.properties.detail.maxLength, 4000);
-  assert.equal(schema.properties.nodes.items.properties.ref.pattern, "^[A-Za-z][A-Za-z0-9_-]{0,79}$");
-  assert.equal(schema.properties.links.items.properties.fromRef.maxLength, 80);
-  assert.equal(schema.properties.economics.properties.loanToValueBps.maximum, 10000);
+  assert.equal(schema.properties.case.properties?.context.maxLength, 4000);
+  assert.equal(schema.properties.nodes.items?.properties?.detail.maxLength, 4000);
+  assert.equal(schema.properties.nodes.items?.properties?.ref.pattern, "^[A-Za-z][A-Za-z0-9_-]{0,79}$");
+  assert.equal(schema.properties.links.items?.properties?.fromRef.maxLength, 80);
+  assert.equal(schema.properties.economics.properties?.loanToValueBps.maximum, 10000);
   assert.ok((STUDIO_AI_PLAN_SCHEMA.required as readonly string[]).includes("economics"));
 });
 

@@ -89,6 +89,7 @@ const CaseReportDialog = lazy(() => import("./CaseReportDialog"));
 const CaseMarkdownDialog = lazy(() => import("./CaseMarkdownDialog"));
 const CaseMarkdownActions = lazy(() => import("./CaseMarkdownActions"));
 const CanonicalMarkdownReview = lazy(() => import("./CanonicalMarkdownReview"));
+const StudioGuidedDemo = lazy(() => import("./StudioGuidedDemo"));
 const CanonicalPromptAction = lazy(() => import("./StudioPromptAuxiliary").then((module) => ({default:module.CanonicalPromptAction})));
 const CanonicalReadyAction = lazy(() => import("./StudioPromptAuxiliary").then((module) => ({default:module.CanonicalReadyAction})));
 const StudioPromptPrivacyNote = lazy(() => import("./StudioPromptAuxiliary").then((module) => ({default:module.StudioPromptPrivacyNote})));
@@ -2329,8 +2330,6 @@ function computeStudioDerivations(source: StudioDraft): StudioDerivations {
 }
 
 function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, generateDraft, applyPromptIteration, applyReviewedAIPlan, applyCanonicalMarkdownDraft, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadExample, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, aiEntitlement }: StudioViewProps) {
-  const draftRef = useRef(draft);
-  draftRef.current = draft;
   const [workspaceState, setWorkspaceState] = useState<"idle" | "saving" | "saved" | "submitted" | "conflict" | "auth_required" | "error">("idle");
   const [linkSourceId, setLinkSourceId] = useState<string | null>(null);
   const [relationStatus, setRelationStatus] = useState("");
@@ -2457,7 +2456,6 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
         if (!cancelled) setDerivationError(true);
       }
     };
-    setDerivationError(false);
     const debounceHandle = window.setTimeout(() => {
       if ("requestIdleCallback" in window) {
         idleHandle = window.requestIdleCallback(derive, { timeout: 700 });
@@ -2598,7 +2596,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
 
   function fitGraph() {
     const viewport = graphViewportRef.current;
-    const bounds = graphBoundsForNodes(draftRef.current.nodes);
+    const bounds = graphBoundsForNodes(draft.nodes);
     const width = viewport?.clientWidth ?? graphDeckRef.current?.clientWidth ?? 1_200;
     const height = viewport?.clientHeight ?? 570;
     const scale = Math.max(0.55, Math.min(1, (width - 28) / bounds.width, (height - 28) / bounds.height));
@@ -2625,9 +2623,9 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   }
 
   async function autoLayoutGraph(orientation: GraphOrientation = graphOrientation) {
-    if (!canDuplicate || draftRef.current.nodes.length < 2) { fitGraph(); return; }
+    if (!canDuplicate || draft.nodes.length < 2) { fitGraph(); return; }
     const { layoutStudioNodes } = await import("./studio-layout");
-    const before = draftRef.current;
+    const before = draft;
     const nodes = layoutStudioNodes(before.nodes, before.links, orientation);
     const changed = nodes.some((node, index) => node.x !== before.nodes[index]?.x || node.y !== before.nodes[index]?.y);
     if (changed) {
@@ -2968,7 +2966,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
           {displayMode === "developer" ? extraStudioActions : <details className="studio-more-actions"><summary><Icon name="plus"/>{locale === "en" ? "More actions" : "Другие действия"}</summary><div>{extraStudioActions}</div></details>}
           <input ref={importRef} className="visually-hidden" type="file" accept=".json,application/json" onChange={(event) => { const file=event.target.files?.[0]; if(file){ clearTransientEditorSelection(); importDraft(file); } event.target.value=""; }}/>
         </div>
-        {submitBlocker && <p id="studio-submit-blocker" className="studio-submit-blocker"><Icon name="alert"/><span>{submitBlocker}</span>{derivationError && <button type="button" onClick={() => setDerivationAttempt((attempt) => attempt + 1)}>{locale === "en" ? "Retry check" : "Повторить проверку"}</button>}{isPrivate && submitBlocker !== firstSubmissionWarning && <button type="button" onClick={() => setUserSettingsOpen(true)}>{locale === "en" ? "Change visibility" : "Изменить видимость"}</button>}{firstSubmissionWarning && submitBlocker === firstSubmissionWarning && <button type="button" onClick={() => document.getElementById("studio-checks")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{locale === "en" ? "Review issue" : "Перейти к замечанию"}</button>}</p>}
+        {submitBlocker && <p id="studio-submit-blocker" className="studio-submit-blocker"><Icon name="alert"/><span>{submitBlocker}</span>{derivationError && <button type="button" onClick={() => { setDerivationError(false); setDerivationAttempt((attempt) => attempt + 1); }}>{locale === "en" ? "Retry check" : "Повторить проверку"}</button>}{isPrivate && submitBlocker !== firstSubmissionWarning && <button type="button" onClick={() => setUserSettingsOpen(true)}>{locale === "en" ? "Change visibility" : "Изменить видимость"}</button>}{firstSubmissionWarning && submitBlocker === firstSubmissionWarning && <button type="button" onClick={() => document.getElementById("studio-checks")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{locale === "en" ? "Review issue" : "Перейти к замечанию"}</button>}</p>}
         {savedFlash && <div className="save-toast"><Icon name="check"/>{text.saved}</div>}
         {caseReportStatus && <div className="save-toast report-toast" role="status"><Icon name="check"/>{caseReportStatus}</div>}
         {visibleWorkspaceState !== "idle" && <div className={`workspace-toast ${visibleWorkspaceState}`} role="status">{visibleWorkspaceState === "saving" ? (locale === "en" ? "Saving the current draft and visibility…" : "Сохраняются текущий черновик и режим видимости…") : visibleWorkspaceState === "auth_required" ? (locale === "en" ? "Sign-in opened in another tab. Complete it, return here and save again." : "Вход открыт в новой вкладке. Завершите его, вернитесь сюда и повторите сохранение.") : visibleWorkspaceState === "saved" ? (locale === "en" ? "Workspace draft and visibility saved." : "Черновик и режим видимости сохранены в workspace.") : visibleWorkspaceState === "submitted" ? (locale === "en" ? "Submitted to the expert review queue." : "Отправлено в очередь экспертной рецензии.") : visibleWorkspaceState === "conflict" ? (locale === "en" ? "A newer workspace version exists. Reopen the case before saving." : "В workspace уже есть более новая версия. Переоткройте кейс перед сохранением.") : !canDuplicate ? (locale === "en" ? "Inspection-only access: save, export and copy are disabled." : "Доступ только для просмотра: сохранение, экспорт и копирование отключены.") : !draftWithinEnvelope ? (locale === "en" ? "The draft exceeds the 900 KB Studio envelope. Shorten node or relation details." : "Черновик превышает лимит Studio 900 КБ. Сократите описания узлов или связей.") : (locale === "en" ? "The workspace change could not be saved. Check access, identity and case status." : "Не удалось сохранить изменение workspace. Проверьте доступ, идентификатор и статус кейса.")}</div>}
@@ -3673,8 +3671,9 @@ function HelpView({ locale, openCommunity, openStudio }: { locale: Locale; openC
     <section className="help-hero"><span>QUICK HELP</span><h1>{locale === "en" ? "How GENESIS: JURIS works" : "Как работает GENESIS: JURIS"}</h1><p>{locale === "en" ? "A practical legal-simulation system: read the evolving matter, make consequential decisions, learn from the debrief and help practitioners improve the next version." : "Практическая система юридических симуляций: изучайте развивающееся дело, принимайте значимые решения, анализируйте результат и помогайте улучшать следующую версию."}</p></section>
     <section className="help-steps">{steps.map(([title, body], index) => <article key={title}><span>{String(index + 1).padStart(2, "0")}</span><h2>{title}</h2><p>{body}</p></article>)}</section>
     <section className="help-video-guides" aria-labelledby="help-video-guides-title">
-      <header><span>GUIDED DEMOS</span><h2 id="help-video-guides-title">{locale === "en" ? "Create, refine, then play" : "Создайте, доработайте и пройдите"}</h2><p>{locale === "en" ? "These captioned walkthroughs cover the stable visual editor, exact-command fallback and player. The current AI-first flow is explained in the open guide below." : "Ролики с субтитрами показывают стабильный визуальный редактор, резервный режим точных команд и плеер. Актуальный AI-first процесс описан в открытом руководстве ниже."}</p></header>
+      <header><span>GUIDED DEMOS</span><h2 id="help-video-guides-title">{locale === "en" ? "Create, refine, then play" : "Создайте, доработайте и пройдите"}</h2><p>{locale === "en" ? "Start with the complete two-minute AI-first demonstration, then use the shorter clips for a closer look at the graph editor and player." : "Начните с полной двухминутной AI-first демонстрации, затем используйте короткие ролики для детального знакомства с редактором графа и плеером."}</p></header>
       <div className="help-video-grid">
+        <Suspense fallback={null}><StudioGuidedDemo locale={locale}/></Suspense>
         <article className="help-video-card">
           <video controls preload="metadata" playsInline poster="/help/case-studio-iterative-editing-poster.jpg" aria-describedby="editor-video-description editor-video-transcript">
             <source src="/help/case-studio-iterative-editing.mp4" type="video/mp4"/>

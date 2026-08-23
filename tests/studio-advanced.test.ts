@@ -292,17 +292,26 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(css, /\.studio-submit-blocker\{/);
 });
 
-test("Help ships two local accessible walkthroughs with bilingual monotonic captions", () => {
+test("Help ships a complete expert demo and two local accessible walkthroughs with bilingual monotonic captions", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
-  assert.equal((appSource.match(/<video controls preload="metadata" playsInline/g) ?? []).length, 2);
-  assert.equal((appSource.match(/kind="captions"/g) ?? []).length, 4);
-  assert.doesNotMatch(appSource, /<video[^>]+autoPlay/);
-  assert.match(appSource, /aria-describedby="editor-video-description editor-video-transcript"/);
-  assert.match(appSource, /aria-describedby="play-video-description play-video-transcript"/);
-  assert.match(appSource, /Your browser does not support HTML video/);
-  assert.match(appSource, /Ваш браузер не поддерживает HTML-видео/);
+  const guidedSource = readFileSync(new URL("../app/StudioGuidedDemo.tsx", import.meta.url), "utf8");
+  const helpSource = `${appSource}\n${guidedSource}`;
+  const directPage = readFileSync(new URL("../app/help/studio-demo/page.tsx", import.meta.url), "utf8");
+  assert.equal((helpSource.match(/<video controls preload="metadata" playsInline/g) ?? []).length, 3);
+  assert.equal((helpSource.match(/kind="captions"/g) ?? []).length, 6);
+  assert.doesNotMatch(helpSource, /<video[^>]+autoPlay/);
+  assert.match(helpSource, /aria-describedby="guided-video-description guided-video-transcript"/);
+  assert.match(helpSource, /aria-describedby="editor-video-description editor-video-transcript"/);
+  assert.match(helpSource, /aria-describedby="play-video-description play-video-transcript"/);
+  assert.match(helpSource, /href="\/help\/studio-demo"/);
+  assert.match(directPage, /studio-ai-guided-demo\.mp4/);
+  assert.match(directPage, /English and Russian captions/);
+  assert.match(helpSource, /Your browser does not support HTML video/);
+  assert.match(helpSource, /Ваш браузер не поддерживает HTML-видео/);
 
   const assets = [
+    "studio-ai-guided-demo.mp4",
+    "studio-ai-guided-demo-poster.jpg",
     "case-studio-iterative-editing.mp4",
     "case-studio-iterative-editing-poster.jpg",
     "play-your-studio-case.mp4",
@@ -311,6 +320,8 @@ test("Help ships two local accessible walkthroughs with bilingual monotonic capt
   for (const name of assets) assert.ok(statSync(new URL(`../public/help/${name}`, import.meta.url)).size > 10_000, `${name} should be a non-empty local asset`);
 
   const captionFiles = [
+    "studio-ai-guided-demo.en.vtt",
+    "studio-ai-guided-demo.ru.vtt",
     "case-studio-iterative-editing.en.vtt",
     "case-studio-iterative-editing.ru.vtt",
     "play-your-studio-case.en.vtt",
@@ -319,7 +330,7 @@ test("Help ships two local accessible walkthroughs with bilingual monotonic capt
   for (const name of captionFiles) {
     const vtt = readFileSync(new URL(`../public/help/${name}`, import.meta.url), "utf8");
     assert.ok(vtt.startsWith("WEBVTT\n"));
-    const starts = [...vtt.matchAll(/^(\d{2}):(\d{2})\.(\d{3}) -->/gm)].map((match) => Number(match[1]) * 60_000 + Number(match[2]) * 1_000 + Number(match[3]));
+    const starts = [...vtt.matchAll(/^(?:(\d{2}):)?(\d{2}):(\d{2})\.(\d{3}) -->/gm)].map((match) => Number(match[1] ?? 0) * 3_600_000 + Number(match[2]) * 60_000 + Number(match[3]) * 1_000 + Number(match[4]));
     assert.ok(starts.length >= 5, `${name} should contain a useful caption sequence`);
     assert.deepEqual(starts, [...starts].sort((a, b) => a - b), `${name} cues should be monotonic`);
   }

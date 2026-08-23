@@ -14,10 +14,8 @@ export default function CaseMarkdownDialog({locale,draft,close,completed}:{local
 
   useEffect(()=>{
     let cancelled=false;
-    setMarkdown("");
-    setError("");
     void buildCaseMarkdown(draft,{status,language}).then((result)=>{
-      if(!cancelled){setMarkdown(result.markdown);setFingerprint(result.fingerprint);}
+      if(!cancelled){setMarkdown(result.markdown);setFingerprint(result.fingerprint);setError("");}
     }).catch(()=>{if(!cancelled)setError(locale==="en"?"The canonical Markdown could not be generated.":"Не удалось создать канонический Markdown.");});
     return()=>{cancelled=true;};
   },[draft,language,locale,status]);
