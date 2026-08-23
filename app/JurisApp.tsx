@@ -2331,6 +2331,8 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     caseFingerprint: "",
     compilation: { scenario: null, issues: [], warnings: [] },
   });
+  const [derivationAttempt, setDerivationAttempt] = useState(0);
+  const [derivationError, setDerivationError] = useState(false);
   const [derivedPrompt, setDerivedPrompt] = useState(prompt);
   const [relationPage, setRelationPage] = useState(0);
   const [relationNodeQuery, setRelationNodeQuery] = useState("");
@@ -2412,24 +2414,36 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   useEffect(() => {
     if (studioDerivations.source === draft) return;
     let idleHandle: number | null = null;
-    let fallbackHandle: number | null = null;
+    let watchdogHandle: number | null = null;
     let cancelled = false;
+    let finished = false;
     const derive = () => {
-      if (cancelled) return;
-      const next = computeStudioDerivations(draft);
-      if (!cancelled) setStudioDerivations(next);
+      if (cancelled || finished) return;
+      finished = true;
+      try {
+        const next = computeStudioDerivations(draft);
+        if (!cancelled) {
+          setStudioDerivations(next);
+          setDerivationError(false);
+        }
+      } catch {
+        if (!cancelled) setDerivationError(true);
+      }
     };
+    setDerivationError(false);
     const debounceHandle = window.setTimeout(() => {
-      if ("requestIdleCallback" in window) idleHandle = window.requestIdleCallback(derive, { timeout: 900 });
-      else fallbackHandle = globalThis.setTimeout(derive, 0) as unknown as number;
-    }, 180);
+      if ("requestIdleCallback" in window) {
+        idleHandle = window.requestIdleCallback(derive, { timeout: 700 });
+        watchdogHandle = window.setTimeout(derive, 1_000);
+      } else watchdogHandle = globalThis.setTimeout(derive, 0) as unknown as number;
+    }, 120);
     return () => {
       cancelled = true;
       window.clearTimeout(debounceHandle);
       if (idleHandle !== null) window.cancelIdleCallback(idleHandle);
-      if (fallbackHandle !== null) window.clearTimeout(fallbackHandle);
+      if (watchdogHandle !== null) window.clearTimeout(watchdogHandle);
     };
-  }, [draft, studioDerivations.source]);
+  }, [derivationAttempt, draft]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDerivedPrompt(prompt), 180);
@@ -2582,12 +2596,12 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     const changed = nodes.some((node, index) => node.x !== before.nodes[index]?.x || node.y !== before.nodes[index]?.y);
     if (changed) {
       setDraft({ ...before, nodes });
-      recordVisualEdit("node_moved", locale === "en" ? `Visual edit: automatically arranged connected graph components into separate non-overlapping topology lanes (${orientation}).` : `Визуальная правка: связанные компоненты схемы автоматически разложены по отдельным неперекрывающимся топологическим полосам (${orientation === "vertical" ? "сверху вниз" : "слева направо"}).`, before);
+      recordVisualEdit("node_moved", locale === "en" ? `Visual edit: applied ${orientation} auto-layout.` : `Визуальная правка: авто-раскладка ${orientation === "vertical" ? "сверху вниз" : "слева направо"}.`, before);
     }
     const viewportWidth = graphViewportRef.current?.clientWidth ?? graphDeckRef.current?.clientWidth ?? 900;
     setGraphZoom(Math.max(0.72, Math.min(1, viewportWidth / 900)));
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => graphViewportRef.current?.scrollTo({ left: 0, top: 0, behavior: "auto" })));
-    if (changed) setRelationStatus(locale === "en" ? `${orientation === "vertical" ? "Top-to-bottom" : "Left-to-right"} graph arranged · use Fit for an overview.` : `Схема разложена ${orientation === "vertical" ? "сверху вниз" : "слева направо"} · «Вместить» покажет обзор.`);
+    if (changed) setRelationStatus(locale === "en" ? `${orientation === "vertical" ? "Vertical" : "Horizontal"} layout applied.` : `Применена ${orientation === "vertical" ? "вертикальная" : "горизонтальная"} раскладка.`);
   }
 
   function clearTransientEditorSelection() {
@@ -2881,7 +2895,9 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   const submitBlocker = !canDuplicate
     ? (locale === "en" ? "This protected case is available for inspection only." : "Этот защищённый кейс доступен только для просмотра.")
     : !derivationsSettled
-      ? (locale === "en" ? "Wait while Studio finishes checking the latest edit." : "Подождите, пока Студия завершит проверку последней правки.")
+      ? derivationError
+        ? (locale === "en" ? "Studio could not check the latest edit." : "Студии не удалось проверить последнюю правку.")
+        : (locale === "en" ? "Wait while Studio finishes checking the latest edit." : "Подождите, пока Студия завершит проверку последней правки.")
       : !draftWithinEnvelope
         ? (locale === "en" ? "Shorten the case to the 900 KB Studio limit." : "Сократите кейс до лимита Studio 900 КБ.")
         : isPrivate
@@ -2915,7 +2931,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
           {displayMode === "developer" ? extraStudioActions : <details className="studio-more-actions"><summary><Icon name="plus"/>{locale === "en" ? "More actions" : "Другие действия"}</summary><div>{extraStudioActions}</div></details>}
           <input ref={importRef} className="visually-hidden" type="file" accept=".json,application/json" onChange={(event) => { const file=event.target.files?.[0]; if(file){ clearTransientEditorSelection(); importDraft(file); } event.target.value=""; }}/>
         </div>
-        {submitBlocker && <p id="studio-submit-blocker" className="studio-submit-blocker"><Icon name="alert"/><span>{submitBlocker}</span>{isPrivate && submitBlocker !== firstSubmissionWarning && <button type="button" onClick={() => setUserSettingsOpen(true)}>{locale === "en" ? "Change visibility" : "Изменить видимость"}</button>}{firstSubmissionWarning && submitBlocker === firstSubmissionWarning && <button type="button" onClick={() => document.getElementById("studio-checks")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{locale === "en" ? "Review issue" : "Перейти к замечанию"}</button>}</p>}
+        {submitBlocker && <p id="studio-submit-blocker" className="studio-submit-blocker"><Icon name="alert"/><span>{submitBlocker}</span>{derivationError && <button type="button" onClick={() => setDerivationAttempt((attempt) => attempt + 1)}>{locale === "en" ? "Retry check" : "Повторить проверку"}</button>}{isPrivate && submitBlocker !== firstSubmissionWarning && <button type="button" onClick={() => setUserSettingsOpen(true)}>{locale === "en" ? "Change visibility" : "Изменить видимость"}</button>}{firstSubmissionWarning && submitBlocker === firstSubmissionWarning && <button type="button" onClick={() => document.getElementById("studio-checks")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{locale === "en" ? "Review issue" : "Перейти к замечанию"}</button>}</p>}
         {savedFlash && <div className="save-toast"><Icon name="check"/>{text.saved}</div>}
         {caseReportStatus && <div className="save-toast report-toast" role="status"><Icon name="check"/>{caseReportStatus}</div>}
         {visibleWorkspaceState !== "idle" && <div className={`workspace-toast ${visibleWorkspaceState}`} role="status">{visibleWorkspaceState === "saving" ? (locale === "en" ? "Saving the current draft and visibility…" : "Сохраняются текущий черновик и режим видимости…") : visibleWorkspaceState === "auth_required" ? (locale === "en" ? "Sign-in opened in another tab. Complete it, return here and save again." : "Вход открыт в новой вкладке. Завершите его, вернитесь сюда и повторите сохранение.") : visibleWorkspaceState === "saved" ? (locale === "en" ? "Workspace draft and visibility saved." : "Черновик и режим видимости сохранены в workspace.") : visibleWorkspaceState === "submitted" ? (locale === "en" ? "Submitted to the expert review queue." : "Отправлено в очередь экспертной рецензии.") : visibleWorkspaceState === "conflict" ? (locale === "en" ? "A newer workspace version exists. Reopen the case before saving." : "В workspace уже есть более новая версия. Переоткройте кейс перед сохранением.") : !canDuplicate ? (locale === "en" ? "Inspection-only access: save, export and copy are disabled." : "Доступ только для просмотра: сохранение, экспорт и копирование отключены.") : !draftWithinEnvelope ? (locale === "en" ? "The draft exceeds the 900 KB Studio envelope. Shorten node or relation details." : "Черновик превышает лимит Studio 900 КБ. Сократите описания узлов или связей.") : (locale === "en" ? "The workspace change could not be saved. Check access, identity and case status." : "Не удалось сохранить изменение workspace. Проверьте доступ, идентификатор и статус кейса.")}</div>}
@@ -3018,7 +3034,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     </div>
     {(draft.dealEconomics || draft.nodes.some((node) => node.type === "cash_flow")) && <Suspense fallback={<section className="deal-outcome deal-outcome-empty page-width" role="status"><p>{locale === "en" ? "Calculating case cash flow…" : "Расчёт денежного потока…"}</p></section>}><DealOutcomePanel locale={locale} draft={draft}/></Suspense>}
     <section className="studio-workspace">
-      <aside className="node-palette" inert={!canDuplicate}><div className="pane-heading"><span>{text.addNode}</span><b>{String(paletteNodeTypes.length).padStart(2,"0")}</b></div>{paletteNodeTypes.map((type) => <button key={type} disabled={!canDuplicate || draft.nodes.length >= 200} onClick={() => { addNode(type, visibleGraphCenter()); setRelationStatus(locale === "en" ? "Node added at the centre of the current graph view." : "Нода добавлена в центр текущей области схемы."); }}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "New nodes appear in the centre of your current graph view. Choose an output dot and then an input dot to create a relation; every completed edit is added to the history." : "Новые ноды появляются в центре текущей области схемы. Выберите выходную, затем входную точку, чтобы создать связь; каждая завершённая правка попадёт в историю."}</p></aside>
+      <aside className="node-palette" inert={!canDuplicate}><div className="pane-heading"><span>{text.addNode}</span><b>{String(paletteNodeTypes.length).padStart(2,"0")}</b></div>{paletteNodeTypes.map((type) => <button key={type} disabled={!canDuplicate || draft.nodes.length >= 200} onClick={() => { addNode(type, visibleGraphCenter()); setRelationStatus(locale === "en" ? "Node added in view centre." : "Нода добавлена по центру."); }}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "New nodes open in the visible centre. Connect OUT to IN; edits remain undoable." : "Ноды появляются по центру. Соединяйте ВЫХОД со ВХОДОМ; правки можно отменить."}</p></aside>
       <section className="graph-deck" ref={graphDeckRef}>
         <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div className="graph-heading-actions"><div>{displayMode === "developer" ? <><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></> : <span className="graph-counts">{draft.nodes.length} {locale === "en" ? "nodes" : "узлов"} · {draft.links.length} {locale === "en" ? "connections" : "связей"}</span>}</div><div className="graph-zoom-controls" aria-label={locale === "en" ? "Graph view controls" : "Управление видом схемы"}><label className="graph-orientation-control"><span>{locale === "en" ? "Flow" : "Поток"}</span><select value={graphOrientation} onChange={(event) => { const orientation = event.target.value as GraphOrientation; setGraphOrientation(orientation); void autoLayoutGraph(orientation); }} aria-label={locale === "en" ? "Graph orientation" : "Ориентация схемы"}><option value="vertical">{locale === "en" ? "Vertical" : "Вертикально"}</option><option value="horizontal">{locale === "en" ? "Horizontal" : "Горизонтально"}</option></select></label><button type="button" disabled={!canDuplicate || draft.nodes.length < 2} onClick={() => void autoLayoutGraph()}>{locale === "en" ? "Auto-layout" : "Авто-раскладка"}</button><button type="button" onClick={fitGraph}>{locale === "en" ? "Fit" : "Вместить"}</button><button type="button" onClick={() => setGraphZoom(1)}>100%</button><button type="button" onClick={centerGraph}>{locale === "en" ? "Center" : "По центру"}</button></div></div></div>
         <div id="graph-connect-status" className="graph-connect-status" role="status" aria-live="polite" tabIndex={-1}><span className={linkSourceId || selectedRuleLinkId || selectedNodeId ? "armed" : ""}/>{relationStatus || (locale === "en" ? "Connect: select OUT then IN. Select a node or relation and press Delete to remove it." : "Связь: выберите ВЫХОД, затем ВХОД. Выделите узел или связь и нажмите Delete для удаления.")}{linkSourceId && <button onClick={() => { setLinkSourceId(null); setRelationStatus(""); }}>{locale === "en" ? "Cancel" : "Отмена"}</button>}</div>

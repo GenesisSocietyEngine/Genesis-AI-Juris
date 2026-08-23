@@ -229,7 +229,7 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /Math\.max\(0\.55/,
     "Fit must retain a legible minimum scale while supporting larger auto-laid-out graphs");
   const autoLayoutSource = appSource.slice(appSource.indexOf("async function autoLayoutGraph"), appSource.indexOf("function clearTransientEditorSelection"));
-  assert.match(autoLayoutSource, /connected graph components into separate non-overlapping topology lanes/);
+  assert.match(autoLayoutSource, /applied \$\{orientation\} auto-layout/);
   assert.doesNotMatch(autoLayoutSource, /studioCanDuplicate|commitStudioDraft|showSessionNotice/,
     "Studio auto-layout must use the state and callbacks actually available inside StudioView");
   assert.match(appSource, /id="graph-connect-status"[\s\S]*tabIndex=\{-1\}/,

@@ -66,8 +66,11 @@ test("the maximum 200-node pilot graph compiles with the exact supplied fingerpr
 
 test("Studio schedules heavy derivations for idle time and never renders all endpoint options", () => {
   const source = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
-  assert.match(source, /requestIdleCallback\(derive, \{ timeout: 900 \}\)/);
-  assert.match(source, /globalThis\.setTimeout\(derive, 0\)/, "non-idle-callback browsers retain a safe fallback");
+  assert.match(source, /requestIdleCallback\(derive, \{ timeout: 700 \}\)/);
+  assert.match(source, /watchdogHandle = window\.setTimeout\(derive, 1_000\)/, "busy browsers cannot strand validation waiting for idle time");
+  assert.match(source, /else watchdogHandle = globalThis\.setTimeout\(derive, 0\)/, "non-idle-callback browsers retain an immediate fallback");
+  assert.match(source, /\}, \[derivationAttempt, draft\]\);/, "derivation state updates must not cancel their own completed request");
+  assert.match(source, /setDerivationAttempt\(\(attempt\) => attempt \+ 1\)/, "a failed calculation exposes a bounded manual retry");
   assert.doesNotMatch(source, /useMemo\(\(\) => compileStudioDraft/);
   assert.doesNotMatch(source, /<code>\{caseFingerprint\(draft\)\}<\/code>/);
   assert.match(source, /studioNodeMenuOptions\(relationNodeMenu\.nodes,nodeById,link\.to\)/);
