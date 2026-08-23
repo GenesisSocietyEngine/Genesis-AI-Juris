@@ -59,6 +59,7 @@ export const accountRecoveryCodes = sqliteTable("account_recovery_codes", {
   accountId: integer("account_id").notNull().references(() => localAccounts.id, { onDelete: "cascade" }),
   codeHash: text("code_hash").notNull(),
   usedAt: text("used_at"),
+  consumedBy: text("consumed_by"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   uniqueIndex("account_recovery_codes_hash_uidx").on(table.codeHash),
@@ -72,9 +73,11 @@ export const passwordResetTokens = sqliteTable("password_reset_tokens", {
   tokenHash: text("token_hash").notNull(),
   expiresAt: text("expires_at").notNull(),
   usedAt: text("used_at"),
+  consumedBy: text("consumed_by"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   uniqueIndex("password_reset_tokens_hash_uidx").on(table.tokenHash),
+  uniqueIndex("password_reset_tokens_active_account_uidx").on(table.accountId).where(sql`${table.usedAt} is null`),
   index("password_reset_tokens_account_expiry_idx").on(table.accountId, table.expiresAt),
 ]);
 

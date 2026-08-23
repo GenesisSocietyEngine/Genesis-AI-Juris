@@ -8,16 +8,20 @@ import { LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, studioDeviceDraftKe
 import styles from "./account.module.css";
 
 type Identity = { email: string; displayName: string; authSource: "chatgpt" | "local" };
-type AuthAction = "login" | "register" | "recover" | "reset" | "logout";
+type AuthAction = "login" | "register" | "recover" | "reset" | "forgot" | "logout";
 
 export default function AccountClient({
   identity,
   hasLocalAccount,
+  isAdmin,
+  emailResetAvailable,
   chatGPTSignInUrl,
   chatGPTSignOutUrl,
 }: {
   identity: Identity | null;
   hasLocalAccount: boolean;
+  isAdmin: boolean;
+  emailResetAvailable: boolean;
   chatGPTSignInUrl: string;
   chatGPTSignOutUrl: string;
 }) {
@@ -27,7 +31,7 @@ export default function AccountClient({
   const [error, setError] = useState("");
   const [recoveryCode, setRecoveryCode] = useState("");
 
-  async function submit(action: Exclude<AuthAction, "logout">, event: FormEvent<HTMLFormElement>) {
+  async function submit(action: Exclude<AuthAction, "logout" | "forgot">, event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(action); setError(""); setMessage(""); setRecoveryCode("");
     const form = new FormData(event.currentTarget);
@@ -61,6 +65,20 @@ export default function AccountClient({
     } finally {
       setBusy(null);
     }
+  }
+
+  async function requestEmailReset(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy("forgot"); setError(""); setMessage(""); setRecoveryCode("");
+    const form = new FormData(event.currentTarget);
+    try {
+      const response = await fetch("/api/auth/forgot-password", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: String(form.get("email") ?? "") }) });
+      const result = await response.json() as { error?: string; message?: string };
+      if (!response.ok) throw new Error(result.error || "The reset request could not be accepted.");
+      setMessage(result.message || "If an account exists, a password-reset link has been sent.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "The reset request could not be accepted.");
+    } finally { setBusy(null); }
   }
 
   async function logout() {
@@ -100,14 +118,14 @@ export default function AccountClient({
       <Link href="/">Return to library</Link>
     </nav>
     <header className={styles.hero}>
-      <p>ACCOUNT SECURITY · v14</p>
+      <p>ACCOUNT SECURITY · v15</p>
       <h1>Professional access without hidden recovery shortcuts.</h1>
       <p>ChatGPT remains the trusted identity source. After one confirmation through ChatGPT, you can use a local password and an offline recovery code independently.</p>
     </header>
 
     {identity && <section className={styles.identity} aria-label="Current identity">
       <div><span>Current session</span><strong>{identity.displayName}</strong><small>{identity.email}</small></div>
-      <b>{identity.authSource === "chatgpt" ? "CHATGPT IDENTITY" : "LOCAL SESSION"}</b>
+      <b className={isAdmin ? styles.adminBadge : ""}>{isAdmin ? "ADMIN VERIFIED · CHATGPT ALLOWLIST" : identity.authSource === "chatgpt" ? "TRUSTED CHATGPT IDENTITY" : "LOCAL SESSION · ADMIN RIGHTS DISABLED"}</b>
       {identity.authSource === "local" && <button onClick={logout} disabled={busy !== null}>{busy === "logout" ? "Signing out…" : "Sign out locally"}</button>}
       {identity.authSource === "chatgpt" && <a href={chatGPTSignOutUrl} onClick={signOutChatGPT}>Sign out from ChatGPT identity</a>}
     </section>}
@@ -129,6 +147,14 @@ export default function AccountClient({
           <Field label="Password"><input name="password" type="password" autoComplete="current-password" minLength={10} maxLength={128} required/></Field>
           <button disabled={busy !== null}>{busy === "login" ? "Checking…" : "Sign in locally"}</button>
         </form>
+        <div className={styles.emailReset}>
+          <h3>Forgot the password?</h3>
+          <p>{emailResetAvailable ? "Request a 15-minute, single-use link. The response never reveals whether an account exists." : "Email reset is implemented but awaits the server sender configuration. Use ChatGPT identity or the offline code for now."}</p>
+          <form onSubmit={requestEmailReset}>
+            <Field label="Account email"><input name="email" type="email" autoComplete="username" required/></Field>
+            <button disabled={busy !== null || !emailResetAvailable}>{busy === "forgot" ? "Requesting…" : "Email reset link"}</button>
+          </form>
+        </div>
       </article>
 
       <article className={styles.card}>
@@ -147,7 +173,7 @@ export default function AccountClient({
 
       <article className={styles.card}>
         <span>03 · OFFLINE RECOVERY</span><h2>Use your recovery code</h2>
-        <p>No email provider is configured. Recovery therefore requires the code shown at enrollment or the trusted ChatGPT path above.</p>
+        <p>The offline code remains an independent fallback if email is unavailable. Using it revokes prior sessions and rotates the code.</p>
         <form onSubmit={(event) => submit("recover", event)}>
           <Field label="Account email"><input name="email" type="email" autoComplete="username" required/></Field>
           <Field label="Offline recovery code"><input name="recoveryCode" type="text" autoComplete="one-time-code" spellCheck={false} required/></Field>
@@ -163,7 +189,7 @@ export default function AccountClient({
       <div className={styles.russianNote} lang="ru">
         <h3>Кратко по-русски</h3>
         <p>Пароль: 10–128 символов, минимум одна заглавная буква, цифра и специальный символ. Первичная привязка возможна только через доверенную идентификацию ChatGPT.</p>
-        <p>Почтовой рассылки для сброса сейчас нет. Восстановление выполняется одноразовым офлайн-кодом либо повторным входом через ChatGPT; старые сессии и прежний код аннулируются.</p>
+        <p>Сброс по email использует одноразовую ссылку на 15 минут и не выполняет автоматический вход. Администратор может только инициировать письмо на сохранённый адрес; пароль и токен ему не показываются. Офлайн-код и доверенный вход ChatGPT остаются резервными способами.</p>
       </div>
     </aside>
   </main>;

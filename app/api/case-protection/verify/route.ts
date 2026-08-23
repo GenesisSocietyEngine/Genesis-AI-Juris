@@ -8,6 +8,7 @@ import { canViewCustomCase, normalizeEmail } from "../../../custom-case-access";
 import { isSameOriginMutation, readJsonObject } from "../../../request-security";
 import { getOrCreateCaseProtectionKey, resolveExactCaseArtifact } from "../../../server-case-protection";
 import { isPlatformAdmin } from "../../../server-authorization";
+import { STUDIO_CASE_BODY_LIMIT } from "../../../studio-envelope";
 import type { CaseProtectionV1, StudioDraft } from "../../../types";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
   if (!isSameOriginMutation(request)) return privateJson({ error: "Cross-site mutation rejected." }, 403);
   const identity = await getChatGPTUser();
   if (!identity) return privateJson({ error: "Sign in is required." }, 401);
-  const payload = await readJsonObject(request, 512_000);
+  const payload = await readJsonObject(request, STUDIO_CASE_BODY_LIMIT);
   if (!payload || !isRecord(payload.draft)) return privateJson({ error: "An exact Studio draft is required." }, 400);
 
   let draft: StudioDraft;

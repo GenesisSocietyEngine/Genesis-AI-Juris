@@ -117,6 +117,10 @@ export function compileStudioDraft(draft: StudioDraft): StudioCompileResult {
   const defaultMaterial = materials[0].ref;
   const stageId = (nodeId: string) => `studio-${nodeId}`;
   const optionId = (linkId: string) => `action-${linkId}`;
+  const stageIds = new Set(ordered.map((node) => stageId(node.id)));
+  const optionIds = new Set(draft.links.map((link) => optionId(link.id)));
+  const rootOpeningStageId = uniqueRuntimeId("studio-root", stageIds);
+  const rootOpeningActionIds = roots.map((_, index) => uniqueRuntimeId(`action-root-${index + 1}`, optionIds));
   const outcomeIndex = new Map(outcomes.map((node, index) => [node.id, index]));
 
   const stages: Scenario["stages"] = ordered.map((node, index) => {
@@ -129,8 +133,9 @@ export function compileStudioDraft(draft: StudioDraft): StudioCompileResult {
         label: localNodeText(rule?.label || target.title),
         detail: localNodeText(rule?.detail || target.detail || `Advance from ${node.title} to ${target.title}.`),
         result: localNodeText(rule?.result || target.detail || `${target.title} is now the active part of the matter.`),
-        cost: rule?.cost ?? (target.type === "evidence" || target.type === "tax_rule" ? 1_500 : 0),
-        minutes: rule?.minutes ?? (target.type === "deadline" ? 30 : 20),
+        cost: rule?.cost ?? target.runtime?.budgetCostEur ?? (target.type === "evidence" || target.type === "tax_rule" ? 1_500 : 0),
+        costAuthored: rule?.cost !== undefined || target.runtime?.budgetCostEur !== undefined,
+        minutes: rule?.minutes ?? target.runtime?.durationMinutes ?? (target.type === "deadline" ? 30 : 20),
         effects: rule?.effects ?? effectsForTarget(target, outcomeIndex.get(target.id) ?? 0, outcomes.length),
         nextStageId: stageId(target.id),
         repeatability: rule?.repeatability ?? "once" as const,
@@ -155,12 +160,17 @@ export function compileStudioDraft(draft: StudioDraft): StudioCompileResult {
     };
   });
 
-  if (roots.length > 1) {
-    warnings.push("Multiple graph roots were compiled into an explicit opening choice.");
+  const needsRootOpening = roots.length > 1 || roots.some((node) => node.runtime?.budgetCostEur !== undefined || node.runtime?.durationMinutes !== undefined);
+  if (needsRootOpening) {
+    warnings.push(roots.length > 1
+      ? "Multiple graph roots were compiled into an explicit opening choice."
+      : "The authored root cost or duration was compiled into an explicit opening action.");
+    const openingSchedule = roots.map((node) => ({ day: node.runtime?.day ?? 1, time: node.runtime?.time ?? "08:30" }))
+      .sort((left, right) => left.day - right.day || left.time.localeCompare(right.time))[0];
     stages.unshift({
-      id: "studio-root",
-      day: 1,
-      time: "08:30",
+      id: rootOpeningStageId,
+      day: openingSchedule.day,
+      time: openingSchedule.time,
       phase: { en: "Opening", ru: "Начало" },
       headline: localNodeText(draft.title),
       brief: localNodeText(draft.premise),
@@ -168,12 +178,13 @@ export function compileStudioDraft(draft: StudioDraft): StudioCompileResult {
       pressure: undefined,
       materialRefs: [defaultMaterial],
       options: roots.map((node, index) => ({
-        id: `action-root-${index + 1}`,
+        id: rootOpeningActionIds[index],
         label: localNodeText(node.title),
         detail: localNodeText(node.detail || "Open this branch of the matter."),
         result: localNodeText(`The matter opens at ${node.title}.`),
-        cost: 0,
-        minutes: 10,
+        cost: node.runtime?.budgetCostEur ?? 0,
+        costAuthored: node.runtime?.budgetCostEur !== undefined,
+        minutes: node.runtime?.durationMinutes ?? 0,
         effects: { position: 1 },
         nextStageId: stageId(node.id),
         repeatability: "once" as const,
@@ -203,7 +214,7 @@ export function compileStudioDraft(draft: StudioDraft): StudioCompileResult {
   const firstOutcome = outcomes[0];
   const middleOutcome = outcomes[Math.floor((outcomes.length - 1) / 2)] ?? firstOutcome;
   const lastOutcome = outcomes.at(-1) ?? firstOutcome;
-  const initialStageId = roots.length > 1 ? "studio-root" : stageId(roots[0].id);
+  const initialStageId = needsRootOpening ? rootOpeningStageId : stageId(roots[0].id);
   const initialClockMinute = stageClockMinute(stages.find((stage) => stage.id === initialStageId)!);
   const base: Scenario = {
     id: `${draft.caseId}.studio.${draft.version.replaceAll(".", "-")}`,
@@ -240,6 +251,14 @@ export function compileStudioDraft(draft: StudioDraft): StudioCompileResult {
   } catch (error) {
     return { scenario: null, issues: [{ code: "invalid_metadata", message: error instanceof Error ? error.message : "The compiled scenario failed validation.", nodeIds: [] }], warnings };
   }
+}
+
+function uniqueRuntimeId(preferred: string, occupied: Set<string>) {
+  let candidate = preferred;
+  let sequence = 2;
+  while (occupied.has(candidate)) candidate = `${preferred}-${sequence++}`;
+  occupied.add(candidate);
+  return candidate;
 }
 
 function positionOrder(left: StudioNode, right: StudioNode) {

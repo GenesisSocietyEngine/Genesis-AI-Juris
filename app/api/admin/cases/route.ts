@@ -2,13 +2,14 @@ import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { auditEvents, caseDrafts, cases, caseVersions, customCases, updates, users } from "../../../../db/schema";
 import { buildCaseProtection, requestedCopyProtection } from "../../../case-protection";
-import { isTaxClassification, normalizeStudioDraft, studioStructuralIssues } from "../../../case-integrity";
+import { isTaxDraft, normalizeStudioDraft, studioStructuralIssues } from "../../../case-integrity";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 import { compilePublicationPlayable, normalizeTaxPublicationAttestation, type TaxPublicationAttestation } from "../../../publication-integrity";
 import { isSameOriginMutation, readJsonObject } from "../../../request-security";
 import { isPlatformAdmin } from "../../../server-authorization";
 import { CaseProtectionIntegrityError, getOrCreateCaseProtectionKey, resolveExactCaseArtifact } from "../../../server-case-protection";
 import { toPublicStudioDraft } from "../../../studio-editing";
+import { STUDIO_CASE_BODY_LIMIT } from "../../../studio-envelope";
 import type { CaseProtectionV1 } from "../../../types";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
   if (!isSameOriginMutation(request)) return Response.json({ error: "Cross-site mutation rejected." }, { status: 403 });
   const identity = await getChatGPTUser();
   if (!identity || !isPlatformAdmin(identity)) return Response.json({ error: "Administrator access is required." }, { status: 403 });
-  const payload = await readJsonObject(request, 750_000);
+  const payload = await readJsonObject(request, STUDIO_CASE_BODY_LIMIT);
   if (!payload) return Response.json({ error: "A valid publication manifest is required." }, { status: 400 });
   let draft;
   try { draft = normalizeStudioDraft(payload.draft); } catch { return Response.json({ error: "The case payload failed structural validation." }, { status: 400 }); }
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
   const { playable, binding: compilationBinding } = compilation;
   const { studioFingerprint, playableFingerprint: fingerprint } = compilationBinding;
   const classification = draft.classification!;
-  const isTax = isTaxClassification(classification);
+  const isTax = isTaxDraft(draft);
   if (isTax && (!classification.complianceOnly || !classification.legalAsOf || (classification.sourceUrls ?? []).length === 0)) {
     return Response.json({ error: "Tax publication requires a lawful compliance scope, a legal as-of date and verified HTTPS sources." }, { status: 422 });
   }

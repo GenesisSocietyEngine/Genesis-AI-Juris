@@ -1,18 +1,19 @@
 import { asc, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
-import { auditEvents, users } from "../../../../db/schema";
+import { auditEvents, localAccounts, users } from "../../../../db/schema";
 import { normalizeEmail, normalizeLicenseTier } from "../../../custom-case-access";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 import { isSameOriginMutation, readJsonObject } from "../../../request-security";
 import { isPlatformAdmin } from "../../../server-authorization";
+import { passwordResetMailAvailable } from "../../../reset-mail";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const identity = await getChatGPTUser();
   if (!identity || !isPlatformAdmin(identity)) return privateJson({ error: "Administrator access is required." }, 403);
-  const rows = await getDb().select({ email: users.email, displayName: users.displayName, organisation: users.organisation, licenseTier: users.licenseTier, verifiedPractitioner: users.verifiedPractitioner }).from(users).orderBy(asc(users.displayName));
-  return privateJson({ users: rows });
+  const rows = await getDb().select({ id: users.id, email: users.email, displayName: users.displayName, organisation: users.organisation, licenseTier: users.licenseTier, verifiedPractitioner: users.verifiedPractitioner, localAccountId: localAccounts.id, localAccountStatus: localAccounts.status }).from(users).leftJoin(localAccounts, eq(localAccounts.userEmail, users.email)).orderBy(asc(users.displayName));
+  return privateJson({ users: rows.map(({ localAccountId, ...row }) => ({ ...row, hasLocalAccount: localAccountId !== null })), emailResetAvailable: passwordResetMailAvailable() });
 }
 
 export async function POST(request: Request) {

@@ -99,12 +99,36 @@ test("Studio canonicalizes tax classifications and enforces server graph/publica
   assert.match(fingerprint, /^sha256-[a-f0-9]{64}$/);
   assert.equal(caseFingerprint(structuredClone(valid)), fingerprint);
   assert.notEqual(caseFingerprint({ ...valid, jurisdiction: "Netherlands · EU" }), fingerprint);
+  const withEconomics = normalizeStudioDraft({ ...taxDraft(), taxEconomics: {
+    kind: "tax-economics-v1", currency: "eur", baselineAnnualTaxCost: 250_000, optimizedAnnualTaxCost: 180_000,
+    implementationCost: 85_000, annualMaintenanceCost: 15_000, terminalTaxOrUnwindCost: 5_000,
+    analysisHorizonMonths: 36, annualDiscountRateBps: 800, benefitRealizationBps: 9_000, assumptions: "Documented test assumptions.",
+  } });
+  assert.equal(withEconomics.taxEconomics?.currency, "EUR");
+  assert.notEqual(caseFingerprint(withEconomics), fingerprint);
+  assert.throws(() => normalizeStudioDraft({ ...taxDraft(), taxEconomics: { ...withEconomics.taxEconomics, implementationCost: -1 } }), /implementation cost/);
+
+  const withNodeRuntime = normalizeStudioDraft({ ...taxDraft(), nodes: taxDraft().nodes.map((node) => node.id === "evidence-1" ? { ...node, runtime: { budgetCostEur: 5_000, durationMinutes: 60 } } : node) });
+  assert.equal(withNodeRuntime.nodes.find((node) => node.id === "evidence-1")?.runtime?.budgetCostEur, 5_000);
+  assert.notEqual(caseFingerprint(withNodeRuntime), fingerprint);
+  assert.throws(() => normalizeStudioDraft({ ...taxDraft(), nodes: taxDraft().nodes.map((node) => node.id === "evidence-1" ? { ...node, runtime: { budgetCostEur: 1.5 } } : node) }), /integer/i);
 
   const disconnected = structuredClone(valid);
   disconnected.links = disconnected.links.filter((link) => link.to !== "outcome-2");
   assert.ok(studioStructuralIssues(disconnected).includes("disconnected_graph"));
   assert.ok(studioStructuralIssues(disconnected).includes("outcome_not_reachable_from_decision"));
   assert.equal(canonicalFingerprint({ b: 2, a: 1 }), "sha256-43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777");
+});
+
+test("tax-specific graph nodes cannot bypass tax classification and publication metadata gates", () => {
+  const graphTaxDraft = normalizeStudioDraft({
+    ...taxDraft(),
+    classification: { domain: "general", practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: false },
+    nodes: taxDraft().nodes,
+  });
+  assert.equal(graphTaxDraft.classification?.domain, "tax");
+  assert.equal(graphTaxDraft.classification?.complianceOnly, true);
+  assert.ok(studioStructuralIssues({ ...graphTaxDraft, classification: { ...graphTaxDraft.classification!, legalAsOf: undefined, sourceUrls: [] } }).includes("tax_publication_metadata_required"));
 });
 
 test("publication compiles on the server and rejects a divergent client preview", () => {

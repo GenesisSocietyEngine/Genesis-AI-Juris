@@ -4,6 +4,8 @@ import { getDb } from "../../db";
 import { localAccounts } from "../../db/schema";
 import { normalizeEmail } from "../auth-crypto";
 import { chatGPTSignInPath, chatGPTSignOutPath, getChatGPTUser } from "../chatgpt-auth";
+import { passwordResetMailAvailable } from "../reset-mail";
+import { isPlatformAdmin } from "../server-authorization";
 import AccountClient from "./AccountClient";
 
 export const metadata: Metadata = {
@@ -27,6 +29,8 @@ export default async function AccountPage() {
   return <AccountClient
     identity={identity ? { email: identity.email, displayName: identity.displayName, authSource: identity.authSource } : null}
     hasLocalAccount={hasLocalAccount}
+    isAdmin={identity ? isPlatformAdmin(identity) : false}
+    emailResetAvailable={passwordResetMailAvailable()}
     chatGPTSignInUrl={chatGPTSignInPath("/account")}
     chatGPTSignOutUrl={chatGPTSignOutPath("/account")}
   />;

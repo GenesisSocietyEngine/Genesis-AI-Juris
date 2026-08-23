@@ -1,6 +1,8 @@
 import type { MetricGuard, MetricKey, RuleComparison, StudioDraft, StudioEditAction, StudioEditEntry, StudioLink, StudioNode, StudioNodeType, TaxCasePurpose } from "./types";
 import { normalizeUntrustedCaseProtection } from "./case-protection";
 import { STUDIO_HISTORY_LIMIT } from "./studio-editing";
+import { STUDIO_DRAFT_SERIALIZED_LIMIT, studioJsonBytes } from "./studio-envelope";
+import { normalizeTaxEconomics } from "./tax-economics";
 
 const nodeTypes = new Set<StudioNodeType>([
   "trigger", "actor", "fact", "evidence", "deadline", "decision", "outcome", "entity", "tax_rule", "cash_flow",
@@ -21,6 +23,10 @@ export function isTaxClassification(classification: StudioDraft["classification"
   return classification.domain === "tax" || classification.taxTopics.length > 0 || taxPracticePattern.test(classification.practiceArea);
 }
 
+export function isTaxDraft(draft: Pick<StudioDraft, "classification" | "nodes">) {
+  return isTaxClassification(draft.classification) || draft.nodes.some((node) => node.type === "entity" || node.type === "tax_rule" || node.type === "cash_flow");
+}
+
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -33,7 +39,8 @@ export function caseFingerprint(draft: StudioDraft) {
   const rawClassification = draft.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true };
   const practiceArea = rawClassification.practiceArea.trim() || "General legal";
   const taxTopics = cleanList(rawClassification.taxTopics, 30, 100);
-  const isTax = rawClassification.domain === "tax" || taxTopics.length > 0 || taxPracticePattern.test(practiceArea);
+  const isTax = rawClassification.domain === "tax" || taxTopics.length > 0 || taxPracticePattern.test(practiceArea)
+    || draft.nodes.some((node) => node.type === "entity" || node.type === "tax_rule" || node.type === "cash_flow");
   const classification = {
     domain: isTax ? "tax" as const : "general" as const,
     practiceArea,
@@ -53,6 +60,7 @@ export function caseFingerprint(draft: StudioDraft) {
     role: draft.role.trim().slice(0, 160),
     premise: draft.premise.trim().slice(0, 8_000),
     classification,
+    taxEconomics: isTax ? normalizeTaxEconomics(draft.taxEconomics) : undefined,
     nodes: draft.nodes.map((node) => ({ ...node, title: node.title.trim(), detail: node.detail.trim().slice(0, 4_000) })),
     links: draft.links.map((link) => ({ from: link.from, to: link.to, rule: link.rule })),
   };
@@ -85,7 +93,8 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
   const rawClassification = isRecord(value.classification) ? value.classification : {};
   const practiceArea = safeString(rawClassification.practiceArea, "General legal", 100);
   const taxTopics = stringList(rawClassification.taxTopics, 30, 100);
-  const isTax = rawClassification.domain === "tax" || taxTopics.length > 0 || taxPracticePattern.test(practiceArea);
+  const isTax = rawClassification.domain === "tax" || taxTopics.length > 0 || taxPracticePattern.test(practiceArea)
+    || nodes.some((node) => node.type === "entity" || node.type === "tax_rule" || node.type === "cash_flow");
   const purpose = typeof rawClassification.purpose === "string" && taxPurposes.has(rawClassification.purpose as TaxCasePurpose)
     ? rawClassification.purpose as TaxCasePurpose
     : isTax ? "lawful_planning" : "compliance_review";
@@ -99,8 +108,9 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
       ? { caseId: value.parent.caseId, version: value.parent.version, fingerprint: value.parent.fingerprint }
       : null;
   const protection = normalizeUntrustedCaseProtection(value.protection);
+  const taxEconomics = isTax ? normalizeTaxEconomics(value.taxEconomics) : undefined;
 
-  return {
+  const normalized: StudioDraft = {
     caseId,
     version,
     parent,
@@ -120,6 +130,7 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
       legalAsOf: isoDate(rawClassification.legalAsOf),
       sourceUrls: urlList(rawClassification.sourceUrls, 30),
     },
+    ...(taxEconomics ? { taxEconomics } : {}),
     nodes,
     links,
     editHistory,
@@ -127,6 +138,8 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
       ? new Date(value.updatedAt).toISOString()
       : new Date().toISOString(),
   };
+  if (studioJsonBytes(normalized) > STUDIO_DRAFT_SERIALIZED_LIMIT) throw new Error("Studio draft exceeds the aggregate JSON size limit");
+  return normalized;
 }
 
 export function studioStructuralIssues(draft: StudioDraft) {
@@ -156,7 +169,7 @@ export function studioStructuralIssues(draft: StudioDraft) {
   if (draft.nodes.some((node) => node.type === "outcome" && !decisionReachable.has(node.id))) issues.push("outcome_not_reachable_from_decision");
   if (draft.nodes.some((node) => node.type === "decision" && !(outgoing.get(node.id)?.length))) issues.push("decision_branch_required");
   const classification = draft.classification!;
-  const isTax = isTaxClassification(classification);
+  const isTax = isTaxDraft(draft);
   if (isTax) {
     if (count("entity") < 1 || count("cash_flow") < 1 || count("tax_rule") < 1) issues.push("tax_graph_nodes_required");
     if (!classification.complianceOnly || !classification.purpose || !classification.legalAsOf || (classification.sourceUrls ?? []).length === 0) issues.push("tax_publication_metadata_required");
@@ -204,7 +217,9 @@ function normalizeNodeRuntime(value: unknown, type: StudioNodeType) {
   const missedOutcomeNodeId = type === "deadline" && typeof value.missedOutcomeNodeId === "string" && /^[a-z0-9][a-z0-9_-]{0,79}$/.test(value.missedOutcomeNodeId)
     ? value.missedOutcomeNodeId
     : undefined;
-  const runtime = { day, time, pressure, terminalOutcome, deadlineDay, deadlineTime, missedOutcomeNodeId };
+  const budgetCostEur = optionalInteger(value.budgetCostEur, 0, 1_000_000_000);
+  const durationMinutes = optionalInteger(value.durationMinutes, 0, 100_000_000);
+  const runtime = { day, time, pressure, terminalOutcome, deadlineDay, deadlineTime, missedOutcomeNodeId, budgetCostEur, durationMinutes };
   return Object.values(runtime).some((item) => item !== undefined) ? runtime : undefined;
 }
 

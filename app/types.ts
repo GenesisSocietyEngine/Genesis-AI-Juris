@@ -156,6 +156,10 @@ export type StudioNode = {
     deadlineDay?: number;
     deadlineTime?: string;
     missedOutcomeNodeId?: string;
+    /** Default budget charged when a playable transition enters this node. */
+    budgetCostEur?: number;
+    /** Default elapsed time charged when a playable transition enters this node. */
+    durationMinutes?: number;
   };
 };
 
@@ -209,6 +213,21 @@ export type TaxCasePurpose = "lawful_planning" | "compliance_review" | "audit_de
 
 export type CaseCopyPolicy = "fork_allowed" | "lineage_locked";
 
+export type TaxEconomicsV1 = {
+  kind: "tax-economics-v1";
+  /** ISO 4217 presentation currency for every monetary input below. */
+  currency: string;
+  baselineAnnualTaxCost: number;
+  optimizedAnnualTaxCost: number;
+  implementationCost: number;
+  annualMaintenanceCost: number;
+  terminalTaxOrUnwindCost: number;
+  analysisHorizonMonths: number;
+  annualDiscountRateBps: number;
+  benefitRealizationBps: number;
+  assumptions: string;
+};
+
 /**
  * Public, server-attested lineage metadata. The codes and HMAC seal provide
  * tamper evidence; they do not encrypt or conceal the Studio case content.
@@ -246,6 +265,7 @@ export type StudioDraft = {
     legalAsOf?: string;
     sourceUrls?: string[];
   };
+  taxEconomics?: TaxEconomicsV1;
   nodes: StudioNode[];
   links: StudioLink[];
   editHistory: StudioEditEntry[];

@@ -1,6 +1,6 @@
-# GENESIS: JURIS v14 architecture
+# GENESIS: JURIS v15 architecture
 
-This document records the v14 runtime and trust boundaries. It is intentionally implementation-oriented; product positioning remains in the root README.
+This document records the v15 runtime and trust boundaries. It is intentionally implementation-oriented; product positioning remains in the root README.
 
 ## Catalogue and immutable content
 
@@ -14,7 +14,7 @@ The deterministic browser engine remains useful for immediate Studio previews an
 
 Signed-in persisted play uses `play_sessions` and append-only `play_events`. For the five bundled cases, a typed server reducer executes the canonical mobile bundle directly: all 22 currently authored effect forms, compound conditions, deterministic decisions, async tasks, inbox/evidence visibility, deadline activation/misses, foreground time and global action repeatability share one runtime state. Only its presentation projection leaves the API; internal flags and decision rolls remain server-side. Every decision or explicit time advance uses an expected revision and an idempotent event ID. A stale revision returns `409` instead of silently overwriting another tab.
 
-The TypeScript reducer is regression-pinned to eleven mobile reference paths (nine lifecycle traces plus both Logistics outcomes), including exact terminal stages, elapsed minutes and resource projections. Moving this authority into the Rust engine compiled to WASM remains a hardening option once the deployment toolchain can build and verify that artifact; v14 does not claim a Rust/WASM binary.
+The TypeScript reducer is regression-pinned to eleven mobile reference paths (nine lifecycle traces plus both Logistics outcomes), including exact terminal stages, elapsed minutes and resource projections. Moving this authority into the Rust engine compiled to WASM remains a hardening option once the deployment toolchain can build and verify that artifact; v15 does not claim a Rust/WASM binary.
 
 Real-time multi-author collaboration is intentionally out of scope. If introduced later, one coordination object per actively edited case can be added without moving ordinary catalogue or single-author traffic away from D1.
 
@@ -22,13 +22,27 @@ Real-time multi-author collaboration is intentionally out of scope. If introduce
 
 Rules are declarative JSON normalized by the same trusted validation path used for publication. No authored expression is passed to `eval` or executed as JavaScript.
 
-- Node runtime fields control stage day/time, pressure, terminal outcome and deadline fallback.
+- Node runtime fields control stage day/time, pressure, terminal outcome, deadline fallback, node budget and node duration.
 - Link rules control action text, cost, duration, metric effects and repeatability.
 - Guards compare `position`, `evidence`, `trust` or `exposure` using `gte`, `lte` or `eq` against a bounded numeric threshold.
 - Limited actions require an explicit maximum-use count.
 - The Studio compiler resolves the graph and DSL into `playable-scenario-v1`; the playable validator then checks references, timing, reachability and terminal paths.
 
 Central publication always recompiles the normalized Studio draft on the server. A client-compiled preview is only an optional stale-preview check and is never persisted as authoritative content. The stored publication evidence binds the Studio fingerprint and server-generated playable fingerprint.
+
+## AI-assisted prompt-to-scheme boundary
+
+AI assists authoring; it is never the scenario runtime or publication authority. The browser sends an authenticated, same-origin request containing the prompt and current bounded Studio graph supplied by the author, plus its base fingerprint. The interface requires the author to de-identify both inputs; the product does not claim automatic redaction. The route requires a registered professional profile, applies tiered per-user and high shared-network limits, keeps the provider key server-side and calls the OpenAI Responses API with response storage disabled and a strict JSON Schema. A configurable tenant-wide daily circuit breaker defaults to 500 requests. Normalized drafts are capped at 900 KB inside the common 1 MB import/API envelope; central publication omits the duplicate client-compiled preview and recompiles from the draft.
+
+The model returns semantic node/link intents and explicit assumptions, warnings or a clarification request. It cannot author executable code, delete nodes, remove relationships or silently replace the draft. Trusted code then:
+
+1. verifies the response against the strict schema and bounded field limits;
+2. assigns deterministic, collision-free IDs and graph coordinates;
+3. converts semantic intents to the existing typed Studio operation DSL;
+4. applies the operations to a temporary copy and runs the normal draft validator;
+5. returns only the sanitized operation plan for human review.
+
+The user must select **Apply reviewed changes**. Immediately before applying, the client recomputes the base fingerprint; a stale proposal is rejected. An accepted proposal becomes one revision in the existing undo/redo timeline. Up to 8,000 characters of the accepted source prompt are retained in bounded, non-public history chunks, while model/request/base/plan identifiers are recorded as non-authoritative provenance metadata. That metadata is useful for author review but is not server-signed and is deliberately stripped from publication; the case seal attests case lineage and content, not the claimed model invocation. The exact-command deterministic planner remains available when AI is unconfigured, unavailable, budget-limited or unsuitable. Model output is therefore a fallible drafting suggestion: legal rules, evidence, authorities, dates, tax conclusions and economic assumptions still require practitioner verification.
 
 ## Optimistic concurrency
 
@@ -72,7 +86,7 @@ Trusted ChatGPT identity remains the enrollment authority. A user can add a loca
 
 Passwords are validated at 10–128 Unicode characters with the requested uppercase/digit/special-character policy, derived with PBKDF2-HMAC-SHA256 at 600,000 iterations and a fresh random salt, and stored only as algorithm/salt/iteration/hash fields. Opaque session and recovery values are stored only as SHA-256 hashes. Credential routes require exact same-origin browser requests, bounded JSON and dual email/network rate limits; responses are private/no-store.
 
-No transactional email binding is present in this deployment. The safe forgot-password paths are therefore a display-once, high-entropy offline recovery code or re-verification through the trusted ChatGPT identity. Recovery rotates the offline code and revokes previous local sessions. A hashed, expiring, single-use reset-token table is reserved for a future mail provider, but the application does not pretend that email delivery exists.
+Transactional email is feature-gated behind server-only `RESEND_API_KEY`, `GENESIS_RESET_FROM_EMAIL` and an exact HTTPS `GENESIS_PUBLIC_ORIGIN`. When configured, forgot-password creates a 15-minute single-use opaque token, stores only its SHA-256 hash and sends the raw proof to the account's stored address. Consumption uses a unique per-attempt nonce in the atomic compare-and-swap batch, so concurrent attempts cannot both succeed even when their timestamps are identical. The public response is generic, and successful email reset revokes prior sessions/tokens, rotates the offline code and requires a fresh login. An administrator may trigger delivery but cannot see the token, choose another address, set the password or impersonate the account. The trusted ChatGPT identity and display-once offline code remain independent fallback proofs.
 
 ## Capacity envelope
 
@@ -83,6 +97,7 @@ For hundreds of cases and roughly 100 users, ordinary work stays below a single-
 - an authoritative decision loads one exact manifest and one compact session state, evaluates a bounded DSL and commits an idempotent event plus a compare-and-swap revision;
 - custom-case lists apply ACL predicates in SQL and calculate protection metadata without per-row API queries;
 - static assets and immutable public case versions are cacheable, while identity/workspace/session responses remain private and uncached.
+- AI is invoked only while a registered practitioner explicitly analyses an authoring prompt, not during catalogue browsing or scenario play. Community, professional and enterprise profiles receive 5, 20 and 60 requests per hour respectively; a 1,000/hour shared-network allowance avoids penalising a normal office NAT, while the configurable tenant-wide daily circuit breaker bounds provider spend independently of user count.
 
 If measured load later outgrows this envelope, the next steps are read-cache warming for popular manifests, archival/partitioning of old play events, D1 query/latency alerts, and one coordination object per actively co-edited case. None is required merely to support the stated hundred-user pilot.
 
@@ -95,6 +110,8 @@ Tax/offshore classification is fail-closed to lawful/compliance use, a legal-as-
 - a substantive publication-facing note;
 - explicit confirmations for lawful purpose, compliance-only scope, legal currency, source authority, anti-abuse rules, reporting obligations and non-facilitation of evasion;
 - the exact Studio and playable fingerprints.
+
+Studio also stores a bounded `tax-economics-v1` estimate: one-time implementation cost, recurring annual cost, annual gross tax benefit, horizon, discount rate, currency and authored assumptions. It deterministically derives annual net benefit, ROI, simple payback and discounted NPV; values are estimates, not promises or tax conclusions. Node budgets and durations remain available for attributing implementation cost and effort to the graph, while relationship-level cost/time can override a transition.
 
 The attestation is normalized and stored with both the immutable case-version payload and the privileged audit event. A Boolean or an attestation for another artifact cannot pass the gate. Elevated review labels separately require an accepted, timestamped moderation record for the exact Studio fingerprint; an expert label requires an independent verified practitioner.
 

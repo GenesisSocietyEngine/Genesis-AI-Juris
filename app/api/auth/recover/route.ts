@@ -1,7 +1,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { accountRecoveryCodes, authAuditEvents, authSessions, localAccounts, passwordResetTokens } from "../../../../db/schema";
-import { createPasswordCredential, generateRecoveryCode, hashOpaqueToken, normalizeEmail, sessionCookie, timingSafeTokenHashMatch, validatePassword } from "../../../auth-crypto";
+import { createPasswordCredential, generateRecoveryCode, generateSessionToken, hashOpaqueToken, normalizeEmail, sessionCookie, timingSafeTokenHashMatch, validatePassword } from "../../../auth-crypto";
 import { authJson, INVALID_RECOVERY_MESSAGE } from "../../../auth-http";
 import { consumeAuthRateLimit, createLocalSessionMaterial, writeAuthAudit } from "../../../local-auth";
 import { isSameOriginCredentialMutation, readJsonObject } from "../../../request-security";
@@ -47,6 +47,7 @@ export async function POST(request: Request) {
   const nextRecoveryHash = await hashOpaqueToken(nextRecoveryCode);
   const session = await createLocalSessionMaterial();
   const now = new Date().toISOString();
+  const consumptionNonce = generateSessionToken();
   const updatedAccountId = sql<number>`(
     SELECT ${localAccounts.id} FROM ${localAccounts}
     WHERE ${localAccounts.id} = ${record.accountId}
@@ -57,12 +58,13 @@ export async function POST(request: Request) {
         WHERE ${accountRecoveryCodes.id} = ${record.recoveryId}
           AND ${accountRecoveryCodes.accountId} = ${record.accountId}
           AND ${accountRecoveryCodes.usedAt} = ${now}
+          AND ${accountRecoveryCodes.consumedBy} = ${consumptionNonce}
       )
     LIMIT 1
   )`;
   try {
     await db.batch([
-      db.update(accountRecoveryCodes).set({ usedAt: now }).where(and(eq(accountRecoveryCodes.id, record.recoveryId), eq(accountRecoveryCodes.accountId, record.accountId), isNull(accountRecoveryCodes.usedAt))),
+      db.update(accountRecoveryCodes).set({ usedAt: now, consumedBy: consumptionNonce }).where(and(eq(accountRecoveryCodes.id, record.recoveryId), eq(accountRecoveryCodes.accountId, record.accountId), isNull(accountRecoveryCodes.usedAt))),
       db.update(localAccounts).set({ passwordHash: credential.hash, passwordSalt: credential.salt, passwordIterations: credential.iterations, passwordAlgorithm: credential.algorithm, passwordChangedAt: now, updatedAt: now }).where(and(eq(localAccounts.id, record.accountId), eq(localAccounts.passwordChangedAt, record.passwordChangedAt), eq(localAccounts.status, "active"))),
       db.update(authSessions).set({ revokedAt: now }).where(and(eq(authSessions.accountId, record.accountId), isNull(authSessions.revokedAt))),
       db.update(passwordResetTokens).set({ usedAt: now }).where(and(eq(passwordResetTokens.accountId, record.accountId), isNull(passwordResetTokens.usedAt))),

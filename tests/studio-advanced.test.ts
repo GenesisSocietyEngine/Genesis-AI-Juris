@@ -139,6 +139,65 @@ test("arbitrary acyclic Studio graph compiles into the full validated player run
   assert.ok(rejected.issues.some((issue) => issue.code === "cycle"));
 });
 
+test("node budget and duration are compiler defaults while a relation rule wins", () => {
+  const base = draft();
+  base.nodes = base.nodes.map((node) => node.id === "outcome-1" ? { ...node, runtime: { budgetCostEur: 12_500, durationMinutes: 75 } } : node);
+  let compiled = compileStudioDraft(base);
+  assert.ok(compiled.scenario);
+  let option = compiled.scenario.stages.find((stage) => stage.id === "studio-decision-1")?.options.find((item) => item.id === "action-link-5");
+  assert.equal(option?.cost, 12_500);
+  assert.equal(option?.minutes, 75);
+  assert.equal(option?.costAuthored, true);
+
+  base.links = base.links.map((link) => link.id === "link-5" ? { ...link, rule: { cost: 900, minutes: 15 } } : link);
+  compiled = compileStudioDraft(base);
+  option = compiled.scenario?.stages.find((stage) => stage.id === "studio-decision-1")?.options.find((item) => item.id === "action-link-5");
+  assert.equal(option?.cost, 900);
+  assert.equal(option?.minutes, 15);
+
+  base.nodes = base.nodes.map((node) => node.id === "trigger-1" ? { ...node, runtime: { budgetCostEur: 2_500, durationMinutes: 45 } } : node);
+  compiled = compileStudioDraft(base);
+  const opening = compiled.scenario?.stages.find((stage) => stage.id === "studio-root");
+  assert.equal(compiled.scenario?.initialStageId, "studio-root");
+  assert.equal(opening?.options[0].cost, 2_500);
+  assert.equal(opening?.options[0].minutes, 45);
+  assert.equal(opening?.options[0].nextStageId, "studio-trigger-1");
+
+  base.nodes = base.nodes.map((node) => node.id === "trigger-1" ? { ...node, runtime: { budgetCostEur: 2_500 } } : node);
+  compiled = compileStudioDraft(base);
+  assert.equal(compiled.scenario?.stages.find((stage) => stage.id === "studio-root")?.options[0].minutes, 0, "cost-only root authoring must not invent elapsed time");
+});
+
+test("compiler synthetic opening IDs cannot collide with valid Studio node or relation IDs", () => {
+  const base = draft();
+  base.nodes = base.nodes.map((node) => node.id === "trigger-1" ? { ...node, id: "root", runtime: { budgetCostEur: 1 } } : node);
+  base.links = base.links.map((link) => ({ ...link, id: link.id === "link-1" ? "root-1" : link.id, from: link.from === "trigger-1" ? "root" : link.from }));
+  const compiled = compileStudioDraft(base);
+  assert.deepEqual(compiled.issues, []);
+  assert.ok(compiled.scenario);
+  assert.notEqual(compiled.scenario.initialStageId, "studio-root", "the real studio-root stage ID is reserved by node root");
+  const ids = compiled.scenario.stages.flatMap((stage) => [stage.id, ...stage.options.map((option) => option.id)]);
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+test("Studio UI exposes intuitive blank reset, selectable relation deletion and dark option contrast", () => {
+  const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(appSource, /function blankStudioDraft/);
+  assert.match(appSource, /nodes: \[\],\s*links: \[\],\s*editHistory: \[\]/);
+  assert.match(appSource, /graph-link-hit/);
+  assert.match(appSource, /event\.key !== "Delete" && event\.key !== "Backspace"/);
+  assert.match(appSource, /target instanceof HTMLInputElement/);
+  assert.match(appSource, /Press Delete to remove it/);
+  assert.match(appSource, /Show on graph/);
+  assert.match(appSource, /runtimeForNodeType\(selectedNode\.runtime,type\)/, "node type changes must strip incompatible runtime fields");
+  assert.match(appSource, /parent: \{ caseId: current\.caseId, version: current\.version, fingerprint: studioServerFingerprint \}/, "child lineage must use the exact persisted parent fingerprint");
+  assert.match(appSource, /Studio case envelope/);
+  assert.match(appSource, /\{taxDraft && <><label><span>\{locale === "en" \? "Tax-case purpose"/, "tax-only controls should stay hidden for general cases");
+  assert.doesNotMatch(appSource.slice(appSource.indexOf("function deleteSelectedRelation"), appSource.indexOf("async function shareDraft")), /deleteNode/);
+  assert.match(css, /\.theme-after-hours \.node-inspector \.inspector-form select option\{color:#14212c;background-color:#fff\}/);
+});
+
 test("Help ships two local accessible walkthroughs with bilingual monotonic captions", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   assert.equal((appSource.match(/<video controls preload="metadata" playsInline/g) ?? []).length, 2);

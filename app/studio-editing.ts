@@ -17,13 +17,15 @@ export type StudioGraphEditResult = {
 
 export type StudioPromptOperation =
   | { kind: "add_node"; node: StudioNode }
-  | { kind: "update_node"; nodeId: string; change: Partial<Pick<StudioNode, "title" | "detail" | "type">> }
+  | { kind: "update_node"; nodeId: string; change: Partial<Pick<StudioNode, "title" | "detail" | "type">> & { runtime?: StudioNode["runtime"] | null } }
   | { kind: "delete_node"; nodeId: string }
   | { kind: "add_link"; link: StudioLink }
+  | { kind: "update_link"; linkId: string; change: NonNullable<StudioLink["rule"]> }
   | { kind: "relink_link"; linkId: string; from: string; to: string }
   | { kind: "delete_link"; linkId: string }
   | { kind: "append_context"; value: string }
-  | { kind: "set_case_field"; field: "title" | "jurisdiction" | "role"; value: string };
+  | { kind: "set_case_field"; field: "caseId" | "title" | "jurisdiction" | "role"; value: string }
+  | { kind: "set_classification"; change: Partial<NonNullable<StudioDraft["classification"]>> };
 
 export type StudioPromptDiagnostic = {
   level: "info" | "error";
@@ -36,6 +38,11 @@ export type StudioPromptPlan = {
   diagnostics: StudioPromptDiagnostic[];
   canApply: boolean;
   contextOnly: boolean;
+  planner?: "deterministic" | "ai";
+  summary?: string;
+  assumptions?: string[];
+  warnings?: string[];
+  aiProvenance?: { model: string | null; requestId: string | null; baseFingerprint: string; planFingerprint: string };
 };
 
 export function toPublicStudioDraft(draft: StudioDraft): Omit<StudioDraft, "editHistory"> {
@@ -71,7 +78,7 @@ export function planStudioPromptIteration(draft: StudioDraft, options: {
   selectedNodeId?: string | null;
 }): StudioPromptPlan {
   const clean = options.instruction.trim();
-  if (!clean) return { instruction: "", operations: [], diagnostics: [], canApply: false, contextOnly: false };
+  if (!clean) return { instruction: "", operations: [], diagnostics: [], canApply: false, contextOnly: false, planner: "deterministic" };
   const nodeMatchers: Array<[StudioNodeType, RegExp]> = [
     ["trigger", /trigger|incident|триггер|событи/i], ["actor", /actor|party|stakeholder|актор|сторон|участник/i],
     ["fact", /fact|факт/i], ["evidence", /evidence|document|proof|доказательств|документ/i],
@@ -176,18 +183,73 @@ export function planStudioPromptIteration(draft: StudioDraft, options: {
 
   const hasError = diagnostics.some((item) => item.level === "error");
   if (!operations.length && !hasError) info(options.locale === "en" ? "No graph command recognised; this turn will extend the case context only." : "Команды для графа не распознаны; реплика только дополнит контекст кейса.");
-  return { instruction: clean, operations, diagnostics, canApply: !hasError, contextOnly: operations.length === 0 };
+  return { instruction: clean, operations, diagnostics, canApply: !hasError, contextOnly: operations.length === 0, planner: "deterministic" };
 }
 
-export function describeStudioPromptOperation(operation: StudioPromptOperation, locale: "en" | "ru") {
+export function describeStudioPromptOperation(operation: StudioPromptOperation, locale: "en" | "ru", nodeTitles?: ReadonlyMap<string, string>) {
   const en = locale === "en";
-  if (operation.kind === "add_node") return en ? `Add ${operation.node.type}: ${operation.node.title}` : `Добавить узел ${operation.node.type}: ${operation.node.title}`;
-  if (operation.kind === "update_node") return en ? `Update ${operation.nodeId}` : `Изменить ${operation.nodeId}`;
+  const nodeName = (id: string) => nodeTitles?.get(id) ? `“${nodeTitles.get(id)}” (${id})` : id;
+  const compact = (value: string | undefined) => {
+    const clean = value?.replace(/\s+/g, " ").trim() ?? "";
+    return clean ? `“${clean.slice(0, 120)}${clean.length > 120 ? "…" : ""}”` : "";
+  };
+  const runtimeSummary = (runtime: StudioNode["runtime"] | null | undefined) => runtime ? [
+    runtime.budgetCostEur !== undefined ? `€${runtime.budgetCostEur.toLocaleString("en")}` : "",
+    runtime.durationMinutes !== undefined ? `${runtime.durationMinutes} min` : "",
+    runtime.day !== undefined ? `${en ? "day" : "день"} ${runtime.day}` : "",
+    runtime.time ?? "",
+    runtime.pressure ? `${en ? "pressure" : "давление"}: ${compact(runtime.pressure)}` : "",
+    runtime.terminalOutcome ? `${en ? "outcome" : "исход"}: ${runtime.terminalOutcome}` : "",
+    runtime.deadlineDay !== undefined && runtime.deadlineTime
+      ? `${en ? "deadline" : "срок"}: ${en ? "day" : "день"} ${runtime.deadlineDay}, ${runtime.deadlineTime}`
+      : "",
+    runtime.missedOutcomeNodeId ? `${en ? "missed outcome" : "исход при пропуске"}: ${nodeName(runtime.missedOutcomeNodeId)}` : "",
+  ].filter(Boolean).join(", ") : "";
+  const ruleSummary = (rule: StudioLink["rule"] | undefined) => rule ? [
+    rule.label ? `${en ? "action" : "действие"}: ${compact(rule.label)}` : "",
+    rule.detail ? `${en ? "detail" : "описание"}: ${compact(rule.detail)}` : "",
+    rule.result ? `${en ? "consequence" : "последствие"}: ${compact(rule.result)}` : "",
+    rule.cost !== undefined ? `€${rule.cost.toLocaleString("en")}` : "",
+    rule.minutes !== undefined ? `${rule.minutes} min` : "",
+    rule.effects && Object.keys(rule.effects).length
+      ? `${en ? "effects" : "эффекты"}: ${Object.entries(rule.effects).map(([metric, value]) => `${metric} ${Number(value) >= 0 ? "+" : ""}${value}`).join(", ")}`
+      : "",
+    rule.guards?.length
+      ? `${en ? "conditions" : "условия"}: ${rule.guards.map((guard) => `${guard.metric} ${guard.comparison} ${guard.value}`).join(", ")}`
+      : "",
+    rule.repeatability ? `${en ? "repeatability" : "повторяемость"}: ${rule.repeatability}${rule.maxUses !== undefined ? ` (${en ? "max" : "макс."} ${rule.maxUses})` : ""}` : "",
+  ].filter(Boolean).join("; ") : "";
+  if (operation.kind === "add_node") {
+    const detail = compact(operation.node.detail);
+    const runtime = runtimeSummary(operation.node.runtime);
+    const suffix = [detail, runtime].filter(Boolean).join("; ");
+    return `${en ? "Add" : "Добавить"} ${operation.node.type}: “${operation.node.title}”${suffix ? ` — ${suffix}` : ""}`;
+  }
+  if (operation.kind === "update_node") {
+    const changes = [
+      operation.change.title ? `${en ? "title" : "название"}: “${operation.change.title}”` : "",
+      operation.change.type ? `${en ? "type" : "тип"}: ${operation.change.type}` : "",
+      operation.change.detail !== undefined ? `${en ? "detail" : "описание"}: ${compact(operation.change.detail) || (en ? "clear" : "очистить")}` : "",
+      Object.hasOwn(operation.change, "runtime") ? `${en ? "runtime" : "параметры"}: ${runtimeSummary(operation.change.runtime) || (en ? "clear" : "очистить")}` : "",
+    ].filter(Boolean).join("; ");
+    return `${en ? "Update" : "Изменить"} ${nodeName(operation.nodeId)}${changes ? ` — ${changes}` : ""}`;
+  }
   if (operation.kind === "delete_node") return en ? `Delete ${operation.nodeId} and its relations` : `Удалить ${operation.nodeId} и его связи`;
-  if (operation.kind === "add_link") return en ? `Connect ${operation.link.from} → ${operation.link.to}` : `Связать ${operation.link.from} → ${operation.link.to}`;
+  if (operation.kind === "add_link") {
+    const rule = ruleSummary(operation.link.rule);
+    return `${en ? "Connect" : "Связать"} ${nodeName(operation.link.from)} → ${nodeName(operation.link.to)}${rule ? ` — ${rule}` : ""}`;
+  }
+  if (operation.kind === "update_link") {
+    const rule = ruleSummary(operation.change);
+    return `${en ? "Update relation" : "Изменить связь"} ${operation.linkId}${rule ? ` — ${rule}` : ""}`;
+  }
   if (operation.kind === "relink_link") return en ? `Relink ${operation.linkId}: ${operation.from} → ${operation.to}` : `Перепривязать ${operation.linkId}: ${operation.from} → ${operation.to}`;
   if (operation.kind === "delete_link") return en ? `Delete ${operation.linkId}` : `Удалить ${operation.linkId}`;
-  if (operation.kind === "append_context") return en ? "Append text to the case context" : "Дополнить контекст кейса";
+  if (operation.kind === "append_context") return `${en ? "Add to case context" : "Дополнить контекст кейса"}: ${compact(operation.value)}`;
+  if (operation.kind === "set_classification") {
+    const values = Object.entries(operation.change).map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : String(value)}`).join("; ");
+    return `${en ? "Update case classification" : "Уточнить классификацию кейса"}${values ? ` — ${values}` : ""}`;
+  }
   return en ? `Set case ${operation.field}: ${operation.value}` : `Изменить ${operation.field}: ${operation.value}`;
 }
 
@@ -199,13 +261,22 @@ export function applyStudioPromptIteration(draft: StudioDraft, options: {
   createdAt: string;
 }) {
   const plan = planStudioPromptIteration(draft, options);
+  return applyStudioPromptPlan(draft, { plan, locale: options.locale, createdAt: options.createdAt });
+}
+
+export function applyStudioPromptPlan(draft: StudioDraft, options: {
+  plan: StudioPromptPlan;
+  locale: "en" | "ru";
+  createdAt: string;
+}) {
+  const plan = options.plan;
   if (!plan.instruction || !plan.canApply) return { draft, changed: false, addedNodeIds: [] as string[], addedLinkIds: [] as string[], plan };
   let next = draft;
   if (plan.contextOnly) {
     const joinedPremise = `${draft.premise.trim()}\n\n${plan.instruction}`.trim();
     next = { ...draft, premise: joinedPremise.slice(0, 8_000) };
   }
-  next = appendStudioHistory(next, { role: "author", source: "prompt", action: "prompt_submitted", message: plan.instruction }, options.createdAt);
+  next = appendPromptSubmissionHistory(next, plan, options.locale, options.createdAt);
   for (const operation of plan.operations) next = executePromptOperation(next, operation);
   const addedNodeIds = plan.operations.filter((operation): operation is Extract<StudioPromptOperation, { kind: "add_node" }> => operation.kind === "add_node").map((operation) => operation.node.id);
   const addedLinkIds = plan.operations.filter((operation): operation is Extract<StudioPromptOperation, { kind: "add_link" }> => operation.kind === "add_link").map((operation) => operation.link.id);
@@ -214,24 +285,56 @@ export function applyStudioPromptIteration(draft: StudioDraft, options: {
     addedNodeIds.length ? (options.locale === "en" ? `added ${addedNodeIds.length} node(s)` : `добавлено узлов: ${addedNodeIds.length}`) : "",
     addedLinkIds.length ? (options.locale === "en" ? `created ${addedLinkIds.length} relation(s)` : `добавлено связей: ${addedLinkIds.length}`) : "",
   ].filter(Boolean).join(options.locale === "en" ? " and " : ", ");
+  const provenance = plan.aiProvenance
+    ? ` AI provenance: model=${plan.aiProvenance.model ?? "unreported"}; request=${plan.aiProvenance.requestId ?? "unreported"}; base=${plan.aiProvenance.baseFingerprint}; plan=${plan.aiProvenance.planFingerprint}.`
+    : "";
+  const reviewNotes = plan.planner === "ai" && ((plan.assumptions?.length ?? 0) || (plan.warnings?.length ?? 0))
+    ? ` Reviewed assumptions: ${(plan.assumptions ?? []).join(" | ") || "none"}. Warnings: ${(plan.warnings ?? []).join(" | ") || "none"}.`
+    : "";
   next = appendStudioHistory(next, {
     role: "studio", source: "prompt", action: "prompt_applied",
     message: structuralSummary
-      ? (options.locale === "en" ? `Applied the iteration without replacing the existing graph: ${structuralSummary}.` : `Итерация применена без замены существующего графа: ${structuralSummary}.`)
+      ? (plan.planner === "ai"
+          ? (options.locale === "en" ? `Applied the reviewed AI-assisted plan without replacing the existing graph: ${structuralSummary}.${provenance}${reviewNotes}` : `Проверенный AI-план применён без замены существующего графа: ${structuralSummary}.${provenance}${reviewNotes}`)
+          : (options.locale === "en" ? `Applied the iteration without replacing the existing graph: ${structuralSummary}.` : `Итерация применена без замены существующего графа: ${structuralSummary}.`))
       : (options.locale === "en" ? "Added this instruction to the case context; the existing graph and manual edits were preserved." : "Инструкция добавлена в контекст кейса; существующий граф и ручные правки сохранены."),
   }, options.createdAt);
   return { draft: next, changed: true, addedNodeIds, addedLinkIds, plan };
 }
 
+function appendPromptSubmissionHistory(draft: StudioDraft, plan: StudioPromptPlan, locale: "en" | "ru", createdAt: string) {
+  if (plan.planner !== "ai" || plan.instruction.length <= 2_000) {
+    return appendStudioHistory(draft, { role: "author", source: "prompt", action: "prompt_submitted", message: plan.instruction }, createdAt);
+  }
+  // AI source prompts can reach 8k. Preserve the complete accepted source in
+  // bounded, non-public history records instead of silently retaining only the
+  // first 2k or the model's shorter summary.
+  const chunkSize = 1_900;
+  const chunks = Array.from({ length: Math.ceil(plan.instruction.length / chunkSize) }, (_, index) => plan.instruction.slice(index * chunkSize, (index + 1) * chunkSize));
+  return chunks.reduce((next, chunk, index) => appendStudioHistory(next, {
+    role: "author",
+    source: "prompt",
+    action: "prompt_submitted",
+    message: `${locale === "en" ? "AI source" : "Источник для ИИ"} ${index + 1}/${chunks.length}:\n${chunk}\n[END AI SOURCE PART]`,
+  }, createdAt), draft);
+}
+
 function executePromptOperation(draft: StudioDraft, operation: StudioPromptOperation): StudioDraft {
   if (operation.kind === "add_node") return { ...draft, nodes: [...draft.nodes, operation.node] };
-  if (operation.kind === "update_node") return { ...draft, nodes: draft.nodes.map((node) => node.id === operation.nodeId ? { ...node, ...operation.change } : node) };
+  if (operation.kind === "update_node") return { ...draft, nodes: draft.nodes.map((node) => node.id === operation.nodeId ? applyPromptNodeChange(node, operation.change) : node) };
   if (operation.kind === "delete_node") return { ...draft, nodes: draft.nodes.filter((node) => node.id !== operation.nodeId), links: draft.links.filter((link) => link.from !== operation.nodeId && link.to !== operation.nodeId) };
   if (operation.kind === "add_link") return { ...draft, links: [...draft.links, operation.link] };
+  if (operation.kind === "update_link") return { ...draft, links: draft.links.map((link) => link.id === operation.linkId ? { ...link, rule: { ...(link.rule ?? {}), ...operation.change } } : link) };
   if (operation.kind === "relink_link") return { ...draft, links: draft.links.map((link) => link.id === operation.linkId ? { ...link, from: operation.from, to: operation.to } : link) };
   if (operation.kind === "delete_link") return { ...draft, links: draft.links.filter((link) => link.id !== operation.linkId) };
   if (operation.kind === "append_context") return { ...draft, premise: `${draft.premise.trim()}\n\n${operation.value}`.trim().slice(0, 8_000) };
+  if (operation.kind === "set_classification") return { ...draft, classification: { ...(draft.classification ?? { domain: "general", practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), ...operation.change, ...(operation.change.domain === "tax" ? { complianceOnly: true } : {}) } };
   return { ...draft, [operation.field]: operation.value };
+}
+
+function applyPromptNodeChange(node: StudioNode, change: Extract<StudioPromptOperation, { kind: "update_node" }>["change"]): StudioNode {
+  const { runtime, ...fields } = change;
+  return { ...node, ...fields, ...(Object.hasOwn(change, "runtime") ? { runtime: runtime ?? undefined } : {}) };
 }
 
 function nextHistoryId(history: StudioEditEntry[], createdAt: string) {

@@ -29,6 +29,8 @@ const migrations = [
   "0004_petite_komodo.sql",
   "0005_dapper_nightcrawler.sql",
   "0006_concerned_korath.sql",
+  "0007_ambitious_phoenix.sql",
+  "0008_first_hitman.sql",
 ] as const;
 
 function migratedDatabase() {
@@ -136,7 +138,7 @@ test("auth JSON is never cacheable and generic errors do not enumerate accounts"
   assert.equal(INVALID_RECOVERY_MESSAGE, "The recovery credentials are invalid or expired.");
 });
 
-test("migration 0006 creates constrained auth storage and permits no plaintext token columns", () => {
+test("current migrations create constrained auth storage and permit no plaintext token columns", () => {
   const db = migratedDatabase();
   assert.equal(db.prepare("PRAGMA integrity_check").get()?.integrity_check, "ok");
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
@@ -158,7 +160,9 @@ test("migration 0006 creates constrained auth storage and permits no plaintext t
   const resetColumns = (db.prepare("PRAGMA table_info(password_reset_tokens)").all() as Array<{ name: string }>).map((row) => row.name);
   assert.ok(sessionColumns.includes("token_hash"));
   assert.ok(recoveryColumns.includes("code_hash"));
+  assert.ok(recoveryColumns.includes("consumed_by"));
   assert.ok(resetColumns.includes("token_hash"));
+  assert.ok(resetColumns.includes("consumed_by"));
   assert.ok(!sessionColumns.includes("token"));
   assert.ok(!recoveryColumns.includes("code"));
   assert.ok(!resetColumns.includes("token"));
@@ -187,6 +191,7 @@ test("migration 0006 creates constrained auth storage and permits no plaintext t
   db.prepare("INSERT INTO account_recovery_codes (account_id, code_hash) VALUES (?, ?)").run(accountId, "recovery-hash-2");
   db.prepare("INSERT INTO password_reset_tokens (account_id, token_hash, expires_at) VALUES (?, ?, ?)")
     .run(accountId, "reset-hash", "2099-01-01T00:00:00.000Z");
+  assert.throws(() => db.prepare("INSERT INTO password_reset_tokens (account_id, token_hash, expires_at) VALUES (?, ?, ?)").run(accountId, "second-active-reset", "2099-01-01T00:00:00.000Z"), /UNIQUE/);
   db.prepare("INSERT INTO auth_audit_events (account_id, event_type, subject_hash) VALUES (?, ?, ?)")
     .run(accountId, "local_login", "subject-hmac");
   db.prepare("INSERT INTO platform_secrets (id, secret) VALUES (?, ?)").run("auth-subject-hmac-v1", "server-only-secret");
@@ -232,6 +237,12 @@ test("source contracts keep ChatGPT first, local admins impossible and recovery 
     assert.match(routeSource, /authJson/);
     assert.doesNotMatch(routeSource, /console\.(?:log|info|debug)/);
   }
+  for (const route of ["forgot-password", "email-reset"]) {
+    const routeSource = source(`app/api/auth/${route}/route.ts`);
+    assert.match(routeSource, /isSameOriginCredentialMutation/);
+    assert.match(routeSource, /authJson/);
+    assert.doesNotMatch(routeSource, /console\.(?:log|info|debug)/);
+  }
 
   for (const route of ["recover", "reset"]) {
     const routeSource = source(`app/api/auth/${route}/route.ts`);
@@ -240,6 +251,9 @@ test("source contracts keep ChatGPT first, local admins impossible and recovery 
     assert.match(routeSource, /authSessions\)\.set\(\{ revokedAt:\s*now \}\)/);
     assert.match(routeSource, /nextRecoveryHash/);
     assert.match(routeSource, /db\.batch\(/);
+    assert.match(routeSource, /consumptionNonce/);
+    assert.match(routeSource, /consumedBy:\s*consumptionNonce/);
+    assert.match(routeSource, /accountRecoveryCodes\.consumedBy/);
   }
 
   const localSession = source("app/local-auth.ts");
@@ -251,6 +265,35 @@ test("source contracts keep ChatGPT first, local admins impossible and recovery 
   assert.match(localSession, /crypto\.subtle\.sign\("HMAC"/);
   assert.match(localSession, /cf-connecting-ip/);
   assert.doesNotMatch(localSession, /x-forwarded-for/i);
+
+  const emailReset = source("app/api/auth/email-reset/route.ts");
+  assert.match(emailReset, /resetToken/);
+  assert.match(emailReset, /gt\(passwordResetTokens\.expiresAt, now\)/);
+  assert.match(emailReset, /isNull\(passwordResetTokens\.usedAt\)/);
+  assert.match(emailReset, /automaticLogin:\s*false/);
+  assert.match(emailReset, /authSessions\)\.set\(\{ revokedAt:\s*now \}\)/);
+  assert.match(emailReset, /consumedBy:\s*consumptionNonce/);
+  assert.match(emailReset, /passwordResetTokens\.consumedBy/);
+  assert.doesNotMatch(emailReset, /sessionCookie|createLocalSessionMaterial|db\.insert\(authSessions\)/);
+
+  const forgot = source("app/api/auth/forgot-password/route.ts");
+  assert.match(forgot, /If an account exists, a password-reset link has been sent/);
+  assert.match(forgot, /return authJson\(\{ accepted: true, message: GENERIC_RESPONSE \}, 202\)/);
+  assert.match(forgot, /waitUntil\(/);
+
+  const adminReset = source("app/api/admin/users/password-reset/route.ts");
+  assert.match(adminReset, /isPlatformAdmin\(identity\)/);
+  assert.match(adminReset, /users\.id, userId/);
+  assert.match(adminReset, /issuePasswordResetEmail\(target\.email, "admin"\)/);
+  assert.doesNotMatch(adminReset, /resetToken|newPassword|temporaryPassword/);
+
+  const mail = source("app/reset-mail.ts");
+  assert.match(mail, /GENESIS_PUBLIC_ORIGIN/);
+  assert.match(mail, /url\.protocol !== "https:"/);
+  assert.match(mail, /url\.pathname !== "\/"/);
+  assert.match(mail, /https:\/\/api\.resend\.com\/emails/);
+  assert.match(mail, /Idempotency-Key/);
+  assert.doesNotMatch(mail, /request\.url|headers\.get\("host"\)|x-forwarded-host/i);
 });
 
 test("profile deletion clears local auth data and all identity responses are no-store", () => {
@@ -263,7 +306,9 @@ test("profile deletion clears local auth data and all identity responses are no-
   assert.ok((me.match(/return authJson/g) ?? []).length >= 8);
 
   const ui = source("app/account/AccountClient.tsx");
-  assert.match(ui, /No email provider is configured/);
+  assert.match(ui, /ADMIN VERIFIED · CHATGPT ALLOWLIST/);
+  assert.match(ui, /LOCAL SESSION · ADMIN RIGHTS DISABLED/);
+  assert.match(ui, /15-minute, single-use link/);
   assert.match(ui, /offline recovery code/);
   assert.match(ui, /trusted ChatGPT identity/);
   assert.match(ui, /never grants platform-administrator rights/);

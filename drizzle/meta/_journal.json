@@ -57,6 +57,13 @@
       "when": 1787443200000,
       "tag": "0007_ambitious_phoenix",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1787445278108,
+      "tag": "0008_first_hitman",
+      "breakpoints": true
     }
   ]
 }
