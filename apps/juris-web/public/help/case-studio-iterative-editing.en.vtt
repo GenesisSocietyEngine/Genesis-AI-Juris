@@ -1,0 +1,25 @@
+WEBVTT
+
+00:00.000 --> 00:03.200
+Open Case Studio. Every prompt and visual change stays in one authoring record.
+
+00:03.200 --> 00:06.400
+Add evidence, connect it to a decision, and rename an actor in one iterative prompt.
+
+00:06.400 --> 00:09.600
+Review the deterministic operation plan before applying any graph changes.
+
+00:09.600 --> 00:12.800
+Apply the plan as one transaction. Inspect its exact diff or undo it.
+
+00:12.800 --> 00:16.000
+The graph, node inspector, and prompt history now describe the same case state.
+
+00:16.000 --> 00:19.200
+Add, rename, and connect a node directly in the visual editor.
+
+00:19.200 --> 00:22.400
+Relink an existing relationship without rebuilding the case.
+
+00:22.400 --> 00:26.200
+Compile the current graph and launch it in the full case player.
