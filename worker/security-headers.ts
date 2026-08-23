@@ -35,6 +35,10 @@ export function withSecurityHeaders(response: Response, requestUrl: URL) {
   if (requestUrl.pathname === "/studio" || requestUrl.pathname.startsWith("/studio/")) headers.delete("X-Frame-Options");
   else headers.set("X-Frame-Options", "DENY");
   headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()");
+  const publicStudioDemoAsset = requestUrl.pathname === "/help/studio-ai-guided-demo.mp4"
+    || requestUrl.pathname === "/help/studio-ai-guided-demo.en.vtt"
+    || requestUrl.pathname === "/help/studio-ai-guided-demo-poster.jpg";
+  if (publicStudioDemoAsset) headers.set("Access-Control-Allow-Origin", "*");
   if (requestUrl.protocol === "https:") headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   const publicCatalogue = requestUrl.pathname === "/api/catalog" || requestUrl.pathname.startsWith("/api/catalog/");
   if (requestUrl.pathname.startsWith("/api/") && !publicCatalogue) {
