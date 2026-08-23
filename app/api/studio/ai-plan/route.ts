@@ -96,22 +96,47 @@ export async function POST(request: Request) {
     return privateJson({ ...result, baseFingerprint });
   } catch (error) {
     const reason = error instanceof StudioAIServiceError ? error.code : "provider_unavailable";
+    const providerFailure = error instanceof StudioAIServiceError ? error.providerFailure : null;
     waitUntil(writeAuthAudit({
       eventType: "studio_ai_plan",
       emailSubjectHash: limit.emailSubjectHash,
       networkSubjectHash: limit.networkSubjectHash,
       success: false,
       reason,
-      detail: { latencyMs: Date.now() - providerStartedAt, contextBytes: providerContextBytes },
+      detail: {
+        latencyMs: Date.now() - providerStartedAt,
+        contextBytes: providerContextBytes,
+        providerStatus: providerFailure?.status ?? null,
+        providerCode: providerFailure?.providerCode ?? null,
+        providerType: providerFailure?.providerType ?? null,
+        providerParam: providerFailure?.providerParam ?? null,
+      },
     }).catch(() => undefined));
     const refused = reason === "refused";
+    const providerError = studioAIProviderError(reason);
     return privateJson({
-      error: refused ? "The source could not be converted into a safe graph plan." : "AI planning is temporarily unavailable. No graph changes were made.",
+      error: refused ? "The source could not be converted into a safe graph plan." : providerError.message,
       code: reason,
-    }, refused ? 422 : 502);
+    }, refused ? 422 : providerError.status, providerFailure?.retryAfterSeconds ? { "Retry-After": String(providerFailure.retryAfterSeconds) } : {});
   } finally {
     waitUntil(releaseStudioAILease(lease.id).catch(() => undefined));
   }
+}
+
+function studioAIProviderError(reason: string) {
+  const errors: Record<string, { message: string; status: number }> = {
+    provider_authentication: { message: "The configured OpenAI API key was rejected. Replace it with an active project API key.", status: 502 },
+    provider_permission: { message: "The OpenAI project key cannot use the configured model or Responses API. Update the key permissions or project access.", status: 502 },
+    provider_quota: { message: "The OpenAI API project has no usable credit or has reached a spend or usage limit. Update API billing or limits, then retry.", status: 503 },
+    provider_rate_limited: { message: "The OpenAI API rate limit was reached. Wait for the indicated interval, then retry.", status: 429 },
+    provider_model_unavailable: { message: "The configured OpenAI model is not available to this API project. Choose a model enabled for the project.", status: 502 },
+    provider_bad_request: { message: "The OpenAI API rejected both the structured planner request and its safe JSON compatibility fallback.", status: 502 },
+    provider_rejected: { message: "The OpenAI API rejected the planner request. Check the project key, model access and API limits.", status: 502 },
+    provider_unavailable: { message: "The OpenAI API could not be reached or returned a temporary server error. No graph changes were made.", status: 502 },
+    invalid_output: { message: "AI returned a plan that did not pass the graph safety validation. No graph changes were made.", status: 502 },
+    incomplete: { message: "AI did not finish the plan. No graph changes were made.", status: 502 },
+  };
+  return errors[reason] ?? errors.provider_unavailable;
 }
 
 function aiDailyRequestLimit() {

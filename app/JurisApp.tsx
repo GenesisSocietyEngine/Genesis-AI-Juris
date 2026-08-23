@@ -2393,6 +2393,10 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
 
   function localizedAIError(code: unknown, fallback: unknown) {
     const key = typeof code === "string" ? code : "";
+    if (key.startsWith("provider_")) {
+      if (locale === "en" && typeof fallback === "string") return fallback;
+      return "OpenAI API отклонил запрос. Проверьте ключ, доступ к модели, биллинг и лимиты проекта.";
+    }
     const messages: Record<string, [string, string]> = {
       ai_context_too_large: ["AI analysis accepts up to 128 KB. Shorten long details or analyse a smaller branch.", "AI-анализ принимает не более 128 КБ. Сократите длинные описания или анализируйте меньшую ветвь."],
       stale_context: ["The graph changed before analysis began. Run analysis again.", "Схема изменилась до начала анализа. Запустите анализ снова."],
@@ -2405,7 +2409,6 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       refused: ["The source could not be converted into a safe graph plan.", "Источник не удалось преобразовать в безопасный план схемы."],
       invalid_output: ["AI returned a plan that did not pass validation. Analyse again.", "AI вернул план, который не прошёл проверку. Запустите анализ снова."],
       incomplete: ["AI did not finish the plan. Analyse again.", "AI не завершил план. Запустите анализ снова."],
-      provider_unavailable: ["AI planning is temporarily unavailable. No changes were made.", "AI-планирование временно недоступно. Изменения не внесены."],
     };
     const translated = messages[key];
     if (translated) return translated[locale === "en" ? 0 : 1];

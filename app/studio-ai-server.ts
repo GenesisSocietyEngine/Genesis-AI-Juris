@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { materializeAIStudioPlan, STUDIO_AI_PLAN_SCHEMA } from "./studio-ai-plan";
 import { studioAIProviderContext } from "./studio-ai-provider-context";
+import { classifyStudioAIProviderFailure, shouldRetryStudioAIWithoutStrictSchema, type StudioAIProviderErrorCode, type StudioAIProviderFailure } from "./studio-ai-provider-error";
 import type { StudioDraft } from "./types";
 
 type StudioAIConfig = { apiKey: string; model: string };
@@ -14,7 +15,10 @@ export type StudioAIUsage = {
 };
 
 export class StudioAIServiceError extends Error {
-  constructor(public readonly code: "not_configured" | "provider_rejected" | "provider_unavailable" | "refused" | "invalid_output" | "incomplete") {
+  constructor(
+    public readonly code: "not_configured" | StudioAIProviderErrorCode | "refused" | "invalid_output" | "incomplete",
+    public readonly providerFailure: StudioAIProviderFailure | null = null,
+  ) {
     super(code);
   }
 }
@@ -54,23 +58,33 @@ export async function createAIStudioPlan(values: {
 
   let response: Response;
   try {
-    response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.apiKey}`,
-        "Content-Type": "application/json",
-        "User-Agent": "GENESIS-JURIS/16 studio-ai",
-      },
-      body: JSON.stringify(requestBody),
-      signal: values.signal
-        ? AbortSignal.any([values.signal, AbortSignal.timeout(35_000)])
-        : AbortSignal.timeout(35_000),
-    });
+    response = await requestStudioAIResponse(config.apiKey, requestBody, values.signal);
   } catch {
     throw new StudioAIServiceError("provider_unavailable");
   }
-  const payload: unknown = await response.json().catch(() => null);
-  if (!response.ok) throw new StudioAIServiceError("provider_rejected");
+  let payload: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const failure = classifyStudioAIProviderFailure(response.status, payload, response.headers.get("Retry-After"));
+    if (shouldRetryStudioAIWithoutStrictSchema(failure)) {
+      const fallbackBody = {
+        ...requestBody,
+        instructions: `${providerContext.instructions}\n- Return one valid JSON object matching the described plan shape. Do not wrap it in Markdown.`,
+        text: { format: { type: "json_object" } },
+      };
+      try {
+        response = await requestStudioAIResponse(config.apiKey, fallbackBody, values.signal);
+      } catch {
+        throw new StudioAIServiceError("provider_unavailable");
+      }
+      payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        const fallbackFailure = classifyStudioAIProviderFailure(response.status, payload, response.headers.get("Retry-After"));
+        throw new StudioAIServiceError(fallbackFailure.code, fallbackFailure);
+      }
+    } else {
+      throw new StudioAIServiceError(failure.code, failure);
+    }
+  }
   if (!isRecord(payload)) throw new StudioAIServiceError("invalid_output");
   if (payload.status !== "completed") throw new StudioAIServiceError(payload.status === "incomplete" ? "incomplete" : "invalid_output");
   const output = Array.isArray(payload.output) ? payload.output : [];
@@ -98,6 +112,21 @@ export async function createAIStudioPlan(values: {
     requestId: typeof payload.id === "string" ? payload.id.slice(0, 200) : null,
     usage: studioAIUsage(payload.usage),
   };
+}
+
+async function requestStudioAIResponse(apiKey: string, body: unknown, signal?: AbortSignal) {
+  return fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "User-Agent": "GENESIS-JURIS/17 studio-ai",
+    },
+    body: JSON.stringify(body),
+    signal: signal
+      ? AbortSignal.any([signal, AbortSignal.timeout(35_000)])
+      : AbortSignal.timeout(35_000),
+  });
 }
 
 function studioAIUsage(value: unknown): StudioAIUsage | null {
