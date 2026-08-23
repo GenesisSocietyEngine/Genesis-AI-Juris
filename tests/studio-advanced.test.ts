@@ -322,7 +322,7 @@ test("Help ships a complete expert demo and two local accessible walkthroughs wi
   assert.match(directPage, /English and Russian captions/);
   assert.match(directPage, /Five Flats, Three Countries/);
   assert.match(directPage, /03:00/);
-  assert.match(guidedSource, /27-node graph/);
+  assert.match(guidedSource, /27-node, 31-connection graph/);
   assert.match(guidedSource, /£24,328 annual cash flow/);
   assert.match(helpSource, /Your browser does not support HTML video/);
   assert.match(helpSource, /Ваш браузер не поддерживает HTML-видео/);
