@@ -4,7 +4,7 @@ import test from "node:test";
 import { caseFingerprint } from "../app/case-integrity";
 import { normalizePlayableScenario, playableFingerprint } from "../app/playable-integrity";
 import { compileStudioDraft } from "../app/studio-compiler";
-import { applyStudioPromptIteration, planStudioPromptIteration } from "../app/studio-editing";
+import { applyStudioPromptIteration, nextStudioNodePosition, planStudioPromptIteration } from "../app/studio-editing";
 import { applyStudioSnapshot, diffDraftToRevision, emptyStudioTimeline, recordStudioRevision, stepStudioTimeline } from "../app/studio-revisions";
 import type { StudioDraft, StudioNodeType } from "../app/types";
 
@@ -73,6 +73,15 @@ test("negated graph commands are not executed and context-only turns remain expl
   const applied = applyStudioPromptIteration(base, { instruction: "Do not add evidence.", locale: "en", nodeLabels, createdAt: at });
   assert.equal(applied.draft.nodes.length, base.nodes.length);
   assert.match(applied.draft.premise, /Do not add evidence/);
+});
+
+test("manual node placement honours the current viewport centre and avoids occupied cards", () => {
+  const nodes = draft().nodes;
+  const centred = nextStudioNodePosition(nodes, nodes[0], { x: 1_480, y: 920 });
+  assert.deepEqual(centred, { x: 1_480, y: 920 });
+  const occupied = nextStudioNodePosition([...nodes, { ...nodes[0], id: "occupied-centre", x: 1_480, y: 920 }], nodes[0], { x: 1_480, y: 920 });
+  assert.notDeepEqual(occupied, { x: 1_480, y: 920 });
+  assert.ok(Math.abs(occupied.x - 1_480) <= 440 && Math.abs(occupied.y - 920) <= 300);
 });
 
 test("session timeline provides exact diff, undo, redo and branch truncation", () => {
@@ -192,6 +201,16 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /event\.key !== "Delete" && event\.key !== "Backspace"/);
   assert.match(appSource, /target instanceof HTMLInputElement/);
   assert.match(appSource, /Press Delete to remove it/);
+  assert.match(appSource, /function visibleGraphCenter\(\)/);
+  assert.match(appSource, /viewport\.scrollLeft \+ viewport\.clientWidth \/ 2/);
+  assert.match(appSource, /useState<GraphOrientation>\(\(\) => inferGraphOrientation\(draft\.nodes, draft\.links\)\)/, "new graphs default vertically while existing saved layouts retain their direction");
+  assert.match(appSource, /if \(!directions\.length\) return "vertical"/);
+  assert.match(appSource, /<option value="vertical">/);
+  assert.match(appSource, /<option value="horizontal">/);
+  assert.match(appSource, /graphLinkGeometry\(from,to,graphOrientation\)/, "relation curves follow the chosen orientation");
+  assert.match(appSource, /function focusNodeAsSource\(nodeId: string\)/);
+  assert.match(appSource, /className="relation-node-tag destination"/, "destination endpoints expose stable node-number navigation");
+  assert.match(appSource, /relation-source-\$\{sourceLink\.id\}/, "destination navigation focuses the matching source row");
   assert.match(appSource, /press Delete to remove/, "selected nodes expose their keyboard deletion shortcut");
   assert.match(appSource, /CashFlowScenarioEditor/, "a selected cash-flow node exposes editable model controls");
   assert.match(cashFlowEditorSource, /CASH-FLOW SCENARIO/);

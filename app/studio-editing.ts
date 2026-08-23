@@ -64,8 +64,15 @@ export function nextStudioLinkId(links: StudioLink[]) {
   return `link-${sequence}`;
 }
 
-export function nextStudioNodePosition(nodes: StudioNode[], anchor?: StudioNode | null) {
-  const candidates = anchor
+export function nextStudioNodePosition(nodes: StudioNode[], anchor?: StudioNode | null, preferred?: { x: number; y: number } | null) {
+  const clamp = (value: number, minimum: number, maximum: number) => Math.min(maximum, Math.max(minimum, Math.round(value)));
+  const preferredOffsets = [
+    [0, 0], [0, 150], [0, -150], [220, 0], [-220, 0], [220, 150], [-220, 150], [220, -150], [-220, -150],
+    [0, 300], [0, -300], [440, 0], [-440, 0], [440, 150], [-440, 150], [440, -150], [-440, -150],
+  ];
+  const candidates = preferred
+    ? preferredOffsets.map(([offsetX, offsetY]) => ({ x: clamp(preferred.x + offsetX, 20, 5_000), y: clamp(preferred.y + offsetY, 20, 5_000) }))
+    : anchor
     ? Array.from({ length: 18 }, (_, index) => ({ x: Math.min(1_005, Math.max(20, anchor.x + 205 + (index % 3) * 22)), y: Math.min(470, Math.max(20, anchor.y + (Math.floor(index / 3) - 2) * 90)) }))
     : Array.from({ length: 30 }, (_, index) => ({ x: 55 + (index % 5) * 210, y: 55 + (Math.floor(index / 5) % 3) * 170 }));
   return candidates.find((candidate) => nodes.every((node) => Math.abs(node.x - candidate.x) > 150 || Math.abs(node.y - candidate.y) > 68))

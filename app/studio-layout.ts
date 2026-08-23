@@ -2,11 +2,17 @@ import type { StudioLink, StudioNode } from "./types";
 
 export const STUDIO_NODE_WIDTH = 165;
 export const STUDIO_NODE_HEIGHT = 96;
+export type StudioLayoutOrientation = "vertical" | "horizontal";
 const COLUMN_PITCH = 320;
-const ROW_GAP = 54;
-const COMPONENT_GAP = 110;
+const ROW_GAP = 88;
+const COMPONENT_GAP = 160;
+const VERTICAL_NODE_GAP = 92;
+const VERTICAL_LAYER_GAP = 150;
+const VERTICAL_WRAP_GAP = 72;
+const VERTICAL_COMPONENT_GAP = 210;
+const VERTICAL_ROW_CAPACITY = 5;
 const PADDING_X = 46;
-const PADDING_Y = 70;
+const PADDING_Y = 86;
 
 export type StudioGraphBounds = { width: number; height: number };
 
@@ -14,7 +20,7 @@ export type StudioGraphBounds = { width: number; height: number };
  * Deterministic layered layout for Studio graphs. It uses the graph topology
  * when possible and still gives cyclic or disconnected nodes unique slots.
  */
-export function layoutStudioNodes(nodes: StudioNode[], links: StudioLink[]) {
+export function layoutStudioNodes(nodes: StudioNode[], links: StudioLink[], orientation: StudioLayoutOrientation = "vertical") {
   if (nodes.length < 2) return nodes.map((node) => ({ ...node }));
   const order = new Map(nodes.map((node, index) => [node.id, index]));
   const ids = new Set(order.keys());
@@ -124,6 +130,27 @@ export function layoutStudioNodes(nodes: StudioNode[], links: StudioLink[]) {
       column,
       values: (columns.get(column) ?? []).filter((id) => componentIds.has(id)),
     })).filter((item) => item.values.length > 0);
+    if (orientation === "vertical") {
+      const rows = componentColumns.map(({ values }) => Array.from({ length: Math.ceil(values.length / VERTICAL_ROW_CAPACITY) }, (_, index) => values.slice(index * VERTICAL_ROW_CAPACITY, (index + 1) * VERTICAL_ROW_CAPACITY)));
+      const rowWidth = (values: string[]) => values.length * STUDIO_NODE_WIDTH + Math.max(0, values.length - 1) * VERTICAL_NODE_GAP;
+      const componentWidth = Math.max(STUDIO_NODE_WIDTH, ...rows.flatMap((chunks) => chunks.map(rowWidth)));
+      let y = componentTop;
+      for (const chunks of rows) {
+        for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex += 1) {
+          const values = chunks[chunkIndex];
+          const height = Math.max(STUDIO_NODE_HEIGHT, ...values.map((id) => studioNodeEstimatedHeight(nodeById.get(id))));
+          let x = PADDING_X + Math.max(0, (componentWidth - rowWidth(values)) / 2);
+          for (const id of values) {
+            positions.set(id, { x, y });
+            x += STUDIO_NODE_WIDTH + VERTICAL_NODE_GAP;
+          }
+          y += height + (chunkIndex < chunks.length - 1 ? VERTICAL_WRAP_GAP : 0);
+        }
+        y += VERTICAL_LAYER_GAP;
+      }
+      componentTop = y - VERTICAL_LAYER_GAP + VERTICAL_COMPONENT_GAP;
+      continue;
+    }
     const componentHeight = Math.max(STUDIO_NODE_HEIGHT, ...componentColumns.map((item) => columnHeight(item.values)));
     for (const { column, values } of componentColumns) {
       let y = componentTop + Math.max(0, (componentHeight - columnHeight(values)) / 2);

@@ -35,7 +35,38 @@ import type {
 type Locale = "en" | "ru";
 type View = "library" | "play" | "studio" | "community" | "help";
 type Theme = "office" | "after-hours";
+type GraphOrientation = "vertical" | "horizontal";
 type StudioAIEntitlement = "loading" | "anonymous" | "profile_required" | "ready" | "not_configured" | "unavailable";
+function inferGraphOrientation(nodes: StudioNode[], links: StudioLink[]): GraphOrientation {
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const directions = links.flatMap((link) => {
+    const from = nodeById.get(link.from);
+    const to = nodeById.get(link.to);
+    return from && to ? [{ horizontal: Math.abs(to.x - from.x), vertical: Math.abs(to.y - from.y) }] : [];
+  });
+  if (!directions.length) return "vertical";
+  return directions.filter((direction) => direction.vertical > direction.horizontal).length >= Math.ceil(directions.length / 2) ? "vertical" : "horizontal";
+}
+function graphNodeVisualHeight(node: StudioNode) {
+  const titleLines = Math.max(1, Math.ceil(node.title.trim().length / 18));
+  const runtimeHeight = node.runtime?.budgetCostEur !== undefined || node.runtime?.durationMinutes !== undefined ? 22 : 0;
+  return Math.max(96, 40 + titleLines * 17 + runtimeHeight);
+}
+function graphLinkGeometry(from: StudioNode, to: StudioNode, orientation: GraphOrientation) {
+  if (orientation === "vertical") {
+    const startX = from.x + 82.5;
+    const startY = from.y + graphNodeVisualHeight(from);
+    const endX = to.x + 82.5;
+    const endY = to.y;
+    const bend = Math.max(60, Math.abs(endY - startY) * 0.42);
+    return { path: `M ${startX} ${startY} C ${startX} ${startY + bend}, ${endX} ${endY - bend}, ${endX} ${endY}`, endX, endY };
+  }
+  const startX = from.x + 165;
+  const startY = from.y + 38;
+  const endX = to.x;
+  const endY = to.y + 38;
+  return { path: `M ${startX} ${startY} C ${startX + 40} ${startY}, ${endX - 38} ${endY}, ${endX} ${endY}`, endX, endY };
+}
 function graphBoundsForNodes(nodes: StudioNode[]) {
   return {
     width: Math.max(1_200, Math.ceil(nodes.reduce((value, node) => Math.max(value, node.x + 211), 0))),
@@ -1514,12 +1545,12 @@ export default function JurisApp() {
     if (!selectedNodeId) return;
     updateStudioDraft((current) => ({ ...current, nodes: current.nodes.map((node) => node.id === selectedNodeId ? { ...node, ...change } : node) }));
   }
-  function addNode(type: StudioNodeType) {
+  function addNode(type: StudioNodeType, preferredPosition?: { x: number; y: number }) {
     const createdAt = new Date().toISOString();
     if (draftRef.current.nodes.length >= 200) return;
     const id = nextStudioNodeId(draftRef.current.nodes, type);
     commitStudioDraft((current) => {
-      const position = nextStudioNodePosition(current.nodes, current.nodes.find((node) => node.id === selectedNodeId));
+      const position = nextStudioNodePosition(current.nodes, current.nodes.find((node) => node.id === selectedNodeId), preferredPosition);
       return appendStudioHistory({ ...current, nodes: [...current.nodes, { id, type, title: text.nodeTypes[type], detail: "", ...position }] }, { role: "studio", source: "visual", action: "node_added", message: locale === "en" ? `Visual edit: added ${text.nodeTypes[type]} node “${text.nodeTypes[type]}”.` : `Визуальная правка: добавлен узел «${text.nodeTypes[type]}».` }, createdAt);
     }, locale === "en" ? `Added ${text.nodeTypes[type]} node` : `Добавлен узел «${text.nodeTypes[type]}»`, "visual", createdAt);
     setSelectedNodeId(id);
@@ -2244,7 +2275,7 @@ type StudioViewProps = {
   generateDraft: () => void; applyPromptIteration: () => void; applyReviewedAIPlan: (plan: StudioPromptPlan, baseFingerprint: string) => boolean; saveDraft: () => void; savedFlash: boolean;
   exportDraft: () => void; importRef: React.RefObject<HTMLInputElement | null>; importDraft: (file: File) => void;
   createChildVersion: () => void; updateNode: (change: Partial<StudioNode>) => void;
-  recordVisualEdit: (action: StudioEditAction, message: string, before?: StudioDraft) => void; addNode: (type: StudioNodeType) => void;
+  recordVisualEdit: (action: StudioEditAction, message: string, before?: StudioDraft) => void; addNode: (type: StudioNodeType, preferredPosition?: { x: number; y: number }) => void;
   addLink: (from: string, to: string) => void; relinkLink: (previous: StudioLink, next: StudioLink) => void;
   deleteLink: (link: StudioLink) => void; deleteNode: () => void;
   moveNode: (event: React.PointerEvent<HTMLButtonElement>, node: StudioNode, graphScale?: number) => void; resetDraft: () => boolean | void;
@@ -2307,6 +2338,9 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   const [destinationNodeQuery, setDestinationNodeQuery] = useState("");
   const [destinationNodePage, setDestinationNodePage] = useState(0);
   const [graphZoom, setGraphZoom] = useState(1);
+  const [graphOrientation, setGraphOrientation] = useState<GraphOrientation>(() => inferGraphOrientation(draft.nodes, draft.links));
+  const graphDraftIdentity = `${draft.caseId}\u0000${draft.version}`;
+  const graphDraftIdentityRef = useRef(graphDraftIdentity);
   const [caseReportOpen, setCaseReportOpen] = useState(false);
   const [caseReportStatus, setCaseReportStatus] = useState("");
   const aiAbortRef = useRef<AbortController | null>(null);
@@ -2342,6 +2376,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   const reviewLinkEndpoints = useMemo(() => new Map(draft.links.map((link) => [link.id, { from: link.from, to: link.to }])), [draft.links]);
   const compiledDraft = derivationsSettled ? studioDerivations.compilation : { scenario: null, issues: [], warnings: [] };
   const nodeById = useMemo(() => new Map(draft.nodes.map((node) => [node.id, node])), [draft.nodes]);
+  const nodeNumberById = useMemo(() => new Map(draft.nodes.map((node, index) => [node.id, index + 1])), [draft.nodes]);
   const graphBounds = useMemo(() => graphBoundsForNodes(draft.nodes), [draft.nodes]);
   const relationPageSize = 20;
   const relationPageCount = Math.max(1, Math.ceil(draft.links.length / relationPageSize));
@@ -2367,6 +2402,12 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   const userLocalFallback = (aiEntitlement !== "ready" && aiEntitlement !== "loading") || aiState === "error";
 
   useEffect(() => () => aiAbortRef.current?.abort(), []);
+
+  useEffect(() => {
+    if (graphDraftIdentityRef.current === graphDraftIdentity) return;
+    graphDraftIdentityRef.current = graphDraftIdentity;
+    setGraphOrientation(inferGraphOrientation(draft.nodes, draft.links));
+  }, [draft.links, draft.nodes, graphDraftIdentity]);
 
   useEffect(() => {
     if (studioDerivations.source === draft) return;
@@ -2523,20 +2564,30 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     if (viewport) viewport.scrollTo({ left: Math.max(0, (viewport.scrollWidth - viewport.clientWidth) / 2), top: Math.max(0, (viewport.scrollHeight - viewport.clientHeight) / 2), behavior: "smooth" });
   }
 
-  async function autoLayoutGraph() {
+  function visibleGraphCenter() {
+    const viewport = graphViewportRef.current;
+    if (!viewport) return { x: 430, y: 210 };
+    const scale = Math.max(0.1, graphZoom);
+    return {
+      x: Math.max(20, Math.round((viewport.scrollLeft + viewport.clientWidth / 2) / scale - 82.5)),
+      y: Math.max(20, Math.round((viewport.scrollTop + viewport.clientHeight / 2) / scale - 48)),
+    };
+  }
+
+  async function autoLayoutGraph(orientation: GraphOrientation = graphOrientation) {
     if (!canDuplicate || draftRef.current.nodes.length < 2) { fitGraph(); return; }
     const { layoutStudioNodes } = await import("./studio-layout");
     const before = draftRef.current;
-    const nodes = layoutStudioNodes(before.nodes, before.links);
+    const nodes = layoutStudioNodes(before.nodes, before.links, orientation);
     const changed = nodes.some((node, index) => node.x !== before.nodes[index]?.x || node.y !== before.nodes[index]?.y);
     if (changed) {
       setDraft({ ...before, nodes });
-      recordVisualEdit("node_moved", locale === "en" ? "Visual edit: automatically arranged connected graph components into separate non-overlapping topology lanes." : "Визуальная правка: связанные компоненты схемы автоматически разложены по отдельным неперекрывающимся топологическим полосам.", before);
+      recordVisualEdit("node_moved", locale === "en" ? `Visual edit: automatically arranged connected graph components into separate non-overlapping topology lanes (${orientation}).` : `Визуальная правка: связанные компоненты схемы автоматически разложены по отдельным неперекрывающимся топологическим полосам (${orientation === "vertical" ? "сверху вниз" : "слева направо"}).`, before);
     }
     const viewportWidth = graphViewportRef.current?.clientWidth ?? graphDeckRef.current?.clientWidth ?? 900;
     setGraphZoom(Math.max(0.72, Math.min(1, viewportWidth / 900)));
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => graphViewportRef.current?.scrollTo({ left: 0, top: 0, behavior: "auto" })));
-    if (changed) setRelationStatus(locale === "en" ? "Graph arranged at a readable scale · use Fit for an overview." : "Схема разложена в читаемом масштабе · «Вместить» покажет обзор.");
+    if (changed) setRelationStatus(locale === "en" ? `${orientation === "vertical" ? "Top-to-bottom" : "Left-to-right"} graph arranged · use Fit for an overview.` : `Схема разложена ${orientation === "vertical" ? "сверху вниз" : "слева направо"} · «Вместить» покажет обзор.`);
   }
 
   function clearTransientEditorSelection() {
@@ -2716,6 +2767,27 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     setSelectedRuleLinkId(null);
     setRelationStatus("");
     selectNode(nodeId);
+  }
+  function focusNodeAsSource(nodeId: string) {
+    selectGraphNode(nodeId);
+    const sourceRelationIndex = draft.links.findIndex((link) => link.from === nodeId);
+    if (sourceRelationIndex >= 0) {
+      const sourceLink = draft.links[sourceRelationIndex];
+      setRelationPage(Math.floor(sourceRelationIndex / relationPageSize));
+      setRelationStatus(locale === "en" ? "Opened at first outgoing connection." : "Открыта первая исходящая связь.");
+      window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+        const sourceButton = document.getElementById(`relation-source-${sourceLink.id}`);
+        sourceButton?.scrollIntoView({ behavior: "smooth", block: "center" });
+        sourceButton?.focus();
+      }));
+      return;
+    }
+    setRelationStatus(locale === "en" ? "No outgoing connection yet." : "Исходящей связи пока нет.");
+    window.requestAnimationFrame(() => {
+      const nodeButton = document.getElementById(`studio-node-${nodeId}`);
+      nodeButton?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+      nodeButton?.focus();
+    });
   }
   function selectGraphLink(link: StudioLink) {
     selectNode(null);
@@ -2946,13 +3018,13 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     </div>
     {(draft.dealEconomics || draft.nodes.some((node) => node.type === "cash_flow")) && <Suspense fallback={<section className="deal-outcome deal-outcome-empty page-width" role="status"><p>{locale === "en" ? "Calculating case cash flow…" : "Расчёт денежного потока…"}</p></section>}><DealOutcomePanel locale={locale} draft={draft}/></Suspense>}
     <section className="studio-workspace">
-      <aside className="node-palette" inert={!canDuplicate}><div className="pane-heading"><span>{text.addNode}</span><b>{String(paletteNodeTypes.length).padStart(2,"0")}</b></div>{paletteNodeTypes.map((type) => <button key={type} disabled={!canDuplicate || draft.nodes.length >= 200} onClick={() => addNode(type)}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "Add nodes here. On the graph, choose an output dot and then an input dot to create a relation. Every completed edit is added to the history." : "Добавляйте узлы здесь. На графе выберите выходную, затем входную точку, чтобы создать связь. Каждая завершённая правка попадёт в историю."}</p></aside>
+      <aside className="node-palette" inert={!canDuplicate}><div className="pane-heading"><span>{text.addNode}</span><b>{String(paletteNodeTypes.length).padStart(2,"0")}</b></div>{paletteNodeTypes.map((type) => <button key={type} disabled={!canDuplicate || draft.nodes.length >= 200} onClick={() => { addNode(type, visibleGraphCenter()); setRelationStatus(locale === "en" ? "Node added at the centre of the current graph view." : "Нода добавлена в центр текущей области схемы."); }}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "New nodes appear in the centre of your current graph view. Choose an output dot and then an input dot to create a relation; every completed edit is added to the history." : "Новые ноды появляются в центре текущей области схемы. Выберите выходную, затем входную точку, чтобы создать связь; каждая завершённая правка попадёт в историю."}</p></aside>
       <section className="graph-deck" ref={graphDeckRef}>
-        <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div className="graph-heading-actions"><div>{displayMode === "developer" ? <><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></> : <span className="graph-counts">{draft.nodes.length} {locale === "en" ? "nodes" : "узлов"} · {draft.links.length} {locale === "en" ? "connections" : "связей"}</span>}</div><div className="graph-zoom-controls" aria-label={locale === "en" ? "Graph view controls" : "Управление видом схемы"}><button type="button" disabled={!canDuplicate || draft.nodes.length < 2} onClick={autoLayoutGraph}>{locale === "en" ? "Auto-layout" : "Авто-раскладка"}</button><button type="button" onClick={fitGraph}>{locale === "en" ? "Fit" : "Вместить"}</button><button type="button" onClick={() => setGraphZoom(1)}>100%</button><button type="button" onClick={centerGraph}>{locale === "en" ? "Center" : "По центру"}</button></div></div></div>
+        <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div className="graph-heading-actions"><div>{displayMode === "developer" ? <><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></> : <span className="graph-counts">{draft.nodes.length} {locale === "en" ? "nodes" : "узлов"} · {draft.links.length} {locale === "en" ? "connections" : "связей"}</span>}</div><div className="graph-zoom-controls" aria-label={locale === "en" ? "Graph view controls" : "Управление видом схемы"}><label className="graph-orientation-control"><span>{locale === "en" ? "Flow" : "Поток"}</span><select value={graphOrientation} onChange={(event) => { const orientation = event.target.value as GraphOrientation; setGraphOrientation(orientation); void autoLayoutGraph(orientation); }} aria-label={locale === "en" ? "Graph orientation" : "Ориентация схемы"}><option value="vertical">{locale === "en" ? "Vertical" : "Вертикально"}</option><option value="horizontal">{locale === "en" ? "Horizontal" : "Горизонтально"}</option></select></label><button type="button" disabled={!canDuplicate || draft.nodes.length < 2} onClick={() => void autoLayoutGraph()}>{locale === "en" ? "Auto-layout" : "Авто-раскладка"}</button><button type="button" onClick={fitGraph}>{locale === "en" ? "Fit" : "Вместить"}</button><button type="button" onClick={() => setGraphZoom(1)}>100%</button><button type="button" onClick={centerGraph}>{locale === "en" ? "Center" : "По центру"}</button></div></div></div>
         <div id="graph-connect-status" className="graph-connect-status" role="status" aria-live="polite" tabIndex={-1}><span className={linkSourceId || selectedRuleLinkId || selectedNodeId ? "armed" : ""}/>{relationStatus || (locale === "en" ? "Connect: select OUT then IN. Select a node or relation and press Delete to remove it." : "Связь: выберите ВЫХОД, затем ВХОД. Выделите узел или связь и нажмите Delete для удаления.")}{linkSourceId && <button onClick={() => { setLinkSourceId(null); setRelationStatus(""); }}>{locale === "en" ? "Cancel" : "Отмена"}</button>}</div>
         <div className="graph-viewport" ref={graphViewportRef} aria-label={locale === "en" ? "Resizable graph viewport" : "Изменяемое окно схемы"}>
-        <div className="graph-canvas" style={{ zoom: graphZoom, width: graphBounds.width, height: graphBounds.height }}>
-          <svg className="graph-links" aria-label={locale === "en" ? "Case relationships" : "Связи кейса"}>{draft.links.map((link) => { const from=nodeById.get(link.from); const to=nodeById.get(link.to); if(!from||!to)return null; const path=`M ${from.x+165} ${from.y+38} C ${from.x+205} ${from.y+38}, ${to.x-38} ${to.y+38}, ${to.x} ${to.y+38}`; const selected=selectedRuleLinkId===link.id; return <g key={link.id} className={`graph-link ${selected?"selected":""}`} role="button" tabIndex={0} aria-pressed={selected} aria-label={locale === "en" ? `Relation from ${from.title} to ${to.title}. Press Delete to remove.` : `Связь от «${from.title}» к «${to.title}». Нажмите Delete для удаления.`} onClick={() => selectGraphLink(link)} onKeyDown={(event) => { if(event.key==="Enter"||event.key===" "){event.preventDefault();selectGraphLink(link);} }}><title>{from.title} → {to.title}</title><path className="graph-link-hit" d={path}/><path className="graph-link-visible" d={path}/><circle cx={to.x} cy={to.y+38} r="3"/></g>; })}</svg>
+        <div className={`graph-canvas graph-orientation-${graphOrientation}`} style={{ zoom: graphZoom, width: graphBounds.width, height: graphBounds.height }}>
+          <svg className="graph-links" aria-label={locale === "en" ? "Case relationships" : "Связи кейса"}>{draft.links.map((link) => { const from=nodeById.get(link.from); const to=nodeById.get(link.to); if(!from||!to)return null; const geometry=graphLinkGeometry(from,to,graphOrientation); const selected=selectedRuleLinkId===link.id; return <g key={link.id} className={`graph-link ${selected?"selected":""}`} role="button" tabIndex={0} aria-pressed={selected} aria-label={locale === "en" ? `Relation from ${from.title} to ${to.title}. Press Delete to remove.` : `Связь от «${from.title}» к «${to.title}». Нажмите Delete для удаления.`} onClick={() => selectGraphLink(link)} onKeyDown={(event) => { if(event.key==="Enter"||event.key===" "){event.preventDefault();selectGraphLink(link);} }}><title>{from.title} → {to.title}</title><path className="graph-link-hit" d={geometry.path}/><path className="graph-link-visible" d={geometry.path}/><circle cx={geometry.endX} cy={geometry.endY} r="3"/></g>; })}</svg>
           {draft.nodes.length === 0 && <div className="graph-empty-state"><Icon name="spark"/><h3>{locale === "en" ? "Start with a description or one node" : "Начните с описания или первого узла"}</h3><p>{locale === "en" ? "Describe the matter above and choose “Understand with AI”, or add a Trigger from the left palette." : "Опишите ситуацию выше и нажмите «Понять и структурировать с AI» либо добавьте «Триггер» в палитре слева."}</p></div>}
           {draft.nodes.map((node) => <div key={node.id} className={`graph-node-shell ${node.id===selectedNodeId?"selected":""} ${node.id===linkSourceId?"link-source":""}`} style={{left:node.x,top:node.y,"--node-color":typeColors[node.type]} as React.CSSProperties}>
             <button className="node-port node-port-in" disabled={!canDuplicate} onClick={() => completeLink(node.id)} aria-label={locale === "en" ? `Use ${node.title} as relation destination` : `Использовать ${node.title} как назначение связи`}><span/></button>
@@ -2969,9 +3041,9 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
             {draft.nodes.length > STUDIO_NODE_MENU_PAGE_SIZE && <div className="relation-node-menu"><label><span>{locale === "en" ? "Find a node for endpoint menus" : "Найти узел для меню связей"}</span><input type="search" value={relationNodeQuery} disabled={!canDuplicate} placeholder={locale === "en" ? "Title, type or ID" : "Название, тип или ID"} onChange={(event) => { setRelationNodeQuery(event.target.value); setRelationNodePage(0); }}/></label><span>{relationNodeMenu.start}–{relationNodeMenu.end} / {relationNodeMenu.total}</span><button type="button" disabled={!canDuplicate || relationNodeMenu.page === 0} onClick={() => setRelationNodePage(relationNodeMenu.page - 1)} aria-label={locale === "en" ? "Previous node-menu page" : "Предыдущая страница меню узлов"}><Icon name="arrow"/></button><button type="button" disabled={!canDuplicate || relationNodeMenu.page >= relationNodeMenu.pageCount - 1} onClick={() => setRelationNodePage(relationNodeMenu.page + 1)} aria-label={locale === "en" ? "Next node-menu page" : "Следующая страница меню узлов"}><Icon name="arrow"/></button></div>}
             <ol>{visibleRelations.map((link, pageIndex) => { const index = safeRelationPage * relationPageSize + pageIndex; return <li key={link.id} className={selectedRuleLinkId === link.id ? "rules-selected" : ""}>
               {displayMode === "developer" ? <code>{String(index + 1).padStart(2,"0")}</code> : <span className="relation-number">{index + 1}</span>}
-              <label><span>{locale === "en" ? "Source" : "Источник"}</span><select disabled={!canDuplicate} aria-label={locale === "en" ? `Source for relation ${index + 1}` : `Источник связи ${index + 1}`} value={link.from} onChange={(event) => changeRelation(link, "from", event.target.value)}>{studioNodeMenuOptions(relationNodeMenu.nodes,nodeById,link.from).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></label>
+              <div className="relation-endpoint"><div className="relation-endpoint-title"><span>{locale === "en" ? "Source" : "Источник"}</span><button id={`relation-source-${link.id}`} className="relation-node-tag" type="button" onClick={() => focusNodeAsSource(link.from)} aria-label={`${locale === "en" ? "Open source" : "Открыть источник"} ${nodeNumberById.get(link.from) ?? ""}`}>N{String(nodeNumberById.get(link.from) ?? 0).padStart(2,"0")}</button></div><select disabled={!canDuplicate} aria-label={locale === "en" ? `Source for relation ${index + 1}` : `Источник связи ${index + 1}`} value={link.from} onChange={(event) => changeRelation(link, "from", event.target.value)}>{studioNodeMenuOptions(relationNodeMenu.nodes,nodeById,link.from).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></div>
               <span className="relation-arrow">→</span>
-              <label><span>{locale === "en" ? "Destination" : "Назначение"}</span><select disabled={!canDuplicate} aria-label={locale === "en" ? `Destination for relation ${index + 1}` : `Назначение связи ${index + 1}`} value={link.to} onChange={(event) => changeRelation(link, "to", event.target.value)}>{studioNodeMenuOptions(relationNodeMenu.nodes,nodeById,link.to).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></label>
+              <div className="relation-endpoint"><div className="relation-endpoint-title"><span>{locale === "en" ? "Destination" : "Назначение"}</span><button className="relation-node-tag destination" type="button" onClick={() => focusNodeAsSource(link.to)} aria-label={`${locale === "en" ? "Open destination" : "Открыть назначение"} ${nodeNumberById.get(link.to) ?? ""}`}>N{String(nodeNumberById.get(link.to) ?? 0).padStart(2,"0")}</button></div><select disabled={!canDuplicate} aria-label={locale === "en" ? `Destination for relation ${index + 1}` : `Назначение связи ${index + 1}`} value={link.to} onChange={(event) => changeRelation(link, "to", event.target.value)}>{studioNodeMenuOptions(relationNodeMenu.nodes,nodeById,link.to).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></div>
               <button className="relation-rules" onClick={() => selectedRuleLinkId === link.id ? setSelectedRuleLinkId(null) : selectGraphLink(link)} aria-expanded={selectedRuleLinkId === link.id}>{displayMode === "developer" ? (locale === "en" ? "Rules" : "Правила") : (locale === "en" ? "Choice" : "Выбор")}</button>
               <button className="relation-delete" disabled={!canDuplicate} onClick={() => { deleteLink(link); if (selectedRuleLinkId === link.id) setSelectedRuleLinkId(null); setRelationStatus(locale === "en" ? "Relation deleted. Undo is available." : "Связь удалена. Доступна отмена действия."); focusRelationStatus(); }} aria-label={locale === "en" ? `Delete relation ${index + 1}` : `Удалить связь ${index + 1}`}><Icon name="trash" size={15}/></button>
             </li>; })}</ol>
