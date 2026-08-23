@@ -2344,6 +2344,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   const graphDraftIdentity = `${draft.caseId}\u0000${draft.version}`;
   const graphDraftIdentityRef = useRef(graphDraftIdentity);
   const [caseReportOpen, setCaseReportOpen] = useState(false);
+  const [caseReportLoading, setCaseReportLoading] = useState(false);
   const [caseReportStatus, setCaseReportStatus] = useState("");
   const aiAbortRef = useRef<AbortController | null>(null);
   const graphDeckRef = useRef<HTMLElement | null>(null);
@@ -2558,6 +2559,20 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
 
   function changeDisplayMode(mode: "user" | "developer") {
     setDisplayMode(mode);
+  }
+
+  async function openCaseReport() {
+    if (caseReportLoading) return;
+    setCaseReportLoading(true);
+    setCaseReportStatus("");
+    try {
+      await import("./CaseReportDialog");
+      setCaseReportOpen(true);
+    } catch {
+      setCaseReportStatus(locale === "en" ? "PDF failed. Refresh." : "PDF не загрузился. Обновите.");
+    } finally {
+      setCaseReportLoading(false);
+    }
   }
 
   function fitGraph() {
@@ -2926,7 +2941,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
         <div className="studio-actions">
           <button className="secondary-cta" onClick={startBlankDraft}><Icon name="reset"/>{text.newDraft}</button>
           <button className="secondary-cta" onClick={() => shareDraft("save")} disabled={!canDuplicate || !draftWithinEnvelope || !derivationsSettled || workspaceState === "saving"}><Icon name="save"/>{workspaceState === "saving" ? (locale === "en" ? "Saving…" : "Сохранение…") : (locale === "en" ? "Save to workspace" : "Сохранить в workspace")}</button>
-          <button className="secondary-cta report-cta" onClick={() => { setCaseReportStatus(""); setCaseReportOpen(true); }} disabled={!canDuplicate || !derivationsSettled || !draft.title.trim() || !draft.nodes.length}><Icon name="download"/>{locale === "en" ? "PDF report" : "PDF-отчёт"}</button>
+          <button className="secondary-cta report-cta" onClick={() => void openCaseReport()} disabled={caseReportLoading || !canDuplicate || !derivationsSettled || !draft.title.trim() || !draft.nodes.length}><Icon name="download"/>{locale === "en" ? "PDF report" : "PDF-отчёт"}</button>
           <button className="primary-cta" onClick={() => shareDraft("submit")} disabled={Boolean(submitBlocker) || workspaceState === "saving"} title={submitBlocker || undefined} aria-describedby={submitBlocker ? "studio-submit-blocker" : undefined}><Icon name="check"/>{locale === "en" ? "Submit for review" : "Отправить на рецензию"}</button>
           {displayMode === "developer" ? extraStudioActions : <details className="studio-more-actions"><summary><Icon name="plus"/>{locale === "en" ? "More actions" : "Другие действия"}</summary><div>{extraStudioActions}</div></details>}
           <input ref={importRef} className="visually-hidden" type="file" accept=".json,application/json" onChange={(event) => { const file=event.target.files?.[0]; if(file){ clearTransientEditorSelection(); importDraft(file); } event.target.value=""; }}/>
@@ -3057,9 +3072,9 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
             {draft.nodes.length > STUDIO_NODE_MENU_PAGE_SIZE && <div className="relation-node-menu"><label><span>{locale === "en" ? "Find a node for endpoint menus" : "Найти узел для меню связей"}</span><input type="search" value={relationNodeQuery} disabled={!canDuplicate} placeholder={locale === "en" ? "Title, type or ID" : "Название, тип или ID"} onChange={(event) => { setRelationNodeQuery(event.target.value); setRelationNodePage(0); }}/></label><span>{relationNodeMenu.start}–{relationNodeMenu.end} / {relationNodeMenu.total}</span><button type="button" disabled={!canDuplicate || relationNodeMenu.page === 0} onClick={() => setRelationNodePage(relationNodeMenu.page - 1)} aria-label={locale === "en" ? "Previous node-menu page" : "Предыдущая страница меню узлов"}><Icon name="arrow"/></button><button type="button" disabled={!canDuplicate || relationNodeMenu.page >= relationNodeMenu.pageCount - 1} onClick={() => setRelationNodePage(relationNodeMenu.page + 1)} aria-label={locale === "en" ? "Next node-menu page" : "Следующая страница меню узлов"}><Icon name="arrow"/></button></div>}
             <ol>{visibleRelations.map((link, pageIndex) => { const index = safeRelationPage * relationPageSize + pageIndex; return <li key={link.id} className={selectedRuleLinkId === link.id ? "rules-selected" : ""}>
               {displayMode === "developer" ? <code>{String(index + 1).padStart(2,"0")}</code> : <span className="relation-number">{index + 1}</span>}
-              <div className="relation-endpoint"><div className="relation-endpoint-title"><span>{locale === "en" ? "Source" : "Источник"}</span><button id={`relation-source-${link.id}`} className="relation-node-tag" type="button" onClick={() => focusNodeAsSource(link.from)} aria-label={`${locale === "en" ? "Open source" : "Открыть источник"} ${nodeNumberById.get(link.from) ?? ""}`}>N{String(nodeNumberById.get(link.from) ?? 0).padStart(2,"0")}</button></div><select disabled={!canDuplicate} aria-label={locale === "en" ? `Source for relation ${index + 1}` : `Источник связи ${index + 1}`} value={link.from} onChange={(event) => changeRelation(link, "from", event.target.value)}>{studioNodeMenuOptions(relationNodeMenu.nodes,nodeById,link.from).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></div>
+              <div className="relation-endpoint"><div className="relation-endpoint-title"><span>{locale === "en" ? "Source" : "Источник"}</span><button id={`relation-source-${link.id}`} className={`relation-node-tag ${link.from===selectedNodeId?"active":""}`} type="button" aria-pressed={link.from===selectedNodeId} onClick={() => focusNodeAsSource(link.from)} aria-label={`${locale === "en" ? "Open source" : "Открыть источник"} ${nodeNumberById.get(link.from) ?? ""}`}>N{String(nodeNumberById.get(link.from) ?? 0).padStart(2,"0")}</button></div><select disabled={!canDuplicate} aria-label={locale === "en" ? `Source for relation ${index + 1}` : `Источник связи ${index + 1}`} value={link.from} onChange={(event) => changeRelation(link, "from", event.target.value)}>{studioNodeMenuOptions(relationNodeMenu.nodes,nodeById,link.from).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></div>
               <span className="relation-arrow">→</span>
-              <div className="relation-endpoint"><div className="relation-endpoint-title"><span>{locale === "en" ? "Destination" : "Назначение"}</span><button className="relation-node-tag destination" type="button" onClick={() => focusNodeAsSource(link.to)} aria-label={`${locale === "en" ? "Open destination" : "Открыть назначение"} ${nodeNumberById.get(link.to) ?? ""}`}>N{String(nodeNumberById.get(link.to) ?? 0).padStart(2,"0")}</button></div><select disabled={!canDuplicate} aria-label={locale === "en" ? `Destination for relation ${index + 1}` : `Назначение связи ${index + 1}`} value={link.to} onChange={(event) => changeRelation(link, "to", event.target.value)}>{studioNodeMenuOptions(relationNodeMenu.nodes,nodeById,link.to).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></div>
+              <div className="relation-endpoint"><div className="relation-endpoint-title"><span>{locale === "en" ? "Destination" : "Назначение"}</span><button className={`relation-node-tag destination ${link.to===selectedNodeId?"active":""}`} type="button" aria-pressed={link.to===selectedNodeId} onClick={() => focusNodeAsSource(link.to)} aria-label={`${locale === "en" ? "Open destination" : "Открыть назначение"} ${nodeNumberById.get(link.to) ?? ""}`}>N{String(nodeNumberById.get(link.to) ?? 0).padStart(2,"0")}</button></div><select disabled={!canDuplicate} aria-label={locale === "en" ? `Destination for relation ${index + 1}` : `Назначение связи ${index + 1}`} value={link.to} onChange={(event) => changeRelation(link, "to", event.target.value)}>{studioNodeMenuOptions(relationNodeMenu.nodes,nodeById,link.to).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></div>
               <button className="relation-rules" onClick={() => selectedRuleLinkId === link.id ? setSelectedRuleLinkId(null) : selectGraphLink(link)} aria-expanded={selectedRuleLinkId === link.id}>{displayMode === "developer" ? (locale === "en" ? "Rules" : "Правила") : (locale === "en" ? "Choice" : "Выбор")}</button>
               <button className="relation-delete" disabled={!canDuplicate} onClick={() => { deleteLink(link); if (selectedRuleLinkId === link.id) setSelectedRuleLinkId(null); setRelationStatus(locale === "en" ? "Relation deleted. Undo is available." : "Связь удалена. Доступна отмена действия."); focusRelationStatus(); }} aria-label={locale === "en" ? `Delete relation ${index + 1}` : `Удалить связь ${index + 1}`}><Icon name="trash" size={15}/></button>
             </li>; })}</ol>
@@ -3087,7 +3102,17 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       </div>:<p className="empty-inspector">{text.noSelection}</p>}</aside>
     </section>
     <section className="studio-bottom page-width"><div id="studio-checks" className="checks-panel"><div className="panel-title"><span>{text.checks}</span><b>{checks.filter((check)=>check.level==="warn").length.toString().padStart(2,"0")}</b></div>{checks.map((check,index)=><div key={index} className={`check-row ${check.level}`}><Icon name={check.level==="ok"?"check":"alert"}/><span>{check.text}</span></div>)}<p>{text.localNote}</p></div><div className="preview-panel"><div className="panel-title"><span>{locale === "en" ? "Test readiness" : "Готовность к тесту"}</span><b>{draft.nodes.length === 0 ? (locale === "en" ? "START" : "СТАРТ") : !derivationsSettled ? (locale === "en" ? "CHECKING" : "ПРОВЕРКА") : compiledDraft.scenario ? (locale === "en" ? "READY" : "ГОТОВО") : `${compiledDraft.issues.length} ${locale === "en" ? "TO FIX" : "ИСПРАВИТЬ"}`}</b></div><div className="preview-card compiler-card"><div className="preview-index">{locale === "en" ? "PLAYABLE CASE PREVIEW" : "ПРЕДПРОСМОТР ИГРАБЕЛЬНОГО КЕЙСА"}</div><h2>{locale === "en" ? "Test the case you built" : "Проверьте собранный кейс"}</h2>{draft.nodes.length === 0 ? <div className="compiler-empty"><p>{locale === "en" ? "Your new draft is empty. Describe the situation in the prompt or add a Trigger node; validation will start after the first node appears." : "Новый черновик пуст. Опишите ситуацию в промпте или добавьте узел «Триггер» — проверка начнётся после появления первого узла."}</p></div> : !derivationsSettled ? <div className="compiler-empty" role="status"><p>{locale === "en" ? "Checking the latest edit in the background. Test and save will unlock when this exact graph is ready." : "Последняя правка проверяется в фоне. Тест и сохранение станут доступны для этой точной версии схемы."}</p></div> : <><p>{locale === "en" ? `Case: ${draft.title || "Untitled case"}. Before testing, every route must start clearly and finish at an Outcome.` : `Кейс: ${draft.title || "Без названия"}. Перед тестом каждый маршрут должен иметь понятное начало и завершаться узлом «Исход».`}</p>{compiledDraft.scenario ? <><dl><div><dt>{locale === "en" ? "Playable stages" : "Игровых стадий"}</dt><dd>{compiledDraft.scenario.stages.length}</dd></div><div><dt>{locale === "en" ? "Player choices" : "Вариантов действий"}</dt><dd>{compiledDraft.scenario.stages.reduce((sum, stage) => sum + stage.options.length, 0)}</dd></div></dl>{compiledDraft.warnings.map((warning) => <p className="compiler-warning" key={warning}>{warning}</p>)}<button className="primary-cta" onClick={playDraft}><Icon name="play"/>{locale === "en" ? "Test this case" : "Протестировать кейс"}</button></> : <div className="compiler-issues">{compiledDraft.issues.map((issue) => <div key={issue.code}><Icon name="alert"/><span>{compilerIssueText(issue)}</span>{issue.nodeIds[0] && <button type="button" onClick={() => { const nodeId=issue.nodeIds[0]; selectGraphNode(nodeId); const nodeButton=document.getElementById(`studio-node-${nodeId}`); nodeButton?.scrollIntoView({behavior:"smooth",block:"center",inline:"center"}); nodeButton?.focus(); }}>{locale === "en" ? "Show on graph" : "Показать на схеме"}</button>}</div>)}</div>}</>}</div></div></section>
-    {caseReportOpen && <Suspense fallback={null}><CaseReportDialog locale={locale} draft={draft} currentFingerprint={studioDerivations.caseFingerprint} workspaceFingerprint={serverFingerprint} privateCase={isPrivate} close={() => setCaseReportOpen(false)} completed={() => setCaseReportStatus(locale === "en" ? "Professional PDF report downloaded." : "Профессиональный PDF-отчёт скачан.")}/></Suspense>}
+    {caseReportOpen && <Suspense fallback={null}><CaseReportDialog
+      locale={locale}
+      draft={draft}
+      currentFingerprint={studioDerivations.caseFingerprint}
+      workspaceFingerprint={serverFingerprint}
+      privateCase={isPrivate}
+      close={() => setCaseReportOpen(false)}
+      completed={() => {
+        setCaseReportStatus(locale === "en" ? "PDF downloaded." : "PDF скачан.");
+      }}
+    /></Suspense>}
   </main>;
 }
 
