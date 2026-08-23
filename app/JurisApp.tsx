@@ -38,16 +38,6 @@ type View = "library" | "play" | "studio" | "community" | "help";
 type Theme = "office" | "after-hours";
 type GraphOrientation = "vertical" | "horizontal";
 type StudioAIEntitlement = "loading" | "anonymous" | "profile_required" | "ready" | "not_configured" | "unavailable";
-function inferGraphOrientation(nodes: StudioNode[], links: StudioLink[]): GraphOrientation {
-  const nodeById = new Map(nodes.map((node) => [node.id, node]));
-  const directions = links.flatMap((link) => {
-    const from = nodeById.get(link.from);
-    const to = nodeById.get(link.to);
-    return from && to ? [{ horizontal: Math.abs(to.x - from.x), vertical: Math.abs(to.y - from.y) }] : [];
-  });
-  if (!directions.length) return "vertical";
-  return directions.filter((direction) => direction.vertical > direction.horizontal).length >= Math.ceil(directions.length / 2) ? "vertical" : "horizontal";
-}
 function graphNodeVisualHeight(node: StudioNode) {
   const titleLines = Math.max(1, Math.ceil(node.title.trim().length / 18));
   const runtimeHeight = node.runtime?.budgetCostEur !== undefined || node.runtime?.durationMinutes !== undefined ? 22 : 0;
@@ -82,14 +72,14 @@ const HelpFaq = lazy(() => import("./HelpFaq"));
 const StudioAIReview = lazy(() => import("./StudioAIReview"));
 const StudioAIProgress = lazy(() => import("./StudioAIProgress"));
 const DealOutcomePanel = lazy(() => import("./DealOutcomePanel"));
-const TaxEconomicsPanel = lazy(() => import("./TaxEconomicsPanel"));
 const CashFlowScenarioEditor = lazy(() => import("./CashFlowScenarioEditor"));
 const GraphMilestones = lazy(() => import("./GraphMilestones"));
 const CaseReportDialog = lazy(() => import("./CaseReportDialog"));
 const CaseMarkdownDialog = lazy(() => import("./CaseMarkdownDialog"));
-const CaseMarkdownActions = lazy(() => import("./CaseMarkdownActions"));
 const CanonicalMarkdownReview = lazy(() => import("./CanonicalMarkdownReview"));
 const StudioGuidedDemo = lazy(() => import("./StudioGuidedDemo"));
+const StudioOutcomeParameters = lazy(() => import("./StudioOutcomeParameters"));
+const StudioUserMoreActions = lazy(() => import("./StudioUserMoreActions"));
 const CanonicalPromptAction = lazy(() => import("./StudioPromptAuxiliary").then((module) => ({default:module.CanonicalPromptAction})));
 const CanonicalReadyAction = lazy(() => import("./StudioPromptAuxiliary").then((module) => ({default:module.CanonicalReadyAction})));
 const StudioPromptPrivacyNote = lazy(() => import("./StudioPromptAuxiliary").then((module) => ({default:module.StudioPromptPrivacyNote})));
@@ -2360,11 +2350,12 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   const [destinationNodeQuery, setDestinationNodeQuery] = useState("");
   const [destinationNodePage, setDestinationNodePage] = useState(0);
   const [graphZoom, setGraphZoom] = useState(1);
-  const [graphOrientation, setGraphOrientation] = useState<GraphOrientation>(() => inferGraphOrientation(draft.nodes, draft.links));
+  const [graphOrientation, setGraphOrientation] = useState<GraphOrientation>("vertical");
   const graphDraftIdentity = `${draft.caseId}\u0000${draft.version}`;
   const graphDraftIdentityRef = useRef(graphDraftIdentity);
+  const defaultGraphLayoutRef = useRef("");
   const [caseReportOpen, setCaseReportOpen] = useState(false);
-  const [caseReportLoading, setCaseReportLoading] = useState(false);
+  const [caseReportFingerprint, setCaseReportFingerprint] = useState("");
   const [caseReportStatus, setCaseReportStatus] = useState("");
   const [caseMarkdownOpen, setCaseMarkdownOpen] = useState(false);
   const [canonicalCandidate, setCanonicalCandidate] = useState<{ draft: StudioDraft; fingerprint: string; status: "amended"|"final"; language: "en"|"ru" } | null>(null);
@@ -2434,8 +2425,27 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   useEffect(() => {
     if (graphDraftIdentityRef.current === graphDraftIdentity) return;
     graphDraftIdentityRef.current = graphDraftIdentity;
-    setGraphOrientation(inferGraphOrientation(draft.nodes, draft.links));
-  }, [draft.links, draft.nodes, graphDraftIdentity]);
+    setGraphOrientation("vertical");
+  }, [graphDraftIdentity]);
+
+  useEffect(() => {
+    const layoutKey = `${graphDraftIdentity}\u0000${draft.nodes.map((node) => node.id).join("\u0001")}`;
+    if (!canDuplicate || draft.nodes.length < 2 || defaultGraphLayoutRef.current === layoutKey) return;
+    defaultGraphLayoutRef.current = layoutKey;
+    setGraphOrientation("vertical");
+    let cancelled = false;
+    void import("./studio-layout").then(({ layoutStudioNodes }) => {
+      if (cancelled) return;
+      setDraft((current) => {
+        const currentKey = `${current.caseId}\u0000${current.version}\u0000${current.nodes.map((node) => node.id).join("\u0001")}`;
+        if (currentKey !== layoutKey) return current;
+        const nodes = layoutStudioNodes(current.nodes, current.links, "vertical");
+        return nodes.some((node, index) => node.x !== current.nodes[index]?.x || node.y !== current.nodes[index]?.y) ? { ...current, nodes } : current;
+      });
+      window.requestAnimationFrame(() => window.requestAnimationFrame(fitGraph));
+    });
+    return () => { cancelled = true; };
+  }, [canDuplicate, draft.nodes, fitGraph, graphDraftIdentity, setDraft]);
 
   useEffect(() => {
     if (studioDerivations.source === draft) return;
@@ -2581,16 +2591,17 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   }
 
   async function openCaseReport() {
-    if (caseReportLoading) return;
-    setCaseReportLoading(true);
-    setCaseReportStatus("");
+    if (!draft.title.trim() || !draft.nodes.length) {
+      setCaseReportStatus(locale === "en" ? "Add a case title and at least one node before creating the report." : "Перед созданием отчёта добавьте название кейса и хотя бы одну ноду.");
+      return;
+    }
     try {
       await import("./CaseReportDialog");
+      setCaseReportStatus("");
+      setCaseReportFingerprint(derivationsSettled ? studioDerivations.caseFingerprint : caseFingerprint(draft));
       setCaseReportOpen(true);
     } catch {
-      setCaseReportStatus(locale === "en" ? "PDF failed. Refresh." : "PDF не загрузился. Обновите.");
-    } finally {
-      setCaseReportLoading(false);
+      setCaseReportStatus(locale === "en" ? "PDF unavailable. Refresh and retry." : "PDF недоступен. Обновите страницу.");
     }
   }
 
@@ -2658,13 +2669,14 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
 
   function startBlankDraft() {
     const reset = resetDraft();
-    if (reset !== false) { clearTransientEditorSelection(); setUserSettingsOpen(false); }
+    if (reset !== false) { clearTransientEditorSelection(); setGraphOrientation("vertical"); setUserSettingsOpen(false); }
   }
 
   function startExampleDraft() {
     const hasWork = Boolean(draft.nodes.length || draft.links.length || draft.title || draft.editHistory.length || prompt.trim());
     if (hasWork && !window.confirm(locale === "en" ? "Replace the current draft with the worked example? The current unsaved graph will be removed." : "Заменить текущий черновик учебным примером? Текущая несохранённая схема будет удалена.")) return;
     clearTransientEditorSelection();
+    setGraphOrientation("vertical");
     setUserSettingsOpen(false);
     loadExample();
   }
@@ -2673,6 +2685,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     const hasWork = Boolean(draft.nodes.length || draft.links.length || draft.title || draft.editHistory.length || prompt.trim());
     if (hasWork && !window.confirm(locale === "en" ? "Replace the current draft with the tax template? The current unsaved graph will be removed." : "Заменить текущий черновик налоговым шаблоном? Текущая несохранённая схема будет удалена.")) return;
     clearTransientEditorSelection();
+    setGraphOrientation("vertical");
     setUserSettingsOpen(true);
     loadTaxTemplate();
   }
@@ -2816,26 +2829,26 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     setRelationStatus("");
     selectNode(nodeId);
   }
-  function focusNodeAsSource(nodeId: string) {
+  function focusGraphNode(nodeId: string) {
+    const node = nodeById.get(nodeId);
+    if (!node) return;
     selectGraphNode(nodeId);
-    const sourceRelationIndex = draft.links.findIndex((link) => link.from === nodeId);
-    if (sourceRelationIndex >= 0) {
-      const sourceLink = draft.links[sourceRelationIndex];
-      setRelationPage(Math.floor(sourceRelationIndex / relationPageSize));
-      setRelationStatus(locale === "en" ? "Opened at first outgoing connection." : "Открыта первая исходящая связь.");
-      window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-        const sourceButton = document.getElementById(`relation-source-${sourceLink.id}`);
-        sourceButton?.scrollIntoView({ behavior: "smooth", block: "center" });
-        sourceButton?.focus();
-      }));
-      return;
-    }
-    setRelationStatus(locale === "en" ? "No outgoing connection yet." : "Исходящей связи пока нет.");
-    window.requestAnimationFrame(() => {
+    setRelationStatus(locale === "en" ? `Focused node N${String(nodeNumberById.get(nodeId) ?? 0).padStart(2,"0")}.` : `В центре схемы нода N${String(nodeNumberById.get(nodeId) ?? 0).padStart(2,"0")}.`);
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      const viewport = graphViewportRef.current;
       const nodeButton = document.getElementById(`studio-node-${nodeId}`);
-      nodeButton?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
-      nodeButton?.focus();
-    });
+      if (viewport) {
+        const scale = Math.max(0.1, graphZoom);
+        const nodeHeight = graphNodeVisualHeight(node);
+        viewport.scrollIntoView({ behavior: "smooth", block: "center" });
+        viewport.scrollTo({
+          left: Math.max(0, (node.x + 82.5) * scale - viewport.clientWidth / 2),
+          top: Math.max(0, (node.y + nodeHeight / 2) * scale - viewport.clientHeight / 2),
+          behavior: "smooth",
+        });
+      }
+      nodeButton?.focus({ preventScroll: true });
+    }));
   }
   function selectGraphLink(link: StudioLink) {
     selectNode(null);
@@ -2937,16 +2950,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
         : isPrivate
           ? (locale === "en" ? "Turn off Private before submitting for expert review." : "Отключите «Приватно» перед отправкой на экспертную рецензию.")
           : firstSubmissionWarning;
-  const extraStudioActions = <>
-    <button className="secondary-cta" onClick={startExampleDraft}><Icon name="play"/>{locale === "en" ? "Worked example" : "Учебный пример"}</button>
-    <button className="secondary-cta" onClick={startTaxTemplate}><Icon name="spark"/>{locale === "en" ? "Tax template" : "Налоговый шаблон"}</button>
-    <button className="secondary-cta" onClick={requestFeedback}><Icon name="file"/>{text.feedback}</button>
-    <button className="secondary-cta" onClick={() => importRef.current?.click()} disabled={!canDuplicate}><Icon name="upload"/>{text.importCustom}</button>
-    <button className="secondary-cta" onClick={exportDraft} disabled={!canDuplicate}><Icon name="download"/>{text.exportCustom}</button>
-    <Suspense fallback={null}><CaseMarkdownActions locale={locale} loadDisabled={!canDuplicate} exportDisabled={!canDuplicate || !derivationsSettled || !draft.title.trim() || !draft.nodes.length} loaded={(value)=>{setCanonicalCandidate(null);setAIResult(null);setAIState("idle");setPrompt(value);}} opened={()=>{setCaseReportStatus("");setCaseMarkdownOpen(true);}} failed={setCaseReportStatus}/></Suspense>
-    <button className="secondary-cta" onClick={saveDraft} disabled={!canDuplicate}><Icon name="save"/>{locale === "en" ? "Save on this device" : "Сохранить на устройстве"}</button>
-  </>;
-
+  const portableStudioActions = <Suspense fallback={null}><StudioUserMoreActions grouped={displayMode === "user"} locale={locale} canDuplicate={canDuplicate} exportReady={derivationsSettled && Boolean(draft.title.trim()) && Boolean(draft.nodes.length)} feedbackLabel={text.feedback} importLabel={text.importCustom} exportLabel={text.exportCustom} startExample={startExampleDraft} startTax={startTaxTemplate} requestFeedback={requestFeedback} importJson={()=>importRef.current?.click()} exportJson={exportDraft} saveDevice={saveDraft} markdownLoaded={(value)=>{setCanonicalCandidate(null);setAIResult(null);setAIState("idle");setPrompt(value);}} markdownOpened={()=>{setCaseReportStatus("");setCaseMarkdownOpen(true);}} markdownFailed={setCaseReportStatus}/></Suspense>;
     return <main className={`studio-view studio-${displayMode}-view ${canDuplicate ? "" : "studio-inspection-view"}`} data-readonly={!canDuplicate || undefined}>
       <section className="studio-hero page-width">
         <div>
@@ -2961,9 +2965,9 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
         <div className="studio-actions">
           <button className="secondary-cta" onClick={startBlankDraft}><Icon name="reset"/>{text.newDraft}</button>
           <button className="secondary-cta" onClick={() => shareDraft("save")} disabled={!canDuplicate || !draftWithinEnvelope || !derivationsSettled || workspaceState === "saving"}><Icon name="save"/>{workspaceState === "saving" ? (locale === "en" ? "Saving…" : "Сохранение…") : (locale === "en" ? "Save to workspace" : "Сохранить в workspace")}</button>
-          <button className="secondary-cta report-cta" onClick={() => void openCaseReport()} disabled={caseReportLoading || !canDuplicate || !derivationsSettled || !draft.title.trim() || !draft.nodes.length}><Icon name="download"/>{locale === "en" ? "PDF report" : "PDF-отчёт"}</button>
+          <button className="secondary-cta report-cta" onClick={() => void openCaseReport()} title={locale === "en" ? "Open PDF options" : "Параметры PDF"}><Icon name="download"/>{locale === "en" ? "PDF report" : "PDF-отчёт"}</button>
           <button className="primary-cta" onClick={() => shareDraft("submit")} disabled={Boolean(submitBlocker) || workspaceState === "saving"} title={submitBlocker || undefined} aria-describedby={submitBlocker ? "studio-submit-blocker" : undefined}><Icon name="check"/>{locale === "en" ? "Submit for review" : "Отправить на рецензию"}</button>
-          {displayMode === "developer" ? extraStudioActions : <details className="studio-more-actions"><summary><Icon name="plus"/>{locale === "en" ? "More actions" : "Другие действия"}</summary><div>{extraStudioActions}</div></details>}
+          {displayMode === "developer" ? portableStudioActions : <details className="studio-more-actions"><summary><Icon name="plus"/>{locale === "en" ? "More actions" : "Другие действия"}</summary>{portableStudioActions}</details>}
           <input ref={importRef} className="visually-hidden" type="file" accept=".json,application/json" onChange={(event) => { const file=event.target.files?.[0]; if(file){ clearTransientEditorSelection(); importDraft(file); } event.target.value=""; }}/>
         </div>
         {submitBlocker && <p id="studio-submit-blocker" className="studio-submit-blocker"><Icon name="alert"/><span>{submitBlocker}</span>{derivationError && <button type="button" onClick={() => { setDerivationError(false); setDerivationAttempt((attempt) => attempt + 1); }}>{locale === "en" ? "Retry check" : "Повторить проверку"}</button>}{isPrivate && submitBlocker !== firstSubmissionWarning && <button type="button" onClick={() => setUserSettingsOpen(true)}>{locale === "en" ? "Change visibility" : "Изменить видимость"}</button>}{firstSubmissionWarning && submitBlocker === firstSubmissionWarning && <button type="button" onClick={() => document.getElementById("studio-checks")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{locale === "en" ? "Review issue" : "Перейти к замечанию"}</button>}</p>}
@@ -3025,7 +3029,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     {prompt.trim() && aiState === "error" && <section className="prompt-ai-status page-width error" role="alert"><Icon name="alert"/><div><b>{locale === "en" ? "No changes were made" : "Изменения не внесены"}</b><p>{aiError}</p><small>{displayMode === "developer" ? (locale === "en" ? "Retry AI analysis or inspect the exact-command preview below." : "Повторите AI-анализ или проверьте точный командный план ниже.") : (locale === "en" ? "Retry AI analysis or apply a simple described change without AI." : "Повторите AI-анализ или примените простое описанное изменение без AI.")}</small></div></section>}
     {activeAIResult && <Suspense fallback={<section className="prompt-ai-status page-width" role="status"><Icon name="spark"/><div><b>{locale === "en" ? "Preparing the proposed scheme…" : "Подготавливается предлагаемая схема…"}</b></div></section>}><StudioAIReview locale={locale} draft={draft} plan={activeAIResult.plan} nodeTitles={aiNodeTitles} linkEndpoints={reviewLinkEndpoints} nodeLabels={text.nodeTypes} applyEnabled={canDuplicate && aiState !== "analysing"} showTechnicalIds={displayMode === "developer"} onApply={applyActiveAIPlan}/></Suspense>}
     {displayMode === "developer" && !canonicalPrompt && prompt.trim() && <details className="prompt-fallback-preview page-width"><summary>{locale === "en" ? "Exact-command fallback preview" : "План точных команд — резервный режим"}</summary>{promptDerivationsSettled && <section className={`prompt-plan ${promptPlan.canApply ? "ready" : "blocked"}`}><header><div><span>{locale === "en" ? "Rule-based interpretation" : "Интерпретация по правилам"}</span><h2>{promptPlan.contextOnly ? (locale === "en" ? "Context-only turn" : "Только контекст") : (locale === "en" ? `${promptPlan.operations.length} exact operation${promptPlan.operations.length === 1 ? "" : "s"}` : `Точных операций: ${promptPlan.operations.length}`)}</h2></div><b>{promptPlan.canApply ? "READY" : "REVIEW"}</b></header>{promptPlan.operations.length > 0 && <ol>{promptPlan.operations.map((operation, index) => <li key={`${operation.kind}-${index}`}><code>{String(index + 1).padStart(2,"0")}</code><span>{describeStudioPromptOperation(operation, locale)}</span></li>)}</ol>}{promptPlan.diagnostics.length > 0 && <ul>{promptPlan.diagnostics.map((diagnostic, index) => <li key={`${diagnostic.level}-${index}`} className={diagnostic.level}><Icon name={diagnostic.level === "error" ? "alert" : "check"}/>{diagnostic.message}</li>)}</ul>}</section>}</details>}
-    {displayMode === "user" && <button type="button" className="studio-settings-toggle page-width" aria-expanded={userSettingsOpen} aria-controls="studio-case-settings" onClick={() => setUserSettingsOpen((current) => !current)}><span><Icon name="file"/><span><b>{locale === "en" ? "Case details, access and economics" : "Детали кейса, доступ и экономика"}</b><small>{locale === "en" ? "Optional classification, visibility, version and tax assumptions" : "Классификация, видимость, версия и налоговые допущения"}</small></span></span><em>{userSettingsOpen ? (locale === "en" ? "Hide" : "Скрыть") : (locale === "en" ? "Open settings" : "Открыть настройки")}</em></button>}
+    {displayMode === "user" && <button type="button" className="studio-settings-toggle page-width" aria-expanded={userSettingsOpen} aria-controls="studio-case-settings" onClick={() => setUserSettingsOpen((current) => !current)}><span><Icon name="file"/><span><b>{locale === "en" ? "Case details, access and version" : "Детали кейса, доступ и версия"}</b><small>{locale === "en" ? "Classification, legal sources, visibility and lineage" : "Классификация, правовые источники, видимость и lineage"}</small></span></span><em>{userSettingsOpen ? (locale === "en" ? "Hide" : "Скрыть") : (locale === "en" ? "Open settings" : "Открыть настройки")}</em></button>}
     <div id="studio-case-settings" className={`studio-settings-stack ${displayMode === "developer" || userSettingsOpen ? "open" : ""}`} hidden={displayMode === "user" && !userSettingsOpen}>
     <section className="studio-meta page-width" inert={!canDuplicate}>
       <label><span>{text.title}</span><input value={draft.title} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({...current,title:event.target.value}))} onBlur={(event)=>commitCaseField(text.title,event.currentTarget.value)}/></label>
@@ -3057,7 +3061,6 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       <label className="source-field"><span>{locale === "en" ? "HTTPS legal sources · one per line" : "HTTPS-источники права · по одному в строке"}</span><textarea rows={3} value={(draft.classification?.sourceUrls ?? []).join("\n")} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({ ...current, classification: { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), sourceUrls: event.target.value.split(/\n+/).map((item) => item.trim()).filter(Boolean) } }))} onBlur={(event)=>commitCaseField(locale === "en" ? "legal sources" : "источники права", event.currentTarget.value)}/></label>
       <div className="compliance-gate"><Icon name="check"/><div><b>{locale === "en" ? "International tax safety & publication gate" : "Контроль безопасности и публикации налогового кейса"}</b><p>{locale === "en" ? "Lawful-planning, compliance, audit-defence and evasion-detection scenarios may model risky facts. Publication requires named reviewer confirmation that the case does not enable concealment, sham substance, false reporting or evasion; HTTPS sources and a legal as-of date are mandatory." : "Кейсы о законном планировании, compliance, налоговом споре и выявлении уклонения могут моделировать рискованные факты. Для публикации именная рецензия должна подтвердить, что кейс не помогает сокрытию, фиктивной substance, ложной отчётности или уклонению; HTTPS-источники и дата актуальности права обязательны."}</p></div></div></>}
     </section>
-    {taxDraft && taxResult && <Suspense fallback={<section className="tax-economics page-width" role="status"><p>{locale === "en" ? "Loading tax economics…" : "Загрузка налоговой экономики…"}</p></section>}><TaxEconomicsPanel key={JSON.stringify(taxModel)} locale={locale} model={taxModel} result={taxResult} disabled={!canDuplicate} onChange={applyTaxEconomicsChange}/></Suspense>}
     <section className={`studio-access page-width ${isPrivate ? "private" : "restricted"}`} aria-labelledby="studio-access-title" inert={!canDuplicate}>
       <div><span>{locale === "en" ? "Access & visibility" : "Доступ и видимость"}</span><h2 id="studio-access-title">{isPrivate ? (locale === "en" ? "Private · owner only" : "Приватно · только владелец") : (locale === "en" ? "Restricted custom case" : "Ограниченный custom-кейс")}</h2><p id="studio-private-description">{isPrivate ? (locale === "en" ? "Only you can open this workspace case. The platform administrator, reviewers and previous recipients cannot see its content or metadata." : "Только вы можете открыть этот кейс в workspace. Администратор платформы, рецензенты и ранее приглашённые пользователи не видят его содержание и метаданные.") : (locale === "en" ? "Visible to you and the platform administrator. Other registered users need an explicit share; it is not part of the General Library." : "Виден вам и администратору платформы. Другим зарегистрированным пользователям требуется явное приглашение; в Общую библиотеку кейс не входит.")}</p></div>
       <label className={`privacy-toggle ${canManagePrivacy ? "" : "locked"}`}><input type="checkbox" checked={isPrivate} disabled={!canManagePrivacy} onChange={(event) => changePrivacy(event.target.checked)} aria-describedby="studio-private-description"/><span>{canManagePrivacy ? (locale === "en" ? "Private" : "Приватно") : (locale === "en" ? "Owner controls privacy" : "Приватность задаёт владелец")}</span><i aria-hidden="true"/></label>
@@ -3072,21 +3075,23 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       <div className="parent-trace"><span>{text.parentCase}</span>{draft.parent ? <><b>{draft.parent.caseId}</b><code>v{draft.parent.version} · {draft.parent.fingerprint}</code></> : <em>{locale === "en" ? "Root case · no parent" : "Корневой кейс · родителя нет"}</em>}</div>
     </section> : <section className="studio-version-simple page-width" inert={!canDuplicate}><div><span>{locale === "en" ? "Current version" : "Текущая версия"}</span><b>v{draft.version}</b><small>{draft.parent ? (locale === "en" ? `Child version of v${draft.parent.version}` : `Дочерняя версия от v${draft.parent.version}`) : (locale === "en" ? "Original case" : "Исходный кейс")}</small></div><button className="secondary-cta" disabled={!canDuplicate} onClick={createChildVersion}><Icon name="plus"/>{text.childVersion}</button></section>}
     </div>
+    {(editableDealModel || (taxDraft && taxResult)) && <Suspense fallback={null}><StudioOutcomeParameters locale={locale} dealModel={editableDealModel} taxModel={taxModel} taxResult={taxDraft ? taxResult : null} disabled={!canDuplicate} beginFieldEdit={beginFieldEdit} commitDealField={commitDealEconomicsField} setDealModel={setDealEconomicsChange} changeRepaymentBasis={(repaymentBasis) => { const before=draft; setDealEconomicsChange({repaymentBasis}); recordVisualEdit("case_updated", locale === "en" ? "Visual edit: changed cash-flow repayment basis." : "Визуальная правка: изменён вид погашения cash-flow.", before); }} applyTaxChange={applyTaxEconomicsChange}/></Suspense>}
     {(draft.dealEconomics || draft.nodes.some((node) => node.type === "cash_flow")) && <Suspense fallback={<section className="deal-outcome deal-outcome-empty page-width" role="status"><p>{locale === "en" ? "Calculating case cash flow…" : "Расчёт денежного потока…"}</p></section>}><DealOutcomePanel locale={locale} draft={draft}/></Suspense>}
     <section className="studio-workspace">
       <aside className="node-palette" inert={!canDuplicate}><div className="pane-heading"><span>{text.addNode}</span><b>{String(paletteNodeTypes.length).padStart(2,"0")}</b></div>{paletteNodeTypes.map((type) => <button key={type} disabled={!canDuplicate || draft.nodes.length >= 200} onClick={() => { addNode(type, visibleGraphCenter()); setRelationStatus(locale === "en" ? "Node added in view centre." : "Нода добавлена по центру."); }}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "New nodes open in the visible centre. Connect OUT to IN; edits remain undoable." : "Ноды появляются по центру. Соединяйте ВЫХОД со ВХОДОМ; правки можно отменить."}</p></aside>
       <section className="graph-deck" ref={graphDeckRef}>
         <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div className="graph-heading-actions"><div>{displayMode === "developer" ? <><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></> : <span className="graph-counts">{draft.nodes.length} {locale === "en" ? "nodes" : "узлов"} · {draft.links.length} {locale === "en" ? "connections" : "связей"}</span>}</div><div className="graph-zoom-controls" aria-label={locale === "en" ? "Graph view controls" : "Управление видом схемы"}><label className="graph-orientation-control"><span>{locale === "en" ? "Flow" : "Поток"}</span><select value={graphOrientation} onChange={(event) => { const orientation = event.target.value as GraphOrientation; setGraphOrientation(orientation); void autoLayoutGraph(orientation); }} aria-label={locale === "en" ? "Graph orientation" : "Ориентация схемы"}><option value="vertical">{locale === "en" ? "Vertical" : "Вертикально"}</option><option value="horizontal">{locale === "en" ? "Horizontal" : "Горизонтально"}</option></select></label><button type="button" disabled={!canDuplicate || draft.nodes.length < 2} onClick={() => void autoLayoutGraph()}>{locale === "en" ? "Auto-layout" : "Авто-раскладка"}</button><button type="button" onClick={fitGraph}>{locale === "en" ? "Fit" : "Вместить"}</button><button type="button" onClick={() => setGraphZoom(1)}>100%</button><button type="button" onClick={centerGraph}>{locale === "en" ? "Center" : "По центру"}</button></div></div></div>
         <div id="graph-connect-status" className="graph-connect-status" role="status" aria-live="polite" tabIndex={-1}><span className={linkSourceId || selectedRuleLinkId || selectedNodeId ? "armed" : ""}/>{relationStatus || (locale === "en" ? "Connect: select OUT then IN. Select a node or relation and press Delete to remove it." : "Связь: выберите ВЫХОД, затем ВХОД. Выделите узел или связь и нажмите Delete для удаления.")}{linkSourceId && <button onClick={() => { setLinkSourceId(null); setRelationStatus(""); }}>{locale === "en" ? "Cancel" : "Отмена"}</button>}</div>
-        <Suspense fallback={null}><GraphMilestones locale={locale} nodes={draft.nodes} select={(nodeId)=>{selectGraphNode(nodeId);requestAnimationFrame(()=>document.getElementById(`studio-node-${nodeId}`)?.focus());}}/></Suspense>
+        <Suspense fallback={null}><GraphMilestones locale={locale} nodes={draft.nodes} select={focusGraphNode}/></Suspense>
         <div className="graph-viewport" ref={graphViewportRef} aria-label={locale === "en" ? "Resizable graph viewport" : "Изменяемое окно схемы"}>
         <div className={`graph-canvas graph-orientation-${graphOrientation}`} style={{ zoom: graphZoom, width: graphBounds.width, height: graphBounds.height }}>
           <svg className="graph-links" aria-label={locale === "en" ? "Case relationships" : "Связи кейса"}>{draft.links.map((link) => { const from=nodeById.get(link.from); const to=nodeById.get(link.to); if(!from||!to)return null; const geometry=graphLinkGeometry(from,to,graphOrientation); const selected=selectedRuleLinkId===link.id; return <g key={link.id} className={`graph-link ${selected?"selected":""}`} role="button" tabIndex={0} aria-pressed={selected} aria-label={locale === "en" ? `Relation from ${from.title} to ${to.title}. Press Delete to remove.` : `Связь от «${from.title}» к «${to.title}». Нажмите Delete для удаления.`} onClick={() => selectGraphLink(link)} onKeyDown={(event) => { if(event.key==="Enter"||event.key===" "){event.preventDefault();selectGraphLink(link);} }}><title>{from.title} → {to.title}</title><path className="graph-link-hit" d={geometry.path}/><path className="graph-link-visible" d={geometry.path}/><circle cx={geometry.endX} cy={geometry.endY} r="3"/></g>; })}</svg>
           {draft.nodes.length === 0 && <div className="graph-empty-state"><Icon name="spark"/><h3>{locale === "en" ? "Start with a description or one node" : "Начните с описания или первого узла"}</h3><p>{locale === "en" ? "Describe the matter above and choose “Understand with AI”, or add a Trigger from the left palette." : "Опишите ситуацию выше и нажмите «Понять и структурировать с AI» либо добавьте «Триггер» в палитре слева."}</p></div>}
           {draft.nodes.map((node) => <div key={node.id} className={`graph-node-shell ${node.id===selectedNodeId?"selected":""} ${node.id===linkSourceId?"link-source":""}`} style={{left:node.x,top:node.y,"--node-color":typeColors[node.type]} as React.CSSProperties}>
-            <button className="node-port node-port-in" style={graphOrientation === "vertical" ? {top:-17,left:"50%",right:"auto",bottom:"auto",transform:"translateX(-50%)"} : undefined} disabled={!canDuplicate} onClick={() => completeLink(node.id)} aria-label={locale === "en" ? `Use ${node.title} as relation destination` : `Использовать ${node.title} как назначение связи`}><span/></button>
-            <button id={`studio-node-${node.id}`} className="graph-node" onFocus={() => selectGraphNode(node.id)} onKeyDown={(event) => { if (canDuplicate) nudgeNode(event, node); }} onPointerDown={(event)=>{setSelectedRuleLinkId(null);if(canDuplicate)moveNode(event,node,graphZoom);else selectGraphNode(node.id);}} onPointerMove={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} onPointerUp={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} onPointerCancel={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} aria-label={`${text.nodeTypes[node.type]}: ${node.title}. ${canDuplicate ? (locale === "en" ? "Use arrow keys to reposition; press Delete to remove." : "Используйте стрелки для перемещения; нажмите Delete для удаления.") : (locale === "en" ? "Inspection only." : "Только просмотр.")}`}><span><i/>{text.nodeTypes[node.type]}{displayMode === "developer" && <code>{node.id.split("-").at(-1)}</code>}</span><b>{node.title}</b>{(node.runtime?.budgetCostEur !== undefined || node.runtime?.durationMinutes !== undefined) && <small className="node-runtime-summary">{node.runtime?.budgetCostEur !== undefined ? `€${node.runtime.budgetCostEur.toLocaleString()}` : (displayMode === "developer" ? "€ auto" : locale === "en" ? "cost automatic" : "стоимость автоматически")} · {node.runtime?.durationMinutes !== undefined ? `${node.runtime.durationMinutes} min` : (displayMode === "developer" ? "time auto" : locale === "en" ? "time automatic" : "время автоматически")}</small>}</button>
-            <button className="node-port node-port-out" style={graphOrientation === "vertical" ? {top:"auto",left:"50%",right:"auto",bottom:-17,transform:"translateX(-50%)"} : undefined} disabled={!canDuplicate} aria-pressed={node.id===linkSourceId} onClick={() => armLinkSource(node.id)} aria-label={locale === "en" ? `Start relation from ${node.title}` : `Начать связь от ${node.title}`}><span/></button>
+            <button className="node-port node-port-in" style={graphOrientation === "vertical" ? {top:-17,left:"50%",right:"auto",bottom:"auto",transform:"translateX(-50%)"} : {top:24,left:-17,right:"auto",bottom:"auto",transform:"none"}} disabled={!canDuplicate} onClick={() => completeLink(node.id)} aria-label={locale === "en" ? `Use ${node.title} as relation destination` : `Использовать ${node.title} как назначение связи`}><span/></button>
+            <button className="graph-node-number" type="button" onClick={(event)=>{event.stopPropagation();focusGraphNode(node.id);}} aria-label={`${locale === "en" ? "Focus node" : "Показать ноду"} ${nodeNumberById.get(node.id) ?? ""}`}>N{String(nodeNumberById.get(node.id) ?? 0).padStart(2,"0")}</button>
+            <button id={`studio-node-${node.id}`} className="graph-node" onFocus={() => selectGraphNode(node.id)} onKeyDown={(event) => { if (canDuplicate) nudgeNode(event, node); }} onPointerDown={(event)=>{setSelectedRuleLinkId(null);if(canDuplicate)moveNode(event,node,graphZoom);else selectGraphNode(node.id);}} onPointerMove={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} onPointerUp={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} onPointerCancel={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} aria-label={`N${String(nodeNumberById.get(node.id) ?? 0).padStart(2,"0")} · ${text.nodeTypes[node.type]}: ${node.title}. ${canDuplicate ? (locale === "en" ? "Use arrow keys to reposition; press Delete to remove." : "Используйте стрелки для перемещения; нажмите Delete для удаления.") : (locale === "en" ? "Inspection only." : "Только просмотр.")}`}><span><i/>{text.nodeTypes[node.type]}</span><b>{node.title}</b>{(node.runtime?.budgetCostEur !== undefined || node.runtime?.durationMinutes !== undefined) && <small className="node-runtime-summary">{node.runtime?.budgetCostEur !== undefined ? `€${node.runtime.budgetCostEur.toLocaleString()}` : (displayMode === "developer" ? "€ auto" : locale === "en" ? "cost automatic" : "стоимость автоматически")} · {node.runtime?.durationMinutes !== undefined ? `${node.runtime.durationMinutes} min` : (displayMode === "developer" ? "time auto" : locale === "en" ? "time automatic" : "время автоматически")}</small>}</button>
+            <button className="node-port node-port-out" style={graphOrientation === "vertical" ? {top:"auto",left:"50%",right:"auto",bottom:-17,transform:"translateX(-50%)"} : {top:24,left:"auto",right:-17,bottom:"auto",transform:"none"}} disabled={!canDuplicate} aria-pressed={node.id===linkSourceId} onClick={() => armLinkSource(node.id)} aria-label={locale === "en" ? `Start relation from ${node.title}` : `Начать связь от ${node.title}`}><span/></button>
           </div>)}
         </div></div>
         <div className="graph-resize-hint"><span aria-hidden="true">↕</span>{locale === "en" ? "Drag the lower edge to resize the graph window" : "Потяните нижний край, чтобы изменить высоту окна схемы"}</div>
@@ -3098,9 +3103,9 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
             {draft.nodes.length > STUDIO_NODE_MENU_PAGE_SIZE && <div className="relation-node-menu"><label><span>{locale === "en" ? "Find a node for endpoint menus" : "Найти узел для меню связей"}</span><input type="search" value={relationNodeQuery} disabled={!canDuplicate} placeholder={locale === "en" ? "Title, type or ID" : "Название, тип или ID"} onChange={(event) => { setRelationNodeQuery(event.target.value); setRelationNodePage(0); }}/></label><span>{relationNodeMenu.start}–{relationNodeMenu.end} / {relationNodeMenu.total}</span><button type="button" disabled={!canDuplicate || relationNodeMenu.page === 0} onClick={() => setRelationNodePage(relationNodeMenu.page - 1)} aria-label={locale === "en" ? "Previous node-menu page" : "Предыдущая страница меню узлов"}><Icon name="arrow"/></button><button type="button" disabled={!canDuplicate || relationNodeMenu.page >= relationNodeMenu.pageCount - 1} onClick={() => setRelationNodePage(relationNodeMenu.page + 1)} aria-label={locale === "en" ? "Next node-menu page" : "Следующая страница меню узлов"}><Icon name="arrow"/></button></div>}
             <ol>{visibleRelations.map((link, pageIndex) => { const index = safeRelationPage * relationPageSize + pageIndex; return <li key={link.id} className={selectedRuleLinkId === link.id ? "rules-selected" : ""}>
               {displayMode === "developer" ? <code>{String(index + 1).padStart(2,"0")}</code> : <span className="relation-number">{index + 1}</span>}
-              <div className="relation-endpoint"><div className="relation-endpoint-title"><span>{locale === "en" ? "Source" : "Источник"}</span><button id={`relation-source-${link.id}`} className={`relation-node-tag ${link.from===selectedNodeId?"active":""}`} type="button" aria-pressed={link.from===selectedNodeId} onClick={() => focusNodeAsSource(link.from)} aria-label={`${locale === "en" ? "Open source" : "Открыть источник"} ${nodeNumberById.get(link.from) ?? ""}`}>N{String(nodeNumberById.get(link.from) ?? 0).padStart(2,"0")}</button></div><select disabled={!canDuplicate} aria-label={locale === "en" ? `Source for relation ${index + 1}` : `Источник связи ${index + 1}`} value={link.from} onChange={(event) => changeRelation(link, "from", event.target.value)}>{studioNodeMenuOptions(relationNodeMenu.nodes,nodeById,link.from).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></div>
+              <div className="relation-endpoint"><div className="relation-endpoint-title"><span>{locale === "en" ? "Source" : "Источник"}</span><button id={`relation-source-${link.id}`} className={`relation-node-tag ${link.from===selectedNodeId?"active":""}`} type="button" aria-pressed={link.from===selectedNodeId} onClick={() => focusGraphNode(link.from)} aria-label={`${locale === "en" ? "Focus source node" : "Показать ноду-источник"} ${nodeNumberById.get(link.from) ?? ""}`}>N{String(nodeNumberById.get(link.from) ?? 0).padStart(2,"0")}</button></div><select disabled={!canDuplicate} aria-label={locale === "en" ? `Source for relation ${index + 1}` : `Источник связи ${index + 1}`} value={link.from} onChange={(event) => changeRelation(link, "from", event.target.value)}>{studioNodeMenuOptions(relationNodeMenu.nodes,nodeById,link.from).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></div>
               <span className="relation-arrow">→</span>
-              <div className="relation-endpoint"><div className="relation-endpoint-title"><span>{locale === "en" ? "Destination" : "Назначение"}</span><button className={`relation-node-tag destination ${link.to===selectedNodeId?"active":""}`} type="button" aria-pressed={link.to===selectedNodeId} onClick={() => focusNodeAsSource(link.to)} aria-label={`${locale === "en" ? "Open destination" : "Открыть назначение"} ${nodeNumberById.get(link.to) ?? ""}`}>N{String(nodeNumberById.get(link.to) ?? 0).padStart(2,"0")}</button></div><select disabled={!canDuplicate} aria-label={locale === "en" ? `Destination for relation ${index + 1}` : `Назначение связи ${index + 1}`} value={link.to} onChange={(event) => changeRelation(link, "to", event.target.value)}>{studioNodeMenuOptions(relationNodeMenu.nodes,nodeById,link.to).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></div>
+              <div className="relation-endpoint"><div className="relation-endpoint-title"><span>{locale === "en" ? "Destination" : "Назначение"}</span><button className={`relation-node-tag destination ${link.to===selectedNodeId?"active":""}`} type="button" aria-pressed={link.to===selectedNodeId} onClick={() => focusGraphNode(link.to)} aria-label={`${locale === "en" ? "Focus destination node" : "Показать ноду-назначение"} ${nodeNumberById.get(link.to) ?? ""}`}>N{String(nodeNumberById.get(link.to) ?? 0).padStart(2,"0")}</button></div><select disabled={!canDuplicate} aria-label={locale === "en" ? `Destination for relation ${index + 1}` : `Назначение связи ${index + 1}`} value={link.to} onChange={(event) => changeRelation(link, "to", event.target.value)}>{studioNodeMenuOptions(relationNodeMenu.nodes,nodeById,link.to).map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></div>
               <button className="relation-rules" onClick={() => selectedRuleLinkId === link.id ? setSelectedRuleLinkId(null) : selectGraphLink(link)} aria-expanded={selectedRuleLinkId === link.id}>{displayMode === "developer" ? (locale === "en" ? "Rules" : "Правила") : (locale === "en" ? "Choice" : "Выбор")}</button>
               <button className="relation-delete" disabled={!canDuplicate} onClick={() => { deleteLink(link); if (selectedRuleLinkId === link.id) setSelectedRuleLinkId(null); setRelationStatus(locale === "en" ? "Relation deleted. Undo is available." : "Связь удалена. Доступна отмена действия."); focusRelationStatus(); }} aria-label={locale === "en" ? `Delete relation ${index + 1}` : `Удалить связь ${index + 1}`}><Icon name="trash" size={15}/></button>
             </li>; })}</ol>
@@ -3131,7 +3136,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     {caseReportOpen && <Suspense fallback={null}><CaseReportDialog
       locale={locale}
       draft={draft}
-      currentFingerprint={studioDerivations.caseFingerprint}
+      currentFingerprint={caseReportFingerprint || studioDerivations.caseFingerprint || caseFingerprint(draft)}
       workspaceFingerprint={serverFingerprint}
       privateCase={isPrivate}
       close={() => setCaseReportOpen(false)}
@@ -3671,7 +3676,7 @@ function HelpView({ locale, openCommunity, openStudio }: { locale: Locale; openC
     <section className="help-hero"><span>QUICK HELP</span><h1>{locale === "en" ? "How GENESIS: JURIS works" : "Как работает GENESIS: JURIS"}</h1><p>{locale === "en" ? "A practical legal-simulation system: read the evolving matter, make consequential decisions, learn from the debrief and help practitioners improve the next version." : "Практическая система юридических симуляций: изучайте развивающееся дело, принимайте значимые решения, анализируйте результат и помогайте улучшать следующую версию."}</p></section>
     <section className="help-steps">{steps.map(([title, body], index) => <article key={title}><span>{String(index + 1).padStart(2, "0")}</span><h2>{title}</h2><p>{body}</p></article>)}</section>
     <section className="help-video-guides" aria-labelledby="help-video-guides-title">
-      <header><span>GUIDED DEMOS</span><h2 id="help-video-guides-title">{locale === "en" ? "Create, refine, then play" : "Создайте, доработайте и пройдите"}</h2><p>{locale === "en" ? "Start with the complete two-minute AI-first demonstration, then use the shorter clips for a closer look at the graph editor and player." : "Начните с полной двухминутной AI-first демонстрации, затем используйте короткие ролики для детального знакомства с редактором графа и плеером."}</p></header>
+      <header><span>GUIDED DEMOS</span><h2 id="help-video-guides-title">{locale === "en" ? "Create, refine, then play" : "Создайте, доработайте и пройдите"}</h2><p>{locale === "en" ? "Watch the two-minute AI demo, then explore the editor and player clips." : "Посмотрите двухминутное AI-демо, затем короткие ролики редактора и плеера."}</p></header>
       <div className="help-video-grid">
         <Suspense fallback={null}><StudioGuidedDemo locale={locale}/></Suspense>
         <article className="help-video-card">

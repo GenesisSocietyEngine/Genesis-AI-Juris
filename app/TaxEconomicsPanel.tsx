@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { defaultTaxEconomics, type TaxEconomicsResult } from "./tax-economics";
 
-export default function TaxEconomicsPanel({ locale, model, result, disabled, onChange }: {
+export default function TaxEconomicsPanel({ locale, model, result, disabled, onChange, embedded = false }: {
   locale: "en" | "ru";
   model: ReturnType<typeof defaultTaxEconomics>;
   result: TaxEconomicsResult;
   disabled: boolean;
   onChange: (change: Partial<ReturnType<typeof defaultTaxEconomics>>, label: string) => void;
+  embedded?: boolean;
 }) {
   const [assumptionsInput, setAssumptionsInput] = useState(model.assumptions);
   const currencies = ["EUR", "GBP", "USD", "CHF", "CNY", "HKD", "SGD", "AED", "CAD", "AUD", "JPY", "SEK", "NOK", "DKK", "PLN", "CZK", "HUF", "RON", "TRY", "RUB"];
@@ -31,7 +32,7 @@ export default function TaxEconomicsPanel({ locale, model, result, disabled, onC
     catch { return `${Math.round(value).toLocaleString(locale === "en" ? "en-GB" : "ru-RU")} ${model.currency}`; }
   };
   const payback = result.paybackMonths === null ? (locale === "en" ? "Not reached" : "Не достигается") : result.paybackMonths > model.analysisHorizonMonths ? (locale === "en" ? `Beyond horizon · ${result.paybackMonths.toFixed(1)} mo` : `За горизонтом · ${result.paybackMonths.toFixed(1)} мес.`) : (locale === "en" ? `${result.paybackMonths.toFixed(1)} months` : `${result.paybackMonths.toFixed(1)} мес.`);
-  return <section className="tax-economics page-width" aria-labelledby="tax-economics-title" inert={disabled}>
+  return <section className={`tax-economics ${embedded ? "embedded" : "page-width"}`} aria-labelledby="tax-economics-title" inert={disabled}>
     <header><div><span>{locale === "en" ? "TAX ECONOMICS · v1" : "ЭКОНОМИКА НАЛОГОВОЙ СТРУКТУРЫ · v1"}</span><h2 id="tax-economics-title">{locale === "en" ? "Profitability and payback estimate" : "Оценка прибыльности и срока окупаемости"}</h2></div><div className="tax-economics-header-controls"><label><span>{locale === "en" ? "Tax input basis" : "Способ ввода налога"}</span><select value={model.taxInputBasis} onChange={(event)=>onChange({taxInputBasis:event.target.value as "amounts"|"rates"},locale === "en" ? "tax input basis" : "способ ввода налога")}><option value="amounts">{locale === "en" ? "Annual tax amounts" : "Годовые суммы налога"}</option><option value="rates">{locale === "en" ? "Tax base + rates (%)" : "Налоговая база + ставки (%)"}</option></select></label><label><span>{locale === "en" ? "Currency" : "Валюта"}</span><select value={model.currency} onChange={(event)=>onChange({currency:event.target.value},locale === "en" ? "currency" : "валюта")} aria-label={locale === "en" ? "Tax economics currency" : "Валюта налоговой экономики"}>{!currencies.includes(model.currency) && <option value={model.currency}>{model.currency}</option>}{currencies.map((currency)=><option key={currency} value={currency}>{currency}</option>)}</select></label></div></header>
     <p>{locale === "en" ? "Compare documented cash-tax costs before and after a lawful structure. Include recurring substance, governance and compliance costs; terminal tax or unwind cost prevents a deferral from being presented as a permanent saving." : "Сравните документированные денежные налоговые расходы до и после законной структуры. Учтите регулярные расходы на substance, управление и compliance; конечный налог или стоимость unwind не позволяют представить отсрочку как постоянную экономию."}</p>
     <div className="tax-economics-inputs">

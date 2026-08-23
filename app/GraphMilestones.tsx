@@ -12,6 +12,6 @@ export default function GraphMilestones({locale,nodes,select}:{locale:"en"|"ru";
   if(!milestones.length)return null;
   return <nav className="graph-milestones" aria-label={locale==="en"?"Temporal milestones":"Временные майлстоуны"}>
     <span>{locale==="en"?"TIMELINE":"ВРЕМЕННАЯ ШКАЛА"}</span>
-    <div>{milestones.map(({node,index,deadline,day,time})=><button key={node.id} type="button" className={deadline?"deadline":""} onClick={()=>select(node.id)} title={node.title}><b>{day?`D${String(day).padStart(2,"0")}`:"TIME"}{time?` · ${time}`:""}</b><small>N{String(index+1).padStart(2,"0")} · {node.title}</small></button>)}</div>
+    <ol>{milestones.map(({node,index,deadline,day,time})=><li key={node.id} className={deadline?"deadline":""}><button type="button" onClick={()=>select(node.id)} title={node.title}><i aria-hidden="true"/><b>{day?`D${String(day).padStart(2,"0")}`:"TIME"}{time?` · ${time}`:""}</b><small>N{String(index+1).padStart(2,"0")} · {node.title}</small></button></li>)}</ol>
   </nav>;
 }

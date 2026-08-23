@@ -13,10 +13,10 @@ Paste the situation in the form experts actually receive it. Five concise lines 
 AI does not silently build or publish. It produces a read-only candidate scheme, exposing every proposed node, relation, deadline, consequence, assumption and economic input.
 
 00:00:42.000 --> 00:00:57.000
-Apply the reviewed proposal as one atomic revision. Select a node and refine its title, facts, timing, budget or professional consequence.
+Apply the reviewed proposal as one atomic revision. Select one node and refine its title, facts, timing, budget or professional consequence directly in the editor.
 
 00:00:57.000 --> 00:01:15.000
-Add a route, focus either endpoint, relink its source or destination, delete the connection and undo the complete change without losing version history.
+Relationships remain under human control. Add a route, relink its source or destination, delete the exact connection and undo the complete change without losing version history.
 
 00:01:15.000 --> 00:01:35.000
 Launch the validated graph in the same player used by published cases. Decisions advance time, expose evidence, consume budget and workload, and lead to authored consequences.
@@ -25,7 +25,7 @@ Launch the validated graph in the same player used by published cases. Decisions
 The final ledger keeps economics explicit: EUR 64,500 settlement, EUR 2,350 spend and EUR 62,150 net result.
 
 00:01:45.000 --> 00:01:54.000
-Finish with a structured PDF report containing the summary, decision map, economics, sources, verification checklist, graph and fingerprint.
+More Actions exposes the portable Final case prompt in Markdown. PDF export contains the summary, economics, sources, verification checklist, graph, node conditions and fingerprint.
 
 00:01:54.000 --> 00:02:00.000
 AI proposes. Professionals decide. The case remains deterministic, reviewable and ready to improve.

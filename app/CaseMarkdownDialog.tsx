@@ -5,7 +5,7 @@ import { buildCaseMarkdown, type CaseMarkdownLanguage, type CaseMarkdownStatus }
 import type { StudioDraft } from "./types";
 
 export default function CaseMarkdownDialog({locale,draft,close,completed}:{locale:"en"|"ru";draft:StudioDraft;close:()=>void;completed:()=>void}){
-  const [status,setStatus]=useState<CaseMarkdownStatus>("amended");
+  const [status,setStatus]=useState<CaseMarkdownStatus>("final");
   const [language,setLanguage]=useState<CaseMarkdownLanguage>(locale);
   const [markdown,setMarkdown]=useState("");
   const [fingerprint,setFingerprint]=useState("");
