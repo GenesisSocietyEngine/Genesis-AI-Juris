@@ -1,10 +1,10 @@
 WEBVTT
 
 00:00.000 --> 00:07.000
-GENESIS: JURIS Studio. Five Flats, Three Countries. One case, shown end to end, without leaving Studio.
+GENESIS: JURIS Studio. Five Flats, Three Countries. End to end, inside Studio.
 
 00:07.000 --> 00:20.000
-Studio opens in User View. The interface keeps technical identifiers out of the way while the complete professional workflow remains available. This walkthrough follows one canonical case from instruction to client-ready report.
+Studio opens in User View. Technical identifiers stay out of the way while the professional workflow remains available. This walkthrough follows one canonical case from instruction to client-ready report.
 
 00:20.000 --> 00:38.000
 Start with one compact instruction: a PRC resident plans to buy five English flats for £1 million, using 80% financing at 7.5%, with Liechtenstein in the route and a 10% annual-return target.
@@ -19,10 +19,10 @@ Next, close the financial gaps. Set interest-only debt, 5% vacancy, 10% manageme
 Now Studio generates the graph from the reviewed prompt and parameters. The result contains 27 semantic nodes and 31 explicit connections covering the client, property, financing, operating model, evidence, three-country tax gates, baseline comparison, decisions and adverse outcomes.
 
 01:44.000 --> 02:02.000
-Select any node to inspect its source, conditions and consequences. The return node keeps four meanings separate: gross yield, NOI yield, pre-tax cash-on-cash and ten-year after-tax equity IRR. Links remain editable, and every change can be undone.
+Select a node to inspect its source, conditions and consequences. The return node keeps four meanings separate: gross yield, NOI yield, pre-tax cash-on-cash and ten-year after-tax equity IRR. Links stay editable, and every change can be undone.
 
 02:02.000 --> 02:24.000
-Outcome calculation stays transparent. Studio calculates £24,328 annual cash flow from the reviewed inputs. On £215,000 of initial equity, pre-tax cash-on-cash is 11.3%, with debt-service coverage of 1.41x.
+Outcome calculation stays transparent. From the reviewed income and costs, Studio calculates £24,328 annual cash flow. On £215,000 of initial equity, pre-tax cash-on-cash is 11.3%, and debt-service coverage is 1.41x.
 
 02:24.000 --> 02:48.000
 Finally, generate the PDF inside Studio. The report uses the same reviewed graph and includes the case overview, economics, scenario analysis, decision map, facts and evidence register, authorities, node conditions, verification checklist and fingerprint. The raw AI prompt is excluded.

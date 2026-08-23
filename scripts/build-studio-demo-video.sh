@@ -86,14 +86,14 @@ ffmpeg -hide_banner -loglevel error -y \
   "${common_video[@]}" "${work_dir}/video.mp4"
 
 narration=(
-  "Genesis Juris Studio. Five Flats, Three Countries. One case, shown end to end, without leaving Studio."
-  "Studio opens in User View. The interface keeps technical identifiers out of the way, while the complete professional workflow remains available. This walkthrough follows one canonical case from instruction to client ready report."
+  "Genesis Juris Studio. Five Flats, Three Countries. End to end, inside Studio."
+  "Studio opens in User View. Technical identifiers stay out of the way while the professional workflow remains available. This walkthrough follows one canonical case from instruction to client ready report."
   "Start with one compact instruction. A PRC resident plans to buy five English flats for one million pounds, using eighty percent financing at seven point five percent, with Liechtenstein in the route and a ten percent annual return target."
   "Understand with AI does not silently rewrite the case. It expands the one line brief into a read only canonical proposal. The proposal lists the mandate, jurisdictions, fixed facts, open assumptions, return definitions, lawful baseline, risks, evidence gates and stop conditions. The author reviews it before accepting anything."
   "Next, close the financial gaps. Set interest only debt, five percent vacancy, ten percent management, five percent repairs, documented insurance and compliance costs, fifteen thousand pounds setup and ten thousand annual administration. The downside remains explicit. Lower rent, extended vacancy and a year two repair."
   "Now Studio generates the graph from the reviewed prompt and parameters. The result contains twenty seven semantic nodes and thirty one explicit connections, covering the client, property, financing, operating model, evidence, three country tax gates, baseline comparison, decisions and adverse outcomes."
-  "Select any node to inspect its source, conditions and consequences. The return node keeps four meanings separate. Gross yield, net operating income yield, pre tax cash on cash, and ten year after tax equity IRR. Links remain editable, and every change can be undone."
-  "Outcome calculation stays transparent. From one hundred twenty nine thousand six hundred pounds of rent, Studio subtracts vacancy, management, repairs, insurance, compliance, owner services, administration and sixty thousand of interest. Annual cash flow is twenty four thousand three hundred twenty eight pounds. On two hundred fifteen thousand of initial equity, pre tax cash on cash is eleven point three percent, with debt service coverage of one point four one."
+  "Select a node to inspect its source, conditions and consequences. The return node keeps four meanings separate. Gross yield, net operating income yield, pre tax cash on cash, and ten year after tax equity IRR. Links stay editable, and every change can be undone."
+  "Outcome calculation stays transparent. From the reviewed income and costs, Studio calculates annual cash flow of twenty four thousand three hundred twenty eight pounds. On two hundred fifteen thousand of initial equity, pre tax cash on cash is eleven point three percent, and debt service coverage is one point four one."
   "Finally, generate the PDF inside Studio. The report uses the same reviewed graph and includes the case overview, economics, scenario analysis, decision map, facts and evidence register, authorities, node conditions, verification checklist and fingerprint. The raw AI prompt is excluded from the client facing document."
   "One case, one Studio, fully auditable. AI proposes, the professional verifies, and Studio preserves the exact prompt, graph, outcome and report."
 )
