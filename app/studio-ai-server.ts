@@ -5,6 +5,7 @@ import { classifyStudioAIProviderFailure, shouldRetryStudioAIWithoutStrictSchema
 import type { StudioDraft } from "./types";
 
 type StudioAIConfig = { apiKey: string; model: string };
+const STUDIO_AI_TIMEOUT_MS = 90_000;
 
 export type StudioAIUsage = {
   inputTokens: number | null;
@@ -43,6 +44,7 @@ export async function createAIStudioPlan(values: {
     store: false,
     safety_identifier: values.safetyIdentifier,
     max_output_tokens: 6_000,
+    reasoning: { effort: "low" },
     instructions: providerContext.instructions,
     input: providerContext.input,
     text: {
@@ -124,8 +126,8 @@ async function requestStudioAIResponse(apiKey: string, body: unknown, signal?: A
     },
     body: JSON.stringify(body),
     signal: signal
-      ? AbortSignal.any([signal, AbortSignal.timeout(35_000)])
-      : AbortSignal.timeout(35_000),
+      ? AbortSignal.any([signal, AbortSignal.timeout(STUDIO_AI_TIMEOUT_MS)])
+      : AbortSignal.timeout(STUDIO_AI_TIMEOUT_MS),
   });
 }
 

@@ -219,6 +219,7 @@ test("AI route keeps the key server-side and enforces auth, same-origin, limits 
   const route = readFileSync(new URL("../app/api/studio/ai-plan/route.ts", import.meta.url), "utf8");
   const server = readFileSync(new URL("../app/studio-ai-server.ts", import.meta.url), "utf8");
   const ui = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
+  const progress = readFileSync(new URL("../app/StudioAIProgress.tsx", import.meta.url), "utf8");
   const review = readFileSync(new URL("../app/StudioAIReview.tsx", import.meta.url), "utf8");
   const me = readFileSync(new URL("../app/api/me/route.ts", import.meta.url), "utf8");
   const localAuth = readFileSync(new URL("../app/local-auth.ts", import.meta.url), "utf8");
@@ -237,10 +238,16 @@ test("AI route keeps the key server-side and enforces auth, same-origin, limits 
   assert.match(server, /OPENAI_API_KEY/);
   assert.match(server, /store: false/);
   assert.match(server, /safety_identifier/);
+  assert.match(server, /reasoning:\s*\{\s*effort:\s*"low"\s*\}/);
+  assert.match(server, /STUDIO_AI_TIMEOUT_MS\s*=\s*90_000/);
   assert.match(server, /AbortSignal\.any/);
   assert.match(server, /text:\s*\{\s*format:\s*\{/);
   assert.doesNotMatch(`${route}\n${ui}`, /OPENAI_API_KEY|NEXT_PUBLIC_OPENAI/);
   assert.match(ui, /Understand with AI/);
+  assert.match(ui, /StudioAIProgress/);
+  assert.match(progress, /Estimated AI planning progress/);
+  assert.match(progress, /role="progressbar"/);
+  assert.match(progress, /the model does not stream an exact completion percentage/);
   assert.match(review, /Apply all .*reviewed changes/);
   assert.match(review, /displayed in full below/);
   assert.match(me, /studioAIAvailable/);
