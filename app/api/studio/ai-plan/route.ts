@@ -98,6 +98,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const reason = error instanceof StudioAIServiceError ? error.code : "provider_unavailable";
     const providerFailure = error instanceof StudioAIServiceError ? error.providerFailure : null;
+    const usage = error instanceof StudioAIServiceError ? error.usage : null;
     waitUntil(writeAuthAudit({
       eventType: "studio_ai_plan",
       emailSubjectHash: limit.emailSubjectHash,
@@ -111,6 +112,12 @@ export async function POST(request: Request) {
         providerCode: providerFailure?.providerCode ?? null,
         providerType: providerFailure?.providerType ?? null,
         providerParam: providerFailure?.providerParam ?? null,
+        incompleteReason: error instanceof StudioAIServiceError ? error.incompleteReason : null,
+        inputTokens: usage?.inputTokens ?? null,
+        cachedInputTokens: usage?.cachedInputTokens ?? null,
+        outputTokens: usage?.outputTokens ?? null,
+        reasoningOutputTokens: usage?.reasoningOutputTokens ?? null,
+        totalTokens: usage?.totalTokens ?? null,
       },
     }).catch(() => undefined));
     const refused = reason === "refused";

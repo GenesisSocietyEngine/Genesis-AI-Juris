@@ -5,7 +5,7 @@ import { classifyStudioAIProviderFailure, shouldRetryStudioAIWithoutStrictSchema
 import type { StudioDraft } from "./types";
 
 type StudioAIConfig = { apiKey: string; model: string };
-const STUDIO_AI_TIMEOUT_MS = 90_000;
+const STUDIO_AI_TIMEOUT_MS = 300_000;
 
 export type StudioAIUsage = {
   inputTokens: number | null;
@@ -19,6 +19,8 @@ export class StudioAIServiceError extends Error {
   constructor(
     public readonly code: "not_configured" | StudioAIProviderErrorCode | "refused" | "invalid_output" | "incomplete",
     public readonly providerFailure: StudioAIProviderFailure | null = null,
+    public readonly usage: StudioAIUsage | null = null,
+    public readonly incompleteReason: "max_output_tokens" | "content_filter" | null = null,
   ) {
     super(code);
   }
@@ -43,7 +45,7 @@ export async function createAIStudioPlan(values: {
     model: config.model,
     store: false,
     safety_identifier: values.safetyIdentifier,
-    max_output_tokens: 6_000,
+    max_output_tokens: 25_000,
     reasoning: { effort: "low" },
     instructions: providerContext.instructions,
     input: providerContext.input,
@@ -88,7 +90,11 @@ export async function createAIStudioPlan(values: {
     }
   }
   if (!isRecord(payload)) throw new StudioAIServiceError("invalid_output");
-  if (payload.status !== "completed") throw new StudioAIServiceError(payload.status === "incomplete" ? "incomplete" : "invalid_output");
+  if (payload.status !== "completed") {
+    const incompleteDetails = isRecord(payload.incomplete_details) ? payload.incomplete_details : null;
+    const incompleteReason = incompleteDetails?.reason === "max_output_tokens" || incompleteDetails?.reason === "content_filter" ? incompleteDetails.reason : null;
+    throw new StudioAIServiceError(payload.status === "incomplete" ? "incomplete" : "invalid_output", null, studioAIUsage(payload.usage), incompleteReason);
+  }
   const output = Array.isArray(payload.output) ? payload.output : [];
   let outputText = "";
   for (const item of output) {

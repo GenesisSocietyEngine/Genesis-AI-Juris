@@ -239,7 +239,7 @@ test("AI route keeps the key server-side and enforces auth, same-origin, limits 
   assert.match(server, /store: false/);
   assert.match(server, /safety_identifier/);
   assert.match(server, /reasoning:\s*\{\s*effort:\s*"low"\s*\}/);
-  assert.match(server, /STUDIO_AI_TIMEOUT_MS\s*=\s*90_000/);
+  assert.match(server, /STUDIO_AI_TIMEOUT_MS\s*=\s*300_000/);
   assert.match(server, /AbortSignal\.any/);
   assert.match(server, /text:\s*\{\s*format:\s*\{/);
   assert.doesNotMatch(`${route}\n${ui}`, /OPENAI_API_KEY|NEXT_PUBLIC_OPENAI/);
@@ -248,6 +248,7 @@ test("AI route keeps the key server-side and enforces auth, same-origin, limits 
   assert.match(progress, /Estimated AI planning progress/);
   assert.match(progress, /role="progressbar"/);
   assert.match(progress, /the model does not stream an exact completion percentage/);
+  assert.match(progress, /complex case can take several minutes/);
   assert.match(review, /Apply all .*reviewed changes/);
   assert.match(review, /displayed in full below/);
   assert.match(me, /studioAIAvailable/);

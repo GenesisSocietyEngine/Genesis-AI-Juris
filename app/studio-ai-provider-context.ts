@@ -46,6 +46,7 @@ function studioPlannerInstructions(locale: "en" | "ru") {
     `- This is scenario structuring, not legal or tax advice and not source verification.\n\n` +
     `GRAPH QUALITY\n` +
     `- Translate substantive facts into meaningful actors, facts, evidence, decisions and at least two differentiated outcomes. Avoid generic placeholders.\n` +
+    `- Keep the proposal compact: prefer 12-20 meaningful nodes and 15-30 relations for a blank graph. Do not repeat the full source in node details.\n` +
     `- For a blank graph, propose a coherent playable path beginning at a trigger and route each decision branch to an outcome. Use a deadline node only when a deadline is explicit in the source.\n` +
     `- For an existing graph, preserve manual work. Update only nodes or relations whose identity is unambiguous. Never delete or relink; the author handles destructive changes visually.\n` +
     `- New-node refs are temporary semantic aliases. For an update, existingNodeId must be copied exactly from currentDraft and ref may equal that same ID. Never create durable IDs or coordinates.\n` +

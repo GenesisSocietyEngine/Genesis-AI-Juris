@@ -42,7 +42,9 @@ test("AI provider context has an independent 128 KB budget", () => {
   const server = readFileSync(new URL("../app/studio-ai-server.ts", import.meta.url), "utf8");
   assert.match(route, /ai_context_too_large/);
   assert.match(route, /}, 413\)/);
-  assert.match(server, /max_output_tokens:\s*6_000/);
+  assert.match(server, /max_output_tokens:\s*25_000/);
+  assert.match(server, /incompleteReason/);
+  assert.match(route, /reasoningOutputTokens:/);
   assert.doesNotMatch(route, /detail:\s*\{[^}]*instruction/, "audit detail must not retain the author prompt");
   assert.match(route, /inputTokens:/);
   assert.match(route, /latencyMs:/);
@@ -69,6 +71,12 @@ test("tenant AI lease migration stores only pseudonymous, expiring capacity meta
 
   db.prepare("DELETE FROM studio_ai_leases WHERE expires_at <= ?").run(expires);
   assert.equal(acquire.run("lease-after-ttl", "subject-new", expires, "2026-08-23T12:02:00.000Z", expires).changes, 1);
+});
+
+test("tenant AI leases cover the full provider timeout without leaking request content", () => {
+  const capacity = readFileSync(new URL("../app/studio-ai-capacity.ts", import.meta.url), "utf8");
+  assert.match(capacity, /STUDIO_AI_LEASE_TTL_MS\s*=\s*330_000/);
+  assert.doesNotMatch(capacity, /instruction|authorPrompt|premise/);
 });
 
 test("latest-request gate aborts and invalidates stale catalogue responses", () => {
