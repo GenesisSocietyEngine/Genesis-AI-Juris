@@ -32,6 +32,13 @@ export type DealCashFlowProbabilityEstimate = {
   usesOperatingCostStress: boolean;
 };
 
+export const DEFAULT_DEAL_SCENARIO_PROBABILITIES: DealEconomicsV1["scenarioProbabilities"] = {
+  interestOnlyBps: 5_000,
+  favorableBps: 2_500,
+  baseBps: 5_000,
+  stressedBps: 2_500,
+};
+
 export function normalizeDealEconomics(value: unknown): DealEconomicsV1 | undefined {
   if (value === undefined || value === null) return undefined;
   if (!isRecord(value) || value.kind !== "deal-economics-v1") throw new Error("Invalid deal economics model");
@@ -41,6 +48,7 @@ export function normalizeDealEconomics(value: unknown): DealEconomicsV1 | undefi
     ? value.repaymentBasis
     : null;
   if (!repaymentBasis) throw new Error("Invalid deal repayment basis");
+  const scenarioProbabilities = normalizeScenarioProbabilities(value.scenarioProbabilities);
   return {
     kind: "deal-economics-v1",
     currency,
@@ -55,6 +63,7 @@ export function normalizeDealEconomics(value: unknown): DealEconomicsV1 | undefi
     annualStructureCost: nullableInteger(value.annualStructureCost, "annual structure cost", 0, 1_000_000_000_000),
     otherInitialCosts: nullableInteger(value.otherInitialCosts, "other initial costs", 0, 1_000_000_000_000),
     targetAnnualReturnBps: nullableInteger(value.targetAnnualReturnBps, "target annual return", 0, 100_000),
+    scenarioProbabilities,
     assumptions: textList(value.assumptions, 12, 500),
   };
 }
@@ -118,13 +127,19 @@ export function calculateDealEconomics(model: DealEconomicsV1): DealEconomicsRes
  */
 export function estimateDealCashFlowProbabilities(model: DealEconomicsV1, result = calculateDealEconomics(model)): DealCashFlowProbabilityEstimate | null {
   if (model.grossAnnualIncome === null || result.initialEquity === null) return null;
+  const probabilityInputs = model.scenarioProbabilities ?? DEFAULT_DEAL_SCENARIO_PROBABILITIES;
+  const interestOnlyWeight = probabilityInputs.interestOnlyBps / 10_000;
   const repaymentScenarios = model.repaymentBasis === "amortizing"
     ? [{ scenario: result.amortizing, weight: 1 }]
     : model.repaymentBasis === "interest_only"
       ? [{ scenario: result.interestOnly, weight: 1 }]
-      : [{ scenario: result.amortizing, weight: 0.5 }, { scenario: result.interestOnly, weight: 0.5 }];
+      : [{ scenario: result.amortizing, weight: 1 - interestOnlyWeight }, { scenario: result.interestOnly, weight: interestOnlyWeight }];
   const costScenarios = model.annualOperatingCosts === null
-    ? [{ ratio: 0.1, weight: 0.25 }, { ratio: 0.2, weight: 0.5 }, { ratio: 0.3, weight: 0.25 }]
+    ? [
+      { ratio: 0.1, weight: probabilityInputs.favorableBps / 10_000 },
+      { ratio: 0.2, weight: probabilityInputs.baseBps / 10_000 },
+      { ratio: 0.3, weight: probabilityInputs.stressedBps / 10_000 },
+    ]
     : [{ ratio: 0, weight: 1 }];
   const observations = repaymentScenarios.flatMap(({ scenario, weight: repaymentWeight }) => {
     if (scenario.annualCashFlow === null) return [];
@@ -189,11 +204,25 @@ export function inferDealEconomicsFromText(text: string): DealEconomicsV1 | unde
     annualStructureCost: annualStructureCost === null ? null : Math.round(annualStructureCost),
     otherInitialCosts: null,
     targetAnnualReturnBps,
+    scenarioProbabilities: DEFAULT_DEAL_SCENARIO_PROBABILITIES,
     assumptions: [
       "Inputs were conservatively extracted from explicit labels in the case text; confirm them before relying on the result.",
       monthlyIncome !== null && annualIncome === null ? "Monthly rent was annualized by multiplying by 12." : "",
     ].filter(Boolean),
   });
+}
+
+function normalizeScenarioProbabilities(value: unknown): DealEconomicsV1["scenarioProbabilities"] {
+  if (value === undefined || value === null) return { ...DEFAULT_DEAL_SCENARIO_PROBABILITIES };
+  if (!isRecord(value)) throw new Error("Invalid deal scenario probabilities");
+  const result = {
+    interestOnlyBps: requiredInteger(value.interestOnlyBps, "interest-only scenario weight", 0, 10_000),
+    favorableBps: requiredInteger(value.favorableBps, "favorable scenario weight", 0, 10_000),
+    baseBps: requiredInteger(value.baseBps, "base scenario weight", 0, 10_000),
+    stressedBps: requiredInteger(value.stressedBps, "stressed scenario weight", 0, 10_000),
+  };
+  if (result.favorableBps + result.baseBps + result.stressedBps !== 10_000) throw new Error("Deal occupancy scenario weights must total 100%");
+  return result;
 }
 
 function annualAmortizingPayment(principal: number, annualRateBps: number, termMonths: number) {
@@ -247,6 +276,11 @@ function labelledNumber(text: string, label: RegExp, suffix: RegExp) {
 
 function nullableInteger(value: unknown, label: string, minimum: number, maximum: number) {
   if (value === null) return null;
+  if (typeof value !== "number" || !Number.isInteger(value) || value < minimum || value > maximum) throw new Error(`Invalid ${label}`);
+  return value;
+}
+
+function requiredInteger(value: unknown, label: string, minimum: number, maximum: number) {
   if (typeof value !== "number" || !Number.isInteger(value) || value < minimum || value > maximum) throw new Error(`Invalid ${label}`);
   return value;
 }

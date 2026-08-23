@@ -10,7 +10,7 @@ import type { StudioDraft, StudioNodeType } from "../app/types";
 const at = "2026-08-23T12:00:00.000Z";
 const emptyRuntime = { day: null, time: null, pressure: null, terminalOutcome: null, deadlineDay: null, deadlineTime: null, budgetCostEur: null, durationMinutes: null };
 const emptyRule = { label: null, detail: null, result: null, cost: null, minutes: null, effects: { position: null, evidence: null, trust: null, exposure: null }, repeatability: null, maxUses: null };
-const emptyEconomics = { currency: null, purchasePrice: null, loanToValueBps: null, annualInterestRateBps: null, termMonths: null, repaymentBasis: null, grossAnnualIncome: null, annualOperatingCosts: null, oneOffStructureCost: null, annualStructureCost: null, otherInitialCosts: null, targetAnnualReturnBps: null, assumptions: [] };
+const emptyEconomics = { currency: null, purchasePrice: null, loanToValueBps: null, annualInterestRateBps: null, termMonths: null, repaymentBasis: null, grossAnnualIncome: null, annualOperatingCosts: null, oneOffStructureCost: null, annualStructureCost: null, otherInitialCosts: null, targetAnnualReturnBps: null, scenarioProbabilities: null, assumptions: [] };
 
 function blankDraft(): StudioDraft {
   return {
@@ -102,6 +102,7 @@ test("AI cash-flow facts materialize as a reviewable non-destructive economics o
     currency: "GBP", purchasePrice: 1_000_000, loanToValueBps: 8_000, annualInterestRateBps: 750, termMonths: 120,
     repaymentBasis: "unknown", grossAnnualIncome: 129_600, annualOperatingCosts: null, oneOffStructureCost: 15_000,
     annualStructureCost: 10_000, otherInitialCosts: null, targetAnnualReturnBps: 1_000,
+    scenarioProbabilities: { interestOnlyBps: 5_000, favorableBps: 2_500, baseBps: 5_000, stressedBps: 2_500 },
     assumptions: ["Monthly rent was annualized from an explicit total."],
   } };
   const plan = materializeAIStudioPlan(blankDraft(), "Model the supplied property cash flow.", proposal, "en");
@@ -109,7 +110,9 @@ test("AI cash-flow facts materialize as a reviewable non-destructive economics o
   assert.ok(economics && economics.kind === "set_deal_economics");
   assert.equal(economics.economics.repaymentBasis, "unknown");
   assert.equal(economics.economics.annualStructureCost, 10_000);
+  assert.equal(economics.economics.scenarioProbabilities.stressedBps, 2_500);
   assert.match(describeStudioPromptOperation(economics, "en"), /purchase.*1,000,000.*LTV 80\.00%/i);
+  assert.match(describeStudioPromptOperation(economics, "en"), /scenario weights.*25\.0%\/50\.0%\/25\.0%/i);
 });
 
 test("AI keeps the raw blank-draft source private and publishes only reviewed case context", () => {

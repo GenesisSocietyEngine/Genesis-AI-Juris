@@ -242,6 +242,16 @@ export type DealEconomicsV1 = {
   annualStructureCost: number | null;
   otherInitialCosts: number | null;
   targetAnnualReturnBps: number | null;
+  scenarioProbabilities: {
+    /** Weight of the interest-only branch when repaymentBasis is unknown. */
+    interestOnlyBps: number;
+    /** Light vacancy / operating-cost stress (10% of gross rent). */
+    favorableBps: number;
+    /** Base vacancy / operating-cost stress (20% of gross rent). */
+    baseBps: number;
+    /** Low-occupancy / high-cost stress (30% of gross rent). */
+    stressedBps: number;
+  };
   assumptions: string[];
 };
 

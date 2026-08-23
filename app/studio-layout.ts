@@ -2,8 +2,9 @@ import type { StudioLink, StudioNode } from "./types";
 
 export const STUDIO_NODE_WIDTH = 165;
 export const STUDIO_NODE_HEIGHT = 96;
-const COLUMN_PITCH = 285;
-const ROW_GAP = 42;
+const COLUMN_PITCH = 320;
+const ROW_GAP = 54;
+const COMPONENT_GAP = 110;
 const PADDING_X = 46;
 const PADDING_Y = 70;
 
@@ -85,15 +86,53 @@ export function layoutStudioNodes(nodes: StudioNode[], links: StudioLink[]) {
   }
 
   const nodeById = new Map(nodes.map((node) => [node.id, node]));
-  const columnHeight = (values: string[]) => values.reduce((sum, id) => sum + studioNodeEstimatedHeight(nodeById.get(id)), 0) + Math.max(0, values.length - 1) * ROW_GAP;
-  const contentHeight = Math.max(STUDIO_NODE_HEIGHT, ...[...columns.values()].map(columnHeight));
-  const positions = new Map<string, { x: number; y: number }>();
-  for (const [column, values] of columns) {
-    let y = PADDING_Y + Math.max(0, (contentHeight - columnHeight(values)) / 2);
-    for (const id of values) {
-      positions.set(id, { x: PADDING_X + column * COLUMN_PITCH, y });
-      y += studioNodeEstimatedHeight(nodeById.get(id)) + ROW_GAP;
+  const weakNeighbours = new Map(nodes.map((node) => [node.id, new Set<string>()]));
+  for (const link of links) {
+    if (!ids.has(link.from) || !ids.has(link.to) || link.from === link.to) continue;
+    weakNeighbours.get(link.from)?.add(link.to);
+    weakNeighbours.get(link.to)?.add(link.from);
+  }
+  const componentByNode = new Map<string, number>();
+  const components: string[][] = [];
+  for (const node of nodes) {
+    if (componentByNode.has(node.id)) continue;
+    const componentIndex = components.length;
+    const component: string[] = [];
+    const pending = [node.id];
+    componentByNode.set(node.id, componentIndex);
+    while (pending.length) {
+      const id = pending.shift() as string;
+      component.push(id);
+      for (const neighbour of [...(weakNeighbours.get(id) ?? [])].sort(byOriginalOrder)) {
+        if (componentByNode.has(neighbour)) continue;
+        componentByNode.set(neighbour, componentIndex);
+        pending.push(neighbour);
+      }
     }
+    component.sort(byOriginalOrder);
+    components.push(component);
+  }
+  const columnHeight = (values: string[]) => values.reduce((sum, id) => sum + studioNodeEstimatedHeight(nodeById.get(id)), 0) + Math.max(0, values.length - 1) * ROW_GAP;
+  const positions = new Map<string, { x: number; y: number }>();
+  let componentTop = PADDING_Y;
+  // Disconnected subgraphs must not be interleaved into the same lanes. Each
+  // component gets a separate horizontal band, which prevents unrelated
+  // branches and their relation lines from becoming one dense visual knot.
+  for (const component of components) {
+    const componentIds = new Set(component);
+    const componentColumns = columnOrder.map((column) => ({
+      column,
+      values: (columns.get(column) ?? []).filter((id) => componentIds.has(id)),
+    })).filter((item) => item.values.length > 0);
+    const componentHeight = Math.max(STUDIO_NODE_HEIGHT, ...componentColumns.map((item) => columnHeight(item.values)));
+    for (const { column, values } of componentColumns) {
+      let y = componentTop + Math.max(0, (componentHeight - columnHeight(values)) / 2);
+      for (const id of values) {
+        positions.set(id, { x: PADDING_X + column * COLUMN_PITCH, y });
+        y += studioNodeEstimatedHeight(nodeById.get(id)) + ROW_GAP;
+      }
+    }
+    componentTop += componentHeight + COMPONENT_GAP;
   }
   return nodes.map((node) => ({ ...node, ...(positions.get(node.id) ?? { x: node.x, y: node.y }) }));
 }

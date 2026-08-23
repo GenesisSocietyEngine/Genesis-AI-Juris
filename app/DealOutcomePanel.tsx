@@ -27,6 +27,7 @@ export default function DealOutcomePanel({ locale, draft }: { locale: "en" | "ru
   };
   const target = model.targetAnnualReturnBps === null ? null : model.targetAnnualReturnBps / 100;
   const probabilityEstimate = estimateDealCashFlowProbabilities(model, result);
+  const probabilityInputs = model.scenarioProbabilities;
   const targetStates = scenarios.map((scenario) => scenario.targetGapPercent === null ? null : scenario.targetGapPercent >= 0);
   const targetVerdict = target === null
     ? (locale === "en" ? "Target not supplied" : "Цель не задана")
@@ -60,10 +61,10 @@ export default function DealOutcomePanel({ locale, draft }: { locale: "en" | "ru
       })}</div>
       <div className="deal-probability-rationale"><h4>{locale === "en" ? "Why the estimate looks this way" : "Почему оценка выглядит именно так"}</h4><div>
         <p><b>{locale === "en" ? "Repayment basis" : "Вид погашения"}</b>{probabilityEstimate.usesRepaymentBasisPrior
-          ? (locale === "en" ? "The loan documents do not specify a basis, so the model gives 50% weight to amortizing and 50% to interest-only. This neutral modelling weight is not a market probability." : "В документах не указан вид погашения, поэтому модель даёт 50% амортизации и 50% варианту только с процентами. Это нейтральный вес модели, а не рыночная вероятность.")
+          ? (locale === "en" ? `The loan documents do not specify a basis, so the editable model gives ${(100-probabilityInputs.interestOnlyBps/100).toFixed(1)}% weight to amortizing and ${(probabilityInputs.interestOnlyBps/100).toFixed(1)}% to interest-only. These are modelling weights, not observed market probabilities.` : `В документах не указан вид погашения, поэтому редактируемая модель даёт ${(100-probabilityInputs.interestOnlyBps/100).toFixed(1)}% амортизации и ${(probabilityInputs.interestOnlyBps/100).toFixed(1)}% варианту только с процентами. Это веса модели, а не наблюдаемые рыночные вероятности.`)
           : (locale === "en" ? `Only the stated ${model.repaymentBasis.replace("_", " ")} basis is used.` : "Используется только указанный вид погашения.")}</p>
         <p><b>{locale === "en" ? "Vacancy and property costs" : "Вакантность и расходы объекта"}</b>{probabilityEstimate.usesOperatingCostStress
-          ? (locale === "en" ? "Because they are missing, the model stresses combined vacancy and operating costs at 10%, 20% and 30% of gross rent, weighted 25%, 50% and 25%. Replace these assumptions with the property budget." : "Поскольку они не указаны, модель проверяет совокупные потери от вакантности и расходы на уровнях 10%, 20% и 30% валовой аренды с весами 25%, 50% и 25%. Замените их бюджетом объекта.")
+          ? (locale === "en" ? `Because they are missing, the model stresses combined vacancy and operating costs at 10%, 20% and 30% of gross rent, weighted ${(probabilityInputs.favorableBps/100).toFixed(1)}%, ${(probabilityInputs.baseBps/100).toFixed(1)}% and ${(probabilityInputs.stressedBps/100).toFixed(1)}%. Select the cash-flow node to edit these weights.` : `Поскольку они не указаны, модель проверяет совокупные потери от вакантности и расходы на уровнях 10%, 20% и 30% валовой аренды с весами ${(probabilityInputs.favorableBps/100).toFixed(1)}%, ${(probabilityInputs.baseBps/100).toFixed(1)}% и ${(probabilityInputs.stressedBps/100).toFixed(1)}%. Выберите cash-flow ноду, чтобы изменить веса.`)
           : (locale === "en" ? `The supplied annual operating-cost amount of ${money(model.annualOperatingCosts)} is used without an extra stress deduction.` : `Использована указанная сумма годовых расходов ${money(model.annualOperatingCosts)} без дополнительного стресс-вычета.`)}</p>
         <p><b>{locale === "en" ? "Return threshold" : "Порог доходности"}</b>{probabilityEstimate.targetCashFlow !== null
           ? (locale === "en" ? `${money(probabilityEstimate.targetCashFlow)} annual cash flow equals the stated ${target?.toFixed(1)}% target on ${money(result.initialEquity)} of known initial equity.` : `${money(probabilityEstimate.targetCashFlow)} годового потока соответствует цели ${target?.toFixed(1)}% на известный начальный капитал ${money(result.initialEquity)}.`)

@@ -301,6 +301,8 @@ export function describeStudioPromptOperation(operation: StudioPromptOperation, 
       model.termMonths !== null ? `${model.termMonths} ${en ? "months" : "месяцев"}` : "",
       model.grossAnnualIncome !== null ? `${en ? "gross annual income" : "валовой годовой доход"} ${model.currency} ${model.grossAnnualIncome.toLocaleString("en")}` : "",
       model.targetAnnualReturnBps !== null ? `${en ? "target return" : "целевая доходность"} ${(model.targetAnnualReturnBps / 100).toFixed(2)}%` : "",
+      `${en ? "scenario weights (favourable/base/low occupancy)" : "веса сценариев (favourable/base/low occupancy)"} ${(model.scenarioProbabilities.favorableBps / 100).toFixed(1)}%/${(model.scenarioProbabilities.baseBps / 100).toFixed(1)}%/${(model.scenarioProbabilities.stressedBps / 100).toFixed(1)}%`,
+      model.repaymentBasis === "unknown" ? `${en ? "interest-only weight" : "вес interest-only"} ${(model.scenarioProbabilities.interestOnlyBps / 100).toFixed(1)}%` : "",
     ].filter(Boolean).join("; ");
     return `${en ? "Set case cash-flow assumptions" : "Задать допущения денежного потока"}${values ? ` — ${values}` : ""}`;
   }

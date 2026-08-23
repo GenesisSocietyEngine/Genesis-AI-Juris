@@ -182,6 +182,7 @@ test("compiler synthetic opening IDs cannot collide with valid Studio node or re
 
 test("Studio UI exposes intuitive blank reset, selectable relation deletion and dark option contrast", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
+  const cashFlowEditorSource = readFileSync(new URL("../app/CashFlowScenarioEditor.tsx", import.meta.url), "utf8");
   const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(appSource, /function blankStudioDraft/);
   assert.match(appSource, /nodes: \[\],\s*links: \[\],\s*editHistory: \[\]/);
@@ -189,12 +190,20 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /event\.key !== "Delete" && event\.key !== "Backspace"/);
   assert.match(appSource, /target instanceof HTMLInputElement/);
   assert.match(appSource, /Press Delete to remove it/);
+  assert.match(appSource, /press Delete to remove/, "selected nodes expose their keyboard deletion shortcut");
+  assert.match(appSource, /CashFlowScenarioEditor/, "a selected cash-flow node exposes editable model controls");
+  assert.match(cashFlowEditorSource, /CASH-FLOW SCENARIO/);
+  assert.match(cashFlowEditorSource, /setProbability/, "cash-flow scenario weights are directly editable");
   assert.match(appSource, /const pointerX = \(event\.clientX - rect\.left\) \/ scale/,
     "scaled graph dragging must translate pointer coordinates back into graph space");
   assert.match(appSource, /moveNode\(event,node,graphZoom\)/,
     "graph interactions must provide their current scale");
   assert.match(appSource, /Math\.max\(0\.55/,
     "Fit must retain a legible minimum scale while supporting larger auto-laid-out graphs");
+  const autoLayoutSource = appSource.slice(appSource.indexOf("async function autoLayoutGraph"), appSource.indexOf("function clearTransientEditorSelection"));
+  assert.match(autoLayoutSource, /connected graph components into separate non-overlapping topology lanes/);
+  assert.doesNotMatch(autoLayoutSource, /studioCanDuplicate|commitStudioDraft|showSessionNotice/,
+    "Studio auto-layout must use the state and callbacks actually available inside StudioView");
   assert.match(appSource, /id="graph-connect-status"[\s\S]*tabIndex=\{-1\}/,
     "relation deletion must have a programmatically focusable status destination");
   assert.match(appSource, /focusRelationStatus\(\)/,
@@ -218,7 +227,10 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /displayMode === "developer" && draft\.protection/, "raw lineage seals stay in Developer view");
   assert.match(appSource, /Publishable case context/);
   assert.match(appSource, /\{taxDraft && <><label><span>\{locale === "en" \? "Tax-case purpose"/, "tax-only controls should stay hidden for general cases");
-  assert.doesNotMatch(appSource.slice(appSource.indexOf("function deleteSelectedRelation"), appSource.indexOf("async function shareDraft")), /deleteNode/);
+  const deleteHandler = appSource.slice(appSource.indexOf("function deleteSelectedGraphItem"), appSource.indexOf("async function shareDraft"));
+  assert.match(deleteHandler, /deleteLink\(link\)/, "Delete removes a selected relation");
+  assert.match(deleteHandler, /deleteNode\(\)/, "Delete removes a selected node");
+  assert.match(deleteHandler, /window\.confirm/, "keyboard node deletion confirms removal of connected relations");
   assert.match(css, /\.theme-after-hours \.node-inspector \.inspector-form select option\{color:#14212c;background-color:#fff\}/);
   assert.match(css, /\.studio-submit-blocker\{/);
 });

@@ -1,7 +1,7 @@
 import { canonicalFingerprint, caseFingerprint, isRecord, normalizeStudioDraft, slugifyCaseId, studioStructuralIssues } from "./case-integrity";
 import { applyStudioPromptPlan, nextStudioLinkId, nextStudioNodeId, nextStudioNodePosition, type StudioPromptDiagnostic, type StudioPromptOperation, type StudioPromptPlan } from "./studio-editing";
 import { compileStudioDraft } from "./studio-compiler";
-import { normalizeDealEconomics } from "./deal-economics";
+import { DEFAULT_DEAL_SCENARIO_PROBABILITIES, normalizeDealEconomics } from "./deal-economics";
 import type { MetricKey, StudioDraft, StudioLink, StudioNode, StudioNodeType } from "./types";
 
 const nodeTypes = new Set<StudioNodeType>([
@@ -52,9 +52,21 @@ export const STUDIO_AI_PLAN_SCHEMA = {
         annualStructureCost: { type: ["integer", "null"], minimum: 0, maximum: 1000000000000 },
         otherInitialCosts: { type: ["integer", "null"], minimum: 0, maximum: 1000000000000 },
         targetAnnualReturnBps: { type: ["integer", "null"], minimum: 0, maximum: 100000 },
+        scenarioProbabilities: {
+          type: ["object", "null"],
+          additionalProperties: false,
+          description: "Editable scenario weights. favorable/base/stressed must total 10000 basis points. Use null when the case is not an investment scenario.",
+          properties: {
+            interestOnlyBps: { type: "integer", minimum: 0, maximum: 10000 },
+            favorableBps: { type: "integer", minimum: 0, maximum: 10000 },
+            baseBps: { type: "integer", minimum: 0, maximum: 10000 },
+            stressedBps: { type: "integer", minimum: 0, maximum: 10000 },
+          },
+          required: ["interestOnlyBps", "favorableBps", "baseBps", "stressedBps"],
+        },
         assumptions: { type: "array", maxItems: 12, items: { type: "string", minLength: 1, maxLength: 500 } },
       },
-      required: ["currency", "purchasePrice", "loanToValueBps", "annualInterestRateBps", "termMonths", "repaymentBasis", "grossAnnualIncome", "annualOperatingCosts", "oneOffStructureCost", "annualStructureCost", "otherInitialCosts", "targetAnnualReturnBps", "assumptions"],
+      required: ["currency", "purchasePrice", "loanToValueBps", "annualInterestRateBps", "termMonths", "repaymentBasis", "grossAnnualIncome", "annualOperatingCosts", "oneOffStructureCost", "annualStructureCost", "otherInitialCosts", "targetAnnualReturnBps", "scenarioProbabilities", "assumptions"],
     },
     nodes: {
       type: "array",
@@ -440,6 +452,7 @@ function normalizeDealEconomicsProposal(value: unknown, existing?: StudioDraft["
   const annualStructureCost = nullableInteger(proposal.annualStructureCost, 0, 1_000_000_000_000);
   const otherInitialCosts = nullableInteger(proposal.otherInitialCosts, 0, 1_000_000_000_000);
   const targetAnnualReturnBps = nullableInteger(proposal.targetAnnualReturnBps, 0, 100_000);
+  const scenarioProbabilities = normalizeScenarioProbabilityProposal(proposal.scenarioProbabilities, existing?.scenarioProbabilities);
   const assumptions = boundedList(proposal.assumptions, 12, 500);
   const repaymentBasis = proposal.repaymentBasis === "amortizing" || proposal.repaymentBasis === "interest_only" || proposal.repaymentBasis === "unknown"
     ? proposal.repaymentBasis
@@ -463,8 +476,23 @@ function normalizeDealEconomicsProposal(value: unknown, existing?: StudioDraft["
     annualStructureCost: annualStructureCost ?? existing?.annualStructureCost ?? null,
     otherInitialCosts: otherInitialCosts ?? existing?.otherInitialCosts ?? null,
     targetAnnualReturnBps: targetAnnualReturnBps ?? existing?.targetAnnualReturnBps ?? null,
+    scenarioProbabilities,
     assumptions: assumptions.length ? assumptions : existing?.assumptions ?? [],
   });
+}
+
+function normalizeScenarioProbabilityProposal(value: unknown, existing?: NonNullable<StudioDraft["dealEconomics"]>["scenarioProbabilities"]) {
+  const fallback = existing ?? DEFAULT_DEAL_SCENARIO_PROBABILITIES;
+  if (value === undefined || value === null) return { ...fallback };
+  const proposal = requireRecord(value, "scenario probability proposal");
+  const result = {
+    interestOnlyBps: nullableInteger(proposal.interestOnlyBps, 0, 10_000) ?? fallback.interestOnlyBps,
+    favorableBps: nullableInteger(proposal.favorableBps, 0, 10_000) ?? fallback.favorableBps,
+    baseBps: nullableInteger(proposal.baseBps, 0, 10_000) ?? fallback.baseBps,
+    stressedBps: nullableInteger(proposal.stressedBps, 0, 10_000) ?? fallback.stressedBps,
+  };
+  if (result.favorableBps + result.baseBps + result.stressedBps !== 10_000) throw new Error("AI occupancy scenario weights must total 10000 basis points");
+  return result;
 }
 
 function normalizeRuntimeProposal(value: unknown, type: StudioNodeType): StudioNode["runtime"] {

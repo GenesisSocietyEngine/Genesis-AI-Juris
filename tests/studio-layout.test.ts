@@ -53,3 +53,21 @@ test("layout reserves real vertical space for wrapped titles and runtime summari
   }
   assert.ok(Math.min(...laidOut.map((node) => node.y)) >= 70, "the first row retains a visible top gutter");
 });
+
+test("disconnected subgraphs receive separate vertical bands", () => {
+  const nodes: StudioNode[] = [
+    { id: "trigger-1", type: "trigger", title: "First component", detail: "", x: 0, y: 0 },
+    { id: "outcome-1", type: "outcome", title: "First result", detail: "", x: 0, y: 0 },
+    { id: "trigger-2", type: "trigger", title: "Second component", detail: "", x: 0, y: 0 },
+    { id: "outcome-2", type: "outcome", title: "Second result", detail: "", x: 0, y: 0 },
+  ];
+  const links: StudioLink[] = [
+    { id: "link-1", from: "trigger-1", to: "outcome-1" },
+    { id: "link-2", from: "trigger-2", to: "outcome-2" },
+  ];
+  const laidOut = layoutStudioNodes(nodes, links);
+  const byId = new Map(laidOut.map((node) => [node.id, node]));
+  const firstBottom = Math.max(byId.get("trigger-1")!.y + studioNodeEstimatedHeight(byId.get("trigger-1")), byId.get("outcome-1")!.y + studioNodeEstimatedHeight(byId.get("outcome-1")));
+  const secondTop = Math.min(byId.get("trigger-2")!.y, byId.get("outcome-2")!.y);
+  assert.ok(secondTop - firstBottom >= 100, "components should be visibly separated rather than interleaved");
+});

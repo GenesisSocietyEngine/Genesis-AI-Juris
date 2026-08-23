@@ -53,6 +53,17 @@ test("cash-flow probability estimate exposes four transparent weighted ranges", 
   assert.equal(estimate.usesOperatingCostStress, true);
 });
 
+test("editable low-occupancy weight immediately changes the four-band estimate", () => {
+  const model = inferDealEconomicsFromText(propertyCase);
+  assert.ok(model);
+  const estimate = estimateDealCashFlowProbabilities({
+    ...model,
+    scenarioProbabilities: { ...model.scenarioProbabilities, favorableBps: 2_500, baseBps: 5_625, stressedBps: 1_875 },
+  });
+  assert.ok(estimate);
+  assert.deepEqual(estimate.bands.map((band) => Number(band.probabilityPercent.toFixed(3))), [50, 9.375, 28.125, 12.5]);
+});
+
 test("deal economics rejects malformed currency and impossible percentages", () => {
   const model = inferDealEconomicsFromText(propertyCase);
   assert.ok(model);

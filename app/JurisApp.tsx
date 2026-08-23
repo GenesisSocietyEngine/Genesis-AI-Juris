@@ -51,6 +51,7 @@ const StudioAIReview = lazy(() => import("./StudioAIReview"));
 const StudioAIProgress = lazy(() => import("./StudioAIProgress"));
 const DealOutcomePanel = lazy(() => import("./DealOutcomePanel"));
 const TaxEconomicsPanel = lazy(() => import("./TaxEconomicsPanel"));
+const CashFlowScenarioEditor = lazy(() => import("./CashFlowScenarioEditor"));
 type OutcomeClass = "strong" | "mixed" | "weak";
 type DecisionRecord = { stageId: string; stage: string; option: DecisionOption };
 type FeedbackTarget = { caseId: string; version: string; title: string; source: "playable" | "studio"; fingerprint?: string; customCaseId?: number | null; contextType?: "case" | "stage" | "decision" | "node"; contextId?: string; privateCase?: boolean };
@@ -2275,6 +2276,8 @@ function computeStudioDerivations(source: StudioDraft): StudioDerivations {
 }
 
 function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, generateDraft, applyPromptIteration, applyReviewedAIPlan, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadExample, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, aiEntitlement }: StudioViewProps) {
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
   const [workspaceState, setWorkspaceState] = useState<"idle" | "saving" | "saved" | "submitted" | "conflict" | "auth_required" | "error">("idle");
   const [linkSourceId, setLinkSourceId] = useState<string | null>(null);
   const [relationStatus, setRelationStatus] = useState("");
@@ -2349,6 +2352,12 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   const paletteNodeTypes = (Object.keys(typeColors) as StudioNodeType[]).filter((type) => displayMode === "developer" || taxDraft || type !== "tax_rule");
   const taxModel = draft.taxEconomics ?? defaultTaxEconomics();
   const taxResult = useMemo(() => taxDraft ? calculateTaxEconomics(taxModel) : null, [taxDraft, taxModel]);
+  const inferredDealModel = useMemo(() => inferDealEconomicsFromText([
+    draft.premise,
+    ...draft.nodes.flatMap((node) => [node.title, node.detail]),
+    ...draft.editHistory.filter((entry) => entry.action === "prompt_submitted").map((entry) => entry.message),
+  ].join("\n")), [draft.editHistory, draft.nodes, draft.premise]);
+  const editableDealModel = draft.dealEconomics ?? inferredDealModel;
   const selectedRevision = timeline.revisions.find((revision) => revision.id === selectedRevisionId) ?? timeline.revisions.at(-1) ?? null;
   const selectedDiff = selectedRevision ? diffStudioSnapshots(selectedRevision.before, selectedRevision.after) : null;
   const restoreDiff = selectedRevision ? diffDraftToRevision(draft, selectedRevision) : null;
@@ -2484,7 +2493,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       setAIResult(null);
       setAIState("idle");
       setAIError("");
-      if (reviewedPlan.operations.some((operation) => operation.kind === "add_node")) void autoLayoutGraph();
+      if (reviewedPlan.operations.some((operation) => operation.kind === "add_node")) window.setTimeout(() => void autoLayoutGraph(), 0);
       else window.requestAnimationFrame(fitGraph);
     }
   }
@@ -2512,18 +2521,19 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   }
 
   async function autoLayoutGraph() {
-    if (!studioCanDuplicate || draftRef.current.nodes.length < 2) { fitGraph(); return; }
+    if (!canDuplicate || draftRef.current.nodes.length < 2) { fitGraph(); return; }
     const { layoutStudioNodes } = await import("./studio-layout");
-    const createdAt = new Date().toISOString();
-    const changed = commitStudioDraft((current) => appendStudioHistory({
-      ...current,
-      nodes: layoutStudioNodes(current.nodes, current.links),
-    }, {
-      role: "studio", source: "visual", action: "node_moved",
-      message: locale === "en" ? "Visual edit: automatically arranged the graph into non-overlapping topology layers." : "Визуальная правка: схема автоматически разложена по неперекрывающимся топологическим слоям.",
-    }, createdAt), locale === "en" ? "Auto-arranged graph" : "Автоматическая раскладка схемы", "visual", createdAt);
-    window.requestAnimationFrame(fitGraph);
-    if (changed) showSessionNotice(locale === "en" ? "Graph arranged and fitted" : "Схема разложена и помещена в окно");
+    const before = draftRef.current;
+    const nodes = layoutStudioNodes(before.nodes, before.links);
+    const changed = nodes.some((node, index) => node.x !== before.nodes[index]?.x || node.y !== before.nodes[index]?.y);
+    if (changed) {
+      setDraft({ ...before, nodes });
+      recordVisualEdit("node_moved", locale === "en" ? "Visual edit: automatically arranged connected graph components into separate non-overlapping topology lanes." : "Визуальная правка: связанные компоненты схемы автоматически разложены по отдельным неперекрывающимся топологическим полосам.", before);
+    }
+    const viewportWidth = graphViewportRef.current?.clientWidth ?? graphDeckRef.current?.clientWidth ?? 900;
+    setGraphZoom(Math.max(0.72, Math.min(1, viewportWidth / 900)));
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => graphViewportRef.current?.scrollTo({ left: 0, top: 0, behavior: "auto" })));
+    if (changed) setRelationStatus(locale === "en" ? "Graph arranged at a readable scale · use Fit for an overview." : "Схема разложена в читаемом масштабе · «Вместить» покажет обзор.");
   }
 
   function clearTransientEditorSelection() {
@@ -2566,21 +2576,31 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   }
 
   useEffect(() => {
-    function deleteSelectedRelation(event: KeyboardEvent) {
-      if ((event.key !== "Delete" && event.key !== "Backspace") || event.metaKey || event.ctrlKey || event.altKey || !selectedRuleLinkId || !canDuplicate) return;
+    function deleteSelectedGraphItem(event: KeyboardEvent) {
+      if ((event.key !== "Delete" && event.key !== "Backspace") || event.metaKey || event.ctrlKey || event.altKey || !canDuplicate) return;
       const target = event.target;
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || (target instanceof HTMLElement && target.isContentEditable)) return;
-      const link = draft.links.find((item) => item.id === selectedRuleLinkId);
-      if (!link) return;
+      if (selectedRuleLinkId) {
+        const link = draft.links.find((item) => item.id === selectedRuleLinkId);
+        if (!link) return;
+        event.preventDefault();
+        deleteLink(link);
+        setSelectedRuleLinkId(null);
+        setRelationStatus(locale === "en" ? "Relation deleted. Undo is available." : "Связь удалена. Доступна отмена действия.");
+        focusRelationStatus();
+        return;
+      }
+      if (!selectedNodeId || !draft.nodes.some((node) => node.id === selectedNodeId)) return;
+      const relationCount = draft.links.filter((link) => link.from === selectedNodeId || link.to === selectedNodeId).length;
+      if (relationCount && !window.confirm(locale === "en" ? `Delete the selected node and ${relationCount} connected relation(s)?` : `Удалить выбранный узел и связанные связи (${relationCount})?`)) return;
       event.preventDefault();
-      deleteLink(link);
-      setSelectedRuleLinkId(null);
-      setRelationStatus(locale === "en" ? "Relation deleted. Undo is available." : "Связь удалена. Доступна отмена действия.");
+      deleteNode();
+      setRelationStatus(locale === "en" ? "Node and its connected relations deleted. Undo is available." : "Узел и связанные с ним связи удалены. Доступна отмена действия.");
       focusRelationStatus();
     }
-    document.addEventListener("keydown", deleteSelectedRelation);
-    return () => document.removeEventListener("keydown", deleteSelectedRelation);
-  }, [canDuplicate, deleteLink, draft.links, focusRelationStatus, locale, selectedRuleLinkId]);
+    document.addEventListener("keydown", deleteSelectedGraphItem);
+    return () => document.removeEventListener("keydown", deleteSelectedGraphItem);
+  }, [canDuplicate, deleteLink, deleteNode, draft.links, draft.nodes, focusRelationStatus, locale, selectedNodeId, selectedRuleLinkId]);
 
   async function shareDraft(action: "save" | "submit") {
     if (!canDuplicate || !draftWithinEnvelope || !derivationsSettled) { setWorkspaceState("error"); return; }
@@ -2679,6 +2699,15 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     const before = draft;
     setDraft((current) => ({ ...current, taxEconomics: { ...(current.taxEconomics ?? defaultTaxEconomics()), ...change } }));
     recordVisualEdit("case_updated", locale === "en" ? `Visual edit: changed tax economics ${label}.` : `Визуальная правка: изменено поле налоговой экономики «${label}».`, before);
+  }
+  function setDealEconomicsChange(change: Partial<NonNullable<StudioDraft["dealEconomics"]>>) {
+    if (!editableDealModel) return;
+    setDraft((current) => ({ ...current, dealEconomics: { ...editableDealModel, ...(current.dealEconomics ?? {}), ...change } }));
+  }
+  function commitDealEconomicsField(label: string, value: string) {
+    if (fieldBefore.current === value) return;
+    recordVisualEdit("case_updated", locale === "en" ? `Visual edit: changed cash-flow scenario ${label}.` : `Визуальная правка: изменён параметр cash-flow сценария «${label}».`, fieldBeforeDraft.current ?? undefined);
+    fieldBeforeDraft.current = null;
   }
   function selectGraphNode(nodeId: string) {
     setSelectedRuleLinkId(null);
@@ -2915,14 +2944,14 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       <aside className="node-palette" inert={!canDuplicate}><div className="pane-heading"><span>{text.addNode}</span><b>{String(paletteNodeTypes.length).padStart(2,"0")}</b></div>{paletteNodeTypes.map((type) => <button key={type} disabled={!canDuplicate || draft.nodes.length >= 200} onClick={() => addNode(type)}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "Add nodes here. On the graph, choose an output dot and then an input dot to create a relation. Every completed edit is added to the history." : "Добавляйте узлы здесь. На графе выберите выходную, затем входную точку, чтобы создать связь. Каждая завершённая правка попадёт в историю."}</p></aside>
       <section className="graph-deck" ref={graphDeckRef}>
         <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div className="graph-heading-actions"><div>{displayMode === "developer" ? <><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></> : <span className="graph-counts">{draft.nodes.length} {locale === "en" ? "nodes" : "узлов"} · {draft.links.length} {locale === "en" ? "connections" : "связей"}</span>}</div><div className="graph-zoom-controls" aria-label={locale === "en" ? "Graph view controls" : "Управление видом схемы"}><button type="button" disabled={!canDuplicate || draft.nodes.length < 2} onClick={autoLayoutGraph}>{locale === "en" ? "Auto-layout" : "Авто-раскладка"}</button><button type="button" onClick={fitGraph}>{locale === "en" ? "Fit" : "Вместить"}</button><button type="button" onClick={() => setGraphZoom(1)}>100%</button><button type="button" onClick={centerGraph}>{locale === "en" ? "Center" : "По центру"}</button></div></div></div>
-        <div id="graph-connect-status" className="graph-connect-status" role="status" aria-live="polite" tabIndex={-1}><span className={linkSourceId || selectedRuleLinkId ? "armed" : ""}/>{relationStatus || (locale === "en" ? "Connect: select OUT on the first node, then IN on the destination. Select a line and press Delete to remove it." : "Связь: нажмите ВЫХОД первого узла, затем ВХОД целевого. Выделите линию и нажмите Delete для удаления.")}{linkSourceId && <button onClick={() => { setLinkSourceId(null); setRelationStatus(""); }}>{locale === "en" ? "Cancel" : "Отмена"}</button>}</div>
+        <div id="graph-connect-status" className="graph-connect-status" role="status" aria-live="polite" tabIndex={-1}><span className={linkSourceId || selectedRuleLinkId || selectedNodeId ? "armed" : ""}/>{relationStatus || (locale === "en" ? "Connect: select OUT then IN. Select a node or relation and press Delete to remove it." : "Связь: выберите ВЫХОД, затем ВХОД. Выделите узел или связь и нажмите Delete для удаления.")}{linkSourceId && <button onClick={() => { setLinkSourceId(null); setRelationStatus(""); }}>{locale === "en" ? "Cancel" : "Отмена"}</button>}</div>
         <div className="graph-viewport" ref={graphViewportRef} aria-label={locale === "en" ? "Resizable graph viewport" : "Изменяемое окно схемы"}>
         <div className="graph-canvas" style={{ zoom: graphZoom, width: graphBounds.width, height: graphBounds.height }}>
           <svg className="graph-links" aria-label={locale === "en" ? "Case relationships" : "Связи кейса"}>{draft.links.map((link) => { const from=nodeById.get(link.from); const to=nodeById.get(link.to); if(!from||!to)return null; const path=`M ${from.x+165} ${from.y+38} C ${from.x+205} ${from.y+38}, ${to.x-38} ${to.y+38}, ${to.x} ${to.y+38}`; const selected=selectedRuleLinkId===link.id; return <g key={link.id} className={`graph-link ${selected?"selected":""}`} role="button" tabIndex={0} aria-pressed={selected} aria-label={locale === "en" ? `Relation from ${from.title} to ${to.title}. Press Delete to remove.` : `Связь от «${from.title}» к «${to.title}». Нажмите Delete для удаления.`} onClick={() => selectGraphLink(link)} onKeyDown={(event) => { if(event.key==="Enter"||event.key===" "){event.preventDefault();selectGraphLink(link);} }}><title>{from.title} → {to.title}</title><path className="graph-link-hit" d={path}/><path className="graph-link-visible" d={path}/><circle cx={to.x} cy={to.y+38} r="3"/></g>; })}</svg>
           {draft.nodes.length === 0 && <div className="graph-empty-state"><Icon name="spark"/><h3>{locale === "en" ? "Start with a description or one node" : "Начните с описания или первого узла"}</h3><p>{locale === "en" ? "Describe the matter above and choose “Understand with AI”, or add a Trigger from the left palette." : "Опишите ситуацию выше и нажмите «Понять и структурировать с AI» либо добавьте «Триггер» в палитре слева."}</p></div>}
           {draft.nodes.map((node) => <div key={node.id} className={`graph-node-shell ${node.id===selectedNodeId?"selected":""} ${node.id===linkSourceId?"link-source":""}`} style={{left:node.x,top:node.y,"--node-color":typeColors[node.type]} as React.CSSProperties}>
             <button className="node-port node-port-in" disabled={!canDuplicate} onClick={() => completeLink(node.id)} aria-label={locale === "en" ? `Use ${node.title} as relation destination` : `Использовать ${node.title} как назначение связи`}><span/></button>
-            <button id={`studio-node-${node.id}`} className="graph-node" onFocus={() => selectGraphNode(node.id)} onKeyDown={(event) => { if (canDuplicate) nudgeNode(event, node); }} onPointerDown={(event)=>{setSelectedRuleLinkId(null);if(canDuplicate)moveNode(event,node,graphZoom);else selectGraphNode(node.id);}} onPointerMove={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} onPointerUp={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} onPointerCancel={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} aria-label={`${text.nodeTypes[node.type]}: ${node.title}. ${canDuplicate ? (locale === "en" ? "Use arrow keys to reposition." : "Используйте стрелки для перемещения.") : (locale === "en" ? "Inspection only." : "Только просмотр.")}`}><span><i/>{text.nodeTypes[node.type]}{displayMode === "developer" && <code>{node.id.split("-").at(-1)}</code>}</span><b>{node.title}</b>{(node.runtime?.budgetCostEur !== undefined || node.runtime?.durationMinutes !== undefined) && <small className="node-runtime-summary">{node.runtime?.budgetCostEur !== undefined ? `€${node.runtime.budgetCostEur.toLocaleString()}` : (displayMode === "developer" ? "€ auto" : locale === "en" ? "cost automatic" : "стоимость автоматически")} · {node.runtime?.durationMinutes !== undefined ? `${node.runtime.durationMinutes} min` : (displayMode === "developer" ? "time auto" : locale === "en" ? "time automatic" : "время автоматически")}</small>}</button>
+            <button id={`studio-node-${node.id}`} className="graph-node" onFocus={() => selectGraphNode(node.id)} onKeyDown={(event) => { if (canDuplicate) nudgeNode(event, node); }} onPointerDown={(event)=>{setSelectedRuleLinkId(null);if(canDuplicate)moveNode(event,node,graphZoom);else selectGraphNode(node.id);}} onPointerMove={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} onPointerUp={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} onPointerCancel={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} aria-label={`${text.nodeTypes[node.type]}: ${node.title}. ${canDuplicate ? (locale === "en" ? "Use arrow keys to reposition; press Delete to remove." : "Используйте стрелки для перемещения; нажмите Delete для удаления.") : (locale === "en" ? "Inspection only." : "Только просмотр.")}`}><span><i/>{text.nodeTypes[node.type]}{displayMode === "developer" && <code>{node.id.split("-").at(-1)}</code>}</span><b>{node.title}</b>{(node.runtime?.budgetCostEur !== undefined || node.runtime?.durationMinutes !== undefined) && <small className="node-runtime-summary">{node.runtime?.budgetCostEur !== undefined ? `€${node.runtime.budgetCostEur.toLocaleString()}` : (displayMode === "developer" ? "€ auto" : locale === "en" ? "cost automatic" : "стоимость автоматически")} · {node.runtime?.durationMinutes !== undefined ? `${node.runtime.durationMinutes} min` : (displayMode === "developer" ? "time auto" : locale === "en" ? "time automatic" : "время автоматически")}</small>}</button>
             <button className="node-port node-port-out" disabled={!canDuplicate} aria-pressed={node.id===linkSourceId} onClick={() => armLinkSource(node.id)} aria-label={locale === "en" ? `Start relation from ${node.title}` : `Начать связь от ${node.title}`}><span/></button>
           </div>)}
         </div></div>
@@ -2950,7 +2979,8 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
         <label><span>{text.nodeType}</span><select value={selectedNode.type} onChange={(event)=>{ const type=event.target.value as StudioNodeType; if(type!==selectedNode.type){ const before=draft; updateNode({type,runtime:runtimeForNodeType(selectedNode.runtime,type)}); recordVisualEdit("node_updated", locale === "en" ? `Visual edit: changed “${selectedNode.title}” from ${text.nodeTypes[selectedNode.type]} to ${text.nodeTypes[type]}.` : `Визуальная правка: тип узла «${selectedNode.title}» изменён на «${text.nodeTypes[type]}».`, before); } }}>{(Object.keys(typeColors) as StudioNodeType[]).map((type)=><option key={type} value={type}>{text.nodeTypes[type]}</option>)}</select></label>
         <label><span>{text.title}</span><input value={selectedNode.title} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event)=>updateNode({title:event.target.value})} onBlur={(event)=>commitNodeField(text.title,event.currentTarget.value)}/></label>
         <label><span>{text.detail}</span><textarea value={selectedNode.detail} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event)=>updateNode({detail:event.target.value})} onBlur={(event)=>commitNodeField(text.detail,event.currentTarget.value)}/></label>
-        <fieldset className="node-runtime-fields"><legend>{locale === "en" ? "TIME & BUDGET" : "ВРЕМЯ И БЮДЖЕТ"}</legend>
+        {selectedNode.type === "cash_flow" && editableDealModel && <Suspense fallback={null}><CashFlowScenarioEditor locale={locale} model={editableDealModel} beginFieldEdit={beginFieldEdit} commitField={commitDealEconomicsField} setModel={setDealEconomicsChange} changeRepaymentBasis={(repaymentBasis) => { const before=draft; setDealEconomicsChange({repaymentBasis}); recordVisualEdit("case_updated", locale === "en" ? "Visual edit: changed cash-flow repayment basis." : "Визуальная правка: изменён вид погашения cash-flow.", before); }}/></Suspense>}
+        {(displayMode === "developer" || selectedNode.type !== "cash_flow") && <fieldset className="node-runtime-fields"><legend>{locale === "en" ? "TIME & BUDGET" : "ВРЕМЯ И БЮДЖЕТ"}</legend>
           <p>{locale === "en" ? "These defaults are charged when the player enters this node. A relation rule may override them." : "Эти значения применяются при входе игрока в узел. Правило конкретной связи может их переопределить."}</p>
           <label><span>{locale === "en" ? "Budgeted node cost · EUR" : "Бюджетная стоимость нода · EUR"}</span><input type="number" min="0" max="1000000000" step="1" value={selectedNode.runtime?.budgetCostEur ?? ""} placeholder="auto" onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event)=>setNodeRuntimeChange({budgetCostEur:optionalRuntimeInteger(event.target.value,1_000_000_000)})} onBlur={(event)=>commitNodeField(locale === "en" ? "budgeted cost" : "бюджетная стоимость",event.currentTarget.value)}/></label>
           <label><span>{locale === "en" ? "Node duration · minutes" : "Продолжительность нода · минуты"}</span><input type="number" min="0" max="100000000" step="1" value={selectedNode.runtime?.durationMinutes ?? ""} placeholder="auto" onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event)=>setNodeRuntimeChange({durationMinutes:optionalRuntimeInteger(event.target.value,100_000_000)})} onBlur={(event)=>commitNodeField(locale === "en" ? "duration" : "продолжительность",event.currentTarget.value)}/></label>
@@ -2958,7 +2988,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
           <label><span>{locale === "en" ? "Scenario time" : "Время сценария"}</span><input type="time" value={selectedNode.runtime?.time ?? ""} onChange={(event)=>applyNodeRuntimeChange({time:event.target.value || undefined},locale === "en" ? "time" : "время")}/></label>
           {selectedNode.type === "outcome" && <label><span>{locale === "en" ? "Outcome class" : "Класс исхода"}</span><select value={selectedNode.runtime?.terminalOutcome ?? "auto"} onChange={(event)=>applyNodeRuntimeChange({terminalOutcome:event.target.value === "auto" ? undefined : event.target.value as "strong"|"mixed"|"weak"},locale === "en" ? "outcome class" : "класс исхода")}><option value="auto">{locale === "en" ? "Automatic" : "Автоматически"}</option><option value="strong">{locale === "en" ? "Strong" : "Сильный"}</option><option value="mixed">{locale === "en" ? "Mixed" : "Смешанный"}</option><option value="weak">{locale === "en" ? "Weak" : "Слабый"}</option></select></label>}
           {selectedNode.type === "deadline" && <><label><span>{locale === "en" ? "Deadline day" : "День дедлайна"}</span><input type="number" min="1" max="10000" value={selectedNode.runtime?.deadlineDay ?? ""} placeholder="auto" onChange={(event)=>applyNodeRuntimeChange({deadlineDay:event.target.value ? Number(event.target.value) : undefined},locale === "en" ? "deadline day" : "день дедлайна")}/></label><label><span>{locale === "en" ? "Deadline time" : "Время дедлайна"}</span><input type="time" value={selectedNode.runtime?.deadlineTime ?? ""} onChange={(event)=>applyNodeRuntimeChange({deadlineTime:event.target.value || undefined},locale === "en" ? "deadline time" : "время дедлайна")}/></label><label><span>{locale === "en" ? "Missed route" : "Переход при пропуске"}</span><select value={selectedNode.runtime?.missedOutcomeNodeId ?? ""} onChange={(event)=>applyNodeRuntimeChange({missedOutcomeNodeId:event.target.value || undefined},locale === "en" ? "missed-deadline route" : "переход при пропуске")}><option value="">{locale === "en" ? "Automatic · weakest outcome" : "Автоматически · самый слабый исход"}</option>{draft.nodes.filter((node)=>node.type==="outcome").map((node)=><option key={node.id} value={node.id}>{node.title}</option>)}</select></label></>}
-        </fieldset>
+        </fieldset>}
         <div className="inspector-destination-picker">{destinationNodes.length > STUDIO_NODE_MENU_PAGE_SIZE && <label className="node-menu-search"><span>{locale === "en" ? "Find destination" : "Найти назначение"}</span><input type="search" value={destinationNodeQuery} placeholder={locale === "en" ? "Title, type or ID" : "Название, тип или ID"} onChange={(event) => { setDestinationNodeQuery(event.target.value); setDestinationNodePage(0); }}/></label>}<label><span>{locale === "en" ? "Connect selected node to" : "Связать выбранный узел с"}</span><select value="" onChange={(event) => { const target=event.target.value; if(!target)return; const issue=canUseRelation(selectedNode.id,target); if(issue){setRelationStatus(issue);return;} addLink(selectedNode.id,target); setRelationStatus(locale === "en" ? "Relation created." : "Связь создана."); }}><option value="">{locale === "en" ? "Choose destination…" : "Выберите узел…"}</option>{destinationNodeMenu.nodes.map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></label>{destinationNodeMenu.pageCount > 1 && <div className="node-menu-pagination"><span>{destinationNodeMenu.start}–{destinationNodeMenu.end} / {destinationNodeMenu.total}</span><button type="button" disabled={destinationNodeMenu.page === 0} onClick={() => setDestinationNodePage(destinationNodeMenu.page - 1)} aria-label={locale === "en" ? "Previous destinations" : "Предыдущие назначения"}><Icon name="arrow"/></button><button type="button" disabled={destinationNodeMenu.page >= destinationNodeMenu.pageCount - 1} onClick={() => setDestinationNodePage(destinationNodeMenu.page + 1)} aria-label={locale === "en" ? "Next destinations" : "Следующие назначения"}><Icon name="arrow"/></button></div>}</div>
         <button className="danger-button" onClick={() => { const relations=draft.links.filter((link)=>link.from===selectedNode.id||link.to===selectedNode.id).length; if(!relations || window.confirm(locale === "en" ? `Delete this node and ${relations} connected relation(s)?` : `Удалить узел и связанные связи (${relations})?`)) deleteNode(); }}><Icon name="trash"/>{text.deleteNode}</button>
       </div>:<p className="empty-inspector">{text.noSelection}</p>}</aside>
