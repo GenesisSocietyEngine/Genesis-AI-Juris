@@ -39,7 +39,11 @@ type StudioAIEntitlement = "loading" | "anonymous" | "profile_required" | "ready
 function graphBoundsForNodes(nodes: StudioNode[]) {
   return {
     width: Math.max(1_200, Math.ceil(nodes.reduce((value, node) => Math.max(value, node.x + 211), 0))),
-    height: Math.max(570, Math.ceil(nodes.reduce((value, node) => Math.max(value, node.y + 150), 0))),
+    height: Math.max(570, Math.ceil(nodes.reduce((value, node) => {
+      const titleLines = Math.max(1, Math.ceil(node.title.trim().length / 18));
+      const runtimeHeight = node.runtime?.budgetCostEur !== undefined || node.runtime?.durationMinutes !== undefined ? 22 : 0;
+      return Math.max(value, node.y + Math.max(150, 40 + titleLines * 17 + runtimeHeight) + 54);
+    }, 0))),
   };
 }
 const HelpFaq = lazy(() => import("./HelpFaq"));
@@ -2496,7 +2500,10 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     const height = viewport?.clientHeight ?? 570;
     const scale = Math.max(0.55, Math.min(1, (width - 28) / bounds.width, (height - 28) / bounds.height));
     setGraphZoom(scale);
-    window.requestAnimationFrame(() => viewport?.scrollTo({ left: 0, top: 0, behavior: "smooth" }));
+    // Wait for CSS zoom and the new canvas bounds to settle, then return to a
+    // deterministic origin. Smooth scrolling could be interrupted and leave
+    // the newly arranged first row clipped above the viewport.
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => viewport?.scrollTo({ left: 0, top: 0, behavior: "auto" })));
   }
 
   function centerGraph() {

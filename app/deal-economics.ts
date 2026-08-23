@@ -18,6 +18,20 @@ export type DealEconomicsResult = {
   missingInputs: string[];
 };
 
+export type DealCashFlowProbabilityBand = {
+  key: "loss" | "below_target" | "target_to_double" | "strong_upside";
+  minimum: number | null;
+  maximum: number | null;
+  probabilityPercent: number;
+};
+
+export type DealCashFlowProbabilityEstimate = {
+  bands: DealCashFlowProbabilityBand[];
+  targetCashFlow: number | null;
+  usesRepaymentBasisPrior: boolean;
+  usesOperatingCostStress: boolean;
+};
+
 export function normalizeDealEconomics(value: unknown): DealEconomicsV1 | undefined {
   if (value === undefined || value === null) return undefined;
   if (!isRecord(value) || value.kind !== "deal-economics-v1") throw new Error("Invalid deal economics model");
@@ -92,6 +106,51 @@ export function calculateDealEconomics(model: DealEconomicsV1): DealEconomicsRes
     amortizing: scenario("amortizing", amortizingDebtService),
     interestOnly: scenario("interest_only", interestOnlyDebtService),
     missingInputs,
+  };
+}
+
+/**
+ * A transparent scenario estimate, not a statistical market forecast. When
+ * the repayment basis is unknown it assigns equal weight to interest-only and
+ * amortizing. When property costs/vacancy are missing it stresses 10%, 20%
+ * and 30% of gross rent with 25%/50%/25% weights. Those explicit weights make
+ * the uncertainty visible instead of hiding it inside one optimistic number.
+ */
+export function estimateDealCashFlowProbabilities(model: DealEconomicsV1, result = calculateDealEconomics(model)): DealCashFlowProbabilityEstimate | null {
+  if (model.grossAnnualIncome === null || result.initialEquity === null) return null;
+  const repaymentScenarios = model.repaymentBasis === "amortizing"
+    ? [{ scenario: result.amortizing, weight: 1 }]
+    : model.repaymentBasis === "interest_only"
+      ? [{ scenario: result.interestOnly, weight: 1 }]
+      : [{ scenario: result.amortizing, weight: 0.5 }, { scenario: result.interestOnly, weight: 0.5 }];
+  const costScenarios = model.annualOperatingCosts === null
+    ? [{ ratio: 0.1, weight: 0.25 }, { ratio: 0.2, weight: 0.5 }, { ratio: 0.3, weight: 0.25 }]
+    : [{ ratio: 0, weight: 1 }];
+  const observations = repaymentScenarios.flatMap(({ scenario, weight: repaymentWeight }) => {
+    if (scenario.annualCashFlow === null) return [];
+    return costScenarios.map(({ ratio, weight: costWeight }) => ({
+      cashFlow: scenario.annualCashFlow! - model.grossAnnualIncome! * ratio,
+      weight: repaymentWeight * costWeight,
+    }));
+  });
+  if (!observations.length) return null;
+  const suppliedTarget = model.targetAnnualReturnBps === null ? null : result.initialEquity * model.targetAnnualReturnBps / 10_000;
+  const largestPositive = Math.max(0, ...observations.map((observation) => observation.cashFlow));
+  const threshold = Math.max(1, suppliedTarget ?? largestPositive / 2);
+  const definitions: Array<Omit<DealCashFlowProbabilityBand, "probabilityPercent"> & { accepts: (cashFlow: number) => boolean }> = [
+    { key: "loss", minimum: null, maximum: 0, accepts: (cashFlow) => cashFlow < 0 },
+    { key: "below_target", minimum: 0, maximum: threshold, accepts: (cashFlow) => cashFlow >= 0 && cashFlow < threshold },
+    { key: "target_to_double", minimum: threshold, maximum: threshold * 2, accepts: (cashFlow) => cashFlow >= threshold && cashFlow < threshold * 2 },
+    { key: "strong_upside", minimum: threshold * 2, maximum: null, accepts: (cashFlow) => cashFlow >= threshold * 2 },
+  ];
+  return {
+    bands: definitions.map(({ accepts, ...band }) => ({
+      ...band,
+      probabilityPercent: observations.filter((observation) => accepts(observation.cashFlow)).reduce((sum, observation) => sum + observation.weight, 0) * 100,
+    })),
+    targetCashFlow: suppliedTarget,
+    usesRepaymentBasisPrior: model.repaymentBasis === "unknown",
+    usesOperatingCostStress: model.annualOperatingCosts === null,
   };
 }
 

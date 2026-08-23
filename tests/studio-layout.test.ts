@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { layoutStudioNodes, studioGraphBounds, studioNodesOverlap } from "../app/studio-layout";
+import { layoutStudioNodes, studioGraphBounds, studioNodeEstimatedHeight, studioNodesOverlap } from "../app/studio-layout";
 import type { StudioLink, StudioNode } from "../app/types";
 
 test("layered Studio layout is deterministic and collision-free for a populated graph", () => {
@@ -38,4 +38,18 @@ test("cyclic repair state still receives unique non-overlapping slots", () => {
   const laidOut = layoutStudioNodes(nodes, links);
   assert.equal(studioNodesOverlap(laidOut[0], laidOut[1]), false);
   assert.equal(studioNodesOverlap(laidOut[1], laidOut[2]), false);
+});
+
+test("layout reserves real vertical space for wrapped titles and runtime summaries", () => {
+  const longTitle = "Commission the three-country legal and tax work across every reviewed ownership vehicle";
+  const nodes: StudioNode[] = Array.from({ length: 8 }, (_, index) => ({
+    id: `decision-${index + 1}`, type: "decision", title: `${longTitle} ${index + 1}`, detail: "", x: 0, y: 0,
+    runtime: index % 2 === 0 ? { budgetCostEur: 12_000, durationMinutes: 1_440 } : undefined,
+  }));
+  const laidOut = layoutStudioNodes(nodes, []);
+  assert.ok(studioNodeEstimatedHeight(laidOut[0]) > 96);
+  for (let left = 0; left < laidOut.length; left += 1) {
+    for (let right = left + 1; right < laidOut.length; right += 1) assert.equal(studioNodesOverlap(laidOut[left], laidOut[right]), false);
+  }
+  assert.ok(Math.min(...laidOut.map((node) => node.y)) >= 70, "the first row retains a visible top gutter");
 });

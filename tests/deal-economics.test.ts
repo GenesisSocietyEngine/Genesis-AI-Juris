@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateDealEconomics, inferDealEconomicsFromText, normalizeDealEconomics } from "../app/deal-economics";
+import { calculateDealEconomics, estimateDealCashFlowProbabilities, inferDealEconomicsFromText, normalizeDealEconomics } from "../app/deal-economics";
 
 const propertyCase = "Chinese resident buying a UK property worth 1mGBP; 80pct financing at 7,5pct for 10years; at least 10pct annual return. Five monthly rents totalling £10,800; current gross £129,600/year. 1 time structure fee 15,000 GBP, 10,000 GBP for administration annually.";
 
@@ -36,6 +36,21 @@ test("deal outcome distinguishes interest-only from amortizing debt without inve
   assert.ok((result.interestOnly.targetGapPercent ?? 0) > 0);
   assert.ok((result.amortizing.targetGapPercent ?? 0) < 0);
   assert.ok(result.missingInputs.includes("property operating costs and vacancy"));
+});
+
+test("cash-flow probability estimate exposes four transparent weighted ranges", () => {
+  const model = inferDealEconomicsFromText(propertyCase);
+  assert.ok(model);
+  const estimate = estimateDealCashFlowProbabilities(model);
+  assert.ok(estimate);
+  assert.equal(estimate.bands.length, 4);
+  assert.equal(estimate.targetCashFlow, 21_500);
+  assert.deepEqual(estimate.bands.map((band) => [band.key, band.probabilityPercent]), [
+    ["loss", 50], ["below_target", 12.5], ["target_to_double", 25], ["strong_upside", 12.5],
+  ]);
+  assert.equal(estimate.bands.reduce((sum, band) => sum + band.probabilityPercent, 0), 100);
+  assert.equal(estimate.usesRepaymentBasisPrior, true);
+  assert.equal(estimate.usesOperatingCostStress, true);
 });
 
 test("deal economics rejects malformed currency and impossible percentages", () => {
