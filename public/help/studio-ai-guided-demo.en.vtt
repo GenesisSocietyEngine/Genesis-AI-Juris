@@ -1,31 +1,31 @@
 WEBVTT
 
-00:00:00.000 --> 00:00:05.000
-GENESIS: JURIS Studio — from a short brief to a playable and explainable legal scenario.
+00:00.000 --> 00:07.000
+GENESIS: JURIS Studio. Five Flats, Three Countries. One case, shown end to end, without leaving Studio.
 
-00:00:05.000 --> 00:00:14.000
-Studio opens in User View. Technical identifiers stay out of the way while the complete professional workflow remains available.
+00:07.000 --> 00:20.000
+Studio opens in User View. The interface keeps technical identifiers out of the way while the complete professional workflow remains available. This walkthrough follows one canonical case from instruction to client-ready report.
 
-00:00:14.000 --> 00:00:27.000
-Paste the situation in the form experts actually receive it. Five concise lines define the parties, urgency, evidence problem, financial offer and decision.
+00:20.000 --> 00:38.000
+Start with one compact instruction: a PRC resident plans to buy five English flats for £1 million, using 80% financing at 7.5%, with Liechtenstein in the route and a 10% annual-return target.
 
-00:00:27.000 --> 00:00:42.000
-AI does not silently build or publish. It produces a read-only candidate scheme, exposing every proposed node, relation, deadline, consequence, assumption and economic input.
+00:38.000 --> 01:00.000
+Understand with AI does not silently rewrite the case. It expands the one-line brief into a read-only canonical proposal: mandate, jurisdictions, fixed facts, open assumptions, return definitions, lawful baseline, risks, evidence gates and stop conditions. The author reviews it before accepting anything.
 
-00:00:42.000 --> 00:00:57.000
-Apply the reviewed proposal as one atomic revision. Select one node and refine its title, facts, timing, budget or professional consequence directly in the editor.
+01:00.000 --> 01:24.000
+Next, close the financial gaps. Set interest-only debt, 5% vacancy, 10% management, 5% repairs, documented insurance and compliance costs, £15,000 setup and £10,000 annual administration. The downside remains explicit: lower rent, extended vacancy and a year-two repair.
 
-00:00:57.000 --> 00:01:15.000
-Relationships remain under human control. Add a route, relink its source or destination, delete the exact connection and undo the complete change without losing version history.
+01:24.000 --> 01:44.000
+Now Studio generates the graph from the reviewed prompt and parameters. The result contains 27 semantic nodes and 31 explicit connections covering the client, property, financing, operating model, evidence, three-country tax gates, baseline comparison, decisions and adverse outcomes.
 
-00:01:15.000 --> 00:01:35.000
-Launch the validated graph in the same player used by published cases. Decisions advance time, expose evidence, consume budget and workload, and lead to authored consequences.
+01:44.000 --> 02:02.000
+Select any node to inspect its source, conditions and consequences. The return node keeps four meanings separate: gross yield, NOI yield, pre-tax cash-on-cash and ten-year after-tax equity IRR. Links remain editable, and every change can be undone.
 
-00:01:35.000 --> 00:01:45.000
-The final ledger keeps economics explicit: EUR 64,500 settlement, EUR 2,350 spend and EUR 62,150 net result.
+02:02.000 --> 02:24.000
+Outcome calculation stays transparent. Studio calculates £24,328 annual cash flow from the reviewed inputs. On £215,000 of initial equity, pre-tax cash-on-cash is 11.3%, with debt-service coverage of 1.41x.
 
-00:01:45.000 --> 00:01:54.000
-More Actions exposes the portable Final case prompt in Markdown. PDF export contains the summary, economics, sources, verification checklist, graph, node conditions and fingerprint.
+02:24.000 --> 02:48.000
+Finally, generate the PDF inside Studio. The report uses the same reviewed graph and includes the case overview, economics, scenario analysis, decision map, facts and evidence register, authorities, node conditions, verification checklist and fingerprint. The raw AI prompt is excluded.
 
-00:01:54.000 --> 00:02:00.000
-AI proposes. Professionals decide. The case remains deterministic, reviewable and ready to improve.
+02:48.000 --> 03:00.000
+One case, one Studio, fully auditable. AI proposes, the professional verifies, and Studio preserves the exact prompt, graph, outcome and report.

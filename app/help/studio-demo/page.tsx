@@ -4,22 +4,22 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Studio guided demo | GENESIS: JURIS",
-  description: "A two-minute expert walkthrough from a five-line legal brief to a reviewable AI proposal, controlled graph edits, financial result and PDF report.",
+  description: "A three-minute Studio-only walkthrough of Five Flats, Three Countries: shortest brief, canonical prompt, reviewed parameters, graph, outcome and PDF.",
   openGraph: {
-    title: "GENESIS: JURIS Studio — two-minute guided demo",
-    description: "Build, review, refine, play and report a professional legal simulation.",
+    title: "GENESIS: JURIS Studio — Five Flats, Three Countries",
+    description: "One complete Studio workflow from compact instruction to auditable PDF report.",
     images: ["/help/studio-ai-guided-demo-poster.jpg"],
   },
 };
 
 const steps = [
-  "User view and a five-line case brief",
-  "Reviewable AI candidate scheme",
-  "Reviewed apply and a manual node edit",
-  "Add, relink, delete and undo a relationship",
-  "Deterministic case player",
-  "Financial result and economics",
-  "Portable Final Markdown and professional PDF",
+  "Shortest useful instruction in User view",
+  "Generated canonical case prompt",
+  "Reviewed financing and operating parameters",
+  "27-node, 31-connection graph generation",
+  "Node, relationship and validation review",
+  "Transparent Studio outcome calculation",
+  "Client-facing PDF from the reviewed graph",
 ];
 
 export default function StudioDemoPage() {
@@ -29,8 +29,8 @@ export default function StudioDemoPage() {
       <a href="/help/studio-ai-guided-demo.mp4" className="secondary-cta">Open MP4</a>
     </nav>
     <section className="standalone-demo-hero">
-      <div><span>STUDIO · GUIDED DEMO · 02:00</span><h1>From five-line brief to professional report</h1><p>A concise expert walkthrough of a controllable AI-assisted workflow. AI proposes; the professional reviews, edits and decides. The player and financial outcome remain deterministic.</p></div>
-      <aside><b>EXPERT REVIEW CUT</b><small>English narration · English and Russian captions</small></aside>
+      <div><span>STUDIO · END-TO-END DEMO · 03:00</span><h1>Five Flats, Three Countries</h1><p>One continuous Studio-only walkthrough of the canonical Five Flats, Three Borders case. AI proposes; the professional verifies the prompt, parameters, graph and outcome before generating the PDF.</p></div>
+      <aside><b>EXPERT REVIEW CUT</b><small>English narration · English and Russian captions · Studio only</small></aside>
     </section>
     <section className="standalone-demo-player" aria-labelledby="studio-demo-title">
       <h2 id="studio-demo-title" className="visually-hidden">GENESIS: JURIS Studio guided demonstration</h2>
@@ -42,7 +42,7 @@ export default function StudioDemoPage() {
       </video>
     </section>
     <section className="standalone-demo-outline" aria-labelledby="demo-outline-title">
-      <header><span>WHAT THE DEMO COVERS</span><h2 id="demo-outline-title">One complete, auditable workflow</h2></header>
+      <header><span>WHAT THE DEMO COVERS</span><h2 id="demo-outline-title">One case, one Studio, one auditable chain</h2></header>
       <ol>{steps.map((step, index) => <li key={step}><span>{String(index + 1).padStart(2, "0")}</span><b>{step}</b></li>)}</ol>
     </section>
     <footer className="standalone-demo-footer"><p>GENESIS: JURIS CODEX · Professional beta · August 2026</p><Link href="/" className="primary-cta">Open GENESIS: JURIS</Link></footer>

@@ -4,21 +4,21 @@ type Locale = "en" | "ru";
 
 export default function StudioGuidedDemo({ locale }: { locale: Locale }) {
   const transcript = locale === "en" ? [
-    "Open Case Studio in User view and start with a five-line professional brief.",
-    "Understand with AI converts the brief into a candidate scheme with semantic nodes, explicit relationships, deadlines, consequences and economic inputs.",
-    "Nothing changes until the author reviews every proposed operation and applies the reviewed transaction.",
-    "Apply the reviewed proposal as one atomic revision, then refine one node directly in the visual editor.",
-    "Add, relink and delete a relationship, then restore the previous graph state with Undo.",
-    "Check and play the compiled case, confirm a decision and inspect the €64,500 award, €2,350 spend and €62,150 net result.",
-    "Open More actions to export the portable Final case prompt in Markdown, or create a professional PDF with the reviewed graph and node-condition register.",
+    "Open Studio in User view and follow one case throughout: Five Flats, Three Borders.",
+    "Start with one compact instruction covering the PRC client, five English flats, £1m price, 80% financing, Liechtenstein route and 10% return target.",
+    "Understand with AI expands that line into a read-only canonical case prompt with fixed facts, open assumptions, return definitions, lawful baseline, risks and evidence gates.",
+    "Review and set the missing parameters: interest-only debt, 5% vacancy, management, repairs, operating costs, structure setup, annual administration and downside assumptions.",
+    "Generate and inspect the 27-node, 31-connection graph. Edit a node or relationship and keep every revision undoable.",
+    "Calculate the transparent outcome: £24,328 annual cash flow, 11.3% pre-tax cash-on-cash and 1.41x debt-service coverage.",
+    "Generate the client-facing PDF from the same reviewed Studio state, including economics, decision map, registers, node conditions, checklist and fingerprint.",
   ] : [
-    "Откройте Case Studio в пользовательском режиме и начните с пятистрочного профессионального описания.",
-    "«Понять с ИИ» превращает описание в проверяемую схему: смысловые ноды, явные связи, сроки, последствия и экономические параметры.",
-    "До проверки автором и применения подтверждённой транзакции в кейсе ничего не меняется.",
-    "Примените проверенное предложение одной транзакцией, затем вручную уточните одну ноду в визуальном редакторе.",
-    "Добавьте, перепривяжите и удалите связь, затем восстановите предыдущее состояние графа через Undo.",
-    "Проверьте и запустите собранный кейс, подтвердите решение и изучите результат: €64 500 присуждено, €2 350 расходов, €62 150 чистого эффекта.",
-    "Откройте More actions для экспорта переносимого Final case prompt в Markdown или создайте профессиональный PDF с графом и реестром условий нодов.",
+    "Откройте Studio в пользовательском режиме и проведите один кейс через весь процесс: Five Flats, Three Borders.",
+    "Начните с одной компактной инструкции: клиент из КНР, пять квартир в Англии, цена £1 млн, 80% финансирования, маршрут через Лихтенштейн и цель 10% годовой доходности.",
+    "«Понять с ИИ» разворачивает строку в канонический промпт только для чтения: фиксированные факты, открытые допущения, определения доходности, законный базовый вариант, риски и доказательственные гейты.",
+    "Проверьте и задайте недостающие параметры: interest-only долг, 5% вакансии, управление, ремонт, операционные расходы, стоимость структуры, ежегодное администрирование и downside-сценарий.",
+    "Сгенерируйте и проверьте граф из 27 нодов и 31 связи. Измените ноду или связь, сохранив возможность Undo для каждой ревизии.",
+    "Рассчитайте прозрачный outcome: £24 328 годового cash flow, 11,3% pre-tax cash-on-cash и покрытие долга 1,41x.",
+    "Создайте клиентский PDF из того же проверенного состояния Studio: экономика, карта решений, реестры, условия нодов, checklist и fingerprint.",
   ];
   return <article className="help-video-card help-video-card-featured" id="studio-expert-demo">
     <video controls preload="metadata" playsInline poster="/help/studio-ai-guided-demo-poster.jpg" aria-describedby="guided-video-description guided-video-transcript">
@@ -27,7 +27,7 @@ export default function StudioGuidedDemo({ locale }: { locale: Locale }) {
       <track kind="captions" src="/help/studio-ai-guided-demo.ru.vtt" srcLang="ru" label="Русский" default={locale === "ru"}/>
       {locale === "en" ? "Your browser does not support HTML video. Use the transcript below." : "Ваш браузер не поддерживает HTML-видео. Используйте расшифровку ниже."}
     </video>
-    <div className="help-video-copy"><span>00 · 02:00 · COMPLETE DEMO</span><h3>{locale === "en" ? "From five-line brief to professional report" : "От пяти строк до профессионального отчёта"}</h3><p id="guided-video-description">{locale === "en" ? "A complete expert walkthrough: reviewable AI proposal, manual node edit, relationship controls and Undo, deterministic player, financial result and PDF handoff." : "Полная экспертная демонстрация: проверяемое AI-предложение, ручная правка ноды, управление связями и Undo, детерминированный плеер, финансовый результат и PDF."}</p><a className="secondary-cta help-video-direct-link" href="/help/studio-demo">{locale === "en" ? "Open direct player" : "Открыть отдельную страницу"}</a></div>
+    <div className="help-video-copy"><span>00 · 03:00 · STUDIO END TO END</span><h3>{locale === "en" ? "Five Flats, Three Countries — complete Studio workflow" : "Five Flats, Three Countries — весь процесс в Studio"}</h3><p id="guided-video-description">{locale === "en" ? "One continuous expert walkthrough: shortest brief, canonical prompt, reviewed parameters, 27-node graph, transparent financial outcome and PDF report — entirely inside Studio." : "Единая экспертная демонстрация: краткий ввод, канонический промпт, проверенные параметры, граф из 27 нодов, прозрачный финансовый outcome и PDF — только в Studio."}</p><a className="secondary-cta help-video-direct-link" href="/help/studio-demo">{locale === "en" ? "Open full demo" : "Открыть полный ролик"}</a></div>
     <details className="help-transcript" id="guided-video-transcript"><summary>{locale === "en" ? "Read transcript" : "Открыть расшифровку"}</summary><ol>{transcript.map((item) => <li key={item}>{item}</li>)}</ol></details>
   </article>;
 }

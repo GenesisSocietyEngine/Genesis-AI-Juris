@@ -278,6 +278,8 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /Вид пользователя/);
   assert.match(appSource, /Вид разработчика/);
   assert.match(appSource, /studio-more-actions/, "secondary User-view commands must be grouped under More actions");
+  assert.match(css, /\.studio-hero:has\(\.studio-more-actions\[open\]\)\{z-index:140\}/, "an open actions menu raises its parent stacking context above later Studio panels");
+  assert.match(css, /\.studio-more-actions>\.studio-more-menu\{[^}]*z-index:151[^}]*background:var\(--strong\)/, "the actions menu is an opaque top-layer surface");
   assert.match(moreActionsSource, /Portable final prompt/);
   assert.match(moreActionsSource, /CaseMarkdownActions/);
   assert.match(outcomeParametersSource, /Outcome recalculation parameters/);
@@ -318,6 +320,10 @@ test("Help ships a complete expert demo and two local accessible walkthroughs wi
   assert.match(helpSource, /href="\/help\/studio-demo"/);
   assert.match(directPage, /studio-ai-guided-demo\.mp4/);
   assert.match(directPage, /English and Russian captions/);
+  assert.match(directPage, /Five Flats, Three Countries/);
+  assert.match(directPage, /03:00/);
+  assert.match(guidedSource, /27-node graph/);
+  assert.match(guidedSource, /£24,328 annual cash flow/);
   assert.match(helpSource, /Your browser does not support HTML video/);
   assert.match(helpSource, /Ваш браузер не поддерживает HTML-видео/);
 
