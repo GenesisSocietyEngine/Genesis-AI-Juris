@@ -3,6 +3,7 @@ import { normalizeUntrustedCaseProtection } from "./case-protection";
 import { STUDIO_HISTORY_LIMIT } from "./studio-editing";
 import { STUDIO_DRAFT_SERIALIZED_LIMIT, studioJsonBytes } from "./studio-envelope";
 import { normalizeTaxEconomics } from "./tax-economics";
+import { normalizeDealEconomics } from "./deal-economics";
 
 const nodeTypes = new Set<StudioNodeType>([
   "trigger", "actor", "fact", "evidence", "deadline", "decision", "outcome", "entity", "tax_rule", "cash_flow",
@@ -74,6 +75,7 @@ function caseFingerprintContent(draft: StudioDraft, includeRelationshipIds: bool
     premise: draft.premise.trim().slice(0, 8_000),
     classification,
     taxEconomics: isTax ? normalizeTaxEconomics(draft.taxEconomics) : undefined,
+    dealEconomics: normalizeDealEconomics(draft.dealEconomics),
     nodes: draft.nodes.map((node) => ({ ...node, title: node.title.trim(), detail: node.detail.trim().slice(0, 4_000) })),
     // Relationship IDs become playable option IDs in studio-compiler. v16
     // therefore treats them as runnable content. The ID-free shape exists only
@@ -126,6 +128,7 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
       : null;
   const protection = normalizeUntrustedCaseProtection(value.protection);
   const taxEconomics = isTax ? normalizeTaxEconomics(value.taxEconomics) : undefined;
+  const dealEconomics = normalizeDealEconomics(value.dealEconomics);
 
   const normalized: StudioDraft = {
     caseId,
@@ -148,6 +151,7 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
       sourceUrls: urlList(rawClassification.sourceUrls, 30),
     },
     ...(taxEconomics ? { taxEconomics } : {}),
+    ...(dealEconomics ? { dealEconomics } : {}),
     nodes,
     links,
     editHistory,

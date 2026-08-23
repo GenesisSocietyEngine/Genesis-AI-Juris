@@ -1,6 +1,7 @@
 import { canonicalFingerprint, caseFingerprint, isRecord, normalizeStudioDraft, slugifyCaseId, studioStructuralIssues } from "./case-integrity";
 import { applyStudioPromptPlan, nextStudioLinkId, nextStudioNodeId, nextStudioNodePosition, type StudioPromptDiagnostic, type StudioPromptOperation, type StudioPromptPlan } from "./studio-editing";
 import { compileStudioDraft } from "./studio-compiler";
+import { normalizeDealEconomics } from "./deal-economics";
 import type { MetricKey, StudioDraft, StudioLink, StudioNode, StudioNodeType } from "./types";
 
 const nodeTypes = new Set<StudioNodeType>([
@@ -33,6 +34,27 @@ export const STUDIO_AI_PLAN_SCHEMA = {
         taxTopics: { type: "array", maxItems: 20, items: { type: "string", minLength: 1, maxLength: 100 } },
       },
       required: ["title", "jurisdiction", "role", "context", "domain", "practiceArea", "tags", "taxTopics"],
+    },
+    economics: {
+      type: "object",
+      additionalProperties: false,
+      description: "Structured cash-flow inputs for an income-producing asset or investment case; use null for facts the author did not supply.",
+      properties: {
+        currency: { type: ["string", "null"], maxLength: 3 },
+        purchasePrice: { type: ["integer", "null"], minimum: 0, maximum: 1000000000000 },
+        loanToValueBps: { type: ["integer", "null"], minimum: 0, maximum: 10000 },
+        annualInterestRateBps: { type: ["integer", "null"], minimum: 0, maximum: 10000 },
+        termMonths: { type: ["integer", "null"], minimum: 1, maximum: 1200 },
+        repaymentBasis: { type: ["string", "null"], enum: ["amortizing", "interest_only", "unknown", null] },
+        grossAnnualIncome: { type: ["integer", "null"], minimum: 0, maximum: 1000000000000 },
+        annualOperatingCosts: { type: ["integer", "null"], minimum: 0, maximum: 1000000000000 },
+        oneOffStructureCost: { type: ["integer", "null"], minimum: 0, maximum: 1000000000000 },
+        annualStructureCost: { type: ["integer", "null"], minimum: 0, maximum: 1000000000000 },
+        otherInitialCosts: { type: ["integer", "null"], minimum: 0, maximum: 1000000000000 },
+        targetAnnualReturnBps: { type: ["integer", "null"], minimum: 0, maximum: 100000 },
+        assumptions: { type: "array", maxItems: 12, items: { type: "string", minLength: 1, maxLength: 500 } },
+      },
+      required: ["currency", "purchasePrice", "loanToValueBps", "annualInterestRateBps", "termMonths", "repaymentBasis", "grossAnnualIncome", "annualOperatingCosts", "oneOffStructureCost", "annualStructureCost", "otherInitialCosts", "targetAnnualReturnBps", "assumptions"],
     },
     nodes: {
       type: "array",
@@ -100,7 +122,7 @@ export const STUDIO_AI_PLAN_SCHEMA = {
       },
     },
   },
-  required: ["compatible", "clarification", "summary", "assumptions", "warnings", "case", "nodes", "links"],
+  required: ["compatible", "clarification", "summary", "assumptions", "warnings", "case", "economics", "nodes", "links"],
 } as const;
 
 export type StudioAIContext = ReturnType<typeof toStudioAIContext>;
@@ -116,6 +138,7 @@ export function toStudioAIContext(draft: StudioDraft) {
     premise: draft.premise,
     classification: draft.classification,
     taxEconomics: draft.taxEconomics,
+    dealEconomics: draft.dealEconomics,
     nodes: draft.nodes,
     links: draft.links,
     updatedAt: draft.updatedAt,
@@ -142,6 +165,7 @@ export function normalizeStudioAIContext(value: unknown): StudioDraft {
     premise: value.premise,
     classification: value.classification,
     taxEconomics: value.taxEconomics,
+    dealEconomics: value.dealEconomics,
     nodes: empty ? [{ id: "trigger-ai-validation", type: "trigger", title: "Validation placeholder", detail: "", x: 0, y: 0 }] : value.nodes,
     links: empty ? [] : value.links,
     editHistory: [],
@@ -210,6 +234,11 @@ export function materializeAIStudioPlan(draft: StudioDraft, instruction: string,
   if (tags.length && JSON.stringify(tags) !== JSON.stringify(draft.classification?.tags ?? [])) classificationChange.tags = tags;
   if (taxTopics.length && JSON.stringify(taxTopics) !== JSON.stringify(draft.classification?.taxTopics ?? [])) classificationChange.taxTopics = taxTopics;
   if (Object.keys(classificationChange).length) operations.push({ kind: "set_classification", change: classificationChange });
+
+  const proposedEconomics = normalizeDealEconomicsProposal(rawProposal.economics, draft.dealEconomics);
+  if (proposedEconomics && JSON.stringify(proposedEconomics) !== JSON.stringify(draft.dealEconomics)) {
+    operations.push({ kind: "set_deal_economics", economics: proposedEconomics });
+  }
 
   let workingNodes = structuredClone(draft.nodes);
   let workingLinks = structuredClone(draft.links);
@@ -362,6 +391,10 @@ export function applyValidatedAIStudioPlan(draft: StudioDraft, values: { plan: u
       if (!isRecord(rawOperation.change)) throw new Error("Invalid AI classification update");
       continue;
     }
+    if (rawOperation.kind === "set_deal_economics") {
+      if (!normalizeDealEconomics(rawOperation.economics)) throw new Error("Invalid AI deal economics update");
+      continue;
+    }
     throw new Error("Destructive AI Studio operations are not permitted");
   }
   const typedPlan = values.plan as unknown as StudioPromptPlan;
@@ -390,6 +423,48 @@ function newlyIntroducedCompileIssues(base: StudioDraft, candidate: StudioDraft)
   const issueKey = (issue: ReturnType<typeof compileStudioDraft>["issues"][number]) => `${issue.code}:${[...issue.nodeIds].sort().join(",")}`;
   const existing = new Set(compileStudioDraft(base).issues.map(issueKey));
   return compileStudioDraft(candidate).issues.filter((issue) => issue.code === "cycle" || !existing.has(issueKey(issue)));
+}
+
+function normalizeDealEconomicsProposal(value: unknown, existing?: StudioDraft["dealEconomics"]) {
+  if (value === undefined || value === null) return existing;
+  const proposal = requireRecord(value, "economics proposal");
+  const currencyValue = nullableString(proposal.currency, 3);
+  const currency = currencyValue?.toUpperCase() ?? existing?.currency ?? null;
+  const purchasePrice = nullableInteger(proposal.purchasePrice, 0, 1_000_000_000_000);
+  const loanToValueBps = nullableInteger(proposal.loanToValueBps, 0, 10_000);
+  const annualInterestRateBps = nullableInteger(proposal.annualInterestRateBps, 0, 10_000);
+  const termMonths = nullableInteger(proposal.termMonths, 1, 1_200);
+  const grossAnnualIncome = nullableInteger(proposal.grossAnnualIncome, 0, 1_000_000_000_000);
+  const annualOperatingCosts = nullableInteger(proposal.annualOperatingCosts, 0, 1_000_000_000_000);
+  const oneOffStructureCost = nullableInteger(proposal.oneOffStructureCost, 0, 1_000_000_000_000);
+  const annualStructureCost = nullableInteger(proposal.annualStructureCost, 0, 1_000_000_000_000);
+  const otherInitialCosts = nullableInteger(proposal.otherInitialCosts, 0, 1_000_000_000_000);
+  const targetAnnualReturnBps = nullableInteger(proposal.targetAnnualReturnBps, 0, 100_000);
+  const assumptions = boundedList(proposal.assumptions, 12, 500);
+  const repaymentBasis = proposal.repaymentBasis === "amortizing" || proposal.repaymentBasis === "interest_only" || proposal.repaymentBasis === "unknown"
+    ? proposal.repaymentBasis
+    : proposal.repaymentBasis === null ? existing?.repaymentBasis ?? "unknown" : null;
+  if (!repaymentBasis) throw new Error("Invalid AI repayment basis");
+  const hasProposedValue = [purchasePrice, loanToValueBps, annualInterestRateBps, termMonths, grossAnnualIncome, annualOperatingCosts, oneOffStructureCost, annualStructureCost, otherInitialCosts, targetAnnualReturnBps].some((item) => item !== null)
+    || assumptions.length > 0;
+  if (!hasProposedValue && !existing) return undefined;
+  if (!currency || !/^[A-Z]{3}$/.test(currency)) throw new Error("AI deal economics requires an ISO currency");
+  return normalizeDealEconomics({
+    kind: "deal-economics-v1",
+    currency,
+    purchasePrice: purchasePrice ?? existing?.purchasePrice ?? null,
+    loanToValueBps: loanToValueBps ?? existing?.loanToValueBps ?? null,
+    annualInterestRateBps: annualInterestRateBps ?? existing?.annualInterestRateBps ?? null,
+    termMonths: termMonths ?? existing?.termMonths ?? null,
+    repaymentBasis,
+    grossAnnualIncome: grossAnnualIncome ?? existing?.grossAnnualIncome ?? null,
+    annualOperatingCosts: annualOperatingCosts ?? existing?.annualOperatingCosts ?? null,
+    oneOffStructureCost: oneOffStructureCost ?? existing?.oneOffStructureCost ?? null,
+    annualStructureCost: annualStructureCost ?? existing?.annualStructureCost ?? null,
+    otherInitialCosts: otherInitialCosts ?? existing?.otherInitialCosts ?? null,
+    targetAnnualReturnBps: targetAnnualReturnBps ?? existing?.targetAnnualReturnBps ?? null,
+    assumptions: assumptions.length ? assumptions : existing?.assumptions ?? [],
+  });
 }
 
 function normalizeRuntimeProposal(value: unknown, type: StudioNodeType): StudioNode["runtime"] {

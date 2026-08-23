@@ -25,7 +25,8 @@ export type StudioPromptOperation =
   | { kind: "delete_link"; linkId: string }
   | { kind: "append_context"; value: string }
   | { kind: "set_case_field"; field: "caseId" | "title" | "jurisdiction" | "role"; value: string }
-  | { kind: "set_classification"; change: Partial<NonNullable<StudioDraft["classification"]>> };
+  | { kind: "set_classification"; change: Partial<NonNullable<StudioDraft["classification"]>> }
+  | { kind: "set_deal_economics"; economics: NonNullable<StudioDraft["dealEconomics"]> };
 
 export type StudioPromptDiagnostic = {
   level: "info" | "error";
@@ -291,6 +292,18 @@ export function describeStudioPromptOperation(operation: StudioPromptOperation, 
   if (operation.kind === "relink_link") return simple ? (en ? "Reconnect the selected relationship" : "Перепривязать выбранную связь") : (en ? `Relink ${operation.linkId}: ${operation.from} → ${operation.to}` : `Перепривязать ${operation.linkId}: ${operation.from} → ${operation.to}`);
   if (operation.kind === "delete_link") return simple ? (en ? "Delete the selected relationship" : "Удалить выбранную связь") : (en ? `Delete ${operation.linkId}` : `Удалить ${operation.linkId}`);
   if (operation.kind === "append_context") return `${en ? "Add to case context" : "Дополнить контекст кейса"}: ${compact(operation.value)}`;
+  if (operation.kind === "set_deal_economics") {
+    const model = operation.economics;
+    const values = [
+      model.purchasePrice !== null ? `${en ? "purchase" : "покупка"} ${model.currency} ${model.purchasePrice.toLocaleString("en")}` : "",
+      model.loanToValueBps !== null ? `LTV ${(model.loanToValueBps / 100).toFixed(2)}%` : "",
+      model.annualInterestRateBps !== null ? `${en ? "interest" : "ставка"} ${(model.annualInterestRateBps / 100).toFixed(2)}%` : "",
+      model.termMonths !== null ? `${model.termMonths} ${en ? "months" : "месяцев"}` : "",
+      model.grossAnnualIncome !== null ? `${en ? "gross annual income" : "валовой годовой доход"} ${model.currency} ${model.grossAnnualIncome.toLocaleString("en")}` : "",
+      model.targetAnnualReturnBps !== null ? `${en ? "target return" : "целевая доходность"} ${(model.targetAnnualReturnBps / 100).toFixed(2)}%` : "",
+    ].filter(Boolean).join("; ");
+    return `${en ? "Set case cash-flow assumptions" : "Задать допущения денежного потока"}${values ? ` — ${values}` : ""}`;
+  }
   if (operation.kind === "set_classification") {
     const values = Object.entries(operation.change).map(([key, value]) => `${classificationName(key)}: ${Array.isArray(value) ? value.join(", ") : String(value)}`).join("; ");
     return `${en ? "Update case classification" : "Уточнить классификацию кейса"}${values ? ` — ${values}` : ""}`;
@@ -374,6 +387,7 @@ function executePromptOperation(draft: StudioDraft, operation: StudioPromptOpera
   if (operation.kind === "relink_link") return { ...draft, links: draft.links.map((link) => link.id === operation.linkId ? { ...link, from: operation.from, to: operation.to } : link) };
   if (operation.kind === "delete_link") return { ...draft, links: draft.links.filter((link) => link.id !== operation.linkId) };
   if (operation.kind === "append_context") return { ...draft, premise: `${draft.premise.trim()}\n\n${operation.value}`.trim().slice(0, 8_000) };
+  if (operation.kind === "set_deal_economics") return { ...draft, dealEconomics: operation.economics };
   if (operation.kind === "set_classification") return { ...draft, classification: { ...(draft.classification ?? { domain: "general", practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), ...operation.change, ...(operation.change.domain === "tax" ? { complianceOnly: true } : {}) } };
   return { ...draft, [operation.field]: operation.value };
 }

@@ -228,6 +228,23 @@ export type TaxEconomicsV1 = {
   assumptions: string;
 };
 
+export type DealEconomicsV1 = {
+  kind: "deal-economics-v1";
+  currency: string;
+  purchasePrice: number | null;
+  loanToValueBps: number | null;
+  annualInterestRateBps: number | null;
+  termMonths: number | null;
+  repaymentBasis: "amortizing" | "interest_only" | "unknown";
+  grossAnnualIncome: number | null;
+  annualOperatingCosts: number | null;
+  oneOffStructureCost: number | null;
+  annualStructureCost: number | null;
+  otherInitialCosts: number | null;
+  targetAnnualReturnBps: number | null;
+  assumptions: string[];
+};
+
 /**
  * Public, server-attested lineage metadata. The codes and HMAC seal provide
  * tamper evidence; they do not encrypt or conceal the Studio case content.
@@ -266,6 +283,7 @@ export type StudioDraft = {
     sourceUrls?: string[];
   };
   taxEconomics?: TaxEconomicsV1;
+  dealEconomics?: DealEconomicsV1;
   nodes: StudioNode[];
   links: StudioLink[];
   editHistory: StudioEditEntry[];

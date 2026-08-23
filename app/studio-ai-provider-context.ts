@@ -25,6 +25,7 @@ export function studioAIProviderContext(values: StudioAIProviderContextInput) {
         role: values.draft.role,
         premise: values.draft.premise,
         classification: values.draft.classification,
+        dealEconomics: values.draft.dealEconomics,
         nodes: values.draft.nodes,
         links: values.draft.links,
       },
@@ -54,6 +55,7 @@ function studioPlannerInstructions(locale: "en" | "ru") {
     `- Produce a connected directed acyclic graph. Every proposed node must be reachable from the trigger, every outcome must be reachable from a decision, every decision needs an outgoing choice, and self-links or duplicate endpoint pairs are forbidden.\n` +
     `- Relation labels should be player actions; detail explains the option; result explains the consequence. Effects must be conservative and intelligible.\n` +
     `- Node and relation cost/time values must be null unless supported by the author or clearly marked as an assumption.\n` +
+    `- Use economics only for an income-producing asset or investment case. Copy explicit monetary inputs exactly, convert percentages to basis points and explicitly annualize monthly income. Use null for unprovided costs; never invent them. If repayment type is not stated, use unknown so the interface compares interest-only and amortizing scenarios.\n` +
     `- deadlineDay and deadlineTime must either both be null or both be sourced values on a deadline node. maxUses must be a positive integer only when repeatability is limited; otherwise maxUses must be null.\n` +
     `- For tax/cross-border cases, use entity, cash_flow and tax_rule nodes, preserve compliance-only framing, distinguish documented law from assumptions, and never suggest concealment, sham substance, false reporting or evasion. Never invent source URLs.\n` +
     `- If the input is not a legal scenario or lacks enough information to propose a safe graph, set compatible=false, leave nodes and links empty, and ask one concise clarification question.\n` +

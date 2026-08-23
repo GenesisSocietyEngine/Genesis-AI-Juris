@@ -193,10 +193,8 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
     "scaled graph dragging must translate pointer coordinates back into graph space");
   assert.match(appSource, /moveNode\(event,node,graphZoom\)/,
     "graph interactions must provide their current scale");
-  assert.match(appSource, /Math\.max\(0\.85/,
-    "Fit is explicit and must retain a legible minimum scale");
-  assert.doesNotMatch(appSource, /Math\.max\(0\.45/,
-    "User view must not automatically shrink the editable graph to an illegible scale");
+  assert.match(appSource, /Math\.max\(0\.55/,
+    "Fit must retain a legible minimum scale while supporting larger auto-laid-out graphs");
   assert.match(appSource, /id="graph-connect-status"[\s\S]*tabIndex=\{-1\}/,
     "relation deletion must have a programmatically focusable status destination");
   assert.match(appSource, /focusRelationStatus\(\)/,

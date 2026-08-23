@@ -19,6 +19,7 @@ import { STUDIO_DRAFT_SERIALIZED_LIMIT, studioJsonBytes } from "./studio-envelop
 import { STUDIO_NODE_MENU_PAGE_SIZE, studioNodeMenuOptions, studioNodeMenuPage } from "./studio-node-menu";
 import { applyStudioSnapshot, diffDraftToRevision, diffStudioSnapshots, emptyStudioTimeline, recordStudioRevision, snapshotStudioDraft, stepStudioTimeline, studioSnapshotsEqual, type StudioRevision, type StudioTimeline } from "./studio-revisions";
 import { calculateTaxEconomics, defaultTaxEconomics } from "./tax-economics";
+import { calculateDealEconomics, inferDealEconomicsFromText } from "./deal-economics";
 import type {
   DecisionOption,
   LocalText,
@@ -35,9 +36,17 @@ type Locale = "en" | "ru";
 type View = "library" | "play" | "studio" | "community" | "help";
 type Theme = "office" | "after-hours";
 type StudioAIEntitlement = "loading" | "anonymous" | "profile_required" | "ready" | "not_configured" | "unavailable";
+function graphBoundsForNodes(nodes: StudioNode[]) {
+  return {
+    width: Math.max(1_200, Math.ceil(nodes.reduce((value, node) => Math.max(value, node.x + 211), 0))),
+    height: Math.max(570, Math.ceil(nodes.reduce((value, node) => Math.max(value, node.y + 150), 0))),
+  };
+}
 const HelpFaq = lazy(() => import("./HelpFaq"));
 const StudioAIReview = lazy(() => import("./StudioAIReview"));
 const StudioAIProgress = lazy(() => import("./StudioAIProgress"));
+const DealOutcomePanel = lazy(() => import("./DealOutcomePanel"));
+const TaxEconomicsPanel = lazy(() => import("./TaxEconomicsPanel"));
 type OutcomeClass = "strong" | "mixed" | "weak";
 type DecisionRecord = { stageId: string; stage: string; option: DecisionOption };
 type FeedbackTarget = { caseId: string; version: string; title: string; source: "playable" | "studio"; fingerprint?: string; customCaseId?: number | null; contextType?: "case" | "stage" | "decision" | "node"; contextId?: string; privateCase?: boolean };
@@ -45,7 +54,7 @@ type FeedbackTarget = { caseId: string; version: string; title: string; source: 
 function returnedAIStudioPlan(value: unknown, instruction: string): StudioPromptPlan | null {
   if (!isRecord(value) || value.planner !== "ai" || value.instruction !== instruction || typeof value.canApply !== "boolean"
     || typeof value.contextOnly !== "boolean" || !Array.isArray(value.operations) || !Array.isArray(value.diagnostics)) return null;
-  const allowed = new Set(["add_node", "update_node", "add_link", "update_link", "append_context", "set_case_field", "set_classification"]);
+  const allowed = new Set(["add_node", "update_node", "add_link", "update_link", "append_context", "set_case_field", "set_classification", "set_deal_economics"]);
   if (value.operations.length > 100 || value.operations.some((operation) => !isRecord(operation) || typeof operation.kind !== "string" || !allowed.has(operation.kind))) return null;
   if (value.assumptions !== undefined && (!Array.isArray(value.assumptions) || value.assumptions.some((item) => typeof item !== "string"))) return null;
   if (value.warnings !== undefined && (!Array.isArray(value.warnings) || value.warnings.some((item) => typeof item !== "string"))) return null;
@@ -2292,6 +2301,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   const [graphZoom, setGraphZoom] = useState(1);
   const aiAbortRef = useRef<AbortController | null>(null);
   const graphDeckRef = useRef<HTMLElement | null>(null);
+  const graphViewportRef = useRef<HTMLDivElement | null>(null);
   const derivationsSettled = studioDerivations.source === draft;
   const promptDerivationsSettled = derivationsSettled && derivedPrompt === prompt;
   const promptPlan = useMemo<StudioPromptPlan>(() => derivationsSettled
@@ -2322,6 +2332,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   const reviewLinkEndpoints = useMemo(() => new Map(draft.links.map((link) => [link.id, { from: link.from, to: link.to }])), [draft.links]);
   const compiledDraft = derivationsSettled ? studioDerivations.compilation : { scenario: null, issues: [], warnings: [] };
   const nodeById = useMemo(() => new Map(draft.nodes.map((node) => [node.id, node])), [draft.nodes]);
+  const graphBounds = useMemo(() => graphBoundsForNodes(draft.nodes), [draft.nodes]);
   const relationPageSize = 20;
   const relationPageCount = Math.max(1, Math.ceil(draft.links.length / relationPageSize));
   const safeRelationPage = Math.min(relationPage, relationPageCount - 1);
@@ -2469,6 +2480,8 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       setAIResult(null);
       setAIState("idle");
       setAIError("");
+      if (reviewedPlan.operations.some((operation) => operation.kind === "add_node")) void autoLayoutGraph();
+      else window.requestAnimationFrame(fitGraph);
     }
   }
 
@@ -2477,14 +2490,33 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   }
 
   function fitGraph() {
-    const width = graphDeckRef.current?.clientWidth ?? 1_200;
-    setGraphZoom(Math.max(0.85, Math.min(1, (width - 20) / 1_200)));
-    graphDeckRef.current?.scrollTo({ left: 0, behavior: "smooth" });
+    const viewport = graphViewportRef.current;
+    const bounds = graphBoundsForNodes(draftRef.current.nodes);
+    const width = viewport?.clientWidth ?? graphDeckRef.current?.clientWidth ?? 1_200;
+    const height = viewport?.clientHeight ?? 570;
+    const scale = Math.max(0.55, Math.min(1, (width - 28) / bounds.width, (height - 28) / bounds.height));
+    setGraphZoom(scale);
+    window.requestAnimationFrame(() => viewport?.scrollTo({ left: 0, top: 0, behavior: "smooth" }));
   }
 
   function centerGraph() {
-    const deck = graphDeckRef.current;
-    if (deck) deck.scrollTo({ left: Math.max(0, (deck.scrollWidth - deck.clientWidth) / 2), behavior: "smooth" });
+    const viewport = graphViewportRef.current;
+    if (viewport) viewport.scrollTo({ left: Math.max(0, (viewport.scrollWidth - viewport.clientWidth) / 2), top: Math.max(0, (viewport.scrollHeight - viewport.clientHeight) / 2), behavior: "smooth" });
+  }
+
+  async function autoLayoutGraph() {
+    if (!studioCanDuplicate || draftRef.current.nodes.length < 2) { fitGraph(); return; }
+    const { layoutStudioNodes } = await import("./studio-layout");
+    const createdAt = new Date().toISOString();
+    const changed = commitStudioDraft((current) => appendStudioHistory({
+      ...current,
+      nodes: layoutStudioNodes(current.nodes, current.links),
+    }, {
+      role: "studio", source: "visual", action: "node_moved",
+      message: locale === "en" ? "Visual edit: automatically arranged the graph into non-overlapping topology layers." : "Визуальная правка: схема автоматически разложена по неперекрывающимся топологическим слоям.",
+    }, createdAt), locale === "en" ? "Auto-arranged graph" : "Автоматическая раскладка схемы", "visual", createdAt);
+    window.requestAnimationFrame(fitGraph);
+    if (changed) showSessionNotice(locale === "en" ? "Graph arranged and fitted" : "Схема разложена и помещена в окно");
   }
 
   function clearTransientEditorSelection() {
@@ -2856,7 +2888,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       <label className="source-field"><span>{locale === "en" ? "HTTPS legal sources · one per line" : "HTTPS-источники права · по одному в строке"}</span><textarea rows={3} value={(draft.classification?.sourceUrls ?? []).join("\n")} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event) => setDraft((current) => ({ ...current, classification: { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), sourceUrls: event.target.value.split(/\n+/).map((item) => item.trim()).filter(Boolean) } }))} onBlur={(event)=>commitCaseField(locale === "en" ? "legal sources" : "источники права", event.currentTarget.value)}/></label>
       <div className="compliance-gate"><Icon name="check"/><div><b>{locale === "en" ? "International tax safety & publication gate" : "Контроль безопасности и публикации налогового кейса"}</b><p>{locale === "en" ? "Lawful-planning, compliance, audit-defence and evasion-detection scenarios may model risky facts. Publication requires named reviewer confirmation that the case does not enable concealment, sham substance, false reporting or evasion; HTTPS sources and a legal as-of date are mandatory." : "Кейсы о законном планировании, compliance, налоговом споре и выявлении уклонения могут моделировать рискованные факты. Для публикации именная рецензия должна подтвердить, что кейс не помогает сокрытию, фиктивной substance, ложной отчётности или уклонению; HTTPS-источники и дата актуальности права обязательны."}</p></div></div></>}
     </section>
-    {taxDraft && taxResult && <TaxEconomicsPanel key={JSON.stringify(taxModel)} locale={locale} model={taxModel} result={taxResult} disabled={!canDuplicate} onChange={applyTaxEconomicsChange}/>}
+    {taxDraft && taxResult && <Suspense fallback={<section className="tax-economics page-width" role="status"><p>{locale === "en" ? "Loading tax economics…" : "Загрузка налоговой экономики…"}</p></section>}><TaxEconomicsPanel key={JSON.stringify(taxModel)} locale={locale} model={taxModel} result={taxResult} disabled={!canDuplicate} onChange={applyTaxEconomicsChange}/></Suspense>}
     <section className={`studio-access page-width ${isPrivate ? "private" : "restricted"}`} aria-labelledby="studio-access-title" inert={!canDuplicate}>
       <div><span>{locale === "en" ? "Access & visibility" : "Доступ и видимость"}</span><h2 id="studio-access-title">{isPrivate ? (locale === "en" ? "Private · owner only" : "Приватно · только владелец") : (locale === "en" ? "Restricted custom case" : "Ограниченный custom-кейс")}</h2><p id="studio-private-description">{isPrivate ? (locale === "en" ? "Only you can open this workspace case. The platform administrator, reviewers and previous recipients cannot see its content or metadata." : "Только вы можете открыть этот кейс в workspace. Администратор платформы, рецензенты и ранее приглашённые пользователи не видят его содержание и метаданные.") : (locale === "en" ? "Visible to you and the platform administrator. Other registered users need an explicit share; it is not part of the General Library." : "Виден вам и администратору платформы. Другим зарегистрированным пользователям требуется явное приглашение; в Общую библиотеку кейс не входит.")}</p></div>
       <label className={`privacy-toggle ${canManagePrivacy ? "" : "locked"}`}><input type="checkbox" checked={isPrivate} disabled={!canManagePrivacy} onChange={(event) => changePrivacy(event.target.checked)} aria-describedby="studio-private-description"/><span>{canManagePrivacy ? (locale === "en" ? "Private" : "Приватно") : (locale === "en" ? "Owner controls privacy" : "Приватность задаёт владелец")}</span><i aria-hidden="true"/></label>
@@ -2871,12 +2903,14 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       <div className="parent-trace"><span>{text.parentCase}</span>{draft.parent ? <><b>{draft.parent.caseId}</b><code>v{draft.parent.version} · {draft.parent.fingerprint}</code></> : <em>{locale === "en" ? "Root case · no parent" : "Корневой кейс · родителя нет"}</em>}</div>
     </section> : <section className="studio-version-simple page-width" inert={!canDuplicate}><div><span>{locale === "en" ? "Current version" : "Текущая версия"}</span><b>v{draft.version}</b><small>{draft.parent ? (locale === "en" ? `Child version of v${draft.parent.version}` : `Дочерняя версия от v${draft.parent.version}`) : (locale === "en" ? "Original case" : "Исходный кейс")}</small></div><button className="secondary-cta" disabled={!canDuplicate} onClick={createChildVersion}><Icon name="plus"/>{text.childVersion}</button></section>}
     </div>
+    {(draft.dealEconomics || draft.nodes.some((node) => node.type === "cash_flow")) && <Suspense fallback={<section className="deal-outcome deal-outcome-empty page-width" role="status"><p>{locale === "en" ? "Calculating case cash flow…" : "Расчёт денежного потока…"}</p></section>}><DealOutcomePanel locale={locale} draft={draft}/></Suspense>}
     <section className="studio-workspace">
       <aside className="node-palette" inert={!canDuplicate}><div className="pane-heading"><span>{text.addNode}</span><b>{String(paletteNodeTypes.length).padStart(2,"0")}</b></div>{paletteNodeTypes.map((type) => <button key={type} disabled={!canDuplicate || draft.nodes.length >= 200} onClick={() => addNode(type)}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "Add nodes here. On the graph, choose an output dot and then an input dot to create a relation. Every completed edit is added to the history." : "Добавляйте узлы здесь. На графе выберите выходную, затем входную точку, чтобы создать связь. Каждая завершённая правка попадёт в историю."}</p></aside>
       <section className="graph-deck" ref={graphDeckRef}>
-        <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div className="graph-heading-actions"><div>{displayMode === "developer" ? <><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></> : <span className="graph-counts">{draft.nodes.length} {locale === "en" ? "nodes" : "узлов"} · {draft.links.length} {locale === "en" ? "connections" : "связей"}</span>}</div><div className="graph-zoom-controls" aria-label={locale === "en" ? "Graph view controls" : "Управление видом схемы"}><button type="button" onClick={fitGraph}>{locale === "en" ? "Fit" : "Вместить"}</button><button type="button" onClick={() => setGraphZoom(1)}>100%</button><button type="button" onClick={centerGraph}>{locale === "en" ? "Center" : "По центру"}</button></div></div></div>
+        <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div className="graph-heading-actions"><div>{displayMode === "developer" ? <><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></> : <span className="graph-counts">{draft.nodes.length} {locale === "en" ? "nodes" : "узлов"} · {draft.links.length} {locale === "en" ? "connections" : "связей"}</span>}</div><div className="graph-zoom-controls" aria-label={locale === "en" ? "Graph view controls" : "Управление видом схемы"}><button type="button" disabled={!canDuplicate || draft.nodes.length < 2} onClick={autoLayoutGraph}>{locale === "en" ? "Auto-layout" : "Авто-раскладка"}</button><button type="button" onClick={fitGraph}>{locale === "en" ? "Fit" : "Вместить"}</button><button type="button" onClick={() => setGraphZoom(1)}>100%</button><button type="button" onClick={centerGraph}>{locale === "en" ? "Center" : "По центру"}</button></div></div></div>
         <div id="graph-connect-status" className="graph-connect-status" role="status" aria-live="polite" tabIndex={-1}><span className={linkSourceId || selectedRuleLinkId ? "armed" : ""}/>{relationStatus || (locale === "en" ? "Connect: select OUT on the first node, then IN on the destination. Select a line and press Delete to remove it." : "Связь: нажмите ВЫХОД первого узла, затем ВХОД целевого. Выделите линию и нажмите Delete для удаления.")}{linkSourceId && <button onClick={() => { setLinkSourceId(null); setRelationStatus(""); }}>{locale === "en" ? "Cancel" : "Отмена"}</button>}</div>
-        <div className="graph-canvas" style={{ zoom: graphZoom }}>
+        <div className="graph-viewport" ref={graphViewportRef} aria-label={locale === "en" ? "Resizable graph viewport" : "Изменяемое окно схемы"}>
+        <div className="graph-canvas" style={{ zoom: graphZoom, width: graphBounds.width, height: graphBounds.height }}>
           <svg className="graph-links" aria-label={locale === "en" ? "Case relationships" : "Связи кейса"}>{draft.links.map((link) => { const from=nodeById.get(link.from); const to=nodeById.get(link.to); if(!from||!to)return null; const path=`M ${from.x+165} ${from.y+38} C ${from.x+205} ${from.y+38}, ${to.x-38} ${to.y+38}, ${to.x} ${to.y+38}`; const selected=selectedRuleLinkId===link.id; return <g key={link.id} className={`graph-link ${selected?"selected":""}`} role="button" tabIndex={0} aria-pressed={selected} aria-label={locale === "en" ? `Relation from ${from.title} to ${to.title}. Press Delete to remove.` : `Связь от «${from.title}» к «${to.title}». Нажмите Delete для удаления.`} onClick={() => selectGraphLink(link)} onKeyDown={(event) => { if(event.key==="Enter"||event.key===" "){event.preventDefault();selectGraphLink(link);} }}><title>{from.title} → {to.title}</title><path className="graph-link-hit" d={path}/><path className="graph-link-visible" d={path}/><circle cx={to.x} cy={to.y+38} r="3"/></g>; })}</svg>
           {draft.nodes.length === 0 && <div className="graph-empty-state"><Icon name="spark"/><h3>{locale === "en" ? "Start with a description or one node" : "Начните с описания или первого узла"}</h3><p>{locale === "en" ? "Describe the matter above and choose “Understand with AI”, or add a Trigger from the left palette." : "Опишите ситуацию выше и нажмите «Понять и структурировать с AI» либо добавьте «Триггер» в палитре слева."}</p></div>}
           {draft.nodes.map((node) => <div key={node.id} className={`graph-node-shell ${node.id===selectedNodeId?"selected":""} ${node.id===linkSourceId?"link-source":""}`} style={{left:node.x,top:node.y,"--node-color":typeColors[node.type]} as React.CSSProperties}>
@@ -2884,7 +2918,8 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
             <button id={`studio-node-${node.id}`} className="graph-node" onFocus={() => selectGraphNode(node.id)} onKeyDown={(event) => { if (canDuplicate) nudgeNode(event, node); }} onPointerDown={(event)=>{setSelectedRuleLinkId(null);if(canDuplicate)moveNode(event,node,graphZoom);else selectGraphNode(node.id);}} onPointerMove={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} onPointerUp={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} onPointerCancel={(event)=>{if(canDuplicate)moveNode(event,node,graphZoom);}} aria-label={`${text.nodeTypes[node.type]}: ${node.title}. ${canDuplicate ? (locale === "en" ? "Use arrow keys to reposition." : "Используйте стрелки для перемещения.") : (locale === "en" ? "Inspection only." : "Только просмотр.")}`}><span><i/>{text.nodeTypes[node.type]}{displayMode === "developer" && <code>{node.id.split("-").at(-1)}</code>}</span><b>{node.title}</b>{(node.runtime?.budgetCostEur !== undefined || node.runtime?.durationMinutes !== undefined) && <small className="node-runtime-summary">{node.runtime?.budgetCostEur !== undefined ? `€${node.runtime.budgetCostEur.toLocaleString()}` : (displayMode === "developer" ? "€ auto" : locale === "en" ? "cost automatic" : "стоимость автоматически")} · {node.runtime?.durationMinutes !== undefined ? `${node.runtime.durationMinutes} min` : (displayMode === "developer" ? "time auto" : locale === "en" ? "time automatic" : "время автоматически")}</small>}</button>
             <button className="node-port node-port-out" disabled={!canDuplicate} aria-pressed={node.id===linkSourceId} onClick={() => armLinkSource(node.id)} aria-label={locale === "en" ? `Start relation from ${node.title}` : `Начать связь от ${node.title}`}><span/></button>
           </div>)}
-        </div>
+        </div></div>
+        <div className="graph-resize-hint"><span aria-hidden="true">↕</span>{locale === "en" ? "Drag the lower edge to resize the graph window" : "Потяните нижний край, чтобы изменить высоту окна схемы"}</div>
         <div className="graph-legend">{(Object.keys(typeColors) as StudioNodeType[]).map((type)=><span key={type}><i style={{background:typeColors[type]}}/>{text.nodeTypes[type]}</span>)}</div>
         <details className="graph-relations" open>
           <summary>{displayMode === "developer" ? (locale === "en" ? "Relationship & Rules DSL editor" : "Редактор связей и Rules DSL") : (locale === "en" ? "Connections and player choices" : "Связи и выборы игрока")} · {draft.links.length}</summary>
@@ -2925,7 +2960,51 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   </main>;
 }
 
-function TaxEconomicsPanel({ locale, model, result, disabled, onChange }: {
+function InlineDealOutcomePanel({ locale, model, result, inferred }: {
+  locale: Locale;
+  model: NonNullable<StudioDraft["dealEconomics"]>;
+  result: ReturnType<typeof calculateDealEconomics>;
+  inferred: boolean;
+}) {
+  const money = (value: number | null) => {
+    if (value === null) return "—";
+    try { return new Intl.NumberFormat(locale === "en" ? "en-GB" : "ru-RU", { style: "currency", currency: model.currency, maximumFractionDigits: 0 }).format(value); }
+    catch { return `${Math.round(value).toLocaleString()} ${model.currency}`; }
+  };
+  const percent = (value: number | null) => value === null ? "—" : `${value.toFixed(1)}%`;
+  const scenarios = model.repaymentBasis === "amortizing" ? [result.amortizing] : model.repaymentBasis === "interest_only" ? [result.interestOnly] : [result.amortizing, result.interestOnly];
+  const numericRange = (values: Array<number | null>, formatter: (value: number | null) => string) => {
+    const valid = values.filter((value): value is number => value !== null).sort((left, right) => left - right);
+    if (!valid.length) return "—";
+    return valid.length === 1 || Math.abs(valid[0] - valid.at(-1)!) < 0.01 ? formatter(valid[0]) : `${formatter(valid[0])} – ${formatter(valid.at(-1)!)}`;
+  };
+  const target = model.targetAnnualReturnBps === null ? null : model.targetAnnualReturnBps / 100;
+  const targetStates = scenarios.map((scenario) => scenario.targetGapPercent === null ? null : scenario.targetGapPercent >= 0);
+  const targetVerdict = target === null
+    ? (locale === "en" ? "Target not supplied" : "Цель не задана")
+    : targetStates.every((state) => state === true)
+      ? (locale === "en" ? "Target met in every modelled basis" : "Цель достигнута при всех сценариях")
+      : targetStates.some((state) => state === true)
+        ? (locale === "en" ? "Depends on repayment basis" : "Зависит от вида погашения")
+        : (locale === "en" ? "Target not met on current inputs" : "Цель не достигнута при текущих данных");
+  return <section className="deal-outcome page-width" aria-labelledby="deal-outcome-title">
+    <header><div><span>{locale === "en" ? "CASE OUTCOME · CASH FLOW" : "РЕЗУЛЬТАТ КЕЙСА · ДЕНЕЖНЫЙ ПОТОК"}</span><h2 id="deal-outcome-title">{locale === "en" ? "Investment result" : "Результат инвестиции"}</h2></div><b className={targetStates.some((state) => state === true) ? "conditional" : "miss"}>{targetVerdict}</b></header>
+    <p>{model.repaymentBasis === "unknown"
+      ? (locale === "en" ? "The prompt does not state whether the loan is interest-only or amortizing, so both outcomes are shown." : "В промпте не указан вид погашения кредита, поэтому показаны оба сценария.")
+      : (locale === "en" ? `Calculated on the stated ${model.repaymentBasis === "amortizing" ? "amortizing" : "interest-only"} basis.` : `Расчёт по указанному сценарию: ${model.repaymentBasis === "amortizing" ? "амортизируемый кредит" : "только проценты"}.`)}</p>
+    <div className="deal-outcome-grid" aria-live="polite">
+      <div><span>{locale === "en" ? "Initial equity" : "Начальный капитал"}</span><b>{money(result.initialEquity)}</b><small>{locale === "en" ? "Down payment + known initial fees" : "Первоначальный взнос + известные разовые расходы"}</small></div>
+      <div><span>{locale === "en" ? "Gross annual rent" : "Валовая аренда за год"}</span><b>{money(model.grossAnnualIncome)}</b><small>{model.purchasePrice && model.grossAnnualIncome !== null ? `${locale === "en" ? "Gross yield" : "Валовая доходность"} ${(model.grossAnnualIncome / model.purchasePrice * 100).toFixed(1)}%` : "—"}</small></div>
+      <div><span>{locale === "en" ? "Annual debt service" : "Обслуживание долга за год"}</span><b>{numericRange(scenarios.map((scenario) => scenario.annualDebtService), money)}</b><small>{model.repaymentBasis === "unknown" ? (locale === "en" ? "Interest-only to amortizing range" : "Диапазон: только проценты — амортизация") : `${model.repaymentBasis.replace("_", " ")}`}</small></div>
+      <div><span>{locale === "en" ? "Annual cash flow" : "Денежный поток за год"}</span><b className={scenarios.every((scenario) => (scenario.annualCashFlow ?? 0) < 0) ? "negative" : ""}>{numericRange(scenarios.map((scenario) => scenario.annualCashFlow), money)}</b><small>{locale === "en" ? "Before tax and unprovided costs" : "До налогов и неуказанных расходов"}</small></div>
+      <div><span>{locale === "en" ? "Cash-on-cash return" : "Доходность на капитал"}</span><b>{numericRange(scenarios.map((scenario) => scenario.cashOnCashReturnPercent), percent)}</b><small>{target === null ? (locale === "en" ? "No target supplied" : "Цель не задана") : `${locale === "en" ? "Target" : "Цель"} ${target.toFixed(1)}%`}</small></div>
+      <div><span>DSCR</span><b>{numericRange(scenarios.map((scenario) => scenario.dscr), (value) => value === null ? "—" : `${value.toFixed(2)}×`)}</b><small>{locale === "en" ? "Before unprovided property costs" : "До неуказанных расходов объекта"}</small></div>
+    </div>
+    <aside><Icon name="alert"/><div><b>{locale === "en" ? "Provisional outcome" : "Предварительный результат"}</b><p>{locale === "en" ? `Missing: ${result.missingInputs.join(", ") || "none"}. Taxes, FX and legal conclusions are not inferred by this calculation.` : `Не указано: ${result.missingInputs.join(", ") || "нет"}. Налоги, FX и юридические выводы не выводятся из этого расчёта.`}</p>{inferred && <small>{locale === "en" ? "Compatibility mode: values were extracted from labelled case text. Re-run AI analysis to store them as reviewed structured inputs." : "Режим совместимости: значения извлечены из подписанных данных кейса. Повторите AI-анализ, чтобы сохранить их как проверенные структурированные данные."}</small>}</div></aside>
+  </section>;
+}
+
+function InlineTaxEconomicsPanel({ locale, model, result, disabled, onChange }: {
   locale: Locale;
   model: ReturnType<typeof defaultTaxEconomics>;
   result: ReturnType<typeof calculateTaxEconomics>;
