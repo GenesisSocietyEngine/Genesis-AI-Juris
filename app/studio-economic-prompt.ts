@@ -54,6 +54,8 @@ export function economicPromptBlock(deal: DealEconomicsV1 | undefined, tax: TaxE
       `Annual structure & compliance: ${amount(tax.annualMaintenanceCost, tax.currency)}.`,
       `Terminal tax/unwind: ${amount(tax.terminalTaxOrUnwindCost, tax.currency)}; discount rate: ${percent(tax.annualDiscountRateBps)}; benefit realization: ${percent(tax.benefitRealizationBps)}.`,
     );
+    const rateSourceLine = tax.assumptions.match(/^Tax-rate sources:[^\n]+/mu)?.[0];
+    if (tax.taxInputBasis === "rates" && rateSourceLine) lines.push(rateSourceLine);
     if (tax.fx) lines.push(`Currency conversion: ECB reference rate as of ${tax.fx.asOf}; 1 ${tax.fx.sourceCurrency} = ${tax.fx.rate.toPrecision(8)} ${tax.fx.targetCurrency}.`);
   }
   lines.push(ECONOMIC_PROMPT_END);

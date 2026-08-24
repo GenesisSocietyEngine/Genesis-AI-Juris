@@ -1,13 +1,28 @@
 "use client";
 
+import { useEffect } from "react";
 import CashFlowScenarioEditor from "./CashFlowScenarioEditor";
 import TaxEconomicsPanel from "./TaxEconomicsPanel";
 import type { RentalTaxBaseBreakdown, TaxEconomicsResult } from "./tax-economics";
-import type { DealEconomicsV1, TaxEconomicsV1 } from "./types";
+import type { DealEconomicsV1, StudioDraft, TaxEconomicsV1 } from "./types";
 
 type Locale = "en" | "ru";
 
-export default function StudioOutcomeParameters({locale,dealModel,taxModel,taxResult,taxBaseBreakdown,disabled,beginFieldEdit,commitDealField,setDealModel,changeRepaymentBasis,applyTaxChange,changeTaxCurrency}:{locale:Locale;dealModel:DealEconomicsV1|null|undefined;taxModel:TaxEconomicsV1;taxResult:TaxEconomicsResult|null;taxBaseBreakdown?:RentalTaxBaseBreakdown|null;disabled:boolean;beginFieldEdit:(value:string)=>void;commitDealField:(label:string,value:string)=>void;setDealModel:(change:Partial<DealEconomicsV1>)=>void;changeRepaymentBasis:(basis:DealEconomicsV1["repaymentBasis"])=>void;applyTaxChange:(change:Partial<TaxEconomicsV1>,label:string)=>void;changeTaxCurrency:(currency:string)=>Promise<{ok:boolean;message:string}>}) {
+export default function StudioOutcomeParameters({locale,dealModel,taxModel,taxResult,taxBaseBreakdown,ratePrompt,rateDraft,disabled,beginFieldEdit,commitDealField,setDealModel,changeRepaymentBasis,applyTaxChange,changeTaxCurrency}:{locale:Locale;dealModel:DealEconomicsV1|null|undefined;taxModel:TaxEconomicsV1;taxResult:TaxEconomicsResult|null;taxBaseBreakdown?:RentalTaxBaseBreakdown|null;ratePrompt:string;rateDraft:StudioDraft;disabled:boolean;beginFieldEdit:(value:string)=>void;commitDealField:(label:string,value:string)=>void;setDealModel:(change:Partial<DealEconomicsV1>)=>void;changeRepaymentBasis:(basis:DealEconomicsV1["repaymentBasis"])=>void;applyTaxChange:(change:Partial<TaxEconomicsV1>,label:string)=>void;changeTaxCurrency:(currency:string)=>Promise<{ok:boolean;message:string}>}) {
+  useEffect(() => {
+    if (!taxResult) return;
+    let cancelled = false;
+    void import("./tax-rate-inference").then(({ prefillTaxRates }) => {
+      if (cancelled) return;
+      const next = prefillTaxRates(taxModel, {
+        prompt: ratePrompt,
+        jurisdiction: rateDraft.jurisdiction,
+        caseText: [rateDraft.title, rateDraft.premise, rateDraft.role, ...rateDraft.nodes.flatMap((node) => [node.title, node.detail])].join("\n"),
+      });
+      if (next !== taxModel) applyTaxChange(next, "automatic rate prefill");
+    });
+    return () => { cancelled = true; };
+  }, [applyTaxChange, rateDraft, ratePrompt, taxModel, taxResult]);
   return <section className="outcome-parameters page-width" aria-labelledby="outcome-parameters-title">
     <header><div><span>{locale === "en" ? "LIVE MODEL INPUTS" : "ВХОДНЫЕ ПАРАМЕТРЫ МОДЕЛИ"}</span><h2 id="outcome-parameters-title">{locale === "en" ? "Outcome recalculation parameters" : "Параметры пересчёта outcome"}</h2></div><b>{locale === "en" ? "Changes recalculate below" : "Пересчёт ниже"}</b></header>
     <p>{locale === "en" ? "Review the financial, financing and tax assumptions here. Every accepted edit immediately updates the cash-flow ranges, return tests and tax economics shown below." : "Проверьте финансовые, кредитные и налоговые допущения. Каждая правка сразу обновляет cash-flow диапазоны, тесты доходности и налоговую экономику ниже."}</p>

@@ -213,6 +213,12 @@ test("Studio opens in After hours and the English demo keeps one Five Flats case
   assert.doesNotMatch(demoBuilder, /case-studio-iterative-editing\.mp4|The Missing Boundary|renewable-energy|Three Borders/);
 });
 
+test("standalone Studio exposes an explicit account destination", () => {
+  const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
+  assert.match(appSource, /href="\/account"/);
+  assert.match(appSource, />Account<\/span>/);
+});
+
 function contrastRatio(foreground: string, background: string) {
   const luminance = (hex: string) => {
     const channels = hex.slice(1).match(/../g)!.map((channel) => Number.parseInt(channel, 16) / 255).map((channel) => channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
