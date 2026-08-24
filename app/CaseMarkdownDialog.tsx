@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { buildCaseMarkdown, type CaseMarkdownLanguage, type CaseMarkdownStatus } from "./case-markdown";
+import { caseMarkdownFilename, normalizeCaseMarkdownFilename } from "./case-markdown-filename";
 import type { StudioDraft } from "./types";
 
 export default function CaseMarkdownDialog({locale,draft,close,completed}:{locale:"en"|"ru";draft:StudioDraft;close:()=>void;completed:()=>void}){
@@ -11,6 +12,9 @@ export default function CaseMarkdownDialog({locale,draft,close,completed}:{local
   const [fingerprint,setFingerprint]=useState("");
   const [error,setError]=useState("");
   const [copyState,setCopyState]=useState("");
+  const [openedAt]=useState(()=>new Date());
+  const [filename,setFilename]=useState(()=>caseMarkdownFilename(draft,"final",openedAt));
+  const [filenameEdited,setFilenameEdited]=useState(false);
 
   useEffect(()=>{
     let cancelled=false;
@@ -28,7 +32,9 @@ export default function CaseMarkdownDialog({locale,draft,close,completed}:{local
     const url=URL.createObjectURL(new Blob([markdown],{type:"text/markdown;charset=utf-8"}));
     const link=document.createElement("a");
     link.href=url;
-    link.download=`${draft.caseId||"case"}-v${draft.version||"0"}-${status}.md`;
+    const safeFilename=normalizeCaseMarkdownFilename(filename,caseMarkdownFilename(draft,status,openedAt));
+    setFilename(safeFilename);
+    link.download=safeFilename;
     link.click();
     URL.revokeObjectURL(url);
     completed();
@@ -39,8 +45,9 @@ export default function CaseMarkdownDialog({locale,draft,close,completed}:{local
       <header><div><span>{locale==="en"?"PORTABLE CASE SPECIFICATION · MD":"ПЕРЕНОСИМАЯ СПЕЦИФИКАЦИЯ КЕЙСА · MD"}</span><h2 id="case-markdown-title">{locale==="en"?"Polished case description":"Структурированное описание кейса"}</h2></div><button type="button" onClick={close} aria-label={locale==="en"?"Close Markdown export":"Закрыть экспорт Markdown"}>×</button></header>
       <p>{locale==="en"?"A professional, human-readable brief plus a compressed canonical manifest. Re-entering the complete file in Studio reconstructs the same graph and fingerprint without AI reinterpretation.":"Профессиональное описание для чтения и сжатый канонический манифест. Повторный ввод полного файла в Studio восстанавливает ту же схему и отпечаток без повторной AI-интерпретации."}</p>
       <div className="case-report-grid">
-        <label><span>{locale==="en"?"Document status":"Статус документа"}</span><select value={status} onChange={(event)=>setStatus(event.target.value as CaseMarkdownStatus)}><option value="amended">{locale==="en"?"Amended":"Уточнённый"}</option><option value="final">{locale==="en"?"Final reviewed":"Финальный проверенный"}</option></select></label>
+        <label><span>{locale==="en"?"Document status":"Статус документа"}</span><select value={status} onChange={(event)=>{const next=event.target.value as CaseMarkdownStatus;setStatus(next);if(!filenameEdited)setFilename(caseMarkdownFilename(draft,next,openedAt));}}><option value="amended">{locale==="en"?"Amended":"Уточнённый"}</option><option value="final">{locale==="en"?"Final reviewed":"Финальный проверенный"}</option></select></label>
         <label><span>{locale==="en"?"Output language":"Язык документа"}</span><select value={language} onChange={(event)=>setLanguage(event.target.value as CaseMarkdownLanguage)}><option value="en">English</option><option value="ru">Русский</option></select></label>
+        <label className="case-markdown-filename"><span>Case filename</span><input value={filename} maxLength={180} spellCheck={false} onChange={(event)=>{setFilenameEdited(true);setFilename(event.target.value);}} onBlur={()=>setFilename((current)=>normalizeCaseMarkdownFilename(current,caseMarkdownFilename(draft,status,openedAt)))}/><small>{locale==="en"?"Editable; the default includes your local date and time (YYYYMMDD_HHMMSS).":"Можно изменить; по умолчанию добавляются локальные дата и время (YYYYMMDD_HHMMSS)."}</small></label>
       </div>
       <div className="case-markdown-meta"><span>{markdown.length.toLocaleString()} {locale==="en"?"characters":"символов"}</span><code>{fingerprint||"…"}</code></div>
       {error?<p className="case-report-error" role="alert">{error}</p>:<textarea className="case-markdown-preview" readOnly value={markdown} aria-label={locale==="en"?"Generated Markdown case description":"Созданное Markdown-описание кейса"}/>}

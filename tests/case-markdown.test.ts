@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildCaseMarkdown, CANONICAL_CASE_MARKER, parseCaseMarkdown } from "../app/case-markdown";
+import { caseMarkdownFilename, normalizeCaseMarkdownFilename } from "../app/case-markdown-filename";
 import { caseFingerprint, normalizeStudioDraft } from "../app/case-integrity";
 import type { StudioDraft } from "../app/types";
 
@@ -75,4 +76,13 @@ test("canonical Markdown rejects a tampered fingerprint", async () => {
   const built = await buildCaseMarkdown(reviewedDraft(), { status: "amended", language: "ru" });
   const tampered = built.markdown.replaceAll(built.fingerprint, `sha256-${"f".repeat(64)}`);
   await assert.rejects(() => parseCaseMarkdown(tampered), /payload is invalid|fingerprint mismatch/);
+});
+
+test("Markdown export filenames are editable, safe and timestamped in local time", () => {
+  const draft = reviewedDraft();
+  const openedAt = new Date(2026, 7, 24, 7, 13, 40);
+  assert.equal(caseMarkdownFilename(draft, "final", openedAt), "five_flats_three_borders-v1.2.0-final_20260824_071340.md");
+  assert.equal(normalizeCaseMarkdownFilename("Client Final / reviewed.md", "fallback.md"), "Client_Final_reviewed.md");
+  assert.doesNotMatch(normalizeCaseMarkdownFilename("../../outside.md", "fallback.md"), /[\\/]/);
+  assert.equal(normalizeCaseMarkdownFilename("   ", "fallback.md"), "fallback.md");
 });
