@@ -183,12 +183,14 @@ function buildEconomics(draft: StudioDraft, options: CaseReportOptions): Content
         ] : []),
         [tr(language, "Gross annual tax saving", "Валовая годовая налоговая экономия"), money(language, model.currency, result.grossAnnualTaxSaving)],
         [tr(language, "Recognized annual saving", "Признанная годовая экономия"), money(language, model.currency, result.recognizedAnnualTaxSaving)],
-        [tr(language, "Net annual benefit", "Чистый годовой эффект"), money(language, model.currency, result.netAnnualBenefit)],
+        [tr(language, "Annualized implementation", "Внедрение в пересчёте на год"), money(language, model.currency, result.annualizedImplementationCost)],
+        [tr(language, "Annualized net benefit", "Чистый годовой эффект"), money(language, model.currency, result.netAnnualBenefit)],
         [tr(language, "Simple payback", "Простая окупаемость"), result.paybackMonths === null ? tr(language, "Not reached", "Не достигается") : `${result.paybackMonths.toFixed(1)} ${tr(language, "months", "мес.")}`],
         [tr(language, "Lifecycle ROI", "ROI жизненного цикла"), result.lifecycleRoiPercent === null ? "-" : `${result.lifecycleRoiPercent.toFixed(1)}%`],
         ["NPV", money(language, model.currency, result.npv)],
       ], ["62%", "38%"]
     ));
+    if (model.fx) content.push({ text: `ECB ${model.fx.asOf}: 1 ${model.fx.sourceCurrency} = ${model.fx.rate.toPrecision(8)} ${model.fx.targetCurrency}.`, style: "note" });
     if (model.assumptions) content.push({ text: `${tr(language, "Assumptions", "Допущения")}: ${model.assumptions}`, style: "note" });
   }
   return content;

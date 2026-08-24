@@ -91,14 +91,19 @@ function economics(draft: StudioDraft, language: CaseMarkdownLanguage) {
   if(draft.taxEconomics){
     const model=draft.taxEconomics;
     output.push(en?"### Tax-structure economics":"### Экономика налоговой структуры","",`| ${en?"Input":"Параметр"} | ${en?"Value":"Значение"} |`,"|---|---:|",
+      `| ${en?"Tax input basis":"Способ ввода налога"} | ${model.taxInputBasis === "rates" ? (en?"Tax base + rates (%)":"Налоговая база + ставки (%)") : (en?"Annual tax amounts":"Годовые суммы налога")} |`,
+      `| ${en?"Annual taxable base":"Годовая налоговая база"} | ${money(model.annualTaxBase,model.currency)} |`,
       `| ${en?"Baseline annual tax":"Базовый годовой налог"} | ${money(model.baselineAnnualTaxCost,model.currency)} |`,
       `| ${en?"Optimized annual tax":"Оптимизированный годовой налог"} | ${money(model.optimizedAnnualTaxCost,model.currency)} |`,
       `| ${en?"Baseline rate":"Базовая ставка"} | ${percent(model.baselineTaxRateBps)} |`,
       `| ${en?"Optimized rate":"Оптимизированная ставка"} | ${percent(model.optimizedTaxRateBps)} |`,
       `| ${en?"Implementation":"Внедрение"} | ${money(model.implementationCost,model.currency)} |`,
+      `| ${en?"Annualized implementation":"Внедрение в пересчёте на год"} | ${money(model.implementationCost/(model.analysisHorizonMonths/12),model.currency)} |`,
       `| ${en?"Annual maintenance":"Годовое сопровождение"} | ${money(model.annualMaintenanceCost,model.currency)} |`,
       `| ${en?"Terminal tax / unwind":"Налог / расходы при выходе"} | ${money(model.terminalTaxOrUnwindCost,model.currency)} |`,
-      `| ${en?"Analysis horizon":"Горизонт анализа"} | ${model.analysisHorizonMonths} ${en?"months":"месяцев"} |`,"",model.assumptions?`> ${model.assumptions}`:"","");
+      `| ${en?"Analysis horizon":"Горизонт анализа"} | ${model.analysisHorizonMonths} ${en?"months":"месяцев"} |`,
+      ...(model.fx ? [`| ${en?"Currency conversion":"Конвертация валюты"} | ECB ${model.fx.asOf}: 1 ${model.fx.sourceCurrency} = ${model.fx.rate.toPrecision(8)} ${model.fx.targetCurrency} |`] : []),
+      "",model.assumptions?`> ${model.assumptions}`:"","");
   }
   return output;
 }

@@ -231,6 +231,14 @@ export type TaxEconomicsV1 = {
   annualDiscountRateBps: number;
   benefitRealizationBps: number;
   assumptions: string;
+  /** Latest ECB reference-rate conversion applied to the monetary inputs. */
+  fx?: {
+    provider: "ECB";
+    sourceCurrency: string;
+    targetCurrency: string;
+    rate: number;
+    asOf: string;
+  };
 };
 
 export type DealEconomicsV1 = {

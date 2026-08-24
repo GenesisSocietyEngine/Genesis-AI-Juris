@@ -19,8 +19,8 @@ import { STUDIO_DRAFT_SERIALIZED_LIMIT, studioJsonBytes } from "./studio-envelop
 import { STUDIO_NODE_MENU_PAGE_SIZE, studioNodeMenuOptions, studioNodeMenuPage } from "./studio-node-menu";
 import { STUDIO_PROMPT_CHARACTER_LIMIT } from "./studio-prompt-limit";
 import { applyStudioSnapshot, diffDraftToRevision, diffStudioSnapshots, emptyStudioTimeline, recordStudioRevision, snapshotStudioDraft, stepStudioTimeline, studioSnapshotsEqual, type StudioRevision, type StudioTimeline } from "./studio-revisions";
-import { calculateTaxEconomics, defaultTaxEconomics } from "./tax-economics";
-import { calculateDealEconomics, inferDealEconomicsFromText } from "./deal-economics";
+import { applyDealChangeToTaxEconomics, calculateTaxEconomics, convertRentalTaxBase, defaultTaxEconomics, prefillTaxEconomicsFromDeal, rentalTaxBaseFromDeal } from "./tax-economics";
+import { inferDealEconomicsFromText } from "./deal-economics";
 import type {
   DecisionOption,
   LocalText,
@@ -2294,7 +2294,7 @@ function DecisionModal({ locale, text, scenario, stageHeadline, option, isResult
 
 type StudioViewProps = {
   standalone?: boolean;
-  locale: Locale; text: UiText; prompt: string; setPrompt: (value: string) => void; draft: StudioDraft;
+  locale: Locale; text: UiText; prompt: string; setPrompt: React.Dispatch<React.SetStateAction<string>>; draft: StudioDraft;
   setDraft: React.Dispatch<React.SetStateAction<StudioDraft>>; selectedNode: StudioNode | null; selectedNodeId: string | null;
   selectNode: (id: string | null) => void; checks: Array<{ level: "ok" | "warn"; text: string }>;
   generateDraft: () => void; applyPromptIteration: () => void; applyReviewedAIPlan: (plan: StudioPromptPlan, baseFingerprint: string) => boolean; applyCanonicalMarkdownDraft: (draft: StudioDraft) => void; saveDraft: () => void; savedFlash: boolean;
@@ -2338,6 +2338,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   const [relationStatus, setRelationStatus] = useState("");
   const fieldBefore = useRef("");
   const fieldBeforeDraft = useRef<StudioDraft | null>(null);
+  const economicPromptSyncRef = useRef(0);
   const [selectedRevisionId, setSelectedRevisionId] = useState("");
   const [selectedRuleLinkId, setSelectedRuleLinkId] = useState<string | null>(null);
   const [aiState, setAIState] = useState<"idle" | "analysing" | "ready" | "error">("idle");
@@ -2420,14 +2421,30 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   const selectedRuleLink = draft.links.find((link) => link.id === selectedRuleLinkId) ?? null;
   const taxDraft = isTaxDraft(draft);
   const paletteNodeTypes = (Object.keys(typeColors) as StudioNodeType[]).filter((type) => displayMode === "developer" || taxDraft || type !== "tax_rule");
-  const taxModel = draft.taxEconomics ?? defaultTaxEconomics();
-  const taxResult = useMemo(() => taxDraft ? calculateTaxEconomics(taxModel) : null, [taxDraft, taxModel]);
   const inferredDealModel = useMemo(() => inferDealEconomicsFromText([
     draft.premise,
     ...draft.nodes.flatMap((node) => [node.title, node.detail]),
     ...draft.editHistory.filter((entry) => entry.action === "prompt_submitted").map((entry) => entry.message),
   ].join("\n")), [draft.editHistory, draft.nodes, draft.premise]);
   const editableDealModel = draft.dealEconomics ?? inferredDealModel;
+  const taxModel = useMemo(() => editableDealModel
+    ? prefillTaxEconomicsFromDeal(draft.taxEconomics, editableDealModel)
+    : draft.taxEconomics ?? defaultTaxEconomics(), [draft.taxEconomics, editableDealModel]);
+  const taxResult = useMemo(() => taxDraft ? calculateTaxEconomics(taxModel) : null, [taxDraft, taxModel]);
+  const taxBaseBreakdown = useMemo(() => {
+    if (!editableDealModel) return null;
+    const source = rentalTaxBaseFromDeal(editableDealModel);
+    if (!source) return null;
+    if (source.currency === taxModel.currency) return source;
+    const rate = taxModel.fx?.sourceCurrency === source.currency && taxModel.fx.targetCurrency === taxModel.currency ? taxModel.fx.rate : null;
+    return rate ? convertRentalTaxBase(source, taxModel.currency, rate) : null;
+  }, [editableDealModel, taxModel.currency, taxModel.fx]);
+  const syncEconomicPrompt = useCallback((nextDraft: StudioDraft) => {
+    const request = ++economicPromptSyncRef.current;
+    void import("./studio-economic-prompt").then(({ synchronizedEconomicPrompt }) => {
+      if (request === economicPromptSyncRef.current) setPrompt((current) => synchronizedEconomicPrompt(current, nextDraft));
+    });
+  }, [setPrompt]);
   const selectedRevision = timeline.revisions.find((revision) => revision.id === selectedRevisionId) ?? timeline.revisions.at(-1) ?? null;
   const selectedDiff = selectedRevision ? diffStudioSnapshots(selectedRevision.before, selectedRevision.after) : null;
   const restoreDiff = selectedRevision ? diffDraftToRevision(draft, selectedRevision) : null;
@@ -2497,6 +2514,13 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     const timer = window.setTimeout(() => setDerivedPrompt(prompt), 180);
     return () => window.clearTimeout(timer);
   }, [prompt]);
+
+  useEffect(() => {
+    if (!taxDraft || JSON.stringify(draft.taxEconomics) === JSON.stringify(taxModel)) return;
+    const nextDraft = { ...draft, taxEconomics: taxModel };
+    setDraft((current) => current === draft ? nextDraft : current);
+    syncEconomicPrompt(nextDraft);
+  }, [draft, setDraft, syncEconomicPrompt, taxDraft, taxModel]);
 
   useEffect(() => { aiInputKeyRef.current = aiInputKey; }, [aiInputKey]);
 
@@ -2825,12 +2849,34 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   }
   function applyTaxEconomicsChange(change: Partial<NonNullable<StudioDraft["taxEconomics"]>>, label: string) {
     const before = draft;
-    setDraft((current) => ({ ...current, taxEconomics: { ...(current.taxEconomics ?? defaultTaxEconomics()), ...change } }));
+    const nextDraft = { ...draft, taxEconomics: { ...taxModel, ...change } };
+    setDraft(nextDraft);
+    syncEconomicPrompt(nextDraft);
     recordVisualEdit("case_updated", locale === "en" ? `Visual edit: changed tax economics ${label}.` : `Визуальная правка: изменено поле налоговой экономики «${label}».`, before);
   }
   function setDealEconomicsChange(change: Partial<NonNullable<StudioDraft["dealEconomics"]>>) {
     if (!editableDealModel) return;
-    setDraft((current) => ({ ...current, dealEconomics: { ...editableDealModel, ...(current.dealEconomics ?? {}), ...change } }));
+    const nextDeal = { ...editableDealModel, ...(draft.dealEconomics ?? {}), ...change };
+    const nextTax = taxDraft ? applyDealChangeToTaxEconomics(taxModel, nextDeal, change) : draft.taxEconomics;
+    const nextDraft = { ...draft, dealEconomics: nextDeal, ...(nextTax ? { taxEconomics: nextTax } : {}) };
+    setDraft(nextDraft);
+    syncEconomicPrompt(nextDraft);
+  }
+  async function changeTaxEconomicsCurrency(targetCurrency: string) {
+    const sourceCurrency = taxModel.currency;
+    if (targetCurrency === sourceCurrency) return { ok: true, message: "" };
+    try {
+      const { convertTaxEconomicsCurrency } = await import("./studio-tax-currency");
+      const converted = await convertTaxEconomicsCurrency(taxModel, editableDealModel, targetCurrency);
+      const before = draft;
+      const nextDraft = { ...draft, taxEconomics: converted.tax };
+      setDraft(nextDraft);
+      syncEconomicPrompt(nextDraft);
+      recordVisualEdit("case_updated", locale === "en" ? `Visual edit: converted tax economics from ${sourceCurrency} to ${targetCurrency} at the ECB reference rate dated ${converted.asOf}.` : `Визуальная правка: налоговая экономика пересчитана из ${sourceCurrency} в ${targetCurrency} по справочному курсу ECB от ${converted.asOf}.`, before);
+      return { ok: true, message: locale === "en" ? `Converted at the ECB reference rate dated ${converted.asOf}.` : `Пересчитано по справочному курсу ECB от ${converted.asOf}.` };
+    } catch {
+      return { ok: false, message: locale === "en" ? "The current ECB reference rate is unavailable for this currency. Values were not changed." : "Текущий справочный курс ECB для этой валюты недоступен. Значения не изменены." };
+    }
   }
   function commitDealEconomicsField(label: string, value: string) {
     if (fieldBefore.current === value) return;
@@ -3062,7 +3108,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
           classification: tax
             ? { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), domain: "tax", complianceOnly: true }
             : { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), domain: "general", practiceArea: "General legal", taxTopics: [], purpose: "compliance_review" },
-          ...(tax ? { taxEconomics: current.taxEconomics ?? defaultTaxEconomics() } : { taxEconomics: undefined }),
+          ...(tax ? { taxEconomics: current.taxEconomics ?? defaultTaxEconomics(current.dealEconomics?.currency ?? inferredDealModel?.currency ?? "EUR") } : { taxEconomics: undefined }),
         }));
       }}><option value="general">{locale === "en" ? "General legal" : "Общеправовой"}</option><option value="tax">{locale === "en" ? "Tax / cross-border structuring" : "Налоги / трансграничное структурирование"}</option></select></label>
       <label><span>{locale === "en" ? "Practice area" : "Область практики"}</span><select value={draft.classification?.practiceArea ?? "General legal"} onChange={(event) => applyCaseChange(locale === "en" ? "practice area" : "область практики", (current) => ({ ...current, classification: { ...(current.classification ?? { difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), practiceArea: event.target.value } }))}><option value="General legal">{locale === "en" ? "General legal" : "Общая юридическая практика"}</option><option value="International tax planning">{locale === "en" ? "International tax planning" : "Международное налоговое планирование"}</option><option value="Corporate tax">{locale === "en" ? "Corporate tax" : "Корпоративные налоги"}</option><option value="Transfer pricing">{locale === "en" ? "Transfer pricing" : "Трансфертное ценообразование"}</option><option value="Commercial disputes">{locale === "en" ? "Commercial disputes" : "Коммерческие споры"}</option><option value="AI regulation">{locale === "en" ? "AI regulation" : "Регулирование ИИ"}</option><option value="Privacy & cybersecurity">{locale === "en" ? "Privacy & cybersecurity" : "Приватность и кибербезопасность"}</option></select></label>
@@ -3088,7 +3134,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
       <div className="parent-trace"><span>{text.parentCase}</span>{draft.parent ? <><b>{draft.parent.caseId}</b><code>v{draft.parent.version} · {draft.parent.fingerprint}</code></> : <em>{locale === "en" ? "Root case · no parent" : "Корневой кейс · родителя нет"}</em>}</div>
     </section> : <section className="studio-version-simple page-width" inert={!canDuplicate}><div><span>{locale === "en" ? "Current version" : "Текущая версия"}</span><b>v{draft.version}</b><small>{draft.parent ? (locale === "en" ? `Child version of v${draft.parent.version}` : `Дочерняя версия от v${draft.parent.version}`) : (locale === "en" ? "Original case" : "Исходный кейс")}</small></div><button className="secondary-cta" disabled={!canDuplicate} onClick={createChildVersion}><Icon name="plus"/>{text.childVersion}</button></section>}
     </div>
-    {(editableDealModel || (taxDraft && taxResult)) && <Suspense fallback={null}><StudioOutcomeParameters locale={locale} dealModel={editableDealModel} taxModel={taxModel} taxResult={taxDraft ? taxResult : null} disabled={!canDuplicate} beginFieldEdit={beginFieldEdit} commitDealField={commitDealEconomicsField} setDealModel={setDealEconomicsChange} changeRepaymentBasis={(repaymentBasis) => { const before=draft; setDealEconomicsChange({repaymentBasis}); recordVisualEdit("case_updated", locale === "en" ? "Visual edit: changed cash-flow repayment basis." : "Визуальная правка: изменён вид погашения cash-flow.", before); }} applyTaxChange={applyTaxEconomicsChange}/></Suspense>}
+    {(editableDealModel || (taxDraft && taxResult)) && <Suspense fallback={null}><StudioOutcomeParameters locale={locale} dealModel={editableDealModel} taxModel={taxModel} taxResult={taxDraft ? taxResult : null} taxBaseBreakdown={taxBaseBreakdown} disabled={!canDuplicate} beginFieldEdit={beginFieldEdit} commitDealField={commitDealEconomicsField} setDealModel={setDealEconomicsChange} changeRepaymentBasis={(repaymentBasis) => { const before=draft; setDealEconomicsChange({repaymentBasis}); recordVisualEdit("case_updated", locale === "en" ? "Visual edit: changed cash-flow repayment basis." : "Визуальная правка: изменён вид погашения cash-flow.", before); }} applyTaxChange={applyTaxEconomicsChange} changeTaxCurrency={changeTaxEconomicsCurrency}/></Suspense>}
     {(draft.dealEconomics || draft.nodes.some((node) => node.type === "cash_flow")) && <Suspense fallback={<section className="deal-outcome deal-outcome-empty page-width" role="status"><p>{locale === "en" ? "Calculating case cash flow…" : "Расчёт денежного потока…"}</p></section>}><DealOutcomePanel locale={locale} draft={draft}/></Suspense>}
     <section className="studio-workspace">
       <aside className="node-palette" inert={!canDuplicate}><div className="pane-heading"><span>{text.addNode}</span><b>{String(paletteNodeTypes.length).padStart(2,"0")}</b></div>{paletteNodeTypes.map((type) => <button key={type} disabled={!canDuplicate || draft.nodes.length >= 200} onClick={() => { addNode(type, visibleGraphCenter()); setRelationStatus(locale === "en" ? "Node added in view centre." : "Нода добавлена по центру."); }}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "New nodes open in the visible centre. Connect OUT to IN; edits remain undoable." : "Ноды появляются по центру. Соединяйте ВЫХОД со ВХОДОМ; правки можно отменить."}</p></aside>
@@ -3159,106 +3205,6 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     /></Suspense>}
     {caseMarkdownOpen && <Suspense fallback={null}><CaseMarkdownDialog locale={locale} draft={draft} close={() => setCaseMarkdownOpen(false)} completed={() => setCaseReportStatus(locale === "en" ? "Markdown downloaded." : "Markdown скачан.")}/></Suspense>}
   </main>;
-}
-
-function InlineDealOutcomePanel({ locale, model, result, inferred }: {
-  locale: Locale;
-  model: NonNullable<StudioDraft["dealEconomics"]>;
-  result: ReturnType<typeof calculateDealEconomics>;
-  inferred: boolean;
-}) {
-  const money = (value: number | null) => {
-    if (value === null) return "—";
-    try { return new Intl.NumberFormat(locale === "en" ? "en-GB" : "ru-RU", { style: "currency", currency: model.currency, maximumFractionDigits: 0 }).format(value); }
-    catch { return `${Math.round(value).toLocaleString()} ${model.currency}`; }
-  };
-  const percent = (value: number | null) => value === null ? "—" : `${value.toFixed(1)}%`;
-  const scenarios = model.repaymentBasis === "amortizing" ? [result.amortizing] : model.repaymentBasis === "interest_only" ? [result.interestOnly] : [result.amortizing, result.interestOnly];
-  const numericRange = (values: Array<number | null>, formatter: (value: number | null) => string) => {
-    const valid = values.filter((value): value is number => value !== null).sort((left, right) => left - right);
-    if (!valid.length) return "—";
-    return valid.length === 1 || Math.abs(valid[0] - valid.at(-1)!) < 0.01 ? formatter(valid[0]) : `${formatter(valid[0])} – ${formatter(valid.at(-1)!)}`;
-  };
-  const target = model.targetAnnualReturnBps === null ? null : model.targetAnnualReturnBps / 100;
-  const targetStates = scenarios.map((scenario) => scenario.targetGapPercent === null ? null : scenario.targetGapPercent >= 0);
-  const targetVerdict = target === null
-    ? (locale === "en" ? "Target not supplied" : "Цель не задана")
-    : targetStates.every((state) => state === true)
-      ? (locale === "en" ? "Target met in every modelled basis" : "Цель достигнута при всех сценариях")
-      : targetStates.some((state) => state === true)
-        ? (locale === "en" ? "Depends on repayment basis" : "Зависит от вида погашения")
-        : (locale === "en" ? "Target not met on current inputs" : "Цель не достигнута при текущих данных");
-  return <section className="deal-outcome page-width" aria-labelledby="deal-outcome-title">
-    <header><div><span>{locale === "en" ? "CASE OUTCOME · CASH FLOW" : "РЕЗУЛЬТАТ КЕЙСА · ДЕНЕЖНЫЙ ПОТОК"}</span><h2 id="deal-outcome-title">{locale === "en" ? "Investment result" : "Результат инвестиции"}</h2></div><b className={targetStates.some((state) => state === true) ? "conditional" : "miss"}>{targetVerdict}</b></header>
-    <p>{model.repaymentBasis === "unknown"
-      ? (locale === "en" ? "The prompt does not state whether the loan is interest-only or amortizing, so both outcomes are shown." : "В промпте не указан вид погашения кредита, поэтому показаны оба сценария.")
-      : (locale === "en" ? `Calculated on the stated ${model.repaymentBasis === "amortizing" ? "amortizing" : "interest-only"} basis.` : `Расчёт по указанному сценарию: ${model.repaymentBasis === "amortizing" ? "амортизируемый кредит" : "только проценты"}.`)}</p>
-    <div className="deal-outcome-grid" aria-live="polite">
-      <div><span>{locale === "en" ? "Initial equity" : "Начальный капитал"}</span><b>{money(result.initialEquity)}</b><small>{locale === "en" ? "Down payment + known initial fees" : "Первоначальный взнос + известные разовые расходы"}</small></div>
-      <div><span>{locale === "en" ? "Gross annual rent" : "Валовая аренда за год"}</span><b>{money(model.grossAnnualIncome)}</b><small>{model.purchasePrice && model.grossAnnualIncome !== null ? `${locale === "en" ? "Gross yield" : "Валовая доходность"} ${(model.grossAnnualIncome / model.purchasePrice * 100).toFixed(1)}%` : "—"}</small></div>
-      <div><span>{locale === "en" ? "Annual debt service" : "Обслуживание долга за год"}</span><b>{numericRange(scenarios.map((scenario) => scenario.annualDebtService), money)}</b><small>{model.repaymentBasis === "unknown" ? (locale === "en" ? "Interest-only to amortizing range" : "Диапазон: только проценты — амортизация") : `${model.repaymentBasis.replace("_", " ")}`}</small></div>
-      <div><span>{locale === "en" ? "Annual cash flow" : "Денежный поток за год"}</span><b className={scenarios.every((scenario) => (scenario.annualCashFlow ?? 0) < 0) ? "negative" : ""}>{numericRange(scenarios.map((scenario) => scenario.annualCashFlow), money)}</b><small>{locale === "en" ? "Before tax and unprovided costs" : "До налогов и неуказанных расходов"}</small></div>
-      <div><span>{locale === "en" ? "Cash-on-cash return" : "Доходность на капитал"}</span><b>{numericRange(scenarios.map((scenario) => scenario.cashOnCashReturnPercent), percent)}</b><small>{target === null ? (locale === "en" ? "No target supplied" : "Цель не задана") : `${locale === "en" ? "Target" : "Цель"} ${target.toFixed(1)}%`}</small></div>
-      <div><span>DSCR</span><b>{numericRange(scenarios.map((scenario) => scenario.dscr), (value) => value === null ? "—" : `${value.toFixed(2)}×`)}</b><small>{locale === "en" ? "Before unprovided property costs" : "До неуказанных расходов объекта"}</small></div>
-    </div>
-    <aside><Icon name="alert"/><div><b>{locale === "en" ? "Provisional outcome" : "Предварительный результат"}</b><p>{locale === "en" ? `Missing: ${result.missingInputs.join(", ") || "none"}. Taxes, FX and legal conclusions are not inferred by this calculation.` : `Не указано: ${result.missingInputs.join(", ") || "нет"}. Налоги, FX и юридические выводы не выводятся из этого расчёта.`}</p>{inferred && <small>{locale === "en" ? "Compatibility mode: values were extracted from labelled case text. Re-run AI analysis to store them as reviewed structured inputs." : "Режим совместимости: значения извлечены из подписанных данных кейса. Повторите AI-анализ, чтобы сохранить их как проверенные структурированные данные."}</small>}</div></aside>
-  </section>;
-}
-
-function InlineTaxEconomicsPanel({ locale, model, result, disabled, onChange }: {
-  locale: Locale;
-  model: ReturnType<typeof defaultTaxEconomics>;
-  result: ReturnType<typeof calculateTaxEconomics>;
-  disabled: boolean;
-  onChange: (change: Partial<ReturnType<typeof defaultTaxEconomics>>, label: string) => void;
-}) {
-  const [currencyInput, setCurrencyInput] = useState(model.currency);
-  const [assumptionsInput, setAssumptionsInput] = useState(model.assumptions);
-  type NumericField = "baselineAnnualTaxCost" | "optimizedAnnualTaxCost" | "implementationCost" | "annualMaintenanceCost" | "terminalTaxOrUnwindCost" | "analysisHorizonMonths" | "annualDiscountRateBps" | "benefitRealizationBps";
-  const [inputs, setInputs] = useState<Record<NumericField, string>>({
-    baselineAnnualTaxCost: String(model.baselineAnnualTaxCost), optimizedAnnualTaxCost: String(model.optimizedAnnualTaxCost), implementationCost: String(model.implementationCost),
-    annualMaintenanceCost: String(model.annualMaintenanceCost), terminalTaxOrUnwindCost: String(model.terminalTaxOrUnwindCost), analysisHorizonMonths: String(model.analysisHorizonMonths),
-    annualDiscountRateBps: String(model.annualDiscountRateBps / 100), benefitRealizationBps: String(model.benefitRealizationBps / 100),
-  });
-  const setInput = (field: NumericField, value: string) => setInputs((current) => ({ ...current, [field]: value }));
-  const commitInput = (field: NumericField, label: string, minimum: number, maximum: number, multiplier = 1) => {
-    const parsed = Number(inputs[field]);
-    const next = Number.isFinite(parsed) ? Math.max(minimum, Math.min(maximum, Math.round(parsed * multiplier))) : model[field];
-    if (next !== model[field]) onChange({ [field]: next }, label);
-    else setInput(field, String(next / multiplier));
-  };
-  const blurOnEnter = (event: React.KeyboardEvent<HTMLInputElement>) => { if (event.key === "Enter") event.currentTarget.blur(); };
-  const money = (value: number) => {
-    try { return new Intl.NumberFormat(locale === "en" ? "en-GB" : "ru-RU", { style: "currency", currency: model.currency, maximumFractionDigits: 0 }).format(value); }
-    catch { return `${Math.round(value).toLocaleString(locale === "en" ? "en-GB" : "ru-RU")} ${model.currency}`; }
-  };
-  const payback = result.paybackMonths === null
-    ? (locale === "en" ? "Not reached" : "Не достигается")
-    : result.paybackMonths > model.analysisHorizonMonths
-      ? (locale === "en" ? `Beyond horizon · ${result.paybackMonths.toFixed(1)} mo` : `За горизонтом · ${result.paybackMonths.toFixed(1)} мес.`)
-      : (locale === "en" ? `${result.paybackMonths.toFixed(1)} months` : `${result.paybackMonths.toFixed(1)} мес.`);
-  return <section className="tax-economics page-width" aria-labelledby="tax-economics-title" inert={disabled}>
-    <header><div><span>{locale === "en" ? "TAX ECONOMICS · v1" : "ЭКОНОМИКА НАЛОГОВОЙ СТРУКТУРЫ · v1"}</span><h2 id="tax-economics-title">{locale === "en" ? "Profitability and payback estimate" : "Оценка прибыльности и срока окупаемости"}</h2></div><label><span>{locale === "en" ? "Currency" : "Валюта"}</span><input value={currencyInput} maxLength={3} pattern="[A-Za-z]{3}" aria-invalid={!/^[A-Z]{3}$/.test(currencyInput)} onChange={(event)=>setCurrencyInput(event.target.value.toUpperCase().replace(/[^A-Z]/g,"").slice(0,3))} onBlur={() => { if (/^[A-Z]{3}$/.test(currencyInput) && currencyInput !== model.currency) onChange({currency:currencyInput},locale === "en" ? "currency" : "валюта"); else setCurrencyInput(model.currency); }}/></label></header>
-    <p>{locale === "en" ? "Compare documented cash-tax costs before and after a lawful structure. Include recurring substance, governance and compliance costs; terminal tax or unwind cost prevents a deferral from being presented as a permanent saving." : "Сравните документированные денежные налоговые расходы до и после законной структуры. Учтите регулярные расходы на substance, управление и compliance; конечный налог или стоимость unwind не позволяют представить отсрочку как постоянную экономию."}</p>
-    <div className="tax-economics-inputs">
-      <label><span>{locale === "en" ? "Baseline annual tax" : "Налог в базовом варианте за год"}</span><input type="number" min="0" step="1" value={inputs.baselineAnnualTaxCost} onKeyDown={blurOnEnter} onChange={(event)=>setInput("baselineAnnualTaxCost",event.target.value)} onBlur={()=>commitInput("baselineAnnualTaxCost","baseline annual tax",0,1_000_000_000_000)}/></label>
-      <label><span>{locale === "en" ? "Optimized annual tax" : "Налог после оптимизации за год"}</span><input type="number" min="0" step="1" value={inputs.optimizedAnnualTaxCost} onKeyDown={blurOnEnter} onChange={(event)=>setInput("optimizedAnnualTaxCost",event.target.value)} onBlur={()=>commitInput("optimizedAnnualTaxCost","optimized annual tax",0,1_000_000_000_000)}/></label>
-      <label><span>{locale === "en" ? "One-off implementation" : "Разовые расходы на внедрение"}</span><input type="number" min="0" step="1" value={inputs.implementationCost} onKeyDown={blurOnEnter} onChange={(event)=>setInput("implementationCost",event.target.value)} onBlur={()=>commitInput("implementationCost","implementation cost",0,1_000_000_000_000)}/></label>
-      <label><span>{locale === "en" ? "Annual structure & compliance" : "Структура и compliance за год"}</span><input type="number" min="0" step="1" value={inputs.annualMaintenanceCost} onKeyDown={blurOnEnter} onChange={(event)=>setInput("annualMaintenanceCost",event.target.value)} onBlur={()=>commitInput("annualMaintenanceCost","annual maintenance cost",0,1_000_000_000_000)}/></label>
-      <label><span>{locale === "en" ? "Terminal tax / unwind" : "Конечный налог / unwind"}</span><input type="number" min="0" step="1" value={inputs.terminalTaxOrUnwindCost} onKeyDown={blurOnEnter} onChange={(event)=>setInput("terminalTaxOrUnwindCost",event.target.value)} onBlur={()=>commitInput("terminalTaxOrUnwindCost","terminal tax or unwind cost",0,1_000_000_000_000)}/></label>
-      <label><span>{locale === "en" ? "Analysis horizon · months" : "Горизонт анализа · месяцы"}</span><input type="number" min="1" max="240" step="1" value={inputs.analysisHorizonMonths} onKeyDown={blurOnEnter} onChange={(event)=>setInput("analysisHorizonMonths",event.target.value)} onBlur={()=>commitInput("analysisHorizonMonths","analysis horizon",1,240)}/></label>
-      <label><span>{locale === "en" ? "Discount rate · % p.a." : "Ставка дисконтирования · % годовых"}</span><input type="number" min="0" max="50" step="0.1" value={inputs.annualDiscountRateBps} onKeyDown={blurOnEnter} onChange={(event)=>setInput("annualDiscountRateBps",event.target.value)} onBlur={()=>commitInput("annualDiscountRateBps","discount rate",0,5000,100)}/></label>
-      <label><span>{locale === "en" ? "Benefit realization · %" : "Вероятность реализации эффекта · %"}</span><input type="number" min="0" max="100" step="1" value={inputs.benefitRealizationBps} onKeyDown={blurOnEnter} onChange={(event)=>setInput("benefitRealizationBps",event.target.value)} onBlur={()=>commitInput("benefitRealizationBps","benefit realization",0,10000,100)}/></label>
-    </div>
-    <div className="tax-economics-results" aria-live="polite">
-      <div><span>{locale === "en" ? "Net annual benefit" : "Чистый эффект за год"}</span><b className={result.netAnnualBenefit < 0 ? "negative" : ""}>{money(result.netAnnualBenefit)}</b><small>{locale === "en" ? `Gross tax saving ${money(result.grossAnnualTaxSaving)}` : `Валовая налоговая экономия ${money(result.grossAnnualTaxSaving)}`}</small></div>
-      <div><span>{locale === "en" ? "Simple payback" : "Простая окупаемость"}</span><b>{payback}</b><small>{locale === "en" ? "Based on net annual benefit" : "По чистому годовому эффекту"}</small></div>
-      <div><span>{locale === "en" ? "Lifecycle ROI" : "ROI за жизненный цикл"}</span><b className={(result.lifecycleRoiPercent ?? 0) < 0 ? "negative" : ""}>{result.lifecycleRoiPercent === null ? "—" : `${result.lifecycleRoiPercent.toFixed(1)}%`}</b><small>{locale === "en" ? `${model.analysisHorizonMonths}-month net ${money(result.horizonNetBenefit)}` : `Чистый эффект за ${model.analysisHorizonMonths} мес.: ${money(result.horizonNetBenefit)}`}</small></div>
-      <div><span>NPV</span><b className={result.npv < 0 ? "negative" : ""}>{money(result.npv)}</b><small>{locale === "en" ? "Monthly discounted cash-tax estimate" : "Помесячная дисконтированная оценка"}</small></div>
-    </div>
-    <label className="tax-assumptions"><span>{locale === "en" ? "Assumptions, exclusions and source notes" : "Допущения, исключения и источники"}</span><textarea maxLength={4000} value={assumptionsInput} onChange={(event)=>setAssumptionsInput(event.target.value)} onBlur={() => { if (assumptionsInput !== model.assumptions) onChange({assumptions:assumptionsInput},locale === "en" ? "assumptions" : "допущения"); }}/></label>
-    <aside><Icon name="alert"/><p>{locale === "en" ? "Estimate only—not tax or legal advice. Profitability does not establish legality. Publication still requires jurisdiction-specific sources, commercial purpose and review of anti-abuse, substance, disclosure and reporting rules. Node budgets are not added automatically: include them in implementation or annual costs only when appropriate, without double counting." : "Только оценка, а не налоговая или юридическая консультация. Прибыльность не подтверждает законность. Для публикации по-прежнему нужны источники по юрисдикциям, деловая цель и проверка anti-abuse, substance, раскрытия и отчётности. Бюджеты нодов автоматически не суммируются: включайте их в расходы на внедрение или ежегодные расходы только при необходимости и без двойного счёта."}</p></aside>
-  </section>;
 }
 
 function RelationRuleEditor({ locale, link, developerMode, disabled, beginFieldEdit, setRule, applyRule, commitField }: {
