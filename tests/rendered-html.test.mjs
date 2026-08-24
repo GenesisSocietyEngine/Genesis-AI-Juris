@@ -43,7 +43,9 @@ test("production build keeps the canonical scenario runtime out of the initial c
   const entry = manifest["app/JurisApp.tsx"];
   assert.ok(entry);
   const runtimeMarker = "Asteron accepts Northbridge's without-prejudice EUR 64,500 payment";
-  assert.ok(jurisStats.size < 300_000, `Initial JurisApp chunk grew to ${jurisStats.size} bytes`);
+  // The shared entry now includes the standalone Falcon-Merlin Studio shell;
+  // keep a tight ceiling while allowing that host-specific navigation layer.
+  assert.ok(jurisStats.size < 305_000, `Initial JurisApp chunk grew to ${jurisStats.size} bytes`);
   assert.ok(scenarioStats.size < 100_000, `Scenario adapter chunk grew to ${scenarioStats.size} bytes`);
   assert.ok(runtimeStats.size < 50_000, `Canonical reducer chunk grew to ${runtimeStats.size} bytes`);
   assert.ok(bundleStats.size > 300_000, "Canonical case bundle did not remain in its lazy data chunk");
