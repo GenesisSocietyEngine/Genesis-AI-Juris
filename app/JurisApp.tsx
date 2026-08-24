@@ -1709,7 +1709,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
       <header className="topbar">
         {studioOnly ? <a className="brand falcon-studio-brand" href="https://www.falcon-merlin.com/" target="_top" aria-label={locale === "en" ? "Falcon-Merlin home" : "Главная Falcon-Merlin"}>
           <span className="falcon-monogram" aria-hidden="true">FM</span>
-          <span><b>FALCON-MERLIN</b><small><strong>CASE STUDIO</strong> · ADVISORY WORKBENCH</small></span>
+          <span><b>FALCON-MERLIN</b><small><strong>CASE STUDIO</strong> · ADVISORY · BETA v0.1.0</small></span>
         </a> : <button className="brand" onClick={() => navigate("library")} aria-label={locale === "en" ? "GENESIS: JURIS CODEX — Case Library" : "GENESIS: JURIS CODEX — Библиотека кейсов"}>
           {/* The SVG is deliberately served directly; it is a tiny UI mark and does not need responsive image optimization. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}

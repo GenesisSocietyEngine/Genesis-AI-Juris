@@ -90,3 +90,33 @@ test("disconnected subgraphs receive separate vertical bands", () => {
   const secondTop = Math.min(byId.get("trigger-2")!.y, byId.get("outcome-2")!.y);
   assert.ok(secondTop - firstBottom >= 100, "components should be visibly separated rather than interleaved");
 });
+
+test("every edge in a multi-parent acyclic graph advances to a later visual layer", () => {
+  const nodes: StudioNode[] = Array.from({ length: 14 }, (_, index) => ({
+    id: `node-${index}`,
+    type: index === 0 ? "trigger" : index === 13 ? "outcome" : "decision",
+    title: `Cross-border decision with a deliberately wrapped title ${index}`,
+    detail: "",
+    x: 0,
+    y: 0,
+  }));
+  const links: StudioLink[] = [
+    { id: "e01", from: "node-0", to: "node-1" }, { id: "e02", from: "node-0", to: "node-2" },
+    { id: "e13", from: "node-1", to: "node-3" }, { id: "e23", from: "node-2", to: "node-3" },
+    { id: "e14", from: "node-1", to: "node-4" }, { id: "e24", from: "node-2", to: "node-4" },
+    { id: "e35", from: "node-3", to: "node-5" }, { id: "e45", from: "node-4", to: "node-5" },
+    ...Array.from({ length: 8 }, (_, index) => ({ id: `tail-${index}`, from: `node-${index + 5}`, to: `node-${index + 6}` })),
+  ];
+  const first = layoutStudioNodes(nodes, links);
+  const second = layoutStudioNodes(nodes, links);
+  const byId = new Map(first.map((node) => [node.id, node]));
+  assert.deepEqual(first, second, "the same topology must always produce the same coordinates");
+  for (const link of links) {
+    const from = byId.get(link.from)!;
+    const to = byId.get(link.to)!;
+    assert.ok(to.y > from.y + studioNodeEstimatedHeight(from), `${link.id} must advance below its source card`);
+  }
+  for (let left = 0; left < first.length; left += 1) {
+    for (let right = left + 1; right < first.length; right += 1) assert.equal(studioNodesOverlap(first[left], first[right]), false);
+  }
+});

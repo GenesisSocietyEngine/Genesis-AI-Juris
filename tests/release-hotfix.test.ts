@@ -217,6 +217,7 @@ test("standalone Studio exposes an explicit account destination", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   assert.match(appSource, /href="\/account"/);
   assert.match(appSource, />Account<\/span>/);
+  assert.match(appSource, /ADVISORY · BETA v0\.1\.0/);
 });
 
 function contrastRatio(foreground: string, background: string) {

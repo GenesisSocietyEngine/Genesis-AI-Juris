@@ -85,22 +85,71 @@ function nodeRuntime(node: StudioNode, language: CaseReportOptions["language"]){
   ].filter(Boolean).join("; ");
 }
 
-function graphSvg(draft: StudioDraft, activeIds: Set<string>){
+const REPORT_GRAPH_PAGE_MAX_NODES = 4;
+const REPORT_GRAPH_PAGE_MAX_VERTICAL_SPAN = 650;
+const REPORT_GRAPH_PAGE_MAX_REGISTER_HEIGHT = 344;
+
+function graphRegisterHeight(draft: StudioDraft, node: StudioNode) {
+  const incoming=draft.links.filter((link)=>link.to===node.id);
+  const outgoing=draft.links.filter((link)=>link.from===node.id);
+  const detailLines=Math.max(1,Math.ceil(clipped(clean(node.detail),170).length/54));
+  const conditionCharacters=clipped([
+    nodeRuntime(node,"en"),
+    ...incoming.map((link)=>relationCondition(link)),
+    ...outgoing.map((link)=>relationCondition(link)),
+  ].filter(Boolean).join("\n"),420).length;
+  const conditionLines=Math.max(1,Math.ceil(conditionCharacters/62));
+  return 34+Math.max(1,Math.ceil(node.title.length/38))*11+detailLines*9+conditionLines*8;
+}
+
+/** The PDF register follows visual graph order and breaks before either the
+ * graph crop or its parallel descriptions would become unreadable. */
+export function caseReportGraphPageIds(draft: StudioDraft) {
+  const originalOrder=new Map(draft.nodes.map((node,index)=>[node.id,index]));
+  const visualNodes=[...layoutStudioNodes(draft.nodes,draft.links,"vertical")].sort((left,right)=>left.y-right.y||left.x-right.x||(originalOrder.get(left.id)??0)-(originalOrder.get(right.id)??0));
+  const pages:StudioNode[][]=[];
+  let current:StudioNode[]=[];
+  let registerHeight=0;
+  for(const node of visualNodes){
+    const candidate=[...current,node];
+    const minY=Math.min(...candidate.map((item)=>item.y));
+    const maxY=Math.max(...candidate.map((item)=>item.y+studioNodeEstimatedHeight(item)));
+    const nextRegisterHeight=registerHeight+graphRegisterHeight(draft,node);
+    const mustBreak=current.length>0&&(candidate.length>REPORT_GRAPH_PAGE_MAX_NODES||maxY-minY>REPORT_GRAPH_PAGE_MAX_VERTICAL_SPAN||nextRegisterHeight>REPORT_GRAPH_PAGE_MAX_REGISTER_HEIGHT);
+    if(mustBreak){pages.push(current);current=[node];registerHeight=graphRegisterHeight(draft,node);}
+    else{current=candidate;registerHeight=nextRegisterHeight;}
+  }
+  if(current.length)pages.push(current);
+  return pages.map((page)=>page.map((node)=>node.id));
+}
+
+export function caseReportGraphSvg(draft: StudioDraft, activeIds: Set<string>){
   const nodes=layoutStudioNodes(draft.nodes,draft.links,"vertical");
   const byId=new Map(nodes.map((node)=>[node.id,node]));
   const numberById=new Map(nodes.map((node,index)=>[node.id,`N${String(index+1).padStart(2,"0")}`]));
-  const maxX=Math.max(1,...nodes.map((node)=>node.x+165+46));
-  const maxY=Math.max(1,...nodes.map((node)=>node.y+studioNodeEstimatedHeight(node)+86));
+  const activeNodes=nodes.filter((node)=>activeIds.has(node.id));
+  const viewportNodes=activeNodes.length?activeNodes:nodes;
+  const rawMinX=Math.min(...viewportNodes.map((node)=>node.x))-58;
+  const rawMaxX=Math.max(...viewportNodes.map((node)=>node.x+165))+58;
+  const rawMinY=Math.min(...viewportNodes.map((node)=>node.y))-62;
+  const rawMaxY=Math.max(...viewportNodes.map((node)=>node.y+studioNodeEstimatedHeight(node)))+62;
+  const rawWidth=Math.max(1,rawMaxX-rawMinX);
+  const rawHeight=Math.max(1,rawMaxY-rawMinY);
+  const viewWidth=Math.max(650,rawWidth);
+  const viewHeight=Math.max(420,rawHeight);
+  const viewX=rawMinX-(viewWidth-rawWidth)/2;
+  const viewY=rawMinY-(viewHeight-rawHeight)/2;
   const paths=draft.links.flatMap((link)=>{const from=byId.get(link.from);const to=byId.get(link.to);if(!from||!to)return[];const x1=from.x+82.5;const y1=from.y+studioNodeEstimatedHeight(from);const x2=to.x+82.5;const y2=to.y;const bend=Math.max(45,Math.abs(y2-y1)*.42);return [`<path d="M ${x1} ${y1} C ${x1} ${y1+bend}, ${x2} ${y2-bend}, ${x2} ${y2}" fill="none" stroke="#3d9daa" stroke-width="3" opacity="0.72"/><circle cx="${x2}" cy="${y2}" r="5" fill="#3d9daa"/>`];}).join("");
   const cards=nodes.map((node)=>{const height=studioNodeEstimatedHeight(node);const active=activeIds.has(node.id);const title=clipped(node.title,31);return `<g><rect x="${node.x}" y="${node.y}" width="165" height="${height}" rx="3" fill="#ffffff" stroke="${active?palette.gold:palette.line}" stroke-width="${active?5:2}"/><rect x="${node.x}" y="${node.y}" width="8" height="${height}" fill="${node.type==="outcome"?"#7b68a8":node.type==="decision"?palette.gold:node.type==="tax_rule"?"#c27847":palette.cyan}"/><text x="${node.x+17}" y="${node.y+24}" font-family="Roboto" font-size="15" font-weight="700" fill="#163445">${numberById.get(node.id)} ${xml(nodeNames[node.type][0].toUpperCase())}</text><text x="${node.x+17}" y="${node.y+50}" font-family="Roboto" font-size="17" fill="#10202c">${xml(title)}</text></g>`;}).join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${maxX} ${maxY}"><rect width="100%" height="100%" fill="#f5f8f8"/>${paths}${cards}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewX} ${viewY} ${viewWidth} ${viewHeight}" preserveAspectRatio="xMidYMid meet"><rect x="${viewX}" y="${viewY}" width="${viewWidth}" height="${viewHeight}" fill="#f5f8f8"/>${paths}${cards}</svg>`;
 }
 
 function graphAppendix(draft: StudioDraft, options: CaseReportOptions, nextSectionNumber:()=>number):Content[]{
   const {language}=options;
   const numberById=new Map(draft.nodes.map((node,index)=>[node.id,`N${String(index+1).padStart(2,"0")}`]));
   const titleById=new Map(draft.nodes.map((node)=>[node.id,node.title]));
-  const pages=Array.from({length:Math.ceil(draft.nodes.length/5)},(_,index)=>draft.nodes.slice(index*5,index*5+5));
+  const nodeById=new Map(draft.nodes.map((node)=>[node.id,node]));
+  const pages=caseReportGraphPageIds(draft).map((ids)=>ids.map((id)=>nodeById.get(id)).filter((node):node is StudioNode=>Boolean(node)));
   const sectionIndex=nextSectionNumber();
   return pages.map((pageNodes,pageIndex)=>({
     pageBreak:"before",pageOrientation:"landscape",
@@ -108,14 +157,14 @@ function graphAppendix(draft: StudioDraft, options: CaseReportOptions, nextSecti
       {text:`${sectionIndex}. ${tr(language,"Graph and node conditions","Граф и условия нодов")}${pages.length>1?` - ${pageIndex+1}/${pages.length}`:""}`,style:"sectionTitle",margin:[0,0,0,8]},
       {text:tr(language,"The highlighted nodes are described in the right-hand register. Relation conditions include authored guards, effects, costs, duration and repeatability.","Выделенные ноды описаны в реестре справа. Условия связей включают заданные guards, эффекты, стоимость, длительность и повторяемость."),style:"note",margin:[0,0,0,8]},
       {columns:[
-        {width:"58%",stack:[{svg:graphSvg(draft,new Set(pageNodes.map((node)=>node.id))),width:425,height:360}]},
-        {width:"42%",stack:pageNodes.map((node)=>{
+        {width:"57%",stack:[{svg:caseReportGraphSvg(draft,new Set(pageNodes.map((node)=>node.id))),fit:[410,390]}]},
+        {width:"43%",stack:pageNodes.map((node)=>{
           const incoming=draft.links.filter((link)=>link.to===node.id).map((link)=>`${tr(language,"IN","ВХОД")} ${numberById.get(link.from)} ${clipped(titleById.get(link.from)??link.from,28)}${relationCondition(link)?`: ${clipped(relationCondition(link),105)}`:""}`);
           const outgoing=draft.links.filter((link)=>link.from===node.id).map((link)=>`${tr(language,"OUT","ВЫХОД")} ${numberById.get(link.to)} ${clipped(titleById.get(link.to)??link.to,28)}${relationCondition(link)?`: ${clipped(relationCondition(link),105)}`:""}`);
           const conditions=[nodeRuntime(node,language),...incoming,...outgoing].filter(Boolean);
           return {stack:[{text:`${numberById.get(node.id)} · ${nodeNames[node.type][language==="en"?0:1]}`,style:"graphNodeType"},{text:node.title,style:"graphNodeTitle"},{text:clipped(clean(node.detail),170),style:"graphNodeDetail"},{text:conditions.length?clipped(conditions.join("\n"),420):tr(language,"No authored runtime or relation conditions.","Runtime или условия связей не заданы."),style:"graphNodeCondition"}],margin:[8,0,0,7]};
         })},
-      ],columnGap:12},
+      ],columnGap:14,unbreakable:true},
     ],
   } as Content));
 }
