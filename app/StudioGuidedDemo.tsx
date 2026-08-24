@@ -22,9 +22,7 @@ export default function StudioGuidedDemo({ locale }: { locale: Locale }) {
   ];
   return <article className="help-video-card help-video-card-featured" id="studio-expert-demo">
     <video controls preload="metadata" playsInline poster="/help/studio-ai-guided-demo-poster.jpg" aria-describedby="guided-video-description guided-video-transcript">
-      <source src="/help/studio-ai-guided-demo.mp4" type="video/mp4"/>
-      <track kind="captions" src="/help/studio-ai-guided-demo.en.vtt" srcLang="en" label="English" default={locale === "en"}/>
-      <track kind="captions" src="/help/studio-ai-guided-demo.ru.vtt" srcLang="ru" label="Русский" default={locale === "ru"}/>
+      <source src="/help/studio-ai-guided-demo.en.mp4" type="video/mp4"/>
       {locale === "en" ? "Your browser does not support HTML video. Use the transcript below." : "Ваш браузер не поддерживает HTML-видео. Используйте расшифровку ниже."}
     </video>
     <div className="help-video-copy"><span>00 · 03:00 · STUDIO END TO END</span><h3>{locale === "en" ? "Five Flats, Three Countries — complete Studio workflow" : "Five Flats, Three Countries — весь процесс в Studio"}</h3><p id="guided-video-description">{locale === "en" ? "One continuous expert walkthrough: shortest brief, canonical prompt, reviewed parameters, 27-node graph, transparent financial outcome and PDF report — entirely inside Studio." : "Единая экспертная демонстрация: краткий ввод, канонический промпт, проверенные параметры, граф из 27 нодов, прозрачный финансовый outcome и PDF — только в Studio."}</p><a className="secondary-cta help-video-direct-link" href="/help/studio-demo">{locale === "en" ? "Open full demo" : "Открыть полный ролик"}</a></div>

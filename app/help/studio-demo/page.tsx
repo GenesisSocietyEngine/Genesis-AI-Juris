@@ -30,7 +30,7 @@ export default function StudioDemoPage() {
     </nav>
     <section className="standalone-demo-hero">
       <div><span>STUDIO · END-TO-END DEMO · 03:00</span><h1>Five Flats, Three Countries</h1><p>One continuous Studio-only walkthrough of the canonical Five Flats, Three Countries case. AI proposes; the professional verifies the prompt, parameters, graph and outcome before generating the PDF.</p></div>
-      <aside><b>EXPERT REVIEW CUT</b><small>English narration · Burned-in English captions · Studio only</small></aside>
+      <aside><b>EXPERT REVIEW CUT</b><small>English narration · No subtitles · Studio only</small></aside>
     </section>
     <section className="standalone-demo-player" aria-labelledby="studio-demo-title">
       <h2 id="studio-demo-title" className="visually-hidden">GENESIS: JURIS Studio guided demonstration</h2>

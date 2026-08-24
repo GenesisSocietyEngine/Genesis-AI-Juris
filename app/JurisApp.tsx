@@ -479,7 +479,7 @@ const initialBlankDraft = blankStudioDraft(new Date(0).toISOString());
 
 export default function JurisApp({ studioOnly = false }: JurisAppProps) {
   const [locale, setLocale] = useState<Locale>("en");
-  const [theme, setTheme] = useState<Theme>(studioOnly ? "office" : "after-hours");
+  const [theme, setTheme] = useState<Theme>("after-hours");
   const [view, setView] = useState<View>(studioOnly ? "studio" : "library");
   const [featuredId, setFeaturedId] = useState(fallbackCatalogueRecords[2].id);
   const [catalogueRecords, setCatalogueRecords] = useState<PublishedCaseSummary[]>(() => bundledCatalogueRecords());

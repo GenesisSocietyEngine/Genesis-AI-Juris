@@ -5,7 +5,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_root="$(cd "${script_dir}/.." && pwd)"
 help_dir="${project_root}/public/help"
 editor_source="${help_dir}/case-studio-iterative-editing.mp4"
-output="${help_dir}/studio-ai-guided-demo.mp4"
+output="${help_dir}/studio-ai-guided-demo.en.mp4"
 poster="${help_dir}/studio-ai-guided-demo-poster.jpg"
 font_sans="/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 font_sans_bold="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
@@ -103,8 +103,10 @@ for index in "${!narration[@]}"; do
   number="$(printf '%02d' "$((index+1))")"
   duration="${durations[$index]}"
   fade_start="$(awk -v duration="${duration}" 'BEGIN { printf "%.2f", duration-0.45 }')"
-  ffmpeg -hide_banner -loglevel error -y -f lavfi -i "flite=text='${narration[$index]}':voice=awb" -af \
-    "aresample=48000,volume=1.08,acompressor=threshold=-19dB:ratio=2.3:attack=18:release=180,apad=pad_dur=${duration},atrim=0:${duration},afade=t=in:st=0:d=.12,afade=t=out:st=${fade_start}:d=.4" \
+  # SLT is Flite's smoother US English voice and is less synthetic than the
+  # former AWB voice. Gentle EQ and dynamics keep speech warm and intelligible.
+  ffmpeg -hide_banner -loglevel error -y -f lavfi -i "flite=text='${narration[$index]}':voice=slt" -af \
+    "aresample=48000,highpass=f=72,lowpass=f=9200,equalizer=f=185:t=q:w=1.1:g=1.6,equalizer=f=3100:t=q:w=1.0:g=-1.1,volume=1.06,acompressor=threshold=-20dB:ratio=2.0:attack=22:release=210,apad=pad_dur=${duration},atrim=0:${duration},afade=t=in:st=0:d=.12,afade=t=out:st=${fade_start}:d=.4" \
     -t "${duration}" -c:a pcm_s16le "${work_dir}/audio-${number}.wav"
 done
 
