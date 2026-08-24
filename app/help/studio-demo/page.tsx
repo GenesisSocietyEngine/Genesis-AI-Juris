@@ -29,7 +29,7 @@ export default function StudioDemoPage() {
       <a href="/help/studio-ai-guided-demo.en.mp4" className="secondary-cta">Open MP4</a>
     </nav>
     <section className="standalone-demo-hero">
-      <div><span>STUDIO · END-TO-END DEMO · 03:00</span><h1>Five Flats, Three Countries</h1><p>One continuous Studio-only walkthrough of the canonical Five Flats, Three Countries case. AI proposes; the professional verifies the prompt, parameters, graph and outcome before generating the PDF.</p></div>
+      <div><span>STUDIO · END-TO-END DEMO · 03:00</span><h1>Five Flats, Three Countries</h1><p>One Studio-only walkthrough of the canonical Five Flats, Three Countries case. Every scene follows the same facts from the compact brief through reviewed parameters, graph, outcome and PDF.</p></div>
       <aside><b>EXPERT REVIEW CUT</b><small>English narration · No subtitles · Studio only</small></aside>
     </section>
     <section className="standalone-demo-player" aria-labelledby="studio-demo-title">

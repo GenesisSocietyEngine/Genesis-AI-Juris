@@ -199,7 +199,7 @@ test("late identity and catalogue responses cannot overwrite newer user intent",
   assert.match(source, /launchRequestVersion === catalogueLaunchRef\.current\) setCatalogueLoading\(false\)/);
 });
 
-test("Studio opens in After hours and the English demo has no subtitle track", () => {
+test("Studio opens in After hours and the English demo keeps one Five Flats case without subtitles", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   const demoPage = readFileSync(new URL("../app/help/studio-demo/page.tsx", import.meta.url), "utf8");
   const demoBuilder = readFileSync(new URL("../scripts/build-studio-demo-video.sh", import.meta.url), "utf8");
@@ -209,6 +209,8 @@ test("Studio opens in After hours and the English demo has no subtitle track", (
   assert.doesNotMatch(demoPage, /<track|\.vtt|Burned-in English captions/);
   assert.match(demoBuilder, /voice=slt/);
   assert.match(demoBuilder, /studio-ai-guided-demo\.en\.mp4/);
+  assert.match(demoBuilder, /Every following screen uses this exact Five Flats case/);
+  assert.doesNotMatch(demoBuilder, /case-studio-iterative-editing\.mp4|The Missing Boundary|renewable-energy|Three Borders/);
 });
 
 function contrastRatio(foreground: string, background: string) {
