@@ -8,6 +8,16 @@ export type TaxRateInferenceContext = {
 
 export type RateOrigin = "prompt" | "jurisdiction_default" | "manual";
 
+type TaxRateOrigins = {
+  baseline: RateOrigin | undefined;
+  optimized: RateOrigin | undefined;
+};
+
+type RateSelection = {
+  bps: number;
+  origin: RateOrigin | undefined;
+};
+
 const AUTO_SYNC_BLOCK = /\n*\[STUDIO REVIEWED ECONOMIC PARAMETERS — AUTO-SYNC\][\s\S]*?\[\/STUDIO REVIEWED ECONOMIC PARAMETERS\]\n*/giu;
 const RATE_SOURCE_LINE = /(?:^|\n)Tax-rate sources: baseline=(prompt|jurisdiction_default|manual|unset); optimized=(prompt|jurisdiction_default|manual|unset)\.[^\n]*/u;
 export function prefillTaxRates(model: TaxEconomicsV1, context: TaxRateInferenceContext): TaxEconomicsV1 {
@@ -20,7 +30,7 @@ export function prefillTaxRates(model: TaxEconomicsV1, context: TaxRateInference
     "optimi[sz]ed(?:\\s+tax)?\\s+rate", "post[-\\s]?structure(?:\\s+tax)?\\s+rate", "tax\\s+rate\\s+after\\s+optimi[sz]ation",
     "оптимизированн(?:ая|ую)\\s+ставк(?:а|у)(?:\\s+налога)?", "ставк(?:а|у)\\s+после\\s+оптимизации",
   ]);
-  const defaults = jurisdictionDefaults(`${context.jurisdiction}\n${context.caseText ?? ""}`);
+  const defaults = jurisdictionDefaults(context.jurisdiction, context.caseText ?? "");
   const origins = taxRateOrigins(model.assumptions);
   const baseline = chooseRate(model.baselineTaxRateBps, origins.baseline, explicitBaseline, defaults?.baseline);
   const optimized = chooseRate(model.optimizedTaxRateBps, origins.optimized, explicitOptimized, defaults?.optimized);
@@ -45,10 +55,23 @@ export function markManualTaxRate(model: TaxEconomicsV1, field: "baseline" | "op
   return withTaxRateOrigins(model.assumptions, origins.baseline, origins.optimized);
 }
 
-function chooseRate(currentBps: number, currentOrigin: RateOrigin, explicitBps: number | null, fallbackBps: number | undefined) {
+export function manualTaxRateChange(
+  model: TaxEconomicsV1,
+  field: "baseline" | "optimized",
+  basisPoints: number,
+): Partial<TaxEconomicsV1> | null {
+  const assumptions = markManualTaxRate(model, field);
+  const current = field === "baseline" ? model.baselineTaxRateBps : model.optimizedTaxRateBps;
+  if (current === basisPoints && assumptions === model.assumptions) return null;
+  return field === "baseline"
+    ? { baselineTaxRateBps: basisPoints, assumptions }
+    : { optimizedTaxRateBps: basisPoints, assumptions };
+}
+
+function chooseRate(currentBps: number, currentOrigin: RateOrigin | undefined, explicitBps: number | null, fallbackBps: number | undefined): RateSelection {
   if (currentOrigin === "manual" || (!currentOrigin && currentBps !== 0)) return { bps: currentBps, origin: currentOrigin };
-  if (explicitBps !== null) return { bps: explicitBps, origin: "prompt" as const };
-  if (fallbackBps !== undefined) return { bps: fallbackBps, origin: "jurisdiction_default" as const };
+  if (explicitBps !== null) return { bps: explicitBps, origin: "prompt" };
+  if (fallbackBps !== undefined) return { bps: fallbackBps, origin: "jurisdiction_default" };
   return { bps: currentOrigin === "prompt" || currentOrigin === "jurisdiction_default" ? 0 : currentBps, origin: undefined };
 }
 
@@ -62,17 +85,23 @@ function labelledRate(source: string, labels: string[]) {
   return null;
 }
 
-function jurisdictionDefaults(source: string): { baseline: number; optimized: number } | null {
-  const text = source.toLocaleLowerCase("en");
-  const ukProperty = /(?:england|united kingdom|\bu\.?k\.?)\b/.test(text) && /(?:flat|property|properties|real estate|rent|аренд|недвижим)/.test(text);
+function jurisdictionDefaults(jurisdiction: string, caseText: string): { baseline: number; optimized: number } | null {
+  const normalizedJurisdiction = jurisdiction.toLocaleLowerCase("en").replace(/\bnew\s+england\b/gu, "");
+  const propertyContext = `${jurisdiction}\n${caseText}`.toLocaleLowerCase("en");
+  const ukProperty = /(?:\bengland\b|\bunited kingdom\b|\bu\.?k\.?\b)/u.test(normalizedJurisdiction)
+    && /(?:\b(?:flats?|propert(?:y|ies)|real estate|rent(?:al|als|ed|ing|s)?)\b|аренд|недвижим)/u.test(propertyContext);
   if (!ukProperty) return null;
   return { baseline: 4_000, optimized: 2_500 };
 }
 
-function taxRateOrigins(assumptions: string): { baseline?: RateOrigin; optimized?: RateOrigin } {
+function taxRateOrigins(assumptions: string): TaxRateOrigins {
   const match = assumptions.match(RATE_SOURCE_LINE);
-  const origin = (value?: string) => value && value !== "unset" ? value as RateOrigin : undefined;
-  return { baseline: origin(match?.[1]), optimized: origin(match?.[2]) };
+  return { baseline: parseRateOrigin(match?.[1]), optimized: parseRateOrigin(match?.[2]) };
+}
+
+function parseRateOrigin(value: string | undefined): RateOrigin | undefined {
+  if (value === "prompt" || value === "jurisdiction_default" || value === "manual") return value;
+  return undefined;
 }
 
 function withTaxRateOrigins(assumptions: string, baseline?: RateOrigin, optimized?: RateOrigin) {

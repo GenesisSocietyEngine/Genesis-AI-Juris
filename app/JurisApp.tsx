@@ -6,7 +6,7 @@ import { canonicalFingerprint, caseFingerprint, isRecord, isTaxDraft, legacyCase
 import { bundledCataloguePresentation, mayUseBundledCatalogueFallback } from "./catalogue-fallback";
 import { actionUseKey, decisionAvailability, resolveDecisionTiming, resolveLegacyDecisionTiming } from "./game-engine";
 import { normalizePlayableScenario, playableFingerprint } from "./playable-integrity";
-import { resolvePlayedCaseScenario } from "./played-case-loader";
+import { isSupportedPlayedCaseSchemaRevision, PLAYED_CASE_SCHEMA_REVISION } from "./played-case-contract";
 import { deriveRunLedger, type RunLedger } from "./run-ledger";
 import type { CanonicalRuntimeState } from "./canonical-runtime";
 import { initialMetrics } from "./runtime-constants";
@@ -109,7 +109,7 @@ type InboxEntry = {
 
 type PlayedCaseFile = {
   format: "genesis-juris-played-case";
-  schemaVersion: 2 | 3;
+  schemaVersion: 2 | typeof PLAYED_CASE_SCHEMA_REVISION;
   exportedAt: string;
   scenario: {
     id: string;
@@ -1139,7 +1139,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
     const exportedOutcome = activeScenario.mobileParity ? canonicalPlayState?.outcome ?? null : outcome;
     const payload: PlayedCaseFile = {
       format: "genesis-juris-played-case",
-      schemaVersion: activeScenario.mobileParity ? 3 : 2,
+      schemaVersion: activeScenario.mobileParity ? PLAYED_CASE_SCHEMA_REVISION : 2,
       exportedAt: new Date().toISOString(),
       scenario: {
         id: activeScenario.id,
@@ -1171,11 +1171,12 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
     reader.onload = async () => {
       try {
         const parsed: unknown = JSON.parse(String(reader.result));
-        if (!isRecord(parsed) || parsed.format !== "genesis-juris-played-case" || (parsed.schemaVersion !== 1 && parsed.schemaVersion !== 2 && parsed.schemaVersion !== 3)) throw new Error("Unsupported played-case schema");
+        if (!isRecord(parsed) || parsed.format !== "genesis-juris-played-case" || !isSupportedPlayedCaseSchemaRevision(parsed.schemaVersion)) throw new Error("Unsupported played-case schema");
         if (!isRecord(parsed.scenario) || !isRecord(parsed.playthrough)) throw new Error("Missing played-case sections");
         const scenarioFile = parsed.scenario;
         const playthroughFile = parsed.playthrough;
 
+        const { requirePlayedCaseServerSession, resolvePlayedCaseScenario } = await import("./played-case-loader");
         const resolvedScenario = await resolvePlayedCaseScenario({ id: scenarioFile.id, caseId: scenarioFile.caseId, contentVersion: scenarioFile.contentVersion, fingerprint: scenarioFile.fingerprint }, catalogueScenarios);
         const importedScenario = resolvedScenario.scenario;
         const legacyMode = resolvedScenario.legacyTiming;
@@ -1186,7 +1187,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
         if (!Array.isArray(importedDecisions) || (importedStatus !== "in_progress" && importedStatus !== "completed") || typeof currentStageId !== "string") {
           throw new Error("Invalid playthrough state");
         }
-        if (parsed.schemaVersion === 3 && importedScenario.mobileParity) {
+        if (parsed.schemaVersion === PLAYED_CASE_SCHEMA_REVISION && importedScenario.mobileParity) {
           const descriptor = playthroughFile.canonicalRuntime;
           if (!isRecord(descriptor)) throw new Error("Missing canonical replay descriptor");
           if (descriptor.mode === "server-session"
@@ -1197,15 +1198,14 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
             const response = await fetch(`/api/play-sessions?sessionKey=${encodeURIComponent(descriptor.sessionKey)}`, { cache: "no-store" });
             const body = await response.json().catch(() => null) as { session?: unknown } | null;
             const session = normalizeServerPlaySession(body?.session);
-            if (!response.ok || !session || session.status === "abandoned" || session.caseId !== importedScenario.caseId || session.version !== importedScenario.version || session.fingerprint !== importedScenario.fingerprint) throw new Error("Canonical server session is unavailable");
-            if (session.revision !== descriptor.expectedRevision) throw new Error("Canonical server session has changed since this file was exported");
+            const exactSession = requirePlayedCaseServerSession(response.ok, session, importedScenario, descriptor.sessionKey, descriptor.expectedRevision);
             setActiveScenario(importedScenario);
             setFeaturedId(importedScenario.caseId);
             playSessionStartRef.current += 1;
             setLegacyTimingMode(false);
             setSelectedOption(null);
             setResultOption(null);
-            restoreFromServerSession(session, importedScenario);
+            restoreFromServerSession(exactSession, importedScenario);
             setPlaySessionSync("server");
             navigate("play");
             showSessionNotice(text.importedPlay);
@@ -2412,6 +2412,22 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   const nodeById = useMemo(() => new Map(draft.nodes.map((node) => [node.id, node])), [draft.nodes]);
   const nodeNumberById = useMemo(() => new Map(draft.nodes.map((node, index) => [node.id, index + 1])), [draft.nodes]);
   const graphBounds = useMemo(() => graphBoundsForNodes(draft.nodes), [draft.nodes]);
+  const graphBoundsRef = useRef(graphBounds);
+  useEffect(() => {
+    graphBoundsRef.current = graphBounds;
+  }, [graphBounds]);
+  const fitGraph = useCallback(() => {
+    const viewport = graphViewportRef.current;
+    const width = viewport?.clientWidth ?? graphDeckRef.current?.clientWidth ?? 1_200;
+    const height = viewport?.clientHeight ?? 570;
+    const bounds = graphBoundsRef.current;
+    const scale = Math.max(0.55, Math.min(1, (width - 28) / bounds.width, (height - 28) / bounds.height));
+    setGraphZoom(scale);
+    // Wait for CSS zoom and the new canvas bounds to settle, then return to a
+    // deterministic origin. Smooth scrolling could be interrupted and leave
+    // the newly arranged first row clipped above the viewport.
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => viewport?.scrollTo({ left: 0, top: 0, behavior: "auto" })));
+  }, []);
   const relationPageSize = 20;
   const relationPageCount = Math.max(1, Math.ceil(draft.links.length / relationPageSize));
   const safeRelationPage = Math.min(relationPage, relationPageCount - 1);
@@ -2479,7 +2495,6 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   }, [canDuplicate, draft.nodes, fitGraph, graphDraftIdentity, setDraft]);
 
   useEffect(() => {
-    if (studioDerivations.source === draft) return;
     let idleHandle: number | null = null;
     let watchdogHandle: number | null = null;
     let cancelled = false;
@@ -2641,19 +2656,6 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     } catch {
       setCaseReportStatus(locale === "en" ? "PDF unavailable. Refresh and retry." : "PDF недоступен. Обновите страницу.");
     }
-  }
-
-  function fitGraph() {
-    const viewport = graphViewportRef.current;
-    const bounds = graphBoundsForNodes(draft.nodes);
-    const width = viewport?.clientWidth ?? graphDeckRef.current?.clientWidth ?? 1_200;
-    const height = viewport?.clientHeight ?? 570;
-    const scale = Math.max(0.55, Math.min(1, (width - 28) / bounds.width, (height - 28) / bounds.height));
-    setGraphZoom(scale);
-    // Wait for CSS zoom and the new canvas bounds to settle, then return to a
-    // deterministic origin. Smooth scrolling could be interrupted and leave
-    // the newly arranged first row clipped above the viewport.
-    window.requestAnimationFrame(() => window.requestAnimationFrame(() => viewport?.scrollTo({ left: 0, top: 0, behavior: "auto" })));
   }
 
   function centerGraph() {

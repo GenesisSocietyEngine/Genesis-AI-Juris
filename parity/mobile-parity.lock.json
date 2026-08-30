@@ -1,0 +1,98 @@
+{
+  "format": "genesis-juris-mobile-parity-lock",
+  "lockVersion": 1,
+  "mobile": {
+    "repository": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris.git",
+    "commit": "39b856320ed5dc397562068706c4cea7d703899c",
+    "appVersion": "0.6.0+13",
+    "rustWorkspaceVersion": "0.5.0"
+  },
+  "bundle": {
+    "webPath": "app/canonical-case-bundle.json",
+    "mobilePath": "apps/juris-mobile/assets/case_catalog/mobile_case_bundle.json",
+    "bundleVersion": 5,
+    "catalogVersion": 1,
+    "sha256": "e90f856cbb0f4625f7612a99db2f527ac3b090619019b7a83c21140f78f1984a",
+    "mobileGitBlob": "464d88b02f6cf6101dc86c04abfc3505abcfb0a6"
+  },
+  "contracts": {
+    "scenarioSchemaRevision": "1.0",
+    "runtimeAdapter": "rust_scenario_v1",
+    "webRuntimeRevision": "canonical-runtime-v1",
+    "playedCaseSchemaRevision": 3,
+    "mobileSaveSchemaId": "genesis.ai-juris.command-log",
+    "mobileSaveSchemaRevision": 1,
+    "mobileRuntimeCompatibility": "scenario-runtime-v2",
+    "mobileSnapshotSchemaRevision": 1,
+    "mobileProjectionSchemaRevision": 1,
+    "mobileBridgeAbi": 1
+  },
+  "identities": [
+    {
+      "caseId": "be_commercial_failed_erp_001",
+      "version": "1.0.0",
+      "fingerprint": "ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8",
+      "schemaRevision": "1.0"
+    },
+    {
+      "caseId": "be_commercial_logistics_001",
+      "version": "1.0.0",
+      "fingerprint": "1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8",
+      "schemaRevision": "1.0"
+    },
+    {
+      "caseId": "greenfire_first_72_hours",
+      "version": "0.2.0",
+      "fingerprint": "173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438",
+      "schemaRevision": "1.0"
+    },
+    {
+      "caseId": "nl_food_safety_goldenshell_001",
+      "version": "0.1.0",
+      "fingerprint": "7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4",
+      "schemaRevision": "1.0"
+    },
+    {
+      "caseId": "us_environmental_desert_water_001",
+      "version": "0.1.0",
+      "fingerprint": "636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af",
+      "schemaRevision": "1.0"
+    }
+  ],
+  "fixtures": {
+    "path": "parity/mobile-parity-fixtures.json",
+    "schemaVersion": 1,
+    "sha256": "08e6cc641f9d7f7fb8b569b49015466172e413702bc2071e28889f1c978b5313",
+    "probePath": "scripts/mobile-parity-probe.rs",
+    "probeSha256": "b2151c0be831fbbbd55aba37a3568504d3ee10063472b3ce17dbdbc9d6f99326",
+    "judicialResultCheckpoints": 9,
+    "routeHashes": {
+      "failed-erp-settlement": "0a41290d73850ab5c29dd8b0f6ac7b3d0012ee62e30e3319f4d3bcd38168ea87",
+      "failed-erp-prepared": "e512d8924768b53a90a013916ebf0652a6f4be3a3173355a0db7b6c6ddc48980",
+      "logistics-judgment": "3b6222509ebc37efd85294d493727ee10879a7229eb4efee7c7295d5d001eaf9",
+      "greenfire-protected": "49fb7c756e39ff6d064e7e5a9210b913b21491e5355f58c12708e4a0397f3278",
+      "greenfire-compromised": "00c0a5e0f6e6e6e6f3ccc389eacf7c1f398e5e078b63472c47b1d96fb98de40e",
+      "goldenshell-coordinated": "cf9b0651fd127f983861eff7f582c2a12c09c67d33a3a598f2f46ad1ca01c6d6",
+      "goldenshell-fragmented": "dc4043b5b42087a57efcf7ddb180e4f69901fc07ddb126bcde0349ed18c4c3f9",
+      "desert-water-coordinated": "d0a4d8dc3d9daec06a68ea2ce97b6487103dca3f4e45b9313b96ed667841f300",
+      "desert-water-compromised": "66286a5f427937972c2cf1409cb1d89a4fcb347606199051ee08ee6152e85b06"
+    },
+    "mobileSaveDigests": {
+      "failed-erp-settlement": "fd77a45422e4abd7f141fc7b1db767524ebf48d9674bd25c21354fb7a2b8c029",
+      "failed-erp-prepared": "f25604fc0225d7ac5a7e98d192ce3b82114970158a3662aee7575b128430ca0c",
+      "logistics-judgment": "c5eff235021441ef6add943d6126a5f064411a3c1f16b681489fbbf4d05993f2",
+      "greenfire-protected": "8bb31d17cb2a5d50edff28fc00c6b2bb863da4edc1ea0811abaccbefb3aaab56",
+      "greenfire-compromised": "0c747d32d34b7d33d3d43efc7b226c5966567dd3453d00c7751f416177ae7cd7",
+      "goldenshell-coordinated": "ed4461cbf6eda809aca8f3442a3d2f3085738f0ddec8d101b5cfc7a0b30c07db",
+      "goldenshell-fragmented": "9596d226b3c1b506b33790faf5998408d16f136e1facd815c87848dad2856152",
+      "desert-water-coordinated": "c05cc31484ecbf4b3cec7de9775ebe0de05494b4e8e99effa400f0f71fdeb145",
+      "desert-water-compromised": "94fb0b50c8a79b7c0c929528620724f0f94075b32bfb9f1822bc80b7c7a57a33"
+    }
+  },
+  "nativeEvidence": {
+    "iosWorkflowRun": 31441634496,
+    "iosWorkflowCommit": "39b856320ed5dc397562068706c4cea7d703899c",
+    "iosWorkflowConclusion": "success",
+    "androidProof": "required-at-release"
+  }
+}

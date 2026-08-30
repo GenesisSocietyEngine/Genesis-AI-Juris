@@ -169,10 +169,15 @@ test("verdict presentation is keyed by the authoritative outcome id", () => {
 
 test("canonical played-case exports retain an exact server session or local replay", () => {
   const source = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
-  assert.match(source, /schemaVersion: activeScenario\.mobileParity \? 3 : 2/);
+  const loader = readFileSync(new URL("../app/played-case-loader.ts", import.meta.url), "utf8");
+  const contract = readFileSync(new URL("../app/played-case-contract.ts", import.meta.url), "utf8");
+  assert.match(contract, /PLAYED_CASE_SCHEMA_REVISION = 3 as const/);
+  assert.match(source, /schemaVersion: activeScenario\.mobileParity \? PLAYED_CASE_SCHEMA_REVISION : 2/);
   assert.match(source, /mode: "server-session"/);
   assert.match(source, /expectedRevision: serverPlaySession\.revision/);
-  assert.match(source, /session\.revision !== descriptor\.expectedRevision/);
+  assert.match(source, /requirePlayedCaseServerSession\(response\.ok, session, importedScenario, descriptor\.sessionKey, descriptor\.expectedRevision\)/);
+  assert.match(loader, /session\.sessionKey !== expectedSessionKey/);
+  assert.match(loader, /session\.revision !== expectedRevision/);
   assert.match(source, /mode: "local-replay"/);
   assert.match(source, /runtimeModule\.dispatchCanonicalAction/);
   assert.match(source, /runtimeModule\.advanceCanonicalTime/);

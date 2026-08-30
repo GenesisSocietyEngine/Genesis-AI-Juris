@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "routes": [
+    {
+      "id": "failed-erp-settlement",
+      "case_id": "be_commercial_failed_erp_001",
+      "seed": 20260724,
+      "commands": [
+        { "kind": "dispatch", "action_id": "run-conflict-check" },
+        { "kind": "dispatch", "action_id": "request-documents" },
+        { "kind": "dispatch", "action_id": "future-settle" }
+      ]
+    },
+    {
+      "id": "failed-erp-prepared",
+      "case_id": "be_commercial_failed_erp_001",
+      "seed": 6,
+      "commands": [
+        { "kind": "dispatch", "action_id": "run-conflict-check" },
+        { "kind": "dispatch", "action_id": "prepare-partner-brief" },
+        { "kind": "dispatch", "action_id": "issue-preservation-notice" },
+        { "kind": "dispatch", "action_id": "delegate-review" },
+        { "kind": "dispatch", "action_id": "ask-ai-research" },
+        { "kind": "dispatch", "action_id": "request-documents" },
+        { "kind": "dispatch", "action_id": "review-junior-findings" },
+        { "kind": "dispatch", "action_id": "reject-settlement" },
+        { "kind": "dispatch", "action_id": "request-budget" },
+        { "kind": "dispatch", "action_id": "future-expert" },
+        { "kind": "dispatch", "action_id": "future-damages" },
+        { "kind": "dispatch", "action_id": "commence-proceedings" },
+        { "kind": "dispatch", "action_id": "prepare-statement-of-claim" },
+        { "kind": "dispatch", "action_id": "prepare-evidence-bundle" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "review-expert-report" },
+        { "kind": "dispatch", "action_id": "prepare-hearing-strategy" },
+        { "kind": "dispatch", "action_id": "prepare-key-witness" },
+        { "kind": "dispatch", "action_id": "reconcile-damages-schedule" },
+        { "kind": "dispatch", "action_id": "wait-until-hearing" },
+        { "kind": "dispatch", "action_id": "attend-hearing" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "inform-client-judgment" },
+        { "kind": "dispatch", "action_id": "prepare-cassation-response" },
+        { "kind": "dispatch", "action_id": "await-cassation-decision" }
+      ]
+    },
+    {
+      "id": "logistics-judgment",
+      "case_id": "be_commercial_logistics_001",
+      "seed": 0,
+      "commands": [
+        { "kind": "dispatch", "action_id": "audit_claim_file" },
+        { "kind": "dispatch", "action_id": "issue_formal_demand" },
+        { "kind": "dispatch", "action_id": "request_judgment" },
+        { "kind": "dispatch", "action_id": "enforce_judgment" }
+      ]
+    },
+    {
+      "id": "greenfire-protected",
+      "case_id": "greenfire_first_72_hours",
+      "seed": 0,
+      "commands": [
+        { "kind": "dispatch", "action_id": "accept_emergency_mandate" },
+        { "kind": "dispatch", "action_id": "issue_legal_hold" },
+        { "kind": "dispatch", "action_id": "run_conflict_assessment" },
+        { "kind": "dispatch", "action_id": "appoint_separate_director_counsel" },
+        { "kind": "dispatch", "action_id": "notify_insurers" },
+        { "kind": "dispatch", "action_id": "retain_independent_fire_expert" },
+        { "kind": "dispatch", "action_id": "open_controlled_regulator_channel" },
+        { "kind": "dispatch", "action_id": "submit_initial_regulatory_response" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "dispatch", "action_id": "review_preliminary_fire_assessment" },
+        { "kind": "dispatch", "action_id": "establish_response_protocol" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "dispatch", "action_id": "complete_protected_handoff" }
+      ]
+    },
+    {
+      "id": "greenfire-compromised",
+      "case_id": "greenfire_first_72_hours",
+      "seed": 0,
+      "commands": [
+        { "kind": "dispatch", "action_id": "accept_emergency_mandate" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "dispatch", "action_id": "release_unreviewed_documents" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "dispatch", "action_id": "complete_compromised_handoff" }
+      ]
+    },
+    {
+      "id": "goldenshell-coordinated",
+      "case_id": "nl_food_safety_goldenshell_001",
+      "seed": 0,
+      "commands": [
+        { "kind": "dispatch", "action_id": "accept_cooperative_mandate" },
+        { "kind": "dispatch", "action_id": "issue_coordinated_legal_hold" },
+        { "kind": "dispatch", "action_id": "preserve_reference_samples" },
+        { "kind": "dispatch", "action_id": "obtain_blocking_decisions" },
+        { "kind": "dispatch", "action_id": "notify_cleaning_contractor" },
+        { "kind": "dispatch", "action_id": "notify_farm_insurers" },
+        { "kind": "dispatch", "action_id": "coordinate_recall_response" },
+        { "kind": "dispatch", "action_id": "request_product_composition_records" },
+        { "kind": "dispatch", "action_id": "retain_independent_residue_expert" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "dispatch", "action_id": "review_preliminary_residue_assessment" },
+        { "kind": "dispatch", "action_id": "map_common_and_individual_losses" },
+        { "kind": "dispatch", "action_id": "prepare_protective_attachment_strategy" },
+        { "kind": "dispatch", "action_id": "establish_coordinated_claim_protocol" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "dispatch", "action_id": "complete_coordinated_handoff" }
+      ]
+    },
+    {
+      "id": "goldenshell-fragmented",
+      "case_id": "nl_food_safety_goldenshell_001",
+      "seed": 0,
+      "commands": [
+        { "kind": "dispatch", "action_id": "accept_cooperative_mandate" },
+        { "kind": "dispatch", "action_id": "authorise_recall_without_reference_samples" },
+        { "kind": "dispatch", "action_id": "prioritise_regulator_claim" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "dispatch", "action_id": "complete_fragmented_handoff" }
+      ]
+    },
+    {
+      "id": "desert-water-coordinated",
+      "case_id": "us_environmental_desert_water_001",
+      "seed": 0,
+      "commands": [
+        { "kind": "dispatch", "action_id": "accept_residents_mandate" },
+        { "kind": "dispatch", "action_id": "commission_defensible_sampling" },
+        { "kind": "dispatch", "action_id": "demand_plant_record_preservation" },
+        { "kind": "dispatch", "action_id": "interview_affected_residents" },
+        { "kind": "dispatch", "action_id": "map_wells_and_exposure_periods" },
+        { "kind": "dispatch", "action_id": "obtain_regulatory_records" },
+        { "kind": "dispatch", "action_id": "obtain_cooling_and_disposal_records" },
+        { "kind": "dispatch", "action_id": "retain_independent_hydrogeologist" },
+        { "kind": "dispatch", "action_id": "test_alternative_source_defence" },
+        { "kind": "dispatch", "action_id": "investigate_corporate_notice" },
+        { "kind": "dispatch", "action_id": "protect_limitation_period" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 90 },
+        { "kind": "dispatch", "action_id": "review_hydrological_source_assessment" },
+        { "kind": "dispatch", "action_id": "prepare_expert_evidence" },
+        { "kind": "advance_time", "minutes": 1185 },
+        { "kind": "dispatch", "action_id": "file_evidence_backed_claim" },
+        { "kind": "dispatch", "action_id": "receive_supported_first_instance_judgment" }
+      ]
+    },
+    {
+      "id": "desert-water-compromised",
+      "case_id": "us_environmental_desert_water_001",
+      "seed": 0,
+      "commands": [
+        { "kind": "dispatch", "action_id": "accept_residents_mandate" },
+        { "kind": "dispatch", "action_id": "rely_on_unverified_samples" },
+        { "kind": "dispatch", "action_id": "interview_affected_residents" },
+        { "kind": "advance_time", "minutes": 511 },
+        { "kind": "advance_time", "minutes": 720 },
+        { "kind": "advance_time", "minutes": 1439 },
+        { "kind": "dispatch", "action_id": "prepare_incomplete_claim" },
+        { "kind": "dispatch", "action_id": "file_underdeveloped_claim" },
+        { "kind": "dispatch", "action_id": "receive_adverse_first_instance_judgment" },
+        { "kind": "dispatch", "action_id": "file_appeal" },
+        { "kind": "dispatch", "action_id": "receive_adverse_appeal_judgment" },
+        { "kind": "dispatch", "action_id": "close_after_adverse_appeal" }
+      ]
+    }
+  ]
+}

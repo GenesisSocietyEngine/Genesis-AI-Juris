@@ -150,6 +150,28 @@ test("played-case loading preserves legacy exports without bypassing server deni
   ), /validation/i);
 });
 
+test("an unavailable historical revision never falls through to the current bundle", async () => {
+  const current = scenarios[0];
+  const unavailableHistoricalIdentity = {
+    id: current.id,
+    caseId: current.caseId,
+    contentVersion: "0.0.1",
+    fingerprint: `sha256-${"f".repeat(64)}`,
+  };
+
+  await assert.rejects(() => resolvePlayedCaseScenario(
+    unavailableHistoricalIdentity,
+    [current],
+    async () => Response.json({ error: "temporarily unavailable" }, { status: 503 }),
+  ), /unavailable/i);
+
+  await assert.rejects(() => resolvePlayedCaseScenario(
+    { ...unavailableHistoricalIdentity, contentVersion: current.version },
+    [current],
+    async () => { throw new Error("offline"); },
+  ), /unavailable/i, "a tampered fingerprint must not select the current bundled scenario");
+});
+
 test("leaving a restricted Studio context cannot carry snapshots or history into a local draft", () => {
   const source = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   const enterNewLocalDraft = source.slice(source.indexOf("function enterNewLocalDraft"), source.indexOf("function updateStudioDraft"));

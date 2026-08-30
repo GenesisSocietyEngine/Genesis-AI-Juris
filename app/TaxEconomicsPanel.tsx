@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { defaultTaxEconomics, type RentalTaxBaseBreakdown, type TaxEconomicsResult } from "./tax-economics";
-import { markManualTaxRate, taxRateOrigin } from "./tax-rate-inference";
+import { manualTaxRateChange, taxRateOrigin } from "./tax-rate-inference";
 
 export default function TaxEconomicsPanel({ locale, model, result, taxBaseBreakdown, disabled, onChange, onCurrencyChange, embedded = false }: {
   locale: "en" | "ru";
@@ -29,10 +29,11 @@ export default function TaxEconomicsPanel({ locale, model, result, taxBaseBreakd
   const commitInput = (field: NumericField, label: string, minimum: number, maximum: number, multiplier = 1) => {
     const parsed = Number(inputs[field]);
     const next = Number.isFinite(parsed) ? Math.max(minimum, Math.min(maximum, Math.round(parsed * multiplier))) : model[field];
-    if (next !== model[field]) {
-      const rateField = field === "baselineTaxRateBps" ? "baseline" : field === "optimizedTaxRateBps" ? "optimized" : null;
-      onChange({ [field]: next, ...(rateField ? { assumptions: markManualTaxRate(model, rateField) } : {}) }, label);
-    } else setInput(field, String(next / multiplier));
+    const rateField = field === "baselineTaxRateBps" ? "baseline" : field === "optimizedTaxRateBps" ? "optimized" : null;
+    const rateChange = rateField ? manualTaxRateChange(model, rateField, next) : null;
+    if (rateChange) onChange(rateChange, label);
+    else if (next !== model[field]) onChange({ [field]: next }, label);
+    else setInput(field, String(next / multiplier));
   };
   const blurOnEnter = (event: React.KeyboardEvent<HTMLInputElement>) => { if (event.key === "Enter") event.currentTarget.blur(); };
   const money = (value: number) => {

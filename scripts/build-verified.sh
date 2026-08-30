@@ -18,6 +18,12 @@ if [[ ! -x "${vinext}" ]]; then
   exit 69
 fi
 
+echo "Running strict TypeScript validation..."
+npm run typecheck
+
+echo "Verifying the locked canonical mobile contract..."
+npm run parity:lock
+
 echo "Running bounded vinext build..."
 timeout \
   --signal=TERM \

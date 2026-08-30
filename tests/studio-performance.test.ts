@@ -70,6 +70,13 @@ test("Studio schedules heavy derivations for idle time and never renders all end
   assert.match(source, /watchdogHandle = window\.setTimeout\(derive, 1_000\)/, "busy browsers cannot strand validation waiting for idle time");
   assert.match(source, /else watchdogHandle = globalThis\.setTimeout\(derive, 0\)/, "non-idle-callback browsers retain an immediate fallback");
   assert.match(source, /\}, \[derivationAttempt, draft\]\);/, "derivation state updates must not cancel their own completed request");
+  assert.doesNotMatch(source, /if \(studioDerivations\.source === draft\) return;/, "the derivation effect must not read an intentionally omitted state dependency");
+  const stableFitGraph = source.indexOf("const fitGraph = useCallback");
+  const defaultLayoutEffect = source.indexOf("const layoutKey = `${graphDraftIdentity}");
+  assert.ok(stableFitGraph >= 0 && stableFitGraph < defaultLayoutEffect, "graph fitting must be stable before the default-layout effect uses it");
+  assert.match(source, /const graphBoundsRef = useRef\(graphBounds\);\s*useEffect\(\(\) => \{\s*graphBoundsRef\.current = graphBounds;\s*\}, \[graphBounds\]\);/);
+  assert.doesNotMatch(source, /const graphBoundsRef = useRef\(graphBounds\);\s*graphBoundsRef\.current = graphBounds;/, "render must not read or update the ref");
+  assert.match(source, /const fitGraph = useCallback\(\(\) => \{[\s\S]*?const bounds = graphBoundsRef\.current;[\s\S]*?\}, \[\]\);/);
   assert.match(source, /setDerivationAttempt\(\(attempt\) => attempt \+ 1\)/, "a failed calculation exposes a bounded manual retry");
   assert.doesNotMatch(source, /useMemo\(\(\) => compileStudioDraft/);
   assert.doesNotMatch(source, /<code>\{caseFingerprint\(draft\)\}<\/code>/);
