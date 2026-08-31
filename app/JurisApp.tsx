@@ -87,6 +87,7 @@ const CanonicalMarkdownReview = lazy(() => import("./CanonicalMarkdownReview"));
 const StudioGuidedDemo = lazy(() => import("./StudioGuidedDemo"));
 const StudioGuidedWizard = lazy(() => import("./StudioGuidedWizard"));
 const StudioCaseTypeSelector = lazy(() => import("./StudioCaseTypeSelector"));
+const StudioCaseViews = lazy(() => import("./StudioCaseViews"));
 const StudioOutcomeParameters = lazy(() => import("./StudioOutcomeParameters"));
 const StudioUserMoreActions = lazy(() => import("./StudioUserMoreActions"));
 const OperationsDashboard = lazy(() => import("./OperationsDashboard"));
@@ -3243,6 +3244,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     {(editableDealModel || (taxDraft && taxResult)) && <Suspense fallback={null}><StudioOutcomeParameters locale={locale} dealModel={editableDealModel} taxModel={taxModel} taxResult={taxDraft ? taxResult : null} taxBaseBreakdown={taxBaseBreakdown} ratePrompt={derivedPrompt} rateDraft={draft} disabled={!canDuplicate} beginFieldEdit={beginFieldEdit} commitDealField={commitDealEconomicsField} setDealModel={setDealEconomicsChange} changeRepaymentBasis={(repaymentBasis) => { const before=draft; setDealEconomicsChange({repaymentBasis}); recordVisualEdit("case_updated", locale === "en" ? "Visual edit: changed cash-flow repayment basis." : "Визуальная правка: изменён вид погашения cash-flow.", before); }} applyTaxChange={applyTaxEconomicsChange} changeTaxCurrency={changeTaxEconomicsCurrency}/></Suspense>}
     {(draft.dealEconomics || draft.nodes.some((node) => node.type === "cash_flow")) && <Suspense fallback={<section className="deal-outcome deal-outcome-empty page-width" role="status"><p>{locale === "en" ? "Calculating case cash flow…" : "Расчёт денежного потока…"}</p></section>}><DealOutcomePanel locale={locale} draft={draft}/></Suspense>}
     </>}
+    {(displayMode === "developer" || guidedStep === 4) && <Suspense fallback={null}><StudioCaseViews locale={locale} draft={draft} onFocusNode={(nodeId) => { focusGraphNode(nodeId); document.querySelector(".studio-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}/></Suspense>}
     {(displayMode === "developer" || guidedStep === 4) && <section className="studio-workspace">
       <aside className="node-palette" inert={!canDuplicate}><div className="pane-heading"><span>{text.addNode}</span><b>{String(paletteNodeTypes.length).padStart(2,"0")}</b></div>{paletteNodeTypes.map((type) => <button key={type} disabled={!canDuplicate || draft.nodes.length >= 200} onClick={() => { addNode(type, visibleGraphCenter()); setRelationStatus(locale === "en" ? "Node added in view centre." : "Нода добавлена по центру."); }}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "New nodes open in the visible centre. Connect OUT to IN; edits remain undoable." : "Ноды появляются по центру. Соединяйте ВЫХОД со ВХОДОМ; правки можно отменить."}</p></aside>
       <section className="graph-deck" ref={graphDeckRef}>
