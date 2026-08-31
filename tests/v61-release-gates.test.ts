@@ -8,6 +8,8 @@ test("Studio retries the exact save after authorization returns to the original 
   assert.match(source, /authRetryActionRef\.current = action/);
   assert.match(source, /window\.addEventListener\("focus", retry\)/);
   assert.match(source, /shareDraftRef\.current\(action\)/);
+  assert.match(source, /function openWorkspaceAuthorization\(\)/);
+  assert.match(source, /Continue sign-in/);
   assert.match(source, /Workspace draft and visibility saved\./);
 });
 
