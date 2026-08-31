@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juris_mobile/models/case_type_registry.dart';
 import 'package:juris_mobile/models/studio_scenario_draft.dart';
 
 void main() {
@@ -12,6 +13,7 @@ void main() {
     expect(scenario['schema_version'], '1.0');
     expect(scenario['metadata']['id'], 'supplier_transition_dispute');
     expect(scenario['initial_stage'], 'intake');
+    expect(draft.caseType.id, CaseTypeId.trainingSimulation);
     expect(draft.identityReady, isTrue);
     expect(draft.factsReady, isTrue);
     expect(draft.mapReady, isTrue);
@@ -47,6 +49,16 @@ void main() {
       (edited.toJson()['actions'] as List<dynamic>).first['id'],
       'assess_case',
     );
+  });
+
+  test('case type is versioned and survives canonical JSON round-trip', () {
+    final StudioScenarioDraft typed =
+        StudioScenarioDraft.blank().updateCaseType(CaseTypeId.erpIncident);
+    final StudioScenarioDraft restored =
+        StudioScenarioDraft.fromJson(typed.toJson());
+    expect(restored.caseType.id, CaseTypeId.erpIncident);
+    expect(restored.caseType.registry, caseTypeRegistryId);
+    expect(restored.caseType.version, caseTypeVersion);
   });
 
   test('import accepts only canonical ScenarioDefinition v1 JSON', () {

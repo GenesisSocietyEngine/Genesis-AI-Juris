@@ -12,6 +12,28 @@ use std::collections::BTreeMap;
 /// Current version understood by this schema crate.
 pub const SCENARIO_SCHEMA_VERSION_V1: &str = "1.0";
 
+/// Immutable registry identity shared by web Studio, Flutter and Rust.
+pub const CASE_TYPE_REGISTRY_ID: &str = "genesis-juris-case-types";
+pub const CASE_TYPE_VERSION_V1: &str = "1.0.0";
+
+/// Stable case-type IDs. Unknown values fail deserialization before runtime.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CaseTypeId {
+    GeneralAdvisory,
+    TaxCompliance,
+    ErpIncident,
+    TrainingSimulation,
+}
+
+/// Exact immutable case-type package selected by the author.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CaseTypeReference {
+    pub registry: String,
+    pub id: CaseTypeId,
+    pub version: String,
+}
+
 /// Standard generic resource IDs used by authoritative resource projection.
 pub const RESOURCE_AUTHORIZED_BUDGET_EUR: &str = "authorized_budget_eur";
 pub const RESOURCE_SPEND_EUR: &str = "spend_eur";
@@ -64,6 +86,9 @@ pub struct ScenarioMetadata {
     pub title: String,
     pub summary: String,
     pub content_version: String,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub case_type: Option<CaseTypeReference>,
 
     #[serde(default)]
     pub author: Option<String>,

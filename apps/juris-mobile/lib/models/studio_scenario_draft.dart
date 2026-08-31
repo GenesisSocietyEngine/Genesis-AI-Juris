@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'case_type_registry.dart';
+
 /// The six workflow stage IDs are shared with the web Guided Studio.
 enum StudioWorkflowStage {
   describe('describe'),
@@ -32,6 +34,7 @@ final class StudioScenarioDraft {
   factory StudioScenarioDraft.blank() {
     return StudioScenarioDraft._(
       _starterScenario(
+        caseTypeId: CaseTypeId.generalAdvisory,
         caseId: 'mobile_studio_case',
         title: '',
         jurisdiction: 'BE',
@@ -45,6 +48,7 @@ final class StudioScenarioDraft {
   factory StudioScenarioDraft.guidedExample() {
     return StudioScenarioDraft._(
       _starterScenario(
+        caseTypeId: CaseTypeId.trainingSimulation,
         caseId: 'supplier_transition_dispute',
         title: 'Supplier transition dispute',
         jurisdiction: 'BE',
@@ -80,6 +84,13 @@ final class StudioScenarioDraft {
   Map<String, dynamic> toJson() => _cloneMap(_scenario);
 
   String get caseId => _metadataString('id');
+  CaseTypeReference get caseType {
+    final Object? source =
+        (_scenario['metadata'] as Map<String, dynamic>?)?['case_type'];
+    return source == null
+        ? const CaseTypeReference(CaseTypeId.generalAdvisory)
+        : CaseTypeReference.fromJson(source);
+  }
   String get title => _metadataString('title');
   String get premise => _metadataString('summary');
   String get version => _metadataString('content_version');
@@ -135,6 +146,14 @@ final class StudioScenarioDraft {
     return StudioScenarioDraft._(next);
   }
 
+  StudioScenarioDraft updateCaseType(CaseTypeId id) {
+    final Map<String, dynamic> next = toJson();
+    final Map<String, dynamic> metadata =
+        next['metadata'] as Map<String, dynamic>;
+    metadata['case_type'] = CaseTypeReference(id).toJson();
+    return StudioScenarioDraft._(next);
+  }
+
   StudioScenarioDraft updateFacts(List<String> values) {
     final Map<String, dynamic> next = toJson();
     next['facts'] = values.indexed
@@ -178,6 +197,7 @@ final class StudioScenarioDraft {
 }
 
 Map<String, dynamic> _starterScenario({
+  required CaseTypeId caseTypeId,
   required String caseId,
   required String title,
   required String jurisdiction,
@@ -192,6 +212,7 @@ Map<String, dynamic> _starterScenario({
       'title': title,
       'summary': premise,
       'content_version': '1',
+      'case_type': CaseTypeReference(caseTypeId).toJson(),
       'author': 'Mobile Guided Studio',
       'tags': <String>['guided_studio', 'mobile_parity'],
     },

@@ -5,9 +5,10 @@
 //! format remain compatible.
 
 use juris_scenario_schema::{
-    ActionId, Condition, DeadlineDefinition, DeterministicDecisionDefinition, Effect,
-    JudicialDecisionInstance, JudicialResult, MatterLifecycleStatus, RelativeTimeDefinition,
-    ScenarioClockMode, ScenarioDefinition, StageId, StageKind, SCENARIO_SCHEMA_VERSION_V1,
+    ActionId, CaseTypeId, CaseTypeReference, Condition, DeadlineDefinition,
+    DeterministicDecisionDefinition, Effect, JudicialDecisionInstance, JudicialResult,
+    MatterLifecycleStatus, RelativeTimeDefinition, ScenarioClockMode, ScenarioDefinition, StageId,
+    StageKind, CASE_TYPE_REGISTRY_ID, CASE_TYPE_VERSION_V1, SCENARIO_SCHEMA_VERSION_V1,
 };
 use serde_json::json;
 
@@ -29,6 +30,50 @@ fn minimal_yaml_deserializes_into_scenario_definition() {
     assert_eq!(scenario.actions.len(), 1);
     assert_eq!(scenario.events.len(), 1);
     assert_eq!(scenario.outcomes.len(), 1);
+}
+
+#[test]
+fn case_type_reference_round_trips_and_unknown_ids_fail_closed() {
+    let reference = CaseTypeReference {
+        registry: CASE_TYPE_REGISTRY_ID.to_owned(),
+        id: CaseTypeId::ErpIncident,
+        version: CASE_TYPE_VERSION_V1.to_owned(),
+    };
+    let encoded = serde_json::to_string(&reference).expect("case type must serialize");
+    assert_eq!(
+        serde_json::from_str::<CaseTypeReference>(&encoded)
+            .expect("case type must deserialize"),
+        reference
+    );
+    assert!(serde_json::from_value::<CaseTypeReference>(json!({
+        "registry": CASE_TYPE_REGISTRY_ID,
+        "id": "unknown_type",
+        "version": CASE_TYPE_VERSION_V1
+    }))
+    .is_err());
+}
+
+#[test]
+fn versioned_case_type_manifest_contains_every_rust_id() {
+    let manifest: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../contracts/case-type-registry.v1.json"
+    ))
+    .expect("case-type registry must be valid JSON");
+    let ids = manifest["types"]
+        .as_array()
+        .expect("registry types must be an array")
+        .iter()
+        .map(|item| item["id"].as_str().expect("case type ID"))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        ids,
+        vec![
+            "general_advisory",
+            "tax_compliance",
+            "erp_incident",
+            "training_simulation"
+        ]
+    );
 }
 
 #[test]
