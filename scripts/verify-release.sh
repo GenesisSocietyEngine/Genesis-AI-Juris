@@ -66,16 +66,19 @@ echo "[native 1/2] Android FFI persistence smoke"
   "${flutter_command}" test --no-pub integration_test/native_android_persistence_smoke_test.dart -d "${android_device}"
 )
 
-echo "[native 2/2] exact-SHA iOS evidence lock"
+echo "[native 2/2] exact-SHA hosted Rust, Flutter, Android, and iOS evidence lock"
 node --input-type=module -e '
   import { readFileSync } from "node:fs";
   const lock = JSON.parse(readFileSync("parity/mobile-parity.lock.json", "utf8"));
-  if (lock.nativeEvidence.iosWorkflowCommit !== lock.mobile.commit
-    || lock.nativeEvidence.iosWorkflowConclusion !== "success"
-    || !Number.isSafeInteger(lock.nativeEvidence.iosWorkflowRun)) {
-    throw new Error("exact-SHA successful iOS workflow evidence is not locked");
+  for (const [gate, evidence] of Object.entries(lock.hostedEvidence)) {
+    if (evidence.commit !== lock.mobile.commit
+      || evidence.conclusion !== "success"
+      || !Number.isSafeInteger(evidence.run)
+      || evidence.run <= 0) {
+      throw new Error(`exact-SHA successful ${gate} workflow evidence is not locked`);
+    }
+    console.log(`PASS ${gate} workflow ${evidence.run} for ${lock.mobile.commit}`);
   }
-  console.log(`PASS iOS workflow ${lock.nativeEvidence.iosWorkflowRun} for ${lock.mobile.commit}`);
 '
 
-echo "PASS v53 release verification. Deployment remains a separate, explicit Sites operation."
+echo "PASS v54 release verification. Deployment remains a separate, explicit Sites operation."

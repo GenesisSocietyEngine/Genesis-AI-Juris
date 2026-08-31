@@ -1,10 +1,10 @@
 {
   "format": "genesis-juris-mobile-parity-lock",
-  "lockVersion": 1,
+  "lockVersion": 2,
   "mobile": {
     "repository": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris.git",
-    "commit": "39b856320ed5dc397562068706c4cea7d703899c",
-    "appVersion": "0.6.0+13",
+    "commit": "4f4af89dc5e9d2195cda1022669d163adfffd8ae",
+    "appVersion": "0.7.0+14",
     "rustWorkspaceVersion": "0.5.0"
   },
   "bundle": {
@@ -62,7 +62,7 @@
   "fixtures": {
     "path": "parity/mobile-parity-fixtures.json",
     "schemaVersion": 2,
-    "sha256": "f7e6b4edf2c01bfdb0ba7f0b0e8099d22199d2166c710cb98e80580294a872ad",
+    "sha256": "a2bfc44aea172350a7f307990929d017c8f953765d2f02b93d580f5fb6137bd7",
     "probePath": "scripts/mobile-parity-probe.rs",
     "probeSha256": "322a2e3b9d4e730a14ef05cdc974c67fcdb9d8a493773c6a9f0c2a57f94c57ec",
     "routeCount": 18,
@@ -109,10 +109,26 @@
       "logistics-negotiated": "82702ca85ace17d4b3b6e06366fcd2d32c3929a8b0108130585e48ae3cf79111"
     }
   },
-  "nativeEvidence": {
-    "iosWorkflowRun": 31441634496,
-    "iosWorkflowCommit": "39b856320ed5dc397562068706c4cea7d703899c",
-    "iosWorkflowConclusion": "success",
-    "androidProof": "required-at-release"
+  "hostedEvidence": {
+    "rust": {
+      "run": 33361640566,
+      "commit": "4f4af89dc5e9d2195cda1022669d163adfffd8ae",
+      "conclusion": "success"
+    },
+    "flutter": {
+      "run": 33361640567,
+      "commit": "4f4af89dc5e9d2195cda1022669d163adfffd8ae",
+      "conclusion": "success"
+    },
+    "android": {
+      "run": 33361640562,
+      "commit": "4f4af89dc5e9d2195cda1022669d163adfffd8ae",
+      "conclusion": "success"
+    },
+    "ios": {
+      "run": 33361640549,
+      "commit": "4f4af89dc5e9d2195cda1022669d163adfffd8ae",
+      "conclusion": "success"
+    }
   }
 }

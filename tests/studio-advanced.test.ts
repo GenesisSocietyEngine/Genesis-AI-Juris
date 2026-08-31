@@ -273,7 +273,7 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
     "relation deletion must have a programmatically focusable status destination");
   assert.match(appSource, /focusRelationStatus\(\)/,
     "relation deletion must restore keyboard focus after removing its control");
-  assert.match(appSource, /Show on graph/);
+  assert.match(appSource, /Fix on decision map/);
   assert.match(appSource, /runtimeForNodeType\(selectedNode\.runtime,type\)/, "node type changes must strip incompatible runtime fields");
   assert.match(appSource, /parent: \{ caseId: current\.caseId, version: current\.version, fingerprint: studioServerFingerprint \}/, "child lineage must use the exact persisted parent fingerprint");
   assert.match(appSource, /Studio case envelope/);
@@ -290,8 +290,8 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(outcomeParametersSource, /Tax economics/);
   assert.match(cashFlowEditorSource, /Purchase price/);
   assert.match(cashFlowEditorSource, /Loan-to-value/);
-  assert.match(appSource, /const \[userSettingsOpen, setUserSettingsOpen\] = useState\(false\)/, "advanced User-view case settings must start collapsed");
-  assert.match(appSource, /studio-settings-toggle/, "collapsed User-view case settings must remain clearly discoverable");
+  assert.match(appSource, /const \[guidedStep, setGuidedStep\] = useState<GuidedStudioStep>\(1\)/, "Guided Studio must start at the plain-language brief");
+  assert.match(appSource, /guidedStep === 3\) && <><div id="studio-case-settings"/, "case settings must be progressively disclosed at the Facts & Assumptions stage");
   assert.match(appSource, /aria-describedby=\{submitBlocker \? "studio-submit-blocker"/, "a disabled submission must expose its concrete blocker");
   assert.match(appSource, /inert=\{!canDuplicate\}/, "inspection-only authoring regions must be removed from keyboard interaction");
   assert.doesNotMatch(appSource, /aria-disabled=\{!canDuplicate\}/, "generic regions must not misuse aria-disabled");

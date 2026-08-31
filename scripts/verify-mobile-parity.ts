@@ -42,6 +42,7 @@ type CanonicalBundleCase = {
 };
 type CanonicalBundle = { bundle_version: number; catalog_version: number; cases: CanonicalBundleCase[] };
 type LockIdentity = { caseId: string; version: string; fingerprint: string; schemaRevision: string };
+type WorkflowEvidence = { run: number; commit: string; conclusion: string };
 type ParityLock = {
   format: string;
   lockVersion: number;
@@ -72,7 +73,12 @@ type ParityLock = {
     routeHashes: Record<string, string>;
     mobileSaveDigests?: Record<string, string>;
   };
-  nativeEvidence: { iosWorkflowRun: number; iosWorkflowCommit: string; iosWorkflowConclusion: string; androidProof: string };
+  hostedEvidence: {
+    rust: WorkflowEvidence;
+    flutter: WorkflowEvidence;
+    android: WorkflowEvidence;
+    ios: WorkflowEvidence;
+  };
 };
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -92,9 +98,12 @@ try {
 function verifyParity() {
   const lock = readJson<ParityLock>(join(projectRoot, "parity", "mobile-parity.lock.json"));
   equal(lock.format, "genesis-juris-mobile-parity-lock", "parity lock format");
-  equal(lock.lockVersion, 1, "parity lock version");
-  equal(lock.nativeEvidence.iosWorkflowCommit, lock.mobile.commit, "iOS evidence commit");
-  equal(lock.nativeEvidence.iosWorkflowConclusion, "success", "iOS workflow conclusion");
+  equal(lock.lockVersion, 2, "parity lock version");
+  for (const [gate, evidence] of Object.entries(lock.hostedEvidence)) {
+    truth(Number.isSafeInteger(evidence.run) && evidence.run > 0, `${gate} workflow run must be a positive integer`);
+    equal(evidence.commit, lock.mobile.commit, `${gate} evidence commit`);
+    equal(evidence.conclusion, "success", `${gate} workflow conclusion`);
+  }
   assertWebContractValues(lock.contracts, {
     webRuntimeRevision: CANONICAL_RUNTIME_REVISION,
     playedCaseSchemaRevision: PLAYED_CASE_SCHEMA_REVISION,
