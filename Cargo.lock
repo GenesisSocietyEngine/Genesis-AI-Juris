@@ -156,6 +156,7 @@ version = "0.5.0"
 dependencies = [
  "juris-engine",
  "juris-scenario-schema",
+ "juris-scenario-validator",
  "serde",
  "serde_json",
 ]

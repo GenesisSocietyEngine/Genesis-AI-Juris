@@ -191,7 +191,10 @@ fn flutter_guided_studio_fixture_validates_and_executes_to_resolution() {
     )
     .unwrap();
     let session_id = created["session_id"].as_u64().unwrap();
-    assert_eq!(created["snapshot"]["available_actions"][0]["id"], "assess_case");
+    assert_eq!(
+        created["snapshot"]["available_actions"][0]["id"],
+        "assess_case"
+    );
 
     let assessed: Value = serde_json::from_str(
         &bridge.execute_json(
@@ -204,7 +207,10 @@ fn flutter_guided_studio_fixture_validates_and_executes_to_resolution() {
         ),
     )
     .unwrap();
-    assert_eq!(assessed["snapshot"]["available_actions"][0]["id"], "close_case");
+    assert_eq!(
+        assessed["snapshot"]["available_actions"][0]["id"],
+        "close_case"
+    );
 
     let closed: Value = serde_json::from_str(
         &bridge.execute_json(
