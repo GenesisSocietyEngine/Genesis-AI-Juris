@@ -41,8 +41,7 @@ fn case_type_reference_round_trips_and_unknown_ids_fail_closed() {
     };
     let encoded = serde_json::to_string(&reference).expect("case type must serialize");
     assert_eq!(
-        serde_json::from_str::<CaseTypeReference>(&encoded)
-            .expect("case type must deserialize"),
+        serde_json::from_str::<CaseTypeReference>(&encoded).expect("case type must deserialize"),
         reference
     );
     assert!(serde_json::from_value::<CaseTypeReference>(json!({

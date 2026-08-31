@@ -1,10 +1,10 @@
 //! Regression tests for structural and reference validation.
 
 use juris_scenario_schema::{
-    ActionId, ActorDefinition, ActorId, ActorRole, DeadlineDefinition, DeadlineId, Effect,
-    CaseTypeId, CaseTypeReference, EventDefinition, EventId, EventKind, EventTrigger, MetricId, OutcomeId,
-    PressureWindowDefinition, PressureWindowId, RelativeTimeDefinition, ScenarioDefinition,
-    ScenarioTime, StageId,
+    ActionId, ActorDefinition, ActorId, ActorRole, CaseTypeId, CaseTypeReference,
+    DeadlineDefinition, DeadlineId, Effect, EventDefinition, EventId, EventKind, EventTrigger,
+    MetricId, OutcomeId, PressureWindowDefinition, PressureWindowId, RelativeTimeDefinition,
+    ScenarioDefinition, ScenarioTime, StageId,
 };
 use juris_scenario_validator::{validate_scenario, DiagnosticCode};
 use serde_json::json;
