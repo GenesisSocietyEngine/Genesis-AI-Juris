@@ -14,13 +14,13 @@ function draftFor(id: CaseTypeId, nodeTypes: StudioNodeType[]): StudioDraft {
   return {
     caseId: `${id}_case`, version: "1.0.0", caseType: caseTypeReference(id), parent: null,
     title: "Reviewable professional matter", jurisdiction: "Belgium", role: "Professional reviewer", premise: "A documented matter requires structured analysis and a reviewable decision package.",
-    classification: { practiceArea: "Professional", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: id === "tax_compliance", purpose: "compliance_review", legalAsOf: id === "tax_compliance" ? "2026-08-31" : undefined, sourceUrls: id === "tax_compliance" ? ["https://example.com/authority"] : [] },
+    classification: { practiceArea: "Professional", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true, purpose: "compliance_review", legalAsOf: "2026-08-31", sourceUrls: ["https://example.com/authority"] },
     nodes: nodeTypes.map((type, index) => ({ id: `${type}-${index + 1}`, type, title: `${type} ${index + 1}`, detail: `Reviewable ${type}`, x: index * 180, y: index * 140 })),
     links: [], editHistory: [], updatedAt: "2026-08-31T00:00:00.000Z",
   };
 }
 
-test("v59 provides one complete declarative playbook for every immutable case type", () => {
+test("v61 provides one complete declarative playbook for every immutable case type", () => {
   assert.equal(CASE_TYPE_PLAYBOOK_REGISTRY.format, "genesis-juris-case-playbook-registry");
   assert.equal(CASE_TYPE_PLAYBOOK_REGISTRY.schemaVersion, 1);
   assert.deepEqual(CASE_TYPE_PLAYBOOK_REGISTRY.playbooks.map((item) => item.caseType.id).sort(), CASE_TYPE_REGISTRY.map((item) => item.id).sort());
@@ -34,12 +34,16 @@ test("v59 provides one complete declarative playbook for every immutable case ty
   }
 });
 
-test("each first-release case type has distinct completeness and testing rules", () => {
-  const advisory = draftFor("general_advisory", ["actor", "fact", "evidence", "decision", "outcome"]);
-  const tax = draftFor("tax_compliance", ["entity", "cash_flow", "tax_rule", "fact", "decision", "outcome"]);
-  const erp = draftFor("erp_incident", ["trigger", "actor", "fact", "evidence", "decision", "outcome"]);
-  const training = draftFor("training_simulation", ["trigger", "actor", "evidence", "decision", "outcome", "outcome"]);
-  for (const draft of [advisory, tax, erp, training]) assert.equal(evaluateCaseTypeDraft(draft, "en").filter((check) => check.level === "warn").length, 0, draft.caseType?.id);
+test("each v61 case type has package-specific completeness and testing rules", () => {
+  const drafts = CASE_TYPE_REGISTRY.map((definition) => {
+    const playbook = caseTypePlaybook(caseTypeReference(definition.id));
+    return draftFor(definition.id, playbook.requiredNodeGroups.flatMap((group) => Array.from({ length: group.minimum }, () => group.types[0])));
+  });
+  for (const draft of drafts) assert.equal(evaluateCaseTypeDraft(draft, "en").filter((check) => check.level === "warn").length, 0, draft.caseType?.id);
+  const advisory = drafts.find((draft) => draft.caseType?.id === "general_advisory")!;
+  const tax = drafts.find((draft) => draft.caseType?.id === "tax_compliance")!;
+  const erp = drafts.find((draft) => draft.caseType?.id === "erp_incident")!;
+  const training = drafts.find((draft) => draft.caseType?.id === "training_simulation")!;
   assert.equal(caseTypePlaybook(advisory.caseType).test.requiresPlayableRoute, false);
   assert.equal(caseTypePlaybook(tax.caseType).test.mode, "compare");
   assert.equal(caseTypePlaybook(erp.caseType).test.mode, "process");
@@ -62,7 +66,7 @@ test("AI provider context is explicitly package-driven", () => {
   assert.match(context.input, /"caseType":\{"registry":"genesis-juris-case-types","id":"erp_incident"/);
 });
 
-test("v59 UI and report profiles consume the playbook registry rather than duplicating case copy", () => {
+test("v61 UI and report profiles consume the playbook registry rather than duplicating case copy", () => {
   const selector = readFileSync(`${root}/app/StudioCaseTypeSelector.tsx`, "utf8");
   const dialog = readFileSync(`${root}/app/CaseReportDialog.tsx`, "utf8");
   const app = readFileSync(`${root}/app/JurisApp.tsx`, "utf8");

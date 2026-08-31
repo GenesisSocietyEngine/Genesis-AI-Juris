@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import StaleChunkRecovery from "./StaleChunkRecovery";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://genesis-juris-web.maxim-hayan.chatgpt.site"),
@@ -39,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased" data-genesis-juris-release="v61"><StaleChunkRecovery/>{children}</body>
     </html>
   );
 }

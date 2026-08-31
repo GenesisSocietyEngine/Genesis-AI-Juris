@@ -4,8 +4,13 @@ export type CaseWorkflowMode = "adaptive" | "process" | "decision" | "simulation
 
 export type CaseTypeId =
   | "general_advisory"
+  | "litigation_strategy"
+  | "contract_review"
+  | "tax_planning"
+  | "compliance"
   | "tax_compliance"
   | "erp_incident"
+  | "investigation"
   | "training_simulation";
 
 export type CaseTypeReference = {

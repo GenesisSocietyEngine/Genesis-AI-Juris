@@ -6,8 +6,13 @@ export const CASE_TYPE_VERSION = "1.0.0" as const;
 
 const supportedCaseTypes = new Set<CaseTypeId>([
   "general_advisory",
+  "litigation_strategy",
+  "contract_review",
+  "tax_planning",
+  "compliance",
   "tax_compliance",
   "erp_incident",
+  "investigation",
   "training_simulation",
 ]);
 

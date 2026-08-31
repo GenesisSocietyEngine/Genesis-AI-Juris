@@ -27,11 +27,15 @@ test("the release verifier guards a linked mobile worktree before running mobile
   const guardAndParity = releaseScript.indexOf('npm run parity:mobile -- --mobile-repo "${mobile_root}"');
   const flutter = releaseScript.indexOf('"${flutter_command}" pub get');
   const cargo = releaseScript.indexOf('"${cargo_command}" test --workspace --locked');
+  const cargoFmt = releaseScript.indexOf('"${cargo_command}" fmt --all -- --check');
+  const cargoClippy = releaseScript.indexOf('"${cargo_command}" clippy --workspace --all-targets --locked -- -D warnings');
   const android = releaseScript.indexOf('"${flutter_command}" test --no-pub');
 
   assert.ok(guardAndParity >= 0, "release verification must invoke the exact-SHA mobile guard and parity gate");
   assert.ok(flutter > guardAndParity, "Flutter commands must remain unreachable until the checkout guard passes");
   assert.ok(cargo > guardAndParity, "Rust commands must remain unreachable until the checkout guard passes");
+  assert.ok(cargoFmt > guardAndParity && cargoFmt < cargo, "Rust formatting must pass before tests");
+  assert.ok(cargoClippy > cargoFmt && cargoClippy < cargo, "Rust Clippy must pass before tests");
   assert.ok(android > guardAndParity, "native commands must remain unreachable until the checkout guard passes");
 });
 

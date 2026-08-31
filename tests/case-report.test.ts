@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildCaseReportDefinition, caseReportGraphPageIds, caseReportGraphSvg, type CaseReportOptions } from "../app/case-report";
+import { caseTypeReference } from "../app/case-type-reference";
 import type { StudioDraft } from "../app/types";
 
 const draft: StudioDraft = {
   caseId: "uk_property_structure",
   version: "1.0.0",
+  caseType: caseTypeReference("tax_compliance"),
   parent: null,
   title: "UK property structure",
   jurisdiction: "United Kingdom / PRC / Liechtenstein",
@@ -19,6 +21,10 @@ const draft: StudioDraft = {
   },
   nodes: [
     { id: "trigger-1", type: "trigger", title: "Acquisition mandate", detail: "Client requests advice.", x: 20, y: 20 },
+    { id: "entity-1", type: "entity", title: "Acquisition vehicle", detail: "Proposed holding entity.", x: 20, y: 160 },
+    { id: "cash-flow-1", type: "cash_flow", title: "Acquisition funding", detail: "Funding flow under review.", x: 180, y: 160 },
+    { id: "tax-rule-1", type: "tax_rule", title: "Applicable tax rule", detail: "Authority must be confirmed as of the legal date.", x: 340, y: 160 },
+    { id: "fact-1", type: "fact", title: "Client residence", detail: "Residence fact to be verified.", x: 500, y: 160 },
     { id: "evidence-1", type: "evidence", title: "Loan term sheet", detail: "Financing basis remains to be confirmed.", x: 320, y: 20 },
     { id: "decision-1", type: "decision", title: "Choose ownership route", detail: "Compare direct and structured holding.", x: 620, y: 20 },
     { id: "outcome-1", type: "outcome", title: "Proceed subject to conditions", detail: "Engagement remains conditional.", x: 920, y: 20 },
@@ -36,7 +42,7 @@ const draft: StudioDraft = {
 };
 
 const options: CaseReportOptions = {
-  language: "en", profileId: "professional_case_report", profileLabel: "Professional case report", audience: "internal", confidentiality: "confidential", preparedBy: "Reviewer", preparedFor: "Client", matterReference: "MAT-001",
+  language: "en", profileId: "tax_position_memorandum", profileLabel: "Tax position memorandum", audience: "internal", confidentiality: "confidential", preparedBy: "Reviewer", preparedFor: "Client", matterReference: "MAT-001",
   includeEconomics: true, includeRegisters: true, includeSources: true, includeAuditTrail: true, includeTechnicalIds: true,
   generatedAt: "2026-08-23T12:05:00.000Z", currentFingerprint: "sha256-current", workspaceFingerprint: "sha256-current", privateCase: true,
 };
@@ -44,7 +50,7 @@ const options: CaseReportOptions = {
 test("professional report contains economics, registers, sign-off and a safe audit trail", () => {
   const report = buildCaseReportDefinition(draft, options);
   const source = JSON.stringify(report.content);
-  assert.match(source, /PROFESSIONAL CASE REPORT/);
+  assert.match(source, /TAX POSITION MEMORANDUM/);
   assert.match(source, /Investment and cash-flow analysis/);
   assert.match(source, /Illustrative annual cash-flow probability ranges/);
   assert.match(source, /Facts, evidence and rules register/);
@@ -58,7 +64,7 @@ test("professional report contains economics, registers, sign-off and a safe aud
 });
 
 test("client-facing report can omit audit trail and technical identifiers", () => {
-  const report = buildCaseReportDefinition(draft, { ...options, audience: "client", includeAuditTrail: false, includeTechnicalIds: false });
+  const report = buildCaseReportDefinition(draft, { ...options, audience: "client", includeAuditTrail: false, includeTechnicalIds: false, reviewerName: "Approving partner", reviewerApproved: true });
   const source = JSON.stringify(report.content);
   assert.doesNotMatch(source, /Authoring and review trail/);
   assert.doesNotMatch(source, /\[evidence-1\]/);

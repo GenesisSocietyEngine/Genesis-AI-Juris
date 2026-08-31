@@ -3,8 +3,8 @@
   "lockVersion": 3,
   "mobile": {
     "repository": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris.git",
-    "commit": "8793335f75f2da42f9a4a98fa15974cecde202e6",
-    "appVersion": "0.10.0+17",
+    "commit": "3dff6146a1b8bbfdf37cf9751ffb157ffb2da4f8",
+    "appVersion": "0.11.0+18",
     "rustWorkspaceVersion": "0.5.0"
   },
   "bundle": {
@@ -20,16 +20,16 @@
     "mobilePath": "contracts/case-type-registry.v1.json",
     "schemaVersion": 1,
     "registry": "genesis-juris-case-types",
-    "sha256": "61b6e48540c0cc0ee3696423691eb4b94310f2adfa2223bca92db14949f1b4ad",
-    "mobileGitBlob": "4f3917def53c707a60805e3194c0ce5a8e951ca8"
+    "sha256": "1c3a21adeb41c55d2a2ebf240f2189706c557e2e997e2451fcd796e0abc3fe2f",
+    "mobileGitBlob": "6fcf5b3987cad7e459f9bf302b0ab9a8c4abd87b"
   },
   "playbooks": {
     "webPath": "app/case-type-playbooks.v1.json",
     "mobilePath": "contracts/case-type-playbooks.v1.json",
     "schemaVersion": 1,
     "registry": "genesis-juris-case-playbooks",
-    "sha256": "98a9baae3fcfdac9712e77bf1eba90e83a7a947e97a8a13a951c0f47a1c9942e",
-    "mobileGitBlob": "e13d431ab07a95faea3b87299663d69d4bbf8c8e"
+    "sha256": "9e20cd9e26c8b541df717f3d48b232f18f3a765106f567e3d80076cf52c88af9",
+    "mobileGitBlob": "4b0e0b9ab6b4e096734061da5171cd81dbe2191a"
   },
   "contracts": {
     "scenarioSchemaRevision": "1.0",
@@ -127,23 +127,23 @@
   },
   "hostedEvidence": {
     "rust": {
-      "run": 33401739228,
-      "commit": "8793335f75f2da42f9a4a98fa15974cecde202e6",
+      "run": 33411296923,
+      "commit": "3dff6146a1b8bbfdf37cf9751ffb157ffb2da4f8",
       "conclusion": "success"
     },
     "flutter": {
-      "run": 33401739277,
-      "commit": "8793335f75f2da42f9a4a98fa15974cecde202e6",
+      "run": 33411297132,
+      "commit": "3dff6146a1b8bbfdf37cf9751ffb157ffb2da4f8",
       "conclusion": "success"
     },
     "android": {
-      "run": 33401739216,
-      "commit": "8793335f75f2da42f9a4a98fa15974cecde202e6",
+      "run": 33411296989,
+      "commit": "3dff6146a1b8bbfdf37cf9751ffb157ffb2da4f8",
       "conclusion": "success"
     },
     "ios": {
-      "run": 33401739196,
-      "commit": "8793335f75f2da42f9a4a98fa15974cecde202e6",
+      "run": 33411296950,
+      "commit": "3dff6146a1b8bbfdf37cf9751ffb157ffb2da4f8",
       "conclusion": "success"
     }
   }

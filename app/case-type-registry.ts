@@ -1,4 +1,5 @@
 import type { CaseTypeId, CaseTypeReference, CaseWorkflowMode, StudioDraft } from "./types";
+import rawRegistry from "./case-type-registry.v1.json";
 import { defaultTaxEconomics } from "./tax-economics";
 import { caseTypeReference, CASE_TYPE_VERSION, DEFAULT_CASE_TYPE } from "./case-type-reference";
 export { caseTypeReference, CASE_TYPE_REGISTRY_ID, CASE_TYPE_REGISTRY_SCHEMA_VERSION, CASE_TYPE_VERSION, DEFAULT_CASE_TYPE, normalizeCaseTypeReference } from "./case-type-reference";
@@ -12,47 +13,35 @@ export type CaseTypeDefinition = {
   practiceArea: string;
   domain: "general" | "tax";
   views: readonly CaseViewId[];
-  requiredReview: "professional" | "tax_governance" | "runtime_parity";
+  requiredReview: "professional" | "evidence_governance" | "tax_governance" | "runtime_parity";
 };
 
-export const CASE_TYPE_REGISTRY: readonly CaseTypeDefinition[] = [
-  {
-    id: "general_advisory",
-    version: CASE_TYPE_VERSION,
-    workflowMode: "hybrid",
-    practiceArea: "General legal",
-    domain: "general",
-    views: ["issue_map", "evidence_map", "decision_table", "timeline"],
-    requiredReview: "professional",
-  },
-  {
-    id: "tax_compliance",
-    version: CASE_TYPE_VERSION,
-    workflowMode: "hybrid",
-    practiceArea: "International tax planning",
-    domain: "tax",
-    views: ["issue_map", "decision_table", "economics", "timeline"],
-    requiredReview: "tax_governance",
-  },
-  {
-    id: "erp_incident",
-    version: CASE_TYPE_VERSION,
-    workflowMode: "process",
-    practiceArea: "ERP incident & solution design",
-    domain: "general",
-    views: ["task_plan", "evidence_map", "decision_table", "timeline"],
-    requiredReview: "professional",
-  },
-  {
-    id: "training_simulation",
-    version: CASE_TYPE_VERSION,
-    workflowMode: "simulation",
-    practiceArea: "Professional training",
-    domain: "general",
-    views: ["simulation", "timeline", "evidence_map"],
-    requiredReview: "runtime_parity",
-  },
-] as const;
+const presentation: Record<CaseTypeId, { practiceArea: string; domain: "general" | "tax" }> = {
+  general_advisory: { practiceArea: "General advisory", domain: "general" },
+  litigation_strategy: { practiceArea: "Litigation strategy", domain: "general" },
+  contract_review: { practiceArea: "Contract review", domain: "general" },
+  tax_planning: { practiceArea: "Tax planning", domain: "tax" },
+  compliance: { practiceArea: "Compliance", domain: "general" },
+  tax_compliance: { practiceArea: "International tax planning", domain: "tax" },
+  erp_incident: { practiceArea: "ERP incident & solution design", domain: "general" },
+  investigation: { practiceArea: "Investigation", domain: "general" },
+  training_simulation: { practiceArea: "Professional training", domain: "general" },
+};
+
+type RawRegistry = { format: string; schemaVersion: number; registry: string; types: Array<Omit<CaseTypeDefinition, "practiceArea" | "domain">> };
+
+function validatedRegistry(value: unknown): readonly CaseTypeDefinition[] {
+  const registry = value as RawRegistry;
+  if (!registry || registry.format !== "genesis-juris-case-type-registry" || registry.schemaVersion !== 1 || registry.registry !== "genesis-juris-case-types" || !Array.isArray(registry.types)) throw new Error("Unsupported case-type registry");
+  const ids = new Set<CaseTypeId>();
+  return registry.types.map((entry) => {
+    if (!(entry.id in presentation) || entry.version !== CASE_TYPE_VERSION || ids.has(entry.id)) throw new Error("Invalid immutable case-type package");
+    ids.add(entry.id);
+    return { ...entry, ...presentation[entry.id] };
+  });
+}
+
+export const CASE_TYPE_REGISTRY = validatedRegistry(rawRegistry);
 
 const byId = new Map(CASE_TYPE_REGISTRY.map((definition) => [definition.id, definition]));
 

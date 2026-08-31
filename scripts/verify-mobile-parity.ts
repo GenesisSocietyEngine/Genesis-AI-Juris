@@ -255,8 +255,13 @@ function verifyCaseTypeRegistryContract(manifest: CaseTypeRegistryManifest, lock
   equal(manifest.registry, lock.caseTypes.registry, "case-type registry identity");
   equalStable(manifest.types.map((item) => ({ id: item.id, version: item.version })), [
     { id: "general_advisory", version: "1.0.0" },
+    { id: "litigation_strategy", version: "1.0.0" },
+    { id: "contract_review", version: "1.0.0" },
+    { id: "tax_planning", version: "1.0.0" },
+    { id: "compliance", version: "1.0.0" },
     { id: "tax_compliance", version: "1.0.0" },
     { id: "erp_incident", version: "1.0.0" },
+    { id: "investigation", version: "1.0.0" },
     { id: "training_simulation", version: "1.0.0" },
   ], "case-type registry identities");
 }
@@ -267,8 +272,13 @@ function verifyPlaybookContract(manifest: CaseTypePlaybookManifest, lock: Parity
   equal(manifest.registry, lock.playbooks.registry, "case-type playbook identity");
   equalStable(manifest.playbooks.map((item) => item.caseType), [
     { id: "general_advisory", version: "1.0.0" },
+    { id: "litigation_strategy", version: "1.0.0" },
+    { id: "contract_review", version: "1.0.0" },
+    { id: "tax_planning", version: "1.0.0" },
+    { id: "compliance", version: "1.0.0" },
     { id: "tax_compliance", version: "1.0.0" },
     { id: "erp_incident", version: "1.0.0" },
+    { id: "investigation", version: "1.0.0" },
     { id: "training_simulation", version: "1.0.0" },
   ], "case-type playbook identities");
   for (const playbook of manifest.playbooks) {

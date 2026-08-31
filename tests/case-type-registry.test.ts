@@ -30,8 +30,8 @@ function legacyDraft(): StudioDraft {
   };
 }
 
-test("case-type registry exposes four immutable v1 packages", () => {
-  assert.deepEqual(CASE_TYPE_REGISTRY.map((item) => item.id), ["general_advisory", "tax_compliance", "erp_incident", "training_simulation"]);
+test("case-type registry exposes nine immutable v1 packages", () => {
+  assert.deepEqual(CASE_TYPE_REGISTRY.map((item) => item.id), ["general_advisory", "litigation_strategy", "contract_review", "tax_planning", "compliance", "tax_compliance", "erp_incident", "investigation", "training_simulation"]);
   assert.ok(CASE_TYPE_REGISTRY.every((item) => item.version === "1.0.0"));
   assert.deepEqual(caseTypeDefinition(caseTypeReference("erp_incident")).views, ["task_plan", "evidence_map", "decision_table", "timeline"]);
   assert.throws(() => normalizeCaseTypeReference({ registry: "genesis-juris-case-types", id: "erp_incident", version: "2.0.0" }), /Unsupported case type version/);

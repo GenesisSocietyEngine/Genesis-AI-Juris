@@ -2438,6 +2438,9 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   const graphDeckRef = useRef<HTMLElement | null>(null);
   const graphViewportRef = useRef<HTMLDivElement | null>(null);
   const moreActionsRef = useRef<HTMLDetailsElement | null>(null);
+  const authRetryActionRef = useRef<"save" | "submit" | null>(null);
+  const authWindowRef = useRef<Window | null>(null);
+  const shareDraftRef = useRef<(action: "save" | "submit") => Promise<void>>(async () => undefined);
   const derivationsSettled = studioDerivations.source === draft;
   const promptDerivationsSettled = derivationsSettled && derivedPrompt === prompt;
   const canonicalPrompt = prompt.includes("GENESIS-JURIS-CANONICAL-V1");
@@ -2454,6 +2457,18 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   const aiInputKey = `${aiBaseFingerprint}\u0000${locale}\u0000${selectedNodeId ?? ""}\u0000${prompt.trim()}`;
   const aiInputKeyRef = useRef(aiInputKey);
   const activeAIResult = derivationsSettled && aiResult?.key === aiInputKey ? aiResult : null;
+  useEffect(() => { shareDraftRef.current = shareDraft; });
+  useEffect(() => {
+    const retry = () => {
+      const action = authRetryActionRef.current;
+      if (!action || document.visibilityState === "hidden") return;
+      authRetryActionRef.current = null;
+      window.setTimeout(() => void shareDraftRef.current(action), 100);
+    };
+    window.addEventListener("focus", retry);
+    document.addEventListener("visibilitychange", retry);
+    return () => { window.removeEventListener("focus", retry); document.removeEventListener("visibilitychange", retry); };
+  }, []);
   const aiNodeTitles = useMemo(() => {
     const titles = new Map(draft.nodes.map((node) => [node.id, node.title]));
     for (const operation of activeAIResult?.plan.operations ?? []) {
@@ -2883,7 +2898,8 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
       const response = await fetch("/api/submissions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, draft, isPrivate, ...concurrency }) });
       if (response.status === 401) {
         setWorkspaceState("auth_required");
-        window.open("/signin-with-chatgpt?return_to=%2F%3Fview%3Dstudio", "_blank", "noopener,noreferrer");
+        authRetryActionRef.current = action;
+        if (!authWindowRef.current || authWindowRef.current.closed) authWindowRef.current = window.open("/signin-with-chatgpt?return_to=%2F%3Fview%3Dstudio", "genesis-juris-studio-auth");
         return;
       }
       if (!response.ok) {
@@ -2902,6 +2918,8 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
       const savedPrivate = saved?.customCase?.isPrivate ?? isPrivate;
       setWorkspaceSavedFingerprint(`${aiBaseFingerprint}\u0000${savedPrivate ? "private" : "restricted"}`);
       setWorkspaceState(action === "submit" ? "submitted" : "saved");
+      authRetryActionRef.current = null;
+      if (authWindowRef.current && !authWindowRef.current.closed) authWindowRef.current.close();
     } catch {
       setWorkspaceState("error");
     }
@@ -3144,7 +3162,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     setGuidedStep(step);
   }
   async function changeCaseType(id: CaseTypeId) {
-    if (id !== "tax_compliance" && draft.nodes.some((node) => node.type === "entity" || node.type === "tax_rule" || node.type === "cash_flow")) {
+    if (id !== "tax_compliance" && id !== "tax_planning" && draft.nodes.some((node) => node.type === "entity" || node.type === "tax_rule" || node.type === "cash_flow")) {
       setRelationStatus(locale === "en" ? "Tax-specific nodes keep this matter in the Tax & compliance package. Remove or convert those nodes before switching case type." : "Налоговые узлы сохраняют пакет «Налоги и compliance». Удалите или преобразуйте их перед сменой типа кейса.");
       return;
     }
@@ -3174,7 +3192,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
         {submitBlocker && displayMode === "developer" && <p id="studio-submit-blocker" className="studio-submit-blocker"><Icon name="alert"/><span>{submitBlocker}</span>{derivationError && <button type="button" onClick={() => { setDerivationError(false); setDerivationAttempt((attempt) => attempt + 1); }}>{locale === "en" ? "Retry check" : "Повторить проверку"}</button>}{isPrivate && submitBlocker !== firstSubmissionWarning && <button type="button" onClick={() => document.getElementById("studio-case-settings")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{locale === "en" ? "Change visibility" : "Изменить видимость"}</button>}{firstSubmissionWarning && submitBlocker === firstSubmissionWarning && <button type="button" onClick={() => document.getElementById("studio-checks")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{locale === "en" ? "Review issue" : "Перейти к замечанию"}</button>}</p>}
         {savedFlash && <div className="save-toast"><Icon name="check"/>{text.saved}</div>}
         {caseReportStatus && <div className="save-toast report-toast" role="status"><Icon name="check"/>{caseReportStatus}</div>}
-        {visibleWorkspaceState !== "idle" && <div className={`workspace-toast ${visibleWorkspaceState}`} role="status">{visibleWorkspaceState === "saving" ? (locale === "en" ? "Saving the current draft and visibility…" : "Сохраняются текущий черновик и режим видимости…") : visibleWorkspaceState === "auth_required" ? (locale === "en" ? "Sign-in opened in another tab. Complete it, return here and save again." : "Вход открыт в новой вкладке. Завершите его, вернитесь сюда и повторите сохранение.") : visibleWorkspaceState === "saved" ? (locale === "en" ? "Workspace draft and visibility saved." : "Черновик и режим видимости сохранены в workspace.") : visibleWorkspaceState === "submitted" ? (locale === "en" ? "Submitted to the expert review queue." : "Отправлено в очередь экспертной рецензии.") : visibleWorkspaceState === "conflict" ? (locale === "en" ? "A newer workspace version exists. Reopen the case before saving." : "В workspace уже есть более новая версия. Переоткройте кейс перед сохранением.") : !canDuplicate ? (locale === "en" ? "Inspection-only access: save, export and copy are disabled." : "Доступ только для просмотра: сохранение, экспорт и копирование отключены.") : !draftWithinEnvelope ? (locale === "en" ? "The draft exceeds the 900 KB Studio envelope. Shorten node or relation details." : "Черновик превышает лимит Studio 900 КБ. Сократите описания узлов или связей.") : (locale === "en" ? "The workspace change could not be saved. Check access, identity and case status." : "Не удалось сохранить изменение workspace. Проверьте доступ, идентификатор и статус кейса.")}</div>}
+        {visibleWorkspaceState !== "idle" && <div className={`workspace-toast ${visibleWorkspaceState}`} role="status">{visibleWorkspaceState === "saving" ? (locale === "en" ? "Saving the current draft and visibility…" : "Сохраняются текущий черновик и режим видимости…") : visibleWorkspaceState === "auth_required" ? (locale === "en" ? "Complete sign-in in the authorization window, then return here; this exact save will retry automatically." : "Завершите вход в окне авторизации и вернитесь сюда: сохранение этой версии повторится автоматически.") : visibleWorkspaceState === "saved" ? (locale === "en" ? "Workspace draft and visibility saved." : "Черновик и режим видимости сохранены в workspace.") : visibleWorkspaceState === "submitted" ? (locale === "en" ? "Submitted to the expert review queue." : "Отправлено в очередь экспертной рецензии.") : visibleWorkspaceState === "conflict" ? (locale === "en" ? "A newer workspace version exists. Reopen the case before saving." : "В workspace уже есть более новая версия. Переоткройте кейс перед сохранением.") : !canDuplicate ? (locale === "en" ? "Inspection-only access: save, export and copy are disabled." : "Доступ только для просмотра: сохранение, экспорт и копирование отключены.") : !draftWithinEnvelope ? (locale === "en" ? "The draft exceeds the 900 KB Studio envelope. Shorten node or relation details." : "Черновик превышает лимит Studio 900 КБ. Сократите описания узлов или связей.") : (locale === "en" ? "The workspace change could not be saved. Check access, identity and case status." : "Не удалось сохранить изменение workspace. Проверьте доступ, идентификатор и статус кейса.")}</div>}
       </section>
     {!canDuplicate && <aside className="studio-readonly-notice page-width" role="status"><Icon name="file"/><div><b>{locale === "en" ? "Inspection-only case" : "Кейс только для просмотра"}</b><p>{locale === "en" ? "You can inspect the graph and rules, but this protected case cannot be edited, copied, exported or saved. Start a blank draft or open the worked example to author a separate case." : "Вы можете изучать схему и правила, но этот защищённый кейс нельзя редактировать, копировать, экспортировать или сохранять. Создайте новый черновик или откройте учебный пример для отдельной работы."}</p></div></aside>}
     <aside className="confidentiality-notice page-width"><Icon name="alert"/><p>{locale === "en" ? "Confidentiality: do not enter client-identifiable, privileged, personal or secret information. Use synthetic or de-identified facts and public legal sources." : "Конфиденциальность: не вводите сведения, идентифицирующие клиента, адвокатскую тайну, персональные данные или секреты. Используйте синтетические или обезличенные факты и публичные источники права."}</p></aside>

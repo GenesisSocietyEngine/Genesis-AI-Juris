@@ -15,46 +15,61 @@ fi
 
 cd "${project_root}"
 
-echo "[web 1/6] strict TypeScript"
+echo "[web 1/7] strict TypeScript"
 npx tsc --noEmit --incremental false
 
-echo "[web 2/6] lint"
+echo "[web 2/7] lint"
 npm run lint
 
-echo "[web 3/6] tests (including verified build)"
+echo "[web 3/7] tests (including verified build)"
 npm test
 
-echo "[web 4/6] production dependency audit"
+echo "[web 4/7] bilingual professional PDF structural and text verification"
+npm run reports:verify
+
+echo "[web 5/7] production dependency audit"
 npm audit --omit=dev
 
-echo "[web 5/6] patch hygiene"
+echo "[web 6/7] patch hygiene"
 git diff --check
 
-echo "[web 6/6] final verified build"
+echo "[web 7/7] final verified build"
 npm run build
 
-echo "[mobile 1/5] exact-SHA checkout and 18-route cross-runtime fixture parity"
+echo "[mobile 1/7] exact-SHA checkout and 18-route cross-runtime fixture parity"
 npm run parity:mobile -- --mobile-repo "${mobile_root}"
 
-echo "[mobile 2/5] dependency resolution"
+echo "[mobile 2/7] dependency resolution"
 (
   cd "${mobile_root}/apps/juris-mobile"
   "${flutter_command}" pub get
 )
 
-echo "[mobile 3/5] Flutter analysis"
+echo "[mobile 3/7] Flutter analysis"
 (
   cd "${mobile_root}/apps/juris-mobile"
   "${flutter_command}" analyze
 )
 
-echo "[mobile 4/5] Flutter tests"
+echo "[mobile 4/7] Flutter tests"
 (
   cd "${mobile_root}/apps/juris-mobile"
   "${flutter_command}" test
 )
 
-echo "[mobile 5/5] locked Rust workspace tests"
+echo "[mobile 5/7] locked Rust formatting"
+(
+  cd "${mobile_root}"
+  "${cargo_command}" fmt --all -- --check
+)
+
+echo "[mobile 6/7] locked Rust Clippy"
+(
+  cd "${mobile_root}"
+  "${cargo_command}" clippy --workspace --all-targets --locked -- -D warnings
+)
+
+echo "[mobile 7/7] locked Rust workspace tests"
 (
   cd "${mobile_root}"
   "${cargo_command}" test --workspace --locked
@@ -81,4 +96,4 @@ node --input-type=module -e '
   }
 '
 
-echo "PASS v59 First Four Case Types release verification. Deployment remains a separate, explicit Sites operation."
+echo "PASS v61 Governance, Evidence, and Professional Reports release verification. Deployment remains a separate, explicit Sites operation."

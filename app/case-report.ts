@@ -2,6 +2,7 @@ import { calculateDealEconomics, estimateDealCashFlowProbabilities } from "./dea
 import { calculateTaxEconomics } from "./tax-economics";
 import { layoutStudioNodes, studioNodeEstimatedHeight } from "./studio-layout";
 import type { StudioDraft, StudioLink, StudioNode, StudioNodeType } from "./types";
+import { buildCanonicalReportModel, reportReceipt, reportReceiptStorageKey, type CanonicalReportModel, type ReportSectionId } from "./report-model";
 import type { Content, ContentTable, TDocumentDefinitions, TableCell } from "pdfmake/interfaces";
 
 export type CaseReportOptions = {
@@ -22,6 +23,10 @@ export type CaseReportOptions = {
   currentFingerprint: string;
   workspaceFingerprint: string | null;
   privateCase: boolean;
+  status?: "draft" | "final";
+  reviewerName?: string;
+  reviewerApproved?: boolean;
+  redactedNodeIds?: string[];
 };
 
 const palette = { ink: "#10202c", navy: "#163445", cyan: "#3d9daa", gold: "#c79b3b", mist: "#edf2f3", line: "#b6c4c8", red: "#a34444", white: "#ffffff" };
@@ -29,6 +34,12 @@ const nodeNames: Record<StudioNodeType, [string, string]> = {
   trigger: ["Trigger", "Триггер"], actor: ["Actor", "Участник"], fact: ["Fact", "Факт"], evidence: ["Evidence", "Доказательство"],
   deadline: ["Deadline", "Срок"], decision: ["Decision", "Решение"], outcome: ["Outcome", "Исход"], entity: ["Entity / jurisdiction", "Организация / юрисдикция"],
   tax_rule: ["Tax rule", "Налоговое правило"], cash_flow: ["Cash flow", "Денежный поток"],
+};
+const reportSectionNames: Record<ReportSectionId, [string, string]> = {
+  executive_summary: ["Executive summary", "Резюме"], issues: ["Issues", "Вопросы"], facts_evidence: ["Facts and evidence", "Факты и доказательства"], authorities: ["Authorities", "Источники права"], options: ["Options", "Варианты"], recommendation: ["Recommendation", "Рекомендация"],
+  sources: ["Sources", "Источники"], approval: ["Approval", "Утверждение"], chronology: ["Chronology", "Хронология"], custody: ["Chain of custody", "Цепочка хранения"], risk_scenarios: ["Risk scenarios", "Сценарии риска"], obligations: ["Obligations", "Обязательства"], deadlines: ["Deadlines", "Сроки"],
+  economics: ["Economics", "Экономика"], tax_position: ["Tax position", "Налоговая позиция"], controls: ["Controls", "Контроли"], gaps: ["Gaps and exceptions", "Пробелы и исключения"], remediation: ["Remediation", "Устранение"], root_cause: ["Root cause", "Первопричина"], process_design: ["Process and solution design", "Процесс и проект решения"],
+  test_plan: ["Test plan", "План тестирования"], expected_results: ["Expected results", "Ожидаемые результаты"], actors: ["Actors", "Участники"], findings: ["Findings", "Выводы"], redactions: ["Redactions", "Скрытые данные"], scenario_map: ["Scenario map", "Карта сценария"], routes: ["Route coverage", "Покрытие маршрутов"], learning_objectives: ["Learning objectives", "Учебные цели"], facilitation: ["Facilitation plan", "План фасилитации"], debrief: ["Debrief", "Разбор"],
 };
 
 const tr = (language: CaseReportOptions["language"], en: string, ru: string) => language === "en" ? en : ru;
@@ -249,6 +260,25 @@ function buildEconomics(draft: StudioDraft, options: CaseReportOptions): Content
 
 export function buildCaseReportDefinition(draft: StudioDraft, options: CaseReportOptions): TDocumentDefinitions {
   const { language } = options;
+  const reportModel = buildCanonicalReportModel(draft, {
+    profileId: options.profileId,
+    status: options.status ?? "draft",
+    audience: options.audience,
+    preparedBy: options.preparedBy,
+    preparedFor: options.preparedFor,
+    reviewerName: options.reviewerName ?? "",
+    reviewerApproved: options.reviewerApproved ?? false,
+    currentFingerprint: options.currentFingerprint,
+    workspaceFingerprint: options.workspaceFingerprint,
+    redactedNodeIds: options.redactedNodeIds,
+    confidential: options.privateCase || options.confidentiality === "confidential",
+  });
+  if ((reportModel.publication.status === "final" || reportModel.publication.audience === "client") && !reportModel.readiness.ready) throw new Error(`Report is not ready: ${reportModel.readiness.blockers.join("; ")}`);
+  const redactions = new Set(options.redactedNodeIds ?? []);
+  if (redactions.size) {
+    const visibleIds = new Set(draft.nodes.filter((node) => !redactions.has(node.id)).map((node) => node.id));
+    draft = { ...draft, nodes: draft.nodes.filter((node) => visibleIds.has(node.id)), links: draft.links.filter((link) => visibleIds.has(link.from) && visibleIds.has(link.to)) };
+  }
   const generated = new Date(options.generatedAt);
   const generatedLabel = Number.isNaN(generated.valueOf()) ? options.generatedAt : generated.toLocaleString(language === "en" ? "en-GB" : "ru-RU", { dateStyle: "long", timeStyle: "short", timeZone: "UTC" });
   const classification = draft.classification;
@@ -294,6 +324,9 @@ export function buildCaseReportDefinition(draft: StudioDraft, options: CaseRepor
       [tr(language, "Legal / guidance as of", "Право / guidance на дату"), clean(classification?.legalAsOf)],
       [tr(language, "Tags", "Теги"), classification?.tags?.join(", ") || "-"],
       [tr(language, "Tax topics", "Налоговые темы"), classification?.taxTopics?.join(", ") || "-"],
+      [tr(language, "Case package", "Пакет кейса"), `${reportModel.case.type.id}@${reportModel.case.type.version}`],
+      [tr(language, "Report profile / renderer", "Профиль отчёта / renderer"), `${reportModel.profile.id}@${reportModel.rendererVersion}`],
+      [tr(language, "Report state", "Состояние отчёта"), `${reportModel.publication.status.toUpperCase()} · ${reportModel.publication.audience.toUpperCase()}`],
     ], ["38%", "62%"]),
     { text: tr(language, "Executive case context", "Ключевой контекст кейса"), style: "subheading" },
     { text: clean(draft.premise, tr(language, "No context supplied.", "Контекст не указан.")), style: "body" },
@@ -306,7 +339,20 @@ export function buildCaseReportDefinition(draft: StudioDraft, options: CaseRepor
       [tr(language, "Outcomes", "Исходы"), String(nodeCounts.outcome)],
       [tr(language, "Public HTTPS sources", "Публичные HTTPS-источники"), String(sourceUrls.length)],
     ], ["74%", "26%"]),
+    { text: tr(language, "Type-aware report scope", "Типовой состав отчёта"), style: "subheading", margin: [0, 12, 0, 5] },
+    { text: reportModel.profile.sections.map((id) => id.replaceAll("_", " ")).join(" · "), style: "bodySmall" },
+    { text: `${tr(language, "Canonical report-model fingerprint", "Отпечаток канонической модели отчёта")}: ${reportModel.contentFingerprint}`, style: "fingerprint" },
   ];
+
+  content.push(numberedSection("Profile-specific analysis", "Профильный анализ"));
+  for (const profileSection of reportModel.sections.filter((item) => !["executive_summary", "sources", "approval", "economics", "scenario_map"].includes(item.id))) {
+    content.push({ text: reportSectionNames[profileSection.id][language === "en" ? 0 : 1], style: "subheading", margin: [0, 10, 0, 5] });
+    if (profileSection.items.length) content.push(table(
+      [tr(language, "Item", "Элемент"), tr(language, "Professional record", "Профессиональная запись")],
+      profileSection.items.map((item) => [options.includeTechnicalIds ? `${item.title}\n[${item.id}]` : item.title, item.detail]), ["35%", "65%"]
+    ));
+    else content.push({ text: tr(language, "No structured items are recorded for this section; reviewer completion is required where material.", "Для этого раздела нет структурированных элементов; рецензент должен заполнить его, если он существенен."), style: "warning" });
+  }
 
   if (options.includeEconomics && (draft.dealEconomics || draft.taxEconomics)) {
     content.push(numberedSection("Economics and scenario analysis", "Экономика и сценарный анализ"));
@@ -419,6 +465,13 @@ export async function downloadCaseReport(draft: StudioDraft, options: CaseReport
   ]);
   (pdfMake as unknown as { addVirtualFileSystem: (fonts: unknown) => void }).addVirtualFileSystem(pdfFonts);
   const definition = buildCaseReportDefinition(draft, options);
+  const model: CanonicalReportModel = buildCanonicalReportModel(draft, {
+    profileId: options.profileId, status: options.status ?? "draft", audience: options.audience,
+    preparedBy: options.preparedBy, preparedFor: options.preparedFor, reviewerName: options.reviewerName ?? "",
+    reviewerApproved: options.reviewerApproved ?? false, currentFingerprint: options.currentFingerprint,
+    workspaceFingerprint: options.workspaceFingerprint, redactedNodeIds: options.redactedNodeIds,
+    confidential: options.privateCase || options.confidentiality === "confidential",
+  });
   const blob = await new Promise<Blob>((resolve) => pdfMake.createPdf(definition).getBlob(resolve));
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -428,4 +481,7 @@ export async function downloadCaseReport(draft: StudioDraft, options: CaseReport
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+  const receipt = reportReceipt(model, options.generatedAt);
+  try { window.localStorage.setItem(reportReceiptStorageKey(draft.caseId, options.profileId), JSON.stringify(receipt)); } catch { /* receipt persistence is best-effort and contains no case content */ }
+  return receipt;
 }
