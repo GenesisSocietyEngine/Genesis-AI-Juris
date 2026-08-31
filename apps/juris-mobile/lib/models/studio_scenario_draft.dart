@@ -119,6 +119,10 @@ final class StudioScenarioDraft {
 
   List<Map<String, dynamic>> get stages => _objectList('stages');
   List<Map<String, dynamic>> get actions => _objectList('actions');
+  int get actorCount => _objectList('actors').length;
+  int get terminalStageCount => stages
+      .where((Map<String, dynamic> stage) => stage['terminal'] == true)
+      .length;
 
   bool get identityReady => title.trim().isNotEmpty &&
       premise.trim().isNotEmpty &&

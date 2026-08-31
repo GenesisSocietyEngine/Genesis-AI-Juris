@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,8 +7,17 @@ import 'package:juris_mobile/app/app_theme.dart';
 import 'package:juris_mobile/data/scenario_bridge_client.dart';
 import 'package:juris_mobile/data/studio_authoring_repository.dart';
 import 'package:juris_mobile/data/studio_draft_store.dart';
+import 'package:juris_mobile/models/case_type_playbook.dart';
+import 'package:juris_mobile/models/case_type_registry.dart';
 import 'package:juris_mobile/models/studio_scenario_draft.dart';
 import 'package:juris_mobile/screens/studio_wizard_screen.dart';
+
+final CaseTypePlaybookRegistry _testPlaybooks =
+    CaseTypePlaybookRegistry.fromJson(
+  jsonDecode(
+    File('../../contracts/case-type-playbooks.v1.json').readAsStringSync(),
+  ),
+);
 
 void main() {
   testWidgets('Guided Studio exposes the shared six-stage low-entry workflow', (
@@ -21,6 +31,7 @@ void main() {
           store: _MemoryStudioStore(),
           locale: 'en',
           onExit: () {},
+          playbookRegistry: _testPlaybooks,
         ),
       ),
     );
@@ -69,17 +80,64 @@ void main() {
           store: store,
           locale: 'en',
           onExit: () {},
+          playbookRegistry: _testPlaybooks,
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Rust validation and route test'), findsOneWidget);
+    expect(find.text('Compile and play every deterministic route'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey<String>('studio-rust-gate')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Schema valid'), findsOneWidget);
+    expect(find.text('Package ready'), findsOneWidget);
     expect(find.textContaining('2 actions'), findsOneWidget);
+    expect(
+      tester.widget<FilledButton>(
+        find.byKey(const ValueKey<String>('studio-continue')),
+      ).onPressed,
+      isNotNull,
+    );
+  });
+
+  testWidgets('advisory package validates without executing a fake route', (
+    WidgetTester tester,
+  ) async {
+    final _WizardBridge bridge = _WizardBridge();
+    final StudioScenarioDraft advisory = StudioScenarioDraft.guidedExample()
+        .updateCaseType(CaseTypeId.generalAdvisory);
+    final _MemoryStudioStore store = _MemoryStudioStore(
+      StudioWorkspace(
+        draft: advisory,
+        activeStage: StudioWorkflowStage.runCompare,
+        completedStages: <StudioWorkflowStage>{
+          StudioWorkflowStage.describe,
+          StudioWorkflowStage.reviewAiDraft,
+          StudioWorkflowStage.factsAssumptions,
+          StudioWorkflowStage.caseMap,
+        },
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: JurisTheme.dark(),
+        home: StudioWizardScreen(
+          repository: StudioAuthoringRepository(bridge),
+          store: store,
+          locale: 'en',
+          onExit: () {},
+          playbookRegistry: _testPlaybooks,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Review evidence coverage and compare options'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey<String>('studio-rust-gate')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Package ready'), findsOneWidget);
+    expect(bridge.routeCalls, 0);
     expect(
       tester.widget<FilledButton>(
         find.byKey(const ValueKey<String>('studio-continue')),
@@ -110,6 +168,7 @@ void main() {
           store: store,
           locale: 'en',
           onExit: () {},
+          playbookRegistry: _testPlaybooks,
         ),
       ),
     );
@@ -158,6 +217,7 @@ final class _MemoryStudioStore implements StudioDraftStore {
 
 final class _WizardBridge implements ScenarioBridgeClient {
   int _turn = 0;
+  int routeCalls = 0;
 
   @override
   String execute(String encodedRequest) {
@@ -167,6 +227,7 @@ final class _WizardBridge implements ScenarioBridgeClient {
       case 'validate_scenario':
         return '{"type":"scenario_validated","valid":true,"diagnostics":[]}';
       case 'create_session':
+        routeCalls += 1;
         _turn = 0;
         return jsonEncode(<String, dynamic>{
           'type': 'session_created',

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../data/studio_authoring_repository.dart';
 import '../data/studio_draft_store.dart';
+import '../models/case_type_playbook.dart';
 import '../models/case_type_registry.dart';
 import '../models/studio_scenario_draft.dart';
 import '../widgets/section_card.dart';
@@ -16,6 +17,7 @@ final class StudioWizardScreen extends StatefulWidget {
     required this.store,
     required this.locale,
     required this.onExit,
+    this.playbookRegistry,
     super.key,
   });
 
@@ -23,6 +25,7 @@ final class StudioWizardScreen extends StatefulWidget {
   final StudioDraftStore store;
   final String locale;
   final VoidCallback onExit;
+  final CaseTypePlaybookRegistry? playbookRegistry;
 
   @override
   State<StudioWizardScreen> createState() => _StudioWizardScreenState();
@@ -40,16 +43,22 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   late final TextEditingController _premiseController;
   StudioValidationResult? _validation;
   StudioRouteTestResult? _routeResult;
+  CaseTypePlaybookRegistry? _playbookRegistry;
   bool _loading = true;
   bool _busy = false;
   String? _notice;
   String? _exportPath;
 
   bool get _ru => widget.locale == 'ru';
+  CaseTypePlaybook get _playbook =>
+      _playbookRegistry!.forCaseType(_draft.caseType.id);
+  CasePackageEvaluation get _packageEvaluation =>
+      evaluateCanonicalCasePackage(_playbook, _draft);
 
   @override
   void initState() {
     super.initState();
+    _playbookRegistry = widget.playbookRegistry;
     _titleController = TextEditingController();
     _jurisdictionController = TextEditingController();
     _roleController = TextEditingController();
@@ -72,6 +81,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
 
   Future<void> _load() async {
     try {
+      _playbookRegistry ??= await loadCaseTypePlaybookRegistry();
       final StudioWorkspace? workspace = await widget.store.read();
       if (workspace != null && mounted) {
         _draft = workspace.draft;
@@ -119,6 +129,18 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (_playbookRegistry == null) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              _notice ?? _t('Case packages could not be loaded.', 'Не удалось загрузить пакеты кейсов.'),
+            ),
+          ),
+        ),
+      );
     }
     return Scaffold(
       appBar: AppBar(
@@ -321,6 +343,31 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                     '${selected.workflowMode} · v$caseTypeVersion',
                     style: Theme.of(context).textTheme.labelSmall,
                   ),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Text(
+                    _t('Package intake', 'Вопросы пакета'),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  for (final (int index, CaseIntakeQuestion question)
+                      in _playbook.intakeQuestions.indexed)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        radius: 14,
+                        child: Text('${index + 1}'),
+                      ),
+                      title: Text(question.label.forLocale(widget.locale)),
+                      subtitle: Text(question.hint.forLocale(widget.locale)),
+                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${_t('AI focus', 'Фокус AI')}: '
+                    '${_playbook.aiFocus.forLocale(widget.locale)}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ],
               );
             },
@@ -439,6 +486,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   }
 
   Widget _buildFacts() {
+    final CanonicalCaseRequirements requirements =
+        _playbook.canonicalRequirements;
     return SectionCard(
       title: _t('Known facts and assumptions', 'Факты и предположения'),
       subtitle: _t(
@@ -447,6 +496,21 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       ),
       child: Column(
         children: <Widget>[
+          if (requirements.requireLegalAsOfFact ||
+              requirements.requireHttpsSourceFact ||
+              requirements.requireComplianceFact) ...<Widget>[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _t(
+                  'For this package, include a YYYY-MM-DD legal as-of date, an authoritative https:// source and the applicable compliance or reporting duty in the fact record.',
+                  'Для этого пакета укажите в фактах дату актуальности права YYYY-MM-DD, официальный источник https:// и применимую обязанность compliance или отчётности.',
+                ),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           for (final (int index, TextEditingController controller)
               in _factControllers.indexed) ...<Widget>[
             Row(
@@ -530,11 +594,18 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
         ),
         const SizedBox(height: 16),
         SectionCard(
-          title: _t('Decision route', 'Маршрут решений'),
-          subtitle: _t(
-            'Each action is executed by the authoritative Rust runtime in Step 5.',
-            'Каждое действие будет выполнено авторитетным Rust runtime на шаге 5.',
-          ),
+          title: _playbook.test.requiresPlayableRoute
+              ? _t('Decision route', 'Маршрут решений')
+              : _t('Action and review plan', 'План действий и проверки'),
+          subtitle: _playbook.test.requiresPlayableRoute
+              ? _t(
+                  'Each action is executed by the authoritative Rust runtime in Step 5.',
+                  'Каждое действие будет выполнено авторитетным Rust runtime на шаге 5.',
+                )
+              : _t(
+                  'These canonical actions organize professional review; Step 5 validates them without pretending the matter is a game.',
+                  'Эти canonical-действия организуют профессиональную проверку; шаг 5 проверяет их без имитации игры.',
+                ),
           child: Column(
             children: <Widget>[
               for (final (int index, Map<String, dynamic> action)
@@ -562,39 +633,62 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
 
   Widget _buildTest() {
     final StudioValidationResult? validation = _validation;
+    final CaseTypePlaybook playbook = _playbook;
+    final CasePackageEvaluation evaluation = _packageEvaluation;
+    final bool routeRequired = playbook.test.requiresPlayableRoute;
+    final bool passed = validation?.valid == true &&
+        evaluation.complete &&
+        (!routeRequired || _routeResult != null);
     return SectionCard(
-      title: _t('Rust validation and route test', 'Проверка Rust и тест маршрута'),
-      subtitle: _t(
-        'Flutter cannot approve its own draft. Rust parses the canonical schema, '
-            'returns diagnostics, then executes the first available route.',
-        'Flutter не подтверждает свой черновик. Rust разбирает canonical schema, '
-            'возвращает диагностику и выполняет первый доступный маршрут.',
-      ),
+      title: playbook.test.label.forLocale(widget.locale),
+      subtitle: routeRequired
+          ? _t(
+              'Rust validates the canonical schema and executes the authored route. Flutter cannot approve its own draft.',
+              'Rust проверяет canonical schema и выполняет созданный маршрут. Flutter не подтверждает свой черновик.',
+            )
+          : _t(
+              'Rust validates the canonical schema; the package then checks matter-specific completeness without inventing a playable route.',
+              'Rust проверяет canonical schema, затем пакет проверяет полноту кейса без искусственного игрового маршрута.',
+            ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           FilledButton.icon(
             key: const ValueKey<String>('studio-rust-gate'),
             onPressed: _busy ? null : _validateAndRun,
-            icon: const Icon(Icons.play_circle_outline),
-            label: Text(_t('Validate and run in Rust', 'Проверить и запустить в Rust')),
+            icon: Icon(routeRequired
+                ? Icons.play_circle_outline
+                : Icons.fact_check_outlined),
+            label: Text(routeRequired
+                ? _t('Validate and play in Rust', 'Проверить и запустить в Rust')
+                : _t('Validate package through Rust', 'Проверить пакет через Rust')),
           ),
           if (validation != null) ...<Widget>[
             const SizedBox(height: 16),
             _GateStatus(
-              passed: validation.valid && _routeResult != null,
-              title: validation.valid
-                  ? _t('Schema valid', 'Схема корректна')
+              passed: passed,
+              title: passed
+                  ? _t('Package ready', 'Пакет готов')
                   : _t('Changes required', 'Нужны изменения'),
-              detail: _routeResult == null
+              detail: !validation.valid
                   ? _t(
                       '${validation.diagnostics.length} Rust diagnostic(s)',
                       'Диагностик Rust: ${validation.diagnostics.length}',
                     )
-                  : _t(
+                  : !evaluation.complete
+                      ? _t(
+                          'Missing package evidence: ${evaluation.missing.join(', ')}',
+                          'Не хватает данных пакета: ${evaluation.missing.join(', ')}',
+                        )
+                      : routeRequired
+                          ? _t(
                       '${_routeResult!.executedActionIds.length} actions → ${_routeResult!.outcomeId}',
                       '${_routeResult!.executedActionIds.length} действий → ${_routeResult!.outcomeId}',
-                    ),
+                            )
+                          : _t(
+                              'Rust schema valid · ${playbook.test.mode} checks passed',
+                              'Rust schema корректна · проверка ${playbook.test.mode} пройдена',
+                            ),
             ),
             for (final StudioDiagnostic diagnostic in validation.diagnostics)
               ListTile(
@@ -611,14 +705,44 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   }
 
   Widget _buildFinish() {
+    final CaseTypePlaybook playbook = _playbook;
     return Column(
       children: <Widget>[
         _GateStatus(
-          passed: _validation?.valid == true && _routeResult != null,
+          passed: _canFinish,
           title: _t('Ready to save', 'Готово к сохранению'),
-          detail: _t(
-            'Canonical schema and executable route passed Rust.',
-            'Canonical schema и исполняемый маршрут прошли Rust.',
+          detail: playbook.test.requiresPlayableRoute
+              ? _t(
+                  'Canonical schema and executable route passed Rust.',
+                  'Canonical schema и исполняемый маршрут прошли Rust.',
+                )
+              : _t(
+                  'Canonical schema passed Rust and package completeness checks passed.',
+                  'Canonical schema прошла Rust и проверки полноты пакета.',
+                ),
+        ),
+        const SizedBox(height: 16),
+        SectionCard(
+          title: _t('Package outputs', 'Результаты пакета'),
+          subtitle: _t(
+            'The primary result is selected automatically; supporting outputs remain reusable.',
+            'Основной результат выбран автоматически; дополнительные результаты остаются повторно используемыми.',
+          ),
+          child: Column(
+            children: <Widget>[
+              for (final CaseOutputProfile output in playbook.outputs)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(output.primary
+                      ? Icons.description_outlined
+                      : Icons.article_outlined),
+                  title: Text(output.label.forLocale(widget.locale)),
+                  subtitle: Text(output.description.forLocale(widget.locale)),
+                  trailing: output.primary
+                      ? Chip(label: Text(_t('Primary', 'Основной')))
+                      : null,
+                ),
+            ],
           ),
         ),
         const SizedBox(height: 16),
@@ -650,7 +774,9 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
     );
   }
 
-  bool get _canFinish => _validation?.valid == true && _routeResult != null;
+  bool get _canFinish => _validation?.valid == true &&
+      _packageEvaluation.complete &&
+      (!_playbook.test.requiresPlayableRoute || _routeResult != null);
 
   bool get _canContinue => switch (_activeStage) {
         StudioWorkflowStage.describe => _draft.identityReady,
@@ -812,19 +938,32 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
     });
     try {
       final StudioValidationResult validation = widget.repository.validate(_draft);
+      final CasePackageEvaluation evaluation = _packageEvaluation;
+      final bool routeRequired = _playbook.test.requiresPlayableRoute;
       StudioRouteTestResult? route;
-      if (validation.valid) {
+      if (validation.valid && evaluation.complete && routeRequired) {
         route = widget.repository.runFirstAvailableRoute(_draft);
       }
       if (!mounted) return;
       setState(() {
         _validation = validation;
         _routeResult = route;
-        if (validation.valid && route != null) {
+        if (validation.valid &&
+            evaluation.complete &&
+            (!routeRequired || route != null)) {
           _completed.add(StudioWorkflowStage.runCompare);
           _notice = _t(
-            'Rust gate passed. Finish is now unlocked.',
-            'Проверка Rust пройдена. Завершение разблокировано.',
+            routeRequired
+                ? 'Rust validation and route execution passed. Finish is unlocked.'
+                : 'Rust validation and package checks passed. Finish is unlocked.',
+            routeRequired
+                ? 'Проверка Rust и маршрут пройдены. Завершение разблокировано.'
+                : 'Проверка Rust и пакета пройдена. Завершение разблокировано.',
+          );
+        } else if (validation.valid && !evaluation.complete) {
+          _notice = _t(
+            'Add the missing package evidence before Finish: ${evaluation.missing.join(', ')}.',
+            'Добавьте недостающие данные пакета: ${evaluation.missing.join(', ')}.',
           );
         }
       });
@@ -909,8 +1048,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   String _stageDescription(StudioWorkflowStage stage) {
     return switch (stage) {
       StudioWorkflowStage.describe => _t(
-          'Tell Studio what the learner should face.',
-          'Опишите ситуацию, с которой столкнётся пользователь.',
+          'Choose the professional matter package and describe the result you need.',
+          'Выберите пакет профессиональной задачи и опишите требуемый результат.',
         ),
       StudioWorkflowStage.reviewAiDraft => _t(
           'Review the safe proposal before adding detail.',
@@ -921,12 +1060,16 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
           'Зафиксируйте факты, определяющие профессиональное решение.',
         ),
       StudioWorkflowStage.caseMap => _t(
-          'Review the matter through its package-defined views, then refine the route.',
-          'Проверьте задачу в представлениях пакета, затем уточните маршрут.',
+          'Review the matter through package-defined views, then refine its actions.',
+          'Проверьте задачу в представлениях пакета, затем уточните действия.',
         ),
       StudioWorkflowStage.runCompare => _t(
-          'Let Rust validate and execute the authored route.',
-          'Пусть Rust проверит и выполнит созданный маршрут.',
+          _playbook.test.requiresPlayableRoute
+              ? 'Let Rust validate and execute the authored route.'
+              : 'Let Rust validate the canonical draft and run package-specific checks.',
+          _playbook.test.requiresPlayableRoute
+              ? 'Пусть Rust проверит и выполнит созданный маршрут.'
+              : 'Пусть Rust проверит canonical draft и правила выбранного пакета.',
         ),
       StudioWorkflowStage.reportSave => _t(
           'Save a canonical artifact that both platforms understand.',
