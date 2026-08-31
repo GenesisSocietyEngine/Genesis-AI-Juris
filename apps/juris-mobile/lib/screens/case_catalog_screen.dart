@@ -28,6 +28,7 @@ class CaseCatalogLoaderScreen extends StatefulWidget {
     required this.locale,
     required this.onLocaleChanged,
     required this.onStartCase,
+    this.onOpenStudio,
     super.key,
   });
 
@@ -36,6 +37,7 @@ class CaseCatalogLoaderScreen extends StatefulWidget {
   final String locale;
   final ValueChanged<String> onLocaleChanged;
   final CaseStartCallback onStartCase;
+  final VoidCallback? onOpenStudio;
 
   @override
   State<CaseCatalogLoaderScreen> createState() =>
@@ -139,6 +141,7 @@ class _CaseCatalogLoaderScreenState extends State<CaseCatalogLoaderScreen> {
           initialLocale: widget.locale,
           onLocaleChanged: widget.onLocaleChanged,
           onStartCase: widget.onStartCase,
+          onOpenStudio: widget.onOpenStudio,
         );
       },
     );
@@ -156,6 +159,7 @@ class CaseCatalogScreen extends StatefulWidget {
   const CaseCatalogScreen({
     required this.bundle,
     required this.onStartCase,
+    this.onOpenStudio,
     this.visualManifest,
     this.initialLocale,
     this.onLocaleChanged,
@@ -167,6 +171,7 @@ class CaseCatalogScreen extends StatefulWidget {
   final String? initialLocale;
   final ValueChanged<String>? onLocaleChanged;
   final CaseStartCallback onStartCase;
+  final VoidCallback? onOpenStudio;
 
   @override
   State<CaseCatalogScreen> createState() => _CaseCatalogScreenState();
@@ -220,6 +225,7 @@ class _CaseCatalogScreenState extends State<CaseCatalogScreen> {
           selectedFilter: _filter,
           onLocaleSelected: _setLocale,
           onFilterSelected: _setFilter,
+          onOpenStudio: widget.onOpenStudio,
         ),
         indexBuilder: (BuildContext context, bool wide) {
           if (visibleCases.isEmpty) {

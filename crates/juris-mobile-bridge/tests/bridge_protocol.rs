@@ -18,6 +18,8 @@ const DOSSIER_SCENARIO: &str =
     include_str!("../../../content/fixtures/authoring/dossier_projection_v1.json");
 const PRESSURE_COUNTERMOVE_SCENARIO: &str =
     include_str!("../../juris-engine/tests/fixtures/pressure_countermove_runtime.json");
+const GUIDED_STUDIO_SCENARIO: &str =
+    include_str!("../../../apps/juris-mobile/test/fixtures/guided_studio_scenario.json");
 
 const PRE_REVEAL_SNAPSHOT_SENTINELS: &[&str] = &[
     "sentinel_unknown_fact",
@@ -109,6 +111,113 @@ fn assert_player_snapshot_ids(
 
 fn logistics_definition() -> ScenarioDefinition {
     serde_json::from_str(LOGISTICS_SCENARIO).expect("Logistics scenario must parse")
+}
+
+#[test]
+fn rust_validator_is_exposed_without_creating_a_session() {
+    let mut bridge = MobileBridge::new();
+    let scenario: Value = serde_json::from_str(LOGISTICS_SCENARIO).unwrap();
+    let response: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "validate_scenario",
+                "scenario": scenario
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+
+    assert_eq!(response["type"], "scenario_validated");
+    assert_eq!(response["valid"], true);
+    assert_eq!(response["diagnostics"], json!([]));
+    assert_eq!(bridge.session_count(), 0);
+}
+
+#[test]
+fn rust_validator_returns_stable_diagnostics_for_an_invalid_studio_graph() {
+    let mut scenario: Value = serde_json::from_str(LOGISTICS_SCENARIO).unwrap();
+    scenario["initial_stage"] = json!("missing_stage");
+    let mut bridge = MobileBridge::new();
+    let response: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "validate_scenario",
+                "scenario": scenario
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+
+    assert_eq!(response["type"], "scenario_validated");
+    assert_eq!(response["valid"], false);
+    assert!(response["diagnostics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|item| item["code"] == "SCN004_MISSING_INITIAL_STAGE"
+            && item["severity"] == "error"
+            && item["path"] == "initial_stage"));
+    assert_eq!(bridge.session_count(), 0);
+}
+
+#[test]
+fn flutter_guided_studio_fixture_validates_and_executes_to_resolution() {
+    let scenario: Value = serde_json::from_str(GUIDED_STUDIO_SCENARIO).unwrap();
+    let mut bridge = MobileBridge::new();
+    let validated: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "validate_scenario",
+                "scenario": scenario.clone()
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(validated["type"], "scenario_validated");
+    assert_eq!(validated["valid"], true, "{validated}");
+
+    let created: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "create_session",
+                "scenario": scenario,
+                "seed": 54
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    let session_id = created["session_id"].as_u64().unwrap();
+    assert_eq!(created["snapshot"]["available_actions"][0]["id"], "assess_case");
+
+    let assessed: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "dispatch",
+                "session_id": session_id,
+                "action_id": "assess_case"
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(assessed["snapshot"]["available_actions"][0]["id"], "close_case");
+
+    let closed: Value = serde_json::from_str(
+        &bridge.execute_json(
+            &json!({
+                "command": "dispatch",
+                "session_id": session_id,
+                "action_id": "close_case"
+            })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(closed["snapshot"]["resolved_outcome"], "guided_resolution");
 }
 
 fn expected_logistics_training_debrief() -> Value {
