@@ -87,6 +87,54 @@ void main() {
       isNotNull,
     );
   });
+
+  testWidgets('case map exposes package-defined read-only projections', (
+    WidgetTester tester,
+  ) async {
+    final _MemoryStudioStore store = _MemoryStudioStore(
+      StudioWorkspace(
+        draft: StudioScenarioDraft.guidedExample(),
+        activeStage: StudioWorkflowStage.caseMap,
+        completedStages: <StudioWorkflowStage>{
+          StudioWorkflowStage.describe,
+          StudioWorkflowStage.reviewAiDraft,
+          StudioWorkflowStage.factsAssumptions,
+        },
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: JurisTheme.dark(),
+        home: StudioWizardScreen(
+          repository: StudioAuthoringRepository(_WizardBridge()),
+          store: store,
+          locale: 'en',
+          onExit: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Professional case views'), findsOneWidget);
+    expect(
+      find.byKey(
+        const ValueKey<String>('studio-case-view-simulation'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Rust remains the validation authority'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey<String>('studio-case-view-timeline')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(
+        const ValueKey<String>('studio-case-view-panel-timeline'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Understand the matter'), findsWidgets);
+  });
 }
 
 final class _MemoryStudioStore implements StudioDraftStore {

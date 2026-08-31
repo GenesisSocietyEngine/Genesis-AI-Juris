@@ -19,6 +19,20 @@ enum CaseTypeId {
   }
 }
 
+enum StudioCaseViewId {
+  issueMap('issue_map'),
+  evidenceMap('evidence_map'),
+  decisionTable('decision_table'),
+  taskPlan('task_plan'),
+  timeline('timeline'),
+  economics('economics'),
+  simulation('simulation');
+
+  const StudioCaseViewId(this.wireName);
+
+  final String wireName;
+}
+
 final class CaseTypeReference {
   const CaseTypeReference(this.id);
 
@@ -60,7 +74,7 @@ final class CaseTypeDefinition {
 
   final CaseTypeId id;
   final String workflowMode;
-  final List<String> views;
+  final List<StudioCaseViewId> views;
   final String requiredReview;
   final String labelEn;
   final String labelRu;
@@ -74,7 +88,12 @@ const List<CaseTypeDefinition> caseTypeRegistry = <CaseTypeDefinition>[
   CaseTypeDefinition(
     id: CaseTypeId.generalAdvisory,
     workflowMode: 'hybrid',
-    views: <String>['issue_map', 'evidence_map', 'decision_table', 'timeline'],
+    views: <StudioCaseViewId>[
+      StudioCaseViewId.issueMap,
+      StudioCaseViewId.evidenceMap,
+      StudioCaseViewId.decisionTable,
+      StudioCaseViewId.timeline,
+    ],
     requiredReview: 'professional',
     labelEn: 'Advisory decision',
     labelRu: 'Консультационное решение',
@@ -86,7 +105,12 @@ const List<CaseTypeDefinition> caseTypeRegistry = <CaseTypeDefinition>[
   CaseTypeDefinition(
     id: CaseTypeId.taxCompliance,
     workflowMode: 'hybrid',
-    views: <String>['issue_map', 'decision_table', 'economics', 'timeline'],
+    views: <StudioCaseViewId>[
+      StudioCaseViewId.issueMap,
+      StudioCaseViewId.decisionTable,
+      StudioCaseViewId.economics,
+      StudioCaseViewId.timeline,
+    ],
     requiredReview: 'tax_governance',
     labelEn: 'Tax & compliance',
     labelRu: 'Налоги и compliance',
@@ -98,7 +122,12 @@ const List<CaseTypeDefinition> caseTypeRegistry = <CaseTypeDefinition>[
   CaseTypeDefinition(
     id: CaseTypeId.erpIncident,
     workflowMode: 'process',
-    views: <String>['task_plan', 'evidence_map', 'decision_table', 'timeline'],
+    views: <StudioCaseViewId>[
+      StudioCaseViewId.taskPlan,
+      StudioCaseViewId.evidenceMap,
+      StudioCaseViewId.decisionTable,
+      StudioCaseViewId.timeline,
+    ],
     requiredReview: 'professional',
     labelEn: 'ERP incident & solution',
     labelRu: 'ERP-инцидент и решение',
@@ -110,7 +139,11 @@ const List<CaseTypeDefinition> caseTypeRegistry = <CaseTypeDefinition>[
   CaseTypeDefinition(
     id: CaseTypeId.trainingSimulation,
     workflowMode: 'simulation',
-    views: <String>['simulation', 'timeline', 'evidence_map'],
+    views: <StudioCaseViewId>[
+      StudioCaseViewId.simulation,
+      StudioCaseViewId.timeline,
+      StudioCaseViewId.evidenceMap,
+    ],
     requiredReview: 'runtime_parity',
     labelEn: 'Training simulation',
     labelRu: 'Учебная симуляция',
@@ -129,7 +162,9 @@ List<Map<String, dynamic>> caseTypeRegistrySignature() => caseTypeRegistry
           'id': item.id.wireName,
           'version': caseTypeVersion,
           'workflowMode': item.workflowMode,
-          'views': item.views,
+          'views': item.views
+              .map((StudioCaseViewId view) => view.wireName)
+              .toList(growable: false),
           'requiredReview': item.requiredReview,
         })
     .toList(growable: false);
