@@ -1,0 +1,149 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "id": "supplier_transition_dispute",
+    "title": "Supplier transition dispute",
+    "summary": "A client must respond to a critical supplier termination while preserving service continuity and its contractual remedies.",
+    "content_version": "1",
+    "author": "Mobile Guided Studio",
+    "tags": [
+      "guided_studio",
+      "mobile_parity"
+    ]
+  },
+  "jurisdiction": {
+    "code": "BE",
+    "pack_version": "studio-1"
+  },
+  "initial_stage": "intake",
+  "actors": [
+    {
+      "id": "player",
+      "name": "Lead commercial counsel",
+      "role": "player",
+      "description": "The professional responsible for this matter."
+    }
+  ],
+  "facts": [
+    {
+      "id": "fact_1",
+      "statement": "The supplier sent a termination notice with immediate effect.",
+      "initial_status": "alleged",
+      "related_actors": [
+        "player"
+      ]
+    },
+    {
+      "id": "fact_2",
+      "statement": "The client depends on the service for daily operations.",
+      "initial_status": "alleged",
+      "related_actors": [
+        "player"
+      ]
+    },
+    {
+      "id": "fact_3",
+      "statement": "The contract contains notice and transition-assistance clauses.",
+      "initial_status": "alleged",
+      "related_actors": [
+        "player"
+      ]
+    }
+  ],
+  "stages": [
+    {
+      "id": "intake",
+      "title": "Understand the matter",
+      "kind": "standard",
+      "exit_actions": [
+        "assess_case"
+      ]
+    },
+    {
+      "id": "strategy",
+      "title": "Choose the response",
+      "kind": "standard",
+      "exit_actions": [
+        "close_case"
+      ]
+    },
+    {
+      "id": "resolved",
+      "title": "Matter resolved",
+      "kind": "resolved",
+      "terminal": true
+    }
+  ],
+  "actions": [
+    {
+      "id": "assess_case",
+      "title": "Assess facts and options",
+      "description": "Review the known facts and select a proportionate path.",
+      "available_when": {
+        "type": "stage_is",
+        "stage": "intake"
+      },
+      "effects": [
+        {
+          "type": "set_stage",
+          "stage": "strategy"
+        }
+      ],
+      "time_cost_minutes": 60,
+      "billable_minutes": 60
+    },
+    {
+      "id": "close_case",
+      "title": "Execute the selected response",
+      "description": "Carry out the response and record the result.",
+      "available_when": {
+        "type": "stage_is",
+        "stage": "strategy"
+      },
+      "effects": [
+        {
+          "type": "set_stage",
+          "stage": "resolved"
+        },
+        {
+          "type": "trigger_event",
+          "event": "matter_closed"
+        }
+      ],
+      "time_cost_minutes": 90,
+      "billable_minutes": 90
+    }
+  ],
+  "events": [
+    {
+      "id": "matter_closed",
+      "title": "Matter closed",
+      "kind": "matter_closed",
+      "trigger": {
+        "type": "by_effect"
+      },
+      "condition": {
+        "type": "stage_is",
+        "stage": "resolved"
+      },
+      "effects": [
+        {
+          "type": "resolve_outcome",
+          "outcome": "guided_resolution"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "guided_resolution",
+      "title": "Reasoned resolution",
+      "summary": "The learner completed the authored legal route.",
+      "terminal_stage": "resolved",
+      "condition": {
+        "type": "stage_is",
+        "stage": "resolved"
+      }
+    }
+  ]
+}

@@ -4,6 +4,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:juris_mobile/data/scenario_bridge_client.dart';
 
 void main() {
+  test('validate-scenario command matches the authoritative Rust protocol', () {
+    final Map<String, dynamic> scenario = <String, dynamic>{
+      'schema_version': '1.0',
+      'metadata': <String, dynamic>{'id': 'studio_case'},
+    };
+    expect(
+      jsonDecode(ScenarioBridgeCommand.validateScenario(scenario)),
+      <String, dynamic>{
+        'command': 'validate_scenario',
+        'scenario': scenario,
+      },
+    );
+  });
+
   test('create-session command matches the Rust bridge protocol', () {
     final Map<String, dynamic> decoded = jsonDecode(
       ScenarioBridgeCommand.createSession(
@@ -120,5 +134,13 @@ void main() {
     expect(error.isError, isTrue);
     expect(error.errorCode, 'action_unavailable');
     expect(error.errorMessage, 'No');
+
+    final ScenarioBridgeResponse validation = ScenarioBridgeResponse.parse(
+      '{"type":"scenario_validated","valid":false,"diagnostics":['
+      '{"code":"SCN004_MISSING_INITIAL_STAGE","severity":"error",'
+      '"path":"initial_stage","message":"Unknown stage"}]}',
+    );
+    expect(validation.valid, isFalse);
+    expect(validation.diagnostics.single['path'], 'initial_stage');
   });
 }

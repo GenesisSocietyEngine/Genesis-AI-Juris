@@ -15,6 +15,7 @@ final class CaseCatalogMasthead extends StatelessWidget {
     required this.selectedFilter,
     required this.onLocaleSelected,
     required this.onFilterSelected,
+    this.onOpenStudio,
   });
 
   final CaseCatalogBundle bundle;
@@ -22,6 +23,7 @@ final class CaseCatalogMasthead extends StatelessWidget {
   final CaseCatalogFilter selectedFilter;
   final ValueChanged<String> onLocaleSelected;
   final ValueChanged<CaseCatalogFilter> onFilterSelected;
+  final VoidCallback? onOpenStudio;
 
   @override
   Widget build(BuildContext context) {
@@ -55,11 +57,27 @@ final class CaseCatalogMasthead extends StatelessWidget {
                 ),
               ),
             ),
-            _LanguageControl(
-              locale: locale,
-              supportedLocales: bundle.supportedLocales,
-              tooltip: bundle.text(locale, 'language'),
-              onSelected: onLocaleSelected,
+            Wrap(
+              spacing: spacing.sm,
+              runSpacing: spacing.sm,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                if (onOpenStudio != null)
+                  FilledButton.icon(
+                    key: const ValueKey<String>('open-guided-studio'),
+                    onPressed: onOpenStudio,
+                    icon: const Icon(Icons.auto_awesome_outlined),
+                    label: Text(
+                      locale == 'ru' ? 'Создать кейс' : 'Create a case',
+                    ),
+                  ),
+                _LanguageControl(
+                  locale: locale,
+                  supportedLocales: bundle.supportedLocales,
+                  tooltip: bundle.text(locale, 'language'),
+                  onSelected: onLocaleSelected,
+                ),
+              ],
             ),
           ],
         ),

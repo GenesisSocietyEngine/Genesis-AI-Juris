@@ -11,6 +11,13 @@ abstract interface class ScenarioBridgeClient {
 
 /// Stable request builders shared by native bridge implementations and tests.
 abstract final class ScenarioBridgeCommand {
+  static String validateScenario(Map<String, dynamic> scenario) {
+    return jsonEncode(<String, dynamic>{
+      'command': 'validate_scenario',
+      'scenario': scenario,
+    });
+  }
+
   static String createSession({
     required Map<String, dynamic> scenario,
     required int seed,
@@ -121,6 +128,16 @@ class ScenarioBridgeResponse {
   String? get errorMessage => payload['message'] as String?;
 
   String? get encodedSave => payload['encoded_save'] as String?;
+
+  bool? get valid => payload['valid'] as bool?;
+
+  List<Map<String, dynamic>> get diagnostics {
+    final dynamic value = payload['diagnostics'];
+    if (value is! List<dynamic>) {
+      return const <Map<String, dynamic>>[];
+    }
+    return value.whereType<Map<String, dynamic>>().toList(growable: false);
+  }
 
   String? get scenarioId {
     final dynamic value = payload['scenario_id'];

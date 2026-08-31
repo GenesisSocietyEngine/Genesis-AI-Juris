@@ -12,12 +12,16 @@ use juris_engine::{
     ScenarioSessionId, ScenarioSessionRegistry,
 };
 use juris_scenario_schema::ScenarioDefinition;
+use juris_scenario_validator::{validate_scenario, Severity};
 use serde::{Deserialize, Serialize};
 
 /// Commands accepted from a mobile transport.
 #[derive(Debug, Deserialize)]
 #[serde(tag = "command", rename_all = "snake_case")]
 pub enum BridgeRequest {
+    ValidateScenario {
+        scenario: Box<ScenarioDefinition>,
+    },
     CreateSession {
         scenario: Box<ScenarioDefinition>,
         seed: u64,
@@ -52,6 +56,10 @@ pub enum BridgeRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum BridgeResponse {
+    ScenarioValidated {
+        valid: bool,
+        diagnostics: Vec<BridgeDiagnostic>,
+    },
     SessionCreated {
         session_id: u64,
         snapshot: MobileScenarioSnapshot,
@@ -82,6 +90,15 @@ pub enum BridgeResponse {
     },
 }
 
+/// Stable, transport-safe projection of one authoritative Rust diagnostic.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct BridgeDiagnostic {
+    pub code: String,
+    pub severity: String,
+    pub path: String,
+    pub message: String,
+}
+
 /// Stateful bridge endpoint owned by one application process.
 #[derive(Debug, Default)]
 pub struct MobileBridge {
@@ -99,6 +116,25 @@ impl MobileBridge {
     /// Executes one already-decoded command.
     pub fn execute(&mut self, request: BridgeRequest) -> BridgeResponse {
         match request {
+            BridgeRequest::ValidateScenario { scenario } => {
+                let report = validate_scenario(&scenario);
+                BridgeResponse::ScenarioValidated {
+                    valid: report.is_valid(),
+                    diagnostics: report
+                        .diagnostics
+                        .into_iter()
+                        .map(|diagnostic| BridgeDiagnostic {
+                            code: diagnostic.code.as_str().to_owned(),
+                            severity: match diagnostic.severity {
+                                Severity::Error => "error".to_owned(),
+                                Severity::Warning => "warning".to_owned(),
+                            },
+                            path: diagnostic.path,
+                            message: diagnostic.message,
+                        })
+                        .collect(),
+                }
+            }
             BridgeRequest::CreateSession { scenario, seed } => {
                 match self.sessions.create(*scenario, seed) {
                     Ok(id) => self.snapshot_response(id, true),

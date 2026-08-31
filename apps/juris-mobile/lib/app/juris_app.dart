@@ -5,9 +5,13 @@ import '../data/case_catalog_repository.dart';
 import '../data/case_runtime_factory.dart';
 import '../data/game_runtime_repository.dart';
 import '../data/game_save_store.dart';
+import '../data/native_scenario_bridge_client.dart';
 import '../data/scenario_bridge_client.dart';
+import '../data/studio_authoring_repository.dart';
+import '../data/studio_draft_store.dart';
 import '../models/case_catalog.dart';
 import '../screens/case_catalog_screen.dart';
+import '../screens/studio_wizard_screen.dart';
 import '../visual_identity/case_visual_manifest_repository.dart';
 import 'app_theme.dart';
 import 'home_shell.dart';
@@ -25,13 +29,15 @@ class JurisApp extends StatefulWidget {
   })  : catalogRepository = null,
         visualManifestRepository = null,
         scenarioBridgeClient = null,
-        gameSaveStore = null;
+        gameSaveStore = null,
+        studioDraftStore = null;
 
   const JurisApp.catalog({
     this.catalogRepository = const CaseCatalogRepository(),
     this.visualManifestRepository,
     this.scenarioBridgeClient,
     this.gameSaveStore,
+    this.studioDraftStore,
     super.key,
   }) : repository = null;
 
@@ -40,6 +46,7 @@ class JurisApp extends StatefulWidget {
   final CaseVisualManifestRepository? visualManifestRepository;
   final ScenarioBridgeClient? scenarioBridgeClient;
   final GameSaveStore? gameSaveStore;
+  final StudioDraftStore? studioDraftStore;
 
   @override
   State<JurisApp> createState() => _JurisAppState();
@@ -50,6 +57,8 @@ class _JurisAppState extends State<JurisApp> {
   CaseVisualManifestRepository? _visualManifestRepository;
   String? _activeCaseId;
   String _activeLocale = 'en';
+  StudioAuthoringRepository? _studioRepository;
+  bool _studioOpen = false;
 
   bool get _usesCatalog => widget.repository == null;
 
@@ -101,6 +110,15 @@ class _JurisAppState extends State<JurisApp> {
   }
 
   Widget _buildHome() {
+    if (_studioOpen) {
+      return StudioWizardScreen(
+        repository: _studioRepository!,
+        store: widget.studioDraftStore ??
+            ApplicationSupportStudioDraftStore(),
+        locale: _activeLocale,
+        onExit: _closeStudio,
+      );
+    }
     final GameRuntimeRepository? activeRepository = _activeRepository;
     if (activeRepository != null) {
       return HomeShell(
@@ -117,6 +135,7 @@ class _JurisAppState extends State<JurisApp> {
       locale: _activeLocale,
       onLocaleChanged: _setCatalogLocale,
       onStartCase: _startCase,
+      onOpenStudio: _openStudio,
     );
   }
 
@@ -154,5 +173,21 @@ class _JurisAppState extends State<JurisApp> {
       _activeLocale = 'en';
     });
     previous?.dispose();
+  }
+
+  void _openStudio() {
+    final ScenarioBridgeClient bridge =
+        widget.scenarioBridgeClient ?? NativeScenarioBridgeClient();
+    setState(() {
+      _studioRepository = StudioAuthoringRepository(bridge);
+      _studioOpen = true;
+    });
+  }
+
+  void _closeStudio() {
+    setState(() {
+      _studioOpen = false;
+      _studioRepository = null;
+    });
   }
 }
