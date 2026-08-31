@@ -179,7 +179,7 @@ List<StudioCaseViewItem> _timelineItems(
             title: _text(item['title'], _text(item['id'], 'Deadline')),
             detail: 'Completion actions: ${_strings(item['completion_actions']).join(' · ')}',
             kind: 'deadline',
-            primaryMeta: '${_integer(item['due_at_minute'])} elapsed min',
+            primaryMeta: _deadlineDueMeta(item['due_at']),
             secondaryMeta: _text(item['activation_event'], 'active at opening'),
             needsAttention: _strings(item['completion_actions']).isEmpty,
           ))
@@ -256,3 +256,14 @@ List<String> _strings(Object? value) => value is List<dynamic>
 String _text(Object? value, String fallback) => value is String && value.trim().isNotEmpty ? value.trim() : fallback;
 
 int _integer(Object? value) => value is int && value >= 0 ? value : 0;
+
+String _deadlineDueMeta(Object? value) {
+  if (value is! Map<String, dynamic>) return 'Unscheduled';
+  final int day = _integer(value['day']);
+  final int minuteOfDay = _integer(value['minute_of_day']);
+  if (minuteOfDay >= 1440) return 'Invalid due time';
+  final int elapsedMinutes = day * 1440 + minuteOfDay;
+  final String hour = (minuteOfDay ~/ 60).toString().padLeft(2, '0');
+  final String minute = (minuteOfDay % 60).toString().padLeft(2, '0');
+  return '$elapsedMinutes elapsed min · Day $day · $hour:$minute';
+}
