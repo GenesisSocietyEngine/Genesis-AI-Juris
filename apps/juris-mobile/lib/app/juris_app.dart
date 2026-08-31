@@ -5,6 +5,7 @@ import '../data/case_catalog_repository.dart';
 import '../data/case_runtime_factory.dart';
 import '../data/game_runtime_repository.dart';
 import '../data/game_save_store.dart';
+import '../data/native_scenario_bridge_client.dart';
 import '../data/scenario_bridge_client.dart';
 import '../data/studio_authoring_repository.dart';
 import '../data/studio_draft_store.dart';

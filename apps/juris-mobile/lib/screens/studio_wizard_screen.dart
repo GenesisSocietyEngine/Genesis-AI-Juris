@@ -102,7 +102,9 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
     _factControllers
       ..clear()
       ..addAll(
-        _draft.facts.map(TextEditingController.new),
+        _draft.facts.map(
+          (String fact) => TextEditingController(text: fact),
+        ),
       );
     if (_factControllers.isEmpty) {
       _factControllers.add(TextEditingController());
