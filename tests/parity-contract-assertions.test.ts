@@ -81,6 +81,10 @@ test("compiled mobile contract receipts fail for changed lock or runtime values"
     () => assertMobileContractValues(lock, { ...receipt, mobile_snapshot_schema_revision: 2 }),
     /mobile snapshot schema revision/u,
   );
+  assert.throws(
+    () => assertMobileContractValues(lock, { ...receipt, mobile_projection_schema_revision: 2 }),
+    /mobile projection schema revision/u,
+  );
 });
 
 test("the compiled probe preserves the pinned lock and binds both judicial projections", () => {

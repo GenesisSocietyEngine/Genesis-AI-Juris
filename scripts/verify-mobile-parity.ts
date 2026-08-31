@@ -17,21 +17,28 @@ import { PLAYED_CASE_SCHEMA_REVISION } from "../app/played-case-contract";
 import { withVerifiedMobileCheckout } from "./mobile-checkout-guard";
 import {
   assertJudicialResultParity,
+  assertLockedReceiptMap,
   assertMobileContractValues,
+  assertMobileRoundTripReceipt,
+  assertParityFixtureMatrix,
+  assertProjectedRouteMatrix,
+  assertProjectedRouteParity,
   assertWebContractValues,
   judicialResultCoverage,
+  type ParityFixtureManifest,
 } from "./parity-contract-assertions";
 
 type JsonObject = Record<string, unknown>;
-type ParityCommand = { kind: "dispatch"; action_id: string } | { kind: "advance_time"; minutes: number };
-type FixtureRoute = { id: string; case_id: string; seed: number; commands: ParityCommand[] };
-type FixtureManifest = { schema_version: number; routes: FixtureRoute[] };
 type CanonicalBundleCase = {
   case_id: string;
   scenario_id: string;
   scenario_fingerprint: string;
   runtime_adapter?: string;
-  scenario: { schema_version: string; metadata: { content_version: string } };
+  scenario: {
+    schema_version: string;
+    metadata: { content_version: string };
+    outcomes: Array<{ id: string }>;
+  };
 };
 type CanonicalBundle = { bundle_version: number; catalog_version: number; cases: CanonicalBundleCase[] };
 type LockIdentity = { caseId: string; version: string; fingerprint: string; schemaRevision: string };
@@ -59,6 +66,8 @@ type ParityLock = {
     sha256: string;
     probePath: string;
     probeSha256: string;
+    routeCount: number;
+    checkpointCount: number;
     judicialResultCheckpoints: number;
     routeHashes: Record<string, string>;
     mobileSaveDigests?: Record<string, string>;
@@ -94,10 +103,7 @@ function verifyParity() {
   const fixturePath = resolveInsideProject(lock.fixtures.path);
   const fixtureBytes = readFileSync(fixturePath);
   const fixtureHash = sha256(fixtureBytes);
-  const fixtures = JSON.parse(fixtureBytes.toString("utf8")) as FixtureManifest;
-  equal(fixtures.schema_version, lock.fixtures.schemaVersion, "fixture schema version");
-  truth(fixtures.routes.length > 0, "fixture manifest must contain at least one route");
-  unique(fixtures.routes.map((route) => route.id), "fixture route IDs");
+  const fixtureManifest = JSON.parse(fixtureBytes.toString("utf8")) as unknown;
   if (!printLockData) equal(fixtureHash, lock.fixtures.sha256, "fixture manifest SHA-256");
   const probePath = resolveInsideProject(lock.fixtures.probePath);
   const probeBytes = readFileSync(probePath);
@@ -109,17 +115,30 @@ function verifyParity() {
   const webBundle = JSON.parse(webBundleBytes.toString("utf8")) as CanonicalBundle;
   verifyBundleContract(webBundle, lock);
 
+  const canonicalOutcomes = Object.fromEntries(webBundle.cases.map((item) => [
+    item.case_id,
+    item.scenario.outcomes.map((outcome) => outcome.id),
+  ]));
+  const fixtures = assertParityFixtureMatrix(fixtureManifest, {
+    expectedRouteCount: lock.fixtures.routeCount,
+    canonicalOutcomes,
+  });
+  equal(fixtures.schema_version, lock.fixtures.schemaVersion, "fixture schema version");
+  const checkpointCount = fixtures.routes.reduce((sum, route) => sum + route.expected.checkpoint_count, 0);
+  equal(checkpointCount, lock.fixtures.checkpointCount, "locked parity checkpoint count");
+
   const webRoutes = runWebRoutes(fixtures, webBundle);
+  assertProjectedRouteMatrix(fixtures, webRoutes, "web");
   const judicialResultCheckpoints = judicialResultCoverage(webRoutes, "web parity routes");
   const routeHashes = Object.fromEntries(webRoutes.map((route) => [String(route.id), sha256(stableJson(route))]));
   if (!printLockData) {
     equal(judicialResultCheckpoints, lock.fixtures.judicialResultCheckpoints, "locked non-null judicial-result checkpoints");
-    equalStable(routeHashes, lock.fixtures.routeHashes, "locked web route projections");
+    assertLockedReceiptMap(routeHashes, lock.fixtures.routeHashes, "locked web route projections");
   }
 
   if (lockOnly || (printLockData && !mobileArgument && !process.env.JURIS_MOBILE_REPO)) {
     if (printLockData) {
-      console.log(JSON.stringify({ fixtureSha256: fixtureHash, judicialResultCheckpoints, routeHashes }, null, 2));
+      console.log(JSON.stringify({ fixtureSha256: fixtureHash, checkpointCount, judicialResultCheckpoints, routeHashes }, null, 2));
     } else {
       console.log("PASS authoritative web contracts: app/canonical-runtime.ts and app/played-case-contract.ts");
       console.log(`PASS mobile parity lock: ${webRoutes.length} deterministic routes; bundle ${lock.bundle.sha256}`);
@@ -150,14 +169,18 @@ function verifyParity() {
   truth(Array.isArray(mobileOutput.routes), "mobile probe routes must be an array");
 
   const mobileRoutes = (mobileOutput.routes as JsonObject[]).map(stripMobileRoundTrip);
+  assertProjectedRouteMatrix(fixtures, mobileRoutes, "mobile");
   equal(assertJudicialResultParity(webRoutes, mobileRoutes), judicialResultCheckpoints, "judicial-result parity checkpoint count");
-  equalStable(mobileRoutes, webRoutes, "web and Rust route projections");
+  assertProjectedRouteParity(webRoutes, mobileRoutes);
   const saveDigests = verifyMobileRoundTrips(mobileOutput.routes as JsonObject[], lock);
-  if (!printLockData) equalStable(saveDigests, lock.fixtures.mobileSaveDigests ?? {}, "locked mobile save digests");
+  if (!printLockData) {
+    assertLockedReceiptMap(saveDigests, lock.fixtures.mobileSaveDigests ?? {}, "locked mobile save digests");
+  }
 
   if (printLockData) {
     console.log(JSON.stringify({
       fixtureSha256: fixtureHash,
+      checkpointCount,
       judicialResultCheckpoints,
       routeHashes,
       mobileSaveDigests: saveDigests,
@@ -186,7 +209,7 @@ function verifyBundleContract(bundle: CanonicalBundle, lock: ParityLock) {
   }
 }
 
-function runWebRoutes(fixtures: FixtureManifest, bundle: CanonicalBundle) {
+function runWebRoutes(fixtures: ParityFixtureManifest, bundle: CanonicalBundle) {
   const cases = new Map(bundle.cases.map((item) => [item.case_id, item]));
   return fixtures.routes.map((route) => {
     const canonicalCase = cases.get(route.case_id);
@@ -275,7 +298,14 @@ function runMobileProbe(
     const archivePath = join(probeRoot, "mobile-source.tar");
     mkdirSync(sourceRoot);
     run("git", ["archive", "--format=tar", "--output", archivePath, mobileCommit], mobileRepo);
-    run("tar", ["-xf", archivePath, "-C", sourceRoot], probeRoot);
+    // Keep tar operands relative to its cwd. MSYS tar otherwise interprets a
+    // Windows drive prefix such as C: as a remote archive host.
+    run("tar", [
+      "-xf",
+      relative(probeRoot, archivePath),
+      "-C",
+      relative(probeRoot, sourceRoot),
+    ], probeRoot);
 
     const exampleRoot = join(sourceRoot, "crates", "juris-mobile-ffi", "examples");
     mkdirSync(exampleRoot, { recursive: true });
@@ -316,21 +346,14 @@ function stripMobileRoundTrip(route: JsonObject) {
 
 function verifyMobileRoundTrips(routes: JsonObject[], lock: ParityLock) {
   const digests: Record<string, string> = {};
+  const saveContract = {
+    mobileSaveSchemaId: lock.contracts.mobileSaveSchemaId,
+    mobileSaveSchemaRevision: lock.contracts.mobileSaveSchemaRevision,
+    mobileRuntimeCompatibility: lock.contracts.mobileRuntimeCompatibility,
+  };
   for (const route of routes) {
     const id = requiredString(route.id, "mobile route id");
-    const commands = route.commands;
-    const roundTrip = route.round_trip;
-    truth(Array.isArray(commands), `${id} mobile commands are missing`);
-    truth(isObject(roundTrip), `${id} mobile round-trip is missing`);
-    equal(roundTrip.matches_final, true, `${id} mobile loaded snapshot`);
-    equal(roundTrip.resaved_matches, true, `${id} mobile re-saved command log`);
-    const save = roundTrip.save;
-    truth(isObject(save), `${id} mobile save summary is missing`);
-    equal(save.schema_id, lock.contracts.mobileSaveSchemaId, `${id} mobile save schema ID`);
-    equal(save.schema_version, lock.contracts.mobileSaveSchemaRevision, `${id} mobile save schema revision`);
-    equal(save.runtime_compatibility, lock.contracts.mobileRuntimeCompatibility, `${id} mobile runtime compatibility`);
-    equal(save.command_count, commands.length, `${id} mobile command-log length`);
-    digests[id] = requiredString(save.final_state_digest, `${id} mobile final-state digest`);
+    digests[id] = assertMobileRoundTripReceipt(route, saveContract);
   }
   return digests;
 }
@@ -417,10 +440,6 @@ function equal(actual: unknown, expected: unknown, label: string) {
 
 function truth(value: unknown, message: string): asserts value {
   if (!value) throw new Error(message);
-}
-
-function unique(values: string[], label: string) {
-  equal(new Set(values).size, values.length, label);
 }
 
 function compareCaseId(left: LockIdentity, right: LockIdentity) {

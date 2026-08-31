@@ -61,11 +61,13 @@
   ],
   "fixtures": {
     "path": "parity/mobile-parity-fixtures.json",
-    "schemaVersion": 1,
-    "sha256": "08e6cc641f9d7f7fb8b569b49015466172e413702bc2071e28889f1c978b5313",
+    "schemaVersion": 2,
+    "sha256": "f7e6b4edf2c01bfdb0ba7f0b0e8099d22199d2166c710cb98e80580294a872ad",
     "probePath": "scripts/mobile-parity-probe.rs",
-    "probeSha256": "b2151c0be831fbbbd55aba37a3568504d3ee10063472b3ce17dbdbc9d6f99326",
-    "judicialResultCheckpoints": 9,
+    "probeSha256": "322a2e3b9d4e730a14ef05cdc974c67fcdb9d8a493773c6a9f0c2a57f94c57ec",
+    "routeCount": 18,
+    "checkpointCount": 290,
+    "judicialResultCheckpoints": 45,
     "routeHashes": {
       "failed-erp-settlement": "0a41290d73850ab5c29dd8b0f6ac7b3d0012ee62e30e3319f4d3bcd38168ea87",
       "failed-erp-prepared": "e512d8924768b53a90a013916ebf0652a6f4be3a3173355a0db7b6c6ddc48980",
@@ -75,7 +77,16 @@
       "goldenshell-coordinated": "cf9b0651fd127f983861eff7f582c2a12c09c67d33a3a598f2f46ad1ca01c6d6",
       "goldenshell-fragmented": "dc4043b5b42087a57efcf7ddb180e4f69901fc07ddb126bcde0349ed18c4c3f9",
       "desert-water-coordinated": "d0a4d8dc3d9daec06a68ea2ce97b6487103dca3f4e45b9313b96ed667841f300",
-      "desert-water-compromised": "66286a5f427937972c2cf1409cb1d89a4fcb347606199051ee08ee6152e85b06"
+      "desert-water-compromised": "66286a5f427937972c2cf1409cb1d89a4fcb347606199051ee08ee6152e85b06",
+      "failed-erp-inactivity-termination": "9ee11550c4379e5545896f0f3569b9b8c0d51aa5d9ec19e6fab57fc9bc2ab5ab",
+      "failed-erp-procedural-default": "d3cd6775424f9856b749d0429c44d04e7c2fe5cee1611693464c4b1ee0882d17",
+      "failed-erp-first-instance-final": "9b2b651c2a186bfc09365078ae040ea3f524fd3d284d72a838f99fdb6348aa69",
+      "failed-erp-mixed-accepted": "54550a22948455536b9fb1ccbb690c233ab066b5196fecf6c2c09de68745346d",
+      "failed-erp-appeal-win": "9133b4f13b757f022cb92c3c075a76737ac760915f2ee36dda152e4d7472abfe",
+      "failed-erp-appeal-loss": "a6af22bc336efcbde5f36ecbedd71d90aceab5864f21b469f26a7a0ee8a4767e",
+      "failed-erp-cassation-dismissed": "d0d2c562ccc907d191925e680deefe2ecacccade7289a053f694143335ed8ffa",
+      "failed-erp-remitted-rehearing": "e8c5a99425488801729a082dec5c5330df42f9f607939adb7fca0873b3f66073",
+      "logistics-negotiated": "ea7f83196d738a2a010c1e672dc650eacbff787b31a1b2ebf60a56ef09310fdd"
     },
     "mobileSaveDigests": {
       "failed-erp-settlement": "fd77a45422e4abd7f141fc7b1db767524ebf48d9674bd25c21354fb7a2b8c029",
@@ -86,7 +97,16 @@
       "goldenshell-coordinated": "ed4461cbf6eda809aca8f3442a3d2f3085738f0ddec8d101b5cfc7a0b30c07db",
       "goldenshell-fragmented": "9596d226b3c1b506b33790faf5998408d16f136e1facd815c87848dad2856152",
       "desert-water-coordinated": "c05cc31484ecbf4b3cec7de9775ebe0de05494b4e8e99effa400f0f71fdeb145",
-      "desert-water-compromised": "94fb0b50c8a79b7c0c929528620724f0f94075b32bfb9f1822bc80b7c7a57a33"
+      "desert-water-compromised": "94fb0b50c8a79b7c0c929528620724f0f94075b32bfb9f1822bc80b7c7a57a33",
+      "failed-erp-inactivity-termination": "490449305eb5a56c7c389169e6a5ba64b8e64f00b50af3ef03e2fd7bf317e586",
+      "failed-erp-procedural-default": "f30e1b6c646d31975c92f85d1c3bada8208cb640389736c8d3a935ff3d3dc88c",
+      "failed-erp-first-instance-final": "a03605b49fc9d89dd5b03b8c9c4dfb34cea87678ee1aa21851b1e842cdb00a00",
+      "failed-erp-mixed-accepted": "83b19f2f06ae7cb0b1e14b83e63dda83285db2442a882e52da4a528b3a146530",
+      "failed-erp-appeal-win": "adbd82c8122da4395a1747b195e6e70398ce5625e8157fb7cb37e88cf7e999bb",
+      "failed-erp-appeal-loss": "fbb4338c3f704bbfc5b14ee0bd54b40cffeb77ab30caedbebc4748b3853045d6",
+      "failed-erp-cassation-dismissed": "ea7389e1e5e0b4d4ceb03385ebf34a18de809521ca9abe1ef42dcaf0527eb318",
+      "failed-erp-remitted-rehearing": "268f27867fd1f45a417c0e999819165bd79f76a74f3ab2e65ee075e193cbc34a",
+      "logistics-negotiated": "82702ca85ace17d4b3b6e06366fcd2d32c3929a8b0108130585e48ae3cf79111"
     }
   },
   "nativeEvidence": {

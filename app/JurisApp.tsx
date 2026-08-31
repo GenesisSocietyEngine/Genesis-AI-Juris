@@ -81,6 +81,7 @@ const CanonicalMarkdownReview = lazy(() => import("./CanonicalMarkdownReview"));
 const StudioGuidedDemo = lazy(() => import("./StudioGuidedDemo"));
 const StudioOutcomeParameters = lazy(() => import("./StudioOutcomeParameters"));
 const StudioUserMoreActions = lazy(() => import("./StudioUserMoreActions"));
+const OperationsDashboard = lazy(() => import("./OperationsDashboard"));
 const CanonicalPromptAction = lazy(() => import("./StudioPromptAuxiliary").then((module) => ({default:module.CanonicalPromptAction})));
 const CanonicalReadyAction = lazy(() => import("./StudioPromptAuxiliary").then((module) => ({default:module.CanonicalReadyAction})));
 const StudioPromptPrivacyNote = lazy(() => import("./StudioPromptAuxiliary").then((module) => ({default:module.StudioPromptPrivacyNote})));
@@ -1195,7 +1196,10 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
             && typeof descriptor.expectedRevision === "number"
             && Number.isSafeInteger(descriptor.expectedRevision)
             && descriptor.expectedRevision >= 0) {
-            const response = await fetch(`/api/play-sessions?sessionKey=${encodeURIComponent(descriptor.sessionKey)}`, { cache: "no-store" });
+            const response = await fetch(`/api/play-sessions?sessionKey=${encodeURIComponent(descriptor.sessionKey)}&purpose=import&expectedRevision=${descriptor.expectedRevision}`, {
+              cache: "no-store",
+              headers: { "X-GENESIS-Expected-Fingerprint": importedScenario.fingerprint },
+            });
             const body = await response.json().catch(() => null) as { session?: unknown } | null;
             const session = normalizeServerPlaySession(body?.session);
             const exactSession = requirePlayedCaseServerSession(response.ok, session, importedScenario, descriptor.sessionKey, descriptor.expectedRevision);
@@ -3569,6 +3573,7 @@ function AdminDesk({ locale, cases, customCases, reloadCustomCases, openCustomCa
   const taxReviewReady = Boolean(pendingTaxClassification?.legalAsOf && pendingTaxClassification.sourceUrls?.length && taxReviewNote.trim().length >= 20 && taxPublicationChecklist.every((key) => taxReviewChecks[key]));
   return <section className="admin-desk">
     <div className="panel-title"><span>PLATFORM ADMIN · MODERATION & RELEASES</span><b>ADMIN</b></div>
+    <Suspense fallback={<section className="operations-dashboard operations-dashboard-loading"><p>{locale === "en" ? "Loading aggregated telemetry…" : "Загрузка агрегированной телеметрии…"}</p></section>}><OperationsDashboard locale={locale}/></Suspense>
     <div className="admin-grid">
       <form onSubmit={publishRelease}><h2>{locale === "en" ? "Addressed release" : "Адресный релиз"}</h2><label><span>Kind</span><select value={kind} onChange={(event) => setKind(event.target.value)}><option value="product">Product</option><option value="case">Case</option><option value="research">Research</option></select></label>{kind === "case" && <label><span>Case</span><select value={caseId} onChange={(event) => setCaseId(event.target.value)}>{cases.map((item) => <option value={item.id} key={item.id}>{item.title} · v{item.currentVersion}</option>)}</select></label>}<label><span>Title</span><input value={title} maxLength={160} onChange={(event) => setTitle(event.target.value)}/></label><label><span>Message</span><textarea value={body} maxLength={4000} onChange={(event) => setBody(event.target.value)}/></label><label><span>Target jurisdictions · comma separated</span><input value={jurisdictions} onChange={(event) => setJurisdictions(event.target.value)}/></label><label><span>Target practices · comma separated</span><input value={practices} onChange={(event) => setPractices(event.target.value)}/></label><label><span>Target roles · comma separated</span><input value={roles} onChange={(event) => setRoles(event.target.value)}/></label><button className="primary-cta" disabled={title.trim().length < 4 || body.trim().length < 10}>Publish release<Icon name="arrow"/></button>{message && <p role="status">{message}</p>}</form>
       <div className="moderation-queues">

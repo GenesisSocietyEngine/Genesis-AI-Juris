@@ -10,7 +10,7 @@ export type PlayedScenarioIdentity = {
   fingerprint: unknown;
 };
 
-type ManifestFetch = (url: string) => Promise<Response>;
+type ManifestFetch = (url: string, init?: RequestInit) => Promise<Response>;
 
 type PlayedCaseServerSessionIdentity = {
   sessionKey: string;
@@ -56,14 +56,17 @@ export function commitPlayedCaseServerSession<T extends PlayedCaseServerSessionI
   return exactSession;
 }
 
-export async function resolvePlayedCaseScenario(identityValue: PlayedScenarioIdentity, cached: Scenario[], fetchManifest: ManifestFetch = (url) => fetch(url)) {
+export async function resolvePlayedCaseScenario(identityValue: PlayedScenarioIdentity, cached: Scenario[], fetchManifest: ManifestFetch = (url, init) => fetch(url, init)) {
   const identity = playedScenarioIdentity(identityValue);
   const cachedScenario = cached.find((scenario) => matchesPlayedIdentity(scenario, identity));
   if (cachedScenario) return { scenario: cachedScenario, legacyTiming: await isLegacyScenario(cachedScenario) };
 
   let responseStatus: number | null = null;
   try {
-    const response = await fetchManifest(`/api/catalog/${encodeURIComponent(identity.caseId)}?version=${encodeURIComponent(identity.contentVersion)}`);
+    const response = await fetchManifest(
+      `/api/catalog/${encodeURIComponent(identity.caseId)}?version=${encodeURIComponent(identity.contentVersion)}`,
+      { headers: { "X-GENESIS-Expected-Fingerprint": identity.fingerprint } },
+    );
     responseStatus = response.status;
     if (!response.ok) throw new Error("Published played-case version is unavailable");
     const historical: unknown = await response.json().catch(() => null);

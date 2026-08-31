@@ -34,3 +34,13 @@ test("the release verifier guards a linked mobile worktree before running mobile
   assert.ok(cargo > guardAndParity, "Rust commands must remain unreachable until the checkout guard passes");
   assert.ok(android > guardAndParity, "native commands must remain unreachable until the checkout guard passes");
 });
+
+test("the mobile parity probe gives tar only cwd-relative archive paths", () => {
+  const parityScript = readFileSync(new URL("../scripts/verify-mobile-parity.ts", import.meta.url), "utf8");
+
+  assert.match(
+    parityScript,
+    /run\("tar", \[\s*"-xf",\s*relative\(probeRoot, archivePath\),\s*"-C",\s*relative\(probeRoot, sourceRoot\),\s*\], probeRoot\);/u,
+  );
+  assert.doesNotMatch(parityScript, /run\("tar", \["-xf", archivePath/u);
+});

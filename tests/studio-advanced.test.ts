@@ -349,7 +349,7 @@ test("Help ships an English no-subtitle expert demo and two local accessible wal
   ];
   for (const name of captionFiles) {
     const vtt = readFileSync(new URL(`../public/help/${name}`, import.meta.url), "utf8");
-    assert.ok(vtt.startsWith("WEBVTT\n"));
+    assert.match(vtt, /^WEBVTT\r?\n/u);
     const starts = [...vtt.matchAll(/^(?:(\d{2}):)?(\d{2}):(\d{2})\.(\d{3}) -->/gm)].map((match) => Number(match[1] ?? 0) * 3_600_000 + Number(match[2]) * 60_000 + Number(match[3]) * 1_000 + Number(match[4]));
     assert.ok(starts.length >= 5, `${name} should contain a useful caption sequence`);
     assert.deepEqual(starts, [...starts].sort((a, b) => a - b), `${name} cues should be monotonic`);

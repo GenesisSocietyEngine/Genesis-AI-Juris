@@ -323,6 +323,52 @@ export const playEvents = sqliteTable("play_events", {
   check("play_events_sequence_check", sql`${table.sequence} >= 0`),
 ]);
 
+// Short-lived operational telemetry. This table deliberately excludes user,
+// session, case, event, fingerprint, URL, query and content identifiers. The
+// random request UUID is retained only to correlate these coarse records with
+// Cloudflare Worker logs during the 14-day operational window.
+export const operationalEvents = sqliteTable("operational_events", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  schema: text("schema").notNull(),
+  occurredAt: text("occurred_at").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  requestId: text("request_id").notNull(),
+  eventName: text("event_name").notNull(),
+  route: text("route").notNull(),
+  outcome: text("outcome").notNull(),
+  reason: text("reason").notNull(),
+  responseClass: text("response_class").notNull(),
+  latencyMs: integer("latency_ms"),
+  operation: text("operation"),
+  logicalRepository: text("logical_repository"),
+  commandCount: integer("command_count"),
+  sampleWeight: integer("sample_weight").notNull().default(1),
+  deploymentVersion: text("deployment_version").notNull(),
+  webCommit: text("web_commit").notNull(),
+  bundleRevision: integer("bundle_revision").notNull(),
+  runtimeRevision: text("runtime_revision").notNull(),
+  playedCaseSchemaRevision: integer("played_case_schema_revision").notNull(),
+}, (table) => [
+  index("operational_events_expiry_idx").on(table.expiresAt),
+  index("operational_events_occurred_idx").on(table.occurredAt),
+  index("operational_events_event_outcome_occurred_idx").on(table.eventName, table.outcome, table.occurredAt),
+  index("operational_events_route_occurred_idx").on(table.route, table.occurredAt),
+  check("operational_events_schema_check", sql`${table.schema} = 'genesis.juris.observability.v1'`),
+  check("operational_events_request_id_check", sql`length(${table.requestId}) = 36 and lower(${table.requestId}) = ${table.requestId}`),
+  check("operational_events_event_name_check", sql`${table.eventName} in ('replay.internal_failure','played_case.revision_mismatch','played_case.fingerprint_mismatch','historical_bundle.lookup_miss')`),
+  check("operational_events_route_check", sql`${table.route} in ('play_sessions','admin')`),
+  check("operational_events_outcome_check", sql`${table.outcome} in ('expected_rejection','internal_failure')`),
+  check("operational_events_reason_check", sql`${table.reason} in ('stored_state_divergence','stored_revision_divergence','stored_fingerprint_divergence','runtime_exception','stale_client','requested_identity_mismatch','stored_identity_mismatch','canonical_source_mismatch','manifest_integrity','case_unavailable','version_unavailable','stored_version_unavailable')`),
+  check("operational_events_response_class_check", sql`${table.responseClass} in ('none','2xx','3xx','4xx','5xx','exception')`),
+  check("operational_events_latency_check", sql`${table.latencyMs} is null or (${table.latencyMs} >= 0 and ${table.latencyMs} <= 120000)`),
+  check("operational_events_operation_check", sql`${table.operation} is null or ${table.operation} in ('request','read','insert','purge','start','decision','advance_time','abandon','import','load','save','replay')`),
+  check("operational_events_repository_check", sql`${table.logicalRepository} is null or ${table.logicalRepository} in ('none','operational_events','play_sessions','play_events','cases','case_versions')`),
+  check("operational_events_command_count_check", sql`${table.commandCount} is null or (${table.commandCount} >= 0 and ${table.commandCount} <= 1000)`),
+  check("operational_events_sample_weight_check", sql`${table.sampleWeight} = 1`),
+  check("operational_events_release_revision_check", sql`${table.bundleRevision} >= 0 and ${table.playedCaseSchemaRevision} >= 0`),
+  check("operational_events_retention_check", sql`unixepoch(${table.expiresAt}) is not null and unixepoch(${table.occurredAt}) is not null and unixepoch(${table.expiresAt}) - unixepoch(${table.occurredAt}) = 1209600`),
+]);
+
 export const auditEvents = sqliteTable("audit_events", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   actorEmail: text("actor_email").notNull(),

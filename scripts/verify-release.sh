@@ -33,7 +33,7 @@ git diff --check
 echo "[web 6/6] final verified build"
 npm run build
 
-echo "[mobile 1/5] exact-SHA checkout and cross-runtime fixture parity"
+echo "[mobile 1/5] exact-SHA checkout and 18-route cross-runtime fixture parity"
 npm run parity:mobile -- --mobile-repo "${mobile_root}"
 
 echo "[mobile 2/5] dependency resolution"
@@ -78,4 +78,4 @@ node --input-type=module -e '
   console.log(`PASS iOS workflow ${lock.nativeEvidence.iosWorkflowRun} for ${lock.mobile.commit}`);
 '
 
-echo "PASS v52 release verification. Deployment remains a separate, explicit Sites operation."
+echo "PASS v53 release verification. Deployment remains a separate, explicit Sites operation."

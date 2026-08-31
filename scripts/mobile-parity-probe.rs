@@ -6,6 +6,8 @@ use std::fs;
 use std::path::Path;
 
 const PROBE_SCHEMA_VERSION: u64 = 1;
+const FIXTURE_SCHEMA_VERSION: u64 = 2;
+const EXPECTED_ROUTE_COUNT: usize = 18;
 
 #[derive(Default)]
 struct ContractReceipt {
@@ -60,19 +62,32 @@ fn run() -> Result<Value, String> {
     let bundle = read_json(Path::new(&arguments[1]), "mobile case bundle")?;
     let fixtures = read_json(Path::new(&arguments[2]), "parity fixtures")?;
     let fixture_schema = required_u64(&fixtures, "schema_version", "parity fixtures")?;
-    if fixture_schema != PROBE_SCHEMA_VERSION {
+    if fixture_schema != FIXTURE_SCHEMA_VERSION {
         return Err(format!(
-            "unsupported parity fixture schema {fixture_schema}; expected {PROBE_SCHEMA_VERSION}"
+            "unsupported parity fixture schema {fixture_schema}; expected {FIXTURE_SCHEMA_VERSION}"
+        ));
+    }
+    let matrix = required_value(&fixtures, "matrix", "parity fixtures")?;
+    let declared_route_count = required_u64(matrix, "route_count", "parity matrix")?;
+    if declared_route_count != EXPECTED_ROUTE_COUNT as u64 {
+        return Err(format!(
+            "parity matrix declares {declared_route_count} routes; expected {EXPECTED_ROUTE_COUNT}"
         ));
     }
 
     let cases = required_array(&bundle, "cases", "mobile case bundle")?;
     let routes = required_array(&fixtures, "routes", "parity fixtures")?;
-    if routes.is_empty() {
-        return Err("parity fixtures contain no routes".to_owned());
+    if routes.len() != EXPECTED_ROUTE_COUNT {
+        return Err(format!(
+            "parity fixtures contain {} routes; expected {EXPECTED_ROUTE_COUNT}",
+            routes.len()
+        ));
     }
 
     let mut route_ids = BTreeSet::new();
+    let mut route_paths = BTreeSet::new();
+    let mut route_branches = BTreeSet::new();
+    let mut covered_case_ids = BTreeSet::new();
     let mut contract_receipt = ContractReceipt::default();
     let mut results = Vec::with_capacity(routes.len());
     for (route_index, route) in routes.iter().enumerate() {
@@ -85,6 +100,26 @@ fn run() -> Result<Value, String> {
         let case_id = required_str(route, "case_id", route_id)?;
         let seed = required_u64(route, "seed", route_id)?;
         let commands = required_array(route, "commands", route_id)?;
+        let command_path = format!(
+            "{case_id}\u{0}{}",
+            serde_json::to_string(commands)
+                .map_err(|error| format!("{route_id}: could not encode command path: {error}"))?
+        );
+        if !route_paths.insert(command_path) {
+            return Err(format!(
+                "{route_id}: duplicate command path for case `{case_id}`"
+            ));
+        }
+        let branch = required_str(route, "branch", route_id)?;
+        if !route_branches.insert(format!("{case_id}\u{0}{branch}")) {
+            return Err(format!(
+                "{route_id}: duplicate branch `{branch}` for case `{case_id}`"
+            ));
+        }
+        required_str(route, "route_class", route_id)?;
+        required_str(route, "risk", route_id)?;
+        verify_serialization_contract(route, route_id)?;
+        covered_case_ids.insert(case_id.to_owned());
         let case = find_case(cases, case_id)?;
         let scenario = required_value(case, "scenario", case_id)?.clone();
         if !scenario.is_object() {
@@ -126,6 +161,7 @@ fn run() -> Result<Value, String> {
                 "snapshot": final_snapshot.clone(),
             }));
         }
+        verify_route_expectations(route, commands.len(), &final_snapshot, route_id)?;
 
         let saved = execute(
             &mut bridge,
@@ -211,6 +247,16 @@ fn run() -> Result<Value, String> {
         }));
     }
 
+    let bundle_case_ids = cases
+        .iter()
+        .map(|case| required_str(case, "case_id", "mobile case bundle").map(str::to_owned))
+        .collect::<Result<BTreeSet<_>, _>>()?;
+    if covered_case_ids != bundle_case_ids {
+        return Err(format!(
+            "parity case coverage mismatch; expected {bundle_case_ids:?}, got {covered_case_ids:?}"
+        ));
+    }
+
     let snapshot_schema_revision = single_contract_revision(
         &contract_receipt.snapshot_schema_revisions,
         "mobile snapshot schema",
@@ -237,6 +283,65 @@ fn read_json(path: &Path, label: &str) -> Result<Value, String> {
         .map_err(|error| format!("could not read {label} `{}`: {error}", path.display()))?;
     serde_json::from_str(&encoded)
         .map_err(|error| format!("could not parse {label} `{}`: {error}", path.display()))
+}
+
+fn verify_serialization_contract(route: &Value, context: &str) -> Result<(), String> {
+    let serialization = required_value(route, "serialization", context)?;
+    for key in ["web_normalize", "mobile_save_load", "mobile_resave"] {
+        if !required_bool(serialization, key, context)? {
+            return Err(format!(
+                "{context}: serialization assertion `{key}` must be true"
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn verify_route_expectations(
+    route: &Value,
+    command_count: usize,
+    final_snapshot: &Value,
+    context: &str,
+) -> Result<(), String> {
+    let expected = required_value(route, "expected", context)?;
+    let checkpoint_count = required_u64(expected, "checkpoint_count", context)?;
+    if checkpoint_count != (command_count + 1) as u64 {
+        return Err(format!(
+            "{context}: expected checkpoint count {checkpoint_count} does not equal {}",
+            command_count + 1
+        ));
+    }
+
+    let expected_stage = required_str(expected, "stage", context)?;
+    let actual_stage = required_str(final_snapshot, "stage", context)?;
+    if actual_stage != expected_stage {
+        return Err(format!(
+            "{context}: final stage `{actual_stage}` does not match expected `{expected_stage}`"
+        ));
+    }
+    let expected_clock = required_u64(expected, "clock", context)?;
+    let actual_clock = required_u64(final_snapshot, "clock", context)?;
+    if actual_clock != expected_clock {
+        return Err(format!(
+            "{context}: final clock {actual_clock} does not match expected {expected_clock}"
+        ));
+    }
+
+    for key in ["outcome", "judicial_result"] {
+        let expected_value = required_value(expected, key, context)?;
+        if !expected_value.is_null() && !expected_value.is_string() {
+            return Err(format!(
+                "{context}: expected `{key}` must be a string or explicit null"
+            ));
+        }
+        let actual_value = required_value(final_snapshot, key, context)?;
+        if actual_value != expected_value {
+            return Err(format!(
+                "{context}: final `{key}` {actual_value} does not match expected {expected_value}"
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn find_case<'a>(cases: &'a [Value], case_id: &str) -> Result<&'a Value, String> {
