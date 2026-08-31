@@ -68,8 +68,13 @@ fn versioned_case_type_manifest_contains_every_rust_id() {
         ids,
         vec![
             "general_advisory",
+            "litigation_strategy",
+            "contract_review",
+            "tax_planning",
+            "compliance",
             "tax_compliance",
             "erp_incident",
+            "investigation",
             "training_simulation"
         ]
     );

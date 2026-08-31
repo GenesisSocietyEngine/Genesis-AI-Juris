@@ -21,8 +21,13 @@ pub const CASE_TYPE_VERSION_V1: &str = "1.0.0";
 #[serde(rename_all = "snake_case")]
 pub enum CaseTypeId {
     GeneralAdvisory,
+    LitigationStrategy,
+    ContractReview,
+    TaxPlanning,
+    Compliance,
     TaxCompliance,
     ErpIncident,
+    Investigation,
     TrainingSimulation,
 }
 
