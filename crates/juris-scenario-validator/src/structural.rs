@@ -3,7 +3,7 @@
 use crate::{Diagnostic, DiagnosticCode, ScenarioIndex, ValidationReport};
 use juris_scenario_schema::{
     Effect, EventTrigger, RelativeTimeDefinition, ScenarioDefinition, ScenarioTime, StageKind,
-    SCENARIO_SCHEMA_VERSION_V1,
+    CASE_TYPE_REGISTRY_ID, CASE_TYPE_VERSION_V1, SCENARIO_SCHEMA_VERSION_V1,
 };
 use std::collections::HashSet;
 
@@ -14,6 +14,7 @@ pub(crate) fn validate_structural(
 ) {
     validate_schema_version(scenario, report);
     validate_metadata_id(scenario, report);
+    validate_case_type(scenario, report);
     validate_initial_stage(scenario, index, report);
     validate_outcomes(scenario, report);
     validate_stage_lifecycle_contract(scenario, report);
@@ -452,6 +453,22 @@ fn validate_metadata_id(scenario: &ScenarioDefinition, report: &mut ValidationRe
             DiagnosticCode::EmptyId,
             "metadata.id",
             "scenario metadata ID must not be empty",
+        ));
+    }
+}
+
+fn validate_case_type(scenario: &ScenarioDefinition, report: &mut ValidationReport) {
+    let Some(reference) = &scenario.metadata.case_type else {
+        return;
+    };
+    if reference.registry != CASE_TYPE_REGISTRY_ID || reference.version != CASE_TYPE_VERSION_V1 {
+        report.push(Diagnostic::error(
+            DiagnosticCode::UnsupportedCaseType,
+            "metadata.case_type",
+            format!(
+                "unsupported case-type package `{}@{}`; expected registry `{}` and version `{}`",
+                reference.registry, reference.version, CASE_TYPE_REGISTRY_ID, CASE_TYPE_VERSION_V1
+            ),
         ));
     }
 }

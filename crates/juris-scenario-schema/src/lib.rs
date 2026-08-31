@@ -56,8 +56,9 @@ pub use lifecycle::{JudicialDecisionInstance, JudicialResult, MatterLifecycleSta
 pub use outcome::OutcomeDefinition;
 pub use pressure::PressureWindowDefinition;
 pub use scenario::{
-    JurisdictionReference, ScenarioClockDefinition, ScenarioClockMode, ScenarioDefinition,
-    ScenarioMetadata, ScenarioTime, RESOURCE_AUTHORIZED_BUDGET_EUR, RESOURCE_BILLABLE_MINUTES,
+    CaseTypeId, CaseTypeReference, JurisdictionReference, ScenarioClockDefinition,
+    ScenarioClockMode, ScenarioDefinition, ScenarioMetadata, ScenarioTime, CASE_TYPE_REGISTRY_ID,
+    CASE_TYPE_VERSION_V1, RESOURCE_AUTHORIZED_BUDGET_EUR, RESOURCE_BILLABLE_MINUTES,
     RESOURCE_SPEND_EUR, SCENARIO_SCHEMA_VERSION_V1,
 };
 pub use stage::{StageDefinition, StageKind};

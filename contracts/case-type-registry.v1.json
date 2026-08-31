@@ -1,0 +1,35 @@
+{
+  "format": "genesis-juris-case-type-registry",
+  "schemaVersion": 1,
+  "registry": "genesis-juris-case-types",
+  "types": [
+    {
+      "id": "general_advisory",
+      "version": "1.0.0",
+      "workflowMode": "hybrid",
+      "views": ["issue_map", "evidence_map", "decision_table", "timeline"],
+      "requiredReview": "professional"
+    },
+    {
+      "id": "tax_compliance",
+      "version": "1.0.0",
+      "workflowMode": "hybrid",
+      "views": ["issue_map", "decision_table", "economics", "timeline"],
+      "requiredReview": "tax_governance"
+    },
+    {
+      "id": "erp_incident",
+      "version": "1.0.0",
+      "workflowMode": "process",
+      "views": ["task_plan", "evidence_map", "decision_table", "timeline"],
+      "requiredReview": "professional"
+    },
+    {
+      "id": "training_simulation",
+      "version": "1.0.0",
+      "workflowMode": "simulation",
+      "views": ["simulation", "timeline", "evidence_map"],
+      "requiredReview": "runtime_parity"
+    }
+  ]
+}

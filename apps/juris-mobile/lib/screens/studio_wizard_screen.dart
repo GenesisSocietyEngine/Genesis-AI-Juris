@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../data/studio_authoring_repository.dart';
 import '../data/studio_draft_store.dart';
+import '../models/case_type_registry.dart';
 import '../models/studio_scenario_draft.dart';
 import '../widgets/section_card.dart';
 
@@ -269,6 +270,63 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
         ),
         const SizedBox(height: 16),
         SectionCard(
+          title: _t('Case type', 'Тип кейса'),
+          subtitle: _t(
+            'Choose the versioned package that defines the workflow and result.',
+            'Выберите версионируемый пакет, определяющий процесс и результат.',
+          ),
+          child: Builder(
+            builder: (BuildContext context) {
+              final CaseTypeDefinition selected =
+                  caseTypeDefinition(_draft.caseType.id);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  DropdownButtonFormField<CaseTypeId>(
+                    key: ValueKey<String>(
+                      'studio-case-type-${_draft.caseType.id.wireName}',
+                    ),
+                    initialValue: _draft.caseType.id,
+                    decoration: InputDecoration(
+                      labelText: _t('Professional matter', 'Профессиональная задача'),
+                    ),
+                    items: caseTypeRegistry
+                        .map(
+                          (CaseTypeDefinition item) =>
+                              DropdownMenuItem<CaseTypeId>(
+                            value: item.id,
+                            child: Text(_ru ? item.labelRu : item.labelEn),
+                          ),
+                        )
+                        .toList(growable: false),
+                    onChanged: _busy
+                        ? null
+                        : (CaseTypeId? value) {
+                            if (value == null || value == _draft.caseType.id) {
+                              return;
+                            }
+                            _replaceDraft(
+                              _draft.updateCaseType(value),
+                              StudioWorkflowStage.describe,
+                            );
+                          },
+                  ),
+                  const SizedBox(height: 12),
+                  Text(_ru ? selected.summaryRu : selected.summaryEn),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${_t('Result', 'Результат')}: '
+                    '${_ru ? selected.outcomeRu : selected.outcomeEn} · '
+                    '${selected.workflowMode} · v$caseTypeVersion',
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 16),
+        SectionCard(
           title: _t('Case brief', 'Описание кейса'),
           subtitle: _t(
             'These details anchor every later step.',
@@ -346,6 +404,12 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _ReviewRow(label: _t('Matter', 'Дело'), value: _draft.title),
+          _ReviewRow(
+            label: _t('Case type', 'Тип кейса'),
+            value: _ru
+                ? caseTypeDefinition(_draft.caseType.id).labelRu
+                : caseTypeDefinition(_draft.caseType.id).labelEn,
+          ),
           _ReviewRow(label: _t('Role', 'Роль'), value: _draft.role),
           _ReviewRow(
             label: _t('Jurisdiction', 'Юрисдикция'),

@@ -5,6 +5,11 @@
     "title": "Supplier transition dispute",
     "summary": "A client must respond to a critical supplier termination while preserving service continuity and its contractual remedies.",
     "content_version": "1",
+    "case_type": {
+      "registry": "genesis-juris-case-types",
+      "id": "training_simulation",
+      "version": "1.0.0"
+    },
     "author": "Mobile Guided Studio",
     "tags": [
       "guided_studio",

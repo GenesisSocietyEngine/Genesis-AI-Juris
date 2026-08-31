@@ -1,10 +1,10 @@
 //! Regression tests for structural and reference validation.
 
 use juris_scenario_schema::{
-    ActionId, ActorDefinition, ActorId, ActorRole, DeadlineDefinition, DeadlineId, Effect,
-    EventDefinition, EventId, EventKind, EventTrigger, MetricId, OutcomeId,
-    PressureWindowDefinition, PressureWindowId, RelativeTimeDefinition, ScenarioDefinition,
-    ScenarioTime, StageId,
+    ActionId, ActorDefinition, ActorId, ActorRole, CaseTypeId, CaseTypeReference,
+    DeadlineDefinition, DeadlineId, Effect, EventDefinition, EventId, EventKind, EventTrigger,
+    MetricId, OutcomeId, PressureWindowDefinition, PressureWindowId, RelativeTimeDefinition,
+    ScenarioDefinition, ScenarioTime, StageId,
 };
 use juris_scenario_validator::{validate_scenario, DiagnosticCode};
 use serde_json::json;
@@ -122,6 +122,30 @@ fn minimal_scenario_passes_phase_one_validation() {
         "expected valid scenario, got diagnostics: {:#?}",
         report.diagnostics
     );
+}
+
+#[test]
+fn supported_case_type_package_passes_authoritative_validation() {
+    let mut scenario = load_minimal_scenario();
+    scenario.metadata.case_type = Some(CaseTypeReference {
+        registry: "genesis-juris-case-types".to_owned(),
+        id: CaseTypeId::ErpIncident,
+        version: "1.0.0".to_owned(),
+    });
+    assert!(validate_scenario(&scenario).is_valid());
+}
+
+#[test]
+fn unsupported_case_type_version_is_rejected() {
+    let mut scenario = load_minimal_scenario();
+    scenario.metadata.case_type = Some(CaseTypeReference {
+        registry: "genesis-juris-case-types".to_owned(),
+        id: CaseTypeId::ErpIncident,
+        version: "2.0.0".to_owned(),
+    });
+    assert!(validate_scenario(&scenario)
+        .error_codes()
+        .contains(&DiagnosticCode::UnsupportedCaseType));
 }
 
 #[test]
