@@ -2386,6 +2386,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   const aiAbortRef = useRef<AbortController | null>(null);
   const graphDeckRef = useRef<HTMLElement | null>(null);
   const graphViewportRef = useRef<HTMLDivElement | null>(null);
+  const moreActionsRef = useRef<HTMLDetailsElement | null>(null);
   const derivationsSettled = studioDerivations.source === draft;
   const promptDerivationsSettled = derivationsSettled && derivedPrompt === prompt;
   const canonicalPrompt = prompt.includes("GENESIS-JURIS-CANONICAL-V1");
@@ -2425,6 +2426,27 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   useEffect(() => {
     graphBoundsRef.current = graphBounds;
   }, [graphBounds]);
+  useEffect(() => {
+    function closeMoreActionsOnOutsidePointer(event: PointerEvent) {
+      const menu = moreActionsRef.current;
+      if (menu?.open && event.target instanceof Node && !menu.contains(event.target)) {
+        menu.open = false;
+      }
+    }
+    function closeMoreActionsOnEscape(event: KeyboardEvent) {
+      const menu = moreActionsRef.current;
+      if (event.key !== "Escape" || !menu?.open) return;
+      const focusWasInside = document.activeElement instanceof Node && menu.contains(document.activeElement);
+      menu.open = false;
+      if (focusWasInside) menu.querySelector<HTMLElement>("summary")?.focus();
+    }
+    document.addEventListener("pointerdown", closeMoreActionsOnOutsidePointer, true);
+    document.addEventListener("keydown", closeMoreActionsOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeMoreActionsOnOutsidePointer, true);
+      document.removeEventListener("keydown", closeMoreActionsOnEscape);
+    };
+  }, []);
   const fitGraph = useCallback(() => {
     const viewport = graphViewportRef.current;
     const width = viewport?.clientWidth ?? graphDeckRef.current?.clientWidth ?? 1_200;
@@ -3084,7 +3106,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
           <button className="secondary-cta" onClick={() => shareDraft("save")} disabled={!canDuplicate || !draftWithinEnvelope || !derivationsSettled || workspaceState === "saving"}><Icon name="save"/>{workspaceState === "saving" ? (locale === "en" ? "Saving…" : "Сохранение…") : (locale === "en" ? "Save to workspace" : "Сохранить в workspace")}</button>
           {displayMode === "developer" && <button className="secondary-cta report-cta" onClick={() => void openCaseReport()} title={locale === "en" ? "Open PDF options" : "Параметры PDF"}><Icon name="download"/>{locale === "en" ? "PDF report" : "PDF-отчёт"}</button>}
           {displayMode === "developer" && <button className="primary-cta" onClick={() => shareDraft("submit")} disabled={Boolean(submitBlocker) || workspaceState === "saving"} title={submitBlocker || undefined} aria-describedby={submitBlocker ? "studio-submit-blocker" : undefined}><Icon name="check"/>{locale === "en" ? "Submit for review" : "Отправить на рецензию"}</button>}
-          {displayMode === "developer" ? portableStudioActions : <details className="studio-more-actions"><summary><Icon name="plus"/>{locale === "en" ? "More actions" : "Другие действия"}</summary>{portableStudioActions}</details>}
+          {displayMode === "developer" ? portableStudioActions : <details ref={moreActionsRef} className="studio-more-actions"><summary><Icon name="plus"/>{locale === "en" ? "More actions" : "Другие действия"}</summary>{portableStudioActions}</details>}
           <input ref={importRef} className="visually-hidden" type="file" accept=".json,application/json" onChange={(event) => { const file=event.target.files?.[0]; if(file){ clearTransientEditorSelection(); importDraft(file); } event.target.value=""; }}/>
         </div>
         {submitBlocker && displayMode === "developer" && <p id="studio-submit-blocker" className="studio-submit-blocker"><Icon name="alert"/><span>{submitBlocker}</span>{derivationError && <button type="button" onClick={() => { setDerivationError(false); setDerivationAttempt((attempt) => attempt + 1); }}>{locale === "en" ? "Retry check" : "Повторить проверку"}</button>}{isPrivate && submitBlocker !== firstSubmissionWarning && <button type="button" onClick={() => document.getElementById("studio-case-settings")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{locale === "en" ? "Change visibility" : "Изменить видимость"}</button>}{firstSubmissionWarning && submitBlocker === firstSubmissionWarning && <button type="button" onClick={() => document.getElementById("studio-checks")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{locale === "en" ? "Review issue" : "Перейти к замечанию"}</button>}</p>}
