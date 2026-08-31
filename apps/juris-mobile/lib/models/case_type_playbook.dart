@@ -291,9 +291,15 @@ CasePackageEvaluation evaluateCanonicalCasePackage(
   if (rules.requireHttpsSourceFact && !record.contains('https://')) {
     missing.add('https_source');
   }
-  if (rules.requireComplianceFact &&
-      !RegExp(r'\b(compliance|reporting|filing|контрол|отч[её]т)\b')
-          .hasMatch(record)) {
+  final bool hasComplianceEvidence = <String>[
+    'compliance',
+    'reporting',
+    'filing',
+    'контрол',
+    'отчёт',
+    'отчет',
+  ].any(record.contains);
+  if (rules.requireComplianceFact && !hasComplianceEvidence) {
     missing.add('compliance');
   }
   return CasePackageEvaluation(List<String>.unmodifiable(missing));

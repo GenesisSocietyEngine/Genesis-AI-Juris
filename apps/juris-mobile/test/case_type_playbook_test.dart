@@ -53,7 +53,7 @@ void main() {
     final StudioScenarioDraft complete = incomplete.updateFacts(<String>[
       'Legal as-of date: 2026-08-31.',
       'Authority: https://example.gov/tax/rule.',
-      'Reporting and compliance filing is required.',
+      'Применяется обязанность по отчётности и compliance.',
     ]);
     expect(evaluateCanonicalCasePackage(playbook, complete).complete, isTrue);
   });
