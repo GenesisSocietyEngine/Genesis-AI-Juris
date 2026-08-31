@@ -221,12 +221,12 @@ test("late identity and catalogue responses cannot overwrite newer user intent",
   assert.match(source, /launchRequestVersion === catalogueLaunchRef\.current\) setCatalogueLoading\(false\)/);
 });
 
-test("Studio opens in After hours and the English demo keeps one Five Flats case without subtitles", () => {
+test("Studio opens in Office and the English demo keeps one Five Flats case without subtitles", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   const demoPage = readFileSync(new URL("../app/help/studio-demo/page.tsx", import.meta.url), "utf8");
   const demoBuilder = readFileSync(new URL("../scripts/build-studio-demo-video.sh", import.meta.url), "utf8");
 
-  assert.match(appSource, /useState<Theme>\("after-hours"\)/);
+  assert.match(appSource, /useState<Theme>\("office"\)/);
   assert.match(demoPage, /English narration · No subtitles · Studio only/);
   assert.doesNotMatch(demoPage, /<track|\.vtt|Burned-in English captions/);
   assert.match(demoBuilder, /voice=slt/);
