@@ -8,6 +8,7 @@ import '../data/studio_draft_store.dart';
 import '../models/case_type_registry.dart';
 import '../models/studio_scenario_draft.dart';
 import '../widgets/section_card.dart';
+import '../widgets/studio_case_views.dart';
 
 final class StudioWizardScreen extends StatefulWidget {
   const StudioWizardScreen({
@@ -490,6 +491,14 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   Widget _buildMap() {
     return Column(
       children: <Widget>[
+        StudioCaseViews(
+          key: ValueKey<String>(
+            'studio-case-views-${_draft.caseType.id.wireName}',
+          ),
+          draft: _draft,
+          locale: widget.locale,
+        ),
+        const SizedBox(height: 16),
         SectionCard(
           title: _t('Stages', 'Этапы дела'),
           subtitle: _t(
@@ -891,7 +900,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       StudioWorkflowStage.reviewAiDraft =>
         _t('Review AI draft', 'Проверка AI-проекта'),
       StudioWorkflowStage.factsAssumptions => _t('Facts', 'Факты'),
-      StudioWorkflowStage.caseMap => _t('Case map', 'Карта кейса'),
+      StudioWorkflowStage.caseMap => _t('Views & map', 'Виды и карта'),
       StudioWorkflowStage.runCompare => _t('Test', 'Тест'),
       StudioWorkflowStage.reportSave => _t('Finish', 'Завершение'),
     };
@@ -912,8 +921,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
           'Зафиксируйте факты, определяющие профессиональное решение.',
         ),
       StudioWorkflowStage.caseMap => _t(
-          'Make the route understandable before testing it.',
-          'Сделайте маршрут понятным до запуска теста.',
+          'Review the matter through its package-defined views, then refine the route.',
+          'Проверьте задачу в представлениях пакета, затем уточните маршрут.',
         ),
       StudioWorkflowStage.runCompare => _t(
           'Let Rust validate and execute the authored route.',
@@ -944,8 +953,8 @@ final class _ProgressHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool ru = locale == 'ru';
     final List<String> labels = ru
-        ? const <String>['Описание', 'AI-проект', 'Факты', 'Карта', 'Тест', 'Готово']
-        : const <String>['Describe', 'AI draft', 'Facts', 'Map', 'Test', 'Finish'];
+        ? const <String>['Описание', 'AI-проект', 'Факты', 'Виды', 'Тест', 'Готово']
+        : const <String>['Describe', 'AI draft', 'Facts', 'Views', 'Test', 'Finish'];
     final int furthest = completed.isEmpty
         ? 0
         : completed.map((StudioWorkflowStage item) => item.index).fold<int>(
