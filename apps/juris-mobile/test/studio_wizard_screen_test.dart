@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,9 +7,17 @@ import 'package:juris_mobile/app/app_theme.dart';
 import 'package:juris_mobile/data/scenario_bridge_client.dart';
 import 'package:juris_mobile/data/studio_authoring_repository.dart';
 import 'package:juris_mobile/data/studio_draft_store.dart';
+import 'package:juris_mobile/models/case_type_playbook.dart';
 import 'package:juris_mobile/models/case_type_registry.dart';
 import 'package:juris_mobile/models/studio_scenario_draft.dart';
 import 'package:juris_mobile/screens/studio_wizard_screen.dart';
+
+final CaseTypePlaybookRegistry _testPlaybooks =
+    CaseTypePlaybookRegistry.fromJson(
+  jsonDecode(
+    File('../../contracts/case-type-playbooks.v1.json').readAsStringSync(),
+  ),
+);
 
 void main() {
   testWidgets('Guided Studio exposes the shared six-stage low-entry workflow', (
@@ -22,6 +31,7 @@ void main() {
           store: _MemoryStudioStore(),
           locale: 'en',
           onExit: () {},
+          playbookRegistry: _testPlaybooks,
         ),
       ),
     );
@@ -70,6 +80,7 @@ void main() {
           store: store,
           locale: 'en',
           onExit: () {},
+          playbookRegistry: _testPlaybooks,
         ),
       ),
     );
@@ -115,6 +126,7 @@ void main() {
           store: store,
           locale: 'en',
           onExit: () {},
+          playbookRegistry: _testPlaybooks,
         ),
       ),
     );
@@ -156,6 +168,7 @@ void main() {
           store: store,
           locale: 'en',
           onExit: () {},
+          playbookRegistry: _testPlaybooks,
         ),
       ),
     );

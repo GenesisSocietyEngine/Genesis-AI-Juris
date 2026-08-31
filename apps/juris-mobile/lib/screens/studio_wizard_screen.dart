@@ -17,6 +17,7 @@ final class StudioWizardScreen extends StatefulWidget {
     required this.store,
     required this.locale,
     required this.onExit,
+    this.playbookRegistry,
     super.key,
   });
 
@@ -24,6 +25,7 @@ final class StudioWizardScreen extends StatefulWidget {
   final StudioDraftStore store;
   final String locale;
   final VoidCallback onExit;
+  final CaseTypePlaybookRegistry? playbookRegistry;
 
   @override
   State<StudioWizardScreen> createState() => _StudioWizardScreenState();
@@ -56,6 +58,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   @override
   void initState() {
     super.initState();
+    _playbookRegistry = widget.playbookRegistry;
     _titleController = TextEditingController();
     _jurisdictionController = TextEditingController();
     _roleController = TextEditingController();
@@ -78,7 +81,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
 
   Future<void> _load() async {
     try {
-      _playbookRegistry = await loadCaseTypePlaybookRegistry();
+      _playbookRegistry ??= await loadCaseTypePlaybookRegistry();
       final StudioWorkspace? workspace = await widget.store.read();
       if (workspace != null && mounted) {
         _draft = workspace.draft;
