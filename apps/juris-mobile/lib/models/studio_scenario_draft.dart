@@ -76,6 +76,14 @@ final class StudioScenarioDraft {
         'Import must be a canonical ScenarioDefinition v1 document.',
       );
     }
+    final Map<String, dynamic> metadata =
+        source['metadata'] as Map<String, dynamic>;
+    final Object? caseTypeSource = metadata['case_type'];
+    if (caseTypeSource != null) {
+      // Reject an unsupported package before the draft can be rendered or
+      // persisted. Getters must never become the first import-validation gate.
+      CaseTypeReference.fromJson(caseTypeSource);
+    }
     return StudioScenarioDraft._(_cloneMap(source));
   }
 

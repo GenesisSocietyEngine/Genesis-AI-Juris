@@ -61,6 +61,18 @@ void main() {
     expect(restored.caseType.version, caseTypeVersion);
   });
 
+  test('import rejects unsupported case types before a draft is created', () {
+    final Map<String, dynamic> source =
+        StudioScenarioDraft.guidedExample().toJson();
+    (source['metadata'] as Map<String, dynamic>)['case_type'] =
+        <String, dynamic>{
+      'registry': caseTypeRegistryId,
+      'id': 'erp_incident',
+      'version': '2.0.0',
+    };
+    expect(() => StudioScenarioDraft.fromJson(source), throwsFormatException);
+  });
+
   test('import accepts only canonical ScenarioDefinition v1 JSON', () {
     expect(
       () => StudioScenarioDraft.fromJson(<String, dynamic>{'title': 'No'}),
