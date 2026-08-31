@@ -16,7 +16,7 @@ test("build contains the GENESIS: JURIS product metadata and worker entry", asyn
 });
 
 test("production build keeps the canonical scenario runtime out of the initial client chunk", async () => {
-  const assetDirectory = new URL("../dist/client/assets/", import.meta.url);
+  const assetDirectory = new URL("../dist/client/_next/static/chunks/", import.meta.url);
   const assets = await readdir(assetDirectory);
   const jurisAppName = assets.find((name) => /^JurisApp-.*\.js$/.test(name));
   const scenariosName = assets.find((name) => /^scenarios-.*\.js$/.test(name));
@@ -43,9 +43,10 @@ test("production build keeps the canonical scenario runtime out of the initial c
   const entry = manifest["app/JurisApp.tsx"];
   assert.ok(entry);
   const runtimeMarker = "Asteron accepts Northbridge's without-prejudice EUR 64,500 payment";
-  // The shared entry now includes the standalone Falcon-Merlin Studio shell;
-  // keep a tight ceiling while allowing that host-specific navigation layer.
-  assert.ok(jurisStats.size < 305_000, `Initial JurisApp chunk grew to ${jurisStats.size} bytes`);
+  // Vinext 1.0 emits the same lazy graph in its Next-compatible chunk directory
+  // with a modestly different minifier result. Keep the initial entry bounded;
+  // the presentation catalogue and Case Core projector remain lazy chunks.
+  assert.ok(jurisStats.size < 325_000, `Initial JurisApp chunk grew to ${jurisStats.size} bytes`);
   assert.ok(scenarioStats.size < 100_000, `Scenario adapter chunk grew to ${scenarioStats.size} bytes`);
   assert.ok(runtimeStats.size < 50_000, `Canonical reducer chunk grew to ${runtimeStats.size} bytes`);
   assert.ok(bundleStats.size > 300_000, "Canonical case bundle did not remain in its lazy data chunk");

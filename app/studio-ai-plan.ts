@@ -144,6 +144,7 @@ export function toStudioAIContext(draft: StudioDraft) {
   return {
     caseId: draft.caseId,
     version: draft.version,
+    caseType: draft.caseType,
     parent: draft.parent,
     title: draft.title,
     jurisdiction: draft.jurisdiction,
@@ -171,6 +172,7 @@ export function normalizeStudioAIContext(value: unknown): StudioDraft {
   const candidate = {
     caseId: value.caseId,
     version: value.version,
+    caseType: value.caseType,
     parent: value.parent,
     title: rawTitle || "Untitled case",
     jurisdiction: value.jurisdiction,

@@ -16,6 +16,7 @@ import { addStudioLink, appendStudioHistory, applyStudioPromptIteration, deleteS
 import { applyValidatedAIStudioPlan, studioAIBaseFingerprint, toStudioAIContext } from "./studio-ai-plan";
 import { compileStudioDraft } from "./studio-compiler";
 import { STUDIO_DRAFT_SERIALIZED_LIMIT, studioJsonBytes } from "./studio-envelope";
+import { caseTypeReference } from "./case-type-reference";
 import { STUDIO_NODE_MENU_PAGE_SIZE, studioNodeMenuOptions, studioNodeMenuPage } from "./studio-node-menu";
 import { STUDIO_PROMPT_CHARACTER_LIMIT } from "./studio-prompt-limit";
 import type { GuidedStudioStep } from "./StudioGuidedWizard";
@@ -25,6 +26,9 @@ import { applyDealChangeToTaxEconomics, calculateTaxEconomics, convertRentalTaxB
 import { inferDealEconomicsFromText } from "./deal-economics";
 import type {
   DecisionOption,
+  CaseCoreV2,
+  CaseTypeId,
+  CaseTypeReference,
   LocalText,
   MetricKey,
   Scenario,
@@ -82,6 +86,7 @@ const CaseMarkdownDialog = lazy(() => import("./CaseMarkdownDialog"));
 const CanonicalMarkdownReview = lazy(() => import("./CanonicalMarkdownReview"));
 const StudioGuidedDemo = lazy(() => import("./StudioGuidedDemo"));
 const StudioGuidedWizard = lazy(() => import("./StudioGuidedWizard"));
+const StudioCaseTypeSelector = lazy(() => import("./StudioCaseTypeSelector"));
 const StudioOutcomeParameters = lazy(() => import("./StudioOutcomeParameters"));
 const StudioUserMoreActions = lazy(() => import("./StudioUserMoreActions"));
 const OperationsDashboard = lazy(() => import("./OperationsDashboard"));
@@ -189,7 +194,7 @@ type PromotionCandidate = { item: CommunityCustomCase; draft: StudioDraft; scena
 
 type CustomCaseFile = {
   format: "genesis-juris-custom-case";
-  schemaVersion: 3;
+  schemaVersion: 4;
   exportedAt: string;
   case: {
     id: string;
@@ -197,8 +202,11 @@ type CustomCaseFile = {
     fingerprint: string;
     parent: StudioDraft["parent"];
     protection: StudioDraft["protection"];
+    coreSchemaVersion: 2;
+    caseType: CaseTypeReference;
     visibility?: "restricted" | "private";
   };
+  core: CaseCoreV2;
   draft: StudioDraft;
 };
 
@@ -437,6 +445,7 @@ const defaultPrompt = `A renewable-energy developer discovers that its community
 const defaultDraft: StudioDraft = {
   caseId: "the_missing_boundary",
   version: "1.0.0",
+  caseType: caseTypeReference("training_simulation"),
   parent: null,
   title: "The Missing Boundary", jurisdiction: "UK · Planning", role: "Project counsel",
   premise: "A consultation map omitted two households before a permit hearing.", updatedAt: new Date(0).toISOString(),
@@ -465,6 +474,7 @@ function blankStudioDraft(updatedAt = new Date().toISOString()): StudioDraft {
   return {
     caseId: "untitled_case",
     version: "1.0.0",
+    caseType: caseTypeReference("general_advisory"),
     parent: null,
     title: "",
     jurisdiction: "",
@@ -1362,7 +1372,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
       ["decision-1", "outcome-1"], ["decision-1", "outcome-2"],
     ]);
     const createdAt = new Date().toISOString();
-    let rebuilt: StudioDraft = { caseId: slugifyCaseId(shortTitle), version: "1.0.0", parent: null, title: shortTitle, jurisdiction: "Set jurisdiction", role: "Scenario counsel", premise: clean, classification: { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }, nodes, links, editHistory: [], updatedAt: createdAt };
+    let rebuilt: StudioDraft = { caseId: slugifyCaseId(shortTitle), version: "1.0.0", caseType: caseTypeReference("general_advisory"), parent: null, title: shortTitle, jurisdiction: "Set jurisdiction", role: "Scenario counsel", premise: clean, classification: { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }, nodes, links, editHistory: [], updatedAt: createdAt };
     rebuilt = appendStudioHistory(rebuilt, { role: "author", source: "prompt", action: "prompt_submitted", message: clean }, createdAt);
     rebuilt = appendStudioHistory(rebuilt, { role: "studio", source: "prompt", action: "graph_rebuilt", message: locale === "en" ? `Built a new ${nodes.length}-node graph from this prompt. The previous draft was replaced by explicit author request.` : `По явной команде автора построен новый граф из ${nodes.length} узлов; предыдущий черновик заменён.` }, createdAt);
     enterNewLocalDraft(rebuilt, "decision-1");
@@ -1425,7 +1435,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
     setSavedFlash(true);
     window.setTimeout(() => setSavedFlash(false), 2200);
   }
-  function exportDraft() {
+  async function exportDraft() {
     if (!studioCanDuplicate) {
       showSessionNotice(locale === "en" ? "This grant allows inspection only; export and copy are not enabled." : "Этот доступ разрешает только просмотр; экспорт и копирование не включены.");
       return;
@@ -1447,19 +1457,26 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
       showSessionNotice(locale === "en" ? "Save this exact version to the workspace before exporting its server-sealed JSON." : "Сохраните эту точную версию в workspace перед экспортом JSON с серверной печатью.");
       return;
     }
+    const exportedAt = new Date().toISOString();
+    const exportedDraft = { ...normalized, updatedAt: exportedAt };
+    const resolvedCaseType = exportedDraft.caseType ?? caseTypeReference("general_advisory");
+    const { projectCaseCoreV2 } = await import("./case-core");
     const payload: CustomCaseFile = {
       format: "genesis-juris-custom-case",
-      schemaVersion: 3,
-      exportedAt: new Date().toISOString(),
+      schemaVersion: 4,
+      exportedAt,
       case: {
         id: normalized.caseId,
         version: normalized.version,
         fingerprint: caseFingerprint(normalized),
         parent: normalized.parent,
         protection: normalized.protection,
+        coreSchemaVersion: 2,
+        caseType: resolvedCaseType,
         visibility: studioPrivate ? "private" : "restricted",
       },
-      draft: { ...normalized, updatedAt: new Date().toISOString() },
+      core: projectCaseCoreV2(exportedDraft),
+      draft: exportedDraft,
     };
     const blob = new Blob([JSON.stringify(payload)], { type: "application/json" }); const url = URL.createObjectURL(blob);
     const link = document.createElement("a"); link.href = url;
@@ -1476,7 +1493,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
         let importedCustomCaseId: number | null = null;
         let importedServerFingerprint: string | null = null;
         let importedCanDuplicate = true;
-        if (isRecord(parsed) && parsed.format === "genesis-juris-custom-case" && (parsed.schemaVersion === 1 || parsed.schemaVersion === 2 || parsed.schemaVersion === 3) && isRecord(parsed.case)) {
+        if (isRecord(parsed) && parsed.format === "genesis-juris-custom-case" && (parsed.schemaVersion === 1 || parsed.schemaVersion === 2 || parsed.schemaVersion === 3 || parsed.schemaVersion === 4) && isRecord(parsed.case)) {
           imported = normalizeStudioDraft(parsed.draft);
           const currentFingerprint = caseFingerprint(imported);
           const legacyFingerprint = legacyCaseFingerprintV15(imported);
@@ -1484,7 +1501,13 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
             || (parsed.case.fingerprint !== currentFingerprint && parsed.case.fingerprint !== legacyFingerprint)) {
             throw new Error("Custom case identity or fingerprint mismatch");
           }
-          if (parsed.schemaVersion === 3) {
+          if (parsed.schemaVersion === 4) {
+            const { projectCaseCoreV2 } = await import("./case-core");
+            const resolvedCaseType = imported.caseType ?? caseTypeReference("general_advisory");
+            if (parsed.case.coreSchemaVersion !== 2 || canonicalFingerprint(parsed.case.caseType) !== canonicalFingerprint(resolvedCaseType)
+              || canonicalFingerprint(parsed.core) !== canonicalFingerprint(projectCaseCoreV2(imported))) throw new Error("Case Core or case-type package mismatch");
+          }
+          if (parsed.schemaVersion === 3 || parsed.schemaVersion === 4) {
             if (!imported.protection || !isRecord(parsed.case.protection) || parsed.case.protection.currentCode !== imported.protection.currentCode || parsed.case.protection.seal !== imported.protection.seal || parsed.case.protection.parentCode !== imported.protection.parentCode || parsed.case.protection.copyPolicy !== imported.protection.copyPolicy) throw new Error("Case protection metadata mismatch");
             const verificationResponse = await fetch("/api/case-protection/verify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ draft: imported }) });
             const verification = await readJsonResponse<{ valid?: boolean; canDuplicate?: boolean; customCaseId?: number | null; fingerprint?: string }>(verificationResponse);
@@ -1608,7 +1631,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
     setPrompt(taxPrompt);
     const createdAt = new Date().toISOString();
     let template: StudioDraft = {
-      caseId: "cross_border_ip_financing_review", version: "1.0.0", parent: null,
+      caseId: "cross_border_ip_financing_review", version: "1.0.0", caseType: caseTypeReference("tax_compliance"), parent: null,
       title: "Cross-border IP & Financing Review", jurisdiction: "Belgium · EU · International",
       role: "International tax counsel", premise: taxPrompt,
       classification: { domain: "tax", practiceArea: "International tax planning", difficulty: "Advanced", tags: ["tax", "cross-border", "advisory", "anti-abuse"], taxTopics: ["Treaty access", "Beneficial ownership", "Transfer pricing", "DEMPE", "Substance", "CFC", "PE", "Withholding tax", "DAC6", "Pillar Two"], complianceOnly: true, purpose: "lawful_planning", legalAsOf: "2026-08-21", sourceUrls: ["https://www.oecd.org/en/topics/global-minimum-tax.html", "https://taxation-customs.ec.europa.eu/taxation/tax-transparency-cooperation/administrative-co-operation-and-mutual-assistance/directive-administrative-cooperation-dac/dac6_en"] },
@@ -3089,6 +3112,14 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     window.history.pushState(window.history.state, "", url);
     setGuidedStep(step);
   }
+  async function changeCaseType(id: CaseTypeId) {
+    if (id !== "tax_compliance" && draft.nodes.some((node) => node.type === "entity" || node.type === "tax_rule" || node.type === "cash_flow")) {
+      setRelationStatus(locale === "en" ? "Tax-specific nodes keep this matter in the Tax & compliance package. Remove or convert those nodes before switching case type." : "Налоговые узлы сохраняют пакет «Налоги и compliance». Удалите или преобразуйте их перед сменой типа кейса.");
+      return;
+    }
+    const { applyCaseType } = await import("./case-type-registry");
+    applyCaseChange(locale === "en" ? "case type" : "тип кейса", (current) => applyCaseType(current, id));
+  }
   const portableStudioActions = <Suspense fallback={null}><StudioUserMoreActions grouped={displayMode === "user"} locale={locale} canDuplicate={canDuplicate} exportReady={derivationsSettled && Boolean(draft.title.trim()) && Boolean(draft.nodes.length)} feedbackLabel={text.feedback} importLabel={text.importCustom} exportLabel={text.exportCustom} startExample={startExampleDraft} startTax={startTaxTemplate} requestFeedback={requestFeedback} importJson={()=>importRef.current?.click()} exportJson={exportDraft} saveDevice={saveDraft} markdownLoaded={(value)=>{setCanonicalCandidate(null);setAIResult(null);setAIState("idle");setPrompt(value);}} markdownOpened={()=>{setCaseReportStatus("");setCaseMarkdownOpen(true);}} markdownFailed={setCaseReportStatus}/></Suspense>;
     return <main className={`studio-view studio-${displayMode}-view studio-guided-step-${guidedStep} ${canDuplicate ? "" : "studio-inspection-view"}`} data-readonly={!canDuplicate || undefined}>
       <section className="studio-hero page-width">
@@ -3118,6 +3149,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     <aside className="confidentiality-notice page-width"><Icon name="alert"/><p>{locale === "en" ? "Confidentiality: do not enter client-identifiable, privileged, personal or secret information. Use synthetic or de-identified facts and public legal sources." : "Конфиденциальность: не вводите сведения, идентифицирующие клиента, адвокатскую тайну, персональные данные или секреты. Используйте синтетические или обезличенные факты и публичные источники права."}</p></aside>
     {(displayMode === "developer" || !draftWithinEnvelope) && <div className={`draft-envelope page-width ${draftWithinEnvelope ? "" : "limit"}`} role={draftWithinEnvelope ? undefined : "alert"}><span>{locale === "en" ? "Studio case envelope" : "Объём кейса Studio"}</span><progress max={STUDIO_DRAFT_SERIALIZED_LIMIT} value={Math.min(draftBytes, STUDIO_DRAFT_SERIALIZED_LIMIT)}/><b>{Math.ceil(draftBytes / 1_000).toLocaleString()} / 900 KB</b>{!draftWithinEnvelope && <em>{locale === "en" ? "Shorten node or relation details before AI, workspace save or submission." : "Сократите описания узлов или связей перед AI-анализом, сохранением или отправкой."}</em>}</div>}
     {displayMode === "user" && <Suspense fallback={null}><StudioGuidedWizard locale={locale} activeStep={guidedStep} readiness={guidedReadiness} caseName={draft.title} saveState={visibleWorkspaceState} validationReady={Boolean(compiledDraft.scenario)} onStepChange={selectGuidedStep} onFocusBrief={() => document.getElementById("studio-case-brief")?.focus()} onStartExample={startExampleDraft} onImport={() => importRef.current?.click()}/></Suspense>}
+    {(displayMode === "developer" || guidedStep === 1) && <Suspense fallback={null}><StudioCaseTypeSelector locale={locale} value={draft.caseType} disabled={!canDuplicate} onChange={changeCaseType}/></Suspense>}
     {displayMode === "user" && <section className="studio-user-undo page-width" aria-label={locale === "en" ? "Recent changes" : "Последние изменения"} inert={!canDuplicate}><div><Icon name="file"/><span>{locale === "en" ? `${timeline.cursor} saved change${timeline.cursor === 1 ? "" : "s"} in this session` : `Изменений в этой сессии: ${timeline.cursor}`}</span></div><div><button onClick={undoDraft} disabled={timeline.cursor === 0 || !canDuplicate}><Icon name="arrow"/>{locale === "en" ? "Undo" : "Отменить"}</button><button onClick={redoDraft} disabled={timeline.cursor >= timeline.revisions.length || !canDuplicate}>{locale === "en" ? "Redo" : "Повторить"}<Icon name="arrow"/></button></div></section>}
     {displayMode === "developer" && <section className="studio-history page-width" aria-labelledby="studio-history-title" inert={!canDuplicate}>
       <header>
@@ -3794,6 +3826,8 @@ function validateDraft(draft: StudioDraft, locale: Locale) {
   const count=(type:StudioNodeType)=>draft.nodes.filter((node)=>node.type===type).length;
   const outgoing=new Set(draft.links.map((link)=>link.from)); const incoming=new Set(draft.links.map((link)=>link.to));
   const warnings:Array<{level:"ok"|"warn";text:string}>=[]; const label=(en:string,ru:string)=>locale==="en"?en:ru;
+  const caseType = draft.caseType ?? caseTypeReference("general_advisory");
+  warnings.push({level:"ok",text:label(`Case type ${caseType.id} is pinned to ${caseType.version}`,`Тип кейса «${caseType.id}» зафиксирован на версии ${caseType.version}`)});
   warnings.push(/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(draft.caseId)?{level:"ok",text:label("Stable custom case ID is defined","Стабильный ID custom-кейса определён")}:{level:"warn",text:label("Use a lowercase snake_case case ID","Используйте ID кейса в формате snake_case")});
   warnings.push(/^\d+\.\d+\.\d+$/.test(draft.version)?{level:"ok",text:label(`Semantic version ${draft.version} is valid`,`Семантическая версия ${draft.version} корректна`)}:{level:"warn",text:label("Use a semantic version such as 1.0.0","Укажите семантическую версию, например 1.0.0")});
   warnings.push(count("actor")>=1?{level:"ok",text:label(`${count("actor")} institutional actor(s) defined`,`Определено акторов: ${count("actor")}`)}:{level:"warn",text:label("Add at least one institutional actor","Добавьте хотя бы одного институционального актора")});

@@ -4,6 +4,7 @@ import { STUDIO_HISTORY_LIMIT } from "./studio-editing";
 import { STUDIO_DRAFT_SERIALIZED_LIMIT, studioJsonBytes } from "./studio-envelope";
 import { normalizeTaxEconomics } from "./tax-economics";
 import { normalizeDealEconomics } from "./deal-economics";
+import { normalizeCaseTypeReference } from "./case-type-reference";
 
 const nodeTypes = new Set<StudioNodeType>([
   "trigger", "actor", "fact", "evidence", "deadline", "decision", "outcome", "entity", "tax_rule", "cash_flow",
@@ -68,6 +69,7 @@ function caseFingerprintContent(draft: StudioDraft, includeRelationshipIds: bool
   };
   return {
     caseId: draft.caseId.trim(),
+    ...(draft.caseType ? { caseType: normalizeCaseTypeReference(draft.caseType) } : {}),
     parent: draft.parent,
     title: draft.title.trim(),
     jurisdiction: draft.jurisdiction.trim().slice(0, 160),
@@ -127,12 +129,14 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
       ? { caseId: value.parent.caseId, version: value.parent.version, fingerprint: value.parent.fingerprint }
       : null;
   const protection = normalizeUntrustedCaseProtection(value.protection);
+  const caseType = normalizeCaseTypeReference(value.caseType);
   const taxEconomics = isTax ? normalizeTaxEconomics(value.taxEconomics) : undefined;
   const dealEconomics = normalizeDealEconomics(value.dealEconomics);
 
   const normalized: StudioDraft = {
     caseId,
     version,
+    ...(caseType ? { caseType } : {}),
     parent,
     ...(protection ? { protection } : {}),
     title,

@@ -1,5 +1,48 @@
 export type MetricKey = "position" | "evidence" | "trust" | "exposure";
 
+export type CaseWorkflowMode = "adaptive" | "process" | "decision" | "simulation" | "hybrid";
+
+export type CaseTypeId =
+  | "general_advisory"
+  | "tax_compliance"
+  | "erp_incident"
+  | "training_simulation";
+
+export type CaseTypeReference = {
+  registry: "genesis-juris-case-types";
+  id: CaseTypeId;
+  version: string;
+};
+
+export type CaseCoreV2 = {
+  schemaVersion: 2;
+  caseType: CaseTypeReference;
+  identity: {
+    caseId: string;
+    version: string;
+    parent: StudioDraft["parent"];
+  };
+  matter: {
+    title: string;
+    summary: string;
+    professionalRole: string;
+  };
+  jurisdiction: {
+    label: string;
+    legalAsOf?: string;
+  };
+  participants: Array<{ id: string; type: "actor" | "entity"; title: string; detail: string }>;
+  facts: Array<{ id: string; statement: string; status: "asserted" | "assumed" }>;
+  evidence: Array<{ id: string; title: string; detail: string }>;
+  issues: Array<{ id: string; title: string; detail: string }>;
+  deadlines: Array<{ id: string; title: string; detail: string; day?: number; time?: string }>;
+  outcomes: Array<{ id: string; title: string; detail: string; classification?: "strong" | "mixed" | "weak" }>;
+  provenance: {
+    updatedAt: string;
+    editCount: number;
+  };
+};
+
 export type RuleComparison = "gte" | "lte" | "eq";
 
 export type MetricGuard = {
@@ -284,6 +327,8 @@ export type CaseProtectionV1 = {
 export type StudioDraft = {
   caseId: string;
   version: string;
+  /** Exact immutable case-type package. Legacy drafts omit it and resolve to general_advisory@1.0.0. */
+  caseType?: CaseTypeReference;
   parent: {
     caseId: string;
     version: string;

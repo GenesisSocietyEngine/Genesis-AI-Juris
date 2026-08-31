@@ -41,6 +41,12 @@ type CanonicalBundleCase = {
   };
 };
 type CanonicalBundle = { bundle_version: number; catalog_version: number; cases: CanonicalBundleCase[] };
+type CaseTypeRegistryManifest = {
+  format: string;
+  schemaVersion: number;
+  registry: string;
+  types: Array<{ id: string; version: string; workflowMode: string; views: string[]; requiredReview: string }>;
+};
 type LockIdentity = { caseId: string; version: string; fingerprint: string; schemaRevision: string };
 type WorkflowEvidence = { run: number; commit: string; conclusion: string };
 type ParityLock = {
@@ -48,6 +54,7 @@ type ParityLock = {
   lockVersion: number;
   mobile: { repository: string; commit: string; appVersion: string; rustWorkspaceVersion: string };
   bundle: { webPath: string; mobilePath: string; bundleVersion: number; catalogVersion: number; sha256: string; mobileGitBlob: string };
+  caseTypes: { webPath: string; mobilePath: string; schemaVersion: number; registry: string; sha256: string; mobileGitBlob: string };
   contracts: {
     scenarioSchemaRevision: string;
     runtimeAdapter: string;
@@ -112,7 +119,7 @@ function verifyParity() {
   const fixturePath = resolveInsideProject(lock.fixtures.path);
   const fixtureBytes = readFileSync(fixturePath);
   const fixtureHash = sha256(fixtureBytes);
-  const fixtureManifest = JSON.parse(fixtureBytes.toString("utf8")) as unknown;
+  const fixtureManifest = JSON.parse(new TextDecoder().decode(fixtureBytes)) as unknown;
   if (!printLockData) equal(fixtureHash, lock.fixtures.sha256, "fixture manifest SHA-256");
   const probePath = resolveInsideProject(lock.fixtures.probePath);
   const probeBytes = readFileSync(probePath);
@@ -121,8 +128,13 @@ function verifyParity() {
   const webBundlePath = resolveInsideProject(lock.bundle.webPath);
   const webBundleBytes = readFileSync(webBundlePath);
   equal(sha256(webBundleBytes), lock.bundle.sha256, "web bundle SHA-256");
-  const webBundle = JSON.parse(webBundleBytes.toString("utf8")) as CanonicalBundle;
+  const webBundle = JSON.parse(new TextDecoder().decode(webBundleBytes)) as CanonicalBundle;
   verifyBundleContract(webBundle, lock);
+
+  const caseTypeRegistryPath = resolveInsideProject(lock.caseTypes.webPath);
+  const caseTypeRegistryBytes = readFileSync(caseTypeRegistryPath);
+  equal(sha256(caseTypeRegistryBytes), lock.caseTypes.sha256, "web case-type registry SHA-256");
+  verifyCaseTypeRegistryContract(JSON.parse(new TextDecoder().decode(caseTypeRegistryBytes)) as CaseTypeRegistryManifest, lock);
 
   const canonicalOutcomes = Object.fromEntries(webBundle.cases.map((item) => [
     item.case_id,
@@ -158,7 +170,7 @@ function verifyParity() {
   const mobileRepo = resolveMobileRepo(mobileArgument, mobileArgumentIndex >= 0);
   const mobileBundlePath = resolveInsideMobileRepo(mobileRepo, lock.bundle.mobilePath);
   const mobileOutput = withVerifiedMobileCheckout(mobileRepo, lock.mobile.commit, () => {
-    verifyMobileEvidence(mobileRepo, mobileBundlePath, webBundleBytes, lock);
+    verifyMobileEvidence(mobileRepo, mobileBundlePath, webBundleBytes, caseTypeRegistryBytes, lock);
     return runMobileProbe(
       mobileRepo,
       lock.mobile.commit,
@@ -216,6 +228,18 @@ function verifyBundleContract(bundle: CanonicalBundle, lock: ParityLock) {
     equal(item.scenario.schema_version, lock.contracts.scenarioSchemaRevision, `${item.case_id} scenario schema`);
     equal(item.runtime_adapter, lock.contracts.runtimeAdapter, `${item.case_id} runtime adapter`);
   }
+}
+
+function verifyCaseTypeRegistryContract(manifest: CaseTypeRegistryManifest, lock: ParityLock) {
+  equal(manifest.format, "genesis-juris-case-type-registry", "case-type registry format");
+  equal(manifest.schemaVersion, lock.caseTypes.schemaVersion, "case-type registry schema version");
+  equal(manifest.registry, lock.caseTypes.registry, "case-type registry identity");
+  equalStable(manifest.types.map((item) => ({ id: item.id, version: item.version })), [
+    { id: "general_advisory", version: "1.0.0" },
+    { id: "tax_compliance", version: "1.0.0" },
+    { id: "erp_incident", version: "1.0.0" },
+    { id: "training_simulation", version: "1.0.0" },
+  ], "case-type registry identities");
 }
 
 function runWebRoutes(fixtures: ParityFixtureManifest, bundle: CanonicalBundle) {
@@ -276,7 +300,7 @@ function projectWebSnapshot(state: CanonicalRuntimeState) {
   });
 }
 
-function verifyMobileEvidence(mobileRepo: string, mobileBundlePath: string, webBundleBytes: Buffer, lock: ParityLock) {
+function verifyMobileEvidence(mobileRepo: string, mobileBundlePath: string, webBundleBytes: Buffer, caseTypeRegistryBytes: Buffer, lock: ParityLock) {
   const pubspec = readFileSync(join(mobileRepo, "apps", "juris-mobile", "pubspec.yaml"), "utf8");
   equal(matchRequired(pubspec, /^version:\s*(\S+)\s*$/m, "Flutter app version"), lock.mobile.appVersion, "mobile app version");
   const cargoToml = readFileSync(join(mobileRepo, "Cargo.toml"), "utf8");
@@ -289,7 +313,17 @@ function verifyMobileEvidence(mobileRepo: string, mobileBundlePath: string, webB
     lock.bundle.mobileGitBlob,
     "mobile bundle HEAD Git blob",
   );
-  verifyBundleContract(JSON.parse(mobileBytes.toString("utf8")) as CanonicalBundle, lock);
+  verifyBundleContract(JSON.parse(new TextDecoder().decode(mobileBytes)) as CanonicalBundle, lock);
+  const mobileCaseTypePath = resolveInsideMobileRepo(mobileRepo, lock.caseTypes.mobilePath);
+  const mobileCaseTypeBytes = readFileSync(mobileCaseTypePath);
+  equal(Buffer.compare(caseTypeRegistryBytes, mobileCaseTypeBytes), 0, "web/mobile case-type registry byte equality");
+  equal(sha256(mobileCaseTypeBytes), lock.caseTypes.sha256, "mobile case-type registry SHA-256");
+  equal(
+    run("git", ["rev-parse", "--verify", `${lock.mobile.commit}:${lock.caseTypes.mobilePath}`], mobileRepo),
+    lock.caseTypes.mobileGitBlob,
+    "mobile case-type registry Git blob",
+  );
+  verifyCaseTypeRegistryContract(JSON.parse(new TextDecoder().decode(mobileCaseTypeBytes)) as CaseTypeRegistryManifest, lock);
 }
 
 function runMobileProbe(
