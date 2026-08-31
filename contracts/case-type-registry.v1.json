@@ -7,28 +7,107 @@
       "id": "general_advisory",
       "version": "1.0.0",
       "workflowMode": "hybrid",
-      "views": ["issue_map", "evidence_map", "decision_table", "timeline"],
+      "views": [
+        "issue_map",
+        "evidence_map",
+        "decision_table",
+        "timeline"
+      ],
       "requiredReview": "professional"
+    },
+    {
+      "id": "litigation_strategy",
+      "version": "1.0.0",
+      "workflowMode": "adaptive",
+      "views": [
+        "evidence_map",
+        "timeline",
+        "decision_table",
+        "task_plan"
+      ],
+      "requiredReview": "evidence_governance"
+    },
+    {
+      "id": "contract_review",
+      "version": "1.0.0",
+      "workflowMode": "decision",
+      "views": [
+        "decision_table",
+        "evidence_map",
+        "task_plan",
+        "timeline"
+      ],
+      "requiredReview": "professional"
+    },
+    {
+      "id": "tax_planning",
+      "version": "1.0.0",
+      "workflowMode": "hybrid",
+      "views": [
+        "issue_map",
+        "decision_table",
+        "economics",
+        "timeline"
+      ],
+      "requiredReview": "tax_governance"
+    },
+    {
+      "id": "compliance",
+      "version": "1.0.0",
+      "workflowMode": "process",
+      "views": [
+        "task_plan",
+        "decision_table",
+        "evidence_map",
+        "timeline"
+      ],
+      "requiredReview": "evidence_governance"
     },
     {
       "id": "tax_compliance",
       "version": "1.0.0",
       "workflowMode": "hybrid",
-      "views": ["issue_map", "decision_table", "economics", "timeline"],
+      "views": [
+        "issue_map",
+        "decision_table",
+        "economics",
+        "timeline"
+      ],
       "requiredReview": "tax_governance"
     },
     {
       "id": "erp_incident",
       "version": "1.0.0",
       "workflowMode": "process",
-      "views": ["task_plan", "evidence_map", "decision_table", "timeline"],
+      "views": [
+        "task_plan",
+        "evidence_map",
+        "decision_table",
+        "timeline"
+      ],
       "requiredReview": "professional"
+    },
+    {
+      "id": "investigation",
+      "version": "1.0.0",
+      "workflowMode": "adaptive",
+      "views": [
+        "evidence_map",
+        "timeline",
+        "task_plan",
+        "decision_table"
+      ],
+      "requiredReview": "evidence_governance"
     },
     {
       "id": "training_simulation",
       "version": "1.0.0",
       "workflowMode": "simulation",
-      "views": ["simulation", "timeline", "evidence_map"],
+      "views": [
+        "simulation",
+        "timeline",
+        "evidence_map"
+      ],
       "requiredReview": "runtime_parity"
     }
   ]
