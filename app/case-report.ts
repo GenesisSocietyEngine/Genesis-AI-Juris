@@ -6,6 +6,8 @@ import type { Content, ContentTable, TDocumentDefinitions, TableCell } from "pdf
 
 export type CaseReportOptions = {
   language: "en" | "ru";
+  profileId: string;
+  profileLabel: string;
   audience: "client" | "internal";
   confidentiality: "confidential" | "internal" | "draft";
   preparedBy: string;
@@ -262,7 +264,7 @@ export function buildCaseReportDefinition(draft: StudioDraft, options: CaseRepor
   const titleById = new Map(draft.nodes.map((node) => [node.id, node.title]));
   const content: Content[] = [
     { text: "GENESIS: JURIS CODEX", style: "brand" },
-    { text: tr(language, "PROFESSIONAL CASE REPORT", "ПРОФЕССИОНАЛЬНЫЙ ОТЧЁТ ПО КЕЙСУ"), style: "kicker" },
+    { text: clean(options.profileLabel, tr(language, "PROFESSIONAL CASE REPORT", "ПРОФЕССИОНАЛЬНЫЙ ОТЧЁТ ПО КЕЙСУ")).toUpperCase(), style: "kicker" },
     { text: clean(draft.title, tr(language, "Untitled case", "Кейс без названия")), style: "coverTitle" },
     { text: clean(draft.premise, tr(language, "No case context supplied.", "Контекст кейса не указан.")), style: "coverSummary" },
     {
@@ -401,7 +403,7 @@ export function buildCaseReportDefinition(draft: StudioDraft, options: CaseRepor
       graphNodeCondition: { fontSize: 6.5, color: "#53666e", lineHeight: 1.12, margin: [0, 2, 0, 0] },
     },
     info: {
-      title: `${draft.title} - professional case report`,
+      title: `${draft.title} - ${clean(options.profileLabel, "professional case report")}`,
       author: options.preparedBy || "GENESIS: JURIS CODEX",
       subject: `${draft.caseId} v${draft.version}`,
       keywords: `legal case report, ${classification?.practiceArea ?? "legal"}, ${draft.jurisdiction}`,
@@ -421,7 +423,7 @@ export async function downloadCaseReport(draft: StudioDraft, options: CaseReport
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${draft.caseId || "case"}-v${draft.version || "0"}-${options.audience}-report.pdf`;
+  link.download = `${draft.caseId || "case"}-v${draft.version || "0"}-${options.profileId || "case-report"}-${options.audience}.pdf`;
   document.body.appendChild(link);
   link.click();
   link.remove();

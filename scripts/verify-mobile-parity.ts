@@ -47,6 +47,19 @@ type CaseTypeRegistryManifest = {
   registry: string;
   types: Array<{ id: string; version: string; workflowMode: string; views: string[]; requiredReview: string }>;
 };
+type CaseTypePlaybookManifest = {
+  format: string;
+  schemaVersion: number;
+  registry: string;
+  playbooks: Array<{
+    caseType: { id: string; version: string };
+    intakeQuestions: unknown[];
+    requiredNodeGroups: unknown[];
+    test: { mode: string; requiresPlayableRoute: boolean };
+    canonicalRequirements: Record<string, unknown>;
+    outputs: Array<{ primary: boolean }>;
+  }>;
+};
 type LockIdentity = { caseId: string; version: string; fingerprint: string; schemaRevision: string };
 type WorkflowEvidence = { run: number; commit: string; conclusion: string };
 type ParityLock = {
@@ -55,6 +68,7 @@ type ParityLock = {
   mobile: { repository: string; commit: string; appVersion: string; rustWorkspaceVersion: string };
   bundle: { webPath: string; mobilePath: string; bundleVersion: number; catalogVersion: number; sha256: string; mobileGitBlob: string };
   caseTypes: { webPath: string; mobilePath: string; schemaVersion: number; registry: string; sha256: string; mobileGitBlob: string };
+  playbooks: { webPath: string; mobilePath: string; schemaVersion: number; registry: string; sha256: string; mobileGitBlob: string };
   contracts: {
     scenarioSchemaRevision: string;
     runtimeAdapter: string;
@@ -105,7 +119,7 @@ try {
 function verifyParity() {
   const lock = readJson<ParityLock>(join(projectRoot, "parity", "mobile-parity.lock.json"));
   equal(lock.format, "genesis-juris-mobile-parity-lock", "parity lock format");
-  equal(lock.lockVersion, 2, "parity lock version");
+  equal(lock.lockVersion, 3, "parity lock version");
   for (const [gate, evidence] of Object.entries(lock.hostedEvidence)) {
     truth(Number.isSafeInteger(evidence.run) && evidence.run > 0, `${gate} workflow run must be a positive integer`);
     equal(evidence.commit, lock.mobile.commit, `${gate} evidence commit`);
@@ -135,6 +149,11 @@ function verifyParity() {
   const caseTypeRegistryBytes = readFileSync(caseTypeRegistryPath);
   equal(sha256(caseTypeRegistryBytes), lock.caseTypes.sha256, "web case-type registry SHA-256");
   verifyCaseTypeRegistryContract(JSON.parse(new TextDecoder().decode(caseTypeRegistryBytes)) as CaseTypeRegistryManifest, lock);
+
+  const playbookPath = resolveInsideProject(lock.playbooks.webPath);
+  const playbookBytes = readFileSync(playbookPath);
+  equal(sha256(playbookBytes), lock.playbooks.sha256, "web case-type playbook SHA-256");
+  verifyPlaybookContract(JSON.parse(new TextDecoder().decode(playbookBytes)) as CaseTypePlaybookManifest, lock);
 
   const canonicalOutcomes = Object.fromEntries(webBundle.cases.map((item) => [
     item.case_id,
@@ -170,7 +189,7 @@ function verifyParity() {
   const mobileRepo = resolveMobileRepo(mobileArgument, mobileArgumentIndex >= 0);
   const mobileBundlePath = resolveInsideMobileRepo(mobileRepo, lock.bundle.mobilePath);
   const mobileOutput = withVerifiedMobileCheckout(mobileRepo, lock.mobile.commit, () => {
-    verifyMobileEvidence(mobileRepo, mobileBundlePath, webBundleBytes, caseTypeRegistryBytes, lock);
+    verifyMobileEvidence(mobileRepo, mobileBundlePath, webBundleBytes, caseTypeRegistryBytes, playbookBytes, lock);
     return runMobileProbe(
       mobileRepo,
       lock.mobile.commit,
@@ -242,6 +261,28 @@ function verifyCaseTypeRegistryContract(manifest: CaseTypeRegistryManifest, lock
   ], "case-type registry identities");
 }
 
+function verifyPlaybookContract(manifest: CaseTypePlaybookManifest, lock: ParityLock) {
+  equal(manifest.format, "genesis-juris-case-playbook-registry", "case-type playbook format");
+  equal(manifest.schemaVersion, lock.playbooks.schemaVersion, "case-type playbook schema version");
+  equal(manifest.registry, lock.playbooks.registry, "case-type playbook identity");
+  equalStable(manifest.playbooks.map((item) => item.caseType), [
+    { id: "general_advisory", version: "1.0.0" },
+    { id: "tax_compliance", version: "1.0.0" },
+    { id: "erp_incident", version: "1.0.0" },
+    { id: "training_simulation", version: "1.0.0" },
+  ], "case-type playbook identities");
+  for (const playbook of manifest.playbooks) {
+    truth(playbook.intakeQuestions.length === 4, `${playbook.caseType.id} intake question count`);
+    truth(playbook.requiredNodeGroups.length >= 4, `${playbook.caseType.id} required groups`);
+    truth(Object.keys(playbook.canonicalRequirements).length >= 8, `${playbook.caseType.id} canonical requirements`);
+    truth(playbook.outputs.filter((output) => output.primary).length === 1, `${playbook.caseType.id} primary output`);
+  }
+  equal(manifest.playbooks.find((item) => item.caseType.id === "training_simulation")?.test.requiresPlayableRoute, true, "training route gate");
+  for (const playbook of manifest.playbooks.filter((item) => item.caseType.id !== "training_simulation")) {
+    equal(playbook.test.requiresPlayableRoute, false, `${playbook.caseType.id} non-playable gate`);
+  }
+}
+
 function runWebRoutes(fixtures: ParityFixtureManifest, bundle: CanonicalBundle) {
   const cases = new Map(bundle.cases.map((item) => [item.case_id, item]));
   return fixtures.routes.map((route) => {
@@ -300,7 +341,7 @@ function projectWebSnapshot(state: CanonicalRuntimeState) {
   });
 }
 
-function verifyMobileEvidence(mobileRepo: string, mobileBundlePath: string, webBundleBytes: Buffer, caseTypeRegistryBytes: Buffer, lock: ParityLock) {
+function verifyMobileEvidence(mobileRepo: string, mobileBundlePath: string, webBundleBytes: Buffer, caseTypeRegistryBytes: Buffer, playbookBytes: Buffer, lock: ParityLock) {
   const pubspec = readFileSync(join(mobileRepo, "apps", "juris-mobile", "pubspec.yaml"), "utf8");
   equal(matchRequired(pubspec, /^version:\s*(\S+)\s*$/m, "Flutter app version"), lock.mobile.appVersion, "mobile app version");
   const cargoToml = readFileSync(join(mobileRepo, "Cargo.toml"), "utf8");
@@ -324,6 +365,16 @@ function verifyMobileEvidence(mobileRepo: string, mobileBundlePath: string, webB
     "mobile case-type registry Git blob",
   );
   verifyCaseTypeRegistryContract(JSON.parse(new TextDecoder().decode(mobileCaseTypeBytes)) as CaseTypeRegistryManifest, lock);
+  const mobilePlaybookPath = resolveInsideMobileRepo(mobileRepo, lock.playbooks.mobilePath);
+  const mobilePlaybookBytes = readFileSync(mobilePlaybookPath);
+  equal(Buffer.compare(playbookBytes, mobilePlaybookBytes), 0, "web/mobile case-type playbook byte equality");
+  equal(sha256(mobilePlaybookBytes), lock.playbooks.sha256, "mobile case-type playbook SHA-256");
+  equal(
+    run("git", ["rev-parse", "--verify", `${lock.mobile.commit}:${lock.playbooks.mobilePath}`], mobileRepo),
+    lock.playbooks.mobileGitBlob,
+    "mobile case-type playbook Git blob",
+  );
+  verifyPlaybookContract(JSON.parse(new TextDecoder().decode(mobilePlaybookBytes)) as CaseTypePlaybookManifest, lock);
 }
 
 function runMobileProbe(

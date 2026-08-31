@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { StudioDraft } from "./types";
 import type { CaseReportOptions } from "./case-report";
+import { caseTypePlaybook, primaryCaseOutput } from "./case-type-playbooks";
 
 export default function CaseReportDialog({ locale, draft, currentFingerprint, workspaceFingerprint, privateCase, close, completed }: {
   locale: "en" | "ru";
@@ -14,6 +15,9 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
   completed: () => void;
 }) {
   const [audience, setAudience] = useState<CaseReportOptions["audience"]>("internal");
+  const playbook = caseTypePlaybook(draft.caseType);
+  const primaryOutput = primaryCaseOutput(draft.caseType);
+  const [profileId, setProfileId] = useState(primaryOutput.id);
   const [confidentiality, setConfidentiality] = useState<CaseReportOptions["confidentiality"]>(privateCase ? "confidential" : "draft");
   const [preparedBy, setPreparedBy] = useState("");
   const [preparedFor, setPreparedFor] = useState("");
@@ -43,7 +47,7 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
     try {
       const { downloadCaseReport } = await import("./case-report");
       await downloadCaseReport(draft, {
-        language: locale, audience, confidentiality, preparedBy, preparedFor, matterReference,
+        language: locale, profileId, profileLabel: playbook.outputs.find((output) => output.id === profileId)?.label[locale] ?? primaryOutput.label[locale], audience, confidentiality, preparedBy, preparedFor, matterReference,
         includeEconomics, includeRegisters, includeSources, includeAuditTrail, includeTechnicalIds,
         generatedAt: new Date().toISOString(), currentFingerprint, workspaceFingerprint, privateCase,
       });
@@ -60,6 +64,7 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
       <p>{t("Generate a structured A4 PDF for review, circulation or the client file. The raw AI prompt is never included.", "Сформируйте структурированный PDF A4 для проверки, распространения или клиентского досье. Исходный AI-промпт никогда не включается.")}</p>
       <div className="case-report-grid">
         <fieldset><legend>{t("REPORT PROFILE", "ПРОФИЛЬ ОТЧЁТА")}</legend>
+          <label><span>{t("Professional output", "Профессиональный результат")}</span><select value={profileId} onChange={(event) => setProfileId(event.target.value)}>{playbook.outputs.map((output) => <option key={output.id} value={output.id}>{output.label[locale]}{output.primary ? ` · ${t("primary", "основной")}` : ""}</option>)}</select></label>
           <label><span>{t("Audience", "Аудитория")}</span><select value={audience} onChange={(event) => chooseAudience(event.target.value as CaseReportOptions["audience"])}><option value="internal">{t("Internal professional review", "Внутренняя профессиональная проверка")}</option><option value="client">{t("Client-facing report", "Отчёт для клиента")}</option></select></label>
           <label><span>{t("Classification", "Гриф")}</span><select value={confidentiality} onChange={(event) => setConfidentiality(event.target.value as CaseReportOptions["confidentiality"])}><option value="confidential">{t("Confidential", "Конфиденциально")}</option><option value="internal">{t("Internal", "Для внутреннего использования")}</option><option value="draft">{t("Draft", "Черновик")}</option></select></label>
           <label><span>{t("Prepared by", "Подготовил")}</span><input maxLength={120} value={preparedBy} onChange={(event) => setPreparedBy(event.target.value)} placeholder={t("Name / firm", "Имя / фирма")}/></label>

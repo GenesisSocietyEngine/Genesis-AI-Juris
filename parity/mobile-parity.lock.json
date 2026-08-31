@@ -1,10 +1,10 @@
 {
   "format": "genesis-juris-mobile-parity-lock",
-  "lockVersion": 2,
+  "lockVersion": 3,
   "mobile": {
     "repository": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris.git",
-    "commit": "1e2160de77b2406b812fa387a53bf81cfce2ad1d",
-    "appVersion": "0.9.0+16",
+    "commit": "8793335f75f2da42f9a4a98fa15974cecde202e6",
+    "appVersion": "0.10.0+17",
     "rustWorkspaceVersion": "0.5.0"
   },
   "bundle": {
@@ -22,6 +22,14 @@
     "registry": "genesis-juris-case-types",
     "sha256": "61b6e48540c0cc0ee3696423691eb4b94310f2adfa2223bca92db14949f1b4ad",
     "mobileGitBlob": "4f3917def53c707a60805e3194c0ce5a8e951ca8"
+  },
+  "playbooks": {
+    "webPath": "app/case-type-playbooks.v1.json",
+    "mobilePath": "contracts/case-type-playbooks.v1.json",
+    "schemaVersion": 1,
+    "registry": "genesis-juris-case-playbooks",
+    "sha256": "98a9baae3fcfdac9712e77bf1eba90e83a7a947e97a8a13a951c0f47a1c9942e",
+    "mobileGitBlob": "e13d431ab07a95faea3b87299663d69d4bbf8c8e"
   },
   "contracts": {
     "scenarioSchemaRevision": "1.0",
@@ -119,23 +127,23 @@
   },
   "hostedEvidence": {
     "rust": {
-      "run": 33391461350,
-      "commit": "1e2160de77b2406b812fa387a53bf81cfce2ad1d",
+      "run": 33401739228,
+      "commit": "8793335f75f2da42f9a4a98fa15974cecde202e6",
       "conclusion": "success"
     },
     "flutter": {
-      "run": 33391461393,
-      "commit": "1e2160de77b2406b812fa387a53bf81cfce2ad1d",
+      "run": 33401739277,
+      "commit": "8793335f75f2da42f9a4a98fa15974cecde202e6",
       "conclusion": "success"
     },
     "android": {
-      "run": 33391461423,
-      "commit": "1e2160de77b2406b812fa387a53bf81cfce2ad1d",
+      "run": 33401739216,
+      "commit": "8793335f75f2da42f9a4a98fa15974cecde202e6",
       "conclusion": "success"
     },
     "ios": {
-      "run": 33391461345,
-      "commit": "1e2160de77b2406b812fa387a53bf81cfce2ad1d",
+      "run": 33401739196,
+      "commit": "8793335f75f2da42f9a4a98fa15974cecde202e6",
       "conclusion": "success"
     }
   }

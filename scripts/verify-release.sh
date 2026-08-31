@@ -81,4 +81,4 @@ node --input-type=module -e '
   }
 '
 
-echo "PASS v58 Multi-view Studio release verification. Deployment remains a separate, explicit Sites operation."
+echo "PASS v59 First Four Case Types release verification. Deployment remains a separate, explicit Sites operation."

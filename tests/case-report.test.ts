@@ -36,7 +36,7 @@ const draft: StudioDraft = {
 };
 
 const options: CaseReportOptions = {
-  language: "en", audience: "internal", confidentiality: "confidential", preparedBy: "Reviewer", preparedFor: "Client", matterReference: "MAT-001",
+  language: "en", profileId: "professional_case_report", profileLabel: "Professional case report", audience: "internal", confidentiality: "confidential", preparedBy: "Reviewer", preparedFor: "Client", matterReference: "MAT-001",
   includeEconomics: true, includeRegisters: true, includeSources: true, includeAuditTrail: true, includeTechnicalIds: true,
   generatedAt: "2026-08-23T12:05:00.000Z", currentFingerprint: "sha256-current", workspaceFingerprint: "sha256-current", privateCase: true,
 };
