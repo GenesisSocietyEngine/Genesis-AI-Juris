@@ -23,6 +23,13 @@ const dossierMigration = "0012_sleepy_magma.sql";
 const auditClaimsMigration = "0013_polite_sentinels.sql";
 const uploadCommitmentMigration = "0014_perfect_marvex.sql";
 const statusHistoryMigration = "0015_low_calypso.sql";
+const allMigrations = [
+  ...legacyMigrations,
+  dossierMigration,
+  auditClaimsMigration,
+  uploadCommitmentMigration,
+  statusHistoryMigration,
+] as const;
 
 function migration(name: string) {
   return readFileSync(new URL(`../drizzle/${name}`, import.meta.url), "utf8");
@@ -53,6 +60,20 @@ function legacyDossierDatabase() {
   // production-workflow coverage and the exact-claim probes below apply 0013.
   return database([...legacyMigrations, dossierMigration]);
 }
+
+test("every D1 migration breakpoint resolves to a non-empty platform statement", () => {
+  for (const name of allMigrations) {
+    const statements = migration(name).split("--> statement-breakpoint");
+    assert.ok(
+      statements.every((statement) => statement.trim().length > 0),
+      `${name} must not create an empty D1 prepared statement`,
+    );
+    assert.ok(
+      statements.every((statement) => Buffer.byteLength(statement, "utf8") <= 100_000),
+      `${name} must respect Cloudflare D1's per-statement 100 KB limit`,
+    );
+  }
+});
 
 function user(db: DatabaseSync, email: string, displayName = email) {
   const result = db.prepare("INSERT INTO users (email, display_name) VALUES (?, ?)").run(email, displayName);

@@ -823,7 +823,6 @@ BEGIN
 			)
 	) THEN RAISE(ABORT, 'dossier revision receipt requires all current outputs stale or one exact approved snapshot workflow') END;
 END;--> statement-breakpoint
---> statement-breakpoint
 CREATE TRIGGER `dossier_audit_events_chain_guard`
 BEFORE INSERT ON `dossier_audit_events`
 FOR EACH ROW
@@ -920,7 +919,6 @@ BEGIN
 	SELECT CASE WHEN NEW.`object_ref_type` = 'audit_event' AND NOT EXISTS (SELECT 1 FROM `dossier_audit_events` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
 		THEN RAISE(ABORT, 'audit event reference is outside the dossier') END;
 END;--> statement-breakpoint
---> statement-breakpoint
 CREATE TRIGGER dossiers_status_transition_guard
 BEFORE UPDATE OF status ON dossiers
 FOR EACH ROW
@@ -969,4 +967,4 @@ WHEN NEW.status IS NOT OLD.status AND NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'dossier status changes require exact reason, time, actor, and closure or archive fields');
-END;--> statement-breakpoint
+END;
