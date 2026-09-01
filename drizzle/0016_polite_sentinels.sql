@@ -54,7 +54,7 @@ CREATE TRIGGER dossier_audit_certifications_insert_guard
 BEFORE INSERT ON dossier_audit_certifications
 FOR EACH ROW
 BEGIN
-  SELECT CASE WHEN NOT EXISTS (
+  SELECT (CASE WHEN NOT EXISTS (
     SELECT 1 FROM dossier_audit_events
     WHERE dossier_id = NEW.dossier_id
       AND id = NEW.audit_event_id
@@ -64,7 +64,7 @@ BEGIN
       AND object_ref_id = NEW.object_ref_id
       AND actor_ref = NEW.actor_ref
       AND occurred_at = NEW.occurred_at
-  ) THEN RAISE(ABORT, 'audit certification requires its exact immutable audit event') END;
+  ) THEN RAISE(ABORT, 'audit certification requires its exact immutable audit event') END);
 END;--> statement-breakpoint
 
 CREATE TRIGGER dossier_audit_certifications_update_guard
@@ -144,17 +144,17 @@ CREATE TRIGGER dossier_revision_receipts_exact_claim_guard
 BEFORE INSERT ON dossier_revision_receipts
 FOR EACH ROW
 BEGIN
-  SELECT CASE WHEN NOT EXISTS (
+  SELECT (CASE WHEN NOT EXISTS (
     SELECT 1 FROM dossier_revision_commitments
     WHERE dossier_id = NEW.dossier_id
       AND resulting_revision = NEW.resulting_revision
-  ) THEN RAISE(ABORT, 'dossier revision receipt requires an exact mutation commitment') END;
-  SELECT CASE WHEN NOT EXISTS (
+  ) THEN RAISE(ABORT, 'dossier revision receipt requires an exact mutation commitment') END);
+  SELECT (CASE WHEN NOT EXISTS (
     SELECT 1 FROM dossier_required_audits
     WHERE dossier_id = NEW.dossier_id
       AND dossier_revision = NEW.resulting_revision
       AND claim_phase = 'revision'
-  ) THEN RAISE(ABORT, 'dossier revision receipt requires at least one exact mutation audit claim') END;
+  ) THEN RAISE(ABORT, 'dossier revision receipt requires at least one exact mutation audit claim') END);
 END;--> statement-breakpoint
 
 CREATE TRIGGER dossiers_insert_audit_claim

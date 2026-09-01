@@ -79,7 +79,7 @@ CREATE TRIGGER `dossier_ai_proposal_jobs_insert_guard`
 BEFORE INSERT ON `dossier_ai_proposal_jobs`
 FOR EACH ROW
 BEGIN
-	SELECT CASE WHEN NEW.`status` <> 'queued'
+	SELECT (CASE WHEN NEW.`status` <> 'queued'
 		OR NEW.`attempt` <> 1
 		OR NEW.`lease_owner` IS NOT NULL
 		OR NEW.`lease_expires_at` IS NOT NULL
@@ -88,27 +88,27 @@ BEGIN
 		OR NEW.`error_detail_code` IS NOT NULL
 		OR NEW.`started_at` IS NOT NULL
 		OR NEW.`completed_at` IS NOT NULL
-	THEN RAISE(ABORT, 'AI proposal job must begin as an unleased queued request') END;
-	SELECT CASE WHEN unixepoch(NEW.`created_at`) IS NULL
+	THEN RAISE(ABORT, 'AI proposal job must begin as an unleased queued request') END);
+	SELECT (CASE WHEN unixepoch(NEW.`created_at`) IS NULL
 		OR unixepoch(NEW.`updated_at`) IS NULL
 		OR unixepoch(NEW.`updated_at`) < unixepoch(NEW.`created_at`)
-	THEN RAISE(ABORT, 'AI proposal job timestamps are invalid') END;
-	SELECT CASE WHEN NOT EXISTS (
+	THEN RAISE(ABORT, 'AI proposal job timestamps are invalid') END);
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1 FROM `dossiers`
 		WHERE `id` = NEW.`dossier_id` AND `revision` = NEW.`expected_dossier_revision`
-	) THEN RAISE(ABORT, 'AI proposal job must bind the current dossier revision') END;
-	SELECT CASE WHEN NOT EXISTS (
+	) THEN RAISE(ABORT, 'AI proposal job must bind the current dossier revision') END);
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1 FROM `dossier_participants`
 		WHERE `dossier_id` = NEW.`dossier_id`
 			AND `user_id` = NEW.`requested_by_user_id`
 			AND `actor_id` = NEW.`requested_by_actor_ref`
 			AND `status` = 'active'
 			AND `role` IN ('owner','contributor','reviewer')
-	) THEN RAISE(ABORT, 'AI proposal job requester must be an exact active professional participant') END;
-	SELECT CASE WHEN (
+	) THEN RAISE(ABORT, 'AI proposal job requester must be an exact active professional participant') END);
+	SELECT (CASE WHEN (
 		SELECT COUNT(*) FROM `dossier_ai_proposal_jobs`
 		WHERE `dossier_id` = NEW.`dossier_id` AND `status` IN ('queued','processing')
-	) >= 10 THEN RAISE(ABORT, 'AI proposal job active quota exceeded') END;
+	) >= 10 THEN RAISE(ABORT, 'AI proposal job active quota exceeded') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_jobs_identity_guard`
 BEFORE UPDATE ON `dossier_ai_proposal_jobs`
@@ -154,14 +154,14 @@ CREATE TRIGGER `dossier_ai_proposal_jobs_state_shape_guard`
 BEFORE UPDATE ON `dossier_ai_proposal_jobs`
 FOR EACH ROW
 BEGIN
-	SELECT CASE WHEN unixepoch(NEW.`updated_at`) IS NULL
+	SELECT (CASE WHEN unixepoch(NEW.`updated_at`) IS NULL
 		OR unixepoch(NEW.`updated_at`) < unixepoch(OLD.`updated_at`)
 		OR (NEW.`started_at` IS NOT NULL AND unixepoch(NEW.`started_at`) IS NULL)
 		OR (NEW.`completed_at` IS NOT NULL AND unixepoch(NEW.`completed_at`) IS NULL)
 		OR (NEW.`completed_at` IS NOT NULL
 			AND unixepoch(NEW.`completed_at`) < unixepoch(COALESCE(NEW.`started_at`, NEW.`created_at`)))
-	THEN RAISE(ABORT, 'AI proposal job timestamps are invalid') END;
-	SELECT CASE WHEN NOT (
+	THEN RAISE(ABORT, 'AI proposal job timestamps are invalid') END);
+	SELECT (CASE WHEN NOT (
 		(NEW.`status` = 'queued'
 			AND NEW.`lease_owner` IS NULL AND NEW.`lease_expires_at` IS NULL
 			AND NEW.`provider_receipt_digest` IS NULL
@@ -183,13 +183,13 @@ BEGIN
 			AND NEW.`lease_owner` IS NULL AND NEW.`lease_expires_at` IS NULL
 			AND NEW.`error_code` IS NOT NULL AND NEW.`error_detail_code` IS NOT NULL
 			AND NEW.`completed_at` IS NOT NULL)
-	) THEN RAISE(ABORT, 'AI proposal job state receipt is incomplete') END;
+	) THEN RAISE(ABORT, 'AI proposal job state receipt is incomplete') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_job_sources_insert_guard`
 BEFORE INSERT ON `dossier_ai_proposal_job_sources`
 FOR EACH ROW
 BEGIN
-	SELECT CASE WHEN NOT EXISTS (
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1
 		FROM `dossier_ai_proposal_jobs` AS job
 		JOIN `dossiers` AS dossier ON dossier.`id` = job.`dossier_id`
@@ -210,20 +210,20 @@ BEGIN
 					)
 				)
 			)
-	) THEN RAISE(ABORT, 'analyzed AI source must bind its exact active job lease and revision') END;
-	SELECT CASE WHEN EXISTS (
+	) THEN RAISE(ABORT, 'analyzed AI source must bind its exact active job lease and revision') END);
+	SELECT (CASE WHEN EXISTS (
 		SELECT 1 FROM `dossier_audit_events`
 		WHERE `dossier_id` = NEW.`dossier_id`
 			AND `event_type` = 'proposal_generation_completed'
 			AND `object_ref_type` = 'dossier'
 			AND `object_ref_id` = NEW.`dossier_id`
 			AND json_extract(`detail`, '$.job_id') = NEW.`job_id`
-	) THEN RAISE(ABORT, 'analyzed AI sources are frozen by the completion audit') END;
-	SELECT CASE WHEN NEW.`source_ordinal` <> 1 + (
+	) THEN RAISE(ABORT, 'analyzed AI sources are frozen by the completion audit') END);
+	SELECT (CASE WHEN NEW.`source_ordinal` <> 1 + (
 		SELECT COUNT(*) FROM `dossier_ai_proposal_job_sources`
 		WHERE `dossier_id` = NEW.`dossier_id` AND `job_id` = NEW.`job_id`
-	) THEN RAISE(ABORT, 'analyzed AI sources require contiguous bounded ordering') END;
-	SELECT CASE WHEN NOT EXISTS (
+	) THEN RAISE(ABORT, 'analyzed AI sources require contiguous bounded ordering') END);
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1
 		FROM `dossier_extraction_results` AS result
 		JOIN `dossier_extraction_jobs` AS extraction_job
@@ -235,15 +235,15 @@ BEGIN
 			AND result.`document_version_id` = NEW.`document_version_id`
 			AND result.`character_count` >= NEW.`context_end`
 			AND extraction_job.`status` = 'ready'
-	) THEN RAISE(ABORT, 'analyzed AI source must bind an exact ready extraction range') END;
-	SELECT CASE WHEN (
+	) THEN RAISE(ABORT, 'analyzed AI source must bind an exact ready extraction range') END);
+	SELECT (CASE WHEN (
 		SELECT COALESCE(SUM(`context_end` - `context_start`), 0)
 		FROM `dossier_ai_proposal_job_sources`
 		WHERE `dossier_id` = NEW.`dossier_id` AND `job_id` = NEW.`job_id`
 	) + NEW.`context_end` - NEW.`context_start` > 96000
-	THEN RAISE(ABORT, 'analyzed AI source context exceeds the bounded job limit') END;
-	SELECT CASE WHEN unixepoch(NEW.`created_at`) IS NULL
-		THEN RAISE(ABORT, 'analyzed AI source timestamp is invalid') END;
+	THEN RAISE(ABORT, 'analyzed AI source context exceeds the bounded job limit') END);
+	SELECT (CASE WHEN unixepoch(NEW.`created_at`) IS NULL
+		THEN RAISE(ABORT, 'analyzed AI source timestamp is invalid') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_job_sources_update_guard`
 BEFORE UPDATE ON `dossier_ai_proposal_job_sources`
@@ -296,12 +296,12 @@ BEFORE UPDATE OF `status` ON `dossier_ai_proposal_jobs`
 FOR EACH ROW
 WHEN OLD.`status` <> 'ready' AND NEW.`status` = 'ready'
 BEGIN
-	SELECT CASE WHEN (
+	SELECT (CASE WHEN (
 		SELECT COUNT(*) FROM `dossier_ai_proposal_job_sources`
 		WHERE `dossier_id` = NEW.`dossier_id` AND `job_id` = NEW.`id`
 	) NOT BETWEEN 1 AND 8
-	THEN RAISE(ABORT, 'ready AI proposal job requires its bounded analyzed source ranges') END;
-	SELECT CASE WHEN (
+	THEN RAISE(ABORT, 'ready AI proposal job requires its bounded analyzed source ranges') END);
+	SELECT (CASE WHEN (
 		(
 			SELECT COUNT(*) FROM `dossier_ai_proposals`
 			WHERE `dossier_id` = NEW.`dossier_id` AND `generation_job_id` = NEW.`id`
@@ -324,12 +324,12 @@ BEGIN
 			WHERE dossier.`id` = NEW.`dossier_id`
 				AND dossier.`revision` = NEW.`expected_dossier_revision` + 1
 		)
-	) THEN RAISE(ABORT, 'ready AI proposal job requires the exact zero-result or candidate revision receipt') END;
-	SELECT CASE WHEN (
+	) THEN RAISE(ABORT, 'ready AI proposal job requires the exact zero-result or candidate revision receipt') END);
+	SELECT (CASE WHEN (
 		SELECT COUNT(*) FROM `dossier_ai_proposals`
 		WHERE `dossier_id` = NEW.`dossier_id` AND `generation_job_id` = NEW.`id`
-	) > 20 THEN RAISE(ABORT, 'ready AI proposal job exceeds the bounded candidate limit') END;
-	SELECT CASE WHEN NOT EXISTS (
+	) > 20 THEN RAISE(ABORT, 'ready AI proposal job exceeds the bounded candidate limit') END);
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1 FROM `dossier_audit_events` AS event
 		WHERE event.`dossier_id` = NEW.`dossier_id`
 			AND event.`dossier_revision` = NEW.`expected_dossier_revision` + CASE WHEN EXISTS (
@@ -348,8 +348,8 @@ BEGIN
 				WHERE `dossier_id` = NEW.`dossier_id` AND `generation_job_id` = NEW.`id`
 			) THEN 'AI_PROPOSAL_GENERATION_READY' ELSE 'AI_PROPOSAL_GENERATION_NO_CANDIDATES' END
 			AND json_extract(event.`detail`, '$.model_receipt_digest') = NEW.`provider_receipt_digest`
-	) THEN RAISE(ABORT, 'ready AI proposal job requires its exact bounded completion audit') END;
-	SELECT CASE WHEN EXISTS (
+	) THEN RAISE(ABORT, 'ready AI proposal job requires its exact bounded completion audit') END);
+	SELECT (CASE WHEN EXISTS (
 		SELECT 1 FROM `dossier_ai_proposals` AS proposal
 		WHERE proposal.`dossier_id` = NEW.`dossier_id`
 			AND proposal.`generation_job_id` = NEW.`id`
@@ -373,8 +373,8 @@ BEGIN
 						AND `actor_ref` = NEW.`requested_by_actor_ref`
 				) <> 1
 			)
-	) THEN RAISE(ABORT, 'ready AI proposal job requires exact grounded pending proposals and audits') END;
-	SELECT CASE WHEN EXISTS (
+	) THEN RAISE(ABORT, 'ready AI proposal job requires exact grounded pending proposals and audits') END);
+	SELECT (CASE WHEN EXISTS (
 		SELECT 1
 		FROM `dossier_ai_proposal_anchors` AS source
 		JOIN `dossier_source_anchors` AS anchor
@@ -396,7 +396,7 @@ BEGIN
 						AND version.`document_version_id` = anchor.`document_version_id`
 				)
 			)
-	) THEN RAISE(ABORT, 'ready AI proposal job contains non-exact generated source anchors') END;
+	) THEN RAISE(ABORT, 'ready AI proposal job contains non-exact generated source anchors') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_jobs_delete_guard`
 BEFORE DELETE ON `dossier_ai_proposal_jobs`
@@ -466,7 +466,7 @@ CREATE TRIGGER `dossier_ai_proposals_review_guard`
 BEFORE UPDATE ON `dossier_ai_proposals`
 FOR EACH ROW
 BEGIN
-	SELECT CASE WHEN OLD.`review_state` <> 'pending'
+	SELECT (CASE WHEN OLD.`review_state` <> 'pending'
 		OR NEW.`review_state` NOT IN ('accepted','rejected')
 		OR NEW.`reviewing_user_id` IS NULL
 		OR NEW.`reviewing_actor_ref` IS NULL
@@ -479,15 +479,15 @@ BEGIN
 				AND `status` = 'active'
 				AND `role` IN ('owner','contributor','reviewer')
 		)
-	THEN RAISE(ABORT, 'AI proposal review requires one bound active reviewer') END;
-	SELECT CASE WHEN NOT EXISTS (
+	THEN RAISE(ABORT, 'AI proposal review requires one bound active reviewer') END);
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1 FROM `dossier_ai_proposal_versions`
 		WHERE `dossier_id` = NEW.`dossier_id` AND `proposal_id` = NEW.`id`
 	) OR NOT EXISTS (
 		SELECT 1 FROM `dossier_ai_proposal_anchors`
 		WHERE `dossier_id` = NEW.`dossier_id` AND `proposal_id` = NEW.`id`
-	) THEN RAISE(ABORT, 'reviewed AI proposal requires an exact version and source anchor') END;
-	SELECT CASE WHEN EXISTS (
+	) THEN RAISE(ABORT, 'reviewed AI proposal requires an exact version and source anchor') END);
+	SELECT (CASE WHEN EXISTS (
 		SELECT 1 FROM `dossier_ai_proposal_anchors` AS source
 		JOIN `dossier_source_anchors` AS anchor
 			ON anchor.`dossier_id` = source.`dossier_id`
@@ -500,8 +500,8 @@ BEGIN
 					AND version.`proposal_id` = source.`proposal_id`
 					AND version.`document_version_id` = anchor.`document_version_id`
 			)
-	) THEN RAISE(ABORT, 'AI proposal source anchors must map to declared source versions') END;
-	SELECT CASE WHEN NEW.`review_state` = 'accepted' AND EXISTS (
+	) THEN RAISE(ABORT, 'AI proposal source anchors must map to declared source versions') END);
+	SELECT (CASE WHEN NEW.`review_state` = 'accepted' AND EXISTS (
 		SELECT 1 FROM `dossier_ai_proposal_anchors` AS source
 		JOIN `dossier_source_anchors` AS anchor
 			ON anchor.`dossier_id` = source.`dossier_id`
@@ -509,13 +509,13 @@ BEGIN
 		WHERE source.`dossier_id` = NEW.`dossier_id`
 			AND source.`proposal_id` = NEW.`id`
 			AND anchor.`review_state` <> 'accepted'
-	) THEN RAISE(ABORT, 'accepted AI proposal requires only accepted source anchors') END;
-	SELECT CASE WHEN NEW.`review_state` = 'accepted' AND (
+	) THEN RAISE(ABORT, 'accepted AI proposal requires only accepted source anchors') END);
+	SELECT (CASE WHEN NEW.`review_state` = 'accepted' AND (
 		NEW.`accepted_object_type` IS NULL OR NEW.`accepted_object_id` IS NULL
-	) THEN RAISE(ABORT, 'accepted AI proposal requires an accepted object') END;
-	SELECT CASE WHEN NEW.`review_state` = 'rejected' AND (
+	) THEN RAISE(ABORT, 'accepted AI proposal requires an accepted object') END);
+	SELECT (CASE WHEN NEW.`review_state` = 'rejected' AND (
 		NEW.`accepted_object_type` IS NOT NULL OR NEW.`accepted_object_id` IS NOT NULL
-	) THEN RAISE(ABORT, 'rejected AI proposal cannot name an accepted object') END;
+	) THEN RAISE(ABORT, 'rejected AI proposal cannot name an accepted object') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_versions_insert_guard`
 BEFORE INSERT ON `dossier_ai_proposal_versions`
@@ -720,33 +720,33 @@ BEFORE UPDATE ON `dossier_ai_proposals`
 FOR EACH ROW
 WHEN NEW.`review_state` = 'accepted'
 BEGIN
-	SELECT CASE WHEN NEW.`reviewing_actor_ref` IS NULL OR NEW.`reviewed_at` IS NULL
+	SELECT (CASE WHEN NEW.`reviewing_actor_ref` IS NULL OR NEW.`reviewed_at` IS NULL
 		OR NEW.`accepted_object_type` IS NULL OR NEW.`accepted_object_id` IS NULL
-	THEN RAISE(ABORT, 'accepted AI proposal requires explicit review and an accepted object') END;
-	SELECT CASE WHEN NEW.`accepted_object_type` = 'participant' AND NOT EXISTS (
+	THEN RAISE(ABORT, 'accepted AI proposal requires explicit review and an accepted object') END);
+	SELECT (CASE WHEN NEW.`accepted_object_type` = 'participant' AND NOT EXISTS (
 		SELECT 1 FROM `dossier_participants` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`accepted_object_id`
-	) THEN RAISE(ABORT, 'accepted AI proposal participant is outside the dossier') END;
-	SELECT CASE WHEN NEW.`accepted_object_type` = 'document' AND NOT EXISTS (
+	) THEN RAISE(ABORT, 'accepted AI proposal participant is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`accepted_object_type` = 'document' AND NOT EXISTS (
 		SELECT 1 FROM `dossier_documents`
 		WHERE `dossier_id` = NEW.`dossier_id`
 			AND `id` = NEW.`accepted_object_id`
 			AND `is_provisional` = false
-	) THEN RAISE(ABORT, 'accepted AI proposal document is outside the dossier or not finalized') END;
-	SELECT CASE WHEN NEW.`accepted_object_type` = 'professional_assertion' AND NOT EXISTS (
+	) THEN RAISE(ABORT, 'accepted AI proposal document is outside the dossier or not finalized') END);
+	SELECT (CASE WHEN NEW.`accepted_object_type` = 'professional_assertion' AND NOT EXISTS (
 		SELECT 1 FROM `dossier_professional_assertions` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`accepted_object_id`
-	) THEN RAISE(ABORT, 'accepted AI proposal assertion is outside the dossier') END;
-	SELECT CASE WHEN NEW.`accepted_object_type` = 'evidence_link' AND NOT EXISTS (
+	) THEN RAISE(ABORT, 'accepted AI proposal assertion is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`accepted_object_type` = 'evidence_link' AND NOT EXISTS (
 		SELECT 1 FROM `dossier_evidence_links` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`accepted_object_id`
-	) THEN RAISE(ABORT, 'accepted AI proposal evidence is outside the dossier') END;
-	SELECT CASE WHEN NEW.`accepted_object_type` = 'information_request' AND NOT EXISTS (
+	) THEN RAISE(ABORT, 'accepted AI proposal evidence is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`accepted_object_type` = 'information_request' AND NOT EXISTS (
 		SELECT 1 FROM `dossier_information_requests` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`accepted_object_id`
-	) THEN RAISE(ABORT, 'accepted AI proposal request is outside the dossier') END;
-	SELECT CASE WHEN NEW.`accepted_object_type` = 'deadline_reference' AND NOT EXISTS (
+	) THEN RAISE(ABORT, 'accepted AI proposal request is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`accepted_object_type` = 'deadline_reference' AND NOT EXISTS (
 		SELECT 1 FROM `dossier_deadline_references` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`accepted_object_id`
-	) THEN RAISE(ABORT, 'accepted AI proposal deadline is outside the dossier') END;
-	SELECT CASE WHEN NEW.`accepted_object_type` = 'decision_package_reference' AND NOT EXISTS (
+	) THEN RAISE(ABORT, 'accepted AI proposal deadline is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`accepted_object_type` = 'decision_package_reference' AND NOT EXISTS (
 		SELECT 1 FROM `dossier_decision_package_references` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`accepted_object_id`
-	) THEN RAISE(ABORT, 'accepted AI proposal package is outside the dossier') END;
+	) THEN RAISE(ABORT, 'accepted AI proposal package is outside the dossier') END);
 END;--> statement-breakpoint
 -- Snapshot rows are assembled while unsealed. The one permitted update seals
 -- the exact manifest; base and normalized rows are immutable thereafter.
@@ -797,15 +797,15 @@ BEFORE UPDATE OF `sealed` ON `dossier_snapshots`
 FOR EACH ROW
 WHEN OLD.`sealed` = false AND NEW.`sealed` = true
 BEGIN
-	SELECT CASE WHEN NOT EXISTS (
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1 FROM `dossiers`
 		WHERE `id` = NEW.`dossier_id` AND `revision` = NEW.`dossier_revision`
-	) THEN RAISE(ABORT, 'snapshot must seal the current dossier revision') END;
-	SELECT CASE WHEN (
+	) THEN RAISE(ABORT, 'snapshot must seal the current dossier revision') END);
+	SELECT (CASE WHEN (
 		SELECT `status` FROM `dossiers` WHERE `id` = NEW.`dossier_id`
 	) IS NOT NEW.`status`
-	THEN RAISE(ABORT, 'snapshot status must equal the current dossier status') END;
-	SELECT CASE WHEN NOT json_valid(NEW.`readiness`)
+	THEN RAISE(ABORT, 'snapshot status must equal the current dossier status') END);
+	SELECT (CASE WHEN NOT json_valid(NEW.`readiness`)
 		OR json_type(NEW.`readiness`) IS NOT 'object'
 		OR json_type(NEW.`readiness`, '$.schema_version') IS NOT 'integer'
 		OR json_extract(NEW.`readiness`, '$.schema_version') IS NOT 1
@@ -813,8 +813,8 @@ BEGIN
 		OR json_extract(NEW.`readiness`, '$.dossier_id') IS NOT NEW.`dossier_id`
 		OR json_type(NEW.`readiness`, '$.computed_from_revision') IS NOT 'integer'
 		OR json_extract(NEW.`readiness`, '$.computed_from_revision') IS NOT NEW.`dossier_revision`
-	THEN RAISE(ABORT, 'snapshot readiness must bind the exact dossier revision') END;
-	SELECT CASE WHEN (
+	THEN RAISE(ABORT, 'snapshot readiness must bind the exact dossier revision') END);
+	SELECT (CASE WHEN (
 		SELECT COUNT(*) FROM json_each(NEW.`readiness`)
 	) <> 6 OR EXISTS (
 		SELECT 1 FROM json_each(NEW.`readiness`) AS member
@@ -822,14 +822,14 @@ BEGIN
 			'schema_version','dossier_id','computed_from_revision',
 			'evaluated_at','ready','dimensions'
 		)
-	) THEN RAISE(ABORT, 'snapshot readiness must have the exact V1 object shape') END;
-	SELECT CASE WHEN json_type(NEW.`readiness`, '$.evaluated_at') <> 'text'
+	) THEN RAISE(ABORT, 'snapshot readiness must have the exact V1 object shape') END);
+	SELECT (CASE WHEN json_type(NEW.`readiness`, '$.evaluated_at') <> 'text'
 		OR unixepoch(json_extract(NEW.`readiness`, '$.evaluated_at')) IS NULL
 		OR json_type(NEW.`readiness`, '$.ready') NOT IN ('true','false')
 		OR json_type(NEW.`readiness`, '$.dimensions') <> 'array'
 		OR json_array_length(NEW.`readiness`, '$.dimensions') <> 10
-	THEN RAISE(ABORT, 'snapshot readiness requires evaluated_at, ready, and all ten dimensions') END;
-	SELECT CASE WHEN json_extract(NEW.`readiness`, '$.dimensions[0].dimension') <> 'document_completeness'
+	THEN RAISE(ABORT, 'snapshot readiness requires evaluated_at, ready, and all ten dimensions') END);
+	SELECT (CASE WHEN json_extract(NEW.`readiness`, '$.dimensions[0].dimension') <> 'document_completeness'
 		OR json_extract(NEW.`readiness`, '$.dimensions[1].dimension') <> 'information_requests'
 		OR json_extract(NEW.`readiness`, '$.dimensions[2].dimension') <> 'ai_proposals'
 		OR json_extract(NEW.`readiness`, '$.dimensions[3].dimension') <> 'contradictions'
@@ -839,8 +839,8 @@ BEGIN
 		OR json_extract(NEW.`readiness`, '$.dimensions[7].dimension') <> 'simulation_tests'
 		OR json_extract(NEW.`readiness`, '$.dimensions[8].dimension') <> 'report_freshness'
 		OR json_extract(NEW.`readiness`, '$.dimensions[9].dimension') <> 'reviewer_approval'
-	THEN RAISE(ABORT, 'snapshot readiness dimensions must be complete and canonically ordered') END;
-	SELECT CASE WHEN EXISTS (
+	THEN RAISE(ABORT, 'snapshot readiness dimensions must be complete and canonically ordered') END);
+	SELECT (CASE WHEN EXISTS (
 		SELECT 1 FROM json_each(NEW.`readiness`, '$.dimensions') AS dimension
 		WHERE json_type(dimension.`value`) <> 'object'
 			OR (SELECT COUNT(*) FROM json_each(dimension.`value`)) <> 3
@@ -856,12 +856,12 @@ BEGIN
 				(json_extract(dimension.`value`, '$.state') = 'blocked')
 				<> (json_array_length(dimension.`value`, '$.reasons') > 0)
 			)
-	) THEN RAISE(ABORT, 'snapshot readiness dimension shape or state is invalid') END;
-	SELECT CASE WHEN json_extract(NEW.`readiness`, '$.ready') <> NOT EXISTS (
+	) THEN RAISE(ABORT, 'snapshot readiness dimension shape or state is invalid') END);
+	SELECT (CASE WHEN json_extract(NEW.`readiness`, '$.ready') <> NOT EXISTS (
 		SELECT 1 FROM json_each(NEW.`readiness`, '$.dimensions') AS dimension
 		WHERE json_extract(dimension.`value`, '$.state') = 'blocked'
-	) THEN RAISE(ABORT, 'snapshot readiness ready flag must be derived from its dimensions') END;
-	SELECT CASE WHEN EXISTS (
+	) THEN RAISE(ABORT, 'snapshot readiness ready flag must be derived from its dimensions') END);
+	SELECT (CASE WHEN EXISTS (
 		SELECT 1
 		FROM json_each(NEW.`readiness`, '$.dimensions') AS dimension
 		JOIN json_each(dimension.`value`, '$.reasons') AS reason
@@ -953,8 +953,8 @@ BEGIN
 					'deadline_reference','decision_package_reference','ai_proposal',
 					'dossier_snapshot','governed_output','audit_event'
 				))
-	) THEN RAISE(ABORT, 'snapshot readiness reasons must match the exact V1 registry') END;
-	SELECT CASE WHEN NOT json_valid(NEW.`approver_records`)
+	) THEN RAISE(ABORT, 'snapshot readiness reasons must match the exact V1 registry') END);
+	SELECT (CASE WHEN NOT json_valid(NEW.`approver_records`)
 		OR json_type(NEW.`approver_records`) <> 'array'
 		OR EXISTS (
 			SELECT 1 FROM json_each(NEW.`approver_records`) AS entry
@@ -984,8 +984,8 @@ BEGIN
 						AND `id` = json_extract(entry.`value`, '$.output_id')
 				))
 		)
-	THEN RAISE(ABORT, 'snapshot approver records must match the governed contract') END;
-	SELECT CASE WHEN EXISTS (
+	THEN RAISE(ABORT, 'snapshot approver records must match the governed contract') END);
+	SELECT (CASE WHEN EXISTS (
 		SELECT 1 FROM `dossier_document_current_versions` AS current_version
 		WHERE current_version.`dossier_id` = NEW.`dossier_id`
 			AND NOT EXISTS (
@@ -1005,8 +1005,8 @@ BEGIN
 					AND current_version.`document_id` = snapshot_version.`document_id`
 					AND current_version.`document_version_id` = snapshot_version.`document_version_id`
 			)
-	) THEN RAISE(ABORT, 'snapshot document manifest must equal all current document versions') END;
-	SELECT CASE WHEN EXISTS (
+	) THEN RAISE(ABORT, 'snapshot document manifest must equal all current document versions') END);
+	SELECT (CASE WHEN EXISTS (
 		SELECT 1 FROM `dossier_snapshot_assertions` AS item
 		LEFT JOIN `dossier_professional_assertions` AS assertion
 			ON assertion.`dossier_id` = item.`dossier_id` AND assertion.`id` = item.`assertion_id`
@@ -1022,8 +1022,8 @@ BEGIN
 					AND item.`snapshot_id` = NEW.`id`
 					AND item.`assertion_id` = assertion.`id`
 			)
-	) THEN RAISE(ABORT, 'snapshot assertion manifest must equal all current accepted assertions') END;
-	SELECT CASE WHEN EXISTS (
+	) THEN RAISE(ABORT, 'snapshot assertion manifest must equal all current accepted assertions') END);
+	SELECT (CASE WHEN EXISTS (
 		SELECT 1 FROM `dossier_snapshot_anchors` AS item
 		LEFT JOIN `dossier_source_anchors` AS anchor
 			ON anchor.`dossier_id` = item.`dossier_id` AND anchor.`id` = item.`source_anchor_id`
@@ -1039,8 +1039,8 @@ BEGIN
 					AND item.`snapshot_id` = NEW.`id`
 					AND item.`source_anchor_id` = anchor.`id`
 			)
-	) THEN RAISE(ABORT, 'snapshot anchor manifest must equal all current accepted anchors') END;
-	SELECT CASE WHEN EXISTS (
+	) THEN RAISE(ABORT, 'snapshot anchor manifest must equal all current accepted anchors') END);
+	SELECT (CASE WHEN EXISTS (
 		SELECT 1 FROM `dossier_snapshot_decision_packages` AS item
 		LEFT JOIN `dossier_decision_package_references` AS package
 			ON package.`dossier_id` = item.`dossier_id`
@@ -1064,7 +1064,7 @@ BEGIN
 					AND item.`package_version` = package.`package_version`
 					AND item.`graph_digest` = package.`graph_digest`
 			)
-	) THEN RAISE(ABORT, 'snapshot package manifest must equal all current exact governed package references') END;
+	) THEN RAISE(ABORT, 'snapshot package manifest must equal all current exact governed package references') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_snapshot_documents_insert_guard`
 BEFORE INSERT ON `dossier_snapshot_document_versions`

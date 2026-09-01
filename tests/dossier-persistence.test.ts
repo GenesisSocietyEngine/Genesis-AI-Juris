@@ -90,10 +90,14 @@ test("every D1 migration breakpoint resolves to a non-empty platform statement",
     .split("--> statement-breakpoint")
     .map((statement) => statement.trim())
     .filter(Boolean);
+  const normalizeRemoteD1TriggerWorkarounds = (statement: string) => statement.replace(
+    /SELECT \((CASE[\s\S]*? END)\);/gu,
+    "SELECT $1;",
+  );
   assert.deepEqual(
-    statements(dossierMigrationSql()),
-    statements(dossierMigrationReceipt()),
-    "the bounded production files must preserve every accepted 0012 statement in exact order",
+    statements(dossierMigrationSql()).map(normalizeRemoteD1TriggerWorkarounds),
+    statements(dossierMigrationReceipt()).map(normalizeRemoteD1TriggerWorkarounds),
+    "the bounded production files must preserve every accepted 0012 statement in exact order, modulo the remote D1 trigger workaround",
   );
   for (const name of [
     ...dossierMigrations.slice(1),
@@ -101,10 +105,22 @@ test("every D1 migration breakpoint resolves to a non-empty platform statement",
     uploadCommitmentMigration,
     statusHistoryMigration,
   ]) {
+    const sql = migration(name);
     assert.doesNotMatch(
-      migration(name),
+      sql,
       /;\s*\n\s*--> statement-breakpoint/u,
       `${name} must keep trigger-safe Sites breakpoints attached to the preceding semicolon`,
+    );
+    assert.doesNotMatch(sql, /\r/u, `${name} must use LF for the remote D1 trigger splitter`);
+    assert.doesNotMatch(
+      sql,
+      /^\s*(?:begin|Begin)\s*$/gmu,
+      `${name} must use uppercase BEGIN for the remote D1 trigger splitter`,
+    );
+    assert.doesNotMatch(
+      sql,
+      /SELECT CASE/u,
+      `${name} must parenthesize SELECT CASE so remote D1 does not terminate the trigger early`,
     );
   }
 });

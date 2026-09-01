@@ -151,18 +151,18 @@ CREATE TRIGGER `dossier_status_transitions_insert_guard`
 BEFORE INSERT ON `dossier_status_transitions`
 FOR EACH ROW
 BEGIN
-	SELECT CASE WHEN NOT EXISTS (
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1 FROM `dossiers`
 		WHERE `id` = NEW.`dossier_id`
 			AND `revision` = NEW.`revision_before`
 			AND `status` = NEW.`previous_status`
-	) THEN RAISE(ABORT, 'status transition must bind the exact live previous revision and status') END;
-	SELECT CASE WHEN NEW.`occurred_at` IS NULL OR unixepoch(NEW.`occurred_at`) IS NULL
-		THEN RAISE(ABORT, 'status transition requires a valid occurrence timestamp') END;
-	SELECT CASE WHEN NEW.`reason` IS NOT NULL
+	) THEN RAISE(ABORT, 'status transition must bind the exact live previous revision and status') END);
+	SELECT (CASE WHEN NEW.`occurred_at` IS NULL OR unixepoch(NEW.`occurred_at`) IS NULL
+		THEN RAISE(ABORT, 'status transition requires a valid occurrence timestamp') END);
+	SELECT (CASE WHEN NEW.`reason` IS NOT NULL
 		AND (length(trim(NEW.`reason`)) < 1 OR length(NEW.`reason`) > 1000)
-		THEN RAISE(ABORT, 'status transition reason is invalid') END;
-	SELECT CASE WHEN NEW.`actor_role` <> 'platform_admin' AND NOT (
+		THEN RAISE(ABORT, 'status transition reason is invalid') END);
+	SELECT (CASE WHEN NEW.`actor_role` <> 'platform_admin' AND NOT (
 		(NEW.`previous_status` = 'draft' AND NEW.`new_status` = 'intake_review' AND NEW.`actor_role` IN ('owner','contributor'))
 		OR (NEW.`previous_status` = 'draft' AND NEW.`new_status` = 'declined' AND NEW.`actor_role` IN ('owner','reviewer'))
 		OR (NEW.`previous_status` = 'draft' AND NEW.`new_status` = 'cancelled' AND NEW.`actor_role` = 'owner')
@@ -192,15 +192,15 @@ BEGIN
 		OR (NEW.`previous_status` = 'cancelled' AND NEW.`new_status` = 'active' AND NEW.`actor_role` IN ('owner','reviewer'))
 		OR (NEW.`previous_status` = 'cancelled' AND NEW.`new_status` = 'archived' AND NEW.`actor_role` IN ('owner','reviewer'))
 		OR (NEW.`previous_status` = 'archived' AND NEW.`new_status` = 'active' AND NEW.`actor_role` IN ('owner','reviewer'))
-	) THEN RAISE(ABORT, 'status transition edge or role is forbidden by the V1 registry') END;
-	SELECT CASE WHEN NEW.`actor_role` = 'platform_admin' AND NOT (
+	) THEN RAISE(ABORT, 'status transition edge or role is forbidden by the V1 registry') END);
+	SELECT (CASE WHEN NEW.`actor_role` = 'platform_admin' AND NOT (
 		NEW.`previous_status` <> 'archived'
 		AND NEW.`new_status` = 'archived'
 		AND NEW.`platform_admin_override` = true
-	) THEN RAISE(ABORT, 'platform admin is limited to the governed archive override') END;
-	SELECT CASE WHEN NEW.`actor_role` <> 'platform_admin' AND NEW.`platform_admin_override` <> false
-		THEN RAISE(ABORT, 'participant transitions cannot claim platform-admin override') END;
-	SELECT CASE WHEN (
+	) THEN RAISE(ABORT, 'platform admin is limited to the governed archive override') END);
+	SELECT (CASE WHEN NEW.`actor_role` <> 'platform_admin' AND NEW.`platform_admin_override` <> false
+		THEN RAISE(ABORT, 'participant transitions cannot claim platform-admin override') END);
+	SELECT (CASE WHEN (
 		NEW.`actor_role` = 'platform_admin'
 		OR NOT (
 			(NEW.`previous_status` = 'draft' AND NEW.`new_status` = 'intake_review')
@@ -209,23 +209,23 @@ BEGIN
 			OR (NEW.`previous_status` = 'internal_review' AND NEW.`new_status` IN ('active','output_approved'))
 		)
 	) AND length(trim(COALESCE(NEW.`reason`, ''))) = 0
-	THEN RAISE(ABORT, 'status transition reason is required by the V1 registry') END;
-	SELECT CASE WHEN NOT json_valid(NEW.`consequences`)
+	THEN RAISE(ABORT, 'status transition reason is required by the V1 registry') END);
+	SELECT (CASE WHEN NOT json_valid(NEW.`consequences`)
 		OR (NEW.`new_status` = 'output_approved' AND json(NEW.`consequences`) <> json('["recompute_readiness","preserve_current_output"]'))
 		OR (NEW.`new_status` <> 'output_approved' AND json(NEW.`consequences`) <> json('["recompute_readiness","mark_outputs_stale"]'))
-	THEN RAISE(ABORT, 'status transition consequences must exactly match the V1 registry') END;
-	SELECT CASE WHEN NEW.`actor_role` IN ('owner','contributor','reviewer','viewer') AND NOT EXISTS (
+	THEN RAISE(ABORT, 'status transition consequences must exactly match the V1 registry') END);
+	SELECT (CASE WHEN NEW.`actor_role` IN ('owner','contributor','reviewer','viewer') AND NOT EXISTS (
 		SELECT 1 FROM `dossier_participants`
 		WHERE `dossier_id` = NEW.`dossier_id`
 			AND `user_id` = NEW.`actor_user_id`
 			AND `actor_id` = NEW.`actor_ref`
 			AND `role` = NEW.`actor_role`
 			AND `status` = 'active'
-	) THEN RAISE(ABORT, 'status transition actor must be an exact active participant authority') END;
-	SELECT CASE WHEN NEW.`actor_role` = 'platform_admin' AND NOT EXISTS (
+	) THEN RAISE(ABORT, 'status transition actor must be an exact active participant authority') END);
+	SELECT (CASE WHEN NEW.`actor_role` = 'platform_admin' AND NOT EXISTS (
 		SELECT 1 FROM `users` WHERE `id` = NEW.`actor_user_id` AND `actor_id` = NEW.`actor_ref`
-	) THEN RAISE(ABORT, 'platform-admin archive override must bind a stable user actor') END;
-	SELECT CASE WHEN NEW.`had_current_output` <> EXISTS (
+	) THEN RAISE(ABORT, 'platform-admin archive override must bind a stable user actor') END);
+	SELECT (CASE WHEN NEW.`had_current_output` <> EXISTS (
 		SELECT 1 FROM `dossier_governed_outputs` AS output
 		JOIN `dossier_output_state_events` AS state
 			ON state.`dossier_id` = output.`dossier_id` AND state.`output_id` = output.`id`
@@ -235,8 +235,8 @@ BEGIN
 				SELECT MAX(later.`sequence`) FROM `dossier_output_state_events` AS later
 				WHERE later.`dossier_id` = state.`dossier_id` AND later.`output_id` = state.`output_id`
 			)
-	) THEN RAISE(ABORT, 'status transition current-output fact is not authoritative') END;
-	SELECT CASE WHEN NEW.`had_reviewer_approval` <> EXISTS (
+	) THEN RAISE(ABORT, 'status transition current-output fact is not authoritative') END);
+	SELECT (CASE WHEN NEW.`had_reviewer_approval` <> EXISTS (
 		SELECT 1 FROM `dossier_governed_outputs` AS output
 		JOIN `dossier_output_state_events` AS state
 			ON state.`dossier_id` = output.`dossier_id` AND state.`output_id` = output.`id`
@@ -248,8 +248,8 @@ BEGIN
 				SELECT MAX(later.`sequence`) FROM `dossier_output_state_events` AS later
 				WHERE later.`dossier_id` = state.`dossier_id` AND later.`output_id` = state.`output_id`
 			)
-	) THEN RAISE(ABORT, 'status transition reviewer-approval fact is not authoritative') END;
-	SELECT CASE WHEN NEW.`new_status` = 'output_approved' AND NOT EXISTS (
+	) THEN RAISE(ABORT, 'status transition reviewer-approval fact is not authoritative') END);
+	SELECT (CASE WHEN NEW.`new_status` = 'output_approved' AND NOT EXISTS (
 		SELECT 1
 		FROM `dossier_governed_outputs` AS output
 		JOIN `dossier_output_state_events` AS state
@@ -265,7 +265,7 @@ BEGIN
 				SELECT MAX(later.`sequence`) FROM `dossier_output_state_events` AS later
 				WHERE later.`dossier_id` = state.`dossier_id` AND later.`output_id` = state.`output_id`
 			)
-	) THEN RAISE(ABORT, 'output approval transition must bind the exact current output and its reviewer') END;
+	) THEN RAISE(ABORT, 'output approval transition must bind the exact current output and its reviewer') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_status_transitions_update_guard`
 BEFORE UPDATE ON `dossier_status_transitions`
@@ -362,23 +362,23 @@ CREATE TRIGGER `dossier_document_versions_lineage_guard`
 BEFORE INSERT ON `dossier_document_versions`
 FOR EACH ROW
 BEGIN
-	SELECT CASE WHEN NEW.`ordinal` = 1 AND EXISTS (
+	SELECT (CASE WHEN NEW.`ordinal` = 1 AND EXISTS (
 		SELECT 1 FROM `dossier_document_versions`
 		WHERE `dossier_id` = NEW.`dossier_id` AND `document_id` = NEW.`document_id`
-	) THEN RAISE(ABORT, 'first document version already exists') END;
-	SELECT CASE WHEN NEW.`ordinal` > 1 AND NOT EXISTS (
+	) THEN RAISE(ABORT, 'first document version already exists') END);
+	SELECT (CASE WHEN NEW.`ordinal` > 1 AND NOT EXISTS (
 		SELECT 1 FROM `dossier_document_versions`
 		WHERE `dossier_id` = NEW.`dossier_id`
 			AND `document_id` = NEW.`document_id`
 			AND `id` = NEW.`predecessor_version_id`
 			AND `ordinal` = NEW.`ordinal` - 1
-	) THEN RAISE(ABORT, 'document version predecessor must be the prior ordinal') END;
-	SELECT CASE WHEN (
+	) THEN RAISE(ABORT, 'document version predecessor must be the prior ordinal') END);
+	SELECT (CASE WHEN (
 		SELECT `source_origin` FROM `dossier_documents`
 		WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`document_id`
 	) = 'internal_upload' AND NEW.`upload_intent_id` IS NULL
-	THEN RAISE(ABORT, 'internal document versions require an upload intent') END;
-	SELECT CASE WHEN NEW.`upload_intent_id` IS NOT NULL AND NOT EXISTS (
+	THEN RAISE(ABORT, 'internal document versions require an upload intent') END);
+	SELECT (CASE WHEN NEW.`upload_intent_id` IS NOT NULL AND NOT EXISTS (
 		SELECT 1
 		FROM `dossier_upload_intents` AS intent
 		JOIN `dossiers` AS dossier ON dossier.`id` = intent.`dossier_id`
@@ -396,29 +396,29 @@ BEGIN
 			AND intent.`measured_content_sha256` = NEW.`content_sha256`
 			AND intent.`committed_object_reference` = NEW.`binary_object_reference`
 			AND (intent.`expected_content_sha256` IS NULL OR intent.`expected_content_sha256` = NEW.`content_sha256`)
-	) THEN RAISE(ABORT, 'document version does not match its pending verified upload intent') END;
-	SELECT CASE WHEN length(NEW.`binary_object_reference`) < 32
+	) THEN RAISE(ABORT, 'document version does not match its pending verified upload intent') END);
+	SELECT (CASE WHEN length(NEW.`binary_object_reference`) < 32
 		OR instr(NEW.`binary_object_reference`, '://') > 0
 		OR instr(NEW.`binary_object_reference`, '..') > 0
 		OR instr(NEW.`binary_object_reference`, '\\') > 0
-	THEN RAISE(ABORT, 'document object reference must be private and opaque') END;
+	THEN RAISE(ABORT, 'document object reference must be private and opaque') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_document_versions_quota_guard`
 BEFORE INSERT ON `dossier_document_versions`
 FOR EACH ROW
 BEGIN
-	SELECT CASE WHEN (
+	SELECT (CASE WHEN (
 		SELECT count(*) FROM `dossier_document_versions`
 		WHERE `dossier_id` = NEW.`dossier_id`
 			AND `document_id` = NEW.`document_id`
 	) >= 50
-	THEN RAISE(ABORT, 'document version quota exceeded') END;
-	SELECT CASE WHEN (
+	THEN RAISE(ABORT, 'document version quota exceeded') END);
+	SELECT (CASE WHEN (
 		SELECT count(*) FROM `dossier_document_versions`
 		WHERE `dossier_id` = NEW.`dossier_id`
 	) >= 1000
-	THEN RAISE(ABORT, 'dossier version quota exceeded') END;
-	SELECT CASE WHEN
+	THEN RAISE(ABORT, 'dossier version quota exceeded') END);
+	SELECT (CASE WHEN
 		COALESCE((
 			SELECT sum(`byte_length`) FROM `dossier_document_versions`
 			WHERE `dossier_id` = NEW.`dossier_id`
@@ -437,7 +437,7 @@ BEGIN
 				)
 		), 0)
 		> 1073741824
-	THEN RAISE(ABORT, 'dossier storage reservation quota exceeded') END;
+	THEN RAISE(ABORT, 'dossier storage reservation quota exceeded') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_document_versions_external_current_pointer`
 AFTER INSERT ON `dossier_document_versions`
@@ -537,18 +537,18 @@ CREATE TRIGGER `dossier_upload_intents_insert_guard`
 BEFORE INSERT ON `dossier_upload_intents`
 FOR EACH ROW
 BEGIN
-	SELECT CASE WHEN NEW.`state` <> 'pending'
+	SELECT (CASE WHEN NEW.`state` <> 'pending'
 		OR NEW.`committed_object_reference` IS NOT NULL
 		OR NEW.`measured_media_type` IS NOT NULL
 		OR NEW.`measured_byte_length` IS NOT NULL
 		OR NEW.`measured_content_sha256` IS NOT NULL
 		OR NEW.`failure_code` IS NOT NULL
 		OR NEW.`committed_at` IS NOT NULL
-	THEN RAISE(ABORT, 'upload intent must begin as an unmeasured pending reservation') END;
-	SELECT CASE WHEN unixepoch(NEW.`expires_at`) IS NULL
+	THEN RAISE(ABORT, 'upload intent must begin as an unmeasured pending reservation') END);
+	SELECT (CASE WHEN unixepoch(NEW.`expires_at`) IS NULL
 		OR unixepoch(NEW.`expires_at`) <= unixepoch('now')
-	THEN RAISE(ABORT, 'upload intent reservation must expire in the future') END;
-	SELECT CASE WHEN NEW.`actor_user_id` IS NULL OR NOT EXISTS (
+	THEN RAISE(ABORT, 'upload intent reservation must expire in the future') END);
+	SELECT (CASE WHEN NEW.`actor_user_id` IS NULL OR NOT EXISTS (
 		SELECT 1
 		FROM `dossiers` AS dossier
 		JOIN `dossier_participants` AS participant
@@ -559,13 +559,13 @@ BEGIN
 			AND participant.`actor_id` = NEW.`actor_ref`
 			AND participant.`role` IN ('owner','contributor')
 			AND participant.`status` = 'active'
-	) THEN RAISE(ABORT, 'upload intent must bind the live revision and active actor') END;
-	SELECT CASE WHEN (
+	) THEN RAISE(ABORT, 'upload intent must bind the live revision and active actor') END);
+	SELECT (CASE WHEN (
 		SELECT count(*) FROM `dossier_upload_intents`
 		WHERE `dossier_id` = NEW.`dossier_id` AND `state` = 'pending'
 	) >= 20
-	THEN RAISE(ABORT, 'pending upload reservation quota exceeded') END;
-	SELECT CASE WHEN
+	THEN RAISE(ABORT, 'pending upload reservation quota exceeded') END);
+	SELECT (CASE WHEN
 		COALESCE((
 			SELECT sum(`byte_length`) FROM `dossier_document_versions`
 			WHERE `dossier_id` = NEW.`dossier_id`
@@ -583,7 +583,7 @@ BEGIN
 		), 0)
 		+ NEW.`expected_byte_length`
 		> 1073741824
-	THEN RAISE(ABORT, 'dossier storage reservation quota exceeded') END;
+	THEN RAISE(ABORT, 'dossier storage reservation quota exceeded') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_insert_state_guard`
 BEFORE INSERT ON `dossier_upload_intents`
@@ -681,7 +681,7 @@ BEFORE UPDATE OF `state` ON `dossier_upload_intents`
 FOR EACH ROW
 WHEN NEW.`state` = 'expired' AND OLD.`state` <> 'expired'
 BEGIN
-	SELECT CASE WHEN OLD.`state` <> 'pending'
+	SELECT (CASE WHEN OLD.`state` <> 'pending'
 		OR unixepoch(OLD.`expires_at`) IS NULL
 		OR unixepoch(OLD.`expires_at`) > unixepoch('now')
 		OR EXISTS (
@@ -690,17 +690,17 @@ BEGIN
 				OR `binary_object_reference` = OLD.`temporary_object_reference`
 				OR (OLD.`committed_object_reference` IS NOT NULL AND `binary_object_reference` = OLD.`committed_object_reference`)
 		)
-	THEN RAISE(ABORT, 'only an expired unreferenced pending upload can expire') END;
+	THEN RAISE(ABORT, 'only an expired unreferenced pending upload can expire') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_commit_guard`
 BEFORE UPDATE OF `state` ON `dossier_upload_intents`
 FOR EACH ROW
 WHEN NEW.`state` = 'committed' AND OLD.`state` <> 'committed'
 BEGIN
-	SELECT CASE WHEN unixepoch(NEW.`expires_at`) IS NULL
+	SELECT (CASE WHEN unixepoch(NEW.`expires_at`) IS NULL
 		OR unixepoch(NEW.`expires_at`) <= unixepoch('now')
-	THEN RAISE(ABORT, 'expired upload intent cannot commit') END;
-	SELECT CASE WHEN OLD.`state` <> 'pending'
+	THEN RAISE(ABORT, 'expired upload intent cannot commit') END);
+	SELECT (CASE WHEN OLD.`state` <> 'pending'
 		OR NEW.`committed_object_reference` IS NULL
 		OR NEW.`measured_media_type` IS NULL
 		OR NEW.`measured_byte_length` IS NULL
@@ -711,8 +711,8 @@ BEGIN
 		OR NEW.`measured_media_type` <> NEW.`expected_media_type`
 		OR NEW.`measured_byte_length` <> NEW.`expected_byte_length`
 		OR (NEW.`expected_content_sha256` IS NOT NULL AND NEW.`measured_content_sha256` <> NEW.`expected_content_sha256`)
-	THEN RAISE(ABORT, 'only a measured pending upload intent can commit') END;
-	SELECT CASE WHEN NOT EXISTS (
+	THEN RAISE(ABORT, 'only a measured pending upload intent can commit') END);
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1
 		FROM `dossier_document_versions` AS version
 		JOIN `dossier_document_current_versions` AS current_version
@@ -731,7 +731,7 @@ BEGIN
 			AND version.`byte_length` = NEW.`measured_byte_length`
 			AND version.`content_sha256` = NEW.`measured_content_sha256`
 			AND dossier.`revision` = NEW.`expected_dossier_revision` + 1
-	) THEN RAISE(ABORT, 'committed upload intent lacks its current version and dossier revision receipt') END;
+	) THEN RAISE(ABORT, 'committed upload intent lacks its current version and dossier revision receipt') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_finalize_document`
 AFTER UPDATE OF `state` ON `dossier_upload_intents`
@@ -754,7 +754,7 @@ BEFORE UPDATE OF `state` ON `dossier_upload_intents`
 FOR EACH ROW
 WHEN NEW.`state` = 'deleting' AND OLD.`state` <> 'deleting'
 BEGIN
-	SELECT CASE WHEN OLD.`state` NOT IN ('pending','expired')
+	SELECT (CASE WHEN OLD.`state` NOT IN ('pending','expired')
 		OR (OLD.`state` = 'pending'
 			AND (unixepoch(OLD.`expires_at`) IS NULL OR unixepoch(OLD.`expires_at`) > unixepoch('now'))
 			AND NEW.`failure_code` IS NULL)
@@ -764,21 +764,21 @@ BEGIN
 				OR `binary_object_reference` = OLD.`temporary_object_reference`
 				OR (OLD.`committed_object_reference` IS NOT NULL AND `binary_object_reference` = OLD.`committed_object_reference`)
 		)
-	THEN RAISE(ABORT, 'only an expired unreferenced upload can enter cleanup') END;
+	THEN RAISE(ABORT, 'only an expired unreferenced upload can enter cleanup') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_finish_cleanup_guard`
 BEFORE UPDATE OF `state` ON `dossier_upload_intents`
 FOR EACH ROW
 WHEN NEW.`state` = 'deleted' AND OLD.`state` <> 'deleted'
 BEGIN
-	SELECT CASE WHEN OLD.`state` <> 'deleting'
+	SELECT (CASE WHEN OLD.`state` <> 'deleting'
 		OR EXISTS (
 			SELECT 1 FROM `dossier_document_versions`
 			WHERE `upload_intent_id` = OLD.`id`
 				OR `binary_object_reference` = OLD.`temporary_object_reference`
 				OR (OLD.`committed_object_reference` IS NOT NULL AND `binary_object_reference` = OLD.`committed_object_reference`)
 		)
-	THEN RAISE(ABORT, 'cleanup completion requires a deleting unreferenced upload') END;
+	THEN RAISE(ABORT, 'cleanup completion requires a deleting unreferenced upload') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_delete_guard`
 BEFORE DELETE ON `dossier_upload_intents`
@@ -1045,7 +1045,7 @@ CREATE TRIGGER `dossier_source_anchors_update_guard`
 BEFORE UPDATE ON `dossier_source_anchors`
 FOR EACH ROW
 BEGIN
-	SELECT CASE WHEN NEW.`id` IS NOT OLD.`id`
+	SELECT (CASE WHEN NEW.`id` IS NOT OLD.`id`
 		OR NEW.`dossier_id` IS NOT OLD.`dossier_id`
 		OR NEW.`document_id` IS NOT OLD.`document_id`
 		OR NEW.`document_version_id` IS NOT OLD.`document_version_id`
@@ -1061,8 +1061,8 @@ BEGIN
 		OR NEW.`creator` IS NOT OLD.`creator`
 		OR NEW.`created_by_actor_ref` IS NOT OLD.`created_by_actor_ref`
 		OR NEW.`created_at` IS NOT OLD.`created_at`
-	THEN RAISE(ABORT, 'source anchor identity and provenance are immutable') END;
-	SELECT CASE WHEN OLD.`review_state` <> 'pending'
+	THEN RAISE(ABORT, 'source anchor identity and provenance are immutable') END);
+	SELECT (CASE WHEN OLD.`review_state` <> 'pending'
 		OR NEW.`review_state` NOT IN ('accepted','rejected')
 		OR NEW.`reviewer_user_id` IS NULL
 		OR NEW.`reviewer_actor_ref` IS NULL
@@ -1075,7 +1075,7 @@ BEGIN
 				AND `status` = 'active'
 				AND `role` IN ('owner','contributor','reviewer')
 		)
-	THEN RAISE(ABORT, 'source anchor review requires an active bound participant') END;
+	THEN RAISE(ABORT, 'source anchor review requires an active bound participant') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_source_anchors_delete_guard`
 BEFORE DELETE ON `dossier_source_anchors`
@@ -1107,10 +1107,10 @@ CREATE TRIGGER `dossier_professional_assertions_update_guard`
 BEFORE UPDATE ON `dossier_professional_assertions`
 FOR EACH ROW
 BEGIN
-	SELECT CASE WHEN OLD.`status` <> 'needs_review'
+	SELECT (CASE WHEN OLD.`status` <> 'needs_review'
 		AND (NEW.`status` <> 'superseded' OR OLD.`status` <> 'accepted')
-	THEN RAISE(ABORT, 'reviewed professional assertions are immutable except supersession') END;
-	SELECT CASE WHEN OLD.`status` <> 'needs_review' AND (
+	THEN RAISE(ABORT, 'reviewed professional assertions are immutable except supersession') END);
+	SELECT (CASE WHEN OLD.`status` <> 'needs_review' AND (
 		NEW.`id` IS NOT OLD.`id`
 		OR NEW.`dossier_id` IS NOT OLD.`dossier_id`
 		OR NEW.`assertion_type` IS NOT OLD.`assertion_type`
@@ -1121,8 +1121,8 @@ BEGIN
 		OR NEW.`reviewed_at` IS NOT OLD.`reviewed_at`
 		OR NEW.`created_by_actor_ref` IS NOT OLD.`created_by_actor_ref`
 		OR NEW.`created_at` IS NOT OLD.`created_at`
-	) THEN RAISE(ABORT, 'reviewed professional assertion provenance is immutable') END;
-	SELECT CASE WHEN NEW.`status` IN ('accepted','rejected') AND OLD.`status` = 'needs_review' AND (
+	) THEN RAISE(ABORT, 'reviewed professional assertion provenance is immutable') END);
+	SELECT (CASE WHEN NEW.`status` IN ('accepted','rejected') AND OLD.`status` = 'needs_review' AND (
 		NEW.`reviewed_by_user_id` IS NULL
 		OR NEW.`reviewed_by_actor_ref` IS NULL
 		OR NEW.`reviewed_at` IS NULL
@@ -1134,8 +1134,8 @@ BEGIN
 				AND `status` = 'active'
 				AND `role` IN ('owner','contributor','reviewer')
 		)
-	) THEN RAISE(ABORT, 'assertion review requires an active bound participant') END;
-	SELECT CASE WHEN NEW.`status` = 'accepted' AND OLD.`status` = 'needs_review' AND (
+	) THEN RAISE(ABORT, 'assertion review requires an active bound participant') END);
+	SELECT (CASE WHEN NEW.`status` = 'accepted' AND OLD.`status` = 'needs_review' AND (
 		NOT EXISTS (
 			SELECT 1 FROM `dossier_assertion_sources`
 			WHERE `dossier_id` = NEW.`dossier_id` AND `assertion_id` = NEW.`id`
@@ -1149,7 +1149,7 @@ BEGIN
 				AND source.`assertion_id` = NEW.`id`
 				AND anchor.`review_state` <> 'accepted'
 		)
-	) THEN RAISE(ABORT, 'accepted assertion requires only accepted source anchors') END;
+	) THEN RAISE(ABORT, 'accepted assertion requires only accepted source anchors') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_professional_assertions_delete_guard`
 BEFORE DELETE ON `dossier_professional_assertions`

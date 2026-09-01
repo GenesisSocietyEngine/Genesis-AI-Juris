@@ -98,7 +98,7 @@ CREATE TRIGGER dossier_status_application_certifications_insert_guard
 BEFORE INSERT ON dossier_status_application_certifications
 FOR EACH ROW
 BEGIN
-	SELECT CASE WHEN NOT EXISTS (
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1
 		FROM dossier_status_transitions AS transition
 		JOIN dossiers AS dossier ON dossier.id = transition.dossier_id
@@ -125,7 +125,7 @@ BEGIN
 				)
 				OR transition.new_status NOT IN ('closed','archived')
 			)
-	) THEN RAISE(ABORT, 'status application certification must bind the exact applied transition') END;
+	) THEN RAISE(ABORT, 'status application certification must bind the exact applied transition') END);
 END;--> statement-breakpoint
 CREATE TRIGGER dossier_status_application_certifications_update_guard
 BEFORE UPDATE ON dossier_status_application_certifications
@@ -446,7 +446,7 @@ BEFORE UPDATE ON dossier_ai_proposals
 FOR EACH ROW
 WHEN NEW.review_state = 'accepted'
 BEGIN
-	SELECT CASE WHEN NOT (
+	SELECT (CASE WHEN NOT (
 		(
 			NEW.accepted_object_type = 'professional_assertion'
 			AND NEW.proposal_type IN ('fact','authority_rule','contradiction','assumption','dated_event')
@@ -537,24 +537,24 @@ BEGIN
 					AND json_extract(NEW.proposed_value, '$.target.parent_package_fingerprint') IS package.parent_package_fingerprint
 			)
 		)
-	) THEN RAISE(ABORT, 'AI proposal acceptance must use an exact registered authoritative materialization') END;
+	) THEN RAISE(ABORT, 'AI proposal acceptance must use an exact registered authoritative materialization') END);
 END;--> statement-breakpoint
 CREATE TRIGGER dossier_status_transitions_insert_guard
 BEFORE INSERT ON dossier_status_transitions
 FOR EACH ROW
 BEGIN
-	SELECT CASE WHEN NOT EXISTS (
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1 FROM dossiers
 		WHERE id = NEW.dossier_id
 			AND revision = NEW.revision_before
 			AND status = NEW.previous_status
-	) THEN RAISE(ABORT, 'status transition must bind the exact live previous revision and status') END;
-	SELECT CASE WHEN NEW.occurred_at IS NULL OR unixepoch(NEW.occurred_at) IS NULL
-		THEN RAISE(ABORT, 'status transition requires a valid occurrence timestamp') END;
-	SELECT CASE WHEN NEW.reason IS NOT NULL
+	) THEN RAISE(ABORT, 'status transition must bind the exact live previous revision and status') END);
+	SELECT (CASE WHEN NEW.occurred_at IS NULL OR unixepoch(NEW.occurred_at) IS NULL
+		THEN RAISE(ABORT, 'status transition requires a valid occurrence timestamp') END);
+	SELECT (CASE WHEN NEW.reason IS NOT NULL
 		AND (length(trim(NEW.reason)) < 1 OR length(NEW.reason) > 1000)
-		THEN RAISE(ABORT, 'status transition reason is invalid') END;
-	SELECT CASE WHEN NEW.actor_role <> 'platform_admin' AND NOT (
+		THEN RAISE(ABORT, 'status transition reason is invalid') END);
+	SELECT (CASE WHEN NEW.actor_role <> 'platform_admin' AND NOT (
 		(NEW.previous_status = 'draft' AND NEW.new_status = 'intake_review' AND NEW.actor_role IN ('owner','contributor'))
 		OR (NEW.previous_status = 'draft' AND NEW.new_status = 'declined' AND NEW.actor_role IN ('owner','reviewer'))
 		OR (NEW.previous_status = 'draft' AND NEW.new_status = 'cancelled' AND NEW.actor_role = 'owner')
@@ -584,15 +584,15 @@ BEGIN
 		OR (NEW.previous_status = 'cancelled' AND NEW.new_status = 'active' AND NEW.actor_role IN ('owner','reviewer'))
 		OR (NEW.previous_status = 'cancelled' AND NEW.new_status = 'archived' AND NEW.actor_role IN ('owner','reviewer'))
 		OR (NEW.previous_status = 'archived' AND NEW.new_status = 'active' AND NEW.actor_role IN ('owner','reviewer'))
-	) THEN RAISE(ABORT, 'status transition edge or role is forbidden by the V1 registry') END;
-	SELECT CASE WHEN NEW.actor_role = 'platform_admin' AND NOT (
+	) THEN RAISE(ABORT, 'status transition edge or role is forbidden by the V1 registry') END);
+	SELECT (CASE WHEN NEW.actor_role = 'platform_admin' AND NOT (
 		NEW.previous_status <> 'archived'
 		AND NEW.new_status = 'archived'
 		AND NEW.platform_admin_override = true
-	) THEN RAISE(ABORT, 'platform admin is limited to the governed archive override') END;
-	SELECT CASE WHEN NEW.actor_role <> 'platform_admin' AND NEW.platform_admin_override <> false
-		THEN RAISE(ABORT, 'participant transitions cannot claim platform-admin override') END;
-	SELECT CASE WHEN (
+	) THEN RAISE(ABORT, 'platform admin is limited to the governed archive override') END);
+	SELECT (CASE WHEN NEW.actor_role <> 'platform_admin' AND NEW.platform_admin_override <> false
+		THEN RAISE(ABORT, 'participant transitions cannot claim platform-admin override') END);
+	SELECT (CASE WHEN (
 		NEW.actor_role = 'platform_admin'
 		OR NOT (
 			(NEW.previous_status = 'draft' AND NEW.new_status = 'intake_review')
@@ -601,23 +601,23 @@ BEGIN
 			OR (NEW.previous_status = 'internal_review' AND NEW.new_status IN ('active','output_approved'))
 		)
 	) AND length(trim(COALESCE(NEW.reason, ''))) = 0
-	THEN RAISE(ABORT, 'status transition reason is required by the V1 registry') END;
-	SELECT CASE WHEN NOT json_valid(NEW.consequences)
+	THEN RAISE(ABORT, 'status transition reason is required by the V1 registry') END);
+	SELECT (CASE WHEN NOT json_valid(NEW.consequences)
 		OR (NEW.new_status = 'output_approved' AND json(NEW.consequences) <> json('["recompute_readiness","preserve_current_output"]'))
 		OR (NEW.new_status <> 'output_approved' AND json(NEW.consequences) <> json('["recompute_readiness","mark_outputs_stale"]'))
-	THEN RAISE(ABORT, 'status transition consequences must exactly match the V1 registry') END;
-	SELECT CASE WHEN NEW.actor_role IN ('owner','contributor','reviewer','viewer') AND NOT EXISTS (
+	THEN RAISE(ABORT, 'status transition consequences must exactly match the V1 registry') END);
+	SELECT (CASE WHEN NEW.actor_role IN ('owner','contributor','reviewer','viewer') AND NOT EXISTS (
 		SELECT 1 FROM dossier_participants
 		WHERE dossier_id = NEW.dossier_id
 			AND user_id = NEW.actor_user_id
 			AND actor_id = NEW.actor_ref
 			AND role = NEW.actor_role
 			AND status = 'active'
-	) THEN RAISE(ABORT, 'status transition actor must be an exact active participant authority') END;
-	SELECT CASE WHEN NEW.actor_role = 'platform_admin' AND NOT EXISTS (
+	) THEN RAISE(ABORT, 'status transition actor must be an exact active participant authority') END);
+	SELECT (CASE WHEN NEW.actor_role = 'platform_admin' AND NOT EXISTS (
 		SELECT 1 FROM users WHERE id = NEW.actor_user_id AND actor_id = NEW.actor_ref
-	) THEN RAISE(ABORT, 'platform-admin archive override must bind a stable user actor') END;
-	SELECT CASE WHEN NEW.had_current_output <> EXISTS (
+	) THEN RAISE(ABORT, 'platform-admin archive override must bind a stable user actor') END);
+	SELECT (CASE WHEN NEW.had_current_output <> EXISTS (
 		SELECT 1 FROM dossier_governed_outputs AS output
 		JOIN dossier_output_state_events AS state
 			ON state.dossier_id = output.dossier_id AND state.output_id = output.id
@@ -627,8 +627,8 @@ BEGIN
 				SELECT MAX(later.sequence) FROM dossier_output_state_events AS later
 				WHERE later.dossier_id = state.dossier_id AND later.output_id = state.output_id
 			)
-	) THEN RAISE(ABORT, 'status transition current-output fact is not authoritative') END;
-	SELECT CASE WHEN NEW.had_reviewer_approval <> EXISTS (
+	) THEN RAISE(ABORT, 'status transition current-output fact is not authoritative') END);
+	SELECT (CASE WHEN NEW.had_reviewer_approval <> EXISTS (
 		SELECT 1 FROM dossier_governed_outputs AS output
 		JOIN dossier_output_state_events AS state
 			ON state.dossier_id = output.dossier_id AND state.output_id = output.id
@@ -640,8 +640,8 @@ BEGIN
 				SELECT MAX(later.sequence) FROM dossier_output_state_events AS later
 				WHERE later.dossier_id = state.dossier_id AND later.output_id = state.output_id
 			)
-	) THEN RAISE(ABORT, 'status transition reviewer-approval fact is not authoritative') END;
-	SELECT CASE WHEN NEW.new_status = 'output_approved' AND NOT EXISTS (
+	) THEN RAISE(ABORT, 'status transition reviewer-approval fact is not authoritative') END);
+	SELECT (CASE WHEN NEW.new_status = 'output_approved' AND NOT EXISTS (
 		SELECT 1
 		FROM dossier_governed_outputs AS output
 		JOIN dossier_output_state_events AS state
@@ -657,7 +657,7 @@ BEGIN
 				SELECT MAX(later.sequence) FROM dossier_output_state_events AS later
 				WHERE later.dossier_id = state.dossier_id AND later.output_id = state.output_id
 			)
-	) THEN RAISE(ABORT, 'output approval transition must bind the exact current output and its reviewer') END;
+	) THEN RAISE(ABORT, 'output approval transition must bind the exact current output and its reviewer') END);
 END;--> statement-breakpoint
 CREATE TRIGGER dossier_status_transitions_update_guard
 BEFORE UPDATE ON dossier_status_transitions
@@ -688,16 +688,16 @@ CREATE TRIGGER `dossier_revision_receipts_insert_guard`
 BEFORE INSERT ON `dossier_revision_receipts`
 FOR EACH ROW
 BEGIN
-	SELECT CASE WHEN NOT EXISTS (
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1 FROM `dossiers`
 		WHERE `id` = NEW.`dossier_id` AND `revision` = NEW.`resulting_revision`
-	) THEN RAISE(ABORT, 'dossier revision receipt must bind the resulting live revision') END;
-	SELECT CASE WHEN NOT EXISTS (
+	) THEN RAISE(ABORT, 'dossier revision receipt must bind the resulting live revision') END);
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1 FROM `dossier_audit_events`
 		WHERE `dossier_id` = NEW.`dossier_id`
 			AND `dossier_revision` = NEW.`resulting_revision`
-	) THEN RAISE(ABORT, 'dossier revision receipt requires at least one exact-revision audit event') END;
-	SELECT CASE WHEN NOT EXISTS (
+	) THEN RAISE(ABORT, 'dossier revision receipt requires at least one exact-revision audit event') END);
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1 FROM `dossier_audit_events` AS primary_event
 		WHERE primary_event.`dossier_id` = NEW.`dossier_id`
 			AND primary_event.`dossier_revision` = NEW.`resulting_revision`
@@ -707,8 +707,8 @@ BEGIN
 				WHERE same_revision.`dossier_id` = NEW.`dossier_id`
 					AND same_revision.`dossier_revision` = NEW.`resulting_revision`
 			)
-	) THEN RAISE(ABORT, 'dossier revision receipt actor must match the primary revision audit') END;
-	SELECT CASE WHEN NEW.`resulting_revision` = 1 AND NOT EXISTS (
+	) THEN RAISE(ABORT, 'dossier revision receipt actor must match the primary revision audit') END);
+	SELECT (CASE WHEN NEW.`resulting_revision` = 1 AND NOT EXISTS (
 		SELECT 1 FROM `dossier_audit_events`
 		WHERE `dossier_id` = NEW.`dossier_id`
 			AND `dossier_revision` = 1
@@ -716,8 +716,8 @@ BEGIN
 			AND `event_type` = 'dossier_created'
 			AND `object_ref_type` = 'dossier'
 			AND `object_ref_id` = NEW.`dossier_id`
-	) THEN RAISE(ABORT, 'revision one receipt requires the exact dossier-created first audit') END;
-	SELECT CASE WHEN EXISTS (
+	) THEN RAISE(ABORT, 'revision one receipt requires the exact dossier-created first audit') END);
+	SELECT (CASE WHEN EXISTS (
 		SELECT 1 FROM `dossier_status_transitions` AS transition
 		WHERE transition.`dossier_id` = NEW.`dossier_id`
 			AND transition.`revision_after` = NEW.`resulting_revision`
@@ -732,8 +732,8 @@ BEGIN
 						ELSE 'dossier_status_transitioned'
 					END
 			)
-	) THEN RAISE(ABORT, 'status revision receipt requires its exact immutable transition audit') END;
-	SELECT CASE WHEN EXISTS (
+	) THEN RAISE(ABORT, 'status revision receipt requires its exact immutable transition audit') END);
+	SELECT (CASE WHEN EXISTS (
 		SELECT 1 FROM `dossier_governed_outputs` AS output
 		WHERE output.`dossier_id` = NEW.`dossier_id`
 			AND NOT EXISTS (
@@ -741,8 +741,8 @@ BEGIN
 				WHERE state.`dossier_id` = output.`dossier_id`
 					AND state.`output_id` = output.`id`
 			)
-	) THEN RAISE(ABORT, 'every governed output requires an initial state before a revision receipt') END;
-	SELECT CASE WHEN EXISTS (
+	) THEN RAISE(ABORT, 'every governed output requires an initial state before a revision receipt') END);
+	SELECT (CASE WHEN EXISTS (
 		SELECT 1
 		FROM `dossier_governed_outputs` AS current_output
 		JOIN `dossier_output_state_events` AS current_state
@@ -794,28 +794,28 @@ BEGIN
 					)
 					AND other_output.`snapshot_id` <> approved_output.`snapshot_id`
 			)
-	) THEN RAISE(ABORT, 'dossier revision receipt requires all current outputs stale or one exact approved snapshot workflow') END;
+	) THEN RAISE(ABORT, 'dossier revision receipt requires all current outputs stale or one exact approved snapshot workflow') END);
 END;--> statement-breakpoint
 CREATE TRIGGER `dossier_audit_events_chain_guard`
 BEFORE INSERT ON `dossier_audit_events`
 FOR EACH ROW
 BEGIN
-	SELECT CASE WHEN NOT EXISTS (
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1 FROM `dossiers`
 		WHERE `id` = NEW.`dossier_id` AND `revision` = NEW.`dossier_revision`
-	) THEN RAISE(ABORT, 'dossier audit event must bind the current live revision') END;
-	SELECT CASE WHEN NEW.`actor_role` IN ('owner','contributor','reviewer','viewer') AND NOT EXISTS (
+	) THEN RAISE(ABORT, 'dossier audit event must bind the current live revision') END);
+	SELECT (CASE WHEN NEW.`actor_role` IN ('owner','contributor','reviewer','viewer') AND NOT EXISTS (
 		SELECT 1 FROM `dossier_participants`
 		WHERE `dossier_id` = NEW.`dossier_id`
 			AND `user_id` = NEW.`actor_user_id`
 			AND `actor_id` = NEW.`actor_ref`
 			AND `role` = NEW.`actor_role`
 			AND `status` = 'active'
-	) THEN RAISE(ABORT, 'dossier audit actor must be an exact active participant authority') END;
-	SELECT CASE WHEN NEW.`sequence` = 1 AND EXISTS (
+	) THEN RAISE(ABORT, 'dossier audit actor must be an exact active participant authority') END);
+	SELECT (CASE WHEN NEW.`sequence` = 1 AND EXISTS (
 		SELECT 1 FROM `dossier_audit_events` WHERE `dossier_id` = NEW.`dossier_id`
-	) THEN RAISE(ABORT, 'dossier audit sequence one already exists') END;
-	SELECT CASE WHEN NEW.`sequence` > 1 AND NOT EXISTS (
+	) THEN RAISE(ABORT, 'dossier audit sequence one already exists') END);
+	SELECT (CASE WHEN NEW.`sequence` > 1 AND NOT EXISTS (
 		SELECT 1 FROM `dossier_audit_events` AS previous
 		WHERE previous.`dossier_id` = NEW.`dossier_id`
 			AND previous.`id` = NEW.`previous_event_id`
@@ -824,16 +824,16 @@ BEGIN
 				SELECT MAX(latest.`sequence`) FROM `dossier_audit_events` AS latest
 				WHERE latest.`dossier_id` = NEW.`dossier_id`
 			)
-	) THEN RAISE(ABORT, 'dossier audit event must extend the latest exact predecessor') END;
-	SELECT CASE WHEN NEW.`sequence` = 1 AND (
+	) THEN RAISE(ABORT, 'dossier audit event must extend the latest exact predecessor') END);
+	SELECT (CASE WHEN NEW.`sequence` = 1 AND (
 		NEW.`dossier_revision` <> 1
 		OR NEW.`event_type` <> 'dossier_created'
 		OR NEW.`object_ref_type` <> 'dossier'
 		OR NEW.`object_ref_id` <> NEW.`dossier_id`
-	) THEN RAISE(ABORT, 'dossier audit sequence one must be the exact revision-one dossier-created event') END;
-	SELECT CASE WHEN NEW.`sequence` > 1 AND NEW.`event_type` = 'dossier_created'
-		THEN RAISE(ABORT, 'dossier-created audit is allowed only at sequence one') END;
-	SELECT CASE WHEN NEW.`sequence` > 1 AND EXISTS (
+	) THEN RAISE(ABORT, 'dossier audit sequence one must be the exact revision-one dossier-created event') END);
+	SELECT (CASE WHEN NEW.`sequence` > 1 AND NEW.`event_type` = 'dossier_created'
+		THEN RAISE(ABORT, 'dossier-created audit is allowed only at sequence one') END);
+	SELECT (CASE WHEN NEW.`sequence` > 1 AND EXISTS (
 		SELECT 1 FROM `dossier_audit_events` AS previous
 		WHERE previous.`dossier_id` = NEW.`dossier_id`
 			AND previous.`id` = NEW.`previous_event_id`
@@ -843,8 +843,8 @@ BEGIN
 				OR unixepoch(previous.`occurred_at`) IS NULL
 				OR unixepoch(NEW.`occurred_at`) < unixepoch(previous.`occurred_at`)
 			)
-	) THEN RAISE(ABORT, 'dossier audit revision and occurrence time must be nondecreasing') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'status_transition' AND NOT EXISTS (
+	) THEN RAISE(ABORT, 'dossier audit revision and occurrence time must be nondecreasing') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'status_transition' AND NOT EXISTS (
 		SELECT 1 FROM `dossier_status_transitions` AS transition
 		WHERE transition.`dossier_id` = NEW.`dossier_id`
 			AND transition.`id` = NEW.`object_ref_id`
@@ -857,40 +857,40 @@ BEGIN
 				WHEN transition.`platform_admin_override` = true THEN 'admin_archive_override'
 				ELSE 'dossier_status_transitioned'
 			END
-	) THEN RAISE(ABORT, 'status-transition audit must bind the exact transition revision, actor, time, and event type') END;
-	SELECT CASE WHEN NEW.`event_type` IN ('dossier_status_transitioned','admin_archive_override')
+	) THEN RAISE(ABORT, 'status-transition audit must bind the exact transition revision, actor, time, and event type') END);
+	SELECT (CASE WHEN NEW.`event_type` IN ('dossier_status_transitioned','admin_archive_override')
 		AND NEW.`object_ref_type` <> 'status_transition'
-		THEN RAISE(ABORT, 'transition audit event must reference its exact status transition') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'dossier' AND NEW.`object_ref_id` <> NEW.`dossier_id`
-		THEN RAISE(ABORT, 'audit dossier reference is outside the dossier') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'participant' AND NOT EXISTS (SELECT 1 FROM `dossier_participants` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
-		THEN RAISE(ABORT, 'audit participant reference is outside the dossier') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'status_transition' AND NOT EXISTS (SELECT 1 FROM `dossier_status_transitions` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
-		THEN RAISE(ABORT, 'audit transition reference is outside the dossier') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'document' AND NOT EXISTS (SELECT 1 FROM `dossier_documents` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id` AND `is_provisional` = false)
-		THEN RAISE(ABORT, 'audit document reference is outside the dossier') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'document_version' AND NOT EXISTS (SELECT 1 FROM `dossier_document_versions` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
-		THEN RAISE(ABORT, 'audit version reference is outside the dossier') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'source_anchor' AND NOT EXISTS (SELECT 1 FROM `dossier_source_anchors` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
-		THEN RAISE(ABORT, 'audit anchor reference is outside the dossier') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'professional_assertion' AND NOT EXISTS (SELECT 1 FROM `dossier_professional_assertions` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
-		THEN RAISE(ABORT, 'audit assertion reference is outside the dossier') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'evidence_link' AND NOT EXISTS (SELECT 1 FROM `dossier_evidence_links` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
-		THEN RAISE(ABORT, 'audit evidence reference is outside the dossier') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'information_request' AND NOT EXISTS (SELECT 1 FROM `dossier_information_requests` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
-		THEN RAISE(ABORT, 'audit request reference is outside the dossier') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'deadline_reference' AND NOT EXISTS (SELECT 1 FROM `dossier_deadline_references` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
-		THEN RAISE(ABORT, 'audit deadline reference is outside the dossier') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'decision_package_reference' AND NOT EXISTS (SELECT 1 FROM `dossier_decision_package_references` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
-		THEN RAISE(ABORT, 'audit package reference is outside the dossier') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'ai_proposal' AND NOT EXISTS (SELECT 1 FROM `dossier_ai_proposals` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
-		THEN RAISE(ABORT, 'audit proposal reference is outside the dossier') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'dossier_snapshot' AND NOT EXISTS (SELECT 1 FROM `dossier_snapshots` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id` AND `sealed` = true)
-		THEN RAISE(ABORT, 'audit snapshot reference is outside or unsealed') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'governed_output' AND NOT EXISTS (SELECT 1 FROM `dossier_governed_outputs` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
-		THEN RAISE(ABORT, 'audit output reference is outside the dossier') END;
-	SELECT CASE WHEN NEW.`object_ref_type` = 'audit_event' AND NOT EXISTS (SELECT 1 FROM `dossier_audit_events` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
-		THEN RAISE(ABORT, 'audit event reference is outside the dossier') END;
+		THEN RAISE(ABORT, 'transition audit event must reference its exact status transition') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'dossier' AND NEW.`object_ref_id` <> NEW.`dossier_id`
+		THEN RAISE(ABORT, 'audit dossier reference is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'participant' AND NOT EXISTS (SELECT 1 FROM `dossier_participants` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
+		THEN RAISE(ABORT, 'audit participant reference is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'status_transition' AND NOT EXISTS (SELECT 1 FROM `dossier_status_transitions` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
+		THEN RAISE(ABORT, 'audit transition reference is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'document' AND NOT EXISTS (SELECT 1 FROM `dossier_documents` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id` AND `is_provisional` = false)
+		THEN RAISE(ABORT, 'audit document reference is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'document_version' AND NOT EXISTS (SELECT 1 FROM `dossier_document_versions` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
+		THEN RAISE(ABORT, 'audit version reference is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'source_anchor' AND NOT EXISTS (SELECT 1 FROM `dossier_source_anchors` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
+		THEN RAISE(ABORT, 'audit anchor reference is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'professional_assertion' AND NOT EXISTS (SELECT 1 FROM `dossier_professional_assertions` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
+		THEN RAISE(ABORT, 'audit assertion reference is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'evidence_link' AND NOT EXISTS (SELECT 1 FROM `dossier_evidence_links` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
+		THEN RAISE(ABORT, 'audit evidence reference is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'information_request' AND NOT EXISTS (SELECT 1 FROM `dossier_information_requests` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
+		THEN RAISE(ABORT, 'audit request reference is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'deadline_reference' AND NOT EXISTS (SELECT 1 FROM `dossier_deadline_references` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
+		THEN RAISE(ABORT, 'audit deadline reference is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'decision_package_reference' AND NOT EXISTS (SELECT 1 FROM `dossier_decision_package_references` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
+		THEN RAISE(ABORT, 'audit package reference is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'ai_proposal' AND NOT EXISTS (SELECT 1 FROM `dossier_ai_proposals` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
+		THEN RAISE(ABORT, 'audit proposal reference is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'dossier_snapshot' AND NOT EXISTS (SELECT 1 FROM `dossier_snapshots` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id` AND `sealed` = true)
+		THEN RAISE(ABORT, 'audit snapshot reference is outside or unsealed') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'governed_output' AND NOT EXISTS (SELECT 1 FROM `dossier_governed_outputs` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
+		THEN RAISE(ABORT, 'audit output reference is outside the dossier') END);
+	SELECT (CASE WHEN NEW.`object_ref_type` = 'audit_event' AND NOT EXISTS (SELECT 1 FROM `dossier_audit_events` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
+		THEN RAISE(ABORT, 'audit event reference is outside the dossier') END);
 END;--> statement-breakpoint
 CREATE TRIGGER dossiers_status_transition_guard
 BEFORE UPDATE OF status ON dossiers

@@ -298,27 +298,27 @@ BEFORE UPDATE OF status ON dossier_documents
 FOR EACH ROW
 WHEN NEW.status IS NOT OLD.status
 BEGIN
-	SELECT CASE WHEN OLD.is_provisional <> false
-		THEN RAISE(ABORT, 'only finalized documents may enter professional review') END;
-	SELECT CASE WHEN NOT (
+	SELECT (CASE WHEN OLD.is_provisional <> false
+		THEN RAISE(ABORT, 'only finalized documents may enter professional review') END);
+	SELECT (CASE WHEN NOT (
 		(OLD.status = 'received' AND NEW.status IN ('under_review','accepted_source','rejected'))
 		OR (OLD.status = 'under_review' AND NEW.status IN ('accepted_source','rejected'))
 		OR (OLD.status = 'rejected' AND NEW.status = 'under_review')
 		OR (OLD.status = 'accepted_source' AND NEW.status = 'superseded')
-	) THEN RAISE(ABORT, 'document status transition is not registered') END;
-	SELECT CASE WHEN unixepoch(NEW.updated_at) IS NULL OR NEW.updated_at IS OLD.updated_at
-		THEN RAISE(ABORT, 'document review requires a new canonical update time') END;
-	SELECT CASE WHEN NOT EXISTS (
+	) THEN RAISE(ABORT, 'document status transition is not registered') END);
+	SELECT (CASE WHEN unixepoch(NEW.updated_at) IS NULL OR NEW.updated_at IS OLD.updated_at
+		THEN RAISE(ABORT, 'document review requires a new canonical update time') END);
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1 FROM dossier_document_current_versions
 		WHERE dossier_id = NEW.dossier_id AND document_id = NEW.id
-	) THEN RAISE(ABORT, 'document review requires an exact current version') END;
-	SELECT CASE WHEN NOT EXISTS (
+	) THEN RAISE(ABORT, 'document review requires an exact current version') END);
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1 FROM dossier_participants
 		WHERE dossier_id = NEW.dossier_id
 			AND actor_id = NEW.updated_by_actor_ref
 			AND role IN ('owner','contributor','reviewer')
 			AND status = 'active'
-	) THEN RAISE(ABORT, 'document review requires an active professional participant') END;
+	) THEN RAISE(ABORT, 'document review requires an active professional participant') END);
 END;--> statement-breakpoint
 CREATE TRIGGER dossier_documents_status_audit_claim
 AFTER UPDATE OF status ON dossier_documents
@@ -343,19 +343,19 @@ CREATE TRIGGER dossier_revision_receipts_exact_claim_guard
 BEFORE INSERT ON dossier_revision_receipts
 FOR EACH ROW
 BEGIN
-	SELECT CASE WHEN NOT EXISTS (
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1 FROM dossier_revision_commitments
 		WHERE dossier_id = NEW.dossier_id
 			AND resulting_revision = NEW.resulting_revision
 			AND actor_ref = NEW.created_by_actor_ref
-	) THEN RAISE(ABORT, 'dossier revision receipt requires an exact mutation commitment') END;
-	SELECT CASE WHEN NOT EXISTS (
+	) THEN RAISE(ABORT, 'dossier revision receipt requires an exact mutation commitment') END);
+	SELECT (CASE WHEN NOT EXISTS (
 		SELECT 1 FROM dossier_required_audits
 		WHERE dossier_id = NEW.dossier_id
 			AND dossier_revision = NEW.resulting_revision
 			AND claim_phase = 'revision'
 			AND event_type <> 'output_marked_stale'
-	) THEN RAISE(ABORT, 'dossier revision receipt requires at least one primary exact mutation audit claim') END;
+	) THEN RAISE(ABORT, 'dossier revision receipt requires at least one primary exact mutation audit claim') END);
 END;--> statement-breakpoint
 CREATE TRIGGER dossiers_creation_provenance_immutable
 BEFORE UPDATE OF id, created_by_actor_ref, created_at ON dossiers
