@@ -22,26 +22,26 @@ final class CinematicCatalogueStrings {
 
   static const CinematicCatalogueStrings english = CinematicCatalogueStrings._(
     applicationName: 'GENESIS: AI Juris',
-    loadingLibrary: 'Loading case library',
-    loadFailed: 'The case library could not be loaded.',
+    loadingLibrary: 'Loading templates',
+    loadFailed: 'The templates could not be loaded.',
     retry: 'Retry',
-    caseIndex: 'Case index',
-    selectedCase: 'Selected case',
+    caseIndex: 'Template index',
+    selectedCase: 'Selected template',
     details: 'Details',
-    selectCase: 'Select case',
+    selectCase: 'Select template',
     fictionalMark: 'FICTIONAL',
     jurisdictionStamp: 'Fictional jurisdiction',
   );
 
   static const CinematicCatalogueStrings russian = CinematicCatalogueStrings._(
     applicationName: 'GENESIS: AI Juris',
-    loadingLibrary: 'Загрузка библиотеки дел',
-    loadFailed: 'Не удалось загрузить библиотеку дел.',
+    loadingLibrary: 'Загрузка шаблонов',
+    loadFailed: 'Не удалось загрузить шаблоны.',
     retry: 'Повторить',
-    caseIndex: 'Указатель дел',
-    selectedCase: 'Выбранное дело',
+    caseIndex: 'Указатель шаблонов',
+    selectedCase: 'Выбранный шаблон',
     details: 'Подробнее',
-    selectCase: 'Выбрать дело',
+    selectCase: 'Выбрать шаблон',
     fictionalMark: 'ВЫМЫШЛЕНО',
     jurisdictionStamp: 'Вымышленная юрисдикция',
   );

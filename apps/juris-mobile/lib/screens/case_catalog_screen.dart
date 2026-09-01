@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app/product_navigation.dart';
 import '../data/case_catalog_repository.dart';
 import '../data/case_runtime_factory.dart';
 import '../models/case_catalog.dart';
@@ -20,7 +21,7 @@ typedef CaseStartCallback = void Function(
 
 /// Loads the authoritative catalogue and presentation manifest as independent
 /// inputs. A visual failure resolves to the manifest repository's safe default
-/// and can never block the authoritative library.
+/// and can never block the authoritative template catalogue.
 class CaseCatalogLoaderScreen extends StatefulWidget {
   const CaseCatalogLoaderScreen({
     required this.repository,
@@ -75,18 +76,30 @@ class _CaseCatalogLoaderScreenState extends State<CaseCatalogLoaderScreen> {
     });
   }
 
+  AppBar _productAppBar(String title) {
+    return AppBar(
+      title: Text(title),
+      actions: <Widget>[
+        ScopedJurisProductNavigation(
+          locale: widget.locale,
+          current: JurisProductDestination.templates,
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final CinematicCatalogueStrings chrome =
-        CinematicCatalogueStrings.of(widget.locale);
+    final CinematicCatalogueStrings chrome = CinematicCatalogueStrings.of(
+      widget.locale,
+    );
     return FutureBuilder<_LoadedCatalogue>(
       future: _catalogue,
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<_LoadedCatalogue> snapshot,
-      ) {
+      builder:
+          (BuildContext context, AsyncSnapshot<_LoadedCatalogue> snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return Scaffold(
+            appBar: _productAppBar(chrome.caseIndex),
             body: Center(
               child: Semantics(
                 label: chrome.loadingLibrary,
@@ -100,6 +113,7 @@ class _CaseCatalogLoaderScreenState extends State<CaseCatalogLoaderScreen> {
         }
         if (snapshot.hasError || !snapshot.hasData) {
           return Scaffold(
+            appBar: _productAppBar(chrome.caseIndex),
             body: SafeArea(
               child: Center(
                 child: Padding(
@@ -256,11 +270,7 @@ class _CaseCatalogScreenState extends State<CaseCatalogScreen> {
             index: index,
             total: visibleCases.length,
             wide: wide,
-            onStart: () => widget.onStartCase(
-              selected,
-              _locale,
-              widget.bundle,
-            ),
+            onStart: () => widget.onStartCase(selected, _locale, widget.bundle),
             onDetails: () => _showDetails(selected),
           );
         },
@@ -327,10 +337,7 @@ class _CaseCatalogScreenState extends State<CaseCatalogScreen> {
     );
     setState(() {
       _filter = filter;
-      _selectedCaseId = _reconciledSelection(
-        nextVisible,
-        _selectedCaseId,
-      );
+      _selectedCaseId = _reconciledSelection(nextVisible, _selectedCaseId);
     });
   }
 
