@@ -368,3 +368,129 @@ v0.5.1 will create the first engine-backed APK. The critical work is not visual 
 ## 2026-07-26 — v0.5.0 mobile interaction patch
 
 The first emulator playtest showed that a global Actions button was not enough for Inbox-driven gameplay. Message cards now open contextual detail sheets, and settlement offers expose explicit Yes/No responses. Generic action confirmations also use `No` and `Yes` instead of the ambiguous `Cancel` / `Execute action` pairing. The demo repository implements acceptance and rejection only to validate the interaction; the Rust bridge remains the future authority for real consequences.
+
+## 2026-09-01 — v62 report-manifest and mobile parity foundation
+
+The authorized v62 milestone was opened from the exact closed v61 baselines: web `8bd10594bc01e5a45183a743396ac24b7aeaf321`, mobile `main` `29f862649dea378cfe3d4e145f5e396bf6d4c6ff`, and live Site version 63 with product marker `v61`. The production deployment was not changed. Site version 63 remains the rollback target.
+
+### Decision
+
+Layout versioning is recorded separately from professional-matter semantics. The new immutable report manifest binds:
+
+- `ReportModel` schema 1;
+- the v61 report-profile registry schema 1 and semantic renderer `1.0.0`;
+- layout schema 1, layout algorithm `1.1.0`, and layout renderer `2.1.0`;
+- layout scope `presentation_only`;
+- every output declared by the nine case playbooks exactly once.
+
+The manifest does not add pagination fields to the canonical case or `ReportModel`. It does not reinterpret `tax_compliance`, change routes, or make layout artifacts into rules, case nodes, evidence, decisions, or runtime transitions. Rust remains authoritative.
+
+### Implementation
+
+- Added `report-manifest.v1.json` to the web application and byte-equivalent copies to mobile contracts and Flutter assets.
+- Copied the unchanged v61 `report-profiles.v1.json` into mobile contracts and Flutter assets.
+- Added the Dart `ReportContract`, `ReportProfileRegistry`, and `ReportManifest` models plus `loadReportContract`.
+- Validation rejects unknown IDs, unknown schema or renderer versions, duplicate profiles or output bindings, invalid case/profile bindings, primary-output drift, and incomplete playbook coverage.
+- Added focused web and Flutter tests for nine-package, 19-profile, and 22-output parity plus malformed-input rejection.
+- The existing `assets/case_types/` directory declaration already includes both new Flutter assets, so `pubspec.yaml` did not require a narrower duplicate declaration.
+
+Canonical Git-filtered object IDs match across the web and mobile repositories:
+
+- report profiles: `686c59b8463af05890c93ca198adfeeb15c4f29c`;
+- report manifest: `209f5b596e0a29bc12281b84cfa024d1d233e369`.
+
+Within mobile, the contract and asset raw bytes are identical:
+
+- report profiles SHA-256: `c022dc2cc6710ba41441d00d816eb9a48f90b3e4b7c4cca281a5c7bd4c131d22`;
+- report manifest SHA-256: `ca99dfb2cf5de55c465b8667d978c276c8e46b0f110a2c9e4cca0c03f158ccd9`.
+
+### Verification evidence
+
+- `dart format lib/models/report_contract.dart test/report_contract_test.dart`: completed.
+- `flutter test test/report_contract_test.dart`: 5 tests passed.
+- `flutter analyze`: no issues found. A temporary `R:` drive mapping was used and removed to avoid the deeply nested Windows worktree path exceeding Flutter iOS-package enumeration limits.
+- Focused TypeScript no-emit check for `tests/v62-report-manifest.test.ts`: passed.
+- `node --import tsx --test tests/v62-report-manifest.test.ts`: 2 tests passed through VS Code's bundled Node-compatible runtime, with synchronous exit code 0. The host does not expose a standalone `node` command on `PATH`.
+
+### Scope and release state
+
+This entry establishes parity contracts only. It does not claim Flutter PDF generation, layout-fixture parity, Bhopal PDF acceptance, full Flutter regression coverage, Android or iOS packaging, a reviewed exact-head merge, or a public v62 deployment.
+
+Before release, v62 still requires receipts and staleness integration, structural/extraction/visual PDF gates, all legacy goldens and stress families, strict web gates, dependency and security audit, Rust and native Android/iOS gates, all 18 routes, exact-head review and merge, production anonymous PDF and authenticated save verification, stale-chunk recovery, and clean observability. Explicit approval is required immediately before the sole final public deployment. No app-store distribution is authorized.
+
+## 2026-09-01 — v62 Flutter deterministic layout parity
+
+The mobile presentation layer now evaluates the same finalized `ReportGraphLayoutModel` contract as the web application. This is deliberately not a Flutter PDF implementation and not a second legal rules engine. It consumes immutable presentation input, performs deterministic geometry and document-flow work, and preserves the canonical case and `ReportModel` content fingerprint unchanged.
+
+### Implementation decision
+
+The evaluator uses integer micrometres for all paper, frame, box, anchor, line-height, and measured-width values. Roboto advances come from the exact web-generated metrics artifact and use the same integer ceiling formula. Text is iterated by Unicode scalar, long tokens break only at the contract's cluster-safe boundaries, node titles are never ellipsized, and visually abbreviated detail points to the complete node register.
+
+Weak components are seeded in ASCII ID order. Kahn processing records longest-parent layers; a cycle promotes the smallest remaining node and records every ignored incoming edge. Each topology layer is split into no more than three portrait lanes and packed atomically between pages. Same-page relationships use deterministic node-border anchors. Cross-page relationships receive edge-order `C001`, `C002`, … pairs with explicit `:OUT` and `:IN` endpoints and the matching adjacency record.
+
+The output is recursively immutable and includes every node record, every adjacency row, every connector row, and a root/terminal/disconnected/cyclic-repair summary. Canonical serialization mirrors the web key collation and binds the presentation-only layout fingerprint.
+
+### Locked artifacts and parity evidence
+
+- Font metrics SHA-256: `dce864593f4230771a0466e73eec1f7f2cf3a1024bcc83580975d4e1fefe7dda`.
+- Layout fixtures SHA-256: `7f71a976872aa7266a7c360529430b9bdc6c2978368917bc0d61c0e3a33e249f`.
+- Report manifest SHA-256: `261ff3984e2e73a52f1bf672f94a7e6b0312c1f5d5a228b5e372ec5c885de5f3`.
+- Exact fixture families: Bhopal EN with fan-in/fan-out, 26-node deep, wide, disconnected, cyclic repair, long-title/detail Russian Unicode, and 200-node stress.
+- Every fixture matches the web node-to-page projection, compact connector projection, and full layout SHA-256 fingerprint.
+- Reversing node and edge input order produces the identical canonical serialization and fingerprint.
+- Recursive result collections reject mutation.
+
+### Verification receipts
+
+- `dart format` on all five layout sources and `report_graph_layout_test.dart`: completed.
+- Focused Dart analysis: no issues.
+- `flutter pub get` from a temporary repository-root `R:` mapping: succeeded; the mapping was removed.
+- `flutter analyze --no-pub`: no issues found.
+- `flutter test test/report_contract_test.dart test/report_graph_layout_test.dart`: 13 tests passed.
+- `flutter test --no-pub`: 256 tests passed.
+
+`crypto` moved from a development-only dependency to the runtime dependency set because production layout evaluation computes SHA-256 fingerprints. The lock version did not change; only its dependency classification changed. The automatic pub step on the deeply nested Windows worktree exposed a generated iOS Swift-package enumeration failure. Pub resolution and the 13 focused report tests then passed from a temporary repository-root mapping, which was removed; the long-path analysis and complete 256-test suite used the already-resolved lock with `--no-pub`. No Rust source, engine semantics, case content, route, report semantic renderer, Android package, iOS package, production Site, or app-store state changed.
+
+The remaining release work is web PDF structure/extraction/visual validation, receipt and stale-render integration, complete web/Rust/native gates, reviewed exact-head merge, final release binding, and the explicitly approved single public deployment.
+
+## 2026-09-01 — governed 1.1 renderer and release-probe correction
+
+The synchronized web assets advanced the presentation-only layout algorithm to
+`1.1.0` and renderer to `2.1.0`; relabeling the old mobile approximation was
+rejected. The Dart evaluator now parses and validates the exact 2048-UPM Roboto
+face contract, cmap, positive shaping allowances, ink overhangs, unsafe shaping
+pairs, stacked GDEF marks, and grapheme-break receipt. Connector cells divide
+the printable width exactly and use up to seven separated route lanes per side.
+Endpoint IDs and mandatory gutter seams remain in the fingerprinted model.
+
+The pure-Dart probe accepts the exact release-script `--manifest`,
+`--font-metrics`, and `--fixtures` arguments, proves manifest byte equality,
+and reproduced every locked fingerprint. The max fixture exercises 200 nodes
+and 187 cross-page connector pairs. Full Flutter analysis is clean, focused
+contract/layout tests pass 13/13, and the complete suite passes 256/256. The
+temporary short Windows drive mapping used for the 283-character generated iOS
+path was removed after each command. No Rust, deployment, or app-store state
+changed.
+
+## 2026-09-01 - Adversarial parity regression gate
+
+Two additional fail-closed probes now reject exact font-face byte drift and
+malformed Unicode or unsafe shaping inputs. The focused report contract/layout
+suite passes 15/15, the complete Flutter suite passes 258/258, and full Flutter
+analysis remains clean. The temporary short drive mapping was removed after the
+run; no Rust, deployment, or app-store state changed.
+
+## 2026-09-01 - Final local mobile and native acceptance
+
+The complete candidate was rechecked after the web dossier migration chain was
+frozen. `dart format --output=none --set-exit-if-changed` checked 113 files with
+zero changes; `flutter analyze` reported no issues; and `flutter test` passed
+258/258. `cargo fmt --all -- --check`, locked workspace Clippy with `-D warnings`,
+and the complete locked Rust workspace tests all passed.
+
+The configured Pixel emulator was started headlessly because no Android device
+was initially connected. The native persistence integration then passed all 12
+scenarios, including save/load integrity, historical content retention,
+corruption atomicity, GreenFire pressure, Failed ERP, Desert Water visibility,
+and terminal debrief restoration. The short `M:` mapping was removed after the
+run. No mobile package was distributed and no app-store action was taken.
