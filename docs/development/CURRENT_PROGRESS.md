@@ -130,19 +130,50 @@ validator_followup: d7a52d836f4f51b9c510af38513bcb2722cbd6a2
 android_followup: de7ac065d095a0e268e14961b4b74edd754cf52e
 latest_published_release_tag: v60-v61-rc.1
 app_version: 60.0.0+61
-decision_dossier_v62_status: active_ai_job_persistence_and_governed_output_integration
+decision_dossier_v62_status: local_release_candidate_gates_green_pending_exact_head_ci_and_production_approval
 decision_dossier_v62_web_starting_head: 8bd10594bc01e5a45183a743396ac24b7aeaf321
 decision_dossier_v62_mobile_starting_head: 29f862649dea378cfe3d4e145f5e396bf6d4c6ff
 decision_dossier_v62_baseline_status: 47_pdfs_702_pages_visually_accepted
-decision_dossier_v62_mobile_gate: flutter_analyze_clean_focused_15_of_15_full_258_of_258
-decision_dossier_v62_slice5_gate: exact_package_graph_and_simulation_receipts_root_replay_24_of_24
-decision_dossier_v62_remote_state: local_only_no_push_no_site_version_no_deployment
+decision_dossier_v62_mobile_gate: dart_format_clean_flutter_analyze_clean_full_258_of_258_rust_green_android_12_of_12
+decision_dossier_v62_slice5_gate: frozen_migrations_0012_0015_adversarial_audit_green_runtime_acceptance_29_of_29
+decision_dossier_v62_web_gate: strict_type_lint_build_audit_pdf_and_493_of_493_green
+decision_dossier_v62_browser_gate: local_http_green_visual_controller_service_unavailable
+decision_dossier_v62_remote_state: no_production_site_version_or_deployment
 last_updated: 2026-09-01
 ---
 
 # Current Progress
 
-## Decision-Centric Dossier Workspace v62 active checkpoint - 2026-09-01
+## Decision-Centric Dossier Workspace v62 release-candidate checkpoint - 2026-09-01
+
+The corrected migration chain is frozen through `0015`; fresh-schema and v61
+upgrade receipts report 62 tables, 251 triggers, zero foreign-key violations,
+and `integrity_check=ok`. Independent mutation/audit review found no Critical or
+High blocker under the documented v61-to-v62 rollout. The final four held
+integration suites passed 29/29, including historical non-pilot snapshot/output
+fail-closed checks before private storage access or approval mutation.
+
+The complete web build and test gate passed 493/493, with strict TypeScript,
+full ESLint, production dependency audit (zero vulnerabilities), patch hygiene,
+and the verified production build green. PDF QA passed 47 PDFs, 702 pages, and
+702 rendered PNGs; its 55-PNG exact visual baseline remains
+`fbcc9a03d8a26b7076aa2504ac1adf28c28a4196806c9e2849bb6a6aba12f8bb`.
+
+Mobile verification is also green: Dart formatting checked 113 files with no
+change, Flutter analysis is clean, all 258 Flutter tests pass, Rust formatting,
+Clippy, and locked workspace tests pass, and all 12 Android native persistence
+scenarios pass. Local HTTP rendering and security-header smokes passed for `/`
+and `/matters`. In-app visual browser inspection could not run because the
+trusted browser-control service is unavailable in this chat; no unsupported
+automation substitute was used.
+
+The remaining boundary is exact commits and push, exact-head hosted Android,
+Flutter, iOS, and Rust receipts, one saved Sites version, fresh explicit approval
+immediately before production deployment, and post-deployment verification.
+Production remains Site version 63 / marker `v61`; no app-store release is
+authorized.
+
+## Earlier Decision-Centric Dossier Workspace v62 active checkpoint - 2026-09-01
 
 ### Status, topology, and deployment boundary
 
