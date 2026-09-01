@@ -8,8 +8,7 @@ WHEN NEW.`actor_id` IS NOT NULL AND (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'user actor id must be an opaque server-resolved identity');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `users_actor_id_fill`
 AFTER INSERT ON `users`
 FOR EACH ROW
@@ -18,8 +17,7 @@ BEGIN
 	UPDATE `users`
 	SET `actor_id` = 'actor_' || lower(hex(randomblob(16)))
 	WHERE `id` = NEW.`id`;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `users_actor_id_update_guard`
 BEFORE UPDATE OF `actor_id` ON `users`
 FOR EACH ROW
@@ -30,8 +28,7 @@ WHEN OLD.`actor_id` IS NOT NULL
 	OR substr(NEW.`actor_id`, 7) GLOB '*[^0-9a-f]*'
 BEGIN
 	SELECT RAISE(ABORT, 'user actor id is immutable and server-resolved');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 -- Every authoritative dossier mutation advances the optimistic revision once.
 CREATE TRIGGER `dossiers_revision_guard`
 BEFORE UPDATE ON `dossiers`
@@ -39,8 +36,7 @@ FOR EACH ROW
 WHEN NEW.`revision` <> OLD.`revision` + 1
 BEGIN
 	SELECT RAISE(ABORT, 'dossier revision must advance exactly once');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossiers_owner_transfer_guard`
 BEFORE UPDATE OF `owner_user_id`, `owner_actor_id` ON `dossiers`
 FOR EACH ROW
@@ -48,14 +44,12 @@ WHEN NEW.`owner_user_id` IS NOT OLD.`owner_user_id`
 	OR NEW.`owner_actor_id` IS NOT OLD.`owner_actor_id`
 BEGIN
 	SELECT RAISE(ABORT, 'dossier ownership transfer requires a governed workflow');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossiers_delete_guard`
 BEFORE DELETE ON `dossiers`
 BEGIN
 	SELECT RAISE(ABORT, 'governed dossiers cannot be hard-deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossiers_owner_participant_create`
 AFTER INSERT ON `dossiers`
 FOR EACH ROW
@@ -68,8 +62,7 @@ BEGIN
 		COALESCE((SELECT `display_name` FROM `users` WHERE `id` = NEW.`owner_user_id`), 'Owner'),
 		'owner', 'active', NEW.`created_by_actor_ref`, NEW.`created_by_actor_ref`
 	);
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_participants_owner_insert_guard`
 BEFORE INSERT ON `dossier_participants`
 FOR EACH ROW
@@ -79,8 +72,7 @@ WHEN (NEW.`role` = 'owner' AND NEW.`status` = 'active') <> (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'dossier owner participant must match the server-owned dossier owner');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_participants_owner_update_guard`
 BEFORE UPDATE OF `user_id`, `actor_id`, `role`, `status` ON `dossier_participants`
 FOR EACH ROW
@@ -90,8 +82,7 @@ WHEN (NEW.`role` = 'owner' AND NEW.`status` = 'active') <> (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'dossier owner participant must match the server-owned dossier owner');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_participants_identity_guard`
 BEFORE UPDATE ON `dossier_participants`
 FOR EACH ROW
@@ -103,22 +94,19 @@ WHEN NEW.`id` IS NOT OLD.`id`
 	OR NEW.`created_at` IS NOT OLD.`created_at`
 BEGIN
 	SELECT RAISE(ABORT, 'participant identity and authority binding are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_participants_owner_delete_guard`
 BEFORE DELETE ON `dossier_participants`
 FOR EACH ROW
 WHEN OLD.`role` = 'owner' AND OLD.`status` = 'active'
 BEGIN
 	SELECT RAISE(ABORT, 'active dossier owner participant cannot be deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_participants_delete_guard`
 BEFORE DELETE ON `dossier_participants`
 BEGIN
 	SELECT RAISE(ABORT, 'dossier participants must be removed, not hard-deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossiers_output_approved_guard`
 BEFORE UPDATE OF `status` ON `dossiers`
 FOR EACH ROW
@@ -141,8 +129,7 @@ WHEN NEW.`status` = 'output_approved' AND OLD.`status` <> 'output_approved'
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'output_approved requires a current governed output with reviewer approval');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossiers_status_transition_guard`
 BEFORE UPDATE OF `status` ON `dossiers`
 FOR EACH ROW
@@ -159,8 +146,7 @@ WHEN NEW.`status` IS NOT OLD.`status` AND NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'dossier status changes require the exact pre-recorded governed transition');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_status_transitions_insert_guard`
 BEFORE INSERT ON `dossier_status_transitions`
 FOR EACH ROW
@@ -280,28 +266,24 @@ BEGIN
 				WHERE later.`dossier_id` = state.`dossier_id` AND later.`output_id` = state.`output_id`
 			)
 	) THEN RAISE(ABORT, 'output approval transition must bind the exact current output and its reviewer') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_status_transitions_update_guard`
 BEFORE UPDATE ON `dossier_status_transitions`
 BEGIN
 	SELECT RAISE(ABORT, 'dossier status transitions are append-only');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_status_transitions_delete_guard`
 BEFORE DELETE ON `dossier_status_transitions`
 BEGIN
 	SELECT RAISE(ABORT, 'dossier status transitions are append-only');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_documents_insert_provisional_guard`
 BEFORE INSERT ON `dossier_documents`
 FOR EACH ROW
 WHEN NEW.`is_provisional` <> true
 BEGIN
 	SELECT RAISE(ABORT, 'all logical documents must begin provisional');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_documents_reservation_guard`
 BEFORE INSERT ON `dossier_documents`
 FOR EACH ROW
@@ -311,8 +293,7 @@ WHEN (
 ) >= 100
 BEGIN
 	SELECT RAISE(ABORT, 'dossier document reservation quota exceeded');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_documents_identity_guard`
 BEFORE UPDATE ON `dossier_documents`
 FOR EACH ROW
@@ -323,8 +304,7 @@ WHEN NEW.`id` IS NOT OLD.`id`
 	OR NEW.`created_at` IS NOT OLD.`created_at`
 BEGIN
 	SELECT RAISE(ABORT, 'logical document identity is immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_documents_finalize_guard`
 BEFORE UPDATE OF `is_provisional` ON `dossier_documents`
 FOR EACH ROW
@@ -358,8 +338,7 @@ WHEN (OLD.`is_provisional` = false AND NEW.`is_provisional` <> false)
 	))
 BEGIN
 	SELECT RAISE(ABORT, 'provisional document finalization requires its contract-complete current version receipt and cannot reverse');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_documents_delete_guard`
 BEFORE DELETE ON `dossier_documents`
 FOR EACH ROW
@@ -376,8 +355,7 @@ WHEN OLD.`is_provisional` = false
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'only a zero-version provisional document with completed cleanup can be deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 -- Internal uploads bind the exact server-measured bytes and current revision to
 -- one pending idempotent intent. External/import versions remain possible.
 CREATE TRIGGER `dossier_document_versions_lineage_guard`
@@ -424,8 +402,7 @@ BEGIN
 		OR instr(NEW.`binary_object_reference`, '..') > 0
 		OR instr(NEW.`binary_object_reference`, '\\') > 0
 	THEN RAISE(ABORT, 'document object reference must be private and opaque') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_document_versions_quota_guard`
 BEFORE INSERT ON `dossier_document_versions`
 FOR EACH ROW
@@ -461,8 +438,7 @@ BEGIN
 		), 0)
 		> 1073741824
 	THEN RAISE(ABORT, 'dossier storage reservation quota exceeded') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_document_versions_external_current_pointer`
 AFTER INSERT ON `dossier_document_versions`
 FOR EACH ROW
@@ -476,20 +452,17 @@ BEGIN
 	) VALUES (
 		NEW.`dossier_id`, NEW.`document_id`, NEW.`id`, NEW.`created_by_actor_ref`
 	);
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_document_versions_update_guard`
 BEFORE UPDATE ON `dossier_document_versions`
 BEGIN
 	SELECT RAISE(ABORT, 'document versions are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_document_versions_delete_guard`
 BEFORE DELETE ON `dossier_document_versions`
 BEGIN
 	SELECT RAISE(ABORT, 'document versions are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_document_current_versions_insert_guard`
 BEFORE INSERT ON `dossier_document_current_versions`
 FOR EACH ROW
@@ -505,8 +478,7 @@ WHEN NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'current document version must be the latest immutable ordinal');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_document_current_versions_finalize_external_document`
 AFTER INSERT ON `dossier_document_current_versions`
 FOR EACH ROW
@@ -521,8 +493,7 @@ BEGIN
 	UPDATE `dossier_documents`
 	SET `is_provisional` = false
 	WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`document_id`;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_document_current_versions_update_guard`
 BEFORE UPDATE ON `dossier_document_current_versions`
 FOR EACH ROW
@@ -540,14 +511,12 @@ WHEN NEW.`dossier_id` IS NOT OLD.`dossier_id`
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'current document version must be the latest immutable ordinal');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_document_current_versions_delete_guard`
 BEFORE DELETE ON `dossier_document_current_versions`
 BEGIN
 	SELECT RAISE(ABORT, 'current document version pointer cannot be deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_object_insert_guard`
 BEFORE INSERT ON `dossier_upload_intents`
 FOR EACH ROW
@@ -563,8 +532,7 @@ WHEN length(NEW.`temporary_object_reference`) < 32
 	))
 BEGIN
 	SELECT RAISE(ABORT, 'upload object references must be private and opaque');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_insert_guard`
 BEFORE INSERT ON `dossier_upload_intents`
 FOR EACH ROW
@@ -616,16 +584,14 @@ BEGIN
 		+ NEW.`expected_byte_length`
 		> 1073741824
 	THEN RAISE(ABORT, 'dossier storage reservation quota exceeded') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_insert_state_guard`
 BEFORE INSERT ON `dossier_upload_intents`
 FOR EACH ROW
 WHEN NEW.`state` <> 'pending' OR NEW.`committed_at` IS NOT NULL
 BEGIN
 	SELECT RAISE(ABORT, 'upload intents must be inserted pending');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_object_update_guard`
 BEFORE UPDATE OF `committed_object_reference` ON `dossier_upload_intents`
 FOR EACH ROW
@@ -637,8 +603,7 @@ WHEN NEW.`committed_object_reference` IS NOT NULL AND (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'upload object references must be private and opaque');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_identity_guard`
 BEFORE UPDATE ON `dossier_upload_intents`
 FOR EACH ROW
@@ -657,8 +622,7 @@ WHEN NEW.`dossier_id` IS NOT OLD.`dossier_id`
 	OR NEW.`created_at` IS NOT OLD.`created_at`
 BEGIN
 	SELECT RAISE(ABORT, 'upload intent identity is immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_failure_guard`
 BEFORE UPDATE ON `dossier_upload_intents`
 FOR EACH ROW
@@ -668,8 +632,7 @@ WHEN (OLD.`failure_code` IS NOT NULL AND NEW.`failure_code` IS NOT OLD.`failure_
 	))
 BEGIN
 	SELECT RAISE(ABORT, 'upload failure receipt is immutable and only valid for a pending abort');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_measurement_guard`
 BEFORE UPDATE ON `dossier_upload_intents`
 FOR EACH ROW
@@ -692,8 +655,7 @@ WHEN (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'measured upload receipt can be written exactly once while pending');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_state_guard`
 BEFORE UPDATE OF `state` ON `dossier_upload_intents`
 FOR EACH ROW
@@ -706,16 +668,14 @@ WHEN NOT (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'invalid upload intent state transition');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_terminal_guard`
 BEFORE UPDATE ON `dossier_upload_intents`
 FOR EACH ROW
 WHEN OLD.`state` IN ('committed','deleted')
 BEGIN
 	SELECT RAISE(ABORT, 'terminal upload intent is immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_expire_guard`
 BEFORE UPDATE OF `state` ON `dossier_upload_intents`
 FOR EACH ROW
@@ -731,8 +691,7 @@ BEGIN
 				OR (OLD.`committed_object_reference` IS NOT NULL AND `binary_object_reference` = OLD.`committed_object_reference`)
 		)
 	THEN RAISE(ABORT, 'only an expired unreferenced pending upload can expire') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_commit_guard`
 BEFORE UPDATE OF `state` ON `dossier_upload_intents`
 FOR EACH ROW
@@ -773,8 +732,7 @@ BEGIN
 			AND version.`content_sha256` = NEW.`measured_content_sha256`
 			AND dossier.`revision` = NEW.`expected_dossier_revision` + 1
 	) THEN RAISE(ABORT, 'committed upload intent lacks its current version and dossier revision receipt') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_finalize_document`
 AFTER UPDATE OF `state` ON `dossier_upload_intents`
 FOR EACH ROW
@@ -790,8 +748,7 @@ BEGIN
 	UPDATE `dossier_documents`
 	SET `is_provisional` = false
 	WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`document_id`;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_cleanup_guard`
 BEFORE UPDATE OF `state` ON `dossier_upload_intents`
 FOR EACH ROW
@@ -808,8 +765,7 @@ BEGIN
 				OR (OLD.`committed_object_reference` IS NOT NULL AND `binary_object_reference` = OLD.`committed_object_reference`)
 		)
 	THEN RAISE(ABORT, 'only an expired unreferenced upload can enter cleanup') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_finish_cleanup_guard`
 BEFORE UPDATE OF `state` ON `dossier_upload_intents`
 FOR EACH ROW
@@ -823,8 +779,7 @@ BEGIN
 				OR (OLD.`committed_object_reference` IS NOT NULL AND `binary_object_reference` = OLD.`committed_object_reference`)
 		)
 	THEN RAISE(ABORT, 'cleanup completion requires a deleting unreferenced upload') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_upload_intents_delete_guard`
 BEFORE DELETE ON `dossier_upload_intents`
 FOR EACH ROW
@@ -837,8 +792,7 @@ WHEN OLD.`state` <> 'deleted'
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'only completed unreferenced upload cleanup metadata can be deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 -- The pilot extractor is deliberately deterministic UTF-8 TXT/Markdown only.
 -- PDF/DOCX are retained as attachments with honest not_extractable state.
 CREATE TRIGGER `dossier_extraction_jobs_insert_media_guard`
@@ -854,8 +808,7 @@ WHEN EXISTS (
 AND NEW.`status` <> 'not_extractable'
 BEGIN
 	SELECT RAISE(ABORT, 'PDF and DOCX extraction is disabled for the pilot');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_extraction_jobs_insert_state_guard`
 BEFORE INSERT ON `dossier_extraction_jobs`
 FOR EACH ROW
@@ -883,8 +836,7 @@ WHEN NOT (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'extraction job must begin queued or honestly not extractable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_extraction_jobs_update_media_guard`
 BEFORE UPDATE ON `dossier_extraction_jobs`
 FOR EACH ROW
@@ -898,8 +850,7 @@ WHEN EXISTS (
 AND NEW.`status` <> 'not_extractable'
 BEGIN
 	SELECT RAISE(ABORT, 'PDF and DOCX extraction is disabled for the pilot');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_extraction_jobs_identity_guard`
 BEFORE UPDATE ON `dossier_extraction_jobs`
 FOR EACH ROW
@@ -912,8 +863,7 @@ WHEN NEW.`id` IS NOT OLD.`id`
 	OR NEW.`created_at` IS NOT OLD.`created_at`
 BEGIN
 	SELECT RAISE(ABORT, 'extraction job identity and provenance are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_extraction_jobs_state_guard`
 BEFORE UPDATE OF `status` ON `dossier_extraction_jobs`
 FOR EACH ROW
@@ -926,8 +876,7 @@ WHEN NOT (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'invalid extraction job state transition');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_extraction_jobs_state_shape_guard`
 BEFORE UPDATE ON `dossier_extraction_jobs`
 FOR EACH ROW
@@ -982,8 +931,7 @@ WHEN NOT (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'extraction job state receipt is incomplete');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_extraction_jobs_requeue_guard`
 BEFORE UPDATE OF `status` ON `dossier_extraction_jobs`
 FOR EACH ROW
@@ -1004,8 +952,7 @@ WHEN OLD.`status` = 'processing' AND NEW.`status` = 'queued' AND (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'only an expired result-free extraction lease can requeue');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_extraction_jobs_result_guard`
 BEFORE UPDATE ON `dossier_extraction_jobs`
 FOR EACH ROW
@@ -1015,8 +962,7 @@ WHEN EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'extraction job with an immutable result cannot change');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_extraction_jobs_delete_guard`
 BEFORE DELETE ON `dossier_extraction_jobs`
 FOR EACH ROW
@@ -1026,8 +972,7 @@ WHEN EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'extraction job with an immutable result cannot be deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_extraction_results_insert_guard`
 BEFORE INSERT ON `dossier_extraction_results`
 FOR EACH ROW
@@ -1052,26 +997,22 @@ WHEN length(NEW.`extracted_text_object_reference`) < 32
 )
 BEGIN
 	SELECT RAISE(ABORT, 'extraction result requires a ready deterministic text job');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_extraction_results_update_guard`
 BEFORE UPDATE ON `dossier_extraction_results`
 BEGIN
 	SELECT RAISE(ABORT, 'extraction results are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_extraction_results_delete_guard`
 BEFORE DELETE ON `dossier_extraction_results`
 BEGIN
 	SELECT RAISE(ABORT, 'extraction results are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_extraction_page_maps_update_guard`
 BEFORE UPDATE ON `dossier_extraction_page_maps`
 BEGIN
 	SELECT RAISE(ABORT, 'extraction page maps are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_extraction_page_maps_insert_guard`
 BEFORE INSERT ON `dossier_extraction_page_maps`
 FOR EACH ROW
@@ -1084,14 +1025,12 @@ WHEN NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'page map must bind the exact extraction result version');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_extraction_page_maps_delete_guard`
 BEFORE DELETE ON `dossier_extraction_page_maps`
 BEGIN
 	SELECT RAISE(ABORT, 'extraction page maps are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_source_anchors_insert_review_guard`
 BEFORE INSERT ON `dossier_source_anchors`
 FOR EACH ROW
@@ -1101,8 +1040,7 @@ WHEN NEW.`review_state` <> 'pending'
 	OR NEW.`reviewed_at` IS NOT NULL
 BEGIN
 	SELECT RAISE(ABORT, 'source anchors must enter review as pending');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_source_anchors_update_guard`
 BEFORE UPDATE ON `dossier_source_anchors`
 FOR EACH ROW
@@ -1138,14 +1076,12 @@ BEGIN
 				AND `role` IN ('owner','contributor','reviewer')
 		)
 	THEN RAISE(ABORT, 'source anchor review requires an active bound participant') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_source_anchors_delete_guard`
 BEFORE DELETE ON `dossier_source_anchors`
 BEGIN
 	SELECT RAISE(ABORT, 'source anchors are governed provenance and cannot be deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_professional_assertions_insert_review_guard`
 BEFORE INSERT ON `dossier_professional_assertions`
 FOR EACH ROW
@@ -1155,8 +1091,7 @@ WHEN NEW.`status` <> 'needs_review'
 	OR NEW.`reviewed_at` IS NOT NULL
 BEGIN
 	SELECT RAISE(ABORT, 'professional assertions must enter review as needs_review');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_professional_assertions_identity_guard`
 BEFORE UPDATE ON `dossier_professional_assertions`
 FOR EACH ROW
@@ -1167,8 +1102,7 @@ WHEN NEW.`id` IS NOT OLD.`id`
 	OR NEW.`created_at` IS NOT OLD.`created_at`
 BEGIN
 	SELECT RAISE(ABORT, 'professional assertion identity and origin are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_professional_assertions_update_guard`
 BEFORE UPDATE ON `dossier_professional_assertions`
 FOR EACH ROW
@@ -1216,14 +1150,12 @@ BEGIN
 				AND anchor.`review_state` <> 'accepted'
 		)
 	) THEN RAISE(ABORT, 'accepted assertion requires only accepted source anchors') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_professional_assertions_delete_guard`
 BEFORE DELETE ON `dossier_professional_assertions`
 BEGIN
 	SELECT RAISE(ABORT, 'professional assertions are governed provenance and cannot be deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_assertion_sources_insert_guard`
 BEFORE INSERT ON `dossier_assertion_sources`
 FOR EACH ROW
@@ -1231,14 +1163,12 @@ WHEN (SELECT `status` FROM `dossier_professional_assertions`
 	WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`assertion_id`) <> 'needs_review'
 BEGIN
 	SELECT RAISE(ABORT, 'assertion sources can only be assembled before review');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_assertion_sources_update_guard`
 BEFORE UPDATE ON `dossier_assertion_sources`
 BEGIN
 	SELECT RAISE(ABORT, 'assertion source rows are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_assertion_sources_delete_guard`
 BEFORE DELETE ON `dossier_assertion_sources`
 FOR EACH ROW
@@ -1246,8 +1176,7 @@ WHEN (SELECT `status` FROM `dossier_professional_assertions`
 	WHERE `dossier_id` = OLD.`dossier_id` AND `id` = OLD.`assertion_id`) <> 'needs_review'
 BEGIN
 	SELECT RAISE(ABORT, 'reviewed assertion provenance cannot be deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_evidence_links_insert_guard`
 BEFORE INSERT ON `dossier_evidence_links`
 FOR EACH ROW
@@ -1276,20 +1205,17 @@ WHEN NOT EXISTS (
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'evidence link requires accepted provenance and a bound reviewer');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_evidence_links_update_guard`
 BEFORE UPDATE ON `dossier_evidence_links`
 BEGIN
 	SELECT RAISE(ABORT, 'reviewed evidence links are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_evidence_links_delete_guard`
 BEFORE DELETE ON `dossier_evidence_links`
 BEGIN
 	SELECT RAISE(ABORT, 'reviewed evidence links cannot be deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_information_requests_owner_insert_guard`
 BEFORE INSERT ON `dossier_information_requests`
 FOR EACH ROW
@@ -1302,8 +1228,7 @@ WHEN NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'information request owner must be an active bound participant');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_information_requests_document_insert_guard`
 BEFORE INSERT ON `dossier_information_requests`
 FOR EACH ROW

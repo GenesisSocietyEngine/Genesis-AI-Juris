@@ -12,8 +12,7 @@ CREATE TABLE `dossier_audit_certifications` (
 	FOREIGN KEY (`dossier_id`) REFERENCES `dossiers`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`dossier_id`,`audit_event_id`) REFERENCES `dossier_audit_events`(`dossier_id`,`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "dossier_audit_certifications_revision_check" CHECK("dossier_audit_certifications"."dossier_revision" >= 1)
-);
---> statement-breakpoint
+);--> statement-breakpoint
 CREATE UNIQUE INDEX `dossier_audit_certifications_scope_uidx` ON `dossier_audit_certifications` (`dossier_id`,`id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `dossier_audit_certifications_tuple_uidx` ON `dossier_audit_certifications` (`dossier_id`,`dossier_revision`,`event_type`,`object_ref_type`,`object_ref_id`,`actor_ref`,`occurred_at`);--> statement-breakpoint
 CREATE INDEX `dossier_audit_certifications_event_idx` ON `dossier_audit_certifications` (`dossier_id`,`audit_event_id`);--> statement-breakpoint
@@ -32,8 +31,7 @@ CREATE TABLE `dossier_required_audits` (
 	FOREIGN KEY (`dossier_id`,`dossier_revision`,`event_type`,`object_ref_type`,`object_ref_id`,`actor_ref`,`occurred_at`) REFERENCES `dossier_audit_certifications`(`dossier_id`,`dossier_revision`,`event_type`,`object_ref_type`,`object_ref_id`,`actor_ref`,`occurred_at`) ON UPDATE no action ON DELETE no action DEFERRABLE INITIALLY DEFERRED,
 	CONSTRAINT "dossier_required_audits_revision_check" CHECK("dossier_required_audits"."dossier_revision" >= 1),
 	CONSTRAINT "dossier_required_audits_phase_check" CHECK("dossier_required_audits"."claim_phase" in ('revision','same_revision'))
-);
---> statement-breakpoint
+);--> statement-breakpoint
 CREATE INDEX `dossier_required_audits_revision_idx` ON `dossier_required_audits` (`dossier_id`,`dossier_revision`,`claim_phase`);--> statement-breakpoint
 CREATE INDEX `dossier_required_audits_object_idx` ON `dossier_required_audits` (`dossier_id`,`object_ref_type`,`object_ref_id`);--> statement-breakpoint
 CREATE TABLE `dossier_revision_commitments` (
@@ -46,8 +44,7 @@ CREATE TABLE `dossier_revision_commitments` (
 	FOREIGN KEY (`dossier_id`) REFERENCES `dossiers`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`dossier_id`,`resulting_revision`) REFERENCES `dossier_revision_receipts`(`dossier_id`,`resulting_revision`) ON UPDATE no action ON DELETE no action DEFERRABLE INITIALLY DEFERRED,
 	CONSTRAINT "dossier_revision_commitments_revision_check" CHECK("dossier_revision_commitments"."resulting_revision" >= 1)
-);
---> statement-breakpoint
+);--> statement-breakpoint
 CREATE UNIQUE INDEX `dossier_revision_commitments_revision_uidx` ON `dossier_revision_commitments` (`dossier_id`,`resulting_revision`);--> statement-breakpoint
 CREATE INDEX `dossier_revision_commitments_created_idx` ON `dossier_revision_commitments` (`dossier_id`,`created_at`);--> statement-breakpoint
 ALTER TABLE `dossier_evidence_links` ADD `originating_proposal_id` text;--> statement-breakpoint

@@ -13,8 +13,7 @@ WHEN NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'governed output requires the exact current-revision sealed snapshot digest');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_governed_outputs_initial_state`
 AFTER INSERT ON `dossier_governed_outputs`
 FOR EACH ROW
@@ -26,20 +25,17 @@ BEGIN
 		NEW.`id` || ':state:1', NEW.`dossier_id`, NEW.`id`, 1, 'current',
 		NULL, NEW.`created_at`, NEW.`created_by_actor_ref`
 	);
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_governed_outputs_update_guard`
 BEFORE UPDATE ON `dossier_governed_outputs`
 BEGIN
 	SELECT RAISE(ABORT, 'governed outputs are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_governed_outputs_delete_guard`
 BEFORE DELETE ON `dossier_governed_outputs`
 BEGIN
 	SELECT RAISE(ABORT, 'governed outputs are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_output_state_events_insert_guard`
 BEFORE INSERT ON `dossier_output_state_events`
 FOR EACH ROW
@@ -60,12 +56,9 @@ WHEN NOT (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'output state history is current then at most one stale receipt');
-END;
---> statement-breakpoint
-CREATE TRIGGER `dossier_output_state_events_update_guard` BEFORE UPDATE ON `dossier_output_state_events` BEGIN SELECT RAISE(ABORT, 'output state history is immutable'); END;
---> statement-breakpoint
-CREATE TRIGGER `dossier_output_state_events_delete_guard` BEFORE DELETE ON `dossier_output_state_events` BEGIN SELECT RAISE(ABORT, 'output state history is immutable'); END;
---> statement-breakpoint
+END;--> statement-breakpoint
+CREATE TRIGGER `dossier_output_state_events_update_guard` BEFORE UPDATE ON `dossier_output_state_events` BEGIN SELECT RAISE(ABORT, 'output state history is immutable'); END;--> statement-breakpoint
+CREATE TRIGGER `dossier_output_state_events_delete_guard` BEFORE DELETE ON `dossier_output_state_events` BEGIN SELECT RAISE(ABORT, 'output state history is immutable'); END;--> statement-breakpoint
 CREATE TRIGGER `dossier_output_approvals_insert_guard`
 BEFORE INSERT ON `dossier_output_approvals`
 FOR EACH ROW
@@ -92,12 +85,9 @@ WHEN NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'output approval requires an active reviewer and current output');
-END;
---> statement-breakpoint
-CREATE TRIGGER `dossier_output_approvals_update_guard` BEFORE UPDATE ON `dossier_output_approvals` BEGIN SELECT RAISE(ABORT, 'output approvals are immutable'); END;
---> statement-breakpoint
-CREATE TRIGGER `dossier_output_approvals_delete_guard` BEFORE DELETE ON `dossier_output_approvals` BEGIN SELECT RAISE(ABORT, 'output approvals are immutable'); END;
---> statement-breakpoint
+END;--> statement-breakpoint
+CREATE TRIGGER `dossier_output_approvals_update_guard` BEFORE UPDATE ON `dossier_output_approvals` BEGIN SELECT RAISE(ABORT, 'output approvals are immutable'); END;--> statement-breakpoint
+CREATE TRIGGER `dossier_output_approvals_delete_guard` BEFORE DELETE ON `dossier_output_approvals` BEGIN SELECT RAISE(ABORT, 'output approvals are immutable'); END;--> statement-breakpoint
 CREATE TRIGGER `dossier_decision_packages_insert_guard`
 BEFORE INSERT ON `dossier_decision_package_references`
 FOR EACH ROW
@@ -113,8 +103,7 @@ BEGIN
 			AND `package_version` = NEW.`parent_package_version`
 			AND `package_fingerprint` = NEW.`parent_package_fingerprint`
 	) THEN RAISE(ABORT, 'decision package parent tuple must match exact governed lineage') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_decision_packages_identity_guard`
 BEFORE UPDATE ON `dossier_decision_package_references`
 FOR EACH ROW
@@ -135,22 +124,19 @@ WHEN NEW.`id` IS NOT OLD.`id`
 	OR NEW.`created_at` IS NOT OLD.`created_at`
 BEGIN
 	SELECT RAISE(ABORT, 'decision package identity, lineage, and graph provenance are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_decision_packages_source_rebind_guard`
 BEFORE UPDATE OF `source_snapshot_id` ON `dossier_decision_package_references`
 FOR EACH ROW
 WHEN OLD.`source_snapshot_id` IS NOT NULL AND NEW.`source_snapshot_id` IS NOT OLD.`source_snapshot_id`
 BEGIN
 	SELECT RAISE(ABORT, 'decision package source snapshot cannot be rebound');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_decision_packages_delete_guard`
 BEFORE DELETE ON `dossier_decision_package_references`
 BEGIN
 	SELECT RAISE(ABORT, 'decision package references are governed and cannot be deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_decision_packages_snapshot_guard`
 BEFORE UPDATE OF `source_snapshot_id` ON `dossier_decision_package_references`
 FOR EACH ROW
@@ -163,8 +149,7 @@ WHEN NEW.`source_snapshot_id` IS NOT NULL AND NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'decision package source snapshot must be sealed');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_decision_packages_snapshot_insert_guard`
 BEFORE INSERT ON `dossier_decision_package_references`
 FOR EACH ROW
@@ -177,8 +162,7 @@ WHEN NEW.`source_snapshot_id` IS NOT NULL AND NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'decision package source snapshot must be sealed');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_revision_receipts_insert_guard`
 BEFORE INSERT ON `dossier_revision_receipts`
 FOR EACH ROW
@@ -290,20 +274,17 @@ BEGIN
 					AND other_output.`snapshot_id` <> approved_output.`snapshot_id`
 			)
 	) THEN RAISE(ABORT, 'dossier revision receipt requires all current outputs stale or one exact approved snapshot workflow') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_revision_receipts_update_guard`
 BEFORE UPDATE ON `dossier_revision_receipts`
 BEGIN
 	SELECT RAISE(ABORT, 'dossier revision receipts are append-only');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_revision_receipts_delete_guard`
 BEFORE DELETE ON `dossier_revision_receipts`
 BEGIN
 	SELECT RAISE(ABORT, 'dossier revision receipts are append-only');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_job_completion_audit_guard`
 BEFORE INSERT ON `dossier_audit_events`
 FOR EACH ROW
@@ -390,8 +371,7 @@ BEGIN
 				)
 			)
 	) THEN RAISE(ABORT, 'AI proposal completion audit must bind the exact in-flight result and analyzed ranges') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_audit_events_chain_guard`
 BEFORE INSERT ON `dossier_audit_events`
 FOR EACH ROW
@@ -487,14 +467,12 @@ BEGIN
 		THEN RAISE(ABORT, 'audit output reference is outside the dossier') END;
 	SELECT CASE WHEN NEW.`object_ref_type` = 'audit_event' AND NOT EXISTS (SELECT 1 FROM `dossier_audit_events` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`object_ref_id`)
 		THEN RAISE(ABORT, 'audit event reference is outside the dossier') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_audit_events_update_guard`
 BEFORE UPDATE ON `dossier_audit_events`
 BEGIN
 	SELECT RAISE(ABORT, 'dossier audit is append-only');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_audit_events_delete_guard`
 BEFORE DELETE ON `dossier_audit_events`
 BEGIN

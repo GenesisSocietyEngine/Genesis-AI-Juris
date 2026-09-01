@@ -95,6 +95,18 @@ test("every D1 migration breakpoint resolves to a non-empty platform statement",
     statements(dossierMigrationReceipt()),
     "the bounded production files must preserve every accepted 0012 statement in exact order",
   );
+  for (const name of [
+    ...dossierMigrations.slice(1),
+    auditClaimsMigration,
+    uploadCommitmentMigration,
+    statusHistoryMigration,
+  ]) {
+    assert.doesNotMatch(
+      migration(name),
+      /;\s*\n\s*--> statement-breakpoint/u,
+      `${name} must keep trigger-safe Sites breakpoints attached to the preceding semicolon`,
+    );
+  }
 });
 
 function user(db: DatabaseSync, email: string, displayName = email) {

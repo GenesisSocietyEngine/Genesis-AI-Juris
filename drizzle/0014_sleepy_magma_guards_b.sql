@@ -7,8 +7,7 @@ WHEN NEW.`id` IS NOT OLD.`id`
 	OR NEW.`created_at` IS NOT OLD.`created_at`
 BEGIN
 	SELECT RAISE(ABORT, 'information request identity is immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_information_requests_owner_update_guard`
 BEFORE UPDATE ON `dossier_information_requests`
 FOR EACH ROW
@@ -21,8 +20,7 @@ WHEN NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'information request owner must be an active bound participant');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_information_requests_document_update_guard`
 BEFORE UPDATE ON `dossier_information_requests`
 FOR EACH ROW
@@ -34,14 +32,12 @@ WHEN NEW.`satisfying_document_id` IS NOT NULL AND NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'information request satisfaction requires a finalized document');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_information_requests_delete_guard`
 BEFORE DELETE ON `dossier_information_requests`
 BEGIN
 	SELECT RAISE(ABORT, 'information requests must be waived or cancelled, not deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_deadline_sources_insert_guard`
 BEFORE INSERT ON `dossier_deadline_sources`
 FOR EACH ROW
@@ -53,8 +49,7 @@ WHEN NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'deadline provenance requires an accepted source anchor');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_deadline_references_identity_guard`
 BEFORE UPDATE ON `dossier_deadline_references`
 FOR EACH ROW
@@ -64,26 +59,22 @@ WHEN NEW.`id` IS NOT OLD.`id`
 	OR NEW.`created_at` IS NOT OLD.`created_at`
 BEGIN
 	SELECT RAISE(ABORT, 'deadline reference identity is immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_deadline_sources_update_guard`
 BEFORE UPDATE ON `dossier_deadline_sources`
 BEGIN
 	SELECT RAISE(ABORT, 'deadline source rows are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_deadline_sources_delete_guard`
 BEFORE DELETE ON `dossier_deadline_sources`
 BEGIN
 	SELECT RAISE(ABORT, 'deadline source rows are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_deadline_references_delete_guard`
 BEFORE DELETE ON `dossier_deadline_references`
 BEGIN
 	SELECT RAISE(ABORT, 'deadline references must be completed, waived, or cancelled, not deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_jobs_insert_guard`
 BEFORE INSERT ON `dossier_ai_proposal_jobs`
 FOR EACH ROW
@@ -118,8 +109,7 @@ BEGIN
 		SELECT COUNT(*) FROM `dossier_ai_proposal_jobs`
 		WHERE `dossier_id` = NEW.`dossier_id` AND `status` IN ('queued','processing')
 	) >= 10 THEN RAISE(ABORT, 'AI proposal job active quota exceeded') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_jobs_identity_guard`
 BEFORE UPDATE ON `dossier_ai_proposal_jobs`
 FOR EACH ROW
@@ -136,8 +126,7 @@ WHEN NEW.`id` IS NOT OLD.`id`
 	OR NEW.`created_at` IS NOT OLD.`created_at`
 BEGIN
 	SELECT RAISE(ABORT, 'AI proposal job request identity and model provenance are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_jobs_state_guard`
 BEFORE UPDATE ON `dossier_ai_proposal_jobs`
 FOR EACH ROW
@@ -160,8 +149,7 @@ WHEN NOT (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'invalid AI proposal job state transition or retry');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_jobs_state_shape_guard`
 BEFORE UPDATE ON `dossier_ai_proposal_jobs`
 FOR EACH ROW
@@ -196,8 +184,7 @@ BEGIN
 			AND NEW.`error_code` IS NOT NULL AND NEW.`error_detail_code` IS NOT NULL
 			AND NEW.`completed_at` IS NOT NULL)
 	) THEN RAISE(ABORT, 'AI proposal job state receipt is incomplete') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_job_sources_insert_guard`
 BEFORE INSERT ON `dossier_ai_proposal_job_sources`
 FOR EACH ROW
@@ -257,20 +244,17 @@ BEGIN
 	THEN RAISE(ABORT, 'analyzed AI source context exceeds the bounded job limit') END;
 	SELECT CASE WHEN unixepoch(NEW.`created_at`) IS NULL
 		THEN RAISE(ABORT, 'analyzed AI source timestamp is invalid') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_job_sources_update_guard`
 BEFORE UPDATE ON `dossier_ai_proposal_job_sources`
 BEGIN
 	SELECT RAISE(ABORT, 'analyzed AI source ranges are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_job_sources_delete_guard`
 BEFORE DELETE ON `dossier_ai_proposal_job_sources`
 BEGIN
 	SELECT RAISE(ABORT, 'analyzed AI source ranges are durable provenance');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_jobs_start_guard`
 BEFORE UPDATE OF `status` ON `dossier_ai_proposal_jobs`
 FOR EACH ROW
@@ -290,8 +274,7 @@ WHEN OLD.`status` = 'queued' AND NEW.`status` = 'processing' AND (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'stale or unauthorized AI proposal job cannot start');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_jobs_no_partial_failure_guard`
 BEFORE UPDATE OF `status` ON `dossier_ai_proposal_jobs`
 FOR EACH ROW
@@ -307,8 +290,7 @@ WHEN NEW.`status` IN ('queued','failed') AND (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'AI proposal job with analyzed sources or generated proposals cannot fail or retry');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_jobs_ready_guard`
 BEFORE UPDATE OF `status` ON `dossier_ai_proposal_jobs`
 FOR EACH ROW
@@ -415,14 +397,12 @@ BEGIN
 				)
 			)
 	) THEN RAISE(ABORT, 'ready AI proposal job contains non-exact generated source anchors') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_jobs_delete_guard`
 BEFORE DELETE ON `dossier_ai_proposal_jobs`
 BEGIN
 	SELECT RAISE(ABORT, 'AI proposal jobs are durable idempotency and recovery records');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposals_generation_job_guard`
 BEFORE INSERT ON `dossier_ai_proposals`
 FOR EACH ROW
@@ -451,8 +431,7 @@ WHEN NEW.`generation_job_id` IS NOT NULL AND NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'generated proposal must bind its exact processing job and revision batch');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposals_insert_guard`
 BEFORE INSERT ON `dossier_ai_proposals`
 FOR EACH ROW
@@ -464,8 +443,7 @@ WHEN NEW.`review_state` <> 'pending'
 	OR NEW.`accepted_object_id` IS NOT NULL
 BEGIN
 	SELECT RAISE(ABORT, 'AI proposals must be inserted pending and unreviewed');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposals_identity_guard`
 BEFORE UPDATE ON `dossier_ai_proposals`
 FOR EACH ROW
@@ -483,8 +461,7 @@ WHEN NEW.`id` IS NOT OLD.`id`
 	OR NEW.`created_at` IS NOT OLD.`created_at`
 BEGIN
 	SELECT RAISE(ABORT, 'AI proposal content and model provenance are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposals_review_guard`
 BEFORE UPDATE ON `dossier_ai_proposals`
 FOR EACH ROW
@@ -539,8 +516,7 @@ BEGIN
 	SELECT CASE WHEN NEW.`review_state` = 'rejected' AND (
 		NEW.`accepted_object_type` IS NOT NULL OR NEW.`accepted_object_id` IS NOT NULL
 	) THEN RAISE(ABORT, 'rejected AI proposal cannot name an accepted object') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_versions_insert_guard`
 BEFORE INSERT ON `dossier_ai_proposal_versions`
 FOR EACH ROW
@@ -572,8 +548,7 @@ WHEN (SELECT `review_state` FROM `dossier_ai_proposals`
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'proposal sources can only be assembled while pending');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_versions_generation_source_guard`
 BEFORE INSERT ON `dossier_ai_proposal_versions`
 FOR EACH ROW
@@ -595,14 +570,12 @@ WHEN EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'generated proposal version must be one exact analyzed source');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_versions_update_guard`
 BEFORE UPDATE ON `dossier_ai_proposal_versions`
 BEGIN
 	SELECT RAISE(ABORT, 'proposal source versions are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_versions_delete_guard`
 BEFORE DELETE ON `dossier_ai_proposal_versions`
 FOR EACH ROW
@@ -634,8 +607,7 @@ WHEN (SELECT `review_state` FROM `dossier_ai_proposals`
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'reviewed or completed proposal source versions cannot be deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_anchors_insert_guard`
 BEFORE INSERT ON `dossier_ai_proposal_anchors`
 FOR EACH ROW
@@ -667,8 +639,7 @@ WHEN (SELECT `review_state` FROM `dossier_ai_proposals`
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'proposal sources can only be assembled while pending');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_anchors_generation_source_guard`
 BEFORE INSERT ON `dossier_ai_proposal_anchors`
 FOR EACH ROW
@@ -701,14 +672,12 @@ WHEN EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'generated proposal anchor must bind one exact analyzed extraction result and range');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_anchors_update_guard`
 BEFORE UPDATE ON `dossier_ai_proposal_anchors`
 BEGIN
 	SELECT RAISE(ABORT, 'proposal source anchors are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposal_anchors_delete_guard`
 BEFORE DELETE ON `dossier_ai_proposal_anchors`
 FOR EACH ROW
@@ -740,14 +709,12 @@ WHEN (SELECT `review_state` FROM `dossier_ai_proposals`
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'reviewed or completed proposal source anchors cannot be deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposals_delete_guard`
 BEFORE DELETE ON `dossier_ai_proposals`
 BEGIN
 	SELECT RAISE(ABORT, 'AI proposals are governed provenance and cannot be deleted');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_ai_proposals_accept_guard`
 BEFORE UPDATE ON `dossier_ai_proposals`
 FOR EACH ROW
@@ -780,8 +747,7 @@ BEGIN
 	SELECT CASE WHEN NEW.`accepted_object_type` = 'decision_package_reference' AND NOT EXISTS (
 		SELECT 1 FROM `dossier_decision_package_references` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`accepted_object_id`
 	) THEN RAISE(ABORT, 'accepted AI proposal package is outside the dossier') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 -- Snapshot rows are assembled while unsealed. The one permitted update seals
 -- the exact manifest; base and normalized rows are immutable thereafter.
 CREATE TRIGGER `dossier_snapshots_update_guard`
@@ -814,8 +780,7 @@ WHEN NOT (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'snapshot is immutable except for its one-way seal');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_snapshots_delete_guard`
 BEFORE DELETE ON `dossier_snapshots`
 FOR EACH ROW
@@ -826,8 +791,7 @@ WHEN OLD.`sealed` = true
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'sealed or output-bound snapshots are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_snapshots_seal_guard`
 BEFORE UPDATE OF `sealed` ON `dossier_snapshots`
 FOR EACH ROW
@@ -1101,16 +1065,14 @@ BEGIN
 					AND item.`graph_digest` = package.`graph_digest`
 			)
 	) THEN RAISE(ABORT, 'snapshot package manifest must equal all current exact governed package references') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_snapshot_documents_insert_guard`
 BEFORE INSERT ON `dossier_snapshot_document_versions`
 FOR EACH ROW
 WHEN (SELECT `sealed` FROM `dossier_snapshots` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`snapshot_id`) <> false
 BEGIN
 	SELECT RAISE(ABORT, 'sealed snapshot manifest cannot change');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_snapshot_assertions_insert_guard`
 BEFORE INSERT ON `dossier_snapshot_assertions`
 FOR EACH ROW
@@ -1118,8 +1080,7 @@ WHEN (SELECT `sealed` FROM `dossier_snapshots` WHERE `dossier_id` = NEW.`dossier
 	OR (SELECT `status` FROM `dossier_professional_assertions` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`assertion_id`) <> 'accepted'
 BEGIN
 	SELECT RAISE(ABORT, 'snapshot assertions must be accepted before sealing');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_snapshot_anchors_insert_guard`
 BEFORE INSERT ON `dossier_snapshot_anchors`
 FOR EACH ROW
@@ -1127,8 +1088,7 @@ WHEN (SELECT `sealed` FROM `dossier_snapshots` WHERE `dossier_id` = NEW.`dossier
 	OR (SELECT `review_state` FROM `dossier_source_anchors` WHERE `dossier_id` = NEW.`dossier_id` AND `id` = NEW.`source_anchor_id`) <> 'accepted'
 BEGIN
 	SELECT RAISE(ABORT, 'snapshot anchors must be accepted before sealing');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_snapshot_packages_insert_guard`
 BEFORE INSERT ON `dossier_snapshot_decision_packages`
 FOR EACH ROW
@@ -1144,20 +1104,12 @@ WHEN (SELECT `sealed` FROM `dossier_snapshots` WHERE `dossier_id` = NEW.`dossier
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'sealed snapshot manifest cannot change');
-END;
---> statement-breakpoint
-CREATE TRIGGER `dossier_snapshot_documents_update_guard` BEFORE UPDATE ON `dossier_snapshot_document_versions` BEGIN SELECT RAISE(ABORT, 'snapshot manifest rows are immutable'); END;
---> statement-breakpoint
-CREATE TRIGGER `dossier_snapshot_documents_delete_guard` BEFORE DELETE ON `dossier_snapshot_document_versions` FOR EACH ROW WHEN (SELECT `sealed` FROM `dossier_snapshots` WHERE `dossier_id` = OLD.`dossier_id` AND `id` = OLD.`snapshot_id`) <> false BEGIN SELECT RAISE(ABORT, 'sealed snapshot manifest rows are immutable'); END;
---> statement-breakpoint
-CREATE TRIGGER `dossier_snapshot_assertions_update_guard` BEFORE UPDATE ON `dossier_snapshot_assertions` BEGIN SELECT RAISE(ABORT, 'snapshot manifest rows are immutable'); END;
---> statement-breakpoint
-CREATE TRIGGER `dossier_snapshot_assertions_delete_guard` BEFORE DELETE ON `dossier_snapshot_assertions` FOR EACH ROW WHEN (SELECT `sealed` FROM `dossier_snapshots` WHERE `dossier_id` = OLD.`dossier_id` AND `id` = OLD.`snapshot_id`) <> false BEGIN SELECT RAISE(ABORT, 'sealed snapshot manifest rows are immutable'); END;
---> statement-breakpoint
-CREATE TRIGGER `dossier_snapshot_anchors_update_guard` BEFORE UPDATE ON `dossier_snapshot_anchors` BEGIN SELECT RAISE(ABORT, 'snapshot manifest rows are immutable'); END;
---> statement-breakpoint
-CREATE TRIGGER `dossier_snapshot_anchors_delete_guard` BEFORE DELETE ON `dossier_snapshot_anchors` FOR EACH ROW WHEN (SELECT `sealed` FROM `dossier_snapshots` WHERE `dossier_id` = OLD.`dossier_id` AND `id` = OLD.`snapshot_id`) <> false BEGIN SELECT RAISE(ABORT, 'sealed snapshot manifest rows are immutable'); END;
---> statement-breakpoint
-CREATE TRIGGER `dossier_snapshot_packages_update_guard` BEFORE UPDATE ON `dossier_snapshot_decision_packages` BEGIN SELECT RAISE(ABORT, 'snapshot manifest rows are immutable'); END;
---> statement-breakpoint
+END;--> statement-breakpoint
+CREATE TRIGGER `dossier_snapshot_documents_update_guard` BEFORE UPDATE ON `dossier_snapshot_document_versions` BEGIN SELECT RAISE(ABORT, 'snapshot manifest rows are immutable'); END;--> statement-breakpoint
+CREATE TRIGGER `dossier_snapshot_documents_delete_guard` BEFORE DELETE ON `dossier_snapshot_document_versions` FOR EACH ROW WHEN (SELECT `sealed` FROM `dossier_snapshots` WHERE `dossier_id` = OLD.`dossier_id` AND `id` = OLD.`snapshot_id`) <> false BEGIN SELECT RAISE(ABORT, 'sealed snapshot manifest rows are immutable'); END;--> statement-breakpoint
+CREATE TRIGGER `dossier_snapshot_assertions_update_guard` BEFORE UPDATE ON `dossier_snapshot_assertions` BEGIN SELECT RAISE(ABORT, 'snapshot manifest rows are immutable'); END;--> statement-breakpoint
+CREATE TRIGGER `dossier_snapshot_assertions_delete_guard` BEFORE DELETE ON `dossier_snapshot_assertions` FOR EACH ROW WHEN (SELECT `sealed` FROM `dossier_snapshots` WHERE `dossier_id` = OLD.`dossier_id` AND `id` = OLD.`snapshot_id`) <> false BEGIN SELECT RAISE(ABORT, 'sealed snapshot manifest rows are immutable'); END;--> statement-breakpoint
+CREATE TRIGGER `dossier_snapshot_anchors_update_guard` BEFORE UPDATE ON `dossier_snapshot_anchors` BEGIN SELECT RAISE(ABORT, 'snapshot manifest rows are immutable'); END;--> statement-breakpoint
+CREATE TRIGGER `dossier_snapshot_anchors_delete_guard` BEFORE DELETE ON `dossier_snapshot_anchors` FOR EACH ROW WHEN (SELECT `sealed` FROM `dossier_snapshots` WHERE `dossier_id` = OLD.`dossier_id` AND `id` = OLD.`snapshot_id`) <> false BEGIN SELECT RAISE(ABORT, 'sealed snapshot manifest rows are immutable'); END;--> statement-breakpoint
+CREATE TRIGGER `dossier_snapshot_packages_update_guard` BEFORE UPDATE ON `dossier_snapshot_decision_packages` BEGIN SELECT RAISE(ABORT, 'snapshot manifest rows are immutable'); END;--> statement-breakpoint
 CREATE TRIGGER `dossier_snapshot_packages_delete_guard` BEFORE DELETE ON `dossier_snapshot_decision_packages` FOR EACH ROW WHEN (SELECT `sealed` FROM `dossier_snapshots` WHERE `dossier_id` = OLD.`dossier_id` AND `id` = OLD.`snapshot_id`) <> false BEGIN SELECT RAISE(ABORT, 'sealed snapshot manifest rows are immutable'); END;

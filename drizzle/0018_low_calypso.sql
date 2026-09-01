@@ -27,8 +27,7 @@ CREATE TABLE `__new_dossier_status_transitions` (
 	CONSTRAINT "dossier_status_transitions_new_check" CHECK("__new_dossier_status_transitions"."new_status" in ('draft','intake_review','active','awaiting_input','internal_review','output_approved','closed','archived','declined','cancelled')),
 	CONSTRAINT "dossier_status_transitions_approved_output_check" CHECK(("__new_dossier_status_transitions"."new_status" = 'output_approved') = ("__new_dossier_status_transitions"."approved_output_id" is not null)),
 	CONSTRAINT "dossier_status_transitions_role_check" CHECK("__new_dossier_status_transitions"."actor_role" in ('owner','contributor','reviewer','viewer','platform_admin'))
-);
---> statement-breakpoint
+);--> statement-breakpoint
 INSERT INTO `__new_dossier_status_transitions`("id", "dossier_id", "revision_before", "revision_after", "previous_status", "new_status", "approved_output_id", "actor_user_id", "actor_ref", "actor_role", "occurred_at", "reason", "comment", "platform_admin_override", "had_current_output", "had_reviewer_approval", "consequences") SELECT "id", "dossier_id", "revision_before", "revision_after", "previous_status", "new_status", "approved_output_id", "actor_user_id", "actor_ref", "actor_role", "occurred_at", "reason", "comment", "platform_admin_override", "had_current_output", "had_reviewer_approval", "consequences" FROM `dossier_status_transitions`;--> statement-breakpoint
 DROP TABLE `dossier_status_transitions`;--> statement-breakpoint
 ALTER TABLE `__new_dossier_status_transitions` RENAME TO `dossier_status_transitions`;--> statement-breakpoint
@@ -43,8 +42,7 @@ CREATE TABLE `dossier_status_application_certifications` (
 	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	FOREIGN KEY (`dossier_id`) REFERENCES `dossiers`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`dossier_id`,`transition_id`) REFERENCES `dossier_status_transitions`(`dossier_id`,`id`) ON UPDATE no action ON DELETE no action
-);
---> statement-breakpoint
+);--> statement-breakpoint
 CREATE UNIQUE INDEX `dossier_status_application_certifications_scope_uidx` ON `dossier_status_application_certifications` (`dossier_id`,`id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `dossier_status_application_certifications_transition_uidx` ON `dossier_status_application_certifications` (`dossier_id`,`transition_id`);--> statement-breakpoint
 CREATE INDEX `dossier_status_application_certifications_created_idx` ON `dossier_status_application_certifications` (`dossier_id`,`created_at`);--> statement-breakpoint
@@ -56,12 +54,10 @@ CREATE TABLE `dossier_status_application_commitments` (
 	FOREIGN KEY (`dossier_id`) REFERENCES `dossiers`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`dossier_id`,`transition_id`) REFERENCES `dossier_status_transitions`(`dossier_id`,`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`dossier_id`,`transition_id`) REFERENCES `dossier_status_application_certifications`(`dossier_id`,`transition_id`) ON UPDATE no action ON DELETE no action DEFERRABLE INITIALLY DEFERRED
-);
---> statement-breakpoint
+);--> statement-breakpoint
 CREATE UNIQUE INDEX `dossier_status_application_commitments_scope_uidx` ON `dossier_status_application_commitments` (`dossier_id`,`id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `dossier_status_application_commitments_transition_uidx` ON `dossier_status_application_commitments` (`dossier_id`,`transition_id`);--> statement-breakpoint
-CREATE INDEX `dossier_status_application_commitments_created_idx` ON `dossier_status_application_commitments` (`dossier_id`,`created_at`);
---> statement-breakpoint
+CREATE INDEX `dossier_status_application_commitments_created_idx` ON `dossier_status_application_commitments` (`dossier_id`,`created_at`);--> statement-breakpoint
 INSERT INTO dossier_status_application_certifications (
 	id, dossier_id, transition_id, created_at
 )
@@ -88,8 +84,7 @@ WHERE (
 	AND dossier.archived_by_actor_ref = transition.actor_ref
 	AND dossier.archive_reason IS transition.reason
 	AND dossier.archive_admin_override = transition.platform_admin_override
-) OR transition.new_status NOT IN ('closed','archived');
---> statement-breakpoint
+) OR transition.new_status NOT IN ('closed','archived');--> statement-breakpoint
 INSERT INTO dossier_status_application_commitments (
 	id, dossier_id, transition_id, created_at
 )
@@ -98,8 +93,7 @@ SELECT
 	dossier_id,
 	id,
 	occurred_at
-FROM dossier_status_transitions;
---> statement-breakpoint
+FROM dossier_status_transitions;--> statement-breakpoint
 CREATE TRIGGER dossier_status_application_certifications_insert_guard
 BEFORE INSERT ON dossier_status_application_certifications
 FOR EACH ROW
@@ -132,32 +126,27 @@ BEGIN
 				OR transition.new_status NOT IN ('closed','archived')
 			)
 	) THEN RAISE(ABORT, 'status application certification must bind the exact applied transition') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_status_application_certifications_update_guard
 BEFORE UPDATE ON dossier_status_application_certifications
 BEGIN
 	SELECT RAISE(ABORT, 'status application certifications are append-only');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_status_application_certifications_delete_guard
 BEFORE DELETE ON dossier_status_application_certifications
 BEGIN
 	SELECT RAISE(ABORT, 'status application certifications are append-only');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_status_application_commitments_update_guard
 BEFORE UPDATE ON dossier_status_application_commitments
 BEGIN
 	SELECT RAISE(ABORT, 'status application commitments are append-only');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_status_application_commitments_delete_guard
 BEFORE DELETE ON dossier_status_application_commitments
 BEGIN
 	SELECT RAISE(ABORT, 'status application commitments are append-only');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_status_application_commitment_after_transition_insert
 AFTER INSERT ON dossier_status_transitions
 FOR EACH ROW
@@ -168,8 +157,7 @@ BEGIN
 		'status-application-commitment:' || NEW.dossier_id || ':' || NEW.id,
 		NEW.dossier_id, NEW.id, NEW.occurred_at
 	);
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossiers_status_application_certification
 AFTER UPDATE OF status ON dossiers
 FOR EACH ROW
@@ -208,8 +196,7 @@ BEGIN
 			)
 			OR NEW.status NOT IN ('closed','archived')
 		);
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TABLE `dossier_proposal_materialization_commitments` (
 	`id` text PRIMARY KEY NOT NULL,
 	`dossier_id` text NOT NULL,
@@ -222,19 +209,16 @@ CREATE TABLE `dossier_proposal_materialization_commitments` (
 	FOREIGN KEY (`dossier_id`,`proposal_id`,`required_state`,`accepted_object_type`,`accepted_object_id`) REFERENCES `dossier_ai_proposals`(`dossier_id`,`id`,`review_state`,`accepted_object_type`,`accepted_object_id`) ON UPDATE no action ON DELETE no action DEFERRABLE INITIALLY DEFERRED,
 	CONSTRAINT "dossier_proposal_materialization_commitments_state_check" CHECK("dossier_proposal_materialization_commitments"."required_state" = 'accepted'),
 	CONSTRAINT "dossier_proposal_materialization_commitments_type_check" CHECK("dossier_proposal_materialization_commitments"."accepted_object_type" in ('professional_assertion','evidence_link'))
-);
---> statement-breakpoint
+);--> statement-breakpoint
 CREATE UNIQUE INDEX `dossier_proposal_materialization_commitments_scope_uidx` ON `dossier_proposal_materialization_commitments` (`dossier_id`,`id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `dossier_proposal_materialization_commitments_proposal_uidx` ON `dossier_proposal_materialization_commitments` (`dossier_id`,`proposal_id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `dossier_proposal_materialization_commitments_object_uidx` ON `dossier_proposal_materialization_commitments` (`dossier_id`,`accepted_object_type`,`accepted_object_id`);--> statement-breakpoint
 CREATE INDEX `dossier_proposal_materialization_commitments_created_idx` ON `dossier_proposal_materialization_commitments` (`dossier_id`,`created_at`);--> statement-breakpoint
-CREATE UNIQUE INDEX `dossier_ai_proposals_materialization_uidx` ON `dossier_ai_proposals` (`dossier_id`,`id`,`review_state`,`accepted_object_type`,`accepted_object_id`);
---> statement-breakpoint
+CREATE UNIQUE INDEX `dossier_ai_proposals_materialization_uidx` ON `dossier_ai_proposals` (`dossier_id`,`id`,`review_state`,`accepted_object_type`,`accepted_object_id`);--> statement-breakpoint
 CREATE TABLE __dossier_proposal_materialization_backfill_guard (
 	valid integer NOT NULL,
 	CONSTRAINT dossier_proposal_materialization_backfill_guard_check CHECK(valid = 1)
-);
---> statement-breakpoint
+);--> statement-breakpoint
 INSERT INTO __dossier_proposal_materialization_backfill_guard (valid)
 SELECT 0
 FROM dossier_professional_assertions AS assertion
@@ -282,8 +266,7 @@ WHERE assertion.originating_proposal_id IS NOT NULL
 							AND assertion_source.source_anchor_id = proposal_source.source_anchor_id
 					)
 			)
-	);
---> statement-breakpoint
+	);--> statement-breakpoint
 INSERT INTO __dossier_proposal_materialization_backfill_guard (valid)
 SELECT 0
 FROM dossier_evidence_links AS evidence
@@ -307,8 +290,7 @@ WHERE evidence.originating_proposal_id IS NOT NULL
 					AND proposal_source.proposal_id = proposal.id
 					AND proposal_source.source_anchor_id = evidence.source_anchor_id
 			)
-	);
---> statement-breakpoint
+	);--> statement-breakpoint
 INSERT INTO __dossier_proposal_materialization_backfill_guard (valid)
 SELECT 0
 FROM dossier_ai_proposals AS proposal
@@ -402,10 +384,8 @@ WHERE proposal.review_state = 'accepted'
 					AND json_extract(proposal.proposed_value, '$.target.parent_package_fingerprint') IS package.parent_package_fingerprint
 			)
 		)
-	);
---> statement-breakpoint
-DROP TABLE __dossier_proposal_materialization_backfill_guard;
---> statement-breakpoint
+	);--> statement-breakpoint
+DROP TABLE __dossier_proposal_materialization_backfill_guard;--> statement-breakpoint
 INSERT INTO dossier_proposal_materialization_commitments (
 	id, dossier_id, proposal_id, required_state,
 	accepted_object_type, accepted_object_id, created_at
@@ -422,20 +402,17 @@ SELECT
 	dossier_id, originating_proposal_id, 'accepted',
 	'evidence_link', id, created_at
 FROM dossier_evidence_links
-WHERE originating_proposal_id IS NOT NULL;
---> statement-breakpoint
+WHERE originating_proposal_id IS NOT NULL;--> statement-breakpoint
 CREATE TRIGGER dossier_proposal_materialization_commitments_update_guard
 BEFORE UPDATE ON dossier_proposal_materialization_commitments
 BEGIN
 	SELECT RAISE(ABORT, 'proposal materialization commitments are append-only');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_proposal_materialization_commitments_delete_guard
 BEFORE DELETE ON dossier_proposal_materialization_commitments
 BEGIN
 	SELECT RAISE(ABORT, 'proposal materialization commitments are append-only');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_professional_assertions_materialization_commitment
 AFTER INSERT ON dossier_professional_assertions
 FOR EACH ROW
@@ -449,8 +426,7 @@ BEGIN
 		NEW.dossier_id, NEW.originating_proposal_id, 'accepted',
 		'professional_assertion', NEW.id, NEW.created_at
 	);
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_evidence_links_materialization_commitment
 AFTER INSERT ON dossier_evidence_links
 FOR EACH ROW
@@ -464,8 +440,7 @@ BEGIN
 		NEW.dossier_id, NEW.originating_proposal_id, 'accepted',
 		'evidence_link', NEW.id, NEW.created_at
 	);
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_ai_proposals_strict_accept_guard
 BEFORE UPDATE ON dossier_ai_proposals
 FOR EACH ROW
@@ -563,8 +538,7 @@ BEGIN
 			)
 		)
 	) THEN RAISE(ABORT, 'AI proposal acceptance must use an exact registered authoritative materialization') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_status_transitions_insert_guard
 BEFORE INSERT ON dossier_status_transitions
 FOR EACH ROW
@@ -709,8 +683,7 @@ BEGIN
 			THEN 'admin_archive_override' ELSE 'dossier_status_transitioned' END,
 		'status_transition', NEW.id, NEW.actor_ref, NEW.occurred_at
 	);
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `dossier_revision_receipts_insert_guard`
 BEFORE INSERT ON `dossier_revision_receipts`
 FOR EACH ROW

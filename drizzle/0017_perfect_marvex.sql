@@ -9,8 +9,7 @@ CREATE TABLE `dossier_upload_version_commitments` (
 	FOREIGN KEY (`dossier_id`,`document_version_id`) REFERENCES `dossier_document_versions`(`dossier_id`,`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`dossier_id`,`upload_intent_id`,`required_state`) REFERENCES `dossier_upload_intents`(`dossier_id`,`id`,`state`) ON UPDATE no action ON DELETE no action DEFERRABLE INITIALLY DEFERRED,
 	CONSTRAINT "dossier_upload_version_commitments_state_check" CHECK("dossier_upload_version_commitments"."required_state" = 'committed')
-);
---> statement-breakpoint
+);--> statement-breakpoint
 CREATE UNIQUE INDEX `dossier_upload_version_commitments_version_uidx` ON `dossier_upload_version_commitments` (`dossier_id`,`document_version_id`);--> statement-breakpoint
 CREATE INDEX `dossier_upload_version_commitments_intent_idx` ON `dossier_upload_version_commitments` (`dossier_id`,`upload_intent_id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `dossier_upload_intents_state_scope_uidx` ON `dossier_upload_intents` (`dossier_id`,`id`,`state`);--> statement-breakpoint
@@ -338,10 +337,8 @@ BEGIN
 		'revision', 'dossier_updated', 'document', NEW.id,
 		NEW.updated_by_actor_ref, NEW.updated_at
 	);
-END;
---> statement-breakpoint
-DROP TRIGGER dossier_revision_receipts_exact_claim_guard;
---> statement-breakpoint
+END;--> statement-breakpoint
+DROP TRIGGER dossier_revision_receipts_exact_claim_guard;--> statement-breakpoint
 CREATE TRIGGER dossier_revision_receipts_exact_claim_guard
 BEFORE INSERT ON dossier_revision_receipts
 FOR EACH ROW
@@ -359,8 +356,7 @@ BEGIN
 			AND claim_phase = 'revision'
 			AND event_type <> 'output_marked_stale'
 	) THEN RAISE(ABORT, 'dossier revision receipt requires at least one primary exact mutation audit claim') END;
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossiers_creation_provenance_immutable
 BEFORE UPDATE OF id, created_by_actor_ref, created_at ON dossiers
 FOR EACH ROW
@@ -369,8 +365,7 @@ WHEN NEW.id IS NOT OLD.id
 	OR NEW.created_at IS NOT OLD.created_at
 BEGIN
 	SELECT RAISE(ABORT, 'dossier identity and creation provenance are immutable');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_professional_assertions_review_state_guard
 BEFORE UPDATE OF status ON dossier_professional_assertions
 FOR EACH ROW
@@ -378,8 +373,7 @@ WHEN OLD.status = 'needs_review'
 	AND NEW.status NOT IN ('needs_review','accepted','rejected')
 BEGIN
 	SELECT RAISE(ABORT, 'pending professional assertions require an explicit accept or reject decision');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_revision_commitments_exact_duplicate_guard
 BEFORE INSERT ON dossier_revision_commitments
 FOR EACH ROW
@@ -394,10 +388,8 @@ WHEN EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'revision commitment actor and occurrence time must match exactly');
-END;
---> statement-breakpoint
-DROP TRIGGER dossier_information_requests_update_audit_claim;
---> statement-breakpoint
+END;--> statement-breakpoint
+DROP TRIGGER dossier_information_requests_update_audit_claim;--> statement-breakpoint
 CREATE TRIGGER dossier_information_requests_update_audit_claim
 AFTER UPDATE ON dossier_information_requests
 FOR EACH ROW
@@ -426,8 +418,7 @@ BEGIN
 		'revision', 'information_request_changed', 'information_request', NEW.id,
 		NEW.updated_by_actor_ref, NEW.updated_at
 	);
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_information_requests_provenance_only_guard
 BEFORE UPDATE OF updated_by_actor_ref, updated_at ON dossier_information_requests
 FOR EACH ROW
@@ -448,10 +439,8 @@ WHEN (
 	AND NEW.satisfying_evidence_link_id IS OLD.satisfying_evidence_link_id
 BEGIN
 	SELECT RAISE(ABORT, 'information-request provenance cannot change without a governed mutation');
-END;
---> statement-breakpoint
-DROP TRIGGER dossier_decision_packages_update_audit_claim;
---> statement-breakpoint
+END;--> statement-breakpoint
+DROP TRIGGER dossier_decision_packages_update_audit_claim;--> statement-breakpoint
 CREATE TRIGGER dossier_decision_packages_update_audit_claim
 AFTER UPDATE ON dossier_decision_package_references
 FOR EACH ROW
@@ -473,8 +462,7 @@ BEGIN
 		'revision', 'decision_package_linked', 'decision_package_reference', NEW.id,
 		NEW.updated_by_actor_ref, NEW.updated_at
 	);
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_decision_packages_provenance_only_guard
 BEFORE UPDATE OF updated_by_actor_ref, updated_at ON dossier_decision_package_references
 FOR EACH ROW
@@ -488,8 +476,7 @@ WHEN (
 	AND NEW.approval_state IS OLD.approval_state
 BEGIN
 	SELECT RAISE(ABORT, 'decision-package provenance cannot change without a governed mutation');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossiers_status_metadata_separation_guard
 BEFORE UPDATE ON dossiers
 FOR EACH ROW
@@ -511,8 +498,7 @@ WHEN NEW.status IS NOT OLD.status AND (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'status transitions cannot piggyback dossier metadata changes');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_audit_events_nonparticipant_role_guard
 BEFORE INSERT ON dossier_audit_events
 FOR EACH ROW
@@ -526,8 +512,7 @@ WHEN NEW.actor_role IN ('system','import')
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'non-participant audit roles are limited to exact platform-admin archive overrides');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossiers_canonical_insert_guard
 BEFORE INSERT ON dossiers
 FOR EACH ROW
@@ -546,8 +531,7 @@ WHEN NEW.status <> 'draft'
 	OR NEW.updated_at IS NOT NEW.created_at
 BEGIN
 	SELECT RAISE(ABORT, 'dossiers must begin as a canonical revision-one draft owned by their creator');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_participants_insert_provenance_guard
 BEFORE INSERT ON dossier_participants
 FOR EACH ROW
@@ -555,8 +539,7 @@ WHEN NEW.updated_by_actor_ref IS NOT NEW.created_by_actor_ref
 	OR NEW.updated_at IS NOT NEW.created_at
 BEGIN
 	SELECT RAISE(ABORT, 'participant creation and update provenance must match');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_professional_assertions_insert_provenance_guard
 BEFORE INSERT ON dossier_professional_assertions
 FOR EACH ROW
@@ -564,8 +547,7 @@ WHEN NEW.updated_by_actor_ref IS NOT NEW.created_by_actor_ref
 	OR NEW.updated_at IS NOT NEW.created_at
 BEGIN
 	SELECT RAISE(ABORT, 'assertion creation and update provenance must match');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_information_requests_insert_provenance_guard
 BEFORE INSERT ON dossier_information_requests
 FOR EACH ROW
@@ -573,8 +555,7 @@ WHEN NEW.updated_by_actor_ref IS NOT NEW.created_by_actor_ref
 	OR NEW.updated_at IS NOT NEW.created_at
 BEGIN
 	SELECT RAISE(ABORT, 'information-request creation and update provenance must match');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_decision_packages_insert_provenance_guard
 BEFORE INSERT ON dossier_decision_package_references
 FOR EACH ROW
@@ -582,8 +563,7 @@ WHEN NEW.updated_by_actor_ref IS NOT NEW.created_by_actor_ref
 	OR NEW.updated_at IS NOT NEW.created_at
 BEGIN
 	SELECT RAISE(ABORT, 'decision-package creation and update provenance must match');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_document_versions_insert_provenance_guard
 BEFORE INSERT ON dossier_document_versions
 FOR EACH ROW
@@ -609,8 +589,7 @@ WHEN NEW.created_by_actor_ref IS NOT NEW.uploader_actor_ref
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'document-version provenance must match its exact uploader and upload intent');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_evidence_links_insert_provenance_guard
 BEFORE INSERT ON dossier_evidence_links
 FOR EACH ROW
@@ -618,8 +597,7 @@ WHEN NEW.created_by_actor_ref IS NOT NEW.reviewed_by_actor_ref
 	OR NEW.created_at IS NOT NEW.reviewed_at
 BEGIN
 	SELECT RAISE(ABORT, 'evidence-link creation provenance must match its exact review decision');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_participants_insert_mutator_guard
 BEFORE INSERT ON dossier_participants
 FOR EACH ROW
@@ -647,8 +625,7 @@ WHEN NOT (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'participant creation requires pre-existing active owner authority');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_participants_update_mutator_guard
 BEFORE UPDATE ON dossier_participants
 FOR EACH ROW
@@ -661,8 +638,7 @@ WHEN NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'participant changes require pre-existing active owner authority');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_professional_assertions_review_provenance_guard
 BEFORE UPDATE ON dossier_professional_assertions
 FOR EACH ROW
@@ -674,8 +650,7 @@ WHEN OLD.status = 'needs_review'
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'assertion review provenance must match the exact reviewer and review time');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_assertion_sources_insert_provenance_guard
 BEFORE INSERT ON dossier_assertion_sources
 FOR EACH ROW
@@ -686,8 +661,7 @@ WHEN NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'assertion-source creation time must match the live dossier mutation');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_decision_packages_insert_revision_phase_guard
 BEFORE INSERT ON dossier_decision_package_references
 FOR EACH ROW
@@ -703,8 +677,7 @@ WHEN NEW.updated_by_actor_ref IS NEW.created_by_actor_ref
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'decision-package creation requires an unreceipted live dossier revision');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_snapshots_pilot_redaction_insert_guard
 BEFORE INSERT ON dossier_snapshots
 FOR EACH ROW
@@ -712,8 +685,7 @@ WHEN NEW.audience <> 'internal'
 	OR NEW.redaction_profile_id <> 'pilot-default'
 BEGIN
 	SELECT RAISE(ABORT, 'pilot snapshots require internal audience and pilot-default redaction profile');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_snapshots_insert_canonical_state_guard
 BEFORE INSERT ON dossier_snapshots
 FOR EACH ROW
@@ -722,8 +694,7 @@ WHEN NEW.sealed IS NOT false
 	OR NEW.sealed_by_actor_ref IS NOT NULL
 BEGIN
 	SELECT RAISE(ABORT, 'snapshot creation must begin unsealed');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_snapshots_pilot_redaction_seal_guard
 BEFORE UPDATE OF sealed ON dossier_snapshots
 FOR EACH ROW
@@ -735,8 +706,7 @@ WHEN OLD.sealed = false
 	)
 BEGIN
 	SELECT RAISE(ABORT, 'pilot snapshots require internal audience and pilot-default redaction profile');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_governed_outputs_pilot_redaction_guard
 BEFORE INSERT ON dossier_governed_outputs
 FOR EACH ROW
@@ -750,8 +720,7 @@ WHEN NOT EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'governed output requires an internal pilot-default snapshot');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER dossier_documents_insert_canonical_state_guard
 BEFORE INSERT ON dossier_documents
 FOR EACH ROW
