@@ -4,6 +4,75 @@ This journal records engineering milestones, decisions, invariants, validation s
 
 ---
 
+## 2026-08-31 — v60/v61 release candidate: release readiness and platform stabilization
+
+### Objective
+
+Consolidate the project into a single, explicit release-candidate identity for the August production-validation cycle and make the repo metadata, release notes, and engineering checkpoints consistent with the current product state.
+
+### Delivered
+
+- Version alignment for the current product checkpoint:
+  - Rust workspace: `60.0.0`
+  - Flutter mobile app: `60.0.0+61`
+  - release label: `v60-v61-rc.1`
+- August checkpoint work around visual identity publication, GreenFire pressure pilot, immutable content retention, pressure/countermove runtime, training debrief, snapshot visibility hardening, and failed ERP migration follow-up was treated as part of the current production-trust boundary.
+- Release docs and progress tracking were updated to reflect a release-candidate status instead of a stray alpha-only metadata state.
+- The project remains a hosted beta / release-candidate platform rather than a signed production binary for Android or iOS.
+
+### Architectural rationale
+
+The August work proved that the project can sustain complex runtime, publication, and audit checks while preserving deterministic scenario behavior. The release-candidate versioning is therefore intended to make the product identity explicit without implying a signed store distribution.
+
+### Validation posture
+
+The repo remains subject to the canonical Rust and Flutter quality gates defined in CI:
+
+- `cargo fmt --all -- --check`
+- `cargo check --workspace`
+- `cargo clippy --workspace --all-targets -- -D warnings`
+- `cargo test --workspace`
+- `cd apps/juris-mobile && flutter pub get && flutter analyze && flutter test`
+
+The current RC state is meant to represent the accepted product baseline and the deployment-preparation branch state, not a final store distribution artifact.
+
+### Engineering significance
+
+The August work established that:
+
+1. multi-case deterministic logic is no longer experimental;
+2. content retention and archive integrity are operational requirements;
+3. scenario publication and mobile parity must be versioned and auditable;
+4. release metadata must be tracked across Rust, Flutter, and docs as a single product identity.
+
+---
+
+## 2026-08-XX — August production validation and checkpoint consolidation
+
+### Objectives
+
+- validate core scenario runtime invariants under production-style review;
+- harden archive/content retention logic for immutable content and published references;
+- finalize the visual identity catalog and mobile presentation contract;
+- complete the pressure/countermove and training debrief publication checkpoints;
+- lock in a release-candidate identity with explicit docs and version metadata.
+
+### Delivered across the month
+
+- Visual identity foundation and catalog publication accepted for the product branch.
+- GreenFire pressure pilot accepted as a production publication checkpoint.
+- Immutable content version retention accepted and archived as a product-grade retention contract.
+- Pressure/countermove runtime checkpoints accepted across engine, content, and mobile validation.
+- Training debrief finalization and cleanup completed.
+- Snapshot visibility hardening and failed ERP follow-up were incorporated into the production-safe path.
+- The repo became explicit about the difference between product publication checkpoints and signed store releases.
+
+### Current status
+
+The project has moved from a collection of milestone branches into an integrated August checkpoint state. The practical release posture is: staged, validated, and deployment-ready as a release candidate rather than a finalized commercial binary.
+
+---
+
 ## 2026-07-24 — v0.1.0: Deterministic vertical skeleton
 
 ### Objective

@@ -2,6 +2,14 @@
 
 The product vision and long-term principles live in `VISION.md`. This document tracks the next engineering releases.
 
+## v60/v61 RC — Release candidate stabilization
+
+- Product metadata unified under `60.0.0` for Rust and `60.0.0+61` for Flutter.
+- Current release-candidate label: `v60-v61-rc.1`.
+- The project is treated as a deployment-preparation candidate rather than a signed Android or iOS production release.
+- August 2026 checkpoint work was integrated across scenario runtime, content retention, mobile identity, and publication review.
+- Hosted beta/web deployment remains the active deployment surface while product validation continues.
+
 ## v0.5.0 — Mobile shell
 
 - Flutter application under `apps/juris-mobile`.

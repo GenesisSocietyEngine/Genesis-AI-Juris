@@ -1,16 +1,42 @@
-# GENESIS: JURIS v0.6.0-alpha.1 — Matter Lifecycle and Dossier Projection
+# GENESIS: JURIS v60/v61 release candidate — Platform stabilization and release readiness
 
 ## Release identity
 
-This is an alpha source checkpoint, not a signed Android or iOS production
-release. The source baseline before release preparation is merge commit
-`9d1ad87961cabd61571fa59e1432d5c70c6d450c`. The exact released source commit
-is the annotated `v0.6.0-alpha.1` tag target and is repeated in the GitHub
-pre-release created after the release-preparation PR is merged.
+This release candidate supersedes the earlier v0.6.0-alpha.1 checkpoint and
+relabels the integrated product build as a proper v60/v61 candidate for
+validation and deployment preparation.
 
-Flutter product metadata is `0.6.0+13`. The Rust workspace remains `0.5.0`:
-this tag identifies the integrated GENESIS: JURIS product/source checkpoint,
-not a publication of Rust crates with version `0.6.0-alpha.1`.
+The product is a release candidate, not a signed production Android or iOS
+binary. The current tracked metadata is:
+
+- Tag / release candidate: `v60-v61-rc.1`
+- Flutter product version: `60.0.0+61`
+- Rust workspace version: `60.0.0`
+
+This is the release-candidate identity for the current GENESIS: JURIS product
+source baseline and is intended to make the product state explicit before the
+final deployment cutover.
+
+## Included in the candidate
+
+- Deterministic mobile bundle validation and authoritative fingerprint checks.
+- Integrated Rust runtime, FFI boundary, and mobile-shell parity checks.
+- Stable authoring, scenario, and publication integrity safeguards.
+- Web deployment posture through ChatGPT Sites with the production-grade review
+  and validation gates already defined in the repo.
+
+## Verification expectations
+
+The repository validates this candidate through the same gates already defined in
+CI:
+
+- Rust: `cargo fmt --all -- --check && cargo check --workspace && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace`
+- Flutter: `cd apps/juris-mobile && flutter pub get && flutter analyze && flutter test`
+
+## Deployment status
+
+This is a release candidate for deployment preparation. It is not presented as a
+final staged production binary or a signed store release.
 
 ## Included
 

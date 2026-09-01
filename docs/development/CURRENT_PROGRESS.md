@@ -128,12 +128,90 @@ original_desert_head: 44e565b22c52a4c3a3e69b2c137353b7771fcf77
 desert_recovery_ref: backup/desert-water-pre-failed-erp
 validator_followup: d7a52d836f4f51b9c510af38513bcb2722cbd6a2
 android_followup: de7ac065d095a0e268e14961b4b74edd754cf52e
-latest_published_release_tag: v0.6.0-alpha.1
-app_version: 0.6.0+13
-last_updated: 2026-08-21
+latest_published_release_tag: v60-v61-rc.1
+app_version: 60.0.0+61
+decision_dossier_v62_status: active_ai_job_persistence_and_governed_output_integration
+decision_dossier_v62_web_starting_head: 8bd10594bc01e5a45183a743396ac24b7aeaf321
+decision_dossier_v62_mobile_starting_head: 29f862649dea378cfe3d4e145f5e396bf6d4c6ff
+decision_dossier_v62_baseline_status: 47_pdfs_702_pages_visually_accepted
+decision_dossier_v62_mobile_gate: flutter_analyze_clean_focused_15_of_15_full_258_of_258
+decision_dossier_v62_slice5_gate: exact_package_graph_and_simulation_receipts_root_replay_24_of_24
+decision_dossier_v62_remote_state: local_only_no_push_no_site_version_no_deployment
+last_updated: 2026-09-01
 ---
 
 # Current Progress
+
+## Decision-Centric Dossier Workspace v62 active checkpoint - 2026-09-01
+
+### Status, topology, and deployment boundary
+
+The Decision-Centric Dossier Workspace and Document Intelligence MVP is active
+in isolated web and mobile worktrees on branch
+`codex/v62-report-graph-pagination`. The unchanged starting heads are web
+`8bd10594bc01e5a45183a743396ac24b7aeaf321` and mobile
+`29f862649dea378cfe3d4e145f5e396bf6d4c6ff`. The implementation is not yet
+committed, pushed, merged, packaged as a new Site version, or deployed.
+Production remains on the v61 boundary and Site version 63 remains the rollback
+target. No production R2 bucket, asynchronous worker, malware scanner, or
+app-store distribution has been created or claimed.
+
+The approved scope includes coding, testing, and deployment, but the governing
+release instructions still require a fresh explicit approval immediately before
+the single public deployment. No intermediate public deployment is permitted.
+
+### Verified work completed so far
+
+- The complete v61 report baseline contains 47 PDFs, 702 A4 pages, and 702
+  rendered PNG pages. Every page was inspected through contact sheets with
+  targeted full-resolution review. The visual baseline manifest SHA-256 is
+  `fbcc9a03d8a26b7076aa2504ac1adf28c28a4196806c9e2849bb6a6aba12f8bb`;
+  the QA manifest SHA-256 is
+  `50abedd58f7991915abe7a90a58ecdd286e54a0da84e605381b7be4f8f4e0e62`.
+- A strict machine-readable dossier contract, ADR, and contract tests are in
+  place; the focused contract gate passes 13/13 with TypeScript and lint clean.
+- Private document upload, deterministic extraction, evidence anchors,
+  assertions, links, source-grounded proposal review, and the responsive Matter
+  workspace have working focused coverage. Their mutation ordering is being
+  rebased onto the corrected persistence invariant before these receipts can be
+  treated as final.
+- The ordinary Matter User View now exposes immutable-version upload, manual
+  exact-anchor/assertion review, current-package graph node/edge evidence links,
+  and document-backed request satisfaction. Its focused acceptance suite passes
+  9/9 and focused ESLint is clean.
+- Slice 5 now binds only exact published package identities and graphs, proves
+  governed lineage and reviewable graph diffs, and re-proves authenticated v61
+  simulation sessions with runtime-state, parameter-binding, and receipt
+  digests. Root replayed the package/Evidence gate at 24/24; the associated real
+  private-R2 upload matrix passed 12/12 after the final transaction-order fix.
+- Web and Flutter report layout assets are byte-pinned. The Flutter release
+  probe reproduces all seven locked graph fingerprints, including 200 nodes and
+  187 cross-page connector pairs. Focused contract/layout tests pass 15/15, the
+  complete Flutter suite passes 258/258, and full Flutter analysis is clean.
+
+### Active audit boundary and remaining work
+
+An independent SQLite audit retracted the first persistence candidate after
+reproducing five high-severity bypasses: incomplete lifecycle authority,
+governed outputs without an initial state, receipts without complete audit
+coverage, malformed sealed snapshot readiness/approver bindings, and forged
+accepted-anchor extraction provenance. The corrected invariant is domain and
+stale-state writes, complete audit events, then the revision receipt last;
+status changes additionally require the validated transition row before the
+dossier update. The final migration SHA and all reordered routes remain blocked
+until a fresh independent adversarial audit passes.
+
+Governed snapshot/output/approval routes and durable idempotent AI proposal-job
+persistence are being integrated in parallel. Required scenarios A-E, pilot-scale
+performance measurements, full security/build/dependency/native gates, browser
+and accessibility evidence, final PDF inspection, exact-head commits and push,
+the single Site version, deployment approval, and post-deployment verification
+remain outstanding. No enterprise storage or scanning readiness is claimed.
+
+The next release-critical step is to freeze the corrected migration and route
+order, rerun the independent bypass audit, then integrate the package/output UI
+contracts and execute the factual A-E acceptance suite on the exact candidate
+head.
 
 ## Professional Product UI Pilot V2 local checkpoint - 2026-08-21
 

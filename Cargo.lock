@@ -86,7 +86,7 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "juris-ai"
-version = "0.5.0"
+version = "60.0.0"
 dependencies = [
  "juris-core",
  "juris-domain",
@@ -94,7 +94,7 @@ dependencies = [
 
 [[package]]
 name = "juris-case-catalog"
-version = "0.5.0"
+version = "60.0.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -103,7 +103,7 @@ dependencies = [
 
 [[package]]
 name = "juris-cli"
-version = "0.5.0"
+version = "60.0.0"
 dependencies = [
  "juris-ai",
  "juris-domain",
@@ -112,7 +112,7 @@ dependencies = [
 
 [[package]]
 name = "juris-content"
-version = "0.5.0"
+version = "60.0.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -121,14 +121,14 @@ dependencies = [
 
 [[package]]
 name = "juris-core"
-version = "0.5.0"
+version = "60.0.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "juris-domain"
-version = "0.5.0"
+version = "60.0.0"
 dependencies = [
  "juris-core",
  "serde",
@@ -136,7 +136,7 @@ dependencies = [
 
 [[package]]
 name = "juris-engine"
-version = "0.5.0"
+version = "60.0.0"
 dependencies = [
  "juris-ai",
  "juris-content",
@@ -152,7 +152,7 @@ dependencies = [
 
 [[package]]
 name = "juris-mobile-bridge"
-version = "0.5.0"
+version = "60.0.0"
 dependencies = [
  "juris-engine",
  "juris-scenario-schema",
@@ -162,7 +162,7 @@ dependencies = [
 
 [[package]]
 name = "juris-mobile-ffi"
-version = "0.5.0"
+version = "60.0.0"
 dependencies = [
  "juris-mobile-bridge",
  "serde_json",
@@ -170,7 +170,7 @@ dependencies = [
 
 [[package]]
 name = "juris-scenario-builder"
-version = "0.5.0"
+version = "60.0.0"
 dependencies = [
  "juris-case-catalog",
  "serde",
@@ -180,7 +180,7 @@ dependencies = [
 
 [[package]]
 name = "juris-scenario-diagnostics"
-version = "0.5.0"
+version = "60.0.0"
 dependencies = [
  "juris-scenario-schema",
  "serde",
@@ -190,7 +190,7 @@ dependencies = [
 
 [[package]]
 name = "juris-scenario-schema"
-version = "0.5.0"
+version = "60.0.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -199,7 +199,7 @@ dependencies = [
 
 [[package]]
 name = "juris-scenario-simulator"
-version = "0.5.0"
+version = "60.0.0"
 dependencies = [
  "juris-engine",
  "juris-scenario-schema",
@@ -211,7 +211,7 @@ dependencies = [
 
 [[package]]
 name = "juris-scenario-validator"
-version = "0.5.0"
+version = "60.0.0"
 dependencies = [
  "juris-scenario-schema",
  "serde_json",
