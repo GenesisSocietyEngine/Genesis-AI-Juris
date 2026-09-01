@@ -75,10 +75,13 @@ const MIGRATIONS = [
   "0009_medical_princess_powerful.sql",
   "0010_square_scalphunter.sql",
   "0011_operational_events.sql",
-  "0012_sleepy_magma.sql",
-  "0013_polite_sentinels.sql",
-  "0014_perfect_marvex.sql",
-  "0015_low_calypso.sql",
+  "0012_sleepy_magma_core.sql",
+  "0013_sleepy_magma_guards_a.sql",
+  "0014_sleepy_magma_guards_b.sql",
+  "0015_sleepy_magma_guards_c.sql",
+  "0016_polite_sentinels.sql",
+  "0017_perfect_marvex.sql",
+  "0018_low_calypso.sql",
 ] as const;
 
 const AT = "2026-09-01T08:00:00.000Z";

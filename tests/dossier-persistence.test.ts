@@ -19,13 +19,18 @@ const legacyMigrations = [
   "0010_square_scalphunter.sql",
   "0011_operational_events.sql",
 ] as const;
-const dossierMigration = "0012_sleepy_magma.sql";
-const auditClaimsMigration = "0013_polite_sentinels.sql";
-const uploadCommitmentMigration = "0014_perfect_marvex.sql";
-const statusHistoryMigration = "0015_low_calypso.sql";
+const dossierMigrations = [
+  "0012_sleepy_magma_core.sql",
+  "0013_sleepy_magma_guards_a.sql",
+  "0014_sleepy_magma_guards_b.sql",
+  "0015_sleepy_magma_guards_c.sql",
+] as const;
+const auditClaimsMigration = "0016_polite_sentinels.sql";
+const uploadCommitmentMigration = "0017_perfect_marvex.sql";
+const statusHistoryMigration = "0018_low_calypso.sql";
 const allMigrations = [
   ...legacyMigrations,
-  dossierMigration,
+  ...dossierMigrations,
   auditClaimsMigration,
   uploadCommitmentMigration,
   statusHistoryMigration,
@@ -35,16 +40,24 @@ function migration(name: string) {
   return readFileSync(new URL(`../drizzle/${name}`, import.meta.url), "utf8");
 }
 
-function migrationSha256(name: string) {
+function dossierMigrationSql() {
+  return dossierMigrations.map((name) => migration(name)).join("\n--> statement-breakpoint\n");
+}
+
+function dossierMigrationReceipt() {
+  return readFileSync(new URL("../docs/migration-receipts/0012_sleepy_magma.sql", import.meta.url), "utf8");
+}
+
+function dossierMigrationReceiptSha256() {
   return createHash("sha256")
-    .update(readFileSync(new URL(`../drizzle/${name}`, import.meta.url)))
+    .update(dossierMigrationReceipt())
     .digest("hex")
     .toUpperCase();
 }
 
 function database(names: readonly string[] = [
   ...legacyMigrations,
-  dossierMigration,
+  ...dossierMigrations,
   auditClaimsMigration,
   uploadCommitmentMigration,
   statusHistoryMigration,
@@ -57,8 +70,8 @@ function database(names: readonly string[] = [
 
 function legacyDossierDatabase() {
   // Historical direct-SQL invariants exercise the frozen 0012 contract. New
-  // production-workflow coverage and the exact-claim probes below apply 0013.
-  return database([...legacyMigrations, dossierMigration]);
+  // production-workflow coverage and the exact-claim probes below apply 0016.
+  return database([...legacyMigrations, ...dossierMigrations]);
 }
 
 test("every D1 migration breakpoint resolves to a non-empty platform statement", () => {
@@ -73,6 +86,15 @@ test("every D1 migration breakpoint resolves to a non-empty platform statement",
       `${name} must respect Cloudflare D1's per-statement 100 KB limit`,
     );
   }
+  const statements = (sql: string) => sql
+    .split("--> statement-breakpoint")
+    .map((statement) => statement.trim())
+    .filter(Boolean);
+  assert.deepEqual(
+    statements(dossierMigrationSql()),
+    statements(dossierMigrationReceipt()),
+    "the bounded production files must preserve every accepted 0012 statement in exact order",
+  );
 });
 
 function user(db: DatabaseSync, email: string, displayName = email) {
@@ -285,9 +307,9 @@ function addDocument(
   return hash;
 }
 
-test("0012 through additive 0015 are fresh-schema and v61-upgrade-safe metadata-only migrations", () => {
+test("0012 through additive 0018 are fresh-schema and v61-upgrade-safe metadata-only migrations", () => {
   assert.equal(
-    migrationSha256(dossierMigration),
+    dossierMigrationReceiptSha256(),
     "AE2A2816B316869D2B4607EE4294FDCF1B1F8DA548BD921DD34C6B69D263C68B",
     "the accepted hardened 0012 migration is frozen byte-for-byte",
   );
@@ -312,12 +334,12 @@ test("0012 through additive 0015 are fresh-schema and v61-upgrade-safe metadata-
     const columns = fresh.prepare(`PRAGMA table_xinfo(${name})`).all() as Array<{ type: string }>;
     assert.ok(columns.every((column) => !/BLOB/iu.test(column.type)), `${name} must store metadata only`);
   }
-  assert.doesNotMatch(migration(dossierMigration), /\bBLOB\b/iu);
+  assert.doesNotMatch(dossierMigrationSql(), /\bBLOB\b/iu);
   assert.doesNotMatch(migration(auditClaimsMigration), /\bBLOB\b/iu);
   assert.doesNotMatch(migration(uploadCommitmentMigration), /\bBLOB\b/iu);
   assert.doesNotMatch(migration(statusHistoryMigration), /\bBLOB\b/iu);
-  assert.match(migration(dossierMigration), /binary_object_reference/);
-  assert.match(migration(dossierMigration), /dossiers_no_fake_organisation_check/);
+  assert.match(dossierMigrationSql(), /binary_object_reference/);
+  assert.match(dossierMigrationSql(), /dossiers_no_fake_organisation_check/);
   assert.match(migration(auditClaimsMigration), /dossier_required_audits/);
   assert.match(migration(auditClaimsMigration), /dossier_revision_commitments/);
   assert.match(migration(uploadCommitmentMigration), /dossier_upload_version_commitments/);
@@ -331,7 +353,7 @@ test("0012 through additive 0015 are fresh-schema and v61-upgrade-safe metadata-
     VALUES ('upgrade-owner@example.com', 'upgrade_case', 'Upgrade case', '1.0.0', 'upgrade-fingerprint')
   `).run();
   const caseCount = upgraded.prepare("SELECT count(*) AS count FROM cases").get()?.count;
-  upgraded.exec(migration(dossierMigration));
+  for (const name of dossierMigrations) upgraded.exec(migration(name));
   upgraded.exec(migration(auditClaimsMigration));
   upgraded.exec(migration(uploadCommitmentMigration));
   upgraded.exec(migration(statusHistoryMigration));
@@ -593,10 +615,10 @@ test("canonical root and governed child inserts bind immutable creation provenan
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
 });
 
-test("0015 preserves populated status history and permits the next exact transition", () => {
+test("0018 preserves populated status history and permits the next exact transition", () => {
   const db = database([
     ...legacyMigrations,
-    dossierMigration,
+    ...dossierMigrations,
     auditClaimsMigration,
     uploadCommitmentMigration,
   ]);
@@ -685,7 +707,7 @@ test("0015 preserves populated status history and permits the next exact transit
     sequence: 2,
     previousStatus: "draft",
     newStatus: "intake_review",
-    reason: "Intake accepted before 0015",
+    reason: "Intake accepted before 0018",
     occurredAt: "2026-09-01T12:00:00.000Z",
     previousEventId: "status-upgrade-dossier-audit-created",
     digestSeed: 21_610,
@@ -704,9 +726,9 @@ test("0015 preserves populated status history and permits the next exact transit
     previous_status: "draft",
     new_status: "intake_review",
     actor_ref: ownerActor,
-    reason: "Intake accepted before 0015",
+    reason: "Intake accepted before 0018",
     occurred_at: "2026-09-01T12:00:00.000Z",
-  }, "the rebuild must preserve the pre-0015 immutable transition tuple");
+  }, "the rebuild must preserve the pre-0018 immutable transition tuple");
 
   db.exec("BEGIN IMMEDIATE");
   try {
@@ -770,7 +792,7 @@ test("0015 preserves populated status history and permits the next exact transit
   `).get() }, {
     revision: 2,
     status: "intake_review",
-    status_reason: "Intake accepted before 0015",
+    status_reason: "Intake accepted before 0018",
   });
   assert.equal(db.prepare(`
     SELECT count(*) AS count FROM dossier_status_transitions
@@ -784,7 +806,7 @@ test("0015 preserves populated status history and permits the next exact transit
     sequence: 3,
     previousStatus: "intake_review",
     newStatus: "active",
-    reason: "Work commenced after 0015",
+    reason: "Work commenced after 0018",
     occurredAt: "2026-09-01T12:01:00.000Z",
     previousEventId: "status-upgrade-intake-audit",
     digestSeed: 21_611,
@@ -795,7 +817,7 @@ test("0015 preserves populated status history and permits the next exact transit
   `).get() }, {
     revision: 3,
     status: "active",
-    status_reason: "Work commenced after 0015",
+    status_reason: "Work commenced after 0018",
   });
   assert.equal(db.prepare(`
     SELECT count(*) AS count FROM dossier_status_transitions
@@ -804,7 +826,7 @@ test("0015 preserves populated status history and permits the next exact transit
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
 });
 
-test("0015 proposal materialization backfill accepts only exact supported preexisting rows", () => {
+test("0018 proposal materialization backfill accepts only exact supported preexisting rows", () => {
   const fixture = () => {
     const db = legacyDossierDatabase();
     const ownerId = user(db, `proposal-upgrade-${Math.random()}@example.com`, "Proposal Upgrade Owner");
@@ -978,7 +1000,7 @@ test("0015 proposal materialization backfill accepts only exact supported preexi
       graphValue,
     };
   };
-  const applyThrough0014 = (db: DatabaseSync) => {
+  const applyThrough0017 = (db: DatabaseSync) => {
     db.exec(migration(auditClaimsMigration));
     db.exec(migration(uploadCommitmentMigration));
   };
@@ -1165,10 +1187,10 @@ test("0015 proposal materialization backfill accepts only exact supported preexi
       String(unsupported[input.object]),
       "2026-09-01T14:20:00.000Z",
     );
-    applyThrough0014(unsupported.db);
+    applyThrough0017(unsupported.db);
     expectRejectedUpgrade(
       unsupported.db,
-      `0015 must reject the unsupported accepted ${input.objectType} branch`,
+      `0018 must reject the unsupported accepted ${input.objectType} branch`,
     );
   }
 
@@ -1182,7 +1204,7 @@ test("0015 proposal materialization backfill accepts only exact supported preexi
       missingOrigin.assertionId,
       "2026-09-01T14:21:00.000Z",
     );
-    applyThrough0014(missingOrigin.db);
+    applyThrough0017(missingOrigin.db);
     expectRejectedUpgrade(
       missingOrigin.db,
       "an accepted assertion proposal cannot backfill against a child with null origin",
@@ -1236,7 +1258,7 @@ test("0015 proposal materialization backfill accepts only exact supported preexi
       childId,
       reviewedAt,
     );
-    applyThrough0014(wrongOrigin.db);
+    applyThrough0017(wrongOrigin.db);
     expectRejectedUpgrade(
       wrongOrigin.db,
       "an accepted proposal cannot adopt another proposal's origin child",
@@ -1293,10 +1315,10 @@ test("0015 proposal materialization backfill accepts only exact supported preexi
       childId,
       reviewedAt,
     );
-    applyThrough0014(wrongAssertionAnchor.db);
+    applyThrough0017(wrongAssertionAnchor.db);
     expectRejectedUpgrade(
       wrongAssertionAnchor.db,
-      "0015 must reject an exact-origin assertion whose sources differ from its proposal anchors",
+      "0018 must reject an exact-origin assertion whose sources differ from its proposal anchors",
     );
   }
 
@@ -1372,7 +1394,7 @@ test("0015 proposal materialization backfill accepts only exact supported preexi
     wrongEvidenceAnchor.db.exec(migration(uploadCommitmentMigration));
     expectRejectedUpgrade(
       wrongEvidenceAnchor.db,
-      "0015 must reject an exact-origin evidence child outside its proposal anchor set",
+      "0018 must reject an exact-origin evidence child outside its proposal anchor set",
     );
   }
 
@@ -1393,10 +1415,10 @@ test("0015 proposal materialization backfill accepts only exact supported preexi
       graph.packages[acceptedIndex].id,
       "2026-09-01T14:23:00.000Z",
     );
-    applyThrough0014(graph.db);
+    applyThrough0017(graph.db);
     expectRejectedUpgrade(
       graph.db,
-      `0015 must reject ${label} graph materialization during backfill`,
+      `0018 must reject ${label} graph materialization during backfill`,
     );
   }
 });
@@ -3262,7 +3284,7 @@ test("append-only revision receipts abort stale CAS and allow multiple current-r
   assert.equal(db.prepare("SELECT count(*) AS count FROM dossier_audit_events WHERE id LIKE 'cas-audit-stale%'").get()?.count, 0);
 });
 
-test("0013 exact revision claims roll back unaudited or mismatched participant and information-request mutations", () => {
+test("0016 exact revision claims roll back unaudited or mismatched participant and information-request mutations", () => {
   const participantDb = database();
   const participantOwnerId = user(participantDb, "claims-participant-owner@example.com", "Claims Participant Owner");
   const participantOwnerActor = actor(participantDb, participantOwnerId);
@@ -3545,7 +3567,7 @@ test("0013 exact revision claims roll back unaudited or mismatched participant a
   assert.deepEqual(requestDb.prepare("PRAGMA foreign_key_check").all(), []);
 });
 
-test("0013 lifecycle status and status_reason update commits with only the exact transition audit claim", () => {
+test("0016 lifecycle status and status_reason update commits with only the exact transition audit claim", () => {
   const db = database();
   const ownerId = user(db, "claims-transition-owner@example.com", "Claims Transition Owner");
   const ownerActor = actor(db, ownerId);
@@ -3621,7 +3643,7 @@ test("0013 lifecycle status and status_reason update commits with only the exact
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
 });
 
-test("0014 status hardening binds metadata, reason, time, and closure/archive fields to exact transitions", () => {
+test("0017 status hardening binds metadata, reason, time, and closure/archive fields to exact transitions", () => {
   const db = database();
   const ownerId = user(db, "status-hardening-owner@example.com", "Status Hardening Owner");
   const ownerActor = actor(db, ownerId);
@@ -4019,7 +4041,7 @@ test("0014 status hardening binds metadata, reason, time, and closure/archive fi
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
 });
 
-test("0014 pure dossier revision bumps cannot commit or mint a bare revision receipt", () => {
+test("0017 pure dossier revision bumps cannot commit or mint a bare revision receipt", () => {
   const db = database();
   const ownerId = user(db, "pure-revision-owner@example.com", "Pure Revision Owner");
   const ownerActor = actor(db, ownerId);
@@ -4067,7 +4089,7 @@ test("0014 pure dossier revision bumps cannot commit or mint a bare revision rec
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
 });
 
-test("0014 revision commitments bind root and child actor/time in either trigger order", () => {
+test("0017 revision commitments bind root and child actor/time in either trigger order", () => {
   const db = database();
   const ownerId = user(db, "commitment-order-owner@example.com", "Commitment Order Owner");
   const ownerActor = actor(db, ownerId);
@@ -4263,7 +4285,7 @@ test("0014 revision commitments bind root and child actor/time in either trigger
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
 });
 
-test("0014 assertion-source mutations use the live dossier actor/time instead of stale parent provenance", () => {
+test("0017 assertion-source mutations use the live dossier actor/time instead of stale parent provenance", () => {
   const db = legacyDossierDatabase();
   const ownerId = user(db, "assertion-source-owner@example.com", "Assertion Source Owner");
   const ownerActor = actor(db, ownerId);
@@ -4433,7 +4455,7 @@ test("0014 assertion-source mutations use the live dossier actor/time instead of
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
 });
 
-test("0014 dossier creation provenance is immutable alone and during title or status mutations", () => {
+test("0017 dossier creation provenance is immutable alone and during title or status mutations", () => {
   const db = database();
   const ownerId = user(db, "root-provenance-owner@example.com", "Root Provenance Owner");
   const ownerActor = actor(db, ownerId);
@@ -4506,7 +4528,7 @@ test("0014 dossier creation provenance is immutable alone and during title or st
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
 });
 
-test("0014 internal upload version commitment rolls back without the final committed intent state", () => {
+test("0017 internal upload version commitment rolls back without the final committed intent state", () => {
   const db = database();
   const ownerId = user(db, "upload-commitment-owner@example.com", "Upload Commitment Owner");
   const ownerActor = actor(db, ownerId);
@@ -4773,7 +4795,7 @@ test("0014 internal upload version commitment rolls back without the final commi
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
 });
 
-test("0014 orphan AI-created source anchors require their own exact revision audit", () => {
+test("0017 orphan AI-created source anchors require their own exact revision audit", () => {
   const db = database();
   const ownerId = user(db, "ai-anchor-claim-owner@example.com", "AI Anchor Claim Owner");
   const ownerActor = actor(db, ownerId);
@@ -4944,7 +4966,7 @@ test("0014 orphan AI-created source anchors require their own exact revision aud
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
 });
 
-test("0014 assertion_type and accepted-assertion supersession require the current exact mutation tuple", () => {
+test("0017 assertion_type and accepted-assertion supersession require the current exact mutation tuple", () => {
   const db = legacyDossierDatabase();
   const ownerId = user(db, "assertion-claim-owner@example.com", "Assertion Claim Owner");
   const ownerActor = actor(db, ownerId);
@@ -6429,7 +6451,7 @@ test("participant mutations require owner authority and nonparticipant audit rol
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
 });
 
-test("0013 same-revision snapshot, output, approval, and stale-state claims fail closed and commit only exact audits", () => {
+test("0016 same-revision snapshot, output, approval, and stale-state claims fail closed and commit only exact audits", () => {
   const db = database();
   const ownerId = user(db, "claims-artifact-owner@example.com", "Claims Artifact Owner");
   const ownerActor = actor(db, ownerId);

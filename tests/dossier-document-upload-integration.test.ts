@@ -38,10 +38,13 @@ const migrations = [
   "0009_medical_princess_powerful.sql",
   "0010_square_scalphunter.sql",
   "0011_operational_events.sql",
-  "0012_sleepy_magma.sql",
-  "0013_polite_sentinels.sql",
-  "0014_perfect_marvex.sql",
-  "0015_low_calypso.sql",
+  "0012_sleepy_magma_core.sql",
+  "0013_sleepy_magma_guards_a.sql",
+  "0014_sleepy_magma_guards_b.sql",
+  "0015_sleepy_magma_guards_c.sql",
+  "0016_polite_sentinels.sql",
+  "0017_perfect_marvex.sql",
+  "0018_low_calypso.sql",
 ] as const;
 
 let miniflare: Miniflare | undefined;
@@ -394,7 +397,7 @@ after(async () => {
   await miniflare?.dispose();
 });
 
-test("migration 0015 and private R2 are executable through Miniflare", async () => {
+test("migration 0018 and private R2 are executable through Miniflare", async () => {
   const db = drizzle(d1, { schema });
   const result = await db.select().from(schema.dossierUploadIntents);
   assert.deepEqual(result, []);
@@ -657,7 +660,7 @@ test("lost-201 exact replay is returned before stale-revision and full pending-q
   `, harness.dossierId))?.count, 20);
 });
 
-test("migration 0014 atomically reserves pending count and stored-plus-pending bytes", async () => {
+test("migration 0017 atomically reserves pending count and stored-plus-pending bytes", async () => {
   const harness = await seedHarness("byte-reservation");
   const base = await uploadFixture({
     revision: 1,
