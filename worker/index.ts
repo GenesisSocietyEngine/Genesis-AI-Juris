@@ -13,6 +13,7 @@ import { withSecurityHeaders } from "./security-headers";
 interface Env extends ObservabilityBindings {
   ASSETS: Fetcher;
   DB: D1Database;
+  DOSSIER_DOCUMENTS: R2Bucket;
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {

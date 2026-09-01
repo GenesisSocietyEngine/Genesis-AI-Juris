@@ -160,7 +160,7 @@ test("alert ownership and unavailable external notification are explicit", () =>
     assert.ok(entry.threshold.length >= 20);
     assert.ok(entry.owner.length >= 10);
     assert.ok(entry.action.length >= 30);
-    assert.match(entry.rollbackCriterion, /Site version 52|No automatic rollback/);
+    assert.match(entry.rollbackCriterion, /Site version 63|No automatic rollback/);
     assert.equal(entry.externalNotification, "unavailable");
   }
   assert.equal(OPERATIONAL_ALERT_RUNBOOK.worker_exception.source, "platform_logs");

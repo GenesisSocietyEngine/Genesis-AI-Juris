@@ -300,6 +300,14 @@ test("source contracts keep ChatGPT first, local admins impossible and recovery 
 
 test("profile deletion clears local auth data and all identity responses are no-store", () => {
   const me = source("app/api/me/route.ts");
+  const responsibilityGuard = me.indexOf("dossier_transfer_required");
+  const firstIdentityDelete = me.indexOf("db.delete(caseSubscriptions)");
+  assert.ok(responsibilityGuard >= 0, "account deletion must expose a stable governed-responsibility stop code");
+  assert.ok(firstIdentityDelete > responsibilityGuard, "the dossier responsibility guard must run before destructive identity cleanup");
+  assert.match(me, /dossiers\.ownerUserId/);
+  assert.match(me, /dossierParticipants\.userId/);
+  assert.match(me, /return authJson\(\{[\s\S]*?code:\s*"dossier_transfer_required"[\s\S]*?\}, 409\)/);
+  assert.doesNotMatch(me, /dossierId:\s*(?:ownedDossier|dossierParticipation)/);
   assert.match(me, /db\.delete\(authAuditEvents\)/);
   assert.match(me, /db\.delete\(authRateLimitEvents\)/);
   assert.match(me, /db\.delete\(users\)/);

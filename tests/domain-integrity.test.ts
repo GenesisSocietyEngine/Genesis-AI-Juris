@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
-import { canonicalFingerprint, caseFingerprint, normalizeStudioDraft, studioStructuralIssues } from "../app/case-integrity";
+import { canonicalFingerprint, caseFingerprint, casePublicationFingerprint, normalizeStudioDraft, studioStructuralIssues } from "../app/case-integrity";
 import { resolveDecisionTiming, resolveLegacyDecisionTiming, stageClockMinute } from "../app/game-engine";
 import { legacyScenarios } from "../app/legacy-scenarios";
 import { normalizePlayableScenario, playableFingerprint } from "../app/playable-integrity";
@@ -99,6 +99,11 @@ test("Studio canonicalizes tax classifications and enforces server graph/publica
   assert.match(fingerprint, /^sha256-[a-f0-9]{64}$/);
   assert.equal(caseFingerprint(structuredClone(valid)), fingerprint);
   assert.notEqual(caseFingerprint({ ...valid, jurisdiction: "Netherlands · EU" }), fingerprint);
+  const promptDerived = { ...valid, premisePublication: "prompt-derived" as const };
+  const authorReviewed = { ...valid, premisePublication: "author-reviewed" as const };
+  assert.equal(caseFingerprint(promptDerived), caseFingerprint(authorReviewed), "v61 semantic case fingerprints remain compatible");
+  assert.notEqual(casePublicationFingerprint(promptDerived), casePublicationFingerprint(authorReviewed), "publication safety binds explicit professional premise review");
+  assert.equal(casePublicationFingerprint({ ...promptDerived, premisePublication: undefined }), casePublicationFingerprint(promptDerived), "legacy and prompt-derived premise states both fail closed as unreviewed");
   const renamedRelationship = structuredClone(valid);
   renamedRelationship.links[0].id = `${renamedRelationship.links[0].id}-renamed`;
   assert.notEqual(caseFingerprint(renamedRelationship), fingerprint, "playable relationship identity is part of the exact Studio artifact");
@@ -142,6 +147,14 @@ test("tax-specific graph nodes cannot bypass tax classification and publication 
 
 test("publication compiles on the server and rejects a divergent client preview", () => {
   const draft = normalizeStudioDraft(taxDraft());
+  for (const premisePublication of ["prompt-derived", undefined] as const) {
+    const unreviewed = compilePublicationPlayable({ ...draft, premisePublication });
+    assert.equal(unreviewed.ok, false);
+    if (!unreviewed.ok) {
+      assert.equal(unreviewed.status, 422);
+      assert.match(unreviewed.error, /deliberately reviewed by the author/i);
+    }
+  }
   const serverOnly = compilePublicationPlayable(draft);
   assert.equal(serverOnly.ok, true);
   if (!serverOnly.ok) return;
@@ -284,6 +297,8 @@ test("critical API sources retain exact-version and review-evidence checks", () 
   assert.match(publication, /compilePublicationPlayable\(draft, payload\.playableScenario\)/);
   assert.match(publication, /normalizeTaxPublicationAttestation/);
   assert.match(publication, /artifactBinding/);
+  assert.match(publication, /publicationFingerprint/);
+  assert.match(publication, /storedPublicationFingerprint\(review\.payload\) !== publicationFingerprint/);
   assert.doesNotMatch(publication, /taxSafetyAttestation !== true/);
   assert.match(publication, /toPublicStudioDraft\(protectedDraft\)/);
   assert.match(publication, /caseProtection: protection/);
@@ -299,6 +314,7 @@ function taxDraft(): StudioDraft {
     jurisdiction: "Belgium · EU",
     role: "International tax counsel",
     premise: "Compare a documented operating baseline with compliant alternatives.",
+    premisePublication: "author-reviewed",
     classification: { domain: "tax", practiceArea: "International tax planning", difficulty: "Advanced", tags: ["tax"], taxTopics: ["Transfer pricing"], complianceOnly: true, purpose: "lawful_planning", legalAsOf: "2026-08-21", sourceUrls: ["https://www.oecd.org/en/topics/global-minimum-tax.html"] },
     nodes: [
       { id: "trigger-1", type: "trigger", title: "Proposal", detail: "", x: 10, y: 10 },
