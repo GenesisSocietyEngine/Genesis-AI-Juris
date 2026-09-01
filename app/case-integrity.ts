@@ -41,6 +41,25 @@ export function caseFingerprint(draft: StudioDraft) {
   return canonicalFingerprint(caseFingerprintContent(draft, true));
 }
 
+export const CASE_PUBLICATION_FINGERPRINT_KIND = "genesis-juris-case-publication-safety-v1" as const;
+
+/**
+ * A separate safety receipt preserves the released semantic case fingerprint
+ * while binding the professional-review state that controls whether premise
+ * text may enter a report or published payload.
+ */
+export function casePublicationFingerprint(draft: StudioDraft) {
+  return canonicalFingerprint({
+    kind: CASE_PUBLICATION_FINGERPRINT_KIND,
+    caseFingerprint: caseFingerprint(draft),
+    premiseReview: casePremiseReviewState(draft),
+  });
+}
+
+export function casePremiseReviewState(draft: Pick<StudioDraft, "premisePublication">) {
+  return draft.premisePublication === "author-reviewed" ? "author-reviewed" as const : "unreviewed" as const;
+}
+
 /**
  * Read-only compatibility fingerprint for artifacts exported before v16.
  * New saves and seals must always use caseFingerprint(), which binds the
@@ -132,6 +151,9 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
   const caseType = normalizeCaseTypeReference(value.caseType);
   const taxEconomics = isTax ? normalizeTaxEconomics(value.taxEconomics) : undefined;
   const dealEconomics = normalizeDealEconomics(value.dealEconomics);
+  const premisePublication = value.premisePublication === "prompt-derived" || value.premisePublication === "author-reviewed"
+    ? value.premisePublication
+    : undefined;
 
   const normalized: StudioDraft = {
     caseId,
@@ -143,6 +165,7 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
     jurisdiction: safeString(value.jurisdiction, "", 160),
     role: safeString(value.role, "", 160),
     premise: safeString(value.premise, "", 8_000),
+    ...(premisePublication ? { premisePublication } : {}),
     classification: {
       domain: isTax ? "tax" : "general",
       practiceArea,
@@ -333,7 +356,14 @@ function isoDate(value: unknown) {
 }
 function urlList(value: unknown, maxItems: number) {
   return stringList(value, maxItems, 500).filter((item) => {
-    try { return new URL(item).protocol === "https:"; } catch { return false; }
+    try {
+      const parsed = new URL(item);
+      return parsed.protocol === "https:"
+        && parsed.username === ""
+        && parsed.password === ""
+        && parsed.hostname !== ""
+        && parsed.origin !== "null";
+    } catch { return false; }
   });
 }
 

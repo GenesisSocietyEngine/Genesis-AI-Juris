@@ -1,9 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { caseFingerprint } from "../app/case-integrity";
+import { caseFingerprint, casePublicationFingerprint } from "../app/case-integrity";
 import { caseTypeReference } from "../app/case-type-reference";
 import { CASE_TYPE_PLAYBOOK_REGISTRY, primaryCaseOutput } from "../app/case-type-playbooks";
-import { REPORT_PROFILE_REGISTRY, buildCanonicalReportModel, isReportReceiptStale, reportReceipt, validateReportReadiness } from "../app/report-model";
+import {
+  REPORT_PROFILE_REGISTRY,
+  buildCanonicalReportModel,
+  isReportReceiptStale,
+  parseReportReceipt,
+  reportReceipt,
+  validateReportReadiness,
+} from "../app/report-model";
+import {
+  REPORT_GRAPH_LAYOUT_ALGORITHM_VERSION,
+  REPORT_GRAPH_LAYOUT_RENDERER_VERSION,
+  REPORT_GRAPH_LAYOUT_SCHEMA_VERSION,
+} from "../app/report-graph-contract";
 import type { CaseTypeId, StudioDraft } from "../app/types";
 
 function governedDraft(id: CaseTypeId): StudioDraft {
@@ -50,20 +62,79 @@ test("canonical report models are deterministic, governed and prompt-safe", () =
 test("external and final report gates fail closed until exact saved approval", () => {
   const draft = governedDraft("general_advisory");
   const fingerprint = caseFingerprint(draft);
-  const blocked = validateReportReadiness(draft, { profileId: "decision_memorandum", status: "final", audience: "client", preparedBy: "", preparedFor: "", reviewerName: "", reviewerApproved: false, currentFingerprint: fingerprint, workspaceFingerprint: null });
+  const publicationFingerprint = casePublicationFingerprint(draft);
+  const blocked = validateReportReadiness(draft, { profileId: "decision_memorandum", status: "final", audience: "client", preparedBy: "", preparedFor: "", reviewerName: "", reviewerApproved: false, currentFingerprint: fingerprint, workspaceFingerprint: null, currentPublicationFingerprint: publicationFingerprint, workspacePublicationFingerprint: null });
   assert.equal(blocked.ready, false);
   assert.ok(blocked.blockers.length >= 5);
-  const ready = validateReportReadiness(draft, { profileId: "decision_memorandum", status: "final", audience: "client", preparedBy: "Author", preparedFor: "Client", reviewerName: "Reviewer", reviewerApproved: true, currentFingerprint: fingerprint, workspaceFingerprint: fingerprint });
+  const ready = validateReportReadiness(draft, { profileId: "decision_memorandum", status: "final", audience: "client", preparedBy: "Author", preparedFor: "Client", reviewerName: "Reviewer", reviewerApproved: true, currentFingerprint: fingerprint, workspaceFingerprint: fingerprint, currentPublicationFingerprint: publicationFingerprint, workspacePublicationFingerprint: publicationFingerprint });
   assert.equal(ready.ready, true);
+
+  const provenanceChanged = { ...draft, premisePublication: "author-reviewed" as const };
+  assert.equal(caseFingerprint(provenanceChanged), fingerprint, "v61 semantic fingerprint compatibility is preserved");
+  const staleSafety = validateReportReadiness(provenanceChanged, { profileId: "decision_memorandum", status: "final", audience: "client", preparedBy: "Author", preparedFor: "Client", reviewerName: "Reviewer", reviewerApproved: true, currentFingerprint: fingerprint, workspaceFingerprint: fingerprint, currentPublicationFingerprint: casePublicationFingerprint(provenanceChanged), workspacePublicationFingerprint: publicationFingerprint });
+  assert.equal(staleSafety.ready, false);
+  assert.match(staleSafety.blockers.join(" "), /exact reviewed case version/i);
 });
 
 test("report receipts detect a changed case without storing case content", () => {
   const draft = governedDraft("training_simulation");
   const fingerprint = caseFingerprint(draft);
   const model = buildCanonicalReportModel(draft, { profileId: "facilitator_guide", status: "draft", audience: "internal", preparedBy: "Trainer", preparedFor: "Cohort", reviewerName: "", reviewerApproved: false, currentFingerprint: fingerprint, workspaceFingerprint: fingerprint, confidential: true });
-  const receipt = reportReceipt(model, "2026-08-31T12:00:00.000Z");
-  assert.equal(isReportReceiptStale(receipt, draft, "facilitator_guide"), false);
+  const layout = {
+    layoutSchemaVersion: REPORT_GRAPH_LAYOUT_SCHEMA_VERSION,
+    layoutAlgorithmVersion: REPORT_GRAPH_LAYOUT_ALGORITHM_VERSION,
+    layoutRendererVersion: REPORT_GRAPH_LAYOUT_RENDERER_VERSION,
+    layoutFingerprint: `sha256-${"a".repeat(64)}`,
+    presentationFingerprint: `sha256-${"e".repeat(64)}`,
+  };
+  const receipt = reportReceipt(model, "2026-08-31T12:00:00.000Z", layout);
+  const current = {
+    reportFingerprint: model.contentFingerprint,
+    layoutFingerprint: layout.layoutFingerprint,
+    presentationFingerprint: layout.presentationFingerprint,
+  };
+  assert.equal(isReportReceiptStale(receipt, draft, "facilitator_guide", current), false);
+  assert.equal(Reflect.apply(isReportReceiptStale, null, [receipt, draft, "facilitator_guide"]), true);
+  assert.equal(isReportReceiptStale(receipt, draft, "facilitator_guide", { ...current, layoutFingerprint: "not-a-layout-fingerprint" }), true);
+  assert.equal(isReportReceiptStale(receipt, draft, "facilitator_guide", { ...current, reportFingerprint: `sha256-${"b".repeat(64)}` }), true);
+  assert.equal(isReportReceiptStale(receipt, draft, "facilitator_guide", { ...current, layoutFingerprint: `sha256-${"b".repeat(64)}` }), true);
+  assert.equal(isReportReceiptStale(receipt, draft, "facilitator_guide", { ...current, presentationFingerprint: `sha256-${"b".repeat(64)}` }), true);
   const changed = { ...draft, premise: `${draft.premise} Changed.` };
-  assert.equal(isReportReceiptStale(receipt, changed, "facilitator_guide"), true);
+  assert.equal(isReportReceiptStale(receipt, changed, "facilitator_guide", current), true);
   assert.doesNotMatch(JSON.stringify(receipt), /governed professional matter/i);
+});
+
+test("legacy and superseded report receipts stay visible but are stale", () => {
+  const draft = governedDraft("training_simulation");
+  const legacy = {
+    caseId: draft.caseId,
+    caseVersion: draft.version,
+    profileId: "facilitator_guide",
+    rendererVersion: "1.0.0",
+    caseFingerprint: caseFingerprint(draft),
+    reportFingerprint: `sha256-${"c".repeat(64)}`,
+    generatedAt: "2026-08-31T12:00:00.000Z",
+    status: "draft" as const,
+    audience: "internal" as const,
+  };
+  const parsedLegacy = parseReportReceipt(JSON.stringify(legacy));
+  assert.ok(parsedLegacy);
+  const current = {
+    reportFingerprint: legacy.reportFingerprint,
+    layoutFingerprint: `sha256-${"a".repeat(64)}`,
+    presentationFingerprint: `sha256-${"e".repeat(64)}`,
+  };
+  assert.equal(isReportReceiptStale(parsedLegacy, draft, "facilitator_guide", current), true);
+
+  const superseded = {
+    ...legacy,
+    receiptSchemaVersion: 2 as const,
+    layoutSchemaVersion: 1,
+    layoutAlgorithmVersion: "0.9.0",
+    layoutRendererVersion: "1.9.0",
+    layoutFingerprint: `sha256-${"d".repeat(64)}`,
+  };
+  const parsedSuperseded = parseReportReceipt(JSON.stringify(superseded));
+  assert.ok(parsedSuperseded);
+  assert.equal(isReportReceiptStale(parsedSuperseded, draft, "facilitator_guide", { ...current, layoutFingerprint: superseded.layoutFingerprint }), true);
 });

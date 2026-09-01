@@ -49,6 +49,7 @@ export type StudioPromptPlan = {
 export function toPublicStudioDraft(draft: StudioDraft): Omit<StudioDraft, "editHistory"> {
   const publicDraft: Partial<StudioDraft> = { ...draft };
   delete publicDraft.editHistory;
+  if (publicDraft.premisePublication !== "author-reviewed") publicDraft.premise = "";
   return publicDraft as Omit<StudioDraft, "editHistory">;
 }
 
@@ -342,7 +343,7 @@ export function applyStudioPromptPlan(draft: StudioDraft, options: {
   let next = draft;
   if (plan.contextOnly) {
     const joinedPremise = `${draft.premise.trim()}\n\n${plan.instruction}`.trim();
-    next = { ...draft, premise: joinedPremise.slice(0, 8_000) };
+    next = { ...draft, premise: joinedPremise.slice(0, 8_000), premisePublication: "prompt-derived" };
   }
   next = appendPromptSubmissionHistory(next, plan, options.locale, options.createdAt);
   for (const operation of plan.operations) next = executePromptOperation(next, operation);
@@ -395,7 +396,7 @@ function executePromptOperation(draft: StudioDraft, operation: StudioPromptOpera
   if (operation.kind === "update_link") return { ...draft, links: draft.links.map((link) => link.id === operation.linkId ? { ...link, rule: { ...(link.rule ?? {}), ...operation.change } } : link) };
   if (operation.kind === "relink_link") return { ...draft, links: draft.links.map((link) => link.id === operation.linkId ? { ...link, from: operation.from, to: operation.to } : link) };
   if (operation.kind === "delete_link") return { ...draft, links: draft.links.filter((link) => link.id !== operation.linkId) };
-  if (operation.kind === "append_context") return { ...draft, premise: `${draft.premise.trim()}\n\n${operation.value}`.trim().slice(0, 8_000) };
+  if (operation.kind === "append_context") return { ...draft, premise: `${draft.premise.trim()}\n\n${operation.value}`.trim().slice(0, 8_000), premisePublication: "prompt-derived" };
   if (operation.kind === "set_deal_economics") return { ...draft, dealEconomics: operation.economics };
   if (operation.kind === "set_classification") return { ...draft, classification: { ...(draft.classification ?? { domain: "general", practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), ...operation.change, ...(operation.change.domain === "tax" ? { complianceOnly: true } : {}) } };
   return { ...draft, [operation.field]: operation.value };

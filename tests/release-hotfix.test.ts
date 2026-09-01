@@ -8,11 +8,21 @@ import { resolvePlayedCaseScenario } from "../app/played-case-loader";
 import { scenarios } from "../app/scenarios";
 import {
   deviceDraftEnvelope,
+  isStudioDeviceScope,
+  mayPersistReportReceiptOnDevice,
   mayPersistStudioDraftOnDevice,
   studioDeviceDraftKey,
   studioDeviceScope,
   unwrapDeviceDraft,
 } from "../app/studio-device-storage";
+import {
+  legacyReportReceiptStorageKey,
+  readStoredReportReceipt,
+  reportReceiptStorageKey,
+  writeStoredReportReceipt,
+  type ReportReceiptDeviceStorage,
+  type ReportReceiptV2,
+} from "../app/report-model";
 import type { StudioDraft } from "../app/types";
 
 const localDraft: StudioDraft = {
@@ -69,6 +79,84 @@ test("only local, unprotected and non-private Studio drafts may use device stora
     },
   };
   assert.equal(mayPersistStudioDraftOnDevice({ canDuplicate: true, customCaseId: null, isPrivate: false, draft: protectedDraft }), false);
+});
+
+test("report receipts require a verified account scope and a local unrestricted case", () => {
+  const scope = "a".repeat(64);
+  const eligible = { scope, canDuplicate: true, customCaseId: null, isPrivate: false, draft: localDraft };
+  assert.equal(isStudioDeviceScope(scope), true);
+  assert.equal(isStudioDeviceScope("anonymous"), false);
+  assert.equal(mayPersistReportReceiptOnDevice(eligible), true);
+  assert.equal(mayPersistReportReceiptOnDevice({ ...eligible, scope: null }), false, "anonymous receipts are memory-only");
+  assert.equal(mayPersistReportReceiptOnDevice({ ...eligible, isPrivate: true }), false, "private receipts are memory-only");
+  assert.equal(mayPersistReportReceiptOnDevice({ ...eligible, canDuplicate: false }), false, "inspection-only receipts are memory-only");
+  assert.equal(mayPersistReportReceiptOnDevice({ ...eligible, customCaseId: 7 }), false, "workspace receipts are memory-only");
+  assert.equal(mayPersistReportReceiptOnDevice({
+    ...eligible,
+    draft: {
+      ...localDraft,
+      protection: {
+        kind: "case-protection-v1",
+        copyProtected: true,
+        copyPolicy: "lineage_locked",
+        parentCode: null,
+        currentCode: "protected-code",
+        seal: "protected-seal",
+      },
+    },
+  }), false, "protected receipts are memory-only");
+});
+
+test("report receipt storage isolates accounts and removes unscoped legacy entries", () => {
+  const entries = new Map<string, string>();
+  const storage: ReportReceiptDeviceStorage = {
+    getItem: (key) => entries.get(key) ?? null,
+    setItem: (key, value) => { entries.set(key, value); },
+    removeItem: (key) => { entries.delete(key); },
+  };
+  const scopeA = "a".repeat(64);
+  const scopeB = "b".repeat(64);
+  const profileId = "legal_advisory";
+  const receipt: ReportReceiptV2 = {
+    receiptSchemaVersion: 2,
+    caseId: localDraft.caseId,
+    caseVersion: localDraft.version,
+    profileId,
+    rendererVersion: "1.0.0",
+    caseFingerprint: `sha256-${"1".repeat(64)}`,
+    reportFingerprint: `sha256-${"2".repeat(64)}`,
+    generatedAt: "2026-09-01T12:00:00.000Z",
+    status: "draft",
+    audience: "internal",
+    layoutSchemaVersion: 1,
+    layoutAlgorithmVersion: "test-layout",
+    layoutRendererVersion: "test-renderer",
+    layoutFingerprint: `sha256-${"3".repeat(64)}`,
+    presentationFingerprint: `sha256-${"4".repeat(64)}`,
+  };
+  const legacyKey = legacyReportReceiptStorageKey(localDraft.caseId, profileId);
+  const contextA = { scope: scopeA, eligible: true, caseId: localDraft.caseId, profileId };
+  const contextB = { scope: scopeB, eligible: true, caseId: localDraft.caseId, profileId };
+
+  entries.set(legacyKey, JSON.stringify(receipt));
+  assert.equal(readStoredReportReceipt(storage, contextA), null, "legacy unscoped receipts are ignored");
+  assert.equal(entries.has(legacyKey), false, "legacy unscoped receipts are removed");
+  assert.equal(writeStoredReportReceipt(storage, contextA, receipt), true);
+  assert.deepEqual(readStoredReportReceipt(storage, contextA), receipt);
+  assert.equal(readStoredReportReceipt(storage, contextB), null, "account B cannot read account A's receipt");
+  assert.equal(entries.has(reportReceiptStorageKey(scopeA, localDraft.caseId, profileId)), true);
+
+  entries.set(legacyKey, JSON.stringify(receipt));
+  assert.equal(writeStoredReportReceipt(storage, contextB, receipt), true);
+  assert.equal(entries.has(legacyKey), false, "writes also remove the legacy unscoped key");
+  assert.equal(entries.has(reportReceiptStorageKey(scopeB, localDraft.caseId, profileId)), true);
+  assert.throws(() => reportReceiptStorageKey("owner@example.com", localDraft.caseId, profileId), /scope/i);
+
+  assert.equal(readStoredReportReceipt(storage, { ...contextA, eligible: false }), null);
+  assert.equal(entries.has(reportReceiptStorageKey(scopeA, localDraft.caseId, profileId)), false, "ineligible scoped entries are removed");
+  entries.set(legacyKey, JSON.stringify(receipt));
+  assert.equal(writeStoredReportReceipt(storage, { ...contextA, scope: null }, receipt), false);
+  assert.equal(entries.has(legacyKey), false, "anonymous access still removes the legacy key");
 });
 
 test("catalogue pointers resolve to integrity-checked current and legacy manifests", () => {

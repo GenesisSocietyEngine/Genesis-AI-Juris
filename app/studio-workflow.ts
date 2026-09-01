@@ -66,3 +66,13 @@ export function parseStudioWorkflowStep(value: string | null | undefined): Studi
 export function serializedStudioWorkflowStep(step: StudioWorkflowStep): StudioWorkflowStageId {
   return studioWorkflowStage(step);
 }
+
+/** A genuinely empty untitled draft is a new workflow, never a continuation
+ * of a stored or URL-selected finish step from an older draft. */
+export function restoredStudioWorkflowStep(
+  emptyUntitledDraft: boolean,
+  queryStep: StudioWorkflowStep | null,
+  storedStep: StudioWorkflowStep | null,
+): StudioWorkflowStep {
+  return emptyUntitledDraft ? 1 : queryStep ?? storedStep ?? 1;
+}

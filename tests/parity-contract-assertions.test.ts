@@ -2,10 +2,27 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
+  assertHostedWorkflowEvidence,
   assertJudicialResultParity,
   assertMobileContractValues,
   assertWebContractValues,
 } from "../scripts/parity-contract-assertions";
+
+test("hosted evidence requires exactly Rust, Flutter, Android, and iOS receipts", () => {
+  const commit = "29f862649dea378cfe3d4e145f5e396bf6d4c6ff";
+  const evidence = Object.fromEntries(["android", "flutter", "ios", "rust"].map((gate, index) => [gate, {
+    commit,
+    conclusion: "success",
+    run: index + 1,
+  }]));
+  assert.doesNotThrow(() => assertHostedWorkflowEvidence(evidence, commit));
+  for (const omitted of ["android", "flutter", "ios", "rust"]) {
+    const incomplete = Object.fromEntries(Object.entries(evidence).filter(([gate]) => gate !== omitted));
+    assert.throws(() => assertHostedWorkflowEvidence(incomplete, commit), /hosted workflow evidence exact keys/u, omitted);
+  }
+  assert.throws(() => assertHostedWorkflowEvidence({ ...evidence, windows: evidence.rust }, commit), /hosted workflow evidence exact keys/u);
+  assert.throws(() => assertHostedWorkflowEvidence({ ...evidence, ios: { ...evidence.ios, commit: "wrong" } }, commit), /ios evidence commit/u);
+});
 
 test("judicial-result parity requires explicit nulls and compares non-null runtime values", () => {
   const webRoutes = [{

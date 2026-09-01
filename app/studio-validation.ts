@@ -26,6 +26,9 @@ export function validateStudioDraft(draft: StudioDraft, locale: Locale): {
   checks.push(draft.title.trim() && draft.premise.trim()
     ? { level: "ok", text: label("Title and professional brief are explicit", "Название и профессиональное описание определены") }
     : { level: "warn", text: label("Add a title and a concise professional brief", "Добавьте название и краткое профессиональное описание") });
+  checks.push(draft.premisePublication === "author-reviewed"
+    ? { level: "ok", text: label("Publishable case context was deliberately reviewed", "Публикуемый контекст кейса проверен автором") }
+    : { level: "warn", text: label("Review and edit the publishable case context before submission", "Проверьте и отредактируйте публикуемый контекст кейса перед отправкой") });
   const orphaned = draft.nodes.filter((node) => node.type !== "trigger" && !incoming.has(node.id) && !outgoing.has(node.id));
   checks.push(orphaned.length === 0
     ? { level: "ok", text: label("No orphaned nodes", "Изолированных узлов нет") }

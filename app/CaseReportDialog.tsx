@@ -2,22 +2,28 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { StudioDraft } from "./types";
-import type { CaseReportOptions } from "./case-report";
+import { caseReportReceiptBinding, type CaseReportOptions } from "./case-report";
 import { caseTypePlaybook, primaryCaseOutput } from "./case-type-playbooks";
-import { isReportReceiptStale, parseReportReceipt, reportReceiptStorageKey, validateReportReadiness, type ReportReceipt } from "./report-model";
+import { isReportReceiptStale, readStoredReportReceipt, validateReportReadiness, type ReportReceipt } from "./report-model";
+import { reportGenerationErrorMessage } from "./report-generation-error";
 
-function storedReceipt(caseId: string, profileId: string) {
+function storedReceipt(caseId: string, profileId: string, scope: string | null, eligible: boolean) {
   if (typeof window === "undefined") return null;
-  try { return parseReportReceipt(window.localStorage.getItem(reportReceiptStorageKey(caseId, profileId))); }
+  try { return readStoredReportReceipt(window.localStorage, { scope, eligible, caseId, profileId }); }
   catch { return null; }
 }
 
-export default function CaseReportDialog({ locale, draft, currentFingerprint, workspaceFingerprint, privateCase, close, completed }: {
+export default function CaseReportDialog({ locale, draft, currentFingerprint, workspaceFingerprint, currentPublicationFingerprint, workspacePublicationFingerprint, privateCase, canGenerateReport, reportReceiptStorageScope, persistReportReceiptOnDevice, close, completed }: {
   locale: "en" | "ru";
   draft: StudioDraft;
   currentFingerprint: string;
   workspaceFingerprint: string | null;
+  currentPublicationFingerprint: string;
+  workspacePublicationFingerprint: string | null;
   privateCase: boolean;
+  canGenerateReport: boolean;
+  reportReceiptStorageScope: string | null;
+  persistReportReceiptOnDevice: boolean;
   close: () => void;
   completed: () => void;
 }) {
@@ -33,7 +39,12 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
   const [reviewerName, setReviewerName] = useState("");
   const [reviewerApproved, setReviewerApproved] = useState(false);
   const [redactedNodeIds, setRedactedNodeIds] = useState<string[]>([]);
-  const [previousReceipt, setPreviousReceipt] = useState<ReportReceipt | null>(() => storedReceipt(draft.caseId, primaryOutput.id));
+  const [previousReceipt, setPreviousReceipt] = useState<ReportReceipt | null>(() => storedReceipt(
+    draft.caseId,
+    primaryOutput.id,
+    reportReceiptStorageScope,
+    persistReportReceiptOnDevice,
+  ));
   const [includeEconomics, setIncludeEconomics] = useState(true);
   const [includeRegisters, setIncludeRegisters] = useState(true);
   const [includeSources, setIncludeSources] = useState(true);
@@ -42,10 +53,52 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const t = (en: string, ru: string) => locale === "en" ? en : ru;
+  const activeReportOptions = useMemo<CaseReportOptions>(() => ({
+    language: locale,
+    profileId,
+    profileLabel: caseTypePlaybook(draft.caseType).outputs.find((output) => output.id === profileId)?.label[locale]
+      ?? primaryCaseOutput(draft.caseType).label[locale],
+    audience,
+    confidentiality,
+    preparedBy,
+    preparedFor,
+    matterReference,
+    includeEconomics,
+    includeRegisters,
+    includeSources,
+    includeAuditTrail,
+    includeTechnicalIds,
+    // Generation time is PDF metadata only and is excluded from both locked fingerprints.
+    generatedAt: "1970-01-01T00:00:00.000Z",
+    currentFingerprint,
+    workspaceFingerprint,
+    currentPublicationFingerprint,
+    workspacePublicationFingerprint,
+    privateCase,
+    reportReceiptStorageScope,
+    persistReportReceiptOnDevice,
+    status,
+    reviewerName,
+    reviewerApproved,
+    redactedNodeIds,
+  }), [
+    audience, confidentiality, currentFingerprint, includeAuditTrail, includeEconomics, includeRegisters,
+    includeSources, includeTechnicalIds, locale, matterReference, persistReportReceiptOnDevice, preparedBy, preparedFor, privateCase,
+    reportReceiptStorageScope,
+    currentPublicationFingerprint, draft.caseType, profileId, redactedNodeIds, reviewerApproved, reviewerName,
+    status, workspaceFingerprint, workspacePublicationFingerprint,
+  ]);
+  const currentReceiptBinding = useMemo(() => {
+    try { return caseReportReceiptBinding(draft, activeReportOptions); }
+    catch { return null; }
+  }, [activeReportOptions, draft]);
+  const previousReceiptIsStale = previousReceipt === null
+    || currentReceiptBinding === null
+    || isReportReceiptStale(previousReceipt, draft, profileId, currentReceiptBinding);
   const readiness = useMemo(() => validateReportReadiness(draft, {
     profileId, status, audience, preparedBy, preparedFor, reviewerName, reviewerApproved,
-    currentFingerprint, workspaceFingerprint, redactedNodeIds,
-  }), [audience, currentFingerprint, draft, preparedBy, preparedFor, profileId, redactedNodeIds, reviewerApproved, reviewerName, status, workspaceFingerprint]);
+    currentFingerprint, workspaceFingerprint, currentPublicationFingerprint, workspacePublicationFingerprint, redactedNodeIds,
+  }), [audience, currentFingerprint, currentPublicationFingerprint, draft, preparedBy, preparedFor, profileId, redactedNodeIds, reviewerApproved, reviewerName, status, workspaceFingerprint, workspacePublicationFingerprint]);
 
   useEffect(() => {
     const escape = (event: KeyboardEvent) => { if (event.key === "Escape" && !busy) close(); };
@@ -53,25 +106,39 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
     return () => document.removeEventListener("keydown", escape);
   }, [busy, close]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setPreviousReceipt(storedReceipt(
+        draft.caseId,
+        profileId,
+        reportReceiptStorageScope,
+        persistReportReceiptOnDevice,
+      ));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [draft.caseId, persistReportReceiptOnDevice, profileId, reportReceiptStorageScope]);
+
   const chooseAudience = (next: CaseReportOptions["audience"]) => {
     setAudience(next);
     if (next === "client") { setStatus("final"); setIncludeAuditTrail(false); setIncludeTechnicalIds(false); }
   };
   const generate = async () => {
+    if (!canGenerateReport) {
+      setError(t("Report export is unavailable in inspection-only mode.", "Экспорт отчёта недоступен в режиме просмотра."));
+      return;
+    }
     if (!draft.title.trim() || !draft.nodes.length || busy) return;
     setBusy(true); setError("");
     try {
       const { downloadCaseReport } = await import("./case-report");
       await downloadCaseReport(draft, {
-        language: locale, profileId, profileLabel: playbook.outputs.find((output) => output.id === profileId)?.label[locale] ?? primaryOutput.label[locale], audience, confidentiality, preparedBy, preparedFor, matterReference,
-        includeEconomics, includeRegisters, includeSources, includeAuditTrail, includeTechnicalIds,
-        generatedAt: new Date().toISOString(), currentFingerprint, workspaceFingerprint, privateCase,
-        status, reviewerName, reviewerApproved, redactedNodeIds,
-      });
+        ...activeReportOptions,
+        generatedAt: new Date().toISOString(),
+      }, { canGenerate: canGenerateReport });
       completed();
       close();
-    } catch {
-      setError(t("The report could not be created. Review the case data and try again.", "Не удалось сформировать отчёт. Проверьте данные кейса и повторите попытку."));
+    } catch (caught) {
+      setError(reportGenerationErrorMessage(caught, locale));
     } finally { setBusy(false); }
   };
 
@@ -81,7 +148,7 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
       <p>{t("Generate a structured A4 PDF for review, circulation or the client file. The raw AI prompt is never included.", "Сформируйте структурированный PDF A4 для проверки, распространения или клиентского досье. Исходный AI-промпт никогда не включается.")}</p>
       <div className="case-report-grid">
         <fieldset><legend>{t("REPORT PROFILE", "ПРОФИЛЬ ОТЧЁТА")}</legend>
-          <label><span>{t("Professional output", "Профессиональный результат")}</span><select value={profileId} onChange={(event) => { setProfileId(event.target.value); setPreviousReceipt(storedReceipt(draft.caseId, event.target.value)); }}>{playbook.outputs.map((output) => <option key={output.id} value={output.id}>{output.label[locale]}{output.primary ? ` · ${t("primary", "основной")}` : ""}</option>)}</select></label>
+          <label><span>{t("Professional output", "Профессиональный результат")}</span><select value={profileId} onChange={(event) => setProfileId(event.target.value)}>{playbook.outputs.map((output) => <option key={output.id} value={output.id}>{output.label[locale]}{output.primary ? ` · ${t("primary", "основной")}` : ""}</option>)}</select></label>
           <label><span>{t("Audience", "Аудитория")}</span><select value={audience} onChange={(event) => chooseAudience(event.target.value as CaseReportOptions["audience"])}><option value="internal">{t("Internal professional review", "Внутренняя профессиональная проверка")}</option><option value="client">{t("Client-facing report", "Отчёт для клиента")}</option></select></label>
           <label><span>{t("Publication state", "Статус публикации")}</span><select value={status} onChange={(event) => setStatus(event.target.value as "draft" | "final")}><option value="draft">{t("Review draft", "Черновик для проверки")}</option><option value="final">{t("Approved final", "Утверждённый финальный")}</option></select></label>
           <label><span>{t("Classification", "Гриф")}</span><select value={confidentiality} onChange={(event) => setConfidentiality(event.target.value as CaseReportOptions["confidentiality"])}><option value="confidential">{t("Confidential", "Конфиденциально")}</option><option value="internal">{t("Internal", "Для внутреннего использования")}</option><option value="draft">{t("Draft", "Черновик")}</option></select></label>
@@ -98,14 +165,14 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
           <label className="report-check"><input type="checkbox" checked={includeAuditTrail} disabled={audience === "client"} onChange={(event) => setIncludeAuditTrail(event.target.checked)}/><span>{t("Safe authoring and review trail", "Безопасная история подготовки и проверки")}</span></label>
           <label className="report-check"><input type="checkbox" checked={includeTechnicalIds} disabled={audience === "client"} onChange={(event) => setIncludeTechnicalIds(event.target.checked)}/><span>{t("Technical node IDs and lineage", "Технические ID нодов и линия версий")}</span></label>
           <label><span>{t("Redact from report", "Скрыть из отчёта")}</span><select multiple size={4} value={redactedNodeIds} onChange={(event) => setRedactedNodeIds([...event.currentTarget.selectedOptions].map((option) => option.value))}>{draft.nodes.filter((node) => node.type === "fact" || node.type === "evidence").map((node) => <option key={node.id} value={node.id}>{node.title}</option>)}</select></label>
-          <aside><b>{t("Always included", "Всегда включается")}</b><p>{t("Executive summary, decision map, verification checklist, report status, page numbers, content fingerprint, and a final graph with the node-condition register.", "Резюме, карта решений, чек-лист проверки, статус отчёта, номера страниц, отпечаток содержания и финальный граф с реестром условий нодов.")}</p></aside>
+          <aside><b>{t("Always included", "Всегда включается")}</b><p>{t("Executive summary, decision map, verification checklist, report status, page numbers, content fingerprint, the full portrait graph, and its complete text alternative.", "Резюме, карта решений, чек-лист проверки, статус отчёта, номера страниц, отпечаток содержания, полный граф в книжной ориентации и его полная текстовая альтернатива.")}</p></aside>
         </fieldset>
       </div>
-      <div className="case-report-status"><b>{workspaceFingerprint === currentFingerprint ? t("Workspace-saved version", "Версия сохранена в workspace") : t("Working draft", "Рабочий черновик")}</b><span>{draft.nodes.length} {t("nodes", "нод")} · {draft.links.length} {t("connections", "связей")}</span></div>
+      <div className="case-report-status"><b>{workspaceFingerprint === currentFingerprint && workspacePublicationFingerprint === currentPublicationFingerprint ? t("Workspace-saved reviewed version", "Проверенная версия сохранена в workspace") : t("Working draft", "Рабочий черновик")}</b><span>{draft.nodes.length} {t("nodes", "нод")} · {draft.links.length} {t("connections", "связей")}</span></div>
       <div className="case-report-status"><b>{readiness.ready ? t("Report gate ready", "Отчёт готов к выпуску") : t("Report gate blocked", "Выпуск отчёта заблокирован")}</b><span>{readiness.blockers.length ? readiness.blockers.join(" · ") : readiness.warnings.join(" · ") || t("All mandatory checks passed", "Все обязательные проверки пройдены")}</span></div>
-      {previousReceipt && <div className="case-report-status"><b>{isReportReceiptStale(previousReceipt, draft, profileId) ? t("Previous report is stale", "Предыдущий отчёт устарел") : t("Current report receipt found", "Найдена актуальная квитанция отчёта")}</b><span>{previousReceipt.generatedAt.slice(0, 16).replace("T", " ")} UTC · {previousReceipt.reportFingerprint.slice(0, 19)}…</span></div>}
+      {previousReceipt && <div className="case-report-status"><b>{previousReceiptIsStale ? t("Previous report is stale", "Предыдущий отчёт устарел") : t("Current content and layout receipt found", "Найдена актуальная квитанция содержания и макета")}</b><span>{previousReceipt.generatedAt.slice(0, 16).replace("T", " ")} UTC · {previousReceipt.reportFingerprint.slice(0, 19)}…</span></div>}
       {error && <p className="case-report-error" role="alert">{error}</p>}
-      <footer><button className="secondary-cta" type="button" onClick={close} disabled={busy}>{t("Cancel", "Отмена")}</button><button className="primary-cta" type="button" onClick={generate} disabled={busy || !draft.title.trim() || !draft.nodes.length || ((status === "final" || audience === "client") && !readiness.ready)}>{busy ? t("Creating PDF…", "Создание PDF…") : t("Generate locally and download", "Сформировать локально и скачать")}</button></footer>
+      <footer><button className="secondary-cta" type="button" onClick={close} disabled={busy}>{t("Cancel", "Отмена")}</button><button className="primary-cta" type="button" onClick={generate} disabled={!canGenerateReport || busy || !draft.title.trim() || !draft.nodes.length || ((status === "final" || audience === "client") && !readiness.ready)}>{busy ? t("Creating PDF…", "Создание PDF…") : t("Generate locally and download", "Сформировать локально и скачать")}</button></footer>
     </section>
   </div>;
 }

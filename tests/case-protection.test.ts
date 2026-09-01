@@ -148,6 +148,9 @@ test("server routes retain signing-key secrecy, exact lineage checks and copy-pr
   const publication = source("app/api/admin/cases/route.ts");
   const verification = source("app/api/case-protection/verify/route.ts");
   const customCases = source("app/api/custom-cases/route.ts");
+  const studio = source("app/JurisApp.tsx");
+  const reportDialog = source("app/CaseReportDialog.tsx");
+  const report = source("app/case-report.ts");
 
   assert.match(serverProtection, /platformSecrets/);
   assert.match(serverProtection, /crypto\.getRandomValues/);
@@ -171,24 +174,43 @@ test("server routes retain signing-key secrecy, exact lineage checks and copy-pr
   assert.match(submissions, /const parentWriteGuard = artifactWriteGuard/);
   assert.match(submissions, /customCaseGrants\.recipientEmail/);
   assert.match(submissions, /codeStillMatches/);
+  assert.match(submissions, /payload\.expectedPublicationFingerprint/);
+  assert.match(submissions, /payload\.basePublicationFingerprint/);
+  assert.match(submissions, /storedPublicationBinding/);
+  assert.match(submissions, /publicationCompareAndSwap/);
 
   assert.match(publication, /caseProtection: protection/);
   assert.match(publication, /payload: \{ kind: "playable-scenario-v1"[\s\S]*protection, artifactBinding/);
   assert.match(publication, /sourceArtifact\?\.copyProtected/);
   assert.match(publication, /parentArtifact\?\.copyProtected/);
+  assert.match(publication, /storedPublicationFingerprint\(sourceDraft\.payload\) !== publicationFingerprint/);
+  assert.match(publication, /storedPublicationFingerprint\(review\.payload\) !== publicationFingerprint/);
+  assert.match(publication, /artifactBinding = \{ \.\.\.compilationBinding, publicationFingerprint, caseProtection: protection \}/);
 
   assert.match(verification, /isSameOriginMutation/);
   assert.match(verification, /normalizeStoredCaseProtection/);
   assert.match(verification, /legacyCaseFingerprintV15/);
-  assert.match(verification, /authoritativeCurrentFingerprint/);
-  assert.match(verification, /await authoritativeCurrentFingerprint\(db, resolved\) !== fingerprint/);
+  assert.match(verification, /authoritativeCurrentFingerprints/);
+  assert.match(verification, /authoritative\.caseFingerprint !== fingerprint/);
+  assert.match(verification, /authoritative\.publicationFingerprint !== publicationFingerprint/);
   assert.match(verification, /access === "owner" \? customCaseId : null/);
-  assert.match(verification, /return privateJson\(\{ valid, copyProtected, canDuplicate, access, customCaseId: access === "owner" \? customCaseId : null, fingerprint \}\)/);
+  assert.match(verification, /return privateJson\(\{ valid, copyProtected, canDuplicate, access, customCaseId: access === "owner" \? customCaseId : null, fingerprint, publicationFingerprint \}\)/);
   assert.doesNotMatch(verification, /secret:/);
 
   assert.match(customCases, /copyProtected/);
   assert.match(customCases, /json_extract/);
   assert.match(customCases, /caseDrafts\.version} = \$\{customCases\.currentVersion/);
   assert.match(customCases, /Boolean\(record\.copyProtected\)/);
+  assert.match(customCases, /casePublicationFingerprint\(storedDraft\)/);
+  assert.match(customCases, /publication binding failed integrity verification/);
   assert.doesNotMatch(customCases, /for \(const record of records\)[\s\S]*await db/);
+
+  assert.match(studio, /serverPublicationFingerprint/);
+  assert.match(studio, /expectedPublicationFingerprint/);
+  assert.match(studio, /basePublicationFingerprint/);
+  assert.match(studio, /Report export is unavailable in inspection-only mode/);
+  assert.match(reportDialog, /canGenerateReport/);
+  assert.match(reportDialog, /workspacePublicationFingerprint === currentPublicationFingerprint/);
+  assert.match(report, /assertCaseReportGenerationAuthorized\(authorization\?\.canGenerate\)/);
+  assert.match(report, /technicalProtection: effectiveOptions\.includeTechnicalIds && draft\.protection/);
 });

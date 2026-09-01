@@ -2,6 +2,13 @@ import rawProfiles from "./report-profiles.v1.json";
 import { canonicalFingerprint, caseFingerprint } from "./case-integrity";
 import { caseTypePlaybook, evaluateCaseTypeDraft } from "./case-type-playbooks";
 import { caseTypeReference, DEFAULT_CASE_TYPE } from "./case-type-reference";
+import {
+  REPORT_GRAPH_LAYOUT_ALGORITHM_VERSION,
+  REPORT_GRAPH_LAYOUT_RENDERER_VERSION,
+  REPORT_GRAPH_LAYOUT_SCHEMA_VERSION,
+} from "./report-graph-contract";
+import { INVALID_REPORT_SOURCE_URL_MESSAGE, sanitizeReportSourceUrls } from "./report-source-url";
+import { isStudioDeviceScope } from "./studio-device-storage";
 import type { CaseTypeId, StudioDraft, StudioNodeType } from "./types";
 
 export const REPORT_MODEL_SCHEMA_VERSION = 1 as const;
@@ -77,6 +84,8 @@ export type ReportReadinessInput = {
   reviewerApproved: boolean;
   currentFingerprint: string;
   workspaceFingerprint: string | null;
+  currentPublicationFingerprint?: string;
+  workspacePublicationFingerprint?: string | null;
   redactedNodeIds?: string[];
 };
 
@@ -87,15 +96,23 @@ export function validateReportReadiness(draft: StudioDraft, input: ReportReadine
   reportProfile(input.profileId, caseType);
   const packageWarnings = evaluateCaseTypeDraft(draft, "en").filter((check) => check.level === "warn").map((check) => check.text);
   const finalExternal = input.status === "final" || input.audience === "client";
+  const sourceUrls = sanitizeReportSourceUrls(draft.classification?.sourceUrls);
   const blockers: string[] = [];
   if (!draft.title.trim() || !draft.nodes.length) blockers.push("The case needs a title and structured content.");
-  if (finalExternal && input.currentFingerprint !== input.workspaceFingerprint) blockers.push("Save this exact case version to the workspace.");
+  if (finalExternal && (
+    input.currentFingerprint !== input.workspaceFingerprint
+    || !/^sha256-[a-f0-9]{64}$/.test(input.currentPublicationFingerprint ?? "")
+    || input.currentPublicationFingerprint !== input.workspacePublicationFingerprint
+  )) blockers.push("Save this exact reviewed case version to the workspace.");
   if (finalExternal && !input.preparedBy.trim()) blockers.push("Name the report preparer.");
   if (finalExternal && !input.preparedFor.trim()) blockers.push("Name the intended recipient.");
   if (finalExternal && !input.reviewerName.trim()) blockers.push("Name the approving reviewer.");
   if (finalExternal && !input.reviewerApproved) blockers.push("Reviewer approval is required for an external or final report.");
+  if (finalExternal && sourceUrls.rejectedCount > 0) blockers.push(INVALID_REPORT_SOURCE_URL_MESSAGE);
   if (finalExternal) blockers.push(...packageWarnings);
-  const warnings = finalExternal ? [] : packageWarnings;
+  const warnings = finalExternal
+    ? []
+    : [...packageWarnings, ...(sourceUrls.rejectedCount > 0 ? [INVALID_REPORT_SOURCE_URL_MESSAGE] : [])];
   return { ready: blockers.length === 0, blockers: [...new Set(blockers)], warnings };
 }
 
@@ -133,6 +150,7 @@ export function buildCanonicalReportModel(draft: StudioDraft, input: ReportReadi
   const profile = reportProfile(input.profileId, caseType);
   const redactions = new Set(input.redactedNodeIds ?? []);
   const readiness = validateReportReadiness(draft, input);
+  const sourceUrls = sanitizeReportSourceUrls(draft.classification?.sourceUrls).urls;
   const base = {
     schemaVersion: REPORT_MODEL_SCHEMA_VERSION,
     rendererVersion: REPORT_RENDERER_VERSION,
@@ -142,7 +160,7 @@ export function buildCanonicalReportModel(draft: StudioDraft, input: ReportReadi
     governance: {
       version: "1.0.0" as const,
       evidencePack: { version: "1.0.0" as const, documents: draft.nodes.filter((node) => node.type === "evidence" && !redactions.has(node.id)).map((node) => ({ id: node.id, version: draft.version, title: node.title, detail: node.detail, provenance: "studio" as const })) },
-      citations: (draft.classification?.sourceUrls ?? []).map((url, index) => ({ id: `source-${index + 1}`, url, effectiveDate: draft.classification?.legalAsOf })),
+      citations: sourceUrls.map((url, index) => ({ id: `source-${index + 1}`, url, effectiveDate: draft.classification?.legalAsOf })),
       custody: draft.editHistory.filter((entry) => !["prompt_submitted", "prompt_applied", "graph_rebuilt"].includes(entry.action)).map((entry) => ({ id: entry.id, action: entry.action, at: entry.createdAt, actor: entry.role })),
       decisionTable: draft.links.map((link) => ({ id: link.id, from: link.from, to: link.to, controlledRule: link.rule ?? null })),
       redactions: [...redactions].sort(),
@@ -154,25 +172,184 @@ export function buildCanonicalReportModel(draft: StudioDraft, input: ReportReadi
   return { ...base, contentFingerprint: canonicalFingerprint(base) };
 }
 
-export type ReportReceipt = { caseId: string; caseVersion: string; profileId: string; rendererVersion: string; caseFingerprint: string; reportFingerprint: string; generatedAt: string; status: "draft" | "final"; audience: "internal" | "client" };
+type ReportReceiptBase = {
+  caseId: string;
+  caseVersion: string;
+  profileId: string;
+  rendererVersion: string;
+  caseFingerprint: string;
+  reportFingerprint: string;
+  generatedAt: string;
+  status: "draft" | "final";
+  audience: "internal" | "client";
+};
 
-export function reportReceipt(model: CanonicalReportModel, generatedAt: string): ReportReceipt {
-  return { caseId: model.case.id, caseVersion: model.case.version, profileId: model.profile.id, rendererVersion: model.rendererVersion, caseFingerprint: model.case.fingerprint, reportFingerprint: model.contentFingerprint, generatedAt, status: model.publication.status, audience: model.publication.audience };
+/** Receipts written before v62 did not bind a presentation-layout contract.
+ * They remain parseable so the Studio can explain that regeneration is due. */
+export type LegacyReportReceipt = ReportReceiptBase & { receiptSchemaVersion?: 1 };
+
+export type ReportLayoutReceiptBinding = {
+  layoutSchemaVersion: number;
+  layoutAlgorithmVersion: string;
+  layoutRendererVersion: string;
+  layoutFingerprint: string;
+};
+
+export type ReportReceiptV2 = ReportReceiptBase & ReportLayoutReceiptBinding & {
+  receiptSchemaVersion: 2;
+  /** Optional only so an already-written provisional v2 receipt can be parsed
+   * and reported as stale. Every current writer supplies this binding. */
+  presentationFingerprint?: string;
+};
+
+export type ReportReceipt = LegacyReportReceipt | ReportReceiptV2;
+export type CurrentReportReceiptBinding = {
+  reportFingerprint: string;
+  layoutFingerprint: string;
+  presentationFingerprint: string;
+};
+
+export function reportReceipt(
+  model: CanonicalReportModel,
+  generatedAt: string,
+  binding: ReportLayoutReceiptBinding & { presentationFingerprint: string },
+): ReportReceiptV2 {
+  return {
+    receiptSchemaVersion: 2,
+    caseId: model.case.id,
+    caseVersion: model.case.version,
+    profileId: model.profile.id,
+    rendererVersion: model.rendererVersion,
+    caseFingerprint: model.case.fingerprint,
+    reportFingerprint: model.contentFingerprint,
+    generatedAt,
+    status: model.publication.status,
+    audience: model.publication.audience,
+    layoutSchemaVersion: binding.layoutSchemaVersion,
+    layoutAlgorithmVersion: binding.layoutAlgorithmVersion,
+    layoutRendererVersion: binding.layoutRendererVersion,
+    layoutFingerprint: binding.layoutFingerprint,
+    presentationFingerprint: binding.presentationFingerprint,
+  };
 }
 
-export function isReportReceiptStale(receipt: ReportReceipt, draft: StudioDraft, profileId: string) {
-  return receipt.profileId !== profileId || receipt.caseFingerprint !== caseFingerprint(draft) || receipt.rendererVersion !== REPORT_RENDERER_VERSION;
+export function isReportReceiptStale(
+  receipt: ReportReceipt,
+  draft: StudioDraft,
+  profileId: string,
+  current: CurrentReportReceiptBinding,
+) {
+  if (
+    !current
+    || !/^sha256-[a-f0-9]{64}$/.test(current.reportFingerprint)
+    || !/^sha256-[a-f0-9]{64}$/.test(current.layoutFingerprint)
+    || !/^sha256-[a-f0-9]{64}$/.test(current.presentationFingerprint)
+    || receipt.profileId !== profileId
+    || receipt.caseFingerprint !== caseFingerprint(draft)
+    || receipt.rendererVersion !== REPORT_RENDERER_VERSION
+    || receipt.receiptSchemaVersion !== 2
+  ) return true;
+  return receipt.reportFingerprint !== current.reportFingerprint
+    || receipt.layoutSchemaVersion !== REPORT_GRAPH_LAYOUT_SCHEMA_VERSION
+    || receipt.layoutAlgorithmVersion !== REPORT_GRAPH_LAYOUT_ALGORITHM_VERSION
+    || receipt.layoutRendererVersion !== REPORT_GRAPH_LAYOUT_RENDERER_VERSION
+    || receipt.layoutFingerprint !== current.layoutFingerprint
+    || receipt.presentationFingerprint !== current.presentationFingerprint;
 }
 
-export function reportReceiptStorageKey(caseId: string, profileId: string) {
+const REPORT_RECEIPT_STORAGE_PREFIX = "genesis-juris-report-receipt:v2:";
+
+export function legacyReportReceiptStorageKey(caseId: string, profileId: string) {
   return `genesis-juris-report-receipt:v1:${caseId}:${profileId}`;
+}
+
+export function reportReceiptStorageKey(scope: string, caseId: string, profileId: string) {
+  if (!isStudioDeviceScope(scope)) throw new Error("Invalid report receipt storage scope");
+  return `${REPORT_RECEIPT_STORAGE_PREFIX}${scope}:${encodeURIComponent(caseId)}:${encodeURIComponent(profileId)}`;
 }
 
 export function parseReportReceipt(value: string | null): ReportReceipt | null {
   if (!value) return null;
   try {
     const receipt = JSON.parse(value) as ReportReceipt;
-    if (!receipt || typeof receipt.caseId !== "string" || typeof receipt.profileId !== "string" || !/^sha256-[a-f0-9]{64}$/.test(receipt.caseFingerprint) || !/^sha256-[a-f0-9]{64}$/.test(receipt.reportFingerprint) || receipt.rendererVersion !== REPORT_RENDERER_VERSION) return null;
+    if (
+      !receipt
+      || typeof receipt.caseId !== "string"
+      || typeof receipt.caseVersion !== "string"
+      || typeof receipt.profileId !== "string"
+      || typeof receipt.rendererVersion !== "string"
+      || typeof receipt.generatedAt !== "string"
+      || (receipt.status !== "draft" && receipt.status !== "final")
+      || (receipt.audience !== "internal" && receipt.audience !== "client")
+      || !/^sha256-[a-f0-9]{64}$/.test(receipt.caseFingerprint)
+      || !/^sha256-[a-f0-9]{64}$/.test(receipt.reportFingerprint)
+    ) return null;
+    if (receipt.receiptSchemaVersion === 2) {
+      if (
+        !Number.isInteger(receipt.layoutSchemaVersion)
+        || typeof receipt.layoutAlgorithmVersion !== "string"
+        || typeof receipt.layoutRendererVersion !== "string"
+        || !/^sha256-[a-f0-9]{64}$/.test(receipt.layoutFingerprint)
+        || (receipt.presentationFingerprint !== undefined && !/^sha256-[a-f0-9]{64}$/.test(receipt.presentationFingerprint))
+      ) return null;
+    } else if (receipt.receiptSchemaVersion !== undefined && receipt.receiptSchemaVersion !== 1) return null;
     return receipt;
   } catch { return null; }
+}
+
+export type ReportReceiptDeviceStorage = {
+  getItem: (key: string) => string | null;
+  setItem: (key: string, value: string) => void;
+  removeItem: (key: string) => void;
+};
+
+export type ReportReceiptStorageContext = {
+  scope: string | null;
+  eligible: boolean;
+  caseId: string;
+  profileId: string;
+};
+
+function removeStoredReportReceipt(storage: ReportReceiptDeviceStorage, key: string) {
+  try { storage.removeItem(key); } catch { /* Browser storage is optional. */ }
+}
+
+export function readStoredReportReceipt(storage: ReportReceiptDeviceStorage, context: ReportReceiptStorageContext) {
+  removeStoredReportReceipt(storage, legacyReportReceiptStorageKey(context.caseId, context.profileId));
+  if (!isStudioDeviceScope(context.scope)) return null;
+  const key = reportReceiptStorageKey(context.scope, context.caseId, context.profileId);
+  if (!context.eligible) {
+    removeStoredReportReceipt(storage, key);
+    return null;
+  }
+  try {
+    const receipt = parseReportReceipt(storage.getItem(key));
+    if (!receipt || receipt.caseId !== context.caseId || receipt.profileId !== context.profileId) {
+      removeStoredReportReceipt(storage, key);
+      return null;
+    }
+    return receipt;
+  } catch {
+    return null;
+  }
+}
+
+export function writeStoredReportReceipt(
+  storage: ReportReceiptDeviceStorage,
+  context: ReportReceiptStorageContext,
+  receipt: ReportReceipt,
+) {
+  removeStoredReportReceipt(storage, legacyReportReceiptStorageKey(context.caseId, context.profileId));
+  if (!isStudioDeviceScope(context.scope)) return false;
+  const key = reportReceiptStorageKey(context.scope, context.caseId, context.profileId);
+  if (!context.eligible || receipt.caseId !== context.caseId || receipt.profileId !== context.profileId) {
+    removeStoredReportReceipt(storage, key);
+    return false;
+  }
+  try {
+    storage.setItem(key, JSON.stringify(receipt));
+    return true;
+  } catch {
+    return false;
+  }
 }

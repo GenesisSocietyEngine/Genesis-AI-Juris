@@ -4,6 +4,7 @@ export const PARITY_FIXTURE_SCHEMA_VERSION = 2;
 export const PARITY_MATRIX_VERSION = 1;
 export const V53_PARITY_ROUTE_COUNT = 18;
 export const PARITY_ROUTE_CLASSES = ["success", "adverse", "boundary", "alternative"] as const;
+export const REQUIRED_HOSTED_EVIDENCE_GATES = ["android", "flutter", "ios", "rust"] as const;
 
 export type ParityCommand =
   | { kind: "dispatch"; action_id: string }
@@ -68,6 +69,27 @@ export type MobileContractReceipt = {
   mobile_projection_schema_revision: unknown;
   mobile_bridge_abi: unknown;
 };
+
+export type HostedWorkflowEvidence = {
+  run: number;
+  commit: string;
+  conclusion: "success";
+};
+
+export function assertHostedWorkflowEvidence(value: unknown, expectedCommit: string) {
+  const hostedEvidence = requiredObject(value, "hosted workflow evidence");
+  equalStructured(Object.keys(hostedEvidence).sort(), [...REQUIRED_HOSTED_EVIDENCE_GATES], "hosted workflow evidence exact keys");
+  const result = {} as Record<(typeof REQUIRED_HOSTED_EVIDENCE_GATES)[number], HostedWorkflowEvidence>;
+  for (const gate of REQUIRED_HOSTED_EVIDENCE_GATES) {
+    const evidence = requiredObject(hostedEvidence[gate], `${gate} workflow evidence`);
+    const run = requiredPositiveInteger(evidence.run, `${gate} workflow run`);
+    const commit = requiredNonEmptyString(evidence.commit, `${gate} evidence commit`);
+    equalContract(commit, expectedCommit, `${gate} evidence commit`);
+    equalContract(evidence.conclusion, "success", `${gate} workflow conclusion`);
+    result[gate] = { run, commit, conclusion: "success" };
+  }
+  return result;
+}
 
 const JUDICIAL_RESULTS = new Set(["won", "lost", "partially_won", "dismissed"]);
 const ROUTE_CLASSES = new Set<string>(PARITY_ROUTE_CLASSES);

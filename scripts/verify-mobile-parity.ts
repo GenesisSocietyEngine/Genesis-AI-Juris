@@ -16,6 +16,7 @@ import {
 import { PLAYED_CASE_SCHEMA_REVISION } from "../app/played-case-contract";
 import { withVerifiedMobileCheckout } from "./mobile-checkout-guard";
 import {
+  assertHostedWorkflowEvidence,
   assertJudicialResultParity,
   assertLockedReceiptMap,
   assertMobileContractValues,
@@ -120,38 +121,34 @@ function verifyParity() {
   const lock = readJson<ParityLock>(join(projectRoot, "parity", "mobile-parity.lock.json"));
   equal(lock.format, "genesis-juris-mobile-parity-lock", "parity lock format");
   equal(lock.lockVersion, 3, "parity lock version");
-  for (const [gate, evidence] of Object.entries(lock.hostedEvidence)) {
-    truth(Number.isSafeInteger(evidence.run) && evidence.run > 0, `${gate} workflow run must be a positive integer`);
-    equal(evidence.commit, lock.mobile.commit, `${gate} evidence commit`);
-    equal(evidence.conclusion, "success", `${gate} workflow conclusion`);
-  }
+  assertHostedWorkflowEvidence(lock.hostedEvidence, lock.mobile.commit);
   assertWebContractValues(lock.contracts, {
     webRuntimeRevision: CANONICAL_RUNTIME_REVISION,
     playedCaseSchemaRevision: PLAYED_CASE_SCHEMA_REVISION,
   });
 
   const fixturePath = resolveInsideProject(lock.fixtures.path);
-  const fixtureBytes = readFileSync(fixturePath);
+  const fixtureBytes = readRepositoryTextBytes(fixturePath);
   const fixtureHash = sha256(fixtureBytes);
   const fixtureManifest = JSON.parse(new TextDecoder().decode(fixtureBytes)) as unknown;
   if (!printLockData) equal(fixtureHash, lock.fixtures.sha256, "fixture manifest SHA-256");
   const probePath = resolveInsideProject(lock.fixtures.probePath);
-  const probeBytes = readFileSync(probePath);
+  const probeBytes = readRepositoryTextBytes(probePath);
   equal(sha256(probeBytes), lock.fixtures.probeSha256, "mobile probe SHA-256");
 
   const webBundlePath = resolveInsideProject(lock.bundle.webPath);
-  const webBundleBytes = readFileSync(webBundlePath);
+  const webBundleBytes = readRepositoryTextBytes(webBundlePath);
   equal(sha256(webBundleBytes), lock.bundle.sha256, "web bundle SHA-256");
   const webBundle = JSON.parse(new TextDecoder().decode(webBundleBytes)) as CanonicalBundle;
   verifyBundleContract(webBundle, lock);
 
   const caseTypeRegistryPath = resolveInsideProject(lock.caseTypes.webPath);
-  const caseTypeRegistryBytes = readFileSync(caseTypeRegistryPath);
+  const caseTypeRegistryBytes = readRepositoryTextBytes(caseTypeRegistryPath);
   equal(sha256(caseTypeRegistryBytes), lock.caseTypes.sha256, "web case-type registry SHA-256");
   verifyCaseTypeRegistryContract(JSON.parse(new TextDecoder().decode(caseTypeRegistryBytes)) as CaseTypeRegistryManifest, lock);
 
   const playbookPath = resolveInsideProject(lock.playbooks.webPath);
-  const playbookBytes = readFileSync(playbookPath);
+  const playbookBytes = readRepositoryTextBytes(playbookPath);
   equal(sha256(playbookBytes), lock.playbooks.sha256, "web case-type playbook SHA-256");
   verifyPlaybookContract(JSON.parse(new TextDecoder().decode(playbookBytes)) as CaseTypePlaybookManifest, lock);
 
@@ -356,7 +353,7 @@ function verifyMobileEvidence(mobileRepo: string, mobileBundlePath: string, webB
   equal(matchRequired(pubspec, /^version:\s*(\S+)\s*$/m, "Flutter app version"), lock.mobile.appVersion, "mobile app version");
   const cargoToml = readFileSync(join(mobileRepo, "Cargo.toml"), "utf8");
   equal(matchRequired(cargoToml, /\[workspace\.package\][\s\S]*?^version\s*=\s*"([^"]+)"/m, "Rust workspace version"), lock.mobile.rustWorkspaceVersion, "Rust workspace version");
-  const mobileBytes = readFileSync(mobileBundlePath);
+  const mobileBytes = readRepositoryTextBytes(mobileBundlePath);
   equal(Buffer.compare(webBundleBytes, mobileBytes), 0, "web/mobile canonical bundle byte equality");
   equal(sha256(mobileBytes), lock.bundle.sha256, "mobile bundle SHA-256");
   equal(
@@ -366,7 +363,7 @@ function verifyMobileEvidence(mobileRepo: string, mobileBundlePath: string, webB
   );
   verifyBundleContract(JSON.parse(new TextDecoder().decode(mobileBytes)) as CanonicalBundle, lock);
   const mobileCaseTypePath = resolveInsideMobileRepo(mobileRepo, lock.caseTypes.mobilePath);
-  const mobileCaseTypeBytes = readFileSync(mobileCaseTypePath);
+  const mobileCaseTypeBytes = readRepositoryTextBytes(mobileCaseTypePath);
   equal(Buffer.compare(caseTypeRegistryBytes, mobileCaseTypeBytes), 0, "web/mobile case-type registry byte equality");
   equal(sha256(mobileCaseTypeBytes), lock.caseTypes.sha256, "mobile case-type registry SHA-256");
   equal(
@@ -376,7 +373,7 @@ function verifyMobileEvidence(mobileRepo: string, mobileBundlePath: string, webB
   );
   verifyCaseTypeRegistryContract(JSON.parse(new TextDecoder().decode(mobileCaseTypeBytes)) as CaseTypeRegistryManifest, lock);
   const mobilePlaybookPath = resolveInsideMobileRepo(mobileRepo, lock.playbooks.mobilePath);
-  const mobilePlaybookBytes = readFileSync(mobilePlaybookPath);
+  const mobilePlaybookBytes = readRepositoryTextBytes(mobilePlaybookPath);
   equal(Buffer.compare(playbookBytes, mobilePlaybookBytes), 0, "web/mobile case-type playbook byte equality");
   equal(sha256(mobilePlaybookBytes), lock.playbooks.sha256, "mobile case-type playbook SHA-256");
   equal(
@@ -417,9 +414,9 @@ function runMobileProbe(
     const fixturePath = join(probeRoot, "mobile-parity-fixtures.json");
     writeFileSync(fixturePath, fixtureBytes);
     const mobileBundlePath = resolveInsideMobileRepo(sourceRoot, mobileBundleRelativePath);
-    const sourceLock = readFileSync(join(mobileRepo, "Cargo.lock"));
+    const sourceLock = readRepositoryTextBytes(join(mobileRepo, "Cargo.lock"));
     const archivedLockPath = join(sourceRoot, "Cargo.lock");
-    const archivedLock = readFileSync(archivedLockPath);
+    const archivedLock = readRepositoryTextBytes(archivedLockPath);
     equal(Buffer.compare(archivedLock, sourceLock), 0, "archived Cargo.lock byte identity");
     const cargo = process.env.CARGO?.trim() || "cargo";
     const encoded = run(cargo, [
@@ -435,7 +432,7 @@ function runMobileProbe(
       mobileBundlePath,
       fixturePath,
     ], sourceRoot, 10 * 60 * 1_000);
-    equal(Buffer.compare(readFileSync(archivedLockPath), archivedLock), 0, "Cargo changed the pinned mobile lock");
+    equal(Buffer.compare(readRepositoryTextBytes(archivedLockPath), archivedLock), 0, "Cargo changed the pinned mobile lock");
     return JSON.parse(encoded) as JsonObject;
   } finally {
     if (dirname(resolve(probeRoot)) === expectedParent) rmSync(probeRoot, { recursive: true, force: true });
@@ -516,6 +513,20 @@ function run(command: string, args: string[], cwd: string, timeout = 60_000) {
 
 function readJson<T>(path: string): T {
   return JSON.parse(readFileSync(path, "utf8")) as T;
+}
+
+/** Git receipts bind LF-normalized text blob bytes. Windows checkout policy may
+ * materialize CRLF without changing the Git object, so release hashing and
+ * web/mobile text equality use repository text bytes on every platform. */
+function readRepositoryTextBytes(path: string) {
+  const bytes = readFileSync(path);
+  if (bytes.includes(0)) throw new Error(`Locked repository text unexpectedly contains NUL: ${path}`);
+  const windowsNewline = String.fromCharCode(13, 10);
+  if (bytes.includes(Buffer.from(windowsNewline))) {
+    const normalized = new TextDecoder().decode(bytes).replaceAll(windowsNewline, String.fromCharCode(10));
+    return Buffer.from(new TextEncoder().encode(normalized));
+  }
+  return bytes;
 }
 
 function sha256(value: string | Buffer) {

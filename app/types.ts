@@ -344,6 +344,8 @@ export type StudioDraft = {
   jurisdiction: string;
   role: string;
   premise: string;
+  /** Only author-reviewed premise text may enter reports or catalogue publication. Missing legacy provenance fails closed. */
+  premisePublication?: "prompt-derived" | "author-reviewed";
   classification?: {
     domain?: "general" | "tax";
     practiceArea: string;

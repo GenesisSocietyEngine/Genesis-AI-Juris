@@ -1,5 +1,6 @@
 import rawRegistry from "./case-type-playbooks.v1.json";
 import { CASE_TYPE_REGISTRY } from "./case-type-registry";
+import { sanitizeReportSourceUrls } from "./report-source-url";
 import type { CaseTypeId, CaseTypeReference, StudioDraft, StudioNodeType } from "./types";
 
 export type LocalizedPlaybookText = { en: string; ru: string };
@@ -68,7 +69,8 @@ export function evaluateCaseTypeDraft(draft: StudioDraft, locale: "en" | "ru"): 
     : { id: "legal-as-of", level: "warn", text: t("Set the legal as-of date", "Укажите дату актуальности права") });
   if (playbook.requirements.httpsSources) {
     const sources = draft.classification?.sourceUrls ?? [];
-    checks.push(sources.length > 0 && sources.every((source) => source.startsWith("https://"))
+    const sanitizedSources = sanitizeReportSourceUrls(sources);
+    checks.push(sources.length > 0 && sanitizedSources.rejectedCount === 0
       ? { id: "https-sources", level: "ok", text: t("Authoritative HTTPS sources are attached", "Авторитетные HTTPS-источники приложены") }
       : { id: "https-sources", level: "warn", text: t("Attach at least one authoritative HTTPS source", "Добавьте хотя бы один авторитетный HTTPS-источник") });
   }

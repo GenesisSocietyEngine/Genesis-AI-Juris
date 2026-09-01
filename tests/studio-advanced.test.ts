@@ -20,6 +20,7 @@ function draft(): StudioDraft {
     jurisdiction: "Belgium",
     role: "Counsel",
     premise: "A regulator requests a documented response.",
+    premisePublication: "author-reviewed",
     classification: { domain: "general", practiceArea: "Regulatory", difficulty: "Advanced", tags: [], taxTopics: [], complianceOnly: true, purpose: "compliance_review", legalAsOf: "", sourceUrls: [] },
     nodes: [
       { id: "trigger-1", type: "trigger", title: "Regulatory request", detail: "A response is required.", x: 20, y: 180 },
@@ -117,6 +118,24 @@ test("session timeline provides exact diff, undo, redo and branch truncation", (
   timeline = recordStudioRevision(timeline, restored, branched, { label: "Change jurisdiction", source: "visual", createdAt: "2026-08-21T13:01:00.000Z" });
   assert.equal(timeline.revisions.length, 1, "a new edit after undo discards the redo branch");
   assert.equal(timeline.cursor, 1);
+});
+
+test("session timeline restores premise publication provenance through undo and redo", () => {
+  const promptDerived = { ...draft(), premise: "Raw intake context", premisePublication: "prompt-derived" as const };
+  const authorReviewed = { ...promptDerived, premise: "Reviewed professional context", premisePublication: "author-reviewed" as const };
+  let timeline = recordStudioRevision(emptyStudioTimeline(), promptDerived, authorReviewed, { label: "Review publishable context", source: "visual", createdAt: at });
+  const undo = stepStudioTimeline(timeline, "undo");
+  assert.ok(undo);
+  const restoredPrompt = applyStudioSnapshot(authorReviewed, undo.snapshot, at);
+  assert.equal(restoredPrompt.premisePublication, "prompt-derived");
+  assert.equal(restoredPrompt.premise, "Raw intake context");
+  timeline = undo.timeline;
+  const redo = stepStudioTimeline(timeline, "redo");
+  assert.ok(redo);
+  const restoredReviewed = applyStudioSnapshot(restoredPrompt, redo.snapshot, at);
+  assert.equal(restoredReviewed.premisePublication, "author-reviewed");
+  assert.equal(restoredReviewed.premise, "Reviewed professional context");
+  assert.deepEqual(diffDraftToRevision(promptDerived, timeline.revisions[0]).fields, ["premise", "premisePublication"]);
 });
 
 test("arbitrary acyclic Studio graph compiles into the full validated player runtime", () => {
@@ -240,8 +259,12 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /await import\("\.\/CaseReportDialog"\)/, "report UI is preloaded on demand before the editor is covered");
   assert.match(appSource, /setCaseReportOpen\(true\)/);
   assert.match(appSource, /PDF unavailable/, "a stale report chunk leaves Studio visible with a recoverable error");
-  const reportButtonSource = appSource.slice(appSource.indexOf('className="secondary-cta report-cta"'), appSource.indexOf('className="primary-cta"'));
-  assert.doesNotMatch(reportButtonSource, /disabled=/, "PDF options remain clickable while background derivations settle");
+  const reportButtonStart = appSource.indexOf('className="secondary-cta report-cta"');
+  const reportButtonSource = appSource.slice(reportButtonStart, appSource.indexOf("</button>", reportButtonStart) + "</button>".length);
+  assert.match(reportButtonSource, /disabled=\{!canDuplicate\}/, "inspection-only cases cannot open report export");
+  assert.doesNotMatch(reportButtonSource, /disabled=\{[^}]*derivationsSettled/, "authorized PDF options remain clickable while background derivations settle");
+  assert.match(appSource, /Report export is unavailable in inspection-only mode/);
+  assert.match(reportDialogSource, /disabled=\{!canGenerateReport \|\| busy/);
   assert.match(markdownActionsSource, /Export Final case prompt \(\.md\)/);
   assert.match(markdownActionsSource, /Import case prompt \(\.md\)/);
   assert.match(markdownActionsSource, /closest\("details"\)\?\.removeAttribute\("open"\)/, "opening Markdown export closes the More actions menu");

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { recommendedGuidedStudioStep } from "../app/StudioGuidedWizard";
-import { initialStudioWorkflowState, parseStudioWorkflowStep, reduceStudioWorkflow, serializedStudioWorkflowStep } from "../app/studio-workflow";
+import { initialStudioWorkflowState, parseStudioWorkflowStep, reduceStudioWorkflow, restoredStudioWorkflowStep, serializedStudioWorkflowStep } from "../app/studio-workflow";
 
 const wizardSource = readFileSync(new URL("../app/StudioGuidedWizard.tsx", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
@@ -28,6 +28,15 @@ test("shared workflow transitions and downstream invalidation are deterministic"
   assert.equal(parseStudioWorkflowStep("6"), 6);
   assert.equal(parseStudioWorkflowStep("unknown"), null);
   assert.equal(serializedStudioWorkflowStep(5), "run_compare");
+});
+
+test("an empty untitled draft always restores at Step 1", () => {
+  assert.equal(restoredStudioWorkflowStep(true, 6, 6), 1);
+  assert.equal(restoredStudioWorkflowStep(true, null, 6), 1);
+  assert.equal(restoredStudioWorkflowStep(false, 4, 6), 4);
+  assert.equal(restoredStudioWorkflowStep(false, null, 6), 6);
+  assert.match(appSource, /restoredStudioWorkflowStep\(guidedDraftIsEmpty, queryStep, storedStep\)/);
+  assert.match(appSource, /window\.localStorage\.setItem\(guidedWorkflowKey, stage\)/);
 });
 
 test("guided Studio exposes six bilingual, keyboard-accessible stages", () => {
