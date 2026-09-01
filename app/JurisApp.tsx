@@ -1,6 +1,7 @@
 "use client";
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { canonicalFingerprint, caseFingerprint, casePublicationFingerprint, isRecord, isTaxDraft, legacyCaseFingerprintV15, normalizeStudioDraft, slugifyCaseId } from "./case-integrity";
 import { bundledCataloguePresentation, mayUseBundledCatalogueFallback } from "./catalogue-fallback";
@@ -215,7 +216,7 @@ type CustomCaseFile = {
 
 const ui = {
   en: {
-    library: "Case Library", play: "Operations", studio: "Case Studio",
+    library: "Templates", play: "Operations", studio: "Case Studio",
     office: "Office", night: "After hours", catalogue: "Production catalogue",
     openCase: "Open case file", launch: "Launch scenario", continue: "Continue operation",
     role: "Your role", jurisdiction: "Jurisdiction", dossier: "Dossier",
@@ -244,7 +245,7 @@ const ui = {
     nodeTypes: { trigger: "Trigger", actor: "Actor", fact: "Fact", evidence: "Evidence", deadline: "Deadline", decision: "Decision", outcome: "Outcome", entity: "Entity / jurisdiction", tax_rule: "Tax rule", cash_flow: "Cash flow" } as Record<StudioNodeType, string>,
   },
   ru: {
-    library: "Библиотека дел", play: "Операции", studio: "Студия кейсов",
+    library: "Шаблоны", play: "Операции", studio: "Студия кейсов",
     office: "Офис", night: "После работы", catalogue: "Производственный каталог",
     openCase: "Открыть дело", launch: "Запустить сценарий", continue: "Продолжить операцию",
     role: "Ваша роль", jurisdiction: "Юрисдикция", dossier: "Досье",
@@ -447,6 +448,7 @@ const defaultPrompt = `A renewable-energy developer discovers that its community
 
 const PENDING_WORKSPACE_SAVE_KEY = "genesis.juris.pending-workspace-save.v2";
 const PENDING_WORKSPACE_SAVE_MAX_AGE_MS = 15 * 60 * 1000;
+const PENDING_CASE_PROMPT_KEY = "genesis-juris-pending-case-prompt-v1";
 
 type PendingWorkspaceSave = {
   schema: "genesis.juris.pending-workspace-save.v2";
@@ -618,6 +620,19 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
       return () => window.clearTimeout(update);
     }
   }, [studioOnly]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("import") !== "markdown") return;
+    const value = window.sessionStorage.getItem(PENDING_CASE_PROMPT_KEY);
+    window.sessionStorage.removeItem(PENDING_CASE_PROMPT_KEY);
+    url.searchParams.delete("import");
+    window.history.replaceState(window.history.state, "", url);
+    if (value && value.length <= STUDIO_PROMPT_CHARACTER_LIMIT) {
+      const update = window.setTimeout(() => setPrompt(value), 0);
+      return () => window.clearTimeout(update);
+    }
+  }, []);
 
   useEffect(() => {
     if (!studioStorageScope) return;
@@ -1817,7 +1832,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
         {studioOnly ? <a className="brand falcon-studio-brand" href="https://www.falcon-merlin.com/" target="_top" aria-label={locale === "en" ? "Falcon-Merlin home" : "Главная Falcon-Merlin"}>
           <span className="falcon-monogram" aria-hidden="true">FM</span>
           <span><b>FALCON-MERLIN</b><small><strong>CASE STUDIO</strong> · ADVISORY · BETA v0.1.0</small></span>
-        </a> : <button className="brand" onClick={() => navigate("library")} aria-label={locale === "en" ? "GENESIS: JURIS CODEX — Case Library" : "GENESIS: JURIS CODEX — Библиотека кейсов"}>
+        </a> : <button className="brand" onClick={() => navigate("library")} aria-label={locale === "en" ? "GENESIS: JURIS CODEX — Templates" : "GENESIS: JURIS CODEX — Шаблоны"}>
           {/* The SVG is deliberately served directly; it is a tiny UI mark and does not need responsive image optimization. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="brand-mark" src="/brand/genesis-juris-codex-mark.svg" alt="" />
@@ -1844,7 +1859,9 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
           />
           {!studioOnly && <button className="utility-button" onClick={() => playedCaseImportRef.current?.click()} aria-label={text.importPlay} title={text.importPlay}><Icon name="upload" /><span>{text.importPlay}</span></button>}
           {!studioOnly && activeScenario && <button className="utility-button" onClick={exportPlayedCase} aria-label={text.exportPlay} title={text.exportPlay}><Icon name="download" /><span>{text.exportPlay}</span></button>}
-          {studioOnly && <a className="utility-button" href="/account"><span>Account</span></a>}
+          <Link className="utility-button" href="/matters"><Icon name="file"/><span>{locale === "en" ? "My cases" : "Мои дела"}</span></Link>
+          {studioOnly && <Link className="utility-button" href="/?view=library"><Icon name="library"/><span>{locale === "en" ? "Templates" : "Шаблоны"}</span></Link>}
+          {studioOnly && <Link className="utility-button" href="/account"><span>Account</span></Link>}
           {studioOnly && <a className="utility-button studio-demo-link" href="/help/studio-demo" target="_blank" rel="noreferrer" aria-label={locale === "en" ? "Open the three-minute Studio demo" : "Открыть трёхминутное демо Studio"}><Icon name="video"/><span>{locale === "en" ? "Demo · 3 min" : "Демо · 3 мин"}</span></a>}
           {studioOnly && <a className="utility-button studio-site-link" href="https://www.falcon-merlin.com/" target="_top" aria-label={locale === "en" ? "Return to the Falcon-Merlin website" : "Вернуться на сайт Falcon-Merlin"}><span aria-hidden="true">←</span><span>{locale === "en" ? "Falcon-Merlin.com" : "На основной сайт"}</span></a>}
           {studioOnly && <a className="utility-button studio-fullscreen-link" href="/studio" target="_blank" rel="noreferrer"><Icon name="arrow" /><span>{locale === "en" ? "Full screen" : "На весь экран"}</span></a>}

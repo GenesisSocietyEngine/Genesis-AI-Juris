@@ -38,6 +38,7 @@ const detailFixture = {
     jurisdictions: ["England and Wales", "Российская Федерация"],
     status: "internal_review",
     owner_actor_id: "actor_owner_001",
+    document_count: 2,
     priority: "urgent",
     classification: "strictly_confidential",
     key_deadline: { at: "2026-09-30T16:00:00.000Z", timezone: "Europe/Paris" },
@@ -94,8 +95,8 @@ const detailFixture = {
 test("the workspace exposes the seven bounded conceptual destinations in the required order", () => {
   assert.deepEqual(MATTER_DESTINATIONS.map(({ key, label }) => ({ key, label })), [
     { key: "overview", label: "Overview" },
-    { key: "documents", label: "Documents" },
-    { key: "evidence", label: "Evidence" },
+    { key: "documents", label: "Documents & evidence" },
+    { key: "evidence", label: "Evidence review" },
     { key: "decision-packages", label: "Decision packages" },
     { key: "requests", label: "Requests & deadlines" },
     { key: "outputs", label: "Outputs & approvals" },
@@ -108,6 +109,7 @@ test("matter normalisation preserves safe professional metadata, explicit readin
   assert.ok(detail);
   assert.equal(detail.id, "dossier_workspace_001");
   assert.equal(detail.ownerName, "Named matter owner");
+  assert.equal(detail.documentCount, 2);
   assert.equal(detail.permissions.role, "reviewer");
   assert.equal(detail.permissions.canManageParticipants, false);
   assert.equal(detail.permissions.canWrite, false);
@@ -258,6 +260,9 @@ test("the rendered client includes required states, endpoints, citations, privac
     "/evidence/anchors", "/evidence/assertions", "/evidence/links",
   ]) assert.match(client, new RegExp(endpoint.replaceAll("/", "\\/")));
   for (const copy of [
+    "My cases", "New case", "Import case prompt (.md)", "Browse templates",
+    "All case types", "Owned by me", "Shared with me", "Recent activity",
+    "Documents & evidence",
     "What needs attention next", "Lifecycle status", "Owner", "Key deadline",
     "AI-PROPOSED · NOT AUTHORITATIVE", "Version history", "Source anchor register",
     "User view", "Developer view", "synthetic or de-identified", "STALE REVISION",
@@ -307,6 +312,11 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.match(client, /\.split\(\/\[\\s,\]\+\/u\)/);
   assert.match(client, /role="tablist"/);
   assert.match(client, /mobileSectionSelect/);
+  assert.match(client, /href="\/matters" aria-current="page"/);
+  assert.match(client, /matter\.documentCount/);
+  assert.match(client, /PENDING_CASE_PROMPT_KEY/);
+  assert.match(client, /sessionStorage\.setItem/);
+  assert.match(client, /\.sort\(\(left, right\)/);
   assert.doesNotMatch(client, /console\.|FileReader|readAs(?:Text|ArrayBuffer|DataURL)/);
 
   assert.match(css, /overflow-wrap:anywhere/);

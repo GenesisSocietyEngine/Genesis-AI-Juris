@@ -20,7 +20,7 @@ type Command = string | number;
 test("v14 carries the repository-exact mobile case bundle", () => {
   const checkedOutBundle = readFileSync(new URL("../app/canonical-case-bundle.json", import.meta.url), "utf8");
   const bundle = Buffer.from(checkedOutBundle.split(String.fromCharCode(13, 10)).join(String.fromCharCode(10)), "utf8");
-  assert.equal(createHash("sha256").update(bundle).digest("hex"), "e90f856cbb0f4625f7612a99db2f527ac3b090619019b7a83c21140f78f1984a");
+  assert.equal(createHash("sha256").update(bundle).digest("hex"), "18144245b2eb11345a96d86a18ead0804ceef7d26aa3492ad67c6924ebbbe012");
 });
 
 function run(caseId: string, seed: number, commands: Command[]) {

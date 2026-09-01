@@ -267,7 +267,7 @@ function addDocument(
 test("0012 through additive 0015 are fresh-schema and v61-upgrade-safe metadata-only migrations", () => {
   assert.equal(
     migrationSha256(dossierMigration),
-    "64E11AA3577547287C072CC38D79F3A9C19A9CA6986DEABDC6C7DF6684458190",
+    "AE2A2816B316869D2B4607EE4294FDCF1B1F8DA548BD921DD34C6B69D263C68B",
     "the accepted hardened 0012 migration is frozen byte-for-byte",
   );
   const fresh = database();

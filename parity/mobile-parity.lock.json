@@ -3,7 +3,7 @@
   "lockVersion": 3,
   "mobile": {
     "repository": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris.git",
-    "commit": "268401ab7dbc12cdc80c20a281268189aad01e60",
+    "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
     "appVersion": "0.11.0+18",
     "rustWorkspaceVersion": "0.5.0"
   },
@@ -12,8 +12,8 @@
     "mobilePath": "apps/juris-mobile/assets/case_catalog/mobile_case_bundle.json",
     "bundleVersion": 5,
     "catalogVersion": 1,
-    "sha256": "e90f856cbb0f4625f7612a99db2f527ac3b090619019b7a83c21140f78f1984a",
-    "mobileGitBlob": "464d88b02f6cf6101dc86c04abfc3505abcfb0a6"
+    "sha256": "18144245b2eb11345a96d86a18ead0804ceef7d26aa3492ad67c6924ebbbe012",
+    "mobileGitBlob": "435813920cee88308ca58989a3735502efff2815"
   },
   "caseTypes": {
     "webPath": "app/case-type-registry.v1.json",
@@ -127,23 +127,23 @@
   },
   "hostedEvidence": {
     "rust": {
-      "run": 33503429648,
-      "commit": "268401ab7dbc12cdc80c20a281268189aad01e60",
+      "run": 33536571536,
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
       "conclusion": "success"
     },
     "flutter": {
-      "run": 33503429646,
-      "commit": "268401ab7dbc12cdc80c20a281268189aad01e60",
+      "run": 33536571515,
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
       "conclusion": "success"
     },
     "android": {
-      "run": 33503429598,
-      "commit": "268401ab7dbc12cdc80c20a281268189aad01e60",
+      "run": 33536571436,
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
       "conclusion": "success"
     },
     "ios": {
-      "run": 33503429554,
-      "commit": "268401ab7dbc12cdc80c20a281268189aad01e60",
+      "run": 33536571586,
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
       "conclusion": "success"
     }
   }

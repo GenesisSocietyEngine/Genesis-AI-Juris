@@ -215,6 +215,7 @@ function projectSummary(
   return {
     ...projectDossier(row.dossier),
     owner_display_name: ownerDisplayName,
+    document_count: Number(row.documentCount),
     current_role: role,
     permissions: permissions(role),
     readiness: computeDossierReadiness({

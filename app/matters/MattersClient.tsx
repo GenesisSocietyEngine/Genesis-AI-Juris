@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import styles from "./matters.module.css";
@@ -81,6 +82,7 @@ class WorkspaceApiError extends Error {
 
 const MAX_ACTIVITY_ITEMS = 500;
 const MAX_PROPOSAL_ITEMS = 500;
+const PENDING_CASE_PROMPT_KEY = "genesis-juris-pending-case-prompt-v1";
 const STATUS_FILTERS: Array<MatterStatus | "all"> = [
   "all", "draft", "intake_review", "active", "awaiting_input", "internal_review",
   "output_approved", "closed", "archived", "declined", "cancelled",
@@ -117,6 +119,7 @@ async function settledRequest(path: string, signal?: AbortSignal): Promise<Settl
 }
 
 export default function MattersClient() {
+  const router = useRouter();
   const [catalogue, setCatalogue] = useState<MatterSummary[]>([]);
   const [catalogueCursor, setCatalogueCursor] = useState<string | null>(null);
   const [cataloguePhase, setCataloguePhase] = useState<LoadPhase>("loading");
@@ -129,12 +132,17 @@ export default function MattersClient() {
   const [view, setView] = useState<MatterView>("user");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<MatterStatus | "all">("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [ownershipFilter, setOwnershipFilter] = useState<"all" | "owned" | "shared">("all");
+  const [recentFilter, setRecentFilter] = useState<"all" | "7" | "30" | "90">("all");
+  const [filterReferenceTime] = useState(() => Date.now());
   const [createOpen, setCreateOpen] = useState(false);
   const [mutationKey, setMutationKey] = useState<string | null>(null);
   const [actionIssue, setActionIssue] = useState<ApiIssue | null>(null);
   const [notice, setNotice] = useState("");
   const matterRequest = useRef(0);
   const matterAbort = useRef<AbortController | null>(null);
+  const promptImportRef = useRef<HTMLInputElement | null>(null);
 
   const loadCatalogue = useCallback(async (preferredId?: string) => {
     setCataloguePhase("loading");
@@ -264,13 +272,39 @@ export default function MattersClient() {
 
   const filteredCatalogue = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
+    const recentDays = recentFilter === "all" ? null : Number(recentFilter);
+    const recentFloor = recentDays === null ? null : filterReferenceTime - recentDays * 86_400_000;
     return catalogue.filter((matter) => {
       if (statusFilter !== "all" && matter.status !== statusFilter) return false;
+      if (typeFilter !== "all" && matter.typeLabel !== typeFilter) return false;
+      if (ownershipFilter === "owned" && matter.permissions.role !== "owner") return false;
+      if (ownershipFilter === "shared" && matter.permissions.role === "owner") return false;
+      if (recentFloor !== null && (!matter.updatedAt || Date.parse(matter.updatedAt) < recentFloor)) return false;
       if (!query) return true;
       return [matter.title, matter.reference, matter.typeLabel, matter.ownerName, ...matter.jurisdictions]
         .some((value) => value.toLocaleLowerCase().includes(query));
+    }).sort((left, right) => {
+      const updated = (Date.parse(right.updatedAt ?? "") || 0) - (Date.parse(left.updatedAt ?? "") || 0);
+      return updated || left.id.localeCompare(right.id);
     });
-  }, [catalogue, search, statusFilter]);
+  }, [catalogue, filterReferenceTime, ownershipFilter, recentFilter, search, statusFilter, typeFilter]);
+
+  const catalogueTypes = useMemo(() => [...new Set(catalogue.map((matter) => matter.typeLabel))].sort((left, right) => left.localeCompare(right)), [catalogue]);
+
+  async function importCasePrompt(file: File) {
+    setActionIssue(null);
+    if (!/\.md$/iu.test(file.name) || file.size > 128_000) {
+      setActionIssue(apiIssueFor(422, { message: "Choose one Markdown case prompt no larger than 128 KB." }));
+      return;
+    }
+    const value = await file.text();
+    if (!value.trim() || value.length > 64_000) {
+      setActionIssue(apiIssueFor(422, { message: "The Markdown case prompt is empty or exceeds the 64,000-character Studio limit." }));
+      return;
+    }
+    window.sessionStorage.setItem(PENDING_CASE_PROMPT_KEY, value);
+    router.push("/studio?studio_step=brief&import=markdown");
+  }
 
   async function mutate(path: string, key: string, body: Record<string, unknown>, successMessage: string, method: "POST" | "PUT" = "POST") {
     if (!workspace) return;
@@ -505,6 +539,8 @@ export default function MattersClient() {
         <span><b>GENESIS: JURIS</b><small>Decision dossier workspace</small></span>
       </Link>
       <div className={styles.topLinks}>
+        <Link href="/matters" aria-current="page">My cases</Link>
+        <Link href="/">Templates</Link>
         <Link href="/studio">Decision Studio</Link>
         <Link href="/account">Account</Link>
       </div>
@@ -518,10 +554,17 @@ export default function MattersClient() {
     <div className={styles.workspaceLayout}>
       <aside className={styles.catalogue} aria-labelledby="matter-catalogue-title">
         <div className={styles.catalogueHeading}>
-          <div><p className={styles.eyebrow}>PRIVATE WORKSPACE</p><h1 id="matter-catalogue-title">Matters</h1></div>
+          <div><p className={styles.eyebrow}>PRIVATE WORKSPACE</p><h1 id="matter-catalogue-title">My cases</h1><p className={styles.catalogueLead}>Your live professional matters are private and separate from reusable templates.</p></div>
           <button type="button" className={styles.iconButton} onClick={() => setCreateOpen((open) => !open)} aria-expanded={createOpen} aria-controls="create-matter-panel">
             <span aria-hidden="true">＋</span><span className={styles.srOnly}>Create a matter</span>
           </button>
+        </div>
+
+        <div className={styles.catalogueActions} aria-label="Case library actions">
+          <button type="button" onClick={() => setCreateOpen(true)}>New case</button>
+          <button type="button" onClick={() => promptImportRef.current?.click()}>Import case prompt (.md)</button>
+          <Link href="/?view=library">Browse templates</Link>
+          <input ref={promptImportRef} className={styles.srOnly} type="file" accept=".md,text/markdown,text/plain" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importCasePrompt(file); event.target.value = ""; }}/>
         </div>
 
         <div className={styles.catalogueTools}>
@@ -529,6 +572,9 @@ export default function MattersClient() {
           <label className={styles.field}><span>Lifecycle status</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as MatterStatus | "all")}>
             {STATUS_FILTERS.map((status) => <option key={status} value={status}>{status === "all" ? "All statuses" : statusLabel(status)}</option>)}
           </select></label>
+          <label className={styles.field}><span>Case type</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">All case types</option>{catalogueTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
+          <label className={styles.field}><span>Ownership</span><select value={ownershipFilter} onChange={(event) => setOwnershipFilter(event.target.value as "all" | "owned" | "shared")}><option value="all">Owned and shared</option><option value="owned">Owned by me</option><option value="shared">Shared with me</option></select></label>
+          <label className={styles.field}><span>Recent activity</span><select value={recentFilter} onChange={(event) => setRecentFilter(event.target.value as "all" | "7" | "30" | "90")}><option value="all">Any time</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></label>
         </div>
 
         <div className={styles.catalogueCount} role="status">{filteredCatalogue.length} loaded authorised matter{filteredCatalogue.length === 1 ? "" : "s"}</div>
@@ -543,7 +589,8 @@ export default function MattersClient() {
               <span className={styles.matterCardTop}><b>{matter.reference}</b><em>{statusLabel(matter.status)}</em></span>
               <strong>{matter.title}</strong>
               <span>{matter.typeLabel}{matter.jurisdictions.length ? " · " + matter.jurisdictions.join(", ") : ""}</span>
-              <span>Owner: {matter.ownerName}</span>
+              <span>{matter.permissions.role === "owner" ? "Owned by me" : "Shared with me"} · {sentenceLabel(matter.permissions.role)}</span>
+              <span>Owner: {matter.ownerName} · {matter.documentCount} document{matter.documentCount === 1 ? "" : "s"}</span>
               <span>Priority: {sentenceLabel(matter.priority)}</span>
               <span>{matter.keyDeadlineAt ? "Next deadline: " + formatMatterDate(matter.keyDeadlineAt, "en-GB", matter.keyDeadlineTimezone) : "No key deadline recorded"}</span>
               <span className={styles.readinessLine}>{summary.headline}</span>
@@ -584,6 +631,7 @@ export default function MattersClient() {
         {selectedId && (workspacePhase === "error" || workspacePhase === "permission") && workspaceIssue && <IssueState issue={workspaceIssue} onRetry={() => void loadMatter(selectedId)}/>}
 
         {workspacePhase === "ready" && workspace && <>
+          <nav className={styles.breadcrumbs} aria-label="Case breadcrumb"><button type="button" onClick={() => document.getElementById("matter-catalogue-title")?.scrollIntoView({ block: "start" })}>My cases</button><span aria-hidden="true">→</span><button type="button" onClick={() => setDestination("overview")}>{workspace.matter.title}</button>{destination === "documents" && <><span aria-hidden="true">→</span><strong>Documents &amp; evidence</strong></>}</nav>
           <MatterHero matter={workspace.matter} view={view} setView={setView}/>
           <SectionNavigation destination={destination} onChange={setDestination}/>
           <div className={styles.sectionPanel} role="tabpanel" id={"panel-" + destination} aria-labelledby={"tab-" + destination}>

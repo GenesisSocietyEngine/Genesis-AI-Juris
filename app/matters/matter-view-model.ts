@@ -1,7 +1,7 @@
 export const MATTER_DESTINATIONS = [
   { key: "overview", label: "Overview", shortLabel: "Overview" },
-  { key: "documents", label: "Documents", shortLabel: "Documents" },
-  { key: "evidence", label: "Evidence", shortLabel: "Evidence" },
+  { key: "documents", label: "Documents & evidence", shortLabel: "Documents" },
+  { key: "evidence", label: "Evidence review", shortLabel: "Evidence" },
   { key: "decision-packages", label: "Decision packages", shortLabel: "Packages" },
   { key: "requests", label: "Requests & deadlines", shortLabel: "Requests" },
   { key: "outputs", label: "Outputs & approvals", shortLabel: "Outputs" },
@@ -72,6 +72,7 @@ export interface MatterSummary {
   status: MatterStatus;
   ownerName: string;
   ownerActorId: string | null;
+  documentCount: number;
   priority: "low" | "normal" | "high" | "urgent";
   classification: string;
   keyDeadlineAt: string | null;
@@ -411,6 +412,7 @@ function normalizeSummary(source: UnknownRecord): MatterSummary | null {
       200,
     ),
     ownerActorId,
+    documentCount: Math.max(0, Math.trunc(numberValue(source, ["document_count", "documentCount"], 0))),
     priority: PRIORITY_VALUES.has(priorityValue as "low") ? priorityValue as MatterSummary["priority"] : "normal",
     classification: textValue(source, ["classification"], "confidential"),
     keyDeadlineAt: nullableText(deadlineSource, ["at", "due_at", "dueAt"])
