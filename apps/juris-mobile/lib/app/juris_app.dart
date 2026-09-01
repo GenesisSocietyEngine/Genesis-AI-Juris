@@ -113,8 +113,7 @@ class _JurisAppState extends State<JurisApp> {
     if (_studioOpen) {
       return StudioWizardScreen(
         repository: _studioRepository!,
-        store: widget.studioDraftStore ??
-            ApplicationSupportStudioDraftStore(),
+        store: widget.studioDraftStore ?? ApplicationSupportStudioDraftStore(),
         locale: _activeLocale,
         onExit: _closeStudio,
       );

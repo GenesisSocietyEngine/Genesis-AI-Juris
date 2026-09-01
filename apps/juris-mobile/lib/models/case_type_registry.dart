@@ -102,56 +102,86 @@ const List<CaseTypeDefinition> caseTypeRegistry = <CaseTypeDefinition>[
     requiredReview: 'professional',
     labelEn: 'Advisory decision',
     labelRu: 'Консультационное решение',
-    summaryEn: 'Structure issues, evidence, options and a reasoned recommendation.',
-    summaryRu: 'Структурируйте вопросы, доказательства, варианты и обоснованную рекомендацию.',
+    summaryEn:
+        'Structure issues, evidence, options and a reasoned recommendation.',
+    summaryRu:
+        'Структурируйте вопросы, доказательства, варианты и обоснованную рекомендацию.',
     outcomeEn: 'Decision memorandum',
     outcomeRu: 'Меморандум по решению',
   ),
   CaseTypeDefinition(
     id: CaseTypeId.litigationStrategy,
     workflowMode: 'adaptive',
-    views: <StudioCaseViewId>[StudioCaseViewId.evidenceMap, StudioCaseViewId.timeline, StudioCaseViewId.decisionTable, StudioCaseViewId.taskPlan],
+    views: <StudioCaseViewId>[
+      StudioCaseViewId.evidenceMap,
+      StudioCaseViewId.timeline,
+      StudioCaseViewId.decisionTable,
+      StudioCaseViewId.taskPlan
+    ],
     requiredReview: 'evidence_governance',
     labelEn: 'Litigation strategy',
     labelRu: 'Стратегия спора',
-    summaryEn: 'Connect claims, chronology, evidence, procedure, scenarios and deadlines.',
-    summaryRu: 'Свяжите требования, хронологию, доказательства, процедуру, сценарии и сроки.',
+    summaryEn:
+        'Connect claims, chronology, evidence, procedure, scenarios and deadlines.',
+    summaryRu:
+        'Свяжите требования, хронологию, доказательства, процедуру, сценарии и сроки.',
     outcomeEn: 'Strategy and risk report',
     outcomeRu: 'Отчёт о стратегии и рисках',
   ),
   CaseTypeDefinition(
     id: CaseTypeId.contractReview,
     workflowMode: 'decision',
-    views: <StudioCaseViewId>[StudioCaseViewId.decisionTable, StudioCaseViewId.evidenceMap, StudioCaseViewId.taskPlan, StudioCaseViewId.timeline],
+    views: <StudioCaseViewId>[
+      StudioCaseViewId.decisionTable,
+      StudioCaseViewId.evidenceMap,
+      StudioCaseViewId.taskPlan,
+      StudioCaseViewId.timeline
+    ],
     requiredReview: 'professional',
     labelEn: 'Contract review',
     labelRu: 'Проверка договора',
-    summaryEn: 'Map clauses, obligations, deviations, negotiation positions and residual risk.',
-    summaryRu: 'Сопоставьте условия, обязательства, отклонения, переговорные позиции и остаточный риск.',
+    summaryEn:
+        'Map clauses, obligations, deviations, negotiation positions and residual risk.',
+    summaryRu:
+        'Сопоставьте условия, обязательства, отклонения, переговорные позиции и остаточный риск.',
     outcomeEn: 'Redline and risk report',
     outcomeRu: 'Отчёт по правкам и рискам',
   ),
   CaseTypeDefinition(
     id: CaseTypeId.taxPlanning,
     workflowMode: 'hybrid',
-    views: <StudioCaseViewId>[StudioCaseViewId.issueMap, StudioCaseViewId.decisionTable, StudioCaseViewId.economics, StudioCaseViewId.timeline],
+    views: <StudioCaseViewId>[
+      StudioCaseViewId.issueMap,
+      StudioCaseViewId.decisionTable,
+      StudioCaseViewId.economics,
+      StudioCaseViewId.timeline
+    ],
     requiredReview: 'tax_governance',
     labelEn: 'Tax planning',
     labelRu: 'Налоговое планирование',
-    summaryEn: 'Compare lawful structures, current authorities, economics, substance and reporting obligations.',
-    summaryRu: 'Сравните законные структуры, актуальные источники, экономику, substance и отчётность.',
+    summaryEn:
+        'Compare lawful structures, current authorities, economics, substance and reporting obligations.',
+    summaryRu:
+        'Сравните законные структуры, актуальные источники, экономику, substance и отчётность.',
     outcomeEn: 'Tax position memorandum',
     outcomeRu: 'Меморандум по налоговой позиции',
   ),
   CaseTypeDefinition(
     id: CaseTypeId.compliance,
     workflowMode: 'process',
-    views: <StudioCaseViewId>[StudioCaseViewId.taskPlan, StudioCaseViewId.decisionTable, StudioCaseViewId.evidenceMap, StudioCaseViewId.timeline],
+    views: <StudioCaseViewId>[
+      StudioCaseViewId.taskPlan,
+      StudioCaseViewId.decisionTable,
+      StudioCaseViewId.evidenceMap,
+      StudioCaseViewId.timeline
+    ],
     requiredReview: 'evidence_governance',
     labelEn: 'Compliance assessment',
     labelRu: 'Compliance-оценка',
-    summaryEn: 'Map obligations to controls, evidence, exceptions, owners and remediation.',
-    summaryRu: 'Сопоставьте обязанности с контролями, доказательствами, исключениями, ответственными и исправлениями.',
+    summaryEn:
+        'Map obligations to controls, evidence, exceptions, owners and remediation.',
+    summaryRu:
+        'Сопоставьте обязанности с контролями, доказательствами, исключениями, ответственными и исправлениями.',
     outcomeEn: 'Gap and remediation plan',
     outcomeRu: 'План устранения пробелов',
   ),
@@ -167,8 +197,10 @@ const List<CaseTypeDefinition> caseTypeRegistry = <CaseTypeDefinition>[
     requiredReview: 'tax_governance',
     labelEn: 'Tax & compliance',
     labelRu: 'Налоги и compliance',
-    summaryEn: 'Compare lawful positions, economics, sources and reporting obligations.',
-    summaryRu: 'Сравните законные позиции, экономику, источники и обязанности по отчётности.',
+    summaryEn:
+        'Compare lawful positions, economics, sources and reporting obligations.',
+    summaryRu:
+        'Сравните законные позиции, экономику, источники и обязанности по отчётности.',
     outcomeEn: 'Tax position memorandum',
     outcomeRu: 'Меморандум по налоговой позиции',
   ),
@@ -184,20 +216,29 @@ const List<CaseTypeDefinition> caseTypeRegistry = <CaseTypeDefinition>[
     requiredReview: 'professional',
     labelEn: 'ERP incident & solution',
     labelRu: 'ERP-инцидент и решение',
-    summaryEn: 'Capture the process failure, root cause, controls, solution and test evidence.',
-    summaryRu: 'Зафиксируйте сбой процесса, первопричину, контроли, решение и тестовые доказательства.',
+    summaryEn:
+        'Capture the process failure, root cause, controls, solution and test evidence.',
+    summaryRu:
+        'Зафиксируйте сбой процесса, первопричину, контроли, решение и тестовые доказательства.',
     outcomeEn: 'Solution design & test pack',
     outcomeRu: 'Проект решения и пакет тестов',
   ),
   CaseTypeDefinition(
     id: CaseTypeId.investigation,
     workflowMode: 'adaptive',
-    views: <StudioCaseViewId>[StudioCaseViewId.evidenceMap, StudioCaseViewId.timeline, StudioCaseViewId.taskPlan, StudioCaseViewId.decisionTable],
+    views: <StudioCaseViewId>[
+      StudioCaseViewId.evidenceMap,
+      StudioCaseViewId.timeline,
+      StudioCaseViewId.taskPlan,
+      StudioCaseViewId.decisionTable
+    ],
     requiredReview: 'evidence_governance',
     labelEn: 'Investigation',
     labelRu: 'Расследование',
-    summaryEn: 'Preserve evidence, actors, chronology, contradictions, findings and unresolved matters.',
-    summaryRu: 'Сохраните доказательства, участников, хронологию, противоречия, выводы и открытые вопросы.',
+    summaryEn:
+        'Preserve evidence, actors, chronology, contradictions, findings and unresolved matters.',
+    summaryRu:
+        'Сохраните доказательства, участников, хронологию, противоречия, выводы и открытые вопросы.',
     outcomeEn: 'Findings and chronology report',
     outcomeRu: 'Отчёт о выводах и хронологии',
   ),
@@ -212,8 +253,10 @@ const List<CaseTypeDefinition> caseTypeRegistry = <CaseTypeDefinition>[
     requiredReview: 'runtime_parity',
     labelEn: 'Training simulation',
     labelRu: 'Учебная симуляция',
-    summaryEn: 'Build a deterministic branching route with decisions, pressure and outcomes.',
-    summaryRu: 'Создайте детерминированный ветвящийся маршрут с решениями, давлением и исходами.',
+    summaryEn:
+        'Build a deterministic branching route with decisions, pressure and outcomes.',
+    summaryRu:
+        'Создайте детерминированный ветвящийся маршрут с решениями, давлением и исходами.',
     outcomeEn: 'Playable scenario',
     outcomeRu: 'Игровой сценарий',
   ),

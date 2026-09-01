@@ -33,13 +33,16 @@ void main() {
     final StudioCaseViewProjection evidence =
         projectStudioCaseView(draft, StudioCaseViewId.evidenceMap);
     expect(evidence.items.length, 3);
-    expect(evidence.items.every((StudioCaseViewItem item) => item.kind == 'fact'), isTrue);
+    expect(
+        evidence.items.every((StudioCaseViewItem item) => item.kind == 'fact'),
+        isTrue);
   });
 
   test('view projection cannot mutate the canonical draft', () {
     final StudioScenarioDraft draft = StudioScenarioDraft.guidedExample();
     final Map<String, dynamic> before = draft.toJson();
-    for (final StudioCaseViewId view in caseTypeDefinition(draft.caseType.id).views) {
+    for (final StudioCaseViewId view
+        in caseTypeDefinition(draft.caseType.id).views) {
       projectStudioCaseView(draft, view);
     }
     expect(draft.toJson(), before);

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../data/studio_authoring_repository.dart';
 import '../data/studio_draft_store.dart';
 import '../models/case_type_playbook.dart';
+import '../models/case_type_playbook_assets.dart';
 import '../models/case_type_registry.dart';
 import '../models/studio_scenario_draft.dart';
 import '../widgets/section_card.dart';
@@ -136,7 +137,9 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
-              _notice ?? _t('Case packages could not be loaded.', 'Не удалось загрузить пакеты кейсов.'),
+              _notice ??
+                  _t('Case packages could not be loaded.',
+                      'Не удалось загрузить пакеты кейсов.'),
             ),
           ),
         ),
@@ -168,7 +171,9 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
             padding: const EdgeInsets.only(right: 16),
             child: Center(
               child: Text(
-                _busy ? _t('Working…', 'Выполняется…') : _t('Auto-saved', 'Автосохранение'),
+                _busy
+                    ? _t('Working…', 'Выполняется…')
+                    : _t('Auto-saved', 'Автосохранение'),
                 style: Theme.of(context).textTheme.labelSmall,
               ),
             ),
@@ -232,9 +237,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
           busy: _busy,
           locale: widget.locale,
           onBack: _activeStage.index == 0 ? null : _previous,
-          onContinue: _activeStage == StudioWorkflowStage.reportSave
-              ? null
-              : _continue,
+          onContinue:
+              _activeStage == StudioWorkflowStage.reportSave ? null : _continue,
         ),
       ),
     );
@@ -282,7 +286,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
             _StartChoice(
               key: const ValueKey<String>('studio-import-scenario'),
               icon: Icons.content_paste_go_outlined,
-              title: _t('Import canonical JSON', 'Импортировать canonical JSON'),
+              title:
+                  _t('Import canonical JSON', 'Импортировать canonical JSON'),
               subtitle: _t(
                 'Paste a ScenarioDefinition v1 from web or mobile.',
                 'Вставьте ScenarioDefinition v1 из web или mobile.',
@@ -311,7 +316,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                     ),
                     initialValue: _draft.caseType.id,
                     decoration: InputDecoration(
-                      labelText: _t('Professional matter', 'Профессиональная задача'),
+                      labelText:
+                          _t('Professional matter', 'Профессиональная задача'),
                     ),
                     items: caseTypeRegistry
                         .map(
@@ -660,8 +666,10 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                 ? Icons.play_circle_outline
                 : Icons.fact_check_outlined),
             label: Text(routeRequired
-                ? _t('Validate and play in Rust', 'Проверить и запустить в Rust')
-                : _t('Validate package through Rust', 'Проверить пакет через Rust')),
+                ? _t(
+                    'Validate and play in Rust', 'Проверить и запустить в Rust')
+                : _t('Validate package through Rust',
+                    'Проверить пакет через Rust')),
           ),
           if (validation != null) ...<Widget>[
             const SizedBox(height: 16),
@@ -682,8 +690,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                         )
                       : routeRequired
                           ? _t(
-                      '${_routeResult!.executedActionIds.length} actions → ${_routeResult!.outcomeId}',
-                      '${_routeResult!.executedActionIds.length} действий → ${_routeResult!.outcomeId}',
+                              '${_routeResult!.executedActionIds.length} actions → ${_routeResult!.outcomeId}',
+                              '${_routeResult!.executedActionIds.length} действий → ${_routeResult!.outcomeId}',
                             )
                           : _t(
                               'Rust schema valid · ${playbook.test.mode} checks passed',
@@ -759,7 +767,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                 key: const ValueKey<String>('studio-save-export'),
                 onPressed: _busy || !_canFinish ? null : _saveAndExport,
                 icon: const Icon(Icons.save_alt_outlined),
-                label: Text(_t('Save and export JSON', 'Сохранить и экспортировать JSON')),
+                label: Text(_t(
+                    'Save and export JSON', 'Сохранить и экспортировать JSON')),
               ),
               if (_exportPath != null) ...<Widget>[
                 const SizedBox(height: 12),
@@ -774,7 +783,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
     );
   }
 
-  bool get _canFinish => _validation?.valid == true &&
+  bool get _canFinish =>
+      _validation?.valid == true &&
       _packageEvaluation.complete &&
       (!_playbook.test.requiresPlayableRoute || _routeResult != null);
 
@@ -866,7 +876,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       if (decoded is! Map<String, dynamic>) {
         throw const FormatException('Clipboard JSON must be an object.');
       }
-      final StudioScenarioDraft imported = StudioScenarioDraft.fromJson(decoded);
+      final StudioScenarioDraft imported =
+          StudioScenarioDraft.fromJson(decoded);
       if (!mounted) return;
       setState(() {
         _draft = imported;
@@ -937,7 +948,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       _routeResult = null;
     });
     try {
-      final StudioValidationResult validation = widget.repository.validate(_draft);
+      final StudioValidationResult validation =
+          widget.repository.validate(_draft);
       final CasePackageEvaluation evaluation = _packageEvaluation;
       final bool routeRequired = _playbook.test.requiresPlayableRoute;
       StudioRouteTestResult? route;
@@ -1096,8 +1108,22 @@ final class _ProgressHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool ru = locale == 'ru';
     final List<String> labels = ru
-        ? const <String>['Описание', 'AI-проект', 'Факты', 'Виды', 'Тест', 'Готово']
-        : const <String>['Describe', 'AI draft', 'Facts', 'Views', 'Test', 'Finish'];
+        ? const <String>[
+            'Описание',
+            'AI-проект',
+            'Факты',
+            'Виды',
+            'Тест',
+            'Готово'
+          ]
+        : const <String>[
+            'Describe',
+            'AI draft',
+            'Facts',
+            'Views',
+            'Test',
+            'Finish'
+          ];
     final int furthest = completed.isEmpty
         ? 0
         : completed.map((StudioWorkflowStage item) => item.index).fold<int>(
