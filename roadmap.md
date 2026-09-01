@@ -144,13 +144,14 @@ Status: **in development**
   - [x] Pass 493/493 full web tests and 29/29 held dossier runtime tests.
   - [ ] Complete in-app visual inspection; local HTTP rendering and security
     headers are green, but the trusted browser-control service is unavailable.
-- [ ] Pass Rust, Flutter, Android, iOS, and exact shared-contract/layout parity gates.
+- [x] Pass Rust, Flutter, Android, iOS, and exact shared-contract/layout parity gates.
   - [x] Pass exact web/Flutter report-manifest, metric, fixture, connector, and
     layout-fingerprint parity; full Flutter analysis and 258-test suite pass.
   - [x] Pass Rust formatting, Clippy with warnings denied, locked workspace
     tests, and 12/12 Android native persistence scenarios.
-  - [ ] Bind the exact candidate head to successful hosted iOS evidence.
-- [ ] Review and merge the exact mobile head; bind its SHA and four CI receipts.
+  - [x] Bind the exact candidate head to successful hosted iOS evidence.
+- [x] Review and push the exact mobile head; bind its SHA and four CI receipts.
+- [ ] Merge the mobile branch; this remains a separately authorised repository action.
 - [ ] Commit and push the exact reviewed web head.
 - [ ] Save exactly one Sites version only after every exact-head gate passes.
 - [ ] Obtain fresh immediate public-deployment approval, deploy, and verify or roll back.
@@ -164,6 +165,10 @@ Candidate evidence recorded on 2026-09-01:
   and `0015 2B616B413351B3CFAE8A58FF23CD52638E27094EF2311D70C474D8DB243DBD81`;
 - exact visual baseline: 55 PNGs,
   `fbcc9a03d8a26b7076aa2504ac1adf28c28a4196806c9e2849bb6a6aba12f8bb`;
+- exact mobile head `268401ab7dbc12cdc80c20a281268189aad01e60` on
+  `codex/v62-report-graph-pagination`; hosted Rust `33503429648`, Flutter
+  `33503429646`, Android `33503429598`, and iOS `33503429554` all concluded
+  `success` on that same SHA;
 - production remains Site version 63 / marker `v61`; fresh approval is still
   required immediately before the sole production deployment.
 

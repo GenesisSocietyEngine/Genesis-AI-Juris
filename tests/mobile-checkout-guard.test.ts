@@ -118,7 +118,18 @@ test("known generated mobile outputs do not make the source checkout dirty", () 
   try {
     const generated = [
       "apps/juris-mobile/.dart_tool/generated.json",
+      "apps/juris-mobile/.flutter-plugins-dependencies",
+      "apps/juris-mobile/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java",
+      "apps/juris-mobile/android/app/src/main/jniLibs/x86_64/libjuris_mobile_ffi.so",
+      "apps/juris-mobile/android/gradle/wrapper/gradle-wrapper.jar",
+      "apps/juris-mobile/android/gradlew",
+      "apps/juris-mobile/android/gradlew.bat",
+      "apps/juris-mobile/android/local.properties",
       "apps/juris-mobile/build/result.bin",
+      "apps/juris-mobile/ios/Flutter/Generated.xcconfig",
+      "apps/juris-mobile/ios/Flutter/flutter_export_environment.sh",
+      "apps/juris-mobile/ios/Runner/GeneratedPluginRegistrant.h",
+      "apps/juris-mobile/ios/Runner/GeneratedPluginRegistrant.m",
       "apps/juris-mobile/test/failures/example_testImage.png",
       "apps/juris-mobile/test/failures/example_masterImage.png",
     ];
@@ -128,6 +139,22 @@ test("known generated mobile outputs do not make the source checkout dirty", () 
       writeFileSync(target, "generated\n");
     }
     assert.doesNotThrow(() => verifyMobileCheckoutState(fixture.worktree, fixture.commit));
+  } finally {
+    removeFixture(fixture.root);
+  }
+});
+
+test("an arbitrary ignored mobile source file still fails closed", () => {
+  const fixture = createCheckoutFixture();
+  try {
+    const excludedPath = "apps/juris-mobile/lib/ignored_backdoor.dart";
+    const excludeFile = git(fixture.worktree, ["rev-parse", "--git-path", "info/exclude"]);
+    appendFileSync(excludeFile, excludedPath + "\n");
+    const target = join(fixture.worktree, ...excludedPath.split("/"));
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, "untracked ignored release input\n");
+    assert.equal(git(fixture.worktree, ["check-ignore", excludedPath]), excludedPath);
+    assertGuardCode(() => verifyMobileCheckoutState(fixture.worktree, fixture.commit), "MOBILE_RELEVANT_UNTRACKED");
   } finally {
     removeFixture(fixture.root);
   }

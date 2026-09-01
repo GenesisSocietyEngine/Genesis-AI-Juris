@@ -44,6 +44,20 @@ const GENERATED_PREFIXES = [
   "apps/juris-mobile/ios/Flutter/ephemeral/",
 ] as const;
 
+const GENERATED_EXACT_PATHS = new Set([
+  "apps/juris-mobile/.flutter-plugins-dependencies",
+  "apps/juris-mobile/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java",
+  "apps/juris-mobile/android/app/src/main/jniLibs/x86_64/libjuris_mobile_ffi.so",
+  "apps/juris-mobile/android/gradle/wrapper/gradle-wrapper.jar",
+  "apps/juris-mobile/android/gradlew",
+  "apps/juris-mobile/android/gradlew.bat",
+  "apps/juris-mobile/android/local.properties",
+  "apps/juris-mobile/ios/Flutter/Generated.xcconfig",
+  "apps/juris-mobile/ios/Flutter/flutter_export_environment.sh",
+  "apps/juris-mobile/ios/Runner/GeneratedPluginRegistrant.h",
+  "apps/juris-mobile/ios/Runner/GeneratedPluginRegistrant.m",
+]);
+
 type HeadTreeEntry = {
   mode: string;
   type: string;
@@ -107,6 +121,7 @@ export function withVerifiedMobileCheckout<T>(
 function isRelevantUntrackedInput(path: string) {
   const normalized = path.split(String.fromCharCode(92)).join("/");
   if (GENERATED_PREFIXES.some((prefix) => normalized.startsWith(prefix))) return false;
+  if (GENERATED_EXACT_PATHS.has(normalized)) return false;
   if (/^apps\/juris-mobile\/test\/failures\/.*_(?:testImage|masterImage|maskedDiff|isolatedDiff)\.png$/u.test(normalized)) return false;
   return true;
 }

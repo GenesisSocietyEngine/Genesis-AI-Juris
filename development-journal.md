@@ -631,3 +631,20 @@ The remaining release boundary is exact commits and push, exact-head hosted
 Android/Flutter/iOS/Rust evidence, one saved Sites version, fresh explicit
 production approval, and post-deployment verification. Production and app-store
 state are unchanged.
+
+## 2026-09-01 - Mobile release head published and four hosted gates accepted
+
+The approved mobile branch `codex/v62-report-graph-pagination` was pushed at
+`268401ab7dbc12cdc80c20a281268189aad01e60`. Rust run `33503429648`, Flutter run
+`33503429646`, Android run `33503429598`, and iOS run `33503429554` each
+concluded `success` on that exact SHA; the iOS run completed the native simulator
+lifecycle rather than stopping at build or export inspection.
+
+The web parity lock now binds that exact commit and only those four successful
+hosted receipts. The final checkout guard now admits only the 11 exact generated
+paths created by Flutter/Android/iOS release commands and still rejects arbitrary
+ignored source; its focused checkout/release matrix passes 16/16.
+
+The mobile branch was not merged, no app-store action was taken, and production
+remains Site version 63 / marker `v61` pending the final exact-web-head verifier,
+Sites source push/save, and fresh immediate deployment approval.
