@@ -34,11 +34,11 @@ void main() {
     final StudioScenarioDraft original = StudioScenarioDraft.blank();
     final StudioScenarioDraft edited = original
         .updateIdentity(
-          title: 'Emergency lease dispute',
-          jurisdiction: 'nl',
-          role: 'Tenant counsel',
-          premise: 'The tenant needs urgent relief.',
-        )
+      title: 'Emergency lease dispute',
+      jurisdiction: 'nl',
+      role: 'Tenant counsel',
+      premise: 'The tenant needs urgent relief.',
+    )
         .updateFacts(<String>['Notice was served.', '  ', 'Rent is current.']);
 
     expect(edited.caseId, 'emergency_lease_dispute');

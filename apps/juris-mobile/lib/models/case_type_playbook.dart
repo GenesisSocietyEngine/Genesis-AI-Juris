@@ -1,7 +1,3 @@
-import 'dart:convert';
-
-import 'package:flutter/services.dart';
-
 import 'case_type_registry.dart';
 import 'studio_scenario_draft.dart';
 
@@ -18,7 +14,8 @@ final class LocalizedText {
         source['ru'] is! String) {
       throw const FormatException('Invalid localized playbook text.');
     }
-    return LocalizedText(en: source['en'] as String, ru: source['ru'] as String);
+    return LocalizedText(
+        en: source['en'] as String, ru: source['ru'] as String);
   }
 
   final String en;
@@ -186,10 +183,9 @@ final class CaseTypePlaybook {
         (source['intakeQuestions'] as List<dynamic>)
             .map(CaseIntakeQuestion.fromJson)
             .toList(growable: false);
-    final List<CaseOutputProfile> outputs =
-        (source['outputs'] as List<dynamic>)
-            .map(CaseOutputProfile.fromJson)
-            .toList(growable: false);
+    final List<CaseOutputProfile> outputs = (source['outputs'] as List<dynamic>)
+        .map(CaseOutputProfile.fromJson)
+        .toList(growable: false);
     if (questions.isEmpty ||
         outputs.isEmpty ||
         outputs.where((CaseOutputProfile item) => item.primary).length != 1) {
@@ -248,14 +244,6 @@ final class CaseTypePlaybookRegistry {
 
   CaseTypePlaybook forCaseType(CaseTypeId id) =>
       playbooks.firstWhere((CaseTypePlaybook item) => item.caseType == id);
-}
-
-Future<CaseTypePlaybookRegistry> loadCaseTypePlaybookRegistry({
-  AssetBundle? bundle,
-}) async {
-  final String encoded =
-      await (bundle ?? rootBundle).loadString(caseTypePlaybookAsset);
-  return CaseTypePlaybookRegistry.fromJson(jsonDecode(encoded));
 }
 
 final class CasePackageEvaluation {

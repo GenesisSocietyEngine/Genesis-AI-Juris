@@ -12,10 +12,11 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   ffi: ^2.2.0
+  crypto: ^3.0.7
   path_provider: ^2.1.6
+  url_launcher: ^6.3.2
 
 dev_dependencies:
-  crypto: ^3.0.7
   flutter_test:
     sdk: flutter
   integration_test:
@@ -27,6 +28,7 @@ flutter:
     - assets/branding/genesis_ai_juris_logo.png
     - assets/case_catalog/
     - assets/case_types/
+    - assets/report_graph/
     - assets/visual_identity/
   fonts:
     - family: JurisLiterata

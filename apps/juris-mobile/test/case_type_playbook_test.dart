@@ -7,19 +7,23 @@ import 'package:juris_mobile/models/case_type_registry.dart';
 import 'package:juris_mobile/models/studio_scenario_draft.dart';
 
 void main() {
-  test('mobile asset is byte-identical to the v61 nine-type playbook contract', () {
+  test('mobile asset is byte-identical to the v61 nine-type playbook contract',
+      () {
     final File contract = File('../../contracts/case-type-playbooks.v1.json');
-    final File asset =
-        File('assets/case_types/case_type_playbooks.v1.json');
+    final File asset = File('assets/case_types/case_type_playbooks.v1.json');
     expect(asset.readAsBytesSync(), contract.readAsBytesSync());
 
-    final CaseTypePlaybookRegistry registry =
-        CaseTypePlaybookRegistry.fromJson(
+    final CaseTypePlaybookRegistry registry = CaseTypePlaybookRegistry.fromJson(
       jsonDecode(contract.readAsStringSync()),
     );
     expect(registry.playbooks.length, 9);
     expect(CaseTypeId.values.length, 9);
-    expect(registry.forCaseType(CaseTypeId.investigation).test.requiresPlayableRoute, isFalse);
+    expect(
+        registry
+            .forCaseType(CaseTypeId.investigation)
+            .test
+            .requiresPlayableRoute,
+        isFalse);
     expect(
       registry
           .forCaseType(CaseTypeId.trainingSimulation)
@@ -36,9 +40,9 @@ void main() {
     );
   });
 
-  test('tax package fails closed until dated sources and duties are recorded', () {
-    final CaseTypePlaybookRegistry registry =
-        CaseTypePlaybookRegistry.fromJson(
+  test('tax package fails closed until dated sources and duties are recorded',
+      () {
+    final CaseTypePlaybookRegistry registry = CaseTypePlaybookRegistry.fromJson(
       jsonDecode(
         File('../../contracts/case-type-playbooks.v1.json').readAsStringSync(),
       ),

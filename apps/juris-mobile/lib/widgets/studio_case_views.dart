@@ -38,7 +38,8 @@ final class _StudioCaseViewsState extends State<StudioCaseViews> {
     }
   }
 
-  CaseTypeDefinition get _definition => caseTypeDefinition(widget.draft.caseType.id);
+  CaseTypeDefinition get _definition =>
+      caseTypeDefinition(widget.draft.caseType.id);
 
   String _t(String en, String ru) => _ru ? ru : en;
 
@@ -253,7 +254,8 @@ final class _ProjectionItem extends StatelessWidget {
                   style: Theme.of(context).textTheme.labelSmall,
                 ),
                 const SizedBox(height: 4),
-                Text(item.title, style: Theme.of(context).textTheme.titleMedium),
+                Text(item.title,
+                    style: Theme.of(context).textTheme.titleMedium),
                 if (item.detail.isNotEmpty) ...<Widget>[
                   const SizedBox(height: 5),
                   Text(item.detail),

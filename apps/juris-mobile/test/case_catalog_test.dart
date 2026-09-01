@@ -84,7 +84,9 @@ void main() {
     expect(failedErp.playerClientId, 'asteron_systems');
     expect(failedErp.playerRole, 'claimant');
     expect(
-        failedErp.localized('en', 'en').playerClientName, 'Asteron Systems NV');
+      failedErp.localized('en', 'en').playerClientName,
+      'Asteron Systems NV',
+    );
     expect(failedErp.status, MobileCaseStatus.playable);
     expect(failedErp.scenarioAvailable, isTrue);
     expect(failedErp.scenario, isNotNull);
@@ -98,8 +100,10 @@ void main() {
     expect(failedErp.readiness.engineRuntime, isTrue);
     expect(failedErp.runtimeAdapter, CaseRuntimeFactory.rustScenarioAdapter);
     expect(CaseRuntimeFactory.supports(failedErp), isTrue);
-    expect(failedErp.scenarioLocalizations.keys,
-        containsAll(<String>['en', 'ru']));
+    expect(
+      failedErp.scenarioLocalizations.keys,
+      containsAll(<String>['en', 'ru']),
+    );
     for (final String locale in <String>['en', 'ru']) {
       expect(
         failedErp.scenarioLocalizations[locale],
@@ -215,7 +219,9 @@ void main() {
       isNot(greenfire.scenarioLocalizations['ru']),
     );
     expect(
-        retained.scenarioLocalizations['ru']?.containsKey('actors'), isFalse);
+      retained.scenarioLocalizations['ru']?.containsKey('actors'),
+      isFalse,
+    );
     expect(
       ((greenfire.scenarioLocalizations['ru']?['actors']
               as Map<String, dynamic>)['port_haven_environment_authority']
@@ -358,13 +364,10 @@ void main() {
         }
       }
     }
-    expect(
-      english['metadata'],
-      <String, dynamic>{
-        'title': (scenario['metadata'] as Map<String, dynamic>)['title'],
-        'summary': (scenario['metadata'] as Map<String, dynamic>)['summary'],
-      },
-    );
+    expect(english['metadata'], <String, dynamic>{
+      'title': (scenario['metadata'] as Map<String, dynamic>)['title'],
+      'summary': (scenario['metadata'] as Map<String, dynamic>)['summary'],
+    });
 
     for (final String locale in <String>['en', 'ru']) {
       failedErp.scenarioText(
@@ -385,10 +388,11 @@ void main() {
     final Map<String, dynamic> decoded =
         jsonDecode(generatedBundle) as Map<String, dynamic>;
     final Map<String, dynamic> retiredCase = Map<String, dynamic>.from(
-        (decoded['cases'] as List<dynamic>).first as Map<String, dynamic>)
-      ..['runtime_adapter'] = 'demo_failed_erp';
-    final MobileCaseDefinition definition =
-        MobileCaseDefinition.fromJson(retiredCase);
+      (decoded['cases'] as List<dynamic>).first as Map<String, dynamic>,
+    )..['runtime_adapter'] = 'demo_failed_erp';
+    final MobileCaseDefinition definition = MobileCaseDefinition.fromJson(
+      retiredCase,
+    );
 
     expect(CaseRuntimeFactory.supports(definition), isFalse);
     expect(
@@ -397,7 +401,7 @@ void main() {
     );
   });
 
-  testWidgets('case library renders all catalog scenarios', (
+  testWidgets('template catalogue renders all catalog scenarios', (
     WidgetTester tester,
   ) async {
     await pumpCatalog(tester);
@@ -448,65 +452,62 @@ void main() {
   });
 
   testWidgets(
-      'language switch localizes case text without changing stable names', (
-    WidgetTester tester,
-  ) async {
-    await pumpCatalog(tester);
+    'language switch localizes case text without changing stable names',
+    (WidgetTester tester) async {
+      await pumpCatalog(tester);
 
-    await tester.tap(find.byIcon(Icons.language));
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is PopupMenuItem<String> && widget.value == 'ru',
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.language));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is PopupMenuItem<String> && widget.value == 'ru',
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Библиотека дел'), findsWidgets);
-    final Finder selectedPanel = find.byKey(
-      const ValueKey<String>('selected-case-panel'),
-    );
-    expect(
-      find.descendant(
-        of: selectedPanel,
-        matching: find.text('Неудачное внедрение ERP'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.text('Asteron Systems NV v. Northbridge Consulting BV'),
-      findsOneWidget,
-    );
+      expect(find.text('Шаблоны'), findsWidgets);
+      final Finder selectedPanel = find.byKey(
+        const ValueKey<String>('selected-case-panel'),
+      );
+      expect(
+        find.descendant(
+          of: selectedPanel,
+          matching: find.text('Неудачное внедрение ERP'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Asteron Systems NV v. Northbridge Consulting BV'),
+        findsOneWidget,
+      );
 
-    await _selectCatalogCase(tester, 'nl_food_safety_goldenshell_001');
+      await _selectCatalogCase(tester, 'nl_food_safety_goldenshell_001');
 
-    expect(
-      find.descendant(
-        of: selectedPanel,
-        matching: find.text('Загрязнение цепочки поставок яиц'),
-      ),
-      findsOneWidget,
-    );
+      expect(
+        find.descendant(
+          of: selectedPanel,
+          matching: find.text('Загрязнение цепочки поставок яиц'),
+        ),
+        findsOneWidget,
+      );
 
-    await _selectCatalogCase(tester, 'us_environmental_desert_water_001');
+      await _selectCatalogCase(tester, 'us_environmental_desert_water_001');
 
-    expect(
-      find.descendant(
-        of: selectedPanel,
-        matching: find.text('Вода пустыни'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.text(
-        'Sundial Mesa Residents Association v. Caldera Compression & Cooling Inc.',
-      ),
-      findsOneWidget,
-    );
-  });
+      expect(
+        find.descendant(of: selectedPanel, matching: find.text('Вода пустыни')),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Sundial Mesa Residents Association v. Caldera Compression & Cooling Inc.',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 
-  testWidgets('playable Rust case opens and returns to library', (
+  testWidgets('playable Rust case opens and returns to templates', (
     WidgetTester tester,
   ) async {
     await pumpCatalog(tester);
@@ -520,10 +521,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-        find.text('Urgent: ERP supplier termination notice'), findsOneWidget);
-    expect(find.byTooltip('Back to case library'), findsOneWidget);
+      find.text('Urgent: ERP supplier termination notice'),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Back to templates'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Back to case library'));
+    await tester.tap(find.byTooltip('Back to templates'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1));
     await tester.pump(const Duration(milliseconds: 400));
@@ -631,10 +634,7 @@ void main() {
   });
 }
 
-Future<void> _selectCatalogCase(
-  WidgetTester tester,
-  String caseId,
-) async {
+Future<void> _selectCatalogCase(WidgetTester tester, String caseId) async {
   final Finder indexItem = find.byKey(
     ValueKey<String>('case-index-item-$caseId'),
   );

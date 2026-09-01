@@ -81,7 +81,10 @@ List<StudioCaseViewItem> _issueItems(
       title: _text(stage['title'], stageId),
       detail: options.isEmpty
           ? 'No decision option is connected to this issue.'
-          : options.map((Map<String, dynamic> item) => _text(item['title'], _text(item['id'], 'action'))).join(' · '),
+          : options
+              .map((Map<String, dynamic> item) =>
+                  _text(item['title'], _text(item['id'], 'action')))
+              .join(' · '),
       kind: 'issue',
       primaryMeta: '${options.length} option${options.length == 1 ? '' : 's'}',
       secondaryMeta: _text(stage['kind'], 'standard'),
@@ -100,7 +103,8 @@ List<StudioCaseViewItem> _recordItems(Map<String, dynamic> source) {
                 : 'Participants: ${_strings(fact['related_actors']).join(' · ')}',
             kind: 'fact',
             primaryMeta: _text(fact['initial_status'], 'alleged'),
-            secondaryMeta: '${_strings(fact['related_actors']).length} participant link(s)',
+            secondaryMeta:
+                '${_strings(fact['related_actors']).length} participant link(s)',
             needsAttention: _strings(fact['related_actors']).isEmpty,
           ))
       .toList(growable: false);
@@ -111,7 +115,8 @@ List<StudioCaseViewItem> _recordItems(Map<String, dynamic> source) {
             detail: _text(item['description'], _text(item['summary'], '')),
             kind: 'evidence',
             primaryMeta: _text(item['kind'], 'record'),
-            secondaryMeta: '${_strings(item['supports_facts']).length} supported fact(s)',
+            secondaryMeta:
+                '${_strings(item['supports_facts']).length} supported fact(s)',
             needsAttention: _strings(item['supports_facts']).isEmpty,
           ))
       .toList(growable: false);
@@ -129,8 +134,10 @@ List<StudioCaseViewItem> _decisionItems(List<Map<String, dynamic>> actions) {
       title: _text(action['title'], actionId),
       detail: _text(action['description'], 'Add a concise consequence.'),
       kind: 'decision option',
-      primaryMeta: action['available_when'] == null ? 'Always available' : 'Conditioned',
-      secondaryMeta: '$minutes min · $billable billable · ${effects.length} effect(s)',
+      primaryMeta:
+          action['available_when'] == null ? 'Always available' : 'Conditioned',
+      secondaryMeta:
+          '$minutes min · $billable billable · ${effects.length} effect(s)',
       needsAttention: effects.isEmpty,
     );
   }).toList(growable: false);
@@ -146,11 +153,16 @@ List<StudioCaseViewItem> _taskItems(
     final List<String> exits = _strings(stage['exit_actions']);
     final int effort = actions
         .where((Map<String, dynamic> action) => exits.contains(action['id']))
-        .fold<int>(0, (int total, Map<String, dynamic> action) => total + _integer(action['time_cost_minutes']));
+        .fold<int>(
+            0,
+            (int total, Map<String, dynamic> action) =>
+                total + _integer(action['time_cost_minutes']));
     return StudioCaseViewItem(
       id: _text(stage['id'], 'stage_$index'),
       title: _text(stage['title'], 'Stage ${index + 1}'),
-      detail: exits.isEmpty ? 'Terminal or awaiting a connected action.' : 'Actions: ${exits.join(' · ')}',
+      detail: exits.isEmpty
+          ? 'Terminal or awaiting a connected action.'
+          : 'Actions: ${exits.join(' · ')}',
       kind: stage['terminal'] == true ? 'outcome' : 'process stage',
       primaryMeta: 'Sequence ${index + 1}',
       secondaryMeta: '$effort min planned',
@@ -167,7 +179,9 @@ List<StudioCaseViewItem> _timelineItems(
       .map(((int, Map<String, dynamic>) entry) => StudioCaseViewItem(
             id: _text(entry.$2['id'], 'stage_${entry.$1}'),
             title: _text(entry.$2['title'], 'Stage ${entry.$1 + 1}'),
-            detail: entry.$2['terminal'] == true ? 'Terminal stage.' : 'Case stage in authored order.',
+            detail: entry.$2['terminal'] == true
+                ? 'Terminal stage.'
+                : 'Case stage in authored order.',
             kind: 'stage',
             primaryMeta: 'Sequence ${entry.$1 + 1}',
             secondaryMeta: _text(entry.$2['kind'], 'standard'),
@@ -177,7 +191,8 @@ List<StudioCaseViewItem> _timelineItems(
       .map((Map<String, dynamic> item) => StudioCaseViewItem(
             id: _text(item['id'], 'deadline'),
             title: _text(item['title'], _text(item['id'], 'Deadline')),
-            detail: 'Completion actions: ${_strings(item['completion_actions']).join(' · ')}',
+            detail:
+                'Completion actions: ${_strings(item['completion_actions']).join(' · ')}',
             kind: 'deadline',
             primaryMeta: _deadlineDueMeta(item['due_at']),
             secondaryMeta: _text(item['activation_event'], 'active at opening'),
@@ -193,15 +208,18 @@ List<StudioCaseViewItem> _economicsItems(
 ) {
   final int totalMinutes = actions.fold<int>(
     0,
-    (int sum, Map<String, dynamic> action) => sum + _integer(action['time_cost_minutes']),
+    (int sum, Map<String, dynamic> action) =>
+        sum + _integer(action['time_cost_minutes']),
   );
   final int billableMinutes = actions.fold<int>(
     0,
-    (int sum, Map<String, dynamic> action) => sum + _integer(action['billable_minutes']),
+    (int sum, Map<String, dynamic> action) =>
+        sum + _integer(action['billable_minutes']),
   );
-  final Map<String, dynamic> resources = source['initial_resources'] is Map<String, dynamic>
-      ? source['initial_resources'] as Map<String, dynamic>
-      : const <String, dynamic>{};
+  final Map<String, dynamic> resources =
+      source['initial_resources'] is Map<String, dynamic>
+          ? source['initial_resources'] as Map<String, dynamic>
+          : const <String, dynamic>{};
   return <StudioCaseViewItem>[
     StudioCaseViewItem(
       id: 'route_effort',
@@ -227,7 +245,8 @@ List<StudioCaseViewItem> _simulationItems(
     StudioCaseViewItem(
       id: 'simulation_route',
       title: 'Playable route',
-      detail: 'The canonical route is validated and executed by Rust in Step 5.',
+      detail:
+          'The canonical route is validated and executed by Rust in Step 5.',
       kind: 'simulation',
       primaryMeta: '${stages.length} stages · ${actions.length} actions',
       secondaryMeta: '${outcomes.length} outcome(s)',
@@ -239,7 +258,8 @@ List<StudioCaseViewItem> _simulationItems(
           detail: _text(outcome['summary'], ''),
           kind: 'outcome',
           primaryMeta: _text(outcome['terminal_stage'], 'terminal'),
-          secondaryMeta: outcome['condition'] == null ? 'No condition' : 'Conditioned',
+          secondaryMeta:
+              outcome['condition'] == null ? 'No condition' : 'Conditioned',
           needsAttention: outcome['condition'] == null,
         )),
   ];
@@ -253,7 +273,8 @@ List<String> _strings(Object? value) => value is List<dynamic>
     ? value.whereType<String>().toList(growable: false)
     : const <String>[];
 
-String _text(Object? value, String fallback) => value is String && value.trim().isNotEmpty ? value.trim() : fallback;
+String _text(Object? value, String fallback) =>
+    value is String && value.trim().isNotEmpty ? value.trim() : fallback;
 
 int _integer(Object? value) => value is int && value >= 0 ? value : 0;
 

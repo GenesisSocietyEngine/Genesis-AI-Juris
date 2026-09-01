@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -6,6 +8,7 @@ import '../data/case_runtime_factory.dart';
 import '../data/game_runtime_repository.dart';
 import '../data/game_save_store.dart';
 import '../data/native_scenario_bridge_client.dart';
+import '../data/professional_workspace_launcher.dart';
 import '../data/scenario_bridge_client.dart';
 import '../data/studio_authoring_repository.dart';
 import '../data/studio_draft_store.dart';
@@ -15,16 +18,19 @@ import '../screens/studio_wizard_screen.dart';
 import '../visual_identity/case_visual_manifest_repository.dart';
 import 'app_theme.dart';
 import 'home_shell.dart';
+import 'product_navigation.dart';
 
 /// Root application widget.
 ///
 /// Tests and legacy embedding may still inject one deterministic repository
 /// directly. The production mobile entrypoint now uses [JurisApp.catalog], so
-/// the app starts from a data-driven case library and creates the correct
+/// the app starts from a data-driven template catalogue and creates the correct
 /// runtime only after the player selects a supported scenario.
 class JurisApp extends StatefulWidget {
   const JurisApp({
     required this.repository,
+    this.professionalWorkspaceLauncher =
+        const AllowlistedProfessionalWorkspaceLauncher(),
     super.key,
   })  : catalogRepository = null,
         visualManifestRepository = null,
@@ -38,6 +44,8 @@ class JurisApp extends StatefulWidget {
     this.scenarioBridgeClient,
     this.gameSaveStore,
     this.studioDraftStore,
+    this.professionalWorkspaceLauncher =
+        const AllowlistedProfessionalWorkspaceLauncher(),
     super.key,
   }) : repository = null;
 
@@ -47,12 +55,16 @@ class JurisApp extends StatefulWidget {
   final ScenarioBridgeClient? scenarioBridgeClient;
   final GameSaveStore? gameSaveStore;
   final StudioDraftStore? studioDraftStore;
+  final ProfessionalWorkspaceLauncher professionalWorkspaceLauncher;
 
   @override
   State<JurisApp> createState() => _JurisAppState();
 }
 
 class _JurisAppState extends State<JurisApp> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
   GameRuntimeRepository? _activeRepository;
   CaseVisualManifestRepository? _visualManifestRepository;
   String? _activeCaseId;
@@ -99,12 +111,22 @@ class _JurisAppState extends State<JurisApp> {
       debugShowCheckedModeBanner: false,
       title: 'GENESIS: AI Juris',
       theme: JurisTheme.dark(),
+      navigatorKey: _navigatorKey,
+      scaffoldMessengerKey: _scaffoldMessengerKey,
       locale: Locale(_activeLocale),
-      supportedLocales: const <Locale>[
-        Locale('en'),
-        Locale('ru'),
-      ],
+      supportedLocales: const <Locale>[Locale('en'), Locale('ru')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      builder: (BuildContext context, Widget? child) {
+        return JurisProductNavigationScope(
+          controller: JurisProductNavigationController(
+            openMyCases: _openMyCases,
+            openTemplates: _openTemplates,
+            openStudio: _openStudio,
+            openAccount: _openAccount,
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: _buildHome(),
     );
   }
@@ -113,8 +135,7 @@ class _JurisAppState extends State<JurisApp> {
     if (_studioOpen) {
       return StudioWizardScreen(
         repository: _studioRepository!,
-        store: widget.studioDraftStore ??
-            ApplicationSupportStudioDraftStore(),
+        store: widget.studioDraftStore ?? ApplicationSupportStudioDraftStore(),
         locale: _activeLocale,
         onExit: _closeStudio,
       );
@@ -175,12 +196,38 @@ class _JurisAppState extends State<JurisApp> {
     previous?.dispose();
   }
 
+  void _openTemplates() {
+    if (!_usesCatalog) {
+      _showNavigationMessage(
+        _activeLocale == 'ru'
+            ? 'Шаблоны недоступны в этом встроенном режиме.'
+            : 'Templates are unavailable in this embedded mode.',
+      );
+      return;
+    }
+    _scheduleOnRootRoute(() {
+      final GameRuntimeRepository? previous = _activeRepository;
+      if (previous == null && !_studioOpen) {
+        return;
+      }
+      setState(() {
+        _studioOpen = false;
+        _studioRepository = null;
+        _activeRepository = null;
+        _activeCaseId = null;
+      });
+      previous?.dispose();
+    });
+  }
+
   void _openStudio() {
-    final ScenarioBridgeClient bridge =
-        widget.scenarioBridgeClient ?? NativeScenarioBridgeClient();
-    setState(() {
-      _studioRepository = StudioAuthoringRepository(bridge);
-      _studioOpen = true;
+    _scheduleOnRootRoute(() {
+      final ScenarioBridgeClient bridge =
+          widget.scenarioBridgeClient ?? NativeScenarioBridgeClient();
+      setState(() {
+        _studioRepository = StudioAuthoringRepository(bridge);
+        _studioOpen = true;
+      });
     });
   }
 
@@ -189,5 +236,51 @@ class _JurisAppState extends State<JurisApp> {
       _studioOpen = false;
       _studioRepository = null;
     });
+  }
+
+  void _scheduleOnRootRoute(VoidCallback transition) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _navigatorKey.currentState?.popUntil(
+        (Route<dynamic> route) => route.isFirst,
+      );
+      transition();
+    });
+  }
+
+  void _openMyCases() {
+    unawaited(
+      _openProfessionalWorkspace(ProfessionalWorkspaceDestination.myCases),
+    );
+  }
+
+  void _openAccount() {
+    unawaited(
+      _openProfessionalWorkspace(ProfessionalWorkspaceDestination.account),
+    );
+  }
+
+  Future<void> _openProfessionalWorkspace(
+    ProfessionalWorkspaceDestination destination,
+  ) async {
+    try {
+      await widget.professionalWorkspaceLauncher.open(destination);
+    } on ProfessionalWorkspaceLaunchException catch (error) {
+      _showNavigationMessage(error.message);
+    } on Object {
+      _showNavigationMessage(
+        _activeLocale == 'ru'
+            ? 'Не удалось открыть защищённое рабочее пространство. Проверьте подключение и повторите попытку.'
+            : 'The secure workspace could not be opened. Check your connection and try again.',
+      );
+    }
+  }
+
+  void _showNavigationMessage(String message) {
+    _scaffoldMessengerKey.currentState
+      ?..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(message), showCloseIcon: true));
   }
 }

@@ -46,13 +46,16 @@ void main() {
     expect(find.text('Advisory decision'), findsOneWidget);
     expect(find.textContaining('Decision memorandum'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey<String>('studio-guided-example')));
+    await tester
+        .tap(find.byKey(const ValueKey<String>('studio-guided-example')));
     await tester.pumpAndSettle();
     expect(find.text('Supplier transition dispute'), findsWidgets);
     expect(
-      tester.widget<FilledButton>(
-        find.byKey(const ValueKey<String>('studio-continue')),
-      ).onPressed,
+      tester
+          .widget<FilledButton>(
+            find.byKey(const ValueKey<String>('studio-continue')),
+          )
+          .onPressed,
       isNotNull,
     );
   });
@@ -86,16 +89,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Compile and play every deterministic route'), findsOneWidget);
+    expect(find.text('Compile and play every deterministic route'),
+        findsOneWidget);
     await tester.tap(find.byKey(const ValueKey<String>('studio-rust-gate')));
     await tester.pumpAndSettle();
 
     expect(find.text('Package ready'), findsOneWidget);
     expect(find.textContaining('2 actions'), findsOneWidget);
     expect(
-      tester.widget<FilledButton>(
-        find.byKey(const ValueKey<String>('studio-continue')),
-      ).onPressed,
+      tester
+          .widget<FilledButton>(
+            find.byKey(const ValueKey<String>('studio-continue')),
+          )
+          .onPressed,
       isNotNull,
     );
   });
@@ -132,16 +138,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Review evidence coverage and compare options'), findsOneWidget);
+    expect(find.text('Review evidence coverage and compare options'),
+        findsOneWidget);
     await tester.tap(find.byKey(const ValueKey<String>('studio-rust-gate')));
     await tester.pumpAndSettle();
 
     expect(find.text('Package ready'), findsOneWidget);
     expect(bridge.routeCalls, 0);
     expect(
-      tester.widget<FilledButton>(
-        find.byKey(const ValueKey<String>('studio-continue')),
-      ).onPressed,
+      tester
+          .widget<FilledButton>(
+            find.byKey(const ValueKey<String>('studio-continue')),
+          )
+          .onPressed,
       isNotNull,
     );
   });
@@ -181,7 +190,8 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.textContaining('Rust remains the validation authority'), findsOneWidget);
+    expect(find.textContaining('Rust remains the validation authority'),
+        findsOneWidget);
     await tester.tap(
       find.byKey(const ValueKey<String>('studio-case-view-timeline')),
     );

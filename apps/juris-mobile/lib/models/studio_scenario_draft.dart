@@ -99,11 +99,13 @@ final class StudioScenarioDraft {
         ? const CaseTypeReference(CaseTypeId.generalAdvisory)
         : CaseTypeReference.fromJson(source);
   }
+
   String get title => _metadataString('title');
   String get premise => _metadataString('summary');
   String get version => _metadataString('content_version');
   String get jurisdiction =>
-      (_scenario['jurisdiction'] as Map<String, dynamic>?)?['code'] as String? ??
+      (_scenario['jurisdiction'] as Map<String, dynamic>?)?['code']
+          as String? ??
       '';
   String get role {
     final List<Map<String, dynamic>> actors = _objectList('actors');
@@ -124,12 +126,14 @@ final class StudioScenarioDraft {
       .where((Map<String, dynamic> stage) => stage['terminal'] == true)
       .length;
 
-  bool get identityReady => title.trim().isNotEmpty &&
+  bool get identityReady =>
+      title.trim().isNotEmpty &&
       premise.trim().isNotEmpty &&
       jurisdiction.trim().isNotEmpty &&
       role.trim().isNotEmpty;
   bool get factsReady => facts.any((String fact) => fact.trim().isNotEmpty);
-  bool get mapReady => stages.length >= 2 &&
+  bool get mapReady =>
+      stages.length >= 2 &&
       actions.isNotEmpty &&
       stages.any((Map<String, dynamic> stage) => stage['terminal'] == true);
 
@@ -273,7 +277,8 @@ Map<String, dynamic> _starterScenario({
       <String, dynamic>{
         'id': 'assess_case',
         'title': 'Assess facts and options',
-        'description': 'Review the known facts and select a proportionate path.',
+        'description':
+            'Review the known facts and select a proportionate path.',
         'available_when': <String, dynamic>{
           'type': 'stage_is',
           'stage': 'intake',

@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../app/product_navigation.dart';
 import '../data/studio_authoring_repository.dart';
 import '../data/studio_draft_store.dart';
 import '../models/case_type_playbook.dart';
+import '../models/case_type_playbook_assets.dart';
 import '../models/case_type_registry.dart';
 import '../models/studio_scenario_draft.dart';
 import '../widgets/section_card.dart';
@@ -17,6 +19,7 @@ final class StudioWizardScreen extends StatefulWidget {
     required this.store,
     required this.locale,
     required this.onExit,
+    this.playbookAssetBundle,
     this.playbookRegistry,
     super.key,
   });
@@ -25,6 +28,7 @@ final class StudioWizardScreen extends StatefulWidget {
   final StudioDraftStore store;
   final String locale;
   final VoidCallback onExit;
+  final AssetBundle? playbookAssetBundle;
   final CaseTypePlaybookRegistry? playbookRegistry;
 
   @override
@@ -81,7 +85,9 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
 
   Future<void> _load() async {
     try {
-      _playbookRegistry ??= await loadCaseTypePlaybookRegistry();
+      _playbookRegistry ??= await loadCaseTypePlaybookRegistry(
+        bundle: widget.playbookAssetBundle,
+      );
       final StudioWorkspace? workspace = await widget.store.read();
       if (workspace != null && mounted) {
         _draft = workspace.draft;
@@ -114,9 +120,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
     _factControllers
       ..clear()
       ..addAll(
-        _draft.facts.map(
-          (String fact) => TextEditingController(text: fact),
-        ),
+        _draft.facts.map((String fact) => TextEditingController(text: fact)),
       );
     if (_factControllers.isEmpty) {
       _factControllers.add(TextEditingController());
@@ -125,56 +129,97 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
 
   String _t(String en, String ru) => _ru ? ru : en;
 
+  AppBar _appBar(BuildContext context, {bool showStatus = false}) {
+    final bool compact = MediaQuery.sizeOf(context).width < 600;
+    final String status = _busy
+        ? _t('Working…', 'Выполняется…')
+        : _t('Auto-saved', 'Автосохранение');
+    return AppBar(
+      leading: IconButton(
+        key: const ValueKey<String>('studio-exit-action'),
+        tooltip: _t('Back to templates', 'Назад к шаблонам'),
+        onPressed: _busy ? null : widget.onExit,
+        icon: const Icon(Icons.arrow_back),
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            _t('Guided Studio', 'Мастер Studio'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            _draft.title.trim().isEmpty
+                ? _t('New case', 'Новый кейс')
+                : _draft.title,
+            style: Theme.of(context).textTheme.labelSmall,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        ScopedJurisProductNavigation(
+          locale: widget.locale,
+          current: JurisProductDestination.studio,
+        ),
+        if (showStatus)
+          Padding(
+            padding: EdgeInsets.only(right: compact ? 8 : 16),
+            child: Center(
+              child: Semantics(
+                key: const ValueKey<String>('studio-save-status'),
+                label: status,
+                liveRegion: true,
+                child: ExcludeSemantics(
+                  child: compact
+                      ? Tooltip(
+                          message: status,
+                          excludeFromSemantics: true,
+                          child: Icon(
+                            _busy ? Icons.sync : Icons.cloud_done_outlined,
+                            size: 20,
+                          ),
+                        )
+                      : Text(
+                          status,
+                          style: Theme.of(context).textTheme.labelSmall,
+                        ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        appBar: _appBar(context),
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
     if (_playbookRegistry == null) {
       return Scaffold(
+        appBar: _appBar(context),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
-              _notice ?? _t('Case packages could not be loaded.', 'Не удалось загрузить пакеты кейсов.'),
+              _notice ??
+                  _t(
+                    'Case packages could not be loaded.',
+                    'Не удалось загрузить пакеты кейсов.',
+                  ),
             ),
           ),
         ),
       );
     }
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          key: const ValueKey<String>('studio-exit-action'),
-          tooltip: _t('Back to case library', 'Назад к библиотеке кейсов'),
-          onPressed: _busy ? null : widget.onExit,
-          icon: const Icon(Icons.arrow_back),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(_t('Guided Studio', 'Мастер Studio')),
-            Text(
-              _draft.title.trim().isEmpty
-                  ? _t('New case', 'Новый кейс')
-                  : _draft.title,
-              style: Theme.of(context).textTheme.labelSmall,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-        actions: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(
-              child: Text(
-                _busy ? _t('Working…', 'Выполняется…') : _t('Auto-saved', 'Автосохранение'),
-                style: Theme.of(context).textTheme.labelSmall,
-              ),
-            ),
-          ),
-        ],
-      ),
+      appBar: _appBar(context, showStatus: true),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -205,9 +250,9 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                           Semantics(
                             liveRegion: true,
                             child: Card(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerHigh,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHigh,
                               child: Padding(
                                 padding: const EdgeInsets.all(16),
                                 child: Text(_notice!),
@@ -232,9 +277,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
           busy: _busy,
           locale: widget.locale,
           onBack: _activeStage.index == 0 ? null : _previous,
-          onContinue: _activeStage == StudioWorkflowStage.reportSave
-              ? null
-              : _continue,
+          onContinue:
+              _activeStage == StudioWorkflowStage.reportSave ? null : _continue,
         ),
       ),
     );
@@ -282,7 +326,10 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
             _StartChoice(
               key: const ValueKey<String>('studio-import-scenario'),
               icon: Icons.content_paste_go_outlined,
-              title: _t('Import canonical JSON', 'Импортировать canonical JSON'),
+              title: _t(
+                'Import canonical JSON',
+                'Импортировать canonical JSON',
+              ),
               subtitle: _t(
                 'Paste a ScenarioDefinition v1 from web or mobile.',
                 'Вставьте ScenarioDefinition v1 из web или mobile.',
@@ -300,18 +347,23 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
           ),
           child: Builder(
             builder: (BuildContext context) {
-              final CaseTypeDefinition selected =
-                  caseTypeDefinition(_draft.caseType.id);
+              final CaseTypeDefinition selected = caseTypeDefinition(
+                _draft.caseType.id,
+              );
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   DropdownButtonFormField<CaseTypeId>(
+                    isExpanded: true,
                     key: ValueKey<String>(
                       'studio-case-type-${_draft.caseType.id.wireName}',
                     ),
                     initialValue: _draft.caseType.id,
                     decoration: InputDecoration(
-                      labelText: _t('Professional matter', 'Профессиональная задача'),
+                      labelText: _t(
+                        'Professional matter',
+                        'Профессиональная задача',
+                      ),
                     ),
                     items: caseTypeRegistry
                         .map(
@@ -583,8 +635,10 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                         : null,
                   ),
                   onChanged: (String value) {
-                    _replaceDraft(_draft.updateStageTitle(index, value),
-                        StudioWorkflowStage.caseMap);
+                    _replaceDraft(
+                      _draft.updateStageTitle(index, value),
+                      StudioWorkflowStage.caseMap,
+                    );
                   },
                 ),
                 const SizedBox(height: 12),
@@ -618,8 +672,10 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                     prefixIcon: const Icon(Icons.route_outlined),
                   ),
                   onChanged: (String value) {
-                    _replaceDraft(_draft.updateActionTitle(index, value),
-                        StudioWorkflowStage.caseMap);
+                    _replaceDraft(
+                      _draft.updateActionTitle(index, value),
+                      StudioWorkflowStage.caseMap,
+                    );
                   },
                 ),
                 const SizedBox(height: 12),
@@ -656,12 +712,22 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
           FilledButton.icon(
             key: const ValueKey<String>('studio-rust-gate'),
             onPressed: _busy ? null : _validateAndRun,
-            icon: Icon(routeRequired
-                ? Icons.play_circle_outline
-                : Icons.fact_check_outlined),
-            label: Text(routeRequired
-                ? _t('Validate and play in Rust', 'Проверить и запустить в Rust')
-                : _t('Validate package through Rust', 'Проверить пакет через Rust')),
+            icon: Icon(
+              routeRequired
+                  ? Icons.play_circle_outline
+                  : Icons.fact_check_outlined,
+            ),
+            label: Text(
+              routeRequired
+                  ? _t(
+                      'Validate and play in Rust',
+                      'Проверить и запустить в Rust',
+                    )
+                  : _t(
+                      'Validate package through Rust',
+                      'Проверить пакет через Rust',
+                    ),
+            ),
           ),
           if (validation != null) ...<Widget>[
             const SizedBox(height: 16),
@@ -682,8 +748,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                         )
                       : routeRequired
                           ? _t(
-                      '${_routeResult!.executedActionIds.length} actions → ${_routeResult!.outcomeId}',
-                      '${_routeResult!.executedActionIds.length} действий → ${_routeResult!.outcomeId}',
+                              '${_routeResult!.executedActionIds.length} actions → ${_routeResult!.outcomeId}',
+                              '${_routeResult!.executedActionIds.length} действий → ${_routeResult!.outcomeId}',
                             )
                           : _t(
                               'Rust schema valid · ${playbook.test.mode} checks passed',
@@ -733,9 +799,11 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
               for (final CaseOutputProfile output in playbook.outputs)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: Icon(output.primary
-                      ? Icons.description_outlined
-                      : Icons.article_outlined),
+                  leading: Icon(
+                    output.primary
+                        ? Icons.description_outlined
+                        : Icons.article_outlined,
+                  ),
                   title: Text(output.label.forLocale(widget.locale)),
                   subtitle: Text(output.description.forLocale(widget.locale)),
                   trailing: output.primary
@@ -759,7 +827,9 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                 key: const ValueKey<String>('studio-save-export'),
                 onPressed: _busy || !_canFinish ? null : _saveAndExport,
                 icon: const Icon(Icons.save_alt_outlined),
-                label: Text(_t('Save and export JSON', 'Сохранить и экспортировать JSON')),
+                label: Text(
+                  _t('Save and export JSON', 'Сохранить и экспортировать JSON'),
+                ),
               ),
               if (_exportPath != null) ...<Widget>[
                 const SizedBox(height: 12),
@@ -774,7 +844,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
     );
   }
 
-  bool get _canFinish => _validation?.valid == true &&
+  bool get _canFinish =>
+      _validation?.valid == true &&
       _packageEvaluation.complete &&
       (!_playbook.test.requiresPlayableRoute || _routeResult != null);
 
@@ -866,7 +937,9 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       if (decoded is! Map<String, dynamic>) {
         throw const FormatException('Clipboard JSON must be an object.');
       }
-      final StudioScenarioDraft imported = StudioScenarioDraft.fromJson(decoded);
+      final StudioScenarioDraft imported = StudioScenarioDraft.fromJson(
+        decoded,
+      );
       if (!mounted) return;
       setState(() {
         _draft = imported;
@@ -882,10 +955,9 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       await _persist();
     } on Object catch (error) {
       if (mounted) {
-        setState(() => _notice = _t(
-              'Import failed: $error',
-              'Ошибка импорта: $error',
-            ));
+        setState(
+          () => _notice = _t('Import failed: $error', 'Ошибка импорта: $error'),
+        );
       }
     }
   }
@@ -904,9 +976,9 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   void _openStage(StudioWorkflowStage stage) {
     final int furthest = _completed.isEmpty
         ? 0
-        : _completed
-                .map((StudioWorkflowStage item) => item.index)
-                .reduce((int left, int right) => left > right ? left : right) +
+        : _completed.map((StudioWorkflowStage item) => item.index).reduce(
+                  (int left, int right) => left > right ? left : right,
+                ) +
             1;
     if (stage.index > furthest.clamp(0, 5)) {
       return;
@@ -937,7 +1009,9 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       _routeResult = null;
     });
     try {
-      final StudioValidationResult validation = widget.repository.validate(_draft);
+      final StudioValidationResult validation = widget.repository.validate(
+        _draft,
+      );
       final CasePackageEvaluation evaluation = _packageEvaluation;
       final bool routeRequired = _playbook.test.requiresPlayableRoute;
       StudioRouteTestResult? route;
@@ -970,10 +1044,12 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       await _persist();
     } on Object catch (error) {
       if (mounted) {
-        setState(() => _notice = _t(
-              'Rust gate failed: $error',
-              'Проверка Rust не пройдена: $error',
-            ));
+        setState(
+          () => _notice = _t(
+            'Rust gate failed: $error',
+            'Проверка Rust не пройдена: $error',
+          ),
+        );
       }
     } finally {
       if (mounted) {
@@ -1002,10 +1078,10 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       });
     } on Object catch (error) {
       if (mounted) {
-        setState(() => _notice = _t(
-              'Save failed: $error',
-              'Ошибка сохранения: $error',
-            ));
+        setState(
+          () =>
+              _notice = _t('Save failed: $error', 'Ошибка сохранения: $error'),
+        );
       }
     } finally {
       if (mounted) {
@@ -1025,10 +1101,12 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       );
     } on Object catch (error) {
       if (mounted) {
-        setState(() => _notice = _t(
-              'Auto-save failed: $error',
-              'Ошибка автосохранения: $error',
-            ));
+        setState(
+          () => _notice = _t(
+            'Auto-save failed: $error',
+            'Ошибка автосохранения: $error',
+          ),
+        );
       }
     }
   }
@@ -1036,8 +1114,10 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   String _stageTitle(StudioWorkflowStage stage) {
     return switch (stage) {
       StudioWorkflowStage.describe => _t('Describe', 'Описание'),
-      StudioWorkflowStage.reviewAiDraft =>
-        _t('Review AI draft', 'Проверка AI-проекта'),
+      StudioWorkflowStage.reviewAiDraft => _t(
+          'Review AI draft',
+          'Проверка AI-проекта',
+        ),
       StudioWorkflowStage.factsAssumptions => _t('Facts', 'Факты'),
       StudioWorkflowStage.caseMap => _t('Views & map', 'Виды и карта'),
       StudioWorkflowStage.runCompare => _t('Test', 'Тест'),
@@ -1096,8 +1176,22 @@ final class _ProgressHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool ru = locale == 'ru';
     final List<String> labels = ru
-        ? const <String>['Описание', 'AI-проект', 'Факты', 'Виды', 'Тест', 'Готово']
-        : const <String>['Describe', 'AI draft', 'Facts', 'Views', 'Test', 'Finish'];
+        ? const <String>[
+            'Описание',
+            'AI-проект',
+            'Факты',
+            'Виды',
+            'Тест',
+            'Готово',
+          ]
+        : const <String>[
+            'Describe',
+            'AI draft',
+            'Facts',
+            'Views',
+            'Test',
+            'Finish',
+          ];
     final int furthest = completed.isEmpty
         ? 0
         : completed.map((StudioWorkflowStage item) => item.index).fold<int>(

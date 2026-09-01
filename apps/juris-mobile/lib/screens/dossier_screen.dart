@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app/product_navigation.dart';
 import '../models/dossier_projection.dart';
 import '../widgets/section_card.dart';
 
@@ -9,11 +10,7 @@ import '../widgets/section_card.dart';
 /// the broader Flutter game snapshot and therefore cannot reconstruct hidden
 /// facts, unavailable evidence, future events, or unavailable remedies.
 class DossierScreen extends StatelessWidget {
-  const DossierScreen({
-    required this.dossier,
-    required this.locale,
-    super.key,
-  });
+  const DossierScreen({required this.dossier, required this.locale, super.key});
 
   final DossierProjectionView dossier;
   final String locale;
@@ -29,6 +26,12 @@ class DossierScreen extends StatelessWidget {
       key: const ValueKey<String>('dossier-screen'),
       appBar: AppBar(
         title: Text(_text('Matter dossier', 'Досье дела')),
+        actions: <Widget>[
+          ScopedJurisProductNavigation(
+            locale: locale,
+            current: JurisProductDestination.templates,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         key: const PageStorageKey<String>('dossier-scroll'),
@@ -50,8 +53,9 @@ class DossierScreen extends StatelessWidget {
 
   Widget _procedureSection(BuildContext context) {
     final DossierProcedureView procedure = dossier.procedure;
-    final ({IconData icon, String label}) matterStatus =
-        _matterStatusView(procedure.matterStatus);
+    final ({IconData icon, String label}) matterStatus = _matterStatusView(
+      procedure.matterStatus,
+    );
     return SectionCard(
       key: const ValueKey<String>('dossier-procedure-section'),
       title: _text('Procedure', 'Процедура'),
@@ -111,10 +115,7 @@ class DossierScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.labelLarge,
             ),
             const SizedBox(height: 4),
-            Text(
-              outcome.title,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text(outcome.title, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 4),
             Text(outcome.summary),
           ],
@@ -221,9 +222,7 @@ class DossierScreen extends StatelessWidget {
                         children: <Widget>[
                           ListTile(
                             contentPadding: EdgeInsets.zero,
-                            leading: Icon(
-                              _deadlineStatusIcon(deadline.status),
-                            ),
+                            leading: Icon(_deadlineStatusIcon(deadline.status)),
                             title: Text(deadline.title),
                             subtitle: Text(
                               key: ValueKey<String>(
@@ -252,9 +251,9 @@ class DossierScreen extends StatelessWidget {
                                   key: ValueKey<String>(
                                     'dossier-remedy-${remedy.actionId}',
                                   ),
-                                  onPressed: () => Navigator.of(context).pop(
-                                    remedy.actionId,
-                                  ),
+                                  onPressed: () => Navigator.of(
+                                    context,
+                                  ).pop(remedy.actionId),
                                   icon: const Icon(Icons.open_in_new),
                                   label: Align(
                                     alignment: Alignment.centerLeft,
@@ -266,9 +265,9 @@ class DossierScreen extends StatelessWidget {
                                         Text(
                                           '${_durationLabel(remedy.timeCostMinutes)} · '
                                           '${_moneyLabel(remedy.costEur)}',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall,
                                         ),
                                       ],
                                     ),
@@ -350,8 +349,10 @@ class DossierScreen extends StatelessWidget {
   String _lifecycleLabel(DossierLifecycleStatus status) {
     return switch (status) {
       DossierLifecycleStatus.active => _text('Active', 'Активно'),
-      DossierLifecycleStatus.postJudgment =>
-        _text('Post-judgment', 'После решения'),
+      DossierLifecycleStatus.postJudgment => _text(
+          'Post-judgment',
+          'После решения',
+        ),
       DossierLifecycleStatus.appeal => _text('Appeal', 'Апелляция'),
       DossierLifecycleStatus.cassation => _text('Cassation', 'Кассация'),
       DossierLifecycleStatus.enforcement => _text('Enforcement', 'Исполнение'),
@@ -364,21 +365,29 @@ class DossierScreen extends StatelessWidget {
     return switch (result) {
       DossierJudicialResult.won => _text('Won', 'Победа'),
       DossierJudicialResult.lost => _text('Lost', 'Поражение'),
-      DossierJudicialResult.partiallyWon =>
-        _text('Partially won', 'Частичная победа'),
-      DossierJudicialResult.dismissed =>
-        _text('Dismissed', 'Требования отклонены'),
+      DossierJudicialResult.partiallyWon => _text(
+          'Partially won',
+          'Частичная победа',
+        ),
+      DossierJudicialResult.dismissed => _text(
+          'Dismissed',
+          'Требования отклонены',
+        ),
       DossierJudicialResult.unknown => _text('Unknown', 'Неизвестно'),
     };
   }
 
   String _decisionInstanceLabel(DossierJudicialDecisionInstance instance) {
     return switch (instance) {
-      DossierJudicialDecisionInstance.firstInstance =>
-        _text('First instance', 'Первая инстанция'),
+      DossierJudicialDecisionInstance.firstInstance => _text(
+          'First instance',
+          'Первая инстанция',
+        ),
       DossierJudicialDecisionInstance.appeal => _text('Appeal', 'Апелляция'),
-      DossierJudicialDecisionInstance.cassation =>
-        _text('Cassation', 'Кассация'),
+      DossierJudicialDecisionInstance.cassation => _text(
+          'Cassation',
+          'Кассация',
+        ),
       DossierJudicialDecisionInstance.unknown => _text('Unknown', 'Неизвестно'),
     };
   }

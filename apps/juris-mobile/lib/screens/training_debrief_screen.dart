@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app/product_navigation.dart';
 import '../models/training_debrief.dart';
 import '../widgets/section_card.dart';
 
@@ -31,6 +32,12 @@ class TrainingDebriefScreen extends StatelessWidget {
       key: const ValueKey<String>('training-debrief-screen'),
       appBar: AppBar(
         title: Text(_text('Training debrief', 'Разбор прохождения')),
+        actions: <Widget>[
+          ScopedJurisProductNavigation(
+            locale: locale,
+            current: JurisProductDestination.templates,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         key: const PageStorageKey<String>('training-debrief-scroll'),
@@ -48,13 +55,11 @@ class TrainingDebriefScreen extends StatelessWidget {
             const SizedBox(height: 20),
             FilledButton.icon(
               key: const ValueKey<String>('training-debrief-replay-button'),
-              onPressed: () => Navigator.of(context).pop(
-                TrainingDebriefNavigationAction.replay,
-              ),
+              onPressed: () => Navigator.of(
+                context,
+              ).pop(TrainingDebriefNavigationAction.replay),
               icon: const Icon(Icons.replay_outlined),
-              label: Text(
-                _text('Replay this case', 'Переиграть это дело'),
-              ),
+              label: Text(_text('Replay this case', 'Переиграть это дело')),
             ),
             const SizedBox(height: 8),
             OutlinedButton(
@@ -284,13 +289,19 @@ class TrainingDebriefScreen extends StatelessWidget {
   String _lifecycleLabel(TrainingDebriefMatterLifecycle lifecycle) {
     return switch (lifecycle) {
       TrainingDebriefMatterLifecycle.active => _text('Active', 'Активно'),
-      TrainingDebriefMatterLifecycle.postJudgment =>
-        _text('Post-judgment', 'После решения'),
+      TrainingDebriefMatterLifecycle.postJudgment => _text(
+          'Post-judgment',
+          'После решения',
+        ),
       TrainingDebriefMatterLifecycle.appeal => _text('Appeal', 'Апелляция'),
-      TrainingDebriefMatterLifecycle.cassation =>
-        _text('Cassation', 'Кассация'),
-      TrainingDebriefMatterLifecycle.enforcement =>
-        _text('Enforcement', 'Исполнение'),
+      TrainingDebriefMatterLifecycle.cassation => _text(
+          'Cassation',
+          'Кассация',
+        ),
+      TrainingDebriefMatterLifecycle.enforcement => _text(
+          'Enforcement',
+          'Исполнение',
+        ),
       TrainingDebriefMatterLifecycle.closed => _text('Closed', 'Закрыто'),
       TrainingDebriefMatterLifecycle.unknown => _text('Unknown', 'Неизвестно'),
     };
@@ -299,8 +310,10 @@ class TrainingDebriefScreen extends StatelessWidget {
   String _matterStatusLabel(TrainingDebriefMatterStatus status) {
     return switch (status) {
       TrainingDebriefMatterStatus.open => _text('Open', 'Открыто'),
-      TrainingDebriefMatterStatus.recoverable =>
-        _text('Recoverable', 'Можно исправить'),
+      TrainingDebriefMatterStatus.recoverable => _text(
+          'Recoverable',
+          'Можно исправить',
+        ),
       TrainingDebriefMatterStatus.closed => _text('Closed', 'Закрыто'),
       TrainingDebriefMatterStatus.unknown => _text('Unknown', 'Неизвестно'),
     };

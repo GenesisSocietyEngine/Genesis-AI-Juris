@@ -81,7 +81,9 @@ final class StudioAuthoringRepository {
         seed: 54,
       ),
     );
-    if (created.isError || created.sessionId == null || created.snapshot == null) {
+    if (created.isError ||
+        created.sessionId == null ||
+        created.snapshot == null) {
       throw StudioBridgeException(
         code: created.errorCode ?? 'route_session_failed',
         message: created.errorMessage ?? 'Rust could not start the route.',
@@ -101,7 +103,8 @@ final class StudioAuthoringRepository {
           );
         }
         final List<dynamic> available =
-            snapshot['available_actions'] as List<dynamic>? ?? const <dynamic>[];
+            snapshot['available_actions'] as List<dynamic>? ??
+                const <dynamic>[];
         final Map<String, dynamic>? action =
             available.whereType<Map<String, dynamic>>().firstOrNull;
         final String? actionId = action?['id'] as String?;

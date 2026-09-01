@@ -29,7 +29,8 @@ abstract interface class StudioDraftStore {
 
 /// Device-local persistence for the canonical scenario plus UI progress only.
 final class ApplicationSupportStudioDraftStore implements StudioDraftStore {
-  ApplicationSupportStudioDraftStore({StudioDirectoryProvider? directoryProvider})
+  ApplicationSupportStudioDraftStore(
+      {StudioDirectoryProvider? directoryProvider})
       : _directoryProvider =
             directoryProvider ?? getApplicationSupportDirectory;
 
