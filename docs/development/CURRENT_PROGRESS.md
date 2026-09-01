@@ -130,15 +130,17 @@ validator_followup: d7a52d836f4f51b9c510af38513bcb2722cbd6a2
 android_followup: de7ac065d095a0e268e14961b4b74edd754cf52e
 latest_published_release_tag: v60-v61-rc.1
 app_version: 60.0.0+61
-decision_dossier_v62_status: local_release_candidate_gates_green_pending_exact_head_ci_and_production_approval
+decision_dossier_v62_status: exact_heads_verified_and_pushed_sites_save_blocked_pending_main_authorization
 decision_dossier_v62_web_starting_head: 8bd10594bc01e5a45183a743396ac24b7aeaf321
 decision_dossier_v62_mobile_starting_head: 29f862649dea378cfe3d4e145f5e396bf6d4c6ff
+decision_dossier_v62_web_release_head: d0de58c3b522189841a269bc91bc15aa45ba8370
+decision_dossier_v62_mobile_release_head: 268401ab7dbc12cdc80c20a281268189aad01e60
 decision_dossier_v62_baseline_status: 47_pdfs_702_pages_visually_accepted
-decision_dossier_v62_mobile_gate: dart_format_clean_flutter_analyze_clean_full_258_of_258_rust_green_android_12_of_12
+decision_dossier_v62_mobile_gate: exact_head_flutter_258_of_258_rust_android_12_of_12_and_four_hosted_workflows_green
 decision_dossier_v62_slice5_gate: frozen_migrations_0012_0015_adversarial_audit_green_runtime_acceptance_29_of_29
-decision_dossier_v62_web_gate: strict_type_lint_build_audit_pdf_and_493_of_493_green
+decision_dossier_v62_web_gate: exact_head_release_verifier_strict_type_lint_build_audit_pdf_and_494_of_494_green
 decision_dossier_v62_browser_gate: local_http_green_visual_controller_service_unavailable
-decision_dossier_v62_remote_state: no_production_site_version_or_deployment
+decision_dossier_v62_remote_state: feature_branches_pushed_no_saved_site_version_production_unchanged_main_authorization_required
 last_updated: 2026-09-01
 ---
 
@@ -153,25 +155,33 @@ High blocker under the documented v61-to-v62 rollout. The final four held
 integration suites passed 29/29, including historical non-pilot snapshot/output
 fail-closed checks before private storage access or approval mutation.
 
-The complete web build and test gate passed 493/493, with strict TypeScript,
+The complete exact-head web build and test gate passed 494/494, with strict TypeScript,
 full ESLint, production dependency audit (zero vulnerabilities), patch hygiene,
-and the verified production build green. PDF QA passed 47 PDFs, 702 pages, and
+and both verified production builds green. PDF QA passed 47 PDFs, 702 pages, and
 702 rendered PNGs; its 55-PNG exact visual baseline remains
 `fbcc9a03d8a26b7076aa2504ac1adf28c28a4196806c9e2849bb6a6aba12f8bb`.
 
 Mobile verification is also green: Dart formatting checked 113 files with no
 change, Flutter analysis is clean, all 258 Flutter tests pass, Rust formatting,
 Clippy, and locked workspace tests pass, and all 12 Android native persistence
-scenarios pass. Local HTTP rendering and security-header smokes passed for `/`
+scenarios pass. Exact mobile head `268401ab7dbc12cdc80c20a281268189aad01e60`
+is pushed; hosted Rust `33503429648`, Flutter `33503429646`, Android
+`33503429598`, and iOS `33503429554` all concluded `success` on that SHA.
+Local HTTP rendering and security-header smokes passed for `/`
 and `/matters`. In-app visual browser inspection could not run because the
 trusted browser-control service is unavailable in this chat; no unsupported
 automation substitute was used.
 
-The remaining boundary is exact commits and push, exact-head hosted Android,
-Flutter, iOS, and Rust receipts, one saved Sites version, fresh explicit approval
-immediately before production deployment, and post-deployment verification.
-Production remains Site version 63 / marker `v61`; no app-store release is
-authorized.
+Exact web head `d0de58c3b522189841a269bc91bc15aa45ba8370` is also pushed on
+`codex/v62-report-graph-pagination`, and the repository release verifier passed
+on both immutable heads. Sites refused to save the candidate because its
+configured source branch is `main`, which still does not point to the release
+commit. Updating or merging `main` is a separate external write and remains
+unapproved. After that authorization, the remaining boundary is one saved Site
+version, the two exact release-identity environment values, fresh explicit
+approval immediately before production deployment, and post-deployment
+verification. Production remains Site version 63 / marker `v61`; no app-store
+release is authorized.
 
 ## Earlier Decision-Centric Dossier Workspace v62 active checkpoint - 2026-09-01
 
