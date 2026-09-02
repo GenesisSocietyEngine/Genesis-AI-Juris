@@ -33,7 +33,7 @@
     },
     "processing_components": {
       "type": "object", "additionalProperties": false,
-      "required": ["workers", "queues", "cron", "malware_scanning", "extraction", "ocr", "kms", "logging", "backup_restore", "support", "ai"],
+      "required": ["workers", "queues", "cron", "malware_scanning", "extraction", "ocr", "kms", "logging", "analytics", "backup_restore", "support", "ai"],
       "properties": {
         "workers": { "$ref": "#/$defs/componentEvidence" },
         "queues": { "$ref": "#/$defs/componentEvidence" },
@@ -43,6 +43,7 @@
         "ocr": { "$ref": "#/$defs/componentEvidence" },
         "kms": { "$ref": "#/$defs/componentEvidence" },
         "logging": { "$ref": "#/$defs/componentEvidence" },
+        "analytics": { "$ref": "#/$defs/componentEvidence" },
         "backup_restore": { "$ref": "#/$defs/componentEvidence" },
         "support": { "$ref": "#/$defs/componentEvidence" },
         "ai": { "$ref": "#/$defs/componentEvidence" }

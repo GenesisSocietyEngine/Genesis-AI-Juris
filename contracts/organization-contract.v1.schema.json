@@ -36,24 +36,57 @@
         "action": {
           "enum": [
             "oidc_callback", "invitation_acceptance",
-            "organization_admin", "tenant_export",
-            "dossier_access", "dossier_export"
+            "organization_read", "organization_update", "member_invite", "member_suspend",
+            "member_remove", "member_role_assign", "identity_connection_read",
+            "identity_connection_manage", "policy_read", "policy_manage",
+            "organization_audit_read", "tenant_export_request",
+            "dossier_read", "dossier_update", "dossier_member_enrol",
+            "dossier_member_remove", "dossier_owner_transfer", "document_upload",
+            "document_read", "document_delete_request", "extraction_request",
+            "ocr_request", "citation_read", "citation_manage", "evidence_read",
+            "evidence_manage", "task_read", "task_manage", "review_read",
+            "review_submit", "report_read", "report_generate", "dossier_export_request",
+            "retention_purge_request", "legal_hold_read", "legal_hold_create",
+            "legal_hold_release", "dossier_audit_read"
           ]
         },
         "dossier_role": { "enum": ["owner", "contributor", "reviewer", "viewer"] },
+        "delegated_organization_authority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authority_version", "grant_id", "action", "status"],
+          "properties": {
+            "authority_version": { "const": "organization-action-authority.v1" },
+            "grant_id": { "$ref": "#/$defs/opaqueId" },
+            "action": { "enum": ["member_invite", "member_suspend"] },
+            "status": { "const": "active" }
+          }
+        },
         "compliance_export_authority": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["authority_version", "grant_id", "status", "dossier_owner_approval_receipt_ids"],
+          "required": ["authority_version", "grant_id", "status", "export_request_id", "export_manifest_sha256", "dossier_owner_approvals"],
           "properties": {
             "authority_version": { "const": "compliance-export-authority.v1" },
             "grant_id": { "$ref": "#/$defs/opaqueId" },
             "status": { "const": "active" },
-            "dossier_owner_approval_receipt_ids": {
-              "type": "array",
-              "minItems": 1,
-              "uniqueItems": true,
-              "items": { "$ref": "#/$defs/opaqueId" }
+            "export_request_id": { "$ref": "#/$defs/opaqueId" },
+            "export_manifest_sha256": { "$ref": "#/$defs/sha256" },
+            "dossier_owner_approvals": {
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": { "$ref": "#/$defs/opaqueId" },
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["approval_version", "dossier_owner_actor_id", "approval_receipt_id", "dossier_manifest_sha256"],
+                "properties": {
+                  "approval_version": { "const": "dossier-export-approval.v1" },
+                  "dossier_owner_actor_id": { "$ref": "#/$defs/opaqueId" },
+                  "approval_receipt_id": { "$ref": "#/$defs/opaqueId" },
+                  "dossier_manifest_sha256": { "$ref": "#/$defs/sha256" }
+                }
+              }
             }
           }
         }
@@ -68,6 +101,7 @@
                 { "required": ["organization_role"] },
                 { "required": ["authorization_version"] },
                 { "required": ["dossier_role"] },
+                { "required": ["delegated_organization_authority"] },
                 { "required": ["compliance_export_authority"] }
               ]
             }
@@ -77,7 +111,16 @@
           "if": { "properties": { "scope": { "const": "organization" } }, "required": ["scope"] },
           "then": {
             "required": ["organization_role", "authorization_version"],
-            "properties": { "action": { "enum": ["organization_admin", "tenant_export"] } },
+            "properties": {
+              "action": {
+                "enum": [
+                  "organization_read", "organization_update", "member_invite", "member_suspend",
+                  "member_remove", "member_role_assign", "identity_connection_read",
+                  "identity_connection_manage", "policy_read", "policy_manage",
+                  "organization_audit_read", "tenant_export_request"
+                ]
+              }
+            },
             "not": { "required": ["dossier_role"] }
           }
         },
@@ -85,20 +128,164 @@
           "if": { "properties": { "scope": { "const": "dossier" } }, "required": ["scope"] },
           "then": {
             "required": ["organization_role", "authorization_version", "dossier_role"],
-            "properties": { "action": { "enum": ["dossier_access", "dossier_export"] } },
-            "not": { "required": ["compliance_export_authority"] }
+            "properties": {
+              "action": {
+                "enum": [
+                  "dossier_read", "dossier_update", "dossier_member_enrol",
+                  "dossier_member_remove", "dossier_owner_transfer", "document_upload",
+                  "document_read", "document_delete_request", "extraction_request",
+                  "ocr_request", "citation_read", "citation_manage", "evidence_read",
+                  "evidence_manage", "task_read", "task_manage", "review_read",
+                  "review_submit", "report_read", "report_generate", "dossier_export_request",
+                  "retention_purge_request", "legal_hold_read", "legal_hold_create",
+                  "legal_hold_release", "dossier_audit_read"
+                ]
+              }
+            },
+            "not": {
+              "anyOf": [
+                { "required": ["delegated_organization_authority"] },
+                { "required": ["compliance_export_authority"] }
+              ]
+            }
           }
         },
         {
-          "if": { "properties": { "action": { "const": "tenant_export" } }, "required": ["action"] },
+          "if": { "properties": { "action": { "const": "tenant_export_request" } }, "required": ["action"] },
           "then": { "required": ["compliance_export_authority"] },
           "else": { "not": { "required": ["compliance_export_authority"] } }
+        },
+        {
+          "if": {
+            "properties": {
+              "organization_role": { "const": "org_owner" },
+              "scope": { "const": "organization" }
+            },
+            "required": ["organization_role", "scope"]
+          },
+          "then": {
+            "not": { "required": ["delegated_organization_authority"] }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "organization_role": { "const": "org_admin" },
+              "scope": { "const": "organization" }
+            },
+            "required": ["organization_role", "scope"]
+          },
+          "then": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "organization_read", "organization_update", "member_invite", "member_suspend",
+                  "identity_connection_read", "identity_connection_manage", "policy_read",
+                  "policy_manage", "organization_audit_read", "tenant_export_request"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "organization_role": { "const": "member" },
+              "scope": { "const": "organization" }
+            },
+            "required": ["organization_role", "scope"]
+          },
+          "then": {
+            "properties": { "action": { "enum": ["organization_read", "identity_connection_read", "policy_read"] } },
+            "not": { "required": ["delegated_organization_authority"] }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "organization_role": { "const": "auditor" },
+              "scope": { "const": "organization" }
+            },
+            "required": ["organization_role", "scope"]
+          },
+          "then": {
+            "properties": { "action": { "enum": ["organization_read", "identity_connection_read", "policy_read", "organization_audit_read"] } },
+            "not": { "required": ["delegated_organization_authority"] }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "member_invite" }, "organization_role": { "const": "org_admin" } }, "required": ["action", "organization_role"] },
+          "then": {
+            "required": ["delegated_organization_authority"],
+            "properties": { "delegated_organization_authority": { "properties": { "action": { "const": "member_invite" } } } }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "member_suspend" }, "organization_role": { "const": "org_admin" } }, "required": ["action", "organization_role"] },
+          "then": {
+            "required": ["delegated_organization_authority"],
+            "properties": { "delegated_organization_authority": { "properties": { "action": { "const": "member_suspend" } } } }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action": { "enum": ["member_invite", "member_suspend"] },
+              "organization_role": { "const": "org_admin" }
+            },
+            "required": ["action", "organization_role"]
+          },
+          "else": { "not": { "required": ["delegated_organization_authority"] } }
+        },
+        {
+          "if": { "properties": { "dossier_role": { "const": "contributor" } }, "required": ["dossier_role"] },
+          "then": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "dossier_read", "dossier_update", "document_upload", "document_read",
+                  "extraction_request", "ocr_request", "citation_read", "citation_manage",
+                  "evidence_read", "evidence_manage", "task_read", "task_manage",
+                  "review_read", "report_read", "report_generate", "legal_hold_read",
+                  "dossier_audit_read"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "dossier_role": { "const": "reviewer" } }, "required": ["dossier_role"] },
+          "then": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "dossier_read", "document_read", "citation_read", "evidence_read",
+                  "task_read", "review_read", "review_submit", "report_read",
+                  "report_generate", "legal_hold_read", "dossier_audit_read"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "dossier_role": { "const": "viewer" } }, "required": ["dossier_role"] },
+          "then": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "dossier_read", "document_read", "citation_read", "evidence_read",
+                  "task_read", "review_read", "report_read", "legal_hold_read"
+                ]
+              }
+            }
+          }
         }
       ]
     }
   },
   "$defs": {
     "opaqueId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{20,128}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
     "version": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$" }
   }
 }
