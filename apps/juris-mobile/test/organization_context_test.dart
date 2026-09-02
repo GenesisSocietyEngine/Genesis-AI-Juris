@@ -150,6 +150,167 @@ void main() {
   );
 
   test(
+    'a failed same-organization clear preserves attempted version floors',
+    () async {
+      bool fail = true;
+      int clearAttempts = 0;
+      final OrganizationContextCoordinator coordinator =
+          OrganizationContextCoordinator(
+        clearTenantState: (_) async {
+          clearAttempts += 1;
+          if (fail) throw StateError('synthetic clear failure');
+        },
+      );
+      await coordinator.switchTo(
+        organizationId: organizationA,
+        displayName: 'Example A',
+        authorizationVersion: 5,
+        sessionVersion: 7,
+      );
+
+      await expectLater(
+        coordinator.switchTo(
+          organizationId: organizationA,
+          displayName: 'Example A',
+          authorizationVersion: 6,
+          sessionVersion: 8,
+        ),
+        throwsA(
+          isA<OrganizationContextException>().having(
+            (error) => error.code,
+            'code',
+            'tenant_state_clear_failed',
+          ),
+        ),
+      );
+      expect(coordinator.current, isNull);
+      expect(coordinator.isBlocked, isTrue);
+
+      fail = false;
+      await expectLater(
+        coordinator.switchTo(
+          organizationId: organizationA,
+          displayName: 'Example A',
+          authorizationVersion: 5,
+          sessionVersion: 8,
+        ),
+        throwsA(
+          isA<OrganizationContextException>().having(
+            (error) => error.code,
+            'code',
+            'stale_authorization_version',
+          ),
+        ),
+      );
+      await expectLater(
+        coordinator.switchTo(
+          organizationId: organizationA,
+          displayName: 'Example A',
+          authorizationVersion: 6,
+          sessionVersion: 7,
+        ),
+        throwsA(
+          isA<OrganizationContextException>().having(
+            (error) => error.code,
+            'code',
+            'stale_session_version',
+          ),
+        ),
+      );
+      expect(clearAttempts, 1);
+      expect(coordinator.current, isNull);
+      expect(coordinator.isBlocked, isTrue);
+    },
+  );
+
+  test('a newer retry recovers after a failed same-organization clear',
+      () async {
+    bool fail = true;
+    int clearAttempts = 0;
+    final OrganizationContextCoordinator coordinator =
+        OrganizationContextCoordinator(
+      clearTenantState: (_) async {
+        clearAttempts += 1;
+        if (fail) throw StateError('synthetic clear failure');
+      },
+    );
+    await coordinator.switchTo(
+      organizationId: organizationA,
+      displayName: 'Example A',
+      authorizationVersion: 5,
+      sessionVersion: 7,
+    );
+
+    await expectLater(
+      coordinator.switchTo(
+        organizationId: organizationA,
+        displayName: 'Example A',
+        authorizationVersion: 6,
+        sessionVersion: 8,
+      ),
+      throwsA(isA<OrganizationContextException>()),
+    );
+
+    fail = false;
+    final OrganizationContext recovered = await coordinator.switchTo(
+      organizationId: organizationA,
+      displayName: 'Example A',
+      authorizationVersion: 7,
+      sessionVersion: 9,
+    );
+    expect(recovered.authorizationVersion, 7);
+    expect(recovered.sessionVersion, 9);
+    expect(coordinator.current, same(recovered));
+    expect(coordinator.isBlocked, isFalse);
+    expect(clearAttempts, 2);
+  });
+
+  test('version floors survive cross-organization switches until sign-out',
+      () async {
+    final OrganizationContextCoordinator coordinator =
+        OrganizationContextCoordinator(clearTenantState: (_) async {});
+    await coordinator.switchTo(
+      organizationId: organizationA,
+      displayName: 'Example A',
+      authorizationVersion: 5,
+      sessionVersion: 7,
+    );
+    final OrganizationContext second = await coordinator.switchTo(
+      organizationId: organizationB,
+      displayName: 'Example B',
+      authorizationVersion: 1,
+      sessionVersion: 1,
+    );
+
+    await expectLater(
+      coordinator.switchTo(
+        organizationId: organizationA,
+        displayName: 'Example A',
+        authorizationVersion: 4,
+        sessionVersion: 7,
+      ),
+      throwsA(
+        isA<OrganizationContextException>().having(
+          (error) => error.code,
+          'code',
+          'stale_authorization_version',
+        ),
+      ),
+    );
+    expect(coordinator.current, same(second));
+
+    await coordinator.invalidate(TenantInvalidationReason.signOut);
+    final OrganizationContext reset = await coordinator.switchTo(
+      organizationId: organizationA,
+      displayName: 'Example A',
+      authorizationVersion: 1,
+      sessionVersion: 1,
+    );
+    expect(reset.authorizationVersion, 1);
+    expect(reset.sessionVersion, 1);
+  });
+
+  test(
     'a queued switch supersedes an in-flight switch before it can activate',
     () async {
       final List<String> clearOrder = <String>[];

@@ -67,6 +67,16 @@ final class OrganizationContextPermit {
   final int generation;
 }
 
+final class _OrganizationVersionBoundary {
+  const _OrganizationVersionBoundary({
+    required this.authorizationVersion,
+    required this.sessionVersion,
+  });
+
+  final int authorizationVersion;
+  final int sessionVersion;
+}
+
 final class OrganizationContextCoordinator {
   OrganizationContextCoordinator({required TenantStateClearer clearTenantState})
       : _clearTenantState = clearTenantState;
@@ -75,6 +85,8 @@ final class OrganizationContextCoordinator {
 
   final TenantStateClearer _clearTenantState;
   final Object _permitIssuer = Object();
+  final Map<String, _OrganizationVersionBoundary> _versionBoundaries =
+      <String, _OrganizationVersionBoundary>{};
   Future<void> _exclusiveTail = Future<void>.value();
   OrganizationContext? _current;
   String? _unclearedOrganizationId;
@@ -94,23 +106,21 @@ final class OrganizationContextCoordinator {
     ConfidentialDocumentMode confidentialDocumentMode =
         ConfidentialDocumentMode.disabled,
   }) {
-    final OrganizationContext? previous = _current;
     try {
       _validateCandidate(
         organizationId: organizationId,
         authorizationVersion: authorizationVersion,
         sessionVersion: sessionVersion,
       );
-      if (previous != null &&
-          previous.organizationId == organizationId &&
-          authorizationVersion < previous.authorizationVersion) {
+      final _OrganizationVersionBoundary? boundary =
+          _versionBoundaries[organizationId];
+      if (boundary != null &&
+          authorizationVersion < boundary.authorizationVersion) {
         throw const OrganizationContextException(
           code: 'stale_authorization_version',
         );
       }
-      if (previous != null &&
-          previous.organizationId == organizationId &&
-          sessionVersion < previous.sessionVersion) {
+      if (boundary != null && sessionVersion < boundary.sessionVersion) {
         throw const OrganizationContextException(
           code: 'stale_session_version',
         );
@@ -118,6 +128,12 @@ final class OrganizationContextCoordinator {
     } on OrganizationContextException catch (error, stackTrace) {
       return Future<OrganizationContext>.error(error, stackTrace);
     }
+
+    _rememberVersionBoundary(
+      organizationId: organizationId,
+      authorizationVersion: authorizationVersion,
+      sessionVersion: sessionVersion,
+    );
 
     final int intent = _beginAuthorityChange();
     final int requestGeneration = _generation;
@@ -144,6 +160,7 @@ final class OrganizationContextCoordinator {
         confidentialDocumentMode: confidentialDocumentMode,
       );
       _current = next;
+      _retainVersionBoundary(next);
       return next;
     });
   }
@@ -156,6 +173,9 @@ final class OrganizationContextCoordinator {
           _unclearedOrganizationId ?? _current?.organizationId;
       if (organizationToClear != null) {
         await _clearOrBlock(organizationToClear, reason);
+      }
+      if (intent == _intent && reason == TenantInvalidationReason.signOut) {
+        _versionBoundaries.clear();
       }
     });
   }
@@ -210,12 +230,44 @@ final class OrganizationContextCoordinator {
     _generation += 1;
     _current = null;
     if (previous != null) {
+      _rememberVersionBoundary(
+        organizationId: previous.organizationId,
+        authorizationVersion: previous.authorizationVersion,
+        sessionVersion: previous.sessionVersion,
+      );
       if (_unclearedOrganizationId == null) {
         _unclearedOrganizationId = previous.organizationId;
         _unclearedGeneration = previous.generation;
       }
     }
     return _intent;
+  }
+
+  void _rememberVersionBoundary({
+    required String organizationId,
+    required int authorizationVersion,
+    required int sessionVersion,
+  }) {
+    final _OrganizationVersionBoundary? previous =
+        _versionBoundaries[organizationId];
+    _versionBoundaries[organizationId] = _OrganizationVersionBoundary(
+      authorizationVersion: previous == null ||
+              authorizationVersion > previous.authorizationVersion
+          ? authorizationVersion
+          : previous.authorizationVersion,
+      sessionVersion:
+          previous == null || sessionVersion > previous.sessionVersion
+              ? sessionVersion
+              : previous.sessionVersion,
+    );
+  }
+
+  void _retainVersionBoundary(OrganizationContext context) {
+    _rememberVersionBoundary(
+      organizationId: context.organizationId,
+      authorizationVersion: context.authorizationVersion,
+      sessionVersion: context.sessionVersion,
+    );
   }
 
   void _throwIfSuperseded(int intent) {
