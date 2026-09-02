@@ -5,7 +5,12 @@
   "type": "object",
   "additionalProperties": false,
   "x-bind-fields-to-server-authorization-context": {
-    "/organization/id": "organization_id"
+    "/organization/id": "organization_id",
+    "/organization/status": "organization_status",
+    "/organization/controller_processor_mode": "controller_processor_mode",
+    "/organization/data_region": "data_region",
+    "/organization/confidential_document_mode": "confidential_document_mode",
+    "/organization/policy_versions": "policy_versions"
   },
   "required": ["contract_version", "organization", "authorization"],
   "properties": {
