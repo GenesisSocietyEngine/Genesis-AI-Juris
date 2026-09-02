@@ -100,7 +100,7 @@ The safe order is:
 
 ## 4. R0 — close the existing review loop before expanding the diff
 
-PR #43 currently has ten open review threads from the pre-fix head: eight P1 and two P2. The code at `ff9c6f4…` contains intended fixes, but the threads are not evidence of closure until the final exact head is independently reviewed.
+PR #43 currently has eleven open review threads from the pre-fix head: nine P1 and two P2. The code at `ff9c6f4…` contains intended fixes, but the threads are not evidence of closure until the final exact head is independently reviewed. Two older P1 threads are already resolved and remain part of regression coverage.
 
 Required actions:
 
@@ -113,7 +113,8 @@ Required actions:
    - independent approval-bound policy activation;
    - one-time atomic export consumption;
    - key-rotation completion evidence;
-   - persistable legal-hold actor/target receipt semantics;
+   - persistable legal-hold requester/reviewer receipt semantics;
+   - legal-hold target-dossier scope in organisation-level receipts;
    - database-current-time invitation acceptance.
 2. Keep every thread open while the baseline rebase and integration work changes the source.
 3. After the final exact-head code and security reviews are green, reply to each thread with the final commit, test name and evidence, then resolve it.
@@ -462,7 +463,7 @@ On the same exact head require successful:
 - Codex code review;
 - Codex security review.
 
-All ten historical findings must be mapped, replied to and resolved only after the final review. New findings restart the fix-and-rerun loop.
+All eleven currently open historical findings must be mapped, replied to and resolved only after the final review. The two previously resolved P1 findings must retain regression coverage. New findings restart the fix-and-rerun loop.
 
 ## 11. R7 — evidence pack and readiness decision
 
