@@ -1009,6 +1009,45 @@ test("tenant export requires a current compliance grant, exact manifest, and eve
     (copy) => {
       copy.request.submittedComplianceAuthority!.dossierIds = [DOSSIER_A, DOSSIER_A];
     },
+    (copy) => {
+      (
+        copy.request.submittedComplianceAuthority as unknown as {
+          dossierIds: unknown;
+        }
+      ).dossierIds = null;
+    },
+    (copy) => {
+      (
+        copy.context.complianceAuthority!.exportRequest as unknown as {
+          ownerApprovals: unknown;
+        }
+      ).ownerApprovals = [null];
+    },
+    (copy) => {
+      const [approval, ...remainingApprovals] =
+        copy.context.complianceAuthority!.exportRequest.ownerApprovals;
+      assert.ok(approval);
+      copy.context.complianceAuthority!.exportRequest.ownerApprovals = [
+        approval,
+        structuredClone(approval),
+        ...remainingApprovals,
+      ];
+    },
+    (copy) => {
+      const sparseSubmittedDossiers: string[] = [];
+      sparseSubmittedDossiers.length = 1;
+      const sparseAuthorityDossiers: string[] = [];
+      sparseAuthorityDossiers.length = 1;
+      const sparseOwnerApprovals =
+        copy.context.complianceAuthority!.exportRequest.ownerApprovals.slice(0, 0);
+      sparseOwnerApprovals.length = 1;
+      copy.request.submittedComplianceAuthority!.dossierIds =
+        sparseSubmittedDossiers;
+      copy.context.complianceAuthority!.exportRequest.dossierIds =
+        sparseAuthorityDossiers;
+      copy.context.complianceAuthority!.exportRequest.ownerApprovals =
+        sparseOwnerApprovals;
+    },
   ];
   for (const mutate of mutations) {
     const copy = structuredClone(fixture);
@@ -1016,6 +1055,28 @@ test("tenant export requires a current compliance grant, exact manifest, and eve
     mutate(copy);
     assertPrivateDenial(copy.request, copy.context);
   }
+});
+
+test("tenant export binds the requester to the authenticated compliance actor before owner separation", async () => {
+  const fixture = await complianceFixture();
+  fixture.context.complianceAuthority!.exportRequest.requestedByActorId = ACTOR_B;
+  fixture.context.complianceAuthority!.exportRequest.ownerApprovals =
+    fixture.context.complianceAuthority!.exportRequest.ownerApprovals.map(
+      (approval, index) =>
+        index === 0
+          ? {
+              ...approval,
+              approvedByActorId: ACTOR_A,
+              currentOwnerActorId: ACTOR_A,
+            }
+          : approval,
+    );
+
+  assertPrivateDenial(fixture.request, fixture.context);
+
+  const malformed = await complianceFixture();
+  malformed.context.complianceAuthority!.exportRequest.requestedByActorId = "";
+  assertPrivateDenial(malformed.request, malformed.context);
 });
 
 function legalHoldApprovalFixture(): {
@@ -2031,17 +2092,17 @@ test("security receipts serialize concurrent appends, bind required evidence, an
   }));
   assert.equal(first.previousDigest, "0".repeat(64));
   assert.equal(second.previousDigest, first.digest);
-  assert.equal(await chain.verify(), true);
+  assert.equal(await chain.verify(ORG_A), true);
   assert.equal("update" in chain, false);
   assert.equal("delete" in chain, false);
 
-  const external = chain.entries() as SecurityReceipt[];
+  const external = chain.entries(ORG_A) as SecurityReceipt[];
   external[0].action = "tampered_external_copy";
-  assert.equal(await chain.verify(), true);
+  assert.equal(await chain.verify(ORG_A), true);
 
-  const tampered = chain.entries().map((receipt) => ({ ...receipt }));
+  const tampered = chain.entries(ORG_A).map((receipt) => ({ ...receipt }));
   tampered[1].outcome = "allowed";
-  assert.equal(await verifySecurityReceiptChain(tampered), false);
+  assert.equal(await verifySecurityReceiptChain(ORG_A, tampered), false);
 
   const concurrent = new InMemorySecurityReceiptChain();
   const appended = await Promise.all(
@@ -2058,7 +2119,7 @@ test("security receipts serialize concurrent appends, bind required evidence, an
     appended.map((receipt) => receipt.sequence),
     Array.from({ length: 32 }, (_, index) => index + 1),
   );
-  assert.equal(await concurrent.verify(), true);
+  assert.equal(await concurrent.verify(ORG_A), true);
 
   const queuedChain = new InMemorySecurityReceiptChain();
   const queueHead = queuedChain.append(securityReceiptInput());
@@ -2076,7 +2137,7 @@ test("security receipts serialize concurrent appends, bind required evidence, an
   assert.equal(capturedReceipt.action, "dossier_update");
   assert.equal(capturedReceipt.requestCorrelationSha256, "a".repeat(64));
   assert.equal(capturedReceipt.occurredAtEpochSeconds, NOW + 1);
-  assert.equal(await queuedChain.verify(), true);
+  assert.equal(await queuedChain.verify(ORG_A), true);
 
   await assert.rejects(
     chain.append(securityReceiptInput({ resourceDigest: DOSSIER_A })),
@@ -2089,4 +2150,182 @@ test("security receipts serialize concurrent appends, bind required evidence, an
     } as SecurityReceiptInput),
     /privacy-safe security receipt/u,
   );
+
+  const missingActionInput = structuredClone(
+    securityReceiptInput(),
+  ) as Partial<SecurityReceiptInput>;
+  delete missingActionInput.action;
+  await assert.rejects(
+    chain.append(missingActionInput as SecurityReceiptInput),
+    /privacy-safe security receipt/u,
+  );
+  await assert.rejects(
+    chain.append({
+      ...securityReceiptInput(),
+      policyVersion: 123,
+    } as unknown as SecurityReceiptInput),
+    /privacy-safe security receipt/u,
+  );
+
+  const [validReceipt] = chain.entries(ORG_A);
+  assert.ok(validReceipt);
+  const { digest: validDigest, ...validPayload } = validReceipt;
+  void validDigest;
+  const missingActionPayload = structuredClone(
+    validPayload,
+  ) as Partial<Omit<SecurityReceipt, "digest">>;
+  delete missingActionPayload.action;
+  const numericPolicyPayload = {
+    ...validPayload,
+    policyVersion: 123,
+  };
+  for (const invalidPayload of [
+    missingActionPayload,
+    numericPolicyPayload,
+  ]) {
+    const selfConsistentInvalidReceipt = {
+      ...invalidPayload,
+      digest: await sha256Hex(canonicalJson(invalidPayload)),
+    } as unknown as SecurityReceipt;
+    assert.equal(
+      await verifySecurityReceiptChain(ORG_A, [selfConsistentInvalidReceipt]),
+      false,
+    );
+  }
+});
+
+test("security receipt sequences and digest chains are partitioned by organization", async () => {
+  const chain = new InMemorySecurityReceiptChain();
+  const alphaFirst = await chain.append(securityReceiptInput());
+  const bravoFirst = await chain.append(
+    securityReceiptInput({
+      organizationId: ORG_B,
+      actorId: ACTOR_B,
+      sessionId: "session_phase_b_bravo_001",
+      dossierId: DOSSIER_B,
+      requestCorrelationSha256: "b".repeat(64),
+      occurredAtEpochSeconds: NOW - 10,
+    }),
+  );
+  const alphaSecond = await chain.append(
+    securityReceiptInput({
+      requestCorrelationSha256: "c".repeat(64),
+      occurredAtEpochSeconds: NOW + 2,
+    }),
+  );
+
+  assert.equal(alphaFirst.sequence, 1);
+  assert.equal(alphaFirst.previousDigest, "0".repeat(64));
+  assert.equal(bravoFirst.sequence, 1);
+  assert.equal(bravoFirst.previousDigest, "0".repeat(64));
+  assert.equal(alphaSecond.sequence, 2);
+  assert.equal(alphaSecond.previousDigest, alphaFirst.digest);
+  assert.deepEqual(
+    chain.entries(ORG_A).map((receipt) => receipt.sequence),
+    [1, 2],
+  );
+  assert.deepEqual(
+    chain.entries(ORG_B).map((receipt) => receipt.sequence),
+    [1],
+  );
+  assert.ok(chain.entries(ORG_A).every((receipt) => receipt.organizationId === ORG_A));
+  assert.ok(chain.entries(ORG_B).every((receipt) => receipt.organizationId === ORG_B));
+  assert.deepEqual(chain.entries("organization_unknown_receipts_001"), []);
+  assert.throws(() => chain.entries("invalid"), /invalid organization receipt scope/u);
+  await assert.rejects(
+    chain.verify("invalid"),
+    /invalid organization receipt scope/u,
+  );
+  assert.equal(await chain.verify(ORG_A), true);
+  assert.equal(await chain.verify(ORG_B), true);
+  assert.equal(
+    await verifySecurityReceiptChain(ORG_A, chain.entries(ORG_B)),
+    false,
+  );
+
+  await assert.rejects(
+    chain.append(
+      securityReceiptInput({
+        requestCorrelationSha256: "d".repeat(64),
+        occurredAtEpochSeconds: NOW + 1,
+      }),
+    ),
+    /stale organization security receipt input/u,
+  );
+  const bravoSecond = await chain.append(
+    securityReceiptInput({
+      organizationId: ORG_B,
+      actorId: ACTOR_B,
+      sessionId: "session_phase_b_bravo_001",
+      dossierId: DOSSIER_B,
+      requestCorrelationSha256: "e".repeat(64),
+      occurredAtEpochSeconds: NOW - 9,
+    }),
+  );
+  assert.equal(bravoSecond.sequence, 2);
+  assert.equal(bravoSecond.previousDigest, bravoFirst.digest);
+  const alphaThird = await chain.append(
+    securityReceiptInput({
+      requestCorrelationSha256: "f".repeat(64),
+      occurredAtEpochSeconds: NOW + 3,
+    }),
+  );
+  assert.equal(alphaThird.sequence, 3);
+  assert.equal(alphaThird.previousDigest, alphaSecond.digest);
+
+  const { digest: ignoredDigest, ...bravoPayload } = bravoFirst;
+  void ignoredDigest;
+  const crossTenantPayload: Omit<SecurityReceipt, "digest"> = {
+    ...bravoPayload,
+    sequence: 2,
+    previousDigest: alphaFirst.digest,
+  };
+  const crossTenantReceipt: SecurityReceipt = {
+    ...crossTenantPayload,
+    digest: await sha256Hex(canonicalJson(crossTenantPayload)),
+  };
+  assert.equal(
+    await verifySecurityReceiptChain(ORG_A, [alphaFirst, crossTenantReceipt]),
+    false,
+  );
+});
+
+test("concurrent receipt appends serialize independently inside each organization", async () => {
+  const chain = new InMemorySecurityReceiptChain();
+  const appended = await Promise.all(
+    Array.from({ length: 32 }, (_, index) => {
+      const isAlpha = index % 2 === 0;
+      return chain.append(
+        securityReceiptInput({
+          organizationId: isAlpha ? ORG_A : ORG_B,
+          actorId: isAlpha ? ACTOR_A : ACTOR_B,
+          sessionId: isAlpha
+            ? "session_phase_b_alpha_001"
+            : "session_phase_b_bravo_001",
+          dossierId: isAlpha ? DOSSIER_A : DOSSIER_B,
+          requestCorrelationSha256: index.toString(16).padStart(64, "0"),
+          occurredAtEpochSeconds: NOW + Math.floor(index / 2),
+        }),
+      );
+    }),
+  );
+
+  for (const organizationId of [ORG_A, ORG_B]) {
+    const organizationReceipts = appended.filter(
+      (receipt) => receipt.organizationId === organizationId,
+    );
+    assert.deepEqual(
+      organizationReceipts.map((receipt) => receipt.sequence),
+      Array.from({ length: 16 }, (_, index) => index + 1),
+    );
+    for (let index = 0; index < organizationReceipts.length; index += 1) {
+      assert.equal(
+        organizationReceipts[index].previousDigest,
+        index === 0
+          ? "0".repeat(64)
+          : organizationReceipts[index - 1].digest,
+      );
+    }
+    assert.equal(await chain.verify(organizationId), true);
+  }
 });

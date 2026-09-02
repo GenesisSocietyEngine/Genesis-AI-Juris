@@ -804,15 +804,35 @@ function hasCurrentComplianceAuthority(
     submitted.exportRequestId !== authority.exportRequest.id ||
     submitted.manifestDigest !== authority.exportRequest.manifestDigest ||
     submitted.manifestDigest !== manifest.canonicalManifestSha256 ||
+    !Array.isArray(submitted.dossierIds) ||
+    !Array.isArray(authority.exportRequest.dossierIds) ||
+    !Array.isArray(authority.exportRequest.ownerApprovals) ||
     !isOpaqueId(authority.grantId) ||
     !isPositiveSafeInteger(authority.grantRevision) ||
     !isOpaqueId(authority.exportRequest.id) ||
+    !isOpaqueId(authority.exportRequest.requestedByActorId) ||
     !isSha256(authority.exportRequest.manifestDigest) ||
-    !authority.exportRequest.dossierIds.every(isOpaqueId) ||
+    !Array.from(submitted.dossierIds).every(isOpaqueId) ||
+    !Array.from(authority.exportRequest.dossierIds).every(isOpaqueId) ||
+    !Array.from(authority.exportRequest.ownerApprovals).every(
+      (approval) =>
+        approval !== null &&
+        typeof approval === "object" &&
+        isOpaqueId(approval.dossierId) &&
+        isOpaqueId(approval.approvedByActorId) &&
+        isOpaqueId(approval.currentOwnerActorId) &&
+        isSha256(approval.manifestDigest) &&
+        ["active", "revoked", "superseded"].includes(approval.status),
+    ) ||
     authority.organizationId !== request.organizationId ||
     authority.actorId !== request.actorId ||
     authority.exportRequest.organizationId !== request.organizationId ||
-    !exactUniqueSetEqual(submitted.dossierIds, authority.exportRequest.dossierIds)
+    authority.exportRequest.requestedByActorId !== authority.actorId ||
+    !exactUniqueSetEqual(submitted.dossierIds, authority.exportRequest.dossierIds) ||
+    !exactUniqueSetEqual(
+      authority.exportRequest.ownerApprovals.map((approval) => approval.dossierId),
+      authority.exportRequest.dossierIds,
+    )
   ) {
     return false;
   }

@@ -1339,14 +1339,12 @@ export interface SecurityReceipt extends SecurityReceiptInput {
   digest: string;
 }
 
-const SECURITY_RECEIPT_INPUT_KEYS = new Set<string>([
+const SECURITY_RECEIPT_INPUT_REQUIRED_KEYS = [
   "schemaVersion",
   "eventType",
   "organizationId",
   "actorId",
-  "sessionId",
   "authenticationMethod",
-  "dossierId",
   "action",
   "policyVersion",
   "authorizationVersion",
@@ -1354,11 +1352,21 @@ const SECURITY_RECEIPT_INPUT_KEYS = new Set<string>([
   "requestCorrelationSha256",
   "outcome",
   "reasonCode",
-  "resourceDigest",
   "occurredAtEpochSeconds",
   "deploymentSha",
   "environment",
+];
+
+const SECURITY_RECEIPT_INPUT_OPTIONAL_KEYS = [
+  "sessionId",
+  "dossierId",
+  "resourceDigest",
   "reviewerActorId",
+];
+
+const SECURITY_RECEIPT_INPUT_KEYS = new Set<string>([
+  ...SECURITY_RECEIPT_INPUT_REQUIRED_KEYS,
+  ...SECURITY_RECEIPT_INPUT_OPTIONAL_KEYS,
 ]);
 
 const SECURITY_RECEIPT_KEYS = new Set<string>([
@@ -1381,14 +1389,108 @@ function receiptDigestPayload(receipt: Omit<SecurityReceipt, "digest">): string 
   return canonicalJson(receipt);
 }
 
+function hasValidSecurityReceiptInputFields(
+  input: Record<string, unknown>,
+): boolean {
+  const hasOwn = (key: string): boolean =>
+    Object.prototype.hasOwnProperty.call(input, key);
+  return (
+    input.schemaVersion === "security-receipt.v1" &&
+    typeof input.eventType === "string" &&
+    [
+      "authorization_decision",
+      "invitation_event",
+      "key_rotation_event",
+      "security_transition",
+    ].includes(input.eventType) &&
+    typeof input.authenticationMethod === "string" &&
+    [
+      "entra_oidc",
+      "session_cookie",
+      "invitation_token",
+      "local_test",
+    ].includes(input.authenticationMethod) &&
+    typeof input.reasonCode === "string" &&
+    [
+      "authorized",
+      "policy_denied",
+      "tenant_boundary_denied",
+      "stale_authority_denied",
+      "replay_denied",
+      "malformed_context_denied",
+      "stale_resource_denied",
+      "manifest_denied",
+      "security_transition",
+    ].includes(input.reasonCode) &&
+    (input.outcome === "allowed" || input.outcome === "denied") &&
+    isOpaqueId(input.organizationId) &&
+    isOpaqueId(input.actorId) &&
+    (!hasOwn("sessionId") || isOpaqueId(input.sessionId)) &&
+    (!hasOwn("dossierId") || isOpaqueId(input.dossierId)) &&
+    (!hasOwn("reviewerActorId") || isOpaqueId(input.reviewerActorId)) &&
+    typeof input.action === "string" &&
+    /^[A-Za-z0-9._:-]{1,128}$/u.test(input.action) &&
+    typeof input.policyVersion === "string" &&
+    /^[A-Za-z0-9._-]{1,64}$/u.test(input.policyVersion) &&
+    isPositiveSafeInteger(input.authorizationVersion) &&
+    isPositiveSafeInteger(input.resourceRevision) &&
+    isSha256(input.requestCorrelationSha256) &&
+    (!hasOwn("resourceDigest") || isSha256(input.resourceDigest)) &&
+    isPositiveSafeInteger(input.occurredAtEpochSeconds) &&
+    typeof input.deploymentSha === "string" &&
+    /^[a-f0-9]{40}$/u.test(input.deploymentSha) &&
+    TENANT_RESOURCE_ENVIRONMENTS.some(
+      (environment) => environment === input.environment,
+    )
+  );
+}
+
+function isValidSecurityReceiptInput(
+  value: unknown,
+): value is SecurityReceiptInput {
+  return (
+    isPlainRecord(value) &&
+    hasOnlyReceiptKeys(value, SECURITY_RECEIPT_INPUT_KEYS) &&
+    hasExactKeys(
+      value,
+      SECURITY_RECEIPT_INPUT_REQUIRED_KEYS,
+      SECURITY_RECEIPT_INPUT_OPTIONAL_KEYS,
+    ) &&
+    hasValidSecurityReceiptInputFields(value)
+  );
+}
+
+function isValidSecurityReceipt(value: unknown): value is SecurityReceipt {
+  return (
+    isPlainRecord(value) &&
+    hasOnlyReceiptKeys(value, SECURITY_RECEIPT_KEYS) &&
+    hasExactKeys(
+      value,
+      [...SECURITY_RECEIPT_INPUT_REQUIRED_KEYS, "sequence", "previousDigest", "digest"],
+      SECURITY_RECEIPT_INPUT_OPTIONAL_KEYS,
+    ) &&
+    hasValidSecurityReceiptInputFields(value) &&
+    isPositiveSafeInteger(value.sequence) &&
+    isSha256(value.previousDigest) &&
+    isSha256(value.digest)
+  );
+}
+
 export async function verifySecurityReceiptChain(
+  expectedOrganizationId: string,
   receipts: readonly SecurityReceipt[],
 ): Promise<boolean> {
+  if (!isOpaqueId(expectedOrganizationId)) {
+    return false;
+  }
   let previousDigest = "0".repeat(64);
+  let previousOccurredAtEpochSeconds = 0;
   for (let index = 0; index < receipts.length; index += 1) {
     const receipt = receipts[index];
     if (
-      !hasOnlyReceiptKeys(receipt, SECURITY_RECEIPT_KEYS) ||
+      !isValidSecurityReceipt(receipt) ||
+      receipt.organizationId !== expectedOrganizationId ||
+      receipt.occurredAtEpochSeconds < previousOccurredAtEpochSeconds ||
       receipt.sequence !== index + 1 ||
       !constantTimeStringEqual(receipt.previousDigest, previousDigest)
     ) {
@@ -1400,96 +1502,89 @@ export async function verifySecurityReceiptChain(
       return false;
     }
     previousDigest = digest;
+    previousOccurredAtEpochSeconds = receipt.occurredAtEpochSeconds;
   }
   return true;
 }
 
 /** Append-only in-memory reference implementation for adapter and chain tests. */
 export class InMemorySecurityReceiptChain {
-  readonly #receipts: SecurityReceipt[] = [];
-  #appendTail: Promise<void> = Promise.resolve();
+  readonly #receiptsByOrganization = new Map<string, SecurityReceipt[]>();
+  readonly #appendTailsByOrganization = new Map<string, Promise<void>>();
 
   append(input: SecurityReceiptInput): Promise<SecurityReceipt> {
     const capturedInput = deepFreeze(structuredClone(input));
-    const operation = this.#appendTail.then(() =>
+    if (!isOpaqueId(capturedInput.organizationId)) {
+      return Promise.reject(
+        new TypeError("invalid privacy-safe security receipt input"),
+      );
+    }
+    const previousTail =
+      this.#appendTailsByOrganization.get(capturedInput.organizationId) ??
+      Promise.resolve();
+    const operation = previousTail.then(() =>
       this.#appendSerialized(capturedInput),
     );
-    this.#appendTail = operation.then(
+    const settledTail = operation.then(
       () => undefined,
       () => undefined,
+    );
+    this.#appendTailsByOrganization.set(
+      capturedInput.organizationId,
+      settledTail,
     );
     return operation;
   }
 
   async #appendSerialized(input: SecurityReceiptInput): Promise<SecurityReceipt> {
-    if (
-      !hasOnlyReceiptKeys(input, SECURITY_RECEIPT_INPUT_KEYS) ||
-      input.schemaVersion !== "security-receipt.v1" ||
-      ![
-        "authorization_decision",
-        "invitation_event",
-        "key_rotation_event",
-        "security_transition",
-      ].includes(input.eventType) ||
-      ![
-        "entra_oidc",
-        "session_cookie",
-        "invitation_token",
-        "local_test",
-      ].includes(input.authenticationMethod) ||
-      ![
-        "authorized",
-        "policy_denied",
-        "tenant_boundary_denied",
-        "stale_authority_denied",
-        "replay_denied",
-        "malformed_context_denied",
-        "stale_resource_denied",
-        "manifest_denied",
-        "security_transition",
-      ].includes(input.reasonCode) ||
-      (input.outcome !== "allowed" && input.outcome !== "denied") ||
-      !isOpaqueId(input.organizationId) ||
-      !isOpaqueId(input.actorId) ||
-      (input.sessionId !== undefined && !isOpaqueId(input.sessionId)) ||
-      (input.dossierId !== undefined && !isOpaqueId(input.dossierId)) ||
-      (input.reviewerActorId !== undefined &&
-        !isOpaqueId(input.reviewerActorId)) ||
-      !/^[A-Za-z0-9._:-]{1,128}$/u.test(input.action) ||
-      !/^[A-Za-z0-9._-]{1,64}$/u.test(input.policyVersion) ||
-      !isPositiveSafeInteger(input.authorizationVersion) ||
-      !isPositiveSafeInteger(input.resourceRevision) ||
-      !isSha256(input.requestCorrelationSha256) ||
-      (input.resourceDigest !== undefined && !isSha256(input.resourceDigest)) ||
-      !isPositiveSafeInteger(input.occurredAtEpochSeconds) ||
-      !/^[a-f0-9]{40}$/u.test(input.deploymentSha) ||
-      !TENANT_RESOURCE_ENVIRONMENTS.some(
-        (environment) => environment === input.environment,
-      )
-    ) {
+    if (!isValidSecurityReceiptInput(input)) {
       throw new TypeError("invalid privacy-safe security receipt input");
+    }
+    let organizationReceipts = this.#receiptsByOrganization.get(
+      input.organizationId,
+    );
+    if (!organizationReceipts) {
+      organizationReceipts = [];
+      this.#receiptsByOrganization.set(input.organizationId, organizationReceipts);
+    }
+    const previousReceipt = organizationReceipts[organizationReceipts.length - 1];
+    if (
+      previousReceipt &&
+      input.occurredAtEpochSeconds < previousReceipt.occurredAtEpochSeconds
+    ) {
+      throw new TypeError("stale organization security receipt input");
     }
     const payload: Omit<SecurityReceipt, "digest"> = {
       ...structuredClone(input),
-      sequence: this.#receipts.length + 1,
-      previousDigest:
-        this.#receipts[this.#receipts.length - 1]?.digest ?? "0".repeat(64),
+      sequence: organizationReceipts.length + 1,
+      previousDigest: previousReceipt?.digest ?? "0".repeat(64),
     };
     const receipt: SecurityReceipt = {
       ...payload,
       digest: await sha256Hex(receiptDigestPayload(payload)),
     };
-    this.#receipts.push(Object.freeze(receipt));
+    organizationReceipts.push(Object.freeze(receipt));
     return structuredClone(receipt);
   }
 
-  entries(): readonly SecurityReceipt[] {
-    return this.#receipts.map((receipt) => structuredClone(receipt));
+  entries(organizationId: string): readonly SecurityReceipt[] {
+    if (!isOpaqueId(organizationId)) {
+      throw new TypeError("invalid organization receipt scope");
+    }
+    return (this.#receiptsByOrganization.get(organizationId) ?? []).map(
+      (receipt) => structuredClone(receipt),
+    );
   }
 
-  async verify(): Promise<boolean> {
-    await this.#appendTail;
-    return verifySecurityReceiptChain(this.#receipts);
+  async verify(organizationId: string): Promise<boolean> {
+    if (!isOpaqueId(organizationId)) {
+      throw new TypeError("invalid organization receipt scope");
+    }
+    await this.#appendTailsByOrganization.get(organizationId);
+    return verifySecurityReceiptChain(
+      organizationId,
+      this.#receiptsByOrganization.get(organizationId) ?? [],
+    );
   }
 }
 
