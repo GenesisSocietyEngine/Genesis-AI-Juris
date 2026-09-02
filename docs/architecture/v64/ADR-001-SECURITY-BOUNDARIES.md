@@ -56,7 +56,10 @@ Source content is untrusted data and cannot alter instructions or formulas.
 
 Versioned policies have no indefinite default and destructive evaluation starts
 with an approved dry run. Legal holds bind an exact tenant/object graph and
-override every purge path. Creation and release require separated actors.
+override every purge path. They use a stored immutable request as the
+requester/action source of truth; an approver cannot supply or rewrite requester
+identity. Creation and release require distinct request and approval actors,
+independently bound by immutable receipts.
 Deletion receipts disclose backup expiry honestly. Dossier export authority is
 case-scoped; a tenant export cannot use organisation administration as ambient
 case authority.
@@ -89,4 +92,3 @@ and keys. Production is never a restore target.
   de-identified input. Only a current, explicitly approved tenant can become
   `approved`.
 * No fallback crosses a tenant, region, scanner, identity, or approval gate.
-
