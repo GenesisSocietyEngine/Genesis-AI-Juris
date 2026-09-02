@@ -28,16 +28,72 @@
     },
     "authorization": {
       "type": "object", "additionalProperties": false,
-      "required": ["organization_role", "authorization_version", "scope"],
+      "required": ["scope", "action"],
       "properties": {
         "organization_role": { "enum": ["org_owner", "org_admin", "member", "auditor"] },
         "authorization_version": { "type": "integer", "minimum": 1 },
         "scope": { "enum": ["identity", "organization", "dossier"] },
-        "dossier_role": { "enum": ["owner", "contributor", "reviewer", "viewer"] }
+        "action": {
+          "enum": [
+            "oidc_callback", "invitation_acceptance",
+            "organization_admin", "tenant_export",
+            "dossier_access", "dossier_export"
+          ]
+        },
+        "dossier_role": { "enum": ["owner", "contributor", "reviewer", "viewer"] },
+        "compliance_export_authority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authority_version", "grant_id", "status", "dossier_owner_approval_receipt_ids"],
+          "properties": {
+            "authority_version": { "const": "compliance-export-authority.v1" },
+            "grant_id": { "$ref": "#/$defs/opaqueId" },
+            "status": { "const": "active" },
+            "dossier_owner_approval_receipt_ids": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/opaqueId" }
+            }
+          }
+        }
       },
       "allOf": [
-        { "if": { "properties": { "scope": { "const": "dossier" } } }, "then": { "required": ["dossier_role"] } },
-        { "if": { "properties": { "scope": { "enum": ["identity", "organization"] } } }, "then": { "not": { "required": ["dossier_role"] } } }
+        {
+          "if": { "properties": { "scope": { "const": "identity" } }, "required": ["scope"] },
+          "then": {
+            "properties": { "action": { "enum": ["oidc_callback", "invitation_acceptance"] } },
+            "not": {
+              "anyOf": [
+                { "required": ["organization_role"] },
+                { "required": ["authorization_version"] },
+                { "required": ["dossier_role"] },
+                { "required": ["compliance_export_authority"] }
+              ]
+            }
+          }
+        },
+        {
+          "if": { "properties": { "scope": { "const": "organization" } }, "required": ["scope"] },
+          "then": {
+            "required": ["organization_role", "authorization_version"],
+            "properties": { "action": { "enum": ["organization_admin", "tenant_export"] } },
+            "not": { "required": ["dossier_role"] }
+          }
+        },
+        {
+          "if": { "properties": { "scope": { "const": "dossier" } }, "required": ["scope"] },
+          "then": {
+            "required": ["organization_role", "authorization_version", "dossier_role"],
+            "properties": { "action": { "enum": ["dossier_access", "dossier_export"] } },
+            "not": { "required": ["compliance_export_authority"] }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "tenant_export" } }, "required": ["action"] },
+          "then": { "required": ["compliance_export_authority"] },
+          "else": { "not": { "required": ["compliance_export_authority"] } }
+        }
       ]
     }
   },

@@ -4,7 +4,7 @@
   "title": "GENESIS JURIS tenant resource manifest v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["manifest_version", "organization_id", "environment", "hostname", "d1", "r2", "jurisdiction", "encryption_key_alias", "schema_version", "deployment_sha", "activation", "verification"],
+  "required": ["manifest_version", "organization_id", "environment", "hostname", "d1", "r2", "jurisdiction", "encryption_key_aliases", "processing_components", "schema_version", "deployment_sha", "activation", "verification"],
   "properties": {
     "manifest_version": { "const": "tenant-resource-manifest.v1" },
     "organization_id": { "$ref": "#/$defs/id" },
@@ -21,7 +21,33 @@
       }
     },
     "jurisdiction": { "const": "eu" },
-    "encryption_key_alias": { "type": "string", "pattern": "^[A-Za-z0-9/_-]{3,160}$" },
+    "encryption_key_aliases": {
+      "type": "object", "additionalProperties": false,
+      "required": ["live_data", "exports", "backups", "restore"],
+      "properties": {
+        "live_data": { "$ref": "#/$defs/liveKeyAlias" },
+        "exports": { "$ref": "#/$defs/exportKeyAlias" },
+        "backups": { "$ref": "#/$defs/backupKeyAlias" },
+        "restore": { "$ref": "#/$defs/restoreKeyAlias" }
+      }
+    },
+    "processing_components": {
+      "type": "object", "additionalProperties": false,
+      "required": ["workers", "queues", "cron", "malware_scanning", "extraction", "ocr", "kms", "logging", "backup_restore", "support", "ai"],
+      "properties": {
+        "workers": { "$ref": "#/$defs/componentEvidence" },
+        "queues": { "$ref": "#/$defs/componentEvidence" },
+        "cron": { "$ref": "#/$defs/componentEvidence" },
+        "malware_scanning": { "$ref": "#/$defs/componentEvidence" },
+        "extraction": { "$ref": "#/$defs/componentEvidence" },
+        "ocr": { "$ref": "#/$defs/componentEvidence" },
+        "kms": { "$ref": "#/$defs/componentEvidence" },
+        "logging": { "$ref": "#/$defs/componentEvidence" },
+        "backup_restore": { "$ref": "#/$defs/componentEvidence" },
+        "support": { "$ref": "#/$defs/componentEvidence" },
+        "ai": { "$ref": "#/$defs/componentEvidence" }
+      }
+    },
     "schema_version": { "type": "string", "pattern": "^v[0-9]+$" },
     "deployment_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
     "activation": { "enum": ["disabled", "validation", "approved", "suspended"] },
@@ -37,6 +63,21 @@
   },
   "$defs": {
     "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{20,128}$" },
-    "resource": { "type": "object", "additionalProperties": false, "required": ["id", "jurisdiction"], "properties": { "id": { "$ref": "#/$defs/id" }, "jurisdiction": { "const": "eu" } } }
+    "liveKeyAlias": { "type": "string", "pattern": "^live/[A-Za-z0-9/_-]{3,155}$" },
+    "exportKeyAlias": { "type": "string", "pattern": "^export/[A-Za-z0-9/_-]{3,153}$" },
+    "backupKeyAlias": { "type": "string", "pattern": "^backup/[A-Za-z0-9/_-]{3,153}$" },
+    "restoreKeyAlias": { "type": "string", "pattern": "^restore/[A-Za-z0-9/_-]{3,152}$" },
+    "resource": { "type": "object", "additionalProperties": false, "required": ["id", "jurisdiction"], "properties": { "id": { "$ref": "#/$defs/id" }, "jurisdiction": { "const": "eu" } } },
+    "componentEvidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["binding_id", "jurisdiction", "receipt_sha256", "verified_at", "expires_at"],
+      "properties": {
+        "binding_id": { "$ref": "#/$defs/id" },
+        "jurisdiction": { "const": "eu" },
+        "receipt_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "verified_at": { "type": "string", "format": "date-time" },
+        "expires_at": { "type": "string", "format": "date-time" }
+      }
+    }
   }
 }

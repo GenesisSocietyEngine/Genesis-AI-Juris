@@ -14,7 +14,15 @@ reinterpretation. Schemas contain no secrets or tenant content.
 This freeze deliberately distinguishes identity, organisation, and dossier
 authorization scopes. Pre-membership identity flows do not invent membership;
 dossier-scoped flows always require participation. It also excludes ambient
-tenant export authority from `org_admin`.
+tenant export authority from `org_admin`: a tenant export action requires an
+independently versioned compliance-export grant and explicit receipts for every
+included dossier owner's approval.
+
+An approved tenant resource manifest also binds four purpose-prefixed key
+aliases and current EU-jurisdiction evidence for workers, queues, cron, malware
+scanning, extraction, OCR, KMS, logging, backup/restore, support, and AI.
+Missing component evidence or an unknown field invalidates the manifest; it
+cannot be inferred from the region of a storage resource.
 
 Phase B must not begin until reviewers accept this freeze and the threat model.
 No confidential activation is implied by accepting either document.
