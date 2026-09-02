@@ -19,7 +19,8 @@ Start from a clean branch/worktree at exact `main` commit:
 - Phase A merge: `c088200138332cd212b87e266746ea85b53a2f77`
 - approved Phase A head: `7d1ca3bb0febf869c521e1ace53ea8c7be1aab06`
 - PR: `#41`
-- production rollback baseline: Site 69 / v62 at web commit `6019e47346a2bf719a09dc1d874a2fc807f99598`
+- expected production rollback baseline from the latest cumulative handoff: Site 69 / v62 at web commit `6019e47346a2bf719a09dc1d874a2fc807f99598`
+- conflicting older repository evidence: Site 63 / marker v61; treat this as an unresolved production-identity discrepancy, not as permission to select either record silently
 - information-architecture source identity: `2881e81f08b3459805a293450edd4840f06d6c97`
 - confidential document mode: `disabled` or validation-only; synthetic/de-identified material only
 
@@ -30,9 +31,64 @@ Before editing:
 3. Read `CodexToInstructions.md`, the three v64 JSON Schemas, and every document under `docs/architecture/v64/` in full.
 4. Inspect the existing D1 migrations, Worker/API routes, session/auth implementation, dossier roles, revision-CAS, audit receipts, Rust bridge, Flutter persistence, and all release workflows.
 5. Produce a short discovery receipt mapping existing components to the frozen Phase A contracts. Do not invent parallel models when a compatible invariant already exists.
-6. Confirm the actual production marker and deployment identity read-only. If it differs from the baseline above, stop and report the discrepancy; do not modify production.
+6. Attempt to confirm the actual production marker and deployment identity read-only through an authorized Sites/hosting receipt. If that channel is unavailable, record the discrepancy and continue only with isolated branch implementation and tests under the amendment below. Do not infer production identity from source history and do not modify production.
 
 Phase A schemas and decisions are frozen. Changes require a new ADR, explicit compatibility analysis, security review, and product-owner approval. Never weaken them merely to simplify implementation.
+
+## 1A. Mandatory amendment — resolve the B0 production-identity stop safely
+
+This amendment supersedes only the earlier instruction to stop all implementation when the production identity cannot be read. It does not weaken any merge, release, deployment, migration, or confidential-activation gate.
+
+### Current verified task state
+
+- PR `#43` instruction-only head: `6feb611b70a79f41bc87e25a6d469490cf8ba71c`.
+- Codex B0 checkpoint created locally: commit `f71848f527fe7bebb3f7339a32673b37b443e13a`, tree `f3c1736ab40cc311048e2e74c0af2493ae09f627`.
+- The B0 checkpoint contains only the discovery receipt and `CURRENT_PROGRESS.md` update; it is not yet present on PR `#43`.
+- Eight baseline push/PR checks across Rust, Flutter, and Android were reported green by the previous task; the two iOS simulator checks were still running at that task's stop point and had not failed.
+- Full Phase B migrations, authorization, isolation, parity, accessibility, exact-head review, and security gates have not yet run and must not be represented as green.
+- No Phase C or later work, deployment, production mutation, secret change, confidential-upload enablement, or app-store activity occurred. The warning and synthetic/de-identified restriction remain mandatory.
+
+### Source-of-truth hierarchy
+
+Keep these identities separate:
+
+1. **Development source baseline:** exact repository `main` commit `c088200138332cd212b87e266746ea85b53a2f77`. This is authoritative for Phase B branch construction.
+2. **Production deployment identity:** unresolved between Site 63/v61 and Site 69/v62 until an authorized read-only hosting receipt proves the live deployment, saved version, production marker, and exact source commit.
+3. **Rollback candidate:** no version may be called the rollback target until the production identity is reconciled and its deployment health receipt is current.
+
+Do not overwrite repository history to make the records agree. Create an immutable reconciliation receipt containing both claims, their sources/timestamps, the authoritative hosting evidence when obtained, the decision, actor, and receipt digest.
+
+### Development may continue under isolation
+
+The unresolved production identity is **not a blocker for B1–B9 implementation on the dedicated, non-production PR branch**, because this task is forbidden to deploy, migrate production, provision production resources, change secrets, or enable confidential mode.
+
+Continue only if all of the following remain true:
+
+- branch base is exactly `c088200138332cd212b87e266746ea85b53a2f77`;
+- no production credential or binding is used;
+- D1/R2/KMS/Entra interactions use deterministic local fakes or explicitly non-production isolated fixtures;
+- migrations are additive and are tested against both repository-represented candidate upgrade shapes: v61/Site 63 and v62/Site 69;
+- legacy fingerprints and `legacy_personal_pilot` behavior remain byte/semantically unchanged;
+- confidential upload stays disabled server-side and visibly warned on web/Flutter;
+- every external dependency without an authoritative receipt is labelled `unverified_external_dependency`.
+
+Production reconciliation remains a hard blocker before marking the PR ready, merging it, creating a Site version, deploying, provisioning a production tenant, changing production secrets, or enabling confidential material.
+
+### Recover B0 without duplication
+
+1. If local commit `f71848f527fe7bebb3f7339a32673b37b443e13a` is reachable and its parent/tree/content match the recorded receipt, cherry-pick or fast-forward its exact content onto the current PR branch.
+2. If it is not reachable, reproduce only the two B0 files from the task result, verify their semantic diff against the recorded summary, and create a new attributable commit. Do not fabricate the old SHA.
+3. Correct stale links in the B0 receipt so they point to the actual PR head containing the files, not the instruction-only head.
+4. Record which recovery route was used, exact parent/head/tree SHAs, and `git diff --check`.
+5. Then proceed to B1; do not repeat the completed discovery audit unless source changes invalidate it.
+
+### Tool and evidence dependencies
+
+- A missing GitHub remote credential in the Codex terminal must not trigger `gh pr create`, force-push, credential discovery, or scope expansion. The existing PR `#43` is the sole review vehicle; return committed work for the connected workflow to publish.
+- Missing local Flutter/Dart or Apple toolchains do not permit skipping their gates. Implement and run available tests locally, then require hosted exact-head Flutter/Android/iOS receipts before Phase B acceptance.
+- Hosted Codex code review and security review are mandatory on the final exact head.
+- Entra, D1/R2 EU isolation, KMS/key rotation, email delivery, compliance, DPA/subprocessor, penetration-test, and restore evidence may be mocked only for implementation tests. They remain external blockers for confidential beta and must be listed precisely.
+- Do not ask for production secrets in comments, commits, CI output, or chat.
 
 ## 2. Non-negotiable boundaries
 
@@ -72,7 +128,7 @@ Work in small reviewable commits in this order:
 
 Do not begin Phase C document ingestion during this task. Phase C may start only after all Phase B gates are green, a clean Codex/security review is complete, and a human explicitly approves the next slice.
 
-Stop and report the exact blocker if any required provider, secret, EU infrastructure receipt, compliance approval, platform capability, or native toolchain is unavailable. Implement test doubles and interfaces where useful, but never represent them as production evidence.
+If a required provider, secret, EU infrastructure receipt, compliance approval, platform capability, or native toolchain is unavailable, record it precisely. Continue branch-safe implementation with deterministic fakes where the amendment permits it, but stop before any gate or action that needs the missing evidence. Never represent a test double as production evidence and never weaken an acceptance gate.
 
 ## 4. B1 — organisation and control-plane migrations
 
@@ -425,6 +481,7 @@ All must pass on the exact candidate head:
 
 ### Evidence pack
 
+- authoritative read-only production reconciliation receipt identifying the actual live Site version, marker, deployment, source SHA, and health evidence; if unavailable, PR remains draft and unmergeable by policy;
 - exact base/head/tree SHAs and clean diff;
 - ordered commits and changed-file inventory;
 - migration/schema fingerprints;
@@ -447,4 +504,4 @@ When Phase B is complete:
 
 The task may push implementation commits to its dedicated branch and maintain one draft PR for review. It must not merge the PR, deploy a Site, provision production confidential infrastructure, change production secrets, activate confidential uploads, or distribute an app-store build.
 
-Phase B is accepted only when organisation isolation and deny-by-default authorization are proven at both database and application boundaries, web/mobile parity is factual, every exact-head gate is green, and no unresolved tenant-isolation or authentication finding remains. Otherwise stop at the last green checkpoint and report the blocker without weakening a gate.
+Phase B is accepted only when the production identity is authoritatively reconciled, organisation isolation and deny-by-default authorization are proven at both database and application boundaries, web/mobile parity is factual, every exact-head gate is green, and no unresolved tenant-isolation or authentication finding remains. Otherwise keep PR `#43` draft, stop at the last green checkpoint, and report the blocker without weakening a gate.
