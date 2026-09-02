@@ -38,7 +38,7 @@ no match to an unavailable object is claimed:
 | 4 | `98409fc650c0fa17e1403112eaf2408a9f13c44d` | `f292f6bb458a71e44660f5f34ba4931f858a56d3` | `fix(mobile): retain organization version floors` |
 | 5 | `dabab4065693a90e14ed33d90d8c58e892f47d78` | `fecc48d55c938c4aceaffb567eb4b8e96234ca93` | `fix(mobile): harden tenant invalidation races` |
 | 6 | `0efcefd5cbf313cdf55509f24b30de7759fdacab` | `8a26c1383e694e08a5411c87742cb094d7f16098` | `feat(v64): reconstruct protected tenant foundation` |
-| 7 | `88416e0791942d75a92f92ac04d1accbb9f26a27` | `581cf28eb5bcc04806b0d070d620021b5f32512a` | `docs(v64): record reconstructed Phase B evidence` |
+| 7 | `88416e0791942d75a92f92ac04d1accbb9f26a27` | `581cf28eb5bcc04806b0d070d620021b5f32512a` | `docs(v64): record reconstructed Phase B evidence and blockers` |
 | 8 | `9cb539af63a034d3a614535aa6f362455ce06fce` | `f50439d0cc1f4906261daf881483669c91f842b2` | `fix(v64): bind export and receipt authority` |
 
 At the implementation checkpoint, the clean diff against `fef5a27` is 12
