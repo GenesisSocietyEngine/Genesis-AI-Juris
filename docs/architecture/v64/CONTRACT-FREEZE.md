@@ -40,7 +40,10 @@ immutable server records and bound to the authenticated actor and organisation;
 their current authority version and active status are exact bound fields. The
 export request, manifest, and complete current owner-approval set are verified
 rather than accepted from payload data. Revoked or superseded grants fail
-closed immediately.
+closed immediately. Both grant types carry a monotonic revision; the server
+resolves the current grant by actor, organisation, authority type (and delegated
+action where applicable), then requires the submitted grant ID/revision to
+match that current pointer. An older immutable active record is not authority.
 
 An approved tenant resource manifest also binds four purpose-prefixed key
 aliases and current EU-jurisdiction evidence for workers, queues, cron, malware

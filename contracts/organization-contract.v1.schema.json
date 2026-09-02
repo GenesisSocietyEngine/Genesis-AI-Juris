@@ -86,13 +86,17 @@
           "x-verify-immutable-server-authority": {
             "record_type": "organization-action-authority.v1",
             "record_id_field": "grant_id",
-            "bound_fields": ["authority_version", "action", "status"],
-            "bind_to_server_context": ["organization_id", "authenticated_actor_id"]
+            "bound_fields": ["authority_version", "grant_revision", "action", "status"],
+            "bind_to_server_context": ["organization_id", "authenticated_actor_id"],
+            "resolve_current_grant_by": ["organization_id", "authenticated_actor_id", "authority_version", "action"],
+            "require_submitted_grant_id_equals_current": true,
+            "reject_if_superseded": true
           },
-          "required": ["authority_version", "grant_id", "action", "status"],
+          "required": ["authority_version", "grant_id", "grant_revision", "action", "status"],
           "properties": {
             "authority_version": { "const": "organization-action-authority.v1" },
             "grant_id": { "$ref": "#/$defs/opaqueId" },
+            "grant_revision": { "type": "integer", "minimum": 1 },
             "action": { "enum": ["member_invite", "member_suspend"] },
             "status": { "const": "active" }
           }
@@ -103,7 +107,10 @@
           "x-verify-immutable-server-authority": {
             "grant_record_type": "compliance-export-authority.v1",
             "grant_id_field": "grant_id",
-            "grant_bound_fields": ["authority_version", "status"],
+            "grant_bound_fields": ["authority_version", "grant_revision", "status"],
+            "resolve_current_grant_by": ["organization_id", "authenticated_actor_id", "authority_version"],
+            "require_submitted_grant_id_equals_current": true,
+            "reject_if_superseded": true,
             "export_request_record_type": "tenant-export-request.v1",
             "export_request_id_field": "export_request_id",
             "export_request_bound_fields": ["export_manifest_sha256", "dossier_owner_approvals"],
@@ -112,10 +119,11 @@
             "bind_to_server_context": ["organization_id", "authenticated_actor_id"],
             "require_current_owner_approval_for_every_dossier": true
           },
-          "required": ["authority_version", "grant_id", "status", "export_request_id", "export_manifest_sha256", "dossier_owner_approvals"],
+          "required": ["authority_version", "grant_id", "grant_revision", "status", "export_request_id", "export_manifest_sha256", "dossier_owner_approvals"],
           "properties": {
             "authority_version": { "const": "compliance-export-authority.v1" },
             "grant_id": { "$ref": "#/$defs/opaqueId" },
+            "grant_revision": { "type": "integer", "minimum": 1 },
             "status": { "const": "active" },
             "export_request_id": { "$ref": "#/$defs/opaqueId" },
             "export_manifest_sha256": { "$ref": "#/$defs/sha256" },

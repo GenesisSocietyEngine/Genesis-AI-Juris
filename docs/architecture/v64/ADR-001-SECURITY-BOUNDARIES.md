@@ -38,7 +38,10 @@ participation are likewise server-resolved. Delegated administrator and
 compliance-export payloads are not authority: their grants, export request,
 manifest, actor/organisation binding, and full owner-approval set are verified
 against immutable current server records. Grant version and active status are
-bound explicitly; revocation or supersession invalidates authority immediately.
+bound explicitly. A monotonic current-grant pointer is resolved by actor,
+organisation, authority type, and delegated action; submitted ID/revision must
+match it. Revocation or supersession invalidates authority immediately even if
+an older immutable record still says `active`.
 
 ## ADR-003 — encryption and key management
 

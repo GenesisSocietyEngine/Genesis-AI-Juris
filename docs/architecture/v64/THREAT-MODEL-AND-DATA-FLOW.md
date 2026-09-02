@@ -65,7 +65,7 @@ content authority.
 | Prompt injection in extracted text | mark untrusted, quote as evidence, AI proposal-only, Rust validation authoritative |
 | Cross-tenant job/cache/download leakage | tenant-bound queues and keys, short grants, purge cache on context/version change |
 | Payload tenant/state substitution or post-suspension access | bind top-level ID, lifecycle, region, confidential mode and policy versions plus nested targets to current server authorization context; require active status for every organisation/dossier action |
-| Forged/stale role, membership, dossier participation, or delegated grant | bind current membership/version/roles/dossier to server context; bind grant version/status and export request/manifest/approval set to immutable current server records |
+| Forged/stale role, membership, dossier participation, or delegated grant | bind current membership/version/roles/dossier; resolve current monotonic grant revision and require exact submitted ID; bind export request/manifest/approval set to immutable server records |
 | Exfiltrate through logs/crash/analytics | field allowlists; prohibit content, filename, identity, token, prompt, object key |
 | Bypass legal hold through scheduled purge | one authoritative object-graph hold check on every deletion path |
 | Reuse/spoof a legal-hold request across actors or scopes | resolve actor/action/organisation/dossier/object graph from the immutable request; bind it to server-owned authorization context; bind approver to the authenticated session; require distinct actors and receipts |
