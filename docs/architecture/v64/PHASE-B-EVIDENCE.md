@@ -3,7 +3,7 @@
 Status: **meaningful isolated reconstruction; PR remains draft and is not
 ready for merge, release, deployment, or confidential activation**
 
-Recorded at: `2026-09-02T16:46:32Z`
+Recorded at: `2026-09-02T17:40:58Z`
 
 Repository: `GenesisSocietyEngine/Genesis-AI-Juris`
 
@@ -16,9 +16,14 @@ Pull request: `#43`, branch `codex/v64-phase-b-tenant-foundation`
 - Amended instruction head and reconstruction parent:
   `fef5a27fd86d4978c522adb0e5f1526d00c9da66`, tree
   `b4d6bb60abb2b4de2722a923734b2cac3501d3d6`.
-- Reconstructed implementation checkpoint:
+- Original reconstructed implementation checkpoint:
   `0efcefd5cbf313cdf55509f24b30de7759fdacab`, tree
   `8a26c1383e694e08a5411c87742cb094d7f16098`.
+- Evidence checkpoint: `88416e0791942d75a92f92ac04d1accbb9f26a27`,
+  tree `581cf28eb5bcc04806b0d070d620021b5f32512a`.
+- Hosted-review correction checkpoint:
+  `9cb539af63a034d3a614535aa6f362455ce06fce`, tree
+  `f50439d0cc1f4906261daf881483669c91f842b2`.
 
 The reported commits beginning `7a971f4`, `7384945`, `c34500f`, and `8fc5797`
 were absent from GitHub and every available local object, ref, reflog, worktree,
@@ -33,12 +38,19 @@ no match to an unavailable object is claimed:
 | 4 | `98409fc650c0fa17e1403112eaf2408a9f13c44d` | `f292f6bb458a71e44660f5f34ba4931f858a56d3` | `fix(mobile): retain organization version floors` |
 | 5 | `dabab4065693a90e14ed33d90d8c58e892f47d78` | `fecc48d55c938c4aceaffb567eb4b8e96234ca93` | `fix(mobile): harden tenant invalidation races` |
 | 6 | `0efcefd5cbf313cdf55509f24b30de7759fdacab` | `8a26c1383e694e08a5411c87742cb094d7f16098` | `feat(v64): reconstruct protected tenant foundation` |
+| 7 | `88416e0791942d75a92f92ac04d1accbb9f26a27` | `581cf28eb5bcc04806b0d070d620021b5f32512a` | `docs(v64): record reconstructed Phase B evidence` |
+| 8 | `9cb539af63a034d3a614535aa6f362455ce06fce` | `f50439d0cc1f4906261daf881483669c91f842b2` | `fix(v64): bind export and receipt authority` |
 
 At the implementation checkpoint, the clean diff against `fef5a27` is 12
 files, 8,564 insertions, and one deletion: three reference server modules, one
 branch-only migration, two web test files, one role/action policy manifest, two
 Flutter organization-context files, three discovery/rollback/progress files.
 The evidence carrier is an additional documentation-only descendant.
+At the hosted-review correction checkpoint, the clean cumulative diff against
+`fef5a27` is 13 files, 9,142 insertions, and one deletion. The correction binds
+the export requester to the authenticated authority, rejects malformed and
+sparse approval inputs, partitions receipt state by organization, and shares
+strict receipt semantics between append and verification.
 
 ## B0-B9 status
 
@@ -48,12 +60,12 @@ The evidence carrier is an additional documentation-only descendant.
 | B1 | **Partial** | The branch-only `0016_tenant_control_plane.sql` candidate defines 21 tables, 32 indexes, 66 triggers, and 32 foreign keys with lifecycle, membership, invitation, grant, manifest, rotation, approval, and append-only receipt invariants. It is deliberately unregistered until the authoritative migration chain and the frozen public lifecycle/`closing` conflict are resolved. |
 | B2 | **Blocked** | No placeholder data plane was invented. The exact base lacks the authoritative v62 dossier/document graph, so composite tenant binding, repository constraints, cache/search/job/locator isolation, and full resource coverage are absent. |
 | B3 | **Partial** | A typed deny-by-default policy decision point, machine-readable role/action policy, dossier participation checks, separate compliance authority, freshness checks, and adversarial tests exist. Production API routes and the missing B2 repositories do not consume it. |
-| B4 | **Partial** | Reference lifecycle, digest-only invitation, membership, grant, compliance-authority, and owner-approval logic is present with negative and concurrency tests. Production APIs/durable adapters, authoritative dossier-owner binding, and lifecycle-contract resolution remain absent. |
+| B4 | **Partial** | Reference lifecycle, digest-only invitation, membership, grant, compliance-authority, and owner-approval logic is present with negative and concurrency tests. Export authorization binds `requestedByActorId` to the authenticated grant actor and requires a structurally valid, exact, unique owner-approval dossier set. Production APIs/durable adapters, authoritative dossier-owner binding, and lifecycle-contract resolution remain absent. |
 | B5 | **Partial** | A local production-shaped PKCE/OIDC transaction and callback boundary checks state, nonce, redirect/origin, browser/tab correlation, stable identity, replay, freshness, and connection enablement. Real discovery, JWKS/signature/token exchange, secure cookie/session integration, durable CAS, and system-browser return are not implemented. |
 | B6 | **Partial** | Strict tenant-resource manifest verification, a local envelope-encryption boundary, key-version binding, and a resumable rotation state machine exist. Production KMS/provider adapters, durable application wiring, EU residency, backup/restore, and provisioning receipts remain unverified. |
-| B7 | **Partial** | Privacy-safe chained receipt logic, append-only SQL guards, version bindings, races, and selected tenant-substitution tests exist. There is no production append adapter or complete B2-wide property/mutation corpus for every required object, search, cache, pagination, job, notification, and locator path. |
+| B7 | **Partial** | Privacy-safe chained receipt logic, append-only SQL guards, version bindings, races, and selected tenant-substitution tests exist. In-memory listing, verification, sequence/digest state, append queues, and monotonic timestamps are explicitly partitioned by organization; strict append/verify validation rejects malformed and cross-tenant chains, including interleaved concurrency. There is no production append adapter or complete B2-wide property/mutation corpus for every required object, search, cache, pagination, job, notification, and locator path. |
 | B8 | **Partial** | The Flutter organization coordinator clears context and enforces independent authorization/session floors across switches, revocation, policy/membership invalidation, failures, and sign-out races. It is not wired into production UI/cache stores; web organization UI, shared-manifest parity, OIDC return, redaction, accessibility, and EN/RU evidence are missing. |
-| B9 | **Blocked** | Focused and broad local gates are green where the branch has implementation, and the final narrow review has no unresolved P0/P1. Exact pushed-head hosted Rust/Flutter/Android/iOS checks, hosted Codex/security reviews, an authoritative secret scan, true Draft 2020-12 schema compilation, full accessibility/parity gates, and the architectural gaps above remain outstanding. |
+| B9 | **Blocked** | Focused and broad local gates are green at the hosted-review correction source. Hosted security review was clean at `88416e0`; hosted code review raised two P1s, both corrected at `9cb539a` with discriminating regressions and a subsequent independent local review reporting no P0/P1. Exact correction/final pushed-head Rust/Flutter/Android/iOS checks and code/security rereviews remain pending. The production-only dependency audit is clean, but a supplemental full dependency-tree audit now reports 15 dev/optional advisories. An authoritative secret scan, true Draft 2020-12 schema compilation, full accessibility/parity gates, and the architectural gaps above also remain outstanding. |
 
 This is not a claim that Phase B is complete. In particular, B2 is an
 architecture dependency for the production wiring and full isolation proof
@@ -82,13 +94,17 @@ was never applied to production.
 The v61 and v62 inputs are source candidates, not production backup, restore,
 deployment, or rollback receipts. Registration remains blocked by the missing
 authoritative `0011`-`0015` history and the absence of B2 aggregates on the
-exact base.
+exact base. The read-only fixture source candidate was observed at
+`bfca01b03e2ef572291ce6847e7b5f23e6be48e9`; it remains labelled
+`unverified_external_dependency`.
 
 ## Local verification
 
-The following gates ran against the source represented by implementation
-checkpoint `0efcefd5cbf313cdf55509f24b30de7759fdacab`. The final evidence change is
-documentation-only.
+The web gates below ran against the source represented by hosted-review
+correction checkpoint `9cb539af63a034d3a614535aa6f362455ce06fce`.
+Flutter, Android, and Rust files were unchanged by that correction; their local
+receipts remain from implementation checkpoint `0efcefd5`. Later evidence
+changes are documentation-only.
 
 ### Web and server
 
@@ -97,9 +113,10 @@ documentation-only.
 | committed-lockfile `npm ci` in the short-path validation clone | PASS; 510 packages installed |
 | `npm run lint` | PASS; zero diagnostics |
 | strict TypeScript `tsc --noEmit --strict` | PASS; zero diagnostics |
-| focused Node Phase B foundation and migration tests | PASS; 34/34 |
-| `npm test` | PASS; verified production build completed all five stages and the complete suite passed 137/137 |
-| `npm audit --omit=dev --audit-level=high` | PASS; zero vulnerabilities |
+| focused Node Phase B foundation and migration tests with both read-only external fixture candidates enabled | PASS; 37/37 |
+| `npm test` | PASS; verified production build completed all five stages and the complete suite passed 140/140 |
+| `npm audit --omit=dev --json` | PASS; zero production vulnerabilities across 20 production dependencies |
+| supplemental `npm audit --audit-level=low` | FAIL; unchanged lockfile currently reports 15 dev/optional findings: 11 high and 4 moderate; suggested complete remediation includes breaking or out-of-range upgrades |
 
 The committed `npm run install:ci` wrapper is Linux-specific (`flock` and
 `/proc`) and cannot execute on this Windows host. Direct committed-lockfile
@@ -135,9 +152,17 @@ CI.
 - Supplemental added-file credential-pattern scan: no apparent embedded
   credential. This is not an authoritative secret-scanner receipt.
 - Independent narrow security/code audit: no unresolved P0/P1 after fixes for
-  receipt input capture, legal-hold binding, OIDC and manifest/invitation
-  time-of-check/time-of-use boundaries, and mobile invalidation races.
-- Hosted Codex and dedicated security review of the exact pushed head: pending.
+  receipt input capture and strict semantics, per-organization chaining,
+  authenticated export requester and approval-set binding, legal-hold binding,
+  OIDC and manifest/invitation time-of-check/time-of-use boundaries, and mobile
+  invalidation races.
+- Hosted security review at `88416e0`: clean; no security issue reported
+  (`issuecomment-5513321128`).
+- Hosted code review at `88416e0`: P1 export-requester binding thread
+  `PRRT_kwDOTiwDjc6emg8r` (`discussion_r3916633722`) and P1 organization receipt
+  partition thread `PRRT_kwDOTiwDjc6emg8y` (`discussion_r3916633736`). Both are
+  corrected at `9cb539a`; exact correction/final-head replies, thread resolution,
+  and rereviews are pending publication.
 
 ## Production reconciliation
 
@@ -193,12 +218,17 @@ blocked.
 5. Add or run real Draft 2020-12 schema validation, authoritative prohibited
    content/secret scanning, parity/manifest, import/export/revision, full 18
    route, accessibility, and other mandatory Phase B gates on the final head.
-6. Obtain exact pushed-head hosted Rust, Flutter, Android, and iOS receipts and
-   hosted Codex plus dedicated security review.
+6. Obtain exact correction/final pushed-head hosted Rust, Flutter, Android, and
+   iOS receipts plus hosted Codex and dedicated security rereview. Prior hosted
+   security and Rust/Flutter/Android evidence at `88416e0` is superseded by the
+   correction head.
 7. Obtain an authoritative read-only live-deployment-to-Site-69/source-SHA and
    current observability receipt.
 8. Keep Entra, EU D1/R2 namespaces, KMS/key rotation, email delivery,
    compliance/DPA/subprocessor, penetration-test, restore, and support evidence
    labelled `unverified_external_dependency`; no mock is production evidence.
+9. Reconcile the 15 current dev/optional dependency advisories through a
+   separately reviewed lockfile/toolchain update. Production dependencies audit
+   clean; this Phase B branch does not alter the frozen lockfile or release gates.
 
 PR `#43` must remain draft. No merge approval is requested by this receipt.
