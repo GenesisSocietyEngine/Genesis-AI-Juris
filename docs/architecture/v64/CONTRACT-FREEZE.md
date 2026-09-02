@@ -32,6 +32,13 @@ authoritative state before accepting an action. Organisation and dossier
 actions require `organization.status = active`; provisioning, suspended, and
 closed organisations fail closed immediately. Identity callbacks may establish
 identity but cannot manufacture or retain organisation/dossier authority.
+For every non-identity action, current membership state, organisation role, and
+authorization version are also server-bound. Dossier actions additionally bind
+the exact dossier ID, current dossier role, and active participation state.
+Delegated-administrator and compliance-export grants are resolved from
+immutable server records and bound to the authenticated actor and organisation;
+the export request, manifest, and complete current owner-approval set are
+verified rather than accepted from payload data.
 
 An approved tenant resource manifest also binds four purpose-prefixed key
 aliases and current EU-jurisdiction evidence for workers, queues, cron, malware

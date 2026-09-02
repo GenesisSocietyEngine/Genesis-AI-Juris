@@ -10,7 +10,13 @@
     "/organization/controller_processor_mode": "controller_processor_mode",
     "/organization/data_region": "data_region",
     "/organization/confidential_document_mode": "confidential_document_mode",
-    "/organization/policy_versions": "policy_versions"
+    "/organization/policy_versions": "policy_versions",
+    "/authorization/organization_role": "organization_role",
+    "/authorization/authorization_version": "authorization_version",
+    "/authorization/membership_status": "membership_status",
+    "/authorization/dossier_id": "dossier_id",
+    "/authorization/dossier_role": "dossier_role",
+    "/authorization/dossier_participation_status": "dossier_participation_status"
   },
   "required": ["contract_version", "organization", "authorization"],
   "properties": {
@@ -51,6 +57,7 @@
       "properties": {
         "organization_role": { "enum": ["org_owner", "org_admin", "member", "auditor"] },
         "authorization_version": { "type": "integer", "minimum": 1 },
+        "membership_status": { "const": "active" },
         "scope": { "enum": ["identity", "organization", "dossier"] },
         "action": {
           "enum": [
@@ -70,10 +77,18 @@
             "legal_hold_release_approve", "dossier_audit_read"
           ]
         },
+        "dossier_id": { "$ref": "#/$defs/opaqueId" },
         "dossier_role": { "enum": ["owner", "contributor", "reviewer", "viewer"] },
+        "dossier_participation_status": { "const": "active" },
         "delegated_organization_authority": {
           "type": "object",
           "additionalProperties": false,
+          "x-verify-immutable-server-authority": {
+            "record_type": "organization-action-authority.v1",
+            "record_id_field": "grant_id",
+            "bound_fields": ["authority_version", "action", "status"],
+            "bind_to_server_context": ["organization_id", "authenticated_actor_id"]
+          },
           "required": ["authority_version", "grant_id", "action", "status"],
           "properties": {
             "authority_version": { "const": "organization-action-authority.v1" },
@@ -85,6 +100,16 @@
         "compliance_export_authority": {
           "type": "object",
           "additionalProperties": false,
+          "x-verify-immutable-server-authority": {
+            "grant_record_type": "compliance-export-authority.v1",
+            "grant_id_field": "grant_id",
+            "export_request_record_type": "tenant-export-request.v1",
+            "export_request_id_field": "export_request_id",
+            "manifest_digest_field": "export_manifest_sha256",
+            "approval_set_field": "dossier_owner_approvals",
+            "bind_to_server_context": ["organization_id", "authenticated_actor_id"],
+            "require_current_owner_approval_for_every_dossier": true
+          },
           "required": ["authority_version", "grant_id", "status", "export_request_id", "export_manifest_sha256", "dossier_owner_approvals"],
           "properties": {
             "authority_version": { "const": "compliance-export-authority.v1" },
@@ -157,7 +182,10 @@
               "anyOf": [
                 { "required": ["organization_role"] },
                 { "required": ["authorization_version"] },
+                { "required": ["membership_status"] },
+                { "required": ["dossier_id"] },
                 { "required": ["dossier_role"] },
+                { "required": ["dossier_participation_status"] },
                 { "required": ["delegated_organization_authority"] },
                 { "required": ["compliance_export_authority"] },
                 { "required": ["legal_hold_approval_authority"] }
@@ -168,7 +196,7 @@
         {
           "if": { "properties": { "scope": { "const": "organization" } }, "required": ["scope"] },
           "then": {
-            "required": ["organization_role", "authorization_version"],
+            "required": ["organization_role", "authorization_version", "membership_status"],
             "properties": {
               "action": {
                 "enum": [
@@ -180,13 +208,19 @@
                 ]
               }
             },
-            "not": { "required": ["dossier_role"] }
+            "not": {
+              "anyOf": [
+                { "required": ["dossier_id"] },
+                { "required": ["dossier_role"] },
+                { "required": ["dossier_participation_status"] }
+              ]
+            }
           }
         },
         {
           "if": { "properties": { "scope": { "const": "dossier" } }, "required": ["scope"] },
           "then": {
-            "required": ["organization_role", "authorization_version", "dossier_role"],
+            "required": ["organization_role", "authorization_version", "membership_status", "dossier_id", "dossier_role", "dossier_participation_status"],
             "properties": {
               "action": {
                 "enum": [

@@ -33,6 +33,11 @@ confidential-document mode, and all policy versions. Organisation and dossier
 actions require active organisation status; suspension, closure, or a stale
 state/policy version invalidates them immediately, regardless of a previously
 valid role or receipt.
+Membership state, role, authorization version, dossier target/role, and dossier
+participation are likewise server-resolved. Delegated administrator and
+compliance-export payloads are not authority: their grants, export request,
+manifest, actor/organisation binding, and full owner-approval set are verified
+against immutable current server records.
 
 ## ADR-003 — encryption and key management
 
