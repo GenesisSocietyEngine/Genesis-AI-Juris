@@ -35,8 +35,9 @@ type Locale = "en" | "ru";
 type View = "library" | "play" | "studio" | "community" | "help";
 type Theme = "office" | "after-hours";
 type StudioAIEntitlement = "loading" | "anonymous" | "profile_required" | "ready" | "not_configured" | "unavailable";
-const HelpFaq = lazy(() => import("./HelpFaq"));
 const StudioAIReview = lazy(() => import("./StudioAIReview"));
+const LazyHelpView = lazy(() => import("./HelpView"));
+const LazyInboxPanel = lazy(() => import("./InboxPanel"));
 type OutcomeClass = "strong" | "mixed" | "weak";
 type DecisionRecord = { stageId: string; stage: string; option: DecisionOption };
 type FeedbackTarget = { caseId: string; version: string; title: string; source: "playable" | "studio"; fingerprint?: string; customCaseId?: number | null; contextType?: "case" | "stage" | "decision" | "node"; contextId?: string; privateCase?: boolean };
@@ -1685,7 +1686,7 @@ export default function JurisApp() {
       />}
       {view === "studio" && <StudioView locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate} aiEntitlement={studioAIEntitlement} />}
       {view === "community" && <CommunityView locale={locale} cases={catalogueRecords} openCustomCase={openWorkspaceCustomCase} refreshCatalogue={() => refreshCatalogue({ force: true })} clearDeviceDraft={purgeLocalStudioState} />}
-      {view === "help" && <HelpView locale={locale} openCommunity={() => navigate("community")} openStudio={() => navigate("studio")} />}
+      {view === "help" && <Suspense fallback={null}><LazyHelpView locale={locale} openCommunity={() => navigate("community")} openStudio={() => navigate("studio")} /></Suspense>}
       {(selectedOption || resultOption) && activeScenario && stage && <DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} busy={playSessionBusy} close={() => { if (!playSessionBusy) { setSelectedOption(null); setResultOption(null); } }} dispatch={dispatchDecision} advance={advanceStage} finalStage={Boolean(activeScenario.stages.find((item) => item.id === (selectedOption ?? resultOption)?.nextStageId)?.terminal)} />}
       {sessionNotice && <div className="session-toast" role="status"><Icon name="check" />{sessionNotice}</div>}
       {feedbackTarget && <FeedbackDialog locale={locale} target={feedbackTarget} close={() => setFeedbackTarget(null)} submitted={(audience) => { const privateProductFeedback = feedbackTarget.privateCase && audience !== "owner_private"; setFeedbackTarget(null); showSessionNotice(audience === "owner_private" ? (locale === "en" ? "Private note saved for you only." : "Приватная заметка сохранена только для вас.") : privateProductFeedback ? (locale === "en" ? "Redacted product feedback sent to Maxim." : "Обезличенный отзыв о продукте отправлен Максиму.") : (locale === "en" ? "Feedback submitted for expert review." : "Отзыв отправлен на экспертную проверку.")); }} />}
@@ -2000,7 +2001,7 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, ledger, 
       </section>
       <button className="case-feedback-cta secondary-cta" onClick={() => requestFeedback("stage", stage.id)}><Icon name="file"/>{locale === "en" ? "Give feedback on this stage" : "Дать отзыв об этой стадии"}</button>
       {inboxOpen && (
-        <InboxPanel
+        <Suspense fallback={null}><LazyInboxPanel
           locale={locale}
           entries={inboxEntries}
           selectedIndex={selectedInboxIndex}
@@ -2011,7 +2012,7 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, ledger, 
             setInboxOpen(false);
             window.setTimeout(() => document.querySelector(".dossier-pane")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
           }}
-        />
+        /></Suspense>
       )}
     </section>
     <aside className="dossier-pane"><div className="pane-heading"><span>{text.dossier}</span><b>{visibleMaterials.length}</b></div><p className="pane-intro">{text.visibleMaterial} · {text.provenance}</p><div className="material-tabs">{visibleMaterials.map((material) => <button key={material.ref} className={material.ref === activeMaterial?.ref ? "active" : ""} onClick={() => setDossierRef(material.ref)}><code>{material.ref}</code><span>{material.title[locale]}</span></button>)}</div>{activeMaterial ? <article className="material-sheet"><div className="sheet-punch"/><div className="sheet-reg">{activeMaterial.ref}</div><span className="document-type">{activeMaterial.type[locale]}</span><h3>{activeMaterial.title[locale]}</h3><dl><div><dt>SOURCE</dt><dd>{activeMaterial.source[locale]}</dd></div><div><dt>DATE / TIME</dt><dd>{activeMaterial.date}</dd></div><div><dt>CASE</dt><dd>{scenario.caseId}</dd></div></dl><p>{locale === "en" ? "Visible case material. Source identity remains attached; opening this record does not recommend a decision." : "Видимый материал дела. Идентичность источника сохранена; открытие записи не рекомендует решение."}</p><div className="sheet-status"><Icon name="check"/> PROVENANCE ATTACHED</div></article> : <p className="pane-intro">{locale === "en" ? "No evidence is available at this stage." : "На этой стадии материалы ещё недоступны."}</p>}{decisionLog.length > 0 && <section className="mini-log"><h3>{text.actionLog}</h3>{decisionLog.map((entry,index) => <div key={`${entry.option.id}-${index}`}><span>{String(index+1).padStart(2,"0")}</span><p>{entry.option.label[locale]}</p></div>)}</section>}</aside></main>;
@@ -2125,48 +2126,6 @@ function DebriefView({ locale, text, scenario, metrics, ledger, decisionLog, out
         <button className="primary-cta" onClick={replayCase}><Icon name="reset"/>{locale === "en" ? "Replay this case" : "Пройти кейс заново"}</button>
       </div>
     </main>
-  );
-}
-
-function InboxPanel({ locale, entries, selectedIndex, selectEntry, close, openMaterial }: { locale: Locale; entries: InboxEntry[]; selectedIndex: number; selectEntry: (index: number) => void; close: () => void; openMaterial: (ref: string) => void }) {
-  const entry = entries[selectedIndex] ?? entries[0];
-  return (
-    <div className="inbox-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
-      <section className="inbox-panel" role="dialog" aria-modal="true" aria-labelledby="inbox-panel-title">
-        <header>
-          <div>
-            <span>OPERATIONAL INBOX</span>
-            <h2 id="inbox-panel-title">{locale === "en" ? "Attention required" : "Требуют внимания"}</h2>
-          </div>
-          <b>{entries.length.toString().padStart(2, "0")}</b>
-          <button onClick={close} aria-label={locale === "en" ? "Close inbox" : "Закрыть входящие"}><Icon name="close"/></button>
-        </header>
-        <div className="inbox-panel-body">
-          <nav aria-label={locale === "en" ? "Attention messages" : "Сообщения, требующие внимания"}>
-            {entries.map((item, index) => (
-              <button key={item.id} className={index === selectedIndex ? "active" : ""} onClick={() => selectEntry(index)}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <div><small>{item.status}</small><b>{item.title}</b><code>{item.source}</code></div>
-                <Icon name="arrow"/>
-              </button>
-            ))}
-          </nav>
-          <article className="inbox-message">
-            <div className="message-register"><span>{entry.status}</span><code>{entry.id}</code></div>
-            <h3>{entry.title}</h3>
-            <p>{entry.body}</p>
-            <dl>
-              <div><dt>SOURCE / TIME</dt><dd>{entry.source}</dd></div>
-              <div><dt>STATUS</dt><dd>{locale === "en" ? "Unread · visible record" : "Не прочитано · видимая запись"}</dd></div>
-            </dl>
-            <div className="message-actions">
-              <button className="secondary-cta" onClick={close}>{locale === "en" ? "Return to operation" : "Вернуться к операции"}</button>
-              {entry.materialRef && <button className="primary-cta" onClick={() => openMaterial(entry.materialRef!)}>{locale === "en" ? "Open linked material" : "Открыть связанный материал"}<Icon name="arrow"/></button>}
-            </div>
-          </article>
-        </div>
-      </section>
-    </div>
   );
 }
 
@@ -3360,79 +3319,6 @@ function AdminDesk({ locale, cases, customCases, reloadCustomCases, openCustomCa
 }
 
 function commaList(value: string) { return value.split(",").map((item) => item.trim()).filter(Boolean); }
-
-function HelpView({ locale, openCommunity, openStudio }: { locale: Locale; openCommunity: () => void; openStudio: () => void }) {
-  const steps = locale === "en" ? [
-    ["Choose a case", "Use search, practice filters, tags, difficulty and duration to select a relevant matter."],
-    ["Work the record", "Review the opening situation, inbox, evidence provenance, deadlines and available decisions."],
-    ["Inspect consequences", "Every confirmed action advances time and changes the legal, evidential and institutional position."],
-    ["Control access", "Keep a case on this device, save a restricted custom case to your workspace, mark it Private, or prepare a reviewed version for the General Library."],
-  ] : [
-    ["Выберите кейс", "Используйте поиск, фильтры практики, теги, сложность и длительность."],
-    ["Работайте с материалами", "Изучите ситуацию, Inbox, доказательства, сроки и доступные решения."],
-    ["Разберите последствия", "Каждое действие продвигает время и меняет правовую и институциональную позицию."],
-    ["Управляйте доступом", "Храните кейс на устройстве, сохраняйте ограниченный custom-кейс в workspace, включайте «Приватно» или готовьте проверенную версию для Общей библиотеки."],
-  ];
-  const editorTranscript = locale === "en" ? [
-    "Open Case Studio. Every prompt and visual change stays in one authoring record.",
-    "Add evidence, connect it to a decision, and rename an actor with the exact-command fallback.",
-    "Review the deterministic operation plan before applying graph changes.",
-    "Apply the plan as one transaction, inspect its exact diff, or undo it.",
-    "Add, rename and connect a node directly in the visual editor.",
-    "Relink an existing relationship, then check the graph and launch the player.",
-  ] : [
-    "Откройте Case Studio. Промпты и визуальные правки сохраняются в единой истории кейса.",
-    "Добавьте доказательство, связь и переименуйте участника через резервный режим точных команд.",
-    "До применения проверьте детерминированный план операций над графом.",
-    "Примените план одной транзакцией, изучите точный diff или отмените изменение.",
-    "Добавьте, переименуйте и соедините узел прямо в визуальном редакторе.",
-    "Перепривяжите существующую связь, проверьте граф и запустите плеер.",
-  ];
-  const playTranscript = locale === "en" ? [
-    "Confirm that Check & play reports the current graph as ready.",
-    "Launch your case in the same Operations player used by published scenarios.",
-    "Review the record, available evidence, deadline, and linked decision options.",
-    "Confirm a decision and observe its consequence, clock, metrics, and deadline state.",
-    "Finish the branch and inspect the complete debrief for your own case.",
-  ] : [
-    "Убедитесь, что раздел «Проверить и играть» отмечает текущий граф как готовый.",
-    "Запустите кейс в том же плеере Operations, что используется для опубликованных сценариев.",
-    "Изучите материалы, доказательства, срок и варианты связанного решения.",
-    "Подтвердите выбор и проследите его последствия, время, метрики и состояние срока.",
-    "Завершите ветвь и изучите полный разбор собственного кейса.",
-  ];
-  return <main className="help-view page-width">
-    <section className="help-hero"><span>QUICK HELP</span><h1>{locale === "en" ? "How GENESIS: JURIS works" : "Как работает GENESIS: JURIS"}</h1><p>{locale === "en" ? "A practical legal-simulation system: read the evolving matter, make consequential decisions, learn from the debrief and help practitioners improve the next version." : "Практическая система юридических симуляций: изучайте развивающееся дело, принимайте значимые решения, анализируйте результат и помогайте улучшать следующую версию."}</p></section>
-    <section className="help-steps">{steps.map(([title, body], index) => <article key={title}><span>{String(index + 1).padStart(2, "0")}</span><h2>{title}</h2><p>{body}</p></article>)}</section>
-    <section className="help-video-guides" aria-labelledby="help-video-guides-title">
-      <header><span>GUIDED DEMOS</span><h2 id="help-video-guides-title">{locale === "en" ? "Create, refine, then play" : "Создайте, доработайте и пройдите"}</h2><p>{locale === "en" ? "These captioned walkthroughs cover the stable visual editor, exact-command fallback and player. The current AI-first flow is explained in the open guide below." : "Ролики с субтитрами показывают стабильный визуальный редактор, резервный режим точных команд и плеер. Актуальный AI-first процесс описан в открытом руководстве ниже."}</p></header>
-      <div className="help-video-grid">
-        <article className="help-video-card">
-          <video controls preload="metadata" playsInline poster="/help/case-studio-iterative-editing-poster.jpg" aria-describedby="editor-video-description editor-video-transcript">
-            <source src="/help/case-studio-iterative-editing.mp4" type="video/mp4"/>
-            <track kind="captions" src="/help/case-studio-iterative-editing.en.vtt" srcLang="en" label="English" default={locale === "en"}/>
-            <track kind="captions" src="/help/case-studio-iterative-editing.ru.vtt" srcLang="ru" label="Русский" default={locale === "ru"}/>
-            {locale === "en" ? "Your browser does not support HTML video. Use the transcript below." : "Ваш браузер не поддерживает HTML-видео. Используйте расшифровку ниже."}
-          </video>
-          <div className="help-video-copy"><span>01 · 00:26</span><h3>{locale === "en" ? "Visual editing & exact-command fallback" : "Визуальные правки и точные команды"}</h3><p id="editor-video-description">{locale === "en" ? "This recording demonstrates the deterministic fallback and stable graph controls. In the current release, Understand with AI is the primary entry point and always requires review before apply." : "Запись показывает детерминированный резервный режим и стабильные элементы графа. В текущей версии основной вход — «Понять с ИИ» с обязательной проверкой до применения."}</p></div>
-          <details className="help-transcript" id="editor-video-transcript"><summary>{locale === "en" ? "Read transcript" : "Открыть расшифровку"}</summary><ol>{editorTranscript.map((item) => <li key={item}>{item}</li>)}</ol></details>
-        </article>
-        <article className="help-video-card">
-          <video controls preload="metadata" playsInline poster="/help/play-your-studio-case-poster.jpg" aria-describedby="play-video-description play-video-transcript">
-            <source src="/help/play-your-studio-case.mp4" type="video/mp4"/>
-            <track kind="captions" src="/help/play-your-studio-case.en.vtt" srcLang="en" label="English" default={locale === "en"}/>
-            <track kind="captions" src="/help/play-your-studio-case.ru.vtt" srcLang="ru" label="Русский" default={locale === "ru"}/>
-            {locale === "en" ? "Your browser does not support HTML video. Use the transcript below." : "Ваш браузер не поддерживает HTML-видео. Используйте расшифровку ниже."}
-          </video>
-          <div className="help-video-copy"><span>02 · 00:17</span><h3>{locale === "en" ? "Play your own Studio case" : "Прохождение своего кейса"}</h3><p id="play-video-description">{locale === "en" ? "Compile the current graph into the complete runtime, make a linked decision, observe its operational consequences, and finish with a full debrief." : "Скомпилируйте текущий граф в полный игровой сценарий, примите связанное решение, проследите операционные последствия и завершите кейс полным разбором."}</p></div>
-          <details className="help-transcript" id="play-video-transcript"><summary>{locale === "en" ? "Read transcript" : "Открыть расшифровку"}</summary><ol>{playTranscript.map((item) => <li key={item}>{item}</li>)}</ol></details>
-        </article>
-      </div>
-    </section>
-    <Suspense fallback={<section className="help-faq"><h2>{locale === "en" ? "Loading help…" : "Загрузка помощи…"}</h2></section>}><HelpFaq locale={locale}/></Suspense>
-    <div className="help-actions"><button className="secondary-cta" onClick={openCommunity}>{locale === "en" ? "Register or update profile" : "Регистрация и профиль"}</button><button className="primary-cta" onClick={openStudio}>{locale === "en" ? "Open Case Studio" : "Открыть Case Studio"}<Icon name="arrow"/></button></div>
-  </main>;
-}
 
 function FeedbackDialog({ locale, target, close, submitted }: { locale: Locale; target: FeedbackTarget; close: () => void; submitted: (audience?: string) => void }) {
   const router = useRouter();

@@ -117,10 +117,88 @@ decision_dossier_v62_slice5_gate: frozen_migrations_0012_0015_adversarial_audit_
 decision_dossier_v62_web_gate: strict_type_lint_build_audit_pdf_and_493_of_493_green
 decision_dossier_v62_browser_gate: local_http_green_visual_controller_service_unavailable
 decision_dossier_v62_remote_state: no_production_site_version_or_deployment
-last_updated: 2026-09-01
+phase_b_tenant_foundation_status: reconstructed_reference_implementation_hosted_p1s_fixed_local_gates_green_architecture_blocked_exact_fix_head_rereview_pending
+phase_b_pr: 43
+phase_b_development_base: c088200138332cd212b87e266746ea85b53a2f77
+phase_b_instruction_predecessor: 6feb611b70a79f41bc87e25a6d469490cf8ba71c
+phase_b_recovery_parent: fef5a27fd86d4978c522adb0e5f1526d00c9da66
+phase_b_implementation_head: 0efcefd5cbf313cdf55509f24b30de7759fdacab
+phase_b_implementation_tree: 8a26c1383e694e08a5411c87742cb094d7f16098
+phase_b_evidence_checkpoint: 88416e0791942d75a92f92ac04d1accbb9f26a27
+phase_b_evidence_tree: 581cf28eb5bcc04806b0d070d620021b5f32512a
+phase_b_hosted_review_basis: 88416e0791942d75a92f92ac04d1accbb9f26a27
+phase_b_review_fix_head: 9cb539af63a034d3a614535aa6f362455ce06fce
+phase_b_review_fix_tree: f50439d0cc1f4906261daf881483669c91f842b2
+phase_b_code_review_threads: PRRT_kwDOTiwDjc6emg8r_PRRT_kwDOTiwDjc6emg8y_fixed_locally_pending_exact_head_rereview
+phase_b_security_review: 88416e0_clean_pending_exact_fix_head_rereview
+phase_b_exact_fix_head_checks: pending_publication
+phase_b_dependency_audit: production_zero_full_tree_15_dev_optional_findings
+phase_b_recovery_route: reconstructed_from_frozen_contracts_and_verifiable_receipts
+phase_b_production_identity: site69_saved_source_and_live_v62_correlated_exact_deployment_link_unverified
+phase_b_confidential_uploads: disabled_synthetic_or_deidentified_only
+phase_b_last_verified_utc: 2026-09-02T17:40:58Z
+last_updated: 2026-09-02
 ---
 
 # Current Progress
+
+## V64 Phase B tenant-foundation reconstructed checkpoint - 2026-09-02
+
+PR #43 remains a draft isolated branch based on exact Phase A merge
+`c088200138332cd212b87e266746ea85b53a2f77`. The missing reported implementation
+objects were not recoverable, so the work has been truthfully reconstructed as
+six implementation commits after recovery parent
+`fef5a27fd86d4978c522adb0e5f1526d00c9da66`, followed by evidence checkpoint
+`88416e0791942d75a92f92ac04d1accbb9f26a27` and hosted-review correction
+checkpoint `9cb539af63a034d3a614535aa6f362455ce06fce`, tree
+`f50439d0cc1f4906261daf881483669c91f842b2`. The original implementation
+checkpoint is `0efcefd5cbf313cdf55509f24b30de7759fdacab`, tree
+`8a26c1383e694e08a5411c87742cb094d7f16098`. Exact provenance, migration
+fingerprints, B0-B9 status, gates, and blockers are recorded in
+`docs/architecture/v64/PHASE-B-EVIDENCE.md`.
+
+Meaningful branch-safe work now exists for the organization control plane,
+deny-by-default policy, lifecycle and digest-only invitations, compliance
+authority/approvals, production-shaped local OIDC/PKCE boundary, tenant resource
+manifests, local envelope encryption and key rotation, append-only receipts,
+and Flutter organization-context invalidation. Export requests are now bound to
+the authenticated compliance actor and an exact dense owner-approval dossier
+set; in-memory receipt append, listing, verification, sequencing, timestamps,
+and concurrency are organization-partitioned with shared strict semantics.
+Focused Phase B web/migration tests pass 37/37 against both read-only source
+candidates; the complete web suite and verified build pass 140/140; lint,
+strict TypeScript, and the production-only dependency audit are green. A
+supplemental full dependency-tree audit reports 15 findings confined to the
+dev/optional tree (11 high, 4 moderate); the frozen lockfile was not changed.
+Flutter analysis is clean, all 290 tests pass, the Android debug APK builds with
+exactly three allowed FFI exports in each ABI, and all 359 locked Rust tests plus
+fmt, Clippy, and MSRV checks pass. Hosted review of `88416e0` reported a clean
+security review and two code-review P1s; both are corrected at `9cb539a` with
+discriminating regressions. The subsequent narrow local audit reports no
+remaining P0/P1; exact correction/final-head hosted checks and rereviews remain
+pending publication.
+
+Phase B is not complete. B2 tenant binding cannot be implemented safely because
+the exact base lacks the authoritative v62 dossier/document graph. Migration
+`0016` is intentionally unregistered until the real `0011`-`0015` chain is
+available, and the frozen lifecycle/`closing` conflict needs an approved
+contract decision. The reference B3-B7 code is not wired to production routes
+or durable trusted providers. Web/Flutter organization UI and policy parity,
+complete isolation/accessibility/security gates, hosted exact-head checks and
+reviews, iOS evidence, and a separately reviewed dev-toolchain dependency
+remediation remain outstanding.
+
+Read-only hosting evidence now correlates the active project, latest saved Site
+version 69, saved source SHA
+`6019e47346a2bf719a09dc1d874a2fc807f99598`, and a live HTTPS 200 `v62` marker.
+The available API does not prove the exact live-deployment-to-saved-version
+link, so this remains `unverified_external_dependency`. No production resource,
+secret, Site version, deployment, app-store state, or frozen release gate was
+changed. No Phase C work began.
+
+> Confidential document mode is not active. Do not upload privileged,
+> client-identifying, or live production documents. Use only synthetic or
+> properly de-identified material.
 
 ## Decision-Centric Dossier Workspace v62 release-candidate checkpoint - 2026-09-01
 

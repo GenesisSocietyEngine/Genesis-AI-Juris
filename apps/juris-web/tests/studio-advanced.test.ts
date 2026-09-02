@@ -226,14 +226,14 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
 });
 
 test("Help ships two local accessible walkthroughs with bilingual monotonic captions", () => {
-  const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
-  assert.equal((appSource.match(/<video controls preload="metadata" playsInline/g) ?? []).length, 2);
-  assert.equal((appSource.match(/kind="captions"/g) ?? []).length, 4);
-  assert.doesNotMatch(appSource, /<video[^>]+autoPlay/);
-  assert.match(appSource, /aria-describedby="editor-video-description editor-video-transcript"/);
-  assert.match(appSource, /aria-describedby="play-video-description play-video-transcript"/);
-  assert.match(appSource, /Your browser does not support HTML video/);
-  assert.match(appSource, /Ваш браузер не поддерживает HTML-видео/);
+  const helpSource = readFileSync(new URL("../app/HelpView.tsx", import.meta.url), "utf8");
+  assert.equal((helpSource.match(/<video controls preload="metadata" playsInline/g) ?? []).length, 2);
+  assert.equal((helpSource.match(/kind="captions"/g) ?? []).length, 4);
+  assert.doesNotMatch(helpSource, /<video[^>]+autoPlay/);
+  assert.match(helpSource, /aria-describedby="editor-video-description editor-video-transcript"/);
+  assert.match(helpSource, /aria-describedby="play-video-description play-video-transcript"/);
+  assert.match(helpSource, /Your browser does not support HTML video/);
+  assert.match(helpSource, /Ваш браузер не поддерживает HTML-видео/);
 
   const assets = [
     "case-studio-iterative-editing.mp4",
