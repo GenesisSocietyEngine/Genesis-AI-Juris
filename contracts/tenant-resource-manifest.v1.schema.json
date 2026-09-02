@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://genesis.invalid/contracts/tenant-resource-manifest.v1.schema.json",
+  "title": "GENESIS JURIS tenant resource manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["manifest_version", "organization_id", "environment", "hostname", "d1", "r2", "jurisdiction", "encryption_key_aliases", "processing_components", "schema_version", "deployment_sha", "activation", "verification"],
+  "properties": {
+    "manifest_version": { "const": "tenant-resource-manifest.v1" },
+    "organization_id": { "$ref": "#/$defs/id" },
+    "environment": { "enum": ["development", "validation", "production"] },
+    "hostname": { "type": "string", "format": "hostname" },
+    "d1": { "$ref": "#/$defs/resource" },
+    "r2": {
+      "type": "object", "additionalProperties": false,
+      "required": ["quarantine", "clean", "extracted_text", "exports", "backups"],
+      "properties": {
+        "quarantine": { "$ref": "#/$defs/quarantineResource" },
+        "clean": { "$ref": "#/$defs/cleanResource" },
+        "extracted_text": { "$ref": "#/$defs/extractedTextResource" },
+        "exports": { "$ref": "#/$defs/exportResource" },
+        "backups": { "$ref": "#/$defs/backupResource" }
+      }
+    },
+    "jurisdiction": { "const": "eu" },
+    "encryption_key_aliases": {
+      "type": "object", "additionalProperties": false,
+      "required": ["live_data", "exports", "backups", "restore"],
+      "properties": {
+        "live_data": { "$ref": "#/$defs/liveKeyAlias" },
+        "exports": { "$ref": "#/$defs/exportKeyAlias" },
+        "backups": { "$ref": "#/$defs/backupKeyAlias" },
+        "restore": { "$ref": "#/$defs/restoreKeyAlias" }
+      }
+    },
+    "processing_components": {
+      "type": "object", "additionalProperties": false,
+      "required": ["workers", "queues", "cron", "malware_scanning", "extraction", "ocr", "kms", "logging", "analytics", "backup_restore", "support", "ai"],
+      "properties": {
+        "workers": { "$ref": "#/$defs/componentEvidence" },
+        "queues": { "$ref": "#/$defs/componentEvidence" },
+        "cron": { "$ref": "#/$defs/componentEvidence" },
+        "malware_scanning": { "$ref": "#/$defs/componentEvidence" },
+        "extraction": { "$ref": "#/$defs/componentEvidence" },
+        "ocr": { "$ref": "#/$defs/componentEvidence" },
+        "kms": { "$ref": "#/$defs/componentEvidence" },
+        "logging": { "$ref": "#/$defs/componentEvidence" },
+        "analytics": { "$ref": "#/$defs/componentEvidence" },
+        "backup_restore": { "$ref": "#/$defs/componentEvidence" },
+        "support": { "$ref": "#/$defs/componentEvidence" },
+        "ai": { "$ref": "#/$defs/componentEvidence" }
+      }
+    },
+    "schema_version": { "type": "string", "pattern": "^v[0-9]+$" },
+    "deployment_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "activation": { "enum": ["disabled", "validation", "approved", "suspended"] },
+    "activation_validation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["validator_version", "evaluated_at", "valid_until", "covered_receipts", "receipt_set_sha256", "validation_receipt_sha256", "status"],
+      "properties": {
+        "validator_version": { "const": "tenant-activation-validator.v1" },
+        "evaluated_at": { "type": "string", "format": "date-time" },
+        "valid_until": { "type": "string", "format": "date-time", "x-require-future-at-validation": true },
+        "covered_receipts": {
+          "type": "object", "additionalProperties": false,
+          "required": ["manifest_verification", "workers", "queues", "cron", "malware_scanning", "extraction", "ocr", "kms", "logging", "analytics", "backup_restore", "support", "ai"],
+          "properties": {
+            "manifest_verification": { "$ref": "#/$defs/sha256" },
+            "workers": { "$ref": "#/$defs/sha256" },
+            "queues": { "$ref": "#/$defs/sha256" },
+            "cron": { "$ref": "#/$defs/sha256" },
+            "malware_scanning": { "$ref": "#/$defs/sha256" },
+            "extraction": { "$ref": "#/$defs/sha256" },
+            "ocr": { "$ref": "#/$defs/sha256" },
+            "kms": { "$ref": "#/$defs/sha256" },
+            "logging": { "$ref": "#/$defs/sha256" },
+            "analytics": { "$ref": "#/$defs/sha256" },
+            "backup_restore": { "$ref": "#/$defs/sha256" },
+            "support": { "$ref": "#/$defs/sha256" },
+            "ai": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "receipt_set_sha256": { "$ref": "#/$defs/sha256" },
+        "validation_receipt_sha256": { "$ref": "#/$defs/sha256" },
+        "status": { "const": "current" }
+      }
+    },
+    "verification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["receipt_sha256", "verified_at", "expires_at"],
+      "properties": {
+        "receipt_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "verified_at": { "type": "string", "format": "date-time" },
+        "expires_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "activation": { "const": "approved" } }, "required": ["activation"] },
+      "then": {
+        "required": ["activation_validation"],
+        "properties": { "environment": { "const": "production" } }
+      },
+      "else": { "not": { "required": ["activation_validation"] } }
+    }
+  ],
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{20,128}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "liveKeyAlias": { "type": "string", "pattern": "^live/[A-Za-z0-9/_-]{3,155}$" },
+    "exportKeyAlias": { "type": "string", "pattern": "^export/[A-Za-z0-9/_-]{3,153}$" },
+    "backupKeyAlias": { "type": "string", "pattern": "^backup/[A-Za-z0-9/_-]{3,153}$" },
+    "restoreKeyAlias": { "type": "string", "pattern": "^restore/[A-Za-z0-9/_-]{3,152}$" },
+    "resource": { "type": "object", "additionalProperties": false, "required": ["id", "jurisdiction"], "properties": { "id": { "$ref": "#/$defs/id" }, "jurisdiction": { "const": "eu" } } },
+    "quarantineResource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "jurisdiction", "namespace", "access_binding_alias"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "jurisdiction": { "const": "eu" },
+        "namespace": { "const": "quarantine" },
+        "access_binding_alias": { "type": "string", "pattern": "^quarantine/[A-Za-z0-9/_-]{3,145}$" }
+      }
+    },
+    "cleanResource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "jurisdiction", "namespace", "access_binding_alias"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "jurisdiction": { "const": "eu" },
+        "namespace": { "const": "clean" },
+        "access_binding_alias": { "type": "string", "pattern": "^clean/[A-Za-z0-9/_-]{3,150}$" }
+      }
+    },
+    "extractedTextResource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "jurisdiction", "namespace", "access_binding_alias"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "jurisdiction": { "const": "eu" },
+        "namespace": { "const": "extracted_text" },
+        "access_binding_alias": { "type": "string", "pattern": "^extracted-text/[A-Za-z0-9/_-]{3,141}$" }
+      }
+    },
+    "exportResource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "jurisdiction", "namespace", "access_binding_alias"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "jurisdiction": { "const": "eu" },
+        "namespace": { "const": "exports" },
+        "access_binding_alias": { "type": "string", "pattern": "^exports/[A-Za-z0-9/_-]{3,148}$" }
+      }
+    },
+    "backupResource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "jurisdiction", "namespace", "access_binding_alias"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "jurisdiction": { "const": "eu" },
+        "namespace": { "const": "backups" },
+        "access_binding_alias": { "type": "string", "pattern": "^backups/[A-Za-z0-9/_-]{3,148}$" }
+      }
+    },
+    "componentEvidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["binding_id", "jurisdiction", "receipt_sha256", "verified_at", "expires_at"],
+      "properties": {
+        "binding_id": { "$ref": "#/$defs/id" },
+        "jurisdiction": { "const": "eu" },
+        "receipt_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "verified_at": { "type": "string", "format": "date-time" },
+        "expires_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

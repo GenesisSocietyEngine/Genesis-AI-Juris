@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ios-native-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   simulator-smoke:
     runs-on: macos-15-intel
@@ -131,12 +135,45 @@ jobs:
 
       - name: Run native Logistics lifecycle on iOS Simulator
         timeout-minutes: 15
+        shell: bash
         run: |
-          xcodebuild test \
-            -workspace ios/Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Debug \
-            -destination \
-              "platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}" \
-            -only-testing:RunnerTests/RunnerTests/testNativeLogisticsLifecycle \
-            CODE_SIGNING_ALLOWED=NO
+          set -euo pipefail
+
+          simulator_id="${{ steps.simulator.outputs.id }}"
+
+          run_lifecycle() {
+            local log_path="$1"
+            set +e
+            xcodebuild test \
+              -workspace ios/Runner.xcworkspace \
+              -scheme Runner \
+              -configuration Debug \
+              -destination "platform=iOS Simulator,id=$simulator_id" \
+              -only-testing:RunnerTests/RunnerTests/testNativeLogisticsLifecycle \
+              CODE_SIGNING_ALLOWED=NO \
+              2>&1 | tee "$log_path"
+            local xcode_status="${PIPESTATUS[0]}"
+            set -e
+            return "$xcode_status"
+          }
+
+          first_log="$RUNNER_TEMP/ios-native-lifecycle-attempt-1.log"
+          if run_lifecycle "$first_log"; then
+            exit 0
+          fi
+
+          if ! grep -Fq \
+            "Early unexpected exit, operation never finished bootstrapping" \
+            "$first_log"; then
+            echo "iOS lifecycle failed outside the allowed simulator-bootstrap retry class" >&2
+            exit 1
+          fi
+
+          echo "Retrying once after a verified pre-test simulator bootstrap failure"
+          xcrun simctl shutdown "$simulator_id" || true
+          xcrun simctl erase "$simulator_id"
+          xcrun simctl boot "$simulator_id"
+          xcrun simctl bootstatus "$simulator_id" -b
+
+          second_log="$RUNNER_TEMP/ios-native-lifecycle-attempt-2.log"
+          run_lifecycle "$second_log"
