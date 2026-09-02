@@ -15,9 +15,11 @@
       "type": "object", "additionalProperties": false,
       "required": ["quarantine", "clean", "extracted_text", "exports", "backups"],
       "properties": {
-        "quarantine": { "$ref": "#/$defs/resource" }, "clean": { "$ref": "#/$defs/resource" },
-        "extracted_text": { "$ref": "#/$defs/resource" }, "exports": { "$ref": "#/$defs/resource" },
-        "backups": { "$ref": "#/$defs/resource" }
+        "quarantine": { "$ref": "#/$defs/quarantineResource" },
+        "clean": { "$ref": "#/$defs/cleanResource" },
+        "extracted_text": { "$ref": "#/$defs/extractedTextResource" },
+        "exports": { "$ref": "#/$defs/exportResource" },
+        "backups": { "$ref": "#/$defs/backupResource" }
       }
     },
     "jurisdiction": { "const": "eu" },
@@ -69,6 +71,51 @@
     "backupKeyAlias": { "type": "string", "pattern": "^backup/[A-Za-z0-9/_-]{3,153}$" },
     "restoreKeyAlias": { "type": "string", "pattern": "^restore/[A-Za-z0-9/_-]{3,152}$" },
     "resource": { "type": "object", "additionalProperties": false, "required": ["id", "jurisdiction"], "properties": { "id": { "$ref": "#/$defs/id" }, "jurisdiction": { "const": "eu" } } },
+    "quarantineResource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "jurisdiction", "namespace", "access_binding_alias"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "jurisdiction": { "const": "eu" },
+        "namespace": { "const": "quarantine" },
+        "access_binding_alias": { "type": "string", "pattern": "^quarantine/[A-Za-z0-9/_-]{3,145}$" }
+      }
+    },
+    "cleanResource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "jurisdiction", "namespace", "access_binding_alias"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "jurisdiction": { "const": "eu" },
+        "namespace": { "const": "clean" },
+        "access_binding_alias": { "type": "string", "pattern": "^clean/[A-Za-z0-9/_-]{3,150}$" }
+      }
+    },
+    "extractedTextResource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "jurisdiction", "namespace", "access_binding_alias"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "jurisdiction": { "const": "eu" },
+        "namespace": { "const": "extracted_text" },
+        "access_binding_alias": { "type": "string", "pattern": "^extracted-text/[A-Za-z0-9/_-]{3,141}$" }
+      }
+    },
+    "exportResource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "jurisdiction", "namespace", "access_binding_alias"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "jurisdiction": { "const": "eu" },
+        "namespace": { "const": "exports" },
+        "access_binding_alias": { "type": "string", "pattern": "^exports/[A-Za-z0-9/_-]{3,148}$" }
+      }
+    },
+    "backupResource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "jurisdiction", "namespace", "access_binding_alias"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "jurisdiction": { "const": "eu" },
+        "namespace": { "const": "backups" },
+        "access_binding_alias": { "type": "string", "pattern": "^backups/[A-Za-z0-9/_-]{3,148}$" }
+      }
+    },
     "componentEvidence": {
       "type": "object", "additionalProperties": false,
       "required": ["binding_id", "jurisdiction", "receipt_sha256", "verified_at", "expires_at"],

@@ -20,8 +20,19 @@
         "data_region": { "const": "eu" },
         "confidential_document_mode": { "enum": ["disabled", "validation", "approved"] },
         "policy_versions": {
-          "type": "object", "minProperties": 1,
-          "additionalProperties": { "$ref": "#/$defs/version" }
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["retention", "deletion", "export", "legal_hold", "offline_mobile", "ai_disclosure", "session", "data_classification"],
+          "properties": {
+            "retention": { "$ref": "#/$defs/version" },
+            "deletion": { "$ref": "#/$defs/version" },
+            "export": { "$ref": "#/$defs/version" },
+            "legal_hold": { "$ref": "#/$defs/version" },
+            "offline_mobile": { "$ref": "#/$defs/version" },
+            "ai_disclosure": { "$ref": "#/$defs/version" },
+            "session": { "$ref": "#/$defs/version" },
+            "data_classification": { "$ref": "#/$defs/version" }
+          }
         },
         "suspension_reason": { "type": ["string", "null"], "maxLength": 500 }
       }

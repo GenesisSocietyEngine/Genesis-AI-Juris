@@ -21,12 +21,19 @@ versioned. A tenant export request requires an independently versioned
 compliance-export grant whose dossier-keyed approval map is the exact export
 set and binds every dossier to its owner, receipt, and content manifest.
 
+The organisation policy set is closed and complete: retention, deletion,
+export, legal hold, offline/mobile, AI disclosure, session, and data
+classification versions are all mandatory. Unknown policy names are rejected.
+
 An approved tenant resource manifest also binds four purpose-prefixed key
 aliases and current EU-jurisdiction evidence for workers, queues, cron, malware
 scanning, extraction, OCR, KMS, logging, analytics, backup/restore, support,
 and AI.
 Missing component evidence or an unknown field invalidates the manifest; it
 cannot be inferred from the region of a storage resource.
+Quarantine, clean, extracted-text, export, and backup storage entries also bind
+distinct purpose namespaces and purpose-specific access aliases; a shared
+unqualified storage binding cannot satisfy the frozen manifest.
 
 Phase B must not begin until reviewers accept this freeze and the threat model.
 No confidential activation is implied by accepting either document.
