@@ -1,507 +1,579 @@
-# Codex implementation instructions — v64 Phase B Tenant Foundation
+# Codex instructions — complete v64 Phase B and release one public Site version
 
-## Role and required outcome
+## Mission
 
-Act as Senior Solution Architect, Security Engineer, Product Owner, and implementation owner for GENESIS: JURIS.
+Act as the Senior Solution Architect, Security Engineer, Product Owner, and release owner for GENESIS: JURIS.
 
-Implement **v64 Phase B — Protected Tenant Foundation** as the next isolated product slice. Build the organisation lifecycle, authorization foundation, tenant-bound persistence, Entra/OIDC boundary, immutable security receipts, and adversarial isolation tests needed before any confidential document pipeline can exist.
+Complete **v64 Phase B — Protected Tenant Foundation** from draft PR #43, reconcile the production/source baseline, wire the tenant foundation into real server routes and durable adapters, finish equivalent web and Flutter organisation experiences, close every mandatory review and release gate, merge the verified work, and publish exactly one new public Site version.
+
+The intended user-facing outcome is a production v64 release in which organisation context, invitations, roles, approvals, policy and security state are real and tenant-isolated. This release must **not** activate confidential document ingestion. Phase C remains out of scope.
 
 The product objective remains:
 
 > Turn an unstructured professional matter into a versioned, explainable, testable, and reusable decision package.
 
-This is not authorization to deploy, activate confidential uploads, provision production confidential resources, distribute a mobile build, merge to `main`, or claim confidential-client readiness.
+## 1. Exact current state to verify before editing
 
-## 1. Authoritative baseline and scope receipt
+Treat every value below as an observation to verify, not as permission to manufacture agreement.
 
-Start from a clean branch/worktree at exact `main` commit:
+| Item | Expected observation |
+|---|---|
+| Repository | `GenesisSocietyEngine/Genesis-AI-Juris` |
+| Phase B PR | `#43`, branch `codex/v64-phase-b-tenant-foundation`, still draft |
+| Current remote PR head | `ff9c6f4250fd999249e9a893892c2115a0103734` |
+| Current remote PR tree | `8d7bf7201190e57724b3f8486707d1b5e8143573` |
+| Phase A / current PR base | `c088200138332cd212b87e266746ea85b53a2f77` |
+| Instruction-only predecessor | `6feb611b70a79f41bc87e25a6d469490cf8ba71c` |
+| Production Site project | `appgprj_6a88a26d2f808191aa076b9fcd8dbce6` |
+| Current saved version | Site 69, opaque version ID `appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_7a9411bf30348191bb0cb483d4807ffa` |
+| Saved version source | `6019e47346a2bf719a09dc1d874a2fc807f99598` |
+| Saved archive | SHA-256 `3dcfe92950c2e5e0f99d7f638f0f66633397c5c25e62ac9e065cc8e27255d555`; 320 files; 25,825,280 bytes |
+| Live URL | `https://studio.falcon-merlin.com` |
+| Custom domain | active; SSL active |
+| Latest runtime observation | Worker script version `0b8eda40-a900-4523-bfb3-992f9f74e7d1`; structured event reports `deploymentVersion=69` and `webCommit=6019e47346a2bf719a09dc1d874a2fc807f99598` |
+| Current exact-head hosted CI | Rust, Flutter and Android green; iOS was still running when this amendment was prepared |
+| Current local/source gate | 144 tests passed, 0 failed, 1 deliberate blocked migration-fixture test; strict TypeScript, lint, build, chunk guard and full dependency audit passed |
 
-- Phase A merge: `c088200138332cd212b87e266746ea85b53a2f77`
-- approved Phase A head: `7d1ca3bb0febf869c521e1ace53ea8c7be1aab06`
-- PR: `#41`
-- expected production rollback baseline from the latest cumulative handoff: Site 69 / v62 at web commit `6019e47346a2bf719a09dc1d874a2fc807f99598`
-- conflicting older repository evidence: Site 63 / marker v61; treat this as an unresolved production-identity discrepancy, not as permission to select either record silently
-- information-architecture source identity: `2881e81f08b3459805a293450edd4840f06d6c97`
-- confidential document mode: `disabled` or validation-only; synthetic/de-identified material only
+Before any edit:
 
-Before editing:
+1. Fetch PR #43 and verify its remote head and tree. Do not start from an inaccessible task-local commit.
+2. Verify that the current head is a clean descendant of the Phase A base and that its scope is still Phase B.
+3. Read in full:
+   - this file;
+   - `docs/development/CURRENT_PROGRESS.md`;
+   - every file under `docs/architecture/v64/`;
+   - all three frozen v64 schemas under `contracts/`;
+   - `apps/juris-web/db/schema.ts`, the complete Drizzle chain and journal;
+   - the tenant foundation, authorization, tests and Flutter organisation-context implementation;
+   - all release workflows and `.openai/hosting.json`.
+4. Record the exact starting head/tree, worktree status, remotes, toolchain versions and current Sites observations in a new append-only Phase B completion receipt.
+5. If PR #43 has advanced, accept the newer head only after proving it is a clean descendant with no Phase C, production-secret, release-gate or unrelated scope change. Otherwise stop and report the divergence.
 
-1. Verify `git rev-parse HEAD` equals the Phase A merge SHA.
-2. Verify the worktree is clean and record all configured remotes.
-3. Read `CodexToInstructions.md`, the three v64 JSON Schemas, and every document under `docs/architecture/v64/` in full.
-4. Inspect the existing D1 migrations, Worker/API routes, session/auth implementation, dossier roles, revision-CAS, audit receipts, Rust bridge, Flutter persistence, and all release workflows.
-5. Produce a short discovery receipt mapping existing components to the frozen Phase A contracts. Do not invent parallel models when a compatible invariant already exists.
-6. Attempt to confirm the actual production marker and deployment identity read-only through an authorized Sites/hosting receipt. If that channel is unavailable, record the discrepancy and continue only with isolated branch implementation and tests under the amendment below. Do not infer production identity from source history and do not modify production.
+Any change made after `ff9c6f4…` invalidates its CI receipts. All mandatory gates must run again on the final exact head.
 
-Phase A schemas and decisions are frozen. Changes require a new ADR, explicit compatibility analysis, security review, and product-owner approval. Never weaken them merely to simplify implementation.
+## 2. Diagnosis and release strategy
 
-## 1A. Mandatory amendment — resolve the B0 production-identity stop safely
+The four reported symptoms have different root causes and must be fixed in dependency order.
 
-This amendment supersedes only the earlier instruction to stop all implementation when the production identity cannot be read. It does not weaken any merge, release, deployment, migration, or confidential-activation gate.
+| Symptom | Root cause | Required correction |
+|---|---|---|
+| `0016` cannot be registered | GitHub `main`/PR base stops at `0010`, while deployed v62 contains a later dossier/document model and migrations `0011–0015`; Site 69’s source SHA is not present in the GitHub repository | Recover and verify the exact Site 69 source/history, land the missing immutable baseline, then rebase Phase B and register a newly generated/reviewed additive `0016` |
+| Live deployment is not immutably tied to Site 69 / `6019e473…` | Saved-version metadata and runtime self-identification correlate, but the historical production deployment ID/status receipt is absent | Obtain a provider-owned deployment receipt that returns `succeeded`, the exact Site 69 version ID, URL and deployment ID; hash and preserve the combined receipt |
+| B3–B7 are reference-only | Domain services are exercised mainly by in-memory tests and are not composed into real Worker routes, D1 repositories, OIDC/session, KMS/manifest and receipt adapters | Add one production composition root, durable adapters and guarded routes; use server-resolved actor/tenant/time and atomic versioned writes |
+| B8 is incomplete | Organisation state is not a first-class web/Flutter product surface, and caches/localisation/accessibility are not tied to tenant authority | Implement equivalent web and Flutter flows, shared policy-manifest semantics, tenant-keyed caches, full invalidation and EN/RU/WCAG evidence |
 
-### Current verified task state
+Do not try to solve these by renumbering migrations, copying an unverified candidate, trusting a visible version label, adding client-only UI, or calling mocks “production adapters.”
 
-- PR `#43` instruction-only head: `6feb611b70a79f41bc87e25a6d469490cf8ba71c`.
-- Codex B0 checkpoint created locally: commit `f71848f527fe7bebb3f7339a32673b37b443e13a`, tree `f3c1736ab40cc311048e2e74c0af2493ae09f627`.
-- The B0 checkpoint contains only the discovery receipt and `CURRENT_PROGRESS.md` update; it is not yet present on PR `#43`.
-- Eight baseline push/PR checks across Rust, Flutter, and Android were reported green by the previous task; the two iOS simulator checks were still running at that task's stop point and had not failed.
-- Full Phase B migrations, authorization, isolation, parity, accessibility, exact-head review, and security gates have not yet run and must not be represented as green.
-- No Phase C or later work, deployment, production mutation, secret change, confidential-upload enablement, or app-store activity occurred. The warning and synthetic/de-identified restriction remain mandatory.
+The safe order is:
 
-### Source-of-truth hierarchy
+1. reconcile production and source provenance;
+2. recover the v62 baseline and migration chain;
+3. rebase Phase B onto that baseline and register the real additive migration;
+4. wire B3–B7 into production-shaped server paths;
+5. finish B8 on web and Flutter;
+6. close review findings and run all exact-head gates;
+7. obtain explicit exact-SHA merge and public deployment approvals;
+8. merge, rebuild from final `main`, save Site 70, deploy once, and verify production.
 
-Keep these identities separate:
+## 3. Non-negotiable guardrails
 
-1. **Development source baseline:** exact repository `main` commit `c088200138332cd212b87e266746ea85b53a2f77`. This is authoritative for Phase B branch construction.
-2. **Production deployment identity:** unresolved between Site 63/v61 and Site 69/v62 until an authorized read-only hosting receipt proves the live deployment, saved version, production marker, and exact source commit.
-3. **Rollback candidate:** no version may be called the rollback target until the production identity is reconciled and its deployment health receipt is current.
-
-Do not overwrite repository history to make the records agree. Create an immutable reconciliation receipt containing both claims, their sources/timestamps, the authoritative hosting evidence when obtained, the decision, actor, and receipt digest.
-
-### Development may continue under isolation
-
-The unresolved production identity is **not a blocker for B1–B9 implementation on the dedicated, non-production PR branch**, because this task is forbidden to deploy, migrate production, provision production resources, change secrets, or enable confidential mode.
-
-Continue only if all of the following remain true:
-
-- branch base is exactly `c088200138332cd212b87e266746ea85b53a2f77`;
-- no production credential or binding is used;
-- D1/R2/KMS/Entra interactions use deterministic local fakes or explicitly non-production isolated fixtures;
-- migrations are additive and are tested against both repository-represented candidate upgrade shapes: v61/Site 63 and v62/Site 69;
-- legacy fingerprints and `legacy_personal_pilot` behavior remain byte/semantically unchanged;
-- confidential upload stays disabled server-side and visibly warned on web/Flutter;
-- every external dependency without an authoritative receipt is labelled `unverified_external_dependency`.
-
-Production reconciliation remains a hard blocker before marking the PR ready, merging it, creating a Site version, deploying, provisioning a production tenant, changing production secrets, or enabling confidential material.
-
-### Recover B0 without duplication
-
-1. If local commit `f71848f527fe7bebb3f7339a32673b37b443e13a` is reachable and its parent/tree/content match the recorded receipt, cherry-pick or fast-forward its exact content onto the current PR branch.
-2. If it is not reachable, reproduce only the two B0 files from the task result, verify their semantic diff against the recorded summary, and create a new attributable commit. Do not fabricate the old SHA.
-3. Correct stale links in the B0 receipt so they point to the actual PR head containing the files, not the instruction-only head.
-4. Record which recovery route was used, exact parent/head/tree SHAs, and `git diff --check`.
-5. Then proceed to B1; do not repeat the completed discovery audit unless source changes invalidate it.
-
-### Tool and evidence dependencies
-
-- A missing GitHub remote credential in the Codex terminal must not trigger `gh pr create`, force-push, credential discovery, or scope expansion. The existing PR `#43` is the sole review vehicle; return committed work for the connected workflow to publish.
-- Missing local Flutter/Dart or Apple toolchains do not permit skipping their gates. Implement and run available tests locally, then require hosted exact-head Flutter/Android/iOS receipts before Phase B acceptance.
-- Hosted Codex code review and security review are mandatory on the final exact head.
-- Entra, D1/R2 EU isolation, KMS/key rotation, email delivery, compliance, DPA/subprocessor, penetration-test, and restore evidence may be mocked only for implementation tests. They remain external blockers for confidential beta and must be listed precisely.
-- Do not ask for production secrets in comments, commits, CI output, or chat.
-
-## 2. Non-negotiable boundaries
-
-- Preserve all existing v62/v63 case, document, evidence, Decision map, task, report, audit, import/export, revision-CAS, PDF, and 18-route semantics.
-- Preserve exact legacy fingerprints. Never silently reinterpret, migrate, tenant-assign, or re-key an existing user, matter, document, anchor, report, or receipt.
-- Existing data remains explicit `legacy_personal_pilot` and synthetic/de-identified only.
-- Rust remains authoritative for canonical case validation/runtime semantics.
-- Server authorization is authoritative for organisations, dossiers, documents, exports, policies, and security actions. Browser, Flutter, OIDC claims, and Rust are not independent authorization engines.
-- AI remains proposal-only. No AI access to quarantined, unscanned, unauthorized, stale, held, or unreviewed document content.
-- Packages and policy manifests are allowlisted, immutable, versioned data. No arbitrary executable package/formula code.
-- Deny by default for missing, unknown, stale, suspended, cross-tenant, malformed, or unsupported context.
-- Unknown and unauthorized tenant/dossier/object identifiers must have indistinguishable private responses.
-- Never log document text, filenames, client identity, raw prompts, credentials, tokens, private object locators, or storage keys.
-- Keep the existing web and Flutter warning visible and enforced server-side:
+- Keep Phase C upload/quarantine/malware/extraction/OCR/citation execution out of this iteration.
+- Keep confidential document mode server-side disabled. Do not create a route that accepts live confidential bytes.
+- Preserve this warning in English and Russian on web and Flutter:
 
   > Confidential document mode is not active. Do not upload privileged, client-identifying, or live production documents. Use only synthetic or properly de-identified material.
 
-- Do not create an app-store distribution.
-- Do not create a Site checkpoint or deployment.
-- Do not enable `confidential_document_mode = approved`.
-- Do not use real client documents, identities, tenants, credentials, malware, or production secrets in tests.
-
-## 3. Execution model and stop conditions
-
-Work in small reviewable commits in this order:
-
-1. B0 discovery and contract-to-code matrix.
-2. B1 additive organisation/control-plane migrations.
-3. B2 tenant-bound data-plane constraints and compatibility adapter.
-4. B3 deny-by-default policy decision point and authorization matrix.
-5. B4 organisation lifecycle, invitations, roles, and compliance-export authority.
-6. B5 Entra/OIDC provider boundary and session revocation.
-7. B6 tenant provisioning/verification abstractions, KMS envelope contract, and key rotation state machine.
-8. B7 immutable security/audit receipts and cross-tenant adversarial tests.
-9. B8 web/Flutter parity for organisation context and safe non-document flows.
-10. B9 exact-head verification and Phase B evidence pack.
-
-Do not begin Phase C document ingestion during this task. Phase C may start only after all Phase B gates are green, a clean Codex/security review is complete, and a human explicitly approves the next slice.
-
-If a required provider, secret, EU infrastructure receipt, compliance approval, platform capability, or native toolchain is unavailable, record it precisely. Continue branch-safe implementation with deterministic fakes where the amendment permits it, but stop before any gate or action that needs the missing evidence. Never represent a test double as production evidence and never weaken an acceptance gate.
-
-## 4. B1 — organisation and control-plane migrations
-
-Implement deterministic additive migrations for the frozen `organization-contract.v1` model:
-
-- `organizations`
-- `organization_identity_connections`
-- `organization_memberships`
-- `organization_invitations`
-- `organization_policy_versions`
-- `tenant_resource_manifests`
-- delegated grants and current-grant pointers where required by the frozen contract
-- compliance-export authority and approval records
-- immutable security/audit receipt envelopes
-
-Requirements:
-
-- opaque stable IDs; never derive authority from display names, slugs, or email domains;
-- explicit organisation lifecycle: `provisioning → active → suspended → closing → closed`, with only allowlisted transitions;
-- confidential capability lifecycle remains separately versioned and server-owned;
-- active organisation state is required for organisation- and dossier-scoped operations;
-- every mutable security record has a monotonic authorization/configuration version;
-- current delegated/compliance grants resolve through an immutable grant revision plus a server-owned current pointer;
-- invitations store token digests, not tokens, and encrypted delivery addresses only for a bounded period;
-- identity connection records store metadata, never client secrets or signing keys;
-- every migration is rerunnable or deterministically rejected, transaction-safe, and has fresh-schema plus upgrade tests;
-- schema downgrade/rollback instructions must preserve evidence and never silently discard tenant bindings.
-
-Generate and freeze:
-
-- fresh-schema manifest;
-- v62/v63-to-Phase-B migration receipt;
-- table/index/trigger/foreign-key counts;
-- `foreign_key_check` and integrity results;
-- deterministic schema fingerprint.
-
-## 5. B2 — tenant-isolated data plane
-
-Add `organization_id` and tenant-bound composite relationships to every confidential-capable aggregate, including dossiers, participants, documents, versions, upload intents, processing jobs, anchors, assertions, requests, Decision packages, snapshots, reports, audit events, exports, holds, and receipts.
-
-Rules:
-
-- All tenant-owned primary/unique identities include or are verified against exact `organization_id`.
-- All parent-child foreign keys include the tenant dimension.
-- Repository/query APIs require trusted server-resolved tenant context and must not accept an authoritative tenant ID from request JSON.
-- Object locators are random, private, tenant-bound, environment-bound, and never authorization credentials.
-- Cache keys, idempotency keys, queue messages, signed grants, search indexes, logs, and background jobs include verified tenant scope.
-- Organisation membership does not create dossier participation.
-- `org_owner` and `org_admin` have no ambient dossier-content access.
-- Dossier owner/contributor/reviewer/viewer permissions remain separate and least-privilege.
-- Platform administrators have no routine content access; do not implement break-glass content access in this slice.
-- Organisation switching invalidates cached dossier/document state and rotates the server session context.
-- Legacy personal matters remain untouched. Any later organisation transfer must be explicit export/import with new IDs and immutable transfer receipts.
-
-Add repository-level and database-level constraints. Application checks alone are insufficient.
-
-## 6. B3 — deny-by-default authorization
-
-Implement one server-side policy decision point with typed actions and resource scopes.
-
-### Request classes
-
-- **pre-membership identity:** OIDC callback, invitation inspection/acceptance; governed by exact state/token/identity rules;
-- **organisation scoped:** organisation profile, membership administration, policy inspection; requires active membership and allowed organisation role;
-- **dossier scoped:** case/document/evidence/task/report/audit actions; additionally requires active dossier participation and allowed case role;
-- **compliance export:** requires separately assigned current compliance-export authority plus exact owner approval for every included dossier;
-- **security operations:** suspension, key rotation, policy activation, restore, hold release; require explicit separation of duties.
-
-Never require dossier participation for legitimate pre-membership or organisation-level flows. Never allow organisation administration to bypass dossier authorization.
-
-For every decision, bind and verify:
-
-- authenticated actor/session;
-- server-resolved organisation;
-- organisation lifecycle and confidential-mode state;
-- current membership and authorization version;
-- exact action and resource scope;
-- current dossier participant and role when dossier-scoped;
-- current delegated/compliance grant revision where applicable;
-- resource revision/receipt freshness;
-- tenant resource-manifest identity and activation state where infrastructure is involved.
-
-Return a privacy-safe decision code and immutable receipt. Do not record sensitive request bodies.
-
-Create a machine-readable role/action matrix covering organisation roles, case roles, compliance authority, and lifecycle states. Generate exhaustive positive and negative tests from the matrix so documentation and enforcement cannot drift.
-
-## 7. B4 — organisation lifecycle, invitations, roles, compliance export
-
-Implement safe API/domain behavior for:
-
-- create/provision/activate/suspend/close organisation state transitions;
-- invite, inspect, accept, expire, revoke, and replay-reject invitations;
-- membership activate/suspend/remove;
-- dossier enrolment and role change by dossier owner;
-- separate assignment/revocation of compliance-export authority;
-- owner-approval collection for a future tenant-wide export;
-- organisation switching with complete cache/session isolation.
-
-Invitation requirements:
-
-- high-entropy, single-use, hashed-at-rest, short-lived, origin-bound tokens;
-- acceptance bound to the exact authenticated identity and intended invitation;
-- no authority before acceptance;
-- replay, expiry, revocation, email change, mixed tenant, swapped role, and concurrent acceptance fail closed;
-- authorization version increments and sessions/grants invalidate immediately on membership or role change;
-- audit receipts identify actor/action/result without exposing delivery address or token.
-
-Implement roles `owner | contributor | reviewer | viewer` inside dossiers and preserve separate organisation roles. Add a dedicated `compliance_export_authority`; do not overload `org_admin`, `reviewer`, or platform administration.
-
-No actual confidential export package is built in Phase B. Only freeze and test the authority/approval state needed by the later governance slice.
-
-## 8. B5 — Microsoft Entra/OIDC foundation
-
-Implement the production-shaped boundary with fake/local identity-provider fixtures. Do not register or change a production Entra application without separate approval.
-
-Use Authorization Code Flow with PKCE and system-browser return. Validate:
-
-- `state`, nonce, PKCE verifier/challenge, exact redirect URI;
-- HTTPS discovery and JWKS metadata;
-- signature, issuer, audience/client ID, verified tenant ID, nonce, `exp`, and `nbf`;
-- stable actor identity from `iss + tid + oid/sub`, never email alone;
-- exact enabled `organization_identity_connection` mapping;
-- key rotation, bounded clock skew, replay rejection, admin-consent status, and session rotation.
-
-Security rules:
-
-- no token in URL history, localStorage, logs, analytics, audit detail, screenshots, or crash reporting;
-- HttpOnly, Secure, SameSite server sessions with bounded duration;
-- session bound to organisation and authorization version;
-- suspension, removal, role/policy change, organisation switch, or identity-connection disablement revokes access immediately;
-- preserve the originating Studio tab and pending save across browser auth return; do not open a duplicate working session;
-- safe stale-JS-chunk recovery must not lose pending state or weaken auth;
-- request no Microsoft Graph permission unless separately justified and approved.
-
-Required negative fixtures include wrong issuer/audience/tenant/nonce/redirect, stale or replayed code, mixed issuer keys, unknown tenant, disabled connection, revoked session, callback CSRF, invitation substitution, and tab-correlation loss.
-
-## 9. B6 — tenant resource manifests, encryption/KMS, and rotation
-
-Implement provider-neutral provisioning and verification interfaces around the frozen tenant-resource manifest. Use local/test manifests unless approved provider credentials and EU resources already exist.
-
-Each manifest binds:
-
-- organisation and environment;
-- deployment/build/schema identities;
-- dedicated D1 and private R2 quarantine/clean/extracted/export/backup namespaces;
-- EU jurisdiction and endpoint evidence;
-- encryption key alias/version, not key material;
-- activation state, verification time, verifier identity, and expiry;
-- receipt fingerprints.
-
-Enforce one dedicated confidential data plane per pilot organisation for v64. Do not introduce pooled confidential storage.
-
-Implement an envelope-encryption/KMS contract:
-
-- provider-managed root key/HSM or KMS boundary;
-- per-tenant key alias and version;
-- authenticated encryption with tenant/object/version associated data;
-- no key material in D1, source, logs, manifests, client storage, or CI artifacts;
-- monotonic rotation state machine with dual-read/single-write transition only where explicitly designed;
-- idempotent resumable rewrap, verification receipts, rollback safety, and revoked-key behavior;
-- key deletion requires retention/legal-hold/export checks and separation of duties.
-
-Do not claim EU residency, encryption readiness, backup readiness, or production provisioning from mocks. Record `unverified_external_dependency` for evidence that cannot be obtained in this task.
-
-## 10. B7 — immutable security/audit receipts and adversarial isolation
-
-Security receipts must be append-only and bind:
-
-- schema/version and event type;
-- trusted actor/session and authentication method;
-- organisation and optional dossier/resource scope;
-- exact action and policy/authorization version;
-- request/idempotency correlation without content;
-- prior/current receipt digest where chaining applies;
-- outcome and bounded privacy-safe reason;
-- server timestamp, deployment SHA, and environment;
-- reviewer/approval identity where required.
-
-Rejected security-relevant operations are also audited without leaking resource existence or sensitive inputs.
-
-Build property-based, mutation, and concurrency tests that substitute or race:
-
-- organisation, user, membership, invitation, dossier, participant, document, version, anchor, report, export, hold, grant, object locator, queue job, policy, receipt, and idempotency IDs;
-- active/suspended/removed/expired/revoked/stale states;
-- same opaque ID under different tenants;
-- stale authorization versions and current-grant pointers;
-- organisation switches with cached UI/mobile state;
-- concurrent role change and write/download;
-- cross-tenant pagination/search timing and error shapes.
-
-Acceptance is zero cross-tenant read, write, existence disclosure, cache reuse, download, signed grant, background processing, log correlation, notification, or audit contamination.
-
-## 11. B8 — web and Flutter parity
-
-Implement equivalent safe Phase B capability in web and Flutter:
-
-- visible current organisation and organisation switcher;
-- organisation lifecycle/confidential-mode status;
-- invitation acceptance and membership state;
-- dossier roles and allowed role-management actions;
-- Entra/OIDC system-browser sign-in and exact originating-tab/deep-link return;
-- session revocation and organisation-switch cache clearing;
-- compliance-export authority/approval visibility without export execution;
-- privacy-safe security/audit timeline;
-- the unchanged confidential upload warning and disabled server behavior.
-
-No confidential document body may enter ordinary mobile cache. Clear tenant state on sign-out, membership removal, organisation switch, policy change, or session revocation. Redact app-switcher previews and prohibit sensitive notifications, clipboard telemetry, analytics, and crash fields.
-
-Web and Flutter must consume the same versioned role/action/policy manifests and produce identical canonical semantics/fingerprints. Responsive mobile web is not Flutter parity.
-
-## 12. Information architecture continuity and next IA slice
-
-Preserve the existing v63 shell during Phase B:
-
-### Global
-
-- My cases
-- Templates
-- Documents
-- Tasks & reviews
-- Reports
-
-### Inside a case
-
-- Overview
-- Documents
-- Evidence
-- Decision map
-- Tasks
-- Reports
-- Audit
-
-Phase B may add only organisation context, membership/security states, and safe empty states needed for its flows. Do not redesign the dossier workspace during the security slice.
-
-Prepare, but do not implement beyond compatible empty-state/parity fixes, the later IA completion acceptance:
-
-- Guided Studio Step 2 is explicitly **Documents & evidence**;
-- every global and case library explains ownership and scope;
-- empty states explain where documents live and how they become case evidence;
-- the visible lineage is `document → immutable version → evidence anchor → decision assertion/node → report citation`;
-- labels and version branding match across web and Flutter;
-- a document is never detached from its organisation and explicit case linkage.
-
-IA work may proceed in a parallel future branch, but confidential activation remains blocked until the backend, governance, and mobile evidence is complete.
-
-## 13. Locked roadmap after Phase B
-
-These are future slices, not authorized implementation in the current task.
-
-### Phase C — document ingestion
-
-Entry gate: Phase B exact-head gates, adversarial isolation, and security review are green.
-
-`Upload → Quarantine → Malware scan → Extraction/OCR → Citation anchors → Reviewed evidence`
-
-Required later capabilities:
-
-- private tenant EU quarantine and clean namespaces;
-- strict PDF/DOCX validation, magic/structure/archive limits;
-- isolated, pinned, network-denied malware scanning with immutable receipts;
-- EICAR, polyglot, ZIP-bomb, encrypted/malformed, timeout/outage, digest-replay, and cross-tenant fixtures;
-- extraction only after clean scan;
-- sandboxed PDF/DOCX extraction;
-- separately requested/versioned OCR with EN/RU packs, confidence, and review state;
-- page/block/range PDF anchors and heading/paragraph/table DOCX anchors;
-- immutable originals, derived lineage, idempotent retry/dead-letter behavior;
-- no AI access before scan, authorization, extraction provenance, and review policy permit it;
-- redaction as a derived immutable version, never destructive overwrite.
-
-### Phase D — governance and operational evidence
-
-Entry gate: Phase C is green and no ingestion bypass exists.
-
-- versioned retention, dry-run deletion, purge, export, and legal hold;
-- separation of duties for hold release and tenant-wide export;
-- encrypted EU backup and proven isolated restore against defined RPO/RTO;
-- reviewer approvals and immutable approval receipts;
-- EU residency receipts for D1, R2, Workers, queues, cron, scanning, extraction, OCR, KMS, backup, logs, analytics, support, and AI;
-- DPA, TOMs, DPIA decision, subprocessor register, transfer assessment, privacy/DSAR procedures;
-- penetration test and retest of every critical/high and tenant-isolation finding;
-- incident-response, breach, restore, deletion, export, and key-rotation runbooks;
-- documented mobile offline/cache policy;
-- complete web, Rust, Flutter, Android, and iOS gates.
-
-### Phase E — enterprise-pilot IA completion
-
-May be developed in parallel after Phase B contracts stabilize, but cannot activate confidential mode:
-
-- global Documents, Tasks & reviews, Reports;
-- Guided Studio Step 2 = Documents & evidence;
-- case tabs Overview / Documents / Evidence / Decision map / Tasks / Reports / Audit;
-- consistent labels/version branding and instructive empty states;
-- traceable document-to-case-to-anchor-to-report lineage;
-- full web/Flutter parity, accessibility, EN/RU, keyboard, tablet/mobile, high contrast, reduced motion.
-
-### Phase F — confidential validation and pilot activation
-
-Only after named product, security, privacy/legal, and operations approval:
-
-1. activate one synthetic internal validation tenant;
-2. execute full production-shaped observability, restore, residency, security, and mobile gates;
-3. obtain a fresh explicit approval for one exact confidential pilot tenant;
-4. create one exact-SHA release and deployment;
-5. verify production before changing that tenant from `validation` to `approved`;
-6. never create an app-store release without separate authorization.
-
-## 14. Mandatory Phase B gates
-
-All must pass on the exact candidate head:
-
-### Contracts and migrations
-
-- all Phase A JSON Schemas compile under Draft 2020-12 and remain fail-closed;
-- fresh-schema and supported-upgrade migrations pass with deterministic fingerprints;
-- `foreign_key_check`, integrity check, tenant composite constraints, rollback/resume tests pass;
-- malformed, future, unknown-field, stale-version, and unsupported imports are rejected atomically before persistence;
-- import/export and revision protection remain green.
-
-### Authorization and security
-
-- complete role × action × scope × lifecycle matrix passes;
-- negative cross-tenant generator passes for every resource type;
-- no ambient organisation-admin dossier access;
-- compliance export requires separate current authority and every included dossier owner’s approval;
-- session/authorization invalidation is immediate and race-tested;
-- OIDC negative/replay/key-rotation/tab-return tests pass;
-- secrets/tokens/client data are absent from logs, receipts, errors, analytics, URLs, and client storage;
-- dependency and secret scans report no unresolved critical/high issue;
-- Codex review and dedicated security review report no unresolved critical/high/P1 finding.
-
-### Existing product regression
-
-- all web tests;
-- strict TypeScript and full lint;
-- verified production build and chunk budget;
-- production dependency audit with zero unresolved vulnerability;
-- auth return/save, stale-JS-chunk recovery, anonymous PDF, report manifest, PDF structural/visual QA;
-- all 18 cross-runtime routes;
-- legacy case/report/document fingerprints unchanged.
-
-### Native and parity
-
-- Rust `fmt`, Clippy with warnings denied, locked workspace tests;
-- Flutter format, analyze, unit/widget/integration tests;
-- Android build, persistence, deep-link/auth, secure-storage/cache tests;
-- iOS build, exact FFI export audit per Mach-O slice, simulator lifecycle, keychain/cache tests;
-- web/Flutter role/action/organisation/security manifest fingerprints identical;
-- 360×800, 412×915, tablet, 200% text, keyboard-only, screen reader, high contrast, reduced motion, and 48 px targets;
-- EN/RU internal strings and error/privacy states.
-
-### Evidence pack
-
-- authoritative read-only production reconciliation receipt identifying the actual live Site version, marker, deployment, source SHA, and health evidence; if unavailable, PR remains draft and unmergeable by policy;
-- exact base/head/tree SHAs and clean diff;
-- ordered commits and changed-file inventory;
-- migration/schema fingerprints;
-- test commands, totals, workflow/run IDs, and conclusions;
-- threat-model delta and residual-risk register;
-- explicit list of mocked/unverified external dependencies;
-- proof that production, confidential mode, tenant infrastructure, Site versions, and app-store state were not changed.
-
-## 15. Completion and handoff
-
-When Phase B is complete:
-
-1. Re-read this instruction and Phase A contracts; perform a requirement-by-requirement gap audit.
-2. Re-run all gates on one exact head. Do not combine evidence from superseded commits.
-3. Request Codex code review and security review of that exact head.
-4. Correct all actionable findings and rerun affected gates.
-5. Update `CURRENT_PROGRESS.md` with factual receipts, blockers, and unchanged production/confidential state.
-6. Improve the Phase C–F plan using what was learned, but do not begin those phases.
-7. Return the complete diff, exact SHAs, tests, review status, residual risks, and required approvals.
-
-The task may push implementation commits to its dedicated branch and maintain one draft PR for review. It must not merge the PR, deploy a Site, provision production confidential infrastructure, change production secrets, activate confidential uploads, or distribute an app-store build.
-
-Phase B is accepted only when the production identity is authoritatively reconciled, organisation isolation and deny-by-default authorization are proven at both database and application boundaries, web/mobile parity is factual, every exact-head gate is green, and no unresolved tenant-isolation or authentication finding remains. Otherwise keep PR `#43` draft, stop at the last green checkpoint, and report the blocker without weakening a gate.
+- Preserve every v62 dossier/document/evidence/Decision map/task/report/audit/import/export/revision-CAS/PDF/18-route invariant.
+- Preserve exact legacy fingerprints and `legacy_personal_pilot` semantics. Never silently assign existing rows to an organisation, reinterpret them as tenant data, or rewrite IDs.
+- Rust remains authoritative for canonical case validation and runtime semantics. Do not create a second rules engine.
+- Server authorization is authoritative for tenant access. Browser, Flutter and OIDC claims are inputs, never authority.
+- AI remains proposal-only and receives no tenant content unless authorization and the later Phase C scan state permit it. In v64, confidential content access stays impossible.
+- Packages, policy manifests and formulas remain allowlisted, immutable, versioned data; never execute arbitrary tenant JavaScript.
+- Deny by default for missing, malformed, stale, suspended, cross-tenant, unsupported or unverified state.
+- Unknown and unauthorized resource identifiers must have indistinguishable private responses.
+- Do not log tokens, secrets, private object locators, client identities, document text, filenames, raw prompts or confidential metadata.
+- Do not commit credentials or obtain them by searching user files, logs, shell history or environment dumps.
+- Do not weaken, remove, rename or skip a release gate to obtain a green result.
+- Do not create an app-store distribution. Merging verified mobile source is allowed only at the release gate; store publication requires separate authorization.
+- Do not enable production Entra, KMS, R2 or confidential-tenant provisioning without explicit provider/configuration approval. A missing provider configuration must fail closed and display “Not configured.”
+- No intermediate public v64 deployment. The only permitted publication is the final exact-SHA release after all gates pass.
+
+## 4. R0 — close the existing review loop before expanding the diff
+
+PR #43 currently has ten open review threads from the pre-fix head: eight P1 and two P2. The code at `ff9c6f4…` contains intended fixes, but the threads are not evidence of closure until the final exact head is independently reviewed.
+
+Required actions:
+
+1. Map each thread to the exact fixing code and discriminating regression test:
+   - grant ↔ membership authorization version;
+   - export approval ↔ immutable approval receipt and dossier manifest;
+   - resource-manifest receipt coverage/digest recomputation;
+   - export-request expiry at append and transition;
+   - maximum seven-day tenant-session lifetime and stale issuance;
+   - independent approval-bound policy activation;
+   - one-time atomic export consumption;
+   - key-rotation completion evidence;
+   - persistable legal-hold actor/target receipt semantics;
+   - database-current-time invitation acceptance.
+2. Keep every thread open while the baseline rebase and integration work changes the source.
+3. After the final exact-head code and security reviews are green, reply to each thread with the final commit, test name and evidence, then resolve it.
+4. Zero unresolved P0, P1 or P2 findings is a release gate. A transient review-service error requires retry, not waiver.
+
+## 5. R1 — create an authoritative production-baseline receipt
+
+### 5.1 Required provider-owned evidence
+
+Use the Sites connector directly. Do not substitute repository prose, a screenshot, HTML text, a self-reported runtime constant or a prior chat summary.
+
+Capture and canonicalise:
+
+- `get_site` for project `appgprj_6a88a26d2f808191aa076b9fcd8dbce6`;
+- `get_site_version` for the exact opaque Site 69 version ID;
+- custom-domain status for `studio.falcon-merlin.com`;
+- current structured Worker logs showing the provider script-version ID, `deploymentVersion=69`, `webCommit=6019e473…`, outcome and timestamp;
+- the historical production deployment ID from the original deploy result, Sites audit/history, retained release receipt or provider support export;
+- `get_deployment_status` for that exact deployment ID, returning:
+  - `status=succeeded`;
+  - the exact Site 69 version ID;
+  - the exact project ID;
+  - the production URL;
+  - provider deployment ID when present;
+  - immutable update timestamp.
+
+Do not guess a deployment ID. If the current API cannot list historical deployments, search only authorized release receipts/audit history or obtain a provider export. Do not redeploy Site 69 merely to manufacture a historical receipt.
+
+### 5.2 Canonical receipt
+
+Create `docs/architecture/v64/PRODUCTION-BASELINE-RECEIPT.json` with a versioned schema and canonical JSON digest. Include:
+
+- project, version and deployment IDs;
+- Site version number 69;
+- source SHA and saved archive digest/count/size;
+- deployment terminal status and timestamps;
+- production and custom-domain URLs;
+- custom-domain/SSL state;
+- runtime script-version ID and structured marker evidence;
+- collector identity class and collection timestamp;
+- explicit `verified`, `correlated_only` and `unverified` fields;
+- SHA-256 over the canonical receipt excluding its own digest field.
+
+Add a validator test that rejects swapped project/version/deployment IDs, a different SHA, missing terminal status, stale domain evidence and a recomputed-but-incomplete receipt.
+
+**Stop condition:** do not mark R1 green, choose a rollback target, mark PR ready, merge or deploy while the exact provider deployment receipt is missing. Correlation is not immutable proof.
+
+## 6. R2 — recover v62 source and the authoritative `0011–0015` chain
+
+### 6.1 Recover from the Sites source repository, not from a candidate folder
+
+1. Obtain a short-lived, repository-scoped Sites source credential for the existing Site. Keep it out of Git config, remotes, files and output; use a per-command authorization header.
+2. Clone/fetch the Sites source repository into a separate clean checkout.
+3. Resolve exact commit `6019e47346a2bf719a09dc1d874a2fc807f99598`.
+4. Verify that its packaged source corresponds to Site 69’s recorded archive:
+   - archive hash `3dcfe929…d555`;
+   - 320 files;
+   - 25,825,280 bytes;
+   - matching hosting manifest/project ID;
+   - matching migration and build manifests.
+5. Inventory and hash exact files for:
+   - migrations `0011–0015`;
+   - every matching Drizzle snapshot and `_journal.json` entry;
+   - `db/schema.ts`;
+   - dossier/document repositories, routes, tests and release manifests.
+6. Compare the Sites commit ancestry with GitHub base `c088200…`.
+
+### 6.2 Git-history decision
+
+- If `6019e473…` is a genuine descendant of `c088200…`, import the exact missing commit chain without rewriting it, then rebase the Phase B commits onto that exact v62 baseline.
+- If it is related but contains generated release-only commits, preserve source identity in an auditable merge/recovery commit and prove byte-level equivalence for every source file.
+- If ancestry is unrelated or the source tree cannot be reproduced exactly, stop. Prepare a dedicated baseline-recovery PR; do not paste selected migration files into PR #43 and do not force-push `main`.
+- Never edit already-applied migrations `0011–0015`, their snapshots or journal entries. Any correction after them is a new migration.
+
+The recovered baseline may be reviewed/merged without a Site deployment. It must not mutate production by itself.
+
+### 6.3 Register Phase B only after recovery
+
+After the exact v62 baseline is present:
+
+1. Re-run Drizzle generation from the reconciled `db/schema.ts`.
+2. Treat current `0016_tenant_control_plane.sql` as an unapplied candidate. Reconcile it with the generated delta and security fixes; replace it only if necessary and record old/new hashes.
+3. Register exactly one collision-free `0016` entry plus its matching snapshot. Do not hand-edit history to conceal divergence.
+4. Keep the migration additive and compatible with code rollback. No table/column drop, rename, destructive rebuild or data rewrite is allowed in the release migration.
+5. Existing rows remain explicitly legacy. Use nullable tenant columns plus database constraints/triggers that require `organization_id` for all newly created tenant-mode records and enforce same-tenant parent/child relationships. Never backfill an organisation ID by inference.
+6. Add indexes only for actual tenant-scoped query patterns and verify representative plans. Run `PRAGMA optimize` in the controlled migration/test workflow, not per request.
+7. Resolve the frozen lifecycle conflict without changing `organization-contract.v1`:
+   - public `organization.status` remains within the frozen enum;
+   - represent asynchronous closure in a separate internal `organization_closure_operations.phase` record;
+   - while closure is running, public status is `suspended` and authorization fails closed;
+   - only verified completion advances the organisation to `closed`;
+   - never expose or persist `closing` as a public v1 organisation status.
+
+### 6.4 Mandatory migration tests
+
+The migration gate must cover:
+
+- fresh schema through `0016`;
+- exact deployed v61 → v62 chain → `0016`;
+- exact Site 69 v62 schema/data fixture → `0016`;
+- upgrade with representative legacy rows and zero tenant reassignment;
+- rerun rejection/idempotence as defined by the runner;
+- late-statement failure with full transaction rollback;
+- foreign-key and integrity checks;
+- table/index/trigger/FK counts and deterministic schema fingerprint;
+- old Site 69 code reading the post-`0016` additive schema for code rollback compatibility;
+- migration journal/snapshot/schema consistency;
+- no skipped authoritative-fixture test.
+
+`PHASE_B_MIGRATION_FIXTURE_ROOT` must point to the verified Site 69 checkout. A folder marked `unverified_external_dependency` cannot satisfy this gate.
+
+## 7. R3 — implement the production B3–B7 composition root
+
+Keep pure domain functions, but make every live path enter them through one server composition root, for example `TenantServices`, containing explicit interfaces for:
+
+- authenticated identity/session resolution;
+- organisation, membership, invitation and dossier-participant repositories;
+- current policy/grant/approval pointers;
+- tenant resource-manifest verification;
+- OIDC discovery/JWKS/state/nonce/PKCE stores;
+- KMS/envelope/key-rotation provider boundary;
+- compliance-export request/approval/acquisition state;
+- append-only security receipt storage;
+- trusted clock, ID generation, idempotency and rate limiting.
+
+Provide real D1 adapters for all durable Phase B state. In-memory adapters remain test-only and must be impossible to select in production builds.
+
+### 7.1 Server trust rules
+
+- Resolve actor, organisation, membership, role, policy/grant versions and trusted time server-side.
+- Ignore or reject client-provided authoritative IDs, roles, timestamps, approval state and current-pointer versions.
+- Scope every statement by `organization_id`; use tenant-bound composite keys and relationships.
+- Use conditional version/CAS updates and atomic D1 batches for one-time actions. Verify the affected-row count.
+- Make invitation acceptance, policy activation, export acquisition and key-rotation completion single-winner operations under concurrency.
+- Bind idempotency keys to actor + organisation + action + resource + authority version.
+- Emit a privacy-safe immutable receipt for every allow/deny security decision and state change.
+- Return the same external 404/denial envelope for unknown and cross-tenant resources.
+- Reject inactive organisation, suspended membership, stale session, stale policy/grant/current pointer and unverified resource manifest before any content read or mutation.
+- Use database/provider time for expiry; never allow backdated client timestamps to revive authority.
+
+### 7.2 Required Worker/API surfaces
+
+Implement the smallest coherent Phase B route set, using the repository’s existing route conventions:
+
+- list/create/read supported organisations;
+- switch active organisation and rotate session context;
+- list/invite/inspect/accept/revoke organisation invitations;
+- list/change/suspend/remove memberships within allowed authority;
+- list/enrol/change/remove dossier participants and roles;
+- inspect/configure an Entra identity connection and complete the guarded OIDC return;
+- inspect policies, propose a new immutable revision, request independent approval and activate through the approval-bound operation;
+- inspect tenant resource-manifest and key-rotation status without exposing locators or secrets;
+- assign/revoke separate compliance-export authority;
+- create an export request, collect exact per-dossier owner approvals and acquire it exactly once;
+- inspect authorised security/audit receipts.
+
+Do not add document upload, processing, OCR or export-package byte generation. The compliance flow ends at a validated one-time authority/acquisition receipt.
+
+### 7.3 OIDC/Entra adapter
+
+- Use Authorization Code + PKCE and system-browser/top-level return.
+- Validate state, nonce, verifier/challenge, exact redirect URI, HTTPS discovery/JWKS, signature, issuer, audience, `tid`, stable `oid/sub`, `exp`, `nbf` and bounded clock skew.
+- Bind identity to the exact enabled `organization_identity_connection`; never authorize by email or domain.
+- Store state/nonce/code-use and session state durably with TTL and replay rejection.
+- Rotate session after return and preserve a same-origin relative `returnTo` to the exact originating Studio route.
+- Tokens never enter URLs after callback, local storage, logs, analytics, receipts or crash output.
+- When production Entra configuration is absent, routes return a typed unavailable state and UI says “Not configured”; no fallback creates authority.
+
+### 7.4 KMS and resource manifests
+
+- Production code uses a provider interface; deterministic local crypto is test-only.
+- Never store plaintext key material in D1, R2, source, receipts or logs.
+- Verify organisation/environment/region/resource/key/version/receipt-set bindings before branding a manifest as verified.
+- Do not enter key-rotation `completed` or remove the old read key without current immutable evidence proving expected count = rewrapped count, failures = 0, exact old/new versions and matching canonical digests.
+- Missing production KMS/EU/provider evidence keeps the tenant manifest inactive and confidential mode disabled; it must not block a safe public v64 UI release if the unavailable feature is visibly and server-side disabled.
+
+## 8. R4 — complete B8 web and Flutter product parity
+
+### 8.1 Web experience
+
+Add a first-class organisation context without displacing the existing dossier information architecture:
+
+- persistent organisation switcher in the authenticated shell;
+- organisation overview and lifecycle state;
+- members and invitations with role/status/expiry;
+- dossier participants and roles `owner | contributor | reviewer | viewer`;
+- separate compliance-export authority and owner-approval state;
+- SSO connection status and guarded connect/return flow;
+- policies, independent approval and activation status;
+- resource/key status using non-secret identifiers only;
+- tenant security/audit receipt register;
+- explicit confidential-mode-disabled warning.
+
+Every empty state must explain why no data exists, what action is allowed, and what remains unavailable until confidential mode is approved. Never advertise document upload in this release.
+
+### 8.2 Flutter experience
+
+Implement equivalent semantic capability in Flutter, not a static mock:
+
+- organisation switcher and current-context banner;
+- organisation/membership/invitation/dossier-role screens;
+- SSO, policy/approval, compliance authority and audit status;
+- system-browser OIDC return into the exact originating screen;
+- disabled confidential-document notice;
+- network/error/empty/loading/suspended/stale-session states.
+
+Mobile may use different native presentation, but actions, policy decisions, reason codes, versions and fingerprints must match web.
+
+### 8.3 Cache and offline isolation
+
+- Durable truth stays in D1/provider systems, never `localStorage` or Flutter preferences.
+- Tenant cache keys include environment + actor + organisation + membership authorization version + policy version + resource identity.
+- On organisation switch, sign-out, session rotation, membership/role change, suspension, failed OIDC return or stale-version response:
+  1. make the old context unusable immediately;
+  2. cancel in-flight requests/subscriptions;
+  3. clear in-memory, browser, query, service-worker, Flutter and disk caches for the old context;
+  4. clear sensitive navigation/view models;
+  5. load the new context only after server confirmation.
+- No stale tenant name, counts, records or error detail may flash after a switch.
+- Offline tenant content is disabled in Phase B. Flutter stores only minimal non-sensitive context pointers in Keychain/secure storage, with bounded TTL and authority-version floors.
+
+### 8.4 Shared parity manifest and localisation
+
+Create one immutable data-only Phase B product/policy manifest containing:
+
+- action and reason-code catalogue;
+- organisation/dossier roles;
+- lifecycle and capability states;
+- route/API contract versions;
+- session and cache policy versions;
+- EN/RU message keys;
+- product marker `v64`.
+
+Generate or validate web and Flutter assets from the same canonical bytes. Require byte-identical manifest SHA-256 and semantic parity tests. Do not duplicate policy logic in Dart.
+
+All user-visible Phase B strings must exist in English and Russian. Fail tests on missing keys, English fallback in Russian, raw enum leakage or mismatched interpolation.
+
+### 8.5 Accessibility
+
+Meet WCAG 2.2 AA for the new web and Flutter surfaces:
+
+- semantic headings, landmarks, lists, tables and status announcements;
+- labelled controls and errors;
+- complete keyboard navigation and visible focus;
+- focus return after dialogs and failed OIDC;
+- 44×44 CSS-pixel / 48×48 dp touch targets where applicable;
+- contrast, 200% text enlargement, 320 CSS-pixel reflow and reduced motion;
+- screen-reader names for roles, expiry, disabled state and audit status;
+- no colour-only status communication.
+
+Run automated axe/widget semantics tests and manual keyboard/screen-reader smoke checks in both languages.
+
+## 9. R5 — integration and adversarial test matrix
+
+Add route-level tests against real D1 adapters and deterministic provider fakes. At minimum prove:
+
+| Area | Required negative and race coverage |
+|---|---|
+| Tenant isolation | swapped org/dossier/object IDs, cross-tenant joins, pagination/search/cache leakage, guessed locators, mixed-tenant batch, background job/receipt substitution |
+| Sessions | missing/stale/replayed session, >7-day lifetime, stale issuance, suspension/reactivation, org switch, authorization-version mismatch |
+| Invitations | expired-now, backdated accept, revoked, wrong identity, wrong tenant, changed role, token replay, concurrent double accept |
+| Grants and roles | suspend/change/reactivate, stale current pointer, wrong policy version, org role without dossier participation, role downgrade during request |
+| Policy activation | proposer = approver, expired/revoked/wrong-tenant approval, stale version, missing receipt, concurrent activations |
+| Compliance export | incomplete/duplicate dossier set, wrong owner/manifest/receipt, expired request, consumed/rejected/stale state, concurrent double acquire |
+| Key rotation | missing/partial/duplicate/forged/cross-tenant evidence, count mismatch, failure count, stale receipt pointer, retry/resume/rollback |
+| Receipts | append mutation/deletion, mixed tenant chain, non-monotonic time, bad predecessor/digest, actor/reviewer collision, invalid target dossier |
+| OIDC | state/nonce/PKCE replay, issuer/audience/tid mismatch, JWKS rotation, expired/not-yet-valid token, returnTo injection, token leakage |
+| Cache/UI | switch and sign-out during fetch, back navigation, deep link, refresh, offline resume, role revocation, EN/RU and accessibility |
+
+Property/fuzz tests must cover identifier substitution and malformed import boundaries. Do not use real identities, documents, credentials or malware.
+
+## 10. R6 — mandatory final exact-head gates
+
+Run every gate on the final PR head after the last source, test, receipt or documentation change.
+
+### Web and Node
+
+From `apps/juris-web` using the committed lockfile:
+
+```bash
+npm run install:ci
+npm run lint
+npx tsc --noEmit --strict
+npm test
+npm audit --omit=dev --audit-level=low
+npm audit --audit-level=low
+```
+
+Additionally require:
+
+- verified production build and current chunk-budget guard;
+- fresh + v61 + Site69-v62 + rollback-compat migration tests, with zero skip;
+- D1 route/integration and cross-tenant mutation corpus;
+- JSON Schema Draft 2020-12 compilation/validation;
+- import/export and revision-CAS protection;
+- all existing report/PDF structural and visual regression tests;
+- auth return to the originating Studio route and successful synthetic workspace save;
+- stale-JS-chunk recovery without data loss;
+- anonymous PDF generation/download policy test;
+- prohibited-content and authoritative secret scan;
+- zero production, development or optional dependency vulnerabilities at the configured release threshold.
+
+### Rust and cross-runtime
+
+```bash
+cargo fmt --all -- --check
+cargo check --workspace --locked
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --all-targets --locked
+cargo +1.78.0 check --workspace --locked
+```
+
+Require all 18 deterministic cross-runtime routes, legacy fingerprints, the nine registry/playbook packages and report-manifest parity to remain green.
+
+### Flutter, Android and iOS
+
+From `apps/juris-mobile`:
+
+```bash
+dart format --output=none --set-exit-if-changed lib test integration_test
+dart run tool/export_mobile_case_bundle.dart --repo-root ../.. --check
+flutter analyze
+flutter test
+flutter build apk --debug --target-platform android-arm64
+flutter build ios --simulator --debug --no-codesign
+```
+
+Require:
+
+- organisation UI and cache-isolation tests on Flutter;
+- Android packaged Rust bridge verification;
+- exact per-slice iOS FFI exports;
+- iOS simulator lifecycle and OIDC-return/cache invalidation tests;
+- identical canonical Phase B manifest bytes/fingerprint across web and Flutter;
+- no app-store package/distribution.
+
+### Hosted GitHub gates
+
+On the same exact head require successful:
+
+- Rust CI;
+- Flutter Mobile UI;
+- Android Native FFI;
+- iOS Native FFI/simulator;
+- hosted web/security checks if added;
+- Codex code review;
+- Codex security review.
+
+All ten historical findings must be mapped, replied to and resolved only after the final review. New findings restart the fix-and-rerun loop.
+
+## 11. R7 — evidence pack and readiness decision
+
+Update `CURRENT_PROGRESS.md` and create/update Phase B evidence with:
+
+- exact base/head/tree and complete commit list;
+- Site69 recovery provenance and migration file hashes;
+- registered `0016` hash, schema fingerprint and migration results;
+- B0–B9 completion matrix with no “reference-only” claim;
+- production adapter/route inventory;
+- web/Flutter manifest digest;
+- every test command, count, workflow URL/ID, conclusion and exact head;
+- code/security review IDs and zero unresolved P0/P1/P2;
+- production-baseline receipt digest;
+- confidential-mode-disabled proof;
+- explicit external provider dependencies still inactive;
+- rollback procedure and evidence that Site69 code tolerates additive `0016`.
+
+The PR is **not ready** if any of these remains true:
+
+- authoritative migration fixture is skipped;
+- Site69 source/history differs from the recovered tree;
+- historical deployment ID/status linkage remains missing;
+- any production route selects an in-memory adapter;
+- any tenant query lacks organisation scope;
+- any web/Flutter action has no semantic peer;
+- EN/RU or accessibility evidence is incomplete;
+- any dependency/security/review/native/parity gate is not green;
+- confidential mode or Phase C code becomes reachable.
+
+Only after every item is green, mark PR #43 ready for review and request this exact approval:
+
+> Approve merging PR #43 at exact head `<FINAL_PR_SHA>` after all recorded gates, with confidential document mode remaining disabled and no app-store release.
+
+Do not merge without the approval containing the actual final SHA.
+
+## 12. R8 — merge and prepare the exact production release
+
+After merge approval:
+
+1. Merge using the repository’s normal protected workflow; do not bypass branch protection.
+2. Fetch `main` and record the resulting exact `MAIN_SHA` and tree.
+3. Verify the main tree equals the reviewed PR tree except for expected merge metadata. If content differs, stop.
+4. Run the complete web build/tests and required post-merge CI on `MAIN_SHA`. PR-head success alone is insufficient for deployment when the merge SHA differs.
+5. Set one consistent user-facing product marker `v64` and runtime release identity from a single build source. Keep Site version separate from product version.
+6. Confirm immediately before saving that the latest saved Site version is still 69. The expected next version is 70. If it is not, stop and reconcile concurrent release activity.
+7. Build and package from a clean checkout of exact `MAIN_SHA` using the Sites workflow. The archive must contain the exact generated migration and hosting metadata.
+8. Push exact `MAIN_SHA` to the existing Sites source repository using a short-lived per-command credential. Never store the token.
+9. Obtain fresh public-deployment approval naming the exact SHA and existing public access:
+
+   > Approve saving and publicly deploying Site 70 at exact main SHA `<MAIN_SHA>` to the existing public access of `studio.falcon-merlin.com`, with automatic code rollback to verified Site 69 on the defined failure conditions; confidential document mode remains disabled.
+
+Saving a version that applies production migrations is part of this approval gate. Do not save or deploy before it.
+
+## 13. R9 — one Site 70 deployment and post-deployment proof
+
+After exact approval:
+
+1. Save exactly one Site version from the unchanged archive and `MAIN_SHA`.
+2. Require the save response to return version number 70 and retain its opaque version ID/archive digest.
+3. Deploy that exact saved version with `deploy_site_version` because the Site is public.
+4. Poll `get_deployment_status` with the returned deployment ID until terminal.
+5. Success requires `status=succeeded`, exact Site70 version ID, expected project ID and the literal production URL.
+6. Verify without weakening authentication:
+   - `studio.falcon-merlin.com` domain and SSL remain active;
+   - visible product marker is `v64` in EN/RU;
+   - structured Worker events report Site 70 and exact `MAIN_SHA`;
+   - zero unhandled exceptions, 5xx and cross-tenant leaks in the observation window;
+   - expected anonymous 401/403 and benign missing favicon/robots responses are classified, not counted as product failures;
+   - authentication returns to the originating Studio route;
+   - one explicitly synthetic, non-identifying workspace save succeeds and produces the expected tenant/audit receipt;
+   - anonymous PDF behavior and stale-chunk recovery pass;
+   - confidential upload remains unavailable in UI and server routes.
+7. Create `PRODUCTION-RELEASE-RECEIPT-v64.json` tying together:
+   - main SHA/tree;
+   - Site70 version/archive;
+   - deployment/provider IDs and terminal status;
+   - domain/SSL;
+   - runtime script version and structured marker;
+   - health/log window and gate evidence;
+   - production-baseline receipt digest;
+   - canonical receipt digest.
+
+Report the production URL, exact main SHA, Site version, deployment ID, test/workflow evidence, migration fingerprint, remaining disabled external capabilities and rollback state.
+
+## 14. Rollback and fail-closed rules
+
+Rollback immediately to the verified Site69 saved version if Site70 deployment fails, marker/SHA differs, migrations are incompatible, auth/save breaks, tenant isolation fails, any 5xx/security error appears, or confidential routes become reachable.
+
+- Roll back code only by deploying the exact verified Site69 version ID and poll its new deployment to `succeeded`.
+- Do not run a destructive down migration. `0016` must be additive and harmless to Site69 code.
+- Keep all Phase B and confidential capabilities disabled after rollback.
+- Capture the failed Site70 and successful rollback deployment receipts.
+- Stop; do not create Site71 or retry production without a new reviewed fix, full gate rerun and new exact-SHA approval.
+
+If Site69’s immutable baseline receipt cannot be completed, rollback is not verified and production release remains blocked. Do not replace that evidence with confidence language.
+
+## 15. Final stop conditions
+
+Stop and report the exact blocker, without merge or deployment, if any of the following occurs:
+
+- Site69 source commit/archive cannot be recovered and matched;
+- the provider-owned historical deployment receipt cannot be obtained;
+- migration ancestry is unrelated or any applied migration would need rewriting;
+- existing data would require silent tenant assignment or destructive conversion;
+- an external provider requires a secret/resource change without explicit approval;
+- any production route cannot be made deny-by-default and durable;
+- any mobile, accessibility, localisation, parity, security, review, migration or dependency gate fails;
+- the final PR or main SHA changes after approval;
+- Site version 70 is no longer the next version;
+- Phase C or confidential upload becomes reachable;
+- rollback compatibility is not proven.
+
+Never declare v64 shipped from a saved version, green local tests, a visible marker, or three of four native checks. “Shipped” means: merged exact source, successful exact Site70 production deployment, correct live marker/SHA, green post-deployment health, immutable release receipt, and confidential mode still disabled.
