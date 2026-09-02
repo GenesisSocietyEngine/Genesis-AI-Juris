@@ -117,42 +117,62 @@ decision_dossier_v62_slice5_gate: frozen_migrations_0012_0015_adversarial_audit_
 decision_dossier_v62_web_gate: strict_type_lint_build_audit_pdf_and_493_of_493_green
 decision_dossier_v62_browser_gate: local_http_green_visual_controller_service_unavailable
 decision_dossier_v62_remote_state: no_production_site_version_or_deployment
-phase_b_tenant_foundation_status: recovery_in_progress_architecture_blocked
+phase_b_tenant_foundation_status: reconstructed_reference_implementation_local_gates_green_architecture_blocked
 phase_b_pr: 43
 phase_b_development_base: c088200138332cd212b87e266746ea85b53a2f77
-phase_b_instruction_head: fef5a27fd86d4978c522adb0e5f1526d00c9da66
+phase_b_instruction_predecessor: 6feb611b70a79f41bc87e25a6d469490cf8ba71c
+phase_b_recovery_parent: fef5a27fd86d4978c522adb0e5f1526d00c9da66
+phase_b_implementation_head: 0efcefd5cbf313cdf55509f24b30de7759fdacab
+phase_b_implementation_tree: 8a26c1383e694e08a5411c87742cb094d7f16098
 phase_b_recovery_route: reconstructed_from_frozen_contracts_and_verifiable_receipts
-phase_b_production_identity: unresolved_site63_v61_vs_site69_v62
+phase_b_production_identity: site69_saved_source_and_live_v62_correlated_exact_deployment_link_unverified
 phase_b_confidential_uploads: disabled_synthetic_or_deidentified_only
-phase_b_last_verified_utc: 2026-09-02T13:58:50Z
+phase_b_last_verified_utc: 2026-09-02T16:46:32Z
 last_updated: 2026-09-02
 ---
 
 # Current Progress
 
-## V64 Phase B tenant-foundation recovery checkpoint - 2026-09-02
+## V64 Phase B tenant-foundation reconstructed checkpoint - 2026-09-02
 
-PR #43 remains a draft isolated implementation branch based on exact Phase A
-merge `c088200138332cd212b87e266746ea85b53a2f77`; its amended recovery parent is
-`fef5a27fd86d4978c522adb0e5f1526d00c9da66`. The previously reported B0 and
-B1-B9 commit objects are absent from GitHub and every available local object,
-ref, reflog, worktree, and Codex artifact. Recovery is therefore a truthful
-reconstruction and will use new SHAs rather than claiming the missing prefixes.
+PR #43 remains a draft isolated branch based on exact Phase A merge
+`c088200138332cd212b87e266746ea85b53a2f77`. The missing reported implementation
+objects were not recoverable, so the work has been truthfully reconstructed as
+six new commits after recovery parent
+`fef5a27fd86d4978c522adb0e5f1526d00c9da66`. The implementation checkpoint is
+`0efcefd5cbf313cdf55509f24b30de7759fdacab`, tree
+`8a26c1383e694e08a5411c87742cb094d7f16098`. Exact provenance, migration
+fingerprints, B0-B9 status, gates, and blockers are recorded in
+`docs/architecture/v64/PHASE-B-EVIDENCE.md`.
 
-The frozen v64 schemas and architecture records were read in full and remain
-unchanged. The discovery receipt is
-`docs/architecture/v64/PHASE-B-DISCOVERY-RECEIPT.md`. It records two acceptance
-blockers: the unpublished `0011` migration name collides with the real v61
-chain and precedes frozen v62 migrations `0012`-`0015`; and the exact PR base
-does not contain the real v62 dossier/document aggregates that B2 must
-tenant-bind. No parallel placeholder data plane will be created.
+Meaningful branch-safe work now exists for the organization control plane,
+deny-by-default policy, lifecycle and digest-only invitations, compliance
+authority/approvals, production-shaped local OIDC/PKCE boundary, tenant resource
+manifests, local envelope encryption and key rotation, append-only receipts,
+and Flutter organization-context invalidation. Focused Phase B web/migration
+tests pass 34/34; the complete web suite and verified build pass 137/137; lint,
+strict TypeScript, and the production dependency audit are green. Flutter
+analysis is clean, all 290 tests pass, the Android debug APK builds with exactly
+three allowed FFI exports in each ABI, and all 359 locked Rust tests plus fmt,
+Clippy, and MSRV checks pass. The final narrow audit reports no unresolved
+P0/P1 in the implemented branch-local boundaries.
 
-Production identity remains unresolved between repository Site 63 / marker v61
-evidence and the approved-line claim of Site 69 / v62 at web SHA
-`6019e47346a2bf719a09dc1d874a2fc807f99598`. This discrepancy is an
-`unverified_external_dependency` and blocks ready-for-merge, release,
-deployment, and confidential activation. No production resource, secret,
-Site version, deployment, or app-store state was changed.
+Phase B is not complete. B2 tenant binding cannot be implemented safely because
+the exact base lacks the authoritative v62 dossier/document graph. Migration
+`0016` is intentionally unregistered until the real `0011`-`0015` chain is
+available, and the frozen lifecycle/`closing` conflict needs an approved
+contract decision. The reference B3-B7 code is not wired to production routes
+or durable trusted providers. Web/Flutter organization UI and policy parity,
+complete isolation/accessibility/security gates, hosted exact-head checks and
+reviews, and iOS evidence remain outstanding.
+
+Read-only hosting evidence now correlates the active project, latest saved Site
+version 69, saved source SHA
+`6019e47346a2bf719a09dc1d874a2fc807f99598`, and a live HTTPS 200 `v62` marker.
+The available API does not prove the exact live-deployment-to-saved-version
+link, so this remains `unverified_external_dependency`. No production resource,
+secret, Site version, deployment, app-store state, or frozen release gate was
+changed. No Phase C work began.
 
 > Confidential document mode is not active. Do not upload privileged,
 > client-identifying, or live production documents. Use only synthetic or
