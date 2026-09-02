@@ -71,10 +71,14 @@ final class _OrganizationVersionBoundary {
   const _OrganizationVersionBoundary({
     required this.authorizationVersion,
     required this.sessionVersion,
+    required this.requiresAuthorizationAdvancement,
+    required this.requiresSessionAdvancement,
   });
 
   final int authorizationVersion;
   final int sessionVersion;
+  final bool requiresAuthorizationAdvancement;
+  final bool requiresSessionAdvancement;
 }
 
 final class OrganizationContextCoordinator {
@@ -93,6 +97,7 @@ final class OrganizationContextCoordinator {
   int? _unclearedGeneration;
   int _generation = 0;
   int _intent = 0;
+  bool _signOutPending = false;
 
   OrganizationContext? get current => _current;
   int get generation => _generation;
@@ -107,6 +112,11 @@ final class OrganizationContextCoordinator {
         ConfidentialDocumentMode.disabled,
   }) {
     try {
+      if (_signOutPending) {
+        throw const OrganizationContextException(
+          code: 'sign_out_in_progress',
+        );
+      }
       _validateCandidate(
         organizationId: organizationId,
         authorizationVersion: authorizationVersion,
@@ -125,6 +135,20 @@ final class OrganizationContextCoordinator {
           code: 'stale_session_version',
         );
       }
+      if (boundary != null &&
+          boundary.requiresAuthorizationAdvancement &&
+          authorizationVersion <= boundary.authorizationVersion) {
+        throw const OrganizationContextException(
+          code: 'stale_authorization_version',
+        );
+      }
+      if (boundary != null &&
+          boundary.requiresSessionAdvancement &&
+          sessionVersion <= boundary.sessionVersion) {
+        throw const OrganizationContextException(
+          code: 'stale_session_version',
+        );
+      }
     } on OrganizationContextException catch (error, stackTrace) {
       return Future<OrganizationContext>.error(error, stackTrace);
     }
@@ -133,9 +157,15 @@ final class OrganizationContextCoordinator {
       organizationId: organizationId,
       authorizationVersion: authorizationVersion,
       sessionVersion: sessionVersion,
+      clearAdvancementRequirements: true,
     );
 
-    final int intent = _beginAuthorityChange();
+    final String? previousOrganizationId =
+        _current?.organizationId ?? _unclearedOrganizationId;
+    final int intent = _beginAuthorityChange(
+      requireSessionAdvance: previousOrganizationId != null &&
+          previousOrganizationId != organizationId,
+    );
     final int requestGeneration = _generation;
     return _runExclusive(() async {
       _throwIfSuperseded(intent);
@@ -166,16 +196,38 @@ final class OrganizationContextCoordinator {
   }
 
   Future<void> invalidate(TenantInvalidationReason reason) {
-    final int intent = _beginAuthorityChange();
+    if (_signOutPending) {
+      return Future<void>.error(
+        const OrganizationContextException(code: 'sign_out_in_progress'),
+      );
+    }
+    if (reason == TenantInvalidationReason.signOut) {
+      _signOutPending = true;
+    }
+    final int intent = _beginAuthorityChange(
+      requireAuthorizationAdvance:
+          reason == TenantInvalidationReason.membershipRemoval ||
+              reason == TenantInvalidationReason.policyChange,
+      requireSessionAdvance:
+          reason == TenantInvalidationReason.sessionRevocation ||
+              reason == TenantInvalidationReason.organizationSwitch ||
+              reason == TenantInvalidationReason.signOut,
+    );
     return _runExclusive(() async {
-      if (intent != _intent) return;
-      final String? organizationToClear =
-          _unclearedOrganizationId ?? _current?.organizationId;
-      if (organizationToClear != null) {
-        await _clearOrBlock(organizationToClear, reason);
-      }
-      if (intent == _intent && reason == TenantInvalidationReason.signOut) {
-        _versionBoundaries.clear();
+      try {
+        if (intent != _intent) return;
+        final String? organizationToClear =
+            _unclearedOrganizationId ?? _current?.organizationId;
+        if (organizationToClear != null) {
+          await _clearOrBlock(organizationToClear, reason);
+        }
+        if (intent == _intent && reason == TenantInvalidationReason.signOut) {
+          _versionBoundaries.clear();
+        }
+      } finally {
+        if (reason == TenantInvalidationReason.signOut) {
+          _signOutPending = false;
+        }
       }
     });
   }
@@ -224,7 +276,10 @@ final class OrganizationContextCoordinator {
     }
   }
 
-  int _beginAuthorityChange() {
+  int _beginAuthorityChange({
+    bool requireAuthorizationAdvance = false,
+    bool requireSessionAdvance = false,
+  }) {
     final OrganizationContext? previous = _current;
     _intent += 1;
     _generation += 1;
@@ -234,10 +289,26 @@ final class OrganizationContextCoordinator {
         organizationId: previous.organizationId,
         authorizationVersion: previous.authorizationVersion,
         sessionVersion: previous.sessionVersion,
+        requireAuthorizationAdvancement: requireAuthorizationAdvance,
+        requireSessionAdvancement: requireSessionAdvance,
       );
       if (_unclearedOrganizationId == null) {
         _unclearedOrganizationId = previous.organizationId;
         _unclearedGeneration = previous.generation;
+      }
+    } else {
+      final String? blockedOrganizationId = _unclearedOrganizationId;
+      if (blockedOrganizationId == null) return _intent;
+      final _OrganizationVersionBoundary? boundary =
+          _versionBoundaries[blockedOrganizationId];
+      if (boundary != null) {
+        _rememberVersionBoundary(
+          organizationId: blockedOrganizationId,
+          authorizationVersion: boundary.authorizationVersion,
+          sessionVersion: boundary.sessionVersion,
+          requireAuthorizationAdvancement: requireAuthorizationAdvance,
+          requireSessionAdvancement: requireSessionAdvance,
+        );
       }
     }
     return _intent;
@@ -247,6 +318,9 @@ final class OrganizationContextCoordinator {
     required String organizationId,
     required int authorizationVersion,
     required int sessionVersion,
+    bool requireAuthorizationAdvancement = false,
+    bool requireSessionAdvancement = false,
+    bool clearAdvancementRequirements = false,
   }) {
     final _OrganizationVersionBoundary? previous =
         _versionBoundaries[organizationId];
@@ -259,6 +333,14 @@ final class OrganizationContextCoordinator {
           previous == null || sessionVersion > previous.sessionVersion
               ? sessionVersion
               : previous.sessionVersion,
+      requiresAuthorizationAdvancement: clearAdvancementRequirements
+          ? false
+          : requireAuthorizationAdvancement ||
+              (previous?.requiresAuthorizationAdvancement ?? false),
+      requiresSessionAdvancement: clearAdvancementRequirements
+          ? false
+          : requireSessionAdvancement ||
+              (previous?.requiresSessionAdvancement ?? false),
     );
   }
 

@@ -265,6 +265,109 @@ void main() {
     expect(clearAttempts, 2);
   });
 
+  test('revocation marks the saved floor after an earlier clear failure',
+      () async {
+    bool fail = true;
+    final OrganizationContextCoordinator coordinator =
+        OrganizationContextCoordinator(
+      clearTenantState: (_) async {
+        if (fail) throw StateError('synthetic clear failure');
+      },
+    );
+    await coordinator.switchTo(
+      organizationId: organizationA,
+      displayName: 'Example A',
+      authorizationVersion: 5,
+      sessionVersion: 7,
+    );
+    await expectLater(
+      coordinator.switchTo(
+        organizationId: organizationA,
+        displayName: 'Example A',
+        authorizationVersion: 6,
+        sessionVersion: 8,
+      ),
+      throwsA(isA<OrganizationContextException>()),
+    );
+    await expectLater(
+      coordinator.invalidate(TenantInvalidationReason.sessionRevocation),
+      throwsA(isA<OrganizationContextException>()),
+    );
+
+    fail = false;
+    await expectLater(
+      coordinator.switchTo(
+        organizationId: organizationA,
+        displayName: 'Example A',
+        authorizationVersion: 7,
+        sessionVersion: 8,
+      ),
+      throwsA(
+        isA<OrganizationContextException>().having(
+          (error) => error.code,
+          'code',
+          'stale_session_version',
+        ),
+      ),
+    );
+    final OrganizationContext refreshed = await coordinator.switchTo(
+      organizationId: organizationA,
+      displayName: 'Example A',
+      authorizationVersion: 6,
+      sessionVersion: 9,
+    );
+    expect(refreshed.sessionVersion, 9);
+  });
+
+  test('switching away from a blocked context requires a fresh return session',
+      () async {
+    bool fail = true;
+    final OrganizationContextCoordinator coordinator =
+        OrganizationContextCoordinator(
+      clearTenantState: (_) async {
+        if (fail) throw StateError('synthetic clear failure');
+      },
+    );
+    await coordinator.switchTo(
+      organizationId: organizationA,
+      displayName: 'Example A',
+      authorizationVersion: 5,
+      sessionVersion: 7,
+    );
+    await expectLater(
+      coordinator.switchTo(
+        organizationId: organizationA,
+        displayName: 'Example A',
+        authorizationVersion: 6,
+        sessionVersion: 8,
+      ),
+      throwsA(isA<OrganizationContextException>()),
+    );
+
+    fail = false;
+    await coordinator.switchTo(
+      organizationId: organizationB,
+      displayName: 'Example B',
+      authorizationVersion: 1,
+      sessionVersion: 1,
+    );
+    await expectLater(
+      coordinator.switchTo(
+        organizationId: organizationA,
+        displayName: 'Example A',
+        authorizationVersion: 6,
+        sessionVersion: 8,
+      ),
+      throwsA(
+        isA<OrganizationContextException>().having(
+          (error) => error.code,
+          'code',
+          'stale_session_version',
+        ),
+      ),
+    );
+  });
+
   test('version floors survive cross-organization switches until sign-out',
       () async {
     final OrganizationContextCoordinator coordinator =
@@ -299,6 +402,23 @@ void main() {
     );
     expect(coordinator.current, same(second));
 
+    await expectLater(
+      coordinator.switchTo(
+        organizationId: organizationA,
+        displayName: 'Example A',
+        authorizationVersion: 5,
+        sessionVersion: 7,
+      ),
+      throwsA(
+        isA<OrganizationContextException>().having(
+          (error) => error.code,
+          'code',
+          'stale_session_version',
+        ),
+      ),
+    );
+    expect(coordinator.current, same(second));
+
     await coordinator.invalidate(TenantInvalidationReason.signOut);
     final OrganizationContext reset = await coordinator.switchTo(
       organizationId: organizationA,
@@ -308,6 +428,50 @@ void main() {
     );
     expect(reset.authorizationVersion, 1);
     expect(reset.sessionVersion, 1);
+  });
+
+  test('an in-flight sign-out cannot be superseded by stale reactivation',
+      () async {
+    final Completer<void> clearGate = Completer<void>();
+    final OrganizationContextCoordinator coordinator =
+        OrganizationContextCoordinator(
+      clearTenantState: (_) => clearGate.future,
+    );
+    await coordinator.switchTo(
+      organizationId: organizationA,
+      displayName: 'Example A',
+      authorizationVersion: 5,
+      sessionVersion: 7,
+    );
+
+    final Future<void> signingOut =
+        coordinator.invalidate(TenantInvalidationReason.signOut);
+    await Future<void>.delayed(Duration.zero);
+    await expectLater(
+      coordinator.switchTo(
+        organizationId: organizationA,
+        displayName: 'Example A',
+        authorizationVersion: 5,
+        sessionVersion: 7,
+      ),
+      throwsA(
+        isA<OrganizationContextException>().having(
+          (error) => error.code,
+          'code',
+          'sign_out_in_progress',
+        ),
+      ),
+    );
+
+    clearGate.complete();
+    await signingOut;
+    final OrganizationContext signedBackIn = await coordinator.switchTo(
+      organizationId: organizationA,
+      displayName: 'Example A',
+      authorizationVersion: 5,
+      sessionVersion: 7,
+    );
+    expect(signedBackIn.sessionVersion, 7);
   });
 
   test(
@@ -500,8 +664,82 @@ void main() {
       expect(requests.single.generation, context.generation);
       cleared.complete();
       await invalidating;
+
+      await expectLater(
+        coordinator.switchTo(
+          organizationId: organizationA,
+          displayName: 'Example A',
+          authorizationVersion: 2,
+          sessionVersion: 3,
+        ),
+        throwsA(
+          isA<OrganizationContextException>().having(
+            (error) => error.code,
+            'code',
+            'stale_session_version',
+          ),
+        ),
+      );
+      await expectLater(
+        coordinator.switchTo(
+          organizationId: organizationA,
+          displayName: 'Example A',
+          authorizationVersion: 3,
+          sessionVersion: 3,
+        ),
+        throwsA(
+          isA<OrganizationContextException>().having(
+            (error) => error.code,
+            'code',
+            'stale_session_version',
+          ),
+        ),
+      );
+      final OrganizationContext refreshed = await coordinator.switchTo(
+        organizationId: organizationA,
+        displayName: 'Example A',
+        authorizationVersion: 2,
+        sessionVersion: 4,
+      );
+      expect(refreshed.sessionVersion, 4);
     },
   );
+
+  test('membership invalidation requires an independent authorization bump',
+      () async {
+    final OrganizationContextCoordinator coordinator =
+        OrganizationContextCoordinator(clearTenantState: (_) async {});
+    await coordinator.switchTo(
+      organizationId: organizationA,
+      displayName: 'Example A',
+      authorizationVersion: 2,
+      sessionVersion: 3,
+    );
+    await coordinator.invalidate(TenantInvalidationReason.membershipRemoval);
+
+    await expectLater(
+      coordinator.switchTo(
+        organizationId: organizationA,
+        displayName: 'Example A',
+        authorizationVersion: 2,
+        sessionVersion: 4,
+      ),
+      throwsA(
+        isA<OrganizationContextException>().having(
+          (error) => error.code,
+          'code',
+          'stale_authorization_version',
+        ),
+      ),
+    );
+    final OrganizationContext refreshed = await coordinator.switchTo(
+      organizationId: organizationA,
+      displayName: 'Example A',
+      authorizationVersion: 3,
+      sessionVersion: 3,
+    );
+    expect(refreshed.authorizationVersion, 3);
+  });
 
   test(
     'all authority invalidations clear tenant state and revoke context',
