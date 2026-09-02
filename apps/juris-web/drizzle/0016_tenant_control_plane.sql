@@ -213,9 +213,20 @@ CREATE TABLE `organization_policy_current` (
 	`organization_id` text PRIMARY KEY NOT NULL,
 	`policy_revision` integer NOT NULL,
 	`pointer_version` integer DEFAULT 1 NOT NULL,
+	`activation_request_id` text,
+	`activation_request_revision` integer,
+	`activation_approval_receipt_id` text,
+	`activation_approval_receipt_sha256` text,
+	`activation_requested_by_actor_id` text,
+	`activation_approved_by_actor_id` text,
 	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	FOREIGN KEY (`organization_id`, `policy_revision`) REFERENCES `organization_policy_versions`(`organization_id`, `policy_revision`) ON UPDATE RESTRICT ON DELETE RESTRICT,
-	CONSTRAINT `organization_policy_current_versions_check` CHECK(`policy_revision` >= 1 AND `pointer_version` >= 1)
+	FOREIGN KEY (`organization_id`, `activation_approval_receipt_id`) REFERENCES `organization_security_receipts`(`organization_id`, `receipt_id`) ON UPDATE RESTRICT ON DELETE RESTRICT,
+	CONSTRAINT `organization_policy_current_versions_check` CHECK(`policy_revision` >= 1 AND `pointer_version` >= 1),
+	CONSTRAINT `organization_policy_activation_shape_check` CHECK(
+		(`policy_revision` = 1 AND `pointer_version` = 1 AND `activation_request_id` IS NULL AND `activation_request_revision` IS NULL AND `activation_approval_receipt_id` IS NULL AND `activation_approval_receipt_sha256` IS NULL AND `activation_requested_by_actor_id` IS NULL AND `activation_approved_by_actor_id` IS NULL)
+		OR (`policy_revision` > 1 AND `pointer_version` > 1 AND length(`activation_request_id`) BETWEEN 20 AND 128 AND `activation_request_id` NOT GLOB '*[^A-Za-z0-9_-]*' AND `activation_request_revision` >= 1 AND length(`activation_approval_receipt_id`) BETWEEN 20 AND 128 AND `activation_approval_receipt_id` NOT GLOB '*[^A-Za-z0-9_-]*' AND length(`activation_approval_receipt_sha256`) = 64 AND `activation_approval_receipt_sha256` NOT GLOB '*[^0-9a-f]*' AND length(`activation_requested_by_actor_id`) BETWEEN 20 AND 128 AND `activation_requested_by_actor_id` NOT GLOB '*[^A-Za-z0-9_-]*' AND length(`activation_approved_by_actor_id`) BETWEEN 20 AND 128 AND `activation_approved_by_actor_id` NOT GLOB '*[^A-Za-z0-9_-]*' AND `activation_requested_by_actor_id` <> `activation_approved_by_actor_id`)
+	)
 );
 --> statement-breakpoint
 
@@ -327,6 +338,8 @@ CREATE TABLE `organization_action_grant_revisions` (
 	`authority_version` text DEFAULT 'organization-action-authority.v1' NOT NULL,
 	`actor_membership_id` text NOT NULL,
 	`actor_id` text NOT NULL,
+	`membership_authorization_version` integer NOT NULL,
+	`policy_revision` integer NOT NULL,
 	`issued_by_membership_id` text NOT NULL,
 	`action` text NOT NULL,
 	`status` text NOT NULL,
@@ -340,6 +353,7 @@ CREATE TABLE `organization_action_grant_revisions` (
 	CONSTRAINT `organization_action_grant_id_check` CHECK(length(`grant_id`) BETWEEN 20 AND 128 AND `grant_id` NOT GLOB '*[^A-Za-z0-9_-]*'),
 	CONSTRAINT `organization_action_grant_actor_id_check` CHECK(length(`actor_id`) BETWEEN 20 AND 128 AND `actor_id` NOT GLOB '*[^A-Za-z0-9_-]*'),
 	CONSTRAINT `organization_action_grant_revision_check` CHECK(`grant_revision` >= 1),
+	CONSTRAINT `organization_action_grant_bound_versions_check` CHECK(`membership_authorization_version` >= 1 AND `policy_revision` >= 1),
 	CONSTRAINT `organization_action_grant_authority_check` CHECK(`authority_version` = 'organization-action-authority.v1'),
 	CONSTRAINT `organization_action_grant_action_check` CHECK(`action` IN ('member_invite', 'member_suspend')),
 	CONSTRAINT `organization_action_grant_status_check` CHECK(`status` IN ('active', 'suspended', 'revoked', 'superseded')),
@@ -359,6 +373,8 @@ CREATE TABLE `organization_action_grant_current` (
 	`organization_id` text NOT NULL,
 	`actor_membership_id` text NOT NULL,
 	`actor_id` text NOT NULL,
+	`membership_authorization_version` integer NOT NULL,
+	`policy_revision` integer NOT NULL,
 	`authority_version` text DEFAULT 'organization-action-authority.v1' NOT NULL,
 	`action` text NOT NULL,
 	`grant_id` text NOT NULL,
@@ -370,7 +386,7 @@ CREATE TABLE `organization_action_grant_current` (
 	FOREIGN KEY (`organization_id`, `grant_id`, `grant_revision`, `actor_membership_id`, `actor_id`, `authority_version`, `action`) REFERENCES `organization_action_grant_revisions`(`organization_id`, `grant_id`, `grant_revision`, `actor_membership_id`, `actor_id`, `authority_version`, `action`) ON UPDATE RESTRICT ON DELETE RESTRICT,
 	CONSTRAINT `organization_action_grant_current_action_check` CHECK(`action` IN ('member_invite', 'member_suspend')),
 	CONSTRAINT `organization_action_grant_current_authority_check` CHECK(`authority_version` = 'organization-action-authority.v1'),
-	CONSTRAINT `organization_action_grant_current_versions_check` CHECK(`grant_revision` >= 1 AND `pointer_version` >= 1)
+	CONSTRAINT `organization_action_grant_current_versions_check` CHECK(`grant_revision` >= 1 AND `pointer_version` >= 1 AND `membership_authorization_version` >= 1 AND `policy_revision` >= 1)
 );
 --> statement-breakpoint
 
@@ -381,6 +397,8 @@ CREATE TABLE `compliance_export_grant_revisions` (
 	`authority_version` text DEFAULT 'compliance-export-authority.v1' NOT NULL,
 	`actor_membership_id` text NOT NULL,
 	`actor_id` text NOT NULL,
+	`membership_authorization_version` integer NOT NULL,
+	`policy_revision` integer NOT NULL,
 	`issued_by_membership_id` text NOT NULL,
 	`status` text NOT NULL,
 	`valid_from` text NOT NULL,
@@ -393,6 +411,7 @@ CREATE TABLE `compliance_export_grant_revisions` (
 	CONSTRAINT `compliance_export_grant_id_check` CHECK(length(`grant_id`) BETWEEN 20 AND 128 AND `grant_id` NOT GLOB '*[^A-Za-z0-9_-]*'),
 	CONSTRAINT `compliance_export_grant_actor_id_check` CHECK(length(`actor_id`) BETWEEN 20 AND 128 AND `actor_id` NOT GLOB '*[^A-Za-z0-9_-]*'),
 	CONSTRAINT `compliance_export_grant_revision_check` CHECK(`grant_revision` >= 1),
+	CONSTRAINT `compliance_export_grant_bound_versions_check` CHECK(`membership_authorization_version` >= 1 AND `policy_revision` >= 1),
 	CONSTRAINT `compliance_export_grant_authority_check` CHECK(`authority_version` = 'compliance-export-authority.v1'),
 	CONSTRAINT `compliance_export_grant_status_check` CHECK(`status` IN ('active', 'suspended', 'revoked', 'superseded')),
 	CONSTRAINT `compliance_export_grant_receipt_check` CHECK(length(`receipt_sha256`) = 64 AND `receipt_sha256` NOT GLOB '*[^0-9a-f]*'),
@@ -411,6 +430,8 @@ CREATE TABLE `compliance_export_grant_current` (
 	`organization_id` text NOT NULL,
 	`actor_membership_id` text NOT NULL,
 	`actor_id` text NOT NULL,
+	`membership_authorization_version` integer NOT NULL,
+	`policy_revision` integer NOT NULL,
 	`authority_version` text DEFAULT 'compliance-export-authority.v1' NOT NULL,
 	`grant_id` text NOT NULL,
 	`grant_revision` integer NOT NULL,
@@ -420,7 +441,7 @@ CREATE TABLE `compliance_export_grant_current` (
 	FOREIGN KEY (`organization_id`, `actor_membership_id`, `actor_id`) REFERENCES `organization_memberships`(`organization_id`, `id`, `actor_id`) ON UPDATE RESTRICT ON DELETE RESTRICT,
 	FOREIGN KEY (`organization_id`, `grant_id`, `grant_revision`, `actor_membership_id`, `actor_id`, `authority_version`) REFERENCES `compliance_export_grant_revisions`(`organization_id`, `grant_id`, `grant_revision`, `actor_membership_id`, `actor_id`, `authority_version`) ON UPDATE RESTRICT ON DELETE RESTRICT,
 	CONSTRAINT `compliance_export_grant_current_authority_check` CHECK(`authority_version` = 'compliance-export-authority.v1'),
-	CONSTRAINT `compliance_export_grant_current_versions_check` CHECK(`grant_revision` >= 1 AND `pointer_version` >= 1)
+	CONSTRAINT `compliance_export_grant_current_versions_check` CHECK(`grant_revision` >= 1 AND `pointer_version` >= 1 AND `membership_authorization_version` >= 1 AND `policy_revision` >= 1)
 );
 --> statement-breakpoint
 
@@ -481,7 +502,10 @@ CREATE TABLE `tenant_export_approval_records` (
 	`approval_version` text DEFAULT 'dossier-export-approval.v1' NOT NULL,
 	`dossier_owner_membership_id` text NOT NULL,
 	`dossier_owner_actor_id` text NOT NULL,
+	`owner_membership_authorization_version` integer NOT NULL,
+	`policy_revision` integer NOT NULL,
 	`approval_receipt_id` text NOT NULL,
+	`approval_receipt_sha256` text NOT NULL,
 	`dossier_manifest_sha256` text NOT NULL,
 	`approved_at` text NOT NULL,
 	PRIMARY KEY (`organization_id`, `export_request_id`, `dossier_id`),
@@ -490,7 +514,9 @@ CREATE TABLE `tenant_export_approval_records` (
 	CONSTRAINT `tenant_export_approvals_dossier_id_check` CHECK(length(`dossier_id`) BETWEEN 20 AND 128 AND `dossier_id` NOT GLOB '*[^A-Za-z0-9_-]*'),
 	CONSTRAINT `tenant_export_approvals_version_check` CHECK(`approval_version` = 'dossier-export-approval.v1'),
 	CONSTRAINT `tenant_export_approvals_actor_id_check` CHECK(length(`dossier_owner_actor_id`) BETWEEN 20 AND 128 AND `dossier_owner_actor_id` NOT GLOB '*[^A-Za-z0-9_-]*'),
+	CONSTRAINT `tenant_export_approvals_bound_versions_check` CHECK(`owner_membership_authorization_version` >= 1 AND `policy_revision` >= 1),
 	CONSTRAINT `tenant_export_approvals_receipt_id_check` CHECK(length(`approval_receipt_id`) BETWEEN 20 AND 128 AND `approval_receipt_id` NOT GLOB '*[^A-Za-z0-9_-]*'),
+	CONSTRAINT `tenant_export_approvals_receipt_sha_check` CHECK(length(`approval_receipt_sha256`) = 64 AND `approval_receipt_sha256` NOT GLOB '*[^0-9a-f]*'),
 	CONSTRAINT `tenant_export_approvals_manifest_check` CHECK(length(`dossier_manifest_sha256`) = 64 AND `dossier_manifest_sha256` NOT GLOB '*[^0-9a-f]*'),
 	CONSTRAINT `tenant_export_approvals_time_check` CHECK(julianday(`approved_at`) IS NOT NULL)
 );
@@ -544,7 +570,7 @@ CREATE TABLE `tenant_sessions` (
 	CONSTRAINT `tenant_sessions_identity_shape_check` CHECK((`authentication_method` = 'entra_oidc' AND `identity_connection_id` IS NOT NULL AND `identity_configuration_version` IS NOT NULL) OR (`authentication_method` <> 'entra_oidc' AND `identity_connection_id` IS NULL AND `identity_configuration_version` IS NULL)),
 	CONSTRAINT `tenant_sessions_status_check` CHECK(`status` IN ('active', 'revoked', 'expired')),
 	CONSTRAINT `tenant_sessions_revocation_shape_check` CHECK((`status` = 'revoked' AND julianday(`revoked_at`) IS NOT NULL AND julianday(`revoked_at`) >= julianday(`issued_at`)) OR (`status` <> 'revoked' AND `revoked_at` IS NULL)),
-	CONSTRAINT `tenant_sessions_time_check` CHECK(julianday(`issued_at`) IS NOT NULL AND julianday(`expires_at`) IS NOT NULL AND julianday(`last_seen_at`) IS NOT NULL AND julianday(`expires_at`) > julianday(`issued_at`) AND julianday(`last_seen_at`) >= julianday(`issued_at`) AND julianday(`last_seen_at`) <= julianday(`expires_at`)),
+	CONSTRAINT `tenant_sessions_time_check` CHECK(julianday(`issued_at`) IS NOT NULL AND julianday(`expires_at`) IS NOT NULL AND julianday(`last_seen_at`) IS NOT NULL AND julianday(`expires_at`) > julianday(`issued_at`) AND julianday(`expires_at`) <= julianday(`issued_at`) + 7 AND julianday(`last_seen_at`) >= julianday(`issued_at`) AND julianday(`last_seen_at`) <= julianday(`expires_at`)),
 	UNIQUE (`organization_id`, `id`)
 );
 --> statement-breakpoint
@@ -626,6 +652,7 @@ CREATE TABLE `organization_security_receipts` (
 	`request_class` text NOT NULL,
 	`scope` text NOT NULL,
 	`dossier_id` text,
+	`target_dossier_id` text,
 	`action` text NOT NULL,
 	`policy_version` text NOT NULL,
 	`organization_authorization_version` integer,
@@ -656,7 +683,7 @@ CREATE TABLE `organization_security_receipts` (
 	CONSTRAINT `organization_security_receipts_outcome_check` CHECK(`outcome` IN ('allowed', 'denied')),
 	CONSTRAINT `organization_security_receipts_actor_check` CHECK(length(`actor_id`) BETWEEN 20 AND 128 AND `actor_id` NOT GLOB '*[^A-Za-z0-9_-]*' AND (`reviewer_actor_id` IS NULL OR (length(`reviewer_actor_id`) BETWEEN 20 AND 128 AND `reviewer_actor_id` NOT GLOB '*[^A-Za-z0-9_-]*' AND `reviewer_actor_id` <> `actor_id`))),
 	CONSTRAINT `organization_security_receipts_authentication_check` CHECK(`authentication_method` IN ('entra_oidc', 'session_cookie', 'invitation_token', 'local_test')),
-	CONSTRAINT `organization_security_receipts_scope_check` CHECK(`request_class` IN ('identity', 'organization', 'dossier', 'compliance_export', 'security') AND `scope` IN ('identity', 'organization', 'dossier') AND ((`scope` = 'dossier' AND length(`dossier_id`) BETWEEN 20 AND 128 AND `dossier_id` NOT GLOB '*[^A-Za-z0-9_-]*') OR (`scope` <> 'dossier' AND `dossier_id` IS NULL))),
+	CONSTRAINT `organization_security_receipts_scope_check` CHECK(`request_class` IN ('identity', 'organization', 'dossier', 'compliance_export', 'security') AND `scope` IN ('identity', 'organization', 'dossier') AND ((`scope` = 'dossier' AND length(`dossier_id`) BETWEEN 20 AND 128 AND `dossier_id` NOT GLOB '*[^A-Za-z0-9_-]*' AND `target_dossier_id` IS NULL) OR (`scope` <> 'dossier' AND `dossier_id` IS NULL AND ((`action` IN ('legal_hold_create_approve','legal_hold_release_approve') AND length(`target_dossier_id`) BETWEEN 20 AND 128 AND `target_dossier_id` NOT GLOB '*[^A-Za-z0-9_-]*') OR (`action` NOT IN ('legal_hold_create_approve','legal_hold_release_approve') AND `target_dossier_id` IS NULL))))),
 	CONSTRAINT `organization_security_receipts_action_check` CHECK(length(`action`) BETWEEN 1 AND 128 AND `action` NOT GLOB '*[^A-Za-z0-9._:-]*'),
 	CONSTRAINT `organization_security_receipts_policy_check` CHECK(length(`policy_version`) BETWEEN 1 AND 64 AND `policy_version` NOT GLOB '*[^A-Za-z0-9._-]*'),
 	CONSTRAINT `organization_security_receipts_versions_check` CHECK((`organization_authorization_version` IS NULL OR `organization_authorization_version` >= 1) AND (`membership_authorization_version` IS NULL OR `membership_authorization_version` >= 1) AND (`participant_authorization_version` IS NULL OR `participant_authorization_version` >= 1) AND (`policy_revision` IS NULL OR `policy_revision` >= 1) AND (`identity_configuration_version` IS NULL OR `identity_configuration_version` >= 1) AND `resource_revision` >= 1 AND (`tenant_manifest_revision` IS NULL OR `tenant_manifest_revision` >= 1)),
@@ -830,6 +857,7 @@ FOR EACH ROW
 WHEN NEW.`id` IS NOT OLD.`id` OR NEW.`organization_id` IS NOT OLD.`organization_id` OR NEW.`invited_by_membership_id` IS NOT OLD.`invited_by_membership_id` OR NEW.`intended_role` IS NOT OLD.`intended_role` OR NEW.`intended_identity_issuer` IS NOT OLD.`intended_identity_issuer` OR NEW.`intended_identity_tenant_id` IS NOT OLD.`intended_identity_tenant_id` OR NEW.`intended_identity_subject` IS NOT OLD.`intended_identity_subject` OR NEW.`exact_origin` IS NOT OLD.`exact_origin` OR NEW.`token_sha256` IS NOT OLD.`token_sha256` OR NEW.`delivery_address_hmac_sha256` IS NOT OLD.`delivery_address_hmac_sha256` OR NEW.`expires_at` IS NOT OLD.`expires_at` OR NEW.`created_at` IS NOT OLD.`created_at`
 	OR NEW.`authorization_version` <> OLD.`authorization_version` + 1
 	OR NOT (OLD.`status` = 'active' AND NEW.`status` IN ('accepted', 'revoked', 'expired'))
+	OR (NEW.`status` = 'accepted' AND (julianday(OLD.`expires_at`) <= julianday('now') OR julianday(NEW.`accepted_at`) > julianday('now')))
 BEGIN
 	SELECT RAISE(ABORT, 'invitation mutation is stale or not allowlisted');
 END;
@@ -860,7 +888,53 @@ END;
 CREATE TRIGGER `organization_policy_current_update_guard`
 BEFORE UPDATE ON `organization_policy_current`
 FOR EACH ROW
-WHEN NEW.`organization_id` IS NOT OLD.`organization_id` OR NEW.`policy_revision` <= OLD.`policy_revision` OR NEW.`pointer_version` <> OLD.`pointer_version` + 1
+WHEN NEW.`organization_id` IS NOT OLD.`organization_id` OR NEW.`policy_revision` <> OLD.`policy_revision` + 1 OR NEW.`pointer_version` <> OLD.`pointer_version` + 1
+	OR NEW.`activation_request_id` IS OLD.`activation_request_id`
+	OR NOT EXISTS (
+		SELECT 1
+		FROM `organization_security_receipts` AS approval
+		JOIN `tenant_sessions` AS approval_session
+			ON approval_session.`organization_id` = approval.`organization_id`
+			AND approval_session.`id` = approval.`session_id`
+		JOIN `organization_memberships` AS approver
+			ON approver.`organization_id` = approval_session.`organization_id`
+			AND approver.`id` = approval_session.`membership_id`
+			AND approver.`actor_id` = approval_session.`actor_id`
+		JOIN `organizations` AS organization
+			ON organization.`id` = approval.`organization_id`
+		JOIN `organization_policy_versions` AS target_policy
+			ON target_policy.`organization_id` = NEW.`organization_id`
+			AND target_policy.`policy_revision` = NEW.`policy_revision`
+		WHERE approval.`organization_id` = NEW.`organization_id`
+			AND approval.`receipt_id` = NEW.`activation_approval_receipt_id`
+			AND approval.`receipt_sha256` = NEW.`activation_approval_receipt_sha256`
+			AND approval.`event_type` = 'authorization_decision'
+			AND approval.`evidence_status` = 'complete'
+			AND approval.`outcome` = 'allowed'
+			AND approval.`actor_id` = NEW.`activation_requested_by_actor_id`
+			AND approval.`reviewer_actor_id` = NEW.`activation_approved_by_actor_id`
+			AND approval.`request_class` = 'security'
+			AND approval.`scope` = 'organization'
+			AND approval.`dossier_id` IS NULL
+			AND approval.`target_dossier_id` IS NULL
+			AND approval.`action` = 'policy_activation_approve'
+			AND approval.`policy_version` = 'phase-b-policy-activation.v1'
+			AND approval.`policy_revision` = OLD.`policy_revision`
+			AND approval.`organization_authorization_version` = organization.`authorization_version`
+			AND approval.`organization_authorization_version` = approval_session.`organization_authorization_version`
+			AND approval.`membership_authorization_version` = approval_session.`membership_authorization_version`
+			AND approval.`resource_revision` = NEW.`policy_revision`
+			AND approval.`resource_digest_sha256` = target_policy.`receipt_sha256`
+			AND approval_session.`actor_id` = NEW.`activation_approved_by_actor_id`
+			AND approval_session.`status` = 'active'
+			AND approval_session.`policy_revision` = OLD.`policy_revision`
+			AND julianday(approval_session.`expires_at`) > julianday('now')
+			AND organization.`status` = 'active'
+			AND approver.`status` = 'active'
+			AND approver.`role` IN ('org_owner', 'org_admin')
+			AND approver.`authorization_version` = approval.`membership_authorization_version`
+			AND julianday(approval.`occurred_at`) <= julianday('now')
+	)
 BEGIN
 	SELECT RAISE(ABORT, 'current policy pointer cannot regress or skip its version');
 END;
@@ -927,7 +1001,9 @@ CREATE TRIGGER `tenant_resource_manifest_current_delete_guard` BEFORE DELETE ON 
 CREATE TRIGGER `organization_action_grant_revisions_insert_guard`
 BEFORE INSERT ON `organization_action_grant_revisions`
 FOR EACH ROW
-WHEN NOT EXISTS (SELECT 1 FROM `organization_memberships` WHERE `organization_id` = NEW.`organization_id` AND `id` = NEW.`actor_membership_id` AND `actor_id` = NEW.`actor_id`)
+WHEN NOT EXISTS (SELECT 1 FROM `organization_memberships` WHERE `organization_id` = NEW.`organization_id` AND `id` = NEW.`actor_membership_id` AND `actor_id` = NEW.`actor_id` AND `status` = 'active' AND `authorization_version` = NEW.`membership_authorization_version`)
+	OR NOT EXISTS (SELECT 1 FROM `organization_memberships` WHERE `organization_id` = NEW.`organization_id` AND `id` = NEW.`issued_by_membership_id` AND `status` = 'active')
+	OR NOT EXISTS (SELECT 1 FROM `organization_policy_current` WHERE `organization_id` = NEW.`organization_id` AND `policy_revision` = NEW.`policy_revision`)
 	OR (NEW.`grant_revision` = 1 AND EXISTS (SELECT 1 FROM `organization_action_grant_revisions` WHERE `organization_id` = NEW.`organization_id` AND `actor_id` = NEW.`actor_id` AND `action` = NEW.`action`))
 	OR (NEW.`grant_revision` > 1 AND NOT EXISTS (
 	SELECT 1 FROM `organization_action_grant_revisions`
@@ -948,7 +1024,8 @@ WHEN NEW.`pointer_version` <> 1 OR NEW.`grant_revision` <> 1 OR NOT EXISTS (
 	SELECT 1 FROM `organization_action_grant_revisions` AS grant_revision
 	JOIN `organization_memberships` AS actor ON actor.`organization_id` = grant_revision.`organization_id` AND actor.`id` = grant_revision.`actor_membership_id` AND actor.`actor_id` = grant_revision.`actor_id`
 	JOIN `organizations` AS organization ON organization.`id` = grant_revision.`organization_id`
-	WHERE grant_revision.`organization_id` = NEW.`organization_id` AND grant_revision.`grant_id` = NEW.`grant_id` AND grant_revision.`grant_revision` = NEW.`grant_revision` AND grant_revision.`actor_membership_id` = NEW.`actor_membership_id` AND grant_revision.`actor_id` = NEW.`actor_id` AND grant_revision.`authority_version` = NEW.`authority_version` AND grant_revision.`action` = NEW.`action` AND grant_revision.`status` = 'active' AND actor.`status` = 'active' AND organization.`status` = 'active' AND julianday(grant_revision.`valid_from`) <= julianday('now') AND (grant_revision.`valid_until` IS NULL OR julianday(grant_revision.`valid_until`) > julianday('now'))
+	JOIN `organization_policy_current` AS policy ON policy.`organization_id` = grant_revision.`organization_id`
+	WHERE grant_revision.`organization_id` = NEW.`organization_id` AND grant_revision.`grant_id` = NEW.`grant_id` AND grant_revision.`grant_revision` = NEW.`grant_revision` AND grant_revision.`actor_membership_id` = NEW.`actor_membership_id` AND grant_revision.`actor_id` = NEW.`actor_id` AND grant_revision.`membership_authorization_version` = NEW.`membership_authorization_version` AND grant_revision.`policy_revision` = NEW.`policy_revision` AND grant_revision.`authority_version` = NEW.`authority_version` AND grant_revision.`action` = NEW.`action` AND grant_revision.`status` = 'active' AND actor.`status` = 'active' AND actor.`authorization_version` = grant_revision.`membership_authorization_version` AND policy.`policy_revision` = grant_revision.`policy_revision` AND organization.`status` = 'active' AND julianday(grant_revision.`valid_from`) <= julianday('now') AND (grant_revision.`valid_until` IS NULL OR julianday(grant_revision.`valid_until`) > julianday('now'))
 )
 BEGIN
 	SELECT RAISE(ABORT, 'current organization grant must resolve to exact active authority');
@@ -959,14 +1036,15 @@ BEFORE UPDATE ON `organization_action_grant_current`
 FOR EACH ROW
 WHEN NEW.`organization_id` IS NOT OLD.`organization_id` OR NEW.`actor_membership_id` IS NOT OLD.`actor_membership_id` OR NEW.`actor_id` IS NOT OLD.`actor_id` OR NEW.`authority_version` IS NOT OLD.`authority_version` OR NEW.`action` IS NOT OLD.`action` OR NEW.`pointer_version` <> OLD.`pointer_version` + 1
 	OR NEW.`grant_id` IS NOT OLD.`grant_id` OR NEW.`grant_revision` <> OLD.`grant_revision` + 1
-	OR NOT EXISTS (SELECT 1 FROM `organization_action_grant_revisions` WHERE `organization_id` = NEW.`organization_id` AND `grant_id` = NEW.`grant_id` AND `grant_revision` = NEW.`grant_revision` AND `actor_membership_id` = NEW.`actor_membership_id` AND `actor_id` = NEW.`actor_id` AND `authority_version` = NEW.`authority_version` AND `action` = NEW.`action`)
+	OR NOT EXISTS (SELECT 1 FROM `organization_action_grant_revisions` WHERE `organization_id` = NEW.`organization_id` AND `grant_id` = NEW.`grant_id` AND `grant_revision` = NEW.`grant_revision` AND `actor_membership_id` = NEW.`actor_membership_id` AND `actor_id` = NEW.`actor_id` AND `membership_authorization_version` = NEW.`membership_authorization_version` AND `policy_revision` = NEW.`policy_revision` AND `authority_version` = NEW.`authority_version` AND `action` = NEW.`action`)
 	OR (
 		EXISTS (SELECT 1 FROM `organization_action_grant_revisions` WHERE `organization_id` = NEW.`organization_id` AND `grant_id` = NEW.`grant_id` AND `grant_revision` = NEW.`grant_revision` AND `status` = 'active')
 		AND NOT EXISTS (
 			SELECT 1 FROM `organization_action_grant_revisions` AS grant_revision
 			JOIN `organization_memberships` AS actor ON actor.`organization_id` = grant_revision.`organization_id` AND actor.`id` = grant_revision.`actor_membership_id` AND actor.`actor_id` = grant_revision.`actor_id`
 			JOIN `organizations` AS organization ON organization.`id` = grant_revision.`organization_id`
-			WHERE grant_revision.`organization_id` = NEW.`organization_id` AND grant_revision.`grant_id` = NEW.`grant_id` AND grant_revision.`grant_revision` = NEW.`grant_revision` AND actor.`status` = 'active' AND organization.`status` = 'active' AND julianday(grant_revision.`valid_from`) <= julianday('now') AND (grant_revision.`valid_until` IS NULL OR julianday(grant_revision.`valid_until`) > julianday('now'))
+			JOIN `organization_policy_current` AS policy ON policy.`organization_id` = grant_revision.`organization_id`
+			WHERE grant_revision.`organization_id` = NEW.`organization_id` AND grant_revision.`grant_id` = NEW.`grant_id` AND grant_revision.`grant_revision` = NEW.`grant_revision` AND actor.`status` = 'active' AND actor.`authorization_version` = grant_revision.`membership_authorization_version` AND actor.`authorization_version` = NEW.`membership_authorization_version` AND policy.`policy_revision` = grant_revision.`policy_revision` AND policy.`policy_revision` = NEW.`policy_revision` AND organization.`status` = 'active' AND julianday(grant_revision.`valid_from`) <= julianday('now') AND (grant_revision.`valid_until` IS NULL OR julianday(grant_revision.`valid_until`) > julianday('now'))
 		)
 	)
 BEGIN
@@ -979,7 +1057,9 @@ CREATE TRIGGER `organization_action_grant_current_delete_guard` BEFORE DELETE ON
 CREATE TRIGGER `compliance_export_grant_revisions_insert_guard`
 BEFORE INSERT ON `compliance_export_grant_revisions`
 FOR EACH ROW
-WHEN NOT EXISTS (SELECT 1 FROM `organization_memberships` WHERE `organization_id` = NEW.`organization_id` AND `id` = NEW.`actor_membership_id` AND `actor_id` = NEW.`actor_id`)
+WHEN NOT EXISTS (SELECT 1 FROM `organization_memberships` WHERE `organization_id` = NEW.`organization_id` AND `id` = NEW.`actor_membership_id` AND `actor_id` = NEW.`actor_id` AND `status` = 'active' AND `authorization_version` = NEW.`membership_authorization_version`)
+	OR NOT EXISTS (SELECT 1 FROM `organization_memberships` WHERE `organization_id` = NEW.`organization_id` AND `id` = NEW.`issued_by_membership_id` AND `status` = 'active')
+	OR NOT EXISTS (SELECT 1 FROM `organization_policy_current` WHERE `organization_id` = NEW.`organization_id` AND `policy_revision` = NEW.`policy_revision`)
 	OR (NEW.`grant_revision` = 1 AND EXISTS (SELECT 1 FROM `compliance_export_grant_revisions` WHERE `organization_id` = NEW.`organization_id` AND `actor_id` = NEW.`actor_id`))
 	OR (NEW.`grant_revision` > 1 AND NOT EXISTS (
 	SELECT 1 FROM `compliance_export_grant_revisions`
@@ -1000,7 +1080,8 @@ WHEN NEW.`pointer_version` <> 1 OR NEW.`grant_revision` <> 1 OR NOT EXISTS (
 	SELECT 1 FROM `compliance_export_grant_revisions` AS grant_revision
 	JOIN `organization_memberships` AS actor ON actor.`organization_id` = grant_revision.`organization_id` AND actor.`id` = grant_revision.`actor_membership_id` AND actor.`actor_id` = grant_revision.`actor_id`
 	JOIN `organizations` AS organization ON organization.`id` = grant_revision.`organization_id`
-	WHERE grant_revision.`organization_id` = NEW.`organization_id` AND grant_revision.`grant_id` = NEW.`grant_id` AND grant_revision.`grant_revision` = NEW.`grant_revision` AND grant_revision.`actor_membership_id` = NEW.`actor_membership_id` AND grant_revision.`actor_id` = NEW.`actor_id` AND grant_revision.`authority_version` = NEW.`authority_version` AND grant_revision.`status` = 'active' AND actor.`status` = 'active' AND organization.`status` = 'active' AND julianday(grant_revision.`valid_from`) <= julianday('now') AND (grant_revision.`valid_until` IS NULL OR julianday(grant_revision.`valid_until`) > julianday('now'))
+	JOIN `organization_policy_current` AS policy ON policy.`organization_id` = grant_revision.`organization_id`
+	WHERE grant_revision.`organization_id` = NEW.`organization_id` AND grant_revision.`grant_id` = NEW.`grant_id` AND grant_revision.`grant_revision` = NEW.`grant_revision` AND grant_revision.`actor_membership_id` = NEW.`actor_membership_id` AND grant_revision.`actor_id` = NEW.`actor_id` AND grant_revision.`membership_authorization_version` = NEW.`membership_authorization_version` AND grant_revision.`policy_revision` = NEW.`policy_revision` AND grant_revision.`authority_version` = NEW.`authority_version` AND grant_revision.`status` = 'active' AND actor.`status` = 'active' AND actor.`authorization_version` = grant_revision.`membership_authorization_version` AND policy.`policy_revision` = grant_revision.`policy_revision` AND organization.`status` = 'active' AND julianday(grant_revision.`valid_from`) <= julianday('now') AND (grant_revision.`valid_until` IS NULL OR julianday(grant_revision.`valid_until`) > julianday('now'))
 )
 BEGIN
 	SELECT RAISE(ABORT, 'current compliance grant must resolve to exact active authority');
@@ -1011,14 +1092,15 @@ BEFORE UPDATE ON `compliance_export_grant_current`
 FOR EACH ROW
 WHEN NEW.`organization_id` IS NOT OLD.`organization_id` OR NEW.`actor_membership_id` IS NOT OLD.`actor_membership_id` OR NEW.`actor_id` IS NOT OLD.`actor_id` OR NEW.`authority_version` IS NOT OLD.`authority_version` OR NEW.`pointer_version` <> OLD.`pointer_version` + 1
 	OR NEW.`grant_id` IS NOT OLD.`grant_id` OR NEW.`grant_revision` <> OLD.`grant_revision` + 1
-	OR NOT EXISTS (SELECT 1 FROM `compliance_export_grant_revisions` WHERE `organization_id` = NEW.`organization_id` AND `grant_id` = NEW.`grant_id` AND `grant_revision` = NEW.`grant_revision` AND `actor_membership_id` = NEW.`actor_membership_id` AND `actor_id` = NEW.`actor_id` AND `authority_version` = NEW.`authority_version`)
+	OR NOT EXISTS (SELECT 1 FROM `compliance_export_grant_revisions` WHERE `organization_id` = NEW.`organization_id` AND `grant_id` = NEW.`grant_id` AND `grant_revision` = NEW.`grant_revision` AND `actor_membership_id` = NEW.`actor_membership_id` AND `actor_id` = NEW.`actor_id` AND `membership_authorization_version` = NEW.`membership_authorization_version` AND `policy_revision` = NEW.`policy_revision` AND `authority_version` = NEW.`authority_version`)
 	OR (
 		EXISTS (SELECT 1 FROM `compliance_export_grant_revisions` WHERE `organization_id` = NEW.`organization_id` AND `grant_id` = NEW.`grant_id` AND `grant_revision` = NEW.`grant_revision` AND `status` = 'active')
 		AND NOT EXISTS (
 			SELECT 1 FROM `compliance_export_grant_revisions` AS grant_revision
 			JOIN `organization_memberships` AS actor ON actor.`organization_id` = grant_revision.`organization_id` AND actor.`id` = grant_revision.`actor_membership_id` AND actor.`actor_id` = grant_revision.`actor_id`
 			JOIN `organizations` AS organization ON organization.`id` = grant_revision.`organization_id`
-			WHERE grant_revision.`organization_id` = NEW.`organization_id` AND grant_revision.`grant_id` = NEW.`grant_id` AND grant_revision.`grant_revision` = NEW.`grant_revision` AND actor.`status` = 'active' AND organization.`status` = 'active' AND julianday(grant_revision.`valid_from`) <= julianday('now') AND (grant_revision.`valid_until` IS NULL OR julianday(grant_revision.`valid_until`) > julianday('now'))
+			JOIN `organization_policy_current` AS policy ON policy.`organization_id` = grant_revision.`organization_id`
+			WHERE grant_revision.`organization_id` = NEW.`organization_id` AND grant_revision.`grant_id` = NEW.`grant_id` AND grant_revision.`grant_revision` = NEW.`grant_revision` AND actor.`status` = 'active' AND actor.`authorization_version` = grant_revision.`membership_authorization_version` AND actor.`authorization_version` = NEW.`membership_authorization_version` AND policy.`policy_revision` = grant_revision.`policy_revision` AND policy.`policy_revision` = NEW.`policy_revision` AND organization.`status` = 'active' AND julianday(grant_revision.`valid_from`) <= julianday('now') AND (grant_revision.`valid_until` IS NULL OR julianday(grant_revision.`valid_until`) > julianday('now'))
 		)
 	)
 BEGIN
@@ -1036,7 +1118,8 @@ WHEN NOT EXISTS (
 	JOIN `compliance_export_grant_current` AS current_grant ON current_grant.`organization_id` = grant_revision.`organization_id` AND current_grant.`actor_id` = grant_revision.`actor_id` AND current_grant.`grant_id` = grant_revision.`grant_id` AND current_grant.`grant_revision` = grant_revision.`grant_revision`
 	JOIN `organization_memberships` AS requester ON requester.`organization_id` = grant_revision.`organization_id` AND requester.`id` = grant_revision.`actor_membership_id` AND requester.`actor_id` = grant_revision.`actor_id`
 	JOIN `organizations` AS organization ON organization.`id` = grant_revision.`organization_id`
-	WHERE grant_revision.`organization_id` = NEW.`organization_id` AND grant_revision.`grant_id` = NEW.`grant_id` AND grant_revision.`grant_revision` = NEW.`grant_revision` AND grant_revision.`actor_membership_id` = NEW.`requester_membership_id` AND grant_revision.`actor_id` = NEW.`requester_actor_id` AND grant_revision.`status` = 'active' AND requester.`status` = 'active' AND organization.`status` = 'active' AND julianday(grant_revision.`valid_from`) <= julianday('now') AND (grant_revision.`valid_until` IS NULL OR julianday(grant_revision.`valid_until`) > julianday('now'))
+	JOIN `organization_policy_current` AS policy ON policy.`organization_id` = grant_revision.`organization_id`
+	WHERE grant_revision.`organization_id` = NEW.`organization_id` AND grant_revision.`grant_id` = NEW.`grant_id` AND grant_revision.`grant_revision` = NEW.`grant_revision` AND grant_revision.`actor_membership_id` = NEW.`requester_membership_id` AND grant_revision.`actor_id` = NEW.`requester_actor_id` AND grant_revision.`membership_authorization_version` = requester.`authorization_version` AND grant_revision.`membership_authorization_version` = current_grant.`membership_authorization_version` AND grant_revision.`policy_revision` = policy.`policy_revision` AND grant_revision.`policy_revision` = current_grant.`policy_revision` AND grant_revision.`status` = 'active' AND requester.`status` = 'active' AND organization.`status` = 'active' AND julianday(grant_revision.`valid_from`) <= julianday('now') AND (grant_revision.`valid_until` IS NULL OR julianday(grant_revision.`valid_until`) > julianday('now'))
 )
 	OR julianday(NEW.`requested_at`) > julianday('now') OR julianday(NEW.`expires_at`) <= julianday('now')
 BEGIN
@@ -1050,7 +1133,7 @@ CREATE TRIGGER `tenant_export_requests_delete_guard` BEFORE DELETE ON `tenant_ex
 CREATE TRIGGER `tenant_export_request_dossiers_insert_guard`
 BEFORE INSERT ON `tenant_export_request_dossiers`
 FOR EACH ROW
-WHEN NOT EXISTS (SELECT 1 FROM `tenant_export_request_state` WHERE `organization_id` = NEW.`organization_id` AND `export_request_id` = NEW.`export_request_id` AND `status` = 'pending')
+WHEN NOT EXISTS (SELECT 1 FROM `tenant_export_request_state` s JOIN `tenant_export_requests` r ON r.`organization_id` = s.`organization_id` AND r.`id` = s.`export_request_id` WHERE s.`organization_id` = NEW.`organization_id` AND s.`export_request_id` = NEW.`export_request_id` AND s.`status` = 'pending' AND julianday(r.`expires_at`) > julianday('now'))
 BEGIN
 	SELECT RAISE(ABORT, 'requested dossiers may only be frozen while the export request is pending');
 END;
@@ -1062,7 +1145,33 @@ CREATE TRIGGER `tenant_export_request_dossiers_delete_guard` BEFORE DELETE ON `t
 CREATE TRIGGER `tenant_export_approval_records_insert_guard`
 BEFORE INSERT ON `tenant_export_approval_records`
 FOR EACH ROW
-WHEN NOT EXISTS (SELECT 1 FROM `tenant_export_request_state` WHERE `organization_id` = NEW.`organization_id` AND `export_request_id` = NEW.`export_request_id` AND `status` = 'pending')
+WHEN NOT EXISTS (SELECT 1 FROM `tenant_export_request_state` s JOIN `tenant_export_requests` r ON r.`organization_id` = s.`organization_id` AND r.`id` = s.`export_request_id` WHERE s.`organization_id` = NEW.`organization_id` AND s.`export_request_id` = NEW.`export_request_id` AND s.`status` = 'pending' AND julianday(r.`expires_at`) > julianday('now'))
+	OR EXISTS (SELECT 1 FROM `tenant_export_requests` WHERE `organization_id` = NEW.`organization_id` AND `id` = NEW.`export_request_id` AND `requester_actor_id` = NEW.`dossier_owner_actor_id`)
+	OR NOT EXISTS (SELECT 1 FROM `organization_memberships` WHERE `organization_id` = NEW.`organization_id` AND `id` = NEW.`dossier_owner_membership_id` AND `actor_id` = NEW.`dossier_owner_actor_id` AND `status` = 'active' AND `authorization_version` = NEW.`owner_membership_authorization_version`)
+	OR NOT EXISTS (SELECT 1 FROM `organization_policy_current` WHERE `organization_id` = NEW.`organization_id` AND `policy_revision` = NEW.`policy_revision`)
+	OR NOT EXISTS (
+		SELECT 1 FROM `organization_security_receipts`
+		WHERE `organization_id` = NEW.`organization_id`
+			AND `receipt_id` = NEW.`approval_receipt_id`
+			AND `receipt_sha256` = NEW.`approval_receipt_sha256`
+			AND `event_type` = 'authorization_decision'
+			AND `evidence_status` = 'complete'
+			AND `outcome` = 'allowed'
+			AND `actor_id` = NEW.`dossier_owner_actor_id`
+			AND `reviewer_actor_id` IS NULL
+			AND `request_class` = 'dossier'
+			AND `scope` = 'dossier'
+			AND `dossier_id` = NEW.`dossier_id`
+			AND `target_dossier_id` IS NULL
+			AND `action` = 'dossier_export_request'
+			AND `membership_authorization_version` = NEW.`owner_membership_authorization_version`
+			AND `policy_revision` = NEW.`policy_revision`
+			AND `organization_authorization_version` = (SELECT `authorization_version` FROM `organizations` WHERE `id` = NEW.`organization_id` AND `status` = 'active')
+			AND `resource_digest_sha256` = NEW.`dossier_manifest_sha256`
+			AND `idempotency_correlation_sha256` = (SELECT `request_receipt_sha256` FROM `tenant_export_requests` WHERE `organization_id` = NEW.`organization_id` AND `id` = NEW.`export_request_id`)
+			AND julianday(`occurred_at`) = julianday(NEW.`approved_at`)
+			AND julianday(`occurred_at`) <= julianday('now')
+	)
 BEGIN
 	SELECT RAISE(ABORT, 'approvals may only be appended while the export request is pending');
 END;
@@ -1085,6 +1194,25 @@ FOR EACH ROW
 WHEN NEW.`organization_id` IS NOT OLD.`organization_id` OR NEW.`export_request_id` IS NOT OLD.`export_request_id` OR NEW.`authorization_version` <> OLD.`authorization_version` + 1
 	OR NOT ((OLD.`status` = 'pending' AND NEW.`status` IN ('approved', 'rejected', 'expired')) OR (OLD.`status` = 'approved' AND NEW.`status` = 'consumed'))
 	OR (NEW.`status` = 'approved' AND ((SELECT count(*) FROM `tenant_export_request_dossiers` WHERE `organization_id` = NEW.`organization_id` AND `export_request_id` = NEW.`export_request_id`) <> (SELECT `expected_dossier_count` FROM `tenant_export_requests` WHERE `organization_id` = NEW.`organization_id` AND `id` = NEW.`export_request_id`) OR (SELECT count(*) FROM `tenant_export_approval_records` WHERE `organization_id` = NEW.`organization_id` AND `export_request_id` = NEW.`export_request_id`) <> (SELECT `expected_dossier_count` FROM `tenant_export_requests` WHERE `organization_id` = NEW.`organization_id` AND `id` = NEW.`export_request_id`)))
+	OR (NEW.`status` = 'approved' AND NOT EXISTS (SELECT 1 FROM `tenant_export_requests` WHERE `organization_id` = NEW.`organization_id` AND `id` = NEW.`export_request_id` AND julianday(`expires_at`) > julianday('now')))
+	OR (NEW.`status` = 'approved' AND EXISTS (
+		SELECT 1
+		FROM `tenant_export_request_dossiers` AS requested
+		LEFT JOIN `tenant_export_approval_records` AS approval
+			ON approval.`organization_id` = requested.`organization_id`
+			AND approval.`export_request_id` = requested.`export_request_id`
+			AND approval.`dossier_id` = requested.`dossier_id`
+		LEFT JOIN `organization_memberships` AS owner
+			ON owner.`organization_id` = approval.`organization_id`
+			AND owner.`id` = approval.`dossier_owner_membership_id`
+			AND owner.`actor_id` = approval.`dossier_owner_actor_id`
+		LEFT JOIN `organization_policy_current` AS policy
+			ON policy.`organization_id` = approval.`organization_id`
+		WHERE requested.`organization_id` = NEW.`organization_id`
+			AND requested.`export_request_id` = NEW.`export_request_id`
+			AND (approval.`dossier_id` IS NULL OR owner.`status` <> 'active' OR owner.`authorization_version` <> approval.`owner_membership_authorization_version` OR policy.`policy_revision` <> approval.`policy_revision`)
+	))
+	OR (NEW.`status` = 'consumed' AND NOT EXISTS (SELECT 1 FROM `tenant_export_requests` WHERE `organization_id` = NEW.`organization_id` AND `id` = NEW.`export_request_id` AND julianday(`expires_at`) > julianday('now')))
 BEGIN
 	SELECT RAISE(ABORT, 'tenant export approval state is stale, incomplete, or not allowlisted');
 END;
@@ -1096,7 +1224,7 @@ CREATE TRIGGER `tenant_sessions_insert_guard`
 BEFORE INSERT ON `tenant_sessions`
 FOR EACH ROW
 WHEN NEW.`status` <> 'active' OR NEW.`session_version` <> 1
-	OR julianday(NEW.`issued_at`) > julianday('now') OR julianday(NEW.`expires_at`) <= julianday('now')
+	OR julianday(NEW.`issued_at`) > julianday('now') OR julianday(NEW.`issued_at`) < julianday('now') - 7 OR julianday(NEW.`expires_at`) <= julianday('now') OR julianday(NEW.`expires_at`) > julianday(NEW.`issued_at`) + 7
 	OR NOT EXISTS (SELECT 1 FROM `organizations` WHERE `id` = NEW.`organization_id` AND `status` = 'active' AND `authorization_version` = NEW.`organization_authorization_version`)
 	OR NOT EXISTS (SELECT 1 FROM `organization_memberships` WHERE `organization_id` = NEW.`organization_id` AND `id` = NEW.`membership_id` AND `actor_id` = NEW.`actor_id` AND `status` = 'active' AND `authorization_version` = NEW.`membership_authorization_version`)
 	OR NOT EXISTS (SELECT 1 FROM `organization_policy_current` WHERE `organization_id` = NEW.`organization_id` AND `policy_revision` = NEW.`policy_revision`)

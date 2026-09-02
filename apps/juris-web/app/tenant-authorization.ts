@@ -15,6 +15,11 @@ import type {
 } from "./tenant-foundation";
 
 export const ROLE_ACTION_POLICY_VERSION = "phase-b-role-action-policy.v1" as const;
+export const DOSSIER_EXPORT_APPROVAL_VERSION =
+  "dossier-export-approval.v1" as const;
+export const POLICY_ACTIVATION_APPROVAL_VERSION =
+  "policy-activation-approval.v1" as const;
+export const TENANT_SESSION_MAX_LIFETIME_SECONDS = 7 * 86_400;
 
 export const TENANT_ACTIONS = [
   "oidc_callback",
@@ -329,6 +334,7 @@ export interface ActiveSessionContext {
   identityConnectionId?: string;
   identityConfigurationVersion?: number;
   expiresAtEpochSeconds: number;
+  issuedAtEpochSeconds: number;
 }
 
 export interface OrganizationAuthorizationContext {
@@ -370,6 +376,8 @@ export interface CurrentDelegatedGrant {
   action: "member_invite" | "member_suspend";
   status: "active" | "revoked" | "superseded";
   expiresAtEpochSeconds: number;
+  membershipAuthorizationVersion: number;
+  policyRevision: number;
 }
 
 export interface ComplianceExportAuthority {
@@ -381,20 +389,286 @@ export interface ComplianceExportAuthority {
   actorId: string;
   status: "active" | "revoked" | "superseded";
   expiresAtEpochSeconds: number;
+  membershipAuthorizationVersion: number;
+  policyRevision: number;
   exportRequest: {
     id: string;
     organizationId: string;
     manifestDigest: string;
+    requestReceiptSha256: string;
+    currentRequestReceiptSha256: string;
     requestedByActorId: string;
+    expiresAtEpochSeconds: number;
+    state: "pending" | "approved" | "rejected" | "expired" | "consumed";
+    stateAuthorizationVersion: number;
+    currentStateAuthorizationVersion: number;
     dossierIds: readonly string[];
     ownerApprovals: readonly {
       dossierId: string;
+      exportRequestId: string;
+      approvalVersion: typeof DOSSIER_EXPORT_APPROVAL_VERSION;
+      approvalReceiptId: string;
+      approvalReceiptSha256: string;
+      currentApprovalReceiptSha256: string;
+      requestReceiptSha256: string;
+      organizationId: string;
       approvedByActorId: string;
       currentOwnerActorId: string;
-      manifestDigest: string;
+      ownerMembershipAuthorizationVersion: number;
+      currentOwnerMembershipAuthorizationVersion: number;
+      dossierManifestSha256: string;
+      currentDossierManifestSha256: string;
+      policyRevision: number;
+      expiresAtEpochSeconds: number;
       status: "active" | "revoked" | "superseded";
     }[];
   };
+}
+
+/** Durable adapters must implement the same compare-and-swap in one transaction. */
+export class InMemoryExportAcquisitionStore {
+  readonly #states = new Map<
+    string,
+    {
+      organizationId: string;
+      exportRequestId: string;
+      version: number;
+      status: "approved" | "rejected" | "expired" | "consumed";
+      expiresAtEpochSeconds: number;
+    }
+  >();
+  readonly #tails = new Map<string, Promise<void>>();
+  readonly #trustedNowEpochSeconds: () => number;
+
+  constructor(
+    trustedNowEpochSeconds: () => number = () => Math.floor(Date.now() / 1_000),
+  ) {
+    this.#trustedNowEpochSeconds = trustedNowEpochSeconds;
+  }
+
+  seed(input: {
+    organizationId: string;
+    exportRequestId: string;
+    version: number;
+    status: "approved" | "rejected" | "expired" | "consumed";
+    expiresAtEpochSeconds: number;
+  }): void {
+    const snapshot = structuredClone(input);
+    const key = `${snapshot.organizationId}:${snapshot.exportRequestId}`;
+    if (
+      !isOpaqueId(snapshot.organizationId) ||
+      !isOpaqueId(snapshot.exportRequestId) ||
+      !isPositiveSafeInteger(snapshot.version) ||
+      !isPositiveSafeInteger(snapshot.expiresAtEpochSeconds) ||
+      !["approved", "rejected", "expired", "consumed"].includes(
+        snapshot.status,
+      ) ||
+      this.#states.has(key)
+    ) {
+      throw new TypeError("invalid export state");
+    }
+    this.#states.set(key, snapshot);
+  }
+
+  inspectForTest(organizationId: string, exportRequestId: string) {
+    const state = this.#states.get(`${organizationId}:${exportRequestId}`);
+    return state ? structuredClone(state) : undefined;
+  }
+
+  async acquire(input: {
+    organizationId: string;
+    exportRequestId: string;
+    expectedVersion: number;
+  }): Promise<boolean> {
+    const snapshot = structuredClone(input);
+    const nowEpochSeconds = this.#trustedNowEpochSeconds();
+    if (
+      !isOpaqueId(snapshot.organizationId) ||
+      !isOpaqueId(snapshot.exportRequestId) ||
+      !isPositiveSafeInteger(snapshot.expectedVersion) ||
+      !isPositiveSafeInteger(nowEpochSeconds)
+    ) {
+      return false;
+    }
+    const key = `${snapshot.organizationId}:${snapshot.exportRequestId}`;
+    let release!: () => void;
+    const prior = this.#tails.get(key) ?? Promise.resolve();
+    this.#tails.set(
+      key,
+      new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+    );
+    await prior;
+    try {
+      const state = this.#states.get(key);
+      if (
+        !state ||
+        state.organizationId !== snapshot.organizationId ||
+        state.exportRequestId !== snapshot.exportRequestId ||
+        state.status !== "approved" ||
+        state.version !== snapshot.expectedVersion ||
+        state.expiresAtEpochSeconds <= nowEpochSeconds
+      ) {
+        return false;
+      }
+      this.#states.set(key, {
+        ...state,
+        status: "consumed",
+        version: state.version + 1,
+      });
+      return true;
+    } finally {
+      release();
+    }
+  }
+}
+
+export interface PolicyActivationApproval {
+  approvalVersion: typeof POLICY_ACTIVATION_APPROVAL_VERSION;
+  requestId: string;
+  currentRequestId: string;
+  requestRevision: number;
+  currentRequestRevision: number;
+  organizationId: string;
+  expectedCurrentPolicyRevision: number;
+  expectedCurrentPointerVersion: number;
+  targetPolicyRevision: number;
+  targetPolicyReceiptSha256: string;
+  requestedByActorId: string;
+  approvedByActorId: string;
+  approverRole: "org_owner" | "org_admin";
+  approverMembershipAuthorizationVersion: number;
+  currentApproverMembershipAuthorizationVersion: number;
+  approvalReceiptId: string;
+  approvalReceiptSha256: string;
+  currentApprovalReceiptSha256: string;
+  expiresAtEpochSeconds: number;
+  status: "approved" | "revoked" | "superseded";
+}
+
+/**
+ * Reference compare-and-swap for the operation that advances a current-policy
+ * pointer. Draft `policy_manage` authorization alone can never call this path.
+ */
+export class InMemoryPolicyActivationStore {
+  readonly #states = new Map<
+    string,
+    { organizationId: string; policyRevision: number; pointerVersion: number }
+  >();
+  readonly #tails = new Map<string, Promise<void>>();
+  readonly #trustedNowEpochSeconds: () => number;
+
+  constructor(
+    trustedNowEpochSeconds: () => number = () => Math.floor(Date.now() / 1_000),
+  ) {
+    this.#trustedNowEpochSeconds = trustedNowEpochSeconds;
+  }
+
+  seed(
+    organizationId: string,
+    policyRevision: number,
+    pointerVersion = 1,
+  ): void {
+    if (
+      !isOpaqueId(organizationId) ||
+      !isPositiveSafeInteger(policyRevision) ||
+      !isPositiveSafeInteger(pointerVersion) ||
+      this.#states.has(organizationId)
+    ) {
+      throw new TypeError("invalid policy pointer state");
+    }
+    this.#states.set(organizationId, {
+      organizationId,
+      policyRevision,
+      pointerVersion,
+    });
+  }
+
+  inspectForTest(organizationId: string) {
+    const state = this.#states.get(organizationId);
+    return state ? structuredClone(state) : undefined;
+  }
+
+  async activate(input: {
+    organizationId: string;
+    expectedCurrentPolicyRevision: number;
+    expectedCurrentPointerVersion: number;
+    targetPolicyRevision: number;
+    targetPolicyReceiptSha256: string;
+    authenticatedApproverActorId: string;
+    approval: PolicyActivationApproval;
+  }): Promise<boolean> {
+    const snapshot = structuredClone(input);
+    const nowEpochSeconds = this.#trustedNowEpochSeconds();
+    if (
+      !isOpaqueId(snapshot.organizationId) ||
+      !isOpaqueId(snapshot.authenticatedApproverActorId) ||
+      !isPositiveSafeInteger(snapshot.expectedCurrentPolicyRevision) ||
+      !isPositiveSafeInteger(snapshot.expectedCurrentPointerVersion) ||
+      !isPositiveSafeInteger(snapshot.targetPolicyRevision) ||
+      !isPositiveSafeInteger(nowEpochSeconds) ||
+      !isSha256(snapshot.targetPolicyReceiptSha256)
+    ) {
+      return false;
+    }
+    let release!: () => void;
+    const prior = this.#tails.get(snapshot.organizationId) ?? Promise.resolve();
+    this.#tails.set(
+      snapshot.organizationId,
+      new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+    );
+    await prior;
+    try {
+      const state = this.#states.get(snapshot.organizationId);
+      const approval = snapshot.approval;
+      if (
+        !state ||
+        state.policyRevision !== snapshot.expectedCurrentPolicyRevision ||
+        state.pointerVersion !== snapshot.expectedCurrentPointerVersion ||
+        snapshot.targetPolicyRevision !== state.policyRevision + 1 ||
+        approval.approvalVersion !== POLICY_ACTIVATION_APPROVAL_VERSION ||
+        !isOpaqueId(approval.requestId) ||
+        approval.requestId !== approval.currentRequestId ||
+        !isPositiveSafeInteger(approval.requestRevision) ||
+        approval.requestRevision !== approval.currentRequestRevision ||
+        approval.organizationId !== snapshot.organizationId ||
+        approval.expectedCurrentPolicyRevision !== state.policyRevision ||
+        approval.expectedCurrentPointerVersion !== state.pointerVersion ||
+        approval.targetPolicyRevision !== snapshot.targetPolicyRevision ||
+        approval.targetPolicyReceiptSha256 !==
+          snapshot.targetPolicyReceiptSha256 ||
+        !isOpaqueId(approval.requestedByActorId) ||
+        !isOpaqueId(approval.approvedByActorId) ||
+        approval.requestedByActorId === approval.approvedByActorId ||
+        approval.approvedByActorId !== snapshot.authenticatedApproverActorId ||
+        !["org_owner", "org_admin"].includes(approval.approverRole) ||
+        !isPositiveSafeInteger(
+          approval.approverMembershipAuthorizationVersion,
+        ) ||
+        approval.approverMembershipAuthorizationVersion !==
+          approval.currentApproverMembershipAuthorizationVersion ||
+        !isOpaqueId(approval.approvalReceiptId) ||
+        !isSha256(approval.approvalReceiptSha256) ||
+        approval.approvalReceiptSha256 !==
+          approval.currentApprovalReceiptSha256 ||
+        approval.expiresAtEpochSeconds <= nowEpochSeconds ||
+        approval.status !== "approved"
+      ) {
+        return false;
+      }
+      this.#states.set(snapshot.organizationId, {
+        organizationId: snapshot.organizationId,
+        policyRevision: snapshot.targetPolicyRevision,
+        pointerVersion: state.pointerVersion + 1,
+      });
+      return true;
+    } finally {
+      release();
+    }
+  }
 }
 
 export interface CurrentSecurityApproval {
@@ -413,6 +687,13 @@ export interface CurrentSecurityApproval {
   requestRecordBindingReceiptSha256: string;
   approvalSessionBindingSha256: string;
   separationOfDutiesReceiptSha256: string;
+  approvalMembershipAuthorizationVersion: number;
+  currentApprovalMembershipAuthorizationVersion: number;
+  policyRevision: number;
+  approvalReceiptId: string;
+  approvalReceiptSha256: string;
+  currentApprovalReceiptSha256: string;
+  expiresAtEpochSeconds: number;
   status: "approved" | "revoked" | "superseded";
 }
 
@@ -498,6 +779,7 @@ export interface AuthorizationDecisionReceipt {
     | "unverified";
   organizationId: string | null;
   dossierId: string | null;
+  targetDossierId: string | null;
   resourceDigest: string | null;
   requestClass: AuthorizationRequestClass | "unrecognized";
   scope: AuthorizationScope | "unrecognized";
@@ -595,7 +877,13 @@ function buildDecisionReceipt(
     schemaVersion: "authorization-decision-receipt.v1",
     eventType: "authorization_decision",
     evidenceStatus: complete ? "complete" : "incomplete",
-    actorId: isOpaqueId(request.actorId) ? request.actorId : null,
+    actorId:
+      SEPARATION_OF_DUTIES_ACTIONS.includes(request.action as never) &&
+      isOpaqueId(context.securityApproval?.requestedByActorId)
+        ? context.securityApproval.requestedByActorId
+        : isOpaqueId(request.actorId)
+          ? request.actorId
+          : null,
     sessionId: isOpaqueId(context.session?.id) ? context.session.id : null,
     authenticationMethod:
       boundary &&
@@ -607,9 +895,14 @@ function buildDecisionReceipt(
     organizationId: isOpaqueId(context.organization?.id)
       ? context.organization.id
       : null,
-    dossierId: isOpaqueId(context.dossier?.id)
-      ? context.dossier.id
-      : isOpaqueId(context.resource?.dossierId)
+    dossierId:
+      request.scope === "dossier" && isOpaqueId(context.dossier?.id)
+        ? context.dossier.id
+        : null,
+    targetDossierId:
+      request.scope === "organization" &&
+      separationOfDutiesActions.has(request.action) &&
+      isOpaqueId(context.resource?.dossierId)
         ? context.resource.dossierId
         : null,
     resourceDigest: isSha256(context.resource?.resourceDigest)
@@ -676,7 +969,9 @@ function buildDecisionReceipt(
       boundary?.environment === "validation"
         ? boundary.environment
         : "unverified",
-    reviewerActorId: isOpaqueId(context.securityApproval?.approvedByActorId)
+    reviewerActorId:
+      separationOfDutiesActions.has(request.action) &&
+      isOpaqueId(context.securityApproval?.approvedByActorId)
       ? context.securityApproval.approvedByActorId
       : null,
   });
@@ -780,7 +1075,11 @@ function hasCurrentDelegatedAuthority(
       submitted.revision === grant.revision &&
       grant.organizationId === request.organizationId &&
       grant.actorId === request.actorId &&
-      grant.action === request.action,
+      grant.action === request.action &&
+      grant.membershipAuthorizationVersion === context.membership?.authorizationVersion &&
+      grant.membershipAuthorizationVersion === request.expectedMembershipAuthorizationVersion &&
+      grant.policyRevision === context.policy?.currentRevision &&
+      grant.policyRevision === request.expectedPolicyRevision
   );
 }
 
@@ -797,6 +1096,10 @@ function hasCurrentComplianceAuthority(
     !manifest ||
     authority.status !== "active" ||
     authority.expiresAtEpochSeconds <= context.nowEpochSeconds ||
+    authority.membershipAuthorizationVersion !== context.membership?.authorizationVersion ||
+    authority.membershipAuthorizationVersion !== request.expectedMembershipAuthorizationVersion ||
+    authority.policyRevision !== context.policy?.currentRevision ||
+    authority.policyRevision !== request.expectedPolicyRevision ||
     authority.grantId !== authority.currentGrantId ||
     authority.grantRevision !== authority.currentGrantRevision ||
     submitted.grantId !== authority.grantId ||
@@ -811,6 +1114,13 @@ function hasCurrentComplianceAuthority(
     !isPositiveSafeInteger(authority.grantRevision) ||
     !isOpaqueId(authority.exportRequest.id) ||
     !isOpaqueId(authority.exportRequest.requestedByActorId) ||
+    !isSha256(authority.exportRequest.requestReceiptSha256) ||
+    authority.exportRequest.requestReceiptSha256 !==
+      authority.exportRequest.currentRequestReceiptSha256 ||
+    authority.exportRequest.expiresAtEpochSeconds <= context.nowEpochSeconds ||
+    authority.exportRequest.state !== "approved" ||
+    authority.exportRequest.stateAuthorizationVersion !== authority.exportRequest.currentStateAuthorizationVersion ||
+    !isPositiveSafeInteger(authority.exportRequest.stateAuthorizationVersion) ||
     !isSha256(authority.exportRequest.manifestDigest) ||
     !Array.from(submitted.dossierIds).every(isOpaqueId) ||
     !Array.from(authority.exportRequest.dossierIds).every(isOpaqueId) ||
@@ -819,9 +1129,16 @@ function hasCurrentComplianceAuthority(
         approval !== null &&
         typeof approval === "object" &&
         isOpaqueId(approval.dossierId) &&
+        isOpaqueId(approval.exportRequestId) &&
+        approval.approvalVersion === DOSSIER_EXPORT_APPROVAL_VERSION &&
+        isOpaqueId(approval.approvalReceiptId) &&
+        isSha256(approval.approvalReceiptSha256) &&
+        isSha256(approval.currentApprovalReceiptSha256) &&
+        isSha256(approval.requestReceiptSha256) &&
+        isOpaqueId(approval.organizationId) &&
         isOpaqueId(approval.approvedByActorId) &&
         isOpaqueId(approval.currentOwnerActorId) &&
-        isSha256(approval.manifestDigest) &&
+        isSha256(approval.dossierManifestSha256) &&
         ["active", "revoked", "superseded"].includes(approval.status),
     ) ||
     authority.organizationId !== request.organizationId ||
@@ -832,7 +1149,12 @@ function hasCurrentComplianceAuthority(
     !exactUniqueSetEqual(
       authority.exportRequest.ownerApprovals.map((approval) => approval.dossierId),
       authority.exportRequest.dossierIds,
-    )
+    ) ||
+    new Set(
+      authority.exportRequest.ownerApprovals.map(
+        (approval) => approval.approvalReceiptId,
+      ),
+    ).size !== authority.exportRequest.ownerApprovals.length
   ) {
     return false;
   }
@@ -843,9 +1165,19 @@ function hasCurrentComplianceAuthority(
     return Boolean(
       approval &&
         approval.status === "active" &&
+        approval.organizationId === request.organizationId &&
+        approval.exportRequestId === authority.exportRequest.id &&
+        approval.requestReceiptSha256 ===
+          authority.exportRequest.requestReceiptSha256 &&
+        approval.approvalVersion === DOSSIER_EXPORT_APPROVAL_VERSION &&
+        approval.approvalReceiptSha256 ===
+          approval.currentApprovalReceiptSha256 &&
+        approval.ownerMembershipAuthorizationVersion === approval.currentOwnerMembershipAuthorizationVersion &&
+        approval.policyRevision === request.expectedPolicyRevision &&
+        approval.expiresAtEpochSeconds > context.nowEpochSeconds &&
         approval.approvedByActorId === approval.currentOwnerActorId &&
         approval.approvedByActorId !== authority.exportRequest.requestedByActorId &&
-        approval.manifestDigest === authority.exportRequest.manifestDigest,
+        approval.dossierManifestSha256 === approval.currentDossierManifestSha256,
     );
   });
 }
@@ -898,6 +1230,16 @@ function hasCurrentSecurityApproval(
       isOpaqueId(approval.approvedByActorId) &&
       approval.approvedByActorId === request.actorId &&
       approval.requestedByActorId !== approval.approvedByActorId &&
+      approval.approvalMembershipAuthorizationVersion ===
+        context.membership?.authorizationVersion &&
+      approval.approvalMembershipAuthorizationVersion ===
+        approval.currentApprovalMembershipAuthorizationVersion &&
+      approval.policyRevision === request.expectedPolicyRevision &&
+      approval.expiresAtEpochSeconds > context.nowEpochSeconds &&
+      isOpaqueId(approval.approvalReceiptId) &&
+      isSha256(approval.approvalReceiptSha256) &&
+      approval.approvalReceiptSha256 ===
+        approval.currentApprovalReceiptSha256 &&
       receiptDigestsAreValid,
   );
 }
@@ -990,8 +1332,14 @@ export function decideTenantAuthorization(
     !isPositiveSafeInteger(session.organizationAuthorizationVersion) ||
     !isPositiveSafeInteger(session.membershipAuthorizationVersion) ||
     !isPositiveSafeInteger(session.policyRevision) ||
+    !isPositiveSafeInteger(session.issuedAtEpochSeconds) ||
     !isPositiveSafeInteger(session.expiresAtEpochSeconds) ||
     session.status !== "active" ||
+    session.issuedAtEpochSeconds > context.nowEpochSeconds ||
+    session.issuedAtEpochSeconds <
+      context.nowEpochSeconds - TENANT_SESSION_MAX_LIFETIME_SECONDS ||
+    session.expiresAtEpochSeconds >
+      session.issuedAtEpochSeconds + TENANT_SESSION_MAX_LIFETIME_SECONDS ||
     session.expiresAtEpochSeconds <= context.nowEpochSeconds ||
     session.actorId !== request.actorId
   ) {

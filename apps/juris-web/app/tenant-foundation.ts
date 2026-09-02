@@ -360,6 +360,13 @@ export type InvitationAcceptanceResult =
  */
 export class InMemoryInvitationStore {
   readonly #records = new Map<string, InvitationRecord>();
+  readonly #trustedNowEpochSeconds: () => number;
+
+  constructor(
+    trustedNowEpochSeconds: () => number = () => Math.floor(Date.now() / 1000),
+  ) {
+    this.#trustedNowEpochSeconds = trustedNowEpochSeconds;
+  }
 
   insert(record: InvitationRecord): void {
     const ttlSeconds = record.expiresAtEpochSeconds - record.createdAtEpochSeconds;
@@ -405,14 +412,14 @@ export class InMemoryInvitationStore {
     secretToken: string;
     authenticatedIdentityKey: string;
     exactOrigin: string;
-    nowEpochSeconds: number;
   }): Promise<InvitationAcceptanceResult> {
+    const nowEpochSeconds = this.#trustedNowEpochSeconds();
     if (
       !isOpaqueId(input.invitationId) ||
       !/^[A-Za-z0-9_-]{43,128}$/u.test(input.secretToken) ||
       !isStableOidcIdentityKey(input.authenticatedIdentityKey) ||
       !isExactHttpsOrigin(input.exactOrigin) ||
-      !isPositiveSafeInteger(input.nowEpochSeconds)
+      !isPositiveSafeInteger(nowEpochSeconds)
     ) {
       return { accepted: false, code: "invitation_unavailable" };
     }
@@ -421,7 +428,7 @@ export class InMemoryInvitationStore {
     if (
       !record ||
       record.status !== "active" ||
-      record.expiresAtEpochSeconds <= input.nowEpochSeconds ||
+      record.expiresAtEpochSeconds <= nowEpochSeconds ||
       !constantTimeStringEqual(record.tokenDigest, submittedDigest) ||
       !constantTimeStringEqual(
         record.intendedIdentityKey,
@@ -436,7 +443,7 @@ export class InMemoryInvitationStore {
     this.#records.set(record.id, {
       ...record,
       status: "accepted",
-      acceptedAtEpochSeconds: input.nowEpochSeconds,
+      acceptedAtEpochSeconds: nowEpochSeconds,
     });
     return {
       accepted: true,
@@ -877,6 +884,41 @@ export async function verifyTenantResourceManifest(input: {
   ) {
     return undefined;
   }
+  if (manifest.activation_validation) {
+    const names = [
+      "manifest_verification",
+      ...TENANT_RESOURCE_COMPONENTS,
+    ] as const;
+    const expected = [
+      manifest.verification.receipt_sha256,
+      ...TENANT_RESOURCE_COMPONENTS.map(
+        (name) => manifest.processing_components[name].receipt_sha256,
+      ),
+    ];
+    const covered = names.map(
+      (name) => manifest.activation_validation!.covered_receipts[name],
+    );
+    const evidenceValidUntil = Math.min(
+      timestampEpochSeconds(manifest.verification.expires_at)!,
+      ...TENANT_RESOURCE_COMPONENTS.map(
+        (name) =>
+          timestampEpochSeconds(
+            manifest.processing_components[name].expires_at,
+          )!,
+      ),
+    );
+    if (
+      new Set(covered).size !== covered.length ||
+      covered.some((receipt, index) => receipt !== expected[index]) ||
+      (await sha256Hex(
+        canonicalJson(manifest.activation_validation.covered_receipts),
+      )) !== manifest.activation_validation.receipt_set_sha256 ||
+      timestampEpochSeconds(manifest.activation_validation.valid_until) !==
+        evidenceValidUntil
+    ) {
+      return undefined;
+    }
+  }
   const digest = await sha256Hex(canonicalJson(manifest));
   if (!constantTimeStringEqual(digest, input.expectedCanonicalManifestSha256)) {
     return undefined;
@@ -1057,20 +1099,29 @@ export class LocalTestEnvelopeKms implements EnvelopeEncryptionBoundary {
 export type KeyRotationState =
   | {
       phase: "stable";
+      organizationId: string;
+      lastRotationVersion: number;
       currentVersion: number;
       writeVersion: number;
       readVersions: readonly [number];
     }
   | {
       phase: "preparing" | "rewrapping" | "verifying";
+      organizationId: string;
+      rotationId: string;
+      rotationVersion: number;
       fromVersion: number;
       toVersion: number;
       newVersionWriteCount: number;
       writeVersion: number;
       readVersions: readonly number[];
+      rewrapEvidence?: KeyRotationRewrapEvidence;
     }
   | {
       phase: "rollback_rewrapping";
+      organizationId: string;
+      rotationId: string;
+      rotationVersion: number;
       fromVersion: number;
       toVersion: number;
       totalNewVersionWrites: number;
@@ -1081,6 +1132,9 @@ export type KeyRotationState =
     }
   | {
       phase: "rollback_verifying";
+      organizationId: string;
+      rotationId: string;
+      rotationVersion: number;
       fromVersion: number;
       toVersion: number;
       totalNewVersionWrites: number;
@@ -1092,12 +1146,20 @@ export type KeyRotationState =
     }
   | {
       phase: "completed";
+      organizationId: string;
+      rotationId: string;
+      rotationVersion: number;
       currentVersion: number;
+      rewrapManifestSha256: string;
+      verificationReceiptSha256: string;
       writeVersion: number;
       readVersions: readonly [number];
     }
   | {
       phase: "rolled_back";
+      organizationId: string;
+      rotationId: string;
+      rotationVersion: number;
       currentVersion: number;
       attemptedVersion: number;
       rollbackVerificationReceiptSha256?: string;
@@ -1106,11 +1168,16 @@ export type KeyRotationState =
     };
 
 export type KeyRotationCommand =
-  | { type: "begin"; toVersion: number }
+  | {
+      type: "begin";
+      rotationId: string;
+      rotationVersion: number;
+      toVersion: number;
+    }
   | { type: "activate_new_writes" }
   | { type: "record_new_version_write" }
-  | { type: "rewrap_complete" }
-  | { type: "verification_complete" }
+  | { type: "rewrap_complete"; evidence: KeyRotationRewrapEvidence }
+  | { type: "verification_complete"; evidence: KeyRotationVerificationEvidence }
   | { type: "rollback" }
   | { type: "record_rollback_rewrap_progress"; completedWrites: number }
   | { type: "verify_rollback_rewrap"; verificationReceiptSha256: string }
@@ -1119,16 +1186,49 @@ export type KeyRotationCommand =
       verificationReceiptSha256: string;
     };
 
+export interface KeyRotationRewrapEvidence {
+  organizationId: string;
+  rotationId: string;
+  rotationVersion: number;
+  fromVersion: number;
+  toVersion: number;
+  expectedEnvelopeCount: number;
+  rewrappedEnvelopeCount: number;
+  failures: number;
+  manifestSha256: string;
+}
+
+export interface KeyRotationVerificationEvidence {
+  organizationId: string;
+  rotationId: string;
+  rotationVersion: number;
+  manifestSha256: string;
+  verificationReceiptSha256: string;
+  currentVerificationReceiptSha256: string;
+}
+
 export type KeyRotationTransition =
   | { ok: true; state: KeyRotationState }
   | { ok: false; code: "invalid_rotation_transition" };
 
-export function stableKeyRotationState(currentVersion: number): KeyRotationState {
-  if (!Number.isSafeInteger(currentVersion) || currentVersion < 1) {
+export function stableKeyRotationState(
+  organizationId: string,
+  currentVersion: number,
+  lastRotationVersion = 0,
+): KeyRotationState {
+  if (
+    !isOpaqueId(organizationId) ||
+    !Number.isSafeInteger(currentVersion) ||
+    currentVersion < 1 ||
+    !Number.isSafeInteger(lastRotationVersion) ||
+    lastRotationVersion < 0
+  ) {
     throw new TypeError("invalid current key version");
   }
   return {
     phase: "stable",
+    organizationId,
+    lastRotationVersion,
     currentVersion,
     writeVersion: currentVersion,
     readVersions: [currentVersion],
@@ -1142,12 +1242,21 @@ export function transitionKeyRotation(
   if (
     command.type === "begin" &&
     (state.phase === "stable" || state.phase === "completed") &&
+    isOpaqueId(command.rotationId) &&
+    isPositiveSafeInteger(command.rotationVersion) &&
+    command.rotationVersion ===
+      (state.phase === "stable"
+        ? state.lastRotationVersion + 1
+        : state.rotationVersion + 1) &&
     command.toVersion === state.currentVersion + 1
   ) {
     return {
       ok: true,
       state: {
         phase: "preparing",
+        organizationId: state.organizationId,
+        rotationId: command.rotationId,
+        rotationVersion: command.rotationVersion,
         fromVersion: state.currentVersion,
         toVersion: command.toVersion,
         newVersionWriteCount: 0,
@@ -1168,7 +1277,30 @@ export function transitionKeyRotation(
     };
   }
   if (state.phase === "rewrapping" && command.type === "rewrap_complete") {
-    return { ok: true, state: { ...state, phase: "verifying" } };
+    const evidence = command.evidence;
+    if (
+      !evidence ||
+      evidence.organizationId !== state.organizationId ||
+      evidence.rotationId !== state.rotationId ||
+      evidence.rotationVersion !== state.rotationVersion ||
+      evidence.fromVersion !== state.fromVersion ||
+      evidence.toVersion !== state.toVersion ||
+      !Number.isSafeInteger(evidence.expectedEnvelopeCount) ||
+      evidence.expectedEnvelopeCount < 0 ||
+      evidence.rewrappedEnvelopeCount !== evidence.expectedEnvelopeCount ||
+      evidence.failures !== 0 ||
+      !isSha256(evidence.manifestSha256)
+    ) {
+      return { ok: false, code: "invalid_rotation_transition" };
+    }
+    return {
+      ok: true,
+      state: {
+        ...state,
+        phase: "verifying",
+        rewrapEvidence: Object.freeze({ ...evidence }),
+      },
+    };
   }
   if (
     (state.phase === "rewrapping" || state.phase === "verifying") &&
@@ -1183,11 +1315,34 @@ export function transitionKeyRotation(
     };
   }
   if (state.phase === "verifying" && command.type === "verification_complete") {
+    const evidence = command.evidence;
+    const rewrap = state.rewrapEvidence;
+    if (
+      !evidence ||
+      !rewrap ||
+      evidence.organizationId !== state.organizationId ||
+      evidence.organizationId !== rewrap.organizationId ||
+      evidence.rotationId !== state.rotationId ||
+      evidence.rotationId !== rewrap.rotationId ||
+      evidence.rotationVersion !== state.rotationVersion ||
+      evidence.rotationVersion !== rewrap.rotationVersion ||
+      evidence.manifestSha256 !== rewrap.manifestSha256 ||
+      !isSha256(evidence.verificationReceiptSha256) ||
+      evidence.verificationReceiptSha256 !==
+        evidence.currentVerificationReceiptSha256
+    ) {
+      return { ok: false, code: "invalid_rotation_transition" };
+    }
     return {
       ok: true,
       state: {
         phase: "completed",
+        organizationId: state.organizationId,
+        rotationId: state.rotationId,
+        rotationVersion: state.rotationVersion,
         currentVersion: state.toVersion,
+        rewrapManifestSha256: rewrap.manifestSha256,
+        verificationReceiptSha256: evidence.verificationReceiptSha256,
         writeVersion: state.toVersion,
         readVersions: [state.toVersion],
       },
@@ -1202,6 +1357,9 @@ export function transitionKeyRotation(
       ok: true,
       state: {
         phase: "rollback_rewrapping",
+        organizationId: state.organizationId,
+        rotationId: state.rotationId,
+        rotationVersion: state.rotationVersion,
         fromVersion: state.fromVersion,
         toVersion: state.toVersion,
         totalNewVersionWrites: state.newVersionWriteCount,
@@ -1222,6 +1380,9 @@ export function transitionKeyRotation(
       ok: true,
       state: {
         phase: "rolled_back",
+        organizationId: state.organizationId,
+        rotationId: state.rotationId,
+        rotationVersion: state.rotationVersion,
         currentVersion: state.fromVersion,
         attemptedVersion: state.toVersion,
         writeVersion: state.fromVersion,
@@ -1256,6 +1417,9 @@ export function transitionKeyRotation(
       ok: true,
       state: {
         phase: "rollback_verifying",
+        organizationId: state.organizationId,
+        rotationId: state.rotationId,
+        rotationVersion: state.rotationVersion,
         fromVersion: state.fromVersion,
         toVersion: state.toVersion,
         totalNewVersionWrites: state.totalNewVersionWrites,
@@ -1280,6 +1444,9 @@ export function transitionKeyRotation(
       ok: true,
       state: {
         phase: "rolled_back",
+        organizationId: state.organizationId,
+        rotationId: state.rotationId,
+        rotationVersion: state.rotationVersion,
         currentVersion: state.fromVersion,
         attemptedVersion: state.toVersion,
         rollbackVerificationReceiptSha256:
@@ -1319,6 +1486,7 @@ export interface SecurityReceiptInput {
     | "invitation_token"
     | "local_test";
   dossierId?: string;
+  targetDossierId?: string;
   action: string;
   policyVersion: string;
   authorizationVersion: number;
@@ -1360,6 +1528,7 @@ const SECURITY_RECEIPT_INPUT_REQUIRED_KEYS = [
 const SECURITY_RECEIPT_INPUT_OPTIONAL_KEYS = [
   "sessionId",
   "dossierId",
+  "targetDossierId",
   "resourceDigest",
   "reviewerActorId",
 ];
@@ -1427,6 +1596,11 @@ function hasValidSecurityReceiptInputFields(
     isOpaqueId(input.actorId) &&
     (!hasOwn("sessionId") || isOpaqueId(input.sessionId)) &&
     (!hasOwn("dossierId") || isOpaqueId(input.dossierId)) &&
+    (!hasOwn("targetDossierId") || isOpaqueId(input.targetDossierId)) &&
+    !(hasOwn("dossierId") && hasOwn("targetDossierId")) &&
+    (!hasOwn("targetDossierId") ||
+      input.action === "legal_hold_create_approve" ||
+      input.action === "legal_hold_release_approve") &&
     (!hasOwn("reviewerActorId") || isOpaqueId(input.reviewerActorId)) &&
     typeof input.action === "string" &&
     /^[A-Za-z0-9._:-]{1,128}$/u.test(input.action) &&

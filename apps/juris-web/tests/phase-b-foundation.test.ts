@@ -12,12 +12,16 @@ import {
 } from "../app/entra-oidc";
 import {
   ACTION_SCOPES,
+  DOSSIER_EXPORT_APPROVAL_VERSION,
   decideTenantAuthorization,
   DOSSIER_ROLE_ACTIONS,
   COMPLIANCE_AUTHORITY_ACTIONS,
   DELEGATED_ORG_ADMIN_ACTIONS,
+  InMemoryExportAcquisitionStore,
+  InMemoryPolicyActivationStore,
   ORGANIZATION_ROLE_ACTIONS,
   PHASE_B_SERVER_DISABLED_ACTIONS,
+  POLICY_ACTIVATION_APPROVAL_VERSION,
   REQUEST_CLASS_ACTIONS,
   SEPARATION_OF_DUTIES_ACTIONS,
   TENANT_ACTIONS,
@@ -254,6 +258,7 @@ function dossierFixture(): {
         organizationAuthorizationVersion: 7,
         membershipAuthorizationVersion: 5,
         policyRevision: 11,
+        issuedAtEpochSeconds: NOW - 60,
         expiresAtEpochSeconds: NOW + 600,
       },
       organization: {
@@ -678,6 +683,8 @@ function delegatedAdminFixture(): {
         action: "member_invite",
         status: "active",
         expiresAtEpochSeconds: NOW + 600,
+        membershipAuthorizationVersion: 5,
+        policyRevision: 11,
       },
     },
   };
@@ -812,6 +819,37 @@ async function verifiedValidationTenantManifest() {
   return verified;
 }
 
+async function rawApprovedTenantManifest(): Promise<TenantResourceManifest> {
+  const manifest = rawValidationTenantManifest();
+  manifest.environment = "production";
+  manifest.hostname = "phase-b.production.example";
+  manifest.activation = "approved";
+  for (const [index, name] of TENANT_RESOURCE_COMPONENTS.entries()) {
+    manifest.processing_components[name].receipt_sha256 = (index + 1)
+      .toString(16)
+      .padStart(64, "0");
+  }
+  const coveredReceipts = Object.fromEntries([
+    ["manifest_verification", manifest.verification.receipt_sha256],
+    ...TENANT_RESOURCE_COMPONENTS.map((name) => [
+      name,
+      manifest.processing_components[name].receipt_sha256,
+    ]),
+  ]) as NonNullable<
+    TenantResourceManifest["activation_validation"]
+  >["covered_receipts"];
+  manifest.activation_validation = {
+    validator_version: "tenant-activation-validator.v1",
+    evaluated_at: new Date((NOW - 30) * 1000).toISOString(),
+    valid_until: manifest.verification.expires_at,
+    covered_receipts: coveredReceipts,
+    receipt_set_sha256: await sha256Hex(canonicalJson(coveredReceipts)),
+    validation_receipt_sha256: "e".repeat(64),
+    status: "current",
+  };
+  return manifest;
+}
+
 function forgedTenantManifestCopy(
   value: VerifiedTenantResourceManifest,
 ): VerifiedTenantResourceManifest {
@@ -892,6 +930,49 @@ test("frozen tenant manifests fail closed on extra fields, stale evidence, diges
   assertPrivateDenial(fixture.request, fixture.context);
 });
 
+test("approved manifests require exact component coverage and canonical receipt-set evidence", async () => {
+  const verify = async (manifest: TenantResourceManifest) =>
+    verifyTenantResourceManifest({
+      manifest,
+      expectedOrganizationId: ORG_A,
+      expectedDeploymentSha: DEPLOYMENT_SHA,
+      expectedCanonicalManifestSha256: await sha256Hex(canonicalJson(manifest)),
+      schemaValidationReceiptSha256: "9".repeat(64),
+      manifestRevision: 4,
+      currentManifestRevision: 4,
+      nowEpochSeconds: NOW,
+    });
+  const valid = await rawApprovedTenantManifest();
+  assert.ok(await verify(valid));
+
+  const wrongComponent = structuredClone(valid);
+  wrongComponent.activation_validation!.covered_receipts.ocr = "a".repeat(64);
+  wrongComponent.activation_validation!.receipt_set_sha256 = await sha256Hex(
+    canonicalJson(wrongComponent.activation_validation!.covered_receipts),
+  );
+  assert.equal(await verify(wrongComponent), undefined);
+
+  const wrongSetDigest = structuredClone(valid);
+  wrongSetDigest.activation_validation!.receipt_set_sha256 = "b".repeat(64);
+  assert.equal(await verify(wrongSetDigest), undefined);
+
+  const nonEarliestExpiry = structuredClone(valid);
+  nonEarliestExpiry.activation_validation!.valid_until = new Date(
+    (NOW + 599) * 1000,
+  ).toISOString();
+  assert.equal(await verify(nonEarliestExpiry), undefined);
+
+  const duplicateCoverage = structuredClone(valid);
+  duplicateCoverage.activation_validation!.covered_receipts.ocr =
+    duplicateCoverage.activation_validation!.covered_receipts.extraction;
+  duplicateCoverage.processing_components.ocr.receipt_sha256 =
+    duplicateCoverage.processing_components.extraction.receipt_sha256;
+  duplicateCoverage.activation_validation!.receipt_set_sha256 = await sha256Hex(
+    canonicalJson(duplicateCoverage.activation_validation!.covered_receipts),
+  );
+  assert.equal(await verify(duplicateCoverage), undefined);
+});
+
 async function complianceFixture(): Promise<{
   request: AuthorizationRequest;
   context: AuthorizationContext;
@@ -945,25 +1026,57 @@ async function complianceFixture(): Promise<{
         actorId: ACTOR_A,
         status: "active",
         expiresAtEpochSeconds: NOW + 600,
+        membershipAuthorizationVersion: 5,
+        policyRevision: 11,
         exportRequest: {
           id: "export_request_alpha_001",
           organizationId: ORG_A,
           manifestDigest: tenantManifest.canonicalManifestSha256,
+          requestReceiptSha256: "5".repeat(64),
+          currentRequestReceiptSha256: "5".repeat(64),
           requestedByActorId: ACTOR_A,
+          expiresAtEpochSeconds: NOW + 300,
+          state: "approved",
+          stateAuthorizationVersion: 2,
+          currentStateAuthorizationVersion: 2,
           dossierIds,
           ownerApprovals: [
             {
               dossierId: DOSSIER_A,
+              exportRequestId: "export_request_alpha_001",
+              approvalVersion: DOSSIER_EXPORT_APPROVAL_VERSION,
+              approvalReceiptId: "receipt_alpha_dossier_0001",
+              approvalReceiptSha256: "3".repeat(64),
+              currentApprovalReceiptSha256: "3".repeat(64),
+              requestReceiptSha256: "5".repeat(64),
+              organizationId: ORG_A,
               approvedByActorId: "owner_alpha_dossier_0001",
               currentOwnerActorId: "owner_alpha_dossier_0001",
-              manifestDigest: tenantManifest.canonicalManifestSha256,
+              ownerMembershipAuthorizationVersion: 1,
+              currentOwnerMembershipAuthorizationVersion: 1,
+              dossierManifestSha256: "1".repeat(64),
+              currentDossierManifestSha256: "1".repeat(64),
+              policyRevision: 11,
+              expiresAtEpochSeconds: NOW + 300,
               status: "active",
             },
             {
               dossierId: DOSSIER_B,
+              exportRequestId: "export_request_alpha_001",
+              approvalVersion: DOSSIER_EXPORT_APPROVAL_VERSION,
+              approvalReceiptId: "receipt_bravo_dossier_0002",
+              approvalReceiptSha256: "4".repeat(64),
+              currentApprovalReceiptSha256: "4".repeat(64),
+              requestReceiptSha256: "5".repeat(64),
+              organizationId: ORG_A,
               approvedByActorId: "owner_bravo_dossier_0002",
               currentOwnerActorId: "owner_bravo_dossier_0002",
-              manifestDigest: tenantManifest.canonicalManifestSha256,
+              ownerMembershipAuthorizationVersion: 1,
+              currentOwnerMembershipAuthorizationVersion: 1,
+              dossierManifestSha256: "2".repeat(64),
+              currentDossierManifestSha256: "2".repeat(64),
+              policyRevision: 11,
+              expiresAtEpochSeconds: NOW + 300,
               status: "active",
             },
           ],
@@ -990,6 +1103,12 @@ test("tenant export requires a current compliance grant, exact manifest, and eve
       copy.context.complianceAuthority!.status = "revoked";
     },
     (copy) => {
+      copy.context.complianceAuthority!.membershipAuthorizationVersion = 4;
+    },
+    (copy) => {
+      copy.context.complianceAuthority!.policyRevision = 10;
+    },
+    (copy) => {
       copy.context.complianceAuthority!.organizationId = ORG_B;
     },
     (copy) => {
@@ -1005,6 +1124,43 @@ test("tenant export requires a current compliance grant, exact manifest, and eve
     },
     (copy) => {
       copy.context.complianceAuthority!.exportRequest.ownerApprovals[0].status = "superseded";
+    },
+    (copy) => {
+      copy.context.complianceAuthority!.exportRequest.state = "consumed";
+    },
+    (copy) => {
+      copy.context.complianceAuthority!.exportRequest.currentStateAuthorizationVersion = 3;
+    },
+    (copy) => {
+      copy.context.complianceAuthority!.exportRequest.expiresAtEpochSeconds = NOW;
+    },
+    (copy) => {
+      copy.context.complianceAuthority!.exportRequest.currentRequestReceiptSha256 =
+        "9".repeat(64);
+    },
+    (copy) => {
+      copy.context.complianceAuthority!.exportRequest.ownerApprovals[0].exportRequestId =
+        "export_request_other_0001";
+    },
+    (copy) => {
+      copy.context.complianceAuthority!.exportRequest.ownerApprovals[0].requestReceiptSha256 =
+        "9".repeat(64);
+    },
+    (copy) => {
+      copy.context.complianceAuthority!.exportRequest.ownerApprovals[0].approvalReceiptSha256 =
+        "9".repeat(64);
+    },
+    (copy) => {
+      copy.context.complianceAuthority!.exportRequest.ownerApprovals[0].ownerMembershipAuthorizationVersion =
+        2;
+    },
+    (copy) => {
+      copy.context.complianceAuthority!.exportRequest.ownerApprovals[0].policyRevision =
+        10;
+    },
+    (copy) => {
+      copy.context.complianceAuthority!.exportRequest.ownerApprovals[0].expiresAtEpochSeconds =
+        NOW;
     },
     (copy) => {
       copy.request.submittedComplianceAuthority!.dossierIds = [DOSSIER_A, DOSSIER_A];
@@ -1079,6 +1235,160 @@ test("tenant export binds the requester to the authenticated compliance actor be
   assertPrivateDenial(malformed.request, malformed.context);
 });
 
+test("tenant export acquisition consumes one exact approved request state", async () => {
+  const store = new InMemoryExportAcquisitionStore(() => NOW);
+  const exportRequestId = "export_request_alpha_atomic_001";
+  store.seed({
+    organizationId: ORG_A,
+    exportRequestId,
+    version: 4,
+    status: "approved",
+    expiresAtEpochSeconds: NOW + 300,
+  });
+  const input = {
+    organizationId: ORG_A,
+    exportRequestId,
+    expectedVersion: 4,
+  };
+  const results = await Promise.all(
+    Array.from({ length: 16 }, () => store.acquire(input)),
+  );
+  assert.equal(results.filter(Boolean).length, 1);
+  assert.deepEqual(store.inspectForTest(ORG_A, exportRequestId), {
+    organizationId: ORG_A,
+    exportRequestId,
+    version: 5,
+    status: "consumed",
+    expiresAtEpochSeconds: NOW + 300,
+  });
+  assert.equal(await store.acquire(input), false);
+  assert.equal(
+    await store.acquire({ ...input, organizationId: ORG_B }),
+    false,
+  );
+
+  for (const status of ["rejected", "expired", "consumed"] as const) {
+    const denied = new InMemoryExportAcquisitionStore(() => NOW);
+    const deniedRequestId = `export_request_${status}_alpha_001`;
+    denied.seed({
+      organizationId: ORG_A,
+      exportRequestId: deniedRequestId,
+      version: 1,
+      status,
+      expiresAtEpochSeconds: NOW + 300,
+    });
+    assert.equal(
+      await denied.acquire({
+        ...input,
+        exportRequestId: deniedRequestId,
+        expectedVersion: 1,
+      }),
+      false,
+    );
+  }
+  const expired = new InMemoryExportAcquisitionStore(() => NOW);
+  expired.seed({
+    organizationId: ORG_A,
+    exportRequestId: "export_request_expired_now_001",
+    version: 1,
+    status: "approved",
+    expiresAtEpochSeconds: NOW,
+  });
+  assert.equal(
+    await expired.acquire({
+      ...input,
+      exportRequestId: "export_request_expired_now_001",
+      expectedVersion: 1,
+    }),
+    false,
+  );
+});
+
+function policyActivationInput() {
+  return {
+    organizationId: ORG_A,
+    expectedCurrentPolicyRevision: 11,
+    expectedCurrentPointerVersion: 4,
+    targetPolicyRevision: 12,
+    targetPolicyReceiptSha256: "6".repeat(64),
+    authenticatedApproverActorId: ACTOR_A,
+    approval: {
+      approvalVersion: POLICY_ACTIVATION_APPROVAL_VERSION,
+      requestId: "policy_activation_request_001",
+      currentRequestId: "policy_activation_request_001",
+      requestRevision: 2,
+      currentRequestRevision: 2,
+      organizationId: ORG_A,
+      expectedCurrentPolicyRevision: 11,
+      expectedCurrentPointerVersion: 4,
+      targetPolicyRevision: 12,
+      targetPolicyReceiptSha256: "6".repeat(64),
+      requestedByActorId: ACTOR_B,
+      approvedByActorId: ACTOR_A,
+      approverRole: "org_admin" as const,
+      approverMembershipAuthorizationVersion: 5,
+      currentApproverMembershipAuthorizationVersion: 5,
+      approvalReceiptId: "policy_activation_receipt_001",
+      approvalReceiptSha256: "7".repeat(64),
+      currentApprovalReceiptSha256: "7".repeat(64),
+      expiresAtEpochSeconds: NOW + 300,
+      status: "approved" as const,
+    },
+  };
+}
+
+test("policy activation is a separate approval-bound, one-time operation", async () => {
+  const store = new InMemoryPolicyActivationStore(() => NOW);
+  store.seed(ORG_A, 11, 4);
+  const input = policyActivationInput();
+  const results = await Promise.all([store.activate(input), store.activate(input)]);
+  assert.equal(results.filter(Boolean).length, 1);
+  assert.deepEqual(store.inspectForTest(ORG_A), {
+    organizationId: ORG_A,
+    policyRevision: 12,
+    pointerVersion: 5,
+  });
+
+  const mutations: Array<(copy: ReturnType<typeof policyActivationInput>) => void> = [
+    (copy) => {
+      copy.approval.requestedByActorId = ACTOR_A;
+    },
+    (copy) => {
+      copy.approval.currentRequestRevision = 3;
+    },
+    (copy) => {
+      copy.approval.organizationId = ORG_B;
+    },
+    (copy) => {
+      copy.approval.targetPolicyReceiptSha256 = "8".repeat(64);
+    },
+    (copy) => {
+      copy.approval.currentApproverMembershipAuthorizationVersion = 6;
+    },
+    (copy) => {
+      copy.approval.currentApprovalReceiptSha256 = "9".repeat(64);
+    },
+    (copy) => {
+      copy.approval.expiresAtEpochSeconds = NOW;
+    },
+    (copy) => {
+      copy.expectedCurrentPointerVersion = 3;
+    },
+  ];
+  for (const mutate of mutations) {
+    const denied = new InMemoryPolicyActivationStore(() => NOW);
+    denied.seed(ORG_A, 11, 4);
+    const copy = structuredClone(input);
+    mutate(copy);
+    assert.equal(await denied.activate(copy), false);
+    assert.deepEqual(denied.inspectForTest(ORG_A), {
+      organizationId: ORG_A,
+      policyRevision: 11,
+      pointerVersion: 4,
+    });
+  }
+});
+
 function legalHoldApprovalFixture(): {
   request: AuthorizationRequest;
   context: AuthorizationContext;
@@ -1114,6 +1424,13 @@ function legalHoldApprovalFixture(): {
         requestRecordBindingReceiptSha256: "2".repeat(64),
         approvalSessionBindingSha256: "3".repeat(64),
         separationOfDutiesReceiptSha256: "4".repeat(64),
+        approvalMembershipAuthorizationVersion: 5,
+        currentApprovalMembershipAuthorizationVersion: 5,
+        policyRevision: 11,
+        approvalReceiptId: "hold_approval_receipt_alpha_1",
+        approvalReceiptSha256: "5".repeat(64),
+        currentApprovalReceiptSha256: "5".repeat(64),
+        expiresAtEpochSeconds: NOW + 300,
         status: "approved",
       },
     },
@@ -1150,6 +1467,13 @@ test("security approval is scoped, current, independently approved, and never gr
       organizationAdminApproval.request,
       organizationAdminApproval.context,
     ).receipt.dossierId,
+    null,
+  );
+  assert.equal(
+    decideTenantAuthorization(
+      organizationAdminApproval.request,
+      organizationAdminApproval.context,
+    ).receipt.targetDossierId,
     DOSSIER_A,
   );
   const wrongOrganizationScopeTarget = structuredClone(organizationAdminApproval);
@@ -1195,6 +1519,18 @@ test("security approval is scoped, current, independently approved, and never gr
     },
     (copy) => {
       copy.context.securityApproval!.approvalSessionBindingSha256 = "invalid";
+    },
+    (copy) => {
+      copy.context.securityApproval!.approvalMembershipAuthorizationVersion = 4;
+    },
+    (copy) => {
+      copy.context.securityApproval!.policyRevision = 10;
+    },
+    (copy) => {
+      copy.context.securityApproval!.approvalReceiptSha256 = "9".repeat(64);
+    },
+    (copy) => {
+      copy.context.securityApproval!.expiresAtEpochSeconds = NOW;
     },
     (copy) => {
       copy.context.securityApproval!.targetObjectGraphSha256 = "1".repeat(64);
@@ -1368,14 +1704,13 @@ test("invitations persist only a high-entropy digest and are exact-identity, exa
   assert.equal(JSON.stringify(invitation.record).includes(invitation.secretToken), false);
   assert.equal("secretToken" in invitation.record, false);
 
-  const store = new InMemoryInvitationStore();
+  const store = new InMemoryInvitationStore(() => NOW + 1);
   store.insert(invitation.record);
   const input = {
     invitationId: invitation.record.id,
     secretToken: invitation.secretToken,
     authenticatedIdentityKey: invitation.record.intendedIdentityKey,
     exactOrigin: invitation.record.exactOrigin,
-    nowEpochSeconds: NOW + 1,
   };
   const simultaneous = await Promise.all([store.accept(input), store.accept(input)]);
   assert.equal(simultaneous.filter((result) => result.accepted).length, 1);
@@ -1408,45 +1743,44 @@ test("invitation creation snapshots authority before asynchronous hashing", asyn
 
 test("wrong invitation token, identity, origin, expiry, and revocation are indistinguishable", async () => {
   const denial = { accepted: false, code: "invitation_unavailable" } as const;
-  const variants: Array<
-    (input: {
+  const variants: Array<{
+    mutate: (input: {
       invitationId: string;
       secretToken: string;
       authenticatedIdentityKey: string;
       exactOrigin: string;
-      nowEpochSeconds: number;
-    }) => void
-  > = [
-    (input) => {
+    }) => void;
+    trustedNowEpochSeconds?: number;
+  }> = [
+    { mutate: (input) => {
       input.secretToken = `${input.secretToken}x`;
-    },
-    (input) => {
+    } },
+    { mutate: (input) => {
       input.authenticatedIdentityKey = "https://issuer.example\u001ftenant-a\u001fother";
-    },
-    (input) => {
+    } },
+    { mutate: (input) => {
       input.exactOrigin = "https://attacker.example";
-    },
-    (input) => {
-      input.nowEpochSeconds = NOW + 301;
-    },
+    } },
+    { mutate: () => undefined, trustedNowEpochSeconds: NOW + 301 },
   ];
-  for (const mutate of variants) {
+  for (const variant of variants) {
     const invitation = await newInvitation();
-    const store = new InMemoryInvitationStore();
+    const store = new InMemoryInvitationStore(
+      () => variant.trustedNowEpochSeconds ?? NOW + 1,
+    );
     store.insert(invitation.record);
     const input = {
       invitationId: invitation.record.id,
       secretToken: invitation.secretToken,
       authenticatedIdentityKey: invitation.record.intendedIdentityKey,
       exactOrigin: invitation.record.exactOrigin,
-      nowEpochSeconds: NOW + 1,
     };
-    mutate(input);
+    variant.mutate(input);
     assert.deepEqual(await store.accept(input), denial);
   }
 
   const revoked = await newInvitation();
-  const revokedStore = new InMemoryInvitationStore();
+  const revokedStore = new InMemoryInvitationStore(() => NOW + 1);
   revokedStore.insert(revoked.record);
   assert.equal(revokedStore.revoke(revoked.record.id), true);
   assert.deepEqual(
@@ -1455,10 +1789,26 @@ test("wrong invitation token, identity, origin, expiry, and revocation are indis
       secretToken: revoked.secretToken,
       authenticatedIdentityKey: revoked.record.intendedIdentityKey,
       exactOrigin: revoked.record.exactOrigin,
-      nowEpochSeconds: NOW + 1,
     }),
     denial,
   );
+});
+
+test("invitation acceptance ignores caller-supplied backdated clocks", async () => {
+  const invitation = await newInvitation();
+  const store = new InMemoryInvitationStore(() => NOW + 301);
+  store.insert(invitation.record);
+  assert.deepEqual(
+    await store.accept({
+      invitationId: invitation.record.id,
+      secretToken: invitation.secretToken,
+      authenticatedIdentityKey: invitation.record.intendedIdentityKey,
+      exactOrigin: invitation.record.exactOrigin,
+      nowEpochSeconds: NOW + 1,
+    } as Parameters<InMemoryInvitationStore["accept"]>[0]),
+    { accepted: false, code: "invitation_unavailable" },
+  );
+  assert.equal(store.inspectForTest(invitation.record.id)?.status, "active");
 });
 
 test("invitation creation rejects unbounded TTL, non-origin URLs, and email-only identities", async () => {
@@ -1935,10 +2285,18 @@ function mustRotate(state: KeyRotationState, command: KeyRotationCommand): KeyRo
 }
 
 test("key rotation is an explicit dual-read/single-write state machine with rollback", () => {
-  let state = stableKeyRotationState(3);
-  state = mustRotate(state, { type: "begin", toVersion: 4 });
+  let state = stableKeyRotationState(ORG_A, 3);
+  state = mustRotate(state, {
+    type: "begin",
+    rotationId: "rotation_phase_b_alpha_001",
+    rotationVersion: 1,
+    toVersion: 4,
+  });
   assert.deepEqual(state, {
     phase: "preparing",
+    organizationId: ORG_A,
+    rotationId: "rotation_phase_b_alpha_001",
+    rotationVersion: 1,
     fromVersion: 3,
     toVersion: 4,
     newVersionWriteCount: 0,
@@ -1948,12 +2306,64 @@ test("key rotation is an explicit dual-read/single-write state machine with roll
   state = mustRotate(state, { type: "activate_new_writes" });
   assert.equal(state.writeVersion, 4);
   assert.deepEqual(state.readVersions, [3, 4]);
-  state = mustRotate(state, { type: "rewrap_complete" });
+  const rewrapEvidence = {
+    organizationId: ORG_A,
+    rotationId: "rotation_phase_b_alpha_001",
+    rotationVersion: 1,
+    fromVersion: 3,
+    toVersion: 4,
+    expectedEnvelopeCount: 2,
+    rewrappedEnvelopeCount: 2,
+    failures: 0,
+    manifestSha256: "6".repeat(64),
+  };
+  for (const invalidEvidence of [
+    { ...rewrapEvidence, organizationId: ORG_B },
+    { ...rewrapEvidence, rotationId: "rotation_phase_b_other_0002" },
+    { ...rewrapEvidence, rotationVersion: 2 },
+    { ...rewrapEvidence, rewrappedEnvelopeCount: 1 },
+    { ...rewrapEvidence, failures: 1 },
+  ]) {
+    assert.deepEqual(
+      transitionKeyRotation(state, {
+        type: "rewrap_complete",
+        evidence: invalidEvidence,
+      }),
+      { ok: false, code: "invalid_rotation_transition" },
+    );
+  }
+  state = mustRotate(state, { type: "rewrap_complete", evidence: rewrapEvidence });
   assert.equal(state.phase, "verifying");
-  state = mustRotate(state, { type: "verification_complete" });
+  const verificationEvidence = {
+    organizationId: ORG_A,
+    rotationId: "rotation_phase_b_alpha_001",
+    rotationVersion: 1,
+    manifestSha256: "6".repeat(64),
+    verificationReceiptSha256: "7".repeat(64),
+    currentVerificationReceiptSha256: "7".repeat(64),
+  };
+  assert.deepEqual(
+    transitionKeyRotation(state, {
+      type: "verification_complete",
+      evidence: {
+        ...verificationEvidence,
+        currentVerificationReceiptSha256: "8".repeat(64),
+      },
+    }),
+    { ok: false, code: "invalid_rotation_transition" },
+  );
+  state = mustRotate(state, {
+    type: "verification_complete",
+    evidence: verificationEvidence,
+  });
   assert.deepEqual(state, {
     phase: "completed",
+    organizationId: ORG_A,
+    rotationId: "rotation_phase_b_alpha_001",
+    rotationVersion: 1,
     currentVersion: 4,
+    rewrapManifestSha256: "6".repeat(64),
+    verificationReceiptSha256: "7".repeat(64),
     writeVersion: 4,
     readVersions: [4],
   });
@@ -1962,26 +2372,38 @@ test("key rotation is an explicit dual-read/single-write state machine with roll
     code: "invalid_rotation_transition",
   });
 
-  let rollback = mustRotate(stableKeyRotationState(8), {
+  let rollback = mustRotate(stableKeyRotationState(ORG_A, 8), {
     type: "begin",
+    rotationId: "rotation_phase_b_alpha_002",
+    rotationVersion: 1,
     toVersion: 9,
   });
   rollback = mustRotate(rollback, { type: "activate_new_writes" });
   rollback = mustRotate(rollback, { type: "rollback" });
   assert.deepEqual(rollback, {
     phase: "rolled_back",
+    organizationId: ORG_A,
+    rotationId: "rotation_phase_b_alpha_002",
+    rotationVersion: 1,
     currentVersion: 8,
     attemptedVersion: 9,
     writeVersion: 8,
     readVersions: [8],
   });
   assert.deepEqual(
-    transitionKeyRotation(stableKeyRotationState(3), { type: "begin", toVersion: 5 }),
+    transitionKeyRotation(stableKeyRotationState(ORG_A, 3), {
+      type: "begin",
+      rotationId: "rotation_phase_b_alpha_003",
+      rotationVersion: 1,
+      toVersion: 5,
+    }),
     { ok: false, code: "invalid_rotation_transition" },
   );
 
-  let safeRollback = mustRotate(stableKeyRotationState(12), {
+  let safeRollback = mustRotate(stableKeyRotationState(ORG_A, 12), {
     type: "begin",
+    rotationId: "rotation_phase_b_alpha_004",
+    rotationVersion: 1,
     toVersion: 13,
   });
   safeRollback = mustRotate(safeRollback, { type: "activate_new_writes" });
@@ -1989,6 +2411,9 @@ test("key rotation is an explicit dual-read/single-write state machine with roll
   safeRollback = mustRotate(safeRollback, { type: "rollback" });
   assert.deepEqual(safeRollback, {
     phase: "rollback_rewrapping",
+    organizationId: ORG_A,
+    rotationId: "rotation_phase_b_alpha_004",
+    rotationVersion: 1,
     fromVersion: 12,
     toVersion: 13,
     totalNewVersionWrites: 1,

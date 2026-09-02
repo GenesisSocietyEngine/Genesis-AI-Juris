@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile, readdir, stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import test from "node:test";
 
 test("build contains the GENESIS: JURIS product metadata and worker entry", async () => {
@@ -16,32 +16,31 @@ test("build contains the GENESIS: JURIS product metadata and worker entry", asyn
 });
 
 test("production build keeps the canonical scenario runtime out of the initial client chunk", async () => {
-  const assetDirectory = new URL("../dist/client/assets/", import.meta.url);
-  const assets = await readdir(assetDirectory);
-  const jurisAppName = assets.find((name) => /^JurisApp-.*\.js$/.test(name));
-  const scenariosName = assets.find((name) => /^scenarios-.*\.js$/.test(name));
-  const canonicalRuntimeName = assets.find((name) => /^canonical-runtime-.*\.js$/.test(name));
-  const canonicalBundleName = assets.find((name) => /^canonical-case-bundle-.*\.js$/.test(name));
-  const legacyName = assets.find((name) => /^legacy-scenarios-.*\.js$/.test(name));
-  assert.ok(jurisAppName);
-  assert.ok(scenariosName);
-  assert.ok(canonicalRuntimeName);
-  assert.ok(canonicalBundleName);
-  assert.ok(legacyName);
-
-  const [jurisApp, canonicalBundle, manifestSource, jurisStats, scenarioStats, runtimeStats, bundleStats, legacyStats] = await Promise.all([
-    readFile(new URL(jurisAppName, assetDirectory), "utf8"),
-    readFile(new URL(canonicalBundleName, assetDirectory), "utf8"),
-    readFile(new URL("../dist/client/.vite/manifest.json", import.meta.url), "utf8"),
-    stat(new URL(jurisAppName, assetDirectory)),
-    stat(new URL(scenariosName, assetDirectory)),
-    stat(new URL(canonicalRuntimeName, assetDirectory)),
-    stat(new URL(canonicalBundleName, assetDirectory)),
-    stat(new URL(legacyName, assetDirectory)),
-  ]);
+  const clientDirectory = new URL("../dist/client/", import.meta.url);
+  const manifestSource = await readFile(new URL(".vite/manifest.json", clientDirectory), "utf8");
   const manifest = JSON.parse(manifestSource);
   const entry = manifest["app/JurisApp.tsx"];
-  assert.ok(entry);
+  const scenariosEntry = manifest["app/scenarios.ts"];
+  const canonicalRuntimeEntry = manifest["app/canonical-runtime.ts"];
+  const legacyEntry = manifest["app/legacy-scenarios.ts"];
+  const canonicalBundleEntry = Object.values(manifest).find(
+    (candidate) => candidate.name === "canonical-case-bundle",
+  );
+  for (const candidate of [entry, scenariosEntry, canonicalRuntimeEntry, canonicalBundleEntry, legacyEntry]) {
+    assert.ok(candidate?.file?.endsWith(".js"));
+    assert.equal(candidate.file.startsWith("../"), false);
+  }
+
+  const [jurisApp, canonicalBundle, jurisStats, scenarioStats, runtimeStats, bundleStats, legacyStats] = await Promise.all([
+    readFile(new URL(entry.file, clientDirectory), "utf8"),
+    readFile(new URL(canonicalBundleEntry.file, clientDirectory), "utf8"),
+    stat(new URL(entry.file, clientDirectory)),
+    stat(new URL(scenariosEntry.file, clientDirectory)),
+    stat(new URL(canonicalRuntimeEntry.file, clientDirectory)),
+    stat(new URL(canonicalBundleEntry.file, clientDirectory)),
+    stat(new URL(legacyEntry.file, clientDirectory)),
+  ]);
+  assert.equal(JSON.parse(manifestSource)["app/JurisApp.tsx"].file, entry.file);
   const runtimeMarker = "Asteron accepts Northbridge's without-prejudice EUR 64,500 payment";
   assert.ok(jurisStats.size < 300_000, `Initial JurisApp chunk grew to ${jurisStats.size} bytes`);
   assert.ok(scenarioStats.size < 100_000, `Scenario adapter chunk grew to ${scenarioStats.size} bytes`);
@@ -50,6 +49,8 @@ test("production build keeps the canonical scenario runtime out of the initial c
   assert.ok(legacyStats.size < 20_000, `Legacy compatibility chunk grew to ${legacyStats.size} bytes`);
   assert.ok(entry.dynamicImports.includes("app/scenarios.ts"));
   assert.ok(entry.dynamicImports.includes("app/canonical-runtime.ts"));
+  assert.ok(entry.dynamicImports.includes("app/HelpView.tsx"));
+  assert.ok(entry.dynamicImports.includes("app/InboxPanel.tsx"));
   assert.equal(entry.imports.some((item) => item.includes("canonical") || item.includes("scenarios")), false);
   assert.equal(jurisApp.includes(runtimeMarker), false);
   assert.equal(canonicalBundle.includes(runtimeMarker), true);
