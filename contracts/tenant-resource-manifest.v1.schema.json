@@ -54,6 +54,37 @@
     "schema_version": { "type": "string", "pattern": "^v[0-9]+$" },
     "deployment_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
     "activation": { "enum": ["disabled", "validation", "approved", "suspended"] },
+    "activation_validation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["validator_version", "evaluated_at", "valid_until", "covered_receipts", "receipt_set_sha256", "validation_receipt_sha256", "status"],
+      "properties": {
+        "validator_version": { "const": "tenant-activation-validator.v1" },
+        "evaluated_at": { "type": "string", "format": "date-time" },
+        "valid_until": { "type": "string", "format": "date-time", "x-require-future-at-validation": true },
+        "covered_receipts": {
+          "type": "object", "additionalProperties": false,
+          "required": ["manifest_verification", "workers", "queues", "cron", "malware_scanning", "extraction", "ocr", "kms", "logging", "analytics", "backup_restore", "support", "ai"],
+          "properties": {
+            "manifest_verification": { "$ref": "#/$defs/sha256" },
+            "workers": { "$ref": "#/$defs/sha256" },
+            "queues": { "$ref": "#/$defs/sha256" },
+            "cron": { "$ref": "#/$defs/sha256" },
+            "malware_scanning": { "$ref": "#/$defs/sha256" },
+            "extraction": { "$ref": "#/$defs/sha256" },
+            "ocr": { "$ref": "#/$defs/sha256" },
+            "kms": { "$ref": "#/$defs/sha256" },
+            "logging": { "$ref": "#/$defs/sha256" },
+            "analytics": { "$ref": "#/$defs/sha256" },
+            "backup_restore": { "$ref": "#/$defs/sha256" },
+            "support": { "$ref": "#/$defs/sha256" },
+            "ai": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "receipt_set_sha256": { "$ref": "#/$defs/sha256" },
+        "validation_receipt_sha256": { "$ref": "#/$defs/sha256" },
+        "status": { "const": "current" }
+      }
+    },
     "verification": {
       "type": "object", "additionalProperties": false,
       "required": ["receipt_sha256", "verified_at", "expires_at"],
@@ -64,8 +95,19 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": { "properties": { "activation": { "const": "approved" } }, "required": ["activation"] },
+      "then": {
+        "required": ["activation_validation"],
+        "properties": { "environment": { "const": "production" } }
+      },
+      "else": { "not": { "required": ["activation_validation"] } }
+    }
+  ],
   "$defs": {
     "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{20,128}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
     "liveKeyAlias": { "type": "string", "pattern": "^live/[A-Za-z0-9/_-]{3,155}$" },
     "exportKeyAlias": { "type": "string", "pattern": "^export/[A-Za-z0-9/_-]{3,153}$" },
     "backupKeyAlias": { "type": "string", "pattern": "^backup/[A-Za-z0-9/_-]{3,153}$" },

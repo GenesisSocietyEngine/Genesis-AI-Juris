@@ -57,8 +57,9 @@
             "ocr_request", "citation_read", "citation_manage", "evidence_read",
             "evidence_manage", "task_read", "task_manage", "review_read",
             "review_submit", "report_read", "report_generate", "dossier_export_request",
-            "retention_purge_request", "legal_hold_read", "legal_hold_create",
-            "legal_hold_release", "dossier_audit_read"
+            "retention_purge_request", "legal_hold_read", "legal_hold_create_request",
+            "legal_hold_create_approve", "legal_hold_release_request",
+            "legal_hold_release_approve", "dossier_audit_read"
           ]
         },
         "dossier_role": { "enum": ["owner", "contributor", "reviewer", "viewer"] },
@@ -100,6 +101,21 @@
               }
             }
           }
+        },
+        "legal_hold_approval_authority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authority_version", "request_id", "request_action", "request_actor_id", "approval_actor_id", "approver_basis", "separation_of_duties_receipt_sha256", "status"],
+          "properties": {
+            "authority_version": { "const": "legal-hold-approval-authority.v1" },
+            "request_id": { "$ref": "#/$defs/opaqueId" },
+            "request_action": { "enum": ["legal_hold_create_request", "legal_hold_release_request"] },
+            "request_actor_id": { "$ref": "#/$defs/opaqueId" },
+            "approval_actor_id": { "$ref": "#/$defs/opaqueId" },
+            "approver_basis": { "enum": ["dossier_reviewer", "organization_admin"] },
+            "separation_of_duties_receipt_sha256": { "$ref": "#/$defs/sha256" },
+            "status": { "const": "approved" }
+          }
         }
       },
       "allOf": [
@@ -113,7 +129,8 @@
                 { "required": ["authorization_version"] },
                 { "required": ["dossier_role"] },
                 { "required": ["delegated_organization_authority"] },
-                { "required": ["compliance_export_authority"] }
+                { "required": ["compliance_export_authority"] },
+                { "required": ["legal_hold_approval_authority"] }
               ]
             }
           }
@@ -128,7 +145,8 @@
                   "organization_read", "organization_update", "member_invite", "member_suspend",
                   "member_remove", "member_role_assign", "identity_connection_read",
                   "identity_connection_manage", "policy_read", "policy_manage",
-                  "organization_audit_read", "tenant_export_request"
+                  "organization_audit_read", "tenant_export_request",
+                  "legal_hold_create_approve", "legal_hold_release_approve"
                 ]
               }
             },
@@ -148,8 +166,9 @@
                   "ocr_request", "citation_read", "citation_manage", "evidence_read",
                   "evidence_manage", "task_read", "task_manage", "review_read",
                   "review_submit", "report_read", "report_generate", "dossier_export_request",
-                  "retention_purge_request", "legal_hold_read", "legal_hold_create",
-                  "legal_hold_release", "dossier_audit_read"
+                  "retention_purge_request", "legal_hold_read", "legal_hold_create_request",
+                  "legal_hold_create_approve", "legal_hold_release_request",
+                  "legal_hold_release_approve", "dossier_audit_read"
                 ]
               }
             },
@@ -192,7 +211,8 @@
                 "enum": [
                   "organization_read", "organization_update", "member_invite", "member_suspend",
                   "identity_connection_read", "identity_connection_manage", "policy_read",
-                  "policy_manage", "organization_audit_read", "tenant_export_request"
+                  "policy_manage", "organization_audit_read", "tenant_export_request",
+                  "legal_hold_create_approve", "legal_hold_release_approve"
                 ]
               }
             }
@@ -272,7 +292,8 @@
                 "enum": [
                   "dossier_read", "document_read", "citation_read", "evidence_read",
                   "task_read", "review_read", "review_submit", "report_read",
-                  "report_generate", "legal_hold_read", "dossier_audit_read"
+                  "report_generate", "legal_hold_read", "legal_hold_create_approve",
+                  "legal_hold_release_approve", "dossier_audit_read"
                 ]
               }
             }
@@ -290,6 +311,46 @@
               }
             }
           }
+        },
+        {
+          "if": { "properties": { "action": { "enum": ["legal_hold_create_request", "legal_hold_release_request"] } }, "required": ["action"] },
+          "then": {
+            "properties": {
+              "scope": { "const": "dossier" },
+              "dossier_role": { "const": "owner" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "enum": ["legal_hold_create_approve", "legal_hold_release_approve"] } }, "required": ["action"] },
+          "then": { "required": ["legal_hold_approval_authority"] },
+          "else": { "not": { "required": ["legal_hold_approval_authority"] } }
+        },
+        {
+          "if": { "properties": { "action": { "enum": ["legal_hold_create_approve", "legal_hold_release_approve"] }, "scope": { "const": "dossier" } }, "required": ["action", "scope"] },
+          "then": {
+            "properties": {
+              "dossier_role": { "const": "reviewer" },
+              "legal_hold_approval_authority": { "properties": { "approver_basis": { "const": "dossier_reviewer" } } }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "enum": ["legal_hold_create_approve", "legal_hold_release_approve"] }, "scope": { "const": "organization" } }, "required": ["action", "scope"] },
+          "then": {
+            "properties": {
+              "organization_role": { "const": "org_admin" },
+              "legal_hold_approval_authority": { "properties": { "approver_basis": { "const": "organization_admin" } } }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "legal_hold_create_approve" } }, "required": ["action"] },
+          "then": { "properties": { "legal_hold_approval_authority": { "properties": { "request_action": { "const": "legal_hold_create_request" } } } } }
+        },
+        {
+          "if": { "properties": { "action": { "const": "legal_hold_release_approve" } }, "required": ["action"] },
+          "then": { "properties": { "legal_hold_approval_authority": { "properties": { "request_action": { "const": "legal_hold_release_request" } } } } }
         }
       ]
     }

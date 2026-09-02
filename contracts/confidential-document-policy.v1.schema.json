@@ -36,8 +36,31 @@
         "ordinary_cache": { "const": false },
         "offline_enabled": { "type": "boolean" },
         "clear_on_tenant_change": { "const": true },
-        "redact_app_switcher": { "const": true }
-      }
+        "redact_app_switcher": { "const": true },
+        "offline_protection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["application_encryption", "device_bound", "os_secure_storage", "backup_excluded", "remote_revocation", "clear_on_sign_out", "clear_on_membership_removal", "clear_on_policy_change", "clear_on_session_revocation"],
+          "properties": {
+            "application_encryption": { "const": true },
+            "device_bound": { "const": true },
+            "os_secure_storage": { "const": true },
+            "backup_excluded": { "const": true },
+            "remote_revocation": { "const": true },
+            "clear_on_sign_out": { "const": true },
+            "clear_on_membership_removal": { "const": true },
+            "clear_on_policy_change": { "const": true },
+            "clear_on_session_revocation": { "const": true }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "offline_enabled": { "const": true } }, "required": ["offline_enabled"] },
+          "then": { "required": ["offline_protection"] },
+          "else": { "not": { "required": ["offline_protection"] } }
+        }
+      ]
     }
   },
   "allOf": [
