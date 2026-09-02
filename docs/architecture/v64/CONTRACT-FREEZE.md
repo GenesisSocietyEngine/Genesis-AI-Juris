@@ -50,13 +50,16 @@ control. Legal-hold creation/release is split into owner requests and
 reviewer/organisation-admin approvals, bound to separate actors and an
 immutable separation-of-duties receipt. The server authorization validator must
 resolve the immutable `legal-hold-request.v1` record from `request_id`, bind its
-stored action and actor to `request_action` and `request_actor_id`, record that
-lookup in `request_record_binding_receipt_sha256`, then enforce the required
-`x-require-distinct-fields` assertion. It must separately bind
+stored action, actor, organisation, dossier, and complete target-object-graph
+digest to the approval authority, and bind the target organisation/dossier to
+the current contract context. The lookup is recorded in
+`request_record_binding_receipt_sha256`; only then may the validator enforce
+the required `x-require-distinct-fields` assertion. It must separately bind
 `approval_actor_id` to the authenticated session actor using the recorded
 session-binding receipt. Generic JSON Schema validation alone is insufficient;
-a missing/mismatched request record, self-approval, or a session/actor mismatch
-fails closed before any receipt is accepted.
+a missing/mismatched request record, foreign tenant/dossier/object graph,
+self-approval, or a session/actor mismatch fails closed before any receipt is
+accepted.
 
 Phase B must not begin until reviewers accept this freeze and the threat model.
 No confidential activation is implied by accepting either document.

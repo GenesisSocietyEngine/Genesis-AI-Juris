@@ -58,8 +58,10 @@ Versioned policies have no indefinite default and destructive evaluation starts
 with an approved dry run. Legal holds bind an exact tenant/object graph and
 override every purge path. They use a stored immutable request as the
 requester/action source of truth; an approver cannot supply or rewrite requester
-identity. Creation and release require distinct request and approval actors,
-independently bound by immutable receipts.
+identity. The request's organisation, dossier, and complete target-object-graph
+digest must match the current authorization context. Creation and release
+require distinct request and approval actors, independently bound by immutable
+receipts.
 Deletion receipts disclose backup expiry honestly. Dossier export authority is
 case-scoped; a tenant export cannot use organisation administration as ambient
 case authority.
