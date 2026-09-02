@@ -105,7 +105,9 @@
         "legal_hold_approval_authority": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["authority_version", "request_id", "request_action", "request_actor_id", "approval_actor_id", "approver_basis", "separation_of_duties_receipt_sha256", "status"],
+          "x-require-distinct-fields": ["request_actor_id", "approval_actor_id"],
+          "x-bind-field-to-authenticated-actor": "approval_actor_id",
+          "required": ["authority_version", "request_id", "request_action", "request_actor_id", "approval_actor_id", "approver_basis", "approval_session_binding_sha256", "separation_of_duties_receipt_sha256", "status"],
           "properties": {
             "authority_version": { "const": "legal-hold-approval-authority.v1" },
             "request_id": { "$ref": "#/$defs/opaqueId" },
@@ -113,6 +115,7 @@
             "request_actor_id": { "$ref": "#/$defs/opaqueId" },
             "approval_actor_id": { "$ref": "#/$defs/opaqueId" },
             "approver_basis": { "enum": ["dossier_reviewer", "organization_admin"] },
+            "approval_session_binding_sha256": { "$ref": "#/$defs/sha256" },
             "separation_of_duties_receipt_sha256": { "$ref": "#/$defs/sha256" },
             "status": { "const": "approved" }
           }

@@ -48,7 +48,12 @@ Offline mobile storage is either absent or carries every required device-bound
 encryption, secure-storage, backup-exclusion, remote-revocation, and clearing
 control. Legal-hold creation/release is split into owner requests and
 reviewer/organisation-admin approvals, bound to separate actors and an
-immutable separation-of-duties receipt.
+immutable separation-of-duties receipt. The server authorization validator must
+enforce the required `x-require-distinct-fields` assertion and bind
+`approval_actor_id` to the authenticated session actor using the recorded
+session-binding receipt. Generic JSON Schema validation alone is insufficient;
+self-approval or a session/actor mismatch fails closed before any receipt is
+accepted.
 
 Phase B must not begin until reviewers accept this freeze and the threat model.
 No confidential activation is implied by accepting either document.
