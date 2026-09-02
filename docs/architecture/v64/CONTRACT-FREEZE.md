@@ -24,6 +24,11 @@ set and binds every dossier to its owner, receipt, and content manifest.
 The organisation policy set is closed and complete: retention, deletion,
 export, legal hold, offline/mobile, AI disclosure, session, and data
 classification versions are all mandatory. Unknown policy names are rejected.
+The top-level organisation ID is bound to the same server-owned authorization
+context used by scoped authorities. Organisation and dossier actions require
+`organization.status = active`; provisioning, suspended, and closed
+organisations fail closed immediately. Identity callbacks may establish
+identity but cannot manufacture or retain organisation/dossier authority.
 
 An approved tenant resource manifest also binds four purpose-prefixed key
 aliases and current EU-jurisdiction evidence for workers, queues, cron, malware

@@ -64,6 +64,7 @@ content authority.
 | Replay a clean receipt for different bytes | bind tenant, object, version, length and SHA-256; idempotent transition |
 | Prompt injection in extracted text | mark untrusted, quote as evidence, AI proposal-only, Rust validation authoritative |
 | Cross-tenant job/cache/download leakage | tenant-bound queues and keys, short grants, purge cache on context/version change |
+| Payload tenant substitution or post-suspension access | bind top-level organisation and nested targets to server authorization context; require active status for every organisation/dossier action |
 | Exfiltrate through logs/crash/analytics | field allowlists; prohibit content, filename, identity, token, prompt, object key |
 | Bypass legal hold through scheduled purge | one authoritative object-graph hold check on every deletion path |
 | Reuse/spoof a legal-hold request across actors or scopes | resolve actor/action/organisation/dossier/object graph from the immutable request; bind it to server-owned authorization context; bind approver to the authenticated session; require distinct actors and receipts |

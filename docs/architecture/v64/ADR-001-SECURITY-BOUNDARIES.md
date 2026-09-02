@@ -26,6 +26,10 @@ pre-membership rules. Organisation actions require active membership, while
 dossier actions additionally require active participation and the exact case
 role. Tenant exports require separate compliance-export authority and approval
 from each included dossier owner.
+The contract's top-level organisation identity and every nested target are
+bound to the same server-resolved authorization context. Organisation and
+dossier actions require active organisation status; suspension or closure
+invalidates them immediately, regardless of a previously valid role or receipt.
 
 ## ADR-003 — encryption and key management
 

@@ -4,6 +4,9 @@
   "title": "GENESIS JURIS organization contract v1",
   "type": "object",
   "additionalProperties": false,
+  "x-bind-fields-to-server-authorization-context": {
+    "/organization/id": "organization_id"
+  },
   "required": ["contract_version", "organization", "authorization"],
   "properties": {
     "contract_version": { "const": "organization-contract.v1" },
@@ -377,6 +380,27 @@
       ]
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "authorization": {
+            "properties": { "scope": { "enum": ["organization", "dossier"] } },
+            "required": ["scope"]
+          }
+        },
+        "required": ["authorization"]
+      },
+      "then": {
+        "properties": {
+          "organization": {
+            "properties": { "status": { "const": "active" } },
+            "required": ["status"]
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "opaqueId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{20,128}$" },
     "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
