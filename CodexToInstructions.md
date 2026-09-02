@@ -191,8 +191,10 @@ Required behavior:
   short-lived, origin-bound, and invalid after revocation or membership change.
 - Email-domain matching, Entra `tid`, group names, UI claims, and invitation
   text never grant dossier access by themselves.
-- Every request resolves one trusted identity, one active organisation
-  membership, one active dossier participant, and one exact action.
+- Every request resolves one trusted identity and one exact action. Identity
+  callbacks and invitation acceptance use their dedicated pre-membership rules;
+  organisation-scoped actions require an active organisation membership; and
+  dossier-scoped actions additionally require an active dossier participant.
 - Unknown and unauthorized organisation/dossier IDs return indistinguishable
   private responses.
 - Switching organisations invalidates cached dossier/document state and binds a
@@ -386,8 +388,10 @@ Use states `requested → approved → grace_period → purging → purged | blo
 
 ### Export
 
-- Organisation admins may request a tenant export; dossier owners may request a
-  dossier export within policy.
+- Dossier owners may request a dossier export within policy. A tenant-wide
+  export requires a separately assigned compliance-export authority plus owner
+  approval for every included dossier; `org_admin` alone never grants ambient
+  dossier access or export authority.
 - Build exports asynchronously in the tenant’s EU environment.
 - Include canonical JSON/Markdown, immutable document versions, extracted text,
   anchors, decisions, tasks, reports, audit receipts, policy versions, and a
