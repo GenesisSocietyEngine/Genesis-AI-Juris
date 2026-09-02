@@ -117,10 +117,46 @@ decision_dossier_v62_slice5_gate: frozen_migrations_0012_0015_adversarial_audit_
 decision_dossier_v62_web_gate: strict_type_lint_build_audit_pdf_and_493_of_493_green
 decision_dossier_v62_browser_gate: local_http_green_visual_controller_service_unavailable
 decision_dossier_v62_remote_state: no_production_site_version_or_deployment
-last_updated: 2026-09-01
+phase_b_tenant_foundation_status: recovery_in_progress_architecture_blocked
+phase_b_pr: 43
+phase_b_development_base: c088200138332cd212b87e266746ea85b53a2f77
+phase_b_instruction_head: fef5a27fd86d4978c522adb0e5f1526d00c9da66
+phase_b_recovery_route: reconstructed_from_frozen_contracts_and_verifiable_receipts
+phase_b_production_identity: unresolved_site63_v61_vs_site69_v62
+phase_b_confidential_uploads: disabled_synthetic_or_deidentified_only
+phase_b_last_verified_utc: 2026-09-02T13:58:50Z
+last_updated: 2026-09-02
 ---
 
 # Current Progress
+
+## V64 Phase B tenant-foundation recovery checkpoint - 2026-09-02
+
+PR #43 remains a draft isolated implementation branch based on exact Phase A
+merge `c088200138332cd212b87e266746ea85b53a2f77`; its amended recovery parent is
+`fef5a27fd86d4978c522adb0e5f1526d00c9da66`. The previously reported B0 and
+B1-B9 commit objects are absent from GitHub and every available local object,
+ref, reflog, worktree, and Codex artifact. Recovery is therefore a truthful
+reconstruction and will use new SHAs rather than claiming the missing prefixes.
+
+The frozen v64 schemas and architecture records were read in full and remain
+unchanged. The discovery receipt is
+`docs/architecture/v64/PHASE-B-DISCOVERY-RECEIPT.md`. It records two acceptance
+blockers: the unpublished `0011` migration name collides with the real v61
+chain and precedes frozen v62 migrations `0012`-`0015`; and the exact PR base
+does not contain the real v62 dossier/document aggregates that B2 must
+tenant-bind. No parallel placeholder data plane will be created.
+
+Production identity remains unresolved between repository Site 63 / marker v61
+evidence and the approved-line claim of Site 69 / v62 at web SHA
+`6019e47346a2bf719a09dc1d874a2fc807f99598`. This discrepancy is an
+`unverified_external_dependency` and blocks ready-for-merge, release,
+deployment, and confidential activation. No production resource, secret,
+Site version, deployment, or app-store state was changed.
+
+> Confidential document mode is not active. Do not upload privileged,
+> client-identifying, or live production documents. Use only synthetic or
+> properly de-identified material.
 
 ## Decision-Centric Dossier Workspace v62 release-candidate checkpoint - 2026-09-01
 
