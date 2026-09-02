@@ -36,16 +36,22 @@ void main() {
       final List<TenantClearRequest> requests = <TenantClearRequest>[];
       final OrganizationContextCoordinator coordinator =
           OrganizationContextCoordinator(
-            clearTenantState: (request) async {
-              requests.add(request);
-              await cleared.future;
-            },
-          );
+        clearTenantState: (request) async {
+          requests.add(request);
+          await cleared.future;
+        },
+      );
       final OrganizationContext first = await coordinator.switchTo(
         organizationId: organizationA,
         displayName: 'Example A',
         authorizationVersion: 4,
         sessionVersion: 8,
+      );
+      final OrganizationContextPermit firstPermit = coordinator.authorize(
+        organizationId: organizationA,
+        authorizationVersion: 4,
+        sessionVersion: 8,
+        generation: first.generation,
       );
 
       final Future<OrganizationContext> pending = coordinator.switchTo(
@@ -54,14 +60,8 @@ void main() {
         authorizationVersion: 1,
         sessionVersion: 1,
       );
-      await Future<void>.delayed(Duration.zero);
       expect(coordinator.current, isNull);
       expect(coordinator.isBlocked, isTrue);
-      expect(requests.single.organizationId, organizationA);
-      expect(
-        requests.single.reason,
-        TenantInvalidationReason.organizationSwitch,
-      );
       expect(
         () => coordinator.authorize(
           organizationId: organizationA,
@@ -71,6 +71,18 @@ void main() {
         ),
         throwsA(isA<OrganizationContextException>()),
       );
+      expect(
+        () => coordinator.validatePermit(firstPermit),
+        throwsA(isA<OrganizationContextException>()),
+      );
+
+      await Future<void>.delayed(Duration.zero);
+      expect(requests.single.organizationId, organizationA);
+      expect(
+        requests.single.reason,
+        TenantInvalidationReason.organizationSwitch,
+      );
+      expect(requests.single.generation, first.generation);
 
       cleared.complete();
       final OrganizationContext second = await pending;
@@ -86,11 +98,11 @@ void main() {
       final List<String> clearedOrganizations = <String>[];
       final OrganizationContextCoordinator coordinator =
           OrganizationContextCoordinator(
-            clearTenantState: (request) async {
-              clearedOrganizations.add(request.organizationId);
-              if (fail) throw StateError('synthetic clear failure');
-            },
-          );
+        clearTenantState: (request) async {
+          clearedOrganizations.add(request.organizationId);
+          if (fail) throw StateError('synthetic clear failure');
+        },
+      );
       final OrganizationContext first = await coordinator.switchTo(
         organizationId: organizationA,
         displayName: 'Example A',
@@ -138,19 +150,19 @@ void main() {
   );
 
   test(
-    'concurrent switches serialize their clear-before-activate boundary',
+    'a queued switch supersedes an in-flight switch before it can activate',
     () async {
       final List<String> clearOrder = <String>[];
       final List<Completer<void>> gates = <Completer<void>>[];
       final OrganizationContextCoordinator coordinator =
           OrganizationContextCoordinator(
-            clearTenantState: (request) async {
-              clearOrder.add(request.organizationId);
-              final Completer<void> gate = Completer<void>();
-              gates.add(gate);
-              await gate.future;
-            },
-          );
+        clearTenantState: (request) async {
+          clearOrder.add(request.organizationId);
+          final Completer<void> gate = Completer<void>();
+          gates.add(gate);
+          await gate.future;
+        },
+      );
       await coordinator.switchTo(
         organizationId: organizationA,
         displayName: 'A',
@@ -164,20 +176,30 @@ void main() {
         authorizationVersion: 1,
         sessionVersion: 1,
       );
+      await Future<void>.delayed(Duration.zero);
+      expect(clearOrder, <String>[organizationA]);
+
       final Future<OrganizationContext> toC = coordinator.switchTo(
         organizationId: organizationC,
         displayName: 'C',
         authorizationVersion: 1,
         sessionVersion: 1,
       );
-      await Future<void>.delayed(Duration.zero);
-      expect(clearOrder, <String>[organizationA]);
+      final Future<void> bWasSuperseded = expectLater(
+        toB,
+        throwsA(
+          isA<OrganizationContextException>().having(
+            (error) => error.code,
+            'code',
+            'organization_context_superseded',
+          ),
+        ),
+      );
+      expect(coordinator.current, isNull);
       gates[0].complete();
-      await toB;
-      await Future<void>.delayed(Duration.zero);
-      expect(clearOrder, <String>[organizationA, organizationB]);
-      gates[1].complete();
+      await bWasSuperseded;
       final OrganizationContext finalContext = await toC;
+      expect(clearOrder, <String>[organizationA]);
       expect(finalContext.organizationId, organizationC);
       expect(coordinator.current?.organizationId, organizationC);
     },
@@ -202,39 +224,52 @@ void main() {
         generation: context.generation,
       );
       expect(permit.organizationId, organizationA);
+      expect(() => coordinator.validatePermit(permit), returnsNormally);
+
+      final OrganizationContextCoordinator otherCoordinator =
+          OrganizationContextCoordinator(clearTenantState: (_) async {});
+      await otherCoordinator.switchTo(
+        organizationId: organizationA,
+        displayName: 'Same display name',
+        authorizationVersion: 7,
+        sessionVersion: 3,
+      );
+      expect(
+        () => otherCoordinator.validatePermit(permit),
+        throwsA(isA<OrganizationContextException>()),
+      );
       for (final ({
-            String organizationId,
-            int auth,
-            int session,
-            int generation,
-          })
-          candidate
+        String organizationId,
+        int auth,
+        int session,
+        int generation,
+      }) candidate
           in <({String organizationId, int auth, int session, int generation})>[
-            (
-              organizationId: organizationB,
-              auth: 7,
-              session: 3,
-              generation: context.generation,
-            ),
-            (
-              organizationId: organizationA,
-              auth: 6,
-              session: 3,
-              generation: context.generation,
-            ),
-            (
-              organizationId: organizationA,
-              auth: 7,
-              session: 2,
-              generation: context.generation,
-            ),
-            (
-              organizationId: organizationA,
-              auth: 7,
-              session: 3,
-              generation: context.generation - 1,
-            ),
-          ]) {
+        (
+          organizationId: organizationB,
+          auth: 7,
+          session: 3,
+          generation: context.generation,
+        ),
+        (
+          organizationId: organizationA,
+          auth: 6,
+          session: 3,
+          generation: context.generation,
+        ),
+        (
+          organizationId: organizationA,
+          auth: 7,
+          session: 2,
+          generation: context.generation,
+        ),
+        (
+          organizationId: organizationA,
+          auth: 7,
+          session: 3,
+          generation: context.generation - 1,
+        ),
+      ]) {
         expect(
           () => coordinator.authorize(
             organizationId: candidate.organizationId,
@@ -255,6 +290,59 @@ void main() {
   );
 
   test(
+    'starting invalidation immediately revokes authorization and permits',
+    () async {
+      final Completer<void> cleared = Completer<void>();
+      final List<TenantClearRequest> requests = <TenantClearRequest>[];
+      final OrganizationContextCoordinator coordinator =
+          OrganizationContextCoordinator(
+        clearTenantState: (request) async {
+          requests.add(request);
+          await cleared.future;
+        },
+      );
+      final OrganizationContext context = await coordinator.switchTo(
+        organizationId: organizationA,
+        displayName: 'Example A',
+        authorizationVersion: 2,
+        sessionVersion: 3,
+      );
+      final OrganizationContextPermit permit = coordinator.authorize(
+        organizationId: organizationA,
+        authorizationVersion: 2,
+        sessionVersion: 3,
+        generation: context.generation,
+      );
+
+      final Future<void> invalidating = coordinator.invalidate(
+        TenantInvalidationReason.sessionRevocation,
+      );
+      expect(coordinator.current, isNull);
+      expect(coordinator.isBlocked, isTrue);
+      expect(
+        () => coordinator.authorize(
+          organizationId: organizationA,
+          authorizationVersion: 2,
+          sessionVersion: 3,
+          generation: context.generation,
+        ),
+        throwsA(isA<OrganizationContextException>()),
+      );
+      expect(
+        () => coordinator.validatePermit(permit),
+        throwsA(isA<OrganizationContextException>()),
+      );
+
+      await Future<void>.delayed(Duration.zero);
+      expect(
+          requests.single.reason, TenantInvalidationReason.sessionRevocation);
+      expect(requests.single.generation, context.generation);
+      cleared.complete();
+      await invalidating;
+    },
+  );
+
+  test(
     'all authority invalidations clear tenant state and revoke context',
     () async {
       const List<TenantInvalidationReason> reasons = <TenantInvalidationReason>[
@@ -267,10 +355,10 @@ void main() {
         final List<TenantClearRequest> requests = <TenantClearRequest>[];
         final OrganizationContextCoordinator coordinator =
             OrganizationContextCoordinator(
-              clearTenantState: (request) async {
-                requests.add(request);
-              },
-            );
+          clearTenantState: (request) async {
+            requests.add(request);
+          },
+        );
         final OrganizationContext context = await coordinator.switchTo(
           organizationId: organizationA,
           displayName: 'Example',

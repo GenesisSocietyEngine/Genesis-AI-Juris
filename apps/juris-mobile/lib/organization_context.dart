@@ -53,12 +53,14 @@ typedef TenantStateClearer = Future<void> Function(TenantClearRequest request);
 
 final class OrganizationContextPermit {
   const OrganizationContextPermit._({
+    required Object issuer,
     required this.organizationId,
     required this.authorizationVersion,
     required this.sessionVersion,
     required this.generation,
-  });
+  }) : _issuer = issuer;
 
+  final Object _issuer;
   final String organizationId;
   final int authorizationVersion;
   final int sessionVersion;
@@ -67,15 +69,18 @@ final class OrganizationContextPermit {
 
 final class OrganizationContextCoordinator {
   OrganizationContextCoordinator({required TenantStateClearer clearTenantState})
-    : _clearTenantState = clearTenantState;
+      : _clearTenantState = clearTenantState;
 
   static final RegExp _opaqueId = RegExp(r'^[A-Za-z0-9_-]{20,128}$');
 
   final TenantStateClearer _clearTenantState;
+  final Object _permitIssuer = Object();
   Future<void> _exclusiveTail = Future<void>.value();
   OrganizationContext? _current;
   String? _unclearedOrganizationId;
+  int? _unclearedGeneration;
   int _generation = 0;
+  int _intent = 0;
 
   OrganizationContext? get current => _current;
   int get generation => _generation;
@@ -89,17 +94,13 @@ final class OrganizationContextCoordinator {
     ConfidentialDocumentMode confidentialDocumentMode =
         ConfidentialDocumentMode.disabled,
   }) {
-    return _runExclusive(() async {
+    final OrganizationContext? previous = _current;
+    try {
       _validateCandidate(
         organizationId: organizationId,
         authorizationVersion: authorizationVersion,
         sessionVersion: sessionVersion,
       );
-      final OrganizationContext? previous = _current;
-      final String? blockedOrganization = _unclearedOrganizationId;
-      final String? organizationToClear =
-          blockedOrganization ?? previous?.organizationId;
-
       if (previous != null &&
           previous.organizationId == organizationId &&
           authorizationVersion < previous.authorizationVersion) {
@@ -110,8 +111,21 @@ final class OrganizationContextCoordinator {
       if (previous != null &&
           previous.organizationId == organizationId &&
           sessionVersion < previous.sessionVersion) {
-        throw const OrganizationContextException(code: 'stale_session_version');
+        throw const OrganizationContextException(
+          code: 'stale_session_version',
+        );
       }
+    } on OrganizationContextException catch (error, stackTrace) {
+      return Future<OrganizationContext>.error(error, stackTrace);
+    }
+
+    final int intent = _beginAuthorityChange();
+    final int requestGeneration = _generation;
+    return _runExclusive(() async {
+      _throwIfSuperseded(intent);
+      final String? blockedOrganization = _unclearedOrganizationId;
+      final String? organizationToClear =
+          blockedOrganization ?? _current?.organizationId;
 
       if (organizationToClear != null) {
         await _clearOrBlock(
@@ -119,34 +133,30 @@ final class OrganizationContextCoordinator {
           TenantInvalidationReason.organizationSwitch,
         );
       }
+      _throwIfSuperseded(intent);
 
-      _generation += 1;
       final OrganizationContext next = OrganizationContext(
         organizationId: organizationId,
         displayName: displayName.trim(),
         authorizationVersion: authorizationVersion,
         sessionVersion: sessionVersion,
-        generation: _generation,
+        generation: requestGeneration,
         confidentialDocumentMode: confidentialDocumentMode,
       );
       _current = next;
-      _unclearedOrganizationId = null;
       return next;
     });
   }
 
   Future<void> invalidate(TenantInvalidationReason reason) {
+    final int intent = _beginAuthorityChange();
     return _runExclusive(() async {
+      if (intent != _intent) return;
       final String? organizationToClear =
           _unclearedOrganizationId ?? _current?.organizationId;
-      if (organizationToClear == null) {
-        _current = null;
-        return;
+      if (organizationToClear != null) {
+        await _clearOrBlock(organizationToClear, reason);
       }
-      await _clearOrBlock(organizationToClear, reason);
-      _generation += 1;
-      _current = null;
-      _unclearedOrganizationId = null;
     });
   }
 
@@ -171,11 +181,49 @@ final class OrganizationContextCoordinator {
       );
     }
     return OrganizationContextPermit._(
+      issuer: _permitIssuer,
       organizationId: context.organizationId,
       authorizationVersion: context.authorizationVersion,
       sessionVersion: context.sessionVersion,
       generation: context.generation,
     );
+  }
+
+  void validatePermit(OrganizationContextPermit permit) {
+    final OrganizationContext? context = _current;
+    if (_unclearedOrganizationId != null ||
+        context == null ||
+        !identical(permit._issuer, _permitIssuer) ||
+        context.organizationId != permit.organizationId ||
+        context.authorizationVersion != permit.authorizationVersion ||
+        context.sessionVersion != permit.sessionVersion ||
+        context.generation != permit.generation) {
+      throw const OrganizationContextException(
+        code: 'organization_context_denied',
+      );
+    }
+  }
+
+  int _beginAuthorityChange() {
+    final OrganizationContext? previous = _current;
+    _intent += 1;
+    _generation += 1;
+    _current = null;
+    if (previous != null) {
+      if (_unclearedOrganizationId == null) {
+        _unclearedOrganizationId = previous.organizationId;
+        _unclearedGeneration = previous.generation;
+      }
+    }
+    return _intent;
+  }
+
+  void _throwIfSuperseded(int intent) {
+    if (intent != _intent) {
+      throw const OrganizationContextException(
+        code: 'organization_context_superseded',
+      );
+    }
   }
 
   void _validateCandidate({
@@ -200,18 +248,23 @@ final class OrganizationContextCoordinator {
     String organizationId,
     TenantInvalidationReason reason,
   ) async {
+    final int generationToClear = _unclearedGeneration ?? _generation;
     _current = null;
     _unclearedOrganizationId = organizationId;
+    _unclearedGeneration ??= generationToClear;
     try {
       await _clearTenantState(
         TenantClearRequest(
           organizationId: organizationId,
           reason: reason,
-          generation: _generation,
+          generation: generationToClear,
         ),
       );
+      if (_unclearedOrganizationId == organizationId) {
+        _unclearedOrganizationId = null;
+        _unclearedGeneration = null;
+      }
     } on Object catch (error) {
-      _generation += 1;
       throw OrganizationContextException(
         code: 'tenant_state_clear_failed',
         cause: error,
