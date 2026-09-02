@@ -66,7 +66,7 @@ content authority.
 | Cross-tenant job/cache/download leakage | tenant-bound queues and keys, short grants, purge cache on context/version change |
 | Exfiltrate through logs/crash/analytics | field allowlists; prohibit content, filename, identity, token, prompt, object key |
 | Bypass legal hold through scheduled purge | one authoritative object-graph hold check on every deletion path |
-| Reuse/spoof a legal-hold request across actors or scopes | resolve actor/action/organisation/dossier/object graph from the immutable request; bind it to the current contract context; bind approver to the authenticated session; require distinct actors and receipts |
+| Reuse/spoof a legal-hold request across actors or scopes | resolve actor/action/organisation/dossier/object graph from the immutable request; bind it to server-owned authorization context; bind approver to the authenticated session; require distinct actors and receipts |
 | Infer residency from storage location | component-specific current receipts; disable capability when any receipt expires |
 
 ## Privacy data map and minimisation

@@ -44,7 +44,6 @@
         "organization_role": { "enum": ["org_owner", "org_admin", "member", "auditor"] },
         "authorization_version": { "type": "integer", "minimum": 1 },
         "scope": { "enum": ["identity", "organization", "dossier"] },
-        "target_dossier_id": { "$ref": "#/$defs/opaqueId" },
         "action": {
           "enum": [
             "oidc_callback", "invitation_acceptance",
@@ -108,9 +107,9 @@
           "additionalProperties": false,
           "x-require-distinct-fields": ["request_actor_id", "approval_actor_id"],
           "x-bind-field-to-authenticated-actor": "approval_actor_id",
-          "x-bind-fields-to-contract-context": {
-            "target_organization_id": "/organization/id",
-            "target_dossier_id": "/authorization/target_dossier_id"
+          "x-bind-fields-to-server-authorization-context": {
+            "target_organization_id": "organization_id",
+            "target_dossier_id": "dossier_id"
           },
           "x-bind-fields-to-immutable-record": {
             "record_type": "legal-hold-request.v1",
@@ -150,7 +149,6 @@
               "anyOf": [
                 { "required": ["organization_role"] },
                 { "required": ["authorization_version"] },
-                { "required": ["target_dossier_id"] },
                 { "required": ["dossier_role"] },
                 { "required": ["delegated_organization_authority"] },
                 { "required": ["compliance_export_authority"] },
@@ -347,15 +345,8 @@
         },
         {
           "if": { "properties": { "action": { "enum": ["legal_hold_create_approve", "legal_hold_release_approve"] } }, "required": ["action"] },
-          "then": { "required": ["target_dossier_id", "legal_hold_approval_authority"] },
-          "else": {
-            "not": {
-              "anyOf": [
-                { "required": ["target_dossier_id"] },
-                { "required": ["legal_hold_approval_authority"] }
-              ]
-            }
-          }
+          "then": { "required": ["legal_hold_approval_authority"] },
+          "else": { "not": { "required": ["legal_hold_approval_authority"] } }
         },
         {
           "if": { "properties": { "action": { "enum": ["legal_hold_create_approve", "legal_hold_release_approve"] }, "scope": { "const": "dossier" } }, "required": ["action", "scope"] },

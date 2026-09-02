@@ -61,7 +61,8 @@ requester/action source of truth; an approver cannot supply or rewrite requester
 identity. The request's organisation, dossier, and complete target-object-graph
 digest must match the current authorization context. Creation and release
 require distinct request and approval actors, independently bound by immutable
-receipts.
+receipts. Organisation and dossier context is server-resolved rather than
+accepted from the approval payload.
 Deletion receipts disclose backup expiry honestly. Dossier export authority is
 case-scoped; a tenant export cannot use organisation administration as ambient
 case authority.

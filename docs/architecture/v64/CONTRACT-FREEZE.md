@@ -52,7 +52,8 @@ immutable separation-of-duties receipt. The server authorization validator must
 resolve the immutable `legal-hold-request.v1` record from `request_id`, bind its
 stored action, actor, organisation, dossier, and complete target-object-graph
 digest to the approval authority, and bind the target organisation/dossier to
-the current contract context. The lookup is recorded in
+the server-resolved authorization context, never to client-supplied context
+fields. The lookup is recorded in
 `request_record_binding_receipt_sha256`; only then may the validator enforce
 the required `x-require-distinct-fields` assertion. It must separately bind
 `approval_actor_id` to the authenticated session actor using the recorded
