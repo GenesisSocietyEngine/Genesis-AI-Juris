@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ios-native-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   simulator-smoke:
     runs-on: macos-15-intel
