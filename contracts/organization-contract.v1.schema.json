@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://genesis.invalid/contracts/organization-contract.v1.schema.json",
+  "title": "GENESIS JURIS organization contract v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "organization", "authorization"],
+  "properties": {
+    "contract_version": { "const": "organization-contract.v1" },
+    "organization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "display_name", "slug", "status", "controller_processor_mode", "data_region", "confidential_document_mode", "policy_versions"],
+      "properties": {
+        "id": { "$ref": "#/$defs/opaqueId" },
+        "display_name": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 63 },
+        "status": { "enum": ["provisioning", "active", "suspended", "closed"] },
+        "controller_processor_mode": { "enum": ["controller", "processor", "joint_controller"] },
+        "data_region": { "const": "eu" },
+        "confidential_document_mode": { "enum": ["disabled", "validation", "approved"] },
+        "policy_versions": {
+          "type": "object", "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/version" }
+        },
+        "suspension_reason": { "type": ["string", "null"], "maxLength": 500 }
+      }
+    },
+    "authorization": {
+      "type": "object", "additionalProperties": false,
+      "required": ["organization_role", "authorization_version", "scope"],
+      "properties": {
+        "organization_role": { "enum": ["org_owner", "org_admin", "member", "auditor"] },
+        "authorization_version": { "type": "integer", "minimum": 1 },
+        "scope": { "enum": ["identity", "organization", "dossier"] },
+        "dossier_role": { "enum": ["owner", "contributor", "reviewer", "viewer"] }
+      },
+      "allOf": [
+        { "if": { "properties": { "scope": { "const": "dossier" } } }, "then": { "required": ["dossier_role"] } },
+        { "if": { "properties": { "scope": { "enum": ["identity", "organization"] } } }, "then": { "not": { "required": ["dossier_role"] } } }
+      ]
+    }
+  },
+  "$defs": {
+    "opaqueId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{20,128}$" },
+    "version": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$" }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://genesis.invalid/contracts/confidential-document-policy.v1.schema.json",
+  "title": "GENESIS JURIS confidential document policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["policy_version", "organization_id", "mode", "upload", "processing", "mobile"],
+  "properties": {
+    "policy_version": { "const": "confidential-document-policy.v1" },
+    "organization_id": { "$ref": "#/$defs/opaqueId" },
+    "mode": { "enum": ["disabled", "validation", "approved"] },
+    "upload": {
+      "type": "object", "additionalProperties": false,
+      "required": ["synthetic_or_deidentified_required", "allowed_media_types", "maximum_bytes"],
+      "properties": {
+        "synthetic_or_deidentified_required": { "type": "boolean" },
+        "allowed_media_types": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"] } },
+        "maximum_bytes": { "type": "integer", "minimum": 1, "maximum": 104857600 }
+      }
+    },
+    "processing": {
+      "type": "object", "additionalProperties": false,
+      "required": ["region", "quarantine_required", "malware_scan_required", "ocr_explicit", "network_egress"],
+      "properties": {
+        "region": { "const": "eu" },
+        "quarantine_required": { "const": true },
+        "malware_scan_required": { "const": true },
+        "ocr_explicit": { "const": true },
+        "network_egress": { "const": "denied" }
+      }
+    },
+    "mobile": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ordinary_cache", "offline_enabled", "clear_on_tenant_change", "redact_app_switcher"],
+      "properties": {
+        "ordinary_cache": { "const": false },
+        "offline_enabled": { "type": "boolean" },
+        "clear_on_tenant_change": { "const": true },
+        "redact_app_switcher": { "const": true }
+      }
+    }
+  },
+  "allOf": [
+    { "if": { "properties": { "mode": { "enum": ["disabled", "validation"] } } }, "then": { "properties": { "upload": { "properties": { "synthetic_or_deidentified_required": { "const": true } } } } } }
+  ],
+  "$defs": { "opaqueId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{20,128}$" } }
+}

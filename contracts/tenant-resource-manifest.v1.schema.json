@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://genesis.invalid/contracts/tenant-resource-manifest.v1.schema.json",
+  "title": "GENESIS JURIS tenant resource manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["manifest_version", "organization_id", "environment", "hostname", "d1", "r2", "jurisdiction", "encryption_key_alias", "schema_version", "deployment_sha", "activation", "verification"],
+  "properties": {
+    "manifest_version": { "const": "tenant-resource-manifest.v1" },
+    "organization_id": { "$ref": "#/$defs/id" },
+    "environment": { "enum": ["development", "validation", "production"] },
+    "hostname": { "type": "string", "format": "hostname" },
+    "d1": { "$ref": "#/$defs/resource" },
+    "r2": {
+      "type": "object", "additionalProperties": false,
+      "required": ["quarantine", "clean", "extracted_text", "exports", "backups"],
+      "properties": {
+        "quarantine": { "$ref": "#/$defs/resource" }, "clean": { "$ref": "#/$defs/resource" },
+        "extracted_text": { "$ref": "#/$defs/resource" }, "exports": { "$ref": "#/$defs/resource" },
+        "backups": { "$ref": "#/$defs/resource" }
+      }
+    },
+    "jurisdiction": { "const": "eu" },
+    "encryption_key_alias": { "type": "string", "pattern": "^[A-Za-z0-9/_-]{3,160}$" },
+    "schema_version": { "type": "string", "pattern": "^v[0-9]+$" },
+    "deployment_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "activation": { "enum": ["disabled", "validation", "approved", "suspended"] },
+    "verification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["receipt_sha256", "verified_at", "expires_at"],
+      "properties": {
+        "receipt_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "verified_at": { "type": "string", "format": "date-time" },
+        "expires_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{20,128}$" },
+    "resource": { "type": "object", "additionalProperties": false, "required": ["id", "jurisdiction"], "properties": { "id": { "$ref": "#/$defs/id" }, "jurisdiction": { "const": "eu" } } }
+  }
+}
