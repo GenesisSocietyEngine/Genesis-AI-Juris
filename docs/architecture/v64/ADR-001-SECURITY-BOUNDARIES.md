@@ -37,7 +37,8 @@ Membership state, role, authorization version, dossier target/role, and dossier
 participation are likewise server-resolved. Delegated administrator and
 compliance-export payloads are not authority: their grants, export request,
 manifest, actor/organisation binding, and full owner-approval set are verified
-against immutable current server records.
+against immutable current server records. Grant version and active status are
+bound explicitly; revocation or supersession invalidates authority immediately.
 
 ## ADR-003 — encryption and key management
 

@@ -103,8 +103,10 @@
           "x-verify-immutable-server-authority": {
             "grant_record_type": "compliance-export-authority.v1",
             "grant_id_field": "grant_id",
+            "grant_bound_fields": ["authority_version", "status"],
             "export_request_record_type": "tenant-export-request.v1",
             "export_request_id_field": "export_request_id",
+            "export_request_bound_fields": ["export_manifest_sha256", "dossier_owner_approvals"],
             "manifest_digest_field": "export_manifest_sha256",
             "approval_set_field": "dossier_owner_approvals",
             "bind_to_server_context": ["organization_id", "authenticated_actor_id"],

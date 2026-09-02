@@ -37,8 +37,10 @@ authorization version are also server-bound. Dossier actions additionally bind
 the exact dossier ID, current dossier role, and active participation state.
 Delegated-administrator and compliance-export grants are resolved from
 immutable server records and bound to the authenticated actor and organisation;
-the export request, manifest, and complete current owner-approval set are
-verified rather than accepted from payload data.
+their current authority version and active status are exact bound fields. The
+export request, manifest, and complete current owner-approval set are verified
+rather than accepted from payload data. Revoked or superseded grants fail
+closed immediately.
 
 An approved tenant resource manifest also binds four purpose-prefixed key
 aliases and current EU-jurisdiction evidence for workers, queues, cron, malware
