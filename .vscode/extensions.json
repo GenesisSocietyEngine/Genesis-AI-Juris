@@ -1,9 +1,0 @@
-{
-  "recommendations": [
-    "rust-lang.rust-analyzer",
-    "tamasfe.even-better-toml",
-    "vadimcn.vscode-lldb",
-    "dart-code.dart-code",
-    "dart-code.flutter"
-  ]
-}
