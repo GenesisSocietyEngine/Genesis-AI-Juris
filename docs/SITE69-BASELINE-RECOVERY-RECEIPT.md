@@ -1,6 +1,6 @@
 # Site 69 baseline-recovery receipt
 
-This receipt records a history-only baseline recovery. It does not begin Phase B or Phase C, change application or dependency files, migrate a tenant, deploy a Site version, enable confidential uploads, or mutate production resources or secrets.
+This receipt records the baseline-history recovery plus narrowly scoped post-provenance evidence and development-tooling advisory remediation. It does not begin Phase B or Phase C, change runtime source, migrate a tenant, deploy or save a Site version, enable confidential uploads, or mutate production resources or secrets. The immutable provenance merge remains in the ancestry unchanged.
 
 ## Provenance
 
@@ -65,50 +65,81 @@ The journal entries at indices 11 through 18 must remain ordered as:
 7. `0017_perfect_marvex`
 8. `0018_low_calypso`
 
+## Development-tooling advisory remediation
+
+The remediation is isolated after the provenance merge and the original evidence commit. Commit `51ea26a6e0e399bbd898cbddb57b581ed92c3a95` pins patched `browserslist` and `fast-uri` resolutions and moves the abandoned `@esbuild-kit/core-utils` nested `esbuild` resolution to `0.25.12`; commit `ea00ad7fdf6c5ff788a2e9d762f19aebdb01dd50` pins `fflate` to the first patched in-range release, `0.7.5`. No `npm audit fix`, force flag, ignored advisory, or severity downgrade was used.
+
+The current registry report for the original `940a465fe2849552962408e5a0510f93bb80f583` lock describes eight advisory records represented by seven package findings (two high and five moderate), which is one moderate `fflate` record more than the earlier six-finding handoff summary. The follow-up therefore closes the requested six findings and the additionally surfaced `fflate` finding. `browserslist@4.28.8`, `fast-uri@3.1.6`, and `fflate@0.7.5` satisfy their parent ranges. The nested `esbuild@0.25.12` override is intentionally outside abandoned `@esbuild-kit/core-utils@3.3.2`'s `~0.18.20` declaration because no patched release exists in that range; clean-install, CLI-load, typecheck, lint, build, and complete-test gates are required compatibility evidence.
+
 ## Exact-head verification
 
 Run the fail-closed verifier from the repository root and supply the original bundle:
 
+The verifier requires two external anchors: the literal expected `HEAD` and the SHA-256 of a canonical post-provenance manifest. The PR body records both values because a tracked verifier or receipt cannot securely embed its own final blob hash or enclosing commit SHA.
+
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-site69-baseline-recovery.ps1 -BundlePath C:\path\to\site69-source-history.bundle
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-site69-baseline-recovery.ps1 `
+  -BundlePath C:\path\to\site69-source-history.bundle `
+  -ExpectedHead <40-character-final-head> `
+  -ExpectedPostProvenanceManifestSha256 <64-character-manifest-sha256>
 ```
 
-The verifier resolves and emits the literal current `HEAD`, checks that its sole parent is the immutable provenance merge, and ensures that this follow-up changes only this receipt and the verifier. This runtime binding avoids the impossible self-reference of embedding a commit's own SHA in its contents. The draft PR body is the authoritative record of the literal recovery-head SHA and the exact-head test and audit results.
+The canonical UTF-8/LF manifest is domain-separated as `site69-post-provenance-manifest-v1` and binds the repository name, provenance SHA, expected head SHA, then exactly four final differences from the provenance merge. Each file row binds status, mode, path, Git blob ID, and raw-blob SHA-256:
+
+- `docs/SITE69-BASELINE-RECOVERY-RECEIPT.md`
+- `package-lock.json`
+- `package.json`
+- `scripts/verify-site69-baseline-recovery.ps1`
+
+Every post-provenance commit must form one linear chain beginning with exact commits `940a465fe2849552962408e5a0510f93bb80f583`, `51ea26a6e0e399bbd898cbddb57b581ed92c3a95`, and `ea00ad7fdf6c5ff788a2e9d762f19aebdb01dd50`; every commit-level changed path must be in that same case-sensitive allowlist. Git replacement objects and non-empty legacy grafts are rejected, replacement processing and commit-graph acceleration are disabled, raw commit parent/tree headers are checked, and shallow repositories fail. Any other path, status, mode, hash, history shape, expected-head mismatch, non-ignored dirty/untracked file, or raw working-tree byte mismatch fails closed.
+
+The verifier supplies integrity, not independent authenticity: a caller can choose a matching head and digest. The exact canonical rows and digest must therefore be repeated by the hosted exact-head review, and final human approval must name PR #45, the exact head, and the manifest digest.
 
 Required exact-head evidence includes the provenance verifier, migration freeze, complete web tests, strict typecheck, lint, production build, production and full dependency audits, available Rust/Flutter/native gates, and hosted code/security/migration reviews. Results are not inherited from an earlier head.
 
+### GitHub Actions diagnosis
+
+GitHub Actions is enabled, all actions are allowed, and the four default-branch workflows are active with unrestricted `push` and `pull_request` triggers. PR #45 nevertheless has zero runs, check suites, statuses, and status-rollup entries because both the recovery head and its synthetic merge tree contain no `.github/workflows` directory. The provenance merge deliberately preserves the Site source tree, which also omits the monorepo Rust/mobile inputs those workflows require. None of the four workflows declares `workflow_dispatch`, and no run exists to re-run or re-request. A no-op commit, fabricated status, branch-protection change, or `pull_request_target` workaround would not provide valid exact-head evidence and was not used.
+
 ### Local gate record
 
-The following results were produced on 2026-09-03. Web gates are bound to this evidence commit by the verifier's runtime `exactRecoveryHead`; the PR body records its literal SHA. Mobile/Rust gates are bound to the parity lock's exact mobile commit `5200b30cc50c77393c6f48b52ce91c0f30e70c64`.
+The following results were produced on 2026-09-03. Web gates are bound to the final evidence commit by the externally supplied exact head and closed-manifest digest recorded in the PR body. Mobile/Rust checks are bound to the parity source commit `5200b30cc50c77393c6f48b52ce91c0f30e70c64`.
 
 | Gate | Result |
 | --- | --- |
-| Provenance, bundle, 373-path, strict object, and 17-artifact migration verifier | PASS |
+| Provenance, bundle, 373-path, closed-manifest, strict-object, and 17-artifact migration verifier | PASS; exact rows and digest are recorded in the PR body |
+| Clean exact-lock npm install and dependency-tree validation | PASS; 530 packages, deliberate overrides resolved as intended |
 | Strict TypeScript | PASS |
 | ESLint | PASS |
 | Vinext production build | PASS; existing large-chunk warning reported |
-| Complete web test suite | PASS, 496/496, using an LF-exact checkout |
+| Complete web test suite | PASS, 496/496, in an LF-exact checkout |
 | Production dependency audit | PASS, 0 vulnerabilities |
-| Full dependency-tree audit | BLOCKED, 6 development/tooling advisories: 2 high and 4 moderate (`browserslist`, `fast-uri`, and transitive `esbuild`) |
-| Rust format, Clippy with warnings denied, workspace tests and doc-tests | PASS at locked mobile commit |
-| Flutter analysis | PASS at locked mobile commit |
-| Flutter tests | PASS, 275 tests at locked mobile commit |
-| Cross-repository mobile parity | PASS, 18 routes and every checkpoint |
-| Flutter report-layout parity | PASS, 7 fixtures |
-| Dart format check | BLOCKED: installed Flutter 3.44.8 / Dart 3.12.2 would reformat 100 of 117 checked files |
-| Report-PDF QA | UNAVAILABLE locally: required Poppler executables are absent |
-| Android native/FFI smoke | UNAVAILABLE locally: ADB reports no attached device |
-| iOS native/FFI smoke | UNAVAILABLE on Windows |
-| Hosted code, security, and migration reviews | PENDING on the exact recovery PR head |
+| Full dependency-tree audit | PASS, 0 vulnerabilities at every severity |
+| Drizzle CLI compatibility | PASS; kit `0.31.10`, ORM `0.45.2`, configuration check reports `Everything's fine` |
+| Rust local exact-lock gates | PASS; format, locked Clippy with warnings denied, and 359 locked workspace tests; 13 doc-test crates, 0 failures |
+| Cross-repository mobile parity/export | PASS at `5200b30`; 18 routes and authoritative fingerprints |
+| Flutter analysis | PASS at `5200b30` with Flutter `3.47.2` / Dart `3.13.2` |
+| Dart no-write format check | FAIL at the authoritative hosted SDK resolution: 97 of 117 files would change; no file was formatted |
+| Flutter exact-lock dependency resolution | FAIL closed: `pub get --enforce-lockfile` requests five lock changes (`intl`, `matcher`, `meta`, `test_api`, `vector_math`) |
+| Flutter local tests | 265/275 PASS; 10 Windows golden comparisons fail under Flutter `3.47.2`; no golden was rewritten |
+| Hosted Rust/Flutter/Android/iOS | Fresh raw-`5200b30` push-run attempts are recorded in the PR body; exact-lock limitations are stated there |
+| Report-PDF QA | BLOCKED: Poppler page rendering/text tools are unavailable locally and no approved hosted workflow performs this gate |
+| PR-head GitHub Actions contexts | BLOCKED by absent workflow definitions/required monorepo inputs; zero PR-head contexts is not treated as success |
+| Hosted code, security, provenance, recovery-diff, and migration reviews | Exact-head outcomes are recorded in the PR body and hosted review comments |
 
-The Windows Node runtime required an ignored test-only `os.userInfo()` fallback because the sandbox returned `ERR_SYSTEM_ERROR/ENOMEM`; no tracked file or dependency was changed. The parity lock separately records successful hosted Rust, Flutter, Android, and iOS runs `33536571536`, `33536571515`, `33536571436`, and `33536571586` at the exact locked mobile commit.
+No declarative exact Flutter or Dart pin exists in the parity lock or workflow YAML: the workflows use `subosito/flutter-action@v2` with floating `channel: stable`. The exact hosted attempts used action commit `1a449444c387b1966244ae4d4f8c696479add0b2` and resolved Flutter `3.47.2`, framework `d3b14c876900e553bc736ca19295fc09e3853e8e`, engine hash `1cf1c4773fb941c4c74a7f8bb144a8837596c0f4` (engine revision `a804b261645ef8c13eb3d5c44a5c2fb0340c5539`), Dart `3.13.2`, and DevTools `2.60.0`. This is the authoritative observed toolchain, not an immutable repository pin.
+
+The fresh hosted mobile workflows use ordinary `flutter pub get`, which changed five dependency resolutions inside their ephemeral runners and did not assert a clean lockfile. The Linux Flutter job also skips canonical Windows goldens. Their source-SHA/native results are useful but are not represented as Flutter exact-lock or Windows-golden evidence. Earlier PR-merge reruns `33536571536`, `33536571515`, `33536571436`, and `33536571586` checked out a synthetic merge tree and are historical only; they are not substituted for the fresh raw-source runs.
+
+Exact web gates run in a clean `core.autocrlf=false` checkout after `npm ci`. Ignored dependency/build outputs are outside the source-integrity claim; the verifier rejects every non-ignored untracked or modified path and compares the raw bytes of every tracked working file with its exact Git blob.
 
 ## Open blockers
 
 - Immutable provider evidence is still required for the Site 69 deployment ID, terminal `succeeded` status, production target, timestamps, saved version ID, and source SHA.
-- Historical dependency evidence reported six development/tooling advisories (two high and four moderate); current exact-head audits must be reported without hiding or force-fixing findings.
-- Hosted code, security, and migration reviews must be green on the exact recovery head.
-- Every P0/P1/P2 finding requires reviewed remediation and regression evidence.
-- Merge requires separate literal user approval naming the recovery PR number and exact head SHA.
+- No approved exact-PR-head workflow can be scheduled from the current tree. A new/restored workflow and its missing monorepo inputs require separate scope approval; no no-op commit, policy weakening, or fabricated context is acceptable.
+- Hosted PDF QA with Poppler text extraction and page rendering remains unavailable because no current workflow provides it.
+- Flutter/Dart is not immutably pinned, the authoritative resolved SDK still fails the no-write format gate, and current hosted mobile workflows do not enforce `pubspec.lock` unchanged.
+- Hosted review comments and the PR body must independently anchor the final exact head and closed-manifest digest; every P0/P1/P2 finding must be resolved with regression evidence and its thread closed.
+- Merge requires separate literal user approval naming PR #45, the final exact head SHA, and the closed-manifest SHA-256. Approval does not authorize deployment or Phase B/C.
 
 This recovery does not authorize merge, deployment, Site-version creation, confidential capability changes, production mutation, or Phase B/Phase C work.

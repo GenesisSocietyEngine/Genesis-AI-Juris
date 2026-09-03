@@ -2,7 +2,15 @@
 param(
   [Parameter(Mandatory = $true)]
   [ValidateNotNullOrEmpty()]
-  [string]$BundlePath
+  [string]$BundlePath,
+
+  [Parameter(Mandatory = $true)]
+  [ValidatePattern('^[0-9a-f]{40}$')]
+  [string]$ExpectedHead,
+
+  [Parameter(Mandatory = $true)]
+  [ValidatePattern('^[0-9a-f]{64}$')]
+  [string]$ExpectedPostProvenanceManifestSha256
 )
 
 Set-StrictMode -Version Latest
@@ -20,6 +28,18 @@ $Expected = [ordered]@{
   SiteHistoryCount = 72
   SitePathCount = 373
   SitePathManifestSha256 = 'b1f800a750639000ddbfab44efe430742f97134343f862f58d747df1384e358c'
+  InitialRecoveryHead = '940a465fe2849552962408e5a0510f93bb80f583'
+  DependencyRemediation = '51ea26a6e0e399bbd898cbddb57b581ed92c3a95'
+  DependencyRemediationCompletion = 'ea00ad7fdf6c5ff788a2e9d762f19aebdb01dd50'
+  Repository = 'GenesisSocietyEngine/Genesis-AI-Juris'
+  PostProvenanceManifestFormat = 'site69-post-provenance-manifest-v1'
+}
+
+$PermittedPostProvenanceFiles = [ordered]@{
+  'docs/SITE69-BASELINE-RECOVERY-RECEIPT.md' = [ordered]@{ Status = 'A'; Mode = '100644' }
+  'package-lock.json' = [ordered]@{ Status = 'M'; Mode = '100644' }
+  'package.json' = [ordered]@{ Status = 'M'; Mode = '100644' }
+  'scripts/verify-site69-baseline-recovery.ps1' = [ordered]@{ Status = 'A'; Mode = '100644' }
 }
 
 $FrozenBlobs = [ordered]@{
@@ -74,14 +94,14 @@ function Invoke-Git {
   $previousErrorActionPreference = $ErrorActionPreference
   try {
     $ErrorActionPreference = 'Continue'
-    $output = @(& git @Arguments 2>&1)
+    $output = @(& git --no-replace-objects -c core.commitGraph=false @Arguments 2>&1)
     $exitCode = $LASTEXITCODE
   }
   finally {
     $ErrorActionPreference = $previousErrorActionPreference
   }
   if ($AllowedExitCodes -notcontains $exitCode) {
-    throw "git $($Arguments -join ' ') failed with exit code $exitCode.`n$($output -join "`n")"
+    throw "git --no-replace-objects -c core.commitGraph=false $($Arguments -join ' ') failed with exit code $exitCode.`n$($output -join "`n")"
   }
   return $output
 }
@@ -104,7 +124,7 @@ function Get-GitBlobBytes {
 
   $startInfo = New-Object System.Diagnostics.ProcessStartInfo
   $startInfo.FileName = 'git'
-  $startInfo.Arguments = "cat-file blob $Ref`:$Path"
+  $startInfo.Arguments = "--no-replace-objects -c core.commitGraph=false cat-file blob $Ref`:$Path"
   $startInfo.RedirectStandardOutput = $true
   $startInfo.RedirectStandardError = $true
   $startInfo.UseShellExecute = $false
@@ -141,6 +161,37 @@ function Get-Sha256Hex {
   }
 }
 
+function Get-GitCommitIdentity {
+  param([Parameter(Mandatory = $true)][string]$Commit)
+
+  $commitLines = @(Invoke-Git -Arguments @('cat-file', 'commit', $Commit))
+  $headerLines = @()
+  foreach ($line in $commitLines) {
+    if ($line -ceq '') {
+      break
+    }
+    $headerLines += $line
+  }
+
+  $treeLines = @($headerLines | Where-Object { $_ -cmatch '^tree ([0-9a-f]{40})$' })
+  Assert-Equal -Actual $treeLines.Count -ExpectedValue 1 -Label "Raw commit tree-header count for $Commit"
+  [void]($treeLines[0] -cmatch '^tree ([0-9a-f]{40})$')
+  $tree = $Matches[1]
+
+  $parents = @()
+  foreach ($line in $headerLines) {
+    if ($line -cmatch '^parent ([0-9a-f]{40})$') {
+      $parents += $Matches[1]
+    }
+  }
+
+  return [pscustomobject][ordered]@{
+    Commit = $Commit
+    Tree = $tree
+    Parents = [string[]]$parents
+  }
+}
+
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $resolvedBundle = (Resolve-Path -LiteralPath $BundlePath).Path
 $originalLocation = Get-Location
@@ -151,11 +202,34 @@ try {
   $gitRoot = Invoke-GitSingleLine -Arguments @('rev-parse', '--show-toplevel')
   Assert-Equal -Actual ([System.IO.Path]::GetFullPath($gitRoot)) -ExpectedValue ([System.IO.Path]::GetFullPath($repositoryRoot)) -Label 'Repository root'
 
-  $originMain = Invoke-GitSingleLine -Arguments @('rev-parse', 'refs/remotes/origin/main^{commit}')
-  Assert-Equal -Actual $originMain -ExpectedValue $Expected.Base -Label 'origin/main'
+  $isShallow = Invoke-GitSingleLine -Arguments @('rev-parse', '--is-shallow-repository')
+  Assert-Equal -Actual $isShallow -ExpectedValue 'false' -Label 'Shallow repository state'
+  $replacementRefs = @(Invoke-Git -Arguments @('replace', '--list'))
+  Assert-Equal -Actual $replacementRefs.Count -ExpectedValue 0 -Label 'Git replacement-ref count'
+  $graftsPath = Invoke-GitSingleLine -Arguments @('rev-parse', '--git-path', 'info/grafts')
+  if (Test-Path -LiteralPath $graftsPath -PathType Leaf) {
+    throw "Legacy Git graft file is not permitted: $graftsPath"
+  }
 
-  $siteRef = Invoke-GitSingleLine -Arguments @('rev-parse', 'refs/remotes/site69/main^{commit}')
-  Assert-Equal -Actual $siteRef -ExpectedValue $Expected.Site -Label 'Imported Site 69 ref'
+  $head = Invoke-GitSingleLine -Arguments @('rev-parse', 'HEAD^{commit}')
+  Assert-Equal -Actual $head -ExpectedValue $ExpectedHead -Label 'Externally anchored recovery head'
+
+  $workspaceStatus = @(Invoke-Git -Arguments @('status', '--porcelain=v1', '--untracked-files=all'))
+  Assert-Equal -Actual $workspaceStatus.Count -ExpectedValue 0 -Label 'Non-ignored index/worktree change count'
+
+  $bundleInfo = Get-Item -LiteralPath $resolvedBundle
+  Assert-Equal -Actual $bundleInfo.Length -ExpectedValue $Expected.BundleBytes -Label 'Bundle size'
+  $bundleSha256 = (Get-FileHash -LiteralPath $resolvedBundle -Algorithm SHA256).Hash.ToLowerInvariant()
+  Assert-Equal -Actual $bundleSha256 -ExpectedValue $Expected.BundleSha256 -Label 'Bundle SHA-256'
+
+  [void](Invoke-Git -Arguments @('bundle', 'verify', $resolvedBundle))
+  $bundleHeads = @(Invoke-Git -Arguments @('bundle', 'list-heads', $resolvedBundle))
+  Assert-Equal -Actual $bundleHeads.Count -ExpectedValue 1 -Label 'Bundle advertised-ref count'
+  Assert-Equal -Actual $bundleHeads[0] -ExpectedValue "$($Expected.Site) refs/heads/main" -Label 'Bundle advertised ref'
+
+  foreach ($commit in @($Expected.Base, $Expected.Site, $Expected.Provenance, $head)) {
+    [void](Invoke-Git -Arguments @('cat-file', '-e', "$commit^{commit}"))
+  }
 
   $baseRoots = @(Invoke-Git -Arguments @('rev-list', '--max-parents=0', $Expected.Base))
   Assert-Equal -Actual $baseRoots.Count -ExpectedValue 1 -Label 'GitHub base root count'
@@ -181,30 +255,107 @@ try {
   $mergeBaseOutput = @(Invoke-Git -Arguments @('merge-base', $Expected.Base, $Expected.Site) -AllowedExitCodes @(1))
   Assert-Equal -Actual ($mergeBaseOutput -join '').Trim() -ExpectedValue '' -Label 'Pre-recovery merge base output'
 
-  $provenanceLine = Invoke-GitSingleLine -Arguments @('rev-list', '--parents', '-n', '1', $Expected.Provenance)
-  $provenanceFields = @($provenanceLine -split '\s+')
-  Assert-Equal -Actual $provenanceFields.Count -ExpectedValue 3 -Label 'Provenance field count'
-  Assert-Equal -Actual $provenanceFields[0] -ExpectedValue $Expected.Provenance -Label 'Provenance commit'
-  Assert-Equal -Actual $provenanceFields[1] -ExpectedValue $Expected.Base -Label 'Provenance first parent'
-  Assert-Equal -Actual $provenanceFields[2] -ExpectedValue $Expected.Site -Label 'Provenance second parent'
+  $provenanceIdentity = Get-GitCommitIdentity -Commit $Expected.Provenance
+  Assert-Equal -Actual $provenanceIdentity.Parents.Count -ExpectedValue 2 -Label 'Provenance raw parent-header count'
+  Assert-Equal -Actual $provenanceIdentity.Parents[0] -ExpectedValue $Expected.Base -Label 'Provenance first raw parent header'
+  Assert-Equal -Actual $provenanceIdentity.Parents[1] -ExpectedValue $Expected.Site -Label 'Provenance second raw parent header'
 
-  $provenanceTree = Invoke-GitSingleLine -Arguments @('rev-parse', "$($Expected.Provenance)^{tree}")
+  $provenanceTree = $provenanceIdentity.Tree
   Assert-Equal -Actual $provenanceTree -ExpectedValue $Expected.SiteTree -Label 'Provenance tree'
   [void](Invoke-Git -Arguments @('diff', '--exit-code', '--no-ext-diff', $Expected.Site, $Expected.Provenance, '--'))
 
-  $head = Invoke-GitSingleLine -Arguments @('rev-parse', 'HEAD^{commit}')
-  $headLine = Invoke-GitSingleLine -Arguments @('rev-list', '--parents', '-n', '1', $head)
-  $headFields = @($headLine -split '\s+')
-  Assert-Equal -Actual $headFields.Count -ExpectedValue 2 -Label 'Recovery-head field count'
-  Assert-Equal -Actual $headFields[1] -ExpectedValue $Expected.Provenance -Label 'Recovery-head parent'
+  [void](Invoke-Git -Arguments @('merge-base', '--is-ancestor', $Expected.Provenance, $head))
+  $postProvenanceCommits = @(Invoke-Git -Arguments @('rev-list', '--reverse', '--ancestry-path', "$($Expected.Provenance)..$head"))
+  $requiredCommitPrefix = @(
+    $Expected.InitialRecoveryHead
+    $Expected.DependencyRemediation
+    $Expected.DependencyRemediationCompletion
+  )
+  if ($postProvenanceCommits.Count -lt $requiredCommitPrefix.Count) {
+    throw "Post-provenance history contains $($postProvenanceCommits.Count) commits; expected at least $($requiredCommitPrefix.Count)."
+  }
+  for ($index = 0; $index -lt $requiredCommitPrefix.Count; $index += 1) {
+    Assert-Equal -Actual $postProvenanceCommits[$index] -ExpectedValue $requiredCommitPrefix[$index] -Label "Post-provenance commit $index"
+  }
 
-  $expectedEvidencePaths = @(
-    'docs/SITE69-BASELINE-RECOVERY-RECEIPT.md'
-    'scripts/verify-site69-baseline-recovery.ps1'
-  ) | Sort-Object
-  $actualEvidencePaths = @(Invoke-Git -Arguments @('diff', '--name-only', $Expected.Provenance, $head, '--')) | Sort-Object
-  $pathDifference = @(Compare-Object -ReferenceObject $expectedEvidencePaths -DifferenceObject $actualEvidencePaths)
-  Assert-Equal -Actual $pathDifference.Count -ExpectedValue 0 -Label 'Evidence-only path set'
+  $expectedPreviousCommit = $Expected.Provenance
+  foreach ($commit in $postProvenanceCommits) {
+    $commitIdentity = Get-GitCommitIdentity -Commit $commit
+    Assert-Equal -Actual $commitIdentity.Parents.Count -ExpectedValue 1 -Label "Linear raw parent-header count for $commit"
+    Assert-Equal -Actual $commitIdentity.Parents[0] -ExpectedValue $expectedPreviousCommit -Label "Linear raw parent header for $commit"
+
+    $commitPaths = @(Invoke-Git -Arguments @('-c', 'core.quotepath=false', 'diff', '--name-only', '--no-renames', '--no-ext-diff', '--no-textconv', $expectedPreviousCommit, $commit, '--'))
+    foreach ($commitPath in $commitPaths) {
+      if ($PermittedPostProvenanceFiles.Keys -cnotcontains $commitPath) {
+        throw "Commit $commit changes forbidden post-provenance path '$commitPath'."
+      }
+    }
+    $expectedPreviousCommit = $commit
+  }
+
+  $rawDiffLines = @(Invoke-Git -Arguments @('-c', 'core.quotepath=false', 'diff', '--raw', '--no-abbrev', '--no-renames', '--no-ext-diff', '--no-textconv', $Expected.Provenance, $head, '--'))
+  $rawEntries = @()
+  foreach ($rawLine in $rawDiffLines) {
+    if ($rawLine -cnotmatch '^:([0-7]{6}) ([0-7]{6}) ([0-9a-f]{40}) ([0-9a-f]{40}) ([A-Z])\t(.+)$') {
+      throw "Unexpected raw diff entry: $rawLine"
+    }
+    $rawEntries += [pscustomobject][ordered]@{
+      OldMode = $Matches[1]
+      Mode = $Matches[2]
+      OldBlob = $Matches[3]
+      GitBlob = $Matches[4]
+      Status = $Matches[5]
+      Path = $Matches[6]
+    }
+  }
+
+  $expectedPaths = @($PermittedPostProvenanceFiles.Keys)
+  Assert-Equal -Actual $rawEntries.Count -ExpectedValue $expectedPaths.Count -Label 'Closed post-provenance path count'
+  foreach ($rawEntry in $rawEntries) {
+    if ($expectedPaths -cnotcontains $rawEntry.Path) {
+      throw "Unexpected post-provenance path '$($rawEntry.Path)'."
+    }
+  }
+
+  $utf8 = New-Object System.Text.UTF8Encoding($false)
+  $postProvenanceManifest = @()
+  $canonicalManifestLines = @(
+    "format`t$($Expected.PostProvenanceManifestFormat)"
+    "repository`t$($Expected.Repository)"
+    "provenance`t$($Expected.Provenance)"
+    "head`t$head"
+  )
+  foreach ($expectedPath in $expectedPaths) {
+    $matches = @($rawEntries | Where-Object { $_.Path -ceq $expectedPath })
+    Assert-Equal -Actual $matches.Count -ExpectedValue 1 -Label "Raw diff entry count for $expectedPath"
+    $rawEntry = $matches[0]
+    $expectedMetadata = $PermittedPostProvenanceFiles[$expectedPath]
+    Assert-Equal -Actual $rawEntry.Status -ExpectedValue $expectedMetadata.Status -Label "Final status for $expectedPath"
+    Assert-Equal -Actual $rawEntry.Mode -ExpectedValue $expectedMetadata.Mode -Label "Final mode for $expectedPath"
+
+    $blobSha256 = Get-Sha256Hex -Bytes (Get-GitBlobBytes -Ref $head -Path $expectedPath)
+    $resolvedBlob = Invoke-GitSingleLine -Arguments @('rev-parse', "$head`:$expectedPath")
+    Assert-Equal -Actual $resolvedBlob -ExpectedValue $rawEntry.GitBlob -Label "Git blob for $expectedPath"
+
+    $postProvenanceManifest += [pscustomobject][ordered]@{
+      status = $rawEntry.Status
+      mode = $rawEntry.Mode
+      path = $expectedPath
+      gitBlob = $rawEntry.GitBlob
+      sha256 = $blobSha256
+    }
+    $canonicalManifestLines += "file`t$($rawEntry.Status)`t$($rawEntry.Mode)`t$expectedPath`t$($rawEntry.GitBlob)`t$blobSha256"
+  }
+  $postProvenanceManifestBytes = $utf8.GetBytes(([string]::Join("`n", $canonicalManifestLines) + "`n"))
+  $postProvenanceManifestSha256 = Get-Sha256Hex -Bytes $postProvenanceManifestBytes
+  Assert-Equal -Actual $postProvenanceManifestSha256 -ExpectedValue $ExpectedPostProvenanceManifestSha256 -Label 'Externally anchored post-provenance manifest SHA-256'
+
+  $trackedPaths = @(Invoke-Git -Arguments @('ls-tree', '-r', '--name-only', $head))
+  foreach ($trackedPath in $trackedPaths) {
+    $headBlob = Invoke-GitSingleLine -Arguments @('rev-parse', "$head`:$trackedPath")
+    $workingBlob = Invoke-GitSingleLine -Arguments @('hash-object', '--no-filters', '--', $trackedPath)
+    Assert-Equal -Actual $workingBlob -ExpectedValue $headBlob -Label "Raw working-tree blob for $trackedPath"
+  }
 
   foreach ($entry in $FrozenBlobs.GetEnumerator()) {
     $actualHash = Get-Sha256Hex -Bytes (Get-GitBlobBytes -Ref $head -Path $entry.Key)
@@ -219,15 +370,15 @@ try {
     Assert-Equal -Actual $matches[0].tag -ExpectedValue $entry.Value -Label "Journal tag for index $($entry.Key)"
   }
 
-  $bundleInfo = Get-Item -LiteralPath $resolvedBundle
-  Assert-Equal -Actual $bundleInfo.Length -ExpectedValue $Expected.BundleBytes -Label 'Bundle size'
-  $bundleSha256 = (Get-FileHash -LiteralPath $resolvedBundle -Algorithm SHA256).Hash.ToLowerInvariant()
-  Assert-Equal -Actual $bundleSha256 -ExpectedValue $Expected.BundleSha256 -Label 'Bundle SHA-256'
-
-  [void](Invoke-Git -Arguments @('bundle', 'verify', $resolvedBundle))
-  $bundleHeads = @(Invoke-Git -Arguments @('bundle', 'list-heads', $resolvedBundle))
-  Assert-Equal -Actual $bundleHeads.Count -ExpectedValue 1 -Label 'Bundle advertised-ref count'
-  Assert-Equal -Actual $bundleHeads[0] -ExpectedValue "$($Expected.Site) refs/heads/main" -Label 'Bundle advertised ref'
+  $journalIndices = @($journal.entries | ForEach-Object { [int]$_.idx })
+  Assert-Equal -Actual (($journalIndices | Measure-Object -Maximum).Maximum) -ExpectedValue 18 -Label 'Highest migration journal index'
+  $futureMigrationPaths = @($trackedPaths | Where-Object {
+      if ($_ -cmatch '^drizzle/([0-9]{4,})_.*\.sql$') {
+        return [int]$Matches[1] -ge 19
+      }
+      return $false
+    })
+  Assert-Equal -Actual $futureMigrationPaths.Count -ExpectedValue 0 -Label 'Future migration path count (next reserved index is 0019)'
 
   [void](Invoke-Git -Arguments @('fsck', '--full', '--strict'))
 
@@ -238,14 +389,21 @@ try {
     provenanceParents = @($Expected.Base, $Expected.Site)
     provenanceTree = $provenanceTree
     provenanceDiffAgainstSite69 = 'empty'
+    postProvenanceCommits = $postProvenanceCommits
+    repository = $Expected.Repository
+    postProvenanceManifestFormat = $Expected.PostProvenanceManifestFormat
+    canonicalPostProvenanceManifestLines = $canonicalManifestLines
+    postProvenanceManifest = $postProvenanceManifest
+    postProvenanceManifestSha256 = $postProvenanceManifestSha256
     bundleSha256 = $bundleSha256
     bundleBytes = $bundleInfo.Length
     siteHistoryCount = $siteHistoryCount
     siteTrackedPaths = $sitePaths.Count
     sitePathManifestSha256 = $pathManifestSha256
+    exactRawWorkingTreePaths = $trackedPaths.Count
     preRecoveryMergeBase = $null
     frozenMigrationArtifacts = $FrozenBlobs.Count
-    evidenceOnlyPaths = $actualEvidencePaths
+    nextTenantMigration = '0019'
     suppliedHistoricalSiteArchiveReceipt = [ordered]@{
       independentlyVerified = $false
       sha256 = '3dcfe92950c2e5e0f99d7f638f0f66633397c5c25e62ac9e065cc8e27255d555'
