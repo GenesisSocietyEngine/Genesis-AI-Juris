@@ -263,6 +263,10 @@ test("submission API declares the optimistic-concurrency client contract", () =>
   const source = readFileSync(new URL("../app/api/submissions/route.ts", import.meta.url), "utf8");
   assert.match(source, /payload\.expectedFingerprint/);
   assert.match(source, /payload\.baseFingerprint/);
+  assert.match(source, /payload\.expectedPublicationFingerprint/);
+  assert.match(source, /payload\.basePublicationFingerprint/);
+  assert.match(source, /publicationCompareAndSwap/);
+  assert.match(source, /parentPublicationStillCurrent/);
   assert.match(source, /code:\s*"stale_draft"/);
   assert.match(source, /await db\.batch\(/);
   assert.match(source, /object_id is NOT NULL/);

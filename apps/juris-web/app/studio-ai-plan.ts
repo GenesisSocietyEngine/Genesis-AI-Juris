@@ -1,6 +1,8 @@
 import { canonicalFingerprint, caseFingerprint, isRecord, normalizeStudioDraft, slugifyCaseId, studioStructuralIssues } from "./case-integrity";
 import { applyStudioPromptPlan, nextStudioLinkId, nextStudioNodeId, nextStudioNodePosition, type StudioPromptDiagnostic, type StudioPromptOperation, type StudioPromptPlan } from "./studio-editing";
 import { compileStudioDraft } from "./studio-compiler";
+import { DEFAULT_DEAL_SCENARIO_PROBABILITIES, normalizeDealEconomics } from "./deal-economics";
+import { STUDIO_PROMPT_CHARACTER_LIMIT } from "./studio-prompt-limit";
 import type { MetricKey, StudioDraft, StudioLink, StudioNode, StudioNodeType } from "./types";
 
 const nodeTypes = new Set<StudioNodeType>([
@@ -15,24 +17,57 @@ export const STUDIO_AI_PLAN_SCHEMA = {
   additionalProperties: false,
   properties: {
     compatible: { type: "boolean", description: "False only when the input cannot be represented as a legal scenario graph." },
-    clarification: { type: ["string", "null"], description: "A concise question or reason when the input is incompatible." },
-    summary: { type: "string", description: "Plain-language summary of the proposed graph changes." },
-    assumptions: { type: "array", maxItems: 10, items: { type: "string" } },
-    warnings: { type: "array", maxItems: 10, items: { type: "string" } },
+    clarification: { type: ["string", "null"], maxLength: 800, description: "A concise question or reason when the input is incompatible." },
+    summary: { type: "string", minLength: 1, maxLength: 800, description: "Plain-language summary of the proposed graph changes." },
+    assumptions: { type: "array", maxItems: 10, items: { type: "string", minLength: 1, maxLength: 500 } },
+    warnings: { type: "array", maxItems: 10, items: { type: "string", minLength: 1, maxLength: 500 } },
     case: {
       type: "object",
       additionalProperties: false,
       properties: {
-        title: { type: ["string", "null"] },
-        jurisdiction: { type: ["string", "null"] },
-        role: { type: ["string", "null"] },
-        context: { type: ["string", "null"], description: "A factual case-premise summary, not instructions to the player." },
+        title: { type: ["string", "null"], maxLength: 200 },
+        jurisdiction: { type: ["string", "null"], maxLength: 160 },
+        role: { type: ["string", "null"], maxLength: 160 },
+        context: { type: ["string", "null"], maxLength: 4000, description: "A factual case-premise summary, not instructions to the player." },
         domain: { type: ["string", "null"], enum: ["general", "tax", null] },
-        practiceArea: { type: ["string", "null"] },
-        tags: { type: "array", maxItems: 20, items: { type: "string" } },
-        taxTopics: { type: "array", maxItems: 20, items: { type: "string" } },
+        practiceArea: { type: ["string", "null"], maxLength: 100 },
+        tags: { type: "array", maxItems: 20, items: { type: "string", minLength: 1, maxLength: 100 } },
+        taxTopics: { type: "array", maxItems: 20, items: { type: "string", minLength: 1, maxLength: 100 } },
       },
       required: ["title", "jurisdiction", "role", "context", "domain", "practiceArea", "tags", "taxTopics"],
+    },
+    economics: {
+      type: "object",
+      additionalProperties: false,
+      description: "Structured cash-flow inputs for an income-producing asset or investment case; use null for facts the author did not supply.",
+      properties: {
+        currency: { type: ["string", "null"], maxLength: 3 },
+        purchasePrice: { type: ["integer", "null"], minimum: 0, maximum: 1000000000000 },
+        loanToValueBps: { type: ["integer", "null"], minimum: 0, maximum: 10000 },
+        annualInterestRateBps: { type: ["integer", "null"], minimum: 0, maximum: 10000 },
+        termMonths: { type: ["integer", "null"], minimum: 1, maximum: 1200 },
+        repaymentBasis: { type: ["string", "null"], enum: ["amortizing", "interest_only", "unknown", null] },
+        grossAnnualIncome: { type: ["integer", "null"], minimum: 0, maximum: 1000000000000 },
+        annualOperatingCosts: { type: ["integer", "null"], minimum: 0, maximum: 1000000000000 },
+        oneOffStructureCost: { type: ["integer", "null"], minimum: 0, maximum: 1000000000000 },
+        annualStructureCost: { type: ["integer", "null"], minimum: 0, maximum: 1000000000000 },
+        otherInitialCosts: { type: ["integer", "null"], minimum: 0, maximum: 1000000000000 },
+        targetAnnualReturnBps: { type: ["integer", "null"], minimum: 0, maximum: 100000 },
+        scenarioProbabilities: {
+          type: ["object", "null"],
+          additionalProperties: false,
+          description: "Editable scenario weights. favorable/base/stressed must total 10000 basis points. Use null when the case is not an investment scenario.",
+          properties: {
+            interestOnlyBps: { type: "integer", minimum: 0, maximum: 10000 },
+            favorableBps: { type: "integer", minimum: 0, maximum: 10000 },
+            baseBps: { type: "integer", minimum: 0, maximum: 10000 },
+            stressedBps: { type: "integer", minimum: 0, maximum: 10000 },
+          },
+          required: ["interestOnlyBps", "favorableBps", "baseBps", "stressedBps"],
+        },
+        assumptions: { type: "array", maxItems: 12, items: { type: "string", minLength: 1, maxLength: 500 } },
+      },
+      required: ["currency", "purchasePrice", "loanToValueBps", "annualInterestRateBps", "termMonths", "repaymentBasis", "grossAnnualIncome", "annualOperatingCosts", "oneOffStructureCost", "annualStructureCost", "otherInitialCosts", "targetAnnualReturnBps", "scenarioProbabilities", "assumptions"],
     },
     nodes: {
       type: "array",
@@ -42,21 +77,21 @@ export const STUDIO_AI_PLAN_SCHEMA = {
         additionalProperties: false,
         properties: {
           action: { type: "string", enum: ["add", "update"] },
-          ref: { type: "string", description: "Temporary unique reference for a new node or a reference alias for an existing node." },
-          existingNodeId: { type: ["string", "null"] },
+          ref: { type: "string", minLength: 1, maxLength: 80, pattern: "^[A-Za-z][A-Za-z0-9_-]{0,79}$", description: "Temporary unique reference for a new node or a reference alias for an existing node." },
+          existingNodeId: { type: ["string", "null"], maxLength: 80 },
           type: { type: "string", enum: [...nodeTypes] },
-          title: { type: "string" },
-          detail: { type: "string" },
+          title: { type: "string", minLength: 1, maxLength: 200 },
+          detail: { type: "string", maxLength: 4000 },
           runtime: {
             type: "object",
             additionalProperties: false,
             properties: {
               day: { type: ["integer", "null"], minimum: 1, maximum: 10000 },
-              time: { type: ["string", "null"] },
-              pressure: { type: ["string", "null"] },
+              time: { type: ["string", "null"], maxLength: 5, pattern: "^(?:[01]\\d|2[0-3]):[0-5]\\d$" },
+              pressure: { type: ["string", "null"], maxLength: 2000 },
               terminalOutcome: { type: ["string", "null"], enum: ["strong", "mixed", "weak", null] },
               deadlineDay: { type: ["integer", "null"], minimum: 1, maximum: 10000 },
-              deadlineTime: { type: ["string", "null"] },
+              deadlineTime: { type: ["string", "null"], maxLength: 5, pattern: "^(?:[01]\\d|2[0-3]):[0-5]\\d$" },
               budgetCostEur: { type: ["integer", "null"], minimum: 0, maximum: 1000000000 },
               durationMinutes: { type: ["integer", "null"], minimum: 0, maximum: 100000000 },
             },
@@ -74,12 +109,12 @@ export const STUDIO_AI_PLAN_SCHEMA = {
         additionalProperties: false,
         properties: {
           action: { type: "string", enum: ["add", "update"] },
-          existingLinkId: { type: ["string", "null"] },
-          fromRef: { type: "string" },
-          toRef: { type: "string" },
-          label: { type: ["string", "null"] },
-          detail: { type: ["string", "null"] },
-          result: { type: ["string", "null"] },
+          existingLinkId: { type: ["string", "null"], maxLength: 80 },
+          fromRef: { type: "string", minLength: 1, maxLength: 80, pattern: "^[A-Za-z][A-Za-z0-9_-]{0,79}$" },
+          toRef: { type: "string", minLength: 1, maxLength: 80, pattern: "^[A-Za-z][A-Za-z0-9_-]{0,79}$" },
+          label: { type: ["string", "null"], maxLength: 200 },
+          detail: { type: ["string", "null"], maxLength: 4000 },
+          result: { type: ["string", "null"], maxLength: 4000 },
           cost: { type: ["integer", "null"], minimum: 0, maximum: 1000000000 },
           minutes: { type: ["integer", "null"], minimum: 0, maximum: 100000000 },
           effects: {
@@ -100,7 +135,7 @@ export const STUDIO_AI_PLAN_SCHEMA = {
       },
     },
   },
-  required: ["compatible", "clarification", "summary", "assumptions", "warnings", "case", "nodes", "links"],
+  required: ["compatible", "clarification", "summary", "assumptions", "warnings", "case", "economics", "nodes", "links"],
 } as const;
 
 export type StudioAIContext = ReturnType<typeof toStudioAIContext>;
@@ -109,6 +144,7 @@ export function toStudioAIContext(draft: StudioDraft) {
   return {
     caseId: draft.caseId,
     version: draft.version,
+    caseType: draft.caseType,
     parent: draft.parent,
     title: draft.title,
     jurisdiction: draft.jurisdiction,
@@ -116,6 +152,7 @@ export function toStudioAIContext(draft: StudioDraft) {
     premise: draft.premise,
     classification: draft.classification,
     taxEconomics: draft.taxEconomics,
+    dealEconomics: draft.dealEconomics,
     nodes: draft.nodes,
     links: draft.links,
     updatedAt: draft.updatedAt,
@@ -135,6 +172,7 @@ export function normalizeStudioAIContext(value: unknown): StudioDraft {
   const candidate = {
     caseId: value.caseId,
     version: value.version,
+    caseType: value.caseType,
     parent: value.parent,
     title: rawTitle || "Untitled case",
     jurisdiction: value.jurisdiction,
@@ -142,6 +180,7 @@ export function normalizeStudioAIContext(value: unknown): StudioDraft {
     premise: value.premise,
     classification: value.classification,
     taxEconomics: value.taxEconomics,
+    dealEconomics: value.dealEconomics,
     nodes: empty ? [{ id: "trigger-ai-validation", type: "trigger", title: "Validation placeholder", detail: "", x: 0, y: 0 }] : value.nodes,
     links: empty ? [] : value.links,
     editHistory: [],
@@ -158,7 +197,7 @@ export function normalizeStudioAIContext(value: unknown): StudioDraft {
 }
 
 export function materializeAIStudioPlan(draft: StudioDraft, instruction: string, rawProposal: unknown, locale: "en" | "ru", selectedNodeId?: string | null): StudioPromptPlan {
-  const clean = instruction.trim().slice(0, 8_000);
+  const clean = instruction.trim().slice(0, STUDIO_PROMPT_CHARACTER_LIMIT);
   if (!clean || !isRecord(rawProposal)) throw new Error("Invalid AI Studio proposal");
   const compatible = rawProposal.compatible === true;
   if (rawProposal.compatible !== true && rawProposal.compatible !== false) throw new Error("Invalid AI compatibility result");
@@ -210,6 +249,11 @@ export function materializeAIStudioPlan(draft: StudioDraft, instruction: string,
   if (tags.length && JSON.stringify(tags) !== JSON.stringify(draft.classification?.tags ?? [])) classificationChange.tags = tags;
   if (taxTopics.length && JSON.stringify(taxTopics) !== JSON.stringify(draft.classification?.taxTopics ?? [])) classificationChange.taxTopics = taxTopics;
   if (Object.keys(classificationChange).length) operations.push({ kind: "set_classification", change: classificationChange });
+
+  const proposedEconomics = normalizeDealEconomicsProposal(rawProposal.economics, draft.dealEconomics);
+  if (proposedEconomics && JSON.stringify(proposedEconomics) !== JSON.stringify(draft.dealEconomics)) {
+    operations.push({ kind: "set_deal_economics", economics: proposedEconomics });
+  }
 
   let workingNodes = structuredClone(draft.nodes);
   let workingLinks = structuredClone(draft.links);
@@ -362,6 +406,10 @@ export function applyValidatedAIStudioPlan(draft: StudioDraft, values: { plan: u
       if (!isRecord(rawOperation.change)) throw new Error("Invalid AI classification update");
       continue;
     }
+    if (rawOperation.kind === "set_deal_economics") {
+      if (!normalizeDealEconomics(rawOperation.economics)) throw new Error("Invalid AI deal economics update");
+      continue;
+    }
     throw new Error("Destructive AI Studio operations are not permitted");
   }
   const typedPlan = values.plan as unknown as StudioPromptPlan;
@@ -390,6 +438,64 @@ function newlyIntroducedCompileIssues(base: StudioDraft, candidate: StudioDraft)
   const issueKey = (issue: ReturnType<typeof compileStudioDraft>["issues"][number]) => `${issue.code}:${[...issue.nodeIds].sort().join(",")}`;
   const existing = new Set(compileStudioDraft(base).issues.map(issueKey));
   return compileStudioDraft(candidate).issues.filter((issue) => issue.code === "cycle" || !existing.has(issueKey(issue)));
+}
+
+function normalizeDealEconomicsProposal(value: unknown, existing?: StudioDraft["dealEconomics"]) {
+  if (value === undefined || value === null) return existing;
+  const proposal = requireRecord(value, "economics proposal");
+  const currencyValue = nullableString(proposal.currency, 3);
+  const currency = currencyValue?.toUpperCase() ?? existing?.currency ?? null;
+  const purchasePrice = nullableInteger(proposal.purchasePrice, 0, 1_000_000_000_000);
+  const loanToValueBps = nullableInteger(proposal.loanToValueBps, 0, 10_000);
+  const annualInterestRateBps = nullableInteger(proposal.annualInterestRateBps, 0, 10_000);
+  const termMonths = nullableInteger(proposal.termMonths, 1, 1_200);
+  const grossAnnualIncome = nullableInteger(proposal.grossAnnualIncome, 0, 1_000_000_000_000);
+  const annualOperatingCosts = nullableInteger(proposal.annualOperatingCosts, 0, 1_000_000_000_000);
+  const oneOffStructureCost = nullableInteger(proposal.oneOffStructureCost, 0, 1_000_000_000_000);
+  const annualStructureCost = nullableInteger(proposal.annualStructureCost, 0, 1_000_000_000_000);
+  const otherInitialCosts = nullableInteger(proposal.otherInitialCosts, 0, 1_000_000_000_000);
+  const targetAnnualReturnBps = nullableInteger(proposal.targetAnnualReturnBps, 0, 100_000);
+  const scenarioProbabilities = normalizeScenarioProbabilityProposal(proposal.scenarioProbabilities, existing?.scenarioProbabilities);
+  const assumptions = boundedList(proposal.assumptions, 12, 500);
+  const repaymentBasis = proposal.repaymentBasis === "amortizing" || proposal.repaymentBasis === "interest_only" || proposal.repaymentBasis === "unknown"
+    ? proposal.repaymentBasis
+    : proposal.repaymentBasis === null ? existing?.repaymentBasis ?? "unknown" : null;
+  if (!repaymentBasis) throw new Error("Invalid AI repayment basis");
+  const hasProposedValue = [purchasePrice, loanToValueBps, annualInterestRateBps, termMonths, grossAnnualIncome, annualOperatingCosts, oneOffStructureCost, annualStructureCost, otherInitialCosts, targetAnnualReturnBps].some((item) => item !== null)
+    || assumptions.length > 0;
+  if (!hasProposedValue && !existing) return undefined;
+  if (!currency || !/^[A-Z]{3}$/.test(currency)) throw new Error("AI deal economics requires an ISO currency");
+  return normalizeDealEconomics({
+    kind: "deal-economics-v1",
+    currency,
+    purchasePrice: purchasePrice ?? existing?.purchasePrice ?? null,
+    loanToValueBps: loanToValueBps ?? existing?.loanToValueBps ?? null,
+    annualInterestRateBps: annualInterestRateBps ?? existing?.annualInterestRateBps ?? null,
+    termMonths: termMonths ?? existing?.termMonths ?? null,
+    repaymentBasis,
+    grossAnnualIncome: grossAnnualIncome ?? existing?.grossAnnualIncome ?? null,
+    annualOperatingCosts: annualOperatingCosts ?? existing?.annualOperatingCosts ?? null,
+    oneOffStructureCost: oneOffStructureCost ?? existing?.oneOffStructureCost ?? null,
+    annualStructureCost: annualStructureCost ?? existing?.annualStructureCost ?? null,
+    otherInitialCosts: otherInitialCosts ?? existing?.otherInitialCosts ?? null,
+    targetAnnualReturnBps: targetAnnualReturnBps ?? existing?.targetAnnualReturnBps ?? null,
+    scenarioProbabilities,
+    assumptions: assumptions.length ? assumptions : existing?.assumptions ?? [],
+  });
+}
+
+function normalizeScenarioProbabilityProposal(value: unknown, existing?: NonNullable<StudioDraft["dealEconomics"]>["scenarioProbabilities"]) {
+  const fallback = existing ?? DEFAULT_DEAL_SCENARIO_PROBABILITIES;
+  if (value === undefined || value === null) return { ...fallback };
+  const proposal = requireRecord(value, "scenario probability proposal");
+  const result = {
+    interestOnlyBps: nullableInteger(proposal.interestOnlyBps, 0, 10_000) ?? fallback.interestOnlyBps,
+    favorableBps: nullableInteger(proposal.favorableBps, 0, 10_000) ?? fallback.favorableBps,
+    baseBps: nullableInteger(proposal.baseBps, 0, 10_000) ?? fallback.baseBps,
+    stressedBps: nullableInteger(proposal.stressedBps, 0, 10_000) ?? fallback.stressedBps,
+  };
+  if (result.favorableBps + result.baseBps + result.stressedBps !== 10_000) throw new Error("AI occupancy scenario weights must total 10000 basis points");
+  return result;
 }
 
 function normalizeRuntimeProposal(value: unknown, type: StudioNodeType): StudioNode["runtime"] {

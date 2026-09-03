@@ -56,6 +56,13 @@ export type PublicationCompilationResult =
  * is a stale-preview guard only: it is never persisted or otherwise trusted.
  */
 export function compilePublicationPlayable(draft: StudioDraft, clientPreview?: unknown): PublicationCompilationResult {
+  if (draft.premisePublication !== "author-reviewed" || !draft.premise.trim()) {
+    return {
+      ok: false,
+      status: 422,
+      error: "Publishable case context must be deliberately reviewed by the author before publication.",
+    };
+  }
   const studioFingerprint = caseFingerprint(draft);
   const compilation = compileStudioDraft(draft);
   if (!compilation.scenario || compilation.issues.length) {

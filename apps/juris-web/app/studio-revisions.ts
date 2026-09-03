@@ -42,8 +42,10 @@ export function snapshotStudioDraft(draft: StudioDraft): StudioSnapshot {
     jurisdiction: draft.jurisdiction,
     role: draft.role,
     premise: draft.premise,
+    premisePublication: draft.premisePublication,
     classification: draft.classification,
     taxEconomics: draft.taxEconomics,
+    dealEconomics: draft.dealEconomics,
     nodes: draft.nodes,
     links: draft.links,
   });
@@ -99,7 +101,7 @@ export function stepStudioTimeline(timeline: StudioTimeline, direction: "undo" |
 }
 
 export function diffStudioSnapshots(base: StudioSnapshot, target: StudioSnapshot): StudioDiff {
-  const fields = (["caseId", "version", "parent", "title", "jurisdiction", "role", "premise", "classification", "taxEconomics"] as const)
+  const fields = (["caseId", "version", "parent", "title", "jurisdiction", "role", "premise", "premisePublication", "classification", "dealEconomics", "taxEconomics"] as const)
     .filter((key) => JSON.stringify(base[key]) !== JSON.stringify(target[key]));
   const baseNodes = new Map(base.nodes.map((node) => [node.id, node]));
   const targetNodes = new Map(target.nodes.map((node) => [node.id, node]));

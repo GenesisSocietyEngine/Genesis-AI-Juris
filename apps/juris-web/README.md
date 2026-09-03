@@ -34,7 +34,7 @@ flowchart TD
     GATES --> D1
 ```
 
-The Cloudflare Worker adds CSP, HSTS and browser hardening headers while preserving public immutable caching and private/no-store APIs. Write routes enforce same-origin JSON mutations, bounded streaming bodies, server-side authorization and canonical SHA-256 fingerprints. See [the v16 architecture and trust boundaries](docs/ARCHITECTURE.md) and the [full v16 product, security and scalability audit](docs/AUDIT-V16.md).
+The Cloudflare Worker adds CSP, HSTS and browser hardening headers while preserving public immutable caching and private/no-store APIs. Write routes enforce same-origin JSON mutations, bounded streaming bodies, server-side authorization and canonical SHA-256 fingerprints. Request outcomes, exceptions, and D1 busy/timeout/internal failures are emitted only as privacy-safe structured Worker logs and never create product-D1 telemetry writes. v53 D1 failure logging covers instrumented operations only: normalized routes `catalog`, `play_sessions`, and `admin`, and logical repositories `cases`, `case_versions`, `play_sessions`, `play_events`, and `operational_events`. This is not platform-wide, auth, users, or all-D1 coverage. A covered D1 capacity failure clears queued anomaly rows and opens a 60-second circuit with zero telemetry prepare/batch work in the triggering request. Product D1 retains only bounded, low-volume replay/history/revision/fingerprint anomalies from play/admin operations; routine successes are not collected or shown as zero. See [the v16 architecture and trust boundaries](docs/ARCHITECTURE.md), [the v53 observability contract](docs/V53-OBSERVABILITY.md), and the [full v16 product, security and scalability audit](docs/AUDIT-V16.md).
 
 ### Core data model
 
@@ -49,6 +49,7 @@ The Cloudflare Worker adds CSP, HSTS and browser hardening headers while preserv
 - `case_feedback`: exact-version feedback, context, severity, citations and moderation state.
 - `case_subscriptions`, `updates`, `update_reads`: addressed release communication.
 - `audit_events`: privileged publication and moderation trail.
+- `operational_events`: 14-day, privacy-safe coarse replay/history/revision/fingerprint anomaly rows from authenticated play/admin operations, aggregated at read time with no request-success, D1-capacity, public-catalog, user, case, payload, URL, SQL or fingerprint fields.
 
 Migrations live in `drizzle/`. A fresh database must apply them in numeric order.
 
@@ -78,7 +79,7 @@ npm run install:ci
 npm run dev
 ```
 
-The local runtime reads `.openai/hosting.json` for the D1 binding name. Production secrets belong in Sites runtime configuration, never in the repository. Copy `.env.example` only as a variable-name reference. `OPENAI_API_KEY` enables reviewed AI authoring, while `RESEND_API_KEY`, `GENESIS_RESET_FROM_EMAIL` and `GENESIS_PUBLIC_ORIGIN` enable transactional reset email. `GENESIS_OPENAI_MODEL` optionally overrides the default AI model; `GENESIS_AI_DAILY_REQUEST_LIMIT` sets the tenant-wide daily circuit breaker (default 500).
+The local runtime reads `.openai/hosting.json` for the D1 binding name. Production secrets belong in Sites runtime configuration, never in the repository. Copy `.env.example` only as a variable-name reference. `OPENAI_API_KEY` enables reviewed AI authoring, while `RESEND_API_KEY`, `GENESIS_RESET_FROM_EMAIL` and `GENESIS_PUBLIC_ORIGIN` enable transactional reset email. `GENESIS_OPENAI_MODEL` optionally overrides the default AI model; `GENESIS_AI_DAILY_REQUEST_LIMIT` sets the tenant-wide daily circuit breaker (default 500). Production observability requires `GENESIS_DEPLOYMENT_VERSION` to equal the saved Site version and `GENESIS_WEB_COMMIT` to equal the exact 40-character pushed release SHA; local or unknown values deliberately produce a partial dashboard state.
 
 ## Verification
 
@@ -90,7 +91,7 @@ npm audit --omit=dev
 git diff --check
 ```
 
-`npm test` performs a production build and replays eleven authoritative mobile reference paths across all five bundled cases, including exact outcomes, clocks, economics, next-workday recovery, global repeatability, legacy session compatibility, tax/graph gates, request limits, D1 migrations and immutable lineage constraints.
+`npm test` performs a production build and verifies 18 authoritative web/mobile reference routes across all five bundled cases, including every canonical terminal outcome, exact checkpoints, serialization, save/load/re-save receipts, alert-source truthfulness, privacy-safe request/D1-capacity log isolation, bounded retained-anomaly storage/migrations, legacy session compatibility, tax/graph gates, request limits and immutable lineage constraints. The separate v53 contention command documented in `docs/V53-OPERATIONS-RUNBOOK.md` must also be green before release.
 
 ## Authentication and authorization
 

@@ -3,6 +3,8 @@ import { normalizeUntrustedCaseProtection } from "./case-protection";
 import { STUDIO_HISTORY_LIMIT } from "./studio-editing";
 import { STUDIO_DRAFT_SERIALIZED_LIMIT, studioJsonBytes } from "./studio-envelope";
 import { normalizeTaxEconomics } from "./tax-economics";
+import { normalizeDealEconomics } from "./deal-economics";
+import { normalizeCaseTypeReference } from "./case-type-reference";
 
 const nodeTypes = new Set<StudioNodeType>([
   "trigger", "actor", "fact", "evidence", "deadline", "decision", "outcome", "entity", "tax_rule", "cash_flow",
@@ -39,6 +41,25 @@ export function caseFingerprint(draft: StudioDraft) {
   return canonicalFingerprint(caseFingerprintContent(draft, true));
 }
 
+export const CASE_PUBLICATION_FINGERPRINT_KIND = "genesis-juris-case-publication-safety-v1" as const;
+
+/**
+ * A separate safety receipt preserves the released semantic case fingerprint
+ * while binding the professional-review state that controls whether premise
+ * text may enter a report or published payload.
+ */
+export function casePublicationFingerprint(draft: StudioDraft) {
+  return canonicalFingerprint({
+    kind: CASE_PUBLICATION_FINGERPRINT_KIND,
+    caseFingerprint: caseFingerprint(draft),
+    premiseReview: casePremiseReviewState(draft),
+  });
+}
+
+export function casePremiseReviewState(draft: Pick<StudioDraft, "premisePublication">) {
+  return draft.premisePublication === "author-reviewed" ? "author-reviewed" as const : "unreviewed" as const;
+}
+
 /**
  * Read-only compatibility fingerprint for artifacts exported before v16.
  * New saves and seals must always use caseFingerprint(), which binds the
@@ -67,6 +88,7 @@ function caseFingerprintContent(draft: StudioDraft, includeRelationshipIds: bool
   };
   return {
     caseId: draft.caseId.trim(),
+    ...(draft.caseType ? { caseType: normalizeCaseTypeReference(draft.caseType) } : {}),
     parent: draft.parent,
     title: draft.title.trim(),
     jurisdiction: draft.jurisdiction.trim().slice(0, 160),
@@ -74,6 +96,7 @@ function caseFingerprintContent(draft: StudioDraft, includeRelationshipIds: bool
     premise: draft.premise.trim().slice(0, 8_000),
     classification,
     taxEconomics: isTax ? normalizeTaxEconomics(draft.taxEconomics) : undefined,
+    dealEconomics: normalizeDealEconomics(draft.dealEconomics),
     nodes: draft.nodes.map((node) => ({ ...node, title: node.title.trim(), detail: node.detail.trim().slice(0, 4_000) })),
     // Relationship IDs become playable option IDs in studio-compiler. v16
     // therefore treats them as runnable content. The ID-free shape exists only
@@ -125,17 +148,24 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
       ? { caseId: value.parent.caseId, version: value.parent.version, fingerprint: value.parent.fingerprint }
       : null;
   const protection = normalizeUntrustedCaseProtection(value.protection);
+  const caseType = normalizeCaseTypeReference(value.caseType);
   const taxEconomics = isTax ? normalizeTaxEconomics(value.taxEconomics) : undefined;
+  const dealEconomics = normalizeDealEconomics(value.dealEconomics);
+  const premisePublication = value.premisePublication === "prompt-derived" || value.premisePublication === "author-reviewed"
+    ? value.premisePublication
+    : undefined;
 
   const normalized: StudioDraft = {
     caseId,
     version,
+    ...(caseType ? { caseType } : {}),
     parent,
     ...(protection ? { protection } : {}),
     title,
     jurisdiction: safeString(value.jurisdiction, "", 160),
     role: safeString(value.role, "", 160),
     premise: safeString(value.premise, "", 8_000),
+    ...(premisePublication ? { premisePublication } : {}),
     classification: {
       domain: isTax ? "tax" : "general",
       practiceArea,
@@ -148,6 +178,7 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
       sourceUrls: urlList(rawClassification.sourceUrls, 30),
     },
     ...(taxEconomics ? { taxEconomics } : {}),
+    ...(dealEconomics ? { dealEconomics } : {}),
     nodes,
     links,
     editHistory,
@@ -325,7 +356,14 @@ function isoDate(value: unknown) {
 }
 function urlList(value: unknown, maxItems: number) {
   return stringList(value, maxItems, 500).filter((item) => {
-    try { return new URL(item).protocol === "https:"; } catch { return false; }
+    try {
+      const parsed = new URL(item);
+      return parsed.protocol === "https:"
+        && parsed.username === ""
+        && parsed.password === ""
+        && parsed.hostname !== ""
+        && parsed.origin !== "null";
+    } catch { return false; }
   });
 }
 

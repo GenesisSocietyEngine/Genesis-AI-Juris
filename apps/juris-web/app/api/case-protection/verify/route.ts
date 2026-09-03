@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { caseDrafts, caseVersions, customCaseGrants, customCases } from "../../../../db/schema";
 import { normalizeStoredCaseProtection, verifyCaseProtection } from "../../../case-protection";
-import { caseFingerprint, isRecord, legacyCaseFingerprintV15, normalizeStudioDraft } from "../../../case-integrity";
+import { caseFingerprint, casePublicationFingerprint, isRecord, legacyCaseFingerprintV15, normalizeStudioDraft } from "../../../case-integrity";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 import { canViewCustomCase, normalizeEmail } from "../../../custom-case-access";
 import { isSameOriginMutation, readJsonObject } from "../../../request-security";
@@ -26,10 +26,11 @@ export async function POST(request: Request) {
     draft = normalizeStudioDraft({ ...payload.draft, protection: payload.protection ?? payload.draft.protection });
     protection = normalizeStoredCaseProtection(draft.protection);
   } catch {
-    return verification(false, false, false, "none", null, null);
+    return verification(false, false, false, "none", null, null, null);
   }
   const fingerprint = caseFingerprint(draft);
-  if (!protection) return verification(false, false, false, "none", null, fingerprint);
+  const publicationFingerprint = casePublicationFingerprint(draft);
+  if (!protection) return verification(false, false, false, "none", null, fingerprint, publicationFingerprint);
 
   const db = getDb();
   try {
@@ -52,16 +53,19 @@ export async function POST(request: Request) {
       if (!sealValid) continue;
       const resolved = await resolveExactCaseArtifact(db, { caseId: draft.caseId, version: draft.version, fingerprint: candidate }, key);
       if (!resolved || resolved.currentCode !== protection.currentCode || resolved.protection?.seal !== protection.seal) continue;
-      // A v15 seal did not bind relationship IDs. Accept it only when the
-      // complete v16 runnable fingerprint matches the authoritative stored
-      // payload, so changing an option identity cannot reuse the old seal.
-      if (candidate === legacyFingerprint && candidate !== fingerprint
-        && await authoritativeCurrentFingerprint(db, resolved) !== fingerprint) continue;
+      // Protection v1 did not bind premise-review provenance (and v15 did not
+      // bind relationship IDs). The authoritative stored draft must therefore
+      // match both current semantic and publication-safety fingerprints before
+      // any imported seal can establish a workspace-saved report boundary.
+      const authoritative = await authoritativeCurrentFingerprints(db, resolved);
+      if (!authoritative
+        || authoritative.caseFingerprint !== fingerprint
+        || authoritative.publicationFingerprint !== publicationFingerprint) continue;
       artifact = resolved;
       break;
     }
     if (!artifact) {
-      return verification(false, false, false, "none", null, fingerprint);
+      return verification(false, false, false, "none", null, fingerprint, publicationFingerprint);
     }
 
     const email = normalizeEmail(identity.email);
@@ -87,15 +91,15 @@ export async function POST(request: Request) {
         access = admin ? "admin" : "shared";
       }
     }
-    if (access === "none") return verification(false, false, false, "none", null, fingerprint);
+    if (access === "none") return verification(false, false, false, "none", null, fingerprint, publicationFingerprint);
     const canDuplicate = access === "owner" || !artifact.copyProtected;
-    return verification(true, artifact.copyProtected, canDuplicate, access, ownerCustomCaseId, artifact.studioFingerprint);
+    return verification(true, artifact.copyProtected, canDuplicate, access, ownerCustomCaseId, artifact.studioFingerprint, publicationFingerprint);
   } catch {
-    return verification(false, false, false, "none", null, fingerprint);
+    return verification(false, false, false, "none", null, fingerprint, publicationFingerprint);
   }
 }
 
-async function authoritativeCurrentFingerprint(db: ReturnType<typeof getDb>, artifact: StoredCaseArtifact) {
+async function authoritativeCurrentFingerprints(db: ReturnType<typeof getDb>, artifact: StoredCaseArtifact) {
   let payload: unknown;
   if (artifact.source === "custom") {
     if (!artifact.customCaseId) return null;
@@ -118,14 +122,15 @@ async function authoritativeCurrentFingerprint(db: ReturnType<typeof getDb>, art
   }
   try {
     const storedDraft = isRecord(payload) && isRecord(payload.studioDraft) ? payload.studioDraft : payload;
-    return caseFingerprint(normalizeStudioDraft(storedDraft));
+    const draft = normalizeStudioDraft(storedDraft);
+    return { caseFingerprint: caseFingerprint(draft), publicationFingerprint: casePublicationFingerprint(draft) };
   } catch {
     return null;
   }
 }
 
-function verification(valid: boolean, copyProtected: boolean, canDuplicate: boolean, access: "owner" | "shared" | "admin" | "public" | "none", customCaseId: number | null, fingerprint: string | null) {
-  return privateJson({ valid, copyProtected, canDuplicate, access, customCaseId: access === "owner" ? customCaseId : null, fingerprint });
+function verification(valid: boolean, copyProtected: boolean, canDuplicate: boolean, access: "owner" | "shared" | "admin" | "public" | "none", customCaseId: number | null, fingerprint: string | null, publicationFingerprint: string | null) {
+  return privateJson({ valid, copyProtected, canDuplicate, access, customCaseId: access === "owner" ? customCaseId : null, fingerprint, publicationFingerprint });
 }
 
 function privateJson(body: unknown, status = 200) {

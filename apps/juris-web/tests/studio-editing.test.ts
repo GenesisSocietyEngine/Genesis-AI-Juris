@@ -152,5 +152,7 @@ test("legacy links receive deterministic IDs while history stays private and non
   assert.equal(caseFingerprint(withHistory), caseFingerprint(base), "authoring history does not alter the content fingerprint");
   const publicDraft = toPublicStudioDraft(withHistory);
   assert.equal("editHistory" in publicDraft, false);
+  assert.equal(publicDraft.premise, "", "a legacy or prompt-derived premise is not copied into a public draft");
+  assert.equal(toPublicStudioDraft({ ...withHistory, premisePublication: "author-reviewed" }).premise, base.premise);
   assert.equal(withHistory.editHistory.length, 1, "the private workspace draft keeps the history");
 });

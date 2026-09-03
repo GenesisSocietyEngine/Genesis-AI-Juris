@@ -3,7 +3,7 @@ import { getDb } from "../db";
 import { studioAILeases } from "../db/schema";
 
 export const STUDIO_AI_MAX_IN_FLIGHT = 8;
-export const STUDIO_AI_LEASE_TTL_MS = 60_000;
+export const STUDIO_AI_LEASE_TTL_MS = 450_000;
 
 export type StudioAILease = { id: string; expiresAt: string };
 

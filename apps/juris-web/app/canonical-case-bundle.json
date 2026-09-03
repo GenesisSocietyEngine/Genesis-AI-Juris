@@ -7,13 +7,13 @@
     "ru"
   ],
   "fictional_notice": {
-    "en": "All organizations, persons, disputes, and events in this library are fictional.",
-    "ru": "Все организации, лица, споры и события в этой библиотеке являются вымышленными."
+    "en": "All organizations, persons, disputes, and events in these templates are fictional.",
+    "ru": "Все организации, лица, споры и события в этих шаблонах являются вымышленными."
   },
   "ui": {
     "en": {
-      "library_title": "Case Library",
-      "library_subtitle": "Choose a matter. Stable IDs keep saves, translations, and gameplay references separate from display text.",
+      "library_title": "Templates",
+      "library_subtitle": "Approved fictional and local training templates. Opening one starts a local training simulation; it does not open a private case from My cases.",
       "all_cases": "All",
       "playable_cases": "Playable",
       "authoring_cases": "In authoring",
@@ -52,16 +52,16 @@
       "scenario_file": "Scenario file",
       "language": "Language",
       "retry": "Retry",
-      "load_failed": "The case library could not be loaded.",
-      "no_cases": "No cases match this filter.",
-      "back_to_library": "Back to case library",
+      "load_failed": "The templates could not be loaded.",
+      "no_cases": "No templates match this filter.",
+      "back_to_library": "Back to templates",
       "fictional": "Fictional case",
       "topic": "Topic",
       "legal_issues": "Legal issues"
     },
     "ru": {
-      "library_title": "Библиотека дел",
-      "library_subtitle": "Выберите дело. Стабильные ID отделяют сохранения, переводы и игровые ссылки от отображаемого текста.",
+      "library_title": "Шаблоны",
+      "library_subtitle": "Одобренные вымышленные и локальные учебные шаблоны. Открытие шаблона запускает локальную учебную симуляцию, а не личное дело из раздела «Мои дела».",
       "all_cases": "Все",
       "playable_cases": "Играбельные",
       "authoring_cases": "В разработке",
@@ -100,9 +100,9 @@
       "scenario_file": "Файл сценария",
       "language": "Язык",
       "retry": "Повторить",
-      "load_failed": "Не удалось загрузить библиотеку дел.",
-      "no_cases": "Нет дел, соответствующих фильтру.",
-      "back_to_library": "Назад в библиотеку дел",
+      "load_failed": "Не удалось загрузить шаблоны.",
+      "no_cases": "Нет шаблонов, соответствующих фильтру.",
+      "back_to_library": "Назад к шаблонам",
       "fictional": "Вымышленное дело",
       "topic": "Тема",
       "legal_issues": "Правовые вопросы"

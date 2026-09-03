@@ -4,12 +4,14 @@ import test from "node:test";
 import { normalizeStudioDraft } from "../app/case-integrity";
 import { applyStudioPromptPlan, describeStudioPromptOperation, toPublicStudioDraft } from "../app/studio-editing";
 import { STUDIO_DRAFT_SERIALIZED_LIMIT, studioJsonBytes } from "../app/studio-envelope";
-import { applyValidatedAIStudioPlan, materializeAIStudioPlan, normalizeStudioAIContext, previewValidatedAIStudioPlan, studioAIBaseFingerprint, toStudioAIContext } from "../app/studio-ai-plan";
+import { STUDIO_PROMPT_CHARACTER_LIMIT } from "../app/studio-prompt-limit";
+import { applyValidatedAIStudioPlan, materializeAIStudioPlan, normalizeStudioAIContext, previewValidatedAIStudioPlan, STUDIO_AI_PLAN_SCHEMA, studioAIBaseFingerprint, toStudioAIContext } from "../app/studio-ai-plan";
 import type { StudioDraft, StudioNodeType } from "../app/types";
 
 const at = "2026-08-23T12:00:00.000Z";
 const emptyRuntime = { day: null, time: null, pressure: null, terminalOutcome: null, deadlineDay: null, deadlineTime: null, budgetCostEur: null, durationMinutes: null };
 const emptyRule = { label: null, detail: null, result: null, cost: null, minutes: null, effects: { position: null, evidence: null, trust: null, exposure: null }, repeatability: null, maxUses: null };
+const emptyEconomics = { currency: null, purchasePrice: null, loanToValueBps: null, annualInterestRateBps: null, termMonths: null, repaymentBasis: null, grossAnnualIncome: null, annualOperatingCosts: null, oneOffStructureCost: null, annualStructureCost: null, otherInitialCosts: null, targetAnnualReturnBps: null, scenarioProbabilities: null, assumptions: [] };
 
 function blankDraft(): StudioDraft {
   return {
@@ -44,6 +46,7 @@ function bhopalProposal() {
       tags: ["industrial disaster", "corporate accountability", "compensation"],
       taxTopics: [],
     },
+    economics: emptyEconomics,
     nodes: [
       node("release", "trigger", "Toxic gas release at Bhopal plant", "More than 40 tons of methyl isocyanate escaped from the pesticide plant."),
       node("company", "actor", "Union Carbide corporate interests", "The company disputed legal responsibility before later accepting moral responsibility."),
@@ -93,6 +96,24 @@ test("AI semantic intents materialize into a meaningful, collision-free, non-des
   assert.deepEqual(applied.draft.editHistory.map((entry) => entry.action), ["prompt_submitted", "prompt_applied"]);
   assert.match(applied.draft.editHistory[1].message, /reviewed AI-assisted plan/i);
   assert.match(applied.draft.editHistory[1].message, /model=gpt-5\.6/);
+});
+
+test("AI cash-flow facts materialize as a reviewable non-destructive economics operation", () => {
+  const proposal = { ...bhopalProposal(), economics: {
+    currency: "GBP", purchasePrice: 1_000_000, loanToValueBps: 8_000, annualInterestRateBps: 750, termMonths: 120,
+    repaymentBasis: "unknown", grossAnnualIncome: 129_600, annualOperatingCosts: null, oneOffStructureCost: 15_000,
+    annualStructureCost: 10_000, otherInitialCosts: null, targetAnnualReturnBps: 1_000,
+    scenarioProbabilities: { interestOnlyBps: 5_000, favorableBps: 2_500, baseBps: 5_000, stressedBps: 2_500 },
+    assumptions: ["Monthly rent was annualized from an explicit total."],
+  } };
+  const plan = materializeAIStudioPlan(blankDraft(), "Model the supplied property cash flow.", proposal, "en");
+  const economics = plan.operations.find((operation) => operation.kind === "set_deal_economics");
+  assert.ok(economics && economics.kind === "set_deal_economics");
+  assert.equal(economics.economics.repaymentBasis, "unknown");
+  assert.equal(economics.economics.annualStructureCost, 10_000);
+  assert.equal(economics.economics.scenarioProbabilities.stressedBps, 2_500);
+  assert.match(describeStudioPromptOperation(economics, "en"), /purchase.*1,000,000.*LTV 80\.00%/i);
+  assert.match(describeStudioPromptOperation(economics, "en"), /scenario weights.*25\.0%\/50\.0%\/25\.0%/i);
 });
 
 test("AI keeps the raw blank-draft source private and publishes only reviewed case context", () => {
@@ -178,6 +199,18 @@ test("AI plan materialization rejects unknown semantic references atomically", (
   assert.throws(() => materializeAIStudioPlan(blankDraft(), "Build it.", proposal, "en"), /invalid endpoint/i);
 });
 
+test("AI response schema mirrors the materializer text and reference bounds", () => {
+  type SchemaNode = { maxLength?: number; maximum?: number; pattern?: string; properties?: Record<string, SchemaNode>; items?: SchemaNode };
+  const schema = STUDIO_AI_PLAN_SCHEMA as unknown as { properties: Record<string, SchemaNode>; required: readonly string[] };
+  assert.equal(schema.properties.summary.maxLength, 800);
+  assert.equal(schema.properties.case.properties?.context.maxLength, 4000);
+  assert.equal(schema.properties.nodes.items?.properties?.detail.maxLength, 4000);
+  assert.equal(schema.properties.nodes.items?.properties?.ref.pattern, "^[A-Za-z][A-Za-z0-9_-]{0,79}$");
+  assert.equal(schema.properties.links.items?.properties?.fromRef.maxLength, 80);
+  assert.equal(schema.properties.economics.properties?.loanToValueBps.maximum, 10000);
+  assert.ok((STUDIO_AI_PLAN_SCHEMA.required as readonly string[]).includes("economics"));
+});
+
 test("AI plans that introduce cycles are review-blocked before apply", () => {
   const proposal = bhopalProposal();
   proposal.links.push(link("credible", "release", "Reopen the initial trigger"));
@@ -219,28 +252,46 @@ test("AI route keeps the key server-side and enforces auth, same-origin, limits 
   const route = readFileSync(new URL("../app/api/studio/ai-plan/route.ts", import.meta.url), "utf8");
   const server = readFileSync(new URL("../app/studio-ai-server.ts", import.meta.url), "utf8");
   const ui = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
+  const progress = readFileSync(new URL("../app/StudioAIProgress.tsx", import.meta.url), "utf8");
   const review = readFileSync(new URL("../app/StudioAIReview.tsx", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
   const me = readFileSync(new URL("../app/api/me/route.ts", import.meta.url), "utf8");
+  const localAuth = readFileSync(new URL("../app/local-auth.ts", import.meta.url), "utf8");
   assert.match(route, /isSameOriginCredentialMutation/);
   assert.match(route, /getChatGPTUser/);
   assert.match(route, /profile_required/);
   assert.match(route, /consumeAuthRateLimit/);
   assert.match(route, /studio-ai-tenant-daily/);
   assert.match(route, /studio-ai-plan-burst/);
+  assert.match(route, /checkSuccessfulAuthEventLimit\("studio_ai_plan"/);
+  assert.doesNotMatch(route, /consumeAuthRateLimit\(request,\s*"studio-ai-plan",/);
+  assert.match(localAuth, /eq\(authAuditEvents\.success, true\)/);
   assert.match(route, /GENESIS_AI_DAILY_REQUEST_LIMIT/);
   assert.match(route, /STUDIO_CASE_BODY_LIMIT/);
   assert.match(route, /baseFingerprint/);
   assert.match(server, /OPENAI_API_KEY/);
   assert.match(server, /store: false/);
   assert.match(server, /safety_identifier/);
+  assert.match(server, /reasoning:\s*\{\s*effort:\s*"low"\s*\}/);
+  assert.match(server, /STUDIO_AI_TIMEOUT_MS\s*=\s*300_000/);
+  assert.match(server, /STUDIO_AI_REPAIR_TIMEOUT_MS\s*=\s*120_000/);
+  assert.match(server, /SEMANTIC REPAIR PASS/);
+  assert.match(server, /reasoning:\s*\{\s*effort:\s*"none"\s*\}/);
   assert.match(server, /AbortSignal\.any/);
   assert.match(server, /text:\s*\{\s*format:\s*\{/);
   assert.doesNotMatch(`${route}\n${ui}`, /OPENAI_API_KEY|NEXT_PUBLIC_OPENAI/);
   assert.match(ui, /Understand with AI/);
+  assert.match(ui, /StudioAIProgress/);
+  assert.match(progress, /Estimated AI planning progress/);
+  assert.match(progress, /role="progressbar"/);
+  assert.match(progress, /the model does not stream an exact completion percentage/);
+  assert.match(progress, /complex case can take several minutes/);
   assert.match(review, /Apply all .*reviewed changes/);
   assert.match(review, /displayed in full below/);
+  assert.match(styles, /\.ai-plan-notes ul li\{display:block;/, "assumptions and warnings must use the full review width rather than the diagnostic icon column");
   assert.match(me, /studioAIAvailable/);
   assert.match(ui, /not_configured/);
   assert.match(ui, /useState<"user" \| "developer">\("user"\)/);
-  assert.match(ui, /maxLength=\{8000\}/);
+  assert.equal(STUDIO_PROMPT_CHARACTER_LIMIT, 64_000);
+  assert.match(ui, /maxLength=\{STUDIO_PROMPT_CHARACTER_LIMIT\}/);
 });

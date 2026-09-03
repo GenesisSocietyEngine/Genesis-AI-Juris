@@ -17,8 +17,12 @@ export async function studioDeviceScope(email: unknown) {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+export function isStudioDeviceScope(scope: unknown): scope is string {
+  return typeof scope === "string" && /^[a-f0-9]{64}$/.test(scope);
+}
+
 export function studioDeviceDraftKey(scope: string) {
-  if (/^[a-f0-9]{64}$/.test(scope)) return `${DEVICE_DRAFT_PREFIX}${scope}`;
+  if (isStudioDeviceScope(scope)) return `${DEVICE_DRAFT_PREFIX}${scope}`;
   throw new Error("Invalid Studio device-draft scope");
 }
 
@@ -45,4 +49,16 @@ export function mayPersistStudioDraftOnDevice(input: {
     && !input.draft.protection?.copyProtected
     && !input.draft.protection?.currentCode
     && !input.draft.protection?.seal;
+}
+
+export function mayPersistReportReceiptOnDevice(input: {
+  scope: string | null;
+  canDuplicate: boolean;
+  customCaseId: number | null;
+  isPrivate: boolean;
+  draft: Pick<StudioDraft, "protection">;
+}) {
+  return isStudioDeviceScope(input.scope)
+    && mayPersistStudioDraftOnDevice(input)
+    && !input.draft.protection?.parentCode;
 }
