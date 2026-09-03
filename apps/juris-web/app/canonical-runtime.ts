@@ -123,8 +123,10 @@ type CanonicalCase = {
 
 const canonicalCases = (canonicalBundle as unknown as { cases: CanonicalCase[] }).cases;
 
+export const CANONICAL_RUNTIME_REVISION = "canonical-runtime-v1" as const;
+
 export type CanonicalRuntimeState = {
-  schema: "canonical-runtime-v1";
+  schema: typeof CANONICAL_RUNTIME_REVISION;
   caseId: string;
   sourceFingerprint: string;
   seed: number;
@@ -157,7 +159,7 @@ export function isCanonicalRuntimeScenario(caseId: string) {
 export function normalizeCanonicalRuntimeState(value: unknown, expectedCaseId: string, expectedSourceFingerprint?: string): CanonicalRuntimeState | null {
   const entry = canonicalCases.find((item) => item.case_id === expectedCaseId);
   if (!entry || (expectedSourceFingerprint && entry.scenario_fingerprint !== expectedSourceFingerprint)) return null;
-  if (!isObject(value) || value.schema !== "canonical-runtime-v1" || value.caseId !== expectedCaseId
+  if (!isObject(value) || value.schema !== CANONICAL_RUNTIME_REVISION || value.caseId !== expectedCaseId
     || value.sourceFingerprint !== entry.scenario_fingerprint
     || typeof value.seed !== "number" || !Number.isSafeInteger(value.seed) || value.seed < 0
     || typeof value.stageId !== "string" || typeof value.clockMinutes !== "number" || !Number.isSafeInteger(value.clockMinutes) || value.clockMinutes < 0
@@ -182,7 +184,7 @@ export function createCanonicalRuntime(caseId: string, seed: number): CanonicalR
   const deadlineDueMinutes: Record<string, number> = {};
   for (const deadline of definition.deadlines) resolveInitialDeadlineDue(definition, deadline.id, baseline, deadlineDueMinutes, new Set());
   const state: CanonicalRuntimeState = {
-    schema: "canonical-runtime-v1",
+    schema: CANONICAL_RUNTIME_REVISION,
     caseId,
     sourceFingerprint: entry.scenario_fingerprint,
     seed,
@@ -645,7 +647,7 @@ function resolveInitialDeadlineDue(definition: CanonicalScenario, id: string, ba
 }
 
 function createTimingState(definition: CanonicalScenario, due: Record<string, number>): CanonicalRuntimeState {
-  return { schema: "canonical-runtime-v1", caseId: "", sourceFingerprint: "", seed: 0, stageId: definition.initial_stage, clockMinutes: 0, flags: {}, numericMetrics: {}, resources: {}, factStatuses: {}, availableEvidence: [], deadlineStatuses: {}, deadlineDueMinutes: due, taskStatuses: {}, taskDueMinutes: {}, visibleInbox: [], resolvedInbox: [], actionUses: {}, firedEvents: [], decisionResolutions: {}, judicialResult: null, outcomeId: null };
+  return { schema: CANONICAL_RUNTIME_REVISION, caseId: "", sourceFingerprint: "", seed: 0, stageId: definition.initial_stage, clockMinutes: 0, flags: {}, numericMetrics: {}, resources: {}, factStatuses: {}, availableEvidence: [], deadlineStatuses: {}, deadlineDueMinutes: due, taskStatuses: {}, taskDueMinutes: {}, visibleInbox: [], resolvedInbox: [], actionUses: {}, firedEvents: [], decisionResolutions: {}, judicialResult: null, outcomeId: null };
 }
 
 function presentationMetrics(state: CanonicalRuntimeState) {

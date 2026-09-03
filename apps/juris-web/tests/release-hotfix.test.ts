@@ -8,11 +8,21 @@ import { resolvePlayedCaseScenario } from "../app/played-case-loader";
 import { scenarios } from "../app/scenarios";
 import {
   deviceDraftEnvelope,
+  isStudioDeviceScope,
+  mayPersistReportReceiptOnDevice,
   mayPersistStudioDraftOnDevice,
   studioDeviceDraftKey,
   studioDeviceScope,
   unwrapDeviceDraft,
 } from "../app/studio-device-storage";
+import {
+  legacyReportReceiptStorageKey,
+  readStoredReportReceipt,
+  reportReceiptStorageKey,
+  writeStoredReportReceipt,
+  type ReportReceiptDeviceStorage,
+  type ReportReceiptV2,
+} from "../app/report-model";
 import type { StudioDraft } from "../app/types";
 
 const localDraft: StudioDraft = {
@@ -69,6 +79,84 @@ test("only local, unprotected and non-private Studio drafts may use device stora
     },
   };
   assert.equal(mayPersistStudioDraftOnDevice({ canDuplicate: true, customCaseId: null, isPrivate: false, draft: protectedDraft }), false);
+});
+
+test("report receipts require a verified account scope and a local unrestricted case", () => {
+  const scope = "a".repeat(64);
+  const eligible = { scope, canDuplicate: true, customCaseId: null, isPrivate: false, draft: localDraft };
+  assert.equal(isStudioDeviceScope(scope), true);
+  assert.equal(isStudioDeviceScope("anonymous"), false);
+  assert.equal(mayPersistReportReceiptOnDevice(eligible), true);
+  assert.equal(mayPersistReportReceiptOnDevice({ ...eligible, scope: null }), false, "anonymous receipts are memory-only");
+  assert.equal(mayPersistReportReceiptOnDevice({ ...eligible, isPrivate: true }), false, "private receipts are memory-only");
+  assert.equal(mayPersistReportReceiptOnDevice({ ...eligible, canDuplicate: false }), false, "inspection-only receipts are memory-only");
+  assert.equal(mayPersistReportReceiptOnDevice({ ...eligible, customCaseId: 7 }), false, "workspace receipts are memory-only");
+  assert.equal(mayPersistReportReceiptOnDevice({
+    ...eligible,
+    draft: {
+      ...localDraft,
+      protection: {
+        kind: "case-protection-v1",
+        copyProtected: true,
+        copyPolicy: "lineage_locked",
+        parentCode: null,
+        currentCode: "protected-code",
+        seal: "protected-seal",
+      },
+    },
+  }), false, "protected receipts are memory-only");
+});
+
+test("report receipt storage isolates accounts and removes unscoped legacy entries", () => {
+  const entries = new Map<string, string>();
+  const storage: ReportReceiptDeviceStorage = {
+    getItem: (key) => entries.get(key) ?? null,
+    setItem: (key, value) => { entries.set(key, value); },
+    removeItem: (key) => { entries.delete(key); },
+  };
+  const scopeA = "a".repeat(64);
+  const scopeB = "b".repeat(64);
+  const profileId = "legal_advisory";
+  const receipt: ReportReceiptV2 = {
+    receiptSchemaVersion: 2,
+    caseId: localDraft.caseId,
+    caseVersion: localDraft.version,
+    profileId,
+    rendererVersion: "1.0.0",
+    caseFingerprint: `sha256-${"1".repeat(64)}`,
+    reportFingerprint: `sha256-${"2".repeat(64)}`,
+    generatedAt: "2026-09-01T12:00:00.000Z",
+    status: "draft",
+    audience: "internal",
+    layoutSchemaVersion: 1,
+    layoutAlgorithmVersion: "test-layout",
+    layoutRendererVersion: "test-renderer",
+    layoutFingerprint: `sha256-${"3".repeat(64)}`,
+    presentationFingerprint: `sha256-${"4".repeat(64)}`,
+  };
+  const legacyKey = legacyReportReceiptStorageKey(localDraft.caseId, profileId);
+  const contextA = { scope: scopeA, eligible: true, caseId: localDraft.caseId, profileId };
+  const contextB = { scope: scopeB, eligible: true, caseId: localDraft.caseId, profileId };
+
+  entries.set(legacyKey, JSON.stringify(receipt));
+  assert.equal(readStoredReportReceipt(storage, contextA), null, "legacy unscoped receipts are ignored");
+  assert.equal(entries.has(legacyKey), false, "legacy unscoped receipts are removed");
+  assert.equal(writeStoredReportReceipt(storage, contextA, receipt), true);
+  assert.deepEqual(readStoredReportReceipt(storage, contextA), receipt);
+  assert.equal(readStoredReportReceipt(storage, contextB), null, "account B cannot read account A's receipt");
+  assert.equal(entries.has(reportReceiptStorageKey(scopeA, localDraft.caseId, profileId)), true);
+
+  entries.set(legacyKey, JSON.stringify(receipt));
+  assert.equal(writeStoredReportReceipt(storage, contextB, receipt), true);
+  assert.equal(entries.has(legacyKey), false, "writes also remove the legacy unscoped key");
+  assert.equal(entries.has(reportReceiptStorageKey(scopeB, localDraft.caseId, profileId)), true);
+  assert.throws(() => reportReceiptStorageKey("owner@example.com", localDraft.caseId, profileId), /scope/i);
+
+  assert.equal(readStoredReportReceipt(storage, { ...contextA, eligible: false }), null);
+  assert.equal(entries.has(reportReceiptStorageKey(scopeA, localDraft.caseId, profileId)), false, "ineligible scoped entries are removed");
+  entries.set(legacyKey, JSON.stringify(receipt));
+  assert.equal(writeStoredReportReceipt(storage, { ...contextA, scope: null }, receipt), false);
+  assert.equal(entries.has(legacyKey), false, "anonymous access still removes the legacy key");
 });
 
 test("catalogue pointers resolve to integrity-checked current and legacy manifests", () => {
@@ -150,6 +238,28 @@ test("played-case loading preserves legacy exports without bypassing server deni
   ), /validation/i);
 });
 
+test("an unavailable historical revision never falls through to the current bundle", async () => {
+  const current = scenarios[0];
+  const unavailableHistoricalIdentity = {
+    id: current.id,
+    caseId: current.caseId,
+    contentVersion: "0.0.1",
+    fingerprint: `sha256-${"f".repeat(64)}`,
+  };
+
+  await assert.rejects(() => resolvePlayedCaseScenario(
+    unavailableHistoricalIdentity,
+    [current],
+    async () => Response.json({ error: "temporarily unavailable" }, { status: 503 }),
+  ), /unavailable/i);
+
+  await assert.rejects(() => resolvePlayedCaseScenario(
+    { ...unavailableHistoricalIdentity, contentVersion: current.version },
+    [current],
+    async () => { throw new Error("offline"); },
+  ), /unavailable/i, "a tampered fingerprint must not select the current bundled scenario");
+});
+
 test("leaving a restricted Studio context cannot carry snapshots or history into a local draft", () => {
   const source = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   const enterNewLocalDraft = source.slice(source.indexOf("function enterNewLocalDraft"), source.indexOf("function updateStudioDraft"));
@@ -197,6 +307,38 @@ test("late identity and catalogue responses cannot overwrite newer user intent",
   assert.match(source, /catalogueLaunchRef\.current = launchRequestVersion/);
   assert.ok((source.match(/launchRequestVersion !== catalogueLaunchRef\.current/g) ?? []).length >= 2);
   assert.match(source, /launchRequestVersion === catalogueLaunchRef\.current\) setCatalogueLoading\(false\)/);
+});
+
+test("Studio opens in Office and the English demo keeps one Five Flats case without subtitles", () => {
+  const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
+  const demoPage = readFileSync(new URL("../app/help/studio-demo/page.tsx", import.meta.url), "utf8");
+  const demoBuilder = readFileSync(new URL("../scripts/build-studio-demo-video.sh", import.meta.url), "utf8");
+
+  assert.match(appSource, /useState<Theme>\("office"\)/);
+  assert.match(demoPage, /English narration · No subtitles · Studio only/);
+  assert.doesNotMatch(demoPage, /<track|\.vtt|Burned-in English captions/);
+  assert.match(demoBuilder, /voice=slt/);
+  assert.match(demoBuilder, /studio-ai-guided-demo\.en\.mp4/);
+  assert.match(demoBuilder, /Every following screen uses this exact Five Flats case/);
+  assert.doesNotMatch(demoBuilder, /case-studio-iterative-editing\.mp4|The Missing Boundary|renewable-energy|Three Borders/);
+});
+
+test("standalone Studio exposes persistent professional destinations", () => {
+  const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
+  assert.match(appSource, /href="\/account"/);
+  assert.match(appSource, />Account<\/span>/);
+  assert.match(appSource, /href="\/matters"/);
+  assert.match(appSource, /"My cases" : "Мои дела"/);
+  assert.match(appSource, /"Templates" : "Шаблоны"/);
+  assert.match(appSource, /sessionStorage\.getItem\(PENDING_CASE_PROMPT_KEY\)/);
+  assert.match(appSource, /ADVISORY · BETA v0\.1\.0/);
+});
+
+test("account navigation exposes My cases, Templates, Studio, and Account", () => {
+  const accountSource = readFileSync(new URL("../app/account/AccountClient.tsx", import.meta.url), "utf8");
+  for (const destination of ["/matters", "/?view=library", "/studio", "/account"]) assert.match(accountSource, new RegExp(`href=\\"${destination.replace(/[?]/g, "\\?")}\\"`));
+  assert.match(accountSource, />My cases<\/Link>/);
+  assert.match(accountSource, />Templates<\/Link>/);
 });
 
 function contrastRatio(foreground: string, background: string) {

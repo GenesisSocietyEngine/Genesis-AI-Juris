@@ -2,6 +2,7 @@ import { and, desc, eq, exists, getTableColumns, inArray, lt, or, sql } from "dr
 import { getDb } from "../../../db";
 import { auditEvents, caseDrafts, caseFeedback, customCaseGrants, customCases, users } from "../../../db/schema";
 import { normalizeStoredCaseProtection, verifyCaseProtection } from "../../case-protection";
+import { caseFingerprint, casePublicationFingerprint, legacyCaseFingerprintV15, normalizeStudioDraft } from "../../case-integrity";
 import { canShareCustomCase, canViewCustomCase, normalizeEmail, normalizeLicenseTier } from "../../custom-case-access";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { isSameOriginMutation, readJsonObject } from "../../request-security";
@@ -31,6 +32,18 @@ export async function GET(request: Request) {
     }
     const [draft] = await db.select().from(caseDrafts).where(and(eq(caseDrafts.customCaseId, record.id), eq(caseDrafts.version, record.currentVersion), eq(caseDrafts.fingerprint, record.fingerprint))).orderBy(desc(caseDrafts.updatedAt)).limit(1);
     if (!draft) return privateJson({ error: "Custom case version not found." }, 404);
+    let publicationFingerprint: string;
+    try {
+      const storedDraft = normalizeStudioDraft(draft.payload);
+      const currentFingerprint = caseFingerprint(storedDraft);
+      const legacyFingerprint = legacyCaseFingerprintV15(storedDraft);
+      if (draft.fingerprint !== record.fingerprint || (record.fingerprint !== currentFingerprint && record.fingerprint !== legacyFingerprint)) {
+        return privateJson({ error: "Custom case publication binding failed integrity verification." }, 409);
+      }
+      publicationFingerprint = casePublicationFingerprint(storedDraft);
+    } catch {
+      return privateJson({ error: "Custom case publication binding failed integrity verification." }, 409);
+    }
     let protection: CaseProtectionV1 | null;
     try {
       protection = normalizeStoredCaseProtection(draft.payload.protection);
@@ -60,7 +73,7 @@ export async function GET(request: Request) {
       ? await db.select({ id: caseFeedback.id, category: caseFeedback.category, rating: caseFeedback.rating, comment: caseFeedback.comment, severity: caseFeedback.severity, suggestedCorrection: caseFeedback.suggestedCorrection, citationUrl: caseFeedback.citationUrl, contextType: caseFeedback.contextType, contextId: caseFeedback.contextId, audience: caseFeedback.audience, status: caseFeedback.status, createdAt: caseFeedback.createdAt }).from(caseFeedback).where(eq(caseFeedback.customCaseId, record.id)).orderBy(desc(caseFeedback.createdAt)).limit(50)
       : [];
     return privateJson({
-      customCase: { ...summarize(record, email, admin, viewerGrant, licenseTier, shares.length, protection?.copyProtected === true), protection },
+      customCase: { ...summarize(record, email, admin, viewerGrant, licenseTier, shares.length, protection?.copyProtected === true), publicationFingerprint, protection },
       draft: protection ? { ...draft.payload, protection } : draft.payload,
       shares,
       feedback,

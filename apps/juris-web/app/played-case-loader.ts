@@ -10,16 +10,63 @@ export type PlayedScenarioIdentity = {
   fingerprint: unknown;
 };
 
-type ManifestFetch = (url: string) => Promise<Response>;
+type ManifestFetch = (url: string, init?: RequestInit) => Promise<Response>;
 
-export async function resolvePlayedCaseScenario(identityValue: PlayedScenarioIdentity, cached: Scenario[], fetchManifest: ManifestFetch = (url) => fetch(url)) {
+type PlayedCaseServerSessionIdentity = {
+  sessionKey: string;
+  caseId: string;
+  version: string;
+  fingerprint: string;
+  status: string;
+  revision: number;
+};
+
+type PlayedCaseScenarioIdentity = Pick<Scenario, "caseId" | "version" | "fingerprint">;
+
+export function requirePlayedCaseServerSession<T extends PlayedCaseServerSessionIdentity>(
+  responseOk: boolean,
+  session: T | null,
+  scenario: PlayedCaseScenarioIdentity,
+  expectedSessionKey: string,
+  expectedRevision: number,
+): T {
+  if (!responseOk || !session || (session.status !== "active" && session.status !== "completed")
+    || session.sessionKey !== expectedSessionKey
+    || session.caseId !== scenario.caseId
+    || session.version !== scenario.version
+    || session.fingerprint !== scenario.fingerprint) {
+    throw new Error("Canonical server session is unavailable");
+  }
+  if (session.revision !== expectedRevision) {
+    throw new Error("Canonical server session has changed since this file was exported");
+  }
+  return session;
+}
+
+export function commitPlayedCaseServerSession<T extends PlayedCaseServerSessionIdentity>(
+  responseOk: boolean,
+  session: T | null,
+  scenario: PlayedCaseScenarioIdentity,
+  expectedSessionKey: string,
+  expectedRevision: number,
+  commit: (exactSession: T) => void,
+): T {
+  const exactSession = requirePlayedCaseServerSession(responseOk, session, scenario, expectedSessionKey, expectedRevision);
+  commit(exactSession);
+  return exactSession;
+}
+
+export async function resolvePlayedCaseScenario(identityValue: PlayedScenarioIdentity, cached: Scenario[], fetchManifest: ManifestFetch = (url, init) => fetch(url, init)) {
   const identity = playedScenarioIdentity(identityValue);
   const cachedScenario = cached.find((scenario) => matchesPlayedIdentity(scenario, identity));
   if (cachedScenario) return { scenario: cachedScenario, legacyTiming: await isLegacyScenario(cachedScenario) };
 
   let responseStatus: number | null = null;
   try {
-    const response = await fetchManifest(`/api/catalog/${encodeURIComponent(identity.caseId)}?version=${encodeURIComponent(identity.contentVersion)}`);
+    const response = await fetchManifest(
+      `/api/catalog/${encodeURIComponent(identity.caseId)}?version=${encodeURIComponent(identity.contentVersion)}`,
+      { headers: { "X-GENESIS-Expected-Fingerprint": identity.fingerprint } },
+    );
     responseStatus = response.status;
     if (!response.ok) throw new Error("Published played-case version is unavailable");
     const historical: unknown = await response.json().catch(() => null);

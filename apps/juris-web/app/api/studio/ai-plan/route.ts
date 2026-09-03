@@ -3,10 +3,11 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { users } from "../../../../db/schema";
 import { getChatGPTUser } from "../../../chatgpt-auth";
-import { consumeAuthRateLimit, writeAuthAudit } from "../../../local-auth";
+import { checkSuccessfulAuthEventLimit, consumeAuthRateLimit, writeAuthAudit } from "../../../local-auth";
 import { isSameOriginCredentialMutation, readJsonObject } from "../../../request-security";
 import { acquireStudioAILease, releaseStudioAILease } from "../../../studio-ai-capacity";
 import { STUDIO_AI_PROVIDER_CONTEXT_LIMIT, studioAIProviderContextBytes } from "../../../studio-ai-provider-context";
+import { STUDIO_PROMPT_CHARACTER_LIMIT } from "../../../studio-prompt-limit";
 import { STUDIO_CASE_BODY_LIMIT } from "../../../studio-envelope";
 import { normalizeStudioAIContext, studioAIBaseFingerprint, type StudioAIContext } from "../../../studio-ai-plan";
 import { createAIStudioPlan, StudioAIServiceError, studioAIAvailable } from "../../../studio-ai-server";
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
   const selectedNodeId = payload?.selectedNodeId === null || payload?.selectedNodeId === undefined
     ? null
     : typeof payload.selectedNodeId === "string" && /^[a-z0-9][a-z0-9_-]{0,79}$/.test(payload.selectedNodeId) ? payload.selectedNodeId : undefined;
-  if (!payload || !instruction || instruction.length > 8_000 || !locale || selectedNodeId === undefined) return privateJson({ error: "A valid Studio prompt and graph context are required.", code: "invalid_request" }, 400);
+  if (!payload || !instruction || instruction.length > STUDIO_PROMPT_CHARACTER_LIMIT || !locale || selectedNodeId === undefined) return privateJson({ error: "A valid Studio prompt and graph context are required.", code: "invalid_request" }, 400);
 
   let draft;
   let baseFingerprint;
@@ -53,8 +54,9 @@ export async function POST(request: Request) {
     waitUntil(writeAuthAudit({ eventType: "studio_ai_plan", emailSubjectHash: burstLimit.emailSubjectHash, networkSubjectHash: burstLimit.networkSubjectHash, success: false, reason: "burst_rate_limited" }).catch(() => undefined));
     return privateJson({ error: "AI is receiving too many requests. Wait one minute or use the local builder.", code: "burst_rate_limited" }, 429, { "Retry-After": "60" });
   }
-  const limit = await consumeAuthRateLimit(request, "studio-ai-plan", identity.email.toLowerCase(), { emailLimit: tierLimit, networkLimit: 1_000, windowSeconds: 60 * 60 });
-  if (!limit.allowed) {
+  const limit = { emailSubjectHash: burstLimit.emailSubjectHash, networkSubjectHash: burstLimit.networkSubjectHash };
+  const successfulUsage = await checkSuccessfulAuthEventLimit("studio_ai_plan", limit.emailSubjectHash, { limit: tierLimit, windowSeconds: 60 * 60 });
+  if (!successfulUsage.allowed) {
     waitUntil(writeAuthAudit({ eventType: "studio_ai_plan", emailSubjectHash: limit.emailSubjectHash, networkSubjectHash: limit.networkSubjectHash, success: false, reason: "rate_limited" }).catch(() => undefined));
     return privateJson({ error: "AI planning limit reached. Use the local builder or try later.", code: "rate_limited" }, 429, { "Retry-After": "3600" });
   }
@@ -96,22 +98,55 @@ export async function POST(request: Request) {
     return privateJson({ ...result, baseFingerprint });
   } catch (error) {
     const reason = error instanceof StudioAIServiceError ? error.code : "provider_unavailable";
+    const providerFailure = error instanceof StudioAIServiceError ? error.providerFailure : null;
+    const usage = error instanceof StudioAIServiceError ? error.usage : null;
     waitUntil(writeAuthAudit({
       eventType: "studio_ai_plan",
       emailSubjectHash: limit.emailSubjectHash,
       networkSubjectHash: limit.networkSubjectHash,
       success: false,
       reason,
-      detail: { latencyMs: Date.now() - providerStartedAt, contextBytes: providerContextBytes },
+      detail: {
+        latencyMs: Date.now() - providerStartedAt,
+        contextBytes: providerContextBytes,
+        providerStatus: providerFailure?.status ?? null,
+        providerCode: providerFailure?.providerCode ?? null,
+        providerType: providerFailure?.providerType ?? null,
+        providerParam: providerFailure?.providerParam ?? null,
+        incompleteReason: error instanceof StudioAIServiceError ? error.incompleteReason : null,
+        invalidStage: error instanceof StudioAIServiceError ? error.invalidStage : null,
+        inputTokens: usage?.inputTokens ?? null,
+        cachedInputTokens: usage?.cachedInputTokens ?? null,
+        outputTokens: usage?.outputTokens ?? null,
+        reasoningOutputTokens: usage?.reasoningOutputTokens ?? null,
+        totalTokens: usage?.totalTokens ?? null,
+      },
     }).catch(() => undefined));
     const refused = reason === "refused";
+    const providerError = studioAIProviderError(reason);
     return privateJson({
-      error: refused ? "The source could not be converted into a safe graph plan." : "AI planning is temporarily unavailable. No graph changes were made.",
+      error: refused ? "The source could not be converted into a safe graph plan." : providerError.message,
       code: reason,
-    }, refused ? 422 : 502);
+    }, refused ? 422 : providerError.status, providerFailure?.retryAfterSeconds ? { "Retry-After": String(providerFailure.retryAfterSeconds) } : {});
   } finally {
     waitUntil(releaseStudioAILease(lease.id).catch(() => undefined));
   }
+}
+
+function studioAIProviderError(reason: string) {
+  const errors: Record<string, { message: string; status: number }> = {
+    provider_authentication: { message: "The configured OpenAI API key was rejected. Replace it with an active project API key.", status: 502 },
+    provider_permission: { message: "The OpenAI project key cannot use the configured model or Responses API. Update the key permissions or project access.", status: 502 },
+    provider_quota: { message: "The OpenAI API project has no usable credit or has reached a spend or usage limit. Update API billing or limits, then retry.", status: 503 },
+    provider_rate_limited: { message: "The OpenAI API rate limit was reached. Wait for the indicated interval, then retry.", status: 429 },
+    provider_model_unavailable: { message: "The configured OpenAI model is not available to this API project. Choose a model enabled for the project.", status: 502 },
+    provider_bad_request: { message: "The OpenAI API rejected both the structured planner request and its safe JSON compatibility fallback.", status: 502 },
+    provider_rejected: { message: "The OpenAI API rejected the planner request. Check the project key, model access and API limits.", status: 502 },
+    provider_unavailable: { message: "The OpenAI API could not be reached or returned a temporary server error. No graph changes were made.", status: 502 },
+    invalid_output: { message: "AI returned a plan that did not pass the graph safety validation. No graph changes were made.", status: 502 },
+    incomplete: { message: "AI did not finish the plan. No graph changes were made.", status: 502 },
+  };
+  return errors[reason] ?? errors.provider_unavailable;
 }
 
 function aiDailyRequestLimit() {

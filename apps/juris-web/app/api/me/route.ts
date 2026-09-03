@@ -1,6 +1,6 @@
 import { eq, inArray, or } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { auditEvents, authAuditEvents, authRateLimitEvents, caseDrafts, caseFeedback, caseSubscriptions, customCaseGrants, customCases, localAccounts, playSessions, updateReads, users } from "../../../db/schema";
+import { auditEvents, authAuditEvents, authRateLimitEvents, caseDrafts, caseFeedback, caseSubscriptions, customCaseGrants, customCases, dossierParticipants, dossiers, localAccounts, playSessions, updateReads, users } from "../../../db/schema";
 import { clearSessionCookie } from "../../auth-crypto";
 import { authJson } from "../../auth-http";
 import { getChatGPTUser } from "../../chatgpt-auth";
@@ -95,6 +95,17 @@ export async function DELETE(request: Request) {
   if (!identity) return authJson({ error: "Sign in is required." }, 401, clearSessionCookie());
   const email = identity.email.toLowerCase();
   const db = getDb();
+  const [storedUser] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+  if (storedUser) {
+    const [ownedDossier] = await db.select({ id: dossiers.id }).from(dossiers).where(eq(dossiers.ownerUserId, storedUser.id)).limit(1);
+    const [dossierParticipation] = await db.select({ id: dossierParticipants.id }).from(dossierParticipants).where(eq(dossierParticipants.userId, storedUser.id)).limit(1);
+    if (ownedDossier || dossierParticipation) {
+      return authJson({
+        error: "Account deletion is blocked while governed dossier responsibilities remain.",
+        code: "dossier_transfer_required",
+      }, 409);
+    }
+  }
   const [localAccount] = await db.select({ id: localAccounts.id }).from(localAccounts).where(eq(localAccounts.userEmail, email)).limit(1);
   const emailSubjectHash = await authSubjectHash(`email:${email}`);
   const ownedCustomCases = await db.select({ id: customCases.id }).from(customCases).where(eq(customCases.ownerEmail, email));

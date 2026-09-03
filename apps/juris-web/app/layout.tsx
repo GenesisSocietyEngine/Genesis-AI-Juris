@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import StaleChunkRecovery from "./StaleChunkRecovery";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://genesis-juris-web.maxim-hayan.chatgpt.site"),
@@ -17,10 +18,10 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og.png",
+        url: "/og-v62.png",
         width: 1200,
         height: 630,
-        alt: "GENESIS: JURIS — Cases, Evidence, Consequences",
+        alt: "GENESIS: JURIS decision-centric dossier workspace",
       },
     ],
   },
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "GENESIS: JURIS",
     description: "Cases. Evidence. Consequences.",
-    images: ["/og.png"],
+    images: ["/og-v62.png"],
   },
 };
 
@@ -39,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased" data-genesis-juris-release="v62"><StaleChunkRecovery/>{children}</body>
     </html>
   );
 }

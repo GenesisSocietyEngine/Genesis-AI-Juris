@@ -1,5 +1,53 @@
 export type MetricKey = "position" | "evidence" | "trust" | "exposure";
 
+export type CaseWorkflowMode = "adaptive" | "process" | "decision" | "simulation" | "hybrid";
+
+export type CaseTypeId =
+  | "general_advisory"
+  | "litigation_strategy"
+  | "contract_review"
+  | "tax_planning"
+  | "compliance"
+  | "tax_compliance"
+  | "erp_incident"
+  | "investigation"
+  | "training_simulation";
+
+export type CaseTypeReference = {
+  registry: "genesis-juris-case-types";
+  id: CaseTypeId;
+  version: string;
+};
+
+export type CaseCoreV2 = {
+  schemaVersion: 2;
+  caseType: CaseTypeReference;
+  identity: {
+    caseId: string;
+    version: string;
+    parent: StudioDraft["parent"];
+  };
+  matter: {
+    title: string;
+    summary: string;
+    professionalRole: string;
+  };
+  jurisdiction: {
+    label: string;
+    legalAsOf?: string;
+  };
+  participants: Array<{ id: string; type: "actor" | "entity"; title: string; detail: string }>;
+  facts: Array<{ id: string; statement: string; status: "asserted" | "assumed" }>;
+  evidence: Array<{ id: string; title: string; detail: string }>;
+  issues: Array<{ id: string; title: string; detail: string }>;
+  deadlines: Array<{ id: string; title: string; detail: string; day?: number; time?: string }>;
+  outcomes: Array<{ id: string; title: string; detail: string; classification?: "strong" | "mixed" | "weak" }>;
+  provenance: {
+    updatedAt: string;
+    editCount: number;
+  };
+};
+
 export type RuleComparison = "gte" | "lte" | "eq";
 
 export type MetricGuard = {
@@ -217,6 +265,11 @@ export type TaxEconomicsV1 = {
   kind: "tax-economics-v1";
   /** ISO 4217 presentation currency for every monetary input below. */
   currency: string;
+  /** Enter annual cash-tax amounts directly, or derive them from a tax base and rates. */
+  taxInputBasis: "amounts" | "rates";
+  annualTaxBase: number;
+  baselineTaxRateBps: number;
+  optimizedTaxRateBps: number;
   baselineAnnualTaxCost: number;
   optimizedAnnualTaxCost: number;
   implementationCost: number;
@@ -226,6 +279,41 @@ export type TaxEconomicsV1 = {
   annualDiscountRateBps: number;
   benefitRealizationBps: number;
   assumptions: string;
+  /** Latest ECB reference-rate conversion applied to the monetary inputs. */
+  fx?: {
+    provider: "ECB";
+    sourceCurrency: string;
+    targetCurrency: string;
+    rate: number;
+    asOf: string;
+  };
+};
+
+export type DealEconomicsV1 = {
+  kind: "deal-economics-v1";
+  currency: string;
+  purchasePrice: number | null;
+  loanToValueBps: number | null;
+  annualInterestRateBps: number | null;
+  termMonths: number | null;
+  repaymentBasis: "amortizing" | "interest_only" | "unknown";
+  grossAnnualIncome: number | null;
+  annualOperatingCosts: number | null;
+  oneOffStructureCost: number | null;
+  annualStructureCost: number | null;
+  otherInitialCosts: number | null;
+  targetAnnualReturnBps: number | null;
+  scenarioProbabilities: {
+    /** Weight of the interest-only branch when repaymentBasis is unknown. */
+    interestOnlyBps: number;
+    /** Light vacancy / operating-cost stress (10% of gross rent). */
+    favorableBps: number;
+    /** Base vacancy / operating-cost stress (20% of gross rent). */
+    baseBps: number;
+    /** Low-occupancy / high-cost stress (30% of gross rent). */
+    stressedBps: number;
+  };
+  assumptions: string[];
 };
 
 /**
@@ -244,6 +332,8 @@ export type CaseProtectionV1 = {
 export type StudioDraft = {
   caseId: string;
   version: string;
+  /** Exact immutable case-type package. Legacy drafts omit it and resolve to general_advisory@1.0.0. */
+  caseType?: CaseTypeReference;
   parent: {
     caseId: string;
     version: string;
@@ -254,6 +344,8 @@ export type StudioDraft = {
   jurisdiction: string;
   role: string;
   premise: string;
+  /** Only author-reviewed premise text may enter reports or catalogue publication. Missing legacy provenance fails closed. */
+  premisePublication?: "prompt-derived" | "author-reviewed";
   classification?: {
     domain?: "general" | "tax";
     practiceArea: string;
@@ -266,6 +358,7 @@ export type StudioDraft = {
     sourceUrls?: string[];
   };
   taxEconomics?: TaxEconomicsV1;
+  dealEconomics?: DealEconomicsV1;
   nodes: StudioNode[];
   links: StudioLink[];
   editHistory: StudioEditEntry[];

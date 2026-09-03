@@ -2,7 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { auditEvents, caseDrafts, caseVersions, customCaseGrants, customCases, users } from "../../../db/schema";
 import { buildCaseProtection, requestedCopyProtection, verifyCaseProtection } from "../../case-protection";
-import { caseFingerprint, normalizeStudioDraft, studioStructuralIssues } from "../../case-integrity";
+import { caseFingerprint, casePremiseReviewState, casePublicationFingerprint, normalizeStudioDraft, studioStructuralIssues } from "../../case-integrity";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { canViewCustomCase, normalizeEmail } from "../../custom-case-access";
 import { isSameOriginMutation, readJsonObject } from "../../request-security";
@@ -47,8 +47,13 @@ export async function POST(request: Request) {
   let draft;
   try { draft = normalizeStudioDraft(payload.draft); } catch { return privateJson({ error: "The Studio draft failed integrity validation." }, 400); }
   const structuralIssues = studioStructuralIssues(draft);
+  if (payload.action === "submit" && (draft.premisePublication !== "author-reviewed" || !draft.premise.trim())) {
+    return privateJson({ error: "Review and edit the publishable case context before submission.", issues: ["premise_author_review_required"] }, 422);
+  }
   if (payload.action === "submit" && structuralIssues.length) return privateJson({ error: "Resolve the Studio integrity checks before submission.", issues: structuralIssues }, 422);
   const fingerprint = caseFingerprint(draft);
+  const publicationFingerprint = casePublicationFingerprint(draft);
+  const premiseReviewState = casePremiseReviewState(draft);
   const [existingCustom] = await db.select().from(customCases).where(and(eq(customCases.ownerEmail, email), eq(customCases.caseId, draft.caseId))).limit(1);
   // Once a workspace envelope exists, visibility changes only through the
   // dedicated privacy action. A stale save from another tab cannot un-private it.
@@ -59,6 +64,7 @@ export async function POST(request: Request) {
     customCaseId: caseDrafts.customCaseId,
     status: caseDrafts.status,
     fingerprint: caseDrafts.fingerprint,
+    payload: caseDrafts.payload,
     updatedAt: caseDrafts.updatedAt,
   }).from(caseDrafts).where(and(
     eq(caseDrafts.userEmail, email), eq(caseDrafts.caseId, draft.caseId), eq(caseDrafts.version, draft.version),
@@ -68,23 +74,52 @@ export async function POST(request: Request) {
 
   const expectedFingerprint = requestFingerprint(payload.expectedFingerprint);
   const baseFingerprint = requestFingerprint(payload.baseFingerprint);
-  if ((payload.expectedFingerprint !== undefined && !expectedFingerprint) || (payload.baseFingerprint !== undefined && !baseFingerprint)) {
+  const expectedPublicationFingerprint = requestFingerprint(payload.expectedPublicationFingerprint);
+  const basePublicationFingerprint = requestFingerprint(payload.basePublicationFingerprint);
+  if ((payload.expectedFingerprint !== undefined && !expectedFingerprint)
+    || (payload.baseFingerprint !== undefined && !baseFingerprint)
+    || (payload.expectedPublicationFingerprint !== undefined && !expectedPublicationFingerprint)
+    || (payload.basePublicationFingerprint !== undefined && !basePublicationFingerprint)) {
     return privateJson({ error: "Draft concurrency fingerprints must use the sha256 content-fingerprint format." }, 400);
+  }
+
+  const [currentEnvelopeDraft] = existingCustom ? await db.select({
+    id: caseDrafts.id,
+    fingerprint: caseDrafts.fingerprint,
+    payload: caseDrafts.payload,
+  }).from(caseDrafts).where(and(
+    eq(caseDrafts.customCaseId, existingCustom.id),
+    eq(caseDrafts.caseId, existingCustom.caseId),
+    eq(caseDrafts.version, existingCustom.currentVersion),
+    eq(caseDrafts.fingerprint, existingCustom.fingerprint),
+  )).limit(1) : [];
+  const currentPublicationBinding = currentEnvelopeDraft ? storedPublicationBinding(currentEnvelopeDraft.payload) : null;
+  if (existingCustom && (!currentEnvelopeDraft || !currentPublicationBinding || currentPublicationBinding.caseFingerprint !== existingCustom.fingerprint)) {
+    return staleDraft(existingCustom, existing, "The workspace publication-safety binding is unavailable. Reopen the exact current version.");
   }
 
   if (existingCustom) {
     const exactCurrentVersion = existingCustom.currentVersion === draft.version;
     if (exactCurrentVersion) {
-      if (!existing || existing.customCaseId !== existingCustom.id || !expectedFingerprint) {
+      if (!existing || existing.customCaseId !== existingCustom.id || !expectedFingerprint || !expectedPublicationFingerprint) {
         return staleDraft(existingCustom, existing, "Reopen this case before overwriting its current version.");
       }
-      if (expectedFingerprint !== existing.fingerprint || (baseFingerprint && baseFingerprint !== existingCustom.fingerprint)) {
+      const existingPublicationBinding = storedPublicationBinding(existing.payload);
+      if (!existingPublicationBinding
+        || existingPublicationBinding.caseFingerprint !== existing.fingerprint
+        || expectedFingerprint !== existing.fingerprint
+        || expectedPublicationFingerprint !== existingPublicationBinding.publicationFingerprint
+        || expectedPublicationFingerprint !== currentPublicationBinding!.publicationFingerprint
+        || (baseFingerprint && baseFingerprint !== existingCustom.fingerprint)
+        || (basePublicationFingerprint && basePublicationFingerprint !== currentPublicationBinding!.publicationFingerprint)) {
         return staleDraft(existingCustom, existing);
       }
     } else {
       // A new version is a compare-and-swap against the workspace envelope.
       // Historical versions are never made current again by saving over them.
-      if (existing || !baseFingerprint || baseFingerprint !== existingCustom.fingerprint
+      if (existing || !baseFingerprint || !basePublicationFingerprint
+        || baseFingerprint !== existingCustom.fingerprint
+        || basePublicationFingerprint !== currentPublicationBinding!.publicationFingerprint
         || draft.parent?.caseId !== existingCustom.caseId
         || draft.parent.version !== existingCustom.currentVersion
         || draft.parent.fingerprint !== existingCustom.fingerprint) {
@@ -182,6 +217,7 @@ export async function POST(request: Request) {
 
   const now = new Date().toISOString();
   const status = payload.action === "submit" ? "submitted" : "draft";
+  const storedPremiseReview = sql<string>`case when json_extract(${caseDrafts.payload}, '$.premisePublication') = 'author-reviewed' then 'author-reviewed' else 'unreviewed' end`;
 
   const draftValues = {
     userEmail: email,
@@ -204,6 +240,7 @@ export async function POST(request: Request) {
       AND ${caseDrafts.version} = ${draft.version}
       AND ${caseDrafts.fingerprint} = ${fingerprint}
       AND ${caseDrafts.status} = ${status}
+      AND ${storedPremiseReview} = ${premiseReviewState}
       AND json_extract(${caseDrafts.payload}, '$.protection.currentCode') = ${protection.currentCode}
       AND ${customCases.ownerEmail} = ${email}
       AND ${customCases.caseId} = ${draft.caseId}
@@ -224,7 +261,9 @@ export async function POST(request: Request) {
       caseId: draft.caseId,
       version: draft.version,
       fingerprint,
+      publicationFingerprint,
       baseFingerprint: existingCustom?.fingerprint ?? null,
+      basePublicationFingerprint: currentPublicationBinding?.publicationFingerprint ?? null,
       isPrivate: requestedPrivate,
       copyProtected,
       protectionCode: protection.currentCode,
@@ -258,6 +297,7 @@ export async function POST(request: Request) {
       const protectionCompareAndSwap = currentArtifact?.protection
         ? sql`json_extract(${caseDrafts.payload}, '$.protection.currentCode') = ${currentArtifact.currentCode}`
         : sql`json_extract(${caseDrafts.payload}, '$.protection.currentCode') IS NULL`;
+      const publicationCompareAndSwap = sql`${storedPremiseReview} = ${currentPublicationBinding!.premiseReview}`;
       const currentEnvelopeExists = sql`EXISTS (
         SELECT 1 FROM ${customCases}
         WHERE ${customCases.id} = ${existingCustom.id}
@@ -272,6 +312,7 @@ export async function POST(request: Request) {
           AND ${caseDrafts.customCaseId} = ${existingCustom.id}
           AND ${caseDrafts.fingerprint} = ${fingerprint}
           AND ${caseDrafts.status} = ${status}
+          AND ${storedPremiseReview} = ${premiseReviewState}
           AND json_extract(${caseDrafts.payload}, '$.protection.currentCode') = ${protection.currentCode}
       )`;
       await db.batch([
@@ -283,7 +324,7 @@ export async function POST(request: Request) {
           status,
           ...(payload.action === "submit" ? { submittedAt: now } : {}),
           updatedAt: now,
-        }).where(and(eq(caseDrafts.id, existing.id), eq(caseDrafts.fingerprint, expected), eq(caseDrafts.status, existing.status), protectionCompareAndSwap, currentEnvelopeExists)),
+        }).where(and(eq(caseDrafts.id, existing.id), eq(caseDrafts.fingerprint, expected), eq(caseDrafts.status, existing.status), protectionCompareAndSwap, publicationCompareAndSwap, currentEnvelopeExists)),
         db.update(customCases).set({ title: draft.title, fingerprint, updatedAt: now }).where(and(
           eq(customCases.id, existingCustom.id),
           eq(customCases.ownerEmail, email),
@@ -295,6 +336,14 @@ export async function POST(request: Request) {
       ]);
     } else {
       const base = baseFingerprint!;
+      const parentPublicationStillCurrent = sql`EXISTS (
+        SELECT 1 FROM ${caseDrafts}
+        WHERE ${caseDrafts.customCaseId} = ${existingCustom.id}
+          AND ${caseDrafts.caseId} = ${existingCustom.caseId}
+          AND ${caseDrafts.version} = ${existingCustom.currentVersion}
+          AND ${caseDrafts.fingerprint} = ${base}
+          AND ${storedPremiseReview} = ${currentPublicationBinding!.premiseReview}
+      )`;
       const finalDraftExists = sql`EXISTS (
         SELECT 1 FROM ${caseDrafts}
         WHERE ${caseDrafts.customCaseId} = ${existingCustom.id}
@@ -303,6 +352,7 @@ export async function POST(request: Request) {
           AND ${caseDrafts.version} = ${draft.version}
           AND ${caseDrafts.fingerprint} = ${fingerprint}
           AND ${caseDrafts.status} = ${status}
+          AND ${storedPremiseReview} = ${premiseReviewState}
           AND json_extract(${caseDrafts.payload}, '$.protection.currentCode') = ${protection.currentCode}
       )`;
       await db.batch([
@@ -317,6 +367,7 @@ export async function POST(request: Request) {
           eq(customCases.ownerEmail, email),
           eq(customCases.currentVersion, existingCustom.currentVersion),
           eq(customCases.fingerprint, base),
+          parentPublicationStillCurrent,
           finalDraftExists,
         )),
         auditWrite,
@@ -349,28 +400,46 @@ export async function POST(request: Request) {
     fingerprint: caseDrafts.fingerprint,
     status: caseDrafts.status,
     updatedAt: caseDrafts.updatedAt,
+    payload: caseDrafts.payload,
     protectionCode: sql<string | null>`json_extract(${caseDrafts.payload}, '$.protection.currentCode')`,
   }).from(caseDrafts).where(and(
     eq(caseDrafts.userEmail, email), eq(caseDrafts.caseId, draft.caseId), eq(caseDrafts.version, draft.version), eq(caseDrafts.fingerprint, fingerprint), eq(caseDrafts.status, status),
   )).limit(1);
-  if (!customCase || !saved || saved.customCaseId !== customCase.id || saved.protectionCode !== protection.currentCode) return staleDraft(customCase ?? null, saved);
+  const savedPublicationBinding = saved ? storedPublicationBinding(saved.payload) : null;
+  if (!customCase || !saved || saved.customCaseId !== customCase.id || saved.protectionCode !== protection.currentCode
+    || !savedPublicationBinding || savedPublicationBinding.caseFingerprint !== saved.fingerprint
+    || savedPublicationBinding.publicationFingerprint !== publicationFingerprint) return staleDraft(customCase ?? null, saved);
   const savedResponse = {
     id: saved.id,
     customCaseId: saved.customCaseId,
     caseId: saved.caseId,
     version: saved.version,
     fingerprint: saved.fingerprint,
+    publicationFingerprint,
     status: saved.status,
     updatedAt: saved.updatedAt,
   };
   return privateJson({
     submission: { ...savedResponse, protection },
-    customCase: { ...customCase, caseId: draft.caseId, title: draft.title, copyProtected, protection },
+    customCase: { ...customCase, caseId: draft.caseId, title: draft.title, publicationFingerprint, copyProtected, protection },
   }, payload.action === "submit" ? 201 : 200);
 }
 
 function requestFingerprint(value: unknown) {
   return typeof value === "string" && /^sha256-[a-f0-9]{64}$/.test(value) ? value : null;
+}
+
+function storedPublicationBinding(value: unknown) {
+  try {
+    const storedDraft = normalizeStudioDraft(value);
+    return {
+      caseFingerprint: caseFingerprint(storedDraft),
+      publicationFingerprint: casePublicationFingerprint(storedDraft),
+      premiseReview: casePremiseReviewState(storedDraft),
+    };
+  } catch {
+    return null;
+  }
 }
 
 function sameParentLineage(artifact: StoredCaseArtifact, parent: { caseId: string; version: string; fingerprint: string } | null) {

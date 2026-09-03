@@ -25,7 +25,8 @@ export type StudioPromptOperation =
   | { kind: "delete_link"; linkId: string }
   | { kind: "append_context"; value: string }
   | { kind: "set_case_field"; field: "caseId" | "title" | "jurisdiction" | "role"; value: string }
-  | { kind: "set_classification"; change: Partial<NonNullable<StudioDraft["classification"]>> };
+  | { kind: "set_classification"; change: Partial<NonNullable<StudioDraft["classification"]>> }
+  | { kind: "set_deal_economics"; economics: NonNullable<StudioDraft["dealEconomics"]> };
 
 export type StudioPromptDiagnostic = {
   level: "info" | "error";
@@ -48,6 +49,7 @@ export type StudioPromptPlan = {
 export function toPublicStudioDraft(draft: StudioDraft): Omit<StudioDraft, "editHistory"> {
   const publicDraft: Partial<StudioDraft> = { ...draft };
   delete publicDraft.editHistory;
+  if (publicDraft.premisePublication !== "author-reviewed") publicDraft.premise = "";
   return publicDraft as Omit<StudioDraft, "editHistory">;
 }
 
@@ -63,8 +65,15 @@ export function nextStudioLinkId(links: StudioLink[]) {
   return `link-${sequence}`;
 }
 
-export function nextStudioNodePosition(nodes: StudioNode[], anchor?: StudioNode | null) {
-  const candidates = anchor
+export function nextStudioNodePosition(nodes: StudioNode[], anchor?: StudioNode | null, preferred?: { x: number; y: number } | null) {
+  const clamp = (value: number, minimum: number, maximum: number) => Math.min(maximum, Math.max(minimum, Math.round(value)));
+  const preferredOffsets = [
+    [0, 0], [0, 150], [0, -150], [220, 0], [-220, 0], [220, 150], [-220, 150], [220, -150], [-220, -150],
+    [0, 300], [0, -300], [440, 0], [-440, 0], [440, 150], [-440, 150], [440, -150], [-440, -150],
+  ];
+  const candidates = preferred
+    ? preferredOffsets.map(([offsetX, offsetY]) => ({ x: clamp(preferred.x + offsetX, 20, 5_000), y: clamp(preferred.y + offsetY, 20, 5_000) }))
+    : anchor
     ? Array.from({ length: 18 }, (_, index) => ({ x: Math.min(1_005, Math.max(20, anchor.x + 205 + (index % 3) * 22)), y: Math.min(470, Math.max(20, anchor.y + (Math.floor(index / 3) - 2) * 90)) }))
     : Array.from({ length: 30 }, (_, index) => ({ x: 55 + (index % 5) * 210, y: 55 + (Math.floor(index / 5) % 3) * 170 }));
   return candidates.find((candidate) => nodes.every((node) => Math.abs(node.x - candidate.x) > 150 || Math.abs(node.y - candidate.y) > 68))
@@ -291,6 +300,20 @@ export function describeStudioPromptOperation(operation: StudioPromptOperation, 
   if (operation.kind === "relink_link") return simple ? (en ? "Reconnect the selected relationship" : "Перепривязать выбранную связь") : (en ? `Relink ${operation.linkId}: ${operation.from} → ${operation.to}` : `Перепривязать ${operation.linkId}: ${operation.from} → ${operation.to}`);
   if (operation.kind === "delete_link") return simple ? (en ? "Delete the selected relationship" : "Удалить выбранную связь") : (en ? `Delete ${operation.linkId}` : `Удалить ${operation.linkId}`);
   if (operation.kind === "append_context") return `${en ? "Add to case context" : "Дополнить контекст кейса"}: ${compact(operation.value)}`;
+  if (operation.kind === "set_deal_economics") {
+    const model = operation.economics;
+    const values = [
+      model.purchasePrice !== null ? `${en ? "purchase" : "покупка"} ${model.currency} ${model.purchasePrice.toLocaleString("en")}` : "",
+      model.loanToValueBps !== null ? `LTV ${(model.loanToValueBps / 100).toFixed(2)}%` : "",
+      model.annualInterestRateBps !== null ? `${en ? "interest" : "ставка"} ${(model.annualInterestRateBps / 100).toFixed(2)}%` : "",
+      model.termMonths !== null ? `${model.termMonths} ${en ? "months" : "месяцев"}` : "",
+      model.grossAnnualIncome !== null ? `${en ? "gross annual income" : "валовой годовой доход"} ${model.currency} ${model.grossAnnualIncome.toLocaleString("en")}` : "",
+      model.targetAnnualReturnBps !== null ? `${en ? "target return" : "целевая доходность"} ${(model.targetAnnualReturnBps / 100).toFixed(2)}%` : "",
+      `${en ? "scenario weights (favourable/base/low occupancy)" : "веса сценариев (favourable/base/low occupancy)"} ${(model.scenarioProbabilities.favorableBps / 100).toFixed(1)}%/${(model.scenarioProbabilities.baseBps / 100).toFixed(1)}%/${(model.scenarioProbabilities.stressedBps / 100).toFixed(1)}%`,
+      model.repaymentBasis === "unknown" ? `${en ? "interest-only weight" : "вес interest-only"} ${(model.scenarioProbabilities.interestOnlyBps / 100).toFixed(1)}%` : "",
+    ].filter(Boolean).join("; ");
+    return `${en ? "Set case cash-flow assumptions" : "Задать допущения денежного потока"}${values ? ` — ${values}` : ""}`;
+  }
   if (operation.kind === "set_classification") {
     const values = Object.entries(operation.change).map(([key, value]) => `${classificationName(key)}: ${Array.isArray(value) ? value.join(", ") : String(value)}`).join("; ");
     return `${en ? "Update case classification" : "Уточнить классификацию кейса"}${values ? ` — ${values}` : ""}`;
@@ -320,7 +343,7 @@ export function applyStudioPromptPlan(draft: StudioDraft, options: {
   let next = draft;
   if (plan.contextOnly) {
     const joinedPremise = `${draft.premise.trim()}\n\n${plan.instruction}`.trim();
-    next = { ...draft, premise: joinedPremise.slice(0, 8_000) };
+    next = { ...draft, premise: joinedPremise.slice(0, 8_000), premisePublication: "prompt-derived" };
   }
   next = appendPromptSubmissionHistory(next, plan, options.locale, options.createdAt);
   for (const operation of plan.operations) next = executePromptOperation(next, operation);
@@ -352,7 +375,7 @@ function appendPromptSubmissionHistory(draft: StudioDraft, plan: StudioPromptPla
   if (plan.planner !== "ai" || plan.instruction.length <= 2_000) {
     return appendStudioHistory(draft, { role: "author", source: "prompt", action: "prompt_submitted", message: plan.instruction }, createdAt);
   }
-  // AI source prompts can reach 8k. Preserve the complete accepted source in
+  // AI source prompts can reach 64k. Preserve the complete accepted source in
   // bounded, non-public history records instead of silently retaining only the
   // first 2k or the model's shorter summary.
   const chunkSize = 1_900;
@@ -373,7 +396,8 @@ function executePromptOperation(draft: StudioDraft, operation: StudioPromptOpera
   if (operation.kind === "update_link") return { ...draft, links: draft.links.map((link) => link.id === operation.linkId ? { ...link, rule: { ...(link.rule ?? {}), ...operation.change } } : link) };
   if (operation.kind === "relink_link") return { ...draft, links: draft.links.map((link) => link.id === operation.linkId ? { ...link, from: operation.from, to: operation.to } : link) };
   if (operation.kind === "delete_link") return { ...draft, links: draft.links.filter((link) => link.id !== operation.linkId) };
-  if (operation.kind === "append_context") return { ...draft, premise: `${draft.premise.trim()}\n\n${operation.value}`.trim().slice(0, 8_000) };
+  if (operation.kind === "append_context") return { ...draft, premise: `${draft.premise.trim()}\n\n${operation.value}`.trim().slice(0, 8_000), premisePublication: "prompt-derived" };
+  if (operation.kind === "set_deal_economics") return { ...draft, dealEconomics: operation.economics };
   if (operation.kind === "set_classification") return { ...draft, classification: { ...(draft.classification ?? { domain: "general", practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), ...operation.change, ...(operation.change.domain === "tax" ? { complianceOnly: true } : {}) } };
   return { ...draft, [operation.field]: operation.value };
 }

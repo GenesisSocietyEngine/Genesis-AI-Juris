@@ -2,7 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { auditEvents, caseDrafts, cases, caseVersions, customCases, updates, users } from "../../../../db/schema";
 import { buildCaseProtection, requestedCopyProtection } from "../../../case-protection";
-import { isTaxDraft, normalizeStudioDraft, studioStructuralIssues } from "../../../case-integrity";
+import { casePublicationFingerprint, isTaxDraft, normalizeStudioDraft, studioStructuralIssues } from "../../../case-integrity";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 import { compilePublicationPlayable, normalizeTaxPublicationAttestation, type TaxPublicationAttestation } from "../../../publication-integrity";
 import { isSameOriginMutation, readJsonObject } from "../../../request-security";
@@ -28,6 +28,7 @@ export async function POST(request: Request) {
   if (!compilation.ok) return Response.json({ error: compilation.error, issues: compilation.issues }, { status: compilation.status });
   const { playable, binding: compilationBinding } = compilation;
   const { studioFingerprint, playableFingerprint: fingerprint } = compilationBinding;
+  const publicationFingerprint = casePublicationFingerprint(draft);
   const classification = draft.classification!;
   const isTax = isTaxDraft(draft);
   if (isTax && (!classification.complianceOnly || !classification.legalAsOf || (classification.sourceUrls ?? []).length === 0)) {
@@ -55,12 +56,15 @@ export async function POST(request: Request) {
     const [source] = await db.select().from(customCases).where(eq(customCases.id, customCaseId)).limit(1);
     if (!source || source.isPrivate) return Response.json({ error: "Custom case not found." }, { status: 404 });
     if (source.caseId !== draft.caseId || source.currentVersion !== draft.version || source.fingerprint !== studioFingerprint) return Response.json({ error: "The custom case changed. Reload its exact current version before promotion." }, { status: 409 });
-    const [sourceDraft] = await db.select({ id: caseDrafts.id }).from(caseDrafts).where(and(eq(caseDrafts.customCaseId, source.id), eq(caseDrafts.version, draft.version), eq(caseDrafts.fingerprint, studioFingerprint))).limit(1);
+    const [sourceDraft] = await db.select({ id: caseDrafts.id, payload: caseDrafts.payload }).from(caseDrafts).where(and(eq(caseDrafts.customCaseId, source.id), eq(caseDrafts.version, draft.version), eq(caseDrafts.fingerprint, studioFingerprint))).limit(1);
     if (!sourceDraft) return Response.json({ error: "The exact custom-case source version is unavailable." }, { status: 409 });
+    if (storedPublicationFingerprint(sourceDraft.payload) !== publicationFingerprint) {
+      return Response.json({ error: "The custom-case publication-safety binding changed. Reload its exact current version before promotion." }, { status: 409 });
+    }
     customSource = source;
     customSourceDraftId = sourceDraft.id;
   }
-  let reviewEvidence: { submissionId: number; reviewerEmail: string; reviewedAt: string } | null = null;
+  let reviewEvidence: { submissionId: number; reviewerEmail: string; reviewedAt: string; publicationFingerprint: string } | null = null;
   if (reviewLevel !== "community_beta") {
     const [review] = await db.select({
       submissionId: caseDrafts.id,
@@ -69,6 +73,7 @@ export async function POST(request: Request) {
       reviewedAt: caseDrafts.reviewedAt,
       reviewerDisplayName: users.displayName,
       verifiedPractitioner: users.verifiedPractitioner,
+      payload: caseDrafts.payload,
     }).from(caseDrafts).leftJoin(users, eq(users.email, caseDrafts.reviewerEmail)).where(and(
       eq(caseDrafts.caseId, draft.caseId),
       eq(caseDrafts.version, draft.version),
@@ -78,11 +83,14 @@ export async function POST(request: Request) {
       ...(customSourceDraftId !== null ? [eq(caseDrafts.id, customSourceDraftId)] : []),
     )).orderBy(desc(caseDrafts.reviewedAt)).limit(1);
     if (!review?.reviewerEmail || !review.reviewedAt) return Response.json({ error: "An accepted, timestamped moderation record for this exact Studio fingerprint is required for an elevated review label." }, { status: 422 });
+    if (storedPublicationFingerprint(review.payload) !== publicationFingerprint) {
+      return Response.json({ error: "The accepted moderation record does not match the current publication-safety state." }, { status: 422 });
+    }
     if (reviewLevel === "expert_reviewed" && (!review.verifiedPractitioner || review.reviewerEmail === review.authorEmail || review.reviewerEmail === identity.email.toLowerCase())) {
       return Response.json({ error: "Expert-reviewed publication requires an independent verified practitioner review." }, { status: 422 });
     }
     reviewerName = review.reviewerDisplayName?.trim().slice(0, 160) || "Registered case reviewer";
-    reviewEvidence = { submissionId: review.submissionId, reviewerEmail: review.reviewerEmail, reviewedAt: review.reviewedAt };
+    reviewEvidence = { submissionId: review.submissionId, reviewerEmail: review.reviewerEmail, reviewedAt: review.reviewedAt, publicationFingerprint };
   }
   const publicationInstant = new Date();
   let taxSafetyAttestation: TaxPublicationAttestation | null = null;
@@ -145,17 +153,17 @@ export async function POST(request: Request) {
   const now = publicationInstant.toISOString();
   const protectedDraft = { ...draft, protection };
   const publicStudioDraft = toPublicStudioDraft(protectedDraft);
-  const artifactBinding = { ...compilationBinding, caseProtection: protection };
+  const artifactBinding = { ...compilationBinding, publicationFingerprint, caseProtection: protection };
   const versionInsert = db.insert(caseVersions).values({ caseId: draft.caseId, sourceCustomCaseId: customSource?.id ?? null, version: draft.version, fingerprint, studioFingerprint, parentCaseId: draft.parent?.caseId ?? null, parentVersion: draft.parent?.version ?? null, parentFingerprint: draft.parent?.fingerprint ?? null, changeSummary: text(payload.changeSummary, 2_000), payload: { kind: "playable-scenario-v1", scenario: playable, studioDraft: publicStudioDraft, protection, artifactBinding, reviewEvidence: reviewEvidence ? { submissionId: reviewEvidence.submissionId, reviewerName, reviewedAt: reviewEvidence.reviewedAt, artifactBinding } : null, taxSafetyAttestation } as unknown as Record<string, unknown>, publishedAt: now });
   const caseUpsert = db.insert(cases).values({
     id: draft.caseId, currentVersion: draft.version, fingerprint, title: draft.title, jurisdiction: draft.jurisdiction,
     practiceArea: classification.practiceArea, sector: text(payload.sector, 120) || classification.practiceArea,
     difficulty: classification.difficulty, durationMinutes: boundedNumber(payload.durationMinutes, 10, 360, 45), status: "published",
-    reviewLevel, authorName, reviewerName, legalAsOf: classification.legalAsOf || null, summary: draft.premise.slice(0, 2_000),
+    reviewLevel, authorName, reviewerName, legalAsOf: classification.legalAsOf || null, summary: draft.premisePublication === "author-reviewed" ? draft.premise.slice(0, 2_000) : "",
     tags: classification.tags, centrallyManaged: true, updatedAt: now,
-  }).onConflictDoUpdate({ target: cases.id, set: { currentVersion: draft.version, fingerprint, title: draft.title, jurisdiction: draft.jurisdiction, practiceArea: classification.practiceArea, sector: text(payload.sector, 120) || classification.practiceArea, difficulty: classification.difficulty, durationMinutes: boundedNumber(payload.durationMinutes, 10, 360, 45), status: "published", reviewLevel, authorName, reviewerName, legalAsOf: classification.legalAsOf || null, summary: draft.premise.slice(0, 2_000), tags: classification.tags, updatedAt: now } });
+  }).onConflictDoUpdate({ target: cases.id, set: { currentVersion: draft.version, fingerprint, title: draft.title, jurisdiction: draft.jurisdiction, practiceArea: classification.practiceArea, sector: text(payload.sector, 120) || classification.practiceArea, difficulty: classification.difficulty, durationMinutes: boundedNumber(payload.durationMinutes, 10, 360, 45), status: "published", reviewLevel, authorName, reviewerName, legalAsOf: classification.legalAsOf || null, summary: draft.premisePublication === "author-reviewed" ? draft.premise.slice(0, 2_000) : "", tags: classification.tags, updatedAt: now } });
   const releaseInsert = db.insert(updates).values({ title: `${draft.title} · v${draft.version}`, body: text(payload.changeSummary, 2_000) || "A reviewed case version is now available in the central library.", kind: "case", caseId: draft.caseId, publishedAt: now });
-  const auditInsert = db.insert(auditEvents).values({ actorEmail: identity.email.toLowerCase(), eventType: "case_version_published", objectType: "case", objectId: draft.caseId, detail: { version: draft.version, sourceCustomCaseId: customSource?.id ?? null, playableFingerprint: fingerprint, studioFingerprint, artifactBinding, reviewLevel, reviewSubmissionId: reviewEvidence?.submissionId ?? null, reviewerEmail: reviewEvidence?.reviewerEmail ?? null, taxSafetyAttestation } });
+  const auditInsert = db.insert(auditEvents).values({ actorEmail: identity.email.toLowerCase(), eventType: "case_version_published", objectType: "case", objectId: draft.caseId, detail: { version: draft.version, sourceCustomCaseId: customSource?.id ?? null, playableFingerprint: fingerprint, studioFingerprint, publicationFingerprint, artifactBinding, reviewLevel, reviewSubmissionId: reviewEvidence?.submissionId ?? null, reviewerEmail: reviewEvidence?.reviewerEmail ?? null, taxSafetyAttestation } });
   try {
     if (customSource && reviewEvidence) {
       const markPublished = db.update(caseDrafts).set({ status: "published", updatedAt: now }).where(and(eq(caseDrafts.id, reviewEvidence.submissionId), eq(caseDrafts.status, "accepted")));
@@ -175,7 +183,15 @@ export async function POST(request: Request) {
   } catch {
     return Response.json({ error: "Publication failed. The case/version may already exist; no partial batch was committed." }, { status: 409 });
   }
-  return Response.json({ publication: { caseId: draft.caseId, version: draft.version, fingerprint, studioFingerprint, reviewLevel, serverCompiled: true, protection } }, { status: 201 });
+  return Response.json({ publication: { caseId: draft.caseId, version: draft.version, fingerprint, studioFingerprint, publicationFingerprint, reviewLevel, serverCompiled: true, protection } }, { status: 201 });
+}
+
+function storedPublicationFingerprint(value: unknown) {
+  try {
+    return casePublicationFingerprint(normalizeStudioDraft(value));
+  } catch {
+    return null;
+  }
 }
 
 function text(value: unknown, max: number) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }

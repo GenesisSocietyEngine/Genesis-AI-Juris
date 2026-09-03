@@ -4,7 +4,7 @@ import test from "node:test";
 import { caseFingerprint } from "../app/case-integrity";
 import { normalizePlayableScenario, playableFingerprint } from "../app/playable-integrity";
 import { compileStudioDraft } from "../app/studio-compiler";
-import { applyStudioPromptIteration, planStudioPromptIteration } from "../app/studio-editing";
+import { applyStudioPromptIteration, nextStudioNodePosition, planStudioPromptIteration } from "../app/studio-editing";
 import { applyStudioSnapshot, diffDraftToRevision, emptyStudioTimeline, recordStudioRevision, stepStudioTimeline } from "../app/studio-revisions";
 import type { StudioDraft, StudioNodeType } from "../app/types";
 
@@ -20,6 +20,7 @@ function draft(): StudioDraft {
     jurisdiction: "Belgium",
     role: "Counsel",
     premise: "A regulator requests a documented response.",
+    premisePublication: "author-reviewed",
     classification: { domain: "general", practiceArea: "Regulatory", difficulty: "Advanced", tags: [], taxTopics: [], complianceOnly: true, purpose: "compliance_review", legalAsOf: "", sourceUrls: [] },
     nodes: [
       { id: "trigger-1", type: "trigger", title: "Regulatory request", detail: "A response is required.", x: 20, y: 180 },
@@ -75,6 +76,15 @@ test("negated graph commands are not executed and context-only turns remain expl
   assert.match(applied.draft.premise, /Do not add evidence/);
 });
 
+test("manual node placement honours the current viewport centre and avoids occupied cards", () => {
+  const nodes = draft().nodes;
+  const centred = nextStudioNodePosition(nodes, nodes[0], { x: 1_480, y: 920 });
+  assert.deepEqual(centred, { x: 1_480, y: 920 });
+  const occupied = nextStudioNodePosition([...nodes, { ...nodes[0], id: "occupied-centre", x: 1_480, y: 920 }], nodes[0], { x: 1_480, y: 920 });
+  assert.notDeepEqual(occupied, { x: 1_480, y: 920 });
+  assert.ok(Math.abs(occupied.x - 1_480) <= 440 && Math.abs(occupied.y - 920) <= 300);
+});
+
 test("session timeline provides exact diff, undo, redo and branch truncation", () => {
   const base = draft();
   const moved = { ...base, title: "Renamed case", nodes: base.nodes.map((node) => node.id === "actor-1" ? { ...node, x: 333 } : node) };
@@ -108,6 +118,24 @@ test("session timeline provides exact diff, undo, redo and branch truncation", (
   timeline = recordStudioRevision(timeline, restored, branched, { label: "Change jurisdiction", source: "visual", createdAt: "2026-08-21T13:01:00.000Z" });
   assert.equal(timeline.revisions.length, 1, "a new edit after undo discards the redo branch");
   assert.equal(timeline.cursor, 1);
+});
+
+test("session timeline restores premise publication provenance through undo and redo", () => {
+  const promptDerived = { ...draft(), premise: "Raw intake context", premisePublication: "prompt-derived" as const };
+  const authorReviewed = { ...promptDerived, premise: "Reviewed professional context", premisePublication: "author-reviewed" as const };
+  let timeline = recordStudioRevision(emptyStudioTimeline(), promptDerived, authorReviewed, { label: "Review publishable context", source: "visual", createdAt: at });
+  const undo = stepStudioTimeline(timeline, "undo");
+  assert.ok(undo);
+  const restoredPrompt = applyStudioSnapshot(authorReviewed, undo.snapshot, at);
+  assert.equal(restoredPrompt.premisePublication, "prompt-derived");
+  assert.equal(restoredPrompt.premise, "Raw intake context");
+  timeline = undo.timeline;
+  const redo = stepStudioTimeline(timeline, "redo");
+  assert.ok(redo);
+  const restoredReviewed = applyStudioSnapshot(restoredPrompt, redo.snapshot, at);
+  assert.equal(restoredReviewed.premisePublication, "author-reviewed");
+  assert.equal(restoredReviewed.premise, "Reviewed professional context");
+  assert.deepEqual(diffDraftToRevision(promptDerived, timeline.revisions[0]).fields, ["premise", "premisePublication"]);
 });
 
 test("arbitrary acyclic Studio graph compiles into the full validated player runtime", () => {
@@ -182,6 +210,16 @@ test("compiler synthetic opening IDs cannot collide with valid Studio node or re
 
 test("Studio UI exposes intuitive blank reset, selectable relation deletion and dark option contrast", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
+  const cashFlowEditorSource = readFileSync(new URL("../app/CashFlowScenarioEditor.tsx", import.meta.url), "utf8");
+  const reportDialogSource = readFileSync(new URL("../app/CaseReportDialog.tsx", import.meta.url), "utf8");
+  const markdownDialogSource = readFileSync(new URL("../app/CaseMarkdownDialog.tsx", import.meta.url), "utf8");
+  const markdownActionsSource = readFileSync(new URL("../app/CaseMarkdownActions.tsx", import.meta.url), "utf8");
+  const canonicalReviewSource = readFileSync(new URL("../app/CanonicalMarkdownReview.tsx", import.meta.url), "utf8");
+  const promptAuxiliarySource = readFileSync(new URL("../app/StudioPromptAuxiliary.tsx", import.meta.url), "utf8");
+  const milestonesSource = readFileSync(new URL("../app/GraphMilestones.tsx", import.meta.url), "utf8");
+  const taxEconomicsSource = readFileSync(new URL("../app/TaxEconomicsPanel.tsx", import.meta.url), "utf8");
+  const outcomeParametersSource = readFileSync(new URL("../app/StudioOutcomeParameters.tsx", import.meta.url), "utf8");
+  const moreActionsSource = readFileSync(new URL("../app/StudioUserMoreActions.tsx", import.meta.url), "utf8");
   const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(appSource, /function blankStudioDraft/);
   assert.match(appSource, /nodes: \[\],\s*links: \[\],\s*editHistory: \[\]/);
@@ -189,19 +227,76 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /event\.key !== "Delete" && event\.key !== "Backspace"/);
   assert.match(appSource, /target instanceof HTMLInputElement/);
   assert.match(appSource, /Press Delete to remove it/);
+  assert.match(appSource, /function visibleGraphCenter\(\)/);
+  assert.match(appSource, /viewport\.scrollLeft \+ viewport\.clientWidth \/ 2/);
+  assert.match(appSource, /useState<GraphOrientation>\("vertical"\)/, "Studio opens new and loaded graphs in the consistent vertical review orientation");
+  assert.match(appSource, /setGraphOrientation\("vertical"\)/);
+  assert.match(appSource, /<option value="vertical">/);
+  assert.match(appSource, /<option value="horizontal">/);
+  assert.match(appSource, /graphLinkGeometry\(from,to,graphOrientation\)/, "relation curves follow the chosen orientation");
+  assert.match(appSource, /GraphMilestones/, "the graph exposes temporal milestones without adding them to the initial bundle");
+  assert.match(milestonesSource, /deadlineDay/);
+  assert.match(milestonesSource, /localeCompare/);
+  assert.match(milestonesSource, /select\(node\.id\)/, "milestones navigate to their graph nodes");
+  assert.match(appSource, /function focusGraphNode\(nodeId: string\)/);
+  assert.match(appSource, /link\.from===selectedNodeId\?"active":""/, "source number tags retain the selected-node highlight");
+  assert.match(appSource, /link\.to===selectedNodeId\?"active":""/, "destination number tags retain the selected-node highlight");
+  assert.match(appSource, /aria-pressed=\{link\.from===selectedNodeId\}/);
+  assert.match(appSource, /aria-pressed=\{link\.to===selectedNodeId\}/);
+  assert.match(appSource, /viewport\.scrollTo\(/, "node navigation centres the selected node inside the graph viewport");
+  assert.match(appSource, /nodeButton\?\.focus\(\{ preventScroll: true \}\)/, "node focus remains stable after viewport centring");
+  assert.match(css, /graph-orientation-vertical \.node-port\{top:auto;right:auto;left:50%;transform:translateX\(-50%\)\}/, "vertical ports are centred on the node");
+  assert.match(css, /graph-orientation-vertical \.node-port-in\{top:-17px;bottom:auto\}/, "vertical inputs sit above the node");
+  assert.match(css, /graph-orientation-vertical \.node-port-out\{top:auto;right:auto;bottom:-17px\}/, "vertical outputs sit below the node");
+  assert.match(appSource, /graphOrientation === "vertical" \? \{top:-17,left:"50%",right:"auto",bottom:"auto",transform:"translateX\(-50%\)"\}/, "vertical input placement is also guaranteed inline against stale or reordered stylesheets");
+  assert.match(appSource, /graphOrientation === "vertical" \? \{top:"auto",left:"50%",right:"auto",bottom:-17,transform:"translateX\(-50%\)"\}/, "vertical output placement is also guaranteed inline against stale or reordered stylesheets");
+  assert.match(css, /relation-node-tag\.destination\.active/, "destination highlights persist after focus moves");
+  assert.match(appSource, /press Delete to remove/, "selected nodes expose their keyboard deletion shortcut");
+  assert.match(appSource, /CashFlowScenarioEditor/, "a selected cash-flow node exposes editable model controls");
+  assert.match(cashFlowEditorSource, /CASH-FLOW SCENARIO/);
+  assert.match(cashFlowEditorSource, /setProbability/, "cash-flow scenario weights are directly editable");
+  assert.match(appSource, /PDF report/);
+  assert.match(appSource, /await import\("\.\/CaseReportDialog"\)/, "report UI is preloaded on demand before the editor is covered");
+  assert.match(appSource, /setCaseReportOpen\(true\)/);
+  assert.match(appSource, /PDF unavailable/, "a stale report chunk leaves Studio visible with a recoverable error");
+  const reportButtonStart = appSource.indexOf('className="secondary-cta report-cta"');
+  const reportButtonSource = appSource.slice(reportButtonStart, appSource.indexOf("</button>", reportButtonStart) + "</button>".length);
+  assert.match(reportButtonSource, /disabled=\{!canDuplicate\}/, "inspection-only cases cannot open report export");
+  assert.doesNotMatch(reportButtonSource, /disabled=\{[^}]*derivationsSettled/, "authorized PDF options remain clickable while background derivations settle");
+  assert.match(appSource, /Report export is unavailable in inspection-only mode/);
+  assert.match(reportDialogSource, /disabled=\{!canGenerateReport \|\| busy/);
+  assert.match(markdownActionsSource, /Export Final case prompt \(\.md\)/);
+  assert.match(markdownActionsSource, /Import case prompt \(\.md\)/);
+  assert.match(markdownActionsSource, /closest\("details"\)\?\.removeAttribute\("open"\)/, "opening Markdown export closes the More actions menu");
+  assert.match(appSource, /CanonicalPromptAction/);
+  assert.match(promptAuxiliarySource, /Verify canonical case/);
+  assert.match(appSource, /<progress className="ai-progress-fallback" max=\{100\} value=\{8\}/, "the lazy-loading fallback keeps a native activity track in every theme");
+  assert.match(markdownDialogSource, /Download \.md/);
+  assert.match(markdownDialogSource, /Final reviewed/);
+  assert.match(markdownDialogSource, /Case filename/);
+  assert.match(markdownDialogSource, /YYYYMMDD_HHMMSS/);
+  assert.match(canonicalReviewSource, /Apply exact case/);
+  assert.match(css, /\.ai-progress-track\{position:relative;height:9px;min-height:9px/, "progress track has explicit geometry independent of theme paints");
+  assert.match(reportDialogSource, /raw AI prompt is never included/);
+  assert.match(reportDialogSource, /Client-facing report/);
+  assert.match(taxEconomicsSource, /Tax base \+ rates \(%\)/, "tax economics supports percentage-rate inputs");
+  assert.match(taxEconomicsSource, /select value=\{model\.currency\}/, "tax currency uses a controlled dropdown");
+  assert.match(taxEconomicsSource, /"EUR", "GBP", "USD", "CHF", "CNY"/);
   assert.match(appSource, /const pointerX = \(event\.clientX - rect\.left\) \/ scale/,
     "scaled graph dragging must translate pointer coordinates back into graph space");
   assert.match(appSource, /moveNode\(event,node,graphZoom\)/,
     "graph interactions must provide their current scale");
-  assert.match(appSource, /Math\.max\(0\.85/,
-    "Fit is explicit and must retain a legible minimum scale");
-  assert.doesNotMatch(appSource, /Math\.max\(0\.45/,
-    "User view must not automatically shrink the editable graph to an illegible scale");
+  assert.match(appSource, /Math\.max\(0\.55/,
+    "Fit must retain a legible minimum scale while supporting larger auto-laid-out graphs");
+  const autoLayoutSource = appSource.slice(appSource.indexOf("async function autoLayoutGraph"), appSource.indexOf("function clearTransientEditorSelection"));
+  assert.match(autoLayoutSource, /applied \$\{orientation\} auto-layout/);
+  assert.doesNotMatch(autoLayoutSource, /studioCanDuplicate|commitStudioDraft|showSessionNotice/,
+    "Studio auto-layout must use the state and callbacks actually available inside StudioView");
   assert.match(appSource, /id="graph-connect-status"[\s\S]*tabIndex=\{-1\}/,
     "relation deletion must have a programmatically focusable status destination");
   assert.match(appSource, /focusRelationStatus\(\)/,
     "relation deletion must restore keyboard focus after removing its control");
-  assert.match(appSource, /Show on graph/);
+  assert.match(appSource, /Fix on decision map/);
   assert.match(appSource, /runtimeForNodeType\(selectedNode\.runtime,type\)/, "node type changes must strip incompatible runtime fields");
   assert.match(appSource, /parent: \{ caseId: current\.caseId, version: current\.version, fingerprint: studioServerFingerprint \}/, "child lineage must use the exact persisted parent fingerprint");
   assert.match(appSource, /Studio case envelope/);
@@ -209,33 +304,62 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /Вид пользователя/);
   assert.match(appSource, /Вид разработчика/);
   assert.match(appSource, /studio-more-actions/, "secondary User-view commands must be grouped under More actions");
-  assert.match(appSource, /const \[userSettingsOpen, setUserSettingsOpen\] = useState\(false\)/, "advanced User-view case settings must start collapsed");
-  assert.match(appSource, /studio-settings-toggle/, "collapsed User-view case settings must remain clearly discoverable");
+  assert.match(appSource, /document\.addEventListener\("pointerdown", closeMoreActionsOnOutsidePointer, true\)/, "clicking outside closes More actions");
+  assert.match(appSource, /event\.key !== "Escape" \|\| !menu\?\.open/, "Escape closes More actions only while it is open");
+  assert.match(appSource, /menu\.querySelector<HTMLElement>\("summary"\)\?\.focus\(\)/, "Escape restores focus to the More actions trigger");
+  assert.match(css, /\.studio-hero:has\(\.studio-more-actions\[open\]\)\{z-index:140\}/, "an open actions menu raises its parent stacking context above later Studio panels");
+  assert.match(css, /\.studio-more-actions>\.studio-more-menu\{[^}]*z-index:151[^}]*background:var\(--strong\)/, "the actions menu is an opaque top-layer surface");
+  assert.match(moreActionsSource, /Portable final prompt/);
+  assert.match(moreActionsSource, /CaseMarkdownActions/);
+  assert.match(outcomeParametersSource, /Outcome recalculation parameters/);
+  assert.match(outcomeParametersSource, /Financial & financing/);
+  assert.match(outcomeParametersSource, /Tax economics/);
+  assert.match(cashFlowEditorSource, /Purchase price/);
+  assert.match(cashFlowEditorSource, /Loan-to-value/);
+  assert.match(appSource, /const \[guidedStep, setGuidedStep\] = useState<GuidedStudioStep>\(1\)/, "Guided Studio must start at the plain-language brief");
+  assert.match(appSource, /guidedStep === 3\) && <><div id="studio-case-settings"/, "case settings must be progressively disclosed at the Facts & Assumptions stage");
   assert.match(appSource, /aria-describedby=\{submitBlocker \? "studio-submit-blocker"/, "a disabled submission must expose its concrete blocker");
   assert.match(appSource, /inert=\{!canDuplicate\}/, "inspection-only authoring regions must be removed from keyboard interaction");
   assert.doesNotMatch(appSource, /aria-disabled=\{!canDuplicate\}/, "generic regions must not misuse aria-disabled");
   assert.match(appSource, /type !== "tax_rule"/, "the general User-view palette must hide the specialist tax-rule node");
   assert.match(appSource, /displayMode === "developer" && <section className="studio-history/, "technical history stays in Developer view");
-  assert.match(appSource, /displayMode === "developer" && prompt\.trim\(\) && <details className="prompt-fallback-preview/, "exact-command DSL stays in Developer view");
+  assert.match(appSource, /displayMode === "developer" && !canonicalPrompt && prompt\.trim\(\) && <details className="prompt-fallback-preview/, "exact-command DSL stays in Developer view and out of canonical imports");
   assert.match(appSource, /displayMode === "developer" && draft\.protection/, "raw lineage seals stay in Developer view");
   assert.match(appSource, /Publishable case context/);
   assert.match(appSource, /\{taxDraft && <><label><span>\{locale === "en" \? "Tax-case purpose"/, "tax-only controls should stay hidden for general cases");
-  assert.doesNotMatch(appSource.slice(appSource.indexOf("function deleteSelectedRelation"), appSource.indexOf("async function shareDraft")), /deleteNode/);
+  const deleteHandler = appSource.slice(appSource.indexOf("function deleteSelectedGraphItem"), appSource.indexOf("async function shareDraft"));
+  assert.match(deleteHandler, /deleteLink\(link\)/, "Delete removes a selected relation");
+  assert.match(deleteHandler, /deleteNode\(\)/, "Delete removes a selected node");
+  assert.match(deleteHandler, /window\.confirm/, "keyboard node deletion confirms removal of connected relations");
   assert.match(css, /\.theme-after-hours \.node-inspector \.inspector-form select option\{color:#14212c;background-color:#fff\}/);
   assert.match(css, /\.studio-submit-blocker\{/);
 });
 
-test("Help ships two local accessible walkthroughs with bilingual monotonic captions", () => {
+test("Help ships an English no-subtitle expert demo and two local accessible walkthroughs with bilingual captions", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
-  assert.equal((appSource.match(/<video controls preload="metadata" playsInline/g) ?? []).length, 2);
-  assert.equal((appSource.match(/kind="captions"/g) ?? []).length, 4);
-  assert.doesNotMatch(appSource, /<video[^>]+autoPlay/);
-  assert.match(appSource, /aria-describedby="editor-video-description editor-video-transcript"/);
-  assert.match(appSource, /aria-describedby="play-video-description play-video-transcript"/);
-  assert.match(appSource, /Your browser does not support HTML video/);
-  assert.match(appSource, /Ваш браузер не поддерживает HTML-видео/);
+  const guidedSource = readFileSync(new URL("../app/StudioGuidedDemo.tsx", import.meta.url), "utf8");
+  const helpSource = `${appSource}\n${guidedSource}`;
+  const directPage = readFileSync(new URL("../app/help/studio-demo/page.tsx", import.meta.url), "utf8");
+  assert.equal((helpSource.match(/<video controls preload="metadata" playsInline/g) ?? []).length, 3);
+  assert.equal((helpSource.match(/kind="captions"/g) ?? []).length, 4);
+  assert.doesNotMatch(helpSource, /<video[^>]+autoPlay/);
+  assert.match(helpSource, /aria-describedby="guided-video-description guided-video-transcript"/);
+  assert.match(helpSource, /aria-describedby="editor-video-description editor-video-transcript"/);
+  assert.match(helpSource, /aria-describedby="play-video-description play-video-transcript"/);
+  assert.match(helpSource, /href="\/help\/studio-demo"/);
+  assert.match(directPage, /studio-ai-guided-demo\.en\.mp4/);
+  assert.match(directPage, /English narration · No subtitles · Studio only/);
+  assert.doesNotMatch(guidedSource, /<track|studio-ai-guided-demo\.(?:en|ru)\.vtt/);
+  assert.match(directPage, /Five Flats, Three Countries/);
+  assert.match(directPage, /03:00/);
+  assert.match(guidedSource, /27-node, 31-connection graph/);
+  assert.match(guidedSource, /£24,328 annual cash flow/);
+  assert.match(helpSource, /Your browser does not support HTML video/);
+  assert.match(helpSource, /Ваш браузер не поддерживает HTML-видео/);
 
   const assets = [
+    "studio-ai-guided-demo.en.mp4",
+    "studio-ai-guided-demo-poster.jpg",
     "case-studio-iterative-editing.mp4",
     "case-studio-iterative-editing-poster.jpg",
     "play-your-studio-case.mp4",
@@ -251,8 +375,8 @@ test("Help ships two local accessible walkthroughs with bilingual monotonic capt
   ];
   for (const name of captionFiles) {
     const vtt = readFileSync(new URL(`../public/help/${name}`, import.meta.url), "utf8");
-    assert.ok(vtt.startsWith("WEBVTT\n"));
-    const starts = [...vtt.matchAll(/^(\d{2}):(\d{2})\.(\d{3}) -->/gm)].map((match) => Number(match[1]) * 60_000 + Number(match[2]) * 1_000 + Number(match[3]));
+    assert.match(vtt, /^WEBVTT\r?\n/u);
+    const starts = [...vtt.matchAll(/^(?:(\d{2}):)?(\d{2}):(\d{2})\.(\d{3}) -->/gm)].map((match) => Number(match[1] ?? 0) * 3_600_000 + Number(match[2]) * 60_000 + Number(match[3]) * 1_000 + Number(match[4]));
     assert.ok(starts.length >= 5, `${name} should contain a useful caption sequence`);
     assert.deepEqual(starts, [...starts].sort((a, b) => a - b), `${name} cues should be monotonic`);
   }

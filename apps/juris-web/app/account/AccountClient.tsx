@@ -115,7 +115,7 @@ export default function AccountClient({
   return <main className={styles.shell}>
     <nav className={styles.nav} aria-label="Account navigation">
       <Link href="/" className={styles.brand}><Image src="/brand/genesis-juris-codex-mark.svg" width={35} height={35} alt=""/><span>GENESIS: JURIS</span></Link>
-      <Link href="/">Return to library</Link>
+      <div className={styles.navLinks}><Link href="/matters">My cases</Link><Link href="/?view=library">Templates</Link><Link href="/studio">Studio</Link><Link href="/account" aria-current="page">Account</Link></div>
     </nav>
     <header className={styles.hero}>
       <p>ACCOUNT SECURITY · v16</p>

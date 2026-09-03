@@ -5,9 +5,12 @@ import { actionUseKey, decisionAvailability, resolveDecisionTiming } from "../..
 import { isRecord } from "../../case-integrity";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { normalizePlayableScenario, playableFingerprint } from "../../playable-integrity";
+import { classifyD1Failure, type ObservabilityEventInput, type ObservabilityOperation, type ObservabilityReason } from "../../observability";
 import { isSameOriginMutation, readJsonObject } from "../../request-security";
 import { initialMetrics } from "../../runtime-constants";
 import type { DecisionOption, MetricKey, Scenario } from "../../types";
+import { observabilityRequestId, observeOperationalEvent } from "../../server-observability";
+import { runObservedD1Operation } from "../../observed-d1-operation";
 import { resolveBundledManifest } from "../catalog/bundled-manifest";
 import {
   advanceCanonicalTime,
@@ -23,6 +26,13 @@ import {
 export const dynamic = "force-dynamic";
 
 const MAX_SESSION_REVISION = 1_000;
+
+type SessionObserver = (input: Omit<ObservabilityEventInput, "requestId" | "route">) => void;
+
+function observerFor(request: Request): SessionObserver {
+  const requestId = observabilityRequestId(request);
+  return (input) => { observeOperationalEvent({ requestId, route: "play_sessions", ...input }); };
+}
 
 type SessionState = {
   currentStageId: string;
@@ -48,40 +58,77 @@ type SessionState = {
 };
 
 export async function GET(request: Request) {
+  const observe = observerFor(request);
+  const searchParams = new URL(request.url).searchParams;
+  const importRequest = searchParams.get("purpose") === "import";
+  const eventName = importRequest ? "session.import" as const : "session.load" as const;
+  const operation = importRequest ? "import" as const : "load" as const;
   const identity = await getChatGPTUser();
-  if (!identity) return privateJson({ error: "Sign in is required." }, 401);
+  if (!identity) {
+    observe({ eventName, outcome: "expected_rejection", reason: "auth_required", responseClass: "4xx", operation, logicalRepository: "play_sessions" });
+    return privateJson({ error: "Sign in is required." }, 401);
+  }
   const email = identity.email.trim().toLowerCase();
-  const sessionKey = new URL(request.url).searchParams.get("sessionKey");
+  const sessionKey = searchParams.get("sessionKey");
   const db = getDb();
   if (sessionKey) {
-    if (!validSessionKey(sessionKey)) return privateJson({ error: "Invalid play-session key." }, 400);
-    const [session] = await db.select().from(playSessions).where(and(eq(playSessions.sessionKey, sessionKey), eq(playSessions.userEmail, email))).limit(1);
+    if (!validSessionKey(sessionKey)) {
+      observe({ eventName, outcome: "expected_rejection", reason: "invalid_request", responseClass: "4xx", operation, logicalRepository: "play_sessions" });
+      return privateJson({ error: "Invalid play-session key." }, 400);
+    }
+    const [session] = await observedD1Read(observe, "play_sessions", () => db.select().from(playSessions).where(and(eq(playSessions.sessionKey, sessionKey), eq(playSessions.userEmail, email))).limit(1));
+    const importRevisionValue = importRequest ? searchParams.get("expectedRevision") : null;
+    const importRevision = importRevisionValue !== null && /^\d{1,4}$/u.test(importRevisionValue) ? Number(importRevisionValue) : null;
+    const revisionMismatch = Boolean(session && importRevision !== null && session.revision !== importRevision);
+    const expectedFingerprint = importRequest ? request.headers.get("X-GENESIS-Expected-Fingerprint")?.trim().toLowerCase() : null;
+    const fingerprintMismatch = Boolean(session && expectedFingerprint && /^sha256-[a-f0-9]{64}$/u.test(expectedFingerprint) && session.caseFingerprint !== expectedFingerprint);
+    if (revisionMismatch) {
+      observe({ eventName: "played_case.revision_mismatch", outcome: "expected_rejection", reason: "stale_client", responseClass: "2xx", operation: "import", logicalRepository: "play_sessions", commandCount: session?.revision ?? null });
+    }
+    if (fingerprintMismatch) {
+      observe({ eventName: "played_case.fingerprint_mismatch", outcome: "expected_rejection", reason: "requested_identity_mismatch", responseClass: "2xx", operation: "import", logicalRepository: "play_sessions", commandCount: session?.revision ?? null });
+    }
+    observe({ eventName, outcome: session && !revisionMismatch && !fingerprintMismatch ? "success" : "expected_rejection", reason: !session ? "not_found" : revisionMismatch ? "stale_revision" : fingerprintMismatch ? "requested_identity_mismatch" : "completed", responseClass: session ? "2xx" : "4xx", operation, logicalRepository: "play_sessions", commandCount: session?.revision ?? null });
     return session ? privateJson({ session: publicSession(session) }) : privateJson({ error: "Play session not found." }, 404);
   }
-  const sessions = await db.select().from(playSessions).where(eq(playSessions.userEmail, email)).orderBy(desc(playSessions.updatedAt)).limit(20);
+  const sessions = await observedD1Read(observe, "play_sessions", () => db.select().from(playSessions).where(eq(playSessions.userEmail, email)).orderBy(desc(playSessions.updatedAt)).limit(20));
+  observe({ eventName, outcome: "success", reason: "completed", responseClass: "2xx", operation, logicalRepository: "play_sessions" });
   return privateJson({ sessions: sessions.map(publicSession) });
 }
 
 export async function POST(request: Request) {
-  if (!isSameOriginMutation(request)) return privateJson({ error: "Cross-site mutation rejected." }, 403);
+  const observe = observerFor(request);
+  if (!isSameOriginMutation(request)) {
+    observe({ eventName: "session.save", outcome: "expected_rejection", reason: "invalid_request", responseClass: "4xx", operation: "save", logicalRepository: "play_sessions" });
+    return privateJson({ error: "Cross-site mutation rejected." }, 403);
+  }
   const identity = await getChatGPTUser();
-  if (!identity) return privateJson({ error: "Sign in is required." }, 401);
+  if (!identity) {
+    observe({ eventName: "session.save", outcome: "expected_rejection", reason: "auth_required", responseClass: "4xx", operation: "save", logicalRepository: "play_sessions" });
+    return privateJson({ error: "Sign in is required." }, 401);
+  }
   const payload = await readJsonObject(request, 16_384);
-  if (!payload || (payload.action !== "start" && payload.action !== "decision" && payload.action !== "advance_time" && payload.action !== "abandon")) return privateJson({ error: "A valid play-session action is required." }, 400);
+  if (!payload || (payload.action !== "start" && payload.action !== "decision" && payload.action !== "advance_time" && payload.action !== "abandon")) {
+    observe({ eventName: "session.save", outcome: "expected_rejection", reason: "invalid_request", responseClass: "4xx", operation: "save", logicalRepository: "play_sessions" });
+    return privateJson({ error: "A valid play-session action is required." }, 400);
+  }
   const email = identity.email.trim().toLowerCase();
-  if (payload.action === "start") return startSession(email, payload);
-  if (payload.action === "decision") return applyDecision(email, payload);
-  if (payload.action === "advance_time") return advanceTime(email, payload);
-  return abandonSession(email, payload);
+  if (payload.action === "start") return startSession(email, payload, observe);
+  if (payload.action === "decision") return applyDecision(email, payload, observe);
+  if (payload.action === "advance_time") return advanceTime(email, payload, observe);
+  return abandonSession(email, payload, observe);
 }
 
-async function startSession(email: string, payload: Record<string, unknown>) {
+async function startSession(email: string, payload: Record<string, unknown>, observe: SessionObserver) {
   const caseId = safeIdentity(payload.caseId, 140);
   const version = safeVersion(payload.version);
   const fingerprint = safeFingerprint(payload.fingerprint);
   if (!caseId || !version || !fingerprint) return privateJson({ error: "Exact case identity is required." }, 400);
-  const scenario = await loadScenario(caseId, version, fingerprint);
-  if (!scenario) return privateJson({ error: "This exact published case version is unavailable." }, 404);
+  const scenario = await loadScenario(caseId, version, fingerprint, observe);
+  if (!scenario) {
+    observe({ eventName: "session.save", outcome: "expected_rejection", reason: "not_found", responseClass: "4xx", operation: "start", logicalRepository: "case_versions" });
+    return privateJson({ error: "This exact published case version is unavailable." }, 404);
+  }
   const initialStage = scenario.stages.find((stage) => stage.id === scenario.initialStageId);
   if (!initialStage) return privateJson({ error: "Published case has no valid opening stage." }, 422);
   if (payload.sessionKey !== undefined && (typeof payload.sessionKey !== "string" || !validSessionKey(payload.sessionKey))) {
@@ -93,7 +140,10 @@ async function startSession(email: string, payload: Record<string, unknown>) {
   try {
     if (scenario.mobileParity) {
       const runtime = createCanonicalRuntime(scenario.caseId, secureRuntimeSeed());
-      if (!scenario.sourceFingerprint || runtime.sourceFingerprint !== scenario.sourceFingerprint) throw new Error("Canonical source fingerprint mismatch");
+      if (!scenario.sourceFingerprint || runtime.sourceFingerprint !== scenario.sourceFingerprint) {
+        observe({ eventName: "played_case.fingerprint_mismatch", outcome: "internal_failure", reason: "canonical_source_mismatch", responseClass: "4xx", operation: "start", logicalRepository: "case_versions" });
+        return privateJson({ error: "The canonical case runtime could not be opened." }, 422);
+      }
       state = canonicalSessionState(runtime, [], []);
     } else {
       state = {
@@ -108,7 +158,7 @@ async function startSession(email: string, payload: Record<string, unknown>) {
   }
   const startEventId = `start:${sessionKey}`;
   const db = getDb();
-  const [prior] = await db.select().from(playSessions).where(and(eq(playSessions.sessionKey, sessionKey), eq(playSessions.userEmail, email))).limit(1);
+  const [prior] = await observedD1Read(observe, "play_sessions", () => db.select().from(playSessions).where(and(eq(playSessions.sessionKey, sessionKey), eq(playSessions.userEmail, email))).limit(1));
   const insertedSessionId = sql<number>`(
     SELECT ${playSessions.id} FROM ${playSessions}
     WHERE ${playSessions.sessionKey} = ${sessionKey}
@@ -118,6 +168,7 @@ async function startSession(email: string, payload: Record<string, unknown>) {
       AND ${playSessions.caseFingerprint} = ${fingerprint}
     LIMIT 1
   )`;
+  const d1StartedAt = Date.now();
   try {
     await db.batch([
       db.insert(playSessions).values({
@@ -133,50 +184,73 @@ async function startSession(email: string, payload: Record<string, unknown>) {
         occurredAt: now,
       }).onConflictDoNothing(),
     ]);
-  } catch {
+    observeD1(observe, "start", "success", "completed", Date.now() - d1StartedAt);
+  } catch (error) {
+    const failure = classifyD1Failure(error);
+    observeD1(observe, "start", failure.outcome, failure.reason, Date.now() - d1StartedAt);
     try {
-      const [collision] = await db.select().from(playSessions).where(eq(playSessions.sessionKey, sessionKey)).limit(1);
+      const [collision] = await observedD1Read(observe, "play_sessions", () => db.select().from(playSessions).where(eq(playSessions.sessionKey, sessionKey)).limit(1));
       const sameStart = collision
         && collision.userEmail === email
         && collision.caseId === caseId
         && collision.caseVersion === version
         && collision.caseFingerprint === fingerprint;
       if (sameStart) {
-        const startEvent = await findEvent(db, collision.id, startEventId);
+        const startEvent = await findEvent(db, collision.id, startEventId, observe);
         if (startEvent?.eventType === "session_started" && startEvent.sequence === 0) {
+          const replayStartedAt = Date.now();
+          observeReplayStart(observe, "start", "play_events", collision.revision);
+          observe({ eventName: "replay.success", outcome: "success", reason: "idempotent_repeat", responseClass: "2xx", latencyMs: Date.now() - replayStartedAt, operation: "start", logicalRepository: "play_events", commandCount: collision.revision });
+          observe({ eventName: "session.save", outcome: "success", reason: "completed", responseClass: "2xx", operation: "start", logicalRepository: "play_sessions", commandCount: collision.revision });
           return privateJson({ session: publicSession(collision), idempotentReplay: true });
         }
+        observe({ eventName: "session.save", outcome: "internal_failure", reason: "persistence_failure", responseClass: "5xx", operation: "start", logicalRepository: "play_sessions" });
         return privateJson({ error: "The play session could not be started. Retry with the same idempotency key.", code: "session_persistence_failed" }, 503);
       }
-      if (collision) return privateJson({ error: "The play-session idempotency key is already bound to another session.", code: "session_key_conflict" }, 409);
+      if (collision) {
+        observe({ eventName: "session.save", outcome: "expected_rejection", reason: "constraint_conflict", responseClass: "4xx", operation: "start", logicalRepository: "play_sessions" });
+        return privateJson({ error: "The play-session idempotency key is already bound to another session.", code: "session_key_conflict" }, 409);
+      }
+      observe({ eventName: "session.save", outcome: "internal_failure", reason: "persistence_failure", responseClass: "5xx", operation: "start", logicalRepository: "play_sessions" });
       return privateJson({ error: "The play session could not be started. Retry with the same idempotency key.", code: "session_persistence_failed" }, 503);
     } catch {
+      observe({ eventName: "session.save", outcome: "internal_failure", reason: "persistence_failure", responseClass: "5xx", operation: "start", logicalRepository: "play_sessions" });
       return privateJson({ error: "The play session could not be started. Retry with the same idempotency key.", code: "session_persistence_failed" }, 503);
     }
   }
-  const [session] = await db.select().from(playSessions).where(and(eq(playSessions.sessionKey, sessionKey), eq(playSessions.userEmail, email))).limit(1);
+  const [session] = await observedD1Read(observe, "play_sessions", () => db.select().from(playSessions).where(and(eq(playSessions.sessionKey, sessionKey), eq(playSessions.userEmail, email))).limit(1));
   if (!session || session.caseId !== caseId || session.caseVersion !== version || session.caseFingerprint !== fingerprint) {
+    observe({ eventName: "session.save", outcome: "expected_rejection", reason: "constraint_conflict", responseClass: "4xx", operation: "start", logicalRepository: "play_sessions", commandCount: session?.revision ?? null });
     return privateJson({ error: "The play-session idempotency key is already bound to another session.", code: "session_key_conflict" }, 409);
   }
+  if (prior) {
+    const replayStartedAt = Date.now();
+    observeReplayStart(observe, "start", "play_events", session.revision);
+    observe({ eventName: "replay.success", outcome: "success", reason: "idempotent_repeat", responseClass: "2xx", latencyMs: Date.now() - replayStartedAt, operation: "start", logicalRepository: "play_events", commandCount: session.revision });
+  }
+  observe({ eventName: "session.save", outcome: "success", reason: "completed", responseClass: "2xx", operation: "start", logicalRepository: "play_sessions", commandCount: session.revision });
   return privateJson({ session: publicSession(session), ...(prior ? { idempotentReplay: true } : {}) }, prior ? 200 : 201);
 }
 
-async function applyDecision(email: string, payload: Record<string, unknown>) {
+async function applyDecision(email: string, payload: Record<string, unknown>, observe: SessionObserver) {
   const sessionKey = typeof payload.sessionKey === "string" && validSessionKey(payload.sessionKey) ? payload.sessionKey : "";
   const eventId = typeof payload.eventId === "string" && validEventId(payload.eventId) ? payload.eventId : "";
   const optionId = typeof payload.optionId === "string" && /^[A-Za-z0-9_.:-]{1,160}$/.test(payload.optionId) ? payload.optionId : "";
   const expectedRevision = validRevision(payload.expectedRevision) ? payload.expectedRevision : -1;
   if (!sessionKey || !eventId || !optionId || expectedRevision < 0) return privateJson({ error: "Session, idempotency key, revision and option are required." }, 400);
   const db = getDb();
-  const [session] = await db.select().from(playSessions).where(and(eq(playSessions.sessionKey, sessionKey), eq(playSessions.userEmail, email))).limit(1);
+  const [session] = await observedD1Read(observe, "play_sessions", () => db.select().from(playSessions).where(and(eq(playSessions.sessionKey, sessionKey), eq(playSessions.userEmail, email))).limit(1));
   if (!session) return privateJson({ error: "Play session not found." }, 404);
-  const duplicate = await findEvent(db, session.id, eventId);
-  if (duplicate) return duplicateDecisionResponse(duplicate, eventId, optionId, expectedRevision, session);
-  if (session.status !== "active" || session.revision !== expectedRevision) return staleSession(session);
+  const duplicate = await findEvent(db, session.id, eventId, observe);
+  if (duplicate) return duplicateDecisionResponse(duplicate, eventId, optionId, expectedRevision, session, observe);
+  if (session.status !== "active" || session.revision !== expectedRevision) return staleSession(session, observe, "decision");
   if (expectedRevision >= MAX_SESSION_REVISION) return privateJson({ error: "This play session reached its maximum event count." }, 409);
-  const scenario = await loadScenario(session.caseId, session.caseVersion, session.caseFingerprint);
-  if (!scenario) return privateJson({ error: "The session case version is no longer available." }, 410);
-  const state = normalizeSessionState(session.state, scenario, session.revision);
+  const scenario = await loadScenario(session.caseId, session.caseVersion, session.caseFingerprint, observe);
+  if (!scenario) {
+    observe({ eventName: "historical_bundle.lookup_miss", outcome: "internal_failure", reason: "stored_version_unavailable", responseClass: "4xx", operation: "read", logicalRepository: "case_versions", commandCount: session.revision });
+    return privateJson({ error: "The session case version is no longer available." }, 410);
+  }
+  const state = observedNormalizeSessionState(session.state, scenario, session.revision, observe, "decision");
   if (!state || state.outcome) return privateJson({ error: "Stored play-session state is invalid or complete." }, 409);
   const stage = scenario.stages.find((item) => item.id === state.currentStageId);
   const option = stage?.options.find((item) => item.id === optionId);
@@ -229,6 +303,7 @@ async function applyDecision(email: string, payload: Record<string, unknown>) {
       AND ${playSessions.lastEventAt} = ${now}
     LIMIT 1
   )`;
+  const d1StartedAt = Date.now();
   try {
     await db.batch([
       db.update(playSessions).set({ state: nextState, status, revision: nextRevision, lastEventAt: now, completedAt: status === "completed" ? now : null, updatedAt: now }).where(and(eq(playSessions.id, session.id), eq(playSessions.userEmail, email), eq(playSessions.status, "active"), eq(playSessions.revision, expectedRevision))),
@@ -249,39 +324,48 @@ async function applyDecision(email: string, payload: Record<string, unknown>) {
         occurredAt: now,
       }),
     ]);
-  } catch {
+    observeD1(observe, "decision", "success", "completed", Date.now() - d1StartedAt);
+  } catch (error) {
+    const failure = classifyD1Failure(error);
+    observeD1(observe, "decision", failure.outcome, failure.reason, Date.now() - d1StartedAt);
     try {
-      const [current] = await db.select().from(playSessions).where(and(eq(playSessions.id, session.id), eq(playSessions.userEmail, email))).limit(1);
-      const currentEvent = await findEvent(db, session.id, eventId);
-      if (currentEvent && current) return duplicateDecisionResponse(currentEvent, eventId, optionId, expectedRevision, current);
-      if (!current || current.status !== "active" || current.revision !== expectedRevision) return staleSession(current ?? null);
+      const [current] = await observedD1Read(observe, "play_sessions", () => db.select().from(playSessions).where(and(eq(playSessions.id, session.id), eq(playSessions.userEmail, email))).limit(1));
+      const currentEvent = await findEvent(db, session.id, eventId, observe);
+      if (currentEvent && current) return duplicateDecisionResponse(currentEvent, eventId, optionId, expectedRevision, current, observe);
+      if (!current || current.status !== "active" || current.revision !== expectedRevision) return staleSession(current ?? null, observe, "decision");
+      observe({ eventName: "session.save", outcome: "internal_failure", reason: "persistence_failure", responseClass: "5xx", operation: "decision", logicalRepository: "play_sessions", commandCount: current.revision });
       return privateJson({ error: "The decision could not be persisted. Retry with the same idempotency key.", code: "session_persistence_failed" }, 503);
     } catch {
+      observe({ eventName: "session.save", outcome: "internal_failure", reason: "persistence_failure", responseClass: "5xx", operation: "decision", logicalRepository: "play_sessions", commandCount: expectedRevision });
       return privateJson({ error: "The decision could not be persisted. Retry with the same idempotency key.", code: "session_persistence_failed" }, 503);
     }
   }
-  const [saved] = await db.select().from(playSessions).where(and(eq(playSessions.id, session.id), eq(playSessions.userEmail, email))).limit(1);
-  const savedEvent = await findEvent(db, session.id, eventId);
-  if (!saved || !savedEvent) return staleSession(saved ?? null);
+  const [saved] = await observedD1Read(observe, "play_sessions", () => db.select().from(playSessions).where(and(eq(playSessions.id, session.id), eq(playSessions.userEmail, email))).limit(1));
+  const savedEvent = await findEvent(db, session.id, eventId, observe);
+  if (!saved || !savedEvent) return staleSession(saved ?? null, observe, "decision");
+  observe({ eventName: "session.save", outcome: "success", reason: "completed", responseClass: "2xx", operation: "decision", logicalRepository: "play_sessions", commandCount: saved.revision });
   return privateJson({ session: publicSession(saved), event: { eventId, sequence: savedEvent.sequence } });
 }
 
-async function advanceTime(email: string, payload: Record<string, unknown>) {
+async function advanceTime(email: string, payload: Record<string, unknown>, observe: SessionObserver) {
   const sessionKey = typeof payload.sessionKey === "string" && validSessionKey(payload.sessionKey) ? payload.sessionKey : "";
   const eventId = typeof payload.eventId === "string" && validEventId(payload.eventId) ? payload.eventId : "";
   const expectedRevision = validRevision(payload.expectedRevision) ? payload.expectedRevision : -1;
   const minutes = typeof payload.minutes === "number" && Number.isInteger(payload.minutes) && payload.minutes > 0 && payload.minutes <= 1_440 ? payload.minutes : 0;
   if (!sessionKey || !eventId || expectedRevision < 0 || !minutes) return privateJson({ error: "Session, idempotency key, revision and time increment are required." }, 400);
   const db = getDb();
-  const [session] = await db.select().from(playSessions).where(and(eq(playSessions.sessionKey, sessionKey), eq(playSessions.userEmail, email))).limit(1);
+  const [session] = await observedD1Read(observe, "play_sessions", () => db.select().from(playSessions).where(and(eq(playSessions.sessionKey, sessionKey), eq(playSessions.userEmail, email))).limit(1));
   if (!session) return privateJson({ error: "Play session not found." }, 404);
-  const duplicate = await findEvent(db, session.id, eventId);
-  if (duplicate) return duplicateAdvanceTimeResponse(duplicate, eventId, minutes, expectedRevision, session);
-  if (session.status !== "active" || session.revision !== expectedRevision) return staleSession(session);
+  const duplicate = await findEvent(db, session.id, eventId, observe);
+  if (duplicate) return duplicateAdvanceTimeResponse(duplicate, eventId, minutes, expectedRevision, session, observe);
+  if (session.status !== "active" || session.revision !== expectedRevision) return staleSession(session, observe, "advance_time");
   if (expectedRevision >= MAX_SESSION_REVISION) return privateJson({ error: "This play session reached its maximum event count." }, 409);
-  const scenario = await loadScenario(session.caseId, session.caseVersion, session.caseFingerprint);
-  if (!scenario) return privateJson({ error: "The session case version is no longer available." }, 410);
-  const state = normalizeSessionState(session.state, scenario, session.revision);
+  const scenario = await loadScenario(session.caseId, session.caseVersion, session.caseFingerprint, observe);
+  if (!scenario) {
+    observe({ eventName: "historical_bundle.lookup_miss", outcome: "internal_failure", reason: "stored_version_unavailable", responseClass: "4xx", operation: "read", logicalRepository: "case_versions", commandCount: session.revision });
+    return privateJson({ error: "The session case version is no longer available." }, 410);
+  }
+  const state = observedNormalizeSessionState(session.state, scenario, session.revision, observe, "advance_time");
   if (!state?.canonicalRuntime || state.outcome) return privateJson({ error: "Foreground time is unavailable for this play session." }, 409);
   const nextRevision = expectedRevision + 1;
   let nextState: SessionState;
@@ -302,6 +386,7 @@ async function advanceTime(email: string, payload: Record<string, unknown>) {
       AND ${playSessions.lastEventAt} = ${now}
     LIMIT 1
   )`;
+  const d1StartedAt = Date.now();
   try {
     await db.batch([
       db.update(playSessions).set({ state: nextState, status, revision: nextRevision, lastEventAt: now, completedAt: status === "completed" ? now : null, updatedAt: now }).where(and(eq(playSessions.id, session.id), eq(playSessions.userEmail, email), eq(playSessions.status, "active"), eq(playSessions.revision, expectedRevision))),
@@ -321,34 +406,40 @@ async function advanceTime(email: string, payload: Record<string, unknown>) {
         occurredAt: now,
       }),
     ]);
-  } catch {
+    observeD1(observe, "advance_time", "success", "completed", Date.now() - d1StartedAt);
+  } catch (error) {
+    const failure = classifyD1Failure(error);
+    observeD1(observe, "advance_time", failure.outcome, failure.reason, Date.now() - d1StartedAt);
     try {
-      const [current] = await db.select().from(playSessions).where(and(eq(playSessions.id, session.id), eq(playSessions.userEmail, email))).limit(1);
-      const currentEvent = await findEvent(db, session.id, eventId);
-      if (currentEvent && current) return duplicateAdvanceTimeResponse(currentEvent, eventId, minutes, expectedRevision, current);
-      if (!current || current.status !== "active" || current.revision !== expectedRevision) return staleSession(current ?? null);
+      const [current] = await observedD1Read(observe, "play_sessions", () => db.select().from(playSessions).where(and(eq(playSessions.id, session.id), eq(playSessions.userEmail, email))).limit(1));
+      const currentEvent = await findEvent(db, session.id, eventId, observe);
+      if (currentEvent && current) return duplicateAdvanceTimeResponse(currentEvent, eventId, minutes, expectedRevision, current, observe);
+      if (!current || current.status !== "active" || current.revision !== expectedRevision) return staleSession(current ?? null, observe, "advance_time");
+      observe({ eventName: "session.save", outcome: "internal_failure", reason: "persistence_failure", responseClass: "5xx", operation: "advance_time", logicalRepository: "play_sessions", commandCount: current.revision });
       return privateJson({ error: "The time advance could not be persisted. Retry with the same idempotency key.", code: "session_persistence_failed" }, 503);
     } catch {
+      observe({ eventName: "session.save", outcome: "internal_failure", reason: "persistence_failure", responseClass: "5xx", operation: "advance_time", logicalRepository: "play_sessions", commandCount: expectedRevision });
       return privateJson({ error: "The time advance could not be persisted. Retry with the same idempotency key.", code: "session_persistence_failed" }, 503);
     }
   }
-  const [saved] = await db.select().from(playSessions).where(and(eq(playSessions.id, session.id), eq(playSessions.userEmail, email))).limit(1);
-  const savedEvent = await findEvent(db, session.id, eventId);
-  if (!saved || !savedEvent) return staleSession(saved ?? null);
+  const [saved] = await observedD1Read(observe, "play_sessions", () => db.select().from(playSessions).where(and(eq(playSessions.id, session.id), eq(playSessions.userEmail, email))).limit(1));
+  const savedEvent = await findEvent(db, session.id, eventId, observe);
+  if (!saved || !savedEvent) return staleSession(saved ?? null, observe, "advance_time");
+  observe({ eventName: "session.save", outcome: "success", reason: "completed", responseClass: "2xx", operation: "advance_time", logicalRepository: "play_sessions", commandCount: saved.revision });
   return privateJson({ session: publicSession(saved), event: { eventId, sequence: savedEvent.sequence } });
 }
 
-async function abandonSession(email: string, payload: Record<string, unknown>) {
+async function abandonSession(email: string, payload: Record<string, unknown>, observe: SessionObserver) {
   const sessionKey = typeof payload.sessionKey === "string" && validSessionKey(payload.sessionKey) ? payload.sessionKey : "";
   const eventId = typeof payload.eventId === "string" && validEventId(payload.eventId) ? payload.eventId : "";
   const expectedRevision = validRevision(payload.expectedRevision) ? payload.expectedRevision : -1;
   if (!sessionKey || !eventId || expectedRevision < 0) return privateJson({ error: "Session, idempotency key and revision are required." }, 400);
   const db = getDb();
-  const [current] = await db.select().from(playSessions).where(and(eq(playSessions.sessionKey, sessionKey), eq(playSessions.userEmail, email))).limit(1);
+  const [current] = await observedD1Read(observe, "play_sessions", () => db.select().from(playSessions).where(and(eq(playSessions.sessionKey, sessionKey), eq(playSessions.userEmail, email))).limit(1));
   if (!current) return privateJson({ error: "Play session not found." }, 404);
-  const duplicate = await findEvent(db, current.id, eventId);
-  if (duplicate) return duplicateAbandonResponse(duplicate, eventId, expectedRevision, current);
-  if (current.status !== "active" || current.revision !== expectedRevision) return staleSession(current);
+  const duplicate = await findEvent(db, current.id, eventId, observe);
+  if (duplicate) return duplicateAbandonResponse(duplicate, eventId, expectedRevision, current, observe);
+  if (current.status !== "active" || current.revision !== expectedRevision) return staleSession(current, observe, "abandon");
   if (expectedRevision >= MAX_SESSION_REVISION) return privateJson({ error: "This play session reached its maximum event count." }, 409);
   const now = new Date().toISOString();
   const nextRevision = expectedRevision + 1;
@@ -361,6 +452,7 @@ async function abandonSession(email: string, payload: Record<string, unknown>) {
       AND ${playSessions.lastEventAt} = ${now}
     LIMIT 1
   )`;
+  const d1StartedAt = Date.now();
   try {
     await db.batch([
       db.update(playSessions).set({ status: "abandoned", revision: nextRevision, lastEventAt: now, updatedAt: now }).where(and(
@@ -368,23 +460,30 @@ async function abandonSession(email: string, payload: Record<string, unknown>) {
       )),
       db.insert(playEvents).values({ playSessionId: updatedSessionId, eventId, sequence: nextRevision, eventType: "session_abandoned", payload: { expectedRevision, resultingRevision: nextRevision }, occurredAt: now }),
     ]);
-  } catch {
+    observeD1(observe, "abandon", "success", "completed", Date.now() - d1StartedAt);
+  } catch (error) {
+    const failure = classifyD1Failure(error);
+    observeD1(observe, "abandon", failure.outcome, failure.reason, Date.now() - d1StartedAt);
     try {
-      const [latest] = await db.select().from(playSessions).where(and(eq(playSessions.id, current.id), eq(playSessions.userEmail, email))).limit(1);
-      const latestEvent = await findEvent(db, current.id, eventId);
-      if (latestEvent && latest) return duplicateAbandonResponse(latestEvent, eventId, expectedRevision, latest);
-      if (!latest || latest.status !== "active" || latest.revision !== expectedRevision) return staleSession(latest ?? null);
+      const [latest] = await observedD1Read(observe, "play_sessions", () => db.select().from(playSessions).where(and(eq(playSessions.id, current.id), eq(playSessions.userEmail, email))).limit(1));
+      const latestEvent = await findEvent(db, current.id, eventId, observe);
+      if (latestEvent && latest) return duplicateAbandonResponse(latestEvent, eventId, expectedRevision, latest, observe);
+      if (!latest || latest.status !== "active" || latest.revision !== expectedRevision) return staleSession(latest ?? null, observe, "abandon");
+      observe({ eventName: "session.save", outcome: "internal_failure", reason: "persistence_failure", responseClass: "5xx", operation: "abandon", logicalRepository: "play_sessions", commandCount: latest.revision });
       return privateJson({ error: "The abandonment could not be persisted. Retry with the same idempotency key.", code: "session_persistence_failed" }, 503);
     } catch {
+      observe({ eventName: "session.save", outcome: "internal_failure", reason: "persistence_failure", responseClass: "5xx", operation: "abandon", logicalRepository: "play_sessions", commandCount: expectedRevision });
       return privateJson({ error: "The abandonment could not be persisted. Retry with the same idempotency key.", code: "session_persistence_failed" }, 503);
     }
   }
-  const [saved] = await db.select().from(playSessions).where(and(eq(playSessions.id, current.id), eq(playSessions.userEmail, email))).limit(1);
-  return saved ? privateJson({ session: publicSession(saved), event: { eventId, sequence: nextRevision } }) : staleSession(null);
+  const [saved] = await observedD1Read(observe, "play_sessions", () => db.select().from(playSessions).where(and(eq(playSessions.id, current.id), eq(playSessions.userEmail, email))).limit(1));
+  if (!saved) return staleSession(null, observe, "abandon");
+  observe({ eventName: "session.save", outcome: "success", reason: "completed", responseClass: "2xx", operation: "abandon", logicalRepository: "play_sessions", commandCount: saved.revision });
+  return privateJson({ session: publicSession(saved), event: { eventId, sequence: nextRevision } });
 }
 
-async function loadScenario(caseId: string, version: string, fingerprint: string): Promise<Scenario | null> {
-  const [record] = await getDb().select({ payload: caseVersions.payload, fingerprint: caseVersions.fingerprint }).from(caseVersions).where(and(eq(caseVersions.caseId, caseId), eq(caseVersions.version, version), eq(caseVersions.fingerprint, fingerprint), isNotNull(caseVersions.publishedAt))).limit(1);
+async function loadScenario(caseId: string, version: string, fingerprint: string, observe: SessionObserver): Promise<Scenario | null> {
+  const [record] = await observedD1Read(observe, "case_versions", () => getDb().select({ payload: caseVersions.payload, fingerprint: caseVersions.fingerprint }).from(caseVersions).where(and(eq(caseVersions.caseId, caseId), eq(caseVersions.version, version), eq(caseVersions.fingerprint, fingerprint), isNotNull(caseVersions.publishedAt))).limit(1));
   if (!record || !isRecord(record.payload)) return null;
   const bundled = resolveBundledManifest(record.payload, caseId, version, fingerprint);
   if (bundled) return bundled.scenario;
@@ -511,46 +610,63 @@ function normalizeSessionState(value: unknown, scenario: Scenario, revision: num
 
 type StoredPlayEvent = Pick<typeof playEvents.$inferSelect, "eventType" | "payload" | "sequence">;
 
-async function findEvent(db: ReturnType<typeof getDb>, playSessionId: number, eventId: string): Promise<StoredPlayEvent | null> {
-  const [event] = await db.select({ eventType: playEvents.eventType, payload: playEvents.payload, sequence: playEvents.sequence }).from(playEvents).where(and(
+async function findEvent(db: ReturnType<typeof getDb>, playSessionId: number, eventId: string, observe: SessionObserver): Promise<StoredPlayEvent | null> {
+  const [event] = await observedD1Read(observe, "play_events", () => db.select({ eventType: playEvents.eventType, payload: playEvents.payload, sequence: playEvents.sequence }).from(playEvents).where(and(
     eq(playEvents.playSessionId, playSessionId), eq(playEvents.eventId, eventId),
-  )).limit(1);
+  )).limit(1));
   return event ?? null;
 }
 
-function duplicateDecisionResponse(event: StoredPlayEvent, eventId: string, optionId: string, expectedRevision: number, session: typeof playSessions.$inferSelect) {
+function duplicateDecisionResponse(event: StoredPlayEvent, eventId: string, optionId: string, expectedRevision: number, session: typeof playSessions.$inferSelect, observe: SessionObserver) {
+  const replayStartedAt = Date.now();
+  observeReplayStart(observe, "decision", "play_events", session.revision);
   if (event.eventType === "decision"
     && event.sequence === expectedRevision + 1
     && isRecord(event.payload)
     && event.payload.optionId === optionId
     && event.payload.expectedRevision === expectedRevision) {
+    observe({ eventName: "replay.success", outcome: "success", reason: "idempotent_repeat", responseClass: "2xx", latencyMs: Date.now() - replayStartedAt, operation: "decision", logicalRepository: "play_events", commandCount: session.revision });
     return privateJson({ session: publicSession(session), event: { eventId, sequence: event.sequence }, idempotentReplay: true });
   }
+  observe({ eventName: "replay.expected_rejection", outcome: "expected_rejection", reason: "idempotency_conflict", responseClass: "4xx", latencyMs: Date.now() - replayStartedAt, operation: "decision", logicalRepository: "play_events", commandCount: session.revision });
   return privateJson({ error: "This idempotency key was already used for a different play-session event.", code: "idempotency_conflict" }, 409);
 }
 
-function duplicateAdvanceTimeResponse(event: StoredPlayEvent, eventId: string, minutes: number, expectedRevision: number, session: typeof playSessions.$inferSelect) {
+function duplicateAdvanceTimeResponse(event: StoredPlayEvent, eventId: string, minutes: number, expectedRevision: number, session: typeof playSessions.$inferSelect, observe: SessionObserver) {
+  const replayStartedAt = Date.now();
+  observeReplayStart(observe, "advance_time", "play_events", session.revision);
   if (event.eventType === "time_advanced"
     && event.sequence === expectedRevision + 1
     && isRecord(event.payload)
     && event.payload.minutes === minutes
     && event.payload.expectedRevision === expectedRevision) {
+    observe({ eventName: "replay.success", outcome: "success", reason: "idempotent_repeat", responseClass: "2xx", latencyMs: Date.now() - replayStartedAt, operation: "advance_time", logicalRepository: "play_events", commandCount: session.revision });
     return privateJson({ session: publicSession(session), event: { eventId, sequence: event.sequence }, idempotentReplay: true });
   }
+  observe({ eventName: "replay.expected_rejection", outcome: "expected_rejection", reason: "idempotency_conflict", responseClass: "4xx", latencyMs: Date.now() - replayStartedAt, operation: "advance_time", logicalRepository: "play_events", commandCount: session.revision });
   return privateJson({ error: "This idempotency key was already used for a different play-session event.", code: "idempotency_conflict" }, 409);
 }
 
-function duplicateAbandonResponse(event: StoredPlayEvent, eventId: string, expectedRevision: number, session: typeof playSessions.$inferSelect) {
+function duplicateAbandonResponse(event: StoredPlayEvent, eventId: string, expectedRevision: number, session: typeof playSessions.$inferSelect, observe: SessionObserver) {
+  const replayStartedAt = Date.now();
+  observeReplayStart(observe, "abandon", "play_events", session.revision);
   if (event.eventType === "session_abandoned"
     && event.sequence === expectedRevision + 1
     && isRecord(event.payload)
     && event.payload.expectedRevision === expectedRevision) {
+    observe({ eventName: "replay.success", outcome: "success", reason: "idempotent_repeat", responseClass: "2xx", latencyMs: Date.now() - replayStartedAt, operation: "abandon", logicalRepository: "play_events", commandCount: session.revision });
     return privateJson({ session: publicSession(session), event: { eventId, sequence: event.sequence }, idempotentReplay: true });
   }
+  observe({ eventName: "replay.expected_rejection", outcome: "expected_rejection", reason: "idempotency_conflict", responseClass: "4xx", latencyMs: Date.now() - replayStartedAt, operation: "abandon", logicalRepository: "play_events", commandCount: session.revision });
   return privateJson({ error: "This idempotency key was already used for a different play-session event.", code: "idempotency_conflict" }, 409);
 }
 
-function staleSession(session: typeof playSessions.$inferSelect | null) {
+function staleSession(session: typeof playSessions.$inferSelect | null, observe: SessionObserver, operation: ObservabilityOperation) {
+  const replayStartedAt = Date.now();
+  observeReplayStart(observe, operation, "play_sessions", session?.revision ?? null);
+  observe({ eventName: "replay.expected_rejection", outcome: "expected_rejection", reason: "stale_revision", responseClass: "4xx", latencyMs: Date.now() - replayStartedAt, operation, logicalRepository: "play_sessions", commandCount: session?.revision ?? null });
+  observe({ eventName: "played_case.revision_mismatch", outcome: "expected_rejection", reason: "stale_client", responseClass: "4xx", operation, logicalRepository: "play_sessions", commandCount: session?.revision ?? null });
+  observe({ eventName: "session.save", outcome: "expected_rejection", reason: "stale_revision", responseClass: "4xx", operation, logicalRepository: "play_sessions", commandCount: session?.revision ?? null });
   return privateJson({ error: "The play session changed in another tab.", code: "stale_session", session: session ? publicSession(session) : null }, 409);
 }
 
@@ -605,6 +721,36 @@ function sameJsonValue(left: unknown, right: unknown): boolean {
   const rightKeys = Object.keys(right);
   return leftKeys.length === rightKeys.length
     && leftKeys.every((key) => Object.prototype.hasOwnProperty.call(right, key) && sameJsonValue(left[key], right[key]));
+}
+function observedNormalizeSessionState(value: unknown, scenario: Scenario, revision: number, observe: SessionObserver, operation: ObservabilityOperation) {
+  const startedAt = Date.now();
+  observe({ eventName: "replay.start", outcome: "started", reason: "state_validation", responseClass: "none", latencyMs: 0, operation: "replay", logicalRepository: "play_sessions", commandCount: revision });
+  const state = normalizeSessionState(value, scenario, revision);
+  if (state) {
+    observe({ eventName: "replay.success", outcome: "success", reason: "state_matches", responseClass: "none", latencyMs: Date.now() - startedAt, operation: "replay", logicalRepository: "play_sessions", commandCount: revision });
+    return state;
+  }
+  let reason: "stored_state_divergence" | "stored_revision_divergence" | "stored_fingerprint_divergence" = "stored_state_divergence";
+  if (isRecord(value) && Array.isArray(value.decisions) && Array.isArray(value.timeAdvances)
+    && value.decisions.length + value.timeAdvances.length !== revision) reason = "stored_revision_divergence";
+  else if (isRecord(value) && isRecord(value.canonicalRuntime) && typeof scenario.sourceFingerprint === "string"
+    && value.canonicalRuntime.sourceFingerprint !== scenario.sourceFingerprint) reason = "stored_fingerprint_divergence";
+  observe({ eventName: "replay.internal_failure", outcome: "internal_failure", reason, responseClass: "4xx", latencyMs: Date.now() - startedAt, operation: "replay", logicalRepository: "play_sessions", commandCount: revision });
+  if (reason === "stored_revision_divergence") {
+    observe({ eventName: "played_case.revision_mismatch", outcome: "internal_failure", reason: "stored_revision_divergence", responseClass: "4xx", operation, logicalRepository: "play_sessions", commandCount: revision });
+  } else if (reason === "stored_fingerprint_divergence") {
+    observe({ eventName: "played_case.fingerprint_mismatch", outcome: "internal_failure", reason: "stored_identity_mismatch", responseClass: "4xx", operation, logicalRepository: "play_sessions", commandCount: revision });
+  }
+  return null;
+}
+function observeReplayStart(observe: SessionObserver, operation: ObservabilityOperation, logicalRepository: "play_sessions" | "play_events", commandCount: number | null) {
+  observe({ eventName: "replay.start", outcome: "started", reason: "state_validation", responseClass: "none", latencyMs: 0, operation, logicalRepository, commandCount });
+}
+function observeD1(observe: SessionObserver, operation: ObservabilityOperation, outcome: "success" | "expected_rejection" | "internal_failure", reason: ObservabilityReason, latencyMs: number) {
+  observe({ eventName: "d1.operation", outcome, reason, responseClass: "none", latencyMs, operation, logicalRepository: "play_sessions" });
+}
+async function observedD1Read<T>(observe: SessionObserver, logicalRepository: "play_sessions" | "play_events" | "case_versions", read: () => Promise<T>): Promise<T> {
+  return runObservedD1Operation(observe, { operation: "read", logicalRepository }, read);
 }
 function clampMetric(value: number) { return Math.max(0, Math.min(100, value)); }
 function classifyMetrics(metrics: Record<MetricKey, number>) { const score = metrics.position + metrics.evidence + metrics.trust - metrics.exposure; return score >= 150 ? "strong" as const : score >= 112 ? "mixed" as const : "weak" as const; }

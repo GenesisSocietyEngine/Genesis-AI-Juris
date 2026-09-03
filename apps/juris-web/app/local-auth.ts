@@ -114,6 +114,30 @@ export async function consumeAuthRateLimit(request: Request, scope: string, emai
   };
 }
 
+/**
+ * Enforce a product-usage allowance from successful audited outcomes only.
+ *
+ * Authentication, provider setup, quota and validation failures must remain
+ * protected by the short burst limiter, but they must not consume a user's
+ * paid/product allowance. The successful audit row is written by the caller
+ * only after the protected operation completes.
+ */
+export async function checkSuccessfulAuthEventLimit(
+  eventType: string,
+  subjectHash: string,
+  policy: { limit: number; windowSeconds: number },
+) {
+  const cutoff = new Date(Date.now() - policy.windowSeconds * 1_000).toISOString();
+  const [countResult] = await getDb().select({ count: sql<number>`count(*)` }).from(authAuditEvents).where(and(
+    eq(authAuditEvents.eventType, eventType),
+    eq(authAuditEvents.subjectHash, subjectHash),
+    eq(authAuditEvents.success, true),
+    gte(authAuditEvents.createdAt, cutoff),
+  ));
+  const count = Number(countResult?.count ?? policy.limit);
+  return { allowed: count < policy.limit, count };
+}
+
 export async function authSubjectHash(value: string) {
   const [digest] = await authSubjectHashes([value]);
   return digest;
