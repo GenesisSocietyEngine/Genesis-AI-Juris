@@ -1,0 +1,1 @@
+export const STUDIO_PROMPT_CHARACTER_LIMIT = 64_000;

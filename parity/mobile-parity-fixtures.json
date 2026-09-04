@@ -1,0 +1,683 @@
+{
+  "schema_version": 2,
+  "matrix": {
+    "version": 1,
+    "route_count": 18,
+    "required_route_classes": [
+      "success",
+      "adverse",
+      "boundary",
+      "alternative"
+    ]
+  },
+  "routes": [
+    {
+      "id": "failed-erp-settlement",
+      "case_id": "be_commercial_failed_erp_001",
+      "seed": 20260724,
+      "route_class": "alternative",
+      "branch": "early-commercial-settlement",
+      "risk": "Pins the early settlement branch before litigation and any judicial result.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "run-conflict-check" },
+        { "kind": "dispatch", "action_id": "request-documents" },
+        { "kind": "dispatch", "action_id": "future-settle" }
+      ],
+      "expected": {
+        "stage": "resolved",
+        "clock": 570,
+        "outcome": "settlement_64500",
+        "judicial_result": null,
+        "checkpoint_count": 4
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "failed-erp-prepared",
+      "case_id": "be_commercial_failed_erp_001",
+      "seed": 6,
+      "route_class": "success",
+      "branch": "judgment-preserved-after-cassation",
+      "risk": "Covers the prepared defense that preserves the successful judgment through cassation.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "run-conflict-check" },
+        { "kind": "dispatch", "action_id": "prepare-partner-brief" },
+        { "kind": "dispatch", "action_id": "issue-preservation-notice" },
+        { "kind": "dispatch", "action_id": "delegate-review" },
+        { "kind": "dispatch", "action_id": "ask-ai-research" },
+        { "kind": "dispatch", "action_id": "request-documents" },
+        { "kind": "dispatch", "action_id": "review-junior-findings" },
+        { "kind": "dispatch", "action_id": "reject-settlement" },
+        { "kind": "dispatch", "action_id": "request-budget" },
+        { "kind": "dispatch", "action_id": "future-expert" },
+        { "kind": "dispatch", "action_id": "future-damages" },
+        { "kind": "dispatch", "action_id": "commence-proceedings" },
+        { "kind": "dispatch", "action_id": "prepare-statement-of-claim" },
+        { "kind": "dispatch", "action_id": "prepare-evidence-bundle" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "review-expert-report" },
+        { "kind": "dispatch", "action_id": "prepare-hearing-strategy" },
+        { "kind": "dispatch", "action_id": "prepare-key-witness" },
+        { "kind": "dispatch", "action_id": "reconcile-damages-schedule" },
+        { "kind": "dispatch", "action_id": "wait-until-hearing" },
+        { "kind": "dispatch", "action_id": "attend-hearing" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "inform-client-judgment" },
+        { "kind": "dispatch", "action_id": "prepare-cassation-response" },
+        { "kind": "dispatch", "action_id": "await-cassation-decision" }
+      ],
+      "expected": {
+        "stage": "resolved",
+        "clock": 8640,
+        "outcome": "judgment_preserved_after_cassation",
+        "judicial_result": "won",
+        "checkpoint_count": 27
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "logistics-judgment",
+      "case_id": "be_commercial_logistics_001",
+      "seed": 0,
+      "route_class": "success",
+      "branch": "judgment-and-enforcement",
+      "risk": "Covers recovery through judgment and enforcement instead of negotiated payment.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "audit_claim_file" },
+        { "kind": "dispatch", "action_id": "issue_formal_demand" },
+        { "kind": "dispatch", "action_id": "request_judgment" },
+        { "kind": "dispatch", "action_id": "enforce_judgment" }
+      ],
+      "expected": {
+        "stage": "resolved",
+        "clock": 480,
+        "outcome": "judgment_recovery",
+        "judicial_result": null,
+        "checkpoint_count": 5
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "greenfire-protected",
+      "case_id": "greenfire_first_72_hours",
+      "seed": 0,
+      "route_class": "success",
+      "branch": "protected-crisis-handoff",
+      "risk": "Pins the protected evidence, conflict, insurer, regulator, and expert response through handoff.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "accept_emergency_mandate" },
+        { "kind": "dispatch", "action_id": "issue_legal_hold" },
+        { "kind": "dispatch", "action_id": "run_conflict_assessment" },
+        { "kind": "dispatch", "action_id": "appoint_separate_director_counsel" },
+        { "kind": "dispatch", "action_id": "notify_insurers" },
+        { "kind": "dispatch", "action_id": "retain_independent_fire_expert" },
+        { "kind": "dispatch", "action_id": "open_controlled_regulator_channel" },
+        { "kind": "dispatch", "action_id": "submit_initial_regulatory_response" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "dispatch", "action_id": "review_preliminary_fire_assessment" },
+        { "kind": "dispatch", "action_id": "establish_response_protocol" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "dispatch", "action_id": "complete_protected_handoff" }
+      ],
+      "expected": {
+        "stage": "handoff_complete",
+        "clock": 4440,
+        "outcome": "protected_crisis_position",
+        "judicial_result": null,
+        "checkpoint_count": 22
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "greenfire-compromised",
+      "case_id": "greenfire_first_72_hours",
+      "seed": 0,
+      "route_class": "adverse",
+      "branch": "compromised-crisis-handoff",
+      "risk": "Covers evidence release and delayed response leading to the compromised handoff outcome.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "accept_emergency_mandate" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "dispatch", "action_id": "release_unreviewed_documents" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "dispatch", "action_id": "complete_compromised_handoff" }
+      ],
+      "expected": {
+        "stage": "handoff_complete",
+        "clock": 4590,
+        "outcome": "compromised_crisis_position",
+        "judicial_result": null,
+        "checkpoint_count": 16
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "goldenshell-coordinated",
+      "case_id": "nl_food_safety_goldenshell_001",
+      "seed": 0,
+      "route_class": "success",
+      "branch": "coordinated-claim-handoff",
+      "risk": "Pins the fully coordinated recall, evidence, expert, insurer, and claim protocol.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "accept_cooperative_mandate" },
+        { "kind": "dispatch", "action_id": "issue_coordinated_legal_hold" },
+        { "kind": "dispatch", "action_id": "preserve_reference_samples" },
+        { "kind": "dispatch", "action_id": "obtain_blocking_decisions" },
+        { "kind": "dispatch", "action_id": "notify_cleaning_contractor" },
+        { "kind": "dispatch", "action_id": "notify_farm_insurers" },
+        { "kind": "dispatch", "action_id": "coordinate_recall_response" },
+        { "kind": "dispatch", "action_id": "request_product_composition_records" },
+        { "kind": "dispatch", "action_id": "retain_independent_residue_expert" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "dispatch", "action_id": "review_preliminary_residue_assessment" },
+        { "kind": "dispatch", "action_id": "map_common_and_individual_losses" },
+        { "kind": "dispatch", "action_id": "prepare_protective_attachment_strategy" },
+        { "kind": "dispatch", "action_id": "establish_coordinated_claim_protocol" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "dispatch", "action_id": "complete_coordinated_handoff" }
+      ],
+      "expected": {
+        "stage": "handoff_complete",
+        "clock": 4545,
+        "outcome": "coordinated_claim_position",
+        "judicial_result": null,
+        "checkpoint_count": 24
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "goldenshell-fragmented",
+      "case_id": "nl_food_safety_goldenshell_001",
+      "seed": 0,
+      "route_class": "adverse",
+      "branch": "fragmented-claim-handoff",
+      "risk": "Covers the recall without reference samples and the fragmented claim outcome.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "accept_cooperative_mandate" },
+        { "kind": "dispatch", "action_id": "authorise_recall_without_reference_samples" },
+        { "kind": "dispatch", "action_id": "prioritise_regulator_claim" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "dispatch", "action_id": "complete_fragmented_handoff" }
+      ],
+      "expected": {
+        "stage": "handoff_complete",
+        "clock": 4710,
+        "outcome": "fragmented_claim_position",
+        "judicial_result": null,
+        "checkpoint_count": 17
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "desert-water-coordinated",
+      "case_id": "us_environmental_desert_water_001",
+      "seed": 0,
+      "route_class": "success",
+      "branch": "credible-source-and-remedy",
+      "risk": "Pins the defensible sampling, source evidence, and supported first-instance remedy path.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "accept_residents_mandate" },
+        { "kind": "dispatch", "action_id": "commission_defensible_sampling" },
+        { "kind": "dispatch", "action_id": "demand_plant_record_preservation" },
+        { "kind": "dispatch", "action_id": "interview_affected_residents" },
+        { "kind": "dispatch", "action_id": "map_wells_and_exposure_periods" },
+        { "kind": "dispatch", "action_id": "obtain_regulatory_records" },
+        { "kind": "dispatch", "action_id": "obtain_cooling_and_disposal_records" },
+        { "kind": "dispatch", "action_id": "retain_independent_hydrogeologist" },
+        { "kind": "dispatch", "action_id": "test_alternative_source_defence" },
+        { "kind": "dispatch", "action_id": "investigate_corporate_notice" },
+        { "kind": "dispatch", "action_id": "protect_limitation_period" },
+        { "kind": "advance_time", "minutes": 360 },
+        { "kind": "advance_time", "minutes": 90 },
+        { "kind": "dispatch", "action_id": "review_hydrological_source_assessment" },
+        { "kind": "dispatch", "action_id": "prepare_expert_evidence" },
+        { "kind": "advance_time", "minutes": 1185 },
+        { "kind": "dispatch", "action_id": "file_evidence_backed_claim" },
+        { "kind": "dispatch", "action_id": "receive_supported_first_instance_judgment" }
+      ],
+      "expected": {
+        "stage": "resolved",
+        "clock": 3180,
+        "outcome": "credible_source_and_remedy",
+        "judicial_result": "won",
+        "checkpoint_count": 19
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "desert-water-compromised",
+      "case_id": "us_environmental_desert_water_001",
+      "seed": 0,
+      "route_class": "adverse",
+      "branch": "compromised-claim-closed",
+      "risk": "Covers unverified sampling, an underdeveloped claim, and final adverse appeal closure.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "accept_residents_mandate" },
+        { "kind": "dispatch", "action_id": "rely_on_unverified_samples" },
+        { "kind": "dispatch", "action_id": "interview_affected_residents" },
+        { "kind": "advance_time", "minutes": 511 },
+        { "kind": "advance_time", "minutes": 720 },
+        { "kind": "advance_time", "minutes": 1439 },
+        { "kind": "dispatch", "action_id": "prepare_incomplete_claim" },
+        { "kind": "dispatch", "action_id": "file_underdeveloped_claim" },
+        { "kind": "dispatch", "action_id": "receive_adverse_first_instance_judgment" },
+        { "kind": "dispatch", "action_id": "file_appeal" },
+        { "kind": "dispatch", "action_id": "receive_adverse_appeal_judgment" },
+        { "kind": "dispatch", "action_id": "close_after_adverse_appeal" }
+      ],
+      "expected": {
+        "stage": "resolved",
+        "clock": 3510,
+        "outcome": "compromised_claim_closed",
+        "judicial_result": "lost",
+        "checkpoint_count": 13
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "failed-erp-inactivity-termination",
+      "case_id": "be_commercial_failed_erp_001",
+      "seed": 0,
+      "route_class": "boundary",
+      "branch": "client-inactivity-at-all-three-deadlines",
+      "risk": "Proves exact 180, 300, and 480 minute inactivity boundaries terminate the engagement deterministically.",
+      "commands": [
+        { "kind": "advance_time", "minutes": 179 },
+        { "kind": "advance_time", "minutes": 1 },
+        { "kind": "advance_time", "minutes": 119 },
+        { "kind": "advance_time", "minutes": 1 },
+        { "kind": "advance_time", "minutes": 179 },
+        { "kind": "advance_time", "minutes": 1 }
+      ],
+      "expected": {
+        "stage": "resolved",
+        "clock": 480,
+        "outcome": "client_engagement_terminated",
+        "judicial_result": null,
+        "checkpoint_count": 7
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "failed-erp-procedural-default",
+      "case_id": "be_commercial_failed_erp_001",
+      "seed": 0,
+      "route_class": "adverse",
+      "branch": "missed-procedural-deadline",
+      "risk": "Pins the dismissal branch reached after delay and confirms the final boundary minute is not skipped.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "run-conflict-check" },
+        { "kind": "dispatch", "action_id": "request-documents" },
+        { "kind": "dispatch", "action_id": "reject-settlement" },
+        { "kind": "dispatch", "action_id": "commence-proceedings" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "request-budget" },
+        { "kind": "advance_time", "minutes": 300 },
+        { "kind": "dispatch", "action_id": "ask-ai-research" },
+        { "kind": "advance_time", "minutes": 120 },
+        { "kind": "advance_time", "minutes": 1 }
+      ],
+      "expected": {
+        "stage": "resolved",
+        "clock": 4861,
+        "outcome": "procedural_default_final",
+        "judicial_result": "dismissed",
+        "checkpoint_count": 13
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "failed-erp-first-instance-final",
+      "case_id": "be_commercial_failed_erp_001",
+      "seed": 0,
+      "route_class": "success",
+      "branch": "prepared-first-instance-final",
+      "risk": "Locks the successful first-instance terminal branch before cassation response work begins.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "run-conflict-check" },
+        { "kind": "dispatch", "action_id": "prepare-partner-brief" },
+        { "kind": "dispatch", "action_id": "issue-preservation-notice" },
+        { "kind": "dispatch", "action_id": "delegate-review" },
+        { "kind": "dispatch", "action_id": "ask-ai-research" },
+        { "kind": "dispatch", "action_id": "request-documents" },
+        { "kind": "dispatch", "action_id": "review-junior-findings" },
+        { "kind": "dispatch", "action_id": "reject-settlement" },
+        { "kind": "dispatch", "action_id": "request-budget" },
+        { "kind": "dispatch", "action_id": "future-expert" },
+        { "kind": "dispatch", "action_id": "future-damages" },
+        { "kind": "dispatch", "action_id": "commence-proceedings" },
+        { "kind": "dispatch", "action_id": "prepare-statement-of-claim" },
+        { "kind": "dispatch", "action_id": "prepare-evidence-bundle" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "review-expert-report" },
+        { "kind": "dispatch", "action_id": "prepare-hearing-strategy" },
+        { "kind": "dispatch", "action_id": "prepare-key-witness" },
+        { "kind": "dispatch", "action_id": "reconcile-damages-schedule" },
+        { "kind": "dispatch", "action_id": "wait-until-hearing" },
+        { "kind": "dispatch", "action_id": "attend-hearing" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "inform-client-judgment" }
+      ],
+      "expected": {
+        "stage": "resolved",
+        "clock": 7260,
+        "outcome": "first_instance_win_final",
+        "judicial_result": "won",
+        "checkpoint_count": 25
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "failed-erp-mixed-accepted",
+      "case_id": "be_commercial_failed_erp_001",
+      "seed": 6,
+      "route_class": "alternative",
+      "branch": "mixed-first-instance-accepted",
+      "risk": "Exercises the partially-won first-instance branch and the client's decision to accept it.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "run-conflict-check" },
+        { "kind": "dispatch", "action_id": "prepare-partner-brief" },
+        { "kind": "dispatch", "action_id": "issue-preservation-notice" },
+        { "kind": "dispatch", "action_id": "request-documents" },
+        { "kind": "dispatch", "action_id": "reject-settlement" },
+        { "kind": "dispatch", "action_id": "commence-proceedings" },
+        { "kind": "dispatch", "action_id": "prepare-statement-of-claim" },
+        { "kind": "dispatch", "action_id": "prepare-evidence-bundle" },
+        { "kind": "dispatch", "action_id": "wait-until-hearing" },
+        { "kind": "dispatch", "action_id": "attend-hearing" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "inform-client-judgment" },
+        { "kind": "dispatch", "action_id": "accept-judgment-and-close" }
+      ],
+      "expected": {
+        "stage": "resolved",
+        "clock": 7290,
+        "outcome": "first_instance_adverse_final",
+        "judicial_result": "partially_won",
+        "checkpoint_count": 14
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "failed-erp-appeal-win",
+      "case_id": "be_commercial_failed_erp_001",
+      "seed": 7,
+      "route_class": "success",
+      "branch": "adverse-first-instance-reversed-on-appeal",
+      "risk": "Proves the appeal path can reverse a first-instance loss and preserves both judicial transitions.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "accept-immediately" },
+        { "kind": "dispatch", "action_id": "request-documents" },
+        { "kind": "dispatch", "action_id": "reject-settlement" },
+        { "kind": "dispatch", "action_id": "commence-proceedings" },
+        { "kind": "dispatch", "action_id": "prepare-statement-of-claim" },
+        { "kind": "dispatch", "action_id": "prepare-evidence-bundle" },
+        { "kind": "dispatch", "action_id": "wait-until-hearing" },
+        { "kind": "dispatch", "action_id": "attend-hearing" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "inform-client-judgment" },
+        { "kind": "dispatch", "action_id": "prepare-appeal-advice" },
+        { "kind": "dispatch", "action_id": "seek-client-appeal-authorization" },
+        { "kind": "dispatch", "action_id": "file-appeal" },
+        { "kind": "dispatch", "action_id": "await-appeal-decision" }
+      ],
+      "expected": {
+        "stage": "resolved",
+        "clock": 8640,
+        "outcome": "appeal_win_final",
+        "judicial_result": "won",
+        "checkpoint_count": 15
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "failed-erp-appeal-loss",
+      "case_id": "be_commercial_failed_erp_001",
+      "seed": 0,
+      "route_class": "adverse",
+      "branch": "adverse-appeal-accepted",
+      "risk": "Pins the terminal loss when the client accepts the appellate judgment.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "accept-immediately" },
+        { "kind": "dispatch", "action_id": "request-documents" },
+        { "kind": "dispatch", "action_id": "reject-settlement" },
+        { "kind": "dispatch", "action_id": "commence-proceedings" },
+        { "kind": "dispatch", "action_id": "prepare-statement-of-claim" },
+        { "kind": "dispatch", "action_id": "prepare-evidence-bundle" },
+        { "kind": "dispatch", "action_id": "wait-until-hearing" },
+        { "kind": "dispatch", "action_id": "attend-hearing" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "inform-client-judgment" },
+        { "kind": "dispatch", "action_id": "prepare-appeal-advice" },
+        { "kind": "dispatch", "action_id": "seek-client-appeal-authorization" },
+        { "kind": "dispatch", "action_id": "file-appeal" },
+        { "kind": "dispatch", "action_id": "await-appeal-decision" },
+        { "kind": "dispatch", "action_id": "accept-appellate-judgment" }
+      ],
+      "expected": {
+        "stage": "resolved",
+        "clock": 8670,
+        "outcome": "appeal_loss_final",
+        "judicial_result": "lost",
+        "checkpoint_count": 16
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "failed-erp-cassation-dismissed",
+      "case_id": "be_commercial_failed_erp_001",
+      "seed": 0,
+      "route_class": "adverse",
+      "branch": "cassation-appeal-dismissed",
+      "risk": "Exercises the full adverse escalation chain through a dismissed cassation appeal.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "accept-immediately" },
+        { "kind": "dispatch", "action_id": "request-documents" },
+        { "kind": "dispatch", "action_id": "reject-settlement" },
+        { "kind": "dispatch", "action_id": "commence-proceedings" },
+        { "kind": "dispatch", "action_id": "prepare-statement-of-claim" },
+        { "kind": "dispatch", "action_id": "prepare-evidence-bundle" },
+        { "kind": "dispatch", "action_id": "wait-until-hearing" },
+        { "kind": "dispatch", "action_id": "attend-hearing" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "inform-client-judgment" },
+        { "kind": "dispatch", "action_id": "prepare-appeal-advice" },
+        { "kind": "dispatch", "action_id": "seek-client-appeal-authorization" },
+        { "kind": "dispatch", "action_id": "file-appeal" },
+        { "kind": "dispatch", "action_id": "await-appeal-decision" },
+        { "kind": "dispatch", "action_id": "assess-cassation-grounds" },
+        { "kind": "dispatch", "action_id": "seek-client-cassation-authorization" },
+        { "kind": "dispatch", "action_id": "file-cassation-appeal" },
+        { "kind": "dispatch", "action_id": "await-cassation-decision" }
+      ],
+      "expected": {
+        "stage": "resolved",
+        "clock": 10080,
+        "outcome": "cassation_dismissed_final",
+        "judicial_result": "dismissed",
+        "checkpoint_count": 19
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "failed-erp-remitted-rehearing",
+      "case_id": "be_commercial_failed_erp_001",
+      "seed": 28,
+      "route_class": "boundary",
+      "branch": "limited-cassation-remittal-rehearing",
+      "risk": "Pins the distinct nonterminal remittal state and explicit null outcome after a second judicial transition.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "run-conflict-check" },
+        { "kind": "dispatch", "action_id": "prepare-partner-brief" },
+        { "kind": "dispatch", "action_id": "issue-preservation-notice" },
+        { "kind": "dispatch", "action_id": "delegate-review" },
+        { "kind": "dispatch", "action_id": "ask-ai-research" },
+        { "kind": "dispatch", "action_id": "request-documents" },
+        { "kind": "dispatch", "action_id": "review-junior-findings" },
+        { "kind": "dispatch", "action_id": "reject-settlement" },
+        { "kind": "dispatch", "action_id": "request-budget" },
+        { "kind": "dispatch", "action_id": "future-expert" },
+        { "kind": "dispatch", "action_id": "future-damages" },
+        { "kind": "dispatch", "action_id": "commence-proceedings" },
+        { "kind": "dispatch", "action_id": "prepare-statement-of-claim" },
+        { "kind": "dispatch", "action_id": "prepare-evidence-bundle" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "review-expert-report" },
+        { "kind": "dispatch", "action_id": "prepare-hearing-strategy" },
+        { "kind": "dispatch", "action_id": "prepare-key-witness" },
+        { "kind": "dispatch", "action_id": "reconcile-damages-schedule" },
+        { "kind": "dispatch", "action_id": "wait-until-hearing" },
+        { "kind": "dispatch", "action_id": "attend-hearing" },
+        { "kind": "dispatch", "action_id": "rest" },
+        { "kind": "dispatch", "action_id": "inform-client-judgment" },
+        { "kind": "dispatch", "action_id": "prepare-cassation-response" },
+        { "kind": "dispatch", "action_id": "await-cassation-decision" },
+        { "kind": "dispatch", "action_id": "continue-limited-cassation-review" },
+        { "kind": "dispatch", "action_id": "continue-remitted-rehearing" },
+        { "kind": "dispatch", "action_id": "rest" }
+      ],
+      "expected": {
+        "stage": "post_judgment",
+        "clock": 10080,
+        "outcome": null,
+        "judicial_result": "won",
+        "checkpoint_count": 30
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    },
+    {
+      "id": "logistics-negotiated",
+      "case_id": "be_commercial_logistics_001",
+      "seed": 0,
+      "route_class": "alternative",
+      "branch": "negotiated-payment",
+      "risk": "Covers the negotiated recovery outcome that bypasses judgment and enforcement.",
+      "commands": [
+        { "kind": "dispatch", "action_id": "audit_claim_file" },
+        { "kind": "dispatch", "action_id": "issue_formal_demand" },
+        { "kind": "dispatch", "action_id": "accept_negotiated_payment" }
+      ],
+      "expected": {
+        "stage": "resolved",
+        "clock": 270,
+        "outcome": "negotiated_recovery",
+        "judicial_result": null,
+        "checkpoint_count": 4
+      },
+      "serialization": {
+        "web_normalize": true,
+        "mobile_save_load": true,
+        "mobile_resave": true
+      }
+    }
+  ]
+}
