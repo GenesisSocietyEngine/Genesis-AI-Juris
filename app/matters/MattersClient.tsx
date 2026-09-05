@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
+import { PRODUCT_RELEASE } from "../runtime-constants";
 import styles from "./matters.module.css";
 import {
   MATTER_DESTINATIONS,
@@ -536,7 +537,7 @@ export default function MattersClient() {
     <nav className={styles.topbar} aria-label="Product navigation">
       <Link href="/" className={styles.brand}>
         <Image src="/brand/genesis-juris-codex-mark.svg" width={38} height={38} alt="" priority/>
-        <span><b>GENESIS: JURIS</b><small>Decision dossier workspace</small></span>
+        <span><b>GENESIS: JURIS</b><small>Product {PRODUCT_RELEASE}</small></span>
       </Link>
       <div className={styles.topLinks}>
         <Link href="/matters" aria-current="page">My cases</Link>
@@ -547,14 +548,17 @@ export default function MattersClient() {
     </nav>
 
     <section className={styles.pilotNotice} aria-label="Pilot privacy limitation">
-      <strong>Pilot boundary · synthetic or de-identified material only</strong>
-      <span>Formal production privacy controls and malware scanning are not yet claimed. Do not upload client-identifying, privileged, or live production documents.</span>
+      <strong>Pilot workspace · synthetic or de-identified files only</strong>
+      <details>
+        <summary>Data limits</summary>
+        <p>Formal production privacy controls and malware scanning are not yet claimed. Do not upload client-identifying, privileged, or live production documents.</p>
+      </details>
     </section>
 
     <div className={styles.workspaceLayout}>
       <aside className={styles.catalogue} aria-labelledby="matter-catalogue-title">
         <div className={styles.catalogueHeading}>
-          <div><p className={styles.eyebrow}>PRIVATE WORKSPACE</p><h1 id="matter-catalogue-title">My cases</h1><p className={styles.catalogueLead}>Your live professional matters are private and separate from reusable templates.</p></div>
+          <div><p className={styles.eyebrow}>CASE LIBRARY</p><h1 id="matter-catalogue-title">My cases</h1><p className={styles.catalogueLead}>Open a case, continue your work, or start a new one.</p></div>
           <button type="button" className={styles.iconButton} onClick={() => setCreateOpen((open) => !open)} aria-expanded={createOpen} aria-controls="create-matter-panel">
             <span aria-hidden="true">＋</span><span className={styles.srOnly}>Create a matter</span>
           </button>
@@ -568,17 +572,22 @@ export default function MattersClient() {
         </div>
 
         <div className={styles.catalogueTools}>
-          <label className={styles.field}><span>Search safe metadata</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Title, reference, owner…"/></label>
-          <label className={styles.field}><span>Lifecycle status</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as MatterStatus | "all")}>
+          <label className={styles.field}><span>Search cases</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Title or reference…"/></label>
+          <label className={styles.field}><span>Status</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as MatterStatus | "all")}>
             {STATUS_FILTERS.map((status) => <option key={status} value={status}>{status === "all" ? "All statuses" : statusLabel(status)}</option>)}
           </select></label>
-          <label className={styles.field}><span>Case type</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">All case types</option>{catalogueTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
-          <label className={styles.field}><span>Ownership</span><select value={ownershipFilter} onChange={(event) => setOwnershipFilter(event.target.value as "all" | "owned" | "shared")}><option value="all">Owned and shared</option><option value="owned">Owned by me</option><option value="shared">Shared with me</option></select></label>
-          <label className={styles.field}><span>Recent activity</span><select value={recentFilter} onChange={(event) => setRecentFilter(event.target.value as "all" | "7" | "30" | "90")}><option value="all">Any time</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></label>
+          <details className={styles.advancedFilters}>
+            <summary>More filters</summary>
+            <div>
+              <label className={styles.field}><span>Case type</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">All case types</option>{catalogueTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
+              <label className={styles.field}><span>Ownership</span><select value={ownershipFilter} onChange={(event) => setOwnershipFilter(event.target.value as "all" | "owned" | "shared")}><option value="all">Owned and shared</option><option value="owned">Owned by me</option><option value="shared">Shared with me</option></select></label>
+              <label className={styles.field}><span>Recent activity</span><select value={recentFilter} onChange={(event) => setRecentFilter(event.target.value as "all" | "7" | "30" | "90")}><option value="all">Any time</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select></label>
+            </div>
+          </details>
         </div>
 
-        <div className={styles.catalogueCount} role="status">{filteredCatalogue.length} loaded authorised matter{filteredCatalogue.length === 1 ? "" : "s"}</div>
-        {cataloguePhase === "loading" && <LoadingState compact label="Loading your authorised matter list"/>}
+        <div className={styles.catalogueCount} role="status">{filteredCatalogue.length} case{filteredCatalogue.length === 1 ? "" : "s"}</div>
+        {cataloguePhase === "loading" && <LoadingState compact label="Loading your cases"/>}
         {(cataloguePhase === "error" || cataloguePhase === "permission") && catalogueIssue && <IssueState issue={catalogueIssue} onRetry={() => void loadCatalogue()} compact/>}
         {cataloguePhase === "empty" && <div className={styles.catalogueEmpty}><strong>No matters yet</strong><span>Create a synthetic or de-identified pilot workspace to begin.</span></div>}
         {cataloguePhase === "ready" && filteredCatalogue.length === 0 && <div className={styles.catalogueEmpty}><strong>No matching matters</strong><span>Clear the search or choose another lifecycle status.</span></div>}
@@ -589,9 +598,11 @@ export default function MattersClient() {
               <span className={styles.matterCardTop}><b>{matter.reference}</b><em>{statusLabel(matter.status)}</em></span>
               <strong>{matter.title}</strong>
               <span>{matter.typeLabel}{matter.jurisdictions.length ? " · " + matter.jurisdictions.join(", ") : ""}</span>
-              <span>{matter.permissions.role === "owner" ? "Owned by me" : "Shared with me"} · {sentenceLabel(matter.permissions.role)}</span>
-              <span>Owner: {matter.ownerName} · {matter.documentCount} document{matter.documentCount === 1 ? "" : "s"}</span>
-              <span>Priority: {sentenceLabel(matter.priority)}</span>
+              {view === "developer" && <>
+                <span>{matter.permissions.role === "owner" ? "Owned by me" : "Shared with me"} · {sentenceLabel(matter.permissions.role)}</span>
+                <span>Owner: {matter.ownerName} · {matter.documentCount} document{matter.documentCount === 1 ? "" : "s"}</span>
+                <span>Priority: {sentenceLabel(matter.priority)}</span>
+              </>}
               <span>{matter.keyDeadlineAt ? "Next deadline: " + formatMatterDate(matter.keyDeadlineAt, "en-GB", matter.keyDeadlineTimezone) : "No key deadline recorded"}</span>
               <span className={styles.readinessLine}>{summary.headline}</span>
               <small>Updated {formatMatterDate(matter.updatedAt)}</small>
@@ -627,7 +638,7 @@ export default function MattersClient() {
         {cataloguePhase === "empty" && !createOpen && <EmptyWorkspace onCreate={() => setCreateOpen(true)}/>}
         {cataloguePhase === "permission" && catalogueIssue && <IssueState issue={catalogueIssue} onRetry={() => void loadCatalogue()}/>}
         {cataloguePhase === "error" && catalogueIssue && <IssueState issue={catalogueIssue} onRetry={() => void loadCatalogue()}/>}
-        {selectedId && workspacePhase === "loading" && <LoadingState label="Loading matter metadata, readiness, and bounded section pages"/>}
+        {selectedId && workspacePhase === "loading" && <LoadingState label="Opening your case"/>}
         {selectedId && (workspacePhase === "error" || workspacePhase === "permission") && workspaceIssue && <IssueState issue={workspaceIssue} onRetry={() => void loadMatter(selectedId)}/>}
 
         {workspacePhase === "ready" && workspace && <>
@@ -654,7 +665,7 @@ function MatterHero({ matter, view, setView }: { matter: MatterDetail; view: Mat
   return <header className={styles.matterHero}>
     <div className={styles.heroTop}>
       <div className={styles.heroIdentity}>
-        <p className={styles.eyebrow}>{matter.reference} · REVISION {matter.revision}</p>
+        <p className={styles.eyebrow}>{matter.reference}{view === "developer" ? ` · REVISION ${matter.revision}` : ""}</p>
         <h1>{matter.title}</h1>
         <p>{matter.typeLabel}{matter.jurisdictions.length ? " · " + matter.jurisdictions.join(" · ") : ""}</p>
       </div>
@@ -676,7 +687,7 @@ function MatterHero({ matter, view, setView }: { matter: MatterDetail; view: Mat
       <section className={styles.nextAction} aria-labelledby="next-attention-title"><span aria-hidden="true">→</span><div><h2 id="next-attention-title">What needs attention next</h2><p>{nextAttention(matter)}</p></div></section>
       <section className={matter.readiness.ready ? styles.readySummary : styles.blockedSummary} aria-labelledby="readiness-summary-title">
         <span className={styles.statusWord}>{matter.readiness.ready ? "READY" : "NOT READY"}</span>
-        <div><h2 id="readiness-summary-title">{readiness.headline}</h2><p>{readiness.detail}</p><small>{readiness.blockedCount} recorded blocker{readiness.blockedCount === 1 ? "" : "s"}; lifecycle status is separate.</small></div>
+        <div><h2 id="readiness-summary-title">{readiness.headline}</h2><p>{readiness.detail}</p><small>{readiness.blockedCount} item{readiness.blockedCount === 1 ? "" : "s"} need attention.{view === "developer" ? " Lifecycle status is separate." : ""}</small></div>
       </section>
     </div>
 

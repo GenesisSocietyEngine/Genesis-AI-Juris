@@ -253,6 +253,8 @@ test("the rendered client includes required states, endpoints, citations, privac
   const workspaceSource = client + viewModel;
   const css = source("app/matters/matters.module.css");
   const page = source("app/matters/page.tsx");
+  const runtimeConstants = source("app/runtime-constants.ts");
+  const app = source("app/JurisApp.tsx");
 
   for (const endpoint of [
     "/api/dossiers", "/documents", "/transitions", "/requests", "/proposals",
@@ -314,6 +316,14 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.match(client, /mobileSectionSelect/);
   assert.match(client, /href="\/matters" aria-current="page"/);
   assert.match(client, /matter\.documentCount/);
+  assert.match(client, /<details className=\{styles\.advancedFilters\}>/);
+  assert.match(client, /view === "developer" \? ` · REVISION/);
+  assert.doesNotMatch(client, /loaded authorised matter/);
+  assert.match(client, /Product \{PRODUCT_RELEASE\}/);
+  assert.match(runtimeConstants, /PRODUCT_RELEASE = "v62"/);
+  assert.match(app, /className="catalogue-filter-more"/);
+  assert.match(app, /className="case-trust-details"/);
+  assert.match(app, /GENESIS: JURIS \{PRODUCT_RELEASE\}/);
   assert.match(client, /PENDING_CASE_PROMPT_KEY/);
   assert.match(client, /sessionStorage\.setItem/);
   assert.match(client, /\.sort\(\(left, right\)/);
