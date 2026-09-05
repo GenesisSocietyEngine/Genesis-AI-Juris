@@ -1,0 +1,33 @@
+name: Rust CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Check workspace
+        run: cargo check --workspace
+      - name: Run Clippy with warnings denied
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Run tests
+        run: cargo test --workspace
+
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install documented minimum Rust version
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.78.0
+      - name: Check workspace on MSRV
+        run: cargo +1.78.0 check --workspace --locked
