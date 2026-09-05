@@ -1,5 +1,23 @@
 # Genesis: Juris — Codex instructions for 5 September 2026
 
+## Execution amendment after the failed cloud run
+
+**Updated:** 2026-09-05. The first GitHub-triggered cloud request ended with "Codex couldn't complete this request. Try again later." No implementation commit or new branch was published by that attempt. The response does not establish a cause; do not infer a code defect, quota issue or image dependency.
+
+Execute P0 as durable checkpoints:
+
+1. **P0a — source restoration:** publish a separate implementation branch/PR with verified native/shared source and inherited CI restored from the reachable historical commit. Keep the root web baseline and frozen migrations. Record exact object identities; do not call inherited floating-toolchain workflows final release evidence.
+2. **P0b — build integration and deterministic CI:** work on the P0a implementation PR. Inspect current failures, fix only actual path/toolchain/lock problems, add web/PDF CI and publish a bounded commit before broader verification.
+3. **P0c — final candidate evidence:** complete the required exact-head gates and ERP pilot checklist; keep unavailable gates explicitly blocked.
+
+Read the current PR and its checkpoint receipt first. Continue from a verified published checkpoint; do not restore the same files repeatedly. If P0a was already completed by the coordinating agent, start at P0b.
+
+Use committed repository content and accessible Git history as task inputs. The owner's screenshot merely shows the generic failure. No chat scratch image, local attachment path or missing image is required for source recovery.
+
+For the cloud continuation, update the existing implementation branch using the integration's supported write path. A separate additional PR is unnecessary once that implementation PR exists. If the runner cannot publish, preserve its patch and report the exact publishing limitation; do not imply a successful push.
+
+The full P0 acceptance requirements below remain unchanged. Splitting checkpoints does not turn a partial result, absent test or generic bot acknowledgment into release readiness. Deployment, merge, confidential activation and Phase C remain outside this execution.
+
 ## Outcome and scope
 
 **Prepared:** 2026-09-05, from a read-only GitHub and Sites audit.  
