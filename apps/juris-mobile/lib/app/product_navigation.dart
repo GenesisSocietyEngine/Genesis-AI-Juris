@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 
 /// Stable product-level destinations shared by Templates, Studio, and Matter
 /// surfaces. These are deliberately separate from local gameplay tabs.
-enum JurisProductDestination { myCases, templates, studio, account, organizations }
+enum JurisProductDestination {
+  myCases,
+  templates,
+  studio,
+  account,
+  organizations,
+}
 
 @immutable
 final class JurisProductNavigationController {

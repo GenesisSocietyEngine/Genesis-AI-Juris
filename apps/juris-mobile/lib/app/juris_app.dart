@@ -265,7 +265,9 @@ class _JurisAppState extends State<JurisApp> {
 
   void _openOrganizations() {
     unawaited(
-      _openProfessionalWorkspace(ProfessionalWorkspaceDestination.organizations),
+      _openProfessionalWorkspace(
+        ProfessionalWorkspaceDestination.organizations,
+      ),
     );
   }
 
