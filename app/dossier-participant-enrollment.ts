@@ -13,6 +13,7 @@ import type {
   DossierServerContext,
 } from "./dossier-server";
 import { parseDossierOpaqueId } from "./dossier-security";
+import { assertOrganizationCurrent, organizationMemberActive } from "./organization-store";
 
 export const DOSSIER_ENROLLABLE_ROLES = ["contributor", "reviewer", "viewer"] as const;
 export type DossierEnrollableRole = (typeof DOSSIER_ENROLLABLE_ROLES)[number];
@@ -115,6 +116,12 @@ export async function enrollDossierParticipant(input: {
     displayName: users.displayName,
   }).from(users).where(eq(users.actorId, targetActorId)).limit(1);
   if (!target?.actorId) return unavailable();
+  if (input.context.organization) {
+    try {
+      await assertOrganizationCurrent(input.context.db, input.context.actor, input.context.organization);
+      if (!await organizationMemberActive(input.context.db, input.context.organization.id, target.actorId)) return unavailable();
+    } catch { return unavailable(); }
+  }
 
   const [existing] = await input.context.db.select({ id: dossierParticipants.id })
     .from(dossierParticipants).where(and(

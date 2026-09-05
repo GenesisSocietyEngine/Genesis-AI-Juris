@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import MattersClient from "./MattersClient";
+import OrganizationBoundary from "../organizations/OrganizationBoundary";
 
 export const metadata: Metadata = {
   title: "Matter workspace · GENESIS: JURIS",
@@ -8,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function MattersPage() {
-  return <MattersClient />;
+  return <OrganizationBoundary><MattersClient /></OrganizationBoundary>;
 }

@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 ///
 /// The enum is intentionally closed. Callers cannot supply arbitrary URLs,
 /// dossier identifiers, authentication material, or private case metadata.
-enum ProfessionalWorkspaceDestination { myCases, account }
+enum ProfessionalWorkspaceDestination { myCases, account, organizations }
 
 /// Browser handoff boundary for the authenticated professional workspace.
 abstract interface class ProfessionalWorkspaceLauncher {
@@ -14,7 +14,7 @@ abstract interface class ProfessionalWorkspaceLauncher {
 
 typedef ProfessionalWorkspaceUriOpener = Future<bool> Function(Uri uri);
 
-/// Opens only the two public entry routes on the production workspace origin.
+/// Opens only the allowlisted entry routes on the production workspace origin.
 ///
 /// Authentication and private dossier access remain in the platform browser.
 /// Flutter neither receives nor persists cookies, tokens, or case records.
@@ -32,6 +32,10 @@ final class AllowlistedProfessionalWorkspaceLauncher
     'studio.falcon-merlin.com',
     '/account',
   );
+  static final Uri organizationsUri = Uri.https(
+    'studio.falcon-merlin.com',
+    '/organizations',
+  );
 
   final ProfessionalWorkspaceUriOpener? _opener;
 
@@ -39,6 +43,7 @@ final class AllowlistedProfessionalWorkspaceLauncher
     return switch (destination) {
       ProfessionalWorkspaceDestination.myCases => myCasesUri,
       ProfessionalWorkspaceDestination.account => accountUri,
+      ProfessionalWorkspaceDestination.organizations => organizationsUri,
     };
   }
 
@@ -49,7 +54,9 @@ final class AllowlistedProfessionalWorkspaceLauncher
         uri.userInfo.isEmpty &&
         !uri.hasQuery &&
         !uri.hasFragment &&
-        (uri.path == '/matters' || uri.path == '/account');
+        (uri.path == '/matters' ||
+            uri.path == '/account' ||
+            uri.path == '/organizations');
   }
 
   @override

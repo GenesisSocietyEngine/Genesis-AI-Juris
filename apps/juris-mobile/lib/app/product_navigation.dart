@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Stable product-level destinations shared by Templates, Studio, and Matter
 /// surfaces. These are deliberately separate from local gameplay tabs.
-enum JurisProductDestination { myCases, templates, studio, account }
+enum JurisProductDestination { myCases, templates, studio, account, organizations }
 
 @immutable
 final class JurisProductNavigationController {
@@ -11,12 +11,14 @@ final class JurisProductNavigationController {
     required this.openTemplates,
     required this.openStudio,
     required this.openAccount,
+    this.openOrganizations,
   });
 
   final VoidCallback openMyCases;
   final VoidCallback openTemplates;
   final VoidCallback openStudio;
   final VoidCallback openAccount;
+  final VoidCallback? openOrganizations;
 
   void open(JurisProductDestination destination) {
     switch (destination) {
@@ -28,6 +30,8 @@ final class JurisProductNavigationController {
         openStudio();
       case JurisProductDestination.account:
         openAccount();
+      case JurisProductDestination.organizations:
+        openOrganizations?.call();
     }
   }
 }
@@ -102,6 +106,12 @@ final class ScopedJurisProductNavigation extends StatelessWidget {
         label: _text('Account', 'Аккаунт'),
         icon: Icons.account_circle_outlined,
       ),
+      if (controller.openOrganizations != null)
+        _ProductNavigationItem(
+          destination: JurisProductDestination.organizations,
+          label: _text('Organizations', 'Организации'),
+          icon: Icons.groups_outlined,
+        ),
     ];
 
     if (MediaQuery.sizeOf(context).width < wideBreakpoint) {

@@ -44,7 +44,7 @@ export async function POST(request: Request, routeContext: RouteContext) {
   if (!isSameOriginMutation(request)) {
     return dossierJson({ error: "Cross-site Matter transition rejected." }, 403);
   }
-  const context = await resolveDossierServerContext();
+  const context = await resolveDossierServerContext(request);
   if (isResponse(context)) return context;
   const { dossierId } = await routeContext.params;
   const access = await requireDossierAccess(context, dossierId, "transition");

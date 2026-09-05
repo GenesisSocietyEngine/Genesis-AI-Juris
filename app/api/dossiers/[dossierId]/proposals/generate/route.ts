@@ -36,7 +36,7 @@ export async function POST(request: Request, routeContext: RouteContext) {
   if (!isSameOriginMutation(request)) {
     return dossierJson({ error: "Cross-site proposal generation rejected." }, 403);
   }
-  const context = await resolveDossierServerContext();
+  const context = await resolveDossierServerContext(request);
   if (isResponse(context)) return context;
   const { dossierId } = await routeContext.params;
   const access = await requireDossierAccess(context, dossierId, "proposals");

@@ -28,7 +28,7 @@ type RouteContext = {
 };
 
 export async function GET(_request: Request, routeContext: RouteContext) {
-  const context = await resolveDossierServerContext();
+  const context = await resolveDossierServerContext(_request);
   if (isResponse(context)) return context;
   const routeIds = await routeContext.params;
   const access = await requireDossierAccess(context, routeIds.dossierId, "download");
@@ -94,6 +94,8 @@ export async function GET(_request: Request, routeContext: RouteContext) {
     ) {
       return privateIntegrityError();
     }
+    const current = await requireDossierAccess(context, routeIds.dossierId, "download");
+    if (isResponse(current)) { await object.body.cancel(); return current; }
     return new Response(object.body, {
       status: decision.status,
       headers: {

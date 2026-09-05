@@ -28,6 +28,7 @@ const dossierMigrations = [
 const auditClaimsMigration = "0016_polite_sentinels.sql";
 const uploadCommitmentMigration = "0017_perfect_marvex.sql";
 const statusHistoryMigration = "0018_low_calypso.sql";
+const organizationScopeMigration = "0019_p1_organization_scope.sql";
 const allMigrations = [
   ...legacyMigrations,
   ...dossierMigrations,
@@ -75,7 +76,7 @@ function legacyDossierDatabase() {
 }
 
 test("every D1 migration breakpoint resolves to a non-empty platform statement", () => {
-  for (const name of allMigrations) {
+  for (const name of [...allMigrations, organizationScopeMigration]) {
     const statements = migration(name).split("--> statement-breakpoint");
     assert.ok(
       statements.every((statement) => statement.trim().length > 0),
@@ -104,6 +105,7 @@ test("every D1 migration breakpoint resolves to a non-empty platform statement",
     auditClaimsMigration,
     uploadCommitmentMigration,
     statusHistoryMigration,
+    organizationScopeMigration,
   ]) {
     const sql = migration(name);
     assert.doesNotMatch(
@@ -123,6 +125,32 @@ test("every D1 migration breakpoint resolves to a non-empty platform statement",
       `${name} must parenthesize SELECT CASE so remote D1 does not terminate the trigger early`,
     );
   }
+});
+
+test("P1 forward migration preserves existing dossiers and receipts and binds only explicit participants", () => {
+  const db = database();
+  try {
+    const owner = user(db, "migration-owner@example.test");
+    const outsider = user(db, "same-domain@example.test");
+    const dossierId = "dossier_" + "9".repeat(32);
+    dossier(db, dossierId, owner);
+    const tables = ["dossiers", "dossier_participants", "dossier_audit_events", "dossier_revision_receipts"];
+    const before = tables.map((name) => db.prepare(`SELECT * FROM ${name} ORDER BY rowid`).all());
+    db.exec(migration(organizationScopeMigration));
+    assert.deepEqual(tables.map((name) => db.prepare(`SELECT * FROM ${name} ORDER BY rowid`).all()), before);
+    const binding = db.prepare("SELECT organization_id FROM dossier_organization_bindings WHERE dossier_id=?").get(dossierId);
+    assert.equal(binding?.organization_id, "org_personal_" + actor(db, owner));
+    assert.equal(db.prepare("SELECT count(*) AS n FROM organization_memberships WHERE organization_id=? AND user_id=?")
+      .get(binding?.organization_id as string, outsider)?.n, 0);
+    assert.equal(db.prepare("SELECT count(*) AS n FROM pragma_foreign_key_check").get()?.n, 0);
+    assert.throws(() => db.prepare("UPDATE dossier_organization_bindings SET organization_id=? WHERE dossier_id=?")
+      .run("org_personal_" + actor(db, outsider), dossierId), /immutable/u);
+    assert.throws(() => db.prepare("DELETE FROM dossier_organization_bindings WHERE dossier_id=?").run(dossierId), /immutable/u);
+    assert.throws(() => dossier(db, "dossier_" + "8".repeat(32), owner), /organization authority required/u);
+    assert.equal(db.prepare("SELECT count(*) AS n FROM dossiers").get()?.n, 1);
+    assert.throws(() => db.prepare("UPDATE organizations SET status='suspended',revision=revision+1 WHERE id=?")
+      .run(binding?.organization_id as string), /approved lifecycle transition required/u);
+  } finally { db.close(); }
 });
 
 function user(db: DatabaseSync, email: string, displayName = email) {

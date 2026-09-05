@@ -123,6 +123,7 @@ class _JurisAppState extends State<JurisApp> {
             openTemplates: _openTemplates,
             openStudio: _openStudio,
             openAccount: _openAccount,
+            openOrganizations: _openOrganizations,
           ),
           child: child ?? const SizedBox.shrink(),
         );
@@ -259,6 +260,12 @@ class _JurisAppState extends State<JurisApp> {
   void _openAccount() {
     unawaited(
       _openProfessionalWorkspace(ProfessionalWorkspaceDestination.account),
+    );
+  }
+
+  void _openOrganizations() {
+    unawaited(
+      _openProfessionalWorkspace(ProfessionalWorkspaceDestination.organizations),
     );
   }
 

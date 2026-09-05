@@ -16,7 +16,7 @@ const MAX_PAGE_SIZE = 50;
 const MAX_DETAIL_CHARACTERS = 16_384;
 
 export async function GET(request: Request, routeContext: RouteContext) {
-  const context = await resolveDossierServerContext();
+  const context = await resolveDossierServerContext(request);
   if (isResponse(context)) return context;
   const { dossierId } = await routeContext.params;
   const access = await requireDossierAccess(context, dossierId, "audit");

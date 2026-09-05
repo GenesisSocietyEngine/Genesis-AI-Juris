@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 type RouteContext = { params: Promise<{ dossierId: string; outputId: string }> };
 
 export async function GET(_request: Request, routeContext: RouteContext) {
-  const context = await resolveDossierServerContext();
+  const context = await resolveDossierServerContext(_request);
   if (isResponse(context)) return context;
   const { dossierId, outputId: outputIdValue } = await routeContext.params;
   const access = await requireDossierAccess(context, dossierId, "download");
@@ -33,12 +33,15 @@ export async function GET(_request: Request, routeContext: RouteContext) {
     return dossierJson({ error: "Private Matter storage is unavailable.", code: "private_storage_unavailable" }, 503);
   }
   try {
-    return await downloadDossierGovernedOutput({
+    const response = await downloadDossierGovernedOutput({
       context,
       bucket: bindings.DOSSIER_DOCUMENTS,
       dossierId: access.dossier.id,
       outputId,
     });
+    const current = await requireDossierAccess(context, dossierId, "download");
+    if (isResponse(current)) { await response.body?.cancel(); return current; }
+    return response;
   } catch (error) {
     return dossierGovernedErrorResponse(error);
   }
