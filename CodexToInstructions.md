@@ -1,8 +1,82 @@
 # Genesis: Juris — Codex instructions for 5 September 2026
 
+## Current checkpoint — P0 recovery released, publication blocker resolved
+
+**Reverified on 5 September 2026 against GitHub and the native Sites provider.**
+This checkpoint supersedes the historical recovery instructions below, including
+the old cloud-task statements that publication is blocked and P0c is pending.
+Do not restore the source again, reopen PR #47, or deploy another copy of this
+release in response to that old task result.
+
+| Item | Verified state |
+| --- | --- |
+| Recovery implementation | PR #47 merged on 2026-09-05 at 10:35:41 UTC |
+| Released source | `83c97a78547c131570df1b752814353ba0cb1fdb` |
+| Released source tree | `777d1111fa3f7d3442b5eecfcade2205487cf6bc` |
+| P0a / P0b | Restored source and deterministic CI published and merged |
+| P0c technical release gates | All five required workflows passed on the released source; deployment confirmed |
+| Sites version | 70, built from that exact released source |
+| Deployment status | `succeeded`, re-read from the provider |
+| Live Studio | https://genesis-juris-web.maxim-hayan.chatgpt.site |
+| Next engineering milestone | P1 Protected Tenant Foundation, scoped in section 6 |
+
+The authoritative [release receipt](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/47#issuecomment-5551289624)
+contains exact workflow, artifact, version and deployment IDs. The cloud task's
+local P0b commit `5c848d4bcff38cc82f8a4489c068b9fc73b39ef5` was recovered as
+published commit `4d585cc94fd9010a5ab970fae60eaf16c7f3c0a9`, with the same tree
+`47004d47d87bdf116eede1b87e280c64a94f12aa`. The subsequent PDF correction is
+`5875dec8552eb53ece46ffc130cd1344f3804bd0`. Do not try to push the obsolete local
+commit onto the already-merged recovery branch.
+
+Verification limits remain explicit: Flutter's 12 Windows pixel-golden tests
+were platform-skipped on Linux, not passed. The separate Windows PDF job did
+pass its unchanged 55-PNG baseline for the 47-PDF / 702-page corpus. The five
+synthetic ERP journeys are prepared acceptance specifications, still **NOT RUN**
+as browser/user trials. P1 tenant/OIDC completion, confidential-data activation,
+Phase C and app-store distribution are not part of this completed recovery.
+
+Start future assigned work from the freshly observed `main` that contains the
+released commit. Later documentation commits can advance `main` without changing
+the source deployed as version 70. Keep the current checkout, tested revision and
+deployed revision separate; never label their different SHAs as a source mismatch
+without first checking ancestry and the actual changed paths.
+
+### Publication handoff when a cloud runner lacks GitHub access
+
+1. Read this checkpoint and live PR state before acting on a historical task
+   result. Record the starting SHA/tree, branch, working-tree status and available
+   publication capabilities. Missing `origin`, unauthenticated `gh`, denied direct
+   network access or an absent `make_pr` tool describe that runner only.
+2. Use an available, authorized GitHub connector or the established authenticated
+   Git transport. Never add credentials to repository files or remote URLs,
+   disable proxy controls, or keep retrying the same rejected network route.
+3. If that runner has no supported publication path, commit the bounded work and
+   produce a binary-capable full-index patch or Git bundle for the explicit
+   starting commit through the final commit. Provide the base/head/tree, changed
+   paths, artifact SHA-256 and an accessible artifact or task link. Report the
+   exact limitation; do not stop with only "cannot push" or claim publication.
+4. The owning coordinator can recover that artifact through the connected GitHub
+   environment. Verify its checksum, provenance and resulting tree against the
+   task receipt in an isolated checkout, then publish to the actual open task PR.
+   If another writer changed its base, reconcile and record a new candidate/tree
+   and verification rather than overwriting the branch or reusing old results.
+5. Run mandatory hosted gates on the published candidate and retain exact-source
+   results. A bot acknowledgment, local commit, green checks on another head or
+   saved Site version is not evidence of a successful deployment.
+
+This handoff does not expand release authorization or start a concurrent cloud
+task. Ordinary source recovery/publication follows the assigned scope. A new
+feature release must meet its own gates and existing owner authorization.
+
+## Historical execution instructions — completed recovery release
+
+The remaining sections preserve the approved scope, history and P1 backlog.
+Their restore/fix/merge/deploy steps describe work completed by PR #47; the current
+checkpoint above governs continuation. They do not authorize a duplicate release.
+
 ## Approved release continuation — 5 September 2026
 
-This section is the current execution authority and supersedes earlier no-merge/no-deploy wording **only for this bounded recovery release**. The owner asked to fix the failed checks, provide revised instructions, deploy the agreed version and monitor progress. Interpret the voice-input word “диплом” in that release request as deployment.
+This section records the execution authority used for the completed bounded recovery release. It superseded earlier no-merge/no-deploy wording **only for that release**. The owner asked to fix the failed checks, provide revised instructions, deploy the agreed version and monitor progress. Interpret the voice-input word “диплом” in that release request as deployment.
 
 ### Current checkpoint and actual failure
 

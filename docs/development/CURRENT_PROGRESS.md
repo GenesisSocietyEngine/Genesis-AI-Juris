@@ -3,8 +3,15 @@ document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
 current_release_track: v64_integration_recovery
 current_release_pr: 47
-current_release_checkpoint: 4d585cc94fd9010a5ab970fae60eaf16c7f3c0a9
-current_release_status: correcting_pdf_ci_before_authorized_deployment
+current_release_checkpoint: 83c97a78547c131570df1b752814353ba0cb1fdb
+current_release_tree: 777d1111fa3f7d3442b5eecfcade2205487cf6bc
+current_release_status: deployed_provider_confirmed
+current_release_site_version: 70
+current_release_receipt: https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/47#issuecomment-5551289624
+current_release_deployment_id: appgdep_6a9bf44b2da08191aea2b4fa86b3f2bd
+current_release_deployment_status: succeeded
+current_release_erp_browser_journeys: not_run
+next_milestone: p1_protected_tenant_foundation
 current_release_instruction: CodexToInstructions.md
 branch: docs/visual-identity-catalogue-v1-publication
 base_commit: 920077c29b8578727ca6cb61b0de3c99c4c6bb5c
@@ -122,12 +129,44 @@ decision_dossier_v62_slice5_gate: frozen_migrations_0012_0015_adversarial_audit_
 decision_dossier_v62_web_gate: strict_type_lint_build_audit_pdf_and_493_of_493_green
 decision_dossier_v62_browser_gate: local_http_green_visual_controller_service_unavailable
 decision_dossier_v62_remote_state: no_production_site_version_or_deployment
-last_updated: 2026-09-01
+last_updated: 2026-09-05
 ---
 
 # Current Progress
 
-## 5 September 2026 — current recovery release
+## 5 September 2026 — recovery released and publication unblocked
+
+This is the current status; older entries and legacy release-specific frontmatter
+are historical receipts. PR #47 is merged. Its released source is
+`83c97a78547c131570df1b752814353ba0cb1fdb`, tree
+`777d1111fa3f7d3442b5eecfcade2205487cf6bc`. All five required workflows passed on
+that exact merged source, and the native Sites provider reconfirmed deployment
+`appgdep_6a9bf44b2da08191aea2b4fa86b3f2bd` as `succeeded` for saved version 70.
+
+| Required workflow on released source | Outcome and source evidence |
+| --- | --- |
+| Rust / MSRV | [PASS](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33961085067) |
+| Flutter Mobile UI | [PASS](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33961085037), with 12 Windows-only pixel goldens platform-skipped |
+| Android Native FFI | [PASS](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33961085002) |
+| iOS Native FFI | [PASS](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33961085025) |
+| Root Web and PDF | [PASS](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33961084998), including 496 web tests and 47 PDFs / 702 pages |
+
+[Live Studio](https://genesis-juris-web.maxim-hayan.chatgpt.site) and the
+[full release receipt](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/47#issuecomment-5551289624)
+identify the exact deployed source independently of later documentation changes.
+
+The old P0b cloud task's missing-origin/authentication message is superseded: its
+patch was recovered with matching tree identity, published as `4d585cc`, corrected
+at `5875dec`, and included in this release. Follow the publication handoff in
+`CodexToInstructions.md` if a future runner has the same access limitation.
+
+P0 source/build recovery and its technical release gates are complete. The five
+synthetic ERP browser/user journeys remain **NOT RUN**. The 12 platform-skipped
+Flutter goldens are not counted as passed; Windows PDF baseline validation did
+run and pass. Protected Tenant Foundation remains P1. Tenant/OIDC completion,
+confidential-data activation, Phase C and app-store distribution remain separate.
+
+## 5 September 2026 — historical pre-deployment checkpoint
 
 This entry supersedes older current-status headings below without rewriting their historical receipts. PR #47 restored 487 native/shared files and published deterministic-toolchain CI. At checkpoint `4d585cc94fd9010a5ab970fae60eaf16c7f3c0a9`, all 496 web tests passed; PDF QA failed because Ubuntu installed Poppler 24.02.0 instead of the approved Windows/x64 25.07.0 rasterizer. The current patch corrects that environment and artifact handling, preserving the visual baseline and frozen migrations.
 
