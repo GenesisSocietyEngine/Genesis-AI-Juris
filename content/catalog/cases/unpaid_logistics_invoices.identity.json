@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "case_id": "be_commercial_logistics_001",
+  "fictional": true,
+  "caption": "Velmont Logistics SA v. Orbis Retail Belgium NV",
+  "topic": "Unpaid Logistics Invoices",
+  "short_title": "Unpaid Logistics Invoices",
+  "jurisdiction": "BE",
+  "practice_area": "commercial_litigation",
+  "difficulty": "introductory",
+  "player_client_id": "velmont_logistics",
+  "synopsis": "Velmont Logistics seeks payment of a series of freight and warehousing invoices. Orbis Retail disputes service levels, detention charges, and the contractual basis for several surcharges.",
+  "legal_issues": [
+    "incorporation of logistics terms",
+    "proof of delivery and service performance",
+    "invoice acceptance and protest",
+    "contractual interest and collection costs",
+    "set-off based on alleged service failures"
+  ],
+  "tags": [
+    "logistics",
+    "invoices",
+    "debt_recovery",
+    "claimant",
+    "introductory"
+  ],
+  "parties": [
+    {
+      "party_id": "velmont_logistics",
+      "display_name": "Velmont Logistics SA",
+      "procedural_role": "claimant",
+      "client_contact": {
+        "contact_id": "sophie_maes",
+        "display_name": "Sophie Maes",
+        "role": "Finance Director"
+      }
+    },
+    {
+      "party_id": "orbis_retail_belgium",
+      "display_name": "Orbis Retail Belgium NV",
+      "procedural_role": "defendant"
+    }
+  ]
+}

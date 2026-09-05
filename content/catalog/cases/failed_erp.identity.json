@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "case_id": "be_commercial_failed_erp_001",
+  "fictional": true,
+  "caption": "Asteron Systems NV v. Northbridge Consulting BV",
+  "topic": "Failed ERP Implementation",
+  "short_title": "Failed ERP",
+  "jurisdiction": "BE",
+  "practice_area": "commercial_litigation",
+  "difficulty": "intermediate",
+  "player_client_id": "asteron_systems",
+  "synopsis": "Asteron Systems claims that Northbridge Consulting failed to deliver a usable ERP implementation. Northbridge maintains that scope changes, incomplete data, and weak client governance caused the programme to fail.",
+  "legal_issues": [
+    "contractual scope and change control",
+    "professional standard of care",
+    "causation of implementation failure",
+    "proof and quantification of loss",
+    "procedural compliance and available remedies"
+  ],
+  "tags": [
+    "erp",
+    "technology",
+    "commercial_contract",
+    "expert_evidence",
+    "claimant"
+  ],
+  "parties": [
+    {
+      "party_id": "asteron_systems",
+      "display_name": "Asteron Systems NV",
+      "procedural_role": "claimant",
+      "client_contact": {
+        "contact_id": "asteron_chief_executive",
+        "display_name": "Asteron Systems Chief Executive Officer",
+        "role": "Chief Executive Officer"
+      }
+    },
+    {
+      "party_id": "northbridge_consulting",
+      "display_name": "Northbridge Consulting BV",
+      "procedural_role": "defendant"
+    }
+  ]
+}

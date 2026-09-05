@@ -1,0 +1,23 @@
+{
+  "template_version": 1,
+  "template_id": "commercial_litigation_v1",
+  "schema_version": 1,
+  "fictional": true,
+  "jurisdiction": "BE",
+  "practice_area": "commercial_litigation",
+  "difficulty": "intermediate",
+  "default_synopsis": "A fictional commercial dispute requiring structured intake, evidence assessment, procedural planning, and post-judgment advice.",
+  "default_legal_issues": [
+    "contract formation and interpretation",
+    "performance against contractual obligations",
+    "causation and proof of loss",
+    "evidence preservation and expert support",
+    "procedural compliance and available remedies"
+  ],
+  "default_tags": [
+    "commercial_contract",
+    "belgium",
+    "fictional",
+    "authoring_template"
+  ]
+}

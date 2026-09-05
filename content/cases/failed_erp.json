@@ -1,0 +1,41 @@
+{
+  "id": "failed-erp-implementation",
+  "title": "The Failed ERP Implementation",
+  "jurisdiction": "Belgium",
+  "practice_area": "Commercial disputes",
+  "claim_value_eur": 240000,
+  "opening_subject": "Urgent: ERP supplier termination notice",
+  "opening_message": "Our ERP supplier has terminated the project and denies responsibility. We estimate our losses at EUR 240,000. Some requirements changed during delivery, but the system still failed. Can you take the case?",
+  "opponent_initial_offer_eur": 60000,
+  "partner_brief_due_minutes_from_start": 420,
+  "preservation_due_minutes_from_start": 1980,
+  "claim_due_minutes_from_start": 4860,
+  "junior_review_turnaround_minutes": 240,
+  "expert_turnaround_minutes": 600,
+  "opponent_disclosure_turnaround_minutes": 720,
+  "hearing_delay_minutes_from_filing": 2880,
+  "client_first_warning_after_inactivity_minutes": 180,
+  "client_final_warning_after_inactivity_minutes": 300,
+  "client_termination_after_inactivity_minutes": 480,
+  "hearing_attendance_grace_minutes": 360,
+  "judgment_favorable_threshold": 60,
+  "judgment_dismissal_threshold": 50,
+  "judgment_seed_variance_min": -15,
+  "judgment_seed_variance_max": 15,
+  "live_clock_standard_game_minutes_per_real_minute": 15,
+  "live_clock_speed_multipliers": [
+    1,
+    2,
+    4
+  ],
+  "live_clock_tick_seconds_by_multiplier": {
+    "1": 4,
+    "2": 2,
+    "4": 1
+  },
+  "appeal_deadline_days_after_judgment": 3,
+  "cassation_deadline_days_after_appeal": 3,
+  "client_minimum_trust_for_further_review": 25,
+  "appeal_decision_roll_success_min": 70,
+  "cassation_remittal_roll_success_max": 29
+}
