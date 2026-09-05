@@ -114,17 +114,22 @@ record already contained its subsequent output approval; approval is a later
 append-only event, checked separately.
 
 Local validation: production build, strict TypeScript, contract lock, lint,
-all ten new API journeys and the populated migration test pass. Full web suite
-is rerun for the final candidate; use the exact CI job count and source receipt
-from the implementation PR. Local Node is 24.19.0; hosted CI uses pinned
-22.23.2. Flutter/Android/iOS and Windows PDF baseline are hosted gates and must
-be read on this candidate, not inherited from P0 or PR #48.
+all ten new API journeys and the populated migration test pass. After the
+anonymous sign-in fallback was added, the complete web suite passed 544/544.
+Local Node is 24.19.0; hosted CI uses pinned 22.23.2.
+
+The P1 core head `f74ce2f0384e9ae19a9f83a3086cbbe24018e76f` passed all five
+candidate workflows: Root Web and PDF, Rust CI, Flutter Mobile UI, Android
+Native FFI and iOS Native FFI. The Root workflow reported 543/543 tests before
+the follow-up fallback test, 47 PDFs / 702 pages / 702 PNGs, and the unchanged
+55-PNG visual baseline. Do not inherit those receipts after another code change;
+read the exact-head checks from PR #49 before merge.
 
 ## Remaining acceptance and enterprise gates
 
 | Gate | State / next work |
 | --- | --- |
-| Authenticated desktop journeys | Pending. Preview rendered the shell but remained on loading; no interactive success claimed. Diagnose client loading and repeat with synthetic test accounts. |
+| Authenticated desktop journeys | Partial. Anonymous `/organizations` and `/matters` now server-render a safe top-level sign-in action instead of an endless loading state, verified in supervised desktop preview. Authenticated organization and ERP interactions remain pending: the preview's Vite client entry did not hydrate any client route, including the unchanged main Studio, after a clean preview restart. This is recorded as a preview-runtime limitation, not as an organization-only pass or failure. Repeat against an authenticated, hydrating candidate with synthetic accounts. |
 | Real phones / Flutter browser handoff | Implementation and allowlist tests added; physical-device session return and export/open checks pending. |
 | Professional trials | Not run. Measure completion, assistance, source traceability and report trust separately from automated checks. |
 | Dedicated confidential EU plane | Not provisioned; approved dedicated D1/R2 architecture remains a later gate. Shared validation bindings are not equivalent. |

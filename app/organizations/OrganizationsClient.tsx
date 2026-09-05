@@ -12,10 +12,10 @@ type LifecycleRequest = { id: string; command: string; requestedByActorId: strin
 type Workspace = { organizations: ClientOrganization[]; selected: ClientOrganization | null; actorId: string;
   members: Member[]; requests: LifecycleRequest[]; events: Array<{ id: string; action: string; occurredAt: string }> };
 
-export default function OrganizationsClient() {
+export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn: boolean; signInUrl: string }) {
   const [locale, setLocale] = useState("en");
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
-  const [issue, setIssue] = useState("");
+  const [issue, setIssue] = useState(signedIn ? "" : "Sign in to manage organizations. / Войдите для управления организациями.");
   const [busy, setBusy] = useState(false);
   const [token, setToken] = useState("");
   const [notice, setNotice] = useState("");
@@ -29,11 +29,12 @@ export default function OrganizationsClient() {
     return await response.json() as Workspace;
   }, []);
   useEffect(() => {
+    if (!signedIn) return;
     const controller = new AbortController();
     void load(controller.signal).then((data) => { if (!controller.signal.aborted) setWorkspace(data); })
       .catch((error: Error) => { if (!controller.signal.aborted) setIssue(error.message); });
     return () => controller.abort();
-  }, [load]);
+  }, [load, signedIn]);
   async function action(payload: Record<string, unknown>, form?: HTMLFormElement) {
     setBusy(true); setIssue(""); setNotice(""); setToken("");
     try {
@@ -65,7 +66,7 @@ export default function OrganizationsClient() {
     <h1>{t("Organizations", "Организации")}</h1>
     <p>{t("Choose the team you are working with. Access to each case is assigned separately.", "Выберите команду для работы. Доступ к каждому делу назначается отдельно.")}</p>
     <p className={styles.pilot}>{t("Pilot workspace · synthetic or de-identified files only", "Пилотная версия · только синтетические или обезличенные файлы")}</p>
-    {issue && <p className={styles.issue} role="alert">{issue} <Link href="/account">{t("Account", "Аккаунт")}</Link></p>}
+    {issue && <p className={styles.issue} role="alert">{issue} <a href={signInUrl} target="_top">{t("Sign in", "Войти")}</a> · <Link href="/account">{t("Account", "Аккаунт")}</Link></p>}
     {notice && <p role="status">{notice}</p>}
     {!workspace && !issue && <p role="status">{t("Loading organizations…", "Загрузка организаций…")}</p>}
     {workspace && <>

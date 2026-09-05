@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import MattersClient from "./MattersClient";
 import OrganizationBoundary from "../organizations/OrganizationBoundary";
+import { chatGPTSignInPath, getChatGPTUser } from "../chatgpt-auth";
 
 export const metadata: Metadata = {
   title: "Matter workspace · GENESIS: JURIS",
@@ -8,6 +9,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function MattersPage() {
-  return <OrganizationBoundary><MattersClient /></OrganizationBoundary>;
+export const dynamic = "force-dynamic";
+
+export default async function MattersPage() {
+  const identity = await getChatGPTUser();
+  return <OrganizationBoundary signedIn={Boolean(identity)} signInUrl={chatGPTSignInPath("/matters")}><MattersClient /></OrganizationBoundary>;
 }

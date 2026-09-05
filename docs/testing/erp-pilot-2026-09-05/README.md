@@ -1,7 +1,8 @@
 # Synthetic ERP pilot acceptance packet
 
 Status: five automated journeys executed through the real API and isolated D1/R2.
-Authenticated browser/phone journeys and professional trials are still pending.
+The anonymous desktop entry now presents an immediate safe sign-in action;
+authenticated browser/phone journeys and professional trials are still pending.
 
 Use the existing versioned ERP case at `content/cases/failed_erp.json` and its authoritative scenario at `content/cases/failed_erp.scenario.json`. The three Markdown sources in this directory are fictitious companion evidence for a follow-on dossier demonstration; review and map them explicitly, rather than silently overwriting the authoritative case.
 
@@ -21,7 +22,7 @@ the released ERP case or publish a production template. Run
 
 | Journey | Acceptance evidence | Current state |
 | --- | --- | --- |
-| Create/resume | Named dossier and scoped list/detail reopen; unknown identity and foreign organization denied | API PASS; browser sign-in/return pending |
+| Create/resume | Named dossier and scoped list/detail reopen; unknown identity and foreign organization denied | API PASS; anonymous sign-in entry PASS; authenticated return pending |
 | Source versions | Three sources plus revised bytes/hashes; original remains downloadable; later source update makes output stale | API PASS; browser file selection pending |
 | Reviewed decision | Explicit document, anchor and assertion review; actual play-session decisions complete before exact package linkage | API PASS; observed professional review pending |
 | Roles | Separate organization and dossier roles; reviewer approves, viewer/foreign organization denied; revocation blocks reads and uploads in flight | API PASS with distinct persisted test organizations; browser accounts pending |

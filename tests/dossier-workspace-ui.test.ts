@@ -336,3 +336,24 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.match(css, /@media\(forced-colors:active\)/);
   assert.match(page, /robots: \{ index: false, follow: false \}/);
 });
+
+test("organization-gated pages render a safe sign-in state before client hydration", () => {
+  const organizationsPage = source("app/organizations/page.tsx");
+  const organizationsClient = source("app/organizations/OrganizationsClient.tsx");
+  const mattersPage = source("app/matters/page.tsx");
+  const organizationBoundary = source("app/organizations/OrganizationBoundary.tsx");
+
+  for (const page of [organizationsPage, mattersPage]) {
+    assert.match(page, /export const dynamic = "force-dynamic"/);
+    assert.match(page, /await getChatGPTUser\(\)/);
+    assert.match(page, /signedIn=\{Boolean\(identity\)\}/);
+  }
+  assert.match(organizationsPage, /chatGPTSignInPath\("\/organizations"\)/);
+  assert.match(mattersPage, /chatGPTSignInPath\("\/matters"\)/);
+
+  for (const client of [organizationsClient, organizationBoundary]) {
+    assert.match(client, /if \(!signedIn\) return;/);
+    assert.match(client, /<a href=\{signInUrl\} target="_top">/);
+    assert.match(client, /useState\(signedIn \? "" : "Sign in/);
+  }
+});

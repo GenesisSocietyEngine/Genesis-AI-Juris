@@ -30,12 +30,16 @@ key rotation or compliance export. The imported PR #43 modules for those areas
 are reference implementations, not production adapters. Keep those capabilities
 off until separately configured, integrated and tested.
 
-Next execution: inspect the implementation PR and exact commit's required
-Rust/Flutter/Android/iOS/web/PDF jobs; fix failures on that branch; complete the
-authenticated desktop/phone acceptance matrix. Keep source, tests and hosted
-release receipts distinct. The present assignment authorizes implementation and
-a reviewable draft PR; the prior P0 release authority does not deploy this new
-feature. No production migration or feature release is claimed by this checkpoint.
+Next execution: do not restart the P1 core. The five workflows passed on
+`f74ce2f0384e9ae19a9f83a3086cbbe24018e76f`; a later code change must still use
+its own exact-head checks. The anonymous organization and matter pages now
+server-render an immediate dispatch-owned sign-in action. Complete the
+authenticated desktop/phone acceptance matrix with synthetic accounts in a
+client runtime that demonstrably hydrates the unchanged Studio as well as the
+new pages. Keep source, tests, preview observations and hosted release receipts
+distinct. The present assignment authorizes implementation and a reviewable
+draft PR; the prior P0 release authority does not deploy this new feature. No
+production migration or feature release is claimed by this checkpoint.
 
 ## Current checkpoint — P0 recovery released, publication blocker resolved
 

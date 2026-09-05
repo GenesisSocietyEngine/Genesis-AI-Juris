@@ -8,13 +8,14 @@ import styles from "./organizations.module.css";
 
 /** Mount children only after the server resolves this tab's organization.
  * Full navigation on switch discards every in-flight closure and case cache. */
-export default function OrganizationBoundary({ children }: { children: ReactNode }) {
+export default function OrganizationBoundary({ children, signedIn, signInUrl }: { children: ReactNode; signedIn: boolean; signInUrl: string }) {
   const [organizations, setOrganizations] = useState<ClientOrganization[]>([]);
   const [active, setActive] = useState<ClientOrganization | null>(null);
-  const [issue, setIssue] = useState("");
+  const [issue, setIssue] = useState(signedIn ? "" : "Sign in to open your organization. / Войдите для доступа к организации.");
   const [locale, setLocale] = useState("en");
   const t = (en: string, ru: string) => locale === "ru" ? ru : en;
   useEffect(() => {
+    if (!signedIn) return;
     const controller = new AbortController();
     const organization = new URL(window.location.href).searchParams.get("organization");
     fetch("/api/organizations" + (organization ? "?organization=" + encodeURIComponent(organization) : ""),
@@ -34,7 +35,7 @@ export default function OrganizationBoundary({ children }: { children: ReactNode
     const onPageShow = (event: PageTransitionEvent) => { if (event.persisted) window.location.reload(); };
     window.addEventListener("pageshow", onPageShow);
     return () => { controller.abort(); window.removeEventListener("pageshow", onPageShow); };
-  }, []);
+  }, [signedIn]);
   return <>
     <div className={styles.contextBar}>
       <label>{t("Organization", "Организация")} <select aria-label={t("Organization", "Организация")} value={active?.id ?? ""} onChange={(event) => {
@@ -46,7 +47,7 @@ export default function OrganizationBoundary({ children }: { children: ReactNode
       <Link href={"/organizations" + (active ? "?organization=" + encodeURIComponent(active.id) : "")}>{t("Manage organizations", "Управление организациями")}</Link>
       <label>{t("Language", "Язык")} <select value={locale} onChange={(event) => setLocale(event.target.value)}><option value="en">English</option><option value="ru">Русский</option></select></label>
     </div>
-    {issue && <p className={styles.issue} role="alert">{issue} <Link href="/account">{t("Account and sign in", "Аккаунт и вход")}</Link></p>}
+    {issue && <p className={styles.issue} role="alert">{issue} <a href={signInUrl} target="_top">{t("Sign in", "Войти")}</a> · <Link href="/account">{t("Account", "Аккаунт")}</Link></p>}
     {active ? children : !issue ? <p className={styles.loading} role="status">{t("Loading your organization…", "Загрузка организации…")}</p> : null}
   </>;
 }
