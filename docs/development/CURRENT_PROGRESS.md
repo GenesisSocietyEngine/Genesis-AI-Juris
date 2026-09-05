@@ -1,6 +1,11 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
+current_release_track: v64_integration_recovery
+current_release_pr: 47
+current_release_checkpoint: 4d585cc94fd9010a5ab970fae60eaf16c7f3c0a9
+current_release_status: correcting_pdf_ci_before_authorized_deployment
+current_release_instruction: CodexToInstructions.md
 branch: docs/visual-identity-catalogue-v1-publication
 base_commit: 920077c29b8578727ca6cb61b0de3c99c4c6bb5c
 ios_per_slice_export_audit_status: merged_and_corrected_main_accepted
@@ -121,6 +126,12 @@ last_updated: 2026-09-01
 ---
 
 # Current Progress
+
+## 5 September 2026 — current recovery release
+
+This entry supersedes older current-status headings below without rewriting their historical receipts. PR #47 restored 487 native/shared files and published deterministic-toolchain CI. At checkpoint `4d585cc94fd9010a5ab970fae60eaf16c7f3c0a9`, all 496 web tests passed; PDF QA failed because Ubuntu installed Poppler 24.02.0 instead of the approved Windows/x64 25.07.0 rasterizer. The current patch corrects that environment and artifact handling, preserving the visual baseline and frozen migrations.
+
+The owner has now authorized the verified recovery merge and deployment to the existing Studio. Required final-head checks and a succeeded Sites receipt are still necessary; this entry does not claim either is complete. Follow the latest `CodexToInstructions.md`. The synthetic ERP acceptance packet is in `docs/testing/erp-pilot-2026-09-05/`; its five journeys are prepared and not yet executed. Protected Tenant Foundation remains P1, with no Phase C or confidential activation.
 
 ## Decision-Centric Dossier Workspace v62 release-candidate checkpoint - 2026-09-01
 
