@@ -1,0 +1,42 @@
+name: Rust CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1; Node 24
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Record checked-out source
+        run: echo "sha=$(git rev-parse HEAD) tree=$(git rev-parse HEAD^{tree})"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.95.0
+          components: rustfmt, clippy
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Check workspace
+        run: cargo check --workspace --locked
+      - name: Run Clippy with warnings denied
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Run tests
+        run: cargo test --workspace --locked
+
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1; Node 24
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Record checked-out source
+        run: echo "sha=$(git rev-parse HEAD) tree=$(git rev-parse HEAD^{tree})"
+      - name: Install documented minimum Rust version
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.78.0
+      - name: Check workspace on MSRV
+        run: cargo +1.78.0 check --workspace --locked

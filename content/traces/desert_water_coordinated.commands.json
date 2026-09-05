@@ -1,0 +1,20 @@
+[
+  {"command": "dispatch", "action_id": "accept_residents_mandate"},
+  {"command": "dispatch", "action_id": "commission_defensible_sampling"},
+  {"command": "dispatch", "action_id": "demand_plant_record_preservation"},
+  {"command": "dispatch", "action_id": "interview_affected_residents"},
+  {"command": "dispatch", "action_id": "map_wells_and_exposure_periods"},
+  {"command": "dispatch", "action_id": "obtain_regulatory_records"},
+  {"command": "dispatch", "action_id": "obtain_cooling_and_disposal_records"},
+  {"command": "dispatch", "action_id": "retain_independent_hydrogeologist"},
+  {"command": "dispatch", "action_id": "test_alternative_source_defence"},
+  {"command": "dispatch", "action_id": "investigate_corporate_notice"},
+  {"command": "dispatch", "action_id": "protect_limitation_period"},
+  {"command": "advance_time", "minutes": 360},
+  {"command": "advance_time", "minutes": 90},
+  {"command": "dispatch", "action_id": "review_hydrological_source_assessment"},
+  {"command": "dispatch", "action_id": "prepare_expert_evidence"},
+  {"command": "advance_time", "minutes": 1185},
+  {"command": "dispatch", "action_id": "file_evidence_backed_claim"},
+  {"command": "dispatch", "action_id": "receive_supported_first_instance_judgment"}
+]

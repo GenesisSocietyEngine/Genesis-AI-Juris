@@ -1,0 +1,86 @@
+# V64 Phase A contract freeze
+
+The following additive schemas are frozen at version 1:
+
+* `contracts/organization-contract.v1.schema.json`
+* `contracts/confidential-document-policy.v1.schema.json`
+* `contracts/tenant-resource-manifest.v1.schema.json`
+
+Consumers must reject unknown contract versions, unknown properties, invalid
+enums, malformed IDs, non-EU resource declarations, and missing required
+fields. Additive behavior requires a new schema version rather than silent
+reinterpretation. Schemas contain no secrets or tenant content.
+
+This freeze deliberately distinguishes identity, organisation, and dossier
+authorization scopes. Pre-membership identity flows do not invent membership;
+dossier-scoped flows always require participation. It also excludes ambient
+tenant export authority from `org_admin`. Authorizations carry a concrete
+operation and are constrained by the exact organisation and dossier role.
+Delegated administrator invitation/suspension authority is explicit and
+versioned. A tenant export request requires an independently versioned
+compliance-export grant whose dossier-keyed approval map is the exact export
+set and binds every dossier to its owner, receipt, and content manifest.
+
+The organisation policy set is closed and complete: retention, deletion,
+export, legal hold, offline/mobile, AI disclosure, session, and data
+classification versions are all mandatory. Unknown policy names are rejected.
+The top-level organisation ID and all security-relevant organisation state are
+bound to the current server-owned authorization context: status,
+controller/processor mode, data region, confidential-document mode, and the
+complete policy-version set. The validator reloads or version-checks that
+authoritative state before accepting an action. Organisation and dossier
+actions require `organization.status = active`; provisioning, suspended, and
+closed organisations fail closed immediately. Identity callbacks may establish
+identity but cannot manufacture or retain organisation/dossier authority.
+For every non-identity action, current membership state, organisation role, and
+authorization version are also server-bound. Dossier actions additionally bind
+the exact dossier ID, current dossier role, and active participation state.
+Delegated-administrator and compliance-export grants are resolved from
+immutable server records and bound to the authenticated actor and organisation;
+their current authority version and active status are exact bound fields. The
+export request, manifest, and complete current owner-approval set are verified
+rather than accepted from payload data. Revoked or superseded grants fail
+closed immediately. Both grant types carry a monotonic revision; the server
+resolves the current grant by actor, organisation, authority type (and delegated
+action where applicable), then requires the submitted grant ID/revision to
+match that current pointer. An older immutable active record is not authority.
+
+An approved tenant resource manifest also binds four purpose-prefixed key
+aliases and current EU-jurisdiction evidence for workers, queues, cron, malware
+scanning, extraction, OCR, KMS, logging, analytics, backup/restore, support,
+and AI.
+Missing component evidence or an unknown field invalidates the manifest; it
+cannot be inferred from the region of a storage resource.
+Quarantine, clean, extracted-text, export, and backup storage entries also bind
+distinct purpose namespaces and purpose-specific access aliases; a shared
+unqualified storage binding cannot satisfy the frozen manifest.
+
+An `approved` manifest requires a production-only
+`tenant-activation-validator.v1` receipt covering the top-level verification
+and every processing-component receipt. The validator must re-read the covered
+receipts, verify their hashes, compute `valid_until` as the earliest expiry, and
+enforce `evaluated_at <= now < valid_until` on activation and every capability
+check. Generic JSON Schema validation alone is insufficient; the custom
+`x-require-future-at-validation` assertion is mandatory in the server-owned
+activation validator. Expiry immediately disables the capability.
+
+Offline mobile storage is either absent or carries every required device-bound
+encryption, secure-storage, backup-exclusion, remote-revocation, and clearing
+control. Legal-hold creation/release is split into owner requests and
+reviewer/organisation-admin approvals, bound to separate actors and an
+immutable separation-of-duties receipt. The server authorization validator must
+resolve the immutable `legal-hold-request.v1` record from `request_id`, bind its
+stored action, actor, organisation, dossier, and complete target-object-graph
+digest to the approval authority, and bind the target organisation/dossier to
+the server-resolved authorization context, never to client-supplied context
+fields. The lookup is recorded in
+`request_record_binding_receipt_sha256`; only then may the validator enforce
+the required `x-require-distinct-fields` assertion. It must separately bind
+`approval_actor_id` to the authenticated session actor using the recorded
+session-binding receipt. Generic JSON Schema validation alone is insufficient;
+a missing/mismatched request record, foreign tenant/dossier/object graph,
+self-approval, or a session/actor mismatch fails closed before any receipt is
+accepted.
+
+Phase B must not begin until reviewers accept this freeze and the threat model.
+No confidential activation is implied by accepting either document.

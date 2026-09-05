@@ -1,0 +1,134 @@
+name: Root Web and PDF
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  web-and-pdf:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1; Node 24
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Record checked-out source
+        run: |
+          mkdir -p .artifacts/ci-logs
+          node -e 'const fs=require("node:fs"),cp=require("node:child_process");const git=(...a)=>cp.execFileSync("git",a,{encoding:"utf8"}).trim();fs.writeFileSync(".artifacts/ci-logs/source.json",JSON.stringify({sha:git("rev-parse","HEAD"),tree:git("rev-parse","HEAD^{tree}")},null,2)+"\n")'
+          cat .artifacts/ci-logs/source.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0; Node 24
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Pin npm
+        run: |
+          npm install --global npm@10.9.8
+          test "$(node --version)" = "v22.23.2"
+          test "$(npm --version)" = "10.9.8"
+      - name: Install exact web dependencies
+        run: |
+          lock_sha="$(sha256sum package-lock.json)"
+          npm run install:ci 2>&1 | tee .artifacts/ci-logs/install.log
+          test "$(sha256sum package-lock.json)" = "$lock_sha"
+          git diff --exit-code -- package-lock.json
+      - name: Strict typecheck
+        run: npm run typecheck
+      - name: Verify root-web/mobile contract lock
+        run: npm run parity:lock
+      - name: Lint
+        run: npm run lint
+      - name: Complete web tests and build
+        run: npm test 2>&1 | tee .artifacts/ci-logs/web-tests.log
+      - name: Audit complete dependency tree
+        run: npm audit --audit-level=low 2>&1 | tee .artifacts/ci-logs/audit-full.log
+      - name: Audit production dependency tree
+        run: npm audit --omit=dev --audit-level=low 2>&1 | tee .artifacts/ci-logs/audit-production.log
+      - name: Upload verified web build
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1; Node 24
+        with:
+          name: verified-web-build-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: |
+            dist
+            .artifacts/ci-logs/source.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload web diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1; Node 24
+        with:
+          name: web-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/ci-logs
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
+  pdf-visual:
+    # The approved PNG baseline includes win32/x64, exact Poppler versions,
+    # and canonical artifact paths. Preserve all three instead of rewriting it.
+    runs-on: windows-2022
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1; Node 24
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Record checked-out source
+        run: |
+          New-Item -ItemType Directory -Force .artifacts/ci-logs | Out-Null
+          @{sha = (git rev-parse HEAD); tree = (git rev-parse 'HEAD^{tree}')} |
+            ConvertTo-Json | Set-Content .artifacts/ci-logs/source.json
+          Get-Content .artifacts/ci-logs/source.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0; Node 24
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Pin npm and verify Windows baseline runtime
+        run: |
+          npm.cmd install --global npm@10.9.8
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ((node --version) -ne 'v22.23.2') { throw 'Unexpected Node version' }
+          if ((npm.cmd --version) -ne '10.9.8') { throw 'Unexpected npm version' }
+          node -e "const b=require('./parity/report-pdf-visual-baseline.v1.json');if(process.platform!==b.runtime.platform||process.arch!==b.runtime.architecture)throw Error('PDF baseline runtime mismatch')"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install checksum-pinned Poppler for the approved baseline
+        run: ./.github/scripts/install-pdf-tools.ps1
+      - name: Install exact PDF dependencies on Windows
+        # The repository install wrapper requires Linux flock and /proc.
+        # npm ci is the Windows lock-enforcing equivalent, with a byte hash gate.
+        run: |
+          $lockHash = (Get-FileHash package-lock.json -Algorithm SHA256).Hash
+          npm.cmd ci 2>&1 | Tee-Object .artifacts/ci-logs/install.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ((Get-FileHash package-lock.json -Algorithm SHA256).Hash -ne $lockHash) {
+            throw 'package-lock.json changed during npm ci'
+          }
+          git diff --exit-code -- package-lock.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify all 47 PDFs and the unchanged visual baseline
+        run: |
+          npm.cmd run reports:verify -- .artifacts/v62-report-qa 2>&1 |
+            Tee-Object .artifacts/ci-logs/pdf-verification.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git diff --exit-code -- parity/report-pdf-visual-baseline.v1.json parity/report-graph-layout-fixtures.v1.json package-lock.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload PDF evidence and failure diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1; Node 24
+        with:
+          name: report-pdf-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .artifacts/v62-report-qa
+            .artifacts/ci-logs
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14

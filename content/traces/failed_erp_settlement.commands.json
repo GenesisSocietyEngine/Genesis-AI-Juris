@@ -1,0 +1,5 @@
+[
+  {"command": "dispatch", "action_id": "run-conflict-check"},
+  {"command": "dispatch", "action_id": "request-documents"},
+  {"command": "dispatch", "action_id": "future-settle"}
+]

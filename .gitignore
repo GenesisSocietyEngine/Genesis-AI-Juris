@@ -42,3 +42,18 @@ next-env.d.ts
 /outputs/
 /work/
 /.artifacts/
+
+# Restored Rust and Flutter workspace (P0 source recovery)
+/target/
+/apps/juris-mobile/.dart_tool/
+/apps/juris-mobile/.flutter-plugins
+/apps/juris-mobile/.flutter-plugins-dependencies
+/apps/juris-mobile/build/
+/apps/juris-mobile/coverage/
+/apps/juris-mobile/android/.gradle/
+/apps/juris-mobile/android/local.properties
+/apps/juris-mobile/ios/Pods/
+/apps/juris-mobile/ios/.symlinks/
+/apps/juris-mobile/ios/Flutter/ephemeral/
+/apps/juris-mobile/*.zip
+/juris-mobile-current.zip
