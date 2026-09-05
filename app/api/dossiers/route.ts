@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
 import {
   dossierAIProposals,
+  dossierOrganizationBindings,
   dossierAuditEvents,
   dossierDecisionPackageReferences,
   dossierDocuments,
@@ -32,13 +33,14 @@ import {
   resolveDossierServerContext,
 } from "../../dossier-server";
 import { isSameOriginMutation, readJsonObject } from "../../request-security";
+import { organizationSelectionToken, assertOrganizationCurrent } from "../../organization-store";
 
 export const dynamic = "force-dynamic";
 
 const MAX_PAGE_SIZE = 50;
 
 export async function GET(request: Request) {
-  const context = await resolveDossierServerContext();
+  const context = await resolveDossierServerContext(request);
   if (isResponse(context)) return context;
   const url = new URL(request.url);
   const requestedLimit = Number(url.searchParams.get("limit") ?? "25");
@@ -47,12 +49,14 @@ export async function GET(request: Request) {
   const statusParam = url.searchParams.get("status");
   const priorityParam = url.searchParams.get("priority");
   const cursorParam = url.searchParams.get("cursor");
-  const cursor = cursorParam ? decodeCursor(cursorParam) : null;
+  const scope = organizationSelectionToken(context.organization!);
+  const cursor = cursorParam ? decodeCursor(cursorParam, scope) : null;
   if (cursorParam && !cursor) return dossierJson({ error: "The Matter cursor is invalid." }, 400);
   if (statusParam && !DOSSIER_STATUSES.includes(statusParam as never)) return dossierJson({ error: "The status filter is invalid." }, 400);
   if (priorityParam && !DOSSIER_WIRE_ENUMS.priority.includes(priorityParam as never)) return dossierJson({ error: "The priority filter is invalid." }, 400);
 
   const filters = [
+    eq(dossierOrganizationBindings.organizationId, context.organization!.id),
     eq(dossierParticipants.userId, context.actor.userId),
     eq(dossierParticipants.actorId, context.actor.actorId),
     eq(dossierParticipants.status, "active"),
@@ -79,7 +83,8 @@ export async function GET(request: Request) {
     simulatedPackageCount: sql<number>`(select count(*) from ${dossierDecisionPackageReferences} where ${dossierDecisionPackageReferences.dossierId} = ${dossiers.id} and ${dossierDecisionPackageReferences.state} = 'current' and json_array_length(${dossierDecisionPackageReferences.simulationRunReferences}) > 0)`,
     currentOutputCount: sql<number>`(select count(*) from ${dossierGovernedOutputs} go join ${dossierSnapshots} ds on ds.dossier_id = go.dossier_id and ds.id = go.snapshot_id where go.dossier_id = ${dossiers.id} and ds.dossier_revision = ${dossiers.revision} and (select ose.state from ${dossierOutputStateEvents} ose where ose.dossier_id = go.dossier_id and ose.output_id = go.id order by ose.sequence desc limit 1) = 'current')`,
     approvedCurrentOutputCount: sql<number>`(select count(*) from ${dossierGovernedOutputs} go join ${dossierSnapshots} ds on ds.dossier_id = go.dossier_id and ds.id = go.snapshot_id where go.dossier_id = ${dossiers.id} and ds.dossier_revision = ${dossiers.revision} and (select ose.state from ${dossierOutputStateEvents} ose where ose.dossier_id = go.dossier_id and ose.output_id = go.id order by ose.sequence desc limit 1) = 'current' and exists (select 1 from ${dossierOutputApprovals} oa where oa.dossier_id = go.dossier_id and oa.output_id = go.id))`,
-  }).from(dossiers).innerJoin(dossierParticipants, eq(dossierParticipants.dossierId, dossiers.id))
+  }).from(dossiers).innerJoin(dossierOrganizationBindings, eq(dossierOrganizationBindings.dossierId, dossiers.id))
+    .innerJoin(dossierParticipants, eq(dossierParticipants.dossierId, dossiers.id))
     .where(and(...filters)).orderBy(desc(dossiers.updatedAt), desc(dossiers.id)).limit(limit + 1);
 
   const page = rows.slice(0, limit);
@@ -91,17 +96,20 @@ export async function GET(request: Request) {
   const evaluatedAt = canonicalDossierTimestamp();
   const items = page.map((row) => projectSummary(row, ownerName.get(row.dossier.ownerUserId) ?? "Assigned matter owner", evaluatedAt));
   const last = page.at(-1)?.dossier;
+  try { await assertOrganizationCurrent(context.db, context.actor, context.organization!); }
+  catch { return dossierJson({ error: "Organization access changed. Refresh your organizations." }, 404); }
   return dossierJson({
     dossiers: items,
-    next_cursor: rows.length > limit && last ? encodeCursor(last.updatedAt, last.id) : null,
+    next_cursor: rows.length > limit && last ? encodeCursor(last.updatedAt, last.id, scope) : null,
     count: items.length,
   });
 }
 
 export async function POST(request: Request) {
   if (!isSameOriginMutation(request)) return dossierJson({ error: "Cross-site Matter creation rejected." }, 403);
-  const context = await resolveDossierServerContext();
+  const context = await resolveDossierServerContext(request);
   if (isResponse(context)) return context;
+  if (!context.organization || context.organization.role === "auditor") return dossierJson({ error: "Case creation is unavailable for this organization role." }, 403);
   const payload = await readJsonObject(request, 16_384);
   if (!payload) return dossierJson({ error: "A valid Matter object is required." }, 400);
   if (["ownerUserId", "ownerActorId", "owner_user_id", "owner_actor_id", "organisationId", "organisation_id", "tenantId", "tenant_id", "reference"].some((key) => key in payload)) {
@@ -157,6 +165,8 @@ export async function POST(request: Request) {
   }]);
   try {
     await context.db.batch([
+      context.db.insert(dossierOrganizationBindings).values({ dossierId: values.id, organizationId: context.organization.id,
+        createdByActorId: context.actor.actorId, createdAt: values.createdAt! }),
       context.db.insert(dossiers).values(values),
       context.db.insert(dossierAuditEvents).values(audit!),
       context.db.insert(dossierRevisionReceipts).values(revisionReceipt),
@@ -283,14 +293,14 @@ function canonicalInputTimestamp(value: unknown, label: string) {
   return new Date(epoch).toISOString();
 }
 
-function encodeCursor(updatedAt: string, id: string) {
-  return encodeURIComponent(`${updatedAt}|${id}`);
+function encodeCursor(updatedAt: string, id: string, scope: string) {
+  return encodeURIComponent(`${updatedAt}|${id}|${scope}`);
 }
 
-function decodeCursor(value: string) {
+function decodeCursor(value: string, scope: string) {
   try {
-    const [updatedAt, id, ...rest] = decodeURIComponent(value).split("|");
-    if (rest.length || !updatedAt || !id || new Date(updatedAt).toISOString() !== updatedAt || !/^dossier_[a-f0-9]{32}$/u.test(id)) return null;
+    const [updatedAt, id, cursorScope, ...rest] = decodeURIComponent(value).split("|");
+    if (cursorScope !== scope || rest.length || !updatedAt || !id || new Date(updatedAt).toISOString() !== updatedAt || !/^dossier_[a-f0-9]{32}$/u.test(id)) return null;
     return { updatedAt, id };
   } catch {
     return null;

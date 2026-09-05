@@ -134,6 +134,13 @@
       "when": 1788253895540,
       "tag": "0018_low_calypso",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1788614637672,
+      "tag": "0019_p1_organization_scope",
+      "breakpoints": true
     }
   ]
 }

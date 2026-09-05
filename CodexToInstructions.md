@@ -1,5 +1,46 @@
 # Genesis: Juris — Codex instructions for 5 September 2026
 
+## Active P1 implementation — organizations and synthetic ERP journeys
+
+The owner assigned P1 implementation after the completed recovery. Continue on
+`codex/p1-organizations-erp-2026-09-05`, based on main
+`5a5ce9b1afc3130c6c1dc55ccdc967902033f929` (includes the PR #48 readability update).
+Do not restart P0 or merge the stale PR #43 layout.
+
+Read [P1 implementation and remaining gates](docs/development/P1-ORGANIZATIONS-ERP-2026-09-05.md)
+and the [ERP acceptance packet](docs/testing/erp-pilot-2026-09-05/README.md).
+The implementation now includes durable organization membership, immutable
+dossier bindings, invitations, independent lifecycle approval, request and
+transaction authorization, scoped web selection and mobile browser navigation.
+Migration `0019_p1_organization_scope.sql` is additive; migrations through 0018,
+the dependency lock and hosting configuration remain unchanged.
+
+The five ERP journeys now have executable evidence through **real API handlers
+and isolated D1/R2**, including real play-session decisions, PDF generation and
+reviewer approval. This supersedes "NOT RUN" only for those automated checks.
+Authenticated browser journeys, real-phone checks and professional trials are
+still pending. The initial preview displayed the organization shell but remained
+on loading; do not mark browser interaction or EN/RU behavior as verified from
+server HTML alone. Resolve this gate on the candidate before a feature release.
+
+This is the existing **synthetic/de-identified validation plane**. It does not
+activate confidential ingestion or implement the approved dedicated EU D1/R2
+plane, production Entra/JWKS verification, external KMS, tenant manifests, durable
+key rotation or compliance export. The imported PR #43 modules for those areas
+are reference implementations, not production adapters. Keep those capabilities
+off until separately configured, integrated and tested.
+
+Next execution: do not restart the P1 core. The five workflows passed on
+`f74ce2f0384e9ae19a9f83a3086cbbe24018e76f`; a later code change must still use
+its own exact-head checks. The anonymous organization and matter pages now
+server-render an immediate dispatch-owned sign-in action. Complete the
+authenticated desktop/phone acceptance matrix with synthetic accounts in a
+client runtime that demonstrably hydrates the unchanged Studio as well as the
+new pages. Keep source, tests, preview observations and hosted release receipts
+distinct. The present assignment authorizes implementation and a reviewable
+draft PR; the prior P0 release authority does not deploy this new feature. No
+production migration or feature release is claimed by this checkpoint.
+
 ## Current checkpoint — P0 recovery released, publication blocker resolved
 
 **Reverified on 5 September 2026 against GitHub and the native Sites provider.**

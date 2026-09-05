@@ -56,7 +56,7 @@ const ALLOWED_UPLOAD_FIELDS = new Set([
 type UploadForm = DossierDocumentUploadForm;
 
 export async function GET(_request: Request, routeContext: RouteContext) {
-  const context = await resolveDossierServerContext();
+  const context = await resolveDossierServerContext(_request);
   if (isResponse(context)) return context;
   const { dossierId } = await routeContext.params;
   const access = await requireDossierAccess(context, dossierId, "read");
@@ -187,7 +187,7 @@ export async function POST(request: Request, routeContext: RouteContext) {
   if (!isSameOriginMutation(request)) {
     return dossierJson({ error: "Cross-site document upload rejected." }, 403);
   }
-  const context = await resolveDossierServerContext();
+  const context = await resolveDossierServerContext(request);
   if (isResponse(context)) return context;
   const { dossierId } = await routeContext.params;
   const access = await requireDossierAccess(context, dossierId, "upload");
@@ -253,7 +253,7 @@ export async function POST(request: Request, routeContext: RouteContext) {
     }
   }
 
-  return executeDossierDocumentUpload({
+  const result = await executeDossierDocumentUpload({
     context,
     bucket,
     dossierId: access.dossier.id,
@@ -280,6 +280,10 @@ export async function POST(request: Request, routeContext: RouteContext) {
         ),
     },
   });
+  // Do not return revisions or result metadata to a membership revoked during R2 work.
+  const finalAccess = await requireDossierAccess(context, dossierId, "upload");
+  if (isResponse(finalAccess)) return finalAccess;
+  return result;
 }
 
 function documentDownloadUrl(dossierId: string, documentId: string, versionId: string) {

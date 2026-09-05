@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const source = readFileSync(new URL("../app/dossier-server.ts", import.meta.url), "utf8");
+const organizationSource = readFileSync(new URL("../app/organization-store.ts", import.meta.url), "utf8");
 
 test("dossier server context resolves only persisted stable actor identities", () => {
   assert.match(source, /users\.actorId/u);
@@ -11,11 +12,15 @@ test("dossier server context resolves only persisted stable actor identities", (
   assert.doesNotMatch(source, /users\.organisation|email\.split|GENESIS_ADMIN_EMAILS/u);
 });
 
-test("object access is one active participant join with a non-disclosing 404", () => {
-  assert.match(source, /innerJoin\(dossierParticipants/u);
-  assert.match(source, /eq\(dossierParticipants\.userId, context\.actor\.userId\)/u);
-  assert.match(source, /eq\(dossierParticipants\.actorId, context\.actor\.actorId\)/u);
-  assert.match(source, /eq\(dossierParticipants\.status, "active"\)/u);
+test("object access composes current organization membership and an active participant join with a non-disclosing 404", () => {
+  assert.match(source, /organizationDossierAccess\(context\.db, context\.actor, context\.organization, dossierId\)/u);
+  assert.match(organizationSource, /await assertOrganizationCurrent\(db, actor, authority\)/u);
+  assert.match(organizationSource, /innerJoin\(dossierOrganizationBindings/u);
+  assert.match(organizationSource, /eq\(dossierOrganizationBindings\.organizationId, authority\.id\)/u);
+  assert.match(organizationSource, /innerJoin\(dossierParticipants/u);
+  assert.match(organizationSource, /eq\(dossierParticipants\.userId, actor\.userId\)/u);
+  assert.match(organizationSource, /eq\(dossierParticipants\.actorId, actor\.actorId\)/u);
+  assert.match(organizationSource, /eq\(dossierParticipants\.status, "active"\)/u);
   assert.match(source, /authorizeDossierAction/u);
   assert.match(source, /return dossierNotFound\(\)/u);
 });

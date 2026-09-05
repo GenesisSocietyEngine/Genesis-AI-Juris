@@ -72,7 +72,7 @@ const ALIASED_FIELDS = [
 ] as const;
 
 export async function GET(request: Request, routeContext: RouteContext) {
-  const context = await resolveDossierServerContext();
+  const context = await resolveDossierServerContext(request);
   if (isResponse(context)) return context;
   const { dossierId } = await routeContext.params;
   const access = await requireDossierAccess(context, dossierId, "read");
@@ -136,7 +136,7 @@ export async function POST(request: Request, routeContext: RouteContext) {
   if (!isSameOriginMutation(request)) {
     return dossierJson({ error: "Cross-site decision-package mutation rejected." }, 403);
   }
-  const context = await resolveDossierServerContext();
+  const context = await resolveDossierServerContext(request);
   if (isResponse(context)) return context;
   const { dossierId } = await routeContext.params;
   const access = await requireDossierAccess(context, dossierId, "snapshot");

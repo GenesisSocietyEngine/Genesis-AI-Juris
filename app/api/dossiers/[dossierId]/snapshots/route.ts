@@ -30,7 +30,7 @@ const SNAPSHOT_FIELDS = new Set([
 ]);
 
 export async function GET(_request: Request, routeContext: RouteContext) {
-  const context = await resolveDossierServerContext();
+  const context = await resolveDossierServerContext(_request);
   if (isResponse(context)) return context;
   const { dossierId } = await routeContext.params;
   const access = await requireDossierAccess(context, dossierId, "read");
@@ -49,7 +49,7 @@ export async function POST(request: Request, routeContext: RouteContext) {
   if (!isSameOriginMutation(request)) {
     return dossierJson({ error: "Cross-site Matter snapshot mutation rejected." }, 403);
   }
-  const context = await resolveDossierServerContext();
+  const context = await resolveDossierServerContext(request);
   if (isResponse(context)) return context;
   const { dossierId } = await routeContext.params;
   const access = await requireDossierAccess(context, dossierId, "snapshot");

@@ -1,0 +1,158 @@
+{
+  "caseId": "erp_d365_duplicate_bank_import_pilot",
+  "version": "1.0.0",
+  "caseType": {
+    "registry": "genesis-juris-case-types",
+    "id": "erp_incident",
+    "version": "1.0.0"
+  },
+  "parent": null,
+  "title": "Synthetic D365 duplicate bank-import incident",
+  "jurisdiction": "Belgium / European Union",
+  "role": "ERP finance process owner",
+  "premise": "Northwind Training Lab has two unposted import candidates for STMT-TRAIN-001 following a lost acknowledgement and retry. Posting is paused. Decide how to reconcile the candidates, prove idempotency, obtain independent approval and resume safely. All data is synthetic.",
+  "classification": {
+    "domain": "general",
+    "practiceArea": "ERP finance operations",
+    "difficulty": "Expert",
+    "tags": [
+      "synthetic",
+      "erp",
+      "d365",
+      "reconciliation"
+    ],
+    "taxTopics": [],
+    "complianceOnly": true,
+    "purpose": "compliance_review",
+    "legalAsOf": "2026-09-01",
+    "sourceUrls": []
+  },
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "type": "trigger",
+      "title": "Posting paused after duplicate statement alert",
+      "detail": "01-incident.md: two candidate batches share a statement reference; neither has been posted.",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "actor-2",
+      "type": "actor",
+      "title": "Finance process owner and independent reviewer",
+      "detail": "The owner coordinates reconciliation. A separately assigned reviewer approves the exact output; organization administration alone is insufficient.",
+      "x": 300,
+      "y": 0
+    },
+    {
+      "id": "fact-3",
+      "type": "fact",
+      "title": "Two import attempts; one source statement",
+      "detail": "02-event-log.md: IMPORT-A lost acknowledgement at 01:02; IMPORT-B was created by a retry at 01:05. These events do not prove either candidate is complete.",
+      "x": 600,
+      "y": 0
+    },
+    {
+      "id": "fact-4",
+      "type": "fact",
+      "title": "Ledger remains unchanged; validation is missing",
+      "detail": "01-incident.md and 03-control-plan.md: compare row counts and totals, verify ledger references, prove idempotency in an isolated test and retain rollback evidence.",
+      "x": 0,
+      "y": 180
+    },
+    {
+      "id": "decision-5",
+      "type": "decision",
+      "title": "Select a controlled recovery approach",
+      "detail": "Alternative A: validate one candidate and reversibly remove the redundant staging candidate. Alternative B: quarantine both and reconcile a fresh isolated import. Neither path authorizes production deletion or posting.",
+      "x": 300,
+      "y": 180
+    },
+    {
+      "id": "outcome-6",
+      "type": "outcome",
+      "title": "A: retain one verified candidate",
+      "detail": "Acceptance: complete source reconciliation, no duplicate ledger reference, successful retry test, recoverable staging change and independent reviewer approval before resumption.",
+      "x": 600,
+      "y": 180
+    },
+    {
+      "id": "outcome-7",
+      "type": "outcome",
+      "title": "B: reconcile a controlled replacement",
+      "detail": "Acceptance: preserve both originals, reconcile a fresh isolated import, prove idempotency, retain rollback evidence and obtain independent reviewer approval.",
+      "x": 600,
+      "y": 360
+    }
+  ],
+  "links": [
+    {
+      "id": "edge-001",
+      "from": "trigger-1",
+      "to": "actor-2",
+      "rule": {
+        "label": "Review incident",
+        "detail": "Use the exact synthetic source version and record professional review.",
+        "result": "Proceed only after the stated control is verified.",
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "edge-002",
+      "from": "actor-2",
+      "to": "fact-3",
+      "rule": {
+        "label": "Inspect import log",
+        "detail": "Use the exact synthetic source version and record professional review.",
+        "result": "Proceed only after the stated control is verified.",
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "edge-003",
+      "from": "fact-3",
+      "to": "fact-4",
+      "rule": {
+        "label": "Check reconciliation gaps",
+        "detail": "Use the exact synthetic source version and record professional review.",
+        "result": "Proceed only after the stated control is verified.",
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "edge-004",
+      "from": "fact-4",
+      "to": "decision-5",
+      "rule": {
+        "label": "Compare remedies",
+        "detail": "Use the exact synthetic source version and record professional review.",
+        "result": "Proceed only after the stated control is verified.",
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "edge-005",
+      "from": "decision-5",
+      "to": "outcome-6",
+      "rule": {
+        "label": "Choose alternative A",
+        "detail": "Use the exact synthetic source version and record professional review.",
+        "result": "Proceed only after the stated control is verified.",
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "edge-006",
+      "from": "decision-5",
+      "to": "outcome-7",
+      "rule": {
+        "label": "Choose alternative B",
+        "detail": "Quarantine both candidates; reconcile a controlled replacement in an isolated test.",
+        "result": "Resume only with independently approved reconciliation.",
+        "repeatability": "once"
+      }
+    }
+  ],
+  "editHistory": [],
+  "updatedAt": "2026-09-05T09:00:00.000Z"
+}

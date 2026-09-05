@@ -16,6 +16,12 @@ void main() {
         ),
         Uri.parse('https://studio.falcon-merlin.com/account'),
       );
+      expect(
+        AllowlistedProfessionalWorkspaceLauncher.uriFor(
+          ProfessionalWorkspaceDestination.organizations,
+        ),
+        Uri.parse('https://studio.falcon-merlin.com/organizations'),
+      );
     });
 
     test('accepts only the exact HTTPS origin and entry paths', () {
@@ -64,10 +70,12 @@ void main() {
 
       await launcher.open(ProfessionalWorkspaceDestination.myCases);
       await launcher.open(ProfessionalWorkspaceDestination.account);
+      await launcher.open(ProfessionalWorkspaceDestination.organizations);
 
       expect(opened, <Uri>[
         Uri.parse('https://studio.falcon-merlin.com/matters'),
         Uri.parse('https://studio.falcon-merlin.com/account'),
+        Uri.parse('https://studio.falcon-merlin.com/organizations'),
       ]);
       for (final Uri uri in opened) {
         expect(uri.hasQuery, isFalse);

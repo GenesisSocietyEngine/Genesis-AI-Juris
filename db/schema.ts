@@ -1,6 +1,104 @@
 import { sql } from "drizzle-orm";
 import { check, foreignKey, index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+// P1 validation workspaces. Confidential data planes still require the frozen
+// per-tenant resource manifest and are never enabled by these shared-DB rows.
+export const organizations = sqliteTable("organizations", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  kind: text("kind").notNull().default("team"),
+  status: text("status").notNull().default("active"),
+  revision: integer("revision").notNull().default(1),
+  createdByActorId: text("created_by_actor_id").notNull(),
+  createdAt: text("created_at").notNull(),
+}, (t) => [
+  check("organizations_status_check", sql`${t.status} in ('provisioning','active','suspended','closed')`),
+  check("organizations_kind_check", sql`${t.kind} in ('personal','team')`),
+  check("organizations_revision_check", sql`${t.revision} >= 1`),
+]);
+
+export const organizationMemberships = sqliteTable("organization_memberships", {
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  actorId: text("actor_id").notNull(),
+  role: text("role").notNull(),
+  status: text("status").notNull().default("active"),
+  revision: integer("revision").notNull().default(1),
+  createdAt: text("created_at").notNull(),
+}, (t) => [
+  uniqueIndex("organization_memberships_user_uidx").on(t.organizationId, t.userId),
+  uniqueIndex("organization_memberships_actor_uidx").on(t.organizationId, t.actorId),
+  foreignKey({ columns: [t.userId, t.actorId], foreignColumns: [users.id, users.actorId] }),
+  check("organization_memberships_role_check", sql`${t.role} in ('org_owner','org_admin','member','auditor')`),
+  check("organization_memberships_status_check", sql`${t.status} in ('active','suspended','removed')`),
+  check("organization_memberships_revision_check", sql`${t.revision} >= 1`),
+]);
+
+// An immutable, total mapping preserves the already sealed dossier/audit rows.
+// Every descendant has an existing composite dossier FK. The forward migration
+// adds a deferred binding commitment, so even a new dossier cannot be unscoped.
+export const dossierOrganizationBindings = sqliteTable("dossier_organization_bindings", {
+  dossierId: text("dossier_id").primaryKey().references(() => dossiers.id),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  createdByActorId: text("created_by_actor_id").notNull(),
+  createdAt: text("created_at").notNull(),
+}, (t) => [uniqueIndex("dossier_organization_bindings_scope_uidx").on(t.organizationId, t.dossierId)]);
+
+export const dossierOrganizationCommitments = sqliteTable("dossier_organization_commitments", {
+  dossierId: text("dossier_id").primaryKey().references(() => dossiers.id),
+}, (t) => [foreignKey({ columns: [t.dossierId], foreignColumns: [dossierOrganizationBindings.dossierId] })]);
+export const organizationCasGuards = sqliteTable("organization_cas_guards", {
+  changed: integer("changed").notNull(),
+}, (t) => [check("organization_cas_guards_check", sql`${t.changed}=1`)]);
+export const organizationAuthorityChecks = sqliteTable("organization_authority_checks", {
+  valid: integer("valid").notNull(),
+}, (t) => [check("organization_authority_checks_check", sql`${t.valid}=1`)]);
+
+export const organizationInvitations = sqliteTable("organization_invitations", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  tokenDigest: text("token_digest").notNull(),
+  recipientActorId: text("recipient_actor_id").notNull(),
+  role: text("role").notNull(),
+  status: text("status").notNull().default("pending"),
+  invitedByActorId: text("invited_by_actor_id").notNull(),
+  inviterRevision: integer("inviter_revision").notNull(),
+  organizationRevision: integer("organization_revision").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  createdAt: text("created_at").notNull(),
+}, (t) => [
+  uniqueIndex("organization_invitations_digest_uidx").on(t.tokenDigest),
+  check("organization_invitations_role_check", sql`${t.role} in ('org_admin','member','auditor')`),
+  check("organization_invitations_status_check", sql`${t.status} in ('pending','accepted','revoked')`),
+]);
+
+export const organizationLifecycleRequests = sqliteTable("organization_lifecycle_requests", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  command: text("command").notNull(),
+  requestedByActorId: text("requested_by_actor_id").notNull(),
+  requesterRevision: integer("requester_revision").notNull(),
+  organizationRevision: integer("organization_revision").notNull(),
+  status: text("status").notNull().default("pending"),
+  approvedByActorId: text("approved_by_actor_id"),
+  expiresAt: text("expires_at").notNull(),
+  createdAt: text("created_at").notNull(),
+}, (t) => [check("organization_lifecycle_command_check", sql`${t.command} in ('suspend','resume','close')`)]);
+
+export const organizationSecurityEvents = sqliteTable("organization_security_events", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  sequence: integer("sequence").notNull(),
+  actorId: text("actor_id").notNull(),
+  action: text("action").notNull(),
+  targetId: text("target_id").notNull(),
+  organizationRevision: integer("organization_revision").notNull(),
+  membershipRevision: integer("membership_revision").notNull(),
+  previousDigest: text("previous_digest"),
+  digest: text("digest").notNull(),
+  occurredAt: text("occurred_at").notNull(),
+}, (t) => [uniqueIndex("organization_security_events_sequence_uidx").on(t.organizationId, t.sequence)]);
+
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   // Stable opaque authority identifier for dossier contracts. Authentication

@@ -61,6 +61,7 @@ void main() {
     expect(find.text('Templates'), findsOneWidget);
     expect(find.text('Studio'), findsOneWidget);
     expect(find.text('Account'), findsOneWidget);
+    expect(find.text('Organizations'), findsOneWidget);
 
     await tester.tap(
       find.byKey(const ValueKey<String>('product-navigation-menu-myCases')),
@@ -90,6 +91,7 @@ void main() {
     expect(find.text('Шаблоны'), findsOneWidget);
     expect(find.text('Студия'), findsOneWidget);
     expect(find.text('Аккаунт'), findsOneWidget);
+    expect(find.text('Организации'), findsOneWidget);
 
     await tester.tap(
       find.byKey(const ValueKey<String>('product-navigation-menu-studio')),
@@ -99,7 +101,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('desktop width exposes four direct labelled actions', (
+  testWidgets('desktop width exposes five direct labelled actions', (
     WidgetTester tester,
   ) async {
     final List<JurisProductDestination> opened = <JurisProductDestination>[];
@@ -127,6 +129,7 @@ void main() {
     expect(find.bySemanticsLabel('Templates'), findsOneWidget);
     expect(find.bySemanticsLabel('Studio'), findsOneWidget);
     expect(find.bySemanticsLabel('Account'), findsOneWidget);
+    expect(find.bySemanticsLabel('Organizations'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -360,7 +363,7 @@ void main() {
     },
   );
 
-  testWidgets('JurisApp hands off only My cases and Account', (
+  testWidgets('JurisApp hands off My cases, Account and Organizations', (
     WidgetTester tester,
   ) async {
     tester.view.devicePixelRatio = 1;
@@ -391,6 +394,15 @@ void main() {
     expect(launcher.opened, <ProfessionalWorkspaceDestination>[
       ProfessionalWorkspaceDestination.myCases,
       ProfessionalWorkspaceDestination.account,
+    ]);
+    await _selectProductDestination(
+      tester,
+      JurisProductDestination.organizations,
+    );
+    expect(launcher.opened, <ProfessionalWorkspaceDestination>[
+      ProfessionalWorkspaceDestination.myCases,
+      ProfessionalWorkspaceDestination.account,
+      ProfessionalWorkspaceDestination.organizations,
     ]);
   });
 
@@ -549,6 +561,8 @@ Future<void> _pumpNavigation(
           openTemplates: () => opened.add(JurisProductDestination.templates),
           openStudio: () => opened.add(JurisProductDestination.studio),
           openAccount: () => opened.add(JurisProductDestination.account),
+          openOrganizations: () =>
+              opened.add(JurisProductDestination.organizations),
         ),
         child: Scaffold(
           appBar: AppBar(

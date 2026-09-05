@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { getDb } from "../db";
 import {
   dossierAuditEvents,
@@ -22,6 +22,9 @@ import {
 } from "./dossier-security";
 import { getChatGPTUser } from "./chatgpt-auth";
 import { isPlatformAdmin } from "./server-authorization";
+import { headers } from "next/headers";
+import { ensurePersonalOrganization, organizationDossierAccess, organizationSelection, organizationScopedDb, resolveOrganization, OrganizationError,
+  type OrganizationAuthority } from "./organization-store";
 
 export type DossierDb = ReturnType<typeof getDb>;
 
@@ -36,6 +39,7 @@ export type DossierServerActor = {
 export type DossierServerContext = {
   db: DossierDb;
   actor: DossierServerActor;
+  organization?: OrganizationAuthority;
 };
 
 export type DossierAccess = {
@@ -44,7 +48,7 @@ export type DossierAccess = {
   role: DossierRole;
 };
 
-export async function resolveDossierServerContext(): Promise<DossierServerContext | Response> {
+export async function resolveDossierServerContext(request?: Request, options: { identityOnly?: boolean } = {}): Promise<DossierServerContext | Response> {
   const identity = await getChatGPTUser();
   if (!identity) return dossierJson({ error: "Sign in is required." }, 401);
   const email = identity.email.toLowerCase();
@@ -66,7 +70,7 @@ export async function resolveDossierServerContext(): Promise<DossierServerContex
   } catch {
     return dossierJson({ error: "The governed actor identity is unavailable.", code: "actor_identity_unavailable" }, 503);
   }
-  return {
+  const context: DossierServerContext = {
     db,
     actor: {
       userId: user.id,
@@ -76,6 +80,18 @@ export async function resolveDossierServerContext(): Promise<DossierServerContex
       platformAdmin: isPlatformAdmin(identity),
     },
   };
+  if (options.identityOnly) return context;
+  try {
+    await ensurePersonalOrganization(db, context.actor);
+    const requestHeaders = request?.headers ?? new Headers(await headers());
+    context.organization = await resolveOrganization(db, context.actor, organizationSelection(requestHeaders, request?.url));
+    context.db = organizationScopedDb(db, context.actor, context.organization);
+    return context;
+  } catch (error) {
+    return dossierJson({ error: "Choose an available organization to continue.",
+      code: error instanceof OrganizationError ? error.code : "organization_service_unavailable" },
+      error instanceof OrganizationError ? error.status : 503);
+  }
 }
 
 /** Performs one joined participant lookup so unknown and unauthorized dossier
@@ -91,15 +107,10 @@ export async function requireDossierAccess(
   } catch {
     return dossierNotFound();
   }
-  const [record] = await context.db.select({
-    dossier: dossiers,
-    participant: dossierParticipants,
-  }).from(dossiers).innerJoin(dossierParticipants, and(
-    eq(dossierParticipants.dossierId, dossiers.id),
-    eq(dossierParticipants.userId, context.actor.userId),
-    eq(dossierParticipants.actorId, context.actor.actorId),
-    eq(dossierParticipants.status, "active"),
-  )).where(eq(dossiers.id, dossierId)).limit(1);
+  if (!context.organization) return dossierNotFound();
+  let record: Awaited<ReturnType<typeof organizationDossierAccess>>;
+  try { record = await organizationDossierAccess(context.db, context.actor, context.organization, dossierId); }
+  catch { return dossierNotFound(); }
   if (!record) return dossierNotFound();
   const decision = authorizeDossierAction({
     action,

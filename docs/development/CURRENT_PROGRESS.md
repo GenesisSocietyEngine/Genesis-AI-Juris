@@ -134,6 +134,23 @@ last_updated: 2026-09-05
 
 # Current Progress
 
+## 5 September 2026 — P1 organizations and ERP implementation candidate
+
+Draft PR #49 contains the additive organization-isolation implementation and
+five synthetic ERP journeys. Core head
+`f74ce2f0384e9ae19a9f83a3086cbbe24018e76f` passed Root Web and PDF, Rust,
+Flutter, Android and iOS workflows. Its web run passed 543/543 tests and all PDF
+gates; the follow-up safe sign-in fallback passes the complete local suite at
+544/544. Read PR #49 for the exact current-head receipts before merge.
+
+The anonymous `/organizations` and `/matters` routes now render a top-level
+sign-in action from server-known identity state instead of waiting indefinitely
+for client hydration. Supervised desktop preview verifies that fallback. It did
+not hydrate any client route, including the unchanged main Studio, after one
+clean restart, so authenticated browser interaction remains unclaimed. Physical
+phone handoff and professional ERP trials are also still pending. No production
+migration, saved Site version or P1 deployment has been performed.
+
 ## 5 September 2026 — recovery released and publication unblocked
 
 This is the current status; older entries and legacy release-specific frontmatter
