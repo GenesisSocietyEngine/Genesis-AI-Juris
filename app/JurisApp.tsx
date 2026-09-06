@@ -1271,7 +1271,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
         const scenarioFile = parsed.scenario;
         const playthroughFile = parsed.playthrough;
 
-        const { requirePlayedCaseServerSession, resolvePlayedCaseScenario } = await import("./played-case-loader");
+        const { requirePlayedCaseServerSession, resolvePlayedCaseScenario, restoredPlayedCaseOutcome } = await import("./played-case-loader");
         const resolvedScenario = await resolvePlayedCaseScenario({ id: scenarioFile.id, caseId: scenarioFile.caseId, contentVersion: scenarioFile.contentVersion, fingerprint: scenarioFile.fingerprint }, catalogueScenarios);
         const importedScenario = resolvedScenario.scenario;
         const legacyMode = resolvedScenario.legacyTiming;
@@ -1417,7 +1417,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
         setActionUseCounts(restoredActionUses);
         setCompletedDeadlineIds(restoredCompletedDeadlines);
         setMissedDeadlineIds(restoredMissedDeadlines);
-        setOutcome(completed ? classifyOutcome(restoredMetrics) : null);
+        setOutcome(restoredPlayedCaseOutcome(completed, importedScenario.stages[restoredStageIndex], restoredLog.at(-1)?.option, classifyOutcome(restoredMetrics)));
         setSelectedOption(null);
         setResultOption(null);
         setDossierRef(importedScenario.materials[0]?.ref ?? null);

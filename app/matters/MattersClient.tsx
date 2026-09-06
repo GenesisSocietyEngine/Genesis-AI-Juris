@@ -559,7 +559,7 @@ export default function MattersClient() {
       </details>
     </section>
 
-    {workspace && (workspace.matter.title === CANOPY_TITLE || workspace.packages.some(item => item.packageId === "project_canopy_managed_site_expansion")) && <p className={styles.pilotNotice}>{CANOPY_DISCLOSURE}</p>}
+    {workspace && (workspace.matter.title.startsWith(CANOPY_TITLE) || workspace.packages.some(item => item.packageId === "project_canopy_managed_site_expansion")) && <p className={styles.pilotNotice}>{CANOPY_DISCLOSURE}</p>}
     <div className={styles.workspaceLayout}>
       <aside className={styles.catalogue} aria-labelledby="matter-catalogue-title">
         <div className={styles.catalogueHeading}>

@@ -7891,6 +7891,31 @@ test("extraction, snapshots, outputs, approvals and dossier audit remain governe
     ) VALUES ('audit-gap', 'governed-dossier', 2, 5, 'dossier_updated', 'dossier', 'governed-dossier',
       ?, ?, 'owner', '2026-09-01T01:30:00.000Z', 'DOSSIER_UPDATED', 'audit-two-stale-output', ?)
   `).run(ownerId, ownerActor, digest(213)), /UNIQUE|exact predecessor/iu);
+
+  // Preserve a populated historical fixture across the exact 0019 boundary.
+  const upgradeOutsider=user(db,"p1-history-outsider@example.test");
+  const upgradeOutsiderActor=actor(db,upgradeOutsider);
+  for(const name of [auditClaimsMigration,uploadCommitmentMigration,statusHistoryMigration])db.exec(migration(name));
+  assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(),[]);
+  const existingTables=db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT GLOB 'sqlite_*' ORDER BY name").all().map(row=>String(row.name));
+  const quoteTable=(name:string)=>`"${name.replaceAll('"','""')}"`;
+  const captureExisting=()=>existingTables.map(name=>[name,db.prepare(`SELECT * FROM ${quoteTable(name)} ORDER BY rowid`).all()]);
+  for(const name of ["dossier_documents","dossier_document_versions","dossier_document_current_versions","dossier_source_anchors","dossier_extraction_results","dossier_snapshots","dossier_snapshot_document_versions","dossier_snapshot_anchors","dossier_governed_outputs","dossier_output_approvals","dossier_output_state_events","dossier_audit_events","dossier_audit_certifications","dossier_revision_receipts"]){
+    assert.ok(Number(db.prepare(`SELECT count(*) AS n FROM ${quoteTable(name)}`).get()?.n)>0,`${name} must contain preserved history`);
+  }
+  const before0019=captureExisting();db.exec(migration(organizationScopeMigration));assert.deepEqual(captureExisting(),before0019);
+  assert.equal(db.prepare(`SELECT count(*) AS n FROM dossiers d LEFT JOIN dossier_organization_bindings b ON b.dossier_id=d.id WHERE b.dossier_id IS NULL OR b.organization_id <> 'org_personal_' || d.owner_actor_id OR b.created_by_actor_id <> d.owner_actor_id OR b.created_at <> d.created_at`).get()?.n,0,"every existing dossier receives its exact owner binding");
+  const dossierCount=db.prepare("SELECT count(*) AS n FROM dossiers").get()?.n;
+  assert.equal(db.prepare("SELECT count(*) AS n FROM dossier_organization_bindings").get()?.n,dossierCount);
+  assert.equal(db.prepare("SELECT count(*) AS n FROM dossier_organization_commitments").get()?.n,dossierCount);
+  const ownerOrganization=`org_personal_${ownerActor}`;
+  for(const reviewerActor of [reviewerOneActor,reviewerTwoActor])assert.equal(db.prepare("SELECT count(*) AS n FROM organization_memberships WHERE organization_id=? AND actor_id=? AND role='member' AND status='active'").get(ownerOrganization,reviewerActor)?.n,1);
+  assert.equal(db.prepare("SELECT count(*) AS n FROM dossier_participants WHERE dossier_id='governed-other' AND actor_id IN (?,?)").get(reviewerOneActor,reviewerTwoActor)?.n,0,"backfill must not invent access to another dossier");
+  assert.throws(()=>db.prepare("UPDATE dossier_organization_bindings SET organization_id=? WHERE dossier_id='governed-dossier'").run(`org_personal_${reviewerOneActor}`),/immutable/u);
+  assert.throws(()=>db.prepare("DELETE FROM dossier_organization_bindings WHERE dossier_id='governed-dossier'").run(),/immutable/u);
+  assert.throws(()=>db.prepare(`INSERT INTO dossier_participants (id,dossier_id,user_id,actor_id,display_name,role,status,created_by_actor_ref,updated_by_actor_ref,created_at,updated_at) VALUES ('p1-foreign-participant','governed-dossier',?,?,'Foreign','viewer','active',?,?,?,?)`).run(upgradeOutsider,upgradeOutsiderActor,ownerActor,ownerActor,"2026-09-06T09:00:00.000Z","2026-09-06T09:00:00.000Z"),/active organization membership required/u);
+  assert.deepEqual(captureExisting(),before0019,"rejected post-upgrade mutations preserve original history");
+  assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(),[]);assert.equal(db.prepare("PRAGMA integrity_check").get()?.integrity_check,"ok");
 });
 
 test("pilot-scale dossier queries use bounded indexes for 10 documents, versions, 100 anchors and 100 audits", (t) => {

@@ -1367,8 +1367,8 @@ test("a replacement snapshot output stales prior-snapshot formats and approval i
   assert.deepEqual(approvalBoundSnapshot.snapshot.generator, {
     contract_version: "1.0.0",
     report_model_schema_version: 1,
-    renderer_version: "1.1.0",
-    build_version: "canopy-local-candidate-1",
+    renderer_version: "1.2.0",
+    build_version: "canopy-local-candidate-2",
   });
   const approvalBoundPdf = await generateOutput(
     harness,

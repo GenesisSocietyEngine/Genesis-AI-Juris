@@ -2,63 +2,36 @@ import { caseFingerprint, normalizeStudioDraft } from "./case-integrity";
 import { compileStudioDraft } from "./studio-compiler";
 import type { MetricGuard, Scenario, StudioDraft, StudioLink, StudioNode } from "./types";
 
-export const CANOPY_DISCLOSURE = "This demonstration uses entirely fictional organisations, documents, people and figures. It is inspired only by publicly described industry patterns and does not represent Greeneration data, performance, controls or decisions.";
+import { CANOPY_DISCLOSURE } from "./canopy-disclosure";
+import { CANOPY_HISTORICAL_SOURCES, type CanopySource } from "./canopy-source-history";
+import { CANOPY_UPSIDE_INPUTS, canopyGuardDeclaration, type CanopyInputs } from "./canopy-inputs";
+export { CANOPY_DISCLOSURE };
+export type { CanopySource };
 export const CANOPY_TITLE = "Project Canopy — Managed-site expansion gate";
 export const CANOPY_QUESTION = "Should Verdant Atelier accept a managed-site expansion opportunity now, approve a conditional 90-day transition pilot, renegotiate/defer, or decline?";
-export const CANOPY_FIXTURE_VERSION = "1.0.0";
-export type CanopyScenarioId = "base" | "upside" | "downside" | "hard_stop";
-export type CanopySource = { id: string; version: number; title: string; sections: Record<string, string> };
-const assumption = "Illustrative synthetic assumption.";
-export const CANOPY_SOURCES: readonly CanopySource[] = [
- { id:"D01", version:1, title:"Investment mandate and approval thresholds", sections:{
-  Mandate:"The fictional Investment and Operating Committee has ten days from dossier opening to choose a controlled managed-site opportunity. This mandate covers premium crops and a 90-day transition pilot, not commodity-volume expansion.",
-  Thresholds:"Minimum signed demand: 450 packs per week. Required yield: 90%. Maximum downside simple payback: 3 years. Setup commitment: 240000 illustrative credits. These are committee assumptions, not market forecasts.",
-  Safety:"A failed or unavailable mandatory independent food-safety or traceability clearance at the production release gate means no-go regardless of financial attractiveness. No production release is permitted under the conditional pilot until all release conditions are independently accepted.",
-  Alternatives:"Approve full management takeover subject to recorded conditions; approve only a conditional 90-day transition pilot; renegotiate and defer; or decline/no-go."
+export const CANOPY_FIXTURE_VERSION = "2.0.0";
+export type CanopyScenarioId = "base" | "upside" | "downside" | "hard_stop" | "hard_stop_unavailable";
+// Existing eleven source versions remain byte-identical. Corrections are append-only.
+export const CANOPY_SOURCES: readonly CanopySource[] = [...CANOPY_HISTORICAL_SOURCES,
+ {id:"D08",version:2,title:"Staffing confirmation addendum",sections:{
+  Leadership:"Synthetic confirmation, 2026-09-08 09:00 UTC. Operating owner Noah Wren confirms appointment of transition lead Inez Reed and commitment of the minimum operating team for the 480-pack/week scope. Confirmation supersedes the unresolved appointment in D08 v1; an authorized reviewer must accept this exact anchor before using it for readiness.",
+  Reviews:"Mara Vale owns signed-demand scope by day 10; Inez Reed owns commissioning evidence before release; Noah Wren owns team readiness before release. Eli Moss checks the mandate on days 30, 60 and 90. Review demand, yield, traceability, delivery performance and exit conditions at every review."
  }},
- { id:"D02", version:1, title:"Draft farm-management term sheet", sections:{
-  Control:"Verdant Atelier Farms retains authority to pause production and deliveries. The site owner funds the illustrative setup commitment. No exclusivity or irreversible takeover is permitted during the pilot.",
-  Exit:"The pilot lasts 90 days with reviews on days 30, 60 and 90. Exit without expansion is required if signed demand, yield, independent release clearance or staffing conditions fail. Commercial owner: Mara Vale; decision deadline: day 10."
+ {id:"D06",version:3,title:"Synthetic mandatory-clearance failure event",sections:{
+  Commissioning:"The commissioning acceptance recorded in D06 v2 for the 480-pack scope is retained. This later release event changes only mandatory clearance; it does not rewrite the earlier commissioning record.",
+  Clearance:"Synthetic event, 2026-09-09 09:00 UTC. Independent release officer Ari Stone records a FAILED traceability release check for the scoped operation. Finding: the mandatory batch-to-delivery release check did not pass. Clearance is failed, not merely missing. This separate fictional event invokes D01 Safety; authorized review is required."
  }},
- { id:"D03", version:1, title:"Hospitality demand pipeline", sections:{
-  Demand:"Total indicated demand is 600 packs per week: 300 signed, 180 non-binding LOI and 120 expressions of interest. Only 300 count as signed commitments against the 450 minimum.",
-  Gap:"The commercial request of 600 packs per week exceeds evidenced transition capacity of 480 by 120. Non-binding interest is not revenue or a production authorization."
+ {id:"D06",version:4,title:"Synthetic unavailable-clearance alternative record",sections:{
+  Commissioning:"Independent alternative scenario copy: commissioning acceptance remains as in D06 v2. This unavailable-clearance record is not a continuation of the failed-inspection scenario and does not assert an inspection failed.",
+  Clearance:"Synthetic alternative, 2026-09-09 09:00 UTC. Release officer Ari Stone records that the required current clearance certificate is UNAVAILABLE at the release gate. No failed inspection is evidenced. Missing clearance independently blocks release under D01 Safety. All non-clearance Upside inputs remain pinned; authorized review is required."
  }},
- { id:"D03", version:2, title:"Hospitality demand pipeline", sections:{
-  Demand:"The defined 180-pack LOI subset has become signed commitments. Signed demand is now 480 packs per week: the original 300 plus 180. The remaining 120 expressions of interest remain uncommitted; total indicated demand remains 600.",
-  Gap:"Only 480 packs per week are in the approved scope, matching transition capacity. The additional 120 remain excluded pending an independently reviewed capacity change."
- }},
- { id:"D04", version:1, title:"Current capacity and crop-fit report", sections:{
-  Capacity:"Evidenced premium-crop transition capacity is 480 packs per week. The candidate is suitable for the specified high-value crop mix. Commodity-volume expansion is excluded.",
-  Yield:"The release yield threshold is 90%. Base demonstrated yield is 92%; upside is 95%; downside is 85%. These are illustrative synthetic scenario assumptions, not agronomy forecasts."
- }},
- { id:"D05", version:1, title:"Candidate-site technical assessment", sections:{
-  Site:"The fictional candidate has suitable cultivation and environmental-control equipment for premium crops. Full operation depends on independent commissioning evidence and closed release controls.",
-  Readiness:"The material traceability reconciliation item in D06 v1 remains pending. A controlled non-production transition pilot may close it; equipment suitability alone never authorizes production."
- }},
- { id:"D06", version:1, title:"Independent commissioning and traceability-readiness report", sections:{
-  Commissioning:"Independent closure evidence for batch-to-delivery traceability reconciliation is pending. This material readiness gap blocks full operation but is not a failed critical safety control. Controlled non-production pilot work may resolve it.",
-  Clearance:"Base declaration: no critical safety failure is identified. Hard-stop stress declaration: mandatory independent food-safety or traceability clearance fails or is unavailable at the production release gate. That declaration requires no-go even with upside economics."
- }},
- { id:"D06", version:2, title:"Independent commissioning and traceability-readiness report", sections:{
-  Commissioning:"Independent evidence now closes batch-to-delivery traceability reconciliation for the 480-pack scope. The evidence requires explicit authorized review before it can support release.",
-  Clearance:"Upside declaration: mandatory independent food-safety and traceability clearances are passed for the scoped operation. Reopening either clearance as failed or unavailable invokes the D01 no-go rule; this version is not an unconditional perpetual clearance."
- }},
- { id:"D07", version:1, title:"Illustrative unit-economics and scenario sheet", sections:{
-  Method:assumption+" Unit: fictional credits. Simple payback = 240000 setup commitment / annual contribution. Contribution = annual revenue - energy - other annual operating costs. These transparent precomputed values are not forecasts, audited calculations or a Genesis financial engine.",
-  Base:"Base: revenue 720000; energy 80000; other costs 520000; total costs 600000; contribution 120000; simple payback 2.00 years. Signed demand 300 packs/week; yield 92%. Headline economics meet the 3-year mandate; evidence and leadership remain conditions.",
-  Upside:"Upside: revenue 840000; energy 80000; other costs 600000; total costs 680000; contribution 160000; simple payback 1.50 years. Signed demand 480 packs/week; yield 95%; accountable leadership confirmed.",
-  Downside:"Downside: revenue 670000; energy 100000; other costs 500000; total costs 600000; contribution 70000; simple payback 3.43 years (rounded from 24/7). Energy rises 25% from 80000; signed demand 300 packs/week; yield 85%. Renegotiate and defer.",
-  HardStop:"Hard stop uses the attractive upside economics (1.50-year payback) with failed or unavailable mandatory release clearance. Recommendation remains no-go. Financial values do not alter safety clearance.",
-  Underwriting:"Conservative base pilot: revenue 690000 - energy 90000 - other 520000 = contribution 80000. Conservative upside operation: revenue 780000 - energy 100000 - other 600000 = contribution 80000. Both downside paybacks are 240000 / 80000 = 3.00 years, meeting the mandate. The separate Downside stress contribution of 70000 breaches it and requires renegotiation/exit. Illustrative synthetic assumptions."
- }},
- { id:"D08", version:1, title:"Staffing and 90-day transition plan", sections:{
-  Leadership:"Base: transition leader appointment and minimum-team commitment are unresolved. Upside declared assumption: transition lead Inez Reed and the minimum team are confirmed before release. Operating owner Noah Wren must evidence confirmation by day 10.",
-  Reviews:"Mara Vale owns signed-demand scope by day 10; Inez Reed owns commissioning evidence before release; Noah Wren owns team readiness before release; finance owner Eli Moss checks the mandate on days 30, 60 and 90. Review demand, yield, traceability, delivery performance and exit conditions at every review."
- }},
- { id:"D09", version:1, title:"Cold-chain and delivery service model", sections:{
-  Service:"The fictional service model supports same-day hospitality deliveries for up to 480 packs per week. Cold-chain capacity matches the scoped upside volume. Delivery owner Sol Hart retains a contingency carrier and may pause deliveries.",
-  Controls:"Production and deliveries require accepted independent release clearance. Monitor freshness SLA and routing capacity at the day 30, 60 and 90 reviews. No customer names, actual facility details or real operating figures are used."
+ {id:"D07",version:2,title:"Reviewed scenario assumptions and units addendum",sections:{
+  Method:"Illustrative synthetic assumptions, not forecasts. Annual values use fictional credits; volume is packs/week. Simple payback is setup divided by annual contribution. D01 thresholds are demand >=450 packs/week, yield >=90%, conservative payback <=3 years. Percentages describe declared assumptions, not measured production.",
+  Base:"Source baseline: 300 signed packs/week (D03 v1). Scenario assumptions: demand 300, yield 92%; annual revenue 720000, energy 80000, other costs 520000; contribution 120000; setup 240000; simple payback 2.00 years. Conservative payback 3.00 years. Unresolved source conditions prohibit production.",
+  Upside:"Source baseline: 480 signed packs/week (D03 v2). Scenario assumptions: demand 480, yield 95%; annual revenue 840000, energy 80000, other costs 600000; contribution 160000; setup 240000; simple payback 1.50 years. Conservative payback 3.00 years. Staffing fact comes from D08 v2, not D08 v1's assumption.",
+  Downside:"Source baseline: 480 signed packs/week. Scenario assumption: demand stressed to 300 packs/week to test demand retention; yield 85%, ten percentage points below Upside 95%. Annual revenue 670000, energy 100000 (+25% from 80000), other costs 500000; contribution 70000; setup 240000; payback 3.43 years rounded from 24/7. Explicit professional review is required; D03 v2 stays unchanged.",
+  HardStop:"Pin all accepted Upside non-clearance inputs: demand/baseline/capacity 480 packs/week, yield 95%, annual revenue 840000, energy 80000, other costs 600000, setup 240000, payback 1.50 years and conservative payback 3.00 years; staffing confirmed, commissioning accepted, policy unchanged. Change only clearance from passed to the separately evidenced failed event or unavailable alternative.",
+  Underwriting:"Conservative Base: 690000 - 90000 - 520000 = 80000 annual contribution. Conservative Upside: 780000 - 100000 - 600000 = 80000. Both: 240000 / 80000 = 3.00 years. Downside stress: 240000 / 70000 = 3.43 years (rounded), above the inclusive 3-year maximum. This is transparent fixture arithmetic, not a new financial engine."
  }}
 ];
 export function canopySource(id: string, version: number) {
@@ -70,57 +43,71 @@ export function canopySourceText(source: CanopySource) {
  return "# "+source.id+" v"+source.version+" — "+source.title+"\n\n"+CANOPY_DISCLOSURE+"\n\n"+Object.entries(source.sections).map(([heading,text])=>"## "+heading+"\n\n"+text).join("\n\n")+"\n";
 }
 export type CanopyDeclaration = {
- id: CanopyScenarioId; version: string; label: string; terminal: string;
- d03: number; d06: number; clearance: boolean; fullyReady: boolean; downside: boolean;
+ id: CanopyScenarioId; version: string; parent: CanopyScenarioId|null; label: string; terminal: string;
+ d03: number; d06: number; d08: number; inputs: CanopyInputs;
  recommendation: string; changed: string; why: string; controls: Array<{document: string; version: number; section: string}>;
 };
+const refs = (d03:number,d06:number,d08:number,section:string) => [
+ {document:"D01",version:1,section:"Thresholds"},{document:"D03",version:d03,section:"Demand"},
+ {document:"D06",version:d06,section:"Clearance"},{document:"D06",version:d06,section:"Commissioning"},
+ {document:"D08",version:d08,section:"Leadership"},{document:"D07",version:2,section},
+ {document:"D04",version:1,section:"Capacity"},{document:"D09",version:1,section:"Service"},
+ {document:"D01",version:1,section:"Safety"}];
 export const CANOPY_SCENARIOS: readonly CanopyDeclaration[] = [
- {id:"base",version:"1.0.0",label:"Base",terminal:"conditional-pilot",d03:1,d06:1,clearance:true,fullyReady:false,downside:false,
+ {id:"base",version:"2.0.0",parent:null,label:"Base",terminal:"conditional-pilot",d03:1,d06:1,d08:1,
+ inputs:{...CANOPY_UPSIDE_INPUTS,sourceBaselineSignedPacksPerWeek:300,assumedDemandPacksPerWeek:300,assumedYieldPercent:92,annualRevenueCredits:720000,annualOtherCostsCredits:520000,staffing:"unresolved",commissioning:"pending",clearance:"no_critical_failure_identified"},
  recommendation:"Approve only a conditional 90-day transition pilot. Production release is prohibited until all recorded conditions are accepted.",
- changed:"Opening evidence: 300 signed packs/week, pending independent commissioning evidence and unresolved transition leadership.",
- why:"Acceptable headline economics do not close demand, commissioning or leadership conditions.",
- controls:[{document:"D03",version:1,section:"Demand"},{document:"D06",version:1,section:"Commissioning"},{document:"D08",version:1,section:"Leadership"}]},
- {id:"upside",version:"1.1.0",label:"Upside",terminal:"approve-operation",d03:2,d06:2,clearance:true,fullyReady:true,downside:false,
- recommendation:"Approve managed-site operation for the 480-pack scope, subject to recorded release conditions and 90-day review/exit controls.",
- changed:"D03 v2 signs the defined 180-pack subset; D06 v2 supplies closure; leadership is confirmed; yield is 95%.",
- why:"Signed demand 480 meets 450, commissioned scope is independently evidenced and accepted, and the declared mandate is met.",
- controls:[{document:"D03",version:2,section:"Demand"},{document:"D06",version:2,section:"Commissioning"},{document:"D07",version:1,section:"Upside"},{document:"D08",version:1,section:"Leadership"}]},
- {id:"downside",version:"1.2.0",label:"Downside",terminal:"defer",d03:2,d06:2,clearance:true,fullyReady:false,downside:true,
- recommendation:"Renegotiate and defer. Do not authorize managed-site production or the unbounded expansion.",
- changed:"Energy +25%; yield 85%; signed demand 300; simple payback 3.43 years.",
- why:"Yield and signed demand fall below their thresholds and downside payback exceeds the 3-year mandate.",
- controls:[{document:"D07",version:1,section:"Downside"},{document:"D01",version:1,section:"Thresholds"}]},
- {id:"hard_stop",version:"1.3.0",label:"Hard stop",terminal:"no-go",d03:2,d06:2,clearance:false,fullyReady:true,downside:false,
- recommendation:"No-go. Failed or unavailable mandatory release clearance cannot be overridden by attractive financial returns.",
- changed:"Mandatory release clearance is reopened as failed/unavailable; the attractive upside economics remain unchanged.",
- why:"D01 safety is a hard stop. The graph terminates before financial gates; the approval and pilot branches are unavailable.",
- controls:[{document:"D01",version:1,section:"Safety"},{document:"D06",version:2,section:"Clearance"},{document:"D07",version:1,section:"HardStop"}]}
+ changed:"Source baseline: 300 signed packs/week; commissioning and staffing remain unresolved. Yield 92% and economics are scenario assumptions.",
+ why:"Acceptable illustrative economics do not close demand, commissioning or leadership conditions.",controls:refs(1,1,1,"Base")},
+ {id:"upside",version:"2.1.0",parent:"base",label:"Upside",terminal:"approve-operation",d03:2,d06:2,d08:2,inputs:{...CANOPY_UPSIDE_INPUTS},
+ recommendation:"Recommend managed-site operation within 480 packs/week, subject to accepted release conditions and 90-day review/exit controls.",
+ changed:"D03 v2 evidences 480 signed packs/week; D06 v2 records commissioning and passed clearance; D08 v2 records Noah Wren's dated staffing confirmation. Yield 95% remains a reviewed assumption.",
+ why:"Accepted evidence and reviewed assumptions meet the declared mandate. Memorandum approval is not operational release authority.",controls:refs(2,2,2,"Upside")},
+ {id:"hard_stop",version:"2.2.0",parent:"upside",label:"Hard stop",terminal:"no-go",d03:2,d06:3,d08:2,inputs:{...CANOPY_UPSIDE_INPUTS,clearance:"failed"},
+ recommendation:"No-go: the mandatory traceability clearance failed. Do not begin production, irrespective of attractive economics.",
+ changed:"Only clearance changes from passed to failed, supported by the later synthetic D06 v3 event. Demand, yield, energy, capacity, staffing, commissioning, finances and policy remain pinned to Upside.",
+ why:"D01 Safety blocks every operation/pilot branch. This is an evidenced fictional failed check, distinct from an unavailable certificate.",controls:refs(2,3,2,"HardStop")},
+ {id:"downside",version:"2.4.0",parent:null,label:"Downside",terminal:"defer",d03:2,d06:2,d08:2,
+ inputs:{...CANOPY_UPSIDE_INPUTS,assumedDemandPacksPerWeek:300,assumedYieldPercent:85,annualRevenueCredits:670000,annualEnergyCredits:100000,annualOtherCostsCredits:500000,conservativePaybackYears:24/7},
+ recommendation:"Renegotiate and defer under the reviewed stress assumptions. Production is not authorized.",
+ changed:"Source baseline: 480 signed packs/week. Scenario assumption: demand stressed to 300 packs/week; yield 85% (10 percentage points lower), energy +25%, payback 3.43 years. D03 v2 remains unchanged.",
+ why:"The independently initialized stress copy breaches yield and payback policy; it is not a new signed-demand source fact.",controls:refs(2,2,2,"Downside")}
 ];
+export const CANOPY_UNAVAILABLE: CanopyDeclaration = {
+ ...CANOPY_SCENARIOS[2],id:"hard_stop_unavailable",version:"2.3.0",label:"Clearance unavailable",d06:4,
+ inputs:{...CANOPY_UPSIDE_INPUTS,clearance:"unavailable"},
+ recommendation:"No-go: mandatory clearance is unavailable. No failed inspection is asserted; production remains prohibited.",
+ changed:"Only clearance changes from passed to unavailable, recorded in the independent D06 v4 alternative. All non-clearance Upside inputs remain pinned.",
+ why:"D01 Safety independently blocks missing mandatory clearance; unavailable evidence is not a demonstrated failed inspection.",controls:refs(2,4,2,"HardStop")
+};
 export function canopyDeclaration(id: CanopyScenarioId) {
- const declaration=CANOPY_SCENARIOS.find(s=>s.id===id);
+ const declaration=[...CANOPY_SCENARIOS,CANOPY_UNAVAILABLE].find(s=>s.id===id);
  if(!declaration) throw new Error("Unknown prepared Canopy scenario");
  return declaration;
 }
-export function buildCanopyPackage(id: CanopyScenarioId): {declaration:CanopyDeclaration;draft:StudioDraft;studioFingerprint:string;scenario:Scenario} {
- const declaration=canopyDeclaration(id);
- const index=CANOPY_SCENARIOS.findIndex(s=>s.id===id);
- const previous=index>0?buildCanopyPackage(CANOPY_SCENARIOS[index-1].id):null;
+export function buildCanopyPackage(id: CanopyScenarioId, independent=false): {declaration:CanopyDeclaration;draft:StudioDraft;studioFingerprint:string;scenario:Scenario} {
+ const sourceDeclaration=canopyDeclaration(id);
+ const independentVersions:Record<CanopyScenarioId,string>={base:"2.0.0",upside:"2.5.0",hard_stop:"2.6.0",hard_stop_unavailable:"2.7.0",downside:"2.4.0"};
+ const standalone=independent||id==="downside"||id==="hard_stop_unavailable";
+ const declaration=standalone?{...sourceDeclaration,version:independent?independentVersions[id]:sourceDeclaration.version,parent:null}:sourceDeclaration;
+ const previous=declaration.parent?buildCanopyPackage(declaration.parent):null;
+ const guards=canopyGuardDeclaration(declaration.inputs);
  const detail=(doc:string,version:number,section:string)=>doc+" v"+version+" § "+section+": "+canopySource(doc,version).sections[section];
  const definitions: Array<[string,StudioNode["type"],string,string]> = [
- ["opening","trigger","Review the declared scenario",CANOPY_QUESTION+" "+CANOPY_DISCLOSURE],
+ ["opening","trigger","Review the declared scenario",CANOPY_QUESTION+" "+CANOPY_DISCLOSURE+" Pinned reviewed inputs: "+JSON.stringify(declaration.inputs)],
  ["mandate","decision","Is this within the committee mandate?",detail("D01",1,"Mandate")],
- ["clearance","decision","Do mandatory safety and traceability clearances permit proceeding?",detail("D01",1,"Safety")+" "+(id==="hard_stop"?"Reviewed stress assumption: mandatory clearance is failed or unavailable at release. ":"")+detail("D06",declaration.d06,"Clearance")],
- ["demand","decision","Is sufficient demand signed, not merely indicated?",(id==="downside"?"Declared downside stress assumes 300 signed packs/week (D07 v1 § Downside); this does not rewrite the 480-pack source baseline. ":"")+detail("D03",declaration.d03,"Demand")],
+ ["clearance","decision","Do mandatory safety and traceability clearances permit proceeding?",detail("D01",1,"Safety")+" "+("Clearance state: "+declaration.inputs.clearance+". ")+detail("D06",declaration.d06,"Clearance")],
+ ["demand","decision","Is sufficient demand signed, not merely indicated?",(id==="downside"?"Source baseline: 480 signed packs/week. Scenario assumption: demand stressed to 300 packs/week (D07 v2 § Downside); D03 v2 is unchanged. ":"")+detail("D03",declaration.d03,"Demand")],
  ["crop","decision","Is the site suitable for high-value crops?",detail("D04",1,"Capacity")],
- ["commissioning","decision","Is independent commissioning evidence accepted?",detail("D06",declaration.d06,"Commissioning")],
- ["leadership","decision","Can the accountable leader and minimum team be in place?",detail("D08",1,"Leadership")],
+ ["commissioning","evidence","Is independent commissioning evidence accepted?",detail("D06",declaration.d06,"Commissioning")],
+ ["leadership","actor","Can the accountable leader and minimum team be in place?",detail("D08",declaration.d08,"Leadership")],
  ["cold-chain","decision","Does cold-chain capacity satisfy the service model?",detail("D09",1,"Service")],
- ["economics","decision","Does downside payback meet the mandate?",detail("D07",1,"Underwriting")+" "+detail("D07",1,declaration.id==="hard_stop"?"HardStop":declaration.label)],
+ ["economics","decision","Does downside payback meet the mandate?",detail("D07",2,"Underwriting")+" "+detail("D07",2,declaration.id.startsWith("hard_stop")?"HardStop":declaration.label)],
  ["pilot","decision","Can remaining risks be bounded by pilot and exit conditions?",detail("D02",1,"Exit")],
  ["approve-operation","outcome","Approve managed-site operation",canopyDeclaration("upside").recommendation],
  ["conditional-pilot","outcome","Conditional 90-day transition pilot",canopyDeclaration("base").recommendation],
  ["defer","outcome","Renegotiate and defer",canopyDeclaration("downside").recommendation],
- ["no-go","outcome","Decline / no-go",canopyDeclaration("hard_stop").recommendation]
+ ["no-go","outcome","Decline / no-go",id.startsWith("hard_stop")?declaration.recommendation:"Mandatory failed or unavailable clearance prohibits production. See the exact current clearance record."]
  ];
  const nodes:StudioNode[]=definitions.map(([nodeId,type,title,nodeDetail],index)=>({id:nodeId,type,title,detail:nodeDetail,x:index*260,y:0,
  runtime:{day:1,time:"09:00",...(type==="outcome"?{terminalOutcome:nodeId==="approve-operation"?"strong" as const:nodeId==="no-go"?"weak" as const:"mixed" as const}:{})}}));
@@ -132,20 +119,20 @@ export function buildCanopyPackage(id: CanopyScenarioId): {declaration:CanopyDec
  // They are not farm measurements or financial formulas. No later edge can alter
  // trust (the mandatory clearance latch), so economics cannot reopen a hard stop.
  link("opening","mandate","Apply explicitly reviewed scenario declaration",declaration.changed+" "+declaration.controls.map(c=>c.document+" v"+c.version+" § "+c.section).join("; "),undefined,
- {trust:declaration.clearance?100:-100,evidence:declaration.fullyReady?100:-100,exposure:declaration.downside?100:-100});
+ {trust:guards.clearance?100:-100,evidence:guards.fullyReady?100:-100,exposure:guards.downside?100:-100});
  link("mandate","clearance","Mandate confirmed",detail("D01",1,"Mandate"));
- link("clearance","no-go","Mandatory clearance failed or unavailable",detail("D01",1,"Safety"),[{metric:"trust",comparison:"eq",value:0}]);
+ link("clearance","no-go","Mandatory clearance blocks release: "+declaration.inputs.clearance,detail("D01",1,"Safety")+" "+detail("D06",declaration.d06,"Clearance"),[{metric:"trust",comparison:"eq",value:0}]);
  link("clearance","demand","No critical failure; evaluate remaining conditions",detail("D06",declaration.d06,"Clearance"),[{metric:"trust",comparison:"eq",value:100}]);
  link("demand","crop","Record signed scope and excluded interest",detail("D03",declaration.d03,"Demand"));
  link("crop","commissioning","Premium-crop scope is suitable",detail("D04",1,"Capacity"));
  link("commissioning","leadership","Record closed evidence or a no-production pilot condition",detail("D06",declaration.d06,"Commissioning"));
- link("leadership","cold-chain","Record accountable leadership condition",detail("D08",1,"Leadership"));
+ link("leadership","cold-chain","Record accountable leadership condition",detail("D08",declaration.d08,"Leadership"));
  link("cold-chain","economics","Delivery capacity covers only the scoped volume",detail("D09",1,"Service"));
- link("economics","defer","Downside mandate fails",detail("D07",1,"Downside"),[{metric:"exposure",comparison:"eq",value:100}]);
+ link("economics","defer","Downside mandate fails",detail("D07",2,"Downside"),[{metric:"exposure",comparison:"eq",value:100}]);
  link("economics","pilot","Mandate met; consider evidence and exit conditions",detail("D01",1,"Thresholds"),[{metric:"exposure",comparison:"eq",value:0}]);
  link("pilot","conditional-pilot","Pilot only; prohibit production release",detail("D01",1,"Safety")+" "+detail("D02",1,"Exit"),[{metric:"evidence",comparison:"eq",value:0},{metric:"trust",comparison:"eq",value:100}]);
  link("pilot","approve-operation","Accepted evidence permits scoped operation","Requires accepted signed scope and commissioning closure. "+detail("D03",declaration.d03,"Demand")+" "+detail("D06",declaration.d06,"Commissioning"),[{metric:"evidence",comparison:"eq",value:100},{metric:"trust",comparison:"eq",value:100}]);
- const draft:StudioDraft=normalizeStudioDraft({caseId:"project_canopy_managed_site_expansion",version:declaration.version,
+ const draft:StudioDraft=normalizeStudioDraft({caseId:"project_canopy_managed_site_expansion"+(standalone&&id!=="base"?"_"+id:""),version:declaration.version,
  caseType:{registry:"genesis-juris-case-types",id:"general_advisory",version:"1.0.0"},parent:previous?{caseId:previous.draft.caseId,version:previous.draft.version,fingerprint:previous.studioFingerprint}:null,title:CANOPY_TITLE,
  jurisdiction:"Fictional Gulf market",role:"Investment and Operating Committee",
  premise:CANOPY_QUESTION+" "+declaration.label+": "+declaration.recommendation+" "+CANOPY_DISCLOSURE,
@@ -163,15 +150,15 @@ export function canopyEdgeEvidence(id:CanopyScenarioId) {
  return {
   "opening--mandate":scenario.controls,
   "mandate--clearance":[ref("D01",1,"Mandate")],
-  "clearance--no-go":[ref("D01",1,"Safety")],
+  "clearance--no-go":[ref("D01",1,"Safety"),ref("D06",scenario.d06,"Clearance")],
   "clearance--demand":[ref("D06",scenario.d06,"Clearance")],
-  "demand--crop":[ref("D03",scenario.d03,"Demand"),...(id==="downside"?[ref("D07",1,"Downside")]:[])],
+  "demand--crop":[ref("D03",scenario.d03,"Demand"),...(id==="downside"?[ref("D07",2,"Downside")]:[])],
   "crop--commissioning":[ref("D04",1,"Capacity")],
   "commissioning--leadership":[ref("D06",scenario.d06,"Commissioning")],
-  "leadership--cold-chain":[ref("D08",1,"Leadership")],
+  "leadership--cold-chain":[ref("D08",scenario.d08,"Leadership")],
   "cold-chain--economics":[ref("D09",1,"Service")],
-  "economics--defer":[ref("D07",1,"Downside"),ref("D01",1,"Thresholds")],
-  "economics--pilot":[ref("D07",1,"Underwriting"),ref("D01",1,"Thresholds")],
+  "economics--defer":[ref("D07",2,"Downside"),ref("D01",1,"Thresholds")],
+  "economics--pilot":[ref("D07",2,"Underwriting"),ref("D01",1,"Thresholds")],
   "pilot--conditional-pilot":[ref("D01",1,"Safety"),ref("D02",1,"Exit")],
   "pilot--approve-operation":[ref("D03",scenario.d03,"Demand"),ref("D06",scenario.d06,"Commissioning")],
  };

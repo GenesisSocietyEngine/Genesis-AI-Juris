@@ -1,14 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CANOPY_SOURCES,CANOPY_SCENARIOS,CANOPY_DISCLOSURE,buildCanopyPackage,canopyEdgeEvidence,canopySourceText } from "../app/canopy-fixture";
+import { CANOPY_SOURCES,CANOPY_SCENARIOS,CANOPY_UNAVAILABLE,CANOPY_DISCLOSURE,buildCanopyPackage,canopyEdgeEvidence,canopySourceText } from "../app/canopy-fixture";
+import { CANOPY_HISTORICAL_SOURCES } from "../app/canopy-source-history";
+import { canopyGuardDeclaration, canopySemanticInputDiff } from "../app/canopy-inputs";
+import { caseFingerprint, studioStructuralIssues } from "../app/case-integrity";
+import { compileStudioDraft } from "../app/studio-compiler";
 import { decisionAvailability } from "../app/game-engine";
-test("Canopy source fixture has nine fictional documents, eleven immutable versions and supported exact excerpts",()=>{
- assert.equal(new Set(CANOPY_SOURCES.map(s=>s.id)).size,9);assert.equal(CANOPY_SOURCES.length,11);
+test("Canopy V2 retains eleven historical versions and appends four provenance corrections",()=>{
+ assert.equal(new Set(CANOPY_SOURCES.map(s=>s.id)).size,9);assert.equal(CANOPY_SOURCES.length,15);
+ assert.deepEqual(CANOPY_SOURCES.slice(0,11),CANOPY_HISTORICAL_SOURCES);
  for(const source of CANOPY_SOURCES){
   const text=canopySourceText(source);assert.ok(text.includes(CANOPY_DISCLOSURE));
   for(const excerpt of Object.values(source.sections)){assert.ok(excerpt.length<=500,source.id+" excerpt too long");assert.equal(text.indexOf(excerpt),text.lastIndexOf(excerpt));}
  }
- for(const id of ["D03","D06"])assert.deepEqual(CANOPY_SOURCES.filter(s=>s.id===id).map(s=>s.version),[1,2]);
+ assert.deepEqual(CANOPY_SOURCES.filter(s=>s.id==="D03").map(s=>s.version),[1,2]);
+ assert.deepEqual(CANOPY_SOURCES.filter(s=>s.id==="D06").map(s=>s.version),[1,2,3,4]);
 });
 test("Canopy numbers reconcile to the transparent source sheet and bounded demand scope",()=>{
  const sheet=CANOPY_SOURCES.find(s=>s.id==="D07")!;
@@ -23,6 +29,7 @@ test("Canopy numbers reconcile to the transparent source sheet and bounded deman
 for(const declaration of CANOPY_SCENARIOS)test("Canopy "+declaration.id+" graph is reproducible, version-bound and has an irreversible safety gate",()=>{
  const a=buildCanopyPackage(declaration.id),b=buildCanopyPackage(declaration.id);
  assert.deepEqual(a,b);assert.equal(a.draft.caseType?.id,"general_advisory");
+ assert.deepEqual(studioStructuralIssues({...a.draft,premisePublication:"author-reviewed"}),[]);
  assert.deepEqual(Object.keys(canopyEdgeEvidence(declaration.id)).sort(),a.draft.links.map(link=>link.id).sort());
  for(const refs of Object.values(canopyEdgeEvidence(declaration.id)))for(const ref of refs)assert.ok(CANOPY_SOURCES.find(s=>s.id===ref.document&&s.version===ref.version)?.sections[ref.section]);
  assert.ok(a.scenario.stages.find(s=>s.id==="studio-"+declaration.terminal)?.terminal);
@@ -35,4 +42,29 @@ for(const declaration of CANOPY_SCENARIOS)test("Canopy "+declaration.id+" graph 
  }
  const pilot=a.scenario.stages.find(s=>s.id==="studio-pilot")!;
  assert.deepEqual(pilot.options.filter(o=>decisionAvailability(o,{position:100,trust:100,evidence:0,exposure:0},0).available).map(o=>o.nextStageId),["studio-conditional-pilot"]);
+});
+test("Canopy causal clearance diff pins all Upside inputs and distinguishes failed from unavailable",()=>{
+ const upside=CANOPY_SCENARIOS.find(s=>s.id==="upside")!;
+ for(const stopped of [CANOPY_SCENARIOS.find(s=>s.id==="hard_stop")!,CANOPY_UNAVAILABLE]){
+  assert.deepEqual(canopySemanticInputDiff(upside.inputs,stopped.inputs),[{field:"clearance",before:"passed",after:stopped.inputs.clearance}]);
+  assert.equal(canopyGuardDeclaration(stopped.inputs).clearance,false);
+  assert.equal(stopped.d08,2);
+ }
+ assert.match(CANOPY_UNAVAILABLE.recommendation,/No failed inspection is asserted/u);
+ const downside=CANOPY_SCENARIOS.find(s=>s.id==="downside")!;
+ assert.equal(downside.inputs.sourceBaselineSignedPacksPerWeek,480);assert.equal(downside.inputs.assumedDemandPacksPerWeek,300);
+ assert.equal(upside.inputs.assumedYieldPercent-downside.inputs.assumedYieldPercent,10);
+ assert.equal(downside.inputs.annualEnergyCredits/upside.inputs.annualEnergyCredits,1.25);
+ assert.equal(Math.round(downside.inputs.conservativePaybackYears*100)/100,3.43);
+ assert.equal(canopyGuardDeclaration(upside.inputs).fullyReady,true);
+ assert.equal(canopyGuardDeclaration({...upside.inputs,assumedDemandPacksPerWeek:449}).fullyReady,false);
+ assert.equal(canopyGuardDeclaration({...upside.inputs,assumedYieldPercent:90}).fullyReady,true);
+});
+test("Canopy labels cannot change compiled evaluated gates; reviewed numeric inputs can",()=>{
+ const original=buildCanopyPackage("upside");
+ const renamed={...original.draft,title:"No-go label without a clearance change",premise:"Decline label only"};
+ const compiled=compileStudioDraft(renamed,caseFingerprint(renamed)).scenario!;
+ assert.deepEqual(compiled.stages.map(s=>s.options),original.scenario.stages.map(s=>s.options));
+ assert.equal(canopyGuardDeclaration({...original.declaration.inputs,clearance:"failed"}).clearance,false);
+ assert.equal(canopyGuardDeclaration({...original.declaration.inputs,clearance:"unavailable"}).clearance,false);
 });
