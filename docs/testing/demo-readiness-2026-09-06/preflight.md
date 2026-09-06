@@ -124,7 +124,7 @@ Historical directions to preserve but not execute:
 | Visually inspected | No fresh browser or PDF visual inspection |
 | Deployed | No action in this sprint; active publication independently unverified |
 | Observed with users | 0 cold-user observations; no metrics claimed |
-| P1 two-user authenticated path | NOT RUN; synthetic identities pending, connected Chrome/Edge unavailable |
+| P1 two-user authenticated path | NOT RUN; ordinary registration of two synthetic accounts explicitly authorized by the user; accounts not yet created, connected Chrome/Edge unavailable |
 | Browser hydration / auth return / private denial / keyboard / 200% / EN/RU | NOT VERIFIED in browser |
 | Phone/browser handoff | NOT RUN |
 | Canopy fixture D01–D09 and immutable versions | NOT CREATED; awaiting P0 entry gate |
@@ -142,7 +142,7 @@ Sanitized provider/GitHub observations are in evidence.json. Artifact checksums 
 1. **P0-01 — active deployment identity unavailable.** Obtain the current deployment ID from the Site publication history or a provider receipt. Read get_deployment_status using that exact ID; record version_id, status, provider_deployment_id, env_set_revision and URL. Do not substitute the historical Site70 ID.
 2. **P0-02 — configured release identity is stale.** Once P0-01 proves active version72/sourcee025, prepare the bounded change GENESIS_DEPLOYMENT_VERSION=72 and GENESIS_WEB_COMMIT=e025131d87e35d4364d542acc5c84b6097eb657b, preserving all other variables. Obtain the brief's explicit environment/deployment approval immediately before applying the reviewed action. No change is authorized by elapsed time or this proposed payload.
 3. **P0-03 — full production migration and rollback acceptance incomplete.** Use supported provider schema/migration/backup inspection to confirm journal0019, all expected objects and guard/consistency state. Do not manually modify DB data. Select and verify the P1-compatible recovery position.
-4. **P1-01 — supported browser/identity setup unavailable.** CUA inventory returned no browsers; Chrome and Edge tab creation each returned "Browser is not available". This is a controller-availability result, not a browser product failure. Two synthetic identities and connected browsers are needed after P0.
+4. **P1-01 — supported browser/identity setup unavailable.** CUA inventory returned no browsers; Chrome and Edge tab creation each returned "Browser is not available". This is a controller-availability result, not a browser product failure. The user explicitly authorized creating two synthetic accounts by ordinary registration. Preserve that authorization; do not ask for it again. Account creation and authenticated testing await connected browsers and P0 clearance.
 5. **P5-01 — actual humans/device required.** Three people who did not build the feature and the presentation phone/device must participate before those acceptance rows can pass. Agents or synthetic transcripts cannot substitute.
 
 Stop follows the assigned brief sections3,8/P0,18 and20, not an inferred skill approval rule. All unaffected read-only checks and documentation were completed. No approval to push, update PRs, merge, apply migrations, change environment or deploy has been requested or consumed.

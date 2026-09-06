@@ -392,6 +392,7 @@
     "hydration_verified": false
   },
   "authorization": {
+    "two_synthetic_accounts_via_ordinary_registration": true,
     "local_documentation_commit": true,
     "push": false,
     "pr_update": false,
