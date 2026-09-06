@@ -45,6 +45,8 @@ All log paths below are relative to this worktree's `.artifacts/` directory. Tes
 
 The first `npm test` built successfully and reported 557 passes plus one outdated literal-link expectation. After correcting that assertion, the navigation tests and entire 558-test suite passed. The original failure log `canopy-full-test.log` is retained. The final suite command was `node --experimental-sqlite --import tsx --test '--test-name-pattern=^(?!Canopy:)' tests/rendered-html.test.mjs tests/*.test.ts`; despite the pattern, its recorded execution includes the Canopy parent and all four nested scenarios, with zero skipped tests. Do not describe it as a partial suite.
 
+After that full run, only handoff documentation and the offline viewer's ERP fallback heading changed to match the preserved D365 duplicate bank-import packet. The artifact verifier and script lint were repeated for that text correction; product code, fixtures and tests were unchanged.
+
 Node 22.23.2, npm 10.9.8 and Poppler 25.07.0 were used locally with the locked dependencies. No lockfile or dependency version changed. Build-file checks in `rendered-html.test.mjs` do not constitute browser DOM acceptance. The new migration upgrade fixtures do not cover a populated pre-0019 document-version/snapshot/output history; that limit is recorded in the production matrix.
 
 ## Snapshot artifacts
