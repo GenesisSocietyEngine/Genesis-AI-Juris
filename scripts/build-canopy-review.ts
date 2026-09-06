@@ -31,7 +31,8 @@ for(const scenario of CANOPY_SCENARIOS){
  assert.equal(sourceManifest.snapshot.snapshot_id,receipt.snapshotId);
  assert.equal(model.source_manifest_sha256,"sha256-"+sha256File(resolve(root,scenario.id+"-snapshot.json")));
  assert.deepEqual(receipt.inputs,scenario.inputs);assert.equal(receipt.inputDigest,canonicalFingerprint(scenario.inputs));
- const draft=read(scenario.id+".studio-draft.json");assert.deepEqual(draft,buildCanopyPackage(scenario.id,scenario.id!=="base").draft);
+ // Compare the exported JSON contract: optional undefined fields are omitted on serialization.
+ const draft=read(scenario.id+".studio-draft.json");assert.deepEqual(draft,JSON.parse(JSON.stringify(buildCanopyPackage(scenario.id,scenario.id!=="base").draft)));
  assert.equal(receipt.packageVersion,draft.version);
  assert.ok(model.assertion_register.some((a:{statement:string})=>a.statement==="Canopy pinned inputs / "+receipt.inputDigest+": "+JSON.stringify(scenario.inputs)));
  const packageInput=model.snapshot.simulation_inputs.decision_packages.find((item:{package_fingerprint:string})=>item.package_fingerprint===receipt.packageFingerprint);

@@ -1409,7 +1409,7 @@ test("a replacement snapshot output stales prior-snapshot formats and approval i
   assert.match(visibleAppendixText, /Snapshot contract/u);
   assert.match(visibleAppendixText, /Snapshot report-model schema/u);
   assert.match(visibleAppendixText, /Snapshot renderer \/ build/u);
-  assert.match(visibleAppendixText, /canopy-local-candidate-1/u);
+  assert.match(visibleAppendixText, /canopy-local-candidate-2/u);
   assert.match(visibleAppendixText, /Sealed simulation and parameter inputs/u);
   assert.ok(visibleAppendixText.includes("parameter_binding_digest"));
   assert.ok(visibleAppendixText.includes(harness.packageFingerprint));
