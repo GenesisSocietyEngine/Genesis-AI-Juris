@@ -134,6 +134,24 @@ last_updated: 2026-09-05
 
 # Current Progress
 
+## 6 September 2026 — Demo Readiness preflight; P0 blocked
+
+Current sprint evidence: [preflight](../testing/demo-readiness-2026-09-06/preflight.md)
+and [live plan](../testing/demo-readiness-2026-09-06/plan.md). Main is
+`e025131d87e35d4364d542acc5c84b6097eb657b`, tree
+`c47f1951d1573e8f72b6c7e6872239f8beb23c39`; PR #49 is merged and all five
+exact-main workflows passed. Provider saved version72 has that source. The
+current active deployment ID and complete migration/rollback acceptance are
+unverified, while configured revision33 retains version69/source6019e473 labels.
+Two live organization binding tables exist and are empty; this is partial
+migration evidence, not proof of every guard/index or authenticated behavior.
+
+The frontmatter's PR47/Site70 `current_release_*` values and prior P1 draft or
+unreleased headlines are preserved historical claims, not today's execution
+instructions. No new product code, migration, remote change or deployment has
+occurred in this sprint. Feature work waits at the brief's P0 boundary; no
+authenticated browser, phone, ten-run or cold-user pass is claimed.
+
 ## 5 September 2026 — P1 organizations and ERP implementation candidate
 
 Draft PR #49 contains the additive organization-isolation implementation and

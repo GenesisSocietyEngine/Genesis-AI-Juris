@@ -1,5 +1,27 @@
 # Genesis: Juris — Codex instructions for 5 September 2026
 
+## 6 September 2026 — Demo Readiness assignment; entry gate blocked
+
+The assigned Demo Readiness sprint now uses the freshly fetched main
+`e025131d87e35d4364d542acc5c84b6097eb657b`, tree
+`c47f1951d1573e8f72b6c7e6872239f8beb23c39`, in the isolated local branch
+`codex/demo-readiness-canopy-2026-09-06`. Follow the
+[current preflight](docs/testing/demo-readiness-2026-09-06/preflight.md) and
+[live plan](docs/testing/demo-readiness-2026-09-06/plan.md).
+
+PR #49 is merged and all five exact-main workflows passed. Sites saved version72
+matches main; two migration0019 binding tables are present and empty. Current
+deployment identity and complete migration/rollback evidence remain unverified,
+and configured environment revision33 still labels version69/source6019e473.
+Do not begin features, guess an active deployment, reapply0019 or follow old
+Site63 rollback guidance. Chrome/Edge controller access is also unavailable.
+
+The P0/P1 branch, draft/unreleased statements and release70 headlines below are
+historical checkpoints. Preserve them without repeating completed work. Local
+implementation and commits are authorized by the new brief; push, PR changes,
+merge, migrations, environment changes and deployment require separate explicit
+approval. No third-party outreach is authorized.
+
 ## Active P1 implementation — organizations and synthetic ERP journeys
 
 The owner assigned P1 implementation after the completed recovery. Continue on

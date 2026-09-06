@@ -1,0 +1,5 @@
+ff79791b464ff03b2a36d9e29bb0a6a766ba02f678b8cbe007f09b096954e048  CodexToInstructions.md
+4af2f9f06d08d20d081c22ade53965776a0a9e46c4dd9f25fcf98a05ba3869ac  docs/development/CURRENT_PROGRESS.md
+44209fd1a2b7fc8f565bf0877750836382450e44272dd3b5f60a88b777d8c16c  docs/testing/demo-readiness-2026-09-06/preflight.md
+6cc7d892f2460d175ec53a185f296ba90eaaf5f0403920cc72498944c029b620  docs/testing/demo-readiness-2026-09-06/plan.md
+e4ed7aab068df3e2cd40add5ce6e57e53dab34b47b23d7e68828e6c36e881717  docs/testing/demo-readiness-2026-09-06/evidence.json
