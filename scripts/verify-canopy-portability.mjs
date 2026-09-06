@@ -21,6 +21,9 @@ const declared = new Set();
 for (const line of readFileSync(manifestPath, "utf8").trim().split(/\r?\n/u)) {
   const match = /^([a-f0-9]{64})  (.+)$/u.exec(line); assert.ok(match, "Malformed checksum line");
   const path = resolve(root, match[2]);
+  assert.ok(!isAbsolute(match[2]), "Checksum paths must be relative");
+  assert.equal(local(path), match[2], "Checksum paths must be canonical packet-relative paths");
+  assert.ok(!declared.has(local(path)), "Duplicate checksum entry");
   assert.ok(path.startsWith(root + sep), "Checksum path escapes packet");
   assert.equal(hash(path), match[1], "Checksum mismatch: " + match[2]); declared.add(local(path));
 }
@@ -28,6 +31,8 @@ assert.deepEqual([...declared].sort(), inventory.filter(path => path !== manifes
 let links = 0;
 for (const path of inventory.filter(path => /\.(?:html|css|md)$/iu.test(path))) {
   const content = readFileSync(path, "utf8");
+  if (/\.html$/iu.test(path)) assert.ok(!/<(?:script|iframe|object|embed|form)\b|\b(?:srcset|srcdoc|http-equiv)\s*=|@import|image-set\s*\(/iu.test(content), "Packet HTML must remain self-contained static markup");
+  if (/\.css$/iu.test(path)) assert.ok(!/@import/iu.test(content), "External CSS imports are not portable");
   assert.ok(!/\b(?:fetch\s*\(|XMLHttpRequest|serviceWorker)/u.test(content) || !/\.html$/iu.test(path), "Offline HTML may not fetch a server");
   const targets = /\.md$/iu.test(path)
     ? [...content.matchAll(/\]\(([^)]+)\)/gu)].map(match => match[1])
