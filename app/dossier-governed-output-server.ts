@@ -65,8 +65,8 @@ export const DOSSIER_OUTPUT_MANIFEST_FORMAT =
   "genesis-juris-dossier-governed-output-manifest" as const;
 export const DOSSIER_REPORT_PROFILE_ID = "dossier-governed-report" as const;
 export const DOSSIER_REPORT_MODEL_SCHEMA_VERSION = 1 as const;
-export const DOSSIER_REPORT_RENDERER_VERSION = "1.0.0" as const;
-export const DOSSIER_REPORT_BUILD_VERSION = "v62-dossier-workspace" as const;
+export const DOSSIER_REPORT_RENDERER_VERSION = "1.1.0" as const;
+export const DOSSIER_REPORT_BUILD_VERSION = "canopy-local-candidate-1" as const;
 export const DOSSIER_PILOT_SNAPSHOT_AUDIENCE = "internal" as const;
 export const DOSSIER_PILOT_REDACTION_PROFILE_ID = "pilot-default" as const;
 
@@ -1997,12 +1997,47 @@ function dossierPdfTable(
   };
 }
 
+function canopyExecutiveMemorandum(model: DossierReportModelV1): Content[] {
+  if (!model.decision_package_graphs.some(graph => graph.package_id === "project_canopy_managed_site_expansion")) return [];
+  const prefix = "Canopy memo / ";
+  const sections = model.assertion_register.filter(assertion => assertion.statement.startsWith(prefix));
+  if (!sections.length) return [];
+  const order = ["Decision requested", "Executive recommendation", "Scope and evidence limitation", "Evidence limitation", "Conditions and no-go rule", "Accountable owners and review dates", "Alternatives and exit", "Assumptions and economics"];
+  const heading = (statement: string) => statement.slice(prefix.length).split(": ")[0];
+  sections.sort((a, b) => order.indexOf(heading(a.statement)) - order.indexOf(heading(b.statement)));
+  return [
+    { text: "GENESIS: JURIS CODEX", style: "brand" },
+    { text: "EXECUTIVE MEMORANDUM", style: "kicker" },
+    { text: model.dossier.title, style: "coverTitle" },
+    { text: `Sealed ${model.snapshot.created_at} · ${model.dossier.status} · readiness ${model.snapshot.readiness.ready ? "ready" : "not ready"}`, style: "notice" },
+    { text: "This demonstration uses entirely fictional organisations, documents, people and figures. It is inspired only by publicly described industry patterns and does not represent Greeneration data, performance, controls or decisions.", style: "notice", margin: [0, 6, 0, 12] },
+    ...sections.flatMap((assertion): Content[] => {
+      const title = heading(assertion.statement);
+      const sources = assertion.source_anchor_ids.map(id => {
+        const anchor = model.anchor_register.find(item => item.source_anchor_id === id);
+        const document = model.source_register.find(item => item.document_version_id === anchor?.document_version_id);
+        return anchor && document ? `${document.original_filename} § ${anchor.section ?? anchor.heading ?? anchor.page_number ?? "source"}` : "See exact anchor register";
+      });
+      return [
+        { text: title, style: "sectionTitle" },
+        { text: assertion.statement.slice(prefix.length + title.length + 2), margin: [0, 0, 0, 5] },
+        { text: [...new Set(sources)].join("; "), style: "notice", margin: [0, 0, 0, 6] },
+      ];
+    }),
+    { text: "Approval and currency", style: "sectionTitle" },
+    { text: "This memorandum contains only assertions accepted into the sealed snapshot. A subsequent approval applies to an exact output and is recorded separately; it does not rewrite this snapshot. Recheck the output register after any authoritative evidence change. An older approved output can be stale.", margin: [0, 0, 0, 8] },
+    { text: `Snapshot ${model.snapshot.snapshot_id}\nSHA-256 ${model.source_manifest_sha256}`, style: "notice" },
+    { text: "Exact source, graph, simulation and audit bindings", style: "sectionTitle", pageBreak: "before" },
+  ];
+}
+
 export function buildDossierGovernancePdfContent(model: DossierReportModelV1): Content[] {
   const deterministic = jsonObject(model.snapshot.deterministic_receipts);
   const receiptPackages = Array.isArray(deterministic?.decision_packages)
     ? deterministic.decision_packages
     : [];
   return [
+    ...canopyExecutiveMemorandum(model),
     { text: "GENESIS: JURIS CODEX", style: "brand" },
     { text: "GOVERNED DECISION DOSSIER", style: "kicker" },
     { text: model.dossier.title, style: "coverTitle" },

@@ -11,6 +11,8 @@ import * as schema from "../db/schema";
 import { organizationSelectionToken, resolveOrganization, type OrganizationAuthority } from "../app/organization-store";
 import { caseFingerprint, normalizeStudioDraft } from "../app/case-integrity";
 import { compileStudioDraft } from "../app/studio-compiler";
+import { CANOPY_SOURCES, CANOPY_SCENARIOS, CANOPY_DISCLOSURE, buildCanopyPackage, canopySourceText } from "../app/canopy-fixture";
+import { CanopyWorkingCopy, type CanopyTransport } from "../app/canopy-workflow";
 
 // Only runtime transport is adapted. These tests call the real route handlers,
 // identity resolver, policy, audit batches, upload coordinator and D1/R2 stores.
@@ -359,4 +361,114 @@ test("P1: selection, cursor, CSRF and unavailable compliance features fail close
   assert.deepEqual(workspace.capabilities, { mode: "synthetic_validation", confidentialUploads: false, entraOidc: false, complianceExport: false });
   await json(await call("organizations", alice, orgA, "POST", { action: "compliance_export", organizationId: orgA }), 400);
   assert.doesNotMatch(JSON.stringify(workspace), /tokenDigest|token_digest|secret_/u);
+});
+
+function canopyTransport(actor:Actor,organization:string):CanopyTransport {
+ return async (path,init={})=>{
+  if(typeof init.body==="string")assert.match(new Headers(init.headers).get("content-type")??"",/application\/json/u);
+  for(const [key,file] of Object.entries(paths)){
+   const names:string[]=[];
+   const pattern=file.replace(/^app/,"").replace(/\/route\.ts$/,"").replace(/\[([^\]]+)\]/gu,(_,name:string)=>{names.push(name);return "([^/]+)";});
+   const match=new RegExp("^"+pattern+"$").exec(path.split("?")[0]);
+   if(!match)continue;
+   const params=Object.fromEntries(names.map((name,index)=>[name,match[index+1]]));
+   const body=init.body instanceof FormData?init.body:typeof init.body==="string"?JSON.parse(init.body):undefined;
+   return call(key as keyof typeof paths,actor,organization,init.method??"GET",body,params,path.includes("?")?"?"+path.split("?")[1]:"");
+  }
+  throw new Error("Unsupported normal Canopy API route: "+path);
+ };
+}
+test("Canopy: isolated clean copy, explicit review, four guarded sessions, sealed outputs and retained history",async(t)=>{
+ const db=drizzle(d1,{schema});
+ const packages=CANOPY_SCENARIOS.map(s=>buildCanopyPackage(s.id));
+ await db.insert(schema.cases).values({id:packages[0].draft.caseId,currentVersion:packages[0].draft.version,fingerprint:packages[0].scenario.fingerprint,
+  title:packages[0].draft.title,jurisdiction:"Fictional Gulf market",practiceArea:"Managed-site decision",sector:"Synthetic training",difficulty:"Advanced",durationMinutes:12});
+ for(const p of packages)await db.insert(schema.caseVersions).values({caseId:p.draft.caseId,version:p.draft.version,fingerprint:p.scenario.fingerprint,
+  parentCaseId:p.draft.parent?.caseId,parentVersion:p.draft.parent?.version,parentFingerprint:p.draft.parent?.fingerprint,
+  studioFingerprint:p.studioFingerprint,payload:{kind:"playable-scenario-v1",studioDraft:p.draft,scenario:p.scenario},publishedAt:p.draft.updatedAt});
+ // Catalog installation is a disposable integration fixture, exactly as for ERP.
+ // No production endpoint, identity/session bypass, or demo-only store is added.
+ orgA=(await json(await call("organizations",alice,null,"POST",{action:"create",name:"Verdant Atelier Farms — synthetic local fixture"}),201)).organization.id;
+ await invite(reviewer,"org_admin");await invite(viewer);
+ const api=canopyTransport(alice,orgA);
+ const copy=await CanopyWorkingCopy.create(api);
+ const initial=await copy.get();
+ assert.equal((initial.dossier as {status:string}).status,"internal_review");
+ assert.match(JSON.stringify(initial),/blocked/u);
+ assert.equal(Object.keys(copy.openingRequests).length,3);
+ assert.match(JSON.stringify(initial),/INFORMATION_REQUEST_OPEN/u);
+ assert.equal(Object.keys(copy.sources).length,9);
+ await assert.rejects(copy.run("base"),/Explicit acceptance/u);
+ mkdirSync(".artifacts/canopy/sources",{recursive:true});
+ for(const source of CANOPY_SOURCES)writeFileSync(".artifacts/canopy/sources/"+source.id+"-v"+source.version+".md",canopySourceText(source));
+ for(const p of packages)writeFileSync(".artifacts/canopy/"+p.declaration.id+".studio-draft.json",JSON.stringify(p.draft,null,2));
+ await copy.mutate("participants",{actorId:reviewer.actorId,role:"reviewer"});
+ await copy.mutate("participants",{actorId:viewer.actorId,role:"viewer"});
+ for(const source of CANOPY_SOURCES.filter(s=>s.version===1))await copy.reviewSource(source.id,1);
+ const unsafe=await copy.propose("Treat all 600 indicated packs as signed demand.",[{id:"D03",version:1,section:"Demand"}]);
+ const gap=await copy.propose("Demand and capacity are identical.",[{id:"D03",version:1,section:"Gap"},{id:"D04",version:1,section:"Capacity"}]);
+ const pending=await copy.get("proposals");
+ assert.equal((pending.proposals as Array<{review_state:string}>).filter(p=>p.review_state==="pending").length,2);
+ await copy.reviewProposal(unsafe,"reject");
+ await copy.reviewProposal(gap,"edit_and_accept","Requested 600 packs exceed evidenced capacity 480 by 120. Only scoped commitments can support release.");
+ const originals={d03:{...copy.source("D03",1)},d06:{...copy.source("D06",1)}};
+ const receipts:unknown[]=[];
+ let oldOutput="";
+ for(const scenario of CANOPY_SCENARIOS){
+  await t.test(scenario.id,async()=>{
+   if(scenario.id==="upside"){
+    await copy.upload("D03",2);await copy.upload("D06",2);
+    const old=await copy.get("outputs");
+    assert.ok((old.outputs as Array<{output_id:string;state:string}>).some(o=>o.output_id===oldOutput&&o.state==="stale"));
+    await json(await call("outputs",reviewer,orgA,"POST",{action:"approve",expectedRevision:copy.revision,outputId:oldOutput},{dossierId:copy.dossierId}),409);
+    await copy.supersedeAssertions();
+    await copy.reviewSource("D03",2);await copy.reviewSource("D06",2);
+   }else if(scenario.id!=="base")await copy.supersedeAssertions();
+   const proposal=await copy.proposeScenario(scenario.id);
+   await assert.rejects(copy.run(scenario.id),/Explicit acceptance/u);
+   await copy.reviewProposal(proposal,"accept");
+   for(const memoProposal of await copy.proposeMemorandum(scenario.id))await copy.reviewProposal(memoProposal,"accept");
+   const run=await copy.run(scenario.id);
+   assert.ok(run.packageRef);
+   assert.equal(run.session.state.currentStageId,"studio-"+scenario.terminal);
+   await copy.linkScenarioEvidence(scenario.id,run.packageRef);
+   const gate=scenario.id==="hard_stop"?"clearance":scenario.id==="downside"?"economics":"pilot";
+   const control=scenario.controls[0];const binding=copy.source(control.document,control.version);
+   await copy.mutate("evidence/links",{action:"create",sourceAnchorId:binding.anchors[control.section],
+    decisionPackageReferenceId:run.packageRef,targetType:"graph_node",targetId:gate,relation:"supports",
+    professionalMeaning:scenario.why});
+   if(scenario.id==="base")for(const [key,source] of Object.entries({demand:copy.source("D03",1),commissioning:copy.source("D06",1),leadership:copy.source("D08",1)}))await copy.mutate("requests",{action:"update_status",requestId:copy.openingRequests[key],status:"received",satisfyingDocumentId:source.documentId});
+   const outputs=await copy.seal();oldOutput=outputs.pdfOutputId;
+   await json(await call("outputs",viewer,orgA,"POST",{action:"approve",expectedRevision:copy.revision,outputId:oldOutput},{dossierId:copy.dossierId}),404);
+   const approval=await json(await call("outputs",reviewer,orgA,"POST",{action:"approve",expectedRevision:copy.revision,outputId:oldOutput},{dossierId:copy.dossierId}));
+   const pdf=await api("/api/dossiers/"+copy.dossierId+"/outputs/"+oldOutput+"/download");
+   assert.equal(pdf.status,200);const bytes=new Uint8Array(await pdf.arrayBuffer());assert.equal(new TextDecoder().decode(bytes.slice(0,5)),"%PDF-");
+   writeFileSync(".artifacts/canopy/"+scenario.id+"-dossier.pdf",bytes);
+   const manifest=await api("/api/dossiers/"+copy.dossierId+"/snapshots/"+outputs.snapshotId+"/manifest");
+   assert.equal(manifest.status,200);const text=await manifest.text();
+   writeFileSync(".artifacts/canopy/"+scenario.id+"-snapshot.json",text);
+   const governedJson=await api("/api/dossiers/"+copy.dossierId+"/outputs/"+outputs.jsonOutputId+"/download");
+   assert.equal(governedJson.status,200);const governedText=await governedJson.text();writeFileSync(".artifacts/canopy/"+scenario.id+"-governed.json",governedText);
+   writeFileSync(".artifacts/canopy/"+scenario.id+"-approval.json",JSON.stringify(approval,null,2));
+   assert.match(text,new RegExp(run.prepared.scenario.fingerprint));
+   assert.match(governedText,/Canopy memo/u);
+   receipts.push({scenario:scenario.id,actualTerminal:run.session.state.currentStageId,changed:scenario.changed,why:scenario.why,
+    recommendation:scenario.recommendation,controls:scenario.controls,sessionKey:run.session.sessionKey,packageFingerprint:run.prepared.scenario.fingerprint,
+    ...outputs,dossierId:copy.dossierId,revision:copy.revision,approval:"separate exact-output receipt",disclosure:CANOPY_DISCLOSURE});
+   const reopened=await copy.get();assert.equal((reopened.dossier as {revision:number}).revision,copy.revision);
+  });
+ }
+ for(const [key,binding] of Object.entries(originals)){
+  const original=await api("/api/dossiers/"+copy.dossierId+"/documents/"+binding.documentId+"/versions/"+binding.versionId+"/download");
+  assert.equal(original.status,200);assert.equal(await original.text(),canopySourceText(CANOPY_SOURCES.find(s=>s.id===key.toUpperCase()&&s.version===1)!));
+ }
+ await json(await call("detail",bob,orgB,"GET",undefined,{dossierId:copy.dossierId}),404);
+ const second=await CanopyWorkingCopy.create(api);
+ assert.notEqual(second.dossierId,copy.dossierId);
+ assert.notEqual(second.source("D03",1).documentId,copy.source("D03",1).documentId);
+ assert.equal(Object.keys(second.sources).length,9);
+ assert.equal((await copy.get("documents")).documents instanceof Array,true);
+ await assert.rejects(second.run("upside"),/Explicit acceptance/u);
+ writeFileSync(".artifacts/canopy/comparison.json",JSON.stringify({disclosure:CANOPY_DISCLOSURE,kind:"locally-tested-api-receipts",receipts,
+  cleanCopies:[copy.dossierId,second.dossierId],finalOutputs:await copy.get("outputs"),productionVerified:false,browserVerified:false},null,2));
 });

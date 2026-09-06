@@ -2,6 +2,28 @@
 
 ## 6 September 2026 — Demo Readiness assignment; entry gate blocked
 
+### Owner clarification — local development proceeds independently
+
+The owner subsequently authorized lane B (isolated local demo implementation,
+fixtures, tests, reports, presenter preparation and reviewed local commits) from
+`47d99d08dc730e15ab881ba09de09692a4c7ba7c`. Production P0 does not block this lane.
+Use only disposable local DB/R2 and synthetic test configuration; no production
+data, credentials, session substitution or authorization bypass. Lane A remains
+blocked for environment/DB changes, push, PR changes, merge, rollback and deployment.
+The prior stop below and its evidence remain historical. Track the two lanes in
+the live plan and distinguish new local results from historical CI and production.
+
+Local Canopy implementation, fixture workflow, Featured packet preparation,
+snapshot memorandum and offline receipt viewer now exist in this isolated
+candidate. Follow [local demo](docs/testing/demo-readiness-2026-09-06/local-demo.md),
+[production verification](docs/testing/demo-readiness-2026-09-06/production-verification.md)
+and [the final candidate handoff](docs/testing/demo-readiness-2026-09-06/handoff.md)
+for exact test/artifact identity: fresh 558/558 tests, four PDF/JSON chains and
+170 rendered Canopy pages. Existing Studio
+publication and a genuine authenticated UI rehearsal remain separate gates.
+
+### Retained first preflight — the all-work stop below is superseded for lane B
+
 The assigned Demo Readiness sprint now uses the freshly fetched main
 `e025131d87e35d4364d542acc5c84b6097eb657b`, tree
 `c47f1951d1573e8f72b6c7e6872239f8beb23c39`, in the isolated local branch

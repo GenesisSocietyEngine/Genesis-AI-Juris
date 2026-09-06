@@ -5,6 +5,64 @@ import { performance } from "node:perf_hooks";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
+
+test("P1 upgrade backfills active explicit participants and excludes removed participants", () => {
+ const db=database();
+ try {
+  const owner=user(db,"canopy-migration-owner@example.test"), active=user(db,"canopy-active@example.test"),
+   removed=user(db,"canopy-removed@example.test"), outsider=user(db,"canopy-outsider@example.test");
+  const ownerActor=actor(db,owner), dossierId="p1-upgrade-memberships";dossier(db,dossierId,owner);
+  let revision=1, previousEventId=dossierId+"-audit-created";
+  const change=(userId:number,id:string,remove=false)=>{
+   const next=revision+1,at="2026-09-01T01:0"+next+":00.000Z",eventId=dossierId+"-audit-"+next;
+   db.exec("BEGIN IMMEDIATE");
+   try{
+    advanceDossierRevision(db,dossierId,revision,ownerActor,at);
+    if(remove)db.prepare("UPDATE dossier_participants SET status='removed',updated_by_actor_ref=?,updated_at=? WHERE id=? AND status='active'").run(ownerActor,at,id);
+    else db.prepare("INSERT INTO dossier_participants(id,dossier_id,user_id,actor_id,display_name,role,status,created_by_actor_ref,updated_by_actor_ref,created_at,updated_at) VALUES(?,?,?,?,'Synthetic participant','viewer','active',?,?,?,?)").run(id,dossierId,userId,actor(db,userId),ownerActor,ownerActor,at,at);
+    appendAudit(db,{id:eventId,dossierId,dossierRevision:next,sequence:next,eventType:"participant_changed",objectRefType:"participant",objectRefId:id,
+     actorUserId:owner,actorRef:ownerActor,actorRole:"owner",occurredAt:at,previousEventId,digestSeed:29000+next});
+    appendRevisionReceipt(db,dossierId,next,ownerActor,at);db.exec("COMMIT");revision=next;previousEventId=eventId;
+   }catch(error){db.exec("ROLLBACK");throw error;}
+  };
+  change(active,"p1-active");change(removed,"p1-removed");change(removed,"p1-removed",true);
+  const tables=["dossiers","dossier_participants","dossier_audit_events","dossier_revision_receipts"];
+  const before=tables.map(table=>db.prepare("SELECT * FROM "+table+" ORDER BY rowid").all());
+  db.exec(migration(organizationScopeMigration));
+  assert.deepEqual(tables.map(table=>db.prepare("SELECT * FROM "+table+" ORDER BY rowid").all()),before);
+  const org="org_personal_"+ownerActor;
+  assert.deepEqual(db.prepare("SELECT user_id,role,status FROM organization_memberships WHERE organization_id=? ORDER BY user_id").all(org).map(row=>({...row})),
+   [{user_id:owner,role:"org_owner",status:"active"},{user_id:active,role:"member",status:"active"}]);
+  for(const excluded of [removed,outsider])assert.equal(db.prepare("SELECT count(*) AS n FROM organization_memberships WHERE organization_id=? AND user_id=?").get(org,excluded)?.n,0);
+  assert.equal(db.prepare("SELECT count(*) AS n FROM dossier_organization_commitments WHERE dossier_id=?").get(dossierId)?.n,1);
+  assert.throws(()=>db.prepare("DELETE FROM organization_memberships WHERE organization_id=? AND user_id=?").run(org,active),/revoke membership/u);
+  assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(),[]);
+ }finally{db.close();}
+});
+
+test("P1 fresh schema includes all organization guards and rejects incomplete atomic bindings",()=>{
+ const db=database();
+ try{
+  const owner=user(db,"canopy-fresh-owner@example.test");
+  db.exec(migration(organizationScopeMigration));
+  const tables=["dossier_organization_bindings","dossier_organization_commitments","organization_authority_checks","organization_cas_guards",
+   "organization_invitations","organization_lifecycle_requests","organization_memberships","organization_security_events","organizations"];
+  for(const name of tables)assert.equal(db.prepare("SELECT type FROM sqlite_schema WHERE name=?").get(name)?.type,"table",name);
+  const indexes=["dossier_organization_bindings_scope_uidx","organization_invitations_digest_uidx","organization_memberships_user_uidx","organization_memberships_actor_uidx","organization_security_events_sequence_uidx"];
+  for(const name of indexes)assert.match(db.prepare("SELECT sql FROM sqlite_schema WHERE name=?").get(name)?.sql as string,/CREATE UNIQUE INDEX/u);
+  const triggers=["p1_dossier_binding_required","p1_dossier_binding_commitment","p1_binding_update_guard","p1_binding_delete_guard","p1_participant_membership_guard","p1_audit_membership_guard","p1_membership_identity_guard","p1_membership_delete_guard","p1_organization_identity_guard","p1_organization_delete_guard","p1_invitation_guard","p1_invitation_accept_authority","p1_lifecycle_request_guard","p1_lifecycle_approval_guard","p1_lifecycle_delete_guard","p1_organization_transition_guard","p1_security_event_guard","p1_security_event_update_guard","p1_security_event_delete_guard"];
+  assert.deepEqual(db.prepare("SELECT name FROM sqlite_schema WHERE type='trigger' AND name GLOB 'p1_*' ORDER BY name").all().map(row=>row.name),triggers.sort());
+  assert.throws(()=>db.prepare("INSERT INTO organization_authority_checks(valid) VALUES(0)").run(),/CHECK/u);
+  assert.throws(()=>db.prepare("INSERT INTO organization_cas_guards(changed) VALUES(0)").run(),/CHECK/u);
+  db.exec("BEGIN");
+  db.prepare("INSERT INTO dossier_organization_bindings(dossier_id,organization_id,created_by_actor_id,created_at) VALUES(?,?,?,?)")
+   .run("orphan-binding","org_personal_"+actor(db,owner),actor(db,owner),"2026-09-06T09:00:00.000Z");
+  assert.throws(()=>db.exec("COMMIT"),/FOREIGN KEY/u);db.exec("ROLLBACK");
+  assert.equal(db.prepare("SELECT count(*) AS n FROM dossier_organization_bindings").get()?.n,0);
+  assert.equal(db.prepare("PRAGMA integrity_check").get()?.integrity_check,"ok");
+ }finally{db.close();}
+});
+
 const legacyMigrations = [
   "0000_worthless_supreme_intelligence.sql",
   "0001_right_talon.sql",

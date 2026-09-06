@@ -21,3 +21,12 @@ export function organizationScopedUrl(path: string) {
   url.searchParams.set("organization", selection);
   return url.pathname + url.search;
 }
+
+/** Keep the selected organization when navigating between private workspaces. */
+export function organizationWorkspaceUrl(path: string) {
+  if (!selection) return path;
+  const url = new URL(path, "https://workspace.invalid");
+  if (url.origin !== "https://workspace.invalid" || !["/matters", "/canopy"].includes(url.pathname)) return path;
+  url.searchParams.set("organization", selection);
+  return url.pathname + url.search + url.hash;
+}

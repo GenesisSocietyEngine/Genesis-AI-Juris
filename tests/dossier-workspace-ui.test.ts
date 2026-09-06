@@ -314,7 +314,7 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.match(client, /\.split\(\/\[\\s,\]\+\/u\)/);
   assert.match(client, /role="tablist"/);
   assert.match(client, /mobileSectionSelect/);
-  assert.match(client, /href="\/matters" aria-current="page"/);
+  assert.match(client, /href=\{organizationWorkspaceUrl\("\/matters"\)\} aria-current="page"/);
   assert.match(client, /matter\.documentCount/);
   assert.match(client, /<details className=\{styles\.advancedFilters\}>/);
   assert.match(client, /view === "developer" \? ` · REVISION/);

@@ -1367,8 +1367,8 @@ test("a replacement snapshot output stales prior-snapshot formats and approval i
   assert.deepEqual(approvalBoundSnapshot.snapshot.generator, {
     contract_version: "1.0.0",
     report_model_schema_version: 1,
-    renderer_version: "1.0.0",
-    build_version: "v62-dossier-workspace",
+    renderer_version: "1.1.0",
+    build_version: "canopy-local-candidate-1",
   });
   const approvalBoundPdf = await generateOutput(
     harness,
@@ -1409,7 +1409,7 @@ test("a replacement snapshot output stales prior-snapshot formats and approval i
   assert.match(visibleAppendixText, /Snapshot contract/u);
   assert.match(visibleAppendixText, /Snapshot report-model schema/u);
   assert.match(visibleAppendixText, /Snapshot renderer \/ build/u);
-  assert.match(visibleAppendixText, /v62-dossier-workspace/u);
+  assert.match(visibleAppendixText, /canopy-local-candidate-1/u);
   assert.match(visibleAppendixText, /Sealed simulation and parameter inputs/u);
   assert.ok(visibleAppendixText.includes("parameter_binding_digest"));
   assert.ok(visibleAppendixText.includes(harness.packageFingerprint));
