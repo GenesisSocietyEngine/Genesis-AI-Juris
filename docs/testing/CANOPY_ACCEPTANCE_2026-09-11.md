@@ -5,14 +5,42 @@
 - Site: GENESIS: JURIS — Canopy V3 Acceptance.
 - Project: `appgprj_6a9dcacf5efc819196d6188105cd2cf6`.
 - URL: https://genesis-juris-canopy-v3-acceptance.maxim-hayan.chatgpt.site
-- Saved version: **1**, source `6a6d6f874c9453d27ae737fc4316092856291e9e`.
-- Deployment `appgdep_6aa2693401288191acd9c5ead150e414`: **succeeded**.
+- Corrective version: **2**, source `fdb58ecef5134b187a6321b93c5e1ed320223752`.
+- Deployment `appgdep_6aa3d734724081918c7d55f01f9c41cf`: **succeeded** at
+  2026-09-11T10:26:13Z, environment revision 0.
+- Original acceptance version 1, source `6a6d6f874c9453d27ae737fc4316092856291e9e`,
+  remains the correction branch's base.
 - Access is custom, with the owner and two external viewers. No access changes were made.
 - The latest cloud-task result reporting 563 tests is a later candidate; its results
   must not be attributed to this older deployed source. This checkpoint and patch
   use the exact deployed source, freshly cloned from the Site repository.
 
-## Actual acceptance state
+## Corrective release and owner repair completed
+
+After deployment, the owner opened retained custom case 1 through Community,
+restored all fourteen coordinates with the expert inspector, reviewed the
+unchanged publishable context and saved through the normal workspace endpoint.
+Read-only database confirmation at 10:31:59Z shows the expected Studio fingerprint
+`sha256-e8df94bed5cc24a4b56093b21b24101839cd7501080d01b4bfb0f1bb7e4b3702`.
+The case remains a restricted **unpublished** custom case, version 2.0.0.
+
+The owner then returned to Community and reopened the saved source. All fourteen
+positions and the fingerprint remained unchanged: the real browser regression
+for the opening defect **passed**. The ordinary JSON export at 10:33:50Z contains
+the same source, `premisePublication: author-reviewed`, and 27 history entries.
+Its SHA-256 is `65e8e89cccfb335158765950d4ac61e247389812f5bc0c5c084df20b518880a3`.
+Offline checks confirm the schema-4 envelope, matching Case Core projection and
+the normal publication compiler's expected playable fingerprint
+`sha256-4c17139f6cf47399349aeaf27a473bbcb1429e7d6a9cc3eb0766e12ab290b31b`.
+The browser download-event waiter timed out, but the newly created synchronized
+JSON file was found, read and verified; no nonexistent download link is claimed.
+
+The original uploaded export remains untouched. Do not repeat the repair or
+replace this reviewed source with an unreviewed raw import. Catalogue publication,
+recorded Canopy sessions, governed PDF/JSON and the distinct reviewer's real
+approval remain pending the administrator configuration described below.
+
+## Earlier acceptance findings and root cause
 
 Read-only database inspection found one organization-bound dossier with two
 different active participants: one owner and one reviewer. Those dossier roles
@@ -80,7 +108,7 @@ commissioning; unresolved leadership/team commitments. A received source is not
 production-release clearance. The retained Base recommendation is a conditional
 90-day transition pilot, with production prohibited until conditions are met.
 
-## Bounded local correction
+## Published bounded correction
 
 Branch: `codex/canopy-publication-preflight-2026-09-11`.
 
@@ -102,15 +130,19 @@ Validation completed on the changed source:
 - 22/22 targeted tests: Canopy fixture/publication, graph layout and Studio
   performance/source-opening regression checks.
 - TypeScript, the 18-route canonical parity lock, lint and the complete web build passed.
+- The complete current web suite exited successfully, including all four Canopy
+  outputs and causal walkthroughs: `node --experimental-sqlite --import tsx
+  --test --test-reporter=dot tests/rendered-html.test.mjs tests/*.test.ts`.
 - Four scenario drafts were also checked against the ordinary publication compiler:
   each is rejected until its context is explicitly reviewed; after that review,
   its prepared playable fingerprint matches the publication compiler.
-- No new hosted CI, full native/PDF corpus or authenticated UI PASS is claimed.
+- No new hosted CI, full native/PDF corpus or complete authenticated ERP acceptance
+  is claimed. The bounded owner repair/save/reopen regression above is verified.
 
-The current source is a correction candidate; its actual publication receipt must
-be recorded separately. Supervised preview serves HTML but its primary navigation
-does not respond; successful production browsing is not a preview PASS. No new
-authenticated browser regression PASS is claimed for the correction yet.
+The correction was pushed to the existing Site repository, saved as version 2
+and deployed with the succeeded receipt above. Supervised preview serves HTML but
+its primary navigation does not respond; successful production browsing is not
+a preview PASS. No authentication, runtime allowlist or Site access setting changed.
 
 ## Resume the real workflow
 
@@ -118,12 +150,10 @@ authenticated browser regression PASS is claimed for the correction yet.
    login unless the browser actually requires one.
 2. Reopen the retained Canopy dossier in its existing organization. Preserve its
    sources, proposals, questions and two participant records.
-3. Reopen custom case 1 using Community / Open in Studio. After the opening-effect
-   correction is published, restore node positions to x = 260 × zero-based node
-   index and y = 0 using the expert inspector. Verify the prepared Base fingerprint.
-   Resolve the confirmed fingerprint mismatch through the ordinary owner editor
-   before publishing version 2.0.0. Review the publishable context explicitly and
-   save the existing source with its normal concurrency binding. A fresh raw
+3. Reopen the already repaired custom case 1 using Community / Open in Studio.
+   Verify its prepared Base fingerprint and existing reviewed context; do not
+   repeat the completed coordinate repair. Preserve its normal concurrency
+   binding. A fresh raw
    import loses that binding and the server intentionally rejects an overwrite
    until the current source is reopened. Do not remove that protection, overwrite
    published versions, seed the live catalogue directly or mark review/approval
