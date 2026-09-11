@@ -3,6 +3,7 @@ import { calculateTaxEconomics } from "./tax-economics";
 import { buildReportGraphLayout, deriveReportGraphLayoutInput, reportGraphGovernedTextIssue, ReportGraphLayoutError, type ReportGraphLayoutModel } from "./report-graph-layout";
 import { buildReportGraphAppendix } from "./report-graph-pdf";
 import { canonicalFingerprint } from "./case-integrity";
+import { caseReportBriefRows } from "./case-report-brief";
 import type { StudioDraft, StudioNodeType } from "./types";
 import { buildCanonicalReportModel, reportReceipt, writeStoredReportReceipt, type CanonicalReportModel, type CurrentReportReceiptBinding, type ReportSectionId } from "./report-model";
 import type { Content, ContentTable, TDocumentDefinitions, TableCell } from "pdfmake/interfaces";
@@ -96,7 +97,7 @@ function table(headers: string[], rows: TableCell[][], widths?: Array<string | n
 }
 
 function section(title: string): Content {
-  return { text: title, style: "sectionTitle", margin: [0, 16, 0, 6] };
+  return { text: title, style: "sectionTitle", headlineLevel: 1, margin: [0, 16, 0, 6] };
 }
 
 function buildEconomics(draft: StudioDraft, options: CaseReportOptions): Content[] {
@@ -198,6 +199,9 @@ function buildCaseReportDefinitionFromModels(
   const status = options.workspaceFingerprint && options.workspaceFingerprint === options.currentFingerprint
     ? tr(language, "Workspace-saved version", "Версия сохранена в workspace")
     : tr(language, "Working draft - not workspace-saved", "Рабочий черновик - не сохранён в workspace");
+  const reportStatus = reportModel.publication.status === "draft"
+    ? tr(language, "DRAFT - preliminary analysis", "ЧЕРНОВИК - предварительный анализ")
+    : tr(language, "FINAL - Studio report", "ФИНАЛЬНЫЙ - отчёт Studio");
   const outgoing = new Map<string, string[]>();
   let sectionNumber = 1;
   const numberedSection = (en: string, ru: string) => section(`${sectionNumber++}. ${tr(language, en, ru)}`);
@@ -217,13 +221,19 @@ function buildCaseReportDefinitionFromModels(
     {
       columns: [
         { width: "50%", stack: [{ text: tr(language, "MATTER REFERENCE", "НОМЕР МАТЕРИАЛА"), style: "metaLabel" }, { text: clean(options.matterReference, "-"), style: "metaValue" }] },
-        { width: "50%", stack: [{ text: tr(language, "REPORT STATUS", "СТАТУС ОТЧЁТА"), style: "metaLabel" }, { text: status, style: "metaValue" }] },
+        { width: "50%", stack: [{ text: tr(language, "REPORT STATUS", "СТАТУС ОТЧЁТА"), style: "metaLabel" }, { text: reportStatus, style: "metaValue" }, { text: status, style: "note" }] },
       ], columnGap: 16, margin: [0, 0, 0, 20]
     },
     { text: `${tr(language, "Classification", "Гриф")}: ${options.confidentiality.toUpperCase()}${options.privateCase ? ` - ${tr(language, "PRIVATE CASE", "ПРИВАТНЫЙ КЕЙС")}` : ""}`, style: "classification" },
     { text: tr(language, "Professional-use notice", "Уведомление для профессионального использования"), style: "subheading", margin: [0, 22, 0, 5] },
-    { text: tr(language, "This report is generated from the reviewed Studio graph. It is a structured working product, not a substitute for jurisdiction-specific legal, tax, financial or regulatory advice. Validate facts, authorities, assumptions and calculations before reliance or circulation.", "Отчёт сформирован из проверенной схемы Studio. Это структурированный рабочий материал, а не замена юридической, налоговой, финансовой или регуляторной консультации по соответствующей юрисдикции. До использования или распространения проверьте факты, источники, допущения и расчёты."), style: "notice" },
+    { text: tr(language, "This report is generated from the Studio graph. It is a structured working product, not a substitute for jurisdiction-specific legal, tax, financial or regulatory advice. Validate facts, authorities, assumptions and calculations before reliance or circulation.", "Отчёт сформирован из схемы Studio. Это структурированный рабочий материал, а не замена юридической, налоговой, финансовой или регуляторной консультации по соответствующей юрисдикции. До использования или распространения проверьте факты, источники, допущения и расчёты."), style: "notice" },
+    { text: tr(language, "Studio review information does not establish independent workflow approval. Recorded runs and independently approved outputs are available through the case workflow.", "Сведения о проверке в Studio не подтверждают независимое утверждение в рабочем процессе. Записанные запуски и независимо утверждённые результаты доступны в деле."), style: "note" },
     { text: `${tr(language, "Generated", "Сформирован")}: ${generatedLabel} UTC`, style: "generated" },
+    { text: "", pageBreak: "after" },
+    numberedSection("Decision brief", "Резюме для принятия решения"),
+    { text: reportStatus, style: "warning" },
+    table([tr(language, "Review question", "Вопрос проверки"), tr(language, "Case model summary", "Краткое содержание модели")], caseReportBriefRows(draft, reportModel, language), ["25%", "75%"]),
+    { text: tr(language, "Selected records and labelled extracts are shown above. The appendices retain all visible records, conditions and source references. Text supplied in the case keeps its original language.", "Выше приведены выбранные записи и обозначенные фрагменты. Приложения содержат все открытые записи, условия и ссылки на источники. Текст самого кейса сохраняет исходный язык."), style: "note" },
     { text: "", pageBreak: "after" },
     numberedSection("Case overview", "Обзор кейса"),
     table([tr(language, "Field", "Поле"), tr(language, "Value", "Значение")], [
@@ -240,9 +250,9 @@ function buildCaseReportDefinitionFromModels(
       [tr(language, "Graph layout contract", "Контракт макета графа"), `${layoutModel.layoutSchemaVersion} · ${layoutModel.layoutAlgorithmVersion} · ${layoutModel.layoutRendererVersion}`],
       [tr(language, "Report state", "Состояние отчёта"), `${reportModel.publication.status.toUpperCase()} · ${reportModel.publication.audience.toUpperCase()}`],
     ], ["38%", "62%"]),
-    { text: tr(language, "Executive case context", "Ключевой контекст кейса"), style: "subheading" },
+    { text: tr(language, "Executive case context", "Ключевой контекст кейса"), style: "subheading", headlineLevel: 2 },
     { text: safePremise, style: "body" },
-    { text: tr(language, "Review snapshot", "Сводка проверки"), style: "subheading", margin: [0, 12, 0, 5] },
+    { text: tr(language, "Model inventory", "Состав модели"), style: "subheading", headlineLevel: 2, margin: [0, 12, 0, 5] },
     table([tr(language, "Measure", "Показатель"), tr(language, "Count", "Количество")], [
       [tr(language, "Nodes", "Ноды"), String(draft.nodes.length)],
       [tr(language, "Connections", "Связи"), String(draft.links.length)],
@@ -251,7 +261,7 @@ function buildCaseReportDefinitionFromModels(
       [tr(language, "Outcomes", "Исходы"), String(nodeCounts.outcome)],
       [tr(language, "Public HTTPS sources", "Публичные HTTPS-источники"), String(sourceUrls.length)],
     ], ["74%", "26%"]),
-    { text: tr(language, "Type-aware report scope", "Типовой состав отчёта"), style: "subheading", margin: [0, 12, 0, 5] },
+    { text: tr(language, "Type-aware report scope", "Типовой состав отчёта"), style: "subheading", headlineLevel: 2, margin: [0, 12, 0, 5] },
     { text: reportModel.profile.sections.map((id) => id.replaceAll("_", " ")).join(" · "), style: "bodySmall" },
     { text: `${tr(language, "Canonical report-model fingerprint", "Отпечаток канонической модели отчёта")}: ${reportModel.contentFingerprint}`, style: "fingerprint" },
     { text: `${tr(language, "Presentation layout fingerprint", "Отпечаток макета представления")}: ${layoutModel.layoutFingerprint}`, style: "fingerprint" },
@@ -259,7 +269,7 @@ function buildCaseReportDefinitionFromModels(
 
   content.push(numberedSection("Profile-specific analysis", "Профильный анализ"));
   for (const profileSection of reportModel.sections.filter((item) => !["executive_summary", "sources", "approval", "economics", "scenario_map"].includes(item.id))) {
-    content.push({ text: reportSectionNames[profileSection.id][language === "en" ? 0 : 1], style: "subheading", margin: [0, 10, 0, 5] });
+    content.push({ text: reportSectionNames[profileSection.id][language === "en" ? 0 : 1], style: "subheading", headlineLevel: 2, margin: [0, 10, 0, 5] });
     if (profileSection.items.length) content.push(table(
       [tr(language, "Item", "Элемент"), tr(language, "Professional record", "Профессиональная запись")],
       profileSection.items.map((item) => [options.includeTechnicalIds ? `${item.title}\n[${item.id}]` : item.title, item.detail]), ["35%", "65%"]
@@ -342,8 +352,10 @@ function buildCaseReportDefinitionFromModels(
     displayTitle: true,
     defaultStyle: { font: "Roboto", fontSize: 9.2, color: palette.ink, lineHeight: 1.25 },
     content,
-    header: (currentPage: number) => currentPage === 1 ? null : ({ columns: [{ text: "GENESIS: JURIS CODEX", style: "headerBrand" }, { text: `${draft.caseId} · v${draft.version}`, alignment: "right", style: "headerMeta" }], margin: [44, 22, 44, 0] }),
-    footer: (currentPage: number, pageCount: number) => ({ columns: [{ text: confidentialityLabel, color: palette.gold, bold: true }, { text: `${currentPage} / ${pageCount}`, alignment: "right" }], fontSize: 7.5, color: "#66777e", margin: [44, 0, 44, 18] }),
+    pageBreakBefore: (current, following) => Boolean(current.headlineLevel)
+      && !following.some((node) => !node.headlineLevel && !node.id?.startsWith("report-furniture-") && Boolean(node.text || node.table || node.ul || node.ol || node.svg)),
+    header: (currentPage: number) => currentPage === 1 ? null : ({ columns: [{ id: "report-furniture-brand", text: "GENESIS: JURIS CODEX", style: "headerBrand" }, { id: "report-furniture-case", text: `${draft.caseId} · v${draft.version}`, alignment: "right", style: "headerMeta" }], margin: [44, 22, 44, 0] }),
+    footer: (currentPage: number, pageCount: number) => ({ columns: [{ id: "report-furniture-classification", text: confidentialityLabel, color: palette.gold, bold: true }, { id: "report-furniture-page", text: `${currentPage} / ${pageCount}`, alignment: "right" }], fontSize: 7.5, color: "#66777e", margin: [44, 0, 44, 18] }),
     styles: {
       brand: { fontSize: 10, bold: true, color: palette.cyan, characterSpacing: 1.8, margin: [0, 8, 0, 30] },
       kicker: { fontSize: 8, bold: true, color: palette.gold, characterSpacing: 1.3, margin: [0, 0, 0, 10] },
@@ -401,7 +413,7 @@ function caseReportPresentationFingerprint(
     : [];
   return canonicalFingerprint({
     format: "genesis-juris-case-report-presentation-binding",
-    version: 1,
+    version: 2,
     reportFingerprint: reportModel.contentFingerprint,
     layoutFingerprint: layoutModel.layoutFingerprint,
     language: effectiveOptions.language,
@@ -546,7 +558,7 @@ export function assertCaseReportGenerationAuthorized(canGenerate: boolean) {
   if (canGenerate !== true) throw new Error("Report generation is unavailable in inspection-only mode.");
 }
 
-export async function downloadCaseReport(draft: StudioDraft, options: CaseReportOptions, authorization: { canGenerate: boolean }) {
+async function renderCaseReport(draft: StudioDraft, options: CaseReportOptions, authorization: { canGenerate: boolean }) {
   assertCaseReportGenerationAuthorized(authorization?.canGenerate);
   const [{ default: pdfMake }, { default: pdfFonts }] = await Promise.all([
     import("pdfmake/build/pdfmake.js"), import("pdfmake/build/vfs_fonts.js"),
@@ -554,6 +566,17 @@ export async function downloadCaseReport(draft: StudioDraft, options: CaseReport
   (pdfMake as unknown as { addVirtualFileSystem: (fonts: unknown) => void }).addVirtualFileSystem(pdfFonts);
   const { definition, reportModel, layoutModel, presentationFingerprint } = buildCaseReportArtifacts(draft, options);
   const blob = await new Promise<Blob>((resolve) => pdfMake.createPdf(definition).getBlob(resolve));
+  return { blob, reportModel, layoutModel, presentationFingerprint };
+}
+
+/** The preview uses the export renderer and its authorization/readiness checks.
+ * Viewing a preview does not record a download receipt or reviewer approval. */
+export async function createCaseReportPreview(draft: StudioDraft, options: CaseReportOptions, authorization: { canGenerate: boolean }) {
+  return (await renderCaseReport(draft, options, authorization)).blob;
+}
+
+export async function downloadCaseReport(draft: StudioDraft, options: CaseReportOptions, authorization: { canGenerate: boolean }) {
+  const { blob, reportModel, layoutModel, presentationFingerprint } = await renderCaseReport(draft, options, authorization);
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
