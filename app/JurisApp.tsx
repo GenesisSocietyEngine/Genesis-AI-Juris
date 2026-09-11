@@ -3735,8 +3735,14 @@ function AdminDesk({ locale, cases, customCases, reloadCustomCases, openCustomCa
   const [emailResetAvailable, setEmailResetAvailable] = useState(false);
   const [adminBusy, setAdminBusy] = useState("");
   const [pendingPromotion, setPendingPromotion] = useState<PromotionCandidate | null>(null);
+  const publicationInFlight = useRef(false);
+  const publicationReviewRef = useRef<HTMLElement>(null);
+  const publicationTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [taxReviewNote, setTaxReviewNote] = useState("");
   const [taxReviewChecks, setTaxReviewChecks] = useState<Record<TaxPublicationChecklistKey, boolean>>(() => Object.fromEntries(taxPublicationChecklist.map((key) => [key, false])) as Record<TaxPublicationChecklistKey, boolean>);
+  useEffect(() => {
+    if (pendingPromotion && !isTaxDraft(pendingPromotion.draft)) publicationReviewRef.current?.focus();
+  }, [pendingPromotion]);
   useEffect(() => {
     Promise.all([
       fetch("/api/admin/submissions").then((response) => readJsonResponse<{ submissions?: Array<Record<string, unknown>> }>(response)),
@@ -3789,41 +3795,60 @@ function AdminDesk({ locale, cases, customCases, reloadCustomCases, openCustomCa
     setMessage(response.ok ? (result?.message ?? (locale === "en" ? "Password-reset email sent." : "Письмо для сброса пароля отправлено.")) : (result?.error ?? (locale === "en" ? "The reset email could not be sent." : "Не удалось отправить письмо для сброса.")));
     setAdminBusy("");
   }
-  async function promoteCustomCase(item: CommunityCustomCase) {
+  async function promoteCustomCase(item: CommunityCustomCase, trigger: HTMLButtonElement) {
+    if (publicationInFlight.current || pendingPromotion) return;
+    publicationInFlight.current = true;
+    publicationTriggerRef.current = trigger;
     setAdminBusy(`promote:${item.id}`); setMessage("");
-    const detailResponse = await fetch(`/api/custom-cases?id=${item.id}`);
-    const detail = await detailResponse.json().catch(() => null) as { draft?: unknown; error?: string } | null;
-    if (!detailResponse.ok || detail?.draft === undefined) {
-      setMessage(detail?.error ?? (locale === "en" ? "The exact custom-case version could not be loaded." : "Не удалось загрузить точную версию custom-кейса.")); setAdminBusy(""); return;
-    }
-    let sourceDraft: StudioDraft;
-    try { sourceDraft = normalizeStudioDraft(detail.draft); }
-    catch { setMessage(locale === "en" ? "The custom-case draft is structurally invalid." : "Структура черновика custom-кейса некорректна."); setAdminBusy(""); return; }
-    const compiled = compileStudioDraft(sourceDraft);
-    if (!compiled.scenario) {
-      setMessage((locale === "en" ? "Promotion blocked: " : "Публикация заблокирована: ") + compiled.issues.map((issue) => issue.message).join(" ")); setAdminBusy(""); return;
-    }
-    const candidate = { item, draft: sourceDraft, scenario: compiled.scenario };
-    if (isTaxDraft(sourceDraft)) {
-      setPendingPromotion(candidate);
+    try {
+      const detailResponse = await fetch(`/api/custom-cases?id=${item.id}`, { signal: AbortSignal.timeout(15_000) });
+      const detail = await detailResponse.json().catch(() => null) as { draft?: unknown; error?: string } | null;
+      if (!detailResponse.ok || detail?.draft === undefined) {
+        setMessage(detail?.error ?? (locale === "en" ? "The exact custom-case version could not be loaded." : "Не удалось загрузить точную версию custom-кейса.")); return;
+      }
+      let sourceDraft: StudioDraft;
+      try { sourceDraft = normalizeStudioDraft(detail.draft); }
+      catch { setMessage(locale === "en" ? "The custom-case draft is structurally invalid." : "Структура черновика custom-кейса некорректна."); return; }
+      const compiled = compileStudioDraft(sourceDraft);
+      if (!compiled.scenario) {
+        setMessage((locale === "en" ? "Promotion blocked: " : "Публикация заблокирована: ") + compiled.issues.map((issue) => issue.message).join(" ")); return;
+      }
+      // Stage the exact fetched source for an explicit in-page confirmation.
+      // Publication still goes through the server's authorization and immutable-version checks.
+      setPendingPromotion({ item, draft: sourceDraft, scenario: compiled.scenario });
       setTaxReviewNote("");
       setTaxReviewChecks(Object.fromEntries(taxPublicationChecklist.map((key) => [key, false])) as Record<TaxPublicationChecklistKey, boolean>);
+    } catch {
+      setMessage(locale === "en" ? "The publication source could not be loaded. Please try again." : "Не удалось загрузить источник для публикации. Попробуйте ещё раз.");
+    } finally {
+      publicationInFlight.current = false;
       setAdminBusy("");
-      return;
     }
-    if (!window.confirm(locale === "en" ? "Publish an immutable copy of this exact custom-case version to the General Library? The restricted source remains in its workspace." : "Опубликовать неизменяемую копию этой точной версии custom-кейса в Общей библиотеке? Ограниченный источник останется в workspace.")) { setAdminBusy(""); return; }
-    await publishPromotion(candidate);
+  }
+  function cancelPromotion() {
+    if (publicationInFlight.current) return;
+    setPendingPromotion(null);
+    requestAnimationFrame(() => publicationTriggerRef.current?.focus());
   }
   async function publishPromotion(candidate: PromotionCandidate, taxSafetyAttestation?: Record<string, unknown>) {
+    if (publicationInFlight.current) return;
+    publicationInFlight.current = true;
     setAdminBusy(`promote:${candidate.item.id}`); setMessage("");
+    try {
     const response = await fetch("/api/admin/cases", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ customCaseId: candidate.item.id, draft: candidate.draft, authorName: candidate.item.ownerDisplayName ?? "Custom case author", reviewerName: "Maxim Hayan · platform administrator", reviewLevel: "community_beta", changeSummary: "Promoted from a restricted custom workspace to the General Library as an immutable snapshot.", durationMinutes: 45, sector: candidate.draft.classification?.practiceArea ?? "General legal", ...(taxSafetyAttestation ? { taxSafetyAttestation } : {}) }) });
     const result = await response.json().catch(() => null) as { error?: string } | null;
     if (response.ok) {
-      await Promise.all([reloadCustomCases(), refreshCatalogue()]);
       setPendingPromotion(null); setTaxReviewNote("");
       setMessage(locale === "en" ? "Immutable case version published to the General Library." : "Неизменяемая версия опубликована в Общей библиотеке.");
+      const refreshed = await Promise.allSettled([reloadCustomCases(), refreshCatalogue()]);
+      if (refreshed.some((result) => result.status === "rejected")) setMessage(locale === "en" ? "The version was published. Refresh the page to update the catalogue." : "Версия опубликована. Обновите страницу, чтобы увидеть её в каталоге.");
     } else setMessage(result?.error ?? (locale === "en" ? "Promotion failed validation." : "Кейс не прошёл проверки публикации."));
-    setAdminBusy("");
+    } catch {
+      setMessage(locale === "en" ? "The publication result could not be confirmed. Refresh the catalogue before trying again." : "Не удалось подтвердить результат публикации. Обновите каталог перед повторной попыткой.");
+    } finally {
+      publicationInFlight.current = false;
+      setAdminBusy("");
+    }
   }
   async function confirmTaxPromotion() {
     if (!pendingPromotion || !pendingPromotion.draft.classification || !isTaxDraft(pendingPromotion.draft)) return;
@@ -3867,7 +3892,22 @@ function AdminDesk({ locale, cases, customCases, reloadCustomCases, openCustomCa
         <section><h2>{locale === "en" ? "Feedback queue" : "Очередь отзывов"}</h2>{feedbackQueue.filter((item) => item.status !== "resolved" && item.status !== "declined").slice(0, 8).map((item) => <article key={String(item.id)}><b>{String(item.caseId)} · {String(item.category)}</b><small>{String(item.severity)} · {String(item.contextType)} {String(item.contextId ?? "")}</small><p>{String(item.comment)}</p><button onClick={() => resolveFeedback(Number(item.id))}>Resolve</button></article>)}</section>
       </div>
     </div>
-    <section className="admin-custom-register"><div className="admin-section-heading"><div><span>CUSTOM → GENERAL LIBRARY</span><h2>{locale === "en" ? "Custom case inventory" : "Реестр custom-кейсов"}</h2></div><b>{customCases.filter((item) => !item.isPrivate).length.toString().padStart(2, "0")}</b></div><p>{locale === "en" ? "Private cases are omitted at the API boundary: Maxim receives neither their content nor their metadata. Promotion creates a new immutable public snapshot and keeps the custom source." : "Приватные кейсы исключаются на границе API: Максим не получает ни содержание, ни метаданные. Продвижение создаёт новую неизменяемую публичную копию и сохраняет custom-источник."}</p><div>{customCases.filter((item) => !item.isPrivate).map((item) => <article key={item.id}><div><span>{item.status === "promoted" ? "LIBRARY SNAPSHOT CREATED" : "RESTRICTED CUSTOM"}</span><h3>{item.title}</h3><small>{item.ownerDisplayName ?? "Case author"} · {item.caseId} · v{item.currentVersion} · {item.shareCount} share(s)</small></div><div><button type="button" className="secondary-cta" onClick={() => openCustomCase(item.id)}>{locale === "en" ? "Open source" : "Открыть источник"}</button><button type="button" className="primary-cta" disabled={adminBusy === `promote:${item.id}`} onClick={() => promoteCustomCase(item)}>{item.status === "promoted" ? (locale === "en" ? "Publish next version" : "Опубликовать новую версию") : (locale === "en" ? "Promote to library" : "Перевести в библиотеку")}<Icon name="arrow"/></button></div></article>)}</div></section>
+    <section className="admin-custom-register"><div className="admin-section-heading"><div><span>CUSTOM → GENERAL LIBRARY</span><h2>{locale === "en" ? "Custom case inventory" : "Реестр custom-кейсов"}</h2></div><b>{customCases.filter((item) => !item.isPrivate).length.toString().padStart(2, "0")}</b></div><p>{locale === "en" ? "Private cases are omitted at the API boundary: Maxim receives neither their content nor their metadata. Promotion creates a new immutable public snapshot and keeps the custom source." : "Приватные кейсы исключаются на границе API: Максим не получает ни содержание, ни метаданные. Продвижение создаёт новую неизменяемую публичную копию и сохраняет custom-источник."}</p><div>{customCases.filter((item) => !item.isPrivate).map((item) => <article key={item.id}><div><span>{item.status === "promoted" ? "LIBRARY SNAPSHOT CREATED" : "RESTRICTED CUSTOM"}</span><h3>{item.title}</h3><small>{item.ownerDisplayName ?? "Case author"} · {item.caseId} · v{item.currentVersion} · {item.shareCount} share(s)</small></div><div><button type="button" className="secondary-cta" onClick={() => openCustomCase(item.id)}>{locale === "en" ? "Open source" : "Открыть источник"}</button><button type="button" className="primary-cta" disabled={Boolean(adminBusy) || Boolean(pendingPromotion)} onClick={(event) => void promoteCustomCase(item, event.currentTarget)}>{item.status === "promoted" ? (locale === "en" ? "Publish next version" : "Опубликовать новую версию") : (locale === "en" ? "Promote to library" : "Перевести в библиотеку")}<Icon name="arrow"/></button></div></article>)}</div></section>
+    {pendingPromotion && !isTaxDraft(pendingPromotion.draft) && <section
+      className="tax-publication-review publication-confirmation"
+      ref={publicationReviewRef} tabIndex={-1} aria-labelledby="publication-confirmation-title"
+      onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); cancelPromotion(); } }}
+    >
+      <header><h2 id="publication-confirmation-title">{locale === "en" ? "Publish this case version?" : "Опубликовать эту версию кейса?"}</h2></header>
+      <p><strong>{pendingPromotion.draft.title}</strong> · {locale === "en" ? "Version" : "Версия"} {pendingPromotion.draft.version}</p>
+      <p>{locale === "en" ? "This creates a fixed copy in the General Library for people who can access this site. Your workspace source remains editable. Later changes require a new published version." : "В Общей библиотеке появится неизменяемая копия для пользователей, имеющих доступ к сайту. Источник в вашем рабочем пространстве останется доступен для редактирования. Последующие изменения нужно публиковать новой версией."}</p>
+      <details><summary>{locale === "en" ? "Verify the exact version" : "Проверить точную версию"}</summary><dl><div><dt>{locale === "en" ? "Case ID" : "ID кейса"}</dt><dd>{pendingPromotion.draft.caseId}</dd></div><div><dt>{locale === "en" ? "Content fingerprint" : "Контрольная сумма содержания"}</dt><dd><code>{caseFingerprint(pendingPromotion.draft)}</code></dd></div></dl></details>
+      {message && <p role="status">{message}</p>}
+      <footer>
+        <button type="button" className="secondary-cta" disabled={adminBusy === `promote:${pendingPromotion.item.id}`} onClick={cancelPromotion}>{locale === "en" ? "Cancel" : "Отмена"}</button>
+        <button type="button" className="primary-cta" disabled={adminBusy === `promote:${pendingPromotion.item.id}`} onClick={() => void publishPromotion(pendingPromotion)}>{adminBusy === `promote:${pendingPromotion.item.id}` ? (locale === "en" ? "Publishing…" : "Публикация…") : (locale === "en" ? "Publish this version" : "Опубликовать эту версию")}</button>
+      </footer>
+    </section>}
     {pendingPromotion && pendingTaxClassification && <section className="tax-publication-review" aria-labelledby="tax-publication-review-title">
       <header><div><span>TAX / OFFSHORE PUBLICATION GATE</span><h2 id="tax-publication-review-title">{locale === "en" ? "Exact-artifact compliance attestation" : "Compliance-аттестация точного артефакта"}</h2></div><button type="button" onClick={() => setPendingPromotion(null)} disabled={adminBusy === `promote:${pendingPromotion.item.id}`} aria-label={locale === "en" ? "Close tax review" : "Закрыть налоговую проверку"}><Icon name="close"/></button></header>
       <p>{locale === "en" ? "Publication remains blocked until the administrator reviews the legal basis, sources and every playable path. Each confirmation is recorded against the exact Studio and compiled-playable fingerprints." : "Публикация заблокирована, пока администратор не проверит правовую основу, источники и каждую игровую ветвь. Подтверждения привязываются к точным fingerprints Studio и собранного playable-артефакта."}</p>

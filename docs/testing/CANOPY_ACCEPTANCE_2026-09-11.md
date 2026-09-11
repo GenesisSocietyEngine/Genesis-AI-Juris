@@ -1,5 +1,36 @@
 # Canopy acceptance checkpoint — 11 September 2026
 
+## Administrator activation and publication retry
+
+The owner explicitly authorized `maxim.hayan@gmail.com` as application administrator.
+`GENESIS_ADMIN_EMAILS` is configured at environment revision 1. Deployment
+`appgdep_6aa3dc169240819186a9dec51e83d1dc` succeeded at 10:47:00Z using
+existing version 2. The owner subsequently saw AdminDesk and the promotion control;
+protected admin requests returned 200. This configuration approval is complete.
+
+The ordinary promotion action loaded custom case 1 successfully. Browser control
+then stalled. On the explicit retry, the browser reported that a native JavaScript
+confirmation was active in that tab. Dialog inspection, acceptance, Escape and
+ordinary tab reads could not complete because tab refresh timed out. Read-only
+reconciliation still showed the exact repaired source as unpublished. No
+publication POST, completed run, governed output or reviewer acceptance is claimed.
+
+This corrective source stages a non-tax publication for explicit confirmation
+inside the page. It names the exact case/version and publication audience, supports
+Cancel and Escape, focuses the confirmation and restores focus after cancellation.
+It also prevents concurrent promotion actions and reports source-load/network
+failures. Tax attestations and all server publication/identity/lineage checks
+remain authoritative. No catalogue or approval database writes were substituted
+for the ordinary user action.
+
+Predeployment validation: TypeScript, the 18-route parity lock, lint, Worker build
+and 38 targeted Canopy, publication, access, lineage and build tests passed.
+The stalled native dialog prevented browser verification of the new confirmation;
+its deployment receipt and subsequent acceptance must be recorded separately.
+The preserved Base must be reopened, not imported or repaired again. Reconcile
+the existing `GENESIS_UX_Investor_Audit_and_Demo_2026-09-11.md` before duplicating
+the requested audit work.
+
 ## Verified target
 
 - Site: GENESIS: JURIS — Canopy V3 Acceptance.
