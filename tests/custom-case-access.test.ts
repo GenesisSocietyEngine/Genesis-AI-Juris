@@ -351,7 +351,8 @@ test("API sources retain server-side privacy, licence, feedback and promotion ga
   assert.doesNotMatch(feedback, /candidates\.find\(/);
   assert.match(feedback, /feedbackStatus = resolvedAudience === "owner_private" \? "private_note" : "new"/);
   assert.match(client, /customCaseId: studioCustomCaseId/);
-  assert.match(client, /customCaseId: target\.source === "studio" && privacyMode !== "product_only" \? target\.customCaseId/);
+  const feedbackClient = readFileSync(new URL("../app/FeedbackDialog.tsx", import.meta.url), "utf8");
+  assert.match(feedbackClient, /customCaseId: target\.source === "studio" && privacyMode !== "product_only" \? target\.customCaseId/);
   assert.match(client, /parsed\.case\.fingerprint !== currentFingerprint && parsed\.case\.fingerprint !== legacyFingerprint/);
 
   assert.match(publication, /source\.isPrivate/);

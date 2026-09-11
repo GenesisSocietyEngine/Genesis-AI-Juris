@@ -32,20 +32,24 @@ export function workspaceDestination(path: string, current: string) {
   const source = new URL(safeWorkspaceReturn(current), ORIGIN);
   const returnPath = safeWorkspaceReturn(source.searchParams.get("return_to"), "");
   const context = returnPath ? new URL(returnPath, ORIGIN) : source;
+  const changesCase = target.searchParams.has("dossier") && target.searchParams.get("dossier") !== context.searchParams.get("dossier");
+  const selectedOrganization = target.searchParams.get("organization") ?? source.searchParams.get("organization");
+  const changesOrganization = selectedOrganization !== null && selectedOrganization !== context.searchParams.get("organization");
+  const changesScenario = target.searchParams.has("scenario") && target.searchParams.get("scenario") !== context.searchParams.get("scenario");
   for (const key of ["organization", "lang"]) {
     const value = source.searchParams.get(key) ?? context.searchParams.get(key);
-    if (value) target.searchParams.set(key, value);
+    if (value && !target.searchParams.has(key)) target.searchParams.set(key, value);
   }
-  if (["/matters", "/canopy"].includes(target.pathname) && ["/matters", "/canopy"].includes(context.pathname) && context.searchParams.has("dossier")) {
+  if (!changesOrganization && !target.searchParams.has("dossier") && ["/matters", "/canopy"].includes(target.pathname) && ["/matters", "/canopy"].includes(context.pathname) && context.searchParams.has("dossier")) {
     target.searchParams.set("dossier", context.searchParams.get("dossier")!);
   }
-  if (target.pathname === "/canopy" && context.pathname === "/canopy") {
+  if (!changesCase && !changesOrganization && target.pathname === "/canopy" && context.pathname === "/canopy") {
     for (const key of ["scenario", "run"]) {
       const value = context.searchParams.get(key);
-      if (value) target.searchParams.set(key, value);
+      if (value && !target.searchParams.has(key) && !(key === "run" && changesScenario)) target.searchParams.set(key, value);
     }
   }
-  if (["/studio", "/templates", "/account"].includes(target.pathname)) {
+  if (!changesCase && !changesOrganization && !target.searchParams.has("return_to") && ["/studio", "/templates", "/account"].includes(target.pathname)) {
     const returnTo = ["/matters", "/canopy"].includes(source.pathname) ? source.pathname + source.search + source.hash : returnPath;
     if (returnTo && returnTo !== target.pathname) target.searchParams.set("return_to", returnTo);
   }

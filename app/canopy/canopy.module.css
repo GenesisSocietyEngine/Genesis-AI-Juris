@@ -1,2 +1,59 @@
-.page{max-width:1200px;margin:auto;padding:28px;color:#20352d;background:#fafaf6;font:16px/1.6 Arial,sans-serif}.page nav{display:flex;justify-content:space-between;gap:20px;font-size:14px}.page a{color:#246547;text-underline-offset:3px}.header{display:grid;grid-template-columns:1.4fr 1fr;gap:36px;margin:28px 0}.header h1{font:normal 38px/1.16 Georgia,serif;margin:12px 0}.eyebrow{font-size:13px;letter-spacing:.12em}.start{align-self:center}.page button{font:inherit;background:#214a38;color:#fff;border:2px solid #214a38;border-radius:6px;padding:10px 18px;cursor:pointer}.page button:disabled{opacity:.65;cursor:wait}.page button:focus-visible,.page a:focus-visible,.page summary:focus-visible{outline:3px solid #d29530;outline-offset:4px}.start p,.disclosure{font-size:14px}.disclosure{padding:16px;border-left:4px solid #877544;background:#f1eee3}.tabs{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.tabs button{background:transparent;color:#214a38}.tabs button[aria-pressed=true]{background:#214a38;color:#fff}.comparison{padding:24px;border:1px solid #b7c6b7;background:#fff}.comparison h3{font:normal 25px/1.4 Georgia,serif;margin-top:0}.comparison dl{margin:0}.comparison dl>div{display:grid;grid-template-columns:220px 1fr;gap:20px;padding:13px 0;border-top:1px solid #e0e6dd}.comparison dt{font-weight:bold}.comparison dd{margin:0}.comparison dd a{display:inline-block;margin-right:15px}.page section{margin:36px 0}.sources{display:grid;gap:10px}.sources details{padding:15px 20px;border:1px solid #d0d8cd;background:#fff;scroll-margin-top:24px}.sources summary{cursor:pointer;font-weight:bold}.sources h3{font-size:16px}.notes{border-top:2px solid #214a38;padding-top:12px}.issue{padding:15px;background:#fff0e8;color:#802b0c;overflow-wrap:anywhere}@media(max-width:700px){.page{padding:18px}.header{grid-template-columns:1fr;gap:12px}.header h1{font-size:30px}.comparison dl>div{grid-template-columns:1fr;gap:4px}.page nav{flex-wrap:wrap}.tabs button{flex:1 1 40%}}
-.page pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.875rem}.page select,.page textarea{display:block;box-sizing:border-box;width:100%;font:inherit;padding:.65rem;margin:.5rem 0;background:#fff;color:#20352d;border:1px solid #8b9c91;border-radius:4px}.page textarea{min-height:9rem}.reviewRow{padding:1rem;margin:.75rem 0;border:1px solid #b7c6b7;background:#fff;overflow-wrap:anywhere}.reviewRow>span{display:inline-block;margin:0 1rem}.page select:focus-visible,.page textarea:focus-visible{outline:3px solid #d29530;outline-offset:3px}.page button{max-width:100%;white-space:normal}.page{font-size:1rem}.header h1{font-size:2.375rem}
+.page {
+  max-width: 1200px;
+  margin: auto;
+  padding: 28px;
+  color: #14212c;
+  background: #faf7f0;
+  font: 1rem/1.6 var(--sans, "Segoe UI", Arial, sans-serif);
+  overflow-wrap: anywhere;
+}
+.page a { color: #17636b; text-underline-offset: 3px; }
+.page h2, .page h3 { scroll-margin-top: 110px; }
+.page h2 { font: normal 1.9rem/1.3 var(--serif, Georgia, serif); margin: 1.5rem 0 .75rem; }
+.breadcrumb, .stepLinks { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
+.breadcrumb { font-size: .875rem; color: #53616b; }
+.header { display: grid; grid-template-columns: 1.25fr 1fr; gap: 32px; margin: 24px 0; }
+.header > div { min-width: 0; }
+.header h1 { font: normal clamp(1.75rem, 3vw, 2.375rem)/1.2 var(--serif, Georgia, serif); margin: 12px 0; }
+.eyebrow { font-size: .8rem; letter-spacing: .09em; color: #17636b; }
+.start { align-self: start; }
+.page button { font: inherit; background: #765618; color: #fff; border: 2px solid #765618; border-radius: 4px; padding: 10px 18px; min-height: 44px; cursor: pointer; max-width: 100%; white-space: normal; }
+.page button:disabled { opacity: .6; cursor: not-allowed; }
+.page button:focus-visible, .page a:focus-visible, .page summary:focus-visible, .page select:focus-visible, .page textarea:focus-visible { outline: 3px solid #17636b; outline-offset: 4px; }
+.page .secondaryButton { background: transparent; color: #14212c; border-color: #78848c; }
+.start p, .disclosure { font-size: .875rem; }
+.disclosure, .nextAction { padding: 16px; border-left: 4px solid #765618; background: #f1ece1; }
+.nextAction { font-size: 1rem; }
+.stepLinks { padding: 12px 0; border-bottom: 1px solid #c9c6bd; }
+.stepLinks a { min-height: 44px; display: inline-flex; align-items: center; }
+.tabs { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+.tabs button { background: transparent; color: #765618; }
+.tabs button[aria-pressed=true] { background: #765618; color: #fff; }
+.comparison { padding: 24px; border: 1px solid #c9c6bd; background: #fffdf8; margin-top: 20px; }
+.comparison h3 { font: normal 1.5rem/1.4 var(--serif, Georgia, serif); margin-top: 0; }
+.comparison dl { margin: 0; }
+.comparison dl > div { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; padding: 13px 0; border-top: 1px solid #ddd9ce; }
+.comparison dt { font-weight: bold; }
+.comparison dd { margin: 0; }
+.comparison dd a { display: inline-block; margin-right: 15px; }
+.page section { margin: 36px 0; }
+.sources { display: grid; gap: 10px; }
+.sources details { padding: 15px 20px; border: 1px solid #c9c6bd; background: #fffdf8; scroll-margin-top: 110px; }
+.page summary { cursor: pointer; padding: 10px 0; }
+.sources summary { font-weight: bold; }
+.sources h3 { font-size: 1rem; }
+.notes { border-top: 2px solid #765618; padding-top: 12px; }
+.issue { padding: 15px; background: #fff0e8; color: #802b0c; overflow-wrap: anywhere; }
+.page pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .875rem; }
+.page select, .page textarea { display: block; box-sizing: border-box; width: 100%; font: inherit; padding: .65rem; margin: .5rem 0; background: #fffdf8; color: #14212c; border: 1px solid #78848c; border-radius: 4px; }
+.page textarea { min-height: 9rem; }
+.reviewRow { padding: 1rem; margin: .75rem 0; border: 1px solid #c9c6bd; background: #fffdf8; overflow-wrap: anywhere; }
+.reviewRow > span { display: block; margin: .65rem 0; }
+@media (max-width: 700px) {
+  .page { padding: 18px; }
+  .header { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .comparison { padding: 18px; }
+  .comparison dl > div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .tabs button { flex: 1 1 40%; }
+  .stepLinks { gap: 4px 18px; }
+}
