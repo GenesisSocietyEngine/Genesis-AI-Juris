@@ -51,6 +51,11 @@ without an ellipsis; full records remain in the appendices. Table subheadings
 repeat as part of the table header and stay with at least one data row. The
 verification checklist and signature area form one indivisible block.
 
+Visual review of the first 55 Windows candidate pages found orphaned audit
+headings in Bhopal and the Russian long-title fixture. Rendered pagination
+regressions reproduce these cases. Empty table/list containers no longer count
+as body content when deciding whether a heading can stay on a page.
+
 ## Dependency audit finding
 
 The 11 September hosted audit reported five high and one critical dependency

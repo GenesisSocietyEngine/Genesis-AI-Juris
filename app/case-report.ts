@@ -6,7 +6,7 @@ import { canonicalFingerprint } from "./case-integrity";
 import { caseReportBriefRows } from "./case-report-brief";
 import type { StudioDraft, StudioNodeType } from "./types";
 import { buildCanonicalReportModel, reportReceipt, writeStoredReportReceipt, type CanonicalReportModel, type CurrentReportReceiptBinding, type ReportSectionId } from "./report-model";
-import type { Content, ContentTable, TDocumentDefinitions, TableCell } from "pdfmake/interfaces";
+import type { Content, ContentTable, ContentText, TDocumentDefinitions, TableCell } from "pdfmake/interfaces";
 
 export type CaseReportOptions = {
   language: "en" | "ru";
@@ -78,10 +78,10 @@ function money(language: CaseReportOptions["language"], currency: string, value:
   catch { return `${Math.round(value).toLocaleString(language === "en" ? "en-GB" : "ru-RU")} ${currency}`; }
 }
 
-function table(headers: string[], rows: TableCell[][], widths?: Array<string | number>, heading?: string): ContentTable {
+function table(headers: string[], rows: TableCell[][], widths?: Array<string | number>, heading?: string | ContentText): ContentTable {
   const headerRows = heading ? 2 : 1;
   const headingRow: TableCell[] = heading ? [
-    { text: heading, colSpan: headers.length, style: "subheading", border: [false, false, false, false], margin: [0, 4, 0, 4] },
+    { ...(typeof heading === "string" ? { text: heading, style: "subheading", margin: [0, 4, 0, 4] as [number, number, number, number] } : heading), headlineLevel: undefined, colSpan: headers.length, border: [false, false, false, false] },
     ...headers.slice(1).map<TableCell>(() => ({ text: "", border: [false, false, false, false] })),
   ] : [];
   return {
@@ -105,7 +105,7 @@ function table(headers: string[], rows: TableCell[][], widths?: Array<string | n
   };
 }
 
-function section(title: string): Content {
+function section(title: string): ContentText {
   return { text: title, style: "sectionTitle", headlineLevel: 1, margin: [0, 16, 0, 6] };
 }
 
@@ -294,24 +294,24 @@ function buildCaseReportDefinitionFromModels(
     content.push(...buildEconomics(draft, options));
   }
 
-  content.push(numberedSection("Scenario and decision map", "Карта сценария и решений"));
+  const scenarioHeading = numberedSection("Scenario and decision map", "Карта сценария и решений");
   content.push(table(
     [tr(language, "Type", "Тип"), tr(language, "Issue / step", "Вопрос / шаг"), tr(language, "Leads to", "Ведёт к")],
     draft.nodes.map((node) => [
       nodeNames[node.type][language === "en" ? 0 : 1],
       options.includeTechnicalIds ? `${node.title}\n[${node.id}]` : node.title,
       (outgoing.get(node.id) ?? []).map((id) => titleById.get(id) ?? id).join("; ") || tr(language, "Terminal / no outgoing path", "Финал / нет исходящей ветви"),
-    ]), ["19%", "42%", "39%"]
+    ]), ["19%", "42%", "39%"], scenarioHeading
   ));
 
   if (options.includeRegisters) {
     const registerNodes = draft.nodes.filter((node) => ["fact", "evidence", "entity", "tax_rule", "deadline"].includes(node.type));
-    content.push(numberedSection("Facts, evidence and rules register", "Реестр фактов, доказательств и правил"));
+    const registerHeading = numberedSection("Facts, evidence and rules register", "Реестр фактов, доказательств и правил");
     if (registerNodes.length) content.push(table(
       [tr(language, "Category", "Категория"), tr(language, "Item", "Элемент"), tr(language, "Detail / verification note", "Описание / примечание о проверке")],
       registerNodes.map((node) => [nodeNames[node.type][language === "en" ? 0 : 1], options.includeTechnicalIds ? `${node.title}\n[${node.id}]` : node.title, clean(node.detail)]),
-      ["20%", "31%", "49%"]
-    )); else content.push({ text: tr(language, "No fact, evidence, entity, rule or deadline nodes are present.", "Ноды фактов, доказательств, организаций, правил или сроков отсутствуют."), style: "warning" });
+      ["20%", "31%", "49%"], registerHeading
+    )); else content.push({ stack: [registerHeading, { text: tr(language, "No fact, evidence, entity, rule or deadline nodes are present.", "Ноды фактов, доказательств, организаций, правил или сроков отсутствуют."), style: "warning" }], unbreakable: true });
     content.push({ text: tr(language, "Each material item should be marked by the reviewer as verified, source-backed, judgment, confirmation required or uncertain before external circulation.", "Перед внешним распространением рецензент должен отметить каждый существенный элемент как проверенный, подтверждённый источником, суждение, требующий подтверждения или неопределённый."), style: "note" });
   }
 
@@ -322,7 +322,7 @@ function buildCaseReportDefinitionFromModels(
   }
 
   if (options.includeAuditTrail && options.audience !== "client") {
-    content.push(numberedSection("Authoring and review trail", "История подготовки и проверки"));
+    const auditHeading = numberedSection("Authoring and review trail", "История подготовки и проверки");
     const redactionsActive = reportModel.governance.redactions.length > 0;
     const safeEntries = draft.editHistory.map((entry) => {
       const promptAction = entry.action === "prompt_submitted" || entry.action === "prompt_applied" || entry.action === "graph_rebuilt";
@@ -333,8 +333,8 @@ function buildCaseReportDefinitionFromModels(
           : clean(entry.message);
       return [new Date(entry.createdAt).toISOString().slice(0, 16).replace("T", " "), entry.source, entry.action, safeMessage];
     });
-    if (safeEntries.length) content.push(table([tr(language, "UTC", "UTC"), tr(language, "Source", "Источник"), tr(language, "Action", "Действие"), tr(language, "Record", "Запись")], safeEntries, ["18%", "13%", "20%", "49%"]));
-    else content.push({ text: tr(language, "No authoring history is recorded.", "История подготовки отсутствует."), style: "body" });
+    if (safeEntries.length) content.push(table([tr(language, "UTC", "UTC"), tr(language, "Source", "Источник"), tr(language, "Action", "Действие"), tr(language, "Record", "Запись")], safeEntries, ["18%", "13%", "20%", "49%"], auditHeading));
+    else content.push({ stack: [auditHeading, { text: tr(language, "No authoring history is recorded.", "История подготовки отсутствует."), style: "body" }], unbreakable: true });
   }
 
   const verificationStart = content.length;
@@ -366,8 +366,10 @@ function buildCaseReportDefinitionFromModels(
     displayTitle: true,
     defaultStyle: { font: "Roboto", fontSize: 9.2, color: palette.ink, lineHeight: 1.25 },
     content,
+    // A table/list container may start here while all of its rendered rows move
+    // to the next page. Only actual body content can keep a heading on this page.
     pageBreakBefore: (current, following) => Boolean(current.headlineLevel)
-      && !following.some((node) => !node.headlineLevel && !node.id?.startsWith("report-furniture-") && Boolean(node.text || node.table || node.ul || node.ol || node.svg)),
+      && !following.some((node) => !node.headlineLevel && !node.id?.startsWith("report-furniture-") && Boolean(node.text || node.svg || node.canvas)),
     header: (currentPage: number) => currentPage === 1 ? null : ({ columns: [{ id: `report-furniture-brand-${currentPage}`, text: "GENESIS: JURIS CODEX", style: "headerBrand" }, { id: `report-furniture-case-${currentPage}`, text: `${draft.caseId} · v${draft.version}`, alignment: "right", style: "headerMeta" }], margin: [44, 22, 44, 0] }),
     footer: (currentPage: number, pageCount: number) => ({ columns: [{ id: `report-furniture-classification-${currentPage}`, text: confidentialityLabel, color: palette.gold, bold: true }, { id: `report-furniture-page-${currentPage}`, text: `${currentPage} / ${pageCount}`, alignment: "right" }], fontSize: 7.5, color: "#66777e", margin: [44, 0, 44, 18] }),
     styles: {

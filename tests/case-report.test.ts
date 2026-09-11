@@ -11,6 +11,8 @@ import { caseFingerprint, casePublicationFingerprint, normalizeStudioDraft } fro
 import { caseTypeReference } from "../app/case-type-reference";
 import { isReportReceiptStale, reportReceipt, validateReportReadiness } from "../app/report-model";
 import { buildCanopyPackage } from "../app/canopy-fixture";
+import { primaryCaseOutput } from "../app/case-type-playbooks";
+import { reportPdfFixtures } from "../scripts/tests/report-pdf-fixtures";
 import type { StudioDraft } from "../app/types";
 
 const draft: StudioDraft = {
@@ -174,6 +176,28 @@ test("executive brief does not disclose redacted input or opening records", () =
   const confidential = { ...draft, nodes: draft.nodes.map((node) => node.id === "trigger-1" || node.id === "evidence-1" ? { ...node, title: "WITHHELD TITLE", detail: "WITHHELD DETAIL" } : node) };
   const definition = buildCaseReportDefinition(confidential, { ...options, redactedNodeIds: ["trigger-1", "evidence-1"] });
   assert.doesNotMatch(collectTextValues(definition.content).join("\n"), /WITHHELD TITLE|WITHHELD DETAIL/);
+});
+
+test("audit headings share a rendered page with a record in Bhopal and long Russian titles", async () => {
+  for (const id of ["golden-bhopal-decision-memorandum", "stress-long-title-ru"]) {
+    const fixture = reportPdfFixtures().find((entry) => entry.id === id)!;
+    const profile = primaryCaseOutput(fixture.draft.caseType);
+    const fingerprint = caseFingerprint(fixture.draft);
+    const publicationFingerprint = casePublicationFingerprint(fixture.draft);
+    const definition = buildCaseReportDefinition(fixture.draft, {
+      ...options, language: fixture.language, profileId: profile.id, profileLabel: profile.label[fixture.language],
+      audience: fixture.audience, preparedBy: "V62 PDF QA Author", preparedFor: "V62 PDF QA Reviewer",
+      matterReference: `V62-${fixture.id}`, generatedAt: "2026-09-01T12:00:00.000Z",
+      currentFingerprint: fingerprint, workspaceFingerprint: fingerprint,
+      currentPublicationFingerprint: publicationFingerprint, workspacePublicationFingerprint: publicationFingerprint,
+      reviewerName: "V62 PDF QA Reviewer", reviewerApproved: true, status: "draft",
+    });
+    const pages = (await paginateDefinition(definition)).map(pdfPageText);
+    const heading = fixture.language === "en" ? "Authoring and review trail" : "История подготовки и проверки";
+    const page = pages.find((entry) => entry.includes(heading));
+    assert.ok(page, `${id}: audit heading is present`);
+    assert.ok(page.includes(fixture.draft.editHistory[0].action), `${id}: audit heading must accompany an actual record`);
+  }
 });
 
 test("client-facing report can omit audit trail and technical identifiers", () => {
