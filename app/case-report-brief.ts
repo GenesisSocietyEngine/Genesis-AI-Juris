@@ -21,14 +21,18 @@ function records(nodes: StudioNode[], maximum: number, language: Language, detai
 
 /** Receives the already-redacted draft. It cannot select a winning branch or
  * infer verified facts, a simulation result, or a workflow approval. */
-export function caseReportBriefRows(draft: StudioDraft, model: CanonicalReportModel, language: Language): Array<[string, string]> {
+export function caseReportBriefRows(draft: StudioDraft, model: CanonicalReportModel, language: Language, includeEconomics: boolean): Array<[string, string]> {
   const purpose = draft.premisePublication === "author-reviewed"
     ? draft.premise
     : draft.nodes.find((node) => node.type === "trigger")?.detail;
   const inputs = draft.nodes.filter((node) => ["fact", "evidence", "cash_flow"].includes(node.type));
   const decisions = draft.nodes.filter((node) => node.type === "decision");
   const outcomes = draft.nodes.filter((node) => node.type === "outcome");
-  const assumptions = [...(draft.dealEconomics?.assumptions ?? []), ...(draft.taxEconomics?.assumptions ? [draft.taxEconomics.assumptions] : [])];
+  // The brief follows the same section selection as its appendix. This does not
+  // redact cash-flow nodes or other canonical case records from the graph.
+  const assumptions = includeEconomics
+    ? [...(draft.dealEconomics?.assumptions ?? []), ...(draft.taxEconomics?.assumptions ? [draft.taxEconomics.assumptions] : [])]
+    : [];
   return [
     [tr(language, "Objective", "Цель"), purpose?.trim()
       ? excerpt(purpose, 300, language)
@@ -42,7 +46,9 @@ export function caseReportBriefRows(draft: StudioDraft, model: CanonicalReportMo
     [tr(language, "Conclusion and basis", "Вывод и обоснование"), tr(language,
       "This PDF describes the case model. It does not establish a selected outcome or prove that a run was completed. Check each branch's full conditions in the appendix before recommending an outcome.",
       "PDF описывает модель кейса. Он не устанавливает выбранное решение и не подтверждает завершённый запуск. Перед рекомендацией проверьте полные условия соответствующей ветви в приложении.")],
-    [tr(language, "Assumptions", "Допущения"), assumptions.length
+    [tr(language, "Assumptions", "Допущения"), !includeEconomics
+      ? tr(language, "Economic assumptions are excluded by report settings. Review conditions and uncertainties in the detailed records.", "Экономические допущения исключены настройками отчёта. Проверьте условия и неопределённости в подробных записях.")
+      : assumptions.length
       ? assumptions.slice(0, 2).map((item) => excerpt(item, 160, language)).join("\n") + (assumptions.length > 2 ? tr(language, "\nFurther assumptions are in the economics appendix.", "\nОстальные допущения - в экономическом приложении.") : "")
       : tr(language, "Assumptions are not recorded separately. Review conditions and uncertainties in the detailed records.", "Допущения не выделены в отдельный реестр. Проверьте условия и неопределённости в подробных записях.")],
     [tr(language, "Sources and limits", "Источники и ограничения"), tr(language,

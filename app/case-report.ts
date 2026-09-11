@@ -241,7 +241,7 @@ function buildCaseReportDefinitionFromModels(
     { text: "", pageBreak: "after" },
     numberedSection("Decision brief", "Резюме для принятия решения"),
     { text: reportStatus, style: "warning" },
-    table([tr(language, "Review question", "Вопрос проверки"), tr(language, "Case model summary", "Краткое содержание модели")], caseReportBriefRows(draft, reportModel, language), ["25%", "75%"]),
+    table([tr(language, "Review question", "Вопрос проверки"), tr(language, "Case model summary", "Краткое содержание модели")], caseReportBriefRows(draft, reportModel, language, options.includeEconomics), ["25%", "75%"]),
     { text: tr(language, "Selected records and labelled extracts are shown above. The appendices retain all visible records, conditions and source references. Text supplied in the case keeps its original language.", "Выше приведены выбранные записи и обозначенные фрагменты. Приложения содержат все открытые записи, условия и ссылки на источники. Текст самого кейса сохраняет исходный язык."), style: "note" },
     { text: "", pageBreak: "after" },
     numberedSection("Case overview", "Обзор кейса"),
