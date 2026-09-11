@@ -34,9 +34,9 @@ already fixed in published Site 77 and has EN/RU regression coverage.
 - Additional gate run: 41/41 tests covering the built assets, auth and
   protection boundaries, existing release checks and the new import/report
   tests. The two runs overlap and are not a combined test count.
-- The full preceding candidate passed 586/586 tests. The complete suite for
-  this UI candidate is required before publication; its final result is
-  reported with the deployment receipt.
+- The complete final suite passed 593/593 tests, with no failures or skips.
+  It used the successful production build and included the long Canopy
+  scenarios, protected access and ERP/output-governance regressions.
 - Independent source review found no additional concrete regressions.
 - React review retained conditional loading, event-driven transitions,
   visible keyboard focus and the dialog focus boundary, including its new
@@ -62,3 +62,13 @@ This continuation changes the UI, not the PDF renderer or its approved image
 baseline. It does not claim a new Windows/native CI result or a completed
 commercial-readiness audit. Rollback is the previously saved Site 77; no
 schema/data migration is introduced.
+
+## Published result
+
+Site 78 was published successfully at 16:00:56 UTC on 11 September 2026:
+https://genesis-juris-web.maxim-hayan.chatgpt.site
+
+The immutable deployed source is
+`143b75bf114cfb12ab76fc23139a7570cfcf3064`. The deployment receipt is stored
+alongside this document. This documentation update is subsequent to that
+source commit and does not require a software redeployment.

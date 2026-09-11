@@ -1,0 +1,37 @@
+{
+  "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+  "version_number": 78,
+  "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_e2c4fd6367f88191a4046f2b8953f49b",
+  "source_commit": "143b75bf114cfb12ab76fc23139a7570cfcf3064",
+  "deployment_id": "appgdep_6aa425a4cd208191ba24b11940bb28d4",
+  "status": "succeeded",
+  "updated_at": "2026-09-11T16:00:56.346775+00:00",
+  "environment_revision": 39,
+  "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+  "audience": "public",
+  "archive_content_hash": "sha256:e1a31c38b756db5100d373fe230dc4061e062399ed761a3af98ccb503217206b",
+  "validation": {
+    "production_build": "passed",
+    "strict_typecheck": "passed",
+    "lint": "passed",
+    "tests": 593,
+    "passed": 593,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 411648.630854,
+    "studio_entry_bytes": 320696,
+    "studio_entry_limit_bytes": 325000,
+    "full_test_log_sha256": "e37e1b2ef7fba6307e4a38279b4302ee86bdf5d8566753831274d9a94a11cc4e",
+    "build_log_sha256": "2050916eb7d62bf7954b04561b1c3232b2d5bfd34705bb09f46d30d114cc4496",
+    "lint_log_sha256": "3575240228582c35dff29b343f7cce9c4c3bad8a943798258322eb9da07954ea"
+  },
+  "unverified": [
+    "Cold registration and first useful action within 120 seconds",
+    "Live AI invocation and canonical import in a browser",
+    "Visual, mobile and keyboard acceptance in a browser",
+    "Production Canopy Base catalogue publication and owner/reviewer journey",
+    "New 8–10 minute recording, short cut and synchronized captions",
+    "New exact-source Windows and native CI run"
+  ],
+  "rollback": { "version_number": 77, "schema_migration": false }
+}
