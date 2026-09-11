@@ -57,9 +57,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-8a89cf014c94db85c25bb5b6d3491b0c41e0712cde2a565c20c77501a9888e3e",
       "pageRole": "graph",
-      "pngPath": ".artifacts/v62-report-qa/png/golden-bhopal-decision-memorandum/page-6.png",
-      "pngSha256": "fed99e6eddc29d9689a591c17672d41825ec5de9f182843d9790a9910d26f383",
-      "reportPage": 6,
+      "pngPath": ".artifacts/v62-report-qa/png/golden-bhopal-decision-memorandum/page-7.png",
+      "pngSha256": "f7afec4334babe8ecaca0a0b3035f45e2cbb14866044db37c521a00136ab1bcc",
+      "reportPage": 7,
       "width": 794
     },
     {
@@ -73,7 +73,7 @@
       "layoutFingerprint": "sha256-8a89cf014c94db85c25bb5b6d3491b0c41e0712cde2a565c20c77501a9888e3e",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/golden-bhopal-decision-memorandum/page-1.png",
-      "pngSha256": "f24af806e20707e4e663b3355a05caaf24003379c90ed8c1e450252de23968af",
+      "pngSha256": "aa11d1a941030fd05bf4ce8adafa7b418806a931467ccfebb444e765fb2286e4",
       "reportPage": 1,
       "width": 794
     },
@@ -87,9 +87,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-8a89cf014c94db85c25bb5b6d3491b0c41e0712cde2a565c20c77501a9888e3e",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/golden-bhopal-decision-memorandum/page-4.png",
-      "pngSha256": "31e04030a71627327cc577787fffb85e9663082b3dc6067fe59f65b5425e50df",
-      "reportPage": 4,
+      "pngPath": ".artifacts/v62-report-qa/png/golden-bhopal-decision-memorandum/page-5.png",
+      "pngSha256": "bcda63f24220e9428ea0769f0ff5289fa3642e97f311331afcf6e42bf1b956b2",
+      "reportPage": 5,
       "width": 794
     },
     {
@@ -102,9 +102,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-8a89cf014c94db85c25bb5b6d3491b0c41e0712cde2a565c20c77501a9888e3e",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/golden-bhopal-decision-memorandum/page-8.png",
-      "pngSha256": "5baf950dc25fbf5ccf6683c682589336cca24cc7709659ffc80209ec47849e30",
-      "reportPage": 8,
+      "pngPath": ".artifacts/v62-report-qa/png/golden-bhopal-decision-memorandum/page-9.png",
+      "pngSha256": "58cdadbb1be47dc25bfc7effe41fbae1f12d04e63379b31d95cc7f0e0c0154be",
+      "reportPage": 9,
       "width": 794
     },
     {
@@ -118,7 +118,7 @@
       "layoutFingerprint": "sha256-73c43b7ed5befb51fb9558d888b3177b3bc29d6c5483d9e33e9db767c06dfbe4",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/stress-cyclic-repair/page-01.png",
-      "pngSha256": "b0fd935dadfeb3db1268f16b04057f622d4b675b04b5075e1181ed86688d4b69",
+      "pngSha256": "c7f82d3ce15d83f751a4716c26f7f939419d438dbb507f1f9e3d3a0607e7c707",
       "reportPage": 1,
       "width": 794
     },
@@ -133,7 +133,7 @@
       "layoutFingerprint": "sha256-73c43b7ed5befb51fb9558d888b3177b3bc29d6c5483d9e33e9db767c06dfbe4",
       "pageRole": "middle",
       "pngPath": ".artifacts/v62-report-qa/png/stress-cyclic-repair/page-06.png",
-      "pngSha256": "eff319076b407375f6e842c5e95743e7a6e06ed14fad0c06e997a348dbc87911",
+      "pngSha256": "894b254b9c12da5b78dfb60d829a18eb747728bf69adf44f6558f2ccf90cf25c",
       "reportPage": 6,
       "width": 794
     },
@@ -147,9 +147,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-73c43b7ed5befb51fb9558d888b3177b3bc29d6c5483d9e33e9db767c06dfbe4",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-cyclic-repair/page-11.png",
-      "pngSha256": "fba13e54d4224f0227dd8cc957cdc71a0c45694b84c850a1f142d6690f2672e1",
-      "reportPage": 11,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-cyclic-repair/page-12.png",
+      "pngSha256": "8543757eae2c5fc89a142f1a594168bd86a9995f12f70265bb21eadfd3d91cb7",
+      "reportPage": 12,
       "width": 794
     },
     {
@@ -163,7 +163,7 @@
       "layoutFingerprint": "sha256-9ecb584c17da2930cfdea03ce59e6ea170462f471bb897e361568c07dd164bf8",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/stress-deep/page-01.png",
-      "pngSha256": "d4a41ef1dd72539f1c958c52d061d90db89614cf908271e7c9bac3a04f5bc3bd",
+      "pngSha256": "3422346d3eb3cf046586b50dd8ef4cde7bd374dac3def682449bfc6f35c8a395",
       "reportPage": 1,
       "width": 794
     },
@@ -177,9 +177,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-9ecb584c17da2930cfdea03ce59e6ea170462f471bb897e361568c07dd164bf8",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-deep/page-09.png",
-      "pngSha256": "66d26db0be7a994b6d48fa1660b45f1de3c30584828f0d7204967b4603bbe771",
-      "reportPage": 9,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-deep/page-10.png",
+      "pngSha256": "5b91c20c3aa772ee994be95bcb0295c8f8447fd89de32e1f1807fd1ff7f1bcf1",
+      "reportPage": 10,
       "width": 794
     },
     {
@@ -192,9 +192,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-9ecb584c17da2930cfdea03ce59e6ea170462f471bb897e361568c07dd164bf8",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-deep/page-18.png",
-      "pngSha256": "5f85f1381a06b194839ab1df105d2165f1b4f17651664044cd89f1e776df5372",
-      "reportPage": 18,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-deep/page-20.png",
+      "pngSha256": "0473882722bd41b6fb98f766e11a45433933990082387509198831c3ca0af61e",
+      "reportPage": 20,
       "width": 794
     },
     {
@@ -208,7 +208,7 @@
       "layoutFingerprint": "sha256-08c79c7b005f374c986374795866d07ad754018ef0c10c6c1d7b8f5c59278408",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/stress-disconnected/page-01.png",
-      "pngSha256": "83ac59ab7590e003e50d9e43bb88700a7b029c43d52a3be1feae560d2cf195b9",
+      "pngSha256": "bc915063ccdc254cbf2351cd5d6ca5672592c257fb5f25ba51df3b3d89f9834b",
       "reportPage": 1,
       "width": 794
     },
@@ -222,9 +222,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-08c79c7b005f374c986374795866d07ad754018ef0c10c6c1d7b8f5c59278408",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-disconnected/page-07.png",
-      "pngSha256": "7784216e2415a19059d5199e1afefc9174bbfefbafcd372cd7b7395c3cfa5330",
-      "reportPage": 7,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-disconnected/page-08.png",
+      "pngSha256": "1bea4899da651dc39f1881c1e870a0484cbc70bbd1619ab1db5f0534db83632e",
+      "reportPage": 8,
       "width": 794
     },
     {
@@ -237,9 +237,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-08c79c7b005f374c986374795866d07ad754018ef0c10c6c1d7b8f5c59278408",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-disconnected/page-14.png",
-      "pngSha256": "46883b1de2e1d3825009cbe9fbd5bcd5b7bfeb65c32214435c6b51f99d4f5406",
-      "reportPage": 14,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-disconnected/page-15.png",
+      "pngSha256": "f430ed03c7d53d4961808980e19d88aaaa003dab4a5bec61c2935453981a2ddd",
+      "reportPage": 15,
       "width": 794
     },
     {
@@ -253,7 +253,7 @@
       "layoutFingerprint": "sha256-4ba7d011b0c1e772316fd5ebf35c184942fb3102e1d973c0b216c07adfb75802",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/stress-fan-in-ru/page-01.png",
-      "pngSha256": "9b5d495f7b1b5a1a36c24b561e78fefda6b81158621ac2c168c7ed8e3f7bfe54",
+      "pngSha256": "a84f849711e8d1b4dc92c355c3453e8be0a0f543bb4194867ce752c790be7a5b",
       "reportPage": 1,
       "width": 794
     },
@@ -267,9 +267,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-4ba7d011b0c1e772316fd5ebf35c184942fb3102e1d973c0b216c07adfb75802",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-fan-in-ru/page-05.png",
-      "pngSha256": "d148057c64dac8e1c317f72cb4d6db5c232d638cbf5dd525d67211c0fcb41c6f",
-      "reportPage": 5,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-fan-in-ru/page-06.png",
+      "pngSha256": "a37057708ea84ae86ec3066c9e689f75a9109ea9258054eff3b884cf80728759",
+      "reportPage": 6,
       "width": 794
     },
     {
@@ -282,9 +282,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-4ba7d011b0c1e772316fd5ebf35c184942fb3102e1d973c0b216c07adfb75802",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-fan-in-ru/page-10.png",
-      "pngSha256": "6ac3130e9b859e022f5b9ec2a1413f0d78e7368bb6fb43ddb6aa417fc2d7a5b3",
-      "reportPage": 10,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-fan-in-ru/page-11.png",
+      "pngSha256": "07321c9509f798c65a9b01a42dea1bc71008b0904ac7ec815a0a7e04f30944f2",
+      "reportPage": 11,
       "width": 794
     },
     {
@@ -298,7 +298,7 @@
       "layoutFingerprint": "sha256-7766bc9ee3f4977befa9e1e58fa22a20b15182163c552b34b6e362cc3becaf15",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/stress-fan-out/page-01.png",
-      "pngSha256": "94a162706615164aff6221a85a72dfc0a4b517eece2de0cd644dd3692c5f07a6",
+      "pngSha256": "13a25138d4475222a090797374d5ca2c8433c1919c52319230185eedc47d70d9",
       "reportPage": 1,
       "width": 794
     },
@@ -312,9 +312,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-7766bc9ee3f4977befa9e1e58fa22a20b15182163c552b34b6e362cc3becaf15",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-fan-out/page-05.png",
-      "pngSha256": "9b69526648bf0e1d1a8371c75ff199071638235828c841688231ff971b57ded6",
-      "reportPage": 5,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-fan-out/page-06.png",
+      "pngSha256": "cfea79b41f28030a71cfa1b272ab8d7b6e7cbd909ea67dcfa19e76cffe4abfa2",
+      "reportPage": 6,
       "width": 794
     },
     {
@@ -327,9 +327,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-7766bc9ee3f4977befa9e1e58fa22a20b15182163c552b34b6e362cc3becaf15",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-fan-out/page-10.png",
-      "pngSha256": "1e9106c8b205cdf1a61a3ddfe406456cb4ed65dc879693e8b869f04b1477dfa1",
-      "reportPage": 10,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-fan-out/page-11.png",
+      "pngSha256": "d660397af940b13388096674f895e888890d204754c51a747d37650c3e9b173e",
+      "reportPage": 11,
       "width": 794
     },
     {
@@ -343,7 +343,7 @@
       "layoutFingerprint": "sha256-329fac7ab07957138667aa68e7ae4b833d114e00c66e9b9b4aa51a88498fcf78",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/golden-investigation-en-client/page-1.png",
-      "pngSha256": "429d145be5bf73e7637ff3100ec9e8caa3e034c2f797cf05b05e60cb9fb66c50",
+      "pngSha256": "f12232657092f3a6f4aa0060ea6ad10771d8cbc0f5576a8dbc26dc07e0917b81",
       "reportPage": 1,
       "width": 794
     },
@@ -357,9 +357,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-329fac7ab07957138667aa68e7ae4b833d114e00c66e9b9b4aa51a88498fcf78",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/golden-investigation-en-client/page-4.png",
-      "pngSha256": "ba1c1a2a91e6cd2e9bcb671734ca18258ff071a640204afc5df6e8d1316ce671",
-      "reportPage": 4,
+      "pngPath": ".artifacts/v62-report-qa/png/golden-investigation-en-client/page-5.png",
+      "pngSha256": "3b41be712a59b4071f7646f5e50491100f923de391ac079ce3580175a32d3653",
+      "reportPage": 5,
       "width": 794
     },
     {
@@ -372,9 +372,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-329fac7ab07957138667aa68e7ae4b833d114e00c66e9b9b4aa51a88498fcf78",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/golden-investigation-en-client/page-8.png",
-      "pngSha256": "d37729b82feb789092a610af3f82288b7e0d5752e5ac0dbe5799fb195bd3b91d",
-      "reportPage": 8,
+      "pngPath": ".artifacts/v62-report-qa/png/golden-investigation-en-client/page-9.png",
+      "pngSha256": "79a20dd27347ad132bf21962290459d83a261e76cd6ba5af5de439592b96ec5d",
+      "reportPage": 9,
       "width": 794
     },
     {
@@ -388,7 +388,7 @@
       "layoutFingerprint": "sha256-24941db2e1c440e1f7e63fbf6e3453120ccad76e01ba15267c78abe0123ceb02",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/golden-investigation-en-internal/page-1.png",
-      "pngSha256": "e2a794478647541c069fb25de4cd2b6388d82b0e92fae0097ac7316fb516abb7",
+      "pngSha256": "43015c2d65897770b91f25a4b9ac55776e92985d724403f4b4caf06499ae42f9",
       "reportPage": 1,
       "width": 794
     },
@@ -402,9 +402,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-24941db2e1c440e1f7e63fbf6e3453120ccad76e01ba15267c78abe0123ceb02",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/golden-investigation-en-internal/page-4.png",
-      "pngSha256": "c1e181459a4056b95866aec5c9f27a3d39c0a41f16dd7dbe23769f3a18341820",
-      "reportPage": 4,
+      "pngPath": ".artifacts/v62-report-qa/png/golden-investigation-en-internal/page-5.png",
+      "pngSha256": "28a43bb6d729703c0f6b7e9d4b99ca13b50b6f0e86e309d4e442fee3a37fa089",
+      "reportPage": 5,
       "width": 794
     },
     {
@@ -417,9 +417,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-24941db2e1c440e1f7e63fbf6e3453120ccad76e01ba15267c78abe0123ceb02",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/golden-investigation-en-internal/page-8.png",
-      "pngSha256": "e95c9fed944e8b62115ece6b6f47e3ed9c37002d0e338788fdeadb3eae63cab7",
-      "reportPage": 8,
+      "pngPath": ".artifacts/v62-report-qa/png/golden-investigation-en-internal/page-9.png",
+      "pngSha256": "a9914d2cafcf287d6863e31b24064dd89199b0cf0911451399d38a6957e3d1f7",
+      "reportPage": 9,
       "width": 794
     },
     {
@@ -433,7 +433,7 @@
       "layoutFingerprint": "sha256-85589a8ce21730a4daff674fdb92866424dbe0587761ac141b5df4a05254b29c",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/golden-erp_incident-ru-client/page-1.png",
-      "pngSha256": "62451a11cbb32d704a7d7176dde528ae3b3646b5e16dd90f639d98236b00f40b",
+      "pngSha256": "bdb7cce2ad438588603db3b76201229b50bcfa11fb66fb36d023fb78bf6c8983",
       "reportPage": 1,
       "width": 794
     },
@@ -447,9 +447,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-85589a8ce21730a4daff674fdb92866424dbe0587761ac141b5df4a05254b29c",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/golden-erp_incident-ru-client/page-4.png",
-      "pngSha256": "63a8815a865259b5f0306c6ae2fc06f9c93bf2546b9a1a3f631eca24318f0406",
-      "reportPage": 4,
+      "pngPath": ".artifacts/v62-report-qa/png/golden-erp_incident-ru-client/page-5.png",
+      "pngSha256": "dbc12e200f9563791afc9ad7c59a9bcacd4b66c581ef210951c873dc4f04c084",
+      "reportPage": 5,
       "width": 794
     },
     {
@@ -462,9 +462,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-85589a8ce21730a4daff674fdb92866424dbe0587761ac141b5df4a05254b29c",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/golden-erp_incident-ru-client/page-8.png",
-      "pngSha256": "39f5d6270361cacaf8dc7c0cc7ee2e17e3d0db982eb711b921937bbd41a3ac51",
-      "reportPage": 8,
+      "pngPath": ".artifacts/v62-report-qa/png/golden-erp_incident-ru-client/page-9.png",
+      "pngSha256": "fc7a58dbd3a3f2506e397872bc978db9ca02574c8227e3b73d2fc343423319a1",
+      "reportPage": 9,
       "width": 794
     },
     {
@@ -478,7 +478,7 @@
       "layoutFingerprint": "sha256-a50ff7a2cd0743703ab4e17a7b6222424436d6ccb3d04f9586c8ab7e27e34e19",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/golden-erp_incident-ru-internal/page-1.png",
-      "pngSha256": "acf4de9b9e39c438c1046a2bf9394964fd40e960f394a0cdc18a82a9063ca6c0",
+      "pngSha256": "8b39759a2d9531f2d992de73496102c2b6177353e7f05267e067c6c662461d9a",
       "reportPage": 1,
       "width": 794
     },
@@ -492,9 +492,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-a50ff7a2cd0743703ab4e17a7b6222424436d6ccb3d04f9586c8ab7e27e34e19",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/golden-erp_incident-ru-internal/page-4.png",
-      "pngSha256": "5a6bfbaed82fa7cc97010aa5c92ee90c980241a1ae1d03c8b3d6fd0d779d8873",
-      "reportPage": 4,
+      "pngPath": ".artifacts/v62-report-qa/png/golden-erp_incident-ru-internal/page-5.png",
+      "pngSha256": "d20c25013bca6e74cd51759de891752545f0ae08f04e238aae90c2a898b2025b",
+      "reportPage": 5,
       "width": 794
     },
     {
@@ -507,9 +507,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-a50ff7a2cd0743703ab4e17a7b6222424436d6ccb3d04f9586c8ab7e27e34e19",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/golden-erp_incident-ru-internal/page-8.png",
-      "pngSha256": "d9d2ce272910e7406f11120856aee74982e7b156c2a22a2be7846d02057f5b9f",
-      "reportPage": 8,
+      "pngPath": ".artifacts/v62-report-qa/png/golden-erp_incident-ru-internal/page-9.png",
+      "pngSha256": "a55ef2eaead46a89997b935f74c9bf5b787d8a3702da9008083efe9a92dc2107",
+      "reportPage": 9,
       "width": 794
     },
     {
@@ -523,7 +523,7 @@
       "layoutFingerprint": "sha256-69cf369f0c6aa3c802d8eb90319d7c2a04565d14398df77697f18d710f843715",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/long-content-litigation_strategy/page-001.png",
-      "pngSha256": "2b5601fda9ee84dbf475f7e92f5d08202bc488a564c4ed81e895ebab1c171529",
+      "pngSha256": "aac2e14a90d4d20a7fc28b22d0edee73d7a85873c2c29758ec640ee16eb4cf32",
       "reportPage": 1,
       "width": 794
     },
@@ -537,9 +537,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-69cf369f0c6aa3c802d8eb90319d7c2a04565d14398df77697f18d710f843715",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/long-content-litigation_strategy/page-076.png",
-      "pngSha256": "3b0fde29f6a0575a6fe2bc35a030e65d01be3a3a8ddde62c50c08c7ca7b83f7d",
-      "reportPage": 76,
+      "pngPath": ".artifacts/v62-report-qa/png/long-content-litigation_strategy/page-077.png",
+      "pngSha256": "72b472a1aa237619154a4078c100ba2895de937f43a8f7ab0703f1e1b2bd3ab1",
+      "reportPage": 77,
       "width": 794
     },
     {
@@ -552,9 +552,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-69cf369f0c6aa3c802d8eb90319d7c2a04565d14398df77697f18d710f843715",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/long-content-litigation_strategy/page-152.png",
-      "pngSha256": "09edef1b3ad661f922875d4357371877bea0d6a7678e67d2110affb9ec578d5d",
-      "reportPage": 152,
+      "pngPath": ".artifacts/v62-report-qa/png/long-content-litigation_strategy/page-153.png",
+      "pngSha256": "47a074d752595cd7dff551a8fae4bdf8775d0966a3c3440a9f6f94113af82c41",
+      "reportPage": 153,
       "width": 794
     },
     {
@@ -568,7 +568,7 @@
       "layoutFingerprint": "sha256-797e55e5d82237816ca6ecf4325001e438c990dfb233f3757252e463d65b791f",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/stress-long-detail-ru/page-01.png",
-      "pngSha256": "01842c8aa7496e01ae5485ef841208540a251e335d3fb9ecc5fc230c0b88f21d",
+      "pngSha256": "f8c58a424de2f529b1f08772e381927f915dc5b6779f406a00b16114a45f7965",
       "reportPage": 1,
       "width": 794
     },
@@ -582,9 +582,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-797e55e5d82237816ca6ecf4325001e438c990dfb233f3757252e463d65b791f",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-long-detail-ru/page-20.png",
-      "pngSha256": "2039215ada425d4a87c354eda1da7ccc2cf7ebac2d7d5d725015cfb1941d68db",
-      "reportPage": 20,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-long-detail-ru/page-21.png",
+      "pngSha256": "dd944ec6218e7e56adb5f2dafcc89fe57bc08943a35e2096abfc6dfe44d36a51",
+      "reportPage": 21,
       "width": 794
     },
     {
@@ -597,9 +597,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-797e55e5d82237816ca6ecf4325001e438c990dfb233f3757252e463d65b791f",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-long-detail-ru/page-40.png",
-      "pngSha256": "dc7facd2d3420ebdb8f81d6d09540a74f51e173c6bf1f2e61936cdee09b28048",
-      "reportPage": 40,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-long-detail-ru/page-41.png",
+      "pngSha256": "47b0ef7dd6c0a7c1ecef306f62f751168eeb943f0bf615dd907872a803b8a13e",
+      "reportPage": 41,
       "width": 794
     },
     {
@@ -613,7 +613,7 @@
       "layoutFingerprint": "sha256-36edf2e07373be16a277d3aff650fea934f4fff9fb092f6704226a94ddb2cd99",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/stress-long-title-en/page-01.png",
-      "pngSha256": "c611898e8597437960239dd384141200d88695a4d7a63be17a3ffc0a941289bd",
+      "pngSha256": "b79879de2ba3ad54020ff6947f4614816b438ee7bc36cb848b01832a373aeb28",
       "reportPage": 1,
       "width": 794
     },
@@ -627,9 +627,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-36edf2e07373be16a277d3aff650fea934f4fff9fb092f6704226a94ddb2cd99",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-long-title-en/page-06.png",
-      "pngSha256": "bec456ed567cafb404c6b93e6ef376c65334cbca70e65b4823c3dc322898b9d3",
-      "reportPage": 6,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-long-title-en/page-07.png",
+      "pngSha256": "879e3f887a2708a4a63356f5c9a1f06a30050ec12259b881e12416693f7b851d",
+      "reportPage": 7,
       "width": 794
     },
     {
@@ -642,9 +642,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-36edf2e07373be16a277d3aff650fea934f4fff9fb092f6704226a94ddb2cd99",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-long-title-en/page-11.png",
-      "pngSha256": "8a82136e96cf5ab50c3f63f8987787d0ddeb24dfaff04ce353f5f693555bc3cf",
-      "reportPage": 11,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-long-title-en/page-13.png",
+      "pngSha256": "4e0d98c9398de2621f6382085d3172398711a83777ebe17fd4523e77c063c151",
+      "reportPage": 13,
       "width": 794
     },
     {
@@ -658,7 +658,7 @@
       "layoutFingerprint": "sha256-e7a4de4f3ac0b95ba3ca4927a743df7e1601385cbb4732d3336ef8132b491d27",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/stress-long-title-ru/page-01.png",
-      "pngSha256": "ca6e3d2ab93337169f6300e040b3cdfd266970f277ec12e816da860fc3aa5122",
+      "pngSha256": "32a05dcd78d30aa803ab44bb4a62676a6e608fe90746cf4c488a5fcac11c0482",
       "reportPage": 1,
       "width": 794
     },
@@ -673,7 +673,7 @@
       "layoutFingerprint": "sha256-e7a4de4f3ac0b95ba3ca4927a743df7e1601385cbb4732d3336ef8132b491d27",
       "pageRole": "middle",
       "pngPath": ".artifacts/v62-report-qa/png/stress-long-title-ru/page-07.png",
-      "pngSha256": "1791f14cd3d668212b8cfdacb36c48f527cd9f318dc272c9c30701f0476eafa5",
+      "pngSha256": "47286d452e90717b7b582320f328ea0d9bd50fec08a31309891931bc48dd7e54",
       "reportPage": 7,
       "width": 794
     },
@@ -687,9 +687,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-e7a4de4f3ac0b95ba3ca4927a743df7e1601385cbb4732d3336ef8132b491d27",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-long-title-ru/page-13.png",
-      "pngSha256": "65e95982d000974515b8220462fcc223b969a392e4853e04186e52bd7e9b99ba",
-      "reportPage": 13,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-long-title-ru/page-14.png",
+      "pngSha256": "089e8169c9b3130dfa0f3d78d920cd238e15d99ac9c0d91deb6434f805c7cba9",
+      "reportPage": 14,
       "width": 794
     },
     {
@@ -703,7 +703,7 @@
       "layoutFingerprint": "sha256-a76e455c612a9e12c746560fe5aca76e1ef1820ba1179165515068fdd79a429d",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/stress-max-200/page-01.png",
-      "pngSha256": "7fdc37dd2e2bef214b4e4be71aad3a9369846d11e0c4173cce8e53a33d194608",
+      "pngSha256": "7868fc6103ff65ba8078373e15f11b8fb642a26e67df94794152600cd026470b",
       "reportPage": 1,
       "width": 794
     },
@@ -717,9 +717,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-a76e455c612a9e12c746560fe5aca76e1ef1820ba1179165515068fdd79a429d",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-max-200/page-39.png",
-      "pngSha256": "84c0dd54f1e6a8d6b157b7bbd205d56d1c8ab33f097298bfeb05a8582802e5ba",
-      "reportPage": 39,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-max-200/page-40.png",
+      "pngSha256": "4297bf853a8e642748da1f7afb4c3609b1ed05cccb5544c140cf7dab2aac3187",
+      "reportPage": 40,
       "width": 794
     },
     {
@@ -732,9 +732,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-a76e455c612a9e12c746560fe5aca76e1ef1820ba1179165515068fdd79a429d",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-max-200/page-77.png",
-      "pngSha256": "ca55c6885615ce93371ff7b04ec7f9791dc8778625815350ba3a857dff1537d2",
-      "reportPage": 77,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-max-200/page-80.png",
+      "pngSha256": "5007c094a20fad76e54b7901a66e56452c7791e60c7d0a4425da49e623d9f25d",
+      "reportPage": 80,
       "width": 794
     },
     {
@@ -748,7 +748,7 @@
       "layoutFingerprint": "sha256-61eae28c9b33a83cc93f66fdf0d538c334ba2edf1d92a6b0fd4e4acf6592169c",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/stress-unicode-en/page-1.png",
-      "pngSha256": "a0dfcb5e259563b4917a4dc9660e9f20940e37685151be5075eef45a34f95c49",
+      "pngSha256": "0acb04e1997c21446382a9245533da10f4eeb30491711c4a6b410669ad1ef17c",
       "reportPage": 1,
       "width": 794
     },
@@ -762,9 +762,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-61eae28c9b33a83cc93f66fdf0d538c334ba2edf1d92a6b0fd4e4acf6592169c",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-unicode-en/page-3.png",
-      "pngSha256": "d5bd890ae17c983ec50e3004150859634d6713cde9f2850dc907f84e7f3e47d2",
-      "reportPage": 3,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-unicode-en/page-4.png",
+      "pngSha256": "d16717affbb729e015f780dd0c91eac8355878ef65ad970dc4b73382c12bdb5b",
+      "reportPage": 4,
       "width": 794
     },
     {
@@ -777,9 +777,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-61eae28c9b33a83cc93f66fdf0d538c334ba2edf1d92a6b0fd4e4acf6592169c",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-unicode-en/page-6.png",
-      "pngSha256": "ba6daf8a7e690b53285569107abe23e9afceb7b30a19b23320e99bc78cab4905",
-      "reportPage": 6,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-unicode-en/page-8.png",
+      "pngSha256": "d1c052a3bdb944ced0bc5e339a494114f77cf1b6ae1b01a00fb823c8d1e43c5a",
+      "reportPage": 8,
       "width": 794
     },
     {
@@ -793,7 +793,7 @@
       "layoutFingerprint": "sha256-bfb45032d9355583c931f7e73de144d50c5c973e34e02c276d4449e106bbc89e",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/stress-unicode-ru/page-1.png",
-      "pngSha256": "c68b38cf16fb31b9908f0798f04a5af6521bc3797ea02de141c79bbff3d55616",
+      "pngSha256": "ee9e841af44ab7b2215189c29f3722c0ad9fcc854899356aca408f67c5bd816b",
       "reportPage": 1,
       "width": 794
     },
@@ -807,9 +807,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-bfb45032d9355583c931f7e73de144d50c5c973e34e02c276d4449e106bbc89e",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-unicode-ru/page-3.png",
-      "pngSha256": "eb30bc33dfe3985916b6234210b6c847cbdf9fb14713814a45c0dfcf144e991d",
-      "reportPage": 3,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-unicode-ru/page-4.png",
+      "pngSha256": "1ae88f43d6f62ec8dff38f73862762ed474e1481a6825898a8668ceb4683c423",
+      "reportPage": 4,
       "width": 794
     },
     {
@@ -822,9 +822,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-bfb45032d9355583c931f7e73de144d50c5c973e34e02c276d4449e106bbc89e",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-unicode-ru/page-6.png",
-      "pngSha256": "2cc8f74a3f4f5a7fc70c20481b0c750ab5c822ae375da0263818a8e8bd5d7a10",
-      "reportPage": 6,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-unicode-ru/page-8.png",
+      "pngSha256": "2bb4f03a3f110aaa064cd3a5bc697eaf112ef2ea99aa1fa40b6b9578517e9b7b",
+      "reportPage": 8,
       "width": 794
     },
     {
@@ -838,7 +838,7 @@
       "layoutFingerprint": "sha256-9308aa1fd5cd2b40067b79a841d1a541bf1125c4ef6d1ec9e8db78d87502cdba",
       "pageRole": "first",
       "pngPath": ".artifacts/v62-report-qa/png/stress-wide/page-01.png",
-      "pngSha256": "bb2690966120b0664db882b3bb3af29876c10f22524f5d62adde75c9578dd57f",
+      "pngSha256": "b4f5faa837572cab1f647c38003a3614882beec018920661f50e5d095f3321cf",
       "reportPage": 1,
       "width": 794
     },
@@ -852,9 +852,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-9308aa1fd5cd2b40067b79a841d1a541bf1125c4ef6d1ec9e8db78d87502cdba",
       "pageRole": "middle",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-wide/page-07.png",
-      "pngSha256": "0f332c86ee14f99ece1b3cb6dbe0696ad5700d002a54fa989faa852a3f713db4",
-      "reportPage": 7,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-wide/page-08.png",
+      "pngSha256": "40b055ffeeccc28f286dff5d5ba072c7e3c423e946b5f221d1d23911e99d7be6",
+      "reportPage": 8,
       "width": 794
     },
     {
@@ -867,9 +867,9 @@
       "height": 1123,
       "layoutFingerprint": "sha256-9308aa1fd5cd2b40067b79a841d1a541bf1125c4ef6d1ec9e8db78d87502cdba",
       "pageRole": "last",
-      "pngPath": ".artifacts/v62-report-qa/png/stress-wide/page-14.png",
-      "pngSha256": "53f483a70e7de924b97ba7a4fd9a6e6481298cdd65a6331d68da6bc98f97a1ae",
-      "reportPage": 14,
+      "pngPath": ".artifacts/v62-report-qa/png/stress-wide/page-16.png",
+      "pngSha256": "851864b1652cbbc220686ed10ecc07d1ad7575913e39e3d4d5fc023d5dab5701",
+      "reportPage": 16,
       "width": 794
     }
   ]

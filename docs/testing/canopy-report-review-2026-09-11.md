@@ -53,8 +53,10 @@ verification checklist and signature area form one indivisible block.
 
 Visual review of the first 55 Windows candidate pages found orphaned audit
 headings in Bhopal and the Russian long-title fixture. Rendered pagination
-regressions reproduce these cases. Empty table/list containers no longer count
-as body content when deciding whether a heading can stay on a page.
+regressions reproduce these cases. Numbered table captions now join the repeating header and first data row,
+because pdfmake may retain stale positions for rows moved as an atomic block.
+Empty table/list containers and page furniture are excluded from the paragraph
+heading heuristic.
 
 ## Dependency audit finding
 
@@ -75,6 +77,17 @@ Cloudflare runtime. Relevant upstream advisories:
 
 ## Boundaries
 
+### Follow-up: economics selection in the brief
+
+The brief now receives the effective `includeEconomics` setting. With economics
+excluded, neither deal assumptions nor tax assumptions are copied into the
+brief, and it explains the exclusion instead of claiming the assumptions were
+never recorded. The canonical graph and cash-flow records remain unchanged.
+The EN/RU regression reproduced the omission failure before the fix. After it,
+both new selection tests and all 17 existing report tests passed (19/19), as did
+TypeScript and patch hygiene. These are local candidate checks, not a new
+deployment, Windows PDF-baseline approval or browser acceptance.
+
 Production remains version 76 until a successful subsequent deployment is
 recorded. The normal browser retry timed out while listing tabs. The Production
 catalogue still lacks Canopy Base. No identity, role, invitation, database record
@@ -84,3 +97,23 @@ Cold-registration timings, live AI preview/application, independent reviewer
 acceptance, the five-minute first-report target, three new-user observations,
 and the real 8-10 minute/short MP4 remain unverified. Existing demo media and
 duration labels are unchanged. The prepared EN/RU demo plan remains applicable.
+
+## Intentional Windows baseline review
+
+Candidate source: `2e73e385f8cfd9f82b579db87f133b70b7e13c95`.
+Run: https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/34616301455
+Artifact: `10270686845`; archive SHA-256
+`5e14b709b9f52c2d306327d92a8fc7b8785f6fc9ad806b5726651898f45312ea`.
+
+All 47 fixtures passed content, completeness and render checks: 758 pages and
+758 PNGs. The 55-entry candidate retains all runtime metadata and selection
+coverage. The previous 55-page candidate was visually inspected; 29 hashes
+remain identical, and all 26 changed pages were inspected again, plus Bhopal
+page 6 and the Russian long-title page 8. Audit headings accompany real rows;
+no clipping or overlap was found in the selected review set. All 30 pages of
+the separate EN/RU Canopy examples were also inspected. This is not a claim
+that a human inspected all 758 pages.
+
+The exact reviewed candidate replaces the tracked baseline intentionally.
+The normal read-only Windows gate must pass on the follow-up commit; workflow
+steps, runtime pins, corpus, thresholds and baseline comparison are unchanged.
