@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { PRODUCT_RELEASE } from "../runtime-constants";
-import { scopedOrganizationHeaders, organizationScopedUrl } from "../organization-client";
+import { CANOPY_DISCLOSURE, CANOPY_TITLE } from "../canopy-fixture";
+import { scopedOrganizationHeaders, organizationScopedUrl, organizationWorkspaceUrl } from "../organization-client";
 import styles from "./matters.module.css";
 import {
   MATTER_DESTINATIONS,
@@ -259,7 +260,8 @@ export default function MattersClient() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => void loadCatalogue(), 0);
+    const preferredId = new URL(window.location.href).searchParams.get("dossier") ?? undefined;
+    const timer = window.setTimeout(() => void loadCatalogue(preferredId), 0);
     return () => window.clearTimeout(timer);
   }, [loadCatalogue]);
 
@@ -542,8 +544,8 @@ export default function MattersClient() {
         <span><b>GENESIS: JURIS</b><small>Product {PRODUCT_RELEASE}</small></span>
       </Link>
       <div className={styles.topLinks}>
-        <Link href="/matters" aria-current="page">My cases</Link>
-        <Link href="/">Templates</Link>
+        <Link href={organizationWorkspaceUrl("/matters")} aria-current="page">My cases</Link>
+        <Link href="/templates">Templates</Link>
         <Link href="/studio">Decision Studio</Link>
         <Link href="/account">Account</Link>
       </div>
@@ -557,6 +559,7 @@ export default function MattersClient() {
       </details>
     </section>
 
+    {workspace && (workspace.matter.title.startsWith(CANOPY_TITLE) || workspace.packages.some(item => item.packageId === "project_canopy_managed_site_expansion")) && <p className={styles.pilotNotice}>{CANOPY_DISCLOSURE}</p>}
     <div className={styles.workspaceLayout}>
       <aside className={styles.catalogue} aria-labelledby="matter-catalogue-title">
         <div className={styles.catalogueHeading}>
@@ -569,7 +572,8 @@ export default function MattersClient() {
         <div className={styles.catalogueActions} aria-label="Case library actions">
           <button type="button" onClick={() => setCreateOpen(true)}>New case</button>
           <button type="button" onClick={() => promptImportRef.current?.click()}>Import case prompt (.md)</button>
-          <Link href="/?view=library">Browse templates</Link>
+          <Link href="/templates">Browse templates</Link>
+          <Link href={organizationWorkspaceUrl("/canopy")}>Featured demo · Project Canopy</Link>
           <input ref={promptImportRef} className={styles.srOnly} type="file" accept=".md,text/markdown,text/plain" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importCasePrompt(file); event.target.value = ""; }}/>
         </div>
 

@@ -613,12 +613,15 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
   }, []);
 
   useEffect(() => {
-    if (studioOnly) return;
-    const requested = new URLSearchParams(window.location.search).get("view");
-    if (requested === "library" || requested === "play" || requested === "studio" || requested === "community" || requested === "help") {
-      const update = window.setTimeout(() => setView(requested), 0);
-      return () => window.clearTimeout(update);
-    }
+    const restoreView = () => {
+      const requested = new URLSearchParams(window.location.search).get("view");
+      if (studioOnly) setView(requested === "play" ? "play" : "studio");
+      else if (requested === "library" || requested === "play" || requested === "studio" || requested === "community" || requested === "help") setView(requested);
+      else setView("library");
+    };
+    const update = window.setTimeout(restoreView, 0);
+    window.addEventListener("popstate", restoreView);
+    return () => { window.clearTimeout(update); window.removeEventListener("popstate", restoreView); };
   }, [studioOnly]);
 
   useEffect(() => {
@@ -860,7 +863,13 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
   }
 
   function navigate(next: View) {
-    setView(studioOnly && next !== "play" ? "studio" : next);
+    const destination = studioOnly && next !== "play" ? "studio" : next;
+    setView(destination);
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("view") !== destination) {
+      url.searchParams.set("view", destination);
+      window.history.pushState(window.history.state, "", url);
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
   function restoreFromServerSession(session: ServerPlaySession, scenario: Scenario) {
@@ -1271,7 +1280,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
         const scenarioFile = parsed.scenario;
         const playthroughFile = parsed.playthrough;
 
-        const { requirePlayedCaseServerSession, resolvePlayedCaseScenario } = await import("./played-case-loader");
+        const { requirePlayedCaseServerSession, resolvePlayedCaseScenario, restoredPlayedCaseOutcome } = await import("./played-case-loader");
         const resolvedScenario = await resolvePlayedCaseScenario({ id: scenarioFile.id, caseId: scenarioFile.caseId, contentVersion: scenarioFile.contentVersion, fingerprint: scenarioFile.fingerprint }, catalogueScenarios);
         const importedScenario = resolvedScenario.scenario;
         const legacyMode = resolvedScenario.legacyTiming;
@@ -1417,7 +1426,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
         setActionUseCounts(restoredActionUses);
         setCompletedDeadlineIds(restoredCompletedDeadlines);
         setMissedDeadlineIds(restoredMissedDeadlines);
-        setOutcome(completed ? classifyOutcome(restoredMetrics) : null);
+        setOutcome(restoredPlayedCaseOutcome(completed, importedScenario.stages[restoredStageIndex], restoredLog.at(-1)?.option, classifyOutcome(restoredMetrics)));
         setSelectedOption(null);
         setResultOption(null);
         setDossierRef(importedScenario.materials[0]?.ref ?? null);
@@ -2500,11 +2509,11 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   const [graphZoom, setGraphZoom] = useState(1);
   const [graphOrientation, setGraphOrientation] = useState<GraphOrientation>("vertical");
   const graphDraftIdentity = `${draft.caseId}\u0000${draft.version}`;
+  const graphViewportKey = `${graphDraftIdentity}\u0000${draft.nodes.map((node) => node.id).join("\u0001")}`;
   const guidedWorkflowKey = studioWorkflowStorageKey(draft.caseId);
   const guidedDraftIsEmpty = !draft.title.trim() && draft.nodes.length === 0 && draft.links.length === 0;
   const graphDraftIdentityRef = useRef(graphDraftIdentity);
   const guidedWorkflowRestoredRef = useRef(false);
-  const defaultGraphLayoutRef = useRef("");
   const [caseReportOpen, setCaseReportOpen] = useState(false);
   const [caseReportFingerprint, setCaseReportFingerprint] = useState("");
   const [caseReportStatus, setCaseReportStatus] = useState("");
@@ -2716,23 +2725,17 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   }, [guidedDraftIsEmpty]);
 
   useEffect(() => {
-    const layoutKey = `${graphDraftIdentity}\u0000${draft.nodes.map((node) => node.id).join("\u0001")}`;
-    if (!canDuplicate || draft.nodes.length < 2 || defaultGraphLayoutRef.current === layoutKey) return;
-    defaultGraphLayoutRef.current = layoutKey;
-    setGraphOrientation("vertical");
-    let cancelled = false;
-    void import("./studio-layout").then(({ layoutStudioNodes }) => {
-      if (cancelled) return;
-      setDraft((current) => {
-        const currentKey = `${current.caseId}\u0000${current.version}\u0000${current.nodes.map((node) => node.id).join("\u0001")}`;
-        if (currentKey !== layoutKey) return current;
-        const nodes = layoutStudioNodes(current.nodes, current.links, "vertical");
-        return nodes.some((node, index) => node.x !== current.nodes[index]?.x || node.y !== current.nodes[index]?.y) ? { ...current, nodes } : current;
-      });
-      window.requestAnimationFrame(() => window.requestAnimationFrame(fitGraph));
+    // Opening a source adjusts the viewport only. Node positions belong to the
+    // signed draft; changing them requires the explicit, recorded layout action.
+    let fitFrame: number | null = null;
+    const layoutFrame = window.requestAnimationFrame(() => {
+      fitFrame = window.requestAnimationFrame(fitGraph);
     });
-    return () => { cancelled = true; };
-  }, [canDuplicate, draft.nodes, fitGraph, graphDraftIdentity, setDraft]);
+    return () => {
+      window.cancelAnimationFrame(layoutFrame);
+      if (fitFrame !== null) window.cancelAnimationFrame(fitFrame);
+    };
+  }, [fitGraph, graphViewportKey]);
 
   useEffect(() => {
     let idleHandle: number | null = null;
@@ -3455,6 +3458,11 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
         <label><span>{text.nodeType}</span><select value={selectedNode.type} onChange={(event)=>{ const type=event.target.value as StudioNodeType; if(type!==selectedNode.type){ const before=draft; updateNode({type,runtime:runtimeForNodeType(selectedNode.runtime,type)}); recordVisualEdit("node_updated", locale === "en" ? `Visual edit: changed “${selectedNode.title}” from ${text.nodeTypes[selectedNode.type]} to ${text.nodeTypes[type]}.` : `Визуальная правка: тип узла «${selectedNode.title}» изменён на «${text.nodeTypes[type]}».`, before); } }}>{(Object.keys(typeColors) as StudioNodeType[]).map((type)=><option key={type} value={type}>{text.nodeTypes[type]}</option>)}</select></label>
         <label><span>{text.title}</span><input value={selectedNode.title} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event)=>updateNode({title:event.target.value})} onBlur={(event)=>commitNodeField(text.title,event.currentTarget.value)}/></label>
         <label><span>{text.detail}</span><textarea value={selectedNode.detail} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event)=>updateNode({detail:event.target.value})} onBlur={(event)=>commitNodeField(text.detail,event.currentTarget.value)}/></label>
+        {displayMode === "developer" && <fieldset className="node-runtime-fields" disabled={!canDuplicate}>
+          <legend>{locale === "en" ? "Node position" : "Положение узла"}</legend>
+          <p>{locale === "en" ? "Set an exact position without dragging. This edits the source and can be undone; Fit changes only the view." : "Задайте точное положение без перетаскивания. Правка изменяет исходник и может быть отменена; «Вписать» меняет только вид."}</p>
+          {(["x", "y"] as const).map((axis) => <label key={axis}><span>{locale === "en" ? `${axis.toUpperCase()} position` : `Координата ${axis.toUpperCase()}`}</span><input type="number" min="0" max="5000" step="any" value={selectedNode[axis]} onFocus={(event) => beginFieldEdit(event.currentTarget.value)} onChange={(event) => { const value = event.currentTarget.valueAsNumber; if (Number.isFinite(value) && value >= 0 && value <= 5000) updateNode({ [axis]: value }); }} onBlur={(event) => commitNodeField(locale === "en" ? `${axis.toUpperCase()} position` : `координата ${axis.toUpperCase()}`, event.currentTarget.value)}/></label>)}
+        </fieldset>}
         {selectedNode.type === "cash_flow" && editableDealModel && <Suspense fallback={null}><CashFlowScenarioEditor locale={locale} model={editableDealModel} beginFieldEdit={beginFieldEdit} commitField={commitDealEconomicsField} setModel={setDealEconomicsChange} changeRepaymentBasis={(repaymentBasis) => { const before=draft; setDealEconomicsChange({repaymentBasis}); recordVisualEdit("case_updated", locale === "en" ? "Visual edit: changed cash-flow repayment basis." : "Визуальная правка: изменён вид погашения cash-flow.", before); }}/></Suspense>}
         {(displayMode === "developer" || selectedNode.type !== "cash_flow") && <fieldset className="node-runtime-fields"><legend>{locale === "en" ? "TIME & BUDGET" : "ВРЕМЯ И БЮДЖЕТ"}</legend>
           <p>{locale === "en" ? "These defaults are charged when the player enters this node. A relation rule may override them." : "Эти значения применяются при входе игрока в узел. Правило конкретной связи может их переопределить."}</p>
@@ -3736,8 +3744,14 @@ function AdminDesk({ locale, cases, customCases, reloadCustomCases, openCustomCa
   const [emailResetAvailable, setEmailResetAvailable] = useState(false);
   const [adminBusy, setAdminBusy] = useState("");
   const [pendingPromotion, setPendingPromotion] = useState<PromotionCandidate | null>(null);
+  const publicationInFlight = useRef(false);
+  const publicationReviewRef = useRef<HTMLElement>(null);
+  const publicationTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [taxReviewNote, setTaxReviewNote] = useState("");
   const [taxReviewChecks, setTaxReviewChecks] = useState<Record<TaxPublicationChecklistKey, boolean>>(() => Object.fromEntries(taxPublicationChecklist.map((key) => [key, false])) as Record<TaxPublicationChecklistKey, boolean>);
+  useEffect(() => {
+    if (pendingPromotion && !isTaxDraft(pendingPromotion.draft)) publicationReviewRef.current?.focus();
+  }, [pendingPromotion]);
   useEffect(() => {
     Promise.all([
       fetch("/api/admin/submissions").then((response) => readJsonResponse<{ submissions?: Array<Record<string, unknown>> }>(response)),
@@ -3790,41 +3804,60 @@ function AdminDesk({ locale, cases, customCases, reloadCustomCases, openCustomCa
     setMessage(response.ok ? (result?.message ?? (locale === "en" ? "Password-reset email sent." : "Письмо для сброса пароля отправлено.")) : (result?.error ?? (locale === "en" ? "The reset email could not be sent." : "Не удалось отправить письмо для сброса.")));
     setAdminBusy("");
   }
-  async function promoteCustomCase(item: CommunityCustomCase) {
+  async function promoteCustomCase(item: CommunityCustomCase, trigger: HTMLButtonElement) {
+    if (publicationInFlight.current || pendingPromotion) return;
+    publicationInFlight.current = true;
+    publicationTriggerRef.current = trigger;
     setAdminBusy(`promote:${item.id}`); setMessage("");
-    const detailResponse = await fetch(`/api/custom-cases?id=${item.id}`);
-    const detail = await detailResponse.json().catch(() => null) as { draft?: unknown; error?: string } | null;
-    if (!detailResponse.ok || detail?.draft === undefined) {
-      setMessage(detail?.error ?? (locale === "en" ? "The exact custom-case version could not be loaded." : "Не удалось загрузить точную версию custom-кейса.")); setAdminBusy(""); return;
-    }
-    let sourceDraft: StudioDraft;
-    try { sourceDraft = normalizeStudioDraft(detail.draft); }
-    catch { setMessage(locale === "en" ? "The custom-case draft is structurally invalid." : "Структура черновика custom-кейса некорректна."); setAdminBusy(""); return; }
-    const compiled = compileStudioDraft(sourceDraft);
-    if (!compiled.scenario) {
-      setMessage((locale === "en" ? "Promotion blocked: " : "Публикация заблокирована: ") + compiled.issues.map((issue) => issue.message).join(" ")); setAdminBusy(""); return;
-    }
-    const candidate = { item, draft: sourceDraft, scenario: compiled.scenario };
-    if (isTaxDraft(sourceDraft)) {
-      setPendingPromotion(candidate);
+    try {
+      const detailResponse = await fetch(`/api/custom-cases?id=${item.id}`, { signal: AbortSignal.timeout(15_000) });
+      const detail = await detailResponse.json().catch(() => null) as { draft?: unknown; error?: string } | null;
+      if (!detailResponse.ok || detail?.draft === undefined) {
+        setMessage(detail?.error ?? (locale === "en" ? "The exact custom-case version could not be loaded." : "Не удалось загрузить точную версию custom-кейса.")); return;
+      }
+      let sourceDraft: StudioDraft;
+      try { sourceDraft = normalizeStudioDraft(detail.draft); }
+      catch { setMessage(locale === "en" ? "The custom-case draft is structurally invalid." : "Структура черновика custom-кейса некорректна."); return; }
+      const compiled = compileStudioDraft(sourceDraft);
+      if (!compiled.scenario) {
+        setMessage((locale === "en" ? "Promotion blocked: " : "Публикация заблокирована: ") + compiled.issues.map((issue) => issue.message).join(" ")); return;
+      }
+      // Stage the exact fetched source for an explicit in-page confirmation.
+      // Publication still goes through the server's authorization and immutable-version checks.
+      setPendingPromotion({ item, draft: sourceDraft, scenario: compiled.scenario });
       setTaxReviewNote("");
       setTaxReviewChecks(Object.fromEntries(taxPublicationChecklist.map((key) => [key, false])) as Record<TaxPublicationChecklistKey, boolean>);
+    } catch {
+      setMessage(locale === "en" ? "The publication source could not be loaded. Please try again." : "Не удалось загрузить источник для публикации. Попробуйте ещё раз.");
+    } finally {
+      publicationInFlight.current = false;
       setAdminBusy("");
-      return;
     }
-    if (!window.confirm(locale === "en" ? "Publish an immutable copy of this exact custom-case version to the General Library? The restricted source remains in its workspace." : "Опубликовать неизменяемую копию этой точной версии custom-кейса в Общей библиотеке? Ограниченный источник останется в workspace.")) { setAdminBusy(""); return; }
-    await publishPromotion(candidate);
+  }
+  function cancelPromotion() {
+    if (publicationInFlight.current) return;
+    setPendingPromotion(null);
+    requestAnimationFrame(() => publicationTriggerRef.current?.focus());
   }
   async function publishPromotion(candidate: PromotionCandidate, taxSafetyAttestation?: Record<string, unknown>) {
+    if (publicationInFlight.current) return;
+    publicationInFlight.current = true;
     setAdminBusy(`promote:${candidate.item.id}`); setMessage("");
+    try {
     const response = await fetch("/api/admin/cases", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ customCaseId: candidate.item.id, draft: candidate.draft, authorName: candidate.item.ownerDisplayName ?? "Custom case author", reviewerName: "Maxim Hayan · platform administrator", reviewLevel: "community_beta", changeSummary: "Promoted from a restricted custom workspace to the General Library as an immutable snapshot.", durationMinutes: 45, sector: candidate.draft.classification?.practiceArea ?? "General legal", ...(taxSafetyAttestation ? { taxSafetyAttestation } : {}) }) });
     const result = await response.json().catch(() => null) as { error?: string } | null;
     if (response.ok) {
-      await Promise.all([reloadCustomCases(), refreshCatalogue()]);
       setPendingPromotion(null); setTaxReviewNote("");
       setMessage(locale === "en" ? "Immutable case version published to the General Library." : "Неизменяемая версия опубликована в Общей библиотеке.");
+      const refreshed = await Promise.allSettled([reloadCustomCases(), refreshCatalogue()]);
+      if (refreshed.some((result) => result.status === "rejected")) setMessage(locale === "en" ? "The version was published. Refresh the page to update the catalogue." : "Версия опубликована. Обновите страницу, чтобы увидеть её в каталоге.");
     } else setMessage(result?.error ?? (locale === "en" ? "Promotion failed validation." : "Кейс не прошёл проверки публикации."));
-    setAdminBusy("");
+    } catch {
+      setMessage(locale === "en" ? "The publication result could not be confirmed. Refresh the catalogue before trying again." : "Не удалось подтвердить результат публикации. Обновите каталог перед повторной попыткой.");
+    } finally {
+      publicationInFlight.current = false;
+      setAdminBusy("");
+    }
   }
   async function confirmTaxPromotion() {
     if (!pendingPromotion || !pendingPromotion.draft.classification || !isTaxDraft(pendingPromotion.draft)) return;
@@ -3868,7 +3901,22 @@ function AdminDesk({ locale, cases, customCases, reloadCustomCases, openCustomCa
         <section><h2>{locale === "en" ? "Feedback queue" : "Очередь отзывов"}</h2>{feedbackQueue.filter((item) => item.status !== "resolved" && item.status !== "declined").slice(0, 8).map((item) => <article key={String(item.id)}><b>{String(item.caseId)} · {String(item.category)}</b><small>{String(item.severity)} · {String(item.contextType)} {String(item.contextId ?? "")}</small><p>{String(item.comment)}</p><button onClick={() => resolveFeedback(Number(item.id))}>Resolve</button></article>)}</section>
       </div>
     </div>
-    <section className="admin-custom-register"><div className="admin-section-heading"><div><span>CUSTOM → GENERAL LIBRARY</span><h2>{locale === "en" ? "Custom case inventory" : "Реестр custom-кейсов"}</h2></div><b>{customCases.filter((item) => !item.isPrivate).length.toString().padStart(2, "0")}</b></div><p>{locale === "en" ? "Private cases are omitted at the API boundary: Maxim receives neither their content nor their metadata. Promotion creates a new immutable public snapshot and keeps the custom source." : "Приватные кейсы исключаются на границе API: Максим не получает ни содержание, ни метаданные. Продвижение создаёт новую неизменяемую публичную копию и сохраняет custom-источник."}</p><div>{customCases.filter((item) => !item.isPrivate).map((item) => <article key={item.id}><div><span>{item.status === "promoted" ? "LIBRARY SNAPSHOT CREATED" : "RESTRICTED CUSTOM"}</span><h3>{item.title}</h3><small>{item.ownerDisplayName ?? "Case author"} · {item.caseId} · v{item.currentVersion} · {item.shareCount} share(s)</small></div><div><button type="button" className="secondary-cta" onClick={() => openCustomCase(item.id)}>{locale === "en" ? "Open source" : "Открыть источник"}</button><button type="button" className="primary-cta" disabled={adminBusy === `promote:${item.id}`} onClick={() => promoteCustomCase(item)}>{item.status === "promoted" ? (locale === "en" ? "Publish next version" : "Опубликовать новую версию") : (locale === "en" ? "Promote to library" : "Перевести в библиотеку")}<Icon name="arrow"/></button></div></article>)}</div></section>
+    <section className="admin-custom-register"><div className="admin-section-heading"><div><span>CUSTOM → GENERAL LIBRARY</span><h2>{locale === "en" ? "Custom case inventory" : "Реестр custom-кейсов"}</h2></div><b>{customCases.filter((item) => !item.isPrivate).length.toString().padStart(2, "0")}</b></div><p>{locale === "en" ? "Private cases are omitted at the API boundary: Maxim receives neither their content nor their metadata. Promotion creates a new immutable public snapshot and keeps the custom source." : "Приватные кейсы исключаются на границе API: Максим не получает ни содержание, ни метаданные. Продвижение создаёт новую неизменяемую публичную копию и сохраняет custom-источник."}</p><div>{customCases.filter((item) => !item.isPrivate).map((item) => <article key={item.id}><div><span>{item.status === "promoted" ? "LIBRARY SNAPSHOT CREATED" : "RESTRICTED CUSTOM"}</span><h3>{item.title}</h3><small>{item.ownerDisplayName ?? "Case author"} · {item.caseId} · v{item.currentVersion} · {item.shareCount} share(s)</small></div><div><button type="button" className="secondary-cta" onClick={() => openCustomCase(item.id)}>{locale === "en" ? "Open source" : "Открыть источник"}</button><button type="button" className="primary-cta" disabled={Boolean(adminBusy) || Boolean(pendingPromotion)} onClick={(event) => void promoteCustomCase(item, event.currentTarget)}>{item.status === "promoted" ? (locale === "en" ? "Publish next version" : "Опубликовать новую версию") : (locale === "en" ? "Promote to library" : "Перевести в библиотеку")}<Icon name="arrow"/></button></div></article>)}</div></section>
+    {pendingPromotion && !isTaxDraft(pendingPromotion.draft) && <section
+      className="tax-publication-review publication-confirmation"
+      ref={publicationReviewRef} tabIndex={-1} aria-labelledby="publication-confirmation-title"
+      onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); cancelPromotion(); } }}
+    >
+      <header><h2 id="publication-confirmation-title">{locale === "en" ? "Publish this case version?" : "Опубликовать эту версию кейса?"}</h2></header>
+      <p><strong>{pendingPromotion.draft.title}</strong> · {locale === "en" ? "Version" : "Версия"} {pendingPromotion.draft.version}</p>
+      <p>{locale === "en" ? "This creates a fixed copy in the General Library for people who can access this site. Your workspace source remains editable. Later changes require a new published version." : "В Общей библиотеке появится неизменяемая копия для пользователей, имеющих доступ к сайту. Источник в вашем рабочем пространстве останется доступен для редактирования. Последующие изменения нужно публиковать новой версией."}</p>
+      <details><summary>{locale === "en" ? "Verify the exact version" : "Проверить точную версию"}</summary><dl><div><dt>{locale === "en" ? "Case ID" : "ID кейса"}</dt><dd>{pendingPromotion.draft.caseId}</dd></div><div><dt>{locale === "en" ? "Content fingerprint" : "Контрольная сумма содержания"}</dt><dd><code>{caseFingerprint(pendingPromotion.draft)}</code></dd></div></dl></details>
+      {message && <p role="status">{message}</p>}
+      <footer>
+        <button type="button" className="secondary-cta" disabled={adminBusy === `promote:${pendingPromotion.item.id}`} onClick={cancelPromotion}>{locale === "en" ? "Cancel" : "Отмена"}</button>
+        <button type="button" className="primary-cta" disabled={adminBusy === `promote:${pendingPromotion.item.id}`} onClick={() => void publishPromotion(pendingPromotion)}>{adminBusy === `promote:${pendingPromotion.item.id}` ? (locale === "en" ? "Publishing…" : "Публикация…") : (locale === "en" ? "Publish this version" : "Опубликовать эту версию")}</button>
+      </footer>
+    </section>}
     {pendingPromotion && pendingTaxClassification && <section className="tax-publication-review" aria-labelledby="tax-publication-review-title">
       <header><div><span>TAX / OFFSHORE PUBLICATION GATE</span><h2 id="tax-publication-review-title">{locale === "en" ? "Exact-artifact compliance attestation" : "Compliance-аттестация точного артефакта"}</h2></div><button type="button" onClick={() => setPendingPromotion(null)} disabled={adminBusy === `promote:${pendingPromotion.item.id}`} aria-label={locale === "en" ? "Close tax review" : "Закрыть налоговую проверку"}><Icon name="close"/></button></header>
       <p>{locale === "en" ? "Publication remains blocked until the administrator reviews the legal basis, sources and every playable path. Each confirmation is recorded against the exact Studio and compiled-playable fingerprints." : "Публикация заблокирована, пока администратор не проверит правовую основу, источники и каждую игровую ветвь. Подтверждения привязываются к точным fingerprints Studio и собранного playable-артефакта."}</p>

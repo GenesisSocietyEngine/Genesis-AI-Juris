@@ -1,0 +1,405 @@
+{
+  "schema": "genesis-demo-preflight-observation-v1",
+  "observed_date_utc": "2026-09-06",
+  "entry_gate": "blocked",
+  "site": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "GENESIS: JURIS Web",
+    "status": "active",
+    "access_mode": "public",
+    "current_live_url": "https://studio.falcon-merlin.com",
+    "latest_saved_version_number": 72
+  },
+  "saved_version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_064892d51c548191bc0847f7f30d2004",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version_number": 72,
+    "source": {
+      "commit_sha": "e025131d87e35d4364d542acc5c84b6097eb657b"
+    },
+    "archive_storage": {
+      "archive_format": "tar",
+      "sediment_file_id": "file_000000001aac81f4ac5b2e1a9f89fb9f",
+      "content_hash": "sha256:49f7ac7ec62dea70fa21c970d8148303b42f36c3af42286ef0f6dfd5878591c2",
+      "size_bytes": 26245120,
+      "file_count": 336
+    }
+  },
+  "active_deployment": {
+    "id": null,
+    "status": null,
+    "provider_deployment_id": null,
+    "env_set_revision": null,
+    "reason": "Not exposed by available discovery tools; exact ID required for status lookup."
+  },
+  "configured_environment": {
+    "revision": 33,
+    "updated_at": "2026-09-01T20:03:40.672530+00:00",
+    "entries": [
+      {
+        "key": "GENESIS_DEPLOYMENT_VERSION",
+        "value": "69",
+        "is_secret": false,
+        "type": "envvar"
+      },
+      {
+        "key": "GENESIS_PUBLIC_ORIGIN",
+        "value": "https://studio.falcon-merlin.com",
+        "is_secret": false,
+        "type": "envvar"
+      },
+      {
+        "key": "GENESIS_WEB_COMMIT",
+        "value": "6019e47346a2bf719a09dc1d874a2fc807f99598",
+        "is_secret": false,
+        "type": "envvar"
+      }
+    ]
+  },
+  "database": {
+    "overview": {
+      "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+      "bindings": [
+        "DB"
+      ],
+      "selected_binding_name": "DB",
+      "tables": [
+        "account_recovery_codes",
+        "audit_events",
+        "auth_audit_events",
+        "auth_rate_limit_events",
+        "auth_sessions",
+        "case_drafts",
+        "case_feedback",
+        "case_subscriptions",
+        "case_versions",
+        "cases",
+        "custom_case_grants",
+        "custom_cases",
+        "dossier_ai_proposal_anchors",
+        "dossier_ai_proposal_job_sources",
+        "dossier_ai_proposal_jobs",
+        "dossier_ai_proposal_versions",
+        "dossier_ai_proposals",
+        "dossier_assertion_sources",
+        "dossier_audit_certifications",
+        "dossier_audit_events",
+        "dossier_deadline_references",
+        "dossier_deadline_sources",
+        "dossier_decision_package_references",
+        "dossier_document_current_versions",
+        "dossier_document_versions",
+        "dossier_documents",
+        "dossier_evidence_links",
+        "dossier_extraction_jobs",
+        "dossier_extraction_page_maps",
+        "dossier_extraction_results",
+        "dossier_governed_outputs",
+        "dossier_information_requests",
+        "dossier_organization_bindings",
+        "dossier_organization_commitments",
+        "dossier_output_approvals",
+        "dossier_output_state_events",
+        "dossier_participants",
+        "dossier_professional_assertions",
+        "dossier_proposal_materialization_commitments",
+        "dossier_required_audits",
+        "dossier_revision_commitments",
+        "dossier_revision_receipts",
+        "dossier_snapshot_anchors",
+        "dossier_snapshot_assertions",
+        "dossier_snapshot_decision_packages",
+        "dossier_snapshot_document_versions",
+        "dossier_snapshots",
+        "dossier_source_anchors",
+        "dossier_status_application_certifications",
+        "dossier_status_application_commitments"
+      ],
+      "model_projection": {
+        "truncated": false,
+        "omitted_project_id": false,
+        "omitted_selected_binding": false,
+        "omitted_bindings": 0,
+        "omitted_tables": 0
+      }
+    },
+    "inspected_tables": [
+      {
+        "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+        "binding_name": "DB",
+        "table_name": "dossier_organization_bindings",
+        "columns": [
+          "dossier_id",
+          "organization_id",
+          "created_by_actor_id",
+          "created_at"
+        ],
+        "rows": [],
+        "limit": 1,
+        "offset": 0,
+        "has_more": false,
+        "model_projection": {
+          "truncated": false,
+          "truncated_values": 0,
+          "omitted_columns": 0,
+          "omitted_rows": 0,
+          "next_offset": null
+        }
+      },
+      {
+        "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+        "binding_name": "DB",
+        "table_name": "dossier_organization_commitments",
+        "columns": [
+          "dossier_id"
+        ],
+        "rows": [],
+        "limit": 1,
+        "offset": 0,
+        "has_more": false,
+        "model_projection": {
+          "truncated": false,
+          "truncated_values": 0,
+          "omitted_columns": 0,
+          "omitted_rows": 0,
+          "next_offset": null
+        }
+      }
+    ],
+    "full_migration_verified": false
+  },
+  "github": {
+    "main_sha": "e025131d87e35d4364d542acc5c84b6097eb657b",
+    "main_tree": "c47f1951d1573e8f72b6c7e6872239f8beb23c39",
+    "open_prs": [
+      {
+        "baseRefName": "main",
+        "headRefName": "codex/v62-site69-baseline-recovery",
+        "headRefOid": "7a74c9ffbd63637e3bcd92d294281b24c42b0681",
+        "isDraft": true,
+        "number": 44,
+        "title": "chore(web): recover exact Site 69 baseline into GitHub",
+        "url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/44"
+      },
+      {
+        "baseRefName": "main",
+        "headRefName": "codex/v64-phase-b-tenant-foundation",
+        "headRefOid": "2f6e545b70a39c3fda4aa3b71ca380799e7c52a8",
+        "isDraft": true,
+        "number": 43,
+        "title": "v64 Phase B: protected tenant foundation",
+        "url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/43"
+      },
+      {
+        "baseRefName": "main",
+        "headRefName": "feat/web-practitioner-platform-v1",
+        "headRefOid": "795780aecbc1a91684e2b4199ae573313a2576cc",
+        "isDraft": true,
+        "number": 32,
+        "title": "feat(web): practitioner platform, feedback and tax case studio",
+        "url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/32"
+      },
+      {
+        "baseRefName": "feat/lost-is-not-closed",
+        "headRefName": "feat/foreground-clock-control",
+        "headRefOid": "ce2debd74264865de1f5fcf7e813f7ad808a5b57",
+        "isDraft": false,
+        "number": 5,
+        "title": "feat(clock): add authoritative foreground time control",
+        "url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/5"
+      },
+      {
+        "baseRefName": "main",
+        "headRefName": "feat/lost-is-not-closed",
+        "headRefOid": "7aa6927e8ebfd6e205bfd12478ba28d52c40248a",
+        "isDraft": false,
+        "number": 4,
+        "title": "Separate judicial results from matter closure",
+        "url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/4"
+      },
+      {
+        "baseRefName": "main",
+        "headRefName": "feat/authoritative-rust-gameplay-engine",
+        "headRefOid": "50af0f011b603de70f9cf660be79092ac3f178a9",
+        "isDraft": false,
+        "number": 2,
+        "title": "feat: add authoritative Rust gameplay domain model",
+        "url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/2"
+      }
+    ],
+    "open_issues": [
+      {
+        "labels": [],
+        "number": 39,
+        "title": "Codex: complete v62 libraries, verify release head, and prepare deployment",
+        "url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/issues/39"
+      }
+    ],
+    "workflow_runs": [
+      {
+        "conclusion": "success",
+        "event": "push",
+        "head_sha": "e025131d87e35d4364d542acc5c84b6097eb657b",
+        "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33976693017",
+        "id": 33976693017,
+        "name": "iOS Native FFI",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "event": "push",
+        "head_sha": "e025131d87e35d4364d542acc5c84b6097eb657b",
+        "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33976692984",
+        "id": 33976692984,
+        "name": "Flutter Mobile UI",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "event": "push",
+        "head_sha": "e025131d87e35d4364d542acc5c84b6097eb657b",
+        "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33976692978",
+        "id": 33976692978,
+        "name": "Rust CI",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "event": "push",
+        "head_sha": "e025131d87e35d4364d542acc5c84b6097eb657b",
+        "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33976692995",
+        "id": 33976692995,
+        "name": "Root Web and PDF",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "event": "push",
+        "head_sha": "e025131d87e35d4364d542acc5c84b6097eb657b",
+        "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33976692960",
+        "id": 33976692960,
+        "name": "Android Native FFI",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "event": "pull_request",
+        "head_sha": "57786557f60c01fc7ad48e1cedc8ea5e9fe059aa",
+        "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33975868702",
+        "id": 33975868702,
+        "name": "Rust CI",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "event": "pull_request",
+        "head_sha": "57786557f60c01fc7ad48e1cedc8ea5e9fe059aa",
+        "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33975868757",
+        "id": 33975868757,
+        "name": "Flutter Mobile UI",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "event": "pull_request",
+        "head_sha": "57786557f60c01fc7ad48e1cedc8ea5e9fe059aa",
+        "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33975868771",
+        "id": 33975868771,
+        "name": "Android Native FFI",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "event": "pull_request",
+        "head_sha": "57786557f60c01fc7ad48e1cedc8ea5e9fe059aa",
+        "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33975868704",
+        "id": 33975868704,
+        "name": "Root Web and PDF",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "event": "pull_request",
+        "head_sha": "57786557f60c01fc7ad48e1cedc8ea5e9fe059aa",
+        "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33975868767",
+        "id": 33975868767,
+        "name": "iOS Native FFI",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "event": "push",
+        "head_sha": "57786557f60c01fc7ad48e1cedc8ea5e9fe059aa",
+        "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33975867578",
+        "id": 33975867578,
+        "name": "iOS Native FFI",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "event": "push",
+        "head_sha": "57786557f60c01fc7ad48e1cedc8ea5e9fe059aa",
+        "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33975866767",
+        "id": 33975866767,
+        "name": "Rust CI",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "event": "push",
+        "head_sha": "57786557f60c01fc7ad48e1cedc8ea5e9fe059aa",
+        "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33975866821",
+        "id": 33975866821,
+        "name": "Flutter Mobile UI",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "event": "push",
+        "head_sha": "57786557f60c01fc7ad48e1cedc8ea5e9fe059aa",
+        "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33975866785",
+        "id": 33975866785,
+        "name": "Android Native FFI",
+        "status": "completed"
+      },
+      {
+        "conclusion": "success",
+        "event": "push",
+        "head_sha": "57786557f60c01fc7ad48e1cedc8ea5e9fe059aa",
+        "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33975866702",
+        "id": 33975866702,
+        "name": "Root Web and PDF",
+        "status": "completed"
+      }
+    ]
+  },
+  "browser": {
+    "inventory": {
+      "apps": [],
+      "browsers": []
+    },
+    "chrome": "Browser is not available: chrome",
+    "edge": "Browser is not available: edge",
+    "authenticated_runs_executed": 0,
+    "cold_testers_observed": 0
+  },
+  "public_http": {
+    "url": "https://studio.falcon-merlin.com/",
+    "observed_utc": "2026-09-06T11:15:33Z",
+    "status": 200,
+    "release_marker": "v62",
+    "header_copy": "CASE STUDIO · ADVISORY · BETA v0.1.0",
+    "hydration_verified": false
+  },
+  "authorization": {
+    "two_synthetic_accounts_via_ordinary_registration": true,
+    "local_documentation_commit": true,
+    "push": false,
+    "pr_update": false,
+    "merge": false,
+    "migration": false,
+    "environment_change": false,
+    "deployment": false,
+    "outreach": false
+  }
+}

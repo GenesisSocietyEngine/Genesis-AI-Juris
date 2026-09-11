@@ -1021,3 +1021,28 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   .case-playbook>footer{grid-template-columns:1fr;padding:18px 22px}
   .case-playbook>footer small{text-align:left}
 }
+
+/* Publication confirmation stays in the page and remains keyboard accessible. */
+.publication-confirmation{scroll-margin-block:24px;font-size:1rem}
+.publication-confirmation:focus-visible{outline:2px solid var(--cyan);outline-offset:4px}
+.publication-confirmation>header h2{margin:0;font-size:1.6rem}
+.publication-confirmation summary,.publication-confirmation dt,.publication-confirmation code,.publication-confirmation button{font-size:.875rem;line-height:1.5}
+.publication-confirmation summary{cursor:pointer}
+.publication-confirmation details dl{margin-top:12px}
+.publication-confirmation>footer{flex-wrap:wrap}
+
+/* Administration: task guidance and readable identity rows at every width. */
+.admin-guidance{border:1px solid var(--rule);padding:1.25rem;margin:1.25rem 0;background:var(--panel);scroll-margin-top:1rem}
+.admin-guidance h2{font:500 1.5rem/1.25 var(--serif);margin:0 0 .75rem}
+.admin-guidance nav{display:flex;flex-wrap:wrap;gap:.75rem 1.5rem}
+.admin-guidance p,.admin-field-help{font-size:1rem;line-height:1.55;max-width:80ch}
+.admin-guidance a{color:var(--copy);text-decoration:underline;text-underline-offset:.2em}
+.admin-guidance a:focus-visible{outline:3px solid var(--brass);outline-offset:4px}
+.admin-grid label>span{font-size:.875rem;line-height:1.4;text-transform:none}
+.admin-custom-register>p,.admin-license-register>p,.admin-desk article small{font-size:.875rem;line-height:1.5}
+.admin-user-identity{display:grid;align-content:start;gap:.3rem;min-width:0;overflow-wrap:anywhere}
+.admin-user-actions{flex-wrap:wrap;max-width:25rem}
+.admin-reset-help{flex-basis:100%;font-size:.875rem;line-height:1.4}
+.admin-desk button:not(.primary-cta):not(.secondary-cta){font-size:.875rem}
+#admin-announcements,#admin-versions,#admin-access{scroll-margin-top:1.5rem}
+@media(max-width:700px){.admin-license-register article,.admin-custom-register article{grid-template-columns:minmax(0,1fr)}.admin-user-actions{max-width:100%}.admin-user-actions select{min-width:0;flex:1 1 10rem}}

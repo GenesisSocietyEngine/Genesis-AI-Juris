@@ -28,6 +28,10 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function Home() {
-  return <JurisApp studioOnly={await requestIsFalconStudio()} />;
+export default async function Home({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+  const { view } = await searchParams;
+  // The custom domain selects the initial workspace; explicit navigation must
+  // still reach the catalogue, saved drafts and help, including old bookmarks.
+  const explicitWorkspace = ["library", "community", "help", "play"].includes(view ?? "");
+  return <JurisApp studioOnly={await requestIsFalconStudio() && !explicitWorkspace} />;
 }

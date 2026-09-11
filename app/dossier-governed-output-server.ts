@@ -65,8 +65,8 @@ export const DOSSIER_OUTPUT_MANIFEST_FORMAT =
   "genesis-juris-dossier-governed-output-manifest" as const;
 export const DOSSIER_REPORT_PROFILE_ID = "dossier-governed-report" as const;
 export const DOSSIER_REPORT_MODEL_SCHEMA_VERSION = 1 as const;
-export const DOSSIER_REPORT_RENDERER_VERSION = "1.0.0" as const;
-export const DOSSIER_REPORT_BUILD_VERSION = "v62-dossier-workspace" as const;
+export const DOSSIER_REPORT_RENDERER_VERSION = "1.2.0" as const;
+export const DOSSIER_REPORT_BUILD_VERSION = "canopy-local-candidate-2" as const;
 export const DOSSIER_PILOT_SNAPSHOT_AUDIENCE = "internal" as const;
 export const DOSSIER_PILOT_REDACTION_PROFILE_ID = "pilot-default" as const;
 
@@ -153,7 +153,7 @@ type SnapshotStorageManifest = {
   snapshot: Omit<DossierSnapshotV1, "manifest_digest">;
 };
 
-type DossierReportModelV1 = {
+export type DossierReportModelV1 = {
   format: typeof DOSSIER_OUTPUT_MANIFEST_FORMAT;
   schema_version: 1;
   profile_id: typeof DOSSIER_REPORT_PROFILE_ID;
@@ -1997,12 +1997,48 @@ function dossierPdfTable(
   };
 }
 
+function canopyExecutiveMemorandum(model: DossierReportModelV1, presentation = false): Content[] {
+  if (!model.decision_package_graphs.some(graph => graph.package_id === "project_canopy_managed_site_expansion" || graph.package_id.startsWith("project_canopy_managed_site_expansion_"))) return [];
+  const prefix = "Canopy memo / ";
+  const sections = model.assertion_register.filter(assertion => assertion.statement.startsWith(prefix));
+  if (!sections.length) return [];
+  const order = ["Decision requested", "Executive recommendation", "Scope and evidence limitation", "Evidence limitation", "Conditions and no-go rule", "Accountable owners and review dates", "Alternatives and exit", "Assumptions and economics"];
+  const heading = (statement: string) => statement.slice(prefix.length).split(": ")[0];
+  sections.sort((a, b) => order.indexOf(heading(a.statement)) - order.indexOf(heading(b.statement)));
+  return [
+    { text: "GENESIS: JURIS CODEX", style: "brand" },
+    { text: presentation ? "PRESENTATION EXTRACT · NOT APPROVED" : "EXECUTIVE MEMORANDUM", style: "kicker" },
+    { text: model.dossier.title, style: "coverTitle" },
+    { text: `Sealed ${model.snapshot.created_at} · ${model.dossier.status} · readiness ${model.snapshot.readiness.ready ? "ready" : "not ready"}`, style: "notice" },
+    { text: "This demonstration uses entirely fictional organisations, documents, people and figures. It is inspired only by publicly described industry patterns and does not represent Greeneration data, performance, controls or decisions.", style: "notice", margin: [0, 6, 0, 12] },
+    ...sections.flatMap((assertion): Content[] => {
+      const title = heading(assertion.statement);
+      const sources = assertion.source_anchor_ids.map(id => {
+        const anchor = model.anchor_register.find(item => item.source_anchor_id === id);
+        const document = model.source_register.find(item => item.document_version_id === anchor?.document_version_id);
+        return anchor && document ? `${document.original_filename} § ${anchor.section ?? anchor.heading ?? anchor.page_number ?? "source"}` : "See exact anchor register";
+      });
+      return [{ unbreakable: true, stack: [
+        { text: title, style: "sectionTitle" },
+        { text: assertion.statement.slice(prefix.length + title.length + 2), margin: [0, 0, 0, 5] },
+        { text: [...new Set(sources)].join("; "), style: "notice", margin: [0, 0, 0, 6] },
+      ] }];
+    }),
+    { text: "Approval and currency", style: "sectionTitle" },
+    { text: presentation ? "Presentation extract from accepted snapshot assertions. This separate PDF has its own hash and NO approval. Any full-dossier approval belongs only to that exact full PDF. As of the snapshot below; consult the later output register for current/stale state. A recommendation or report approval is not permission to begin production." : "This memorandum contains only assertions accepted into the sealed snapshot. A subsequent approval applies to an exact output and is recorded separately; it does not rewrite this snapshot. Recheck the output register after any authoritative evidence change. An older approved output can be stale.", margin: [0, 0, 0, 8] },
+    { text: `Snapshot ${model.snapshot.snapshot_id}\nSHA-256 ${model.source_manifest_sha256}`, style: "notice" },
+    ...(presentation ? [{text:"Full governed dossier and exact JSON: use the accompanying packet index. For later approvals and current/stale status, reopen this Matter in the application output register.",style:"notice",margin:[0,8,0,0] as [number,number,number,number]}] : []),
+    ...(presentation ? [] : [{ text: "Exact source, graph, simulation and audit bindings", style: "sectionTitle", pageBreak: "before" as const }]),
+  ];
+}
+
 export function buildDossierGovernancePdfContent(model: DossierReportModelV1): Content[] {
   const deterministic = jsonObject(model.snapshot.deterministic_receipts);
   const receiptPackages = Array.isArray(deterministic?.decision_packages)
     ? deterministic.decision_packages
     : [];
   return [
+    ...canopyExecutiveMemorandum(model),
     { text: "GENESIS: JURIS CODEX", style: "brand" },
     { text: "GOVERNED DECISION DOSSIER", style: "kicker" },
     { text: model.dossier.title, style: "coverTitle" },
@@ -2304,6 +2340,25 @@ async function renderDossierPdf(model: DossierReportModelV1): Promise<Uint8Array
       creationDate: new Date(model.snapshot.created_at),
     },
   };
+  return renderPdfDefinition(definition);
+}
+
+/** A distinct unapproved presentation artifact; never registered as the governed PDF. */
+export async function renderCanopyPresentationExtract(model: DossierReportModelV1): Promise<Uint8Array> {
+  const content=canopyExecutiveMemorandum(model,true);
+  if(!content.length)throw new DossierGovernedError("canopy_memo_unavailable",409,"No accepted Canopy memorandum is present in this exact output.");
+  assertDossierPdfTextSupported(model);
+  return renderPdfDefinition({
+    pageSize:"A4",pageOrientation:"portrait",pageMargins:[42,38,42,38],
+    defaultStyle:{font:"Roboto",fontSize:11,lineHeight:1.15},
+    styles:{brand:{fontSize:10,bold:true},kicker:{fontSize:11,bold:true,color:"#5b3820",margin:[0,8,0,8]},coverTitle:{fontSize:20,bold:true,margin:[0,0,0,10]},notice:{fontSize:9,color:"#374151"},sectionTitle:{fontSize:12,bold:true,margin:[0,11,0,4]}},
+    content,footer:(page,total)=>({text:`Presentation extract · not approved · ${page}/${total}`,alignment:"center",fontSize:9,margin:[0,12,0,0]}),
+    language:"en-GB",displayTitle:true,
+    info:{title:model.dossier.title+" — unapproved presentation extract",subject:`Snapshot ${model.snapshot.snapshot_id} ${model.source_manifest_sha256}`,creator:"GENESIS: JURIS CODEX",creationDate:new Date(model.snapshot.created_at)},
+  });
+}
+
+async function renderPdfDefinition(definition:TDocumentDefinitions):Promise<Uint8Array> {
   const [{ default: pdfMake }, { default: pdfFonts }] = await Promise.all([
     import("pdfmake/build/pdfmake.js"),
     import("pdfmake/build/vfs_fonts.js"),
