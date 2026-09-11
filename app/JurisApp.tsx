@@ -2500,11 +2500,11 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   const [graphZoom, setGraphZoom] = useState(1);
   const [graphOrientation, setGraphOrientation] = useState<GraphOrientation>("vertical");
   const graphDraftIdentity = `${draft.caseId}\u0000${draft.version}`;
+  const graphViewportKey = `${graphDraftIdentity}\u0000${draft.nodes.map((node) => node.id).join("\u0001")}`;
   const guidedWorkflowKey = studioWorkflowStorageKey(draft.caseId);
   const guidedDraftIsEmpty = !draft.title.trim() && draft.nodes.length === 0 && draft.links.length === 0;
   const graphDraftIdentityRef = useRef(graphDraftIdentity);
   const guidedWorkflowRestoredRef = useRef(false);
-  const defaultGraphLayoutRef = useRef("");
   const [caseReportOpen, setCaseReportOpen] = useState(false);
   const [caseReportFingerprint, setCaseReportFingerprint] = useState("");
   const [caseReportStatus, setCaseReportStatus] = useState("");
@@ -2716,23 +2716,17 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   }, [guidedDraftIsEmpty]);
 
   useEffect(() => {
-    const layoutKey = `${graphDraftIdentity}\u0000${draft.nodes.map((node) => node.id).join("\u0001")}`;
-    if (!canDuplicate || draft.nodes.length < 2 || defaultGraphLayoutRef.current === layoutKey) return;
-    defaultGraphLayoutRef.current = layoutKey;
-    setGraphOrientation("vertical");
-    let cancelled = false;
-    void import("./studio-layout").then(({ layoutStudioNodes }) => {
-      if (cancelled) return;
-      setDraft((current) => {
-        const currentKey = `${current.caseId}\u0000${current.version}\u0000${current.nodes.map((node) => node.id).join("\u0001")}`;
-        if (currentKey !== layoutKey) return current;
-        const nodes = layoutStudioNodes(current.nodes, current.links, "vertical");
-        return nodes.some((node, index) => node.x !== current.nodes[index]?.x || node.y !== current.nodes[index]?.y) ? { ...current, nodes } : current;
-      });
-      window.requestAnimationFrame(() => window.requestAnimationFrame(fitGraph));
+    // Opening a source adjusts the viewport only. Node positions belong to the
+    // signed draft; changing them requires the explicit, recorded layout action.
+    let fitFrame: number | null = null;
+    const layoutFrame = window.requestAnimationFrame(() => {
+      fitFrame = window.requestAnimationFrame(fitGraph);
     });
-    return () => { cancelled = true; };
-  }, [canDuplicate, draft.nodes, fitGraph, graphDraftIdentity, setDraft]);
+    return () => {
+      window.cancelAnimationFrame(layoutFrame);
+      if (fitFrame !== null) window.cancelAnimationFrame(fitFrame);
+    };
+  }, [fitGraph, graphViewportKey]);
 
   useEffect(() => {
     let idleHandle: number | null = null;
@@ -3455,6 +3449,11 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
         <label><span>{text.nodeType}</span><select value={selectedNode.type} onChange={(event)=>{ const type=event.target.value as StudioNodeType; if(type!==selectedNode.type){ const before=draft; updateNode({type,runtime:runtimeForNodeType(selectedNode.runtime,type)}); recordVisualEdit("node_updated", locale === "en" ? `Visual edit: changed “${selectedNode.title}” from ${text.nodeTypes[selectedNode.type]} to ${text.nodeTypes[type]}.` : `Визуальная правка: тип узла «${selectedNode.title}» изменён на «${text.nodeTypes[type]}».`, before); } }}>{(Object.keys(typeColors) as StudioNodeType[]).map((type)=><option key={type} value={type}>{text.nodeTypes[type]}</option>)}</select></label>
         <label><span>{text.title}</span><input value={selectedNode.title} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event)=>updateNode({title:event.target.value})} onBlur={(event)=>commitNodeField(text.title,event.currentTarget.value)}/></label>
         <label><span>{text.detail}</span><textarea value={selectedNode.detail} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event)=>updateNode({detail:event.target.value})} onBlur={(event)=>commitNodeField(text.detail,event.currentTarget.value)}/></label>
+        {displayMode === "developer" && <fieldset className="node-runtime-fields" disabled={!canDuplicate}>
+          <legend>{locale === "en" ? "Node position" : "Положение узла"}</legend>
+          <p>{locale === "en" ? "Set an exact position without dragging. This edits the source and can be undone; Fit changes only the view." : "Задайте точное положение без перетаскивания. Правка изменяет исходник и может быть отменена; «Вписать» меняет только вид."}</p>
+          {(["x", "y"] as const).map((axis) => <label key={axis}><span>{locale === "en" ? `${axis.toUpperCase()} position` : `Координата ${axis.toUpperCase()}`}</span><input type="number" min="0" max="5000" step="any" value={selectedNode[axis]} onFocus={(event) => beginFieldEdit(event.currentTarget.value)} onChange={(event) => { const value = event.currentTarget.valueAsNumber; if (Number.isFinite(value) && value >= 0 && value <= 5000) updateNode({ [axis]: value }); }} onBlur={(event) => commitNodeField(locale === "en" ? `${axis.toUpperCase()} position` : `координата ${axis.toUpperCase()}`, event.currentTarget.value)}/></label>)}
+        </fieldset>}
         {selectedNode.type === "cash_flow" && editableDealModel && <Suspense fallback={null}><CashFlowScenarioEditor locale={locale} model={editableDealModel} beginFieldEdit={beginFieldEdit} commitField={commitDealEconomicsField} setModel={setDealEconomicsChange} changeRepaymentBasis={(repaymentBasis) => { const before=draft; setDealEconomicsChange({repaymentBasis}); recordVisualEdit("case_updated", locale === "en" ? "Visual edit: changed cash-flow repayment basis." : "Визуальная правка: изменён вид погашения cash-flow.", before); }}/></Suspense>}
         {(displayMode === "developer" || selectedNode.type !== "cash_flow") && <fieldset className="node-runtime-fields"><legend>{locale === "en" ? "TIME & BUDGET" : "ВРЕМЯ И БЮДЖЕТ"}</legend>
           <p>{locale === "en" ? "These defaults are charged when the player enters this node. A relation rule may override them." : "Эти значения применяются при входе игрока в узел. Правило конкретной связи может их переопределить."}</p>

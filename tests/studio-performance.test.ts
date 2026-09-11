@@ -72,8 +72,8 @@ test("Studio schedules heavy derivations for idle time and never renders all end
   assert.match(source, /\}, \[derivationAttempt, draft\]\);/, "derivation state updates must not cancel their own completed request");
   assert.doesNotMatch(source, /if \(studioDerivations\.source === draft\) return;/, "the derivation effect must not read an intentionally omitted state dependency");
   const stableFitGraph = source.indexOf("const fitGraph = useCallback");
-  const defaultLayoutEffect = source.indexOf("const layoutKey = `${graphDraftIdentity}");
-  assert.ok(stableFitGraph >= 0 && stableFitGraph < defaultLayoutEffect, "graph fitting must be stable before the default-layout effect uses it");
+  const viewportEffect = source.indexOf("// Opening a source adjusts the viewport only.");
+  assert.ok(stableFitGraph >= 0 && stableFitGraph < viewportEffect, "graph fitting must be stable before the viewport effect uses it");
   assert.match(source, /const graphBoundsRef = useRef\(graphBounds\);\s*useEffect\(\(\) => \{\s*graphBoundsRef\.current = graphBounds;\s*\}, \[graphBounds\]\);/);
   assert.doesNotMatch(source, /const graphBoundsRef = useRef\(graphBounds\);\s*graphBoundsRef\.current = graphBounds;/, "render must not read or update the ref");
   assert.match(source, /const fitGraph = useCallback\(\(\) => \{[\s\S]*?const bounds = graphBoundsRef\.current;[\s\S]*?\}, \[\]\);/);
@@ -82,4 +82,17 @@ test("Studio schedules heavy derivations for idle time and never renders all end
   assert.doesNotMatch(source, /<code>\{caseFingerprint\(draft\)\}<\/code>/);
   assert.match(source, /studioNodeMenuOptions\(relationNodeMenu\.nodes,nodeById,link\.to\)/);
   assert.match(source, /destinationNodeMenu\.nodes\.map/);
+});
+
+test("opening a saved or imported graph fits the viewport without changing its signed source", () => {
+  const source = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
+  const viewportEffect = source.match(/useEffect\(\(\) => \{\s*\/\/ Opening a source[\s\S]*?\}, \[fitGraph, graphViewportKey\]\);/)?.[0];
+  assert.ok(viewportEffect, "saved and imported graphs have a viewport-only opening effect");
+  assert.match(viewportEffect, /requestAnimationFrame\(fitGraph\)/);
+  assert.match(viewportEffect, /cancelAnimationFrame\(fitFrame\)/, "case switches cancel a pending fit");
+  assert.doesNotMatch(viewportEffect, /setDraft|layoutStudioNodes|canDuplicate/, "opening a source must not edit it, even for its owner");
+  assert.equal(source.match(/layoutStudioNodes\(current\.nodes/g)?.length ?? 0, 0, "automatic opening must not silently rearrange canonical nodes");
+  const explicitLayout = source.slice(source.indexOf("async function autoLayoutGraph("), source.indexOf("async function autoLayoutGraph(") + 1600);
+  assert.match(explicitLayout, /layoutStudioNodes/);
+  assert.match(explicitLayout, /recordVisualEdit\("node_moved"/, "deliberate rearrangement remains a recorded edit");
 });
