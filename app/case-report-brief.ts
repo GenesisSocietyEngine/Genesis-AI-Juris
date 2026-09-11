@@ -10,7 +10,7 @@ function excerpt(value: string, limit: number, language: Language) {
   if (text.length <= limit) return text;
   const prefix = text.slice(0, limit);
   const boundary = prefix.lastIndexOf(" ");
-  return `${prefix.slice(0, boundary > limit / 2 ? boundary : limit)}... ${tr(language, "[extract]", "[фрагмент]")}`;
+  return `${prefix.slice(0, boundary > limit / 2 ? boundary : limit)} ${tr(language, "[extract]", "[фрагмент]")}`;
 }
 
 function records(nodes: StudioNode[], maximum: number, language: Language, details = false) {

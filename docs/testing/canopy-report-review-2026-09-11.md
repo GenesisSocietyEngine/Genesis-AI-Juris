@@ -45,6 +45,29 @@ Windows/x64, Node 22.23.2 and Poppler 25.07.0 are required by the existing
 it must not be reported as that gate. An intentional candidate baseline must
 be visually reviewed before replacement and followed by read-only verification.
 
+The first hosted run found that the long-content corpus disallows ellipsis
+characters. Brief extracts now use an explicit `[extract]` / `[фрагмент]` label
+without an ellipsis; full records remain in the appendices. Table subheadings
+repeat as part of the table header and stay with at least one data row. The
+verification checklist and signature area form one indivisible block.
+
+## Dependency audit finding
+
+The 11 September hosted audit reported five high and one critical dependency
+findings. Corrected pins are Next.js / eslint-config-next 16.3.4, Cloudflare
+Vite plugin 1.54.8, Wrangler 4.131.1 and its matching Workers types
+5.20260911.1. The lockfile resolves sharp 0.35.4 and js-yaml 4.3.2. These are
+targeted security updates; no audit threshold, peer-dependency check, permission
+or release gate is disabled. PDF dependencies and graph contract stay pinned.
+
+The audit finding alone does not demonstrate exploitation in the deployed
+Cloudflare runtime. Relevant upstream advisories:
+
+- https://github.com/advisories/GHSA-2xp9-vwfh-vxw4
+- https://github.com/advisories/GHSA-p293-qw3h-jr36
+- https://github.com/advisories/GHSA-rgj7-g3m4-5g8c
+- https://github.com/advisories/GHSA-2883-xcg3-v3hh
+
 ## Boundaries
 
 Production remains version 76 until a successful subsequent deployment is

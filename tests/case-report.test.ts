@@ -158,8 +158,13 @@ test("Canopy opens with a bounded EN/RU decision brief and keeps draft, outcomes
     assert.ok(!brief.includes(canopy.premise), "raw unreviewed premise must remain excluded");
     // The analysis heading must accompany actual content, rather than end a page.
     for (const page of pages) {
+      const body = page.replace(/\s+/g, " ");
       const heading = language === "en" ? "Profile-specific analysis" : "Профильный анализ";
-      if (page.includes(heading)) assert.ok(page.includes("Is this within the committee mandate?"), "the analysis heading must share a page with its first actual record");
+      if (body.includes(heading)) assert.ok(body.includes("Is this within the committee mandate?"), "the analysis heading must share a page with its first actual record");
+      const evidenceHeading = language === "en" ? "Facts and evidence" : "Факты и доказательства";
+      if (page.split("\n").includes(evidenceHeading)) assert.ok(body.includes("Is independent commissioning evidence accepted?"), "a table header alone must not keep its section on the prior page");
+      const signoffHeading = language === "en" ? "Verification and sign-off" : "Проверка и утверждение";
+      if (body.includes(signoffHeading)) assert.match(body, language === "en" ? /Sign-off \/ qualification/ : /Утверждение \/ оговорка/);
     }
   }
   assert.equal(JSON.stringify(canopy), original, "report rendering must not mutate the immutable Base");

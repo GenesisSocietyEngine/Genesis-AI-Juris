@@ -78,16 +78,25 @@ function money(language: CaseReportOptions["language"], currency: string, value:
   catch { return `${Math.round(value).toLocaleString(language === "en" ? "en-GB" : "ru-RU")} ${currency}`; }
 }
 
-function table(headers: string[], rows: TableCell[][], widths?: Array<string | number>): ContentTable {
+function table(headers: string[], rows: TableCell[][], widths?: Array<string | number>, heading?: string): ContentTable {
+  const headerRows = heading ? 2 : 1;
+  const headingRow: TableCell[] = heading ? [
+    { text: heading, colSpan: headers.length, style: "subheading", border: [false, false, false, false], margin: [0, 4, 0, 4] },
+    ...headers.slice(1).map<TableCell>(() => ({ text: "", border: [false, false, false, false] })),
+  ] : [];
   return {
     table: {
-      headerRows: 1,
+      headerRows,
+      keepWithHeaderRows: 1,
       widths: widths ?? headers.map(() => "*"),
-      body: [headers.map((value) => ({ text: value, style: "tableHeader" })), ...rows],
+      body: [
+        ...(heading ? [headingRow] : []),
+        headers.map((value) => ({ text: value, style: "tableHeader" })), ...rows,
+      ],
       dontBreakRows: true,
     },
     layout: {
-      fillColor: (rowIndex: number) => rowIndex === 0 ? palette.navy : rowIndex % 2 === 0 ? "#f5f8f8" : palette.white,
+      fillColor: (rowIndex: number) => rowIndex === 0 && heading ? palette.white : rowIndex < headerRows ? palette.navy : (rowIndex - headerRows) % 2 === 1 ? "#f5f8f8" : palette.white,
       hLineColor: () => palette.line,
       vLineColor: () => palette.line,
       paddingLeft: () => 6, paddingRight: () => 6, paddingTop: () => 5, paddingBottom: () => 5,
@@ -269,12 +278,15 @@ function buildCaseReportDefinitionFromModels(
 
   content.push(numberedSection("Profile-specific analysis", "Профильный анализ"));
   for (const profileSection of reportModel.sections.filter((item) => !["executive_summary", "sources", "approval", "economics", "scenario_map"].includes(item.id))) {
-    content.push({ text: reportSectionNames[profileSection.id][language === "en" ? 0 : 1], style: "subheading", headlineLevel: 2, margin: [0, 10, 0, 5] });
+    const heading = reportSectionNames[profileSection.id][language === "en" ? 0 : 1];
     if (profileSection.items.length) content.push(table(
       [tr(language, "Item", "Элемент"), tr(language, "Professional record", "Профессиональная запись")],
-      profileSection.items.map((item) => [options.includeTechnicalIds ? `${item.title}\n[${item.id}]` : item.title, item.detail]), ["35%", "65%"]
+      profileSection.items.map((item) => [options.includeTechnicalIds ? `${item.title}\n[${item.id}]` : item.title, item.detail]), ["35%", "65%"], heading
     ));
-    else content.push({ text: tr(language, "No structured items are recorded for this section; reviewer completion is required where material.", "Для этого раздела нет структурированных элементов; рецензент должен заполнить его, если он существенен."), style: "warning" });
+    else content.push({ stack: [
+      { text: heading, style: "subheading", margin: [0, 10, 0, 5] },
+      { text: tr(language, "No structured items are recorded for this section; reviewer completion is required where material.", "Для этого раздела нет структурированных элементов; рецензент должен заполнить его, если он существенен."), style: "warning" },
+    ], unbreakable: true });
   }
 
   if (options.includeEconomics && (draft.dealEconomics || draft.taxEconomics)) {
@@ -325,6 +337,7 @@ function buildCaseReportDefinitionFromModels(
     else content.push({ text: tr(language, "No authoring history is recorded.", "История подготовки отсутствует."), style: "body" });
   }
 
+  const verificationStart = content.length;
   content.push(numberedSection("Verification and sign-off", "Проверка и утверждение"));
   content.push({
     ul: [
@@ -341,6 +354,7 @@ function buildCaseReportDefinitionFromModels(
   ));
   content.push({ text: `${tr(language, "Current content fingerprint", "Отпечаток текущего содержания")}: ${options.currentFingerprint || tr(language, "pending", "ожидается")}`, style: "fingerprint" });
   if (options.includeTechnicalIds && draft.protection) content.push({ text: `${tr(language, "Lineage code", "Код линии версий")}: ${draft.protection.currentCode || "pending"}\n${tr(language, "Copy policy", "Политика копирования")}: ${draft.protection.copyPolicy}`, style: "fingerprint" });
+  content.push({ stack: content.splice(verificationStart), unbreakable: true });
   content.push(...buildReportGraphAppendix(layoutModel, options, sectionNumber++));
 
   const confidentialityLabel = options.confidentiality.toUpperCase();
@@ -354,8 +368,8 @@ function buildCaseReportDefinitionFromModels(
     content,
     pageBreakBefore: (current, following) => Boolean(current.headlineLevel)
       && !following.some((node) => !node.headlineLevel && !node.id?.startsWith("report-furniture-") && Boolean(node.text || node.table || node.ul || node.ol || node.svg)),
-    header: (currentPage: number) => currentPage === 1 ? null : ({ columns: [{ id: "report-furniture-brand", text: "GENESIS: JURIS CODEX", style: "headerBrand" }, { id: "report-furniture-case", text: `${draft.caseId} · v${draft.version}`, alignment: "right", style: "headerMeta" }], margin: [44, 22, 44, 0] }),
-    footer: (currentPage: number, pageCount: number) => ({ columns: [{ id: "report-furniture-classification", text: confidentialityLabel, color: palette.gold, bold: true }, { id: "report-furniture-page", text: `${currentPage} / ${pageCount}`, alignment: "right" }], fontSize: 7.5, color: "#66777e", margin: [44, 0, 44, 18] }),
+    header: (currentPage: number) => currentPage === 1 ? null : ({ columns: [{ id: `report-furniture-brand-${currentPage}`, text: "GENESIS: JURIS CODEX", style: "headerBrand" }, { id: `report-furniture-case-${currentPage}`, text: `${draft.caseId} · v${draft.version}`, alignment: "right", style: "headerMeta" }], margin: [44, 22, 44, 0] }),
+    footer: (currentPage: number, pageCount: number) => ({ columns: [{ id: `report-furniture-classification-${currentPage}`, text: confidentialityLabel, color: palette.gold, bold: true }, { id: `report-furniture-page-${currentPage}`, text: `${currentPage} / ${pageCount}`, alignment: "right" }], fontSize: 7.5, color: "#66777e", margin: [44, 0, 44, 18] }),
     styles: {
       brand: { fontSize: 10, bold: true, color: palette.cyan, characterSpacing: 1.8, margin: [0, 8, 0, 30] },
       kicker: { fontSize: 8, bold: true, color: palette.gold, characterSpacing: 1.3, margin: [0, 0, 0, 10] },
