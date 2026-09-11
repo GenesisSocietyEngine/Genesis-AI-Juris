@@ -327,7 +327,7 @@ test("standalone Studio exposes persistent professional destinations", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   assert.match(appSource, /href="\/account"/);
   assert.match(appSource, /"Account" : "Аккаунт"/);
-  assert.match(appSource, /href="\/matters"/);
+  assert.match(appSource, /workspaceDestination\("\/matters", workspaceLocation\)/);
   assert.match(appSource, /"My cases" : "Мои дела"/);
   assert.match(appSource, /"Templates" : "Шаблоны"/);
   assert.match(appSource, /sessionStorage\.getItem\(PENDING_CASE_PROMPT_KEY\)/);
@@ -335,11 +335,11 @@ test("standalone Studio exposes persistent professional destinations", () => {
   assert.doesNotMatch(appSource, /ADVISORY · BETA v0\.1\.0/);
 });
 
-test("account navigation exposes My cases, Templates, Studio, and Account", () => {
+test("account uses the shared navigation without losing professional destinations", () => {
   const accountSource = readFileSync(new URL("../app/account/AccountClient.tsx", import.meta.url), "utf8");
-  for (const destination of ["/matters", "/templates", "/studio", "/account"]) assert.match(accountSource, new RegExp(`href=\\"${destination.replace(/[?]/g, "\\?")}\\"`));
-  assert.match(accountSource, />My cases<\/Link>/);
-  assert.match(accountSource, />Templates<\/Link>/);
+  const navigationSource = readFileSync(new URL("../app/WorkspaceNavigation.tsx", import.meta.url), "utf8");
+  assert.match(accountSource, /<WorkspaceNavigation active="\/account"/);
+  for (const destination of ["/matters", "/templates", "/studio", "/canopy", "/organizations", "/account"]) assert.ok(navigationSource.includes('"' + destination + '"'));
 });
 
 function contrastRatio(foreground: string, background: string) {

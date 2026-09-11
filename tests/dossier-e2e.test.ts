@@ -1526,7 +1526,8 @@ test("Scenario D - v61 validation, simulation, anonymous PDF and Studio save-ret
     "genesis-juris:studio-workflow:v1:" + existing.caseId,
   );
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
-  assert.match(appSource, /return_to=.*view=studio&auth_retry=1/u);
+  assert.match(appSource, /returnUrl\.searchParams\.set\("auth_retry", "1"\)/u);
+  assert.match(appSource, /workspaceSignInPath\(returnUrl\.pathname \+ returnUrl\.search \+ returnUrl\.hash\)/u);
   assert.match(appSource, /setDraft\(pending\.draft\)/u);
   assert.match(appSource, /shareDraftRef\.current\(pending\.action, pending\)/u);
 

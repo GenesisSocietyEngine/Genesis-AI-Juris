@@ -255,6 +255,8 @@ test("the rendered client includes required states, endpoints, citations, privac
   const page = source("app/matters/page.tsx");
   const runtimeConstants = source("app/runtime-constants.ts");
   const app = source("app/JurisApp.tsx");
+  const navigation = source("app/WorkspaceNavigation.tsx");
+  const boundary = source("app/organizations/OrganizationBoundary.tsx");
 
   for (const endpoint of [
     "/api/dossiers", "/documents", "/transitions", "/requests", "/proposals",
@@ -314,12 +316,14 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.match(client, /\.split\(\/\[\\s,\]\+\/u\)/);
   assert.match(client, /role="tablist"/);
   assert.match(client, /mobileSectionSelect/);
-  assert.match(client, /href=\{organizationWorkspaceUrl\("\/matters"\)\} aria-current="page"/);
+  assert.match(boundary, /<WorkspaceNavigation active=/);
+  assert.match(navigation, /\["\/matters", "My cases", "Мои дела"\]/);
+  assert.match(navigation, /aria-current=\{active === path \? "page" : undefined\}/);
   assert.match(client, /matter\.documentCount/);
   assert.match(client, /<details className=\{styles\.advancedFilters\}>/);
   assert.match(client, /view === "developer" \? ` · REVISION/);
   assert.doesNotMatch(client, /loaded authorised matter/);
-  assert.match(client, /Product \{PRODUCT_RELEASE\}/);
+  assert.doesNotMatch(client, /aria-label="Product navigation"/);
   assert.match(runtimeConstants, /PRODUCT_RELEASE = "v62"/);
   assert.match(app, /className="catalogue-filter-more"/);
   assert.match(app, /className="case-trust-details"/);
@@ -348,8 +352,8 @@ test("organization-gated pages render a safe sign-in state before client hydrati
     assert.match(page, /await getChatGPTUser\(\)/);
     assert.match(page, /signedIn=\{Boolean\(identity\)\}/);
   }
-  assert.match(organizationsPage, /chatGPTSignInPath\("\/organizations"\)/);
-  assert.match(mattersPage, /chatGPTSignInPath\("\/matters"\)/);
+  assert.match(organizationsPage, /chatGPTSignInPath\(workspacePagePath\("\/organizations", await searchParams\)\)/);
+  assert.match(mattersPage, /chatGPTSignInPath\(workspacePagePath\("\/matters", await searchParams\)\)/);
 
   for (const client of [organizationsClient, organizationBoundary]) {
     assert.match(client, /if \(!signedIn\) return;/);

@@ -12,6 +12,9 @@ import { deriveRunLedger, type RunLedger } from "./run-ledger";
 import type { CanonicalRuntimeState } from "./canonical-runtime";
 import { initialMetrics, PRODUCT_RELEASE } from "./runtime-constants";
 import { LatestRequestGate } from "./latest-request";
+import { useInterfaceLocale, useWorkspaceLocation } from "./use-interface-locale";
+import { workspaceSignInPath, workspaceDestination } from "./workspace-navigation";
+import { createStudioAuthContinuation, readStudioAuthContinuation, STUDIO_AUTH_CONTINUATION_KEY } from "./studio-auth-continuation";
 import { deviceDraftEnvelope, LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, mayPersistReportReceiptOnDevice, mayPersistStudioDraftOnDevice, studioDeviceDraftKey, studioDeviceScope, unwrapDeviceDraft } from "./studio-device-storage";
 import { addStudioLink, appendStudioHistory, applyStudioPromptIteration, deleteStudioLink, describeStudioPromptOperation, nextStudioLinkId, nextStudioNodeId, nextStudioNodePosition, planStudioPromptIteration, relinkStudioLink, type StudioPromptPlan } from "./studio-editing";
 import { applyValidatedAIStudioPlan, studioAIBaseFingerprint, toStudioAIContext } from "./studio-ai-plan";
@@ -526,8 +529,9 @@ function blankStudioDraft(updatedAt = new Date().toISOString()): StudioDraft {
 const initialBlankDraft = blankStudioDraft(new Date(0).toISOString());
 
 export default function JurisApp({ studioOnly = false }: JurisAppProps) {
-  const [locale, setLocale] = useState<Locale>("en");
+  const [locale, setLocale] = useInterfaceLocale();
   const [theme, setTheme] = useState<Theme>("office");
+  const workspaceLocation = useWorkspaceLocation();
   const [view, setView] = useState<View>(studioOnly ? "studio" : "library");
   const [featuredId, setFeaturedId] = useState(fallbackCatalogueRecords[2].id);
   const [catalogueRecords, setCatalogueRecords] = useState<PublishedCaseSummary[]>(() => bundledCatalogueRecords());
@@ -626,6 +630,25 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
 
   useEffect(() => {
     const url = new URL(window.location.href);
+    if (url.searchParams.get("example") !== "canopy" || url.searchParams.has("auth_continue")) return;
+    let cancelled = false;
+    void import("./canopy-fixture").then(({ buildCanopyPackage }) => {
+      if (cancelled || studioChangedBeforeRestoreRef.current) return;
+      const exact = buildCanopyPackage("base").draft;
+      studioChangedBeforeRestoreRef.current = true;
+      draftRef.current = exact;
+      setDraftState(exact);
+      setSelectedNodeId(exact.nodes[0]?.id ?? null);
+      url.searchParams.delete("example");
+      url.searchParams.set("studio_step", "case_map");
+      window.history.replaceState(window.history.state, "", url);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }).catch(() => { if (!cancelled) setSessionNotice("The Canopy example could not be opened. Refresh and retry. / Не удалось открыть пример Canopy. Обновите страницу."); });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
     if (url.searchParams.get("import") !== "markdown") return;
     const value = window.sessionStorage.getItem(PENDING_CASE_PROMPT_KEY);
     window.sessionStorage.removeItem(PENDING_CASE_PROMPT_KEY);
@@ -636,6 +659,34 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
       return () => window.clearTimeout(update);
     }
   }, []);
+
+  useEffect(() => {
+    if (studioAIEntitlement === "loading") return;
+    const timer = window.setTimeout(() => {
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get("auth_continue");
+    if (!id) return;
+    // Resolve identity first, then consume the same-tab continuation once.
+    let pending: ReturnType<typeof readStudioAuthContinuation> = null;
+    try {
+      pending = readStudioAuthContinuation(window.sessionStorage.getItem(STUDIO_AUTH_CONTINUATION_KEY), id, studioStorageScope);
+      window.sessionStorage.removeItem(STUDIO_AUTH_CONTINUATION_KEY);
+    } catch { /* Storage-denied browsers keep the safe blank editor. */ }
+    url.searchParams.delete("auth_continue");
+    window.history.replaceState(window.history.state, "", url);
+    if (!pending) {
+      setSessionNotice(locale === "en" ? "The sign-in draft expired or belongs to another account. Reopen your saved case or import the file again." : "Черновик для входа истёк или принадлежит другому аккаунту. Откройте сохранённый кейс или повторите импорт.");
+      return;
+    }
+    studioChangedBeforeRestoreRef.current = true;
+    draftRef.current = pending.draft;
+    setDraftState(pending.draft);
+    setPrompt(pending.prompt);
+    setSelectedNodeId(pending.selectedNodeId);
+    setSessionNotice(locale === "en" ? "Your prompt and case are restored. Review the next action before continuing." : "Промпт и кейс восстановлены. Проверьте следующий шаг перед продолжением.");
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [studioAIEntitlement, studioStorageScope, locale]);
 
   useEffect(() => {
     if (!studioStorageScope) return;
@@ -1575,7 +1626,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
     link.click(); URL.revokeObjectURL(url);
   }
   function importDraft(file: File) {
-    if (file.size > 1_000_000) { window.alert(locale === "en" ? "Case files are limited to 1 MB." : "Размер файла кейса ограничен 1 МБ."); return; }
+    if (file.size > 1_000_000) { setSessionNotice(locale === "en" ? "The case file exceeds 1 MB. Export a smaller Studio JSON file, or shorten node details before retrying. Your current case is unchanged." : "Файл больше 1 МБ. Экспортируйте меньший JSON Studio или сократите описания узлов. Текущий кейс сохранён без изменений."); return; }
     const reader = new FileReader(); reader.onload = async () => {
       try {
         const parsed: unknown = JSON.parse(String(reader.result));
@@ -1627,8 +1678,10 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
         setSelectedNodeId(restored.nodes[0]?.id ?? null);
         navigate("studio");
         showSessionNotice(importedCanDuplicate ? (locale === "en" ? "Custom case loaded in the visual editor" : "Custom-кейс открыт в визуальном редакторе") : (locale === "en" ? "Protected case seal verified; opened for inspection only" : "Печать защищённого кейса проверена; открыт режим просмотра"));
-      } catch { window.alert(locale === "en" ? "This file is not a valid GENESIS: JURIS case draft." : "Файл не является корректным черновиком GENESIS: JURIS."); }
-    }; reader.readAsText(file);
+      } catch { setSessionNotice(locale === "en" ? "The file could not be imported. Use a Studio draft JSON or an unchanged GENESIS custom-case export. For a .md prompt, choose More actions → Import case prompt (.md). Protected exports require sign-in and access to the original case. Your current case is unchanged." : "Не удалось импортировать файл. Используйте JSON-черновик Studio или неизменённый экспорт custom-кейса GENESIS. Для .md выберите Другие действия → Импорт промпта кейса (.md). Защищённый экспорт требует входа и доступа к исходному кейсу. Текущий кейс не изменён."); }
+    };
+    reader.onerror = () => setSessionNotice(locale === "en" ? "The file could not be read. Download it again, then retry the import." : "Файл не читается. Скачайте его заново и повторите импорт.");
+    reader.readAsText(file);
   }
   async function openWorkspaceCustomCase(customCaseId: number) {
     const response = await fetch(`/api/custom-cases?id=${customCaseId}`);
@@ -1838,9 +1891,9 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
     <div className={`app-shell theme-${theme}${studioOnly ? " studio-only-shell studio-host-falcon" : ""}`}>
       <div className="atmosphere" aria-hidden="true"><span /><span /><span /></div>
       <header className="topbar">
-        {studioOnly ? <a className="brand falcon-studio-brand" href="https://www.falcon-merlin.com/" target="_top" aria-label={locale === "en" ? "Falcon-Merlin home" : "Главная Falcon-Merlin"}>
-          <span className="falcon-monogram" aria-hidden="true">FM</span>
-          <span><b>FALCON-MERLIN</b><small><strong>CASE STUDIO</strong> · {PRODUCT_RELEASE}</small></span>
+        {studioOnly ? <a className="brand falcon-studio-brand" href={workspaceDestination("/studio", workspaceLocation)} aria-label={locale === "en" ? "GENESIS: JURIS Studio" : "Студия GENESIS: JURIS"}>
+          <span className="falcon-monogram" aria-hidden="true">G</span>
+          <span><b>GENESIS: JURIS</b><small><strong>CASE STUDIO</strong> · {PRODUCT_RELEASE}</small></span>
         </a> : <button className="brand" onClick={() => navigate("library")} aria-label={locale === "en" ? "GENESIS: JURIS CODEX — Templates" : "GENESIS: JURIS CODEX — Шаблоны"}>
           {/* The SVG is deliberately served directly; it is a tiny UI mark and does not need responsive image optimization. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1868,14 +1921,15 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
           />
           {!studioOnly && <button className="utility-button" onClick={() => playedCaseImportRef.current?.click()} aria-label={text.importPlay} title={text.importPlay}><Icon name="upload" /><span>{text.importPlay}</span></button>}
           {!studioOnly && activeScenario && <button className="utility-button" onClick={exportPlayedCase} aria-label={text.exportPlay} title={text.exportPlay}><Icon name="download" /><span>{text.exportPlay}</span></button>}
-          <Link className="utility-button" href="/matters"><Icon name="file"/><span>{locale === "en" ? "My cases" : "Мои дела"}</span></Link>
-          {studioOnly && <Link className="utility-button" href="/?view=library"><Icon name="library"/><span>{locale === "en" ? "Templates" : "Шаблоны"}</span></Link>}
-          {studioOnly && <Link className="utility-button" href="/canopy"><span>Canopy</span></Link>}
-          {studioOnly && <Link className="utility-button" href="/?view=community"><span>{locale === "en" ? "Workspace" : "Рабочее пространство"}</span></Link>}
-          {studioOnly && <Link className="utility-button" href="/account"><span>{locale === "en" ? "Account" : "Аккаунт"}</span></Link>}
+          <Link className="utility-button" href={workspaceDestination("/matters", workspaceLocation)}><Icon name="file"/><span>{locale === "en" ? "My cases" : "Мои дела"}</span></Link>
+          {studioOnly && <Link className="utility-button" href={workspaceDestination("/templates", workspaceLocation)}><Icon name="library"/><span>{locale === "en" ? "Templates" : "Шаблоны"}</span></Link>}
+          {studioOnly && <Link className="utility-button" href={workspaceDestination("/canopy", workspaceLocation)}><span>Canopy</span></Link>}
+          {studioOnly && <Link className="utility-button" href={workspaceDestination("/?view=community", workspaceLocation)}><span>{locale === "en" ? "Workspace" : "Рабочее пространство"}</span></Link>}
+          {studioOnly && <Link className="utility-button" href={workspaceDestination("/organizations", workspaceLocation)}><span>{locale === "en" ? "Organizations" : "Организации"}</span></Link>}
+          {studioOnly && <Link className="utility-button" href={workspaceDestination("/account", workspaceLocation)}><span>{locale === "en" ? "Account" : "Аккаунт"}</span></Link>}
           {studioOnly && <a className="utility-button studio-demo-link" href="/help/studio-demo" target="_blank" rel="noreferrer" aria-label={locale === "en" ? "Open the three-minute Studio demo" : "Открыть трёхминутное демо Studio"}><Icon name="video"/><span>{locale === "en" ? "Demo · 3 min" : "Демо · 3 мин"}</span></a>}
           {studioOnly && <a className="utility-button studio-site-link" href="https://www.falcon-merlin.com/" target="_top" aria-label={locale === "en" ? "Return to the Falcon-Merlin website" : "Вернуться на сайт Falcon-Merlin"}><span aria-hidden="true">←</span><span>{locale === "en" ? "Falcon-Merlin.com" : "На основной сайт"}</span></a>}
-          {studioOnly && <a className="utility-button studio-fullscreen-link" href="/studio" target="_blank" rel="noreferrer"><Icon name="arrow" /><span>{locale === "en" ? "Full screen" : "На весь экран"}</span></a>}
+          {studioOnly && <a className="utility-button studio-fullscreen-link" href={workspaceDestination("/studio", workspaceLocation)} target="_blank" rel="noreferrer"><Icon name="arrow" /><span>{locale === "en" ? "Full screen" : "На весь экран"}</span></a>}
           <button className="utility-button" onClick={() => setLocale(locale === "en" ? "ru" : "en")} aria-label={locale === "en" ? "Switch language" : "Сменить язык"}><Icon name="globe" /><span>{locale.toUpperCase()}</span></button>
           <button className="utility-button" onClick={() => setTheme(theme === "office" ? "after-hours" : "office")} aria-label={locale === "en" ? "Switch atmosphere" : "Сменить тему оформления"}><Icon name={theme === "office" ? "sun" : "moon"} /><span>{theme === "office" ? text.office : text.night}</span></button>
         </div>
@@ -2576,8 +2630,25 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     };
     window.sessionStorage.setItem(PENDING_WORKSPACE_SAVE_KEY, JSON.stringify(pending));
     // SIWC must start as a top-level navigation; a client router or fetch is not valid here.
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.assign(`/signin-with-chatgpt?return_to=${encodeURIComponent("/?view=studio&auth_retry=1")}`);
+    const returnUrl = new URL(window.location.href);
+    returnUrl.searchParams.set("auth_retry", "1");
+    returnUrl.searchParams.set("lang", locale);
+    window.location.assign(workspaceSignInPath(returnUrl.pathname + returnUrl.search + returnUrl.hash));
+  }
+  function openStudioAccess(profileOnly = false) {
+    try {
+      const pending = createStudioAuthContinuation({ draft, prompt, selectedNodeId, scope: reportReceiptStorageScope, customCaseId, isPrivate, canDuplicate });
+      window.sessionStorage.setItem(STUDIO_AUTH_CONTINUATION_KEY, JSON.stringify(pending));
+      const url = new URL(window.location.href);
+      url.searchParams.set("auth_continue", pending.id);
+      url.searchParams.set("lang", locale);
+      // Back/cancel and successful sign-in both return to the exact task.
+      window.history.replaceState(window.history.state, "", url);
+      const destination = "/account?lang=" + locale + "&return_to=" + encodeURIComponent(url.pathname + url.search + url.hash);
+      window.location.assign(profileOnly ? destination : workspaceSignInPath(destination));
+    } catch {
+      setCaseReportStatus(locale === "en" ? "Your case could not be retained for sign-in. Save or export it first, then sign in from Account. Your work is still open here." : "Не удалось сохранить кейс на время входа. Сначала сохраните или экспортируйте его, затем войдите через Аккаунт. Работа остаётся открыта здесь.");
+    }
   }
   const aiNodeTitles = useMemo(() => {
     const titles = new Map(draft.nodes.map((node) => [node.id, node.title]));
@@ -2848,7 +2919,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
         signal: controller.signal,
       });
       const payload: unknown = await response.json().catch(() => null);
-      if (response.status === 401 || (response.status === 403 && isRecord(payload) && payload.code === "profile_required")) throw new Error(locale === "en" ? "AI access requires a signed-in, registered professional profile. Use the access action above without closing this tab." : "Для AI нужен вход и зарегистрированный профессиональный профиль. Используйте кнопку доступа выше, не закрывая эту вкладку.");
+      if (response.status === 401 || (response.status === 403 && isRecord(payload) && payload.code === "profile_required")) throw new Error(locale === "en" ? "AI access requires sign-in and a confirmed profile. Use the access action to return to this task afterwards." : "Для AI нужен вход и подтверждённый профиль. Кнопка доступа вернёт вас к этой задаче.");
       if (!isRecord(payload)) throw new Error(locale === "en" ? "AI planning returned an unreadable response." : "AI-планировщик вернул нечитаемый ответ.");
       if (!response.ok) {
         const { localizedStudioAIError } = await import("./studio-ai-client-error");
@@ -3299,9 +3370,9 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     return <main className={`studio-view studio-${displayMode}-view studio-guided-step-${guidedStep} ${canDuplicate ? "" : "studio-inspection-view"}`} data-readonly={!canDuplicate || undefined}>
       <section className="studio-hero page-width">
         <div>
-          <div className="eyebrow"><span className="live-dot"/>{standalone ? (locale === "en" ? "FALCON-MERLIN · PROFESSIONAL CASE STUDIO" : "FALCON-MERLIN · ПРОФЕССИОНАЛЬНАЯ СТУДИЯ КЕЙСОВ") : displayMode === "user" ? (locale === "en" ? "CASE STUDIO · GUIDED AUTHORING" : "СТУДИЯ КЕЙСОВ · ПОШАГОВОЕ СОЗДАНИЕ") : "AUTHORING LAB · VISUAL + PROMPT"}</div>
-          <h1>{standalone ? (locale === "en" ? "Model the advice before the client acts" : "Смоделируйте консультацию до решения клиента") : displayMode === "user" ? (locale === "en" ? "Build your case" : "Создайте свой кейс") : text.author}</h1>
-          <p>{standalone ? (locale === "en" ? "Turn a tax or legal matter into a reviewable case, recalculate alternative scenarios as assumptions change, and preserve the methodology in one canonical file." : "Превратите налоговую или юридическую задачу в проверяемый кейс, пересчитывайте альтернативные сценарии при изменении параметров и сохраняйте методологию в одном каноническом файле.") : displayMode === "user" ? (locale === "en" ? "Describe the situation, review the proposed scheme, adjust it visually and test the result." : "Опишите ситуацию, проверьте предложенную схему, скорректируйте её визуально и протестируйте результат.") : text.authorLead}</p>
+          <div className="eyebrow"><span className="live-dot"/>{standalone ? (locale === "en" ? "GENESIS: JURIS · CASE STUDIO" : "GENESIS: JURIS · СТУДИЯ КЕЙСОВ") : displayMode === "user" ? (locale === "en" ? "CASE STUDIO · GUIDED AUTHORING" : "СТУДИЯ КЕЙСОВ · ПОШАГОВОЕ СОЗДАНИЕ") : "AUTHORING LAB · VISUAL + PROMPT"}</div>
+          <h1>{standalone ? (locale === "en" ? "Turn a task into a decision" : "От задачи — к решению") : displayMode === "user" ? (locale === "en" ? "Build your case" : "Создайте свой кейс") : text.author}</h1>
+          <p>{standalone ? (locale === "en" ? "Open an example, load a case or describe your task. Compare options and prepare an analytical report." : "Откройте пример, загрузите кейс или опишите задачу. Сравните варианты и подготовьте аналитический отчёт.") : displayMode === "user" ? (locale === "en" ? "Describe the situation, review the proposed scheme, adjust it visually and test the result." : "Опишите ситуацию, проверьте предложенную схему, скорректируйте её визуально и протестируйте результат.") : text.authorLead}</p>
           <div className="studio-display-mode" role="group" aria-label={locale === "en" ? "Studio interface mode" : "Режим интерфейса Студии"}>
             <button type="button" className={displayMode === "user" ? "active" : ""} aria-pressed={displayMode === "user"} onClick={() => changeDisplayMode("user")}><Icon name="person"/>{locale === "en" ? "Guided · User view" : "Пошагово · Вид пользователя"}</button>
             <button type="button" className={displayMode === "developer" ? "active" : ""} aria-pressed={displayMode === "developer"} onClick={() => changeDisplayMode("developer")}><Icon name="studio"/>{locale === "en" ? "Expert · Developer view" : "Экспертно · Вид разработчика"}</button>
@@ -3310,7 +3381,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
         <div className="studio-actions">
           <button className="secondary-cta" onClick={startBlankDraft}><Icon name="reset"/>{text.newDraft}</button>
           <button className="secondary-cta" onClick={() => shareDraft("save")} disabled={!canDuplicate || !draftWithinEnvelope || !derivationsSettled || workspaceState === "saving"}><Icon name="save"/>{workspaceState === "saving" ? (locale === "en" ? "Saving…" : "Сохранение…") : (locale === "en" ? "Save to workspace" : "Сохранить в workspace")}</button>
-          {displayMode === "developer" && <button className="secondary-cta report-cta" disabled={!canDuplicate} onClick={() => void openCaseReport()} title={locale === "en" ? "Open PDF options" : "Параметры PDF"}><Icon name="download"/>{locale === "en" ? "PDF report" : "PDF-отчёт"}</button>}
+          <button className="secondary-cta report-cta" disabled={!canDuplicate || !draft.title.trim() || !draft.nodes.length} onClick={() => void openCaseReport()} title={locale === "en" ? "Preview a preliminary report; independent approval is separate" : "Предпросмотр предварительного отчёта; независимое утверждение выполняется отдельно"}><Icon name="download"/>{locale === "en" ? "Create analytical report" : "Сформировать аналитический отчёт"}</button>
           {displayMode === "developer" && <button className="primary-cta" onClick={() => shareDraft("submit")} disabled={Boolean(submitBlocker) || workspaceState === "saving"} title={submitBlocker || undefined} aria-describedby={submitBlocker ? "studio-submit-blocker" : undefined}><Icon name="check"/>{locale === "en" ? "Submit for review" : "Отправить на рецензию"}</button>}
           {displayMode === "developer" ? portableStudioActions : <details ref={moreActionsRef} className="studio-more-actions"><summary><Icon name="plus"/>{locale === "en" ? "More actions" : "Другие действия"}</summary>{portableStudioActions}</details>}
           <input ref={importRef} className="visually-hidden" type="file" accept=".json,application/json" onChange={(event) => { const file=event.target.files?.[0]; if(file){ clearTransientEditorSelection(); importDraft(file); } event.target.value=""; }}/>
@@ -3324,7 +3395,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     <aside className="confidentiality-notice page-width"><Icon name="alert"/><p>{locale === "en" ? "Confidentiality: do not enter client-identifiable, privileged, personal or secret information. Use synthetic or de-identified facts and public legal sources." : "Конфиденциальность: не вводите сведения, идентифицирующие клиента, адвокатскую тайну, персональные данные или секреты. Используйте синтетические или обезличенные факты и публичные источники права."}</p></aside>
     {(displayMode === "developer" || !draftWithinEnvelope) && <div className={`draft-envelope page-width ${draftWithinEnvelope ? "" : "limit"}`} role={draftWithinEnvelope ? undefined : "alert"}><span>{locale === "en" ? "Studio case envelope" : "Объём кейса Studio"}</span><progress max={STUDIO_DRAFT_SERIALIZED_LIMIT} value={Math.min(draftBytes, STUDIO_DRAFT_SERIALIZED_LIMIT)}/><b>{Math.ceil(draftBytes / 1_000).toLocaleString()} / 900 KB</b>{!draftWithinEnvelope && <em>{locale === "en" ? "Shorten node or relation details before AI, workspace save or submission." : "Сократите описания узлов или связей перед AI-анализом, сохранением или отправкой."}</em>}</div>}
     {displayMode === "user" && <Suspense fallback={null}><StudioGuidedWizard locale={locale} activeStep={guidedStep} readiness={guidedReadiness} caseName={draft.title} saveState={visibleWorkspaceState} validationReady={validationReady} onStepChange={selectGuidedStep} onFocusBrief={() => document.getElementById("studio-case-brief")?.focus()} onStartExample={startExampleDraft} onImport={() => importRef.current?.click()}/></Suspense>}
-    {(displayMode === "developer" || guidedStep === 1) && <Suspense fallback={null}><StudioCaseTypeSelector locale={locale} value={draft.caseType} disabled={!canDuplicate} onChange={changeCaseType}/><StudioCasePlaybook locale={locale} draft={draft} phase="intake"/></Suspense>}
+    {(displayMode === "developer" || guidedStep === 3) && <Suspense fallback={null}><StudioCaseTypeSelector locale={locale} value={draft.caseType} disabled={!canDuplicate} onChange={changeCaseType}/><StudioCasePlaybook locale={locale} draft={draft} phase="intake"/></Suspense>}
     {displayMode === "user" && <section className="studio-user-undo page-width" aria-label={locale === "en" ? "Recent changes" : "Последние изменения"} inert={!canDuplicate}><div><Icon name="file"/><span>{locale === "en" ? `${timeline.cursor} saved change${timeline.cursor === 1 ? "" : "s"} in this session` : `Изменений в этой сессии: ${timeline.cursor}`}</span></div><div><button onClick={undoDraft} disabled={timeline.cursor === 0 || !canDuplicate}><Icon name="arrow"/>{locale === "en" ? "Undo" : "Отменить"}</button><button onClick={redoDraft} disabled={timeline.cursor >= timeline.revisions.length || !canDuplicate}>{locale === "en" ? "Redo" : "Повторить"}<Icon name="arrow"/></button></div></section>}
     {displayMode === "developer" && <section className="studio-history page-width" aria-labelledby="studio-history-title" inert={!canDuplicate}>
       <header>
@@ -3352,9 +3423,9 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
           : aiEntitlement === "ready"
             ? <button className="generate-button" disabled={!prompt.trim() || aiState === "analysing" || !canDuplicate || !draftWithinEnvelope || !derivationsSettled} onClick={() => { if (displayMode === "user") setGuidedStep(2); void analysePromptWithAI(); }}><Icon name="spark" size={24}/><span>{aiState === "analysing" ? (locale === "en" ? "AI is mapping the case…" : "AI строит смысловую схему…") : !derivationsSettled ? (locale === "en" ? "Finishing the latest edit…" : "Завершается последняя правка…") : (locale === "en" ? "Understand with AI" : "Понять и структурировать с AI")}<small>{locale === "en" ? "First create a reviewable proposal; nothing is changed yet" : "Сначала создаётся план для проверки; схема пока не меняется"}</small></span><Icon name="arrow"/></button>
             : aiEntitlement === "anonymous"
-              ? <a className="generate-button" href={standalone ? "/signin-with-chatgpt?return_to=%2Fstudio" : "/signin-with-chatgpt?return_to=%2F%3Fview%3Dstudio"} target="_blank" rel="noreferrer"><Icon name="person" size={24}/><span>{locale === "en" ? "Sign in to use AI" : "Войдите для работы с AI"}<small>{locale === "en" ? "Opens a separate tab so this unsaved prompt and graph remain here" : "Вход откроется отдельно: несохранённые промпт и схема останутся в этой вкладке"}</small></span><Icon name="arrow"/></a>
+              ? <button className="generate-button" onClick={() => openStudioAccess()}><Icon name="person" size={24}/><span>{locale === "en" ? "Sign in to use AI" : "Войдите для работы с AI"}<small>{locale === "en" ? "Return to this prompt and case in the same tab" : "Вернитесь к этому промпту и кейсу в той же вкладке"}</small></span><Icon name="arrow"/></button>
               : aiEntitlement === "profile_required"
-                ? <a className="generate-button" href={standalone ? "/account" : "/?view=community"} target="_blank" rel="noreferrer"><Icon name="person" size={24}/><span>{locale === "en" ? "Complete your profile to use AI" : "Заполните профиль для работы с AI"}<small>{locale === "en" ? "Registration opens separately; return here when the profile is saved" : "Регистрация откроется отдельно; после сохранения профиля вернитесь сюда"}</small></span><Icon name="arrow"/></a>
+                ? <button className="generate-button" onClick={() => openStudioAccess(true)}><Icon name="person" size={24}/><span>{locale === "en" ? "Confirm your profile to use AI" : "Подтвердите профиль для работы с AI"}<small>{locale === "en" ? "Name and role only; then return to your case" : "Только имя и роль — затем возврат к кейсу"}</small></span><Icon name="arrow"/></button>
                 : aiEntitlement === "not_configured"
                   ? <button className="generate-button" disabled><Icon name="spark" size={24}/><span>{locale === "en" ? "AI assistant is awaiting activation" : "AI-ассистент ожидает активации"}<small>{locale === "en" ? "The safe rule-based builder remains available; no data is sent" : "Безопасный локальный конструктор доступен; данные никуда не отправляются"}</small></span><Icon name="arrow"/></button>
                   : <button className="generate-button" disabled><Icon name="spark" size={24}/><span>{aiEntitlement === "loading" ? (locale === "en" ? "Checking AI access…" : "Проверка доступа к AI…") : (locale === "en" ? "AI access status is unavailable" : "Статус AI временно недоступен")}<small>{locale === "en" ? "The local case builder remains available" : "Локальный конструктор кейса остаётся доступен"}</small></span><Icon name="arrow"/></button>}
@@ -3486,7 +3557,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
       <header><div><span>{locale === "en" ? "FINAL STEP · YOUR CASE STAYS EDITABLE" : "ФИНАЛЬНЫЙ ЭТАП · КЕЙС ОСТАЁТСЯ РЕДАКТИРУЕМЫМ"}</span><h2 id="studio-finish-title">{locale === "en" ? "Choose what happens next" : "Выберите следующее действие"}</h2></div><b className={validationReady ? "ready" : "blocked"}>{validationReady ? (locale === "en" ? "READY" : "ГОТОВО") : (locale === "en" ? "REVIEW NEEDED" : "НУЖНА ПРОВЕРКА")}</b></header>
       <div className="studio-finish-options">
         <article><Icon name="save"/><span>01</span><h3>{locale === "en" ? "Keep working later" : "Продолжить позже"}</h3><p>{locale === "en" ? "Save the exact draft and visibility settings to your workspace." : "Сохраните точный черновик и настройки видимости в workspace."}</p><button className="secondary-cta" onClick={() => shareDraft("save")} disabled={!canDuplicate || !draftWithinEnvelope || !derivationsSettled || workspaceState === "saving"}>{locale === "en" ? "Save to workspace" : "Сохранить в workspace"}</button></article>
-        <article><Icon name="download"/><span>02</span><h3>{locale === "en" ? "Create a client report" : "Создать отчёт для клиента"}</h3><p>{locale === "en" ? "Choose the sections and download a PDF from this reviewed state." : "Выберите разделы и скачайте PDF из текущего проверенного состояния."}</p><button className="secondary-cta report-cta" onClick={() => void openCaseReport()} disabled={!canDuplicate || !draft.title.trim() || !draft.nodes.length}>{locale === "en" ? "Open PDF options" : "Открыть параметры PDF"}</button></article>
+        <article><Icon name="download"/><span>02</span><h3>{locale === "en" ? "Create an analytical report" : "Сформировать аналитический отчёт"}</h3><p>{locale === "en" ? "Preview a preliminary PDF from this draft. Independent approval is a separate step in your case." : "Просмотрите предварительный PDF из этого черновика. Независимое утверждение — отдельный шаг в деле."}</p><button className="secondary-cta report-cta" onClick={() => void openCaseReport()} disabled={!canDuplicate || !draft.title.trim() || !draft.nodes.length}>{locale === "en" ? "Open PDF options" : "Открыть параметры PDF"}</button></article>
         <article><Icon name="check"/><span>03</span><h3>{locale === "en" ? "Request expert review" : "Запросить экспертную рецензию"}</h3><p>{locale === "en" ? "Submit only when validation is green and the visibility setting is correct." : "Отправляйте только после зелёной проверки и подтверждения режима видимости."}</p><button className="primary-cta" onClick={() => shareDraft("submit")} disabled={Boolean(submitBlocker) || workspaceState === "saving"} title={submitBlocker || undefined}>{locale === "en" ? "Submit for review" : "Отправить на рецензию"}</button></article>
       </div>
       {submitBlocker && <p className="studio-finish-note"><Icon name="alert"/>{submitBlocker}</p>}
@@ -3682,7 +3753,7 @@ function CommunityView({ locale, cases, openCustomCase, refreshCatalogue, clearD
     if (response.ok) { clearDeviceDraft(); setRegistered(false); setUpdates([]); setSubscriptions([]); setSubmissions([]); setCustomCases([]); setCustomCasesNextCursor(null); setCaseShares({}); setCaseFeedback({}); setFormError(locale === "en" ? "Stored community and device-draft data deleted." : "Данные сообщества и локальный черновик удалены."); }
   }
   if (status === "loading") return <main className="community-view page-width"><div className="community-loading">Loading professional workspace…</div></main>;
-  if (status === "anonymous") return <main className="community-view page-width"><section className="community-hero"><div><span>PRACTITIONER COMMUNITY</span><h1>{locale === "en" ? "Register your professional profile" : "Зарегистрируйте профессиональный профиль"}</h1><p>{locale === "en" ? "Sign in to submit attributed case feedback, follow selected cases and receive updates matched to your jurisdiction, practice area and role." : "Войдите, чтобы отправлять авторизованные отзывы, подписываться на кейсы и получать обновления с учётом юрисдикции, практики и роли."}</p><div className="featured-actions"><a className="primary-cta" href="/signin-with-chatgpt?return_to=%2F">{locale === "en" ? "Sign in with ChatGPT" : "Войти через ChatGPT"}<Icon name="arrow"/></a><a className="secondary-cta" href="/account">{locale === "en" ? "Email & password" : "Email и пароль"}</a></div></div></section></main>;
+  if (status === "anonymous") return <main className="community-view page-width"><section className="community-hero"><div><span>PRACTITIONER COMMUNITY</span><h1>{locale === "en" ? "Register your professional profile" : "Зарегистрируйте профессиональный профиль"}</h1><p>{locale === "en" ? "Sign in to submit attributed case feedback, follow selected cases and receive updates matched to your jurisdiction, practice area and role." : "Войдите, чтобы отправлять авторизованные отзывы, подписываться на кейсы и получать обновления с учётом юрисдикции, практики и роли."}</p><div className="featured-actions"><a className="primary-cta" href={workspaceSignInPath("/?view=community")} target="_top">{locale === "en" ? "Sign in with ChatGPT" : "Войти через ChatGPT"}<Icon name="arrow"/></a><a className="secondary-cta" href="/account">{locale === "en" ? "Email & password" : "Email и пароль"}</a></div></div></section></main>;
   if (!profile) return null;
   return <main className="community-view page-width">
     <section className="community-hero"><div><span>PRACTITIONER COMMUNITY</span><h1>{locale === "en" ? "Professional profile & update centre" : "Профессиональный профиль и центр обновлений"}</h1><p>{locale === "en" ? "Your profile controls attribution, relevant invitations and addressed case releases." : "Профиль определяет авторство, релевантные приглашения и адресные обновления кейсов."}</p></div>{profile.verifiedPractitioner && <b className="verified-badge"><Icon name="check"/>VERIFIED PRACTITIONER</b>}</section>
@@ -3898,6 +3969,8 @@ function AdminDesk({ locale, cases, customCases, reloadCustomCases, openCustomCa
     <Suspense fallback={<section className="operations-dashboard operations-dashboard-loading"><p>{locale === "en" ? "Loading aggregated telemetry…" : "Загрузка агрегированной телеметрии…"}</p></section>}><OperationsDashboard locale={locale}/></Suspense>
     <section className="admin-guidance" aria-labelledby="admin-guide-title">
       <h2 id="admin-guide-title">{locale === "en" ? "Administration guide" : "Как пользоваться администрированием"}</h2>
+      <p>{locale === "en" ? "Licence controls sharing features. Organization membership controls team access. A case role controls actions in that case; none of these grants the other automatically." : "Лицензия определяет функции пересылки. Членство даёт доступ к команде. Роль в деле определяет действия в нём; одно право не выдаёт остальные автоматически."}</p>
+      <p>{locale === "en" ? "An invitation grants only its stated scope and can be revoked. Publishing a case creates a public immutable snapshot; later edits require a new version. A release announcement is a separate message and does not publish the case." : "Приглашение даёт только указанный доступ и может быть отозвано. Публикация кейса создаёт публичную неизменяемую копию; для правок нужна новая версия. Объявление о релизе — отдельное сообщение, которое не публикует кейс."}</p>
       <nav aria-label={locale === "en" ? "Administration sections" : "Разделы администрирования"}>
         <a href="#admin-versions">{locale === "en" ? "Publish a case" : "Публикация кейса"}</a>
         <a href="#admin-announcements">{locale === "en" ? "Announcements and reviews" : "Объявления и рецензии"}</a>

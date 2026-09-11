@@ -546,7 +546,7 @@ export function assertCaseReportGenerationAuthorized(canGenerate: boolean) {
   if (canGenerate !== true) throw new Error("Report generation is unavailable in inspection-only mode.");
 }
 
-export async function downloadCaseReport(draft: StudioDraft, options: CaseReportOptions, authorization: { canGenerate: boolean }) {
+async function renderCaseReport(draft: StudioDraft, options: CaseReportOptions, authorization: { canGenerate: boolean }) {
   assertCaseReportGenerationAuthorized(authorization?.canGenerate);
   const [{ default: pdfMake }, { default: pdfFonts }] = await Promise.all([
     import("pdfmake/build/pdfmake.js"), import("pdfmake/build/vfs_fonts.js"),
@@ -554,6 +554,17 @@ export async function downloadCaseReport(draft: StudioDraft, options: CaseReport
   (pdfMake as unknown as { addVirtualFileSystem: (fonts: unknown) => void }).addVirtualFileSystem(pdfFonts);
   const { definition, reportModel, layoutModel, presentationFingerprint } = buildCaseReportArtifacts(draft, options);
   const blob = await new Promise<Blob>((resolve) => pdfMake.createPdf(definition).getBlob(resolve));
+  return { blob, reportModel, layoutModel, presentationFingerprint };
+}
+
+/** The preview uses the export renderer and its authorization/readiness checks.
+ * Viewing a preview does not record a download receipt or reviewer approval. */
+export async function createCaseReportPreview(draft: StudioDraft, options: CaseReportOptions, authorization: { canGenerate: boolean }) {
+  return (await renderCaseReport(draft, options, authorization)).blob;
+}
+
+export async function downloadCaseReport(draft: StudioDraft, options: CaseReportOptions, authorization: { canGenerate: boolean }) {
+  const { blob, reportModel, layoutModel, presentationFingerprint } = await renderCaseReport(draft, options, authorization);
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

@@ -1,0 +1,53 @@
+const ORIGIN = "https://workspace.invalid";
+const RESERVED = new Set(["/signin-with-chatgpt", "/signout-with-chatgpt", "/callback"]);
+const PAGES = new Set(["/", "/studio", "/templates", "/matters", "/canopy", "/organizations", "/account"]);
+
+/** A return destination is a same-origin browser page, never an auth callback or API. */
+export function safeWorkspaceReturn(value: unknown, fallback = "/studio"): string {
+  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//") || /[\\\r\n\t]/.test(value)) return fallback;
+  try {
+    const url = new URL(value, ORIGIN);
+    if (url.origin !== ORIGIN || RESERVED.has(url.pathname) || !PAGES.has(url.pathname)) return fallback;
+    return url.pathname + url.search + url.hash;
+  } catch { return fallback; }
+}
+
+export function workspaceSignInPath(returnTo: string) {
+  return "/signin-with-chatgpt?return_to=" + encodeURIComponent(safeWorkspaceReturn(returnTo));
+}
+
+export function workspacePagePath(path: string, params: Record<string, string | string[] | undefined>) {
+  const query = new URLSearchParams();
+  for (const key of ["organization", "dossier", "scenario", "run", "lang", "view", "studio_step", "return_to"]) {
+    const value = params[key];
+    if (typeof value === "string" && value.length <= 2048) query.set(key, key === "return_to" ? safeWorkspaceReturn(value) : value);
+  }
+  return path + (query.size ? "?" + query.toString() : "");
+}
+
+/** Preserve only navigation hints. Every destination still authorizes on the server. */
+export function workspaceDestination(path: string, current: string) {
+  const target = new URL(path, ORIGIN);
+  if (target.origin !== ORIGIN || !PAGES.has(target.pathname)) return path;
+  const source = new URL(safeWorkspaceReturn(current), ORIGIN);
+  const returnPath = safeWorkspaceReturn(source.searchParams.get("return_to"), "");
+  const context = returnPath ? new URL(returnPath, ORIGIN) : source;
+  for (const key of ["organization", "lang"]) {
+    const value = source.searchParams.get(key) ?? context.searchParams.get(key);
+    if (value) target.searchParams.set(key, value);
+  }
+  if (["/matters", "/canopy"].includes(target.pathname) && ["/matters", "/canopy"].includes(context.pathname) && context.searchParams.has("dossier")) {
+    target.searchParams.set("dossier", context.searchParams.get("dossier")!);
+  }
+  if (target.pathname === "/canopy" && context.pathname === "/canopy") {
+    for (const key of ["scenario", "run"]) {
+      const value = context.searchParams.get(key);
+      if (value) target.searchParams.set(key, value);
+    }
+  }
+  if (["/studio", "/templates", "/account"].includes(target.pathname)) {
+    const returnTo = ["/matters", "/canopy"].includes(source.pathname) ? source.pathname + source.search + source.hash : returnPath;
+    if (returnTo && returnTo !== target.pathname) target.searchParams.set("return_to", returnTo);
+  }
+  return target.pathname + target.search + target.hash;
+}

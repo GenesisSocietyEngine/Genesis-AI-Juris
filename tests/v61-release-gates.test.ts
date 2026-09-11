@@ -8,8 +8,8 @@ test("Studio retries the exact save after authorization returns to the original 
   assert.match(source, /PENDING_WORKSPACE_SAVE_KEY/);
   assert.match(source, /parsePendingWorkspaceSave/);
   assert.match(source, /window\.sessionStorage\.setItem\(PENDING_WORKSPACE_SAVE_KEY/);
-  assert.match(source, /window\.location\.assign\(`\/signin-with-chatgpt/);
-  assert.match(source, /auth_retry=1/);
+  assert.match(source, /window\.location\.assign\(workspaceSignInPath\(/);
+  assert.match(source, /returnUrl\.searchParams\.set\("auth_retry", "1"\)/);
   assert.match(source, /shareDraftRef\.current\(pending\.action, pending\)/);
   assert.doesNotMatch(source, /window\.open\("\/signin-with-chatgpt/);
   assert.match(source, /Continue sign-in/);

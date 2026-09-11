@@ -255,13 +255,13 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /CashFlowScenarioEditor/, "a selected cash-flow node exposes editable model controls");
   assert.match(cashFlowEditorSource, /CASH-FLOW SCENARIO/);
   assert.match(cashFlowEditorSource, /setProbability/, "cash-flow scenario weights are directly editable");
-  assert.match(appSource, /PDF report/);
+  assert.match(appSource, /Create analytical report/);
   assert.match(appSource, /await import\("\.\/CaseReportDialog"\)/, "report UI is preloaded on demand before the editor is covered");
   assert.match(appSource, /setCaseReportOpen\(true\)/);
   assert.match(appSource, /PDF unavailable/, "a stale report chunk leaves Studio visible with a recoverable error");
   const reportButtonStart = appSource.indexOf('className="secondary-cta report-cta"');
   const reportButtonSource = appSource.slice(reportButtonStart, appSource.indexOf("</button>", reportButtonStart) + "</button>".length);
-  assert.match(reportButtonSource, /disabled=\{!canDuplicate\}/, "inspection-only cases cannot open report export");
+  assert.match(reportButtonSource, /disabled=\{!canDuplicate \|\| !draft\.title\.trim\(\) \|\| !draft\.nodes\.length\}/, "inspection-only and empty cases cannot open report export");
   assert.doesNotMatch(reportButtonSource, /disabled=\{[^}]*derivationsSettled/, "authorized PDF options remain clickable while background derivations settle");
   assert.match(appSource, /Report export is unavailable in inspection-only mode/);
   assert.match(reportDialogSource, /disabled=\{!canGenerateReport \|\| busy/);

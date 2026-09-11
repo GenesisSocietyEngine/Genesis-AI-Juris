@@ -49,9 +49,9 @@ test("guided Studio exposes six bilingual, keyboard-accessible stages", () => {
   assert.match(wizardSource, /aria-current=\{active \? "step"/);
   assert.match(wizardSource, /<progress max=\{6\}/);
   assert.match(wizardSource, /Complete the task below to continue/);
-  assert.match(wizardSource, /Describe my own case/);
-  assert.match(wizardSource, /Try the guided example/);
-  assert.match(wizardSource, /Import an existing case/);
+  assert.match(wizardSource, /Describe a task/);
+  assert.match(wizardSource, /Open an example/);
+  assert.match(wizardSource, /Load a case/);
 });
 
 test("guided stages progressively disclose the existing canonical editor", () => {

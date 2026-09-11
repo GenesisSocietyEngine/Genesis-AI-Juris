@@ -1,3 +1,4 @@
+import { workspacePagePath } from "../workspace-navigation";
 import type { Metadata } from "next";
 import MattersClient from "./MattersClient";
 import OrganizationBoundary from "../organizations/OrganizationBoundary";
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function MattersPage() {
+export default async function MattersPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const identity = await getChatGPTUser();
-  return <OrganizationBoundary signedIn={Boolean(identity)} signInUrl={chatGPTSignInPath("/matters")}><MattersClient /></OrganizationBoundary>;
+  return <OrganizationBoundary signedIn={Boolean(identity)} signInUrl={chatGPTSignInPath(workspacePagePath("/matters", await searchParams))}><MattersClient /></OrganizationBoundary>;
 }

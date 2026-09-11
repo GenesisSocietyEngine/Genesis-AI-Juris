@@ -319,7 +319,7 @@ test("profile deletion clears local auth data and all identity responses are no-
   assert.match(ui, /ADMIN VERIFIED · CHATGPT ALLOWLIST/);
   assert.match(ui, /LOCAL SESSION · ADMIN RIGHTS DISABLED/);
   assert.match(ui, /15-minute, single-use link/);
-  assert.match(ui, /offline recovery code/);
+  assert.match(ui, /Offline recovery code/i);
   assert.match(ui, /trusted ChatGPT identity/);
   assert.match(ui, /never grants platform-administrator rights/);
   assert.match(ui, /localStorage\.removeItem/);

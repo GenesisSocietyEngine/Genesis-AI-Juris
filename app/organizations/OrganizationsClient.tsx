@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import WorkspaceNavigation from "../WorkspaceNavigation";
+import { useInterfaceLocale } from "../use-interface-locale";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import type { ClientOrganization } from "../organization-client";
-import { PRODUCT_RELEASE } from "../runtime-constants";
 import styles from "./organizations.module.css";
 
 type Member = { actorId: string; name: string; role: string; status: string; revision: number };
@@ -13,7 +14,7 @@ type Workspace = { organizations: ClientOrganization[]; selected: ClientOrganiza
   members: Member[]; requests: LifecycleRequest[]; events: Array<{ id: string; action: string; occurredAt: string }> };
 
 export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn: boolean; signInUrl: string }) {
-  const [locale, setLocale] = useState("en");
+  const [locale] = useInterfaceLocale();
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [issue, setIssue] = useState(signedIn ? "" : "Sign in to manage organizations. / Войдите для управления организациями.");
   const [busy, setBusy] = useState(false);
@@ -57,12 +58,7 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
   }
   const roleLabel = (role: string) => ({ org_owner: t("Organization owner", "Владелец организации"), org_admin: t("Administrator", "Администратор"),
     member: t("Member", "Участник"), auditor: t("Auditor", "Аудитор") }[role] ?? role);
-  return <main className={styles.page} lang={locale}>
-    <nav className={styles.navigation} aria-label={t("Product navigation", "Навигация")}>
-      <Link href="/matters">GENESIS: JURIS <small>{PRODUCT_RELEASE}</small></Link>
-      <Link href="/matters">{t("My cases", "Мои дела")}</Link><Link href="/account">{t("Account", "Аккаунт")}</Link>
-      <label className={styles.language}>{t("Language", "Язык")} <select value={locale} onChange={(e) => setLocale(e.target.value)}><option value="en">English</option><option value="ru">Русский</option></select></label>
-    </nav>
+  return <main className={styles.page} lang={locale}><WorkspaceNavigation active="/organizations"/>
     <h1>{t("Organizations", "Организации")}</h1>
     <p>{t("Choose the team you are working with. Access to each case is assigned separately.", "Выберите команду для работы. Доступ к каждому делу назначается отдельно.")}</p>
     <p className={styles.pilot}>{t("Pilot workspace · synthetic or de-identified files only", "Пилотная версия · только синтетические или обезличенные файлы")}</p>

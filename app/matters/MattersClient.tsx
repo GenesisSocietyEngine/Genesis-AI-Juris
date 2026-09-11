@@ -1,11 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { PRODUCT_RELEASE } from "../runtime-constants";
 import { CANOPY_DISCLOSURE, CANOPY_TITLE } from "../canopy-fixture";
 import { scopedOrganizationHeaders, organizationScopedUrl, organizationWorkspaceUrl } from "../organization-client";
 import styles from "./matters.module.css";
@@ -538,19 +536,6 @@ export default function MattersClient() {
 
   return <main className={styles.shell}>
     <a className={styles.skipLink} href="#matter-workspace">Skip to matter workspace</a>
-    <nav className={styles.topbar} aria-label="Product navigation">
-      <Link href="/" className={styles.brand}>
-        <Image src="/brand/genesis-juris-codex-mark.svg" width={38} height={38} alt="" priority/>
-        <span><b>GENESIS: JURIS</b><small>Product {PRODUCT_RELEASE}</small></span>
-      </Link>
-      <div className={styles.topLinks}>
-        <Link href={organizationWorkspaceUrl("/matters")} aria-current="page">My cases</Link>
-        <Link href="/templates">Templates</Link>
-        <Link href="/studio">Decision Studio</Link>
-        <Link href="/account">Account</Link>
-      </div>
-    </nav>
-
     <section className={styles.pilotNotice} aria-label="Pilot privacy limitation">
       <strong>Pilot workspace · synthetic or de-identified files only</strong>
       <details>

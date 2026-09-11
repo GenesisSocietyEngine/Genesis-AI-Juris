@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { StudioDraft } from "./types";
 import { caseReportReceiptBinding, type CaseReportOptions } from "./case-report";
 import { caseTypePlaybook, primaryCaseOutput } from "./case-type-playbooks";
@@ -52,6 +52,8 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
   const [includeTechnicalIds, setIncludeTechnicalIds] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [previewDocument, setPreviewDocument] = useState<{ url: string; options: CaseReportOptions; draft: StudioDraft } | null>(null);
+  const dialogRef = useRef<HTMLElement | null>(null);
   const t = (en: string, ru: string) => locale === "en" ? en : ru;
   const activeReportOptions = useMemo<CaseReportOptions>(() => ({
     language: locale,
@@ -101,10 +103,38 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
   }), [audience, currentFingerprint, currentPublicationFingerprint, draft, preparedBy, preparedFor, profileId, redactedNodeIds, reviewerApproved, reviewerName, status, workspaceFingerprint, workspacePublicationFingerprint]);
 
   useEffect(() => {
-    const escape = (event: KeyboardEvent) => { if (event.key === "Escape" && !busy) close(); };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !busy) close();
+      if (event.key === "Tab") {
+        const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),a[href],iframe') ?? []).filter(element => element.getClientRects().length > 0);
+        const first = controls[0], last = controls.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    };
     document.addEventListener("keydown", escape);
     return () => document.removeEventListener("keydown", escape);
   }, [busy, close]);
+
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    dialogRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    return () => { if (previous?.isConnected) previous.focus(); };
+  }, []);
+  useEffect(() => () => { if (previewDocument) URL.revokeObjectURL(previewDocument.url); }, [previewDocument]);
+  // Derive visibility from the exact inputs, so stale previews disappear immediately.
+  const previewUrl = previewDocument?.options === activeReportOptions && previewDocument.draft === draft ? previewDocument.url : null;
+
+  const preview = async () => {
+    if (!canGenerateReport || busy || !draft.title.trim() || !draft.nodes.length) return;
+    setBusy(true); setError("");
+    try {
+      const { createCaseReportPreview } = await import("./case-report");
+      const blob = await createCaseReportPreview(draft, { ...activeReportOptions, generatedAt: new Date().toISOString() }, { canGenerate: canGenerateReport });
+      setPreviewDocument({ url: URL.createObjectURL(blob), options: activeReportOptions, draft });
+    } catch (caught) { setError(reportGenerationErrorMessage(caught, locale)); }
+    finally { setBusy(false); }
+  };
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -143,9 +173,10 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
   };
 
   return <div className="case-report-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) close(); }}>
-    <section className="case-report-dialog" role="dialog" aria-modal="true" aria-labelledby="case-report-title">
+    <section ref={dialogRef} className="case-report-dialog" role="dialog" aria-modal="true" aria-labelledby="case-report-title">
       <header><div><span>{t("PROFESSIONAL DELIVERABLE", "ПРОФЕССИОНАЛЬНЫЙ ДОКУМЕНТ")}</span><h2 id="case-report-title">{t("Create case report", "Создать отчёт по кейсу")}</h2></div><button type="button" onClick={close} disabled={busy} aria-label={t("Close report dialog", "Закрыть окно отчёта")}>×</button></header>
       <p>{t("Generate a structured A4 PDF for review, circulation or the client file. The raw AI prompt is never included.", "Сформируйте структурированный PDF A4 для проверки, распространения или клиентского досье. Исходный AI-промпт никогда не включается.")}</p>
+      <p className="report-draft-explainer">{t("Start with a preliminary analytical report. Previewing or downloading it does not create an independent approval. Governed outputs and a reviewer's decision are recorded separately in My cases → Reports.", "Начните с предварительного аналитического отчёта. Просмотр или скачивание не создаёт независимого утверждения. Контролируемые документы и решение проверяющего фиксируются отдельно: Мои дела → Отчёты.")}</p>
       <div className="case-report-grid">
         <fieldset><legend>{t("REPORT PROFILE", "ПРОФИЛЬ ОТЧЁТА")}</legend>
           <label><span>{t("Professional output", "Профессиональный результат")}</span><select value={profileId} onChange={(event) => setProfileId(event.target.value)}>{playbook.outputs.map((output) => <option key={output.id} value={output.id}>{output.label[locale]}{output.primary ? ` · ${t("primary", "основной")}` : ""}</option>)}</select></label>
@@ -172,7 +203,8 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
       <div className="case-report-status"><b>{readiness.ready ? t("Report gate ready", "Отчёт готов к выпуску") : t("Report gate blocked", "Выпуск отчёта заблокирован")}</b><span>{readiness.blockers.length ? readiness.blockers.join(" · ") : readiness.warnings.join(" · ") || t("All mandatory checks passed", "Все обязательные проверки пройдены")}</span></div>
       {previousReceipt && <div className="case-report-status"><b>{previousReceiptIsStale ? t("Previous report is stale", "Предыдущий отчёт устарел") : t("Current content and layout receipt found", "Найдена актуальная квитанция содержания и макета")}</b><span>{previousReceipt.generatedAt.slice(0, 16).replace("T", " ")} UTC · {previousReceipt.reportFingerprint.slice(0, 19)}…</span></div>}
       {error && <p className="case-report-error" role="alert">{error}</p>}
-      <footer><button className="secondary-cta" type="button" onClick={close} disabled={busy}>{t("Cancel", "Отмена")}</button><button className="primary-cta" type="button" onClick={generate} disabled={!canGenerateReport || busy || !draft.title.trim() || !draft.nodes.length || ((status === "final" || audience === "client") && !readiness.ready)}>{busy ? t("Creating PDF…", "Создание PDF…") : t("Generate locally and download", "Сформировать локально и скачать")}</button></footer>
+      {previewUrl && <section className="case-report-preview"><h3>{t("PDF preview", "Предпросмотр PDF")}</h3><iframe src={previewUrl} title={t("Analytical PDF preview", "Предпросмотр аналитического PDF")}/><a href={previewUrl} target="_blank" rel="noreferrer">{t("Open preview in a new tab", "Открыть предпросмотр в новой вкладке")}</a></section>}
+      <footer><button className="secondary-cta" type="button" onClick={close} disabled={busy}>{t("Cancel", "Отмена")}</button><button className="secondary-cta" type="button" onClick={preview} disabled={!canGenerateReport || busy || !draft.title.trim() || !draft.nodes.length || ((status === "final" || audience === "client") && !readiness.ready)}>{t("Preview PDF", "Предпросмотр PDF")}</button><button className="primary-cta" type="button" onClick={generate} disabled={!canGenerateReport || busy || !draft.title.trim() || !draft.nodes.length || ((status === "final" || audience === "client") && !readiness.ready)}>{busy ? t("Creating PDF…", "Создание PDF…") : t("Generate locally and download", "Сформировать локально и скачать")}</button></footer>
     </section>
   </div>;
 }
