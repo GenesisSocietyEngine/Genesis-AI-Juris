@@ -10,6 +10,9 @@ import { caseReportGraphLayoutSvg } from "../app/report-graph-pdf";
 import { caseFingerprint, casePublicationFingerprint, normalizeStudioDraft } from "../app/case-integrity";
 import { caseTypeReference } from "../app/case-type-reference";
 import { isReportReceiptStale, reportReceipt, validateReportReadiness } from "../app/report-model";
+import { buildCanopyPackage } from "../app/canopy-fixture";
+import { primaryCaseOutput } from "../app/case-type-playbooks";
+import { reportPdfFixtures } from "../scripts/tests/report-pdf-fixtures";
 import type { StudioDraft } from "../app/types";
 
 const draft: StudioDraft = {
@@ -131,6 +134,70 @@ test("professional report contains economics, registers, sign-off and a safe aud
   assert.equal(report.pageOrientation, "portrait");
   assert.equal(report.language, "en-GB");
   assert.equal(report.displayTitle, true);
+});
+
+test("Canopy opens with a bounded EN/RU decision brief and keeps draft, outcomes and approval distinct", async () => {
+  const { draft: canopy } = buildCanopyPackage("base");
+  const original = JSON.stringify(canopy);
+  for (const language of ["en", "ru"] as const) {
+    const definition = buildCaseReportDefinition(canopy, {
+      ...options, language, profileId: "decision_memorandum", profileLabel: "Decision memorandum",
+      audience: "internal", status: "draft", reviewerName: "", reviewerApproved: false,
+      workspaceFingerprint: null, workspacePublicationFingerprint: null,
+      privateCase: false, includeAuditTrail: false, includeTechnicalIds: false,
+    });
+    const pages = (await paginateDefinition(definition)).map(pdfPageText);
+    assert.match(pages[0], language === "en" ? /DRAFT - preliminary analysis/ : /ЧЕРНОВИК - предварительный анализ/);
+    assert.doesNotMatch(pages.join("\n"), /generated from the reviewed Studio graph|из проверенной схемы Studio/);
+    assert.match(pages[1], language === "en" ? /Decision brief/ : /Резюме для принятия решения/);
+    const appendixIndex = pages.findIndex((page) => /Case overview|Обзор кейса/.test(page));
+    assert.ok(appendixIndex >= 2 && appendixIndex <= 3, "the brief must occupy at most two pages before the appendix");
+    const brief = pages.slice(1, appendixIndex).join("\n").replace(/\s+/g, " ");
+    for (const title of ["Conditional 90-day transition pilot", "Renegotiate and defer", "Decline / no-go", "Does downside payback meet the mandate?"]) assert.ok(brief.includes(title), title);
+    assert.match(brief, language === "en" ? /does not establish a selected outcome/ : /не устанавливает выбранное решение/);
+    assert.match(brief, language === "en" ? /Individual fact-verification status is not recorded/ : /Статус проверки отдельных фактов/);
+    assert.match(brief, language === "en" ? /independent approval through the case workflow/ : /независимое утверждение/);
+    assert.ok(!brief.includes(canopy.premise), "raw unreviewed premise must remain excluded");
+    // The analysis heading must accompany actual content, rather than end a page.
+    for (const page of pages) {
+      const body = page.replace(/\s+/g, " ");
+      const heading = language === "en" ? "Profile-specific analysis" : "Профильный анализ";
+      if (body.includes(heading)) assert.ok(body.includes("Is this within the committee mandate?"), "the analysis heading must share a page with its first actual record");
+      const evidenceHeading = language === "en" ? "Facts and evidence" : "Факты и доказательства";
+      if (page.split("\n").includes(evidenceHeading)) assert.ok(body.includes("Is independent commissioning evidence accepted?"), "a table header alone must not keep its section on the prior page");
+      const signoffHeading = language === "en" ? "Verification and sign-off" : "Проверка и утверждение";
+      if (body.includes(signoffHeading)) assert.match(body, language === "en" ? /Sign-off \/ qualification/ : /Утверждение \/ оговорка/);
+    }
+  }
+  assert.equal(JSON.stringify(canopy), original, "report rendering must not mutate the immutable Base");
+});
+
+test("executive brief does not disclose redacted input or opening records", () => {
+  const confidential = { ...draft, nodes: draft.nodes.map((node) => node.id === "trigger-1" || node.id === "evidence-1" ? { ...node, title: "WITHHELD TITLE", detail: "WITHHELD DETAIL" } : node) };
+  const definition = buildCaseReportDefinition(confidential, { ...options, redactedNodeIds: ["trigger-1", "evidence-1"] });
+  assert.doesNotMatch(collectTextValues(definition.content).join("\n"), /WITHHELD TITLE|WITHHELD DETAIL/);
+});
+
+test("audit headings share a rendered page with a record in Bhopal and long Russian titles", async () => {
+  for (const id of ["golden-bhopal-decision-memorandum", "stress-long-title-ru"]) {
+    const fixture = reportPdfFixtures().find((entry) => entry.id === id)!;
+    const profile = primaryCaseOutput(fixture.draft.caseType);
+    const fingerprint = caseFingerprint(fixture.draft);
+    const publicationFingerprint = casePublicationFingerprint(fixture.draft);
+    const definition = buildCaseReportDefinition(fixture.draft, {
+      ...options, language: fixture.language, profileId: profile.id, profileLabel: profile.label[fixture.language],
+      audience: fixture.audience, preparedBy: "V62 PDF QA Author", preparedFor: "V62 PDF QA Reviewer",
+      matterReference: `V62-${fixture.id}`, generatedAt: "2026-09-01T12:00:00.000Z",
+      currentFingerprint: fingerprint, workspaceFingerprint: fingerprint,
+      currentPublicationFingerprint: publicationFingerprint, workspacePublicationFingerprint: publicationFingerprint,
+      reviewerName: "V62 PDF QA Reviewer", reviewerApproved: true, status: "draft",
+    });
+    const pages = (await paginateDefinition(definition)).map(pdfPageText);
+    const heading = fixture.language === "en" ? "Authoring and review trail" : "История подготовки и проверки";
+    const page = pages.find((entry) => entry.includes(heading));
+    assert.ok(page, `${id}: audit heading is present`);
+    assert.ok(page.includes(fixture.draft.editHistory[0].action), `${id}: audit heading must accompany an actual record`);
+  }
 });
 
 test("client-facing report can omit audit trail and technical identifiers", () => {

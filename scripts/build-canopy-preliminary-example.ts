@@ -12,6 +12,8 @@ import { primaryCaseOutput } from "../app/case-type-playbooks";
 // Reproducible synthetic example. This command has no database, identity,
 // publication, simulation, approval or receipt-writing capability.
 const destination = resolve(process.argv[2] ?? ".artifacts/canopy-preliminary");
+const language = process.argv[3] ?? "en";
+assert.ok(language === "en" || language === "ru", "Report language must be en or ru");
 const { draft, scenario } = buildCanopyPackage("base");
 const fingerprint = caseFingerprint(draft);
 const publicationReviewFingerprint = casePublicationFingerprint(draft);
@@ -20,7 +22,7 @@ assert.equal(fingerprint, "sha256-e8df94bed5cc24a4b56093b21b24101839cd7501080d01
 assert.equal(playableFingerprint, "sha256-4c17139f6cf47399349aeaf27a473bbcb1429e7d6a9cc3eb0766e12ab290b31b");
 const profile = primaryCaseOutput(draft.caseType);
 const options: CaseReportOptions = {
-  language: "en", profileId: profile.id, profileLabel: profile.label.en,
+  language, profileId: profile.id, profileLabel: profile.label[language],
   audience: "internal", confidentiality: "draft",
   preparedBy: "Synthetic demonstration", preparedFor: "Product review",
   matterReference: "CANOPY-BASE-2.0.0-PRELIMINARY",
@@ -47,5 +49,6 @@ writeFileSync(resolve(destination, "sample-provenance.json"), JSON.stringify({
   pdfSha256: createHash("sha256").update(pdf).digest("hex"), fingerprint, playableFingerprint, publicationReviewFingerprint,
   approval: "none", productionRun: false, firstReportTiming: "Not verified",
   renderer: "app/case-report.ts", model: "Local report model; not a governed workflow JSON export",
+  language, presentationFingerprint: artifacts.presentationFingerprint,
 }, null, 2) + "\n");
 console.log(JSON.stringify({ destination, pdfBytes: pdf.length, fingerprint, playableFingerprint, approval: "none" }));
