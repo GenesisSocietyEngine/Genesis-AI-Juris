@@ -326,17 +326,18 @@ test("Studio opens in Office and the English demo keeps one Five Flats case with
 test("standalone Studio exposes persistent professional destinations", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   assert.match(appSource, /href="\/account"/);
-  assert.match(appSource, />Account<\/span>/);
+  assert.match(appSource, /"Account" : "Аккаунт"/);
   assert.match(appSource, /href="\/matters"/);
   assert.match(appSource, /"My cases" : "Мои дела"/);
   assert.match(appSource, /"Templates" : "Шаблоны"/);
   assert.match(appSource, /sessionStorage\.getItem\(PENDING_CASE_PROMPT_KEY\)/);
-  assert.match(appSource, /ADVISORY · BETA v0\.1\.0/);
+  assert.match(appSource, /<strong>CASE STUDIO<\/strong> · \{PRODUCT_RELEASE\}/);
+  assert.doesNotMatch(appSource, /ADVISORY · BETA v0\.1\.0/);
 });
 
 test("account navigation exposes My cases, Templates, Studio, and Account", () => {
   const accountSource = readFileSync(new URL("../app/account/AccountClient.tsx", import.meta.url), "utf8");
-  for (const destination of ["/matters", "/?view=library", "/studio", "/account"]) assert.match(accountSource, new RegExp(`href=\\"${destination.replace(/[?]/g, "\\?")}\\"`));
+  for (const destination of ["/matters", "/templates", "/studio", "/account"]) assert.match(accountSource, new RegExp(`href=\\"${destination.replace(/[?]/g, "\\?")}\\"`));
   assert.match(accountSource, />My cases<\/Link>/);
   assert.match(accountSource, />Templates<\/Link>/);
 });
