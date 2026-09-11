@@ -6,6 +6,11 @@ import type { MetricKey } from "./types";
 /** The caller supplies its normal authenticated, organization-scoped transport.
  * This module has no DB, session, environment, deletion or privileged reset access. */
 export type CanopyTransport = (path: string, init?: RequestInit) => Promise<Response>;
+export type CanopyPublicationStatus = {
+ state: "ready" | "missing" | "mismatch";
+ caseId: string;
+ version: string;
+};
 type Wire = Record<string, unknown>;
 type SourceBinding = { documentId: string; versionId: string; anchors: Record<string,string>; anchorStates:Record<string,string>; reviewed: boolean; current:boolean; documentAccepted:boolean };
 export class CanopyWorkingCopy {
@@ -22,6 +27,19 @@ export class CanopyWorkingCopy {
  lastSessionKey:string|null=null;
  private preparationCache:Map<string,string>|null=null;
  package(id:CanopyScenarioId=this.currentScenario){return buildCanopyPackage(id,this.independent);}
+ /** Read the pinned version, not merely the catalogue's latest version. This is
+  * UI guidance only: starting a run still requires the server's normal checks.
+  * Never publish or replace a package as a side effect of a readiness check. */
+ async publicationStatus(id:CanopyScenarioId=this.currentScenario):Promise<CanopyPublicationStatus> {
+  const prepared=this.package(id);
+  const identity={caseId:prepared.draft.caseId,version:prepared.draft.version};
+  const response=await this.api("/api/catalog/"+encodeURIComponent(identity.caseId)+"?version="+encodeURIComponent(identity.version),{
+   cache:"no-store",headers:{"X-GENESIS-Expected-Fingerprint":prepared.scenario.fingerprint},
+  });
+  if(response.status===404)return {...identity,state:"missing"};
+  const published=await checked(response);
+  return {...identity,state:published.caseId===identity.caseId&&published.currentVersion===identity.version&&published.fingerprint===prepared.scenario.fingerprint?"ready":"mismatch"};
+ }
  constructor(readonly api:CanopyTransport, readonly dossierId:string) {}
  static async resume(api:CanopyTransport,dossierId:string) {
   const copy=new CanopyWorkingCopy(api,dossierId);
