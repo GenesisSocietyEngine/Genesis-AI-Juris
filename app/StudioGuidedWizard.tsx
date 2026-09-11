@@ -75,7 +75,7 @@ export default function StudioGuidedWizard({
   return <section className="studio-guide-shell page-width" id="studio-guided-workflow" aria-labelledby="studio-guided-title">
     {activeStep === 1 && <div className="studio-quick-starts" aria-label={locale === "en" ? "Quick starts" : "Быстрый старт"}>
       <button type="button" onClick={onStartExample}><span>01</span><b>{locale === "en" ? "Open an example" : "Открыть пример"}</b><small>{locale === "en" ? "Edit a prepared case and inspect its decision map" : "Измените готовый кейс и изучите карту решений"}</small></button>
-      <button type="button" onClick={onImport}><span>02</span><b>{locale === "en" ? "Load a case" : "Загрузить кейс"}</b><small>{locale === "en" ? "Continue from a validated Studio JSON file" : "Продолжите из проверенного JSON-файла Studio"}</small></button>
+      <button type="button" onClick={onImport}><span>02</span><b>{locale === "en" ? "Load a case or prompt" : "Загрузить кейс или промпт"}</b><small>{locale === "en" ? "Studio JSON, canonical Markdown or a text description" : "JSON Studio, канонический Markdown или текстовое описание"}</small></button>
       <button type="button" onClick={onFocusBrief}><span>03</span><b>{locale === "en" ? "Describe a task" : "Описать задачу"}</b><small>{locale === "en" ? "Start with a plain-language brief" : "Начните с описания обычным языком"}</small></button>
     </div>}
     <header className="studio-guide-progress">

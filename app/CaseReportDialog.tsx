@@ -13,7 +13,7 @@ function storedReceipt(caseId: string, profileId: string, scope: string | null, 
   catch { return null; }
 }
 
-export default function CaseReportDialog({ locale, draft, currentFingerprint, workspaceFingerprint, currentPublicationFingerprint, workspacePublicationFingerprint, privateCase, canGenerateReport, reportReceiptStorageScope, persistReportReceiptOnDevice, close, completed }: {
+export default function CaseReportDialog({ locale, draft, currentFingerprint, workspaceFingerprint, currentPublicationFingerprint, workspacePublicationFingerprint, privateCase, canGenerateReport, developerView = false, reportReceiptStorageScope, persistReportReceiptOnDevice, close, completed }: {
   locale: "en" | "ru";
   draft: StudioDraft;
   currentFingerprint: string;
@@ -22,6 +22,7 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
   workspacePublicationFingerprint: string | null;
   privateCase: boolean;
   canGenerateReport: boolean;
+  developerView?: boolean;
   reportReceiptStorageScope: string | null;
   persistReportReceiptOnDevice: boolean;
   close: () => void;
@@ -106,7 +107,7 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
     const escape = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !busy) close();
       if (event.key === "Tab") {
-        const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),a[href],iframe') ?? []).filter(element => element.getClientRects().length > 0);
+        const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),summary,a[href],iframe') ?? []).filter(element => element.getClientRects().length > 0);
         const first = controls[0], last = controls.at(-1);
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
         else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
@@ -118,7 +119,8 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
-    dialogRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    (dialogRef.current?.querySelector<HTMLButtonElement>("[data-report-preview]:not(:disabled)")
+      ?? dialogRef.current?.querySelector<HTMLButtonElement>("button"))?.focus();
     return () => { if (previous?.isConnected) previous.focus(); };
   }, []);
   useEffect(() => () => { if (previewDocument) URL.revokeObjectURL(previewDocument.url); }, [previewDocument]);
@@ -171,12 +173,24 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
       setError(reportGenerationErrorMessage(caught, locale));
     } finally { setBusy(false); }
   };
+  const outputBlocked = !canGenerateReport || busy || !draft.title.trim() || !draft.nodes.length
+    || ((status === "final" || audience === "client") && !readiness.ready);
 
   return <div className="case-report-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) close(); }}>
     <section ref={dialogRef} className="case-report-dialog" role="dialog" aria-modal="true" aria-labelledby="case-report-title">
       <header><div><span>{t("PROFESSIONAL DELIVERABLE", "ПРОФЕССИОНАЛЬНЫЙ ДОКУМЕНТ")}</span><h2 id="case-report-title">{t("Create case report", "Создать отчёт по кейсу")}</h2></div><button type="button" onClick={close} disabled={busy} aria-label={t("Close report dialog", "Закрыть окно отчёта")}>×</button></header>
       <p>{t("Generate a structured A4 PDF for review, circulation or the client file. The raw AI prompt is never included.", "Сформируйте структурированный PDF A4 для проверки, распространения или клиентского досье. Исходный AI-промпт никогда не включается.")}</p>
       <p className="report-draft-explainer">{t("Start with a preliminary analytical report. Previewing or downloading it does not create an independent approval. Governed outputs and a reviewer's decision are recorded separately in My cases → Reports.", "Начните с предварительного аналитического отчёта. Просмотр или скачивание не создаёт независимого утверждения. Контролируемые документы и решение проверяющего фиксируются отдельно: Мои дела → Отчёты.")}</p>
+      <section className="case-report-quick-actions" aria-label={t("Create your report", "Создать отчёт")}>
+        <div><b>{activeReportOptions.profileLabel}</b><span>{status === "draft" ? t("Preliminary draft", "Предварительный черновик") : t("Final report", "Финальный отчёт")} · {audience === "internal" ? t("Internal review", "Внутренняя проверка") : t("For the client", "Для клиента")}</span></div>
+        <div className="case-report-buttons"><button data-report-preview className="primary-cta" type="button" onClick={preview} disabled={outputBlocked}>{busy ? t("Creating PDF…", "Создание PDF…") : t("Preview PDF", "Предпросмотр PDF")}</button><button className="secondary-cta" type="button" onClick={generate} disabled={outputBlocked}>{t("Download PDF", "Скачать PDF")}</button></div>
+      </section>
+      {!canGenerateReport && <p className="case-report-error" role="status">{t("Report export is unavailable in inspection-only mode.", "Экспорт отчёта недоступен в режиме просмотра.")}</p>}
+      {(status === "final" || audience === "client") && !readiness.ready && <p className="case-report-error" role="status">{readiness.blockers.join(" · ")}</p>}
+      {error && <p className="case-report-error" role="alert">{error}</p>}
+      {previewUrl && <section className="case-report-preview"><h3>{t("PDF preview", "Предпросмотр PDF")}</h3><iframe src={previewUrl} title={t("Analytical PDF preview", "Предпросмотр аналитического PDF")}/><a href={previewUrl} target="_blank" rel="noreferrer">{t("Open preview in a new tab", "Открыть предпросмотр в новой вкладке")}</a></section>}
+      <details className="case-report-settings" open={developerView}>
+      <summary>{t("Report settings and approval", "Настройки отчёта и утверждение")}</summary>
       <div className="case-report-grid">
         <fieldset><legend>{t("REPORT PROFILE", "ПРОФИЛЬ ОТЧЁТА")}</legend>
           <label><span>{t("Professional output", "Профессиональный результат")}</span><select value={profileId} onChange={(event) => setProfileId(event.target.value)}>{playbook.outputs.map((output) => <option key={output.id} value={output.id}>{output.label[locale]}{output.primary ? ` · ${t("primary", "основной")}` : ""}</option>)}</select></label>
@@ -190,7 +204,7 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
           <label className="report-check"><input type="checkbox" checked={reviewerApproved} onChange={(event) => setReviewerApproved(event.target.checked)}/><span>{t("I confirm reviewer approval for this exact saved version", "Подтверждаю рецензию именно этой сохранённой версии")}</span></label>
         </fieldset>
         <fieldset><legend>{t("INCLUDE", "ВКЛЮЧИТЬ")}</legend>
-          <label className="report-check"><input type="checkbox" checked={includeEconomics} onChange={(event) => setIncludeEconomics(event.target.checked)}/><span>{t("Economics, cash flow and probabilities", "Экономика, денежный поток и вероятности")}</span></label>
+          <label className="report-check"><input type="checkbox" checked={includeEconomics} onChange={(event) => setIncludeEconomics(event.target.checked)}/><span>{t("Economic analysis and assumptions", "Экономический анализ и допущения")}</span></label>
           <label className="report-check"><input type="checkbox" checked={includeRegisters} onChange={(event) => setIncludeRegisters(event.target.checked)}/><span>{t("Facts, evidence and rules register", "Реестр фактов, доказательств и правил")}</span></label>
           <label className="report-check"><input type="checkbox" checked={includeSources} onChange={(event) => setIncludeSources(event.target.checked)}/><span>{t("Authorities and source register", "Реестр правовых источников")}</span></label>
           <label className="report-check"><input type="checkbox" checked={includeAuditTrail} disabled={audience === "client"} onChange={(event) => setIncludeAuditTrail(event.target.checked)}/><span>{t("Safe authoring and review trail", "Безопасная история подготовки и проверки")}</span></label>
@@ -202,9 +216,8 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
       <div className="case-report-status"><b>{workspaceFingerprint === currentFingerprint && workspacePublicationFingerprint === currentPublicationFingerprint ? t("Workspace-saved reviewed version", "Проверенная версия сохранена в workspace") : t("Working draft", "Рабочий черновик")}</b><span>{draft.nodes.length} {t("nodes", "нод")} · {draft.links.length} {t("connections", "связей")}</span></div>
       <div className="case-report-status"><b>{readiness.ready ? t("Report gate ready", "Отчёт готов к выпуску") : t("Report gate blocked", "Выпуск отчёта заблокирован")}</b><span>{readiness.blockers.length ? readiness.blockers.join(" · ") : readiness.warnings.join(" · ") || t("All mandatory checks passed", "Все обязательные проверки пройдены")}</span></div>
       {previousReceipt && <div className="case-report-status"><b>{previousReceiptIsStale ? t("Previous report is stale", "Предыдущий отчёт устарел") : t("Current content and layout receipt found", "Найдена актуальная квитанция содержания и макета")}</b><span>{previousReceipt.generatedAt.slice(0, 16).replace("T", " ")} UTC · {previousReceipt.reportFingerprint.slice(0, 19)}…</span></div>}
-      {error && <p className="case-report-error" role="alert">{error}</p>}
-      {previewUrl && <section className="case-report-preview"><h3>{t("PDF preview", "Предпросмотр PDF")}</h3><iframe src={previewUrl} title={t("Analytical PDF preview", "Предпросмотр аналитического PDF")}/><a href={previewUrl} target="_blank" rel="noreferrer">{t("Open preview in a new tab", "Открыть предпросмотр в новой вкладке")}</a></section>}
-      <footer><button className="secondary-cta" type="button" onClick={close} disabled={busy}>{t("Cancel", "Отмена")}</button><button className="secondary-cta" type="button" onClick={preview} disabled={!canGenerateReport || busy || !draft.title.trim() || !draft.nodes.length || ((status === "final" || audience === "client") && !readiness.ready)}>{t("Preview PDF", "Предпросмотр PDF")}</button><button className="primary-cta" type="button" onClick={generate} disabled={!canGenerateReport || busy || !draft.title.trim() || !draft.nodes.length || ((status === "final" || audience === "client") && !readiness.ready)}>{busy ? t("Creating PDF…", "Создание PDF…") : t("Generate locally and download", "Сформировать локально и скачать")}</button></footer>
+      </details>
+      <footer><button className="secondary-cta" type="button" onClick={close} disabled={busy}>{t("Close", "Закрыть")}</button></footer>
     </section>
   </div>;
 }

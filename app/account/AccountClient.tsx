@@ -158,7 +158,7 @@ export default function AccountClient({
 
     {identity && <section className={styles.identity} aria-label="Current identity">
       <div><span>{t("Current session", "Текущий сеанс")}</span><strong>{identity.displayName}</strong><small>{identity.email}</small></div>
-      <a className={styles.primaryLink} href={returnTo}>{t("Continue to your work", "Продолжить работу")}</a>
+      {initialProfile && <a className={styles.primaryLink} href={returnTo}>{t("Continue to your work", "Продолжить работу")}</a>}
       {identity.authSource === "local" && <button onClick={logout} disabled={busy !== null}>{busy === "logout" ? t("Signing out…", "Выход…") : t("Sign out locally", "Выйти из локального сеанса")}</button>}
       {identity.authSource === "chatgpt" && <a href={chatGPTSignOutUrl} onClick={signOutChatGPT}>{t("Sign out from ChatGPT identity", "Выйти из аккаунта ChatGPT")}</a>}
     </section>}
@@ -173,6 +173,7 @@ export default function AccountClient({
         <p>{t("No update subscriptions are enabled. You can edit your profile in Workspace.", "Подписки на обновления не включаются. Профиль можно изменить в рабочем пространстве.")}</p>
         <button className={styles.primaryLink} disabled={busy !== null}>{busy === "profile" ? t("Saving…", "Сохранение…") : t("Save profile and continue", "Сохранить профиль и продолжить")}</button>
       </form> : <p role="alert">{t("Your profile could not be loaded. Refresh before changing it.", "Не удалось загрузить профиль. Обновите страницу перед изменением.")}</p>}
+      <a className={styles.secondaryLink} href={returnTo}>{t("Explore Studio without completing registration", "Открыть Студию без завершения регистрации")}</a>
     </section>}
     {recoveryCode && <section className={styles.recoveryReveal} aria-live="polite">
       <span>{t("DISPLAYED ONCE", "ПОКАЗЫВАЕТСЯ ОДИН РАЗ")}</span><h2>{t("Save your replacement recovery code", "Сохраните новый код восстановления")}</h2>

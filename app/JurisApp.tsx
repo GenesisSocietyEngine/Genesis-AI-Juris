@@ -1625,7 +1625,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
     link.download = `${normalized.caseId}-v${normalized.version}.juris-case.json`;
     link.click(); URL.revokeObjectURL(url);
   }
-  function importDraft(file: File) {
+  function importDraft(file: File, loaded?: (draft: StudioDraft) => void) {
     if (file.size > 1_000_000) { setSessionNotice(locale === "en" ? "The case file exceeds 1 MB. Export a smaller Studio JSON file, or shorten node details before retrying. Your current case is unchanged." : "Файл больше 1 МБ. Экспортируйте меньший JSON Studio или сократите описания узлов. Текущий кейс сохранён без изменений."); return; }
     const reader = new FileReader(); reader.onload = async () => {
       try {
@@ -1677,8 +1677,9 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
         setPrompt("");
         setSelectedNodeId(restored.nodes[0]?.id ?? null);
         navigate("studio");
+        loaded?.(restored);
         showSessionNotice(importedCanDuplicate ? (locale === "en" ? "Custom case loaded in the visual editor" : "Custom-кейс открыт в визуальном редакторе") : (locale === "en" ? "Protected case seal verified; opened for inspection only" : "Печать защищённого кейса проверена; открыт режим просмотра"));
-      } catch { setSessionNotice(locale === "en" ? "The file could not be imported. Use a Studio draft JSON or an unchanged GENESIS custom-case export. For a .md prompt, choose More actions → Import case prompt (.md). Protected exports require sign-in and access to the original case. Your current case is unchanged." : "Не удалось импортировать файл. Используйте JSON-черновик Studio или неизменённый экспорт custom-кейса GENESIS. Для .md выберите Другие действия → Импорт промпта кейса (.md). Защищённый экспорт требует входа и доступа к исходному кейсу. Текущий кейс не изменён."); }
+      } catch { setSessionNotice(locale === "en" ? "The file could not be imported. Use a Studio draft JSON or an unchanged GENESIS custom-case export. Protected exports require sign-in and access to the original case. Your current case is unchanged." : "Не удалось импортировать файл. Используйте JSON-черновик Studio или неизменённый экспорт custom-кейса GENESIS. Защищённый экспорт требует входа и доступа к исходному кейсу. Текущий кейс не изменён."); }
     };
     reader.onerror = () => setSessionNotice(locale === "en" ? "The file could not be read. Download it again, then retry the import." : "Файл не читается. Скачайте его заново и повторите импорт.");
     reader.readAsText(file);
@@ -2495,7 +2496,7 @@ type StudioViewProps = {
   setDraft: React.Dispatch<React.SetStateAction<StudioDraft>>; selectedNode: StudioNode | null; selectedNodeId: string | null;
   selectNode: (id: string | null) => void; checks: Array<{ level: "ok" | "warn"; text: string }>; packageRequiresPlayableRoute: boolean;
   generateDraft: () => void; applyPromptIteration: () => void; applyReviewedAIPlan: (plan: StudioPromptPlan, baseFingerprint: string) => boolean; applyCanonicalMarkdownDraft: (draft: StudioDraft) => void; saveDraft: () => void; savedFlash: boolean;
-  exportDraft: () => void; importRef: React.RefObject<HTMLInputElement | null>; importDraft: (file: File) => void;
+  exportDraft: () => void; importRef: React.RefObject<HTMLInputElement | null>; importDraft: (file: File, loaded?: (draft: StudioDraft) => void) => void;
   createChildVersion: () => void; updateNode: (change: Partial<StudioNode>) => void;
   recordVisualEdit: (action: StudioEditAction, message: string, before?: StudioDraft) => void; addNode: (type: StudioNodeType, preferredPosition?: { x: number; y: number }) => void;
   addLink: (from: string, to: string) => void; relinkLink: (previous: StudioLink, next: StudioLink) => void;
@@ -3024,6 +3025,45 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     setWorkspaceState("idle");
   }
 
+  function loadCasePrompt(value: string) {
+    if (!canDuplicate) return;
+    aiAbortRef.current?.abort();
+    setCanonicalCandidate(null);
+    setAIResult(null);
+    setAIState("idle");
+    setAIError("");
+    setPromptLimitNotice(false);
+    setPrompt(value);
+    selectGuidedStep(1);
+    moreActionsRef.current?.removeAttribute("open");
+    setCaseReportStatus(locale === "en" ? "Prompt loaded. Review the description, then verify or analyse it before applying any changes." : "Промпт загружен. Проверьте описание, затем проверьте или проанализируйте его перед применением изменений.");
+    window.requestAnimationFrame(() => document.getElementById("studio-case-brief")?.focus());
+  }
+
+  async function loadStudioFile(file: File) {
+    if (!canDuplicate) return;
+    try {
+      const { studioImportFileKind, readStudioPromptFile, studioPromptFileError } = await import("./studio-prompt-file");
+      const kind = studioImportFileKind(file);
+      if (kind === "case") {
+        importDraft(file, (restored) => {
+          clearTransientEditorSelection();
+          setCanonicalCandidate(null);
+          setCaseReportStatus("");
+          moreActionsRef.current?.removeAttribute("open");
+          selectGuidedStep(!restored.title.trim() && !restored.nodes.length && !restored.links.length ? 1 : 4);
+        });
+      } else if (kind === "prompt") {
+        try { loadCasePrompt(await readStudioPromptFile(file)); }
+        catch (error) { setCaseReportStatus(studioPromptFileError(error, locale)); }
+      } else {
+        setCaseReportStatus(locale === "en" ? "Choose a Studio JSON case or a Markdown (.md) / text (.txt) prompt. Your current work is unchanged." : "Выберите JSON-кейс Studio или промпт Markdown (.md) / текст (.txt). Текущая работа не изменена.");
+      }
+    } catch {
+      setCaseReportStatus(locale === "en" ? "File tools could not be loaded. Refresh and retry. Your current work is unchanged." : "Не удалось загрузить модуль импорта. Обновите страницу и повторите. Текущая работа не изменена.");
+    }
+  }
+
   const focusRelationStatus = useCallback(() => {
     window.requestAnimationFrame(() => document.getElementById("graph-connect-status")?.focus());
   }, []);
@@ -3366,7 +3406,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     const { applyCaseType } = await import("./case-type-registry");
     applyCaseChange(locale === "en" ? "case type" : "тип кейса", (current) => applyCaseType(current, id));
   }
-  const portableStudioActions = <Suspense fallback={null}><StudioUserMoreActions grouped={displayMode === "user"} locale={locale} canDuplicate={canDuplicate} exportReady={derivationsSettled && Boolean(draft.title.trim()) && Boolean(draft.nodes.length)} feedbackLabel={text.feedback} importLabel={text.importCustom} exportLabel={text.exportCustom} startExample={startExampleDraft} startTax={startTaxTemplate} requestFeedback={requestFeedback} importJson={()=>importRef.current?.click()} exportJson={exportDraft} saveDevice={saveDraft} markdownLoaded={(value)=>{setCanonicalCandidate(null);setAIResult(null);setAIState("idle");setPrompt(value);}} markdownOpened={()=>{setCaseReportStatus("");setCaseMarkdownOpen(true);}} markdownFailed={setCaseReportStatus}/></Suspense>;
+  const portableStudioActions = <Suspense fallback={null}><StudioUserMoreActions grouped={displayMode === "user"} locale={locale} canDuplicate={canDuplicate} exportReady={derivationsSettled && Boolean(draft.title.trim()) && Boolean(draft.nodes.length)} feedbackLabel={text.feedback} importLabel={text.importCustom} exportLabel={text.exportCustom} startExample={startExampleDraft} startTax={startTaxTemplate} requestFeedback={requestFeedback} importJson={()=>importRef.current?.click()} exportJson={exportDraft} saveDevice={saveDraft} markdownLoaded={loadCasePrompt} markdownOpened={()=>{setCaseReportStatus("");setCaseMarkdownOpen(true);}} markdownFailed={setCaseReportStatus}/></Suspense>;
     return <main className={`studio-view studio-${displayMode}-view studio-guided-step-${guidedStep} ${canDuplicate ? "" : "studio-inspection-view"}`} data-readonly={!canDuplicate || undefined}>
       <section className="studio-hero page-width">
         <div>
@@ -3384,7 +3424,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
           <button className="secondary-cta report-cta" disabled={!canDuplicate || !draft.title.trim() || !draft.nodes.length} onClick={() => void openCaseReport()} title={locale === "en" ? "Preview a preliminary report; independent approval is separate" : "Предпросмотр предварительного отчёта; независимое утверждение выполняется отдельно"}><Icon name="download"/>{locale === "en" ? "Create analytical report" : "Сформировать аналитический отчёт"}</button>
           {displayMode === "developer" && <button className="primary-cta" onClick={() => shareDraft("submit")} disabled={Boolean(submitBlocker) || workspaceState === "saving"} title={submitBlocker || undefined} aria-describedby={submitBlocker ? "studio-submit-blocker" : undefined}><Icon name="check"/>{locale === "en" ? "Submit for review" : "Отправить на рецензию"}</button>}
           {displayMode === "developer" ? portableStudioActions : <details ref={moreActionsRef} className="studio-more-actions"><summary><Icon name="plus"/>{locale === "en" ? "More actions" : "Другие действия"}</summary>{portableStudioActions}</details>}
-          <input ref={importRef} className="visually-hidden" type="file" accept=".json,application/json" onChange={(event) => { const file=event.target.files?.[0]; if(file){ clearTransientEditorSelection(); importDraft(file); } event.target.value=""; }}/>
+          <input ref={importRef} className="visually-hidden" type="file" accept=".json,.md,.txt,application/json,text/markdown,text/plain" onChange={(event) => { const file=event.target.files?.[0]; if(file) void loadStudioFile(file); event.target.value=""; }}/>
         </div>
         {submitBlocker && displayMode === "developer" && <p id="studio-submit-blocker" className="studio-submit-blocker"><Icon name="alert"/><span>{submitBlocker}</span>{derivationError && <button type="button" onClick={() => { setDerivationError(false); setDerivationAttempt((attempt) => attempt + 1); }}>{locale === "en" ? "Retry check" : "Повторить проверку"}</button>}{isPrivate && submitBlocker !== firstSubmissionWarning && <button type="button" onClick={() => document.getElementById("studio-case-settings")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{locale === "en" ? "Change visibility" : "Изменить видимость"}</button>}{firstSubmissionWarning && submitBlocker === firstSubmissionWarning && <button type="button" onClick={() => document.getElementById("studio-checks")?.scrollIntoView({ behavior: "smooth", block: "start" })}>{locale === "en" ? "Review issue" : "Перейти к замечанию"}</button>}</p>}
         {savedFlash && <div className="save-toast"><Icon name="check"/>{text.saved}</div>}
@@ -3571,6 +3611,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
       workspacePublicationFingerprint={serverPublicationFingerprint}
       privateCase={isPrivate}
       canGenerateReport={canDuplicate}
+      developerView={displayMode === "developer"}
       reportReceiptStorageScope={reportReceiptStorageScope}
       persistReportReceiptOnDevice={persistReportReceiptOnDevice}
       close={() => setCaseReportOpen(false)}

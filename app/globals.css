@@ -1051,3 +1051,12 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .studio-user-view .studio-hero{padding-top:24px;padding-bottom:18px}.studio-user-view .studio-hero h1{font-size:clamp(30px,4vw,48px);line-height:1.15}.studio-user-view .studio-hero p{font-size:16px;max-width:750px}.studio-user-view .studio-actions{gap:8px}.studio-user-view .studio-guide-progress{padding-block:18px}.studio-guide-meter small{display:block;max-width:220px;font-size:12px;line-height:1.4}.studio-user-view .studio-quick-starts{margin:0 0 18px}.studio-user-view .studio-guide-task{padding-block:16px}.studio-user-view .confidentiality-notice{font-size:14px}.studio-user-view .studio-user-undo{margin-block:12px}
 .case-report-preview iframe{width:100%;height:65vh;min-height:320px;border:1px solid #b0bdc1;background:white}.case-report-preview a{display:inline-block;padding:12px 0}.report-draft-explainer{padding:14px;border-left:3px solid #176b73;background:#edf5f3;color:#172735;font-size:15px;line-height:1.5}.case-report-dialog footer{flex-wrap:wrap}.case-report-dialog :focus-visible{outline:3px solid #176b73;outline-offset:3px}
 @media(max-width:640px){.workspace-navigation{gap:10px;padding:14px 16px}.workspace-navigation>div{flex-basis:100%;gap:4px 16px}.workspace-navigation a{font-size:14px}.studio-user-view .studio-actions{justify-content:flex-start}.studio-user-view .studio-actions>button{min-height:44px}.case-report-dialog{max-height:94vh;overflow:auto}}
+
+/* Put the first analytical result ahead of optional publication controls. */
+.case-report-quick-actions{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;align-items:center;padding:18px 0}
+.case-report-quick-actions>div:first-child{display:grid;gap:7px;min-width:0;flex:1 1 260px}
+.case-report-quick-actions b{font:600 19px var(--serif);overflow-wrap:anywhere}
+.case-report-quick-actions span{font:13px/1.5 var(--sans);color:var(--subtle)}
+.case-report-buttons{display:flex;flex-wrap:wrap;gap:10px}.case-report-buttons button{min-height:44px}
+.case-report-settings{border-top:1px solid var(--rule);margin-top:12px;padding-top:4px}.case-report-settings>summary{min-height:44px;padding:13px 0;cursor:pointer;font:600 14px var(--sans);color:var(--copy)}
+@media(max-width:640px){.case-report-buttons{width:100%}.case-report-buttons button{flex:1;justify-content:center}.case-report-quick-actions{gap:12px}}
