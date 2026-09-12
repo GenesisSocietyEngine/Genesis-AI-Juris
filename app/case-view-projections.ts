@@ -12,6 +12,8 @@ export type CaseViewItem = {
   primaryMeta?: string;
   secondaryMeta?: string;
   relatedNodeIds: string[];
+  /** Explicit graph target; projection IDs may belong to links or aggregates. */
+  focusNodeId?: string;
   status: CaseViewItemStatus;
 };
 
@@ -45,6 +47,7 @@ function issueMap(draft: StudioDraft): CaseViewItem[] {
     const outcomes = related.filter((item) => item.type === "outcome");
     return {
       id: node.id,
+      focusNodeId: node.id,
       title: node.title,
       detail: node.detail,
       kind: "issue",
@@ -62,6 +65,7 @@ function evidenceMap(draft: StudioDraft): CaseViewItem[] {
     const related = relatedNodes(draft, links, node.id);
     return {
       id: node.id,
+      focusNodeId: node.id,
       title: node.title,
       detail: node.detail,
       kind: node.type,
@@ -79,6 +83,7 @@ function decisionTable(draft: StudioDraft): CaseViewItem[] {
     const outgoing = draft.links.filter((link) => link.from === node.id);
     if (!outgoing.length) return [{
       id: node.id,
+      focusNodeId: node.id,
       title: node.title,
       detail: node.detail,
       kind: "decision",
@@ -95,6 +100,7 @@ function decisionTable(draft: StudioDraft): CaseViewItem[] {
       const economics = [cost === undefined ? "" : euro(cost), duration === undefined ? "" : `${duration} min`].filter(Boolean).join(" · ");
       return {
         id: link.id,
+        focusNodeId: node.id,
         title: link.rule?.label || destination?.title || link.id,
         detail: link.rule?.result || destination?.detail || node.detail,
         kind: node.title,
@@ -115,6 +121,7 @@ function taskPlan(draft: StudioDraft): CaseViewItem[] {
     const scheduled = day !== undefined || Boolean(time);
     return {
       id: node.id,
+      focusNodeId: node.id,
       title: node.title,
       detail: node.detail,
       kind: node.type,
@@ -144,6 +151,7 @@ function timeline(draft: StudioDraft): CaseViewItem[] {
     const time = node.type === "deadline" ? node.runtime?.deadlineTime : node.runtime?.time;
     return {
       id: node.id,
+      focusNodeId: node.id,
       title: node.title,
       detail: node.detail,
       kind: node.type,
@@ -161,6 +169,7 @@ function economics(draft: StudioDraft): CaseViewItem[] {
     const result = calculateTaxEconomics(draft.taxEconomics);
     items.push({
       id: "tax-economics",
+      focusNodeId: draft.nodes.find((node) => node.type === "tax_rule" || node.type === "cash_flow")?.id,
       title: "Tax position economics",
       detail: draft.taxEconomics.assumptions,
       kind: "tax",
@@ -172,6 +181,7 @@ function economics(draft: StudioDraft): CaseViewItem[] {
   }
   return [...items, ...draft.nodes.filter((node) => node.type === "cash_flow").map((node) => ({
     id: node.id,
+    focusNodeId: node.id,
     title: node.title,
     detail: node.detail,
     kind: "cash flow",
@@ -187,13 +197,14 @@ function simulation(draft: StudioDraft): CaseViewItem[] {
   const outcomes = draft.nodes.filter((node) => node.type === "outcome");
   return [...decisions, ...outcomes].map((node) => ({
     id: node.id,
+    focusNodeId: node.id,
     title: node.title,
     detail: node.detail,
     kind: node.type,
     primaryMeta: node.type === "decision"
       ? `${draft.links.filter((link) => link.from === node.id).length} route option${draft.links.filter((link) => link.from === node.id).length === 1 ? "" : "s"}`
       : node.runtime?.terminalOutcome ?? "Outcome",
-    secondaryMeta: node.type === "decision" ? "Rust-tested at Step 5" : undefined,
+    secondaryMeta: node.type === "decision" ? "Test this route at Step 5" : undefined,
     relatedNodeIds: relatedNodes(draft, connectedLinks(draft, node.id), node.id).map((item) => item.id),
     status: connectedLinks(draft, node.id).length ? "ready" as const : "attention" as const,
   }));

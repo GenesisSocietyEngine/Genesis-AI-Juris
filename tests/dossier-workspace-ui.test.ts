@@ -327,7 +327,7 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.match(runtimeConstants, /PRODUCT_RELEASE = "v62"/);
   assert.match(app, /className="catalogue-filter-more"/);
   assert.match(app, /className="case-trust-details"/);
-  assert.match(app, /GENESIS: JURIS \{PRODUCT_RELEASE\}/);
+  assert.match(app, /GENESIS: JURIS · \{PRODUCT_RELEASE\}/);
   assert.match(client, /PENDING_CASE_PROMPT_KEY/);
   assert.match(client, /sessionStorage\.setItem/);
   assert.match(client, /\.sort\(\(left, right\)/);

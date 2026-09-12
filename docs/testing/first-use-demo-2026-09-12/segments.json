@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-12",
+  "status": "narration_and_storyboard_prepared_video_pending",
+  "durationSeconds": 540,
+  "languages": [
+    "en",
+    "ru"
+  ],
+  "timingNote": "Editorial chapter targets for a 9-minute full cut, not measured product latency or a validated two-minute onboarding result. Adjust pauses and chapter boundaries after real capture and voice render; never pad a short synthetic animation into a claimed screencast.",
+  "capturePolicy": "Use actual captured product UI. No credential entry, fabricated AI response, simulated approval, or expected terminal presented as execution. Label time cuts. Keep synthetic-data disclosure visible. Do not call the exact Canopy Base a production preset unless catalogue presence is verified.",
+  "case": {
+    "title": "Project Canopy — Managed-Site Expansion",
+    "variant": "Base",
+    "version": "2.0.0",
+    "nodes": 14,
+    "caseId": "project_canopy_managed_site_expansion",
+    "studioFingerprint": "sha256-e8df94bed5cc24a4b56093b21b24101839cd7501080d01b4bfb0f1bb7e4b3702",
+    "playableFingerprint": "sha256-4c17139f6cf47399349aeaf27a473bbcb1429e7d6a9cc3eb0766e12ab290b31b",
+    "source": "app/canopy-fixture.ts; app/canopy-source-history.ts",
+    "disclosureEn": "This demonstration uses entirely fictional organisations, documents, people and figures. It is inspired only by publicly described industry patterns and does not represent Greeneration data, performance, controls or decisions.",
+    "disclosureRu": "В демонстрации используются полностью вымышленные организации, документы, люди и цифры. Она основана только на публично описанных отраслевых подходах и не отражает данные, результаты, меры контроля или решения Greeneration."
+  },
+  "chapters": [
+    {
+      "id": "decision-first",
+      "start": 0,
+      "end": 45,
+      "titleEn": "A decision you can explain",
+      "titleRu": "Решение, которое можно объяснить",
+      "narrationEn": "A useful decision tool should help you reach a clear next step, and explain why it makes sense. GENESIS: JURIS brings the case, the decision map and the analytical report into one workspace. In this walkthrough, we will start with a ready-made case, look at two ways to bring in your own material, make a visible edit and prepare a report. Our example is Project Canopy, a fictional managed-site expansion. Every organisation, person, document and figure in it is synthetic. Watch the first two minutes for the entry route, then stay for the complete authoring workflow. The interface opens in user view, with technical details available when needed.",
+      "narrationRu": "Хороший инструмент для принятия решений помогает понять следующий шаг и объяснить, почему он обоснован. GENESIS: JURIS объединяет материалы кейса, карту решений и аналитический отчёт в одном рабочем пространстве. В этой демонстрации мы начнём с готового кейса, покажем два способа добавить собственные материалы, внесём наглядную правку и подготовим отчёт. Наш пример — Project Canopy, вымышленный проект расширения управляемой площадки. Все организации, люди, документы и цифры в нём созданы специально для демонстрации. Первые две минуты посвящены началу работы, остальные — полному процессу подготовки кейса. По умолчанию открыт пользовательский вид; технические подробности доступны по необходимости.",
+      "visual": "Actual start screen, then an actual Canopy title/source declaration. Persistent small fictional-data disclosure. Highlight the entry action without hiding the surrounding interface.",
+      "verification": {
+        "status": "partially_observed",
+        "observed": "Current start screen and Studio user view observed in browser.",
+        "pending": "Canopy import/opening in this browser and the final edited entry screen must be captured. No measured first-use time."
+      }
+    },
+    {
+      "id": "account-and-ready-case",
+      "start": 45,
+      "end": 105,
+      "titleEn": "Sign in and open a ready-made case",
+      "titleRu": "Войдите и откройте готовый кейс",
+      "narrationEn": "For your own saved work, begin with the account screen. Sign in yourself using the available method, and complete the profile confirmation if this is your first visit. The recording pauses while personal information is entered; credentials never appear in the demo. Continue into the workspace and choose a case from the library. The title and short description help you decide where to begin. Open a scenario, read the immediate situation and inspect the available choices. You can start learning from a prepared case before authoring one of your own. For this demonstration, Canopy is opened from its prepared Base package. It asks a concrete question: should a team proceed with a managed-site expansion, authorize limited transition work, defer or decline? Keep that question in view as we move into Studio.",
+      "narrationRu": "Чтобы сохранять собственную работу, начните со страницы учётной записи. Самостоятельно войдите доступным способом и подтвердите данные профиля, если заходите впервые. На время ввода личных данных запись приостанавливается; пароль в ролик не попадает. Продолжите в рабочее пространство и выберите кейс в библиотеке. Название и краткое описание помогают понять, с чего начать. Откройте сценарий, прочитайте исходную ситуацию и посмотрите доступные действия. Готовый кейс позволяет освоить подход ещё до создания собственного. Для этой демонстрации Canopy открывается из подготовленного пакета Base. В нём поставлен конкретный вопрос: перейти к эксплуатации управляемой площадки, разрешить ограниченную подготовительную работу, отложить решение или отказаться? Этот вопрос остаётся ориентиром и при переходе в Студию.",
+      "visual": "Real account entry before authentication; pause recording for private input; visibly label any time cut. Capture actual profile confirmation and Continue only with an authorized real account. Open an available preset. Show Canopy via the exact Base package, never label it a production-library preset unless verified.",
+      "verification": {
+        "status": "capture_required",
+        "observed": "Account/profile source implementation inspected.",
+        "pending": "Real-account registration, profile continuation, preset launch and elapsed time not verified in the current browser. Do not show a fabricated success screen."
+      }
+    },
+    {
+      "id": "three-entry-routes",
+      "start": 105,
+      "end": 165,
+      "titleEn": "Bring your own case or prompt",
+      "titleRu": "Добавьте свой кейс или промпт",
+      "narrationEn": "There are three practical starting points: a prepared scenario, a structured case file or a written brief. In Studio, use the import action for a supported JSON case, or for a Markdown or text prompt. A structured JSON case is checked before it replaces the current draft. A written brief enters the description stage, where you can read it before moving on. These routes serve different needs. Use a canonical case when you want to preserve a defined structure. Use a prompt when you are still framing the situation. For Canopy, keep the Base package and its source versions together. A failed import should leave your existing work in place. The aim is to move quickly from your material to a case you can inspect. Choose the starting point that fits the work already in front of you.",
+      "narrationRu": "Есть три удобные точки входа: готовый сценарий, структурированный файл кейса и текстовое описание. В Студии действие импорта принимает поддерживаемый JSON-кейс, а также промпт в Markdown или обычном текстовом файле. Структурированный кейс проверяется перед заменой текущего черновика. Текст попадает на этап описания: его можно прочитать до следующего шага. Эти варианты решают разные задачи. Канонический кейс подходит для переноса определённой структуры, а промпт — для ситуации, которую вы ещё формулируете. Для Canopy важно сохранить пакет Base вместе с версиями его источников. Ошибка импорта должна оставлять текущую работу на месте. Цель — быстро перейти от ваших материалов к кейсу, который можно изучать. Выберите точку входа, соответствующую тому, что у вас уже подготовлено.",
+      "visual": "Capture one successful JSON import and one .md or .txt import as separate clearly labelled routes. Show file names, replacement warning if present, and resulting stage. Show no credentials or real client data.",
+      "verification": {
+        "status": "capture_required",
+        "observed": "Unified import and validation behavior inspected in source; earlier automated tests exist.",
+        "pending": "Current browser file upload encountered a service recovery failure. Successful JSON/text import and state preservation must be captured before presenting this as a live demonstration."
+      }
+    },
+    {
+      "id": "review-before-apply",
+      "start": 165,
+      "end": 225,
+      "titleEn": "Turn a brief into a reviewed structure",
+      "titleRu": "Преобразуйте описание в проверенную структуру",
+      "narrationEn": "For the prompt route, write the decision, the people involved, the known facts and the questions still open. Specific inputs make the proposed structure easier to review. Where AI is available for your account, ask it to understand and structure the brief. Read the proposed interpretation before applying it. Look for facts that were changed, assumptions that need a source, and missing alternatives. The author remains responsible for what enters the case. An AI proposal is a starting point for review. The interface lets you examine changes before applying them as an authoring operation. If the service is unavailable, use the clearly labelled local option or continue editing manually. For this recorded example, the exact prepared Canopy package keeps the case consistent throughout. Any separate AI-generated result should be identified as a new proposal.",
+      "narrationRu": "Для работы через промпт опишите решение, участников, известные факты и открытые вопросы. Чем конкретнее исходные данные, тем легче проверить предложенную структуру. Если AI доступен вашей учётной записи, попросите его понять и структурировать описание. Перед применением прочитайте предложенную интерпретацию. Проверьте, не изменились ли факты, каким допущениям нужны источники и какие альтернативы пропущены. За содержание кейса отвечает автор. Предложение AI — отправная точка для проверки. Интерфейс позволяет рассмотреть изменения до их применения. Если сервис недоступен, можно воспользоваться явно обозначенным локальным вариантом или продолжить вручную. В этой демонстрации точный подготовленный пакет Canopy сохраняет единый пример на всех этапах. Отдельно сгенерированный AI результат следует показывать именно как новое предложение.",
+      "visual": "Actual brief editor, then an actual returned AI review if available. Otherwise show the brief and local/manual route with a visible label; do not animate a fabricated AI response. Keep raw sensitive content out of the capture.",
+      "verification": {
+        "status": "capture_required",
+        "observed": "Brief editor and guided Studio navigation observed; AI review behavior inspected in source.",
+        "pending": "Current account AI capability, actual response and apply sequence require browser capture. Canonical review/apply must be explicit."
+      }
+    },
+    {
+      "id": "decision-map",
+      "start": 225,
+      "end": 285,
+      "titleEn": "Read and edit the decision map",
+      "titleRu": "Прочитайте и измените карту решений",
+      "narrationEn": "Now the case becomes a map you can inspect. The prepared Canopy Base contains fourteen nodes. Read the route from the initial situation through its evidence and decision checks to an outcome. Select a node to see its title and content. The purpose of the map is to expose the logic: what is known, what changes the decision and where a route ends. For a simple editing demonstration, select a connection and press Delete. The link disappears visibly. Undo brings it back, so you can experiment without losing the intended route. Keep the labels readable and make one change at a time. The user view keeps the main actions close to the work. Developer view remains available for detailed settings and diagnostics, but is not required to understand the case.",
+      "narrationRu": "Теперь кейс представлен картой, которую можно изучать и менять. Подготовленный Canopy Base содержит четырнадцать узлов. Проследите путь от исходной ситуации через доказательства и условия решения к результату. Выберите узел, чтобы увидеть его название и содержание. Карта делает логику явной: что известно, что влияет на решение и чем заканчивается каждый маршрут. Для простой демонстрации редактирования выделите связь и нажмите Delete. Связь исчезнет с экрана. Команда отмены вернёт её, позволяя экспериментировать без потери исходного маршрута. Следите за читаемостью подписей и вносите по одному изменению. Пользовательский вид держит основные действия рядом с рабочей областью. Вид разработчика открывает подробные настройки и диагностику, но для понимания кейса он не требуется.",
+      "visual": "Actual Canopy graph, exact 14-node count checked from package. Select one labelled link, Delete, then Undo. Keep original source and branch semantics intact. If capture uses the built-in teaching example, label that cut and do not call it Canopy.",
+      "verification": {
+        "status": "partially_observed",
+        "observed": "Built-in example, graph navigation, connection selection, Delete and Undo observed in the current browser. Canopy 14-node structure is source-backed.",
+        "pending": "Repeat the interaction on imported Canopy and capture at a readable size."
+      }
+    },
+    {
+      "id": "cost-time-economics",
+      "start": 285,
+      "end": 345,
+      "titleEn": "Make time and financial assumptions explicit",
+      "titleRu": "Задайте время и экономические допущения",
+      "narrationEn": "A decision also uses time and resources. Select the relevant node and inspect its budget cost and duration. Give those values an explicit meaning in the case, so another reader can follow the assumptions. Canopy provides a simple economic illustration: setup costs of two hundred and forty thousand credits and annual contribution of one hundred and twenty thousand imply a simple payback of two years. These are fictional declared inputs, not operating results. The arithmetic is easy to inspect, and its limitations remain visible. A promising payback does not close an evidence gap or authorize production. In a tax-structure case, review the dedicated economic inputs and the calculated results in their own context. Keep profitability, cash flow and payback definitions clear, and retain the required substantive review before any external use.",
+      "narrationRu": "Решение также требует времени и ресурсов. Выберите соответствующий узел и проверьте его бюджетную стоимость и продолжительность. У этих значений должен быть понятный смысл, чтобы другой читатель мог проследить ваши допущения. Canopy даёт простой экономический пример: затраты на запуск — двести сорок тысяч условных кредитов, годовой вклад — сто двадцать тысяч. Простая окупаемость составляет два года. Это заданные вымышленные показатели, а не результаты реальной эксплуатации. Расчёт легко проверить, а его ограничения остаются видимыми. Привлекательная окупаемость не закрывает пробелы в доказательствах и не разрешает производство. В кейсе о налоговой структуре изучите предусмотренные для него экономические параметры и результаты расчёта. Чётко определяйте прибыльность, денежный поток и окупаемость; необходимая содержательная проверка сохраняется перед внешним использованием.",
+      "visual": "Actual node cost/duration fields and Canopy Base source declaration with the simple arithmetic. Do not alter Base to manufacture a favorable result. Optional clearly labelled tax-case insert only after its UI is captured; no claim that Canopy uses the tax engine.",
+      "verification": {
+        "status": "source_checked_capture_required",
+        "observed": "Node fields and economic source declarations inspected. Base arithmetic: 240000 / 120000 = 2 years.",
+        "pending": "Actual field editing and recalculation capture; tax-case insert is optional and must not displace the single-case story."
+      }
+    },
+    {
+      "id": "evidence-and-test",
+      "start": 345,
+      "end": 410,
+      "titleEn": "Test the reasoning, keep the conditions",
+      "titleRu": "Проверьте логику и сохраните условия",
+      "narrationEn": "Before testing, use the checks to find missing pieces and return to the relevant point on the map. A complete route needs a clear beginning and an outcome. Then test the case and follow the decisions as a reader would. Canopy makes the evidence distinction concrete. Its Base demand document describes six hundred indicated packs per week, but only three hundred are signed commitments. Evidenced capacity is four hundred and eighty. Those figures cannot be treated as interchangeable. The Base branch therefore concerns conditional transition work, with unresolved evidence and leadership requirements; it does not authorize production. A useful demonstration shows why a branch was taken and what still has to change. Keep the underlying source version attached to the claim. This gives a reviewer something specific to challenge, correct or confirm, instead of a conclusion detached from its inputs.",
+      "narrationRu": "Перед тестом воспользуйтесь замечаниями проверки: они помогают найти недостающие элементы и вернуться к нужному месту на карте. У завершённого маршрута должны быть понятное начало и исход. Затем протестируйте кейс и пройдите решения так, как их увидит читатель. Canopy показывает, почему важно различать доказательства. В документе Base указан совокупный интерес к шестистам упаковкам в неделю, но подписанные обязательства относятся только к трёмстам. Подтверждённая мощность составляет четыреста восемьдесят. Эти показатели нельзя подменять друг другом. Поэтому ветка Base касается условной подготовительной работы при незакрытых требованиях к доказательствам и руководству; она не разрешает производство. Демонстрация должна показывать причину выбора ветки и оставшиеся условия. Привязывайте утверждение к версии источника. Тогда проверяющий получает конкретный предмет для обсуждения, исправления или подтверждения.",
+      "visual": "Actual checks panel; real test run only if completed. Show D03 v1 demand excerpt and D04 capacity excerpt alongside corresponding Base nodes. Display conditional-pilot result only from a real run receipt; otherwise label it the defined branch.",
+      "verification": {
+        "status": "source_checked_capture_required",
+        "observed": "Base declarations and source history confirm 300 signed, 600 indicated and 480 capacity, with conditional-pilot terminal.",
+        "pending": "A completed current-browser exact-package test run. Do not turn a defined terminal or expected card into a claimed execution receipt."
+      }
+    },
+    {
+      "id": "analytical-report",
+      "start": 410,
+      "end": 485,
+      "titleEn": "Create a report people can review",
+      "titleRu": "Создайте отчёт для содержательной проверки",
+      "narrationEn": "When the draft is ready for discussion, choose Generate report. The report dialog puts Preview PDF and Download PDF at the top, so you can see the result before exploring advanced settings. Start with a preliminary report for internal review. The document brings together the executive summary, decision map, checks and the selected registers and economic assumptions. Review the page layout, names, numbers and full text alternative to the graph. Open the settings when you need to adjust the audience, classification or included material. The original AI prompt is not included in the report. A downloaded preliminary PDF is a working deliverable; it does not establish independent approval. Governed outputs and the reviewer's decision belong to the separate case-report workflow, with their own conditions. For a first session, the useful result is concrete: a case you can inspect and a clearly labelled analytical draft that another person can read and question.",
+      "narrationRu": "Когда черновик готов к обсуждению, выберите «Сформировать отчёт». В верхней части окна расположены предпросмотр и скачивание PDF: результат можно увидеть до открытия подробных настроек. Начните с предварительного отчёта для внутренней проверки. Документ объединяет резюме, карту решений, проверки, выбранные реестры и экономические допущения. Просмотрите вёрстку, названия, цифры и полную текстовую альтернативу графу. Настройки понадобятся, если вы хотите изменить аудиторию, гриф или состав материала. Исходный AI-промпт в отчёт не включается. Скачанный предварительный PDF — рабочий документ; сам по себе он не подтверждает независимое утверждение. Контролируемые документы и решение проверяющего относятся к отдельному процессу отчётов по делу со своими условиями. Для первой сессии результат вполне конкретен: понятный кейс и явно обозначенный аналитический черновик, который другой человек может прочитать и обсудить.",
+      "visual": "Actual Generate report action and report dialog; Preview then actual PDF pages with visible draft status. Inspect graph arrows, Cyrillic, numeric values and page breaks. Capture actual download only after it succeeds. No mock PDF browser or simulated approval badge.",
+      "verification": {
+        "status": "partially_observed",
+        "observed": "Report dialog with primary Preview/Download observed in browser. PDF arrow glyph defect identified and being repaired by parent.",
+        "pending": "Post-fix browser preview, actual downloaded PDF and visual examination; report generation timing not established."
+      }
+    },
+    {
+      "id": "close-and-next-step",
+      "start": 485,
+      "end": 540,
+      "titleEn": "Leave with a useful first result",
+      "titleRu": "Завершите первую сессию полезным результатом",
+      "narrationEn": "The first-use journey should leave you with three things: a case you understand, a visible decision structure and a report you can share for the right kind of review. A ready-made scenario is the quickest way to explore. A canonical file carries an existing structure into Studio. A prompt helps you begin when the material is still unstructured. From there, review the assumptions, edit the map and create the analytical draft. For a team evaluating the product, choose one recurring decision and try this workflow with synthetic or sanitized material. Measure the time to first useful action, the questions raised and the effort needed to prepare the report. The next step is simple: open a case and make one decision that you can explain.",
+      "narrationRu": "После первого знакомства у вас должны остаться три результата: понятный кейс, наглядная структура решения и отчёт для соответствующей проверки. Готовый сценарий помогает быстрее освоиться. Канонический файл переносит существующую структуру в Студию. Промпт позволяет начать, когда материалы ещё не упорядочены. Дальше вы проверяете допущения, редактируете карту и создаёте аналитический черновик. Команде, которая оценивает продукт, стоит выбрать одно повторяющееся решение и пройти этот процесс на вымышленных или обезличенных материалах. Измерьте время до первого полезного действия, возникшие вопросы и усилия на подготовку отчёта. Следующий шаг прост: откройте кейс и примите одно решение, которое сможете объяснить.",
+      "visual": "Actual final graph and preliminary report side by side only if readable; then return to the real start action. End card may be graphic, clearly separate from product UI. No investor ROI, adoption or registration speed claims.",
+      "verification": {
+        "status": "storyboard_prepared",
+        "observed": "No measured onboarding or investor evaluation result claimed.",
+        "pending": "Final continuous take and timed cold-user acceptance across the three entry routes."
+      }
+    }
+  ],
+  "shortCut": {
+    "durationSeconds": 90,
+    "status": "narration_and_storyboard_prepared_video_pending",
+    "chapters": [
+      {
+        "id": "short-open",
+        "start": 0,
+        "end": 15,
+        "narrationEn": "Start with a decision you need to explain. GENESIS: JURIS brings the case, its decision map and an analytical report into one workspace. This example uses entirely fictional Canopy data.",
+        "narrationRu": "Начните с решения, которое нужно объяснить. GENESIS: JURIS объединяет кейс, карту решений и аналитический отчёт в одном пространстве. В примере используются полностью вымышленные данные Canopy.",
+        "visual": "Actual start screen and fictional-data disclosure."
+      },
+      {
+        "id": "short-enter",
+        "start": 15,
+        "end": 35,
+        "narrationEn": "Sign in yourself and confirm your profile. Then choose a ready-made scenario, import a supported case file, or begin with a written prompt. In Studio, review the proposed structure before applying it. Your first action should be easy to find.",
+        "narrationRu": "Самостоятельно войдите и подтвердите профиль. Выберите готовый сценарий, импортируйте поддерживаемый файл кейса или начните с текстового промпта. В Студии проверьте предложенную структуру до её применения. Первое действие должно быть легко найти.",
+        "visual": "Actual authorized account continuation and three entry actions. Mark removed private-input time. Never fabricate authentication."
+      },
+      {
+        "id": "short-map",
+        "start": 35,
+        "end": 55,
+        "narrationEn": "Read the decision map, select a node and inspect its assumptions. Edit a connection, then undo the change. Costs and time belong with the decision. In Canopy, attractive economics still leave evidence conditions that must be resolved.",
+        "narrationRu": "Прочитайте карту решений, выберите узел и проверьте допущения. Измените связь и отмените правку. Стоимость и время рассматриваются вместе с решением. В Canopy привлекательная экономика сохраняет условия доказательности, которые ещё нужно выполнить.",
+        "visual": "Actual readable graph, Delete and Undo, then source-bound condition."
+      },
+      {
+        "id": "short-report",
+        "start": 55,
+        "end": 75,
+        "narrationEn": "Choose Generate report, preview the PDF and download a preliminary analytical draft. The report gives another person a clear starting point for review. Independent approval remains a separate step, with its own evidence and permissions.",
+        "narrationRu": "Выберите формирование отчёта, просмотрите PDF и скачайте предварительный аналитический черновик. Документ даёт другому человеку понятную основу для проверки. Независимое утверждение остаётся отдельным этапом со своими доказательствами и полномочиями.",
+        "visual": "Actual report dialog and post-fix PDF with preliminary status visible."
+      },
+      {
+        "id": "short-close",
+        "start": 75,
+        "end": 90,
+        "narrationEn": "Leave the first session with a case you understand, a decision you can explain and a useful draft report. Open a case and begin with one concrete question.",
+        "narrationRu": "Завершите первую сессию понятным кейсом, объяснимым решением и полезным черновиком отчёта. Откройте кейс и начните с одного конкретного вопроса.",
+        "visual": "Actual final result and clear start action."
+      }
+    ],
+    "narrationEn": "Start with a decision you need to explain. GENESIS: JURIS brings the case, its decision map and an analytical report into one workspace. This example uses entirely fictional Canopy data. Sign in yourself and confirm your profile. Then choose a ready-made scenario, import a supported case file, or begin with a written prompt. In Studio, review the proposed structure before applying it. Your first action should be easy to find. Read the decision map, select a node and inspect its assumptions. Edit a connection, then undo the change. Costs and time belong with the decision. In Canopy, attractive economics still leave evidence conditions that must be resolved. Choose Generate report, preview the PDF and download a preliminary analytical draft. The report gives another person a clear starting point for review. Independent approval remains a separate step, with its own evidence and permissions. Leave the first session with a case you understand, a decision you can explain and a useful draft report. Open a case and begin with one concrete question.",
+    "narrationRu": "Начните с решения, которое нужно объяснить. GENESIS: JURIS объединяет кейс, карту решений и аналитический отчёт в одном пространстве. В примере используются полностью вымышленные данные Canopy. Самостоятельно войдите и подтвердите профиль. Выберите готовый сценарий, импортируйте поддерживаемый файл кейса или начните с текстового промпта. В Студии проверьте предложенную структуру до её применения. Первое действие должно быть легко найти. Прочитайте карту решений, выберите узел и проверьте допущения. Измените связь и отмените правку. Стоимость и время рассматриваются вместе с решением. В Canopy привлекательная экономика сохраняет условия доказательности, которые ещё нужно выполнить. Выберите формирование отчёта, просмотрите PDF и скачайте предварительный аналитический черновик. Документ даёт другому человеку понятную основу для проверки. Независимое утверждение остаётся отдельным этапом со своими доказательствами и полномочиями. Завершите первую сессию понятным кейсом, объяснимым решением и полезным черновиком отчёта. Откройте кейс и начните с одного конкретного вопроса.",
+    "verification": "Use only accepted footage from the long cut. Registration, import, AI response, actual run, PDF preview/download and elapsed time remain subject to capture and verification.",
+    "wordCountEn": 170,
+    "wordCountRu": 134
+  },
+  "wordCountEn": 1187,
+  "wordCountRu": 949
+}

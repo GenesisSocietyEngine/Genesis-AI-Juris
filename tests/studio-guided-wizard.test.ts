@@ -48,7 +48,8 @@ test("guided Studio exposes six bilingual, keyboard-accessible stages", () => {
   }
   assert.match(wizardSource, /aria-current=\{active \? "step"/);
   assert.match(wizardSource, /<progress max=\{6\}/);
-  assert.match(wizardSource, /Complete the task below to continue/);
+  assert.match(wizardSource, /<p>\{current.description\}<\/p>/);
+  assert.match(wizardSource, /disabled=\{!canContinue\}/);
   assert.match(wizardSource, /Describe a task/);
   assert.match(wizardSource, /Open an example/);
   assert.match(wizardSource, /Load a case/);
@@ -72,6 +73,6 @@ test("guided stages progressively disclose the existing canonical editor", () =>
 test("guided shell retains narrow-layout and touch-friendly presentation", () => {
   assert.match(cssSource, /\.studio-guide ol\{display:grid;grid-template-columns:repeat\(6/);
   assert.match(cssSource, /@media\(max-width:640px\)[\s\S]*\.studio-guide ol\{grid-template-columns:repeat\(2/);
-  assert.match(cssSource, /\.studio-quick-starts button\{min-width:0;min-height:124px/);
+  assert.match(cssSource, /\.studio-user-view \.studio-quick-starts button\{min-height:78px/);
   assert.match(cssSource, /\.studio-finish-options\{display:grid;grid-template-columns:repeat\(3/);
 });

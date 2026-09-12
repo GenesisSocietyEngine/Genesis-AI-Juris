@@ -65,6 +65,11 @@ export default function StudioGuidedWizard({
   const completed = readiness.filter(Boolean).length;
   const current = steps[activeStep - 1];
   const canContinue = activeStep === 6 || readiness[activeStep - 1];
+  const saveLabel = saveState === "saving" ? (locale === "en" ? "Saving…" : "Сохранение…")
+    : saveState === "saved" ? (locale === "en" ? "Saved to workspace" : "Сохранено в рабочем пространстве")
+    : saveState === "submitted" ? (locale === "en" ? "Submitted for review" : "Отправлено на рецензию")
+    : saveState === "idle" ? (locale === "en" ? "Not saved to workspace" : "Не сохранено в рабочем пространстве")
+    : (locale === "en" ? "Saving needs attention" : "Проверьте сохранение");
 
   function changeStep(step: GuidedStudioStep) {
     onStepChange(step);
@@ -78,21 +83,16 @@ export default function StudioGuidedWizard({
       <button type="button" onClick={onImport}><span>02</span><b>{locale === "en" ? "Load a case or prompt" : "Загрузить кейс или промпт"}</b><small>{locale === "en" ? "Studio JSON, canonical Markdown or a text description" : "JSON Studio, канонический Markdown или текстовое описание"}</small></button>
       <button type="button" onClick={onFocusBrief}><span>03</span><b>{locale === "en" ? "Describe a task" : "Описать задачу"}</b><small>{locale === "en" ? "Start with a plain-language brief" : "Начните с описания обычным языком"}</small></button>
     </div>}
-    <header className="studio-guide-progress">
+    <header className="studio-guide-progress studio-guide-progress-compact">
       <div>
-        <span>{locale === "en" ? "GUIDED STUDIO · SIX CLEAR STEPS" : "ПОШАГОВАЯ СТУДИЯ · ШЕСТЬ ПОНЯТНЫХ ЭТАПОВ"}</span>
-        <h2 id="studio-guided-title">{locale === "en" ? "From a rough matter to a reviewable case" : "От исходной задачи до проверяемого кейса"}</h2>
+        <h2 id="studio-guided-title">{caseName.trim() || (locale === "en" ? "New case" : "Новый кейс")}</h2>
+        <p className={`studio-guide-save save-${saveState}`}><span>{saveLabel}</span><span aria-hidden="true"> · </span><span>{validationReady ? (locale === "en" ? "Ready to test" : "Готово к тесту") : (locale === "en" ? "Work in progress" : "В работе")}</span></p>
       </div>
       <div className="studio-guide-meter" aria-label={locale === "en" ? `${completed} of 6 sections contain data` : `Заполнено разделов: ${completed} из 6`}>
-        <b>{completed}/6</b><small>{locale === "en" ? "Sections populated · review and testing are separate" : "Разделы заполнены · проверка и тестирование отдельно"}</small>
-        <progress max={6} value={completed}/>
+        <b>{completed}/6</b><small>{locale === "en" ? "Sections filled" : "Разделы заполнены"}</small>
+        <progress max={6} value={completed} aria-label={locale === "en" ? "Case content progress; review and testing are separate" : "Заполнение кейса; проверка и тестирование отдельно"}/>
       </div>
     </header>
-    <div className="studio-guide-context" aria-label={locale === "en" ? "Current case status" : "Статус текущего кейса"}>
-      <div><span>{locale === "en" ? "CASE" : "КЕЙС"}</span><b>{caseName.trim() || (locale === "en" ? "New untitled case" : "Новый кейс без названия")}</b></div>
-      <div className={`save-${saveState}`}><span>{locale === "en" ? "WORKSPACE" : "РАБОЧЕЕ ПРОСТРАНСТВО"}</span><b>{saveState === "saving" ? (locale === "en" ? "Saving…" : "Сохранение…") : saveState === "saved" ? (locale === "en" ? "Saved" : "Сохранено") : saveState === "submitted" ? (locale === "en" ? "Submitted" : "Отправлено") : saveState === "idle" ? (locale === "en" ? "Unsaved changes" : "Есть несохранённые изменения") : (locale === "en" ? "Needs attention" : "Требует внимания")}</b></div>
-      <div className={validationReady ? "validation-ready" : "validation-review"}><span>{locale === "en" ? "VALIDATION" : "ПРОВЕРКА"}</span><b>{validationReady ? (locale === "en" ? "Ready to test" : "Готово к тесту") : (locale === "en" ? "In progress" : "В процессе")}</b></div>
-    </div>
     <nav className="studio-guide" aria-label={locale === "en" ? "Case authoring steps" : "Этапы создания кейса"}>
       <ol>
         {steps.map((step, index) => {
@@ -109,13 +109,11 @@ export default function StudioGuidedWizard({
         })}
       </ol>
     </nav>
-    <div className="studio-guide-task" aria-live="polite">
-      <div className="studio-guide-task-number"><span>{locale === "en" ? "STEP" : "ЭТАП"}</span><b>{String(activeStep).padStart(2, "0")}</b></div>
+    <div className="studio-guide-task studio-guide-task-compact" aria-live="polite">
       <div className="studio-guide-task-copy">
-        <span>{current.label}</span>
         <h3>{current.title}</h3>
         <p>{current.description}</p>
-        <small className={readiness[activeStep - 1] ? "ready" : "pending"}>{readiness[activeStep - 1] ? `✓ ${current.ready}` : (locale === "en" ? "Complete the task below to continue." : "Выполните задачу ниже, чтобы продолжить.")}</small>
+        {readiness[activeStep - 1] && <small className="ready">✓ {current.ready}</small>}
       </div>
       <div className="studio-guide-navigation">
         {activeStep > 1 && <button type="button" className="secondary-cta" onClick={() => changeStep((activeStep - 1) as GuidedStudioStep)}>{locale === "en" ? "Back" : "Назад"}</button>}

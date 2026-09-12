@@ -4,6 +4,7 @@ import { buildReportGraphLayout, deriveReportGraphLayoutInput, reportGraphGovern
 import { buildReportGraphAppendix } from "./report-graph-pdf";
 import { canonicalFingerprint } from "./case-integrity";
 import { caseReportBriefRows } from "./case-report-brief";
+import { CASE_REPORT_PDF_FONTS, REPORT_AUDIT_SYMBOL_FONT, REPORT_AUDIT_SYMBOL_FONT_SHA256, reportAuditText } from "./report-audit-symbols";
 import type { StudioDraft, StudioNodeType } from "./types";
 import { buildCanonicalReportModel, reportReceipt, writeStoredReportReceipt, type CanonicalReportModel, type CurrentReportReceiptBinding, type ReportSectionId } from "./report-model";
 import type { Content, ContentTable, ContentText, TDocumentDefinitions, TableCell } from "pdfmake/interfaces";
@@ -331,7 +332,7 @@ function buildCaseReportDefinitionFromModels(
         : redactionsActive
           ? tr(language, "Authoring event recorded - message excluded because report redactions are active", "Событие подготовки записано - сообщение исключено из-за активного редактирования отчёта")
           : clean(entry.message);
-      return [new Date(entry.createdAt).toISOString().slice(0, 16).replace("T", " "), entry.source, entry.action, safeMessage];
+      return [new Date(entry.createdAt).toISOString().slice(0, 16).replace("T", " "), entry.source, entry.action, reportAuditText(safeMessage)];
     });
     if (safeEntries.length) content.push(table([tr(language, "UTC", "UTC"), tr(language, "Source", "Источник"), tr(language, "Action", "Действие"), tr(language, "Record", "Запись")], safeEntries, ["18%", "13%", "20%", "49%"], auditHeading));
     else content.push({ stack: [auditHeading, { text: tr(language, "No authoring history is recorded.", "История подготовки отсутствует."), style: "body" }], unbreakable: true });
@@ -429,7 +430,8 @@ function caseReportPresentationFingerprint(
     : [];
   return canonicalFingerprint({
     format: "genesis-juris-case-report-presentation-binding",
-    version: 2,
+    version: 3,
+    auditSymbolFont: REPORT_AUDIT_SYMBOL_FONT_SHA256,
     reportFingerprint: reportModel.contentFingerprint,
     layoutFingerprint: layoutModel.layoutFingerprint,
     language: effectiveOptions.language,
@@ -528,7 +530,14 @@ function assertGovernedReportDefinitionText(definition: TDocumentDefinitions) {
       for (const item of value) inspect(item);
       return;
     }
-    for (const item of Object.values(value as Record<string, unknown>)) inspect(item);
+    const record = value as Record<string, unknown>;
+    for (const [key, item] of Object.entries(record)) {
+      // Only the exact scalar supported by the pinned audit face bypasses the
+      // Roboto check. XML, other unsupported glyphs and graph inputs stay strict.
+      if (key === "text" && record.font === REPORT_AUDIT_SYMBOL_FONT
+        && typeof item === "string" && /^→+$/u.test(item)) continue;
+      inspect(item);
+    }
   };
   inspect(definition);
 
@@ -576,12 +585,12 @@ export function assertCaseReportGenerationAuthorized(canGenerate: boolean) {
 
 async function renderCaseReport(draft: StudioDraft, options: CaseReportOptions, authorization: { canGenerate: boolean }) {
   assertCaseReportGenerationAuthorized(authorization?.canGenerate);
-  const [{ default: pdfMake }, { default: pdfFonts }] = await Promise.all([
-    import("pdfmake/build/pdfmake.js"), import("pdfmake/build/vfs_fonts.js"),
+  const [{ default: pdfMake }, { default: pdfFonts }, { default: auditFont }] = await Promise.all([
+    import("pdfmake/build/pdfmake.js"), import("pdfmake/build/vfs_fonts.js"), import("./report-audit-symbol-font.v1.json"),
   ]);
-  (pdfMake as unknown as { addVirtualFileSystem: (fonts: unknown) => void }).addVirtualFileSystem(pdfFonts);
+  (pdfMake as unknown as { addVirtualFileSystem: (fonts: unknown) => void }).addVirtualFileSystem({ ...pdfFonts, ...auditFont.vfs });
   const { definition, reportModel, layoutModel, presentationFingerprint } = buildCaseReportArtifacts(draft, options);
-  const blob = await new Promise<Blob>((resolve) => pdfMake.createPdf(definition).getBlob(resolve));
+  const blob = await new Promise<Blob>((resolve) => pdfMake.createPdf(definition, undefined, CASE_REPORT_PDF_FONTS).getBlob(resolve));
   return { blob, reportModel, layoutModel, presentationFingerprint };
 }
 
