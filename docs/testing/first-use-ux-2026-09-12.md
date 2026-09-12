@@ -52,3 +52,7 @@ The complete suite ran 595 tests: 593 passed and two assertions still expected r
 No schema migration, secret, access role, publication gate or case lineage policy changes. The PDF presentation fingerprint is advanced to bind the new audit font; existing exact-output approvals are not transferable to newly rendered bytes. Unsupported graph glyphs continue to fail visibly rather than disappearing from evidence. This remains a limitation for arbitrary symbols in user-authored graph text.
 
 Automated release results are recorded in `first-use-release-2026-09-12.json`. Passing automation does not close the live acceptance items above.
+
+## Published result
+
+Site 79 was published successfully at 11:33:15 UTC on 12 September 2026. The native deployment response confirms the source commit `318e7d8764972a24a5cdb48f9ebdc8dd8572a611` and URL https://genesis-juris-web.maxim-hayan.chatgpt.site. The exact receipt is in the accompanying JSON. The final production-build/projection rerun passed 8/8 tests, and the initial application chunk is 322,292 bytes, below its existing 325,000-byte gate. This receipt update is a documentation-only commit after the published implementation.
