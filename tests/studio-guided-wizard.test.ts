@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
-import { recommendedGuidedStudioStep } from "../app/StudioGuidedWizard";
+import StudioGuidedWizard, { recommendedGuidedStudioStep } from "../app/StudioGuidedWizard";
 import { initialStudioWorkflowState, parseStudioWorkflowStep, reduceStudioWorkflow, restoredStudioWorkflowStep, serializedStudioWorkflowStep } from "../app/studio-workflow";
 
-const wizardSource = readFileSync(new URL("../app/StudioGuidedWizard.tsx", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
 const cssSource = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
 
@@ -39,19 +40,28 @@ test("an empty untitled draft always restores at Step 1", () => {
   assert.match(appSource, /window\.localStorage\.setItem\(guidedWorkflowKey, stage\)/);
 });
 
-test("guided Studio exposes six bilingual, keyboard-accessible stages", () => {
-  for (const label of ["Brief", "AI draft", "Case facts", "Decision map", "Test", "Finish"]) {
-    assert.match(wizardSource, new RegExp(`label: "${label}"`));
+test("guided Studio renders numbered bilingual stages and practical quick starts", () => {
+  const noop = () => undefined;
+  for (const locale of ["en", "ru"] as const) {
+    const markup = renderToStaticMarkup(createElement(StudioGuidedWizard, {
+      locale, activeStep: 1, readiness: [true, true, true, true, false, false],
+      onStepChange: noop, onFocusBrief: noop, onStartExample: noop,
+      onBrowseDemos: noop, onImport: noop, caseName: "Canopy",
+      saveState: "idle", validationReady: false,
+    }));
+    const labels = locale === "en"
+      ? ["Brief", "Draft review", "Facts &amp; evidence", "Decision map", "Test", "Finish"]
+      : ["Задача", "Черновик", "Факты и материалы", "Карта", "Тест", "Готово"];
+    for (const label of labels) assert.ok(markup.includes(label), label);
+    for (let number = 1; number <= 6; number += 1) {
+      assert.ok(markup.includes("<b>" + number + "</b>"), "completed stages retain their numbers");
+    }
+    assert.match(markup, /aria-current="step"/);
+    assert.match(markup, /<progress max="6"/);
+    assert.ok(markup.includes(locale === "en" ? "Browse demo cases" : "Открыть демо-кейсы"));
+    assert.ok(markup.includes(locale === "en" ? "Describe my own case" : "Описать свой кейс"));
+    assert.ok(markup.includes("(.json)") && markup.includes("(.md)"));
   }
-  for (const label of ["Задача", "AI-черновик", "Факты", "Карта", "Тест", "Готово"]) {
-    assert.match(wizardSource, new RegExp(`label: "${label}"`));
-  }
-  assert.match(wizardSource, /aria-current=\{active \? "step"/);
-  assert.match(wizardSource, /<progress max=\{6\}/);
-  assert.match(wizardSource, /Complete the task below to continue/);
-  assert.match(wizardSource, /Describe my own case/);
-  assert.match(wizardSource, /Try the guided example/);
-  assert.match(wizardSource, /Import an existing case/);
 });
 
 test("guided stages progressively disclose the existing canonical editor", () => {

@@ -326,12 +326,13 @@ test("Studio opens in Office and the English demo keeps one Five Flats case with
 test("standalone Studio exposes persistent professional destinations", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   assert.match(appSource, /href="\/account"/);
-  assert.match(appSource, />Account<\/span>/);
+  assert.match(appSource, /locale === "en" \? "Account" : "Аккаунт"/);
   assert.match(appSource, /href="\/matters"/);
   assert.match(appSource, /"My cases" : "Мои дела"/);
   assert.match(appSource, /"Templates" : "Шаблоны"/);
   assert.match(appSource, /sessionStorage\.getItem\(PENDING_CASE_PROMPT_KEY\)/);
-  assert.match(appSource, /ADVISORY · BETA v0\.1\.0/);
+  assert.doesNotMatch(appSource, /ADVISORY · BETA v0\.1\.0/);
+  assert.match(appSource, /"Demo cases" : "Демо-кейсы"/);
 });
 
 test("account navigation exposes My cases, Templates, Studio, and Account", () => {
