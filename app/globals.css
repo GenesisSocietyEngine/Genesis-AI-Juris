@@ -1021,3 +1021,34 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   .case-playbook>footer{grid-template-columns:1fr;padding:18px 22px}
   .case-playbook>footer small{text-align:left}
 }
+
+/* Studio guidance and the separate demo catalogue. */
+.demo-library { padding-block: 2rem 4rem; position: relative; z-index: 1; }
+.demo-library-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; }
+.demo-library h1 { margin:0 0 .65rem; font:500 clamp(2rem,4vw,3rem)/1.1 var(--serif); }
+.demo-library p { font-size:1rem; line-height:1.6; color:var(--subtle); max-width:75ch; }
+.demo-getting-started { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1.5rem; padding:1.25rem 1.25rem 1.25rem 2.5rem; margin:1.5rem 0 2rem; border:1px solid var(--rule); background:var(--panel); }
+.demo-getting-started li { padding-inline-end:1rem; font-size:1rem; line-height:1.6; }
+.demo-getting-started li::marker { font-weight:700; color:var(--cyan); }
+.demo-category { margin-top:2rem; }
+.demo-category h2 { font:500 1.8rem/1.2 var(--serif); margin:0; }
+.demo-case-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin-top:1rem; }
+.demo-case-grid article { display:flex; flex-direction:column; align-items:flex-start; min-width:0; padding:1.4rem; border:1px solid var(--rule); background:var(--panel); border-radius:8px; }
+.demo-case-grid h3 { font-size:1.2rem; line-height:1.35; margin:0 0 .5rem; overflow-wrap:anywhere; }
+.demo-case-grid small { font-size:.875rem; color:var(--subtle); margin-bottom:.5rem; }
+.demo-case-grid p { margin:0 0 1rem; flex:1; }
+.demo-library button { min-height:44px; font-size:.875rem; white-space:normal; text-align:start; }
+.demo-library button:focus-visible,.case-view-tabs button:focus-visible { outline:3px solid var(--cyan); outline-offset:3px; }
+.demo-error { color:var(--red)!important; border-left:3px solid var(--red); padding:1rem; }
+.studio-user-view .studio-hero { padding-block:1.5rem; gap:1.5rem; }
+.studio-user-view .studio-hero h1 { font-size:clamp(1.75rem,3vw,2.5rem); margin:.75rem 0; }
+.studio-user-view .studio-guide-task-copy p { font-size:1rem; }
+.studio-user-view .studio-guide button,.studio-user-view .studio-actions button,.studio-user-view .studio-guide-navigation button { font-size:.875rem; min-height:44px; }
+.studio-user-view .case-view-tabs button,.studio-user-view .case-view-focus { font-size:.875rem; min-height:44px; }
+.studio-user-view .studio-quick-starts button b { font-size:1rem; }
+.studio-user-view .studio-quick-starts button small { font-size:.875rem; line-height:1.45; }
+@media(max-width:700px) {
+  .demo-getting-started,.demo-case-grid { grid-template-columns:1fr; }
+  .demo-getting-started { gap:.75rem; }
+  .demo-library-header { align-items:flex-start; }
+}

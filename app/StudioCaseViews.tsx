@@ -44,7 +44,7 @@ const viewCopy: Record<CaseViewId, {
   },
   simulation: {
     label: { en: "Simulation", ru: "Симуляция" },
-    description: { en: "Playable decisions and terminal outcomes; execution remains Rust-validated.", ru: "Игровые решения и финальные исходы; исполнение проверяется Rust." },
+    description: { en: "Review the available decisions and the outcomes they can reach.", ru: "Проверьте доступные решения и исходы, к которым они ведут." },
     empty: { en: "Add a Decision and an Outcome to form a playable route.", ru: "Добавьте решение и исход, чтобы создать игровой маршрут." },
   },
 };
@@ -77,21 +77,31 @@ function ProjectionRows({ id, items, locale, onFocusNode }: { id: CaseViewId; it
   </article>)}</div>;
 }
 
-export default function StudioCaseViews({ locale, draft, onFocusNode }: { locale: Locale; draft: StudioDraft; onFocusNode: (id: string) => void }) {
+export default function StudioCaseViews({ locale, draft, onFocusNode, showTechnicalDetails = false }: { locale: Locale; draft: StudioDraft; onFocusNode: (id: string) => void; showTechnicalDetails?: boolean }) {
   const definition = caseTypeDefinition(draft.caseType);
   const [activeView, setActiveView] = useState<CaseViewId>(definition.views[0]);
   const resolvedActiveView = definition.views.includes(activeView) ? activeView : definition.views[0];
   const projection = projectCaseView(draft, resolvedActiveView);
   return <section className="case-view-studio page-width" aria-labelledby="case-view-studio-title">
     <header>
-      <div><span>{locale === "en" ? "V58 · MULTI-VIEW CASE STUDIO" : "V58 · МНОГОПРОФИЛЬНАЯ СТУДИЯ"}</span><h2 id="case-view-studio-title">{locale === "en" ? "See the same matter from the angle you need" : "Посмотрите на один кейс с нужной точки зрения"}</h2><p>{locale === "en" ? "Every view is projected from the same versioned draft. Switching views never creates or changes case content." : "Каждое представление строится из одного версионируемого черновика. Переключение не создаёт и не меняет содержание кейса."}</p></div>
-      <code>{definition.id} · v{definition.version}</code>
+      <div><span>{locale === "en" ? "Case views" : "Представления кейса"}</span><h2 id="case-view-studio-title">{locale === "en" ? "See the same matter from the angle you need" : "Посмотрите на один кейс с нужной точки зрения"}</h2><p>{locale === "en" ? "Every view is projected from the same versioned draft. Switching views never creates or changes case content." : "Каждое представление строится из одного версионируемого черновика. Переключение не создаёт и не меняет содержание кейса."}</p></div>
+      {showTechnicalDetails && <code>{definition.id} · v{definition.version}</code>}
     </header>
     <div className="case-view-tabs" role="tablist" aria-label={locale === "en" ? "Case views" : "Представления кейса"}>
-      {definition.views.map((viewId) => <button key={viewId} type="button" role="tab" id={`case-view-tab-${viewId}`} aria-selected={resolvedActiveView === viewId} aria-controls={`case-view-panel-${viewId}`} tabIndex={resolvedActiveView === viewId ? 0 : -1} className={resolvedActiveView === viewId ? "active" : ""} onClick={() => setActiveView(viewId)}><span>{viewCopy[viewId].label[locale]}</span><small>{projectCaseView(draft, viewId).items.length.toString().padStart(2, "0")}</small></button>)}
+      {definition.views.map((viewId) => <button key={viewId} type="button" role="tab" id={`case-view-tab-${viewId}`} aria-selected={resolvedActiveView === viewId} aria-controls={`case-view-panel-${viewId}`} tabIndex={resolvedActiveView === viewId ? 0 : -1} className={resolvedActiveView === viewId ? "active" : ""} onKeyDown={(event) => {
+        const index = definition.views.indexOf(viewId);
+        const nextIndex = event.key === "ArrowRight" ? (index + 1) % definition.views.length
+          : event.key === "ArrowLeft" ? (index + definition.views.length - 1) % definition.views.length
+          : event.key === "Home" ? 0 : event.key === "End" ? definition.views.length - 1 : null;
+        if (nextIndex === null) return;
+        event.preventDefault();
+        const next = definition.views[nextIndex];
+        setActiveView(next);
+        document.getElementById(`case-view-tab-${next}`)?.focus();
+      }} onClick={() => setActiveView(viewId)}><span>{viewCopy[viewId].label[locale]}</span><small>{projectCaseView(draft, viewId).items.length.toString().padStart(2, "0")}</small></button>)}
     </div>
-    <div className="case-view-panel" id={`case-view-panel-${resolvedActiveView}`} role="tabpanel" aria-labelledby={`case-view-tab-${resolvedActiveView}`}>
-      <div className="case-view-panel-heading"><div><span>{viewCopy[resolvedActiveView].label[locale]}</span><p>{viewCopy[resolvedActiveView].description[locale]}</p></div><b>{projection.sourceNodeCount} N · {projection.sourceLinkCount} L</b></div>
+    <div className="case-view-panel" id={`case-view-panel-${resolvedActiveView}`} role="tabpanel" tabIndex={0} aria-labelledby={`case-view-tab-${resolvedActiveView}`}>
+      <div className="case-view-panel-heading"><div><span>{viewCopy[resolvedActiveView].label[locale]}</span><p>{viewCopy[resolvedActiveView].description[locale]}</p></div>{showTechnicalDetails && <b>{projection.sourceNodeCount} N · {projection.sourceLinkCount} L</b>}</div>
       <ProjectionRows id={resolvedActiveView} items={projection.items} locale={locale} onFocusNode={onFocusNode}/>
     </div>
   </section>;

@@ -17,16 +17,16 @@ type StepCopy = {
 const copy: Record<Locale, StepCopy[]> = {
   en: [
     { label: "Brief", short: "Describe", title: "Tell us what needs to be decided", description: "Use plain language. Include the parties, jurisdiction, important facts, desired outcome and anything still uncertain.", ready: "The brief is ready for review." },
-    { label: "AI draft", short: "Review", title: "Review the proposed structure", description: "Nothing changes until you approve it. Check assumptions, warnings and every proposed operation before applying the draft.", ready: "A structured draft has been applied." },
-    { label: "Case facts", short: "Complete", title: "Confirm the facts and assumptions", description: "Give the case a clear title, confirm jurisdiction and role, then check the publishable context and economic assumptions.", ready: "The core case details are complete." },
+    { label: "Draft review", short: "Review", title: "Review the proposed structure", description: "Nothing changes until you approve it. Check assumptions, warnings and every proposed operation before applying the draft.", ready: "A structured draft has been applied." },
+    { label: "Facts & evidence", short: "Complete", title: "Confirm the facts and assumptions", description: "Give the case a clear title, confirm jurisdiction and role, then check the publishable context and economic assumptions.", ready: "The core case details are complete." },
     { label: "Decision map", short: "Map", title: "Make every route understandable", description: "Inspect the visual map. Each choice should lead somewhere intentional, and every route should finish at an Outcome.", ready: "The decision map has nodes and connections." },
-    { label: "Test", short: "Validate", title: "Run the case before sharing it", description: "Resolve plain-language checks, then play the scenario exactly as a learner or client will experience it.", ready: "The case compiles and is ready to test." },
+    { label: "Test", short: "Validate", title: "Run the case before sharing it", description: "Resolve plain-language checks, then play the scenario exactly as a learner or client will experience it.", ready: "The case is ready to test." },
     { label: "Finish", short: "Share", title: "Save, report and submit", description: "Choose the right output: keep a workspace draft, create a client-ready PDF, or submit the case for expert review.", ready: "Choose a final action below." },
   ],
   ru: [
     { label: "Задача", short: "Опишите", title: "Расскажите, какое решение нужно принять", description: "Пишите обычным языком. Укажите стороны, юрисдикцию, важные факты, желаемый результат и всё, что пока неизвестно.", ready: "Описание готово к проверке." },
-    { label: "AI-черновик", short: "Проверьте", title: "Проверьте предложенную структуру", description: "До вашего подтверждения ничего не изменится. Проверьте допущения, предупреждения и каждую операцию перед применением.", ready: "Структурированный черновик применён." },
-    { label: "Факты", short: "Уточните", title: "Подтвердите факты и допущения", description: "Дайте кейсу понятное название, подтвердите юрисдикцию и роль, затем проверьте публикуемый контекст и экономические допущения.", ready: "Основные детали кейса заполнены." },
+    { label: "Черновик", short: "Проверьте", title: "Проверьте предложенную структуру", description: "До вашего подтверждения ничего не изменится. Проверьте допущения, предупреждения и каждую операцию перед применением.", ready: "Структурированный черновик применён." },
+    { label: "Факты и материалы", short: "Уточните", title: "Подтвердите факты и допущения", description: "Дайте кейсу понятное название, подтвердите юрисдикцию и роль, затем проверьте публикуемый контекст и экономические допущения.", ready: "Основные детали кейса заполнены." },
     { label: "Карта", short: "Свяжите", title: "Сделайте каждый маршрут понятным", description: "Проверьте визуальную карту. Каждый выбор должен вести к осмысленному продолжению, а каждый маршрут — завершаться исходом.", ready: "В карте есть узлы и связи." },
     { label: "Тест", short: "Проверьте", title: "Пройдите кейс перед отправкой", description: "Устраните понятные замечания, затем пройдите сценарий так, как его увидит обучающийся или клиент.", ready: "Кейс собран и готов к тесту." },
     { label: "Готово", short: "Сохраните", title: "Сохраните, создайте отчёт или отправьте", description: "Выберите результат: сохранить черновик в workspace, создать клиентский PDF или отправить кейс на экспертную рецензию.", ready: "Выберите итоговое действие ниже." },
@@ -45,6 +45,7 @@ export default function StudioGuidedWizard({
   onStepChange,
   onFocusBrief,
   onStartExample,
+  onBrowseDemos,
   onImport,
   caseName,
   saveState,
@@ -56,6 +57,7 @@ export default function StudioGuidedWizard({
   onStepChange: (step: GuidedStudioStep) => void;
   onFocusBrief: () => void;
   onStartExample: () => void;
+  onBrowseDemos?: () => void;
   onImport: () => void;
   caseName: string;
   saveState: "idle" | "saving" | "saved" | "submitted" | "conflict" | "auth_required" | "error";
@@ -97,7 +99,7 @@ export default function StudioGuidedWizard({
           const available = index === 0 || readiness.slice(0, index).every(Boolean);
           return <li key={step.label} className={active ? "current" : done ? "done" : available ? "available" : "blocked"}>
             <button type="button" disabled={!active && !available} aria-current={active ? "step" : undefined} onClick={() => changeStep(number)}>
-              <b>{done ? "✓" : number}</b>
+              <b>{number}</b>
               <span>{step.label}<small>{step.short}</small></span>
             </button>
           </li>;
@@ -118,9 +120,9 @@ export default function StudioGuidedWizard({
       </div>
     </div>
     {activeStep === 1 && <div className="studio-quick-starts" aria-label={locale === "en" ? "Quick starts" : "Быстрый старт"}>
-      <button type="button" onClick={onStartExample}><span>01</span><b>{locale === "en" ? "Try the guided example" : "Пройти учебный пример"}</b><small>{locale === "en" ? "Learn the complete flow in about 3 minutes" : "Изучите весь процесс примерно за 3 минуты"}</small></button>
+      <button type="button" onClick={onBrowseDemos ?? onStartExample}><span>01</span><b>{locale === "en" ? "Browse demo cases" : "Открыть демо-кейсы"}</b><small>{locale === "en" ? "Choose Canopy or a playable example" : "Выберите Canopy или игровой пример"}</small></button>
       <button type="button" onClick={onFocusBrief}><span>02</span><b>{locale === "en" ? "Describe my own case" : "Описать свой кейс"}</b><small>{locale === "en" ? "Start with a plain-language brief" : "Начните с описания обычным языком"}</small></button>
-      <button type="button" onClick={onImport}><span>03</span><b>{locale === "en" ? "Import an existing case" : "Импортировать кейс"}</b><small>{locale === "en" ? "Continue from a validated Studio JSON file" : "Продолжите из проверенного JSON-файла Studio"}</small></button>
+      <button type="button" onClick={onImport}><span>03</span><b>{locale === "en" ? "Import an existing case" : "Импортировать кейс"}</b><small>{locale === "en" ? "Open a saved case (.json) or case prompt (.md)" : "Откройте сохранённый кейс (.json) или промпт (.md)"}</small></button>
     </div>}
   </section>;
 }
