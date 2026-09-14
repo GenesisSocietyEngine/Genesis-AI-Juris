@@ -58,7 +58,7 @@ test("guided Studio renders numbered bilingual stages and practical quick starts
     }
     assert.match(markup, /aria-current="step"/);
     assert.match(markup, /<progress max="6"/);
-    assert.ok(markup.includes(locale === "en" ? "Browse demo cases" : "Открыть демо-кейсы"));
+    assert.ok(markup.includes(locale === "en" ? "Open Canopy" : "Открыть Canopy"));
     assert.ok(markup.includes(locale === "en" ? "Describe a task" : "Описать задачу"));
     assert.ok(markup.includes("(.json)") && markup.includes("(.md)"));
   }

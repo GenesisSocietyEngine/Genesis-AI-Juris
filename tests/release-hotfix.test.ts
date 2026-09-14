@@ -325,14 +325,11 @@ test("Studio opens in Office and the English demo keeps one Five Flats case with
 
 test("standalone Studio exposes persistent professional destinations", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
-  assert.match(appSource, /href="\/account"/);
-  assert.match(appSource, /"Account" : "Аккаунт"/);
-  assert.match(appSource, /workspaceDestination\("\/matters", workspaceLocation\)/);
-  assert.match(appSource, /"My cases" : "Мои дела"/);
-  assert.match(appSource, /"Templates" : "Шаблоны"/);
+  const navigation = readFileSync(new URL("../app/AppNavigation.tsx", import.meta.url), "utf8");
+  for (const destination of ["/account", "/organizations", "/matters", "/studio"]) assert.ok(navigation.includes('"' + destination + '"'));
+  assert.match(appSource, /<AppNavigation/);
   assert.match(appSource, /sessionStorage\.getItem\(PENDING_CASE_PROMPT_KEY\)/);
   assert.doesNotMatch(appSource, /ADVISORY · BETA v0\.1\.0/);
-  assert.match(appSource, /"Demo cases" : "Демо-кейсы"/);
 });
 
 test("account uses the shared navigation without losing professional destinations", () => {

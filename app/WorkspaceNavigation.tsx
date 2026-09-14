@@ -7,7 +7,7 @@ export default function WorkspaceNavigation({ active }: { active: string }) {
   const [locale, setLocale] = useInterfaceLocale();
   const location = useWorkspaceLocation();
   const returnTo = safeWorkspaceReturn(new URL(location, "https://workspace.invalid").searchParams.get("return_to"), "");
-  const items = [["/matters", "My cases", "Мои дела"], ["/studio", "Studio", "Студия"], ["/templates", "Templates", "Шаблоны"], ["/studio?view=demos", "Demo cases", "Демо-кейсы"], ["/organizations", "Organizations", "Организации"], ["/account", "Account", "Аккаунт"]];
+  const items = [["/studio", "Case Studio", "Студия кейсов"], ["/studio?view=demos", "Demo cases", "Демо-кейсы"], ["/templates", "Templates", "Шаблоны"], ["/matters", "My cases", "Мои дела"], ["/organizations", "Organizations", "Организации"], ["/account", "Account", "Аккаунт"]];
   return <nav className="workspace-navigation" aria-label={locale === "en" ? "Workspace navigation" : "Навигация по рабочему пространству"}>
     <a className="workspace-navigation-brand" href={workspaceDestination("/studio", location)}>GENESIS: JURIS</a>
     <div>{items.map(([path, en, ru]) => <a key={path} href={workspaceDestination(path, location)} aria-current={(active === path || (active === "/canopy" && path === "/studio?view=demos")) ? "page" : undefined}>{locale === "en" ? en : ru}</a>)}</div>

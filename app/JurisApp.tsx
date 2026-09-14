@@ -2,6 +2,8 @@
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import AppNavigation from "./AppNavigation";
+import OperationsDossier from "./OperationsDossier";
 import { canonicalFingerprint, caseFingerprint, casePublicationFingerprint, isRecord, isTaxDraft, legacyCaseFingerprintV15, normalizeStudioDraft, slugifyCaseId } from "./case-integrity";
 import { bundledCataloguePresentation, mayUseBundledCatalogueFallback } from "./catalogue-fallback";
 import { actionUseKey, decisionAvailability, resolveDecisionTiming, resolveLegacyDecisionTiming } from "./game-engine";
@@ -48,7 +50,7 @@ type View = "library" | "demos" | "play" | "studio" | "community" | "help";
 type Theme = "office" | "after-hours";
 type GraphOrientation = "vertical" | "horizontal";
 type StudioAIEntitlement = "loading" | "anonymous" | "profile_required" | "ready" | "not_configured" | "unavailable";
-type JurisAppProps = { studioOnly?: boolean };
+type JurisAppProps = { studioOnly?: boolean; initialView?: View; autoStartCanopy?: boolean };
 function graphNodeVisualHeight(node: StudioNode) {
   const titleLines = Math.max(1, Math.ceil(node.title.trim().length / 18));
   const runtimeHeight = node.runtime?.budgetCostEur !== undefined || node.runtime?.durationMinutes !== undefined ? 22 : 0;
@@ -449,8 +451,6 @@ function clientCanonicalState(runtime: CanonicalRuntimeState, presentation: Cano
   };
 }
 
-const defaultPrompt = `A renewable-energy developer discovers that its community consultation map omitted two households before a permit hearing. The planning authority requests a corrected record within 36 hours. Create a case for counsel to preserve evidence, coordinate the developer and mapping contractor, decide whether to seek an adjournment, and reach either a credible corrected process or a compromised permit position.`;
-
 const PENDING_WORKSPACE_SAVE_KEY = "genesis.juris.pending-workspace-save.v2";
 const PENDING_WORKSPACE_SAVE_MAX_AGE_MS = 15 * 60 * 1000;
 const PENDING_CASE_PROMPT_KEY = "genesis-juris-pending-case-prompt-v1";
@@ -479,34 +479,6 @@ function parsePendingWorkspaceSave(value: string | null): PendingWorkspaceSave |
   }
 }
 
-const defaultDraft: StudioDraft = {
-  caseId: "the_missing_boundary",
-  version: "1.0.0",
-  caseType: caseTypeReference("training_simulation"),
-  parent: null,
-  title: "The Missing Boundary", jurisdiction: "UK · Planning", role: "Project counsel",
-  premise: "A consultation map omitted two households before a permit hearing.", premisePublication: "author-reviewed", updatedAt: new Date(0).toISOString(),
-  classification: { practiceArea: "Planning & regulatory", difficulty: "Intermediate", tags: ["evidence", "regulatory", "deadline"], taxTopics: [], complianceOnly: true },
-  nodes: [
-    { id: "trigger-1", type: "trigger", title: "Omitted households discovered", detail: "The consultation map excluded two addresses.", x: 50, y: 220 },
-    { id: "actor-1", type: "actor", title: "Planning authority", detail: "Requests a corrected record within 36 hours.", x: 270, y: 70 },
-    { id: "evidence-1", type: "evidence", title: "Map revision history", detail: "GIS exports, contractor instructions and approval log.", x: 270, y: 270 },
-    { id: "deadline-1", type: "deadline", title: "36-hour correction window", detail: "Before the permit hearing bundle closes.", x: 490, y: 80 },
-    { id: "decision-1", type: "decision", title: "Correct or adjourn", detail: "Choose a corrected filing or seek an adjournment.", x: 510, y: 300 },
-    { id: "outcome-1", type: "outcome", title: "Credible corrected process", detail: "The record is repaired and participation restored.", x: 750, y: 180 },
-    { id: "outcome-2", type: "outcome", title: "Compromised permit position", detail: "The omission undermines procedural confidence.", x: 750, y: 390 },
-  ],
-  links: numberedStudioLinks([
-    ["trigger-1", "actor-1"], ["trigger-1", "evidence-1"], ["actor-1", "deadline-1"],
-    ["evidence-1", "decision-1"], ["deadline-1", "decision-1"], ["decision-1", "outcome-1"],
-    ["decision-1", "outcome-2"],
-  ]),
-  editHistory: [
-    { id: "edit-initial-author", role: "author", source: "prompt", action: "prompt_submitted", message: defaultPrompt, createdAt: "2026-08-21T00:00:00.000Z" },
-    { id: "edit-initial-studio", role: "studio", source: "prompt", action: "prompt_applied", message: "Created the initial seven-node scenario graph. Future prompt iterations will preserve manual graph edits.", createdAt: "2026-08-21T00:00:00.000Z" },
-  ],
-};
-
 function blankStudioDraft(updatedAt = new Date().toISOString()): StudioDraft {
   return {
     caseId: "untitled_case",
@@ -526,15 +498,14 @@ function blankStudioDraft(updatedAt = new Date().toISOString()): StudioDraft {
   };
 }
 
-// Keep the first server/client render deterministic and genuinely empty. The
-// worked example remains available as an explicit author action.
+// Restore the account-scoped draft before opening the starter demo.
 const initialBlankDraft = blankStudioDraft(new Date(0).toISOString());
 
-export default function JurisApp({ studioOnly = false }: JurisAppProps) {
+export default function JurisApp({ studioOnly = false, initialView = "studio", autoStartCanopy = true }: JurisAppProps) {
   const [locale, setLocale] = useInterfaceLocale();
   const [theme, setTheme] = useState<Theme>("office");
   const workspaceLocation = useWorkspaceLocation();
-  const [view, setView] = useState<View>(studioOnly ? "studio" : "library");
+  const [view, setView] = useState<View>(initialView);
   const [featuredId, setFeaturedId] = useState(fallbackCatalogueRecords[2].id);
   const [catalogueRecords, setCatalogueRecords] = useState<PublishedCaseSummary[]>(() => bundledCatalogueRecords());
   const [catalogueNextCursor, setCatalogueNextCursor] = useState<string | null>(null);
@@ -543,7 +514,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
   const [catalogueError, setCatalogueError] = useState("");
   const [catalogueScenarios, setCatalogueScenarios] = useState<Scenario[]>([]);
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(null);
-  const [playReturnView, setPlayReturnView] = useState<View>(studioOnly ? "studio" : "library");
+  const [playReturnView, setPlayReturnView] = useState<View>("studio");
   const [stageIndex, setStageIndex] = useState(0);
   const [metrics, setMetrics] = useState({ ...initialMetrics });
   const [selectedOption, setSelectedOption] = useState<DecisionOption | null>(null);
@@ -589,6 +560,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
   const catalogueLaunchRef = useRef(0);
   const catalogueRequestGateRef = useRef(new LatestRequestGate());
   const studioChangedBeforeRestoreRef = useRef(false);
+  const starterCancelledRef = useRef(false);
   const text = ui[locale];
 
   useEffect(() => {
@@ -624,12 +596,12 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
     function restoreView() {
       const requested = new URLSearchParams(window.location.search).get("view");
       if (requested === "library" || requested === "demos" || requested === "studio"
-        || requested === "help" || (!studioOnly && requested === "community")) {
+        || requested === "help" || requested === "community") {
         setView(requested);
       } else if (requested === "play" && activeScenario) {
         setView("play");
       } else {
-        setView(studioOnly ? "studio" : "library");
+        setView(initialView);
       }
     }
     const update = window.setTimeout(restoreView, 0);
@@ -638,7 +610,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
       window.clearTimeout(update);
       window.removeEventListener("popstate", restoreView);
     };
-  }, [studioOnly, activeScenario]);
+  }, [studioOnly, activeScenario, initialView]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -701,17 +673,19 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
   }, [studioAIEntitlement, studioStorageScope, locale]);
 
   useEffect(() => {
-    if (!studioStorageScope) return;
+    if (studioAIEntitlement === "loading" || studioAIEntitlement === "unavailable") return;
+    let cancelled = false;
     const restore = window.setTimeout(() => {
       if (studioChangedBeforeRestoreRef.current) return;
-      const stored = window.localStorage.getItem(studioDeviceDraftKey(studioStorageScope));
-      if (stored) {
-        try {
+      try {
+        const stored = studioStorageScope && window.localStorage.getItem(studioDeviceDraftKey(studioStorageScope));
+        if (stored && studioStorageScope) {
           const candidate = unwrapDeviceDraft(JSON.parse(stored), studioStorageScope);
           if (!candidate) throw new Error("Invalid device-draft envelope");
           const restored = normalizeStudioDraft(candidate);
           if (!mayPersistStudioDraftOnDevice({ canDuplicate: true, customCaseId: null, isPrivate: false, draft: restored })) throw new Error("Workspace or protected draft cannot be restored from device storage");
           const emptyTimeline = emptyStudioTimeline();
+          studioChangedBeforeRestoreRef.current = true;
           draftRef.current = restored;
           studioTimelineRef.current = emptyTimeline;
           setDraftState(restored);
@@ -724,13 +698,30 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
           setStudioServerPublicationFingerprint(null);
           setStudioCanDuplicate(true);
           setStudioCopyProtectionLocked(restored.protection?.copyProtected === true && Boolean(restored.protection.seal));
-        } catch {
-          // Keep the bundled draft when local storage contains invalid data.
+          return;
         }
-      }
+      } catch { /* Invalid or unavailable device storage cannot replace a case. */ }
+      if (!autoStartCanopy || starterCancelledRef.current || prompt.trim()) return;
+      void import("./canopy-fixture").then(({ buildCanopyPackage }) => {
+        if (cancelled || studioChangedBeforeRestoreRef.current || starterCancelledRef.current) return;
+        const url = new URL(window.location.href);
+        if (![null, "studio", "play"].includes(url.searchParams.get("view"))) return;
+        const starter = buildCanopyPackage("base", true).draft;
+        studioChangedBeforeRestoreRef.current = true;
+        draftRef.current = starter;
+        setDraftState(starter);
+        setSelectedNodeId(starter.nodes[0]?.id ?? null);
+        setStudioOpenRevision((revision) => revision + 1);
+        url.searchParams.set("view", "studio");
+        url.searchParams.set("studio_step", "case_map");
+        window.history.replaceState(window.history.state, "", url);
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      }).catch(() => {
+        if (!cancelled) setSessionNotice(locale === "en" ? "Canopy could not be opened. Choose it from Demo cases to retry." : "Не удалось открыть Canopy. Повторите попытку в разделе «Демо-кейсы».");
+      });
     }, 0);
-    return () => window.clearTimeout(restore);
-  }, [studioStorageScope]);
+    return () => { cancelled = true; window.clearTimeout(restore); };
+  }, [studioStorageScope, studioAIEntitlement, autoStartCanopy, prompt, locale]);
 
   useEffect(() => {
     if (!studioStorageScope) return;
@@ -928,7 +919,8 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
   }
 
   function navigate(next: View, step?: GuidedStudioStep) {
-    const destination = studioOnly && next === "community" ? "studio" : next;
+    if (next !== "studio") starterCancelledRef.current = true;
+    const destination = next;
     const url = new URL(window.location.href);
     url.searchParams.set("view", destination);
     if (destination !== "studio") url.searchParams.delete("studio_step");
@@ -1029,7 +1021,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
     }
   }
   function startScenario(scenario: Scenario, options: { legacyTiming?: boolean } = {}) {
-    if (view !== "play") setPlayReturnView(view === "demos" ? "demos" : view === "studio" ? "studio" : "library");
+    if (view !== "play") setPlayReturnView(view);
     const sessionRequestVersion = playSessionStartRef.current + 1;
     playSessionStartRef.current = sessionRequestVersion;
     const initialIndex = Math.max(0, scenario.stages.findIndex((item) => item.id === scenario.initialStageId));
@@ -1899,6 +1891,7 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
     setSelectedNodeId(null);
   }
   async function loadCanopyDemo(id: CanopyScenarioId) {
+    starterCancelledRef.current = true;
     const before = draftRef.current;
     const hasWork = Boolean(before.title.trim() || before.nodes.length || prompt.trim());
     if (hasWork && !window.confirm(locale === "en"
@@ -1912,70 +1905,37 @@ export default function JurisApp({ studioOnly = false }: JurisAppProps) {
     navigate("studio", 4);
   }
   function loadExampleDraft() {
-    enterNewLocalDraft(defaultDraft, "decision-1");
-    setPrompt("");
+    void loadCanopyDemo("base").catch(() => showSessionNotice(locale === "en" ? "Canopy could not be opened. Please try again." : "Не удалось открыть Canopy. Попробуйте ещё раз."));
+  }
+  async function openOperations() {
+    starterCancelledRef.current = true;
+    if (activeScenario) { navigate("play"); return; }
+    try {
+      const { buildCanopyPackage } = await import("./canopy-fixture");
+      const compiled = compileStudioDraft(buildCanopyPackage("base", true).draft);
+      if (!compiled.scenario) throw new Error("Canopy is not playable");
+      startScenario(compiled.scenario);
+    } catch { showSessionNotice(locale === "en" ? "The case could not be opened. Please try again." : "Не удалось открыть кейс. Попробуйте ещё раз."); }
   }
 
   return (
     <div className={`app-shell theme-${theme}${studioOnly ? " studio-only-shell studio-host-falcon" : ""}`}>
       <div className="atmosphere" aria-hidden="true"><span /><span /><span /></div>
-      <header className="topbar">
-        {studioOnly ? <a className="brand falcon-studio-brand" href={workspaceDestination("/studio", workspaceLocation)} aria-label={locale === "en" ? "GENESIS: JURIS Studio" : "Студия GENESIS: JURIS"}>
-          <span className="falcon-monogram" aria-hidden="true">G</span>
-          <span><b>GENESIS: JURIS</b><small><strong>CASE STUDIO</strong></small></span>
-        </a> : <button className="brand" onClick={() => navigate("library")} aria-label={locale === "en" ? "GENESIS: JURIS CODEX — Templates" : "GENESIS: JURIS CODEX — Шаблоны"}>
-          {/* The SVG is deliberately served directly; it is a tiny UI mark and does not need responsive image optimization. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="brand-mark" src="/brand/genesis-juris-codex-mark.svg" alt="" />
-          <span><b>GENESIS: JURIS</b><small><strong>CODEX</strong> · CASE STUDIO</small></span>
-        </button>}
-        {!studioOnly && <nav className="main-nav" aria-label={locale === "en" ? "Primary navigation" : "Основная навигация"}>
-          <button className={view === "library" ? "active" : ""} aria-current={view === "library" ? "page" : undefined} onClick={() => navigate("library")}><Icon name="library" />{text.library}</button>
-          <button className={view === "play" ? "active" : ""} aria-current={view === "play" ? "page" : undefined} onClick={() => activeScenario ? navigate("play") : void launchCatalogueCase(featuredRecord)}><Icon name="play" />{text.play}</button>
-          <button className={view === "studio" ? "active" : ""} aria-current={view === "studio" ? "page" : undefined} onClick={() => navigate("studio")}><Icon name="studio" />{text.studio}</button>
-          <button className={view === "community" ? "active" : ""} aria-current={view === "community" ? "page" : undefined} onClick={() => navigate("community")}><Icon name="globe" />{text.community}</button>
-          <button className={view === "help" ? "active" : ""} aria-current={view === "help" ? "page" : undefined} onClick={() => navigate("help")}><Icon name="file" />{text.help}</button>
-        </nav>}
-        <div className="top-actions">
-          <input
-            ref={playedCaseImportRef}
-            className="visually-hidden"
-            type="file"
-            accept=".json,application/json"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) importPlayedCase(file);
-              event.target.value = "";
-            }}
-          />
-          {!studioOnly && view === "play" && <button className="utility-button" onClick={() => playedCaseImportRef.current?.click()} aria-label={locale === "en" ? "Restore a play session" : "Восстановить прохождение"} title={locale === "en" ? "Restore a saved play-session JSON" : "Восстановить прохождение из сохранённого JSON"}><Icon name="upload" /><span>{locale === "en" ? "Restore a play session" : "Восстановить прохождение"}</span></button>}
-          {!studioOnly && activeScenario && <button className="utility-button" onClick={exportPlayedCase} aria-label={text.exportPlay} title={text.exportPlay}><Icon name="download" /><span>{text.exportPlay}</span></button>}
-          <Link className="utility-button" href={workspaceDestination("/matters", workspaceLocation)}><Icon name="file"/><span>{locale === "en" ? "My cases" : "Мои дела"}</span></Link>
-          {studioOnly && <Link className="utility-button" href={workspaceDestination("/templates", workspaceLocation)}><Icon name="library"/><span>{locale === "en" ? "Templates" : "Шаблоны"}</span></Link>}
-          {studioOnly && <Link className="utility-button" href={workspaceDestination("/?view=community", workspaceLocation)}><span>{locale === "en" ? "Workspace" : "Рабочее пространство"}</span></Link>}
-          {studioOnly && <Link className="utility-button" href={workspaceDestination("/organizations", workspaceLocation)}><span>{locale === "en" ? "Organizations" : "Организации"}</span></Link>}
-          <Link className="utility-button" href={workspaceDestination("/account", workspaceLocation)} aria-label={locale === "en" ? "Account" : "Аккаунт"}><Icon name="person"/><span>{locale === "en" ? "Account" : "Аккаунт"}</span></Link>
-          <button type="button" className="utility-button" aria-current={view === "demos" ? "page" : undefined} onClick={() => navigate("demos")}><Icon name="library"/><span>{locale === "en" ? "Demo cases" : "Демо-кейсы"}</span></button>
-          {studioOnly && <a className="utility-button studio-demo-link" href="/help/studio-demo" target="_blank" rel="noreferrer" aria-label={locale === "en" ? "Open the three-minute Studio demo" : "Открыть трёхминутное демо Studio"}><Icon name="video"/><span>{locale === "en" ? "Demo · 3 min" : "Демо · 3 мин"}</span></a>}
-          {studioOnly && <a className="utility-button studio-site-link" href="https://www.falcon-merlin.com/" target="_top" aria-label={locale === "en" ? "Return to the Falcon-Merlin website" : "Вернуться на сайт Falcon-Merlin"}><span aria-hidden="true">←</span><span>{locale === "en" ? "Falcon-Merlin.com" : "На основной сайт"}</span></a>}
-          {studioOnly && <a className="utility-button studio-fullscreen-link" href={workspaceDestination("/studio", workspaceLocation)} target="_blank" rel="noreferrer"><Icon name="arrow" /><span>{locale === "en" ? "Full screen" : "На весь экран"}</span></a>}
-          <button className="utility-button" onClick={() => setLocale(locale === "en" ? "ru" : "en")} aria-label={locale === "en" ? "Switch language" : "Сменить язык"}><Icon name="globe" /><span>{locale.toUpperCase()}</span></button>
-          <button className="utility-button" onClick={() => setTheme(theme === "office" ? "after-hours" : "office")} aria-label={locale === "en" ? "Switch atmosphere" : "Сменить тему оформления"}><Icon name={theme === "office" ? "sun" : "moon"} /><span>{theme === "office" ? text.office : text.night}</span></button>
-        </div>
-      </header>
+      <AppNavigation locale={locale} view={view} studioOnly={studioOnly} workspaceLocation={workspaceLocation} navigate={navigate} openOperations={() => void openOperations()} restoreSession={() => playedCaseImportRef.current?.click()} exportSession={exportPlayedCase} hasActiveScenario={Boolean(activeScenario)} toggleLocale={() => setLocale(locale === "en" ? "ru" : "en")} toggleTheme={() => setTheme(theme === "office" ? "after-hours" : "office")} dark={theme === "after-hours"}/>
+      <input ref={playedCaseImportRef} className="visually-hidden" type="file" accept=".json,application/json" aria-label={locale === "en" ? "Restore a play session" : "Восстановить прохождение"} onChange={(event) => { const file = event.target.files?.[0]; if (file) importPlayedCase(file); event.target.value = ""; }} />
 
       {view === "demos" && <Suspense fallback={<main className="demo-library page-width" role="status">{locale === "en" ? "Opening demo cases…" : "Открываются демо-кейсы…"}</main>}><DemoCases locale={locale} records={bundledCatalogueRecords()} openCanopy={loadCanopyDemo} canopyWorkflowHref={workspaceDestination("/canopy", workspaceLocation)} playCase={async (id) => { const record = fallbackCatalogueRecords.find((item) => item.id === id); if (record) await launchCatalogueCase(record); }} openStudio={() => navigate("studio")} /></Suspense>}
-      {view === "library" && <LibraryView locale={locale} workspaceLocation={workspaceLocation} restorePlaySession={() => playedCaseImportRef.current?.click()} text={text} records={catalogueRecords} loadedScenarios={catalogueScenarios} featuredRecord={featuredRecord} featuredScenario={featured} setFeaturedId={setFeaturedId} launchCase={(record) => void launchCatalogueCase(record)} requestFeedback={setFeedbackTarget} openTaxTemplate={loadTaxTemplate} searchCatalogue={refreshCatalogue} nextCursor={catalogueNextCursor} total={catalogueTotal} loading={catalogueLoading} error={catalogueError} />}
+      {view === "library" && <LibraryView locale={locale} workspaceLocation={workspaceLocation} restorePlaySession={() => playedCaseImportRef.current?.click()} text={text} records={catalogueRecords} loadedScenarios={catalogueScenarios} featuredRecord={featuredRecord} featuredScenario={featured} setFeaturedId={setFeaturedId} launchCase={(record) => void launchCatalogueCase(record)} requestFeedback={setFeedbackTarget} openCanopy={loadExampleDraft} searchCatalogue={refreshCatalogue} nextCursor={catalogueNextCursor} total={catalogueTotal} loading={catalogueLoading} error={catalogueError} />}
       {view === "play" && activeScenario && stage && runLedger && <PlayView
         locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} ledger={runLedger}
         decisionLog={decisionLog} caseMinute={caseMinute} actionUseCounts={actionUseCounts} completedDeadlineIds={completedDeadlineIds}
         missedDeadlineIds={missedDeadlineIds} canonicalState={canonicalPlayState ?? undefined} dossierRef={dossierRef} setDossierRef={setDossierRef}
         setSelectedOption={setSelectedOption} advanceTime={(minutes) => void advanceCaseTime(minutes)} timeBusy={playSessionBusy} outcome={outcome}
         sessionSync={playSessionSync} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario, { legacyTiming: legacyTimingMode })}
-        returnLibrary={() => navigate(playReturnView)} returnToStudio={playReturnView === "studio"} returnLabel={playReturnView === "demos" ? (locale === "en" ? "Demo cases" : "Демо-кейсы") : undefined} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })}
+        returnLibrary={() => navigate(playReturnView)} returnToStudio={playReturnView === "studio"} returnLabel={playReturnView === "demos" ? (locale === "en" ? "Demo cases" : "Демо-кейсы") : playReturnView === "help" ? text.help : playReturnView === "community" ? text.community : undefined} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })}
       />}
       {view === "studio" && <StudioView key={studioOpenRevision} standalone={studioOnly} locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} packageRequiresPlayableRoute={packageRequiresPlayableRoute} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} applyCanonicalMarkdownDraft={applyCanonicalMarkdownDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} serverPublicationFingerprint={studioServerPublicationFingerprint} setServerPublicationFingerprint={setStudioServerPublicationFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate} reportReceiptStorageScope={studioStorageScope} persistReportReceiptOnDevice={reportReceiptDeviceEligible} aiEntitlement={studioAIEntitlement} />}
-      {!studioOnly && view === "community" && <CommunityView locale={locale} cases={catalogueRecords} openCustomCase={openWorkspaceCustomCase} refreshCatalogue={() => refreshCatalogue({ force: true })} clearDeviceDraft={purgeLocalStudioState} />}
+      {view === "community" && <CommunityView locale={locale} cases={catalogueRecords} openCustomCase={openWorkspaceCustomCase} refreshCatalogue={() => refreshCatalogue({ force: true })} clearDeviceDraft={purgeLocalStudioState} />}
       {view === "help" && <HelpView locale={locale} openCommunity={() => navigate("community")} openStudio={() => navigate("studio")} />}
       {(selectedOption || resultOption) && activeScenario && stage && <DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} busy={playSessionBusy} close={() => { if (!playSessionBusy) { setSelectedOption(null); setResultOption(null); } }} dispatch={dispatchDecision} advance={advanceStage} finalStage={Boolean(activeScenario.stages.find((item) => item.id === (selectedOption ?? resultOption)?.nextStageId)?.terminal)} />}
       {sessionNotice && <div className="session-toast" role="status"><Icon name="check" />{sessionNotice}</div>}
@@ -2072,7 +2032,7 @@ function editorialReviewLabel(level: string | undefined, locale: Locale) {
   return locale === "en" ? "Editorial preview" : "Редакционный предпросмотр";
 }
 
-function LibraryView({ locale, workspaceLocation, restorePlaySession, text, records, loadedScenarios, featuredRecord, featuredScenario, setFeaturedId, launchCase, requestFeedback, openTaxTemplate, searchCatalogue, nextCursor, total, loading, error }: { locale: Locale; workspaceLocation: string; restorePlaySession: () => void; text: UiText; records: PublishedCaseSummary[]; loadedScenarios: Scenario[]; featuredRecord: PublishedCaseSummary; featuredScenario: Scenario | null; setFeaturedId: (id: string) => void; launchCase: (record: PublishedCaseSummary) => void; requestFeedback: (target: FeedbackTarget) => void; openTaxTemplate: () => void; searchCatalogue: (options?: { filters?: CatalogueSearchFilters; cursor?: string | null; append?: boolean; force?: boolean }) => Promise<void>; nextCursor: string | null; total: number; loading: boolean; error: string }) {
+function LibraryView({ locale, workspaceLocation, restorePlaySession, text, records, loadedScenarios, featuredRecord, featuredScenario, setFeaturedId, launchCase, requestFeedback, openCanopy, searchCatalogue, nextCursor, total, loading, error }: { locale: Locale; workspaceLocation: string; restorePlaySession: () => void; text: UiText; records: PublishedCaseSummary[]; loadedScenarios: Scenario[]; featuredRecord: PublishedCaseSummary; featuredScenario: Scenario | null; setFeaturedId: (id: string) => void; launchCase: (record: PublishedCaseSummary) => void; requestFeedback: (target: FeedbackTarget) => void; openCanopy: () => void; searchCatalogue: (options?: { filters?: CatalogueSearchFilters; cursor?: string | null; append?: boolean; force?: boolean }) => Promise<void>; nextCursor: string | null; total: number; loading: boolean; error: string }) {
   const [query, setQuery] = useState("");
   const [practiceFilter, setPracticeFilter] = useState("all");
   const [jurisdictionFilter, setJurisdictionFilter] = useState("all");
@@ -2120,10 +2080,10 @@ function LibraryView({ locale, workspaceLocation, restorePlaySession, text, reco
         <h1>{text.library}</h1>
         <p className="hero-deck">{locale === "en" ? "Open a prepared case and explore its decisions. Bring your own case to Studio to build a decision map and create an analytical report." : "Откройте готовый кейс и изучите варианты решений. Загрузите свой кейс в Студию, чтобы собрать карту решений и сформировать аналитический отчёт."}</p>
         <div className="featured-actions library-start-actions">
-          <button className="primary-cta" disabled={loading} onClick={() => launchCase(featuredRecord)}>{loading ? (locale === "en" ? "Loading…" : "Загрузка…") : (locale === "en" ? "Open a prepared case" : "Открыть готовый кейс")}<Icon name="arrow"/></button>
+          <button className="primary-cta" onClick={openCanopy}>{locale === "en" ? "Open Canopy in Studio" : "Открыть Canopy в Студии"}<Icon name="arrow"/></button>
           <Link className="secondary-cta" href={workspaceDestination("/studio?studio_step=describe", workspaceLocation)}><Icon name="studio"/>{locale === "en" ? "Load a case or describe a task" : "Загрузить кейс или описать задачу"}</Link>
         </div>
-        <p className="library-start-note">{locale === "en" ? `Start with ${featured.title[locale]}. Studio accepts JSON, Markdown and text prompts.` : `Начните с «${featured.title[locale]}». Студия принимает JSON, Markdown и текстовые промпты.`}</p>
+        <p className="library-start-note">{locale === "en" ? "Start with Canopy, or load your own case as JSON, Markdown or text." : "Начните с Canopy или загрузите свой кейс в формате JSON, Markdown или текста."}</p>
         <div className="hero-facts"><span>{total.toString().padStart(2, "0")} {locale === "en" ? "guided cases" : "учебных кейсов"}</span><span>EN / RU</span></div>
       </div>
       <div className="hero-index" aria-label="Catalogue index"><span>CASE INDEX</span><b>{String(Math.max(1, records.findIndex((record) => record.id === featuredRecord.id) + 1)).padStart(2, "0")}</b><small>/ {total.toString().padStart(2, "0")}</small></div>
@@ -2141,7 +2101,7 @@ function LibraryView({ locale, workspaceLocation, restorePlaySession, text, reco
     })}{filteredCases.length === 0 && !loading && <div className="catalogue-empty"><b>{locale === "en" ? "No cases match these filters." : "Кейсы по этим фильтрам не найдены."}</b><button className="secondary-cta" onClick={resetFilters}>{locale === "en" ? "Reset filters" : "Сбросить фильтры"}</button></div>}</div>{nextCursor && <button className="catalogue-load-more secondary-cta" disabled={loading} onClick={() => void searchCatalogue({ filters: { q: query, practiceArea: practiceFilter, jurisdiction: jurisdictionFilter, difficulty: difficultyFilter, tag: tagFilter }, cursor: nextCursor, append: true })}>{loading ? (locale === "en" ? "Loading…" : "Загрузка…") : (locale === "en" ? "Load next 24 cases" : "Загрузить следующие 24 кейса")}</button>}</section>
     <div className="library-restore page-width"><span>{locale === "en" ? "Have saved progress?" : "Есть сохранённое прохождение?"}</span><button className="secondary-cta" onClick={restorePlaySession}><Icon name="upload"/>{locale === "en" ? "Restore a play session" : "Восстановить прохождение"}</button></div>
     <section className="positioning-band page-width"><div><span>PROFESSIONAL JUDGMENT · SIMULATED</span><h2>{locale === "en" ? "Train the decisions that legal work rarely lets you repeat." : "Тренируйте решения, которые реальная юридическая работа редко позволяет повторить."}</h2></div><p>{locale === "en" ? "GENESIS: JURIS is a platform for building, reviewing and playing branching legal simulations. It develops judgment under uncertainty, evidence discipline and risk-aware action — with versioned cases and practitioner feedback." : "GENESIS: JURIS — платформа для создания, рецензирования и прохождения разветвлённых юридических симуляций. Она развивает профессиональное суждение в условиях неопределённости, дисциплину доказательств и управление рисками."}</p></section>
-    <section className="tax-capability page-width"><div><span>CROSS-BORDER TAX STRUCTURING · OFFSHORE COMPLIANCE</span><h2>{locale === "en" ? "Model lawful cross-border tax planning as a living system." : "Моделируйте законное трансграничное налоговое планирование как живую систему."}</h2><p>{locale === "en" ? "Map entities, jurisdictions, cash flows, treaty access, beneficial ownership, transfer pricing, substance, CFC, PE, withholding tax, DAC6 and Pillar Two — with explicit anti-abuse and documentation gates." : "Связывайте компании, юрисдикции, денежные потоки, treaty access, beneficial ownership, transfer pricing, substance, CFC, PE, withholding tax, DAC6 и Pillar Two — с обязательными anti-abuse и документальными проверками."}</p></div><button className="primary-cta" onClick={openTaxTemplate}>{locale === "en" ? "Open tax-planning template" : "Открыть налоговый шаблон"}<Icon name="arrow"/></button></section>
+
     <section className="authority-note page-width"><span className="authority-seal">J</span><div><b>{text.adaptation}</b><p>{text.canonNote}</p></div></section>
   </main>;
 }
@@ -2210,17 +2170,17 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, ledger, 
   }
 
   function revealDecisions() {
-    decisionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    decisionRef.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
     window.setTimeout(() => {
       decisionRef.current?.querySelector<HTMLButtonElement>(".decision-options button")?.focus();
     }, 380);
   }
   if (outcome) return <DebriefView locale={locale} text={text} scenario={scenario} metrics={metrics} ledger={ledger} decisionLog={decisionLog} outcome={outcome} canonicalOutcome={canonicalState?.canonicalOutcome} exportSession={exportSession} replayCase={replayCase} returnLibrary={returnLibrary} returnToStudio={returnToStudio} returnLabel={returnLabel} requestFeedback={() => requestFeedback("case")}/>;
-  return <main className="operations-view"><aside className="case-rail"><button className="rail-back" onClick={returnLibrary}><span>←</span>{returnLabel ?? (returnToStudio ? text.studio : text.library)}</button><div className="rail-case"><small>ACTIVE MATTER</small><b>{scenario.title[locale]}</b><span>{scenario.jurisdiction}</span></div><div className="workflow-depth"><span>{scenario.stages.length} STAGES</span><span>{scenario.mobileParity?.actionCount ?? scenario.stages.reduce((sum, item) => sum + item.options.length, 0)} ACTIONS</span></div><div className={`run-authority ${sessionSync}`}><span>{sessionSync === "server" ? (locale === "en" ? "Progress saved online" : "Прогресс сохранён онлайн") : sessionSync === "opening" ? (locale === "en" ? "OPENING RUN…" : "ЗАПУСК…") : sessionSync === "stale" ? (locale === "en" ? "Progress restored" : "Прогресс восстановлен") : sessionSync === "error" ? (locale === "en" ? "Progress could not be synced" : "Не удалось синхронизировать прогресс") : (locale === "en" ? "Preview on this device" : "Предпросмотр на этом устройстве")}</span></div><ol className="stage-list">{scenario.stages.map((item, index) => <li key={item.id} className={index === stageIndex ? "active" : visitedStageIds.has(item.id) ? "done" : ""}><span>{visitedStageIds.has(item.id) && index !== stageIndex ? "✓" : index + 1}</span><div><b>{item.phase[locale]}</b><small>{item.terminal ? (locale === "en" ? "Outcome" : "Исход") : ""}</small></div></li>)}</ol><details className="rail-version"><summary>{locale === "en" ? "Technical details" : "Технические сведения"}</summary><div><span>{scenario.caseId} · v{scenario.version}</span><br/><code>{scenario.fingerprint}</code></div></details></aside>
+  return <main className="operations-view"><aside className="case-rail"><button className="rail-back" onClick={returnLibrary}><span>←</span>{returnLabel ?? (returnToStudio ? text.studio : text.library)}</button><div className="rail-case"><small>{locale === "en" ? "Active case" : "Текущий кейс"}</small><b>{scenario.title[locale]}</b><span>{scenario.jurisdiction}</span></div><div className="workflow-depth"><span>{scenario.stages.length} {locale === "en" ? "stages" : "этапов"}</span><span>{scenario.mobileParity?.actionCount ?? scenario.stages.reduce((sum, item) => sum + item.options.length, 0)} {locale === "en" ? "actions" : "действий"}</span></div><div className={`run-authority ${sessionSync}`}><span>{sessionSync === "server" ? (locale === "en" ? "Progress saved online" : "Прогресс сохранён онлайн") : sessionSync === "opening" ? (locale === "en" ? "Starting case…" : "Запуск кейса…") : sessionSync === "stale" ? (locale === "en" ? "Progress restored" : "Прогресс восстановлен") : sessionSync === "error" ? (locale === "en" ? "Progress could not be synced" : "Не удалось синхронизировать прогресс") : (locale === "en" ? "Preview on this device" : "Предпросмотр на этом устройстве")}</span></div><ol className="stage-list">{scenario.stages.map((item, index) => <li key={item.id} className={index === stageIndex ? "active" : visitedStageIds.has(item.id) ? "done" : ""} aria-current={index === stageIndex ? "step" : undefined}><span>{index + 1}</span><div><b>{item.phase[locale]}</b><small>{item.terminal ? (locale === "en" ? "Outcome" : "Исход") : ""}</small></div></li>)}</ol><details className="rail-version"><summary>{locale === "en" ? "Technical details" : "Технические сведения"}</summary><div><span>{scenario.caseId} · v{scenario.version}</span><br/><code>{scenario.fingerprint}</code></div></details></aside>
     <section className="command-center">
       <div className="command-header">
         <div>
-          <div className="eyebrow"><span className="live-dot"/>LIVE OPERATION · {text.day.toUpperCase()} {clock.day}</div>
+          <div className="eyebrow"><span className="live-dot"/>{locale === "en" ? "Operations" : "Операции"} · {text.day} {clock.day}</div>
           <h1>{scenario.title[locale]}</h1>
           <p>{stage.phase[locale]} <span>·</span> {clock.time}</p>
         </div>
@@ -2234,7 +2194,12 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, ledger, 
       </div>
       <RunLedgerPanel locale={locale} ledger={ledger} day={clock.day} />
       <MetricPanel locale={locale} metrics={metrics} compact/>
-      <article className="engagement-brief">
+      <nav className="operations-guide" aria-label={locale === "en" ? "How to play" : "Как пройти кейс"}>
+        <a href="#operation-brief"><b>1</b>{locale === "en" ? "Read the brief" : "Изучите задачу"}</a>
+        <a href="#operations-dossier-title"><b>2</b>{locale === "en" ? "Review documents" : "Проверьте документы"}</a>
+        <button type="button" onClick={revealDecisions}><b>3</b>{locale === "en" ? "Choose an action" : "Выберите действие"}</button>
+      </nav>
+      <article className="engagement-brief" id="operation-brief">
         <div><span>{locale === "en" ? "INITIAL SITUATION / MANDATE" : "НАЧАЛЬНАЯ СИТУАЦИЯ / ПОРУЧЕНИЕ"}</span></div>
         <p>{scenario.opening[locale]}</p>
       </article>
@@ -2247,7 +2212,7 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, ledger, 
         >
           <span>{text.attention}</span>
           <b>{inboxEntries.length}</b>
-          <small>ACTION REQUIRED</small>
+          <small>{locale === "en" ? "Review updates" : "Проверьте обновления"}</small>
           <Icon name="arrow"/>
         </button>
         <button
@@ -2323,7 +2288,7 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, ledger, 
         />
       )}
     </section>
-    <aside className="dossier-pane"><div className="pane-heading"><span>{text.dossier}</span><b>{visibleMaterials.length}</b></div><p className="pane-intro">{text.visibleMaterial} · {text.provenance}</p><div className="material-tabs">{visibleMaterials.map((material) => <button key={material.ref} className={material.ref === activeMaterial?.ref ? "active" : ""} onClick={() => setDossierRef(material.ref)}><code>{material.ref}</code><span>{material.title[locale]}</span></button>)}</div>{activeMaterial ? <article className="material-sheet"><div className="sheet-punch"/><div className="sheet-reg">{activeMaterial.ref}</div><span className="document-type">{activeMaterial.type[locale]}</span><h3>{activeMaterial.title[locale]}</h3><dl><div><dt>SOURCE</dt><dd>{activeMaterial.source[locale]}</dd></div><div><dt>DATE / TIME</dt><dd>{activeMaterial.date}</dd></div><div><dt>CASE</dt><dd>{scenario.caseId}</dd></div></dl><p>{locale === "en" ? "Visible case material. Source identity remains attached; opening this record does not recommend a decision." : "Видимый материал дела. Идентичность источника сохранена; открытие записи не рекомендует решение."}</p><div className="sheet-status"><Icon name="check"/> PROVENANCE ATTACHED</div></article> : <p className="pane-intro">{locale === "en" ? "No evidence is available at this stage." : "На этой стадии материалы ещё недоступны."}</p>}{decisionLog.length > 0 && <section className="mini-log"><h3>{text.actionLog}</h3>{decisionLog.map((entry,index) => <div key={`${entry.option.id}-${index}`}><span>{String(index+1).padStart(2,"0")}</span><p>{entry.option.label[locale]}</p></div>)}</section>}</aside></main>;
+    <OperationsDossier locale={locale} materials={visibleMaterials} activeMaterial={activeMaterial} selectMaterial={setDossierRef} caseId={scenario.caseId} decisions={decisionLog}/></main>;
 }
 
 function DebriefView({ locale, text, scenario, metrics, ledger, decisionLog, outcome, canonicalOutcome, exportSession, replayCase, returnLibrary, returnToStudio = false, returnLabel, requestFeedback }: { locale: Locale; text: UiText; scenario: Scenario; metrics: Record<MetricKey, number>; ledger: RunLedger; decisionLog: DecisionRecord[]; outcome: OutcomeClass; canonicalOutcome?: NonNullable<DecisionOption["resolvedOutcome"]>; exportSession: () => void; replayCase: () => void; returnLibrary: () => void; returnToStudio?: boolean; returnLabel?: string; requestFeedback: () => void }) {
@@ -2484,12 +2449,13 @@ function MetricPanel({ locale, metrics, compact = false }: { locale: Locale; met
 }
 
 function RunLedgerPanel({ locale, ledger, day }: { locale: Locale; ledger: RunLedger; day: number }) {
+  const en = locale === "en";
   const remaining = ledger.authorizedBudgetEur > 0 ? ledger.authorizedBudgetEur - ledger.spendEur : null;
-  return <section className="run-ledger" aria-label={locale === "en" ? "Current case resources" : "Текущие ресурсы дела"}>
-    <div className={remaining !== null && remaining < 0 ? "resource-alert" : ""}><span>{locale === "en" ? (ledger.costCoverage === "complete" || ledger.spendAuthoritative ? "TOTAL SPEND" : "KNOWN SPEND") : (ledger.costCoverage === "complete" || ledger.spendAuthoritative ? "ВСЕГО ЗАТРАТ" : "ИЗВЕСТНЫЕ ЗАТРАТЫ")}</span><b>€ {ledger.spendEur.toLocaleString()}</b><small>{remaining === null ? (locale === "en" ? "No budget authored" : "Бюджет не задан") : remaining < 0 ? `${locale === "en" ? "Exceeded" : "Превышение"}: € ${Math.abs(remaining).toLocaleString()}` : `${locale === "en" ? "Remaining" : "Остаток"}: € ${remaining.toLocaleString()}`}</small></div>
-    <div className={ledger.staminaModelled && ledger.stamina < 35 ? "resource-alert" : ""}><span>STAMINA</span><b>{ledger.staminaModelled ? `${ledger.stamina}/100` : "—"}</b><small>{ledger.staminaModelled ? `${locale === "en" ? "Fatigue" : "Усталость"} ${ledger.fatigue} · ${locale === "en" ? "strain" : "нагрузка"} ${ledger.cumulativeStrain}` : (locale === "en" ? "Not authored for this case" : "Не задана для этого кейса")}</small></div>
-    <div><span>{locale === "en" ? "WORKING DAY" : "РАБОЧИЙ ДЕНЬ"}</span><b>{String(day).padStart(2, "0")}</b><small>{locale === "en" ? "Deadlines keep running" : "Сроки продолжают идти"}</small></div>
-    <div><span>{locale === "en" ? "BILLABLE TIME" : "УЧТЁННОЕ ВРЕМЯ"}</span><b>{ledger.billableCoverage === "not-authored" ? "—" : `${(ledger.billableMinutes / 60).toFixed(1)} h`}</b><small>{ledger.billableCoverage === "not-authored" ? (locale === "en" ? "Not authored for this case" : "Не задано для этого кейса") : `${ledger.billableMinutes.toLocaleString()} min`}</small></div>
+  return <section className="run-ledger" aria-label={en ? "Current case resources" : "Текущие ресурсы дела"}>
+    {(ledger.costCoverage !== "not-authored" || ledger.spendAuthoritative) && <div className={remaining !== null && remaining < 0 ? "resource-alert" : ""}><span>{ledger.costCoverage === "complete" || ledger.spendAuthoritative ? (en ? "Total spend" : "Всего затрат") : (en ? "Known spend" : "Известные затраты")}</span><b>€ {ledger.spendEur.toLocaleString()}</b>{remaining !== null && <small>{remaining < 0 ? `${en ? "Exceeded" : "Превышение"}: € ${Math.abs(remaining).toLocaleString()}` : `${en ? "Remaining" : "Остаток"}: € ${remaining.toLocaleString()}`}</small>}</div>}
+    {ledger.staminaModelled && <div className={ledger.stamina < 35 ? "resource-alert" : ""}><span>{en ? "Stamina" : "Выносливость"}</span><b>{ledger.stamina}/100</b><small>{en ? "Fatigue" : "Усталость"} {ledger.fatigue} · {en ? "strain" : "нагрузка"} {ledger.cumulativeStrain}</small></div>}
+    <div><span>{en ? "Working day" : "Рабочий день"}</span><b>{String(day).padStart(2, "0")}</b><small>{en ? "Check the deadlines below" : "Проверьте сроки ниже"}</small></div>
+    {ledger.billableCoverage !== "not-authored" && <div><span>{en ? "Billable time" : "Учтённое время"}</span><b>{(ledger.billableMinutes / 60).toFixed(1)} {en ? "h" : "ч"}</b><small>{ledger.billableMinutes.toLocaleString()} {en ? "min" : "мин"}</small></div>}
   </section>;
 }
 
@@ -2512,12 +2478,12 @@ function DecisionModal({ locale, text, scenario, stageHeadline, option, isResult
         <span className="modal-kicker">{isResult ? text.consequence : text.review}</span>
         <h2 id="decision-title">{option.label[locale]}</h2>
         <p className="modal-context">{isResult ? option.result[locale] : option.detail[locale]}</p>
-        {!isResult && <div className="modal-source"><small>CURRENT SITUATION</small><p>{stageHeadline}</p></div>}
+        {!isResult && <div className="modal-source"><small>{locale === "en" ? "Current situation" : "Текущая ситуация"}</small><p>{stageHeadline}</p></div>}
         <dl className="decision-cost">
-          <div><dt>{text.cost}</dt><dd>{authoredCost ? `EUR ${option.cost.toLocaleString()}` : (locale === "en" ? "Not authored" : "Не задана")}</dd></div>
+          <div><dt>{text.cost}</dt><dd>{authoredCost ? `EUR ${option.cost.toLocaleString()}` : (locale === "en" ? "Not specified" : "Не указана")}</dd></div>
           <div><dt>{text.duration}</dt><dd>{option.minutes} min</dd></div>
-          <div><dt>{locale === "en" ? "Billable time" : "Учтённое время"}</dt><dd>{option.billableMinutes === undefined ? (locale === "en" ? "Not authored" : "Не задано") : `${option.billableMinutes} min`}</dd></div>
-          <div><dt>{locale === "en" ? "Workload" : "Нагрузка"}</dt><dd>{workloadAuthored ? `${fatigueLabel} · ${locale === "en" ? "strain" : "напряжение"} ${(option.strainDelta ?? 0) >= 0 ? "+" : ""}${option.strainDelta ?? 0}` : (locale === "en" ? "Not modelled" : "Не моделируется")}</dd></div>
+          {option.billableMinutes !== undefined && <div><dt>{locale === "en" ? "Billable time" : "Учтённое время"}</dt><dd>{option.billableMinutes} {locale === "en" ? "min" : "мин"}</dd></div>}
+          {workloadAuthored && <div><dt>{locale === "en" ? "Workload" : "Нагрузка"}</dt><dd>{fatigueLabel} · {locale === "en" ? "strain" : "напряжение"} {(option.strainDelta ?? 0) >= 0 ? "+" : ""}{option.strainDelta ?? 0}</dd></div>}
           {nextWorkday && <div className="decision-calendar"><dt>{locale === "en" ? "Calendar transition" : "Переход календаря"}</dt><dd>{locale === "en" ? "Next workday" : "Следующий рабочий день"}{completionTime ? ` · ${completionTime}` : ""}</dd></div>}
         </dl>
         <div className="effect-preview">{(Object.entries(option.effects) as Array<[MetricKey, number]>).map(([key,value]) => <span key={key} className={value >= 0 ? "positive" : "negative"}>{metricLabels[locale][key]} {value >= 0 ? "+" : ""}{value}</span>)}</div>
@@ -3133,11 +3099,6 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   }
 
   function startExampleDraft() {
-    const hasWork = Boolean(draft.nodes.length || draft.links.length || draft.title || draft.editHistory.length || prompt.trim());
-    if (hasWork && !window.confirm(locale === "en" ? "Replace the current draft with the worked example? The current unsaved graph will be removed." : "Заменить текущий черновик учебным примером? Текущая несохранённая схема будет удалена.")) return;
-    clearTransientEditorSelection();
-    setGraphOrientation("vertical");
-    selectGuidedStep(4);
     loadExample();
   }
 

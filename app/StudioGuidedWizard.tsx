@@ -81,10 +81,11 @@ export default function StudioGuidedWizard({
 
   return <section className="studio-guide-shell page-width" id="studio-guided-workflow" aria-labelledby="studio-guided-title">
     {activeStep === 1 && <div className="studio-quick-starts" aria-label={locale === "en" ? "Quick starts" : "Быстрый старт"}>
-      <button type="button" onClick={onBrowseDemos ?? onStartExample}><span>01</span><b>{locale === "en" ? "Browse demo cases" : "Открыть демо-кейсы"}</b><small>{locale === "en" ? "Choose Canopy or a playable example" : "Выберите Canopy или игровой пример"}</small></button>
+      <button type="button" onClick={onStartExample}><span>01</span><b>{locale === "en" ? "Open Canopy" : "Открыть Canopy"}</b><small>{locale === "en" ? "Explore the prepared decision map" : "Изучите готовую карту решений"}</small></button>
       <button type="button" onClick={onImport}><span>02</span><b>{locale === "en" ? "Load a case or prompt" : "Загрузить кейс или промпт"}</b><small>{locale === "en" ? "Saved case (.json), case prompt (.md) or text (.txt)" : "Кейс (.json), промпт (.md) или текст (.txt)"}</small></button>
       <button type="button" onClick={onFocusBrief}><span>03</span><b>{locale === "en" ? "Describe a task" : "Описать задачу"}</b><small>{locale === "en" ? "Start with a plain-language brief" : "Начните с описания обычным языком"}</small></button>
     </div>}
+    {activeStep === 1 && onBrowseDemos && <button type="button" className="studio-browse-demos" onClick={onBrowseDemos}>{locale === "en" ? "Browse all demo cases" : "Все демо-кейсы"}</button>}
     <header className="studio-guide-progress studio-guide-progress-compact">
       <div>
         <h2 id="studio-guided-title">{caseName.trim() || (locale === "en" ? "New case" : "Новый кейс")}</h2>

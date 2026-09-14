@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import JurisApp from "./JurisApp";
 import { isFalconStudioHost } from "./host-mode";
+import { studioEntry } from "./studio-entry";
 
 async function requestIsFalconStudio(): Promise<boolean> {
   const requestHeaders = await headers();
@@ -28,10 +29,11 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
-  const { view } = await searchParams;
+export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const params = await searchParams;
+  const { view } = params;
   // The custom domain selects the initial workspace; explicit navigation must
   // still reach the catalogue, saved drafts and help, including old bookmarks.
   const explicitWorkspace = ["library", "community", "help", "play"].includes(view ?? "");
-  return <JurisApp studioOnly={await requestIsFalconStudio() && !explicitWorkspace} />;
+  return <JurisApp {...studioEntry(params)} studioOnly={await requestIsFalconStudio() && !explicitWorkspace} />;
 }

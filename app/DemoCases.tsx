@@ -43,7 +43,7 @@ export default function DemoCases({ locale, records, openCanopy, canopyWorkflowH
     <ol className="demo-getting-started">
       <li>{locale === "en" ? "Choose an example below." : "Выберите пример ниже."}</li>
       <li>{locale === "en" ? "Review its facts, evidence and decision map." : "Проверьте факты, доказательства и карту решений."}</li>
-      <li>{locale === "en" ? "Test the scenario, then open Finish to save or create a report." : "Пройдите сценарий, затем откройте «Готово» для сохранения или отчёта."}</li>
+      <li>{locale === "en" ? "Follow the steps to test your decisions and review the outcome." : "Пройдите этапы, чтобы проверить решения и оценить результат."}</li>
     </ol>
     {error && <p className="demo-error" role="alert">{error}</p>}
     <section className="demo-category" aria-labelledby="canopy-demo-title">
@@ -52,9 +52,10 @@ export default function DemoCases({ locale, records, openCanopy, canopyWorkflowH
         : "Учебное решение о расширении управляемого объекта. Каждый вариант открывает отдельный рабочий черновик в Studio."}</p></header>
       <p><a className="secondary-cta" href={canopyWorkflowHref}>{locale === "en" ? "Open the full Canopy walkthrough" : "Открыть полный пошаговый процесс Canopy"}</a></p>
       <div className="demo-case-grid">
-        {canopyExamples.map((example) => <article key={example.id}>
+        {canopyExamples.map((example) => <article key={example.id} className={example.id === "base" ? "demo-recommended" : undefined}>
+          {example.id === "base" && <small>{locale === "en" ? "Start here" : "Начните здесь"}</small>}
           <h3>{example[locale]}</h3><p>{example.detail[locale]}</p>
-          <button type="button" className="primary-cta" disabled={pending !== null} onClick={() => void open(example.id, () => openCanopy(example.id))}>
+          <button type="button" className={example.id === "base" ? "primary-cta" : "secondary-cta"} disabled={pending !== null} onClick={() => void open(example.id, () => openCanopy(example.id))}>
             {pending === example.id ? (locale === "en" ? "Opening…" : "Открывается…") : (locale === "en" ? "Open in Studio" : "Открыть в Studio")}
             <span className="visually-hidden"> — Canopy {example[locale]}</span>
           </button>
