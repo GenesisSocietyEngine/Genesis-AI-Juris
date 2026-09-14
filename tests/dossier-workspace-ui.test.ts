@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import WorkspaceNavigation from "../app/WorkspaceNavigation";
 import {
   MATTER_DESTINATIONS,
   apiIssueFor,
@@ -318,7 +321,9 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.match(client, /mobileSectionSelect/);
   assert.match(boundary, /<WorkspaceNavigation active=/);
   assert.match(navigation, /\["\/matters", "My cases", "Мои дела"\]/);
-  assert.match(navigation, /aria-current=\{active === path \? "page" : undefined\}/);
+  const navigationMarkup = renderToStaticMarkup(createElement(WorkspaceNavigation, { active: "/canopy" }));
+  assert.match(navigationMarkup, /href="\/studio\?view=demos" aria-current="page">Demo cases<\/a>/);
+  assert.match(navigationMarkup, /href="\/matters">My cases<\/a>/);
   assert.match(client, /matter\.documentCount/);
   assert.match(client, /<details className=\{styles\.advancedFilters\}>/);
   assert.match(client, /view === "developer" \? ` · REVISION/);
@@ -327,7 +332,7 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.match(runtimeConstants, /PRODUCT_RELEASE = "v62"/);
   assert.match(app, /className="catalogue-filter-more"/);
   assert.match(app, /className="case-trust-details"/);
-  assert.match(app, /GENESIS: JURIS · \{PRODUCT_RELEASE\}/);
+  assert.doesNotMatch(app, /GENESIS: JURIS · \{PRODUCT_RELEASE\}/);
   assert.match(client, /PENDING_CASE_PROMPT_KEY/);
   assert.match(client, /sessionStorage\.setItem/);
   assert.match(client, /\.sort\(\(left, right\)/);

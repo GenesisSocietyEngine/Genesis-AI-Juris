@@ -331,8 +331,8 @@ test("standalone Studio exposes persistent professional destinations", () => {
   assert.match(appSource, /"My cases" : "Мои дела"/);
   assert.match(appSource, /"Templates" : "Шаблоны"/);
   assert.match(appSource, /sessionStorage\.getItem\(PENDING_CASE_PROMPT_KEY\)/);
-  assert.match(appSource, /<strong>CASE STUDIO<\/strong> · \{PRODUCT_RELEASE\}/);
   assert.doesNotMatch(appSource, /ADVISORY · BETA v0\.1\.0/);
+  assert.match(appSource, /"Demo cases" : "Демо-кейсы"/);
 });
 
 test("account uses the shared navigation without losing professional destinations", () => {

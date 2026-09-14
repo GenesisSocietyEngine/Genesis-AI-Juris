@@ -102,7 +102,7 @@ export default function StudioCaseViews({ locale, draft, onFocusNode, developerV
         event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIndex]?.focus();
       }}><span>{viewCopy[viewId].label[locale]}</span><small>{projectCaseView(draft, viewId).items.length.toString().padStart(2, "0")}</small></button>)}
     </div>
-    <div className="case-view-panel" id={`case-view-panel-${resolvedActiveView}`} role="tabpanel" aria-labelledby={`case-view-tab-${resolvedActiveView}`}>
+    <div className="case-view-panel" id={`case-view-panel-${resolvedActiveView}`} role="tabpanel" tabIndex={0} aria-labelledby={`case-view-tab-${resolvedActiveView}`}>
       <div className="case-view-panel-heading"><div><span>{viewCopy[resolvedActiveView].label[locale]}</span><p>{viewCopy[resolvedActiveView].description[locale]}</p></div>{developerView && <b>{projection.sourceNodeCount} N · {projection.sourceLinkCount} L</b>}</div>
       <ProjectionRows id={resolvedActiveView} items={projection.items} locale={locale} nodeIds={nodeIds} onFocusNode={onFocusNode}/>
     </div>
