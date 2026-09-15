@@ -29,6 +29,8 @@ test("anonymous PDF authoring remains local and does not call an authenticated A
   const dialog = readFileSync(new URL("../app/CaseReportDialog.tsx", import.meta.url), "utf8");
   const report = readFileSync(new URL("../app/case-report.ts", import.meta.url), "utf8");
   assert.doesNotMatch(dialog, /fetch\(/);
-  assert.match(report, /URL\.createObjectURL\(blob\)/);
+  const download = readFileSync(new URL("../app/report-download.ts", import.meta.url), "utf8");
+  assert.match(report, /startReportDownload\(blob/);
+  assert.match(download, /URL\.createObjectURL\(blob\)/);
   assert.doesNotMatch(report, /\/api\//);
 });

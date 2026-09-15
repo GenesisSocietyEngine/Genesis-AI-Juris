@@ -4,7 +4,7 @@ import test from "node:test";
 import pdfMake from "pdfmake/build/pdfmake.js";
 import pdfFonts from "pdfmake/build/vfs_fonts.js";
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
-import { assertCaseReportGenerationAuthorized, buildCaseReportArtifacts, buildCaseReportDefinition, caseReportReceiptBinding, mayPersistGeneratedReportReceipt, type CaseReportOptions } from "../app/case-report";
+import { assertCaseReportGenerationAuthorized, buildCaseReportArtifacts, buildCaseReportDefinition, caseReportReceiptBinding, createCaseReportPreview, mayPersistGeneratedReportReceipt, type CaseReportOptions } from "../app/case-report";
 import { REPORT_GRAPH_CONNECTOR_MIN_SIZE_MILLI_POINTS, ReportGraphLayoutError } from "../app/report-graph-layout";
 import { caseReportGraphLayoutSvg } from "../app/report-graph-pdf";
 import { caseFingerprint, casePublicationFingerprint, normalizeStudioDraft } from "../app/case-integrity";
@@ -12,6 +12,7 @@ import { caseTypeReference } from "../app/case-type-reference";
 import { isReportReceiptStale, reportReceipt, validateReportReadiness } from "../app/report-model";
 import { buildCanopyPackage } from "../app/canopy-fixture";
 import { primaryCaseOutput } from "../app/case-type-playbooks";
+import { diffDraftToRevision, snapshotStudioDraft, type StudioRevision } from "../app/studio-revisions";
 import { reportPdfFixtures } from "../scripts/tests/report-pdf-fixtures";
 import type { StudioDraft } from "../app/types";
 
@@ -113,6 +114,39 @@ function collectPdfLinks(value: unknown): string[] {
     ...Object.entries(record).filter(([key]) => key !== "link").flatMap(([, item]) => collectPdfLinks(item)),
   ];
 }
+
+test("PDF generation with financial assumptions preserves live case state and permits reopening and a second report", async () => {
+  const source = structuredClone(draft);
+  source.dealEconomics!.assumptions = ["Confirm the financing terms.", "Verify annual operating costs."];
+  const expected = structuredClone(source);
+  const fingerprint = caseFingerprint(source);
+  const publicationFingerprint = casePublicationFingerprint(source);
+  const receiptBefore = caseReportReceiptBinding(source, options);
+  const snapshot = snapshotStudioDraft(source);
+  const revision: StudioRevision = { id: "before-pdf", label: "Edited case", source: "visual", createdAt: source.updatedAt, before: snapshot, after: snapshot };
+  const diffBefore = diffDraftToRevision(source, revision);
+  // Freezing the actual authoring input catches any nested object lent to the
+  // mutating PDF renderer, including arrays beyond the originally broken ul.
+  const freeze = (value: unknown): void => {
+    if (!value || typeof value !== "object") return;
+    Object.values(value).forEach(freeze);
+    Object.freeze(value);
+  };
+  freeze(source);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const blob = await createCaseReportPreview(source, options, { canGenerate: true });
+    assert.equal(blob.type, "application/pdf");
+    assert.equal(Buffer.from(await blob.arrayBuffer()).subarray(0, 5).toString(), "%PDF-");
+    assert.deepEqual(source, expected);
+    assert.equal(caseFingerprint(source), fingerprint);
+    assert.equal(casePublicationFingerprint(source), publicationFingerprint);
+    // The report dialog calculates this again after generation sets its state.
+    assert.deepEqual(caseReportReceiptBinding(source, options), receiptBefore);
+    // StudioView eagerly evaluates this after the download completion callback.
+    // pdfmake layout functions in the live draft used to cause DataCloneError.
+    assert.deepEqual(diffDraftToRevision(source, revision), diffBefore);
+  }
+});
 
 test("professional report contains economics, registers, sign-off and a safe audit trail", () => {
   const report = buildCaseReportDefinition(draft, options);

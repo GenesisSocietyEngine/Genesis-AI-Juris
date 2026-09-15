@@ -20,6 +20,8 @@ import { useInterfaceLocale, useWorkspaceLocation } from "./use-interface-locale
 import { workspaceSignInPath, workspaceDestination } from "./workspace-navigation";
 import { createStudioAuthContinuation, readStudioAuthContinuation, STUDIO_AUTH_CONTINUATION_KEY } from "./studio-auth-continuation";
 import ReportErrorBoundary from "./ReportErrorBoundary";
+import { withLocalChunkRecovery } from "./stale-chunk-recovery";
+import { reportGenerationErrorMessage } from "./report-generation-error";
 import { savedStudioPath, verifiedStudioSaveReceipt } from "./studio-save-receipt";
 import { deviceDraftEnvelope, LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, mayPersistReportReceiptOnDevice, mayPersistStudioDraftOnDevice, studioDeviceDraftKey, studioDeviceScope, unwrapDeviceDraft } from "./studio-device-storage";
 import { addStudioLink, appendStudioHistory, applyStudioPromptIteration, deleteStudioLink, describeStudioPromptOperation, nextStudioLinkId, nextStudioNodeId, nextStudioNodePosition, planStudioPromptIteration, relinkStudioLink, type StudioPromptPlan } from "./studio-editing";
@@ -3054,12 +3056,12 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       return;
     }
     try {
-      await import("./CaseReportDialog");
+      await withLocalChunkRecovery(() => import("./CaseReportDialog"));
       setCaseReportStatus("");
       setCaseReportFingerprint(derivationsSettled ? studioDerivations.caseFingerprint : caseFingerprint(draft));
       setCaseReportOpen(true);
-    } catch {
-      setCaseReportStatus(locale === "en" ? "PDF unavailable. Refresh and retry." : "PDF недоступен. Обновите страницу.");
+    } catch (error) {
+      setCaseReportStatus(reportGenerationErrorMessage(error, locale));
     }
   }
 
@@ -3751,7 +3753,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
       persistReportReceiptOnDevice={persistReportReceiptOnDevice}
       close={() => setCaseReportOpen(false)}
       completed={() => {
-        setCaseReportStatus(locale === "en" ? "PDF downloaded." : "PDF скачан.");
+        setCaseReportStatus(locale === "en" ? "PDF download started." : "Скачивание PDF началось.");
       }}
     /></Suspense></ReportErrorBoundary>}
     {caseMarkdownOpen && <Suspense fallback={null}><CaseMarkdownDialog locale={locale} draft={draft} close={() => setCaseMarkdownOpen(false)} completed={() => setCaseReportStatus(locale === "en" ? "Markdown downloaded." : "Markdown скачан.")}/></Suspense>}

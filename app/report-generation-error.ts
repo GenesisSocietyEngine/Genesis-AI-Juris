@@ -1,3 +1,4 @@
+import { isStaleChunkError } from "./stale-chunk-recovery";
 type ReportLocale = "en" | "ru";
 
 const LAYOUT_ERROR_CODES = new Set([
@@ -39,6 +40,9 @@ function safeCodePoint(value: unknown) {
 }
 
 export function reportGenerationErrorMessage(error: unknown, locale: ReportLocale) {
+  if (isStaleChunkError(error)) return localized(locale,
+    "The report files could not load. Your case is still open. Check your connection and try again. Save or export your case before refreshing the page.",
+    "Не удалось загрузить компоненты отчёта. Кейс остаётся открытым. Проверьте соединение и повторите попытку. Перед обновлением страницы сохраните или экспортируйте кейс.");
   const layoutError = safeLayoutError(error);
   if (!layoutError) {
     return localized(

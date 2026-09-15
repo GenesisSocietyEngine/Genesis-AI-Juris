@@ -1,4 +1,6 @@
 import { pdfBlobFromDocument } from "./pdf-blob";
+import { startReportDownload } from "./report-download";
+import { withLocalChunkRecovery } from "./stale-chunk-recovery";
 import { calculateDealEconomics, estimateDealCashFlowProbabilities } from "./deal-economics";
 import { calculateTaxEconomics } from "./tax-economics";
 import { buildReportGraphLayout, deriveReportGraphLayoutInput, reportGraphGovernedTextIssue, ReportGraphLayoutError, type ReportGraphLayoutModel } from "./report-graph-layout";
@@ -158,7 +160,7 @@ function buildEconomics(draft: StudioDraft, options: CaseReportOptions): Content
       ), style: "note" });
     }
     if (result.missingInputs.length) content.push({ text: `${tr(language, "Open financial inputs", "Незаполненные финансовые параметры")}: ${result.missingInputs.join(", ")}.`, style: "warning" });
-    if (model.assumptions.length) content.push({ ul: model.assumptions, style: "bodySmall", margin: [8, 4, 0, 8] });
+    if (model.assumptions.length) content.push({ ul: [...model.assumptions], style: "bodySmall", margin: [8, 4, 0, 8] });
   }
   if (draft.taxEconomics) {
     const model = draft.taxEconomics;
@@ -557,7 +559,9 @@ function assertGovernedReportDefinitionText(definition: TDocumentDefinitions) {
 
 export function buildCaseReportArtifacts(draft: StudioDraft, options: CaseReportOptions): CaseReportArtifacts {
   const { reportModel, layoutModel, presentationFingerprint } = buildCaseReportModels(draft, options);
-  const definition = buildCaseReportDefinitionFromModels(draft, options, reportModel, layoutModel);
+  // pdfmake mutates content arrays during layout. A report must never lend it
+  // live Studio state: those mutations otherwise corrupt the case on rerender.
+  const definition = buildCaseReportDefinitionFromModels(structuredClone(draft), options, reportModel, layoutModel);
   assertGovernedReportDefinitionText(definition);
   return {
     definition,
@@ -587,7 +591,9 @@ export function assertCaseReportGenerationAuthorized(canGenerate: boolean) {
 async function renderCaseReport(draft: StudioDraft, options: CaseReportOptions, authorization: { canGenerate: boolean }) {
   assertCaseReportGenerationAuthorized(authorization?.canGenerate);
   const [{ default: pdfMake }, { default: pdfFonts }, { default: auditFont }] = await Promise.all([
-    import("pdfmake/build/pdfmake.js"), import("pdfmake/build/vfs_fonts.js"), import("./report-audit-symbol-font.v1.json"),
+    withLocalChunkRecovery(() => import("pdfmake/build/pdfmake.js")),
+    withLocalChunkRecovery(() => import("pdfmake/build/vfs_fonts.js")),
+    withLocalChunkRecovery(() => import("./report-audit-symbol-font.v1.json")),
   ]);
   (pdfMake as unknown as { addVirtualFileSystem: (fonts: unknown) => void }).addVirtualFileSystem({ ...pdfFonts, ...auditFont.vfs });
   const { definition, reportModel, layoutModel, presentationFingerprint } = buildCaseReportArtifacts(draft, options);
@@ -603,14 +609,7 @@ export async function createCaseReportPreview(draft: StudioDraft, options: CaseR
 
 export async function downloadCaseReport(draft: StudioDraft, options: CaseReportOptions, authorization: { canGenerate: boolean }) {
   const { blob, reportModel, layoutModel, presentationFingerprint } = await renderCaseReport(draft, options, authorization);
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${draft.caseId || "case"}-v${draft.version || "0"}-${options.profileId || "case-report"}-${options.audience}.pdf`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+  startReportDownload(blob, `${draft.caseId || "case"}-v${draft.version || "0"}-${options.profileId || "case-report"}-${options.audience}.pdf`);
   const receipt = reportReceipt(reportModel, options.generatedAt, {
     layoutSchemaVersion: layoutModel.layoutSchemaVersion,
     layoutAlgorithmVersion: layoutModel.layoutAlgorithmVersion,
