@@ -1,3 +1,4 @@
+import { getChatGPTUser } from "../../../chatgpt-auth";
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { authAuditEvents, authSessions, localAccounts, users } from "../../../../db/schema";
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   if (!isSameOriginCredentialMutation(request)) return authJson({ error: "Cross-site credential mutation rejected." }, 403);
+  if (await getChatGPTUser()) return authJson({ code: "already_authenticated", error: "Sign out before signing in to another account." }, 409);
   const payload = await readJsonObject(request, 12_000);
   if (!payload) return authJson({ error: INVALID_LOGIN_MESSAGE }, 401);
   const email = normalizeEmail(payload.email);

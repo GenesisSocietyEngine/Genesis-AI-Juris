@@ -74,8 +74,8 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
         <details ref={moreRef} className="genesis-nav-more">
           <summary>{en ? "More" : "Ещё"}<span aria-hidden="true">⌄</span></summary>
           <div className="genesis-nav-menu" onClick={closeMore}>
-            <a href={href("/account")}>{en ? "Account & sign in" : "Аккаунт и вход"}</a>
-            <a href={href("/organizations")}>{en ? "Administration" : "Администрирование"}</a>
+            <a href={href("/account")} aria-current={active === "/account" ? "page" : undefined}>{en ? "Account" : "Аккаунт"}</a>
+            <a href={href("/organizations")} aria-current={active === "/organizations" ? "page" : undefined}>{en ? "Administration" : "Администрирование"}</a>
             <a href={href("/?view=community")}>{en ? "Community & reviews" : "Сообщество и рецензии"}</a>
             <a className="genesis-mobile-help" href={href("/studio?view=help")} onClick={event => follow(event,"help")}>{en ? "Help & guides" : "Помощь"}</a>
             {menu}

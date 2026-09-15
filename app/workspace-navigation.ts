@@ -50,7 +50,7 @@ export function workspaceDestination(path: string, current: string) {
     }
   }
   if (!changesCase && !changesOrganization && !target.searchParams.has("return_to") && ["/studio", "/templates", "/account"].includes(target.pathname)) {
-    const returnTo = ["/matters", "/canopy"].includes(source.pathname) ? source.pathname + source.search + source.hash : returnPath;
+    const returnTo = (["/matters", "/canopy"].includes(source.pathname) || (source.pathname === "/organizations" && target.pathname === "/account")) ? source.pathname + source.search + source.hash : returnPath;
     if (returnTo && returnTo !== target.pathname) target.searchParams.set("return_to", returnTo);
   }
   return target.pathname + target.search + target.hash;

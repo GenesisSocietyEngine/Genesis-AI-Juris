@@ -57,3 +57,11 @@ test("Studio and account navigation retain the originating organization and case
 test("PDF preview rejects inspection-only access before loading or generating a PDF", async () => {
   await assert.rejects(createCaseReportPreview(buildCanopyPackage("base").draft, {} as never, { canGenerate: false }), /inspection-only/);
 });
+
+test("administration account completion returns to the exact organization and language", () => {
+  const source="/organizations?organization=org-admin&lang=ru#members";
+  const target=new URL(workspaceDestination("/account",source),"https://example.test");
+  assert.equal(target.searchParams.get("organization"),"org-admin");
+  assert.equal(target.searchParams.get("lang"),"ru");
+  assert.equal(safeWorkspaceReturn(target.searchParams.get("return_to")),source);
+});

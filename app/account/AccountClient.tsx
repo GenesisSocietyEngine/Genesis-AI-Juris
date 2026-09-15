@@ -44,6 +44,8 @@ export default function AccountClient({
 
   async function submit(action: "login" | "register" | "recover" | "reset", event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy !== null) return;
+    if (identity && action === "login") { setError(t("Sign out before signing in to another account.", "Выйдите перед входом в другой аккаунт.")); return; }
     setBusy(action); setError(""); setMessage(""); setRecoveryCode("");
     const form = new FormData(event.currentTarget);
     const passwordField = action === "login" ? "password" : "newPassword";
@@ -66,7 +68,11 @@ export default function AccountClient({
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
-      const result = await response.json() as { error?: string; recoveryCode?: string; recoveryNotice?: string };
+      const result = await response.json() as { code?: string; error?: string; recoveryCode?: string; recoveryNotice?: string };
+      if (response.status === 409 && result.code === "already_authenticated") {
+        // Another tab signed in: refresh the verified identity so sign-out is available.
+        router.refresh();
+      }
       if (!response.ok) throw new Error(result.error || "The credential request could not be completed.");
       if (result.recoveryCode) setRecoveryCode(result.recoveryCode);
       setMessage(result.recoveryNotice || (action === "login" ? "Local sign-in completed." : "Credentials updated."));
@@ -80,7 +86,7 @@ export default function AccountClient({
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!identity || !profileKnown) return;
+    if (busy !== null || !identity || !profileKnown) return;
     setBusy("profile"); setError("");
     const form = new FormData(event.currentTarget);
     try {
@@ -100,6 +106,7 @@ export default function AccountClient({
 
   async function requestEmailReset(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy !== null) return;
     setBusy("forgot"); setError(""); setMessage(""); setRecoveryCode("");
     const form = new FormData(event.currentTarget);
     try {
@@ -113,13 +120,15 @@ export default function AccountClient({
   }
 
   async function logout() {
+    if (busy !== null) return;
     setBusy("logout"); setError(""); setMessage(""); setRecoveryCode("");
     try {
       const response = await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
       if (!response.ok) throw new Error("Local sign-out could not be completed.");
       await clearDeviceStudioDraft();
-      router.replace("/account");
-      router.refresh();
+      // Discard account-scoped UI and pending callbacks after confirmed sign-out.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- Sign-out must clear private client state.
+      window.location.assign("/account?lang=" + locale + "&return_to=" + encodeURIComponent(returnTo));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Local sign-out could not be completed.");
       setBusy(null);
@@ -138,6 +147,7 @@ export default function AccountClient({
 
   async function signOutChatGPT(event: MouseEvent<HTMLAnchorElement>) {
     event.preventDefault();
+    if (busy !== null) return;
     setBusy("logout");
     setError("");
     try {
@@ -168,7 +178,8 @@ export default function AccountClient({
       <div><span>{t("Current session", "Текущий сеанс")}</span><strong>{identity.displayName}</strong><small>{identity.email}</small></div>
       {initialProfile && <a className={styles.primaryLink} href={returnTo}>{t("Continue to your work", "Продолжить работу")}</a>}
       {identity.authSource === "local" && <button onClick={logout} disabled={busy !== null}>{busy === "logout" ? t("Signing out…", "Выход…") : t("Sign out locally", "Выйти из локального сеанса")}</button>}
-      {identity.authSource === "chatgpt" && <a href={chatGPTSignOutUrl} onClick={signOutChatGPT}>{t("Sign out from ChatGPT identity", "Выйти из аккаунта ChatGPT")}</a>}
+      <p>{t("To use a different account, sign out first. Organization administration and access to individual cases are managed separately.", "Для входа в другой аккаунт сначала выйдите. Управление организацией и доступ к отдельным делам назначаются отдельно.")}</p>
+      {identity.authSource === "chatgpt" && <a href={chatGPTSignOutUrl} onClick={signOutChatGPT} aria-disabled={busy !== null}>{t("Sign out", "Выйти")}</a>}
     </section>}
 
     {(message || error) && <div className={error ? styles.error : styles.success} role={error ? "alert" : "status"}>{error || message}</div>}
@@ -193,7 +204,7 @@ export default function AccountClient({
     <details className={styles.optional}>
     <summary>{t("Password and recovery · optional", "Пароль и восстановление · необязательно")}</summary>
     <section className={styles.grid}>
-      <article className={styles.card}>
+      {!identity && <article className={styles.card}>
         <span>{t("01 · RETURNING USER", "01 · ВХОД С ПАРОЛЕМ")}</span><h2>{t("Sign in with password", "Войти с паролем")}</h2>
         <p>{t("Use credentials enrolled after ChatGPT identity confirmation.", "Для аккаунтов, в которых пароль создан после подтверждения входа через ChatGPT.")}</p>
         <form onSubmit={(event) => submit("login", event)}>
@@ -203,18 +214,18 @@ export default function AccountClient({
         </form>
         <div className={styles.emailReset}>
           <h3>{t("Forgot the password?", "Забыли пароль?")}</h3>
-          <p>{emailResetAvailable ? t("Request a 15-minute, single-use link. The response never reveals whether an account exists.", "Запросите одноразовую ссылку на 15 минут. Ответ не раскрывает наличие аккаунта.") : t("Email reset is implemented but awaits the server sender configuration. Use ChatGPT identity or the offline code for now.", "Отправка email недоступна. Используйте вход через ChatGPT или код восстановления.")}</p>
+          <p>{emailResetAvailable ? t("Request a 15-minute, single-use link. The response never reveals whether an account exists.", "Запросите одноразовую ссылку на 15 минут. Ответ не раскрывает наличие аккаунта.") : t("Email recovery is currently unavailable. Use ChatGPT sign-in or your recovery code.", "Отправка email недоступна. Используйте вход через ChatGPT или код восстановления.")}</p>
           <form onSubmit={requestEmailReset}>
             <Field label={t("Account email", "Email аккаунта")}><input name="email" type="email" autoComplete="username" required/></Field>
             <button disabled={busy !== null || !emailResetAvailable}>{busy === "forgot" ? t("Requesting…", "Отправка запроса…") : t("Email reset link", "Отправить ссылку сброса")}</button>
           </form>
         </div>
-      </article>
+      </article>}
 
       <article className={styles.card}>
         <span>{t("02 · FIRST-TIME ENROLLMENT", "02 · ДОПОЛНИТЕЛЬНЫЙ ПАРОЛЬ")}</span><h2>{hasLocalAccount ? t("Reset through ChatGPT", "Сбросить через ChatGPT") : t("Create local credentials", "Создать локальный пароль")}</h2>
         {identity?.authSource === "chatgpt" ? <>
-          <p>{t("Your account email is taken from the trusted ChatGPT identity header, never from an editable form.", "Используется email подтверждённого аккаунта ChatGPT. Его нельзя заменить в этой форме.")}</p>
+          <p>{t("This password belongs to your signed-in ChatGPT account. It does not create a separate account.", "Используется email подтверждённого аккаунта ChatGPT. Его нельзя заменить в этой форме.")}</p>
           <form onSubmit={(event) => submit(hasLocalAccount ? "reset" : "register", event)}>
             <PasswordFields locale={locale}/>
             <button disabled={busy !== null}>{busy === "register" || busy === "reset" ? t("Protecting credentials…", "Сохранение пароля…") : hasLocalAccount ? t("Reset password and sessions", "Сбросить пароль и сеансы") : t("Enroll local password", "Создать локальный пароль")}</button>
@@ -225,7 +236,7 @@ export default function AccountClient({
         </>}
       </article>
 
-      <article className={styles.card}>
+      {!identity && <article className={styles.card}>
         <span>{t("03 · OFFLINE RECOVERY", "03 · КОД ВОССТАНОВЛЕНИЯ")}</span><h2>{t("Use your recovery code", "Использовать код восстановления")}</h2>
         <p>{t("The offline code remains an independent fallback if email is unavailable. Using it revokes prior sessions and rotates the code.", "Код работает и без email. Его использование отзывает прежние сеансы и заменяет код.")}</p>
         <form onSubmit={(event) => submit("recover", event)}>
@@ -234,7 +245,7 @@ export default function AccountClient({
           <PasswordFields locale={locale}/>
           <button disabled={busy !== null}>{busy === "recover" ? t("Rotating credentials…", "Обновление данных входа…") : t("Recover and revoke old sessions", "Восстановить и отозвать старые сеансы")}</button>
         </form>
-      </article>
+      </article>}
     </section>
     </details>
 

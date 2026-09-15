@@ -2,108 +2,172 @@
 
 import Link from "next/link";
 import WorkspaceNavigation from "../WorkspaceNavigation";
-import { useInterfaceLocale } from "../use-interface-locale";
-import { useCallback, useEffect, useState } from "react";
+import { useInterfaceLocale, useWorkspaceLocation } from "../use-interface-locale";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import type { ClientOrganization } from "../organization-client";
+import { workspaceDestination } from "../workspace-navigation";
+import { invitationRecipientIssue, organizationIssue, validOrganizationReceipt, type AdminIssue } from "./organization-admin-model";
 import styles from "./organizations.module.css";
 
 type Member = { actorId: string; name: string; role: string; status: string; revision: number };
 type LifecycleRequest = { id: string; command: string; requestedByActorId: string; expiresAt: string };
 type Workspace = { organizations: ClientOrganization[]; selected: ClientOrganization | null; actorId: string;
-  members: Member[]; requests: LifecycleRequest[]; events: Array<{ id: string; action: string; occurredAt: string }> };
+  selectionIssue?: string | null; invitations?: Array<{id:string;recipientActorId:string;role:string;status:string;expiresAt:string}>; members: Member[]; requests: LifecycleRequest[]; events: Array<{ id: string; action: string; occurredAt: string }> };
 
 export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn: boolean; signInUrl: string }) {
   const [locale] = useInterfaceLocale();
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
-  const [issue, setIssue] = useState(signedIn ? "" : "Sign in to manage organizations. / Войдите для управления организациями.");
+  const location = useWorkspaceLocation();
+  const [issue, setIssue] = useState<AdminIssue | null>(signedIn ? null : {code:"signin_required",status:401,scope:"page"});
   const [busy, setBusy] = useState(false);
-  const [token, setToken] = useState("");
+  const busyRef = useRef(false);
+  const mounted = useRef(true);
+  const [invitation, setInvitation] = useState<{token:string;organizationId:string;expiresAt:string}|null>(null);
   const [notice, setNotice] = useState("");
+  const [recipient, setRecipient] = useState("");
+  const refreshSelection = useRef<string | undefined>(undefined);
   const t = (en: string, ru: string) => locale === "ru" ? ru : en;
   const selected = workspace?.selected;
   const owner = selected?.role === "org_owner";
-  const load = useCallback(async (signal?: AbortSignal) => {
-    const query = new URL(window.location.href).searchParams.get("organization");
-    const response = await fetch("/api/organizations" + (query ? "?organization=" + encodeURIComponent(query) : ""), { cache: "no-store", signal });
-    if (!response.ok) throw new Error(response.status === 401 ? "Sign in to manage organizations. / Войдите для управления организациями." : "Organizations are unavailable. / Организации недоступны.");
-    return await response.json() as Workspace;
+  const accountUrl = workspaceDestination("/account", location);
+  const orgHref = (id:string) => "/organizations?organization="+encodeURIComponent(id)+"&lang="+locale;
+  const load = useCallback(async (signal?: AbortSignal, selection?: string) => {
+    const query = selection ?? new URL(window.location.href).searchParams.get("organization");
+    const response = await fetch("/api/organizations" + (query ? "?organization=" + encodeURIComponent(query) : ""), { credentials:"same-origin", cache: "no-store", signal });
+    const data = await response.json().catch(()=>null) as (Workspace & {code?:string}) | null;
+    if (!response.ok) throw {code:data?.code??"organization_unavailable",status:response.status,scope:"page"};
+    if (!data || !Array.isArray(data.organizations) || typeof data.actorId!=="string" || !Array.isArray(data.members) || !Array.isArray(data.requests) || !Array.isArray(data.events)) throw {code:"invalid_receipt",status:503,scope:"page"};
+    return data;
   }, []);
   useEffect(() => {
-    if (!signedIn) return;
+    mounted.current=true;
+    if (!signedIn) return () => {mounted.current=false;};
     const controller = new AbortController();
-    void load(controller.signal).then((data) => { if (!controller.signal.aborted) setWorkspace(data); })
-      .catch((error: Error) => { if (!controller.signal.aborted) setIssue(error.message); });
-    return () => controller.abort();
+    void load(controller.signal).then((data) => { if (!controller.signal.aborted) {setWorkspace(data);setIssue(null);} })
+      .catch((error: AdminIssue) => { if (!controller.signal.aborted) setIssue({code:error.code??"network",status:error.status??0,scope:"page"}); });
+    return () => { mounted.current=false;controller.abort(); };
   }, [load, signedIn]);
-  async function action(payload: Record<string, unknown>, form?: HTMLFormElement) {
-    setBusy(true); setIssue(""); setNotice(""); setToken("");
+  async function refresh() {
+    if(busyRef.current)return;
+    busyRef.current=true;setBusy(true);
     try {
-      const response = await fetch("/api/organizations", { method: "POST", cache: "no-store",
+      const next=await load(undefined,refreshSelection.current??selected?.id);
+      if(!mounted.current)return;
+      if(workspace&&next.actorId!==workspace.actorId){window.location.reload();return;}
+      setWorkspace(next);setIssue(null);
+      // A refreshed organization hint never grants authority; every write is checked on the server.
+      if(next.selected){const url=new URL(window.location.href);url.searchParams.set("organization",next.selected.id);window.history.replaceState(window.history.state,"",url);window.dispatchEvent(new Event("genesis-interface-change"));}
+    } catch(error){if(mounted.current){const e=error as AdminIssue;setIssue({code:e.code??"network",status:e.status??0,scope:"page",refreshOnly:issue?.refreshOnly});}}
+    finally{busyRef.current=false;if(mounted.current)setBusy(false);}
+  }
+  async function action(payload: Record<string, unknown>, form?: HTMLFormElement) {
+    if(busyRef.current||!workspace)return;
+    const scope=String(payload.action);const actorId=workspace.actorId;
+    if(scope==="invite"){
+      payload.recipientActorId=String(payload.recipientActorId??"").trim();
+      const code=invitationRecipientIssue(String(payload.recipientActorId),actorId,workspace.members);
+      if(code){setIssue({code,status:400,scope});(form?.elements.namedItem("recipientActorId") as HTMLInputElement|null)?.focus();return;}
+    }
+    if(scope==="accept")payload.token=String(payload.token??"").trim();
+    busyRef.current=true;setBusy(true);setIssue(null);setNotice("");
+    let confirmed=false;
+    try {
+      const response = await fetch("/api/organizations", { method: "POST", credentials:"same-origin", cache: "no-store",
         headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      const result = await response.json() as { token?: string };
-      if (!response.ok) throw new Error(t("Action unavailable. Check your role, invitation and current membership, then refresh.", "Действие недоступно. Проверьте роль, приглашение и актуальный доступ, затем обновите страницу."));
-      if (result.token) setToken(result.token);
+      const result = await response.json().catch(()=>null) as { code?:string;token?:string;expiresAt?:string;organization?:ClientOrganization;id?:string;ok?:boolean } | null;
+      if(!mounted.current)return;
+      if (!response.ok) throw {code:result?.code??"organization_unavailable",status:response.status,scope};
+      if (!result) throw {code:"invalid_receipt",status:503,scope};
+      if(["create","accept","select"].includes(scope)&&!validOrganizationReceipt(result.organization,actorId,scope==="select"?String(payload.organizationId):undefined))throw {code:"invalid_receipt",status:503,scope};
+      if(scope==="invite"&&(!result.token||!result.id||!result.expiresAt))throw {code:"invalid_receipt",status:503,scope};
+      if(["member","lifecycle_approve"].includes(scope)&&result.ok!==true)throw {code:"invalid_receipt",status:503,scope};
+      if(scope==="lifecycle_request"&&!result.id)throw {code:"invalid_receipt",status:503,scope};
+      confirmed=true;
+      if(scope==="select"&&result.organization){
+        // Full navigation discards previous organization state; successful selection does not depend on a second GET.
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- Tenant switching must discard client caches and in-flight case closures.
+        window.location.assign("/matters?organization="+encodeURIComponent(result.organization.selection)+"&lang="+locale);return;
+      }
+      if (scope==="invite"&&result.token) {setInvitation({token:result.token,organizationId:String(payload.organizationId),expiresAt:result.expiresAt!});setRecipient("");}
       form?.reset();
-      setNotice(t("Saved.", "Сохранено."));
-      setWorkspace(await load());
-      return result;
-    } catch (error) { setIssue((error as Error).message); return null; }
-    finally { setBusy(false); }
+      setNotice(scope==="invite"?t("Invitation created. Copy the code below for its recipient.","Приглашение создано. Скопируйте код для получателя."):scope==="create"?t("Organization created. You are its owner.","Организация создана. Вы — её владелец."):scope==="accept"?t("Invitation accepted. Your organization is ready to open.","Приглашение принято. Организация доступна."):t("Change saved.","Изменение сохранено."));
+      const nextId=result.organization?.id??selected?.id;
+      refreshSelection.current=nextId;
+      const next=await load(undefined,nextId);
+      if(!mounted.current)return;
+      if(next.actorId!==actorId){window.location.reload();return;}
+      setWorkspace(next);
+      if(result.organization){setRecipient("");const url=new URL(window.location.href);url.searchParams.set("organization",result.organization.id);window.history.replaceState(window.history.state,"",url);window.dispatchEvent(new Event("genesis-interface-change"));}
+    } catch (error) {
+      if(!mounted.current)return;
+      const e=error as AdminIssue;
+      setIssue({code:e.code??"network",status:e.status??0,scope:confirmed?"page":scope,refreshOnly:confirmed});
+    } finally {busyRef.current=false;if(mounted.current)setBusy(false);}
   }
   function submit(event: FormEvent<HTMLFormElement>, base: Record<string, unknown>) {
     event.preventDefault();
     const form = event.currentTarget;
     void action({ ...base, ...Object.fromEntries(new FormData(form).entries()) }, form);
   }
+  function feedback(scope:string){
+    if(!issue||issue.scope!==scope)return null;
+    const {message,recovery}=organizationIssue(issue,locale);
+    return <div className={styles.issue} role="alert" id={"admin-issue-"+scope}><p>{message}</p>
+      {recovery==="signin"?<><a href={signInUrl} target="_blank" rel="noopener">{t("Sign in in a new tab","Войти в новой вкладке")}</a><button type="button" className={styles.secondary} disabled={busy} onClick={()=>void refresh()}>{t("I've signed in — refresh","Вход выполнен — обновить")}</button></>
+      :recovery==="profile"?<><a href={accountUrl} target="_blank" rel="noopener">{t("Complete profile in a new tab","Заполнить профиль в новой вкладке")}</a><button type="button" className={styles.secondary} disabled={busy} onClick={()=>void refresh()}>{t("Profile completed — refresh","Профиль заполнен — обновить")}</button></>
+      :recovery==="refresh"?<button type="button" className={styles.secondary} disabled={busy} onClick={()=>void refresh()}>{t("Refresh organization details","Обновить данные организации")}</button>:null}
+    </div>;
+  }
   const roleLabel = (role: string) => ({ org_owner: t("Organization owner", "Владелец организации"), org_admin: t("Administrator", "Администратор"),
     member: t("Member", "Участник"), auditor: t("Auditor", "Аудитор") }[role] ?? role);
   return <><WorkspaceNavigation active="/organizations"/><main className={styles.page} lang={locale}>
-    <h1>{t("Administration", "Администрирование")}</h1>
-    <p>{t("Choose the team you are working with. Access to each case is assigned separately.", "Выберите команду для работы. Доступ к каждому делу назначается отдельно.")}</p>
+    <div className={styles.heading}><div><h1>{t("Organization administration", "Управление организациями")}</h1><p>{t("Organization membership and case access are managed separately.","Членство в организации и доступ к делам управляются отдельно.")}</p></div><Link href={accountUrl}>{t("Your account", "Ваш аккаунт")}</Link></div>
     <p className={styles.pilot}>{t("Pilot workspace · synthetic or de-identified files only", "Пилотная версия · только синтетические или обезличенные файлы")}</p>
-    {issue && <p className={styles.issue} role="alert">{issue.includes(" / ") ? issue.split(" / ")[locale === "ru" ? 1 : 0] : issue} <a href={signInUrl} target="_top">{t("Sign in", "Войти")}</a> · <Link href="/account">{t("Account", "Аккаунт")}</Link></p>}
-    {notice && <p role="status">{notice}</p>}
+    {feedback("page")}
+    {notice && <p className={styles.notice} role="status">{notice}</p>}
     {!workspace && !issue && <p role="status">{t("Loading organizations…", "Загрузка организаций…")}</p>}
     {workspace && <>
+      {workspace.selectionIssue&&<div className={styles.issue} role="alert">{t("Your previous organization selection is no longer current. Choose an available organization below.","Предыдущий выбор организации устарел. Выберите доступную организацию ниже.")}</div>}
+      <div className={styles.sessionContext}><span>{issue?.status===401?t("Session expired", "Сеанс истёк"):t("Account connected", "Аккаунт подключён")}</span><span>{selected?t("Managing: ","Управление: ")+selected.name:t("Choose an organization","Выберите организацию")}</span></div>
       <div className={styles.grid}>
         <section className={styles.panel}><h2>{t("Your organizations", "Ваши организации")}</h2>
+          {feedback("select")}
           <ul className={styles.organizations}>{workspace.organizations.map((o) => <li key={o.id}>
-            <a href={"/organizations?organization=" + encodeURIComponent(o.id)} aria-current={selected?.id === o.id ? "page" : undefined}>{o.name}</a>
+            <a href={orgHref(o.id)} aria-current={selected?.id === o.id ? "page" : undefined}>{o.name}</a>
             <span>{roleLabel(o.role)} · {t(o.status, { active: "Активна", suspended: "Приостановлена", closed: "Закрыта" }[o.status] ?? o.status)}</span>
-            {o.status === "active" && <button disabled={busy} onClick={async () => {
-              const result = await action({ action: "select", organizationId: o.id });
-              // A full navigation discards private state and pending requests from the previous organization.
-              // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-              if (result) window.location.assign("/matters?organization=" + encodeURIComponent(o.id));
-            }}>{t("Open cases", "Открыть дела")}</button>}
+            <span className={styles.actions}><a className={styles.manageLink} href={orgHref(o.id)}>{selected?.id===o.id?t("Selected", "Выбрана"):t("Manage", "Управлять")}</a>
+            {o.status === "active" && <button disabled={busy} onClick={()=>void action({action:"select",organizationId:o.id})}>{t("Open cases", "Открыть дела")}</button>}</span>
           </li>)}</ul>
-          <form onSubmit={(event) => submit(event, { action: "create" })}><h3>{t("New organization", "Новая организация")}</h3>
+          <details><summary>{t("Create an organization", "Создать организацию")}</summary><form onSubmit={(event) => submit(event, { action: "create" })}><fieldset disabled={busy}><h3>{t("New organization", "Новая организация")}</h3>
             <label>{t("Organization name", "Название организации")}<input name="name" minLength={2} maxLength={120} required /></label>
-            <button disabled={busy}>{t("Create organization", "Создать организацию")}</button>
-          </form>
+            <button disabled={busy}>{t("Create organization", "Создать организацию")}</button>{feedback("create")}
+          </fieldset></form></details>
         </section>
         <section className={styles.panel}><h2>{t("Join an organization", "Вступить в организацию")}</h2>
           <p>{t("Share your member ID with the organization owner to receive an invitation.", "Передайте свой идентификатор владельцу организации для получения приглашения.")}</p>
-          <label>{t("Your member ID", "Ваш идентификатор")}<input readOnly value={workspace.actorId} onFocus={(event) => event.target.select()} /></label>
-          <form onSubmit={(event) => submit(event, { action: "accept" })}><label>{t("Invitation code", "Код приглашения")}<input name="token" autoComplete="off" required maxLength={200} /></label>
-            <button disabled={busy}>{t("Accept invitation", "Принять приглашение")}</button></form>
+          <label>{t("Your member ID — share with an owner", "Ваш идентификатор — передайте владельцу")}<input readOnly value={workspace.actorId} onFocus={(event) => event.target.select()} /></label>
+          <form onSubmit={(event) => submit(event, { action: "accept" })}><fieldset disabled={busy}><label>{t("Invitation code", "Код приглашения")}<input name="token" autoComplete="off" required maxLength={200} /></label>
+            <button disabled={busy}>{t("Accept invitation", "Принять приглашение")}</button>{feedback("accept")}</fieldset></form>
         </section>
       </div>
-      {selected && <section className={styles.panel}><h2>{selected.name}</h2>
+      {selected && <section className={styles.panel} key={workspace.actorId+":"+selected.id}><h2>{selected.name}</h2>
         <p>{t("Organization roles control team administration. Access to each case is assigned separately. Review the person's role and status before changing access.", "Роли организации управляют командой. Доступ к каждому делу назначается отдельно. Перед изменением доступа проверьте роль и статус участника.")}</p>
         {workspace.members.length > 0 && <div className={styles.tableWrap}><table><caption>{t("Members and organization access", "Участники и доступ к организации")}</caption><thead><tr><th>{t("Name", "Имя")}</th><th>{t("Role", "Роль")}</th><th>{t("Status", "Статус")}</th><th>{t("Access", "Доступ")}</th></tr></thead><tbody>
-          {workspace.members.map((m) => <tr key={m.actorId}><td>{m.name}</td><td>{roleLabel(m.role)}</td><td>{t(m.status, { active: "Активен", suspended: "Приостановлен", removed: "Удалён" }[m.status] ?? m.status)}</td><td>
+          {workspace.members.map((m) => <tr key={m.actorId}><td>{m.name}{m.actorId===workspace.actorId&&<small className={styles.you}>{t("You", "Вы")}</small>}</td><td>{roleLabel(m.role)}</td><td>{t(m.status, { active: "Активен", suspended: "Приостановлен", removed: "Удалён" }[m.status] ?? m.status)}</td><td>
             {owner && m.role !== "org_owner" && m.status !== "removed" && <button disabled={busy || selected.status !== "active"} onClick={() => void action({ action: "member", organizationId: selected.id, actorId: m.actorId, role: m.role,
               status: m.status === "active" ? "suspended" : "active", expectedRevision: m.revision })}>{m.status === "active" ? t("Suspend access", "Приостановить доступ") : t("Restore access", "Восстановить доступ")}</button>}
+            {m.role==="org_owner"&&<span className={styles.help}>{t("Owner access is protected", "Доступ владельца защищён")}</span>}
           </td></tr>)}</tbody></table></div>}
+        {feedback("member")}
+        {!owner&&<p className={styles.help}>{t("Only the organization owner can invite members and change their access. Administrator, auditor and case roles have separate permissions.","Только владелец организации может приглашать участников и менять их доступ. Администратор, аудитор и роли в делах имеют отдельные полномочия.")}</p>}
         {owner && selected.status === "active" && <form className={styles.invite} onSubmit={(event) => submit(event, { action: "invite", organizationId: selected.id })}>
-          <h3>{t("Invite a member", "Пригласить участника")}</h3>
-          <label>{t("Recipient member ID", "Идентификатор получателя")}<input name="recipientActorId" required minLength={20} maxLength={128} /></label>
+          <fieldset disabled={busy}><h3>{t("Invite another person", "Пригласить другого человека")}</h3><p className={styles.help}>{t("Ask the recipient to sign in and share their member ID from this page. Your own account already has access.","Попросите получателя войти и передать свой идентификатор с этой страницы. У вашего аккаунта уже есть доступ.")}</p>
+          <label>{t("Recipient member ID", "Идентификатор получателя")}<input name="recipientActorId" value={recipient} onChange={e=>{setRecipient(e.target.value);if(issue?.scope==="invite")setIssue(null);}} aria-invalid={issue?.scope==="invite"||undefined} aria-describedby={issue?.scope==="invite"?"admin-issue-invite":undefined} autoComplete="off" spellCheck={false} required minLength={20} maxLength={128} /></label>
           <label>{t("Organization role", "Роль в организации")}<select name="role"><option value="member">{roleLabel("member")}</option><option value="org_admin">{roleLabel("org_admin")}</option><option value="auditor">{roleLabel("auditor")}</option></select></label>
-          <button disabled={busy}>{t("Create invitation", "Создать приглашение")}</button>
+          <button disabled={busy}>{t("Create invitation", "Создать приглашение")}</button>{feedback("invite")}</fieldset>
         </form>}
-        {token && <div className={styles.token} role="status"><p>{t("Copy this code for the recipient. It expires in 24 hours and can be used once.", "Скопируйте код для получателя. Он действует 24 часа и может быть использован один раз.")}</p><input aria-label={t("Invitation code to share", "Код для передачи получателю")} readOnly value={token} onFocus={(e) => e.target.select()} /></div>}
+        {invitation?.organizationId===selected.id && <div className={styles.token} role="status"><p>{t("Copy this code for the recipient. It expires in 24 hours and can be used once.", "Скопируйте код для получателя. Он действует 24 часа и может быть использован один раз.")}</p><input aria-label={t("Invitation code to share", "Код для передачи получателю")} readOnly value={invitation.token} onFocus={(e) => e.target.select()} /><button type="button" className={styles.secondary} onClick={()=>setInvitation(null)}>{t("I have copied the code — dismiss", "Код скопирован — скрыть")}</button></div>}
         {selected.kind === "team" && <details><summary>{t("Organization lifecycle", "Статус организации")}</summary>
           <p>{t("Suspension, resumption and closure require a request from the owner and approval by a different administrator.", "Приостановка, возобновление и закрытие требуют запроса владельца и подтверждения другим администратором.")}</p>
           {owner && <div className={styles.actions}><button disabled={busy} onClick={() => void action({ action: "lifecycle_request", organizationId: selected.id, command: selected.status === "suspended" ? "resume" : "suspend" })}>{selected.status === "suspended" ? t("Request resumption", "Запросить возобновление") : t("Request suspension", "Запросить приостановку")}</button>
@@ -111,6 +175,7 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
           {workspace.requests.filter((r) => r.expiresAt > new Date().toISOString()).map((r) => <p key={r.id}>{t(r.command, { suspend: "Приостановка", resume: "Возобновление", close: "Закрытие" }[r.command] ?? r.command)}
             {r.requestedByActorId !== workspace.actorId && ["org_owner", "org_admin"].includes(selected.role) && <button disabled={busy} onClick={() => void action({ action: "lifecycle_approve", organizationId: selected.id, requestId: r.id })}>{t("Approve request", "Подтвердить запрос")}</button>}</p>)}
         </details>}
+        {feedback("lifecycle_request")}{feedback("lifecycle_approve")}
         <details><summary>{t("Organization activity", "История организации")}</summary><ul>{workspace.events.map((e) => <li key={e.id}>{e.occurredAt.slice(0,16).replace("T"," ")} · {e.action.replaceAll("_"," ")}</li>)}</ul></details>
       </section>}
     </>}

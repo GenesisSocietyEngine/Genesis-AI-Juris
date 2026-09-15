@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { build } from "esbuild";
+import { pathToFileURL } from "node:url";
+import { resolve } from "node:path";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -346,11 +349,9 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.match(page, /robots: \{ index: false, follow: false \}/);
 });
 
-test("organization-gated pages render a safe sign-in state before client hydration", () => {
+test("organization-gated pages render a safe sign-in state before client hydration", async () => {
   const organizationsPage = source("app/organizations/page.tsx");
-  const organizationsClient = source("app/organizations/OrganizationsClient.tsx");
   const mattersPage = source("app/matters/page.tsx");
-  const organizationBoundary = source("app/organizations/OrganizationBoundary.tsx");
 
   for (const page of [organizationsPage, mattersPage]) {
     assert.match(page, /export const dynamic = "force-dynamic"/);
@@ -360,9 +361,26 @@ test("organization-gated pages render a safe sign-in state before client hydrati
   assert.match(organizationsPage, /chatGPTSignInPath\(workspacePagePath\("\/organizations", await searchParams\)\)/);
   assert.match(mattersPage, /chatGPTSignInPath\(workspacePagePath\("\/matters", await searchParams\)\)/);
 
-  for (const client of [organizationsClient, organizationBoundary]) {
-    assert.match(client, /if \(!signedIn\) return;/);
-    assert.match(client, /<a href=\{signInUrl\} target="_top">/);
-    assert.match(client, /useState\(signedIn \? "" : "Sign in/);
+  // Render actual components; adapt only routing and CSS for Node SSR, not state or callbacks.
+  const result=await build({stdin:{contents: `export {default as OrganizationsClient} from "./app/organizations/OrganizationsClient";
+export {default as OrganizationBoundary} from "./app/organizations/OrganizationBoundary";
+export {default as AccountClient} from "./app/account/AccountClient";`,resolveDir:process.cwd(),loader:"tsx"},
+    bundle:true,write:false,format:"esm",platform:"node",packages:"external",loader:{".css":"empty",".module.css":"empty"},jsx:"automatic",
+    plugins:[{name:"ssr-router",setup(b){b.onResolve({filter:/^next\/navigation$/},()=>({path:"routing",namespace:"ssr"}));b.onLoad({filter:/.*/,namespace:"ssr"},()=>({contents:"export const useRouter=()=>({replace(){},refresh(){}});"}));}}]});
+  mkdirSync(".artifacts/admin-render",{recursive:true});
+  const file=resolve(".artifacts/admin-render/components.mjs");writeFileSync(file,result.outputFiles[0].text);
+  const {OrganizationsClient,OrganizationBoundary,AccountClient}=await import(pathToFileURL(file).href);
+  const signInUrl="/signin-with-chatgpt?return_to=%2Forganizations";
+  for(const component of [OrganizationsClient,OrganizationBoundary]){
+    const markup=renderToStaticMarkup(createElement(component,{signedIn:false,signInUrl}));
+    assert.match(markup,/href="\/signin-with-chatgpt\?return_to=%2Forganizations"/);
+    assert.match(markup,/Sign in/);
+    assert.doesNotMatch(markup,/name="recipientActorId"|name="token"|Suspend access/);
   }
+  const props={hasLocalAccount:true,isAdmin:false,emailResetAvailable:false,chatGPTSignInUrl:signInUrl,chatGPTSignOutUrl:"/signout-with-chatgpt",initialProfile:null,profileKnown:true,returnTo:"/organizations"};
+  const signedIn=renderToStaticMarkup(createElement(AccountClient,{...props,identity:{email:"synthetic@example.test",displayName:"Synthetic User",authSource:"chatgpt"}}));
+  assert.doesNotMatch(signedIn,/name="password"|Sign in with password/);
+  assert.match(signedIn,/sign out first/);
+  const signedOut=renderToStaticMarkup(createElement(AccountClient,{...props,identity:null}));
+  assert.match(signedOut,/name="password"/);
 });

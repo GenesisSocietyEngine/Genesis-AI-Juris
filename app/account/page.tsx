@@ -55,6 +55,6 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
     profileKnown={profileKnown}
     returnTo={returnTo}
     chatGPTSignInUrl={chatGPTSignInPath(workspacePagePath("/account", { ...params, return_to: returnTo }))}
-    chatGPTSignOutUrl={chatGPTSignOutPath("/account")}
+    chatGPTSignOutUrl={chatGPTSignOutPath(workspacePagePath("/account", { lang: params.lang, return_to: returnTo }))}
   />;
 }

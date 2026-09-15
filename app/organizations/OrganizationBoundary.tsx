@@ -15,6 +15,9 @@ export default function OrganizationBoundary({ children, signedIn, signInUrl }: 
   const [organizations, setOrganizations] = useState<ClientOrganization[]>([]);
   const [active, setActive] = useState<ClientOrganization | null>(null);
   const [issue, setIssue] = useState(signedIn ? "" : "Sign in to open your organization. / Войдите для доступа к организации.");
+  const [needsSignIn, setNeedsSignIn] = useState(!signedIn);
+  const [needsProfile, setNeedsProfile] = useState(false);
+  const [retry, setRetry] = useState(0);
   const [locale] = useInterfaceLocale();
   const location = useWorkspaceLocation();
   const t = (en: string, ru: string) => locale === "ru" ? ru : en;
@@ -25,9 +28,12 @@ export default function OrganizationBoundary({ children, signedIn, signInUrl }: 
     fetch("/api/organizations" + (organization ? "?organization=" + encodeURIComponent(organization) : ""),
       { credentials: "same-origin", cache: "no-store", signal: controller.signal })
       .then(async (response) => {
-        if (!response.ok) throw new Error(response.status === 401 ? "Sign in to open your organization. / Войдите для доступа к организации." : "Organizations could not be loaded. Refresh to retry. / Не удалось загрузить организации. Обновите страницу.");
-        const data = await response.json() as { organizations: ClientOrganization[]; selected: ClientOrganization | null; selectionIssue: string | null };
+        const data = await response.json().catch(()=>null) as { code?: string; organizations: ClientOrganization[]; selected: ClientOrganization | null; selectionIssue: string | null } | null;
         if (controller.signal.aborted) return;
+        setNeedsSignIn(response.status === 401);
+        setNeedsProfile(data?.code === "profile_required");
+        if (!response.ok) throw new Error(response.status === 401 ? "Sign in to open your organization. / Войдите для доступа к организации." : data?.code === "profile_required" ? "Complete your profile before opening saved work. / Заполните профиль перед открытием сохранённых дел." : "Organizations could not be loaded. Refresh to retry. / Не удалось загрузить организации. Обновите страницу.");
+        if (!data || !Array.isArray(data.organizations)) throw new Error("Organizations could not be loaded. Refresh to retry. / Не удалось загрузить организации. Обновите страницу.");
         setOrganizations(data.organizations);
         if (!data.selected || data.selectionIssue || data.selected.status !== "active") {
           setIssue("Choose an active organization to continue. / Выберите активную организацию."); return;
@@ -43,7 +49,7 @@ export default function OrganizationBoundary({ children, signedIn, signInUrl }: 
     const onPageShow = (event: PageTransitionEvent) => { if (event.persisted) window.location.reload(); };
     window.addEventListener("pageshow", onPageShow);
     return () => { controller.abort(); window.removeEventListener("pageshow", onPageShow); };
-  }, [signedIn]);
+  }, [signedIn, retry]);
   if (!signedIn) return <>
     <WorkspaceNavigation active={location.split("?")[0]}/>
     <main className={styles.accessEmpty}>
@@ -69,7 +75,9 @@ export default function OrganizationBoundary({ children, signedIn, signInUrl }: 
       <Link href={workspaceDestination("/organizations", location)}>{t("Manage organizations", "Управление организациями")}</Link>
 
     <small>{t("Changing organization opens its case list and clears the current case context.", "Смена организации откроет её список дел и сбросит контекст текущего дела.")}</small></div>
-    {issue && <p className={styles.issue} role="alert">{issue.includes(" / ") ? issue.split(" / ")[locale === "ru" ? 1 : 0] : issue} <a href={signInUrl} target="_top">{t("Sign in", "Войти")}</a> · <a href={workspaceDestination("/account", location)}>{t("Account", "Аккаунт")}</a></p>}
+    {issue && <div className={styles.issue} role="alert"><p>{issue.includes(" / ") ? issue.split(" / ")[locale === "ru" ? 1 : 0] : issue}</p>
+      {needsSignIn ? <a href={signInUrl} target="_top">{t("Sign in", "Войти")}</a> : needsProfile ? <a href={workspaceDestination("/account", location)}>{t("Complete profile", "Заполнить профиль")}</a> : <button type="button" className={styles.secondary} onClick={()=>{setActive(null);setIssue("");setRetry(value=>value+1);}}>{t("Refresh organizations", "Обновить организации")}</button>}
+      <a href={workspaceDestination("/account", location)}>{t("Account", "Аккаунт")}</a></div>}
     {active ? children : !issue ? <p className={styles.loading} role="status">{t("Loading your organization…", "Загрузка организации…")}</p> : null}
   </>;
 }

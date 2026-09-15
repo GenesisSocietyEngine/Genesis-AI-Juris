@@ -53,6 +53,8 @@ const storage = new AsyncLocalStorage<Request>();
 const fixtureRoot = "docs/testing/erp-pilot-2026-09-05/";
 const erpDraft = normalizeStudioDraft(JSON.parse(readFileSync(fixtureRoot + "erp-d365-pilot.studio-draft.json", "utf8")));
 const paths = {
+  login: "app/api/auth/login/route.ts",
+  register: "app/api/auth/register/route.ts", logout: "app/api/auth/logout/route.ts",
   dispositions: "app/api/dossiers/[dossierId]/dispositions/route.ts",
   presentation: "app/api/dossiers/[dossierId]/outputs/[outputId]/presentation/route.ts",
   catalog: "app/api/catalog/[caseId]/route.ts",
@@ -172,6 +174,64 @@ before(async () => {
   ]);
 });
 after(async () => { await mf?.dispose(); });
+
+test("Administration: authenticated password login cannot silently switch the effective identity", async () => {
+  const count = () => d1.prepare("SELECT count(*) AS n FROM auth_sessions").first<{n:number}>();
+  const before = await count();
+  const response = await call("login", alice, null, "POST", {email:bob.email,password:"Synthetic-password-1!"});
+  assert.equal(response.status,409);
+  assert.equal((await response.json() as {code:string}).code,"already_authenticated");
+  assert.equal(response.headers.get("set-cookie"),null);
+  assert.deepEqual(await count(),before);
+});
+
+test("Administration: password sign-in still works after explicit local sign-out", async () => {
+  const person=await newActor("admin-local-login"),password="Synthetic-local-password-1!";
+  const enrolled=await call("register",person,null,"POST",{password});
+  assert.equal(enrolled.status,201);
+  const initialCookie=enrolled.headers.get("set-cookie")?.split(";")[0];assert.ok(initialCookie);
+  const withCookie=async(route:"login"|"logout",cookie:string)=>{
+    const request=new Request("https://erp.test/api/auth/"+route,{method:"POST",headers:{origin:"https://erp.test","sec-fetch-site":"same-origin",cookie,"content-type":"application/json"},body:JSON.stringify({email:person.email,password})});
+    return storage.run(request,()=>routes[route].POST!(request,{params:Promise.resolve({})}));
+  };
+  assert.equal((await withCookie("login",initialCookie)).status,409);
+  assert.equal((await withCookie("logout",initialCookie)).status,200);
+  const signedIn=await withCookie("login",initialCookie);
+  assert.equal(signedIn.status,200);assert.ok(signedIn.headers.get("set-cookie"));
+  assert.equal((await signedIn.json() as {authenticated:boolean}).authenticated,true);
+  const session=await d1.prepare("SELECT count(*) AS n FROM auth_sessions WHERE revoked_at IS NULL").first<{n:number}>();
+  assert.ok(session && session.n>=1);
+});
+
+test("Administration: invitations respect existing membership and restoration with durable audit", async () => {
+  const owner=await newActor("admin-owner"), member=await newActor("admin-member"), outsider=await newActor("admin-outsider");
+  const organizationId=(await json(await call("organizations",owner,null,"POST",{action:"create",name:"Synthetic administration regression"}),201)).organization.id;
+  const payload={action:"invite",organizationId,recipientActorId:member.actorId,role:"member"};
+  const counts=()=>d1.prepare("SELECT (SELECT count(*) FROM organization_invitations WHERE organization_id=?) AS invitations, (SELECT count(*) FROM organization_security_events WHERE organization_id=?) AS events").bind(organizationId,organizationId).first();
+  const rejected=async(actor:Actor,body:unknown,status:number,code:string)=>{
+    const before=await counts(); const result=await call("organizations",actor,organizationId,"POST",body);
+    assert.equal(result.status,status);assert.equal((await result.json() as {code:string}).code,code);assert.deepEqual(await counts(),before);
+  };
+  await rejected(owner,{...payload,recipientActorId:owner.actorId},400,"invitation_fields_invalid");
+  await rejected(outsider,payload,404,"organization_unavailable");
+  const invitation=await json(await call("organizations",owner,organizationId,"POST",payload),201);
+  await json(await call("organizations",member,null,"POST",{action:"accept",token:invitation.token}));
+  await rejected(owner,payload,409,"invitation_unavailable");
+  await rejected(member,{...payload,recipientActorId:outsider.actorId},404,"organization_unavailable");
+  const change={action:"member",organizationId,actorId:member.actorId,role:"member"};
+  await json(await call("organizations",owner,organizationId,"POST",{...change,status:"suspended",expectedRevision:1}));
+  await rejected(owner,payload,409,"invitation_member_suspended");
+  await rejected(owner,{...change,status:"active",expectedRevision:1},409,"membership_changed");
+  await json(await call("organizations",owner,organizationId,"POST",{...change,status:"active",expectedRevision:2}));
+  const reopened=await (await call("organizations",member,organizationId)).json() as {selected:{id:string;membershipRevision:number}};
+  assert.equal(reopened.selected.id,organizationId);assert.equal(reopened.selected.membershipRevision,3);
+  await json(await call("organizations",owner,organizationId,"POST",{...change,status:"removed",expectedRevision:3}));
+  await rejected(owner,payload,409,"invitation_member_removed");
+  const final=await (await call("organizations",owner,organizationId)).json() as {members:Array<{actorId:string;status:string;revision:number}>;events:Array<{action:string}>};
+  assert.equal(final.members.find(m=>m.actorId===member.actorId)?.status,"removed");
+  assert.equal(final.members.find(m=>m.actorId===member.actorId)?.revision,4);
+  assert.equal(final.events.filter(e=>e.action==="membership_changed").length,3);
+});
 
 test("P1 ERP 1: create, reopen, filter and page a dossier in exactly one organization", async () => {
   await json(await call("dossiers", null, orgA), 401);
