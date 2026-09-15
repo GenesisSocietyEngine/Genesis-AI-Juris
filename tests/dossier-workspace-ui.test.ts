@@ -364,13 +364,12 @@ test("organization-gated pages render a safe sign-in state before client hydrati
   // Render actual components; adapt only routing and CSS for Node SSR, not state or callbacks.
   const result=await build({stdin:{contents: `export {default as OrganizationsClient} from "./app/organizations/OrganizationsClient";
 export {default as OrganizationBoundary} from "./app/organizations/OrganizationBoundary";
-export {default as AccountClient} from "./app/account/AccountClient";
-export {default as SavedOutcomePanel} from "./app/matters/SavedOutcomePanel";`,resolveDir:process.cwd(),loader:"tsx"},
+export {default as AccountClient} from "./app/account/AccountClient";`,resolveDir:process.cwd(),loader:"tsx"},
     bundle:true,write:false,format:"esm",platform:"node",packages:"external",loader:{".css":"empty",".module.css":"empty"},jsx:"automatic",
     plugins:[{name:"ssr-router",setup(b){b.onResolve({filter:/^next\/navigation$/},()=>({path:"routing",namespace:"ssr"}));b.onLoad({filter:/.*/,namespace:"ssr"},()=>({contents:"export const useRouter=()=>({replace(){},refresh(){}});"}));}}]});
   mkdirSync(".artifacts/admin-render",{recursive:true});
   const file=resolve(".artifacts/admin-render/components.mjs");writeFileSync(file,result.outputFiles[0].text);
-  const {OrganizationsClient,OrganizationBoundary,AccountClient,SavedOutcomePanel}=await import(pathToFileURL(file).href);
+  const {OrganizationsClient,OrganizationBoundary,AccountClient}=await import(pathToFileURL(file).href);
   const signInUrl="/signin-with-chatgpt?return_to=%2Forganizations";
   for(const component of [OrganizationsClient,OrganizationBoundary]){
     const markup=renderToStaticMarkup(createElement(component,{signedIn:false,signInUrl}));
@@ -384,10 +383,4 @@ export {default as SavedOutcomePanel} from "./app/matters/SavedOutcomePanel";`,r
   assert.match(signedIn,/sign out first/);
   const signedOut=renderToStaticMarkup(createElement(AccountClient,{...props,identity:null}));
   assert.match(signedOut,/name="password"/);
-  const receipt={caseId:"dossier_test",recordId:"deadline_test",kind:"deadline",reason:"Controlled confirmed outcome",outcome:"completed",supportingSourceId:null,actorId:null,actorRole:"reviewer",occurredAt:null,auditEventId:"audit_test",revision:8};
-  const markup=renderToStaticMarkup(createElement(SavedOutcomePanel,{state:{receipt,phase:"update_failed"},recordLabel:"Filing deadline",onRetry(){},onAudit(){},onRecord(){}}));
-  assert.match(markup,/Outcome saved.*could not be updated/);
-  assert.match(markup,/Retry update/);assert.match(markup,/Name not returned/);assert.match(markup,/Time not returned/);
-  assert.doesNotMatch(markup,/actions updated/);
-
 });

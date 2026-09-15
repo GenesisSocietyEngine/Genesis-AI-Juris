@@ -4,7 +4,9 @@ import { replayRecordedCanopy } from "./helpers/canopy-replay";
 import { canopySemanticInputDiff } from "../app/canopy-inputs";
 import { actionUseKey, decisionAvailability } from "../app/game-engine";
 import { before, after, test } from "node:test";
-import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { readFileSync, mkdirSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -567,6 +569,49 @@ test("Phase 2: information-request receipt survives lost response and later case
   await json(await call("assertions",bob,orgB,"GET",undefined,params,"?assertion_id="+assertion.id),404);
   await json(await call("assertions",alice,orgA,"GET",undefined,params,"?assertion_id=assertion_missing"),404);
   writeFileSync(".artifacts/p1-route-tests/phase2-evidence.json",JSON.stringify({environment:"Actual route handlers with isolated Miniflare D1/R2 and synthetic provider headers; not authenticated browser proof",freshAndV86Upgrade:true,notes:await d1.prepare("SELECT note_id,revision,action,actor_role,occurred_at FROM dossier_working_note_versions ORDER BY note_id,revision").all(),requestReceipts:await d1.prepare("SELECT id,request_id,revision,audit_event_id FROM dossier_request_operations ORDER BY revision").all(),sealedPdfBytesPreserved:true},null,2));
+});
+
+test("Release A: exact v86 handlers remain compatible with populated 0022 and preserve new records", async () => {
+  const oldCommit="dca6af234ce27c76a6b1cb22359be9540d8e5049";
+  const oldRoot=mkdtempSync(resolve(tmpdir(),"juris-v86-"));
+  const currentRoutes=routes;
+  const params={dossierId};
+  const newTables=["dossier_working_notes","dossier_working_note_versions","dossier_working_note_sources","dossier_working_note_applications","dossier_request_operations"];
+  const capture=()=>Promise.all(newTables.map(table=>d1.prepare(`SELECT * FROM ${table} ORDER BY 1`).all().then(r=>r.results)));
+  const beforeRows=await capture();assert.ok(beforeRows.every(rows=>rows.length>0));
+  const originalPdf=new Uint8Array(await (await call("outputDownload",alice,orgA,"GET",undefined,{dossierId,outputId})).arrayBuffer());
+  try {
+    // Compile the whole old dependency graph, not just old route files with current helpers.
+    execFileSync("tar",["-xf","-","-C",oldRoot],{input:execFileSync("git",["archive",oldCommit,"app","db","package.json"],{maxBuffer:64*1024*1024})});
+    const oldPaths=Object.entries(paths).filter(([key])=>key!=="notes");
+    const result=await build({stdin:{contents:oldPaths.map(([key,path])=>`import * as ${key} from './${path}';`).join("\n")+`\nexport {${oldPaths.map(([key])=>key).join(",")}};`,resolveDir:oldRoot,loader:"ts"},bundle:true,write:false,platform:"node",format:"esm",packages:"external",target:"es2022",nodePaths:[resolve("node_modules")],
+      plugins:[{name:"exact-v86-isolated-runtime",setup(b){
+        b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},args=>({path:args.path,namespace:"test-runtime"}));
+        b.onLoad({filter:/.*/,namespace:"test-runtime"},args=>({contents:args.path==="cloudflare:workers"?"export const env=globalThis.__p1_env; export function waitUntil(p){globalThis.__p1_jobs.push(p)}":args.path==="next/headers"?"export async function headers(){return globalThis.__p1_headers()}":"export function redirect(){throw new Error('unexpected redirect')}"}));
+      }}]});
+    const harness=resolve(".artifacts/p1-route-tests/v86-routes.mjs");writeFileSync(harness,result.outputFiles[0].text);routes=await import(pathToFileURL(harness).href);
+    for(const key of ["detail","documents","anchors","assertions","requests","outputs","activity"] as const)await json(await call(key,alice,orgA,"GET",undefined,params));
+    await json(await call("detail",bob,orgB,"GET",undefined,params),404);
+    await json(await call("outputDownload",bob,orgB,"GET",undefined,{dossierId,outputId}),404);
+    await json(await call("requests",viewer,orgA,"POST",{action:"create",question:"Denied old-code request",reason:"Controlled denied check",expectedRevision:revision},params),404);
+    // Old clients remain unkeyed. Rollback must reject a cached new keyed write rather than strip its key.
+    await json(await call("requests",alice,orgA,"POST",{action:"create",question:"Cached new client",reason:"Do not silently downgrade replay",expectedRevision:revision,idempotencyKey:"rollback-keyed-client"},params),400);
+    const created=await json(await call("requests",alice,orgA,"POST",{action:"create",question:"Legacy recovery compatibility",reason:"Controlled v86 write on upgraded schema",expectedRevision:revision},params),201) as ApiResult & {request:{information_request_id:string}};revision=created.dossier.revision;
+    const received=await json(await call("requests",reviewer,orgA,"POST",{action:"update_status",requestId:created.request.information_request_id,status:"received",satisfyingDocumentId:documentId,expectedRevision:revision},params));revision=received.dossier.revision;
+    const remaining=await (await call("requests",alice,orgA,"GET",undefined,params)).json() as {requests:Array<{information_request_id:string;status:string}>};
+    for(const request of remaining.requests.filter(r=>r.status==="open"||r.status==="partial")){
+      const waived=await json(await call("requests",reviewer,orgA,"POST",{action:"update_status",requestId:request.information_request_id,status:"waived",expectedRevision:revision},params));revision=waived.dossier.revision;
+    }
+    const sealed=await json(await call("snapshots",alice,orgA,"POST",{expectedRevision:revision,locale:"en",audience:"internal",redactionProfileId:"pilot-default"},params),201);
+    const generated=await json(await call("outputs",alice,orgA,"POST",{action:"generate",expectedRevision:revision,snapshotId:sealed.snapshot.snapshot_id,format:"pdf"},params),201);
+    const response=await call("outputDownload",alice,orgA,"GET",undefined,{dossierId,outputId:generated.output.output_id});assert.equal(response.status,200);
+    const newPdf=new Uint8Array(await response.arrayBuffer());assert.equal(Buffer.from(newPdf).subarray(0,5).toString(),"%PDF-");
+    assert.deepEqual(new Uint8Array(await (await call("outputDownload",alice,orgA,"GET",undefined,{dossierId,outputId:generated.output.output_id})).arrayBuffer()),newPdf);
+    assert.deepEqual(new Uint8Array(await (await call("outputDownload",alice,orgA,"GET",undefined,{dossierId,outputId})).arrayBuffer()),originalPdf);
+    assert.deepEqual(await capture(),beforeRows);
+    assert.equal((await d1.prepare("PRAGMA foreign_key_check").all()).results.length,0);
+    writeFileSync(".artifacts/p1-route-tests/release-a-rollback-evidence.json",JSON.stringify({oldSourceCommit:oldCommit,environment:"Exact v86 route dependency graph; isolated Miniflare D1/R2 after 0022; synthetic provider headers, not browser authentication",reads:true,legacyRequestCreateAndUpdate:true,keyedClientRejectedWithoutMutation:true,foreignOrganizationAndViewerDenied:true,freshSnapshotAndPdfReopened:true,sealedPdfBytesPreserved:true,newTableCounts:beforeRows.map((rows,i)=>({table:newTables[i],count:rows.length})),newRecordsPreserved:true,foreignKeyViolations:0,oldPdfSha256:createHash("sha256").update(originalPdf).digest("hex"),newPdfSha256:createHash("sha256").update(newPdf).digest("hex")},null,2));
+  } finally {routes=currentRoutes;rmSync(oldRoot,{recursive:true,force:true});}
 });
 
 test("P1: every dossier route denies a foreign organization before reads or side effects", async () => {
