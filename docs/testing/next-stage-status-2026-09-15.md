@@ -2,6 +2,8 @@
 
 Reviewed 15 September 2026. **Partial implementation; unpublished and not accepted for release.**
 
+**Reference update later on 15 September:** the replacement Notion upload is now accessible. `Notion web Jun 2026 89.zip` contains 101 PNGs; 19 separate PNGs also arrived. All files passed integrity checks, and 31 originals were visually inspected. See the [Notion review and amended design mapping](notion-reference-review-2026-09-15.md). The browser discovery retry still times out, so this resolves reference access without changing the implementation/release acceptance status below.
+
 ## Baseline and review environment
 
 The live product is [Genesis: Juris Studio](https://studio.falcon-merlin.com), published **version 86**, source `dca6af234ce27c76a6b1cb22359be9540d8e5049`. The starting checkout was clean and matched that source. Version 86 already contains the organization/account recovery work described in [Administration review](organization-administration-2026-09-15.md). This reconciles the supplied brief's version-85 baseline and preserves the prior PDF adapter, governed dispositions and Plane review. No new production version was deployed in this iteration.
@@ -79,7 +81,7 @@ The actual Plane archive is available. Its earlier review records integrity chec
 
 The remaining queue/review mappings above use the existing attributed record for `75.png`, `172.png`, `96.png`, `104.png` and `102.png`, not a claimed new inspection of those originals. Coda remains the document/evidence direction, ClickUp the task/review direction, and Folk the previously proposed concise-record direction. No new authenticated Folk/Mobbin screens were inspected.
 
-**`Notion web Jun 2026.zip` failed to arrive and was not inspected.** The user was asked to retry the upload. Official Notion documentation was reviewed as a **secondary reference**: searchable record relations and reciprocal associations support the proposed source-link picker and backlinks; record pages and nested-page navigation support keeping notes within the case. Genesis's permissions, immutable evidence versions and review semantics are our adaptation. Sources: [Notion relations](https://www.notion.com/help/relations-and-rollups), [database pages](https://www.notion.com/help/intro-to-databases), [subpages](https://www.notion.com/help/create-a-subpage).
+The initial `Notion web Jun 2026.zip` upload failed. The later replacement archive and individual screenshots are now inspected as recorded in the [Notion reference review](notion-reference-review-2026-09-15.md). Their document, contextual-editor, attachment and table patterns are primary visual evidence. The inspected screens do not establish a relational picker/backlink/unlink journey. Official Notion documentation remains a **secondary reference** for searchable relations and reciprocal associations; Genesis's permissions, immutable evidence versions and review semantics are our adaptation. Sources: [Notion relations](https://www.notion.com/help/relations-and-rollups), [database pages](https://www.notion.com/help/intro-to-databases), [subpages](https://www.notion.com/help/create-a-subpage).
 
 ## Verification evidence
 
@@ -117,10 +119,11 @@ Existing [task before](action-tiles-images/tasks-before.jpg), [task after](actio
 | Save/refresh feedback | **Implemented but unverified** | Bounded confirmed-save candidate passes model/static checks; required rendered failure/retry review is blocked. Unknown-write, conflict and expired-session flows remain incomplete. |
 | Queue ordering and counts | **Blocked** | Audit and exact mapping complete; implementation follows accepted P0 review. No new ordered/filterable queue claimed. |
 | Deadline/citation reviews | **Implemented but unverified** | Existing server transitions and persistence/denial/conflict checks pass; receipt/audit candidate added. Direct form opening, unloaded assertions and browser completion remain outstanding. |
-| Connected dossier and notes | **Blocked** | Source/entity/permission design complete; no notes feature yet. It follows P0 acceptance. Notion ZIP is also unavailable, but reference access is not the sole blocker. |
+| Connected dossier and notes | **Blocked** | Source/entity/permission design complete and amended against the now-accessible Notion screenshots; no notes feature yet. It follows P0 acceptance, which remains blocked by browser access. |
 | Persistence and organization scope | **Blocked** | Prior v86 administration changes retained; isolated server checks remain distinct from real reload/new-session/switching. Supported authenticated browser required. |
 | First-use/mobile | **Blocked** | No registration-inclusive observed timing, new narrow-screen review or native-device test. No two-minute achievement claim. |
 | Plane archive | **Verified** | Earlier integrity/survey record plus two original screens reopened for this candidate. |
+| Notion reference set | **Verified** | Replacement ZIP with 101 PNGs and 19 separate PNGs passed integrity checks; 31 originals visually inspected. See the separate reference review for coverage and limits. |
 | Controlled report generation | **Verified** | Actual PDFs generated; all-page dimensions and the stated representative visual checks completed. |
 
 **Guided-demo readiness:** existing demonstrated sample paths remain usable conditionally, but this iteration cannot certify the complete guided Canopy journey or accept the new candidate. Keep the unresolved PDF/authentication boundaries visible to the demonstrator.
