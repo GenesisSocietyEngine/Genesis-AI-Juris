@@ -53,6 +53,7 @@ const storage = new AsyncLocalStorage<Request>();
 const fixtureRoot = "docs/testing/erp-pilot-2026-09-05/";
 const erpDraft = normalizeStudioDraft(JSON.parse(readFileSync(fixtureRoot + "erp-d365-pilot.studio-draft.json", "utf8")));
 const paths = {
+  dispositions: "app/api/dossiers/[dossierId]/dispositions/route.ts",
   presentation: "app/api/dossiers/[dossierId]/outputs/[outputId]/presentation/route.ts",
   catalog: "app/api/catalog/[caseId]/route.ts",
   playSessions: "app/api/play-sessions/route.ts",
@@ -277,6 +278,56 @@ test("P1 ERP 5: snapshot-bound PDF and JSON export, independent approval, reopen
   const stale = await json(await call("outputs", alice, orgA, "GET", undefined, params));
   assert.equal(stale.outputs[0].state, "stale");
   await json(await call("outputs", reviewer, orgA, "POST", { action: "approve", expectedRevision: revision, outputId }, params), 409);
+});
+
+test("Dependable actions: historical disposition and citation retirement persist with exact audit, denial, replay and conflicts", async () => {
+ const params={dossierId};
+ const originalPdf=new Uint8Array(await (await call("outputDownload",alice,orgA,"GET",undefined,{dossierId,outputId})).arrayBuffer());
+ // Seed a pre-registration historical record only: the production insert guard stays intact.
+ const guard=await d1.prepare("SELECT sql FROM sqlite_master WHERE type='trigger' AND name='dossier_deadline_references_unregistered_insert_guard'").first<{sql:string}>(); assert.ok(guard);
+ await d1.batch([d1.prepare("DROP TRIGGER dossier_deadline_references_unregistered_insert_guard"),d1.prepare("INSERT INTO dossier_deadline_references(id,dossier_id,deadline_kind,title,due_at,timezone,critical,status,created_by_actor_ref,updated_by_actor_ref,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").bind("deadline_historical_review",dossierId,"workspace","Historical filing gate","2020-01-01T12:00:00.000Z","Europe/Brussels",1,"open",alice.actorId,alice.actorId,"2020-01-01T00:00:00.000Z","2020-01-01T00:00:00.000Z"),d1.prepare(guard.sql)]);
+ const before=await d1.prepare("SELECT * FROM dossier_deadline_references WHERE id=?").bind("deadline_historical_review").first<Record<string,unknown>>();assert.ok(before);
+ const fields={kind:"deadline",recordId:"deadline_historical_review",status:"completed",reason:"Synthetic filing acknowledged by the receiving office.",expectedRevision:revision,idempotencyKey:"deadline-review-once"};
+ await json(await call("dispositions",viewer,orgA,"POST",fields,params),404);
+ await json(await call("dispositions",bob,orgB,"POST",fields,params),404);
+ await json(await call("dispositions",null,orgA,"POST",fields,params),401);
+ const result=await json(await call("dispositions",reviewer,orgA,"POST",fields,params));revision=result.dossier.revision;
+ await json(await call("dispositions",reviewer,orgA,"POST",fields,params));
+ await json(await call("dispositions",reviewer,orgA,"POST",{...fields,reason:"Changed reason under the same request"},params),409);
+ const after=await d1.prepare("SELECT * FROM dossier_deadline_references WHERE id=?").bind("deadline_historical_review").first<Record<string,unknown>>();assert.ok(after);assert.equal(after.status,"completed");
+ for(const field of ["due_at","timezone","title","critical","created_at","created_by_actor_ref"])assert.equal(after[field],before[field]);
+ const deadlineReceipt=await d1.prepare("SELECT * FROM dossier_deadline_dispositions WHERE dossier_id=?").bind(dossierId).first<Record<string,unknown>>();assert.ok(deadlineReceipt);
+ const audit=await d1.prepare("SELECT summary_code,detail FROM dossier_audit_events WHERE id=?").bind(deadlineReceipt.audit_event_id).first<{summary_code:string;detail:string}>();assert.equal(audit?.summary_code,"HISTORICAL_DEADLINE_DISPOSED");assert.equal(JSON.parse(audit!.detail).deadline_reference_id,fields.recordId);
+ await assert.rejects(d1.prepare("UPDATE dossier_deadline_references SET due_at='2030-01-01T00:00:00.000Z' WHERE id=?").bind(fields.recordId).run());
+ const anchor=await d1.prepare("SELECT * FROM dossier_source_anchors WHERE dossier_id=? AND review_state='accepted' LIMIT 1").bind(dossierId).first<Record<string,unknown>>();assert.ok(anchor);
+ const retire={kind:"citation",recordId:anchor.id,reason:"Superseded by the synthetic reconciliation source update.",expectedRevision:revision,idempotencyKey:"citation-retire-once"};
+ await json(await call("dispositions",viewer,orgA,"POST",retire,params),404);
+ await json(await call("dispositions",bob,orgB,"POST",retire,params),404);
+ const retired=await json(await call("dispositions",reviewer,orgA,"POST",retire,params));revision=retired.dossier.revision;
+ await json(await call("dispositions",reviewer,orgA,"POST",retire,params));
+ await json(await call("dispositions",reviewer,orgA,"POST",{...retire,idempotencyKey:"other-conflicting-request"},params),409);
+ assert.deepEqual(await d1.prepare("SELECT * FROM dossier_source_anchors WHERE id=?").bind(anchor.id).first(),anchor);
+ const detail=await (await call("detail",alice,orgA,"GET",undefined,params)).json() as {dossier:{readiness:{dimensions:Array<{reasons:Array<{code:string}>}>}}};
+ assert.match(JSON.stringify(detail),/SOURCE_ANCHOR_MISSING/);
+ await json(await call("snapshots",alice,orgA,"POST",{expectedRevision:revision,locale:"en",audience:"internal",redactionProfileId:"pilot-default"},params),409);
+ const preservedPdf=new Uint8Array(await (await call("outputDownload",alice,orgA,"GET",undefined,{dossierId,outputId})).arrayBuffer());assert.deepEqual(preservedPdf,originalPdf);
+
+ await json(await call("assertions",alice,orgA,"POST",{action:"create",expectedRevision:revision,assertionType:"fact",statement:"Invalid reuse of retired citation",sourceAnchorIds:[anchor.id]},params),409);
+ const retiredAssertion=await d1.prepare("SELECT assertion_id FROM dossier_assertion_sources WHERE dossier_id=? AND source_anchor_id=? LIMIT 1").bind(dossierId,anchor.id).first<{assertion_id:string}>();assert.ok(retiredAssertion);
+ let repaired=await json(await call("assertions",reviewer,orgA,"POST",{action:"supersede",assertionId:retiredAssertion.assertion_id,expectedRevision:revision},params));revision=repaired.dossier.revision;
+ const current=await d1.prepare("SELECT document_version_id FROM dossier_document_current_versions WHERE dossier_id=? AND document_id=?").bind(dossierId,documentId).first<{document_version_id:string}>();assert.ok(current);
+ repaired=await json(await call("anchors",alice,orgA,"POST",{action:"create",expectedRevision:revision,documentId,documentVersionId:current.document_version_id,section:"Known facts",paragraph:"3",excerpt:"Additional reconciliation evidence is required."},params),201);revision=repaired.dossier.revision;
+ const replacementId=repaired.source_anchor.source_anchor_id;
+ repaired=await json(await call("anchors",reviewer,orgA,"POST",{action:"review",expectedRevision:revision,sourceAnchorId:replacementId,decision:"accepted"},params));revision=repaired.dossier.revision;
+ repaired=await json(await call("assertions",alice,orgA,"POST",{action:"create",expectedRevision:revision,assertionType:"fact",statement:"The updated synthetic reconciliation source has been reviewed.",sourceAnchorIds:[replacementId]},params),201);revision=repaired.dossier.revision;
+ const replacementAssertion=repaired.professional_assertion?.assertion_id??repaired.assertion?.assertion_id;
+ repaired=await json(await call("assertions",reviewer,orgA,"POST",{action:"review",expectedRevision:revision,assertionId:replacementAssertion,decision:"accepted"},params));revision=repaired.dossier.revision;
+ const freshSnapshot=await json(await call("snapshots",alice,orgA,"POST",{expectedRevision:revision,locale:"en",audience:"internal",redactionProfileId:"pilot-default"},params),201);
+ const freshOutput=await json(await call("outputs",alice,orgA,"POST",{action:"generate",expectedRevision:revision,snapshotId:freshSnapshot.snapshot.snapshot_id,format:"json_manifest"},params),201);
+ const freshReport=await (await call("outputDownload",alice,orgA,"GET",undefined,{dossierId,outputId:freshOutput.output.output_id})).text();assert.match(freshReport,/citation_retirements/);assert.match(freshReport,new RegExp(String(anchor.id)));
+ writeFileSync(".artifacts/p1-route-tests/retirement-reviewed-report.json",freshReport);
+ assert.equal((await d1.prepare("PRAGMA foreign_key_check").all()).results.length,0);
+ writeFileSync(".artifacts/p1-route-tests/dependable-actions-evidence.json",JSON.stringify({environment:"Miniflare D1/R2 actual handlers; trusted-header simulation, not browser authentication",deadlineReceipt,audit,retirement:await d1.prepare("SELECT * FROM dossier_source_anchor_retirements WHERE dossier_id=?").bind(dossierId).first(),oldPdfBytesPreserved:true},null,2));
 });
 
 test("P1: every dossier route denies a foreign organization before reads or side effects", async () => {

@@ -1,3 +1,4 @@
+import { pdfBlobFromDocument } from "./pdf-blob";
 import { calculateDealEconomics, estimateDealCashFlowProbabilities } from "./deal-economics";
 import { calculateTaxEconomics } from "./tax-economics";
 import { buildReportGraphLayout, deriveReportGraphLayoutInput, reportGraphGovernedTextIssue, ReportGraphLayoutError, type ReportGraphLayoutModel } from "./report-graph-layout";
@@ -590,7 +591,7 @@ async function renderCaseReport(draft: StudioDraft, options: CaseReportOptions, 
   ]);
   (pdfMake as unknown as { addVirtualFileSystem: (fonts: unknown) => void }).addVirtualFileSystem({ ...pdfFonts, ...auditFont.vfs });
   const { definition, reportModel, layoutModel, presentationFingerprint } = buildCaseReportArtifacts(draft, options);
-  const blob = await new Promise<Blob>((resolve) => pdfMake.createPdf(definition, undefined, CASE_REPORT_PDF_FONTS).getBlob(resolve));
+  const blob = await pdfBlobFromDocument(pdfMake.createPdf(definition, undefined, CASE_REPORT_PDF_FONTS));
   return { blob, reportModel, layoutModel, presentationFingerprint };
 }
 

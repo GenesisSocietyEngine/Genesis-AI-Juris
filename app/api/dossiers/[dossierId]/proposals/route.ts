@@ -1,3 +1,4 @@
+import { hasRetiredCitation } from "../../../../dossier-evidence-server";
 import { and, asc, desc, eq, inArray, lt, or } from "drizzle-orm";
 import {
   dossierAIProposalAnchors,
@@ -487,6 +488,8 @@ async function reviewProposal(
   }
 
   const sources = await loadReviewSources(context, access.dossier.id, proposalId);
+  if(await hasRetiredCitation(context,access.dossier.id,sources.anchors.map(s=>s.anchorId)))return dossierJson({error:"A citation was retired. Review current replacement evidence and create or revise the affected work before accepting it.",code:"retired_citation"},409);
+
   if (
     sources.versionIds.length === 0
     || sources.anchors.length === 0

@@ -1,6 +1,7 @@
-import { and, asc, eq, isNotNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import {
   caseVersions,
+  dossierSourceAnchorRetirements,
   dossierDecisionPackageReferences,
   dossierOutputStateEvents,
 } from "../db/schema";
@@ -83,6 +84,7 @@ export function evidenceOutputAuditInputs(
 }
 
 export type EvidenceStaleReason =
+  | "DEADLINE_DISPOSED"
   | "DOCUMENT_REVIEW_CHANGED"
   | "SOURCE_ANCHOR_CHANGED"
   | "PROFESSIONAL_ASSERTION_CHANGED"
@@ -143,4 +145,11 @@ export function positiveInteger(value: unknown, label: string): number {
 export function nonNegativeInteger(value: unknown, label: string): number {
   if (!Number.isSafeInteger(value) || (value as number) < 0) throw new Error(`${label} is invalid.`);
   return value as number;
+}
+
+/** Existing pending work must be checked too; acceptance history alone is insufficient. */
+export async function hasRetiredCitation(context:DossierServerContext,dossierId:string,anchorIds:readonly string[]) {
+  if(!anchorIds.length)return false;
+  const rows=await context.db.select({id:dossierSourceAnchorRetirements.sourceAnchorId}).from(dossierSourceAnchorRetirements).where(and(eq(dossierSourceAnchorRetirements.dossierId,dossierId),inArray(dossierSourceAnchorRetirements.sourceAnchorId,[...anchorIds]))).limit(1);
+  return rows.length>0;
 }

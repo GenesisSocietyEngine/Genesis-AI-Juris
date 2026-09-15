@@ -141,6 +141,20 @@
       "when": 1788614637672,
       "tag": "0019_p1_organization_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1789463220250,
+      "tag": "0020_dependable_actions",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1789463847634,
+      "tag": "0021_disposition_audit_binding",
+      "breakpoints": true
     }
   ]
 }

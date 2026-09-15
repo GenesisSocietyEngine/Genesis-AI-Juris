@@ -1528,3 +1528,60 @@ export const dossierRequiredAudits = sqliteTable("dossier_required_audits", {
   check("dossier_required_audits_revision_check", sql`${table.dossierRevision} >= 1`),
   check("dossier_required_audits_phase_check", sql`${table.claimPhase} in ('revision','same_revision')`),
 ]);
+
+/** Append-only reviewed disposition; original records and sealed history remain intact. */
+export const dossierDeadlineDispositions = sqliteTable("dossier_deadline_dispositions", {
+  id: text("id").primaryKey(),
+  dossierId: text("dossier_id").notNull().references(() => dossiers.id),
+  deadlineReferenceId: text("deadline_reference_id").notNull(),
+  newStatus: text("new_status").notNull(),
+  supportingSourceAnchorId: text("supporting_source_anchor_id"),
+  reason: text("reason").notNull(),
+  actorUserId: integer("actor_user_id").notNull().references(() => users.id),
+  actorRef: text("actor_ref").notNull(),
+  actorRole: text("actor_role").notNull(),
+  occurredAt: text("occurred_at").notNull(),
+  revisionBefore: integer("revision_before").notNull(),
+  revisionAfter: integer("revision_after").notNull(),
+  idempotencyKey: text("idempotency_key").notNull(),
+  requestDigest: text("request_digest").notNull(),
+  auditEventId: text("audit_event_id").notNull(),
+}, t => [
+  uniqueIndex("dossier_deadline_dispositions_audit_uidx").on(t.dossierId, t.auditEventId),
+  uniqueIndex("dossier_deadline_dispositions_record_uidx").on(t.dossierId, t.deadlineReferenceId),
+  uniqueIndex("dossier_deadline_dispositions_request_uidx").on(t.dossierId, t.actorRef, t.idempotencyKey),
+  foreignKey({ columns: [t.dossierId, t.deadlineReferenceId], foreignColumns: [dossierDeadlineReferences.dossierId, dossierDeadlineReferences.id] }),
+  foreignKey({ columns: [t.dossierId, t.supportingSourceAnchorId], foreignColumns: [dossierSourceAnchors.dossierId, dossierSourceAnchors.id] }),
+  foreignKey({ columns: [t.dossierId, t.auditEventId], foreignColumns: [dossierAuditEvents.dossierId, dossierAuditEvents.id] }),
+  check("dossier_deadline_dispositions_revision_check", sql`${t.revisionBefore} >= 1 and ${t.revisionAfter} = ${t.revisionBefore} + 1`),
+  check("dossier_deadline_dispositions_reason_check", sql`length(trim(${t.reason})) between 5 and 2000`),
+  check("dossier_deadline_dispositions_role_check", sql`${t.actorRole} in ('owner','contributor','reviewer')`),
+]);
+
+/** Append-only reviewed disposition; original records and sealed history remain intact. */
+export const dossierSourceAnchorRetirements = sqliteTable("dossier_source_anchor_retirements", {
+  id: text("id").primaryKey(),
+  dossierId: text("dossier_id").notNull().references(() => dossiers.id),
+  sourceAnchorId: text("source_anchor_id").notNull(),
+  replacementSourceAnchorId: text("replacement_source_anchor_id"),
+  reason: text("reason").notNull(),
+  actorUserId: integer("actor_user_id").notNull().references(() => users.id),
+  actorRef: text("actor_ref").notNull(),
+  actorRole: text("actor_role").notNull(),
+  occurredAt: text("occurred_at").notNull(),
+  revisionBefore: integer("revision_before").notNull(),
+  revisionAfter: integer("revision_after").notNull(),
+  idempotencyKey: text("idempotency_key").notNull(),
+  requestDigest: text("request_digest").notNull(),
+  auditEventId: text("audit_event_id").notNull(),
+}, t => [
+  uniqueIndex("dossier_source_anchor_retirements_audit_uidx").on(t.dossierId, t.auditEventId),
+  uniqueIndex("dossier_source_anchor_retirements_record_uidx").on(t.dossierId, t.sourceAnchorId),
+  uniqueIndex("dossier_source_anchor_retirements_request_uidx").on(t.dossierId, t.actorRef, t.idempotencyKey),
+  foreignKey({ columns: [t.dossierId, t.sourceAnchorId], foreignColumns: [dossierSourceAnchors.dossierId, dossierSourceAnchors.id] }),
+  foreignKey({ columns: [t.dossierId, t.replacementSourceAnchorId], foreignColumns: [dossierSourceAnchors.dossierId, dossierSourceAnchors.id] }),
+  foreignKey({ columns: [t.dossierId, t.auditEventId], foreignColumns: [dossierAuditEvents.dossierId, dossierAuditEvents.id] }),
+  check("dossier_source_anchor_retirements_revision_check", sql`${t.revisionBefore} >= 1 and ${t.revisionAfter} = ${t.revisionBefore} + 1`),
+  check("dossier_source_anchor_retirements_reason_check", sql`length(trim(${t.reason})) between 5 and 2000`),
+  check("dossier_source_anchor_retirements_role_check", sql`${t.actorRole} in ('owner','contributor','reviewer')`),
+]);

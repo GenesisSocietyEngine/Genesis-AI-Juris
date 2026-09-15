@@ -104,6 +104,7 @@ export interface SourceAnchorItem {
   excerpt: string | null;
   reviewState: string;
   checksum: string | null;
+  retiredAt?: string | null;
 }
 
 export interface AssertionItem {
@@ -249,6 +250,8 @@ export interface ActivityItem {
   sequence: number | null;
   eventType: string;
   summaryCode: string;
+  reviewReason?: string | null;
+  reviewRecordId?: string | null;
   actorId: string | null;
   actorRole: string | null;
   occurredAt: string | null;
@@ -482,6 +485,7 @@ function normalizeAnchors(payload: unknown): SourceAnchorItem[] {
     paragraph: nullableText(anchor, ["paragraph"]),
     excerpt: nullableText(anchor, ["excerpt"]) ? boundedText(textValue(anchor, ["excerpt"]), 1_200) : null,
     reviewState: textValue(anchor, ["review_state", "reviewState"], "pending"),
+    retiredAt: nullableText(anchor, ["retired_at"]),
     checksum: nullableText(anchor, ["anchor_checksum", "anchorChecksum", "checksum"]),
   })).filter((anchor) => anchor.id);
 }
@@ -644,6 +648,8 @@ export function normalizeActivity(payload: unknown): { items: ActivityItem[]; ne
     id: textValue(item, ["audit_event_id", "auditEventId", "event_id", "eventId", "id"]),
     sequence: nullableInteger(valueAt(item, "sequence")),
     eventType: textValue(item, ["event_type", "eventType", "type"], "dossier_updated"),
+    reviewReason: nullableText(record(valueAt(item,"detail")), ["reason"]),
+    reviewRecordId: nullableText(record(valueAt(item,"detail")), ["deadline_reference_id", "source_anchor_id"]),
     summaryCode: textValue(item, ["summary_code", "summaryCode", "summary"], "Matter record updated"),
     actorId: nullableText(item, ["actor_id", "actorId"]),
     actorRole: nullableText(item, ["actor_role", "actorRole"]),

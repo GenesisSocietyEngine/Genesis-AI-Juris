@@ -13,6 +13,7 @@ import {
   dossierProfessionalAssertions,
   dossierSnapshots,
   dossierSourceAnchors,
+  dossierSourceAnchorRetirements,
 } from "../db/schema";
 import type { DossierReadinessFinding } from "./dossier-readiness";
 import { computeDossierReadiness } from "./dossier-readiness";
@@ -25,7 +26,7 @@ export interface DossierReadinessFacts {
   pendingProposals: ReadonlyArray<{ id: string }>;
   contradictions: ReadonlyArray<{ id: string }>;
   criticalDeadlines: ReadonlyArray<{ id: string; status: string; dueAt: string }>;
-  acceptedAssertions: ReadonlyArray<{ id: string; sourceAnchorIds: readonly string[] }>;
+  acceptedAssertions: ReadonlyArray<{ id: string; sourceAnchorIds: readonly string[]; retiredSourceIds?: readonly string[] }>;
   acceptedSourceAnchors: ReadonlyArray<{
     id: string;
     documentVersionId: string;
@@ -88,7 +89,7 @@ export function dossierReadinessFindingsFromFacts(
   }
 
   for (const assertion of facts.acceptedAssertions) {
-    if (assertion.sourceAnchorIds.length === 0) add("SOURCE_ANCHOR_MISSING", "professional_assertion", assertion.id);
+    if (assertion.sourceAnchorIds.length === 0 || assertion.retiredSourceIds?.length) add("SOURCE_ANCHOR_MISSING", "professional_assertion", assertion.id);
   }
   for (const anchor of facts.acceptedSourceAnchors) {
     if (!anchor.currentDocumentVersionId || anchor.documentVersionId !== anchor.currentDocumentVersionId) {
@@ -141,6 +142,7 @@ export async function computeStoredDossierReadiness(input: {
     outputRows,
     outputStates,
     approvals,
+    retirements,
   ] = await Promise.all([
     input.db.select({ id: dossierDocuments.id, status: dossierDocuments.status })
       .from(dossierDocuments).where(eq(dossierDocuments.dossierId, input.dossierId)),
@@ -172,8 +174,10 @@ export async function computeStoredDossierReadiness(input: {
       .orderBy(asc(dossierOutputStateEvents.outputId), asc(dossierOutputStateEvents.sequence)),
     input.db.select({ outputId: dossierOutputApprovals.outputId }).from(dossierOutputApprovals)
       .where(eq(dossierOutputApprovals.dossierId, input.dossierId)),
+    input.db.select({sourceAnchorId: dossierSourceAnchorRetirements.sourceAnchorId}).from(dossierSourceAnchorRetirements).where(eq(dossierSourceAnchorRetirements.dossierId, input.dossierId)),
   ]);
 
+  const retiredIds = new Set(retirements.map(r => r.sourceAnchorId));
   const currentVersionByDocument = new Map(currentVersions.map((item) => [item.documentId, item.documentVersionId]));
   const sourcesByAssertion = new Map<string, string[]>();
   for (const source of assertionSources) {
@@ -192,8 +196,8 @@ export async function computeStoredDossierReadiness(input: {
     pendingProposals: proposals,
     contradictions: assertions.filter(({ type, status }) => type === "contradiction" && (status === "accepted" || status === "needs_review")),
     criticalDeadlines: deadlines.filter(({ critical }) => critical).map(({ id, status, dueAt }) => ({ id, status, dueAt })),
-    acceptedAssertions: assertions.filter(({ status }) => status === "accepted").map(({ id }) => ({ id, sourceAnchorIds: sourcesByAssertion.get(id) ?? [] })),
-    acceptedSourceAnchors: anchors.filter(({ id, reviewState }) => acceptedAnchorIds.has(id) && reviewState === "accepted").map((anchor) => ({
+    acceptedAssertions: assertions.filter(({ status }) => status === "accepted").map(({ id }) => ({ id, sourceAnchorIds: sourcesByAssertion.get(id) ?? [], retiredSourceIds: (sourcesByAssertion.get(id) ?? []).filter(source => retiredIds.has(source)) })),
+    acceptedSourceAnchors: anchors.filter(({ id, reviewState }) => acceptedAnchorIds.has(id) && reviewState === "accepted" && !retiredIds.has(id)).map((anchor) => ({
       id: anchor.id,
       documentVersionId: anchor.documentVersionId,
       currentDocumentVersionId: currentVersionByDocument.get(anchor.documentId) ?? null,

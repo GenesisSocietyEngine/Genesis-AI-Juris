@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   const admin = isPlatformAdmin(identity);
   const db = getDb();
   const [profile] = await db.select({ email: users.email }).from(users).where(eq(users.email, email)).limit(1);
-  if (!profile) return privateJson({ error: "Complete your professional profile before saving a shared workspace draft." }, 409);
+  if (!profile) return privateJson({ code: "profile_required", error: "Complete your professional profile before saving a shared workspace draft." }, 409);
   let draft;
   try { draft = normalizeStudioDraft(payload.draft); } catch { return privateJson({ error: "The Studio draft failed integrity validation." }, 400); }
   const structuralIssues = studioStructuralIssues(draft);

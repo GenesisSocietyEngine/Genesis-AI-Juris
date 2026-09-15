@@ -9,6 +9,7 @@ import {
   dossierProfessionalAssertions,
   dossierRevisionReceipts,
   dossierSourceAnchors,
+  dossierSourceAnchorRetirements,
   dossiers,
 } from "../../../../db/schema";
 import { DOSSIER_WIRE_ENUMS } from "../../../dossier-contract";
@@ -163,7 +164,9 @@ async function detailPayload(context: DossierServerContext, access: DossierAcces
       excerpt: dossierSourceAnchors.excerpt,
       review_state: dossierSourceAnchors.reviewState,
       checksum: dossierSourceAnchors.anchorChecksum,
+      retired_at: dossierSourceAnchorRetirements.occurredAt,
     }).from(dossierSourceAnchors)
+      .leftJoin(dossierSourceAnchorRetirements, and(eq(dossierSourceAnchorRetirements.dossierId, dossierSourceAnchors.dossierId), eq(dossierSourceAnchorRetirements.sourceAnchorId,dossierSourceAnchors.id)))
       .innerJoin(dossierDocuments, and(eq(dossierDocuments.dossierId, dossierSourceAnchors.dossierId), eq(dossierDocuments.id, dossierSourceAnchors.documentId)))
       .innerJoin(dossierDocumentVersions, and(eq(dossierDocumentVersions.dossierId, dossierSourceAnchors.dossierId), eq(dossierDocumentVersions.id, dossierSourceAnchors.documentVersionId)))
       .where(eq(dossierSourceAnchors.dossierId, access.dossier.id)).orderBy(desc(dossierSourceAnchors.createdAt)).limit(1_000),

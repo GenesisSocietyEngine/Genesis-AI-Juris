@@ -1,3 +1,4 @@
+import { hasRetiredCitation } from "../../../../dossier-evidence-server";
 import { and, asc, desc, eq, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
 import {
   caseVersions,
@@ -736,6 +737,7 @@ async function resolveGraphProposal(input: {
       code: "graph_proposal_source_review_required",
     }, 409);
   }
+  if(await hasRetiredCitation(input.context,input.dossierId,sources.map(s=>s.anchorId)))return dossierJson({error:"A citation was retired. Review current replacement evidence and create or revise the affected work before accepting it.",code:"retired_citation"},409);
   const expectedDiff = buildDecisionPackageGraphProposalDiff({
     base: input.base,
     target: input.target,

@@ -1,3 +1,4 @@
+import { hasRetiredCitation } from "../../../../../dossier-evidence-server";
 import { and, asc, desc, eq, inArray, lt, or } from "drizzle-orm";
 import {
   dossierAssertionSources,
@@ -233,6 +234,8 @@ async function createAssertion(
       eq(dossierDocuments.isProvisional, false),
     )).limit(MAX_SOURCE_IDS);
   if (acceptedAnchors.length !== sourceAnchorIds.length) return dossierNotFound();
+  if(await hasRetiredCitation(context,access.dossier.id,sourceAnchorIds))return dossierJson({error:"A citation was retired. Review current replacement evidence and create or revise the affected work before accepting it.",code:"retired_citation"},409);
+
 
   const outputStates = await loadCurrentEvidenceOutputs(context, access.dossier.id);
   if (!outputStates.ok) return outputStateLimit();
@@ -348,6 +351,7 @@ async function reviewAssertion(
   }
   const sources = await assertionSources(context, access.dossier.id, assertionId);
   if (sources.length > MAX_SOURCE_IDS) return assertionSourceLimit();
+  if(decision === "accepted" && await hasRetiredCitation(context,access.dossier.id,sources.map(s=>s.sourceAnchorId)))return dossierJson({error:"Retired citations cannot support this assertion. Review a replacement assertion with current evidence.",code:"retired_citation"},409);
   if (decision === "accepted" && (
     sources.length === 0 || sources.some(({ reviewState, isProvisional }) => (
       reviewState !== "accepted" || isProvisional

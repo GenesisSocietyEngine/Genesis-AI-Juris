@@ -1526,10 +1526,10 @@ test("Scenario D - v61 validation, simulation, anonymous PDF and Studio save-ret
     "genesis-juris:studio-workflow:v1:" + existing.caseId,
   );
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
-  assert.match(appSource, /returnUrl\.searchParams\.set\("auth_retry", "1"\)/u);
-  assert.match(appSource, /workspaceSignInPath\(returnUrl\.pathname \+ returnUrl\.search \+ returnUrl\.hash\)/u);
-  assert.match(appSource, /setDraft\(pending\.draft\)/u);
-  assert.match(appSource, /shareDraftRef\.current\(pending\.action, pending\)/u);
+  assert.match(appSource, /createStudioAuthContinuation/u);
+  assert.match(appSource, /verifiedStudioSaveReceipt/u);
+  assert.match(appSource, /savedStudioPath/u);
+  assert.doesNotMatch(appSource, /shareDraftRef|parsePendingWorkspaceSave/u);
 
   const dossierCountAfter = await row<{ count: number }>(
     "SELECT count(*) AS count FROM dossiers",

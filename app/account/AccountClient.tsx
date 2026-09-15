@@ -127,6 +127,9 @@ export default function AccountClient({
   }
 
   async function clearDeviceStudioDraft() {
+    window.sessionStorage.removeItem("genesis-studio-auth-continuation-v1");
+    window.sessionStorage.removeItem("genesis.juris.pending-workspace-save.v2");
+    window.sessionStorage.removeItem("genesis-juris-pending-case-prompt-v1");
     window.localStorage.removeItem(LEGACY_STUDIO_DRAFT_KEY);
     window.localStorage.removeItem(LEGACY_STUDIO_PRIVATE_KEY);
     const scope = await studioDeviceScope(identity?.email);
@@ -136,10 +139,15 @@ export default function AccountClient({
   async function signOutChatGPT(event: MouseEvent<HTMLAnchorElement>) {
     event.preventDefault();
     setBusy("logout");
+    setError("");
     try {
+      const response = await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+      if (!response.ok) throw new Error(t("Sign-out could not be confirmed. Retry before leaving this shared device.", "Не удалось подтвердить выход. Повторите попытку перед уходом с общего устройства."));
       await clearDeviceStudioDraft();
-    } finally {
       window.location.assign(chatGPTSignOutUrl);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("Sign-out failed. Please retry.", "Не удалось выйти. Повторите попытку."));
+      setBusy(null);
     }
   }
 
@@ -153,7 +161,7 @@ export default function AccountClient({
       <h2>{t("Start with ChatGPT", "Начать через ChatGPT")}</h2>
       <p>{t("Then open an example, import a case or describe your task.", "Затем откройте пример, загрузите кейс или опишите задачу.")}</p>
       <a className={styles.primaryLink} href={chatGPTSignInUrl} target="_top">{t("Continue with ChatGPT", "Продолжить через ChatGPT")}</a>
-      <a className={styles.secondaryLink} href={workspaceDestination("/studio", "/account?lang=" + locale + "&return_to=" + encodeURIComponent(returnTo))}>{t("Explore Studio first", "Сначала открыть Студию")}</a>
+      <a className={styles.secondaryLink} href={returnTo}>{t("Return to your task without signing in", "Вернуться к задаче без входа")}</a>
     </section>}
 
     {identity && <section className={styles.identity} aria-label="Current identity">
