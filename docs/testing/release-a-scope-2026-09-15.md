@@ -1,5 +1,7 @@
 # Release A — frozen scope and recovery review
 
+**Superseded publication scope:** this candidate was saved as v87 but its deployment failed during migration with `incomplete input: SQLITE_ERROR`. It was not published. See `release-a-core-scope-2026-09-15.md` for the reduced, no-migration successor. The 15/15 compatibility evidence below applies to the failed-v87 candidate, not to publication of request receipts or notes.
+
 The product-owner amendment in `production-release-amendment-2026-09-15.md` replaces the previous universal browser publication hold. Release A is a bounded reliability publication. Release B and C still require the actual browser/human acceptance specified for their new visible workflows.
 
 ## Reconciled baseline

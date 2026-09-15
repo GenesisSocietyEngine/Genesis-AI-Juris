@@ -1,7 +1,6 @@
 import { and, asc, desc, eq, inArray, lt, or } from "drizzle-orm";
 import {
   dossierAuditEvents,
-  dossierRequestOperations,
   dossierDeadlineReferences,
   dossierDeadlineSources,
   dossierDocuments,
@@ -12,13 +11,12 @@ import {
   dossierRevisionReceipts,
   dossiers,
 } from "../../../../../db/schema";
-import { canonicalDossierJson } from "../../../../dossier-contract";
+import { computeStoredDossierReadiness } from "../../../../dossier-readiness-server";
 import { parseDossierOpaqueId } from "../../../../dossier-security";
 import {
   boundedDossierText,
   canonicalDossierTimestamp,
   dossierEnum,
-  dossierSha256,
   dossierJson,
   dossierNotFound,
   expectedDossierRevision,
@@ -43,7 +41,6 @@ const REQUEST_STATUSES = ["open", "received", "waived", "cancelled"] as const;
 const REQUEST_REASON_CODES = ["INFORMATION_REQUEST_OPEN", "INFORMATION_REQUEST_OVERDUE"] as const;
 
 const ALLOWED_REQUEST_FIELDS = new Set([
-  "idempotencyKey",
   "action",
   "expectedRevision",
   "expected_revision",
@@ -88,19 +85,6 @@ export async function GET(request: Request, routeContext: RouteContext) {
   if (isResponse(access)) return access;
 
   const url = new URL(request.url);
-  if (["request_id","operation_key","cursor","limit"].some(key=>url.searchParams.getAll(key).length>1)) return dossierJson({error:"Use a unique request selection."},400);
-  const operationKey=url.searchParams.get("operation_key");
-  if(operationKey!==null) {
-    if(url.searchParams.has("request_id")||url.searchParams.has("cursor")||url.searchParams.has("limit"))return dossierJson({error:"Choose one operation without pagination."},400);
-    try{if(boundedDossierText(operationKey,"Operation key",8,120)!==operationKey)return dossierNotFound();}catch{return dossierNotFound();}
-    const [row]=await context.db.select().from(dossierRequestOperations).where(and(eq(dossierRequestOperations.dossierId,access.dossier.id),eq(dossierRequestOperations.actorRef,context.actor.actorId),eq(dossierRequestOperations.idempotencyKey,operationKey))).limit(1);
-    return row?dossierJson({...JSON.parse(row.result),operation:operationMetadata(row),replayed:true},row.httpStatus):dossierNotFound();
-  }
-  let exactId:string|null=null;
-  if(url.searchParams.has("request_id")) {
-    if(url.searchParams.has("cursor")||url.searchParams.has("limit"))return dossierJson({error:"Choose an exact request without pagination."},400);
-    try{exactId=parseDossierOpaqueId(url.searchParams.get("request_id"),"request ID");}catch{return dossierNotFound();}
-  }
   const limit = pageLimit(url.searchParams.get("limit"));
   if (limit === null) return dossierJson({ error: "The request page limit is invalid." }, 400);
 
@@ -148,7 +132,6 @@ export async function GET(request: Request, routeContext: RouteContext) {
     eq(dossierParticipants.id, dossierInformationRequests.requestedFromParticipantId),
   )).where(and(
     eq(dossierInformationRequests.dossierId, access.dossier.id),
-    exactId ? eq(dossierInformationRequests.id,exactId) : undefined,
     cursor ? or(
       lt(dossierInformationRequests.createdAt, cursor.createdAt),
       and(
@@ -159,7 +142,6 @@ export async function GET(request: Request, routeContext: RouteContext) {
   )).orderBy(desc(dossierInformationRequests.createdAt), desc(dossierInformationRequests.id))
     .limit(limit + 1);
 
-  if(exactId&&!requestRows.length)return dossierNotFound();
   const hasMore = requestRows.length > limit;
   const visibleRequests = requestRows.slice(0, limit);
   const deadlineRows = await context.db.select({
@@ -249,12 +231,6 @@ export async function POST(request: Request, routeContext: RouteContext) {
     return dossierJson({
       error: error instanceof Error ? error.message : "The information-request mutation is invalid.",
     }, 400);
-  }
-  if (payload.idempotencyKey !== undefined) {
-    try { if(boundedDossierText(payload.idempotencyKey, "Operation key", 8, 120)!==payload.idempotencyKey)throw new Error("Noncanonical key"); }
-    catch { return dossierJson({error:"A valid operation key is required.",code:"validation",field:"idempotencyKey"},400); }
-    const replay = await requestOperationReplay(context, access.dossier.id, payload);
-    if (replay) return replay;
   }
   if (expectedRevision !== access.dossier.revision) {
     return dossierJson({
@@ -370,31 +346,6 @@ async function createInformationRequest(
     })),
   ]);
 
-  const result = {
-    request: projectInformationRequest({
-      informationRequestId,
-      dossierId: access.dossier.id,
-      question,
-      ownerActorId: context.actor.actorId,
-      requestedFromParticipantId,
-      requestedFromDisplayName: participant.displayName,
-      priority,
-      dueAt: due.dueAt,
-      timezone: due.timezone,
-      status: "open",
-      reason,
-      readinessReasonCode,
-      satisfyingDocumentId: null,
-      satisfyingEvidenceLinkId: null,
-      createdAt: now,
-      createdBy: context.actor.actorId,
-      updatedAt: now,
-      updatedBy: context.actor.actorId,
-    }),
-    dossier: { dossier_id: access.dossier.id, revision: nextRevision },
-    audit_event_id: auditEvents[0]!.id,
-  };
-  const operation = await prepareRequestOperation(context, access.dossier.id, payload, result, 201);
   try {
     await context.db.batch([
       context.db.update(dossiers).set({
@@ -415,18 +366,45 @@ async function createInformationRequest(
       })),
       ...auditEvents.map((event) => context.db.insert(dossierAuditEvents).values(event)),
       context.db.insert(dossierRevisionReceipts).values(revisionReceipt),
-      ...(operation ? [context.db.insert(dossierRequestOperations).values(operation)] : []),
     ]);
   } catch {
-    const freshAccess = await requireDossierAccess(context, access.dossier.id, "requests");
-    if (isResponse(freshAccess)) return freshAccess;
-    const replay = await requestOperationReplay(context, access.dossier.id, payload);
-    if (replay) return replay;
-    return dossierJson({error:"The save could not be confirmed. Retain the proposal and check the original operation before retrying.",
-      code:freshAccess.dossier.revision !== expectedRevision ? "revision_conflict" : "save_unconfirmed",
-      currentRevision:freshAccess.dossier.revision}, freshAccess.dossier.revision !== expectedRevision ? 409 : 503);
+    return dossierJson({
+      error: "The Matter changed before this information request could be recorded.",
+      code: "request_conflict",
+    }, 409);
   }
-  return dossierJson({...result, ...(operation ? {operation:operationMetadata(operation)} : {})}, 201);
+
+  const readiness = await computeStoredDossierReadiness({
+    db: context.db,
+    dossierId: access.dossier.id,
+    dossierRevision: nextRevision,
+    keyDeadlineAt: access.dossier.keyDeadlineAt,
+    evaluatedAt: now,
+  });
+  return dossierJson({
+    request: projectInformationRequest({
+      informationRequestId,
+      dossierId: access.dossier.id,
+      question,
+      ownerActorId: context.actor.actorId,
+      requestedFromParticipantId,
+      requestedFromDisplayName: participant.displayName,
+      priority,
+      dueAt: due.dueAt,
+      timezone: due.timezone,
+      status: "open",
+      reason,
+      readinessReasonCode,
+      satisfyingDocumentId: null,
+      satisfyingEvidenceLinkId: null,
+      createdAt: now,
+      createdBy: context.actor.actorId,
+      updatedAt: now,
+      updatedBy: context.actor.actorId,
+    }),
+    dossier: { dossier_id: access.dossier.id, revision: nextRevision, readiness },
+    audit_event_id: auditEvents[0]!.id,
+  }, 201);
 }
 
 async function updateInformationRequestStatus(
@@ -520,36 +498,6 @@ async function updateInformationRequestStatus(
     })),
   ]);
 
-  const participant = await resolveRequestedParticipant(
-    context,
-    access.dossier.id,
-    stored.requestedFromParticipantId,
-  );
-  const result = {
-    request: projectInformationRequest({
-      informationRequestId: stored.id,
-      dossierId: stored.dossierId,
-      question: stored.question,
-      ownerActorId: stored.ownerActorRef,
-      requestedFromParticipantId: stored.requestedFromParticipantId,
-      requestedFromDisplayName: participant.displayName,
-      priority: stored.priority,
-      dueAt: stored.dueAt,
-      timezone: stored.timezone,
-      status,
-      reason: stored.reason,
-      readinessReasonCode: stored.readinessReasonCode,
-      satisfyingDocumentId,
-      satisfyingEvidenceLinkId,
-      createdAt: stored.createdAt,
-      createdBy: stored.createdByActorRef,
-      updatedAt: now,
-      updatedBy: context.actor.actorId,
-    }),
-    dossier: { dossier_id: access.dossier.id, revision: nextRevision },
-    audit_event_id: auditEvents[0]!.id,
-  };
-  const operation = await prepareRequestOperation(context, access.dossier.id, payload, result, 200);
   try {
     await context.db.batch([
       context.db.update(dossiers).set({
@@ -579,18 +527,50 @@ async function updateInformationRequestStatus(
       })),
       ...auditEvents.map((event) => context.db.insert(dossierAuditEvents).values(event)),
       context.db.insert(dossierRevisionReceipts).values(revisionReceipt),
-      ...(operation ? [context.db.insert(dossierRequestOperations).values(operation)] : []),
     ]);
   } catch {
-    const freshAccess = await requireDossierAccess(context, access.dossier.id, "requests");
-    if (isResponse(freshAccess)) return freshAccess;
-    const replay = await requestOperationReplay(context, access.dossier.id, payload);
-    if (replay) return replay;
-    return dossierJson({error:"The save could not be confirmed. Retain the proposal and check the original operation before retrying.",
-      code:freshAccess.dossier.revision !== expectedRevision ? "revision_conflict" : "save_unconfirmed",
-      currentRevision:freshAccess.dossier.revision}, freshAccess.dossier.revision !== expectedRevision ? 409 : 503);
+    return dossierJson({
+      error: "The Matter changed before this information-request status could be recorded.",
+      code: "request_conflict",
+    }, 409);
   }
-  return dossierJson({...result, ...(operation ? {operation:operationMetadata(operation)} : {})}, 200);
+
+  const readiness = await computeStoredDossierReadiness({
+    db: context.db,
+    dossierId: access.dossier.id,
+    dossierRevision: nextRevision,
+    keyDeadlineAt: access.dossier.keyDeadlineAt,
+    evaluatedAt: now,
+  });
+  const participant = await resolveRequestedParticipant(
+    context,
+    access.dossier.id,
+    stored.requestedFromParticipantId,
+  );
+  return dossierJson({
+    request: projectInformationRequest({
+      informationRequestId: stored.id,
+      dossierId: stored.dossierId,
+      question: stored.question,
+      ownerActorId: stored.ownerActorRef,
+      requestedFromParticipantId: stored.requestedFromParticipantId,
+      requestedFromDisplayName: participant.displayName,
+      priority: stored.priority,
+      dueAt: stored.dueAt,
+      timezone: stored.timezone,
+      status,
+      reason: stored.reason,
+      readinessReasonCode: stored.readinessReasonCode,
+      satisfyingDocumentId,
+      satisfyingEvidenceLinkId,
+      createdAt: stored.createdAt,
+      createdBy: stored.createdByActorRef,
+      updatedAt: now,
+      updatedBy: context.actor.actorId,
+    }),
+    dossier: { dossier_id: access.dossier.id, revision: nextRevision, readiness },
+    audit_event_id: auditEvents[0]!.id,
+  });
 }
 
 type ProjectableRequest = {
@@ -797,24 +777,4 @@ function zonedDateParts(epoch: number, timezone: string) {
     minute: value("minute"),
     second: value("second"),
   };
-}
-
-
-type RequestOperation = typeof dossierRequestOperations.$inferSelect;
-function operationMetadata(row: RequestOperation) {
-  return {id:row.id, key:row.idempotencyKey, caseId:row.dossierId, recordId:row.requestId,
-    revision:row.revision, actor:row.actorRef, auditEventId:row.auditEventId, requestDigest:row.requestDigest};
-}
-async function requestOperationReplay(context:DossierServerContext, caseId:string, payload:Record<string,unknown>) {
-  if(typeof payload.idempotencyKey!=="string")return null;
-  const [row]=await context.db.select().from(dossierRequestOperations).where(and(eq(dossierRequestOperations.dossierId,caseId),eq(dossierRequestOperations.actorRef,context.actor.actorId),eq(dossierRequestOperations.idempotencyKey,payload.idempotencyKey))).limit(1);
-  if(!row)return null;
-  if(row.requestDigest!==await dossierSha256(canonicalDossierJson(payload)))return dossierJson({error:"This operation key belongs to another proposal. Resolve the original save before submitting changed input.",code:"operation_key_conflict"},409);
-  return dossierJson({...JSON.parse(row.result),operation:operationMetadata(row),replayed:true},row.httpStatus);
-}
-async function prepareRequestOperation(context:DossierServerContext,caseId:string,payload:Record<string,unknown>,result:{request:ReturnType<typeof projectInformationRequest>;dossier:{revision:number};audit_event_id:string},httpStatus:number):Promise<RequestOperation|null> {
-  if(typeof payload.idempotencyKey!=="string")return null; // Existing clients remain compatible; new recovery clients supply a key.
-  return {id:newDossierOpaqueId("request_operation"),dossierId:caseId,actorRef:context.actor.actorId,idempotencyKey:payload.idempotencyKey,
-    requestDigest:await dossierSha256(canonicalDossierJson(payload)),requestId:result.request.information_request_id,
-    revision:result.dossier.revision,auditEventId:result.audit_event_id,result:canonicalDossierJson(result),httpStatus};
 }

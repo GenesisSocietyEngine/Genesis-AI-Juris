@@ -100,7 +100,7 @@ test("received status requires a same-dossier satisfying source and unknown requ
   assert.match(requests, /eq\(dossierDocuments\.dossierId, dossierId\)/u);
   assert.match(requests, /eq\(dossierEvidenceLinks\.dossierId, dossierId\)/u);
   assert.match(requests, /if \(!stored\) return dossierNotFound\(\)/u);
-  // Current readiness is verified through the real GET after a receipt in p1-organization-erp.test.ts.
+  assert.match(requests, /computeStoredDossierReadiness/u);
 });
 
 test("activity pages the immutable audit sequence with bounded metadata detail", () => {

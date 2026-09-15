@@ -1,0 +1,31 @@
+{
+  "recordedAt": "2026-09-15T13:54:39.373034+00:00",
+  "scope": "No-migration disposition recovery and exact audit/assertion reads; baseline UI with neutral receipt copy",
+  "checks": {
+    "serverIntegration": {
+      "passed": 6,
+      "failed": 0,
+      "durationMs": 26620.58668,
+      "environment": "isolated real Miniflare D1/R2 handlers, synthetic trusted provider headers"
+    },
+    "modelSourceSSR": {
+      "passed": 39,
+      "failed": 0
+    },
+    "build": "passed",
+    "typecheck": "passed",
+    "mobileLock": "18 deterministic routes; not mobile browser verification",
+    "browser": "not run; controller tab refresh timeout"
+  },
+  "migrationPackage": "exact v86 0000-0021; no new migration requested; failed v87 migration boundary remains unresolved",
+  "artifacts": {
+    "dist/server/index.js": {
+      "sha256": "49fc1aef8a5b13c214db2505b95ef43c67d00d719b95ac1b77e90e8623a8cdf2",
+      "bytes": 279913
+    },
+    "drizzle/meta/_journal.json": {
+      "sha256": "73431b8055b567d1a95077a518a7a9db74cf5ba3ef758d58cfb1942902a00c52",
+      "bytes": 3282
+    }
+  }
+}

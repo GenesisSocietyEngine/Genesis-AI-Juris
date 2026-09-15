@@ -30,8 +30,8 @@ export async function GET(request: Request, routeContext: RouteContext) {
   const cursorValue = url.searchParams.get("cursor");
   const eventValue = url.searchParams.get("event_id");
   let eventId: string | null = null;
-  if (eventValue) {
-    if (cursorValue) return dossierJson({ error: "Choose an exact event or a history page, not both." }, 400);
+  if (eventValue !== null) {
+    if (url.searchParams.getAll("event_id").length !== 1 || url.searchParams.has("cursor")) return dossierJson({ error: "Choose one exact event without a history cursor." }, 400);
     try { eventId = parseDossierOpaqueId(eventValue, "audit event"); }
     catch { return dossierNotFound(); }
   }
