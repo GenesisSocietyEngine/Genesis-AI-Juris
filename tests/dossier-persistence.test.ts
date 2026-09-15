@@ -134,7 +134,8 @@ function legacyDossierDatabase() {
 }
 
 test("every D1 migration breakpoint resolves to a non-empty platform statement", () => {
-  for (const name of [...allMigrations, organizationScopeMigration]) {
+  const journalMigrations = (JSON.parse(readFileSync("drizzle/meta/_journal.json", "utf8")).entries as Array<{ idx: number; tag: string }>);
+  for (const name of journalMigrations.map((entry) => `${entry.tag}.sql`)) {
     const statements = migration(name).split("--> statement-breakpoint");
     assert.ok(
       statements.every((statement) => statement.trim().length > 0),
@@ -164,6 +165,7 @@ test("every D1 migration breakpoint resolves to a non-empty platform statement",
     uploadCommitmentMigration,
     statusHistoryMigration,
     organizationScopeMigration,
+    ...journalMigrations.filter((entry) => entry.idx > 19).map((entry) => `${entry.tag}.sql`),
   ]) {
     const sql = migration(name);
     assert.doesNotMatch(

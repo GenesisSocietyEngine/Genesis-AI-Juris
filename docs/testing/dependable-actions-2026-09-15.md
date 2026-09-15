@@ -78,3 +78,10 @@ Retained from the starting review: Coda `Coda web Mar 2024 99.png` supports narr
 **Guided demo:** conditionally usable for demonstrated sample paths, with the listed browser gaps disclosed. **Self-service trial:** hold. Do not recommend release as self-service-ready until a real authenticated save/reopen/organization journey and the exact PDF incident are verified. Remaining priorities: (1) supported authenticated browser and private-case PDF retest; (2) desktop/narrow action completion, failure, keyboard and return checks; (3) complete controlled conflict/status variants; (4) actual Plane archive and native-device review. No registration-inclusive two-minute claim is made.
 
 Build verification: the production bundle, strict typecheck and locked canonical mobile contract passed. The mobile contract check is deterministic code parity, not a mobile-device test. Temporary review harness assets were removed before packaging. The managed preview was stopped after browser recovery remained unavailable.
+
+
+## Publication migration recovery
+
+The first publication attempt (saved version 84) failed before Worker upload with `incomplete input: SQLITE_ERROR`. The supported live database overview showed existing predecessor tables but no `dossier_deadline_dispositions` (the first table created by 0020), establishing that 0020 had not applied. No prior migration was changed. The repository's existing remote D1 formatting guard identified two missed requirements in 0020: `SELECT (CASE ... END);` and breakpoint comments attached to the preceding semicolon. The failed, unapplied 0020 was normalized without changing its domain SQL. The existing guard now discovers every journal migration, so future migrations cannot silently miss the check. Migration 0021 and applied migrations remain unchanged.
+
+Recovery verification: the journal-wide D1 formatting check passed, followed by all six focused organization/ERP/disposition server journeys against a fresh D1/R2 fixture using the corrected migrations.
