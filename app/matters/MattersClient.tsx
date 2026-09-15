@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import ActionTile, { focusActionTarget } from "../ActionTile";
+import MatterActionCenter from "./MatterActionCenter";
+import { actionForFinding, type MatterActionTarget } from "./matter-actions";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
@@ -11,7 +14,6 @@ import {
   MATTER_DESTINATIONS,
   apiIssueFor,
   availableTransitions,
-  destinationForDeepLink,
   formatBytes,
   formatMatterDate,
   isOverdue,
@@ -131,6 +133,23 @@ export default function MattersClient() {
   const [workspacePhase, setWorkspacePhase] = useState<LoadPhase>("loading");
   const [workspaceIssue, setWorkspaceIssue] = useState<ApiIssue | null>(null);
   const [destination, setDestination] = useState<MatterDestination>("overview");
+  const [notice, setNotice] = useState("");
+  const [actionTarget, setActionTarget] = useState<(MatterActionTarget & { caseId: string }) | null>(null);
+  const selectedIdRef = useRef(selectedId);
+  useEffect(() => { selectedIdRef.current = selectedId; }, [selectedId]);
+  function openAction(target: MatterActionTarget) {
+    if (!selectedId) return;
+    setActionTarget({ ...target, requestId: target.requestId ?? (actionTarget?.caseId === selectedId && target.id === "document-upload" ? actionTarget.requestId : undefined), caseId: selectedId });
+    setDestination(target.destination);
+  }
+  useEffect(() => {
+    if (!actionTarget || actionTarget.caseId !== selectedId || workspacePhase !== "ready" || destination !== actionTarget.destination) return;
+    const frame = requestAnimationFrame(() => {
+      if (!focusActionTarget(actionTarget.id) && !(["package-link", "snapshot-create"].includes(actionTarget.id) && focusActionTarget("package-actions"))) setNotice("The requested record is not in the loaded page. Load more records or refresh this case; no different item has been selected.");
+      else setNotice(current => current.startsWith("The requested record is not in the loaded page.") ? "" : current);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [actionTarget, selectedId, workspacePhase, destination, workspace]);
   const [view, setView] = useState<MatterView>("user");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<MatterStatus | "all">("all");
@@ -141,7 +160,6 @@ export default function MattersClient() {
   const [createOpen, setCreateOpen] = useState(false);
   const [mutationKey, setMutationKey] = useState<string | null>(null);
   const [actionIssue, setActionIssue] = useState<ApiIssue | null>(null);
-  const [notice, setNotice] = useState("");
   const matterRequest = useRef(0);
   const matterAbort = useRef<AbortController | null>(null);
   const promptImportRef = useRef<HTMLInputElement | null>(null);
@@ -321,7 +339,7 @@ export default function MattersClient() {
   }
 
   async function mutate(path: string, key: string, body: Record<string, unknown>, successMessage: string, method: "POST" | "PUT" = "POST") {
-    if (!workspace) return;
+    if (!workspace || mutationKey !== null) return;
     setMutationKey(key);
     setActionIssue(null);
     setNotice("");
@@ -331,10 +349,12 @@ export default function MattersClient() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(mutationPayload(workspace.matter.revision, body)),
       });
+      if (selectedIdRef.current !== workspace.matter.id) return;
       setNotice(successMessage);
-      await loadCatalogue(workspace.matter.id);
-      await loadMatter(workspace.matter.id);
+      await loadCatalogue();
+      if (selectedIdRef.current === workspace.matter.id) await loadMatter(workspace.matter.id);
     } catch (caught) {
+      if (selectedIdRef.current !== workspace.matter.id) return;
       setActionIssue(caught instanceof WorkspaceApiError
         ? apiIssueFor(caught.status, caught.payload)
         : apiIssueFor(500, { message: "The write could not be confirmed." }));
@@ -377,7 +397,7 @@ export default function MattersClient() {
 
   async function uploadDocument(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!workspace) return;
+    if (!workspace || mutationKey !== null) return;
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     const candidate = form.get("file");
@@ -404,11 +424,13 @@ export default function MattersClient() {
         method: "POST",
         body: form,
       });
+      if (selectedIdRef.current !== workspace.matter.id) return;
       setNotice("Document submission accepted. Server validation and extraction state are shown below.");
       formElement.reset();
-      await loadCatalogue(workspace.matter.id);
-      await loadMatter(workspace.matter.id);
+      await loadCatalogue();
+      if (selectedIdRef.current === workspace.matter.id) await loadMatter(workspace.matter.id);
     } catch (caught) {
+      if (selectedIdRef.current !== workspace.matter.id) return;
       setActionIssue(caught instanceof WorkspaceApiError
         ? apiIssueFor(caught.status, caught.payload)
         : apiIssueFor(500, { message: "The document upload could not be confirmed." }));
@@ -466,7 +488,7 @@ export default function MattersClient() {
   }
 
   async function generateAiProposals(documentVersionIds: string[], retryFailed: boolean) {
-    if (!workspace || documentVersionIds.length === 0) return;
+    if (!workspace || mutationKey !== null || documentVersionIds.length === 0) return;
     const dossierId = workspace.matter.id;
     setMutationKey("proposal-generate");
     setActionIssue(null);
@@ -527,14 +549,16 @@ export default function MattersClient() {
         ? ` ${analyzedRanges.length} bounded source range(s), ${analyzedCharacters} characters total, were analyzed.`
           + (truncatedSources > 0 ? ` ${truncatedSources} source(s) exceeded the disclosed context bound.` : "")
         : "";
+      if (selectedIdRef.current !== dossierId) return;
       setNotice(job.status === "processing"
         ? "An identical AI proposal job is already processing. Manual evidence work remains available."
         : job.result_code === "ready_no_candidates"
           ? "AI analysis completed with no grounded candidates; nothing became authoritative." + coverage
           : `AI analysis created ${proposalCount} grounded proposal(s) for explicit review.` + coverage);
-      await loadCatalogue(dossierId);
-      await loadMatter(dossierId);
+      await loadCatalogue();
+      if (selectedIdRef.current === dossierId) await loadMatter(dossierId);
     } catch (caught) {
+      if (selectedIdRef.current !== dossierId) return;
       setActionIssue(caught instanceof WorkspaceApiError
         ? apiIssueFor(caught.status, caught.payload)
         : apiIssueFor(500, { message: "AI proposal generation could not be confirmed. Manual evidence work remains available." }));
@@ -596,7 +620,7 @@ export default function MattersClient() {
         <div className={styles.matterList} aria-label="Authorised matters">
           {filteredCatalogue.map((matter) => {
             const summary = readinessSummary(matter.readiness);
-            return <button key={matter.id} type="button" className={matter.id === selectedId ? styles.matterCardActive : styles.matterCard} onClick={() => { setSelectedId(matter.id); setDestination("overview"); }} aria-pressed={matter.id === selectedId}>
+            return <button key={matter.id} type="button" className={matter.id === selectedId ? styles.matterCardActive : styles.matterCard} onClick={() => { selectedIdRef.current = matter.id; setSelectedId(matter.id); setDestination("overview"); }} aria-pressed={matter.id === selectedId}>
               <span className={styles.matterCardTop}><b>{matter.reference}</b><em>{statusLabel(matter.status)}</em></span>
               <strong>{matter.title}</strong>
               <span>{matter.typeLabel}{matter.jurisdictions.length ? " · " + matter.jurisdictions.join(", ") : ""}</span>
@@ -616,7 +640,7 @@ export default function MattersClient() {
 
       <section className={styles.content} id="matter-workspace" aria-label="Selected matter workspace">
         <div className={styles.mobileSelectors}>
-          <label className={styles.field}><span>Open matter</span><select value={selectedId ?? ""} onChange={(event) => { setSelectedId(event.target.value || null); setDestination("overview"); }} disabled={catalogue.length === 0}>
+          <label className={styles.field}><span>Open matter</span><select value={selectedId ?? ""} onChange={(event) => { selectedIdRef.current = event.target.value || null; setSelectedId(event.target.value || null); setDestination("overview"); }} disabled={catalogue.length === 0}>
             {catalogue.length === 0 && <option value="">No authorised matters</option>}
             {catalogue.map((matter) => <option key={matter.id} value={matter.id}>{matter.reference} — {matter.title}</option>)}
           </select></label>
@@ -645,15 +669,16 @@ export default function MattersClient() {
 
         {workspacePhase === "ready" && workspace && <>
           <nav className={styles.breadcrumbs} aria-label="Case breadcrumb"><button type="button" onClick={() => document.getElementById("matter-catalogue-title")?.scrollIntoView({ block: "start" })}>My cases</button><span aria-hidden="true">→</span><button type="button" onClick={() => setDestination("overview")}>{workspace.matter.title}</button>{destination !== "overview" && <><span aria-hidden="true">→</span><strong>{MATTER_DESTINATIONS.find(item => item.key === destination)?.label}</strong></>}</nav>
-          <MatterHero matter={workspace.matter} view={view} setView={setView}/>
+          <MatterHero matter={workspace.matter} view={view} setView={setView} onOpenActions={() => openAction({ destination: "overview", id: "matter-next-actions" })}/>
           <SectionNavigation destination={destination} onChange={setDestination}/>
+          {actionTarget?.caseId === selectedId && <div className="action-return"><button type="button" onClick={() => openAction({ destination: "overview", id: "matter-next-actions" })}>← Back to case actions</button><span>Confirmed changes refresh this case’s readiness.</span>{actionTarget.requestId && destination === "documents" && <button type="button" onClick={() => openAction({ destination: "requests", id: "request-response", requestId: actionTarget.requestId })}>Return to the originating request →</button>}</div>}
           <div className={styles.sectionPanel} role="tabpanel" id={"panel-" + destination} aria-labelledby={"tab-" + destination}>
-            {destination === "overview" && <OverviewSection matter={workspace.matter} outputs={workspace.outputs} view={view} mutationKey={mutationKey} onNavigate={setDestination} onTransition={(option, reason) => void mutate(dossierPath + "/transitions", "transition", { newStatus: option.to, reason: reason || null }, "Lifecycle transition recorded at a new revision.")} onUpdate={(fields) => void mutate(dossierPath, "matter-update", fields, "Matter metadata updated at a new revision.", "PUT")} onEnroll={(fields) => void mutate(dossierPath + "/participants", "participant-enroll", fields, "Participant enrolled at a new governed revision.")}/>}
+            {destination === "overview" && <OverviewSection requests={workspace.requests} documents={workspace.documents} matter={workspace.matter} snapshots={workspace.snapshots} outputs={workspace.outputs} view={view} mutationKey={mutationKey} onNavigate={openAction} onTransition={(option, reason) => void mutate(dossierPath + "/transitions", "transition", { newStatus: option.to, reason: reason || null }, "Lifecycle transition recorded at a new revision.")} onUpdate={(fields) => void mutate(dossierPath, "matter-update", fields, "Matter metadata updated at a new revision.", "PUT")} onEnroll={(fields) => void mutate(dossierPath + "/participants", "participant-enroll", fields, "Participant enrolled at a new governed revision.")}/>}
             {destination === "documents" && <DocumentsSection matter={workspace.matter} documents={workspace.documents} issue={workspace.issues.documents} view={view} mutationKey={mutationKey} onUpload={uploadDocument} onReview={(document, decision) => void mutate(dossierPath + "/documents/" + encodeURIComponent(document.id) + "/review", "document-review-" + document.id, { decision }, decision === "accepted_source" ? "Document accepted as a governed source." : "Document rejection recorded.")}/>}
-            {destination === "evidence" && <EvidenceSection matter={workspace.matter} documents={workspace.documents} packages={workspace.packages} proposals={workspace.proposals} cursor={workspace.proposalCursor} issue={workspace.issues.proposals} view={view} mutationKey={mutationKey} onGenerate={(documentVersionIds, retryFailed) => void generateAiProposals(documentVersionIds, retryFailed)} onReview={(proposal, action, editedValue, note) => void mutate(dossierPath + "/proposals", "proposal-" + proposal.id, { proposalId: proposal.id, action, editedValue, reviewNote: note || null }, "AI proposal review recorded. The historical proposal remains attributable.")} onCreateAnchor={(fields) => void mutate(dossierPath + "/evidence/anchors", "anchor-create", { action: "create", ...fields }, "Exact manual source anchor recorded for review.")} onReviewAnchor={(anchor, decision) => void mutate(dossierPath + "/evidence/anchors", "anchor-review-" + anchor.id, { action: "review", sourceAnchorId: anchor.id, decision }, "Source-anchor review decision recorded.")} onCreateAssertion={(fields) => void mutate(dossierPath + "/evidence/assertions", "assertion-create", { action: "create", ...fields }, "Professional assertion recorded for review.")} onReviewAssertion={(assertion, decision) => void mutate(dossierPath + "/evidence/assertions", "assertion-review-" + assertion.id, { action: "review", assertionId: assertion.id, decision }, "Professional assertion review decision recorded.")} onLinkEvidence={(fields) => void mutate(dossierPath + "/evidence/links", "evidence-link", { action: "create", ...fields }, "Reviewed evidence linked to the exact graph entity.")} onLoadMore={() => void loadMoreProposals()}/>}
-            {destination === "decision-packages" && <DecisionPackagesSection matter={workspace.matter} packages={workspace.packages} snapshots={workspace.snapshots} issue={workspace.issues.packages ?? workspace.issues.snapshots} view={view} mutationKey={mutationKey} onLink={(fields) => void mutate(dossierPath + "/decision-packages", "package-link", fields, "Decision package linked to the visible dossier revision.")} onSnapshot={(fields) => void mutate(dossierPath + "/snapshots", "snapshot-create", fields, "Immutable dossier snapshot created.")}/>}
-            {destination === "requests" && <RequestsSection matter={workspace.matter} documents={workspace.documents} requests={workspace.requests} deadlines={workspace.deadlines} issue={workspace.issues.requests} view={view} mutationKey={mutationKey} onCreate={(fields) => void mutate(dossierPath + "/requests", "request-create", fields, "Information request recorded and readiness will be recomputed.")} onSatisfy={(fields) => void mutate(dossierPath + "/requests", "request-satisfy", { action: "update_status", status: "received", ...fields }, "Information request satisfied by an exact Matter document link.")}/>}
-            {destination === "outputs" && <OutputsSection matter={workspace.matter} outputs={workspace.outputs} snapshots={workspace.snapshots} issue={workspace.issues.outputs} view={view} mutationKey={mutationKey} onGenerate={(fields) => void mutate(dossierPath + "/outputs", "output-generate", fields, "Governed output request recorded against an immutable snapshot.")} onApprove={(output) => void mutate(dossierPath + "/outputs", "output-approve-" + output.id, { action: "approve", outputId: output.id }, "Reviewer approval recorded for the snapshot-bound output.")}/>}
+            {destination === "evidence" && <EvidenceSection matter={workspace.matter} documents={workspace.documents} packages={workspace.packages} proposals={workspace.proposals} cursor={workspace.proposalCursor} issue={workspace.issues.proposals} view={view} mutationKey={mutationKey} onGenerate={(documentVersionIds, retryFailed) => void generateAiProposals(documentVersionIds, retryFailed)} onReview={(proposal, action, editedValue, note) => void mutate(dossierPath + "/proposals", "proposal-" + proposal.id, { proposalId: proposal.id, action, editedValue, reviewNote: note || null }, "AI proposal review recorded. The historical proposal remains attributable.")} onCreateAnchor={(fields) => void mutate(dossierPath + "/evidence/anchors", "anchor-create", { action: "create", ...fields }, "Exact manual source anchor recorded for review.")} onReviewAnchor={(anchor, decision) => void mutate(dossierPath + "/evidence/anchors", "anchor-review-" + anchor.id, { action: "review", sourceAnchorId: anchor.id, decision }, "Source-anchor review decision recorded.")} onCreateAssertion={(fields) => void mutate(dossierPath + "/evidence/assertions", "assertion-create", { action: "create", ...fields }, "Professional assertion recorded for review.")} onSupersedeAssertion={(assertion) => void mutate(dossierPath + "/evidence/assertions", "assertion-review-" + assertion.id, { action: "supersede", assertionId: assertion.id }, "Assertion superseded with history preserved. Review or create its replacement before relying on the decision.")} onReviewAssertion={(assertion, decision) => void mutate(dossierPath + "/evidence/assertions", "assertion-review-" + assertion.id, { action: "review", assertionId: assertion.id, decision }, "Professional assertion review decision recorded.")} onLinkEvidence={(fields) => void mutate(dossierPath + "/evidence/links", "evidence-link", { action: "create", ...fields }, "Reviewed evidence linked to the exact graph entity.")} onLoadMore={() => void loadMoreProposals()}/>}
+            {destination === "decision-packages" && <DecisionPackagesSection onNavigate={openAction} focusedPackageId={actionTarget?.caseId === selectedId ? actionTarget.packageRefId : undefined} matter={workspace.matter} packages={workspace.packages} snapshots={workspace.snapshots} issue={workspace.issues.packages ?? workspace.issues.snapshots} view={view} mutationKey={mutationKey} onLink={(fields) => void mutate(dossierPath + "/decision-packages", "package-link", fields, "Decision package linked to the visible dossier revision.")} onSnapshot={(fields) => void mutate(dossierPath + "/snapshots", "snapshot-create", fields, "Immutable dossier snapshot created.")}/>}
+            {destination === "requests" && <RequestsSection key={`${workspace.matter.id}:${actionTarget?.caseId === selectedId ? actionTarget.requestId ?? "" : ""}`} focusedRequestId={actionTarget?.caseId === selectedId ? actionTarget.requestId : undefined} onNavigate={openAction} onUpdateDeadline={(fields) => void mutate(dossierPath, "deadline-update", fields, "Key deadline saved. Case readiness has been refreshed.", "PUT")} matter={workspace.matter} documents={workspace.documents} requests={workspace.requests} deadlines={workspace.deadlines} issue={workspace.issues.requests} view={view} mutationKey={mutationKey} onCreate={(fields) => void mutate(dossierPath + "/requests", "request-create", fields, "Information request recorded and readiness will be recomputed.")} onSatisfy={(fields) => void mutate(dossierPath + "/requests", "request-satisfy", { action: "update_status", status: "received", ...fields }, "Information request satisfied by an exact Matter document link.")}/>}
+            {destination === "outputs" && <OutputsSection onNavigate={openAction} matter={workspace.matter} outputs={workspace.outputs} snapshots={workspace.snapshots} issue={workspace.issues.outputs} view={view} mutationKey={mutationKey} onGenerate={(fields) => void mutate(dossierPath + "/outputs", "output-generate", fields, "Governed output request recorded against an immutable snapshot.")} onApprove={(output) => void mutate(dossierPath + "/outputs", "output-approve-" + output.id, { action: "approve", outputId: output.id }, "Reviewer approval recorded for the snapshot-bound output.")}/>}
             {destination === "activity" && <ActivitySection activity={workspace.activity} cursor={workspace.activityCursor} issue={workspace.issues.activity} view={view} mutationKey={mutationKey} onLoadMore={() => void loadMoreActivity()}/>}
           </div>
         </>}
@@ -662,7 +687,7 @@ export default function MattersClient() {
   </main>;
 }
 
-function MatterHero({ matter, view, setView }: { matter: MatterDetail; view: MatterView; setView: (view: MatterView) => void }) {
+function MatterHero({ matter, view, setView, onOpenActions }: { matter: MatterDetail; view: MatterView; setView: (view: MatterView) => void; onOpenActions: () => void }) {
   const readiness = readinessSummary(matter.readiness);
   return <header className={styles.matterHero}>
     <div className={styles.heroTop}>
@@ -686,7 +711,7 @@ function MatterHero({ matter, view, setView }: { matter: MatterDetail; view: Mat
     </dl>
 
     <div className={styles.attentionGrid}>
-      <section className={styles.nextAction} aria-labelledby="next-attention-title"><span aria-hidden="true">→</span><div><h2 id="next-attention-title">What needs attention next</h2><p>{nextAttention(matter)}</p></div></section>
+      <ActionTile title="Review the next case action" detail={nextAttention(matter)} next="Open actions" onClick={onOpenActions}/>
       <section className={matter.readiness.ready ? styles.readySummary : styles.blockedSummary} aria-labelledby="readiness-summary-title">
         <span className={styles.statusWord}>{matter.readiness.ready ? "READY" : "NOT READY"}</span>
         <div><h2 id="readiness-summary-title">{readiness.headline}</h2><p>{readiness.detail}</p><small>{readiness.blockedCount} item{readiness.blockedCount === 1 ? "" : "s"} need attention.{view === "developer" ? " Lifecycle status is separate." : ""}</small></div>
@@ -721,8 +746,11 @@ export function SectionNavigation({ destination, onChange }: { destination: Matt
   </nav>;
 }
 
-function OverviewSection({
+export function OverviewSection({
   matter,
+  requests = [],
+  documents = [],
+  snapshots,
   outputs,
   view,
   mutationKey,
@@ -733,9 +761,12 @@ function OverviewSection({
 }: {
   matter: MatterDetail;
   outputs: OutputItem[];
+  snapshots: SnapshotItem[];
+  requests?: RequestItem[];
+  documents?: DocumentItem[];
   view: MatterView;
   mutationKey: string | null;
-  onNavigate: (destination: MatterDestination) => void;
+  onNavigate: (target: MatterActionTarget) => void;
   onTransition: (option: TransitionOption, reason: string) => void;
   onUpdate: (fields: Record<string, unknown>) => void;
   onEnroll: (fields: Record<string, unknown>) => void;
@@ -752,14 +783,15 @@ function OverviewSection({
     && (!option?.requiresReviewerApproval || currentReviewerApproval)
     && matter.permissions.canTransition;
   return <div className={styles.sectionStack}>
-    <SectionHeading eyebrow="MATTER CONTROL" title="Overview" description="Lifecycle and readiness are related, but they are never the same signal."/>
+    <SectionHeading eyebrow="CASE WORKSPACE" title="Overview" description="See what needs attention, resolve the evidence gaps and prepare the decision package."/>
+    <MatterActionCenter requests={requests} documents={documents} matter={matter} snapshots={snapshots} outputs={outputs} onOpen={onNavigate}/>
     <div className={styles.twoColumn}>
       <section className={styles.panel} aria-labelledby="readiness-dimensions-title">
         <div className={styles.panelHeading}><h3 id="readiness-dimensions-title">Readiness by professional check</h3><span>{matter.readiness.dimensions.length || 10} dimensions</span></div>
         {matter.readiness.dimensions.length === 0 ? <EmptyState title="Readiness has not been computed" detail="The API returned no dimension findings for this revision."/> : <div className={styles.readinessGrid}>
           {matter.readiness.dimensions.map((dimension) => <article key={dimension.dimension} className={styles.readinessItem}>
             <div><strong>{sentenceLabel(dimension.dimension)}</strong><span className={styles.stateToken}>{dimension.state === "not_applicable" ? "Not applicable" : dimension.state === "ready" ? "Ready" : "Blocked"}</span></div>
-            {dimension.reasons.length === 0 ? <p>{dimension.state === "ready" ? "No blocker recorded." : "No action required for this matter."}</p> : <ul>{dimension.reasons.map((finding) => <li key={finding.code + (finding.relatedObjectId ?? "")}><b>{finding.code}</b><span>{finding.explanation}</span>{finding.deepLink && <button type="button" className={styles.linkButton} onClick={() => onNavigate(destinationForDeepLink(finding.deepLink ?? ""))} aria-label={"Open readiness source for " + finding.code}>Open related record</button>}</li>)}</ul>}
+            {dimension.reasons.length === 0 ? <p>{dimension.state === "ready" ? "No blocker recorded." : "No action required for this matter."}</p> : <ul>{dimension.reasons.map((finding) => <li key={finding.code + (finding.relatedObjectId ?? "")}>{view === "developer" && <b>{finding.code}</b>}<span>{finding.explanation}</span>{finding.deepLink && <button type="button" className={styles.linkButton} onClick={() => onNavigate(actionForFinding(finding, snapshots, outputs, matter.revision).target)} aria-label={"Open readiness source for " + finding.code}>Open related record</button>}</li>)}</ul>}
           </article>)}
         </div>}
       </section>
@@ -851,7 +883,7 @@ function DocumentsSection({ matter, documents, issue, view, mutationKey, onUploa
   return <div className={styles.sectionStack}>
     <SectionHeading eyebrow="CASE MATERIALS" title="Documents & evidence" description="Read source documents, compare their versions and keep every citation connected to its original evidence."/>
     {issue && <IssueState issue={issue} compact/>}
-    <section className={styles.uploadPanel} aria-labelledby="safe-upload-title">
+    <section id="document-upload" className={styles.uploadPanel} aria-labelledby="safe-upload-title">
       <div><p className={styles.eyebrow}>SAFE PILOT INTAKE</p><h3 id="safe-upload-title">Add a document or version</h3><p>PDF and DOCX up to 25 MiB; TXT and Markdown up to 5 MiB. Filename, media type, size, and content are validated again by the server. No client preview reads the file body.</p></div>
       {!matter.permissions.canWrite ? <NoPermission detail="Your participant role can inspect document metadata but cannot add a source."/> : <form className={styles.uploadForm} onSubmit={onUpload}>
         <label className={styles.field}><span>Logical document title</span><input name="title" required maxLength={500}/></label>
@@ -867,7 +899,7 @@ function DocumentsSection({ matter, documents, issue, view, mutationKey, onUploa
     {documents.length === 0 && !issue ? <EmptyState title="No documents in this matter" detail="Add the first synthetic or de-identified source when your role permits."/> : <div className={styles.recordList}>
       {documents.map((document) => {
         const current = document.versions.find((version) => version.id === document.currentVersionId) ?? document.versions[0] ?? null;
-        return <article className={styles.documentCard} key={document.id}>
+        return <article id={"document-" + document.id} className={styles.documentCard} key={document.id}>
           <div className={styles.recordHeading}><div><span className={styles.stateToken}>{sentenceLabel(document.status)}</span><h3>{document.title}</h3><p>{sentenceLabel(document.type)} · {sentenceLabel(document.classification)}</p></div><div className={styles.versionBadge}><strong>{current ? "v" + current.ordinal : "No version"}</strong><span>Current version</span></div></div>
           {current && <div className={styles.currentVersion}>
             <div><strong>{current.originalFilename}</strong><span>{formatBytes(current.byteLength)} · {current.mediaType}</span></div>
@@ -890,7 +922,7 @@ function DocumentsSection({ matter, documents, issue, view, mutationKey, onUploa
   </div>;
 }
 
-function EvidenceSection({ matter, documents, packages, proposals, cursor, issue, view, mutationKey, onGenerate, onReview, onCreateAnchor, onReviewAnchor, onCreateAssertion, onReviewAssertion, onLinkEvidence, onLoadMore }: {
+function EvidenceSection({ matter, documents, packages, proposals, cursor, issue, view, mutationKey, onGenerate, onReview, onCreateAnchor, onReviewAnchor, onCreateAssertion, onReviewAssertion, onSupersedeAssertion, onLinkEvidence, onLoadMore }: {
   matter: MatterDetail;
   documents: DocumentItem[];
   packages: DecisionPackageItem[];
@@ -905,6 +937,7 @@ function EvidenceSection({ matter, documents, packages, proposals, cursor, issue
   onReviewAnchor: (anchor: SourceAnchorItem, decision: "accepted" | "rejected") => void;
   onCreateAssertion: (fields: Record<string, unknown>) => void;
   onReviewAssertion: (assertion: AssertionItem, decision: "accepted" | "rejected") => void;
+  onSupersedeAssertion: (assertion: AssertionItem) => void;
   onLinkEvidence: (fields: Record<string, unknown>) => void;
   onLoadMore: () => void;
 }) {
@@ -916,7 +949,7 @@ function EvidenceSection({ matter, documents, packages, proposals, cursor, issue
     <ManualEvidenceControls matter={matter} documents={documents} packages={packages} mutationKey={mutationKey} onCreateAnchor={onCreateAnchor} onCreateAssertion={onCreateAssertion} onLinkEvidence={onLinkEvidence}/>
     <div className={styles.evidenceColumns}>
       <section className={styles.panel} aria-labelledby="accepted-evidence-title"><div className={styles.panelHeading}><h3 id="accepted-evidence-title">Professional assertions</h3><span>{matter.assertions.length} records</span></div>
-        {matter.assertions.length === 0 ? <EmptyState title="No assertions recorded" detail="AI output is not silently promoted into the professional record."/> : <div className={styles.assertionList}>{matter.assertions.map((assertion) => <AssertionCard key={assertion.id} assertion={assertion} anchors={anchorMap} view={view} canReview={matter.permissions.canReview} busy={mutationKey === "assertion-review-" + assertion.id} onReview={onReviewAssertion}/>)}</div>}
+        {matter.assertions.length === 0 ? <EmptyState title="No assertions recorded" detail="AI output is not silently promoted into the professional record."/> : <div className={styles.assertionList}>{matter.assertions.map((assertion) => <AssertionCard key={assertion.id} assertion={assertion} anchors={anchorMap} view={view} canReview={matter.permissions.canReview} busy={mutationKey === "assertion-review-" + assertion.id} onReview={onReviewAssertion} onSupersede={onSupersedeAssertion}/>)}</div>}
       </section>
       <section className={styles.panel} aria-labelledby="proposal-review-title"><div className={styles.panelHeading}><h3 id="proposal-review-title">AI proposal queue</h3><span>{proposals.filter((proposal) => proposal.reviewState === "pending").length} pending</span></div>
         <div className={styles.aiBoundary}><strong>AI-PROPOSED · NOT AUTHORITATIVE</strong><p>Confidence is not evidence. Acceptance is explicit, attributable, and unavailable without an inspectable source anchor.</p></div>
@@ -924,7 +957,7 @@ function EvidenceSection({ matter, documents, packages, proposals, cursor, issue
         {proposals.length >= MAX_PROPOSAL_ITEMS ? <p className={styles.paginationNote}>Client review is bounded to 500 proposal records. Use a refined server query to continue.</p> : cursor && <button type="button" className={styles.secondaryButton} onClick={onLoadMore} disabled={mutationKey !== null}>{mutationKey === "proposal-more" ? "Loading proposals…" : "Load next proposal page"}</button>}
       </section>
     </div>
-    <section className={styles.sourceRegister} aria-labelledby="source-register-title"><div className={styles.panelHeading}><h3 id="source-register-title">Source anchor register</h3><span>{matter.anchors.length} exact citations</span></div>{matter.anchors.length === 0 ? <EmptyState title="No source anchors returned" detail="Evidence cannot be presented as source-grounded without an exact anchor."/> : <ol>{matter.anchors.map((anchor) => <li id={"source-" + anchor.id} key={anchor.id}><SourceCitation anchor={anchor} view={view} canReview={matter.permissions.canReview} busy={mutationKey === "anchor-review-" + anchor.id} onReview={onReviewAnchor}/></li>)}</ol>}</section>
+    <section className={styles.sourceRegister} aria-labelledby="source-register-title"><div className={styles.panelHeading}><h3 id="source-register-title">Source anchor register</h3><span>{matter.anchors.length} exact citations</span></div>{matter.anchors.length === 0 ? <EmptyState title="No source anchors returned" detail="Evidence cannot be presented as source-grounded without an exact anchor."/> : <ol>{matter.anchors.map((anchor) => <li id={"source-" + anchor.id} key={anchor.id}><SourceCitation anchor={anchor} view={view} canReview={matter.permissions.canReview} busy={mutationKey === "anchor-review-" + anchor.id} onReview={onReviewAnchor} stale={anchor.reviewState === "accepted" && documents.some(document => document.id === anchor.documentId && document.currentVersionId !== anchor.documentVersionId)}/></li>)}</ol>}</section>
   </div>;
 }
 
@@ -975,9 +1008,9 @@ function ManualEvidenceControls({ matter, documents, packages, mutationKey, onCr
   const acceptedAnchors = matter.anchors.filter((anchor) => anchor.reviewState === "accepted");
   const acceptedAssertions = matter.assertions.filter((assertion) => assertion.status === "accepted");
   const currentPackages = packages.filter((item) => item.state === "current");
-  if (!matter.permissions.canWrite) return <NoPermission detail="Your participant role may inspect evidence but cannot add professional material."/>;
+  if (!matter.permissions.canWrite) return <section id="anchor-create"><NoPermission detail="Your participant role may inspect evidence but cannot add professional material. Ask the case owner for contributor access to add a replacement source."/></section>;
   return <div className={styles.twoColumn}>
-    <section className={styles.panel} aria-labelledby="manual-evidence-title">
+    <section id="anchor-create" className={styles.panel} aria-labelledby="manual-evidence-title">
       <div className={styles.panelHeading}><h3 id="manual-evidence-title">Manual exact-source evidence</h3><span>Human authored</span></div>
       {currentSources.length === 0 ? <EmptyState title="A document version is required" detail="Upload a source before creating an exact manual anchor."/> : <form className={styles.actionForm} onSubmit={(event) => {
         event.preventDefault();
@@ -996,7 +1029,7 @@ function ManualEvidenceControls({ matter, documents, packages, mutationKey, onCr
         <label className={styles.field}><span>Bounded source excerpt (optional)</span><textarea name="excerpt" maxLength={500}/></label>
         <button className={styles.secondaryButton} disabled={mutationKey !== null}>{mutationKey === "anchor-create" ? "Recording anchor…" : "Create source anchor for review"}</button>
       </form>}
-      {acceptedAnchors.length > 0 && <form className={styles.actionForm} onSubmit={(event) => {
+      {acceptedAnchors.length > 0 && <form id="assertion-create" className={styles.actionForm} onSubmit={(event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         onCreateAssertion({
@@ -1041,8 +1074,8 @@ function ManualEvidenceControls({ matter, documents, packages, mutationKey, onCr
   </div>;
 }
 
-function AssertionCard({ assertion, anchors, view, canReview, busy, onReview }: { assertion: AssertionItem; anchors: Map<string, SourceAnchorItem>; view: MatterView; canReview: boolean; busy: boolean; onReview: (assertion: AssertionItem, decision: "accepted" | "rejected") => void }) {
-  return <article className={styles.assertionCard}><div className={styles.recordHeading}><div><span className={styles.stateToken}>{sentenceLabel(assertion.status)}</span><h4>{sentenceLabel(assertion.type)}</h4></div><span>PROFESSIONAL RECORD</span></div><p>{assertion.statement}</p><div className={styles.citationLinks}>{assertion.sourceAnchorIds.length === 0 ? <span>No source anchor recorded</span> : assertion.sourceAnchorIds.map((id) => { const anchor = anchors.get(id); return <a key={id} href={"#source-" + id} aria-label={"Open source citation " + sourceCitationLabel(anchor, id)}>{sourceCitationLabel(anchor, id)}</a>; })}</div>{assertion.status === "needs_review" && canReview && <div className={styles.inlineActions}><button type="button" className={styles.primaryButton} disabled={busy} onClick={() => onReview(assertion, "accepted")}>{busy ? "Recording…" : "Accept assertion"}</button><button type="button" className={styles.dangerButton} disabled={busy} onClick={() => onReview(assertion, "rejected")}>Reject assertion</button></div>}{view === "developer" && <p className={styles.rawId}>Assertion <code>{assertion.id}</code> · reviewed by <code>{assertion.reviewedBy ?? "not returned"}</code> at {formatMatterDate(assertion.reviewedAt)}</p>}</article>;
+function AssertionCard({ assertion, anchors, view, canReview, busy, onReview, onSupersede }: { assertion: AssertionItem; anchors: Map<string, SourceAnchorItem>; view: MatterView; canReview: boolean; busy: boolean; onReview: (assertion: AssertionItem, decision: "accepted" | "rejected") => void; onSupersede: (assertion: AssertionItem) => void }) {
+  return <article id={"assertion-" + assertion.id} className={styles.assertionCard}><div className={styles.recordHeading}><div><span className={styles.stateToken}>{sentenceLabel(assertion.status)}</span><h4>{sentenceLabel(assertion.type)}</h4></div><span>PROFESSIONAL RECORD</span></div><p>{assertion.statement}</p><div className={styles.citationLinks}>{assertion.sourceAnchorIds.length === 0 ? <span>No source anchor recorded</span> : assertion.sourceAnchorIds.map((id) => { const anchor = anchors.get(id); return <a key={id} href={"#source-" + id} aria-label={"Open source citation " + sourceCitationLabel(anchor, id)}>{sourceCitationLabel(anchor, id)}</a>; })}</div>{assertion.status === "needs_review" && canReview && <div className={styles.inlineActions}><button type="button" className={styles.primaryButton} disabled={busy} onClick={() => onReview(assertion, "accepted")}>{busy ? "Recording…" : "Accept assertion"}</button><button type="button" className={styles.dangerButton} disabled={busy} onClick={() => onReview(assertion, "rejected")}>Reject assertion</button></div>}{assertion.status === "accepted" && canReview && <details className={styles.metadataEditor}><summary>Correct or supersede this assertion</summary><p>Superseding retires this assertion while preserving its history. It does not prove that a contradiction is resolved or create replacement evidence.</p><button type="button" className={styles.secondaryButton} disabled={busy} onClick={() => { if (window.confirm("Retire this accepted assertion as superseded? Its evidence and review history will be preserved; create a reviewed replacement separately.")) onSupersede(assertion); }}>Mark assertion as superseded</button><button type="button" className={styles.linkButton} onClick={() => { if (!focusActionTarget("assertion-create")) focusActionTarget("anchor-create"); }}>Create replacement evidence →</button></details>}{view === "developer" && <p className={styles.rawId}>Assertion <code>{assertion.id}</code> · reviewed by <code>{assertion.reviewedBy ?? "not returned"}</code> at {formatMatterDate(assertion.reviewedAt)}</p>}</article>;
 }
 
 function ProposalCard({ proposal, anchors, canReview, view, busy, onReview }: { proposal: ProposalItem; anchors: Map<string, SourceAnchorItem>; canReview: boolean; view: MatterView; busy: boolean; onReview: (proposal: ProposalItem, action: "accept" | "edit_and_accept" | "reject", editedValue: string | null, note: string) => void }) {
@@ -1052,7 +1085,7 @@ function ProposalCard({ proposal, anchors, canReview, view, busy, onReview }: { 
   const sourceAnchors = proposal.sourceAnchorIds.map((id) => anchors.get(id)).filter((anchor): anchor is SourceAnchorItem => Boolean(anchor));
   const grounded = sourceAnchors.length > 0;
   const pending = proposal.reviewState === "pending";
-  return <article className={styles.proposalCard} aria-label={"AI proposal: " + sentenceLabel(proposal.type)}>
+  return <article id={"proposal-" + proposal.id} className={styles.proposalCard} aria-label={"AI proposal: " + sentenceLabel(proposal.type)}>
     <div className={styles.proposalHeader}><div><span>AI-PROPOSED · {sentenceLabel(proposal.reviewState)}</span><h4>{sentenceLabel(proposal.type)}</h4></div>{proposal.confidenceCategory && <b>Model confidence: {sentenceLabel(proposal.confidenceCategory)}{proposal.confidenceScore === null ? "" : " · " + Math.round(proposal.confidenceScore * 100) + "%"}</b>}</div>
     <pre className={styles.proposedValue}>{proposal.proposedValue}</pre>
     <div className={styles.proposalSources}><strong>Inspectable sources</strong>{sourceAnchors.length === 0 ? <p className={styles.blockingText}>No usable source anchor was returned. Acceptance controls are disabled.</p> : sourceAnchors.map((anchor) => <a key={anchor.id} href={"#source-" + anchor.id} aria-label={"Inspect AI proposal source " + sourceCitationLabel(anchor, anchor.id)}>{sourceCitationLabel(anchor, anchor.id)}{anchor.excerpt ? <q>{anchor.excerpt}</q> : null}</a>)}</div>
@@ -1067,18 +1100,20 @@ function ProposalCard({ proposal, anchors, canReview, view, busy, onReview }: { 
   </article>;
 }
 
-function SourceCitation({ anchor, view, canReview, busy, onReview }: { anchor: SourceAnchorItem; view: MatterView; canReview: boolean; busy: boolean; onReview: (anchor: SourceAnchorItem, decision: "accepted" | "rejected") => void }) {
-  return <article className={styles.sourceCitation}><div><strong>{anchor.documentTitle}</strong><span>{anchor.versionOrdinal ? "Version " + anchor.versionOrdinal + " · " : ""}{anchor.pageNumber ? "Page " + anchor.pageNumber : anchor.heading ?? anchor.section ?? "Document-level anchor"}{anchor.paragraph ? " · paragraph " + anchor.paragraph : ""}</span></div>{anchor.excerpt && <blockquote>{anchor.excerpt}</blockquote>}<span className={styles.stateToken}>Review: {sentenceLabel(anchor.reviewState)}</span>{anchor.reviewState === "pending" && canReview && <div className={styles.inlineActions}><button type="button" className={styles.primaryButton} disabled={busy} onClick={() => onReview(anchor, "accepted")}>{busy ? "Recording…" : "Accept anchor"}</button><button type="button" className={styles.dangerButton} disabled={busy} onClick={() => onReview(anchor, "rejected")}>Reject anchor</button></div>}{view === "developer" && <dl><div><dt>Anchor ID</dt><dd><code>{anchor.id}</code></dd></div><div><dt>Version ID</dt><dd><code>{anchor.documentVersionId}</code></dd></div><div><dt>Checksum</dt><dd><code>{anchor.checksum ?? "not returned"}</code></dd></div></dl>}</article>;
+function SourceCitation({ anchor, view, canReview, busy, onReview, stale = false }: { anchor: SourceAnchorItem; view: MatterView; canReview: boolean; busy: boolean; onReview: (anchor: SourceAnchorItem, decision: "accepted" | "rejected") => void; stale?: boolean }) {
+  return <article className={styles.sourceCitation}><div><strong>{anchor.documentTitle}</strong><span>{anchor.versionOrdinal ? "Version " + anchor.versionOrdinal + " · " : ""}{anchor.pageNumber ? "Page " + anchor.pageNumber : anchor.heading ?? anchor.section ?? "Document-level anchor"}{anchor.paragraph ? " · paragraph " + anchor.paragraph : ""}</span></div>{anchor.excerpt && <blockquote>{anchor.excerpt}</blockquote>}<span className={styles.stateToken}>Review: {sentenceLabel(anchor.reviewState)}</span>{stale && <div className={styles.consequenceBox}><strong>A newer source version exists</strong><p>This accepted historical citation remains part of the record. Add and review a citation to the current source; retiring this historical acceptance is not supported by the current workflow.</p><button type="button" className={styles.secondaryButton} onClick={() => focusActionTarget("anchor-create")}>Add a current-source citation →</button></div>}{anchor.reviewState === "pending" && canReview && <div className={styles.inlineActions}><button type="button" className={styles.primaryButton} disabled={busy} onClick={() => onReview(anchor, "accepted")}>{busy ? "Recording…" : "Accept anchor"}</button><button type="button" className={styles.dangerButton} disabled={busy} onClick={() => onReview(anchor, "rejected")}>Reject anchor</button></div>}{view === "developer" && <dl><div><dt>Anchor ID</dt><dd><code>{anchor.id}</code></dd></div><div><dt>Version ID</dt><dd><code>{anchor.documentVersionId}</code></dd></div><div><dt>Checksum</dt><dd><code>{anchor.checksum ?? "not returned"}</code></dd></div></dl>}</article>;
 }
 
-function DecisionPackagesSection({ matter, packages, snapshots, issue, view, mutationKey, onLink, onSnapshot }: { matter: MatterDetail; packages: DecisionPackageItem[]; snapshots: SnapshotItem[]; issue?: ApiIssue; view: MatterView; mutationKey: string | null; onLink: (fields: Record<string, unknown>) => void; onSnapshot: (fields: Record<string, unknown>) => void }) {
+export function DecisionPackagesSection({ onNavigate, focusedPackageId, matter, packages, snapshots, issue, view, mutationKey, onLink, onSnapshot }: { matter: MatterDetail; packages: DecisionPackageItem[]; snapshots: SnapshotItem[]; issue?: ApiIssue; view: MatterView; mutationKey: string | null; onLink: (fields: Record<string, unknown>) => void; onSnapshot: (fields: Record<string, unknown>) => void; focusedPackageId?: string; onNavigate?: (target: MatterActionTarget) => void }) {
+  const selectedPackage = packages.find(item => item.id === focusedPackageId);
   return <div className={styles.sectionStack}>
     <SectionHeading eyebrow="REASONING & DECISIONS" title="Decision package" description="Connect the decision map to a verified version of the evidence. Original documents and earlier versions remain available."/>
     {issue && <IssueState issue={issue} compact/>}
     <div className={styles.twoColumn}>
-      <section className={styles.panel}><div className={styles.panelHeading}><h3>Linked packages</h3><span>{packages.length} exact version{packages.length === 1 ? "" : "s"}</span></div>{packages.length === 0 ? <EmptyState title="No decision package linked" detail="Link an exact existing package version or create one from a governed snapshot."/> : <div className={styles.recordList}>{packages.map((item) => <article key={item.id} className={styles.packageCard}><div className={styles.recordHeading}><div><span className={styles.stateToken}>{sentenceLabel(item.state)}</span><h4>{item.packageId}</h4><p>Version {item.packageVersion}</p></div><b>{sentenceLabel(item.graphValidationStatus)} graph</b></div><dl className={styles.factList}><div><dt>Approval</dt><dd>{sentenceLabel(item.approvalState)}</dd></div><div><dt>Source revision</dt><dd>{item.sourceRevision ?? "Not returned"}</dd></div><div><dt>Updated</dt><dd>{formatMatterDate(item.updatedAt)}</dd></div>{view === "developer" && <><div><dt>Reference ID</dt><dd><code>{item.id}</code></dd></div><div><dt>Package fingerprint</dt><dd><code>{item.packageFingerprint ?? "not returned"}</code></dd></div><div><dt>Graph digest</dt><dd><code>{item.graphDigest ?? "not returned"}</code></dd></div></>}</dl></article>)}</div>}</section>
-      <aside className={styles.panel}><div className={styles.panelHeading}><h3>Package actions</h3><span>Revision {matter.revision}</span></div>{!matter.permissions.canWrite ? <NoPermission detail="Your role can inspect packages but cannot link or snapshot them."/> : <>
-        <form className={styles.actionForm} onSubmit={(event) => {
+      <section className={styles.panel}><div className={styles.panelHeading}><h3>Linked packages</h3><span>{packages.length} exact version{packages.length === 1 ? "" : "s"}</span></div>{packages.length === 0 ? <EmptyState title="No decision package linked" detail="Link an exact existing package version or create one from a governed snapshot."/> : <div className={styles.recordList}>{packages.map((item) => <article id={"package-" + item.id} key={item.id} className={styles.packageCard}><div className={styles.recordHeading}><div><span className={styles.stateToken}>{sentenceLabel(item.state)}</span><h4>{item.packageId}</h4><p>Version {item.packageVersion}</p></div><b>{sentenceLabel(item.graphValidationStatus)} graph</b></div><dl className={styles.factList}><div><dt>Approval</dt><dd>{sentenceLabel(item.approvalState)}</dd></div><div><dt>Source revision</dt><dd>{item.sourceRevision ?? "Not returned"}</dd></div><div><dt>Updated</dt><dd>{formatMatterDate(item.updatedAt)}</dd></div>{view === "developer" && <><div><dt>Reference ID</dt><dd><code>{item.id}</code></dd></div><div><dt>Package fingerprint</dt><dd><code>{item.packageFingerprint ?? "not returned"}</code></dd></div><div><dt>Graph digest</dt><dd><code>{item.graphDigest ?? "not returned"}</code></dd></div></>}</dl></article>)}</div>}</section>
+      <aside id="package-actions" className={styles.panel}><div className={styles.panelHeading}><h3>Package actions</h3><span>Revision {matter.revision}</span></div>{!matter.permissions.canWrite && !matter.permissions.canGenerateOutput ? <><div id="package-link" style={{ marginBottom: "1rem" }}><NoPermission detail="Ask a case contributor or owner to link the exact decision package."/></div><div id="snapshot-create"><NoPermission detail="Ask a case owner, contributor or reviewer to save an evidence snapshot."/></div></> : <>
+        {!matter.permissions.canWrite && <div id="package-link" style={{ marginBottom: "1rem" }}><NoPermission detail="Ask a case contributor or owner to link the exact decision package. Your reviewer role can save a snapshot below."/></div>}
+        {matter.permissions.canWrite && <form key={focusedPackageId ?? "new-package"} id="package-link" className={styles.actionForm} onSubmit={(event) => {
           event.preventDefault();
           const form = new FormData(event.currentTarget);
           const graphProposalId = String(form.get("graphProposalId") ?? "").trim();
@@ -1095,25 +1130,33 @@ function DecisionPackagesSection({ matter, packages, snapshots, issue, view, mut
           if (graphProposalId) fields.graphProposalId = graphProposalId;
           onLink(fields);
         }}>
-          <h4>Link an exact existing package</h4>
-          <label className={styles.field}><span>Package ID</span><input name="packageId" required maxLength={200}/></label>
-          <label className={styles.field}><span>Exact version</span><input name="packageVersion" required maxLength={80}/></label>
-          <label className={styles.field}><span>Package fingerprint</span><input name="packageFingerprint" required spellCheck={false} maxLength={100}/></label>
+          <h4>Link an exact existing package</h4>{focusedPackageId && !selectedPackage && <p role="alert">The requested package is not in the loaded case. Refresh the case before linking a replacement.</p>}{selectedPackage && <p>Reviewing {selectedPackage.packageId} · version {selectedPackage.packageVersion}. Confirm the exact tested version and receipts below.</p>}
+          <label className={styles.field}><span>Package ID</span><input name="packageId" defaultValue={selectedPackage?.packageId} required maxLength={200}/></label>
+          <label className={styles.field}><span>Exact version</span><input name="packageVersion" defaultValue={selectedPackage?.packageVersion} required maxLength={80}/></label>
+          <label className={styles.field}><span>Package fingerprint</span><input name="packageFingerprint" defaultValue={selectedPackage?.packageFingerprint ?? ""} required spellCheck={false} maxLength={100}/></label>
           <label className={styles.field}><span>Accepted graph proposal ID (optional)</span><input name="graphProposalId" spellCheck={false} maxLength={200}/></label>
           <label className={styles.field}><span>Completed simulation receipt IDs (optional)</span><textarea name="simulationReceiptIds" rows={3} placeholder="One UUID per line or comma-separated" spellCheck={false}/></label>
           <div className={styles.consequenceBox}><strong>Exact package proof</strong><p>The server revalidates the published graph, accepted proposal diff, lineage, and every supplied v61 simulation receipt before linking this version.</p></div>
           <button className={styles.primaryButton} disabled={mutationKey !== null}>{mutationKey === "package-link" ? "Linking…" : "Link exact package"}</button>
-        </form>
-        <form className={styles.actionForm} onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); onSnapshot({ locale: String(form.get("locale") ?? "en"), audience: "internal", redactionProfileId: "pilot-default" }); }}><h4>Save an evidence snapshot</h4><label className={styles.field}><span>Locale</span><select name="locale" defaultValue="en"><option value="en">English</option><option value="ru">Русский</option></select></label><div className={styles.consequenceBox}><strong>Internal-only pilot boundary</strong><p>Snapshots use the fixed pilot-default profile. Client-facing exports remain unavailable until deterministic, versioned redaction is implemented.</p></div><button className={styles.secondaryButton} disabled={mutationKey !== null}>{mutationKey === "snapshot-create" ? "Freezing snapshot…" : "Create snapshot from revision " + matter.revision}</button></form>
+        </form>}
+        {matter.permissions.canGenerateOutput && <form id="snapshot-create" className={styles.actionForm} onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); onSnapshot({ locale: String(form.get("locale") ?? "en"), audience: "internal", redactionProfileId: "pilot-default" }); }}><h4>Save an evidence snapshot</h4><label className={styles.field}><span>Locale</span><select name="locale" defaultValue="en"><option value="en">English</option><option value="ru">Русский</option></select></label><div className={styles.consequenceBox}><strong>Internal-only pilot boundary</strong><p>Snapshots use the fixed pilot-default profile. Client-facing exports remain unavailable until deterministic, versioned redaction is implemented.</p></div><button className={styles.secondaryButton} disabled={mutationKey !== null}>{mutationKey === "snapshot-create" ? "Freezing snapshot…" : "Create snapshot from revision " + matter.revision}</button></form>}
       </>}</aside>
     </div>
+    {onNavigate && snapshots.some(snapshot => snapshot.sealed && snapshot.dossierRevision === matter.revision) && <ActionTile title="Generate report from this snapshot" detail="A sealed snapshot of the current case revision is available." next="Open report" onClick={() => onNavigate({ destination: "outputs", id: "report-generate" })}/>}
     <section className={styles.panel}><div className={styles.panelHeading}><h3>Snapshot register</h3><span>{snapshots.length} immutable manifest{snapshots.length === 1 ? "" : "s"}</span></div>{snapshots.length === 0 ? <EmptyState title="No snapshot exists" detail="Governed outputs require an exact immutable dossier snapshot."/> : <div className={styles.snapshotGrid}>{snapshots.map((snapshot) => <article key={snapshot.id}><strong>Revision {snapshot.dossierRevision ?? "?"} · {statusLabel(snapshot.status)}</strong><span>{sentenceLabel(snapshot.audience)} · {snapshot.locale} · {sentenceLabel(snapshot.classification)}</span><span>Created {formatMatterDate(snapshot.createdAt)}</span>{view === "developer" && <><code>{snapshot.id}</code><code>{snapshot.manifestDigest ?? "manifest digest not returned"}</code></>}</article>)}</div>}</section>
   </div>;
 }
 
-export function RequestsSection({ matter, documents, requests, deadlines, issue, view, mutationKey, onCreate, onSatisfy }: { matter: MatterDetail; documents: DocumentItem[]; requests: RequestItem[]; deadlines: DeadlineItem[]; issue?: ApiIssue; view: MatterView; mutationKey: string | null; onCreate: (fields: Record<string, unknown>) => void; onSatisfy: (fields: Record<string, unknown>) => void }) {
+export function RequestsSection({ matter, documents, requests, deadlines, issue, view, mutationKey, onCreate, onSatisfy, focusedRequestId, onNavigate, onUpdateDeadline }: { matter: MatterDetail; documents: DocumentItem[]; requests: RequestItem[]; deadlines: DeadlineItem[]; issue?: ApiIssue; view: MatterView; mutationKey: string | null; onCreate: (fields: Record<string, unknown>) => void; onSatisfy: (fields: Record<string, unknown>) => void; focusedRequestId?: string; onNavigate?: (target: MatterActionTarget) => void; onUpdateDeadline?: (fields: Record<string, unknown>) => void }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
+  const [deadlineReview, setDeadlineReview] = useState<DeadlineItem | null>(null);
+  const [selectedRequestId, setSelectedRequestId] = useState(focusedRequestId ?? "");
+  const selectedRequest = requests.find(request => request.id === selectedRequestId);
+  function openRequest(id: string) {
+    setSelectedRequestId(id);
+    requestAnimationFrame(() => focusActionTarget("request-response"));
+  }
   const visibleRequests = requests.filter(request => {
     const matchesStatus = status === "all" || (status === "overdue" ? isOverdue(request.dueAt, request.status) : request.status === status);
     const ownerName = request.requestedFrom ?? "";
@@ -1129,12 +1172,12 @@ export function RequestsSection({ matter, documents, requests, deadlines, issue,
     </div>
     {requests.length > 0 && visibleRequests.length === 0 && <EmptyState title="No matching tasks" detail="Try another owner, question or status filter."/>}
     <div className={styles.twoColumn}>
-      <section className={styles.panel}><div className={styles.panelHeading}><h3>Information requests</h3><span>{requests.filter((item) => item.status === "open").length} open</span></div>{requests.length === 0 ? <EmptyState title="No information requests" detail="No missing-information workflow has been recorded."/> : <div className={styles.requestList}>{visibleRequests.map((request) => { const overdue = isOverdue(request.dueAt, request.status); return <article key={request.id} className={styles.requestCard} data-overdue={overdue || undefined}><div className={styles.recordHeading}><span className={styles.stateToken}>{overdue ? "OVERDUE · OPEN" : sentenceLabel(request.status)}</span><b>{sentenceLabel(request.priority)} priority</b></div><h4>{request.question}</h4><p>{request.reason}</p><dl><div><dt>Responsible</dt><dd>{request.requestedFrom ?? "Not assigned"}</dd></div><div><dt>Due</dt><dd>{formatMatterDate(request.dueAt, "en-GB", request.timezone)}{request.timezone ? " · " + request.timezone : ""}</dd></div><div><dt>Decision readiness</dt><dd>{view === "developer" ? (request.readinessReasonCode ?? "Not returned") : request.status === "open" ? "Awaiting information" : request.status === "received" ? "Information received" : sentenceLabel(request.status)}</dd></div>{view === "developer" && <div><dt>Request ID</dt><dd><code>{request.id}</code></dd></div>}</dl></article>; })}</div>}</section>
-      <aside className={styles.panel}><div className={styles.panelHeading}><h3>Request missing information</h3><span>Revision {matter.revision}</span></div>{!matter.permissions.canWrite ? <NoPermission detail="Your role may inspect requests but cannot create one."/> : <form className={styles.actionForm} onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); onCreate({ question: String(form.get("question") ?? "").trim(), reason: String(form.get("reason") ?? "").trim(), priority: String(form.get("priority") ?? "normal"), requestedFromParticipantId: String(form.get("requestedFromParticipantId") ?? "") || null, dueAt: String(form.get("dueAt") ?? "") || null, timezone: String(form.get("timezone") ?? "Europe/Paris"), readinessReasonCode: "INFORMATION_REQUEST_OPEN" }); }}><label className={styles.field}><span>Requested item or question</span><textarea name="question" required maxLength={1_000}/></label><label className={styles.field}><span>Why it is needed</span><textarea name="reason" required maxLength={1_000}/></label><label className={styles.field}><span>Responsible person</span><select name="requestedFromParticipantId"><option value="">Assign later</option>{matter.participants.filter(person => person.status === "active").map(person => <option key={person.id} value={person.id}>{person.displayName}</option>)}</select></label><label className={styles.field}><span>Priority</span><select name="priority" defaultValue="normal"><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></label><label className={styles.field}><span>Due date and time</span><input type="datetime-local" name="dueAt"/></label><label className={styles.field}><span>Timezone</span><input name="timezone" defaultValue="Europe/Paris" maxLength={80}/></label><button className={styles.primaryButton} disabled={mutationKey !== null}>{mutationKey === "request-create" ? "Recording request…" : "Create information request"}</button></form>}</aside>
+      <section className={styles.panel}><div className={styles.panelHeading}><h3>Information requests</h3><span>{requests.filter((item) => item.status === "open").length} open</span></div>{requests.length === 0 ? <EmptyState title="No information requests" detail="No missing-information workflow has been recorded."/> : <div className={styles.requestList}>{visibleRequests.map((request) => { const overdue = isOverdue(request.dueAt, request.status); return <article id={"request-" + request.id} key={request.id} className={styles.requestCard} data-overdue={overdue || undefined}><div className={styles.recordHeading}><span className={styles.stateToken}>{overdue ? "OVERDUE · OPEN" : sentenceLabel(request.status)}</span><b>{sentenceLabel(request.priority)} priority</b></div><h4>{request.question}</h4><p>{request.reason}</p><dl><div><dt>Responsible</dt><dd>{request.requestedFrom ?? "Not assigned"}</dd></div><div><dt>Due</dt><dd>{formatMatterDate(request.dueAt, "en-GB", request.timezone)}{request.timezone ? " · " + request.timezone : ""}</dd></div><div><dt>Decision readiness</dt><dd>{view === "developer" ? (request.readinessReasonCode ?? "Not returned") : request.status === "open" ? "Awaiting information" : request.status === "received" ? "Information received" : sentenceLabel(request.status)}</dd></div>{view === "developer" && <div><dt>Request ID</dt><dd><code>{request.id}</code></dd></div>}</dl>{request.status === "open" && <button type="button" className={styles.secondaryButton} onClick={() => openRequest(request.id)}>Provide requested information →</button>}{request.status === "received" && <p className={styles.successBanner}>Information received{request.satisfyingDocumentId ? ": " + (documents.find(document => document.id === request.satisfyingDocumentId)?.title ?? "Linked case document") : request.satisfyingEvidenceLinkId ? " · linked case evidence" : ""}.{request.satisfyingDocumentId && onNavigate && <button type="button" className={styles.linkButton} onClick={() => onNavigate({ destination: "documents", id: "document-" + request.satisfyingDocumentId })}>Review the linked source →</button>}</p>}</article>; })}</div>}</section>
+      <aside id="request-create" className={styles.panel}><div className={styles.panelHeading}><h3>Request missing information</h3><span>Revision {matter.revision}</span></div>{!matter.permissions.canWrite ? <NoPermission detail="Your role may inspect requests but cannot create one."/> : <form className={styles.actionForm} onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); onCreate({ question: String(form.get("question") ?? "").trim(), reason: String(form.get("reason") ?? "").trim(), priority: String(form.get("priority") ?? "normal"), requestedFromParticipantId: String(form.get("requestedFromParticipantId") ?? "") || null, dueAt: String(form.get("dueAt") ?? "") || null, timezone: String(form.get("timezone") ?? "Europe/Paris"), readinessReasonCode: "INFORMATION_REQUEST_OPEN" }); }}><label className={styles.field}><span>Requested item or question</span><textarea key={deadlineReview?.id ?? "new-request"} name="question" defaultValue={deadlineReview ? `Review deadline: ${deadlineReview.title} (${formatMatterDate(deadlineReview.dueAt, "en-GB", deadlineReview.timezone)})` : ""} required maxLength={1_000}/></label><label className={styles.field}><span>Why it is needed</span><textarea key={deadlineReview?.id ?? "new-request-reason"} name="reason" defaultValue={deadlineReview ? "Confirm the required response and document the outcome. This request does not close the deadline record." : ""} required maxLength={1_000}/></label><label className={styles.field}><span>Responsible person</span><select name="requestedFromParticipantId"><option value="">Assign later</option>{matter.participants.filter(person => person.status === "active").map(person => <option key={person.id} value={person.id}>{person.displayName}</option>)}</select></label><label className={styles.field}><span>Priority</span><select name="priority" defaultValue="normal"><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></label><label className={styles.field}><span>Due date and time</span><input type="datetime-local" name="dueAt"/></label><label className={styles.field}><span>Timezone</span><input name="timezone" defaultValue="Europe/Paris" maxLength={80}/></label><button className={styles.primaryButton} disabled={mutationKey !== null}>{mutationKey === "request-create" ? "Recording request…" : "Create information request"}</button></form>}</aside>
     </div>
-    <section className={styles.panel} aria-labelledby="request-satisfaction-title">
-      <div className={styles.panelHeading}><h3 id="request-satisfaction-title">Satisfy a request with a Matter source</h3><span>Exact logical document link</span></div>
-      {!matter.permissions.canWrite ? <NoPermission detail="Your role cannot change an information-request status."/> : requests.every((item) => item.status !== "open") || documents.length === 0 ? <EmptyState title="An open request and document are required" detail="Upload the satisfying source and keep the request open until the exact link can be recorded."/> : <form className={styles.actionForm} onSubmit={(event) => {
+    <section id="request-response" className={styles.panel} aria-labelledby="request-satisfaction-title">
+      {focusedRequestId && !requests.some(request => request.id === focusedRequestId) && <p role="alert">This request is no longer in the loaded case. Refresh the case or ask its owner for access; choose another request only if that is your intent.</p>}<div className={styles.panelHeading}><h3 id="request-satisfaction-title">Satisfy a request with a Matter source</h3><span>Exact logical document link</span></div>
+      {!matter.permissions.canWrite ? <NoPermission detail="Your role cannot change an information-request status."/> : requests.every((item) => item.status !== "open") || documents.length === 0 ? <><EmptyState title="An open request and document are required" detail="Upload the satisfying source and keep the request open until the exact link can be recorded."/>{documents.length === 0 && onNavigate && <button type="button" className={styles.secondaryButton} onClick={() => onNavigate({ destination: "documents", id: "document-upload", requestId: selectedRequestId || focusedRequestId })}>Add the requested source document →</button>}</> : <form key={`${selectedRequestId}:${selectedRequest?.status}`} className={styles.actionForm} onSubmit={(event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         onSatisfy({
@@ -1142,24 +1185,35 @@ export function RequestsSection({ matter, documents, requests, deadlines, issue,
           satisfyingDocumentId: String(form.get("satisfyingDocumentId") ?? ""),
         });
       }}>
-        <label className={styles.field}><span>Open information request</span><select name="requestId" required>{requests.filter((item) => item.status === "open").map((item) => <option key={item.id} value={item.id}>{item.question}</option>)}</select></label>
-        <label className={styles.field}><span>Satisfying logical document</span><select name="satisfyingDocumentId" required>{documents.map((document) => <option key={document.id} value={document.id}>{document.title}</option>)}</select></label>
+        <label className={styles.field}><span>Open information request</span><select name="requestId" required value={selectedRequest?.status === "open" ? selectedRequestId : ""} onChange={event => setSelectedRequestId(event.target.value)}><option value="">Choose the request to satisfy</option>{requests.filter((item) => item.status === "open").map((item) => <option key={item.id} value={item.id}>{item.question}</option>)}</select></label>
+        <label className={styles.field}><span>Satisfying logical document</span><select name="satisfyingDocumentId" required defaultValue=""><option value="">Choose the exact source document</option>{documents.map((document) => <option key={document.id} value={document.id}>{document.title}</option>)}</select></label>
         <div className={styles.consequenceBox}><strong>Request receipt</strong><p>The link records which governed Matter document satisfied the request; it does not copy document text into activity or list responses.</p></div>
-        <button className={styles.primaryButton} disabled={mutationKey !== null}>{mutationKey === "request-satisfy" ? "Recording source link…" : "Mark request received with source"}</button>
+        <button className={styles.primaryButton} disabled={mutationKey !== null || selectedRequest?.status !== "open"}>{mutationKey === "request-satisfy" ? "Recording source link…" : "Confirm receipt with this source"}</button>
       </form>}
     </section>
-    <section className={styles.panel}><div className={styles.panelHeading}><h3>Deadline register</h3><span>{deadlines.length} real or projected date{deadlines.length === 1 ? "" : "s"}</span></div>{deadlines.length === 0 ? <EmptyState title="No deadline references returned" detail="Workspace deadlines and projected simulation deadlines remain distinct."/> : <div className={styles.deadlineGrid}>{deadlines.map((deadline) => <article key={deadline.id}><span className={styles.stateToken}>{deadline.critical ? "CRITICAL · " : ""}{sentenceLabel(deadline.status)}</span><h4>{deadline.title}</h4><p>{formatMatterDate(deadline.dueAt, "en-GB", deadline.timezone)} · {sentenceLabel(deadline.kind)}</p>{view === "developer" && <code>{deadline.id}</code>}</article>)}</div>}</section>
+    <section id="key-deadline-editor" className={styles.panel}>
+      <h3>Set the key case deadline</h3><p>Record the next critical date for this case. Existing deadline records and simulation dates stay separate.</p>
+      {matter.permissions.canWrite && onUpdateDeadline ? <form className={styles.actionForm} onSubmit={event => {
+        event.preventDefault(); const fields = new FormData(event.currentTarget); const date = new Date(String(fields.get("keyDeadlineAt")));
+        if (!Number.isNaN(date.valueOf())) onUpdateDeadline({ keyDeadlineAt: date.toISOString(), keyDeadlineTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+      }}>
+        <label className={styles.field}><span>Key deadline — your local date and time</span><input name="keyDeadlineAt" type="datetime-local" required/></label>
+        <p>Current: {formatMatterDate(matter.keyDeadlineAt, "en-GB", matter.keyDeadlineTimezone)}. The new date is saved with your browser’s timezone.</p>
+        <button className={styles.primaryButton} disabled={mutationKey !== null}>{mutationKey === "deadline-update" ? "Saving deadline…" : "Save key deadline"}</button>
+      </form> : <NoPermission detail="A case contributor or owner can set the key deadline."/>}
+    </section>
+    <section id="deadline-register" className={styles.panel}><div className={styles.panelHeading}><h3>Deadline register</h3><span>{deadlines.length} real or projected date{deadlines.length === 1 ? "" : "s"}</span></div>{deadlines.length === 0 ? <EmptyState title="No deadline references returned" detail="Workspace deadlines and projected simulation deadlines remain distinct."/> : <div className={styles.deadlineGrid}>{deadlines.map((deadline) => <article id={"deadline-" + deadline.id} key={deadline.id}><span className={styles.stateToken}>{deadline.critical ? "CRITICAL · " : ""}{sentenceLabel(deadline.status)}</span><h4>{deadline.title}</h4><p>{formatMatterDate(deadline.dueAt, "en-GB", deadline.timezone)} · {sentenceLabel(deadline.kind)}</p>{view === "developer" && <code>{deadline.id}</code>}{deadline.status === "open" && <><p>Deadline dispositions are not editable in this release. Record a review request to track the required response; it will not mark this deadline complete.</p><button type="button" className={styles.secondaryButton} onClick={() => { setDeadlineReview(deadline); requestAnimationFrame(() => focusActionTarget("request-create")); }}>Request a deadline review →</button></>}</article>)}</div>}</section>
   </div>;
 }
 
-function OutputsSection({ matter, outputs, snapshots, issue, view, mutationKey, onGenerate, onApprove }: { matter: MatterDetail; outputs: OutputItem[]; snapshots: SnapshotItem[]; issue?: ApiIssue; view: MatterView; mutationKey: string | null; onGenerate: (fields: Record<string, unknown>) => void; onApprove: (output: OutputItem) => void }) {
-  const currentSnapshots = snapshots.slice().sort((left, right) => (right.dossierRevision ?? 0) - (left.dossierRevision ?? 0));
+export function OutputsSection({ onNavigate, matter, outputs, snapshots, issue, view, mutationKey, onGenerate, onApprove }: { matter: MatterDetail; outputs: OutputItem[]; snapshots: SnapshotItem[]; issue?: ApiIssue; view: MatterView; mutationKey: string | null; onGenerate: (fields: Record<string, unknown>) => void; onApprove: (output: OutputItem) => void; onNavigate: (target: MatterActionTarget) => void }) {
+  const currentSnapshots = snapshots.filter(snapshot => snapshot.sealed === true && snapshot.dossierRevision === matter.revision && snapshot.manifestDigest).sort((left, right) => (right.dossierRevision ?? 0) - (left.dossierRevision ?? 0));
   return <div className={styles.sectionStack}>
     <SectionHeading eyebrow="DECISION OUTPUTS" title="Reports" description="Generate a report from a saved evidence snapshot, then request independent approval. You will see when later evidence makes a report out of date."/>
     {issue && <IssueState issue={issue} compact/>}
     <div className={styles.twoColumn}>
-          <section className={styles.panel}><div className={styles.panelHeading}><h3>Output register</h3><span>{outputs.filter((output) => output.state === "current").length} current</span></div>{outputs.length === 0 ? <EmptyState title="No reports yet" detail="Create a snapshot before requesting a report or manifest."/> : <div className={styles.outputList}>{outputs.map((output) => <article key={output.id} className={styles.outputCard}><div className={styles.recordHeading}><div><span className={styles.stateToken}>{sentenceLabel(output.state)}</span><h4>{output.filename}</h4><p>{output.format.toUpperCase()} · created {formatMatterDate(output.createdAt)}</p></div><b>{output.approvedAt ? "APPROVED" : "AWAITING APPROVAL"}</b></div>{output.staleReason && <p className={styles.blockingText}>Stale because: {output.staleReason}</p>}<dl><div><dt>Snapshot</dt><dd>{output.snapshotId}</dd></div><div><dt>Reviewer</dt><dd>{output.reviewerActorId ?? "Not assigned"}</dd></div><div><dt>Approved</dt><dd>{formatMatterDate(output.approvedAt)}</dd></div>{view === "developer" && <><div><dt>Output ID</dt><dd><code>{output.id}</code></dd></div><div><dt>Snapshot digest</dt><dd><code>{output.snapshotDigest ?? "not returned"}</code></dd></div><div><dt>Content SHA-256</dt><dd><code>{output.contentSha256 ?? "not returned"}</code></dd></div></>}</dl><div className={styles.inlineActions}>{output.downloadUrl ? <a className={styles.secondaryButton} href={organizationScopedUrl(output.downloadUrl)} aria-label={"Securely download " + output.filename}>Secure download</a> : <span className={styles.unavailableAction}>No secure download capability returned.</span>}{!output.approvedAt && matter.permissions.canApprove && <button type="button" className={styles.primaryButton} disabled={mutationKey !== null || output.state !== "current"} onClick={() => onApprove(output)}>{mutationKey === "output-approve-" + output.id ? "Approving…" : "Approve current output"}</button>}</div></article>)}</div>}</section>
-      <aside className={styles.panel}><div className={styles.panelHeading}><h3>Create a report</h3><span>From a saved evidence snapshot</span></div>{!matter.permissions.canGenerateOutput ? <NoPermission detail="Your role cannot generate governed outputs."/> : snapshots.length === 0 ? <EmptyState title="Snapshot required" detail="Create an immutable snapshot in Decision packages first."/> : <form className={styles.actionForm} onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); onGenerate({ action: "generate", snapshotId: String(form.get("snapshotId") ?? ""), format: String(form.get("format") ?? "pdf") }); }}><label className={styles.field}><span>Immutable snapshot</span><select name="snapshotId" required>{currentSnapshots.map((snapshot) => <option key={snapshot.id} value={snapshot.id}>Revision {snapshot.dossierRevision ?? "?"} · {formatMatterDate(snapshot.createdAt)}</option>)}</select></label><label className={styles.field}><span>Output format</span><select name="format" defaultValue="pdf"><option value="pdf">PDF report</option><option value="json_manifest">JSON manifest</option><option value="markdown">Markdown</option></select></label><div className={styles.consequenceBox}><strong>What the report includes</strong><p>The selected evidence version, source references, decision history, classification and approval status remain attached to the report.</p></div><button className={styles.primaryButton} disabled={mutationKey !== null}>{mutationKey === "output-generate" ? "Requesting output…" : "Generate report"}</button></form>}</aside>
+          <section className={styles.panel}><div className={styles.panelHeading}><h3>Output register</h3><span>{outputs.filter((output) => output.state === "current").length} current</span></div>{outputs.length === 0 ? <EmptyState title="No reports yet" detail="Create a snapshot before requesting a report or manifest."/> : <div className={styles.outputList}>{outputs.map((output) => <article id={"output-" + output.id} key={output.id} className={styles.outputCard}><div className={styles.recordHeading}><div><span className={styles.stateToken}>{sentenceLabel(output.state)}</span><h4>{output.filename}</h4><p>{output.format.toUpperCase()} · created {formatMatterDate(output.createdAt)}</p></div><b>{output.approvedAt ? "APPROVED" : "AWAITING APPROVAL"}</b></div>{output.staleReason && <p className={styles.blockingText}>Stale because: {output.staleReason}</p>}{output.state !== "current" && <button type="button" className={styles.secondaryButton} onClick={() => onNavigate({ destination: "decision-packages", id: "snapshot-create" })}>Save current evidence and regenerate →</button>}<dl><div><dt>Snapshot</dt><dd>{output.snapshotId}</dd></div><div><dt>Reviewer</dt><dd>{output.reviewerActorId ?? "Not assigned"}</dd></div><div><dt>Approved</dt><dd>{formatMatterDate(output.approvedAt)}</dd></div>{view === "developer" && <><div><dt>Output ID</dt><dd><code>{output.id}</code></dd></div><div><dt>Snapshot digest</dt><dd><code>{output.snapshotDigest ?? "not returned"}</code></dd></div><div><dt>Content SHA-256</dt><dd><code>{output.contentSha256 ?? "not returned"}</code></dd></div></>}</dl><div className={styles.inlineActions}>{output.downloadUrl ? <a className={styles.secondaryButton} href={organizationScopedUrl(output.downloadUrl)} aria-label={"Securely download " + output.filename}>Secure download</a> : <span className={styles.unavailableAction}>No secure download capability returned.</span>}{!output.approvedAt && matter.permissions.canApprove && <button type="button" className={styles.primaryButton} disabled={mutationKey !== null || output.state !== "current"} onClick={() => onApprove(output)}>{mutationKey === "output-approve-" + output.id ? "Approving…" : "Approve current output"}</button>}</div></article>)}</div>}</section>
+      <aside id="report-generate" className={styles.panel}><div className={styles.panelHeading}><h3>Create a report</h3><span>From a saved evidence snapshot</span></div>{!matter.permissions.canGenerateOutput ? <NoPermission detail="Your role cannot generate governed outputs."/> : currentSnapshots.length === 0 ? <ActionTile title="Save evidence for the report" detail="Save the current case revision as a snapshot before generating its report. Older snapshots remain in the register." next="Create snapshot" onClick={() => onNavigate({ destination: "decision-packages", id: "snapshot-create" })}/> : <form className={styles.actionForm} onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); onGenerate({ action: "generate", snapshotId: String(form.get("snapshotId") ?? ""), format: String(form.get("format") ?? "pdf") }); }}><label className={styles.field}><span>Immutable snapshot</span><select name="snapshotId" required>{currentSnapshots.map((snapshot) => <option key={snapshot.id} value={snapshot.id}>Revision {snapshot.dossierRevision ?? "?"} · {formatMatterDate(snapshot.createdAt)}</option>)}</select></label><label className={styles.field}><span>Output format</span><select name="format" defaultValue="pdf"><option value="pdf">PDF report</option><option value="json_manifest">JSON manifest</option><option value="markdown">Markdown</option></select></label><div className={styles.consequenceBox}><strong>What the report includes</strong><p>The selected evidence version, source references, decision history, classification and approval status remain attached to the report.</p></div><button className={styles.primaryButton} disabled={mutationKey !== null}>{mutationKey === "output-generate" ? "Requesting output…" : "Generate report"}</button></form>}</aside>
     </div>
   </div>;
 }

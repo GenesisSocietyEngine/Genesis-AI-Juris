@@ -1150,6 +1150,7 @@ export async function listDossierSnapshots(context: DossierGovernedContext, doss
     const snapshot = await loadSnapshotProjection(context, row);
     snapshots.push({
       ...snapshot,
+      sealed: row.sealed,
       manifest_download_url: manifestDownloadUrl(dossierId, row.id),
     });
   }

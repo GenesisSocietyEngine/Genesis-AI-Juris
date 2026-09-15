@@ -177,6 +177,8 @@ export interface ProposalItem {
 }
 
 export interface RequestItem {
+  satisfyingDocumentId?: string | null;
+  satisfyingEvidenceLinkId?: string | null;
   id: string;
   question: string;
   ownerActorId: string | null;
@@ -216,6 +218,7 @@ export interface DecisionPackageItem {
 
 export interface SnapshotItem {
   id: string;
+  sealed?: boolean;
   dossierRevision: number | null;
   status: string;
   manifestDigest: string | null;
@@ -569,6 +572,8 @@ export function normalizeRequests(payload: unknown): { requests: RequestItem[]; 
     timezone: nullableText(request, ["timezone"]),
     status: textValue(request, ["status"], "open"),
     reason: boundedText(textValue(request, ["reason"], "Needed for professional review."), 800),
+    satisfyingDocumentId: nullableText(request, ["satisfying_document_id", "satisfyingDocumentId"]),
+    satisfyingEvidenceLinkId: nullableText(request, ["satisfying_evidence_link_id", "satisfyingEvidenceLinkId"]),
     readinessReasonCode: nullableText(request, ["readiness_reason_code", "readinessReasonCode"]),
   })).filter((request) => request.id);
   const deadlines = recordsFrom(payload, ["deadlines", "deadline_references", "deadlineReferences"], 1_000).map((deadline) => ({
@@ -604,6 +609,7 @@ export function normalizeSnapshots(payload: unknown): SnapshotItem[] {
   return recordsFrom(payload, ["snapshots", "items"], 500).map((item) => ({
     id: textValue(item, ["snapshot_id", "snapshotId", "id"]),
     dossierRevision: nullableInteger(valueAt(item, "dossier_revision", "dossierRevision")),
+    sealed: booleanValue(item, ["sealed"], false),
     status: textValue(item, ["status"], "draft"),
     manifestDigest: nullableText(item, ["manifest_digest", "manifestDigest"]),
     locale: textValue(item, ["locale"], "en"),
