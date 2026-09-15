@@ -358,6 +358,12 @@ test("Dependable actions: historical disposition and citation retirement persist
  for(const field of ["due_at","timezone","title","critical","created_at","created_by_actor_ref"])assert.equal(after[field],before[field]);
  const deadlineReceipt=await d1.prepare("SELECT * FROM dossier_deadline_dispositions WHERE dossier_id=?").bind(dossierId).first<Record<string,unknown>>();assert.ok(deadlineReceipt);
  const audit=await d1.prepare("SELECT summary_code,detail FROM dossier_audit_events WHERE id=?").bind(deadlineReceipt.audit_event_id).first<{summary_code:string;detail:string}>();assert.equal(audit?.summary_code,"HISTORICAL_DEADLINE_DISPOSED");assert.equal(JSON.parse(audit!.detail).deadline_reference_id,fields.recordId);
+ const exactQuery="?event_id="+encodeURIComponent(String(deadlineReceipt.audit_event_id));
+ const exactAudit=await (await call("activity",reviewer,orgA,"GET",undefined,params,exactQuery)).json() as {activity:Array<{audit_event_id:string}>,next_cursor:string|null};
+ assert.deepEqual(exactAudit.activity.map(event=>event.audit_event_id),[deadlineReceipt.audit_event_id]);assert.equal(exactAudit.next_cursor,null);
+ await json(await call("activity",bob,orgB,"GET",undefined,params,exactQuery),404);
+ await json(await call("activity",null,orgA,"GET",undefined,params,exactQuery),401);
+ await json(await call("activity",reviewer,orgA,"GET",undefined,params,"?event_id=event_missing_000000000001"),404);
  await assert.rejects(d1.prepare("UPDATE dossier_deadline_references SET due_at='2030-01-01T00:00:00.000Z' WHERE id=?").bind(fields.recordId).run());
  const anchor=await d1.prepare("SELECT * FROM dossier_source_anchors WHERE dossier_id=? AND review_state='accepted' LIMIT 1").bind(dossierId).first<Record<string,unknown>>();assert.ok(anchor);
  const retire={kind:"citation",recordId:anchor.id,reason:"Superseded by the synthetic reconciliation source update.",expectedRevision:revision,idempotencyKey:"citation-retire-once"};

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import DispositionReview from "./DispositionReview";
+import SavedOutcomePanel from "./SavedOutcomePanel";
+import { refreshSavedOutcome, type RefreshResult, type SavedOutcome, type SavedOutcomeState } from "./saved-outcome";
 import ActionTile, { focusActionTarget } from "../ActionTile";
 import MatterActionCenter from "./MatterActionCenter";
 import { actionForFinding, type MatterActionTarget } from "./matter-actions";
@@ -135,9 +137,21 @@ export default function MattersClient() {
   const [workspaceIssue, setWorkspaceIssue] = useState<ApiIssue | null>(null);
   const [destination, setDestination] = useState<MatterDestination>("overview");
   const [notice, setNotice] = useState("");
+  const [savedOutcome, setSavedOutcome] = useState<SavedOutcomeState | null>(null);
+  const outcomeRefreshSequence = useRef(0);
+  const currentOutcome = savedOutcome?.receipt.caseId === selectedId ? savedOutcome : null;
   const [actionTarget, setActionTarget] = useState<(MatterActionTarget & { caseId: string }) | null>(null);
   const selectedIdRef = useRef(selectedId);
   useEffect(() => { selectedIdRef.current = selectedId; }, [selectedId]);
+  const selectMatter = useCallback((id: string | null) => {
+    if (selectedIdRef.current !== id) {
+      outcomeRefreshSequence.current++;
+      setSavedOutcome(null);
+      setActionTarget(null);
+    }
+    selectedIdRef.current = id;
+    setSelectedId(id);
+  }, []);
   function openAction(target: MatterActionTarget) {
     if (!selectedId) return;
     setActionTarget({ ...target, requestId: target.requestId ?? (actionTarget?.caseId === selectedId && target.id === "document-upload" ? actionTarget.requestId : undefined), caseId: selectedId });
@@ -174,16 +188,14 @@ export default function MattersClient() {
       setCatalogue(items);
       setCatalogueCursor(nextPageCursor(payload));
       if (items.length === 0) {
-        setSelectedId(null);
+        selectMatter(null);
         setWorkspace(null);
         setCataloguePhase("empty");
         return;
       }
-      setSelectedId((current) => {
-        if (preferredId && items.some((item) => item.id === preferredId)) return preferredId;
-        if (current && items.some((item) => item.id === current)) return current;
-        return items[0].id;
-      });
+      const current = selectedIdRef.current;
+      selectMatter(preferredId && items.some(item => item.id === preferredId) ? preferredId
+        : current && items.some(item => item.id === current) ? current : items[0].id);
       setCataloguePhase("ready");
     } catch (caught) {
       const issue = caught instanceof WorkspaceApiError
@@ -192,7 +204,7 @@ export default function MattersClient() {
       setCatalogueIssue(issue);
       setCataloguePhase(issue.kind === "permission" ? "permission" : "error");
     }
-  }, []);
+  }, [selectMatter]);
 
   async function loadMoreCatalogue() {
     if (!catalogueCursor || catalogue.length >= 200) return;
@@ -215,7 +227,7 @@ export default function MattersClient() {
     }
   }
 
-  const loadMatter = useCallback(async (dossierId: string) => {
+  const loadMatter = useCallback(async (dossierId: string): Promise<RefreshResult> => {
     matterAbort.current?.abort();
     const controller = new AbortController();
     matterAbort.current = controller;
@@ -227,7 +239,7 @@ export default function MattersClient() {
       const encodedId = encodeURIComponent(dossierId);
       const detailPayload = await apiRequest("/api/dossiers/" + encodedId, { signal: controller.signal });
       const matter = normalizeMatterDetail(detailPayload);
-      if (!matter) throw new WorkspaceApiError(500, { message: "The server returned an unsupported matter envelope." });
+      if (!matter || matter.id !== dossierId) throw new WorkspaceApiError(500, { message: "The server returned an unsupported matter envelope." });
 
       const [documentsResult, requestsResult, proposalsResult, packagesResult, snapshotsResult, outputsResult, activityResult] = await Promise.all([
         settledRequest("/api/dossiers/" + encodedId + "/documents", controller.signal),
@@ -238,7 +250,7 @@ export default function MattersClient() {
         settledRequest("/api/dossiers/" + encodedId + "/outputs", controller.signal),
         settledRequest("/api/dossiers/" + encodedId + "/activity?limit=100", controller.signal),
       ]);
-      if (requestId !== matterRequest.current) return;
+      if (requestId !== matterRequest.current || selectedIdRef.current !== dossierId) return { status: "superseded" };
 
       const fallbackRequests = normalizeRequests(detailPayload);
       const requestData = requestsResult.payload ? normalizeRequests(requestsResult.payload) : fallbackRequests;
@@ -265,16 +277,48 @@ export default function MattersClient() {
         issues,
       });
       setWorkspacePhase("ready");
+      return Object.keys(issues).length || matter.readiness.computedFromRevision !== matter.revision
+        ? { status: "failed" } : { status: "updated", revision: matter.revision };
     } catch (caught) {
-      if (caught instanceof DOMException && caught.name === "AbortError") return;
-      if (requestId !== matterRequest.current) return;
+      if (caught instanceof DOMException && caught.name === "AbortError") return { status: "superseded" };
+      if (requestId !== matterRequest.current || selectedIdRef.current !== dossierId) return { status: "superseded" };
       const issue = caught instanceof WorkspaceApiError
         ? apiIssueFor(caught.status, caught.payload)
         : apiIssueFor(500, { message: "The selected matter could not be loaded." });
       setWorkspaceIssue(issue);
       setWorkspacePhase(issue.kind === "permission" ? "permission" : "error");
+      return { status: "failed" };
     }
   }, []);
+
+  async function updateSavedOutcome(receipt: SavedOutcome) {
+    if (selectedIdRef.current !== receipt.caseId) return;
+    const sequence = ++outcomeRefreshSequence.current;
+    setNotice("");
+    setDestination("overview");
+    setActionTarget({ destination: "overview", id: "matter-next-actions", caseId: receipt.caseId });
+    await refreshSavedOutcome(receipt, () => loadMatter(receipt.caseId),
+      () => selectedIdRef.current === receipt.caseId && sequence === outcomeRefreshSequence.current,
+      setSavedOutcome);
+  }
+
+  async function openOutcomeAudit(receipt: SavedOutcome) {
+    if (selectedIdRef.current !== receipt.caseId) return;
+    const sequence = outcomeRefreshSequence.current;
+    try {
+      const payload = await apiRequest("/api/dossiers/" + encodeURIComponent(receipt.caseId) + "/activity?event_id=" + encodeURIComponent(receipt.auditEventId));
+      const event = normalizeActivity(payload).items.find(item => item.id === receipt.auditEventId);
+      if (!event) throw new WorkspaceApiError(404, {});
+      if (selectedIdRef.current !== receipt.caseId || sequence !== outcomeRefreshSequence.current) return;
+      setWorkspace(current => current?.matter.id === receipt.caseId ? { ...current,
+        activity: [...current.activity.filter(item => item.id !== event.id).slice(0, MAX_ACTIVITY_ITEMS - 1), event]
+          .sort((left, right) => (right.sequence ?? 0) - (left.sequence ?? 0)) } : current);
+      setDestination("activity");
+      setActionTarget({ destination: "activity", id: "audit-" + receipt.auditEventId, caseId: receipt.caseId });
+    } catch {
+      if (selectedIdRef.current === receipt.caseId && sequence === outcomeRefreshSequence.current) setNotice("The exact audit event could not be opened. The outcome remains recorded; retry when access and connection are available.");
+    }
+  }
 
   useEffect(() => {
     const params = new URL(window.location.href).searchParams;
@@ -621,7 +665,7 @@ export default function MattersClient() {
         <div className={styles.matterList} aria-label="Authorised matters">
           {filteredCatalogue.map((matter) => {
             const summary = readinessSummary(matter.readiness);
-            return <button key={matter.id} type="button" className={matter.id === selectedId ? styles.matterCardActive : styles.matterCard} onClick={() => { selectedIdRef.current = matter.id; setSelectedId(matter.id); setDestination("overview"); }} aria-pressed={matter.id === selectedId}>
+            return <button key={matter.id} type="button" className={matter.id === selectedId ? styles.matterCardActive : styles.matterCard} onClick={() => { selectMatter(matter.id); setDestination("overview"); }} aria-pressed={matter.id === selectedId}>
               <span className={styles.matterCardTop}><b>{matter.reference}</b><em>{statusLabel(matter.status)}</em></span>
               <strong>{matter.title}</strong>
               <span>{matter.typeLabel}{matter.jurisdictions.length ? " · " + matter.jurisdictions.join(", ") : ""}</span>
@@ -641,7 +685,7 @@ export default function MattersClient() {
 
       <section className={styles.content} id="matter-workspace" aria-label="Selected matter workspace">
         <div className={styles.mobileSelectors}>
-          <label className={styles.field}><span>Open matter</span><select value={selectedId ?? ""} onChange={(event) => { selectedIdRef.current = event.target.value || null; setSelectedId(event.target.value || null); setDestination("overview"); }} disabled={catalogue.length === 0}>
+          <label className={styles.field}><span>Open matter</span><select value={selectedId ?? ""} onChange={(event) => { selectMatter(event.target.value || null); setDestination("overview"); }} disabled={catalogue.length === 0}>
             {catalogue.length === 0 && <option value="">No authorised matters</option>}
             {catalogue.map((matter) => <option key={matter.id} value={matter.id}>{matter.reference} — {matter.title}</option>)}
           </select></label>
@@ -659,6 +703,12 @@ export default function MattersClient() {
           </form>
         </section>}
 
+        {currentOutcome && <SavedOutcomePanel state={currentOutcome}
+          recordLabel={currentOutcome.receipt.kind === "deadline" ? workspace?.deadlines.find(item => item.id === currentOutcome.receipt.recordId)?.title ?? "Historical deadline" : workspace?.matter.anchors.find(item => item.id === currentOutcome.receipt.recordId)?.documentTitle ?? "Reviewed citation"}
+          actorName={workspace?.matter.participants.find(item => item.actorId === currentOutcome.receipt.actorId)?.displayName}
+          supportLabel={workspace?.matter.anchors.find(item => item.id === currentOutcome.receipt.supportingSourceId)?.documentTitle}
+          onRetry={() => void updateSavedOutcome(currentOutcome.receipt)} onAudit={() => void openOutcomeAudit(currentOutcome.receipt)}
+          onRecord={() => openAction({ destination: currentOutcome.receipt.kind === "deadline" ? "requests" : "evidence", id: (currentOutcome.receipt.kind === "deadline" ? "deadline-" : "source-") + currentOutcome.receipt.recordId })}/>}
         {notice && <div className={styles.successBanner} role="status">{notice}</div>}
         {actionIssue && <IssueState issue={actionIssue} onRetry={actionIssue.kind === "stale" && workspace ? () => void loadMatter(workspace.matter.id) : undefined}/>}
 
@@ -666,9 +716,9 @@ export default function MattersClient() {
         {cataloguePhase === "permission" && catalogueIssue && <IssueState issue={catalogueIssue} onRetry={() => void loadCatalogue()}/>}
         {cataloguePhase === "error" && catalogueIssue && <IssueState issue={catalogueIssue} onRetry={() => void loadCatalogue()}/>}
         {selectedId && workspacePhase === "loading" && <LoadingState label="Opening your case"/>}
-        {selectedId && (workspacePhase === "error" || workspacePhase === "permission") && workspaceIssue && <IssueState issue={workspaceIssue} onRetry={() => void loadMatter(selectedId)}/>}
+        {selectedId && (workspacePhase === "error" || workspacePhase === "permission") && workspaceIssue && <IssueState issue={workspaceIssue} onRetry={() => currentOutcome ? void updateSavedOutcome(currentOutcome.receipt) : void loadMatter(selectedId)}/>}
 
-        {workspacePhase === "ready" && workspace && <>
+        {workspacePhase === "ready" && workspace?.matter.id === selectedId && workspace && (!currentOutcome || currentOutcome.phase === "updated") && <>
           <nav className={styles.breadcrumbs} aria-label="Case breadcrumb"><button type="button" onClick={() => document.getElementById("matter-catalogue-title")?.scrollIntoView({ block: "start" })}>My cases</button><span aria-hidden="true">→</span><button type="button" onClick={() => setDestination("overview")}>{workspace.matter.title}</button>{destination !== "overview" && <><span aria-hidden="true">→</span><strong>{MATTER_DESTINATIONS.find(item => item.key === destination)?.label}</strong></>}</nav>
           <MatterHero matter={workspace.matter} view={view} setView={setView} onOpenActions={() => openAction({ destination: "overview", id: "matter-next-actions" })}/>
           <SectionNavigation destination={destination} onChange={setDestination}/>
@@ -676,9 +726,9 @@ export default function MattersClient() {
           <div className={styles.sectionPanel} role="tabpanel" id={"panel-" + destination} aria-labelledby={"tab-" + destination}>
             {destination === "overview" && <OverviewSection requests={workspace.requests} documents={workspace.documents} matter={workspace.matter} snapshots={workspace.snapshots} outputs={workspace.outputs} view={view} mutationKey={mutationKey} onNavigate={openAction} onTransition={(option, reason) => void mutate(dossierPath + "/transitions", "transition", { newStatus: option.to, reason: reason || null }, "Lifecycle transition recorded at a new revision.")} onUpdate={(fields) => void mutate(dossierPath, "matter-update", fields, "Matter metadata updated at a new revision.", "PUT")} onEnroll={(fields) => void mutate(dossierPath + "/participants", "participant-enroll", fields, "Participant enrolled at a new governed revision.")}/>}
             {destination === "documents" && <DocumentsSection matter={workspace.matter} documents={workspace.documents} issue={workspace.issues.documents} view={view} mutationKey={mutationKey} onUpload={uploadDocument} onReview={(document, decision) => void mutate(dossierPath + "/documents/" + encodeURIComponent(document.id) + "/review", "document-review-" + document.id, { decision }, decision === "accepted_source" ? "Document accepted as a governed source." : "Document rejection recorded.")}/>}
-            {destination === "evidence" && <EvidenceSection focusedCitationId={actionTarget?.id.startsWith("source-") ? actionTarget.id.slice(7) : undefined} onDispositionSaved={() => { setDestination("overview"); setActionTarget({destination:"overview",id:"matter-next-actions",caseId:workspace.matter.id}); setNotice("Review outcome saved. Readiness and the action queue have been refreshed."); void loadMatter(workspace.matter.id); }} matter={workspace.matter} documents={workspace.documents} packages={workspace.packages} proposals={workspace.proposals} cursor={workspace.proposalCursor} issue={workspace.issues.proposals} view={view} mutationKey={mutationKey} onGenerate={(documentVersionIds, retryFailed) => void generateAiProposals(documentVersionIds, retryFailed)} onReview={(proposal, action, editedValue, note) => void mutate(dossierPath + "/proposals", "proposal-" + proposal.id, { proposalId: proposal.id, action, editedValue, reviewNote: note || null }, "AI proposal review recorded. The historical proposal remains attributable.")} onCreateAnchor={(fields) => void mutate(dossierPath + "/evidence/anchors", "anchor-create", { action: "create", ...fields }, "Exact manual source anchor recorded for review.")} onReviewAnchor={(anchor, decision) => void mutate(dossierPath + "/evidence/anchors", "anchor-review-" + anchor.id, { action: "review", sourceAnchorId: anchor.id, decision }, "Source-anchor review decision recorded.")} onCreateAssertion={(fields) => void mutate(dossierPath + "/evidence/assertions", "assertion-create", { action: "create", ...fields }, "Professional assertion recorded for review.")} onSupersedeAssertion={(assertion) => void mutate(dossierPath + "/evidence/assertions", "assertion-review-" + assertion.id, { action: "supersede", assertionId: assertion.id }, "Assertion superseded with history preserved. Review or create its replacement before relying on the decision.")} onReviewAssertion={(assertion, decision) => void mutate(dossierPath + "/evidence/assertions", "assertion-review-" + assertion.id, { action: "review", assertionId: assertion.id, decision }, "Professional assertion review decision recorded.")} onLinkEvidence={(fields) => void mutate(dossierPath + "/evidence/links", "evidence-link", { action: "create", ...fields }, "Reviewed evidence linked to the exact graph entity.")} onLoadMore={() => void loadMoreProposals()}/>}
+            {destination === "evidence" && <EvidenceSection focusedCitationId={actionTarget?.id.startsWith("source-") ? actionTarget.id.slice(7) : undefined} onDispositionSaved={receipt => void updateSavedOutcome(receipt)} matter={workspace.matter} documents={workspace.documents} packages={workspace.packages} proposals={workspace.proposals} cursor={workspace.proposalCursor} issue={workspace.issues.proposals} view={view} mutationKey={mutationKey} onGenerate={(documentVersionIds, retryFailed) => void generateAiProposals(documentVersionIds, retryFailed)} onReview={(proposal, action, editedValue, note) => void mutate(dossierPath + "/proposals", "proposal-" + proposal.id, { proposalId: proposal.id, action, editedValue, reviewNote: note || null }, "AI proposal review recorded. The historical proposal remains attributable.")} onCreateAnchor={(fields) => void mutate(dossierPath + "/evidence/anchors", "anchor-create", { action: "create", ...fields }, "Exact manual source anchor recorded for review.")} onReviewAnchor={(anchor, decision) => void mutate(dossierPath + "/evidence/anchors", "anchor-review-" + anchor.id, { action: "review", sourceAnchorId: anchor.id, decision }, "Source-anchor review decision recorded.")} onCreateAssertion={(fields) => void mutate(dossierPath + "/evidence/assertions", "assertion-create", { action: "create", ...fields }, "Professional assertion recorded for review.")} onSupersedeAssertion={(assertion) => void mutate(dossierPath + "/evidence/assertions", "assertion-review-" + assertion.id, { action: "supersede", assertionId: assertion.id }, "Assertion superseded with history preserved. Review or create its replacement before relying on the decision.")} onReviewAssertion={(assertion, decision) => void mutate(dossierPath + "/evidence/assertions", "assertion-review-" + assertion.id, { action: "review", assertionId: assertion.id, decision }, "Professional assertion review decision recorded.")} onLinkEvidence={(fields) => void mutate(dossierPath + "/evidence/links", "evidence-link", { action: "create", ...fields }, "Reviewed evidence linked to the exact graph entity.")} onLoadMore={() => void loadMoreProposals()}/>}
             {destination === "decision-packages" && <DecisionPackagesSection onNavigate={openAction} focusedPackageId={actionTarget?.caseId === selectedId ? actionTarget.packageRefId : undefined} matter={workspace.matter} packages={workspace.packages} snapshots={workspace.snapshots} issue={workspace.issues.packages ?? workspace.issues.snapshots} view={view} mutationKey={mutationKey} onLink={(fields) => void mutate(dossierPath + "/decision-packages", "package-link", fields, "Decision package linked to the visible dossier revision.")} onSnapshot={(fields) => void mutate(dossierPath + "/snapshots", "snapshot-create", fields, "Immutable dossier snapshot created.")}/>}
-            {destination === "requests" && <RequestsSection focusedDeadlineId={actionTarget?.id.startsWith("deadline-") ? actionTarget.id.slice(9) : undefined} onDispositionSaved={() => { setDestination("overview"); setActionTarget({destination:"overview",id:"matter-next-actions",caseId:workspace.matter.id}); setNotice("Historical deadline outcome saved. The key case deadline is unchanged."); void loadMatter(workspace.matter.id); }} key={`${workspace.matter.id}:${actionTarget?.caseId === selectedId ? actionTarget.requestId ?? "" : ""}`} focusedRequestId={actionTarget?.caseId === selectedId ? actionTarget.requestId : undefined} onNavigate={openAction} onUpdateDeadline={(fields) => void mutate(dossierPath, "deadline-update", fields, "Key deadline saved. Case readiness has been refreshed.", "PUT")} matter={workspace.matter} documents={workspace.documents} requests={workspace.requests} deadlines={workspace.deadlines} issue={workspace.issues.requests} view={view} mutationKey={mutationKey} onCreate={(fields) => void mutate(dossierPath + "/requests", "request-create", fields, "Information request recorded and readiness will be recomputed.")} onSatisfy={(fields) => void mutate(dossierPath + "/requests", "request-satisfy", { action: "update_status", status: "received", ...fields }, "Information request satisfied by an exact Matter document link.")}/>}
+            {destination === "requests" && <RequestsSection focusedDeadlineId={actionTarget?.id.startsWith("deadline-") ? actionTarget.id.slice(9) : undefined} onDispositionSaved={receipt => void updateSavedOutcome(receipt)} key={`${workspace.matter.id}:${actionTarget?.caseId === selectedId ? actionTarget.requestId ?? "" : ""}`} focusedRequestId={actionTarget?.caseId === selectedId ? actionTarget.requestId : undefined} onNavigate={openAction} onUpdateDeadline={(fields) => void mutate(dossierPath, "deadline-update", fields, "Key deadline saved. Case readiness has been refreshed.", "PUT")} matter={workspace.matter} documents={workspace.documents} requests={workspace.requests} deadlines={workspace.deadlines} issue={workspace.issues.requests} view={view} mutationKey={mutationKey} onCreate={(fields) => void mutate(dossierPath + "/requests", "request-create", fields, "Information request recorded and readiness will be recomputed.")} onSatisfy={(fields) => void mutate(dossierPath + "/requests", "request-satisfy", { action: "update_status", status: "received", ...fields }, "Information request satisfied by an exact Matter document link.")}/>}
             {destination === "outputs" && <OutputsSection onNavigate={openAction} matter={workspace.matter} outputs={workspace.outputs} snapshots={workspace.snapshots} issue={workspace.issues.outputs} view={view} mutationKey={mutationKey} onGenerate={(fields) => void mutate(dossierPath + "/outputs", "output-generate", fields, "Governed output request recorded against an immutable snapshot.")} onApprove={(output) => void mutate(dossierPath + "/outputs", "output-approve-" + output.id, { action: "approve", outputId: output.id }, "Reviewer approval recorded for the snapshot-bound output.")}/>}
             {destination === "activity" && <ActivitySection onNavigate={openAction} activity={workspace.activity} cursor={workspace.activityCursor} issue={workspace.issues.activity} view={view} mutationKey={mutationKey} onLoadMore={() => void loadMoreActivity()}/>}
           </div>
@@ -924,7 +974,7 @@ function DocumentsSection({ matter, documents, issue, view, mutationKey, onUploa
 }
 
 function EvidenceSection({ focusedCitationId, onDispositionSaved, matter, documents, packages, proposals, cursor, issue, view, mutationKey, onGenerate, onReview, onCreateAnchor, onReviewAnchor, onCreateAssertion, onReviewAssertion, onSupersedeAssertion, onLinkEvidence, onLoadMore }: {
-  focusedCitationId?: string; onDispositionSaved?: () => void; matter: MatterDetail;
+  focusedCitationId?: string; onDispositionSaved?: (receipt: SavedOutcome) => void; matter: MatterDetail;
   documents: DocumentItem[];
   packages: DecisionPackageItem[];
   proposals: ProposalItem[];
@@ -1102,7 +1152,7 @@ function ProposalCard({ proposal, anchors, canReview, view, busy, onReview }: { 
   </article>;
 }
 
-function SourceCitation({ citations, caseId, onSaved, anchor, view, canReview, busy, onReview, stale = false }: { citations:Array<{id:string;label:string}>; caseId: string; onSaved?: () => void; anchor: SourceAnchorItem; view: MatterView; canReview: boolean; busy: boolean; onReview: (anchor: SourceAnchorItem, decision: "accepted" | "rejected") => void; stale?: boolean }) {
+function SourceCitation({ citations, caseId, onSaved, anchor, view, canReview, busy, onReview, stale = false }: { citations:Array<{id:string;label:string}>; caseId: string; onSaved?: (receipt: SavedOutcome) => void; anchor: SourceAnchorItem; view: MatterView; canReview: boolean; busy: boolean; onReview: (anchor: SourceAnchorItem, decision: "accepted" | "rejected") => void; stale?: boolean }) {
   return <article className={styles.sourceCitation}><div><strong>{anchor.documentTitle}</strong><span>{anchor.versionOrdinal ? "Version " + anchor.versionOrdinal + " · " : ""}{anchor.pageNumber ? "Page " + anchor.pageNumber : anchor.heading ?? anchor.section ?? "Document-level anchor"}{anchor.paragraph ? " · paragraph " + anchor.paragraph : ""}</span></div>{anchor.excerpt && <blockquote>{anchor.excerpt}</blockquote>}<span className={styles.stateToken}>Review: {sentenceLabel(anchor.reviewState)}</span>{anchor.retiredAt && <p className={styles.stateToken}>Retired from current use · acceptance history preserved</p>}{stale && !anchor.retiredAt && <div className={styles.consequenceBox}><strong>A newer source version exists</strong><p>This citation refers to an older source. Review its retirement, then review every dependent assertion against current evidence.</p><button type="button" className={styles.secondaryButton} onClick={() => focusActionTarget("anchor-create")}>Add a current-source citation →</button>{canReview && <DispositionReview citations={citations} caseId={caseId} recordId={anchor.id} kind="citation" onSaved={onSaved}/>}</div>}{anchor.reviewState === "pending" && canReview && <div className={styles.inlineActions}><button type="button" className={styles.primaryButton} disabled={busy} onClick={() => onReview(anchor, "accepted")}>{busy ? "Recording…" : "Accept anchor"}</button><button type="button" className={styles.dangerButton} disabled={busy} onClick={() => onReview(anchor, "rejected")}>Reject anchor</button></div>}{view === "developer" && <dl><div><dt>Anchor ID</dt><dd><code>{anchor.id}</code></dd></div><div><dt>Version ID</dt><dd><code>{anchor.documentVersionId}</code></dd></div><div><dt>Checksum</dt><dd><code>{anchor.checksum ?? "not returned"}</code></dd></div></dl>}</article>;
 }
 
@@ -1149,7 +1199,7 @@ export function DecisionPackagesSection({ onNavigate, focusedPackageId, matter, 
   </div>;
 }
 
-export function RequestsSection({ focusedDeadlineId, onDispositionSaved, matter, documents, requests, deadlines, issue, view, mutationKey, onCreate, onSatisfy, focusedRequestId, onNavigate, onUpdateDeadline }: { focusedDeadlineId?: string; onDispositionSaved?: () => void; matter: MatterDetail; documents: DocumentItem[]; requests: RequestItem[]; deadlines: DeadlineItem[]; issue?: ApiIssue; view: MatterView; mutationKey: string | null; onCreate: (fields: Record<string, unknown>) => void; onSatisfy: (fields: Record<string, unknown>) => void; focusedRequestId?: string; onNavigate?: (target: MatterActionTarget) => void; onUpdateDeadline?: (fields: Record<string, unknown>) => void }) {
+export function RequestsSection({ focusedDeadlineId, onDispositionSaved, matter, documents, requests, deadlines, issue, view, mutationKey, onCreate, onSatisfy, focusedRequestId, onNavigate, onUpdateDeadline }: { focusedDeadlineId?: string; onDispositionSaved?: (receipt: SavedOutcome) => void; matter: MatterDetail; documents: DocumentItem[]; requests: RequestItem[]; deadlines: DeadlineItem[]; issue?: ApiIssue; view: MatterView; mutationKey: string | null; onCreate: (fields: Record<string, unknown>) => void; onSatisfy: (fields: Record<string, unknown>) => void; focusedRequestId?: string; onNavigate?: (target: MatterActionTarget) => void; onUpdateDeadline?: (fields: Record<string, unknown>) => void }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [deadlineReview, setDeadlineReview] = useState<DeadlineItem | null>(null);
@@ -1225,7 +1275,7 @@ function ActivitySection({ onNavigate, activity, cursor, issue, view, mutationKe
   return <div className={styles.sectionStack}>
     <SectionHeading eyebrow="ATTRIBUTABLE HISTORY" title="Audit" description="See who reviewed evidence, changed the case or approved a report. Earlier decisions remain part of the history."/>
     {issue && <IssueState issue={issue} compact/>}
-    {activity.length === 0 && !issue ? <EmptyState title="No activity returned" detail="The server has not returned an attributable audit event for this matter."/> : <ol className={styles.timeline}>{activity.map((event) => <li key={event.id}><div className={styles.timelineMarker} aria-hidden="true">{event.sequence ?? "·"}</div><article><div className={styles.recordHeading}><div><span className={styles.stateToken}>{sentenceLabel(event.eventType)}</span><h3>{sentenceLabel(event.summaryCode)}</h3></div><time dateTime={event.occurredAt ?? undefined}>{formatMatterDate(event.occurredAt)}</time></div>{event.reviewReason && <p>{event.reviewReason}</p>}{event.reviewRecordId && ["HISTORICAL_DEADLINE_DISPOSED","SOURCE_ANCHOR_RETIRED"].includes(event.summaryCode) && <button type="button" className={styles.linkButton} onClick={()=>onNavigate({destination:event.summaryCode==="HISTORICAL_DEADLINE_DISPOSED"?"requests":"evidence",id:(event.summaryCode==="HISTORICAL_DEADLINE_DISPOSED"?"deadline-":"source-")+event.reviewRecordId})}>Open reviewed record →</button>}<p>Actor: {event.actorRole ? sentenceLabel(event.actorRole) : "Role not returned"}{view === "developer" && event.actorId ? " · " + event.actorId : ""}</p>{view === "developer" && <dl className={styles.factList}><div><dt>Event ID</dt><dd><code>{event.id}</code></dd></div><div><dt>Object</dt><dd><code>{event.objectType ?? "?"} / {event.objectId ?? "?"}</code></dd></div><div><dt>Digest</dt><dd><code>{event.eventDigest ?? "not returned"}</code></dd></div>{event.detail && <div><dt>Bounded detail</dt><dd><pre>{event.detail}</pre></dd></div>}</dl>}</article></li>)}</ol>}
+    {activity.length === 0 && !issue ? <EmptyState title="No activity returned" detail="The server has not returned an attributable audit event for this matter."/> : <ol className={styles.timeline}>{activity.map((event) => <li key={event.id} id={"audit-" + event.id} tabIndex={-1}><div className={styles.timelineMarker} aria-hidden="true">{event.sequence ?? "·"}</div><article><div className={styles.recordHeading}><div><span className={styles.stateToken}>{sentenceLabel(event.eventType)}</span><h3>{sentenceLabel(event.summaryCode)}</h3></div><time dateTime={event.occurredAt ?? undefined}>{formatMatterDate(event.occurredAt)}</time></div>{event.reviewReason && <p>{event.reviewReason}</p>}{event.reviewRecordId && ["HISTORICAL_DEADLINE_DISPOSED","SOURCE_ANCHOR_RETIRED"].includes(event.summaryCode) && <button type="button" className={styles.linkButton} onClick={()=>onNavigate({destination:event.summaryCode==="HISTORICAL_DEADLINE_DISPOSED"?"requests":"evidence",id:(event.summaryCode==="HISTORICAL_DEADLINE_DISPOSED"?"deadline-":"source-")+event.reviewRecordId})}>Open reviewed record →</button>}<p>Actor: {event.actorRole ? sentenceLabel(event.actorRole) : "Role not returned"}{view === "developer" && event.actorId ? " · " + event.actorId : ""}</p>{view === "developer" && <dl className={styles.factList}><div><dt>Event ID</dt><dd><code>{event.id}</code></dd></div><div><dt>Object</dt><dd><code>{event.objectType ?? "?"} / {event.objectId ?? "?"}</code></dd></div><div><dt>Digest</dt><dd><code>{event.eventDigest ?? "not returned"}</code></dd></div>{event.detail && <div><dt>Bounded detail</dt><dd><pre>{event.detail}</pre></dd></div>}</dl>}</article></li>)}</ol>}
     {activity.length >= MAX_ACTIVITY_ITEMS ? <p className={styles.paginationNote}>Client activity is bounded to 500 events. Use a refined server query for older history.</p> : cursor && <button type="button" className={styles.secondaryButton} onClick={onLoadMore} disabled={mutationKey !== null}>{mutationKey === "activity-more" ? "Loading history…" : "Load older activity"}</button>}
   </div>;
 }
