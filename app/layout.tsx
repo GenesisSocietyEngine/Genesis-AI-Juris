@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./workspace-design.css";
 import StaleChunkRecovery from "./StaleChunkRecovery";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://genesis-juris-web.maxim-hayan.chatgpt.site"),
-  title: "GENESIS: JURIS CODEX",
+  title: "GENESIS: JURIS Studio",
   description:
-    "Build, review and play branching legal simulations for professional judgment, including compliant international tax-planning scenarios.",
+    "Connect case documents, evidence and reasoning in a versioned, explainable decision package.",
   icons: {
     icon: "/brand/genesis-juris-codex-mark.svg",
     shortcut: "/brand/genesis-juris-codex-mark.svg",

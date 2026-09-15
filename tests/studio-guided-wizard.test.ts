@@ -4,6 +4,7 @@ import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import StudioEntryScreen from "../app/StudioEntryScreen";
 import StudioGuidedWizard, { recommendedGuidedStudioStep } from "../app/StudioGuidedWizard";
 import { initialStudioWorkflowState, parseStudioWorkflowStep, reduceStudioWorkflow, restoredStudioWorkflowStep, serializedStudioWorkflowStep } from "../app/studio-workflow";
 
@@ -40,7 +41,7 @@ test("an empty untitled draft always restores at Step 1", () => {
   assert.match(appSource, /window\.localStorage\.setItem\(guidedWorkflowKey, stage\)/);
 });
 
-test("guided Studio renders numbered bilingual stages and practical quick starts", () => {
+test("guided Studio renders numbered bilingual stages and explicit input and next action", () => {
   const noop = () => undefined;
   for (const locale of ["en", "ru"] as const) {
     const markup = renderToStaticMarkup(createElement(StudioGuidedWizard, {
@@ -58,9 +59,13 @@ test("guided Studio renders numbered bilingual stages and practical quick starts
     }
     assert.match(markup, /aria-current="step"/);
     assert.match(markup, /<progress max="6"/);
-    assert.ok(markup.includes(locale === "en" ? "Open Canopy" : "Открыть Canopy"));
-    assert.ok(markup.includes(locale === "en" ? "Describe a task" : "Описать задачу"));
-    assert.ok(markup.includes("(.json)") && markup.includes("(.md)"));
+    assert.ok(markup.includes(locale === "en" ? "Input" : "Нужно"));
+    assert.ok(markup.includes(locale === "en" ? "Next" : "Далее"));
+    const entry = renderToStaticMarkup(createElement(StudioEntryScreen, {locale, recentTitle: "Canopy", onCreate: noop, onImport: noop, onDemo: noop, onContinue: noop}));
+    assert.ok(entry.includes(locale === "en" ? "Open demo case" : "Открыть демо-кейс"));
+    assert.ok(entry.includes(locale === "en" ? "Create a case" : "Создать кейс"));
+    assert.ok(entry.includes("JSON · Markdown · TXT"));
+    assert.ok(entry.includes("Canopy"));
   }
 });
 
@@ -72,8 +77,8 @@ test("guided stages progressively disclose the existing canonical editor", () =>
   assert.match(appSource, /guidedStep === 5\) && <section className="studio-bottom/);
   assert.match(appSource, /guidedStep === 6 && <section className="studio-finish/);
   assert.match(appSource, /displayMode === "developer" \|\| guidedStep/);
-  assert.match(appSource, /Guided · User view/);
-  assert.match(appSource, /Expert · Developer view/);
+  assert.match(appSource, /User view/);
+  assert.match(appSource, /Developer view/);
   assert.match(appSource, /window\.history\.pushState/);
   assert.match(appSource, /window\.localStorage\.setItem\(guidedWorkflowKey/);
   assert.match(appSource, /window\.addEventListener\("popstate"/);

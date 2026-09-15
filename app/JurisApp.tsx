@@ -3,7 +3,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import AppNavigation from "./AppNavigation";
-import OperationsDossier from "./OperationsDossier";
 import { canonicalFingerprint, caseFingerprint, casePublicationFingerprint, isRecord, isTaxDraft, legacyCaseFingerprintV15, normalizeStudioDraft, slugifyCaseId } from "./case-integrity";
 import { bundledCataloguePresentation, mayUseBundledCatalogueFallback } from "./catalogue-fallback";
 import { actionUseKey, decisionAvailability, resolveDecisionTiming, resolveLegacyDecisionTiming } from "./game-engine";
@@ -81,6 +80,9 @@ function graphBoundsForNodes(nodes: StudioNode[]) {
     }, 0))),
   };
 }
+const StudioEntryScreen = lazy(() => import("./StudioEntryScreen"));
+const StudioNodeSummary = lazy(() => import("./StudioNodeSummary"));
+const OperationsDossier = lazy(() => import("./OperationsDossier"));
 const FeedbackDialog = lazy(() => import("./FeedbackDialog"));
 const HelpFaq = lazy(() => import("./HelpFaq"));
 const DemoCases = lazy(() => import("./DemoCases"));
@@ -239,7 +241,7 @@ const ui = {
     author: "Case authoring command deck",
     authorLead: "Describe a legal crisis in plain language, then shape its actors, evidence, deadlines, decisions and outcomes on the visual graph.",
     prompt: "Case prompt", generate: "Generate case graph", save: "Save draft", saved: "Draft saved on this device",
-    export: "Export JSON", import: "Import JSON", newDraft: "New draft", graph: "Scenario graph",
+    export: "Export JSON", import: "Import JSON", newDraft: "New draft", graph: "Decision map",
     importCustom: "Import custom case", exportCustom: "Export custom case", childVersion: "Create child version",
     customCase: "Custom case", caseId: "Case ID", version: "Version", parentCase: "Parent case", fingerprint: "Content fingerprint",
     exportPlay: "Export play JSON", importPlay: "Import played case", importedPlay: "Played case restored",
@@ -268,7 +270,7 @@ const ui = {
     author: "Командная палуба автора",
     authorLead: "Опишите юридический кризис обычным языком, затем соберите акторов, доказательства, сроки, решения и исходы на визуальном графе.",
     prompt: "Промпт кейса", generate: "Построить граф кейса", save: "Сохранить черновик", saved: "Черновик сохранён на этом устройстве",
-    export: "Экспорт JSON", import: "Импорт JSON", newDraft: "Новый черновик", graph: "Граф сценария",
+    export: "Экспорт JSON", import: "Импорт JSON", newDraft: "Новый черновик", graph: "Карта решений",
     importCustom: "Импорт custom-кейса", exportCustom: "Экспорт custom-кейса", childVersion: "Создать дочернюю версию",
     customCase: "Custom-кейс", caseId: "ID кейса", version: "Версия", parentCase: "Родительский кейс", fingerprint: "Отпечаток содержимого",
     exportPlay: "Экспорт прохождения", importPlay: "Импорт прохождения", importedPlay: "Прохождение восстановлено",
@@ -501,7 +503,7 @@ function blankStudioDraft(updatedAt = new Date().toISOString()): StudioDraft {
 // Restore the account-scoped draft before opening the starter demo.
 const initialBlankDraft = blankStudioDraft(new Date(0).toISOString());
 
-export default function JurisApp({ studioOnly = false, initialView = "studio", autoStartCanopy = true }: JurisAppProps) {
+export default function JurisApp({ studioOnly = false, initialView = "studio", autoStartCanopy = false }: JurisAppProps) {
   const [locale, setLocale] = useInterfaceLocale();
   const [theme, setTheme] = useState<Theme>("office");
   const workspaceLocation = useWorkspaceLocation();
@@ -544,6 +546,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   const [studioCopyProtectionLocked, setStudioCopyProtectionLocked] = useState(false);
   const [studioStorageScope, setStudioStorageScope] = useState<string | null>(null);
   const [studioAIEntitlement, setStudioAIEntitlement] = useState<StudioAIEntitlement>("loading");
+  const [studioRestoreReady, setStudioRestoreReady] = useState(false);
   const draftRef = useRef<StudioDraft>(initialBlankDraft);
   const [studioTimeline, setStudioTimelineState] = useState<StudioTimeline>(emptyStudioTimeline());
   const studioTimelineRef = useRef<StudioTimeline>(emptyStudioTimeline());
@@ -598,7 +601,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       if (requested === "library" || requested === "demos" || requested === "studio"
         || requested === "help" || requested === "community") {
         setView(requested);
-      } else if (requested === "play" && activeScenario) {
+      } else if (requested === "play") {
         setView("play");
       } else {
         setView(initialView);
@@ -606,9 +609,10 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     }
     const update = window.setTimeout(restoreView, 0);
     window.addEventListener("popstate", restoreView);
+    window.addEventListener("genesis-studio-navigation", restoreView);
     return () => {
       window.clearTimeout(update);
-      window.removeEventListener("popstate", restoreView);
+      window.removeEventListener("popstate", restoreView); window.removeEventListener("genesis-studio-navigation", restoreView);
     };
   }, [studioOnly, activeScenario, initialView]);
 
@@ -626,7 +630,8 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       url.searchParams.delete("example");
       url.searchParams.set("studio_step", "case_map");
       window.history.replaceState(window.history.state, "", url);
-      window.dispatchEvent(new PopStateEvent("popstate"));
+      window.dispatchEvent(new Event("genesis-studio-navigation"));
+    window.dispatchEvent(new Event("genesis-interface-change"));
     }).catch(() => { if (!cancelled) setSessionNotice("The Canopy example could not be opened. Refresh and retry. / Не удалось открыть пример Canopy. Обновите страницу."); });
     return () => { cancelled = true; };
   }, []);
@@ -676,6 +681,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     if (studioAIEntitlement === "loading" || studioAIEntitlement === "unavailable") return;
     let cancelled = false;
     const restore = window.setTimeout(() => {
+      try {
       if (studioChangedBeforeRestoreRef.current) return;
       try {
         const stored = studioStorageScope && window.localStorage.getItem(studioDeviceDraftKey(studioStorageScope));
@@ -715,10 +721,12 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         url.searchParams.set("view", "studio");
         url.searchParams.set("studio_step", "case_map");
         window.history.replaceState(window.history.state, "", url);
-        window.dispatchEvent(new PopStateEvent("popstate"));
+        window.dispatchEvent(new Event("genesis-studio-navigation"));
+    window.dispatchEvent(new Event("genesis-interface-change"));
       }).catch(() => {
         if (!cancelled) setSessionNotice(locale === "en" ? "Canopy could not be opened. Choose it from Demo cases to retry." : "Не удалось открыть Canopy. Повторите попытку в разделе «Демо-кейсы».");
       });
+      } finally { if (!cancelled) setStudioRestoreReady(true); }
     }, 0);
     return () => { cancelled = true; window.clearTimeout(restore); };
   }, [studioStorageScope, studioAIEntitlement, autoStartCanopy, prompt, locale]);
@@ -925,8 +933,11 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     url.searchParams.set("view", destination);
     if (destination !== "studio") url.searchParams.delete("studio_step");
     else if (step) url.searchParams.set("studio_step", serializedStudioWorkflowStep(step));
+    else url.searchParams.delete("studio_step");
     window.history.pushState(window.history.state, "", url);
     setView(destination);
+    window.dispatchEvent(new Event("genesis-studio-navigation"));
+    window.dispatchEvent(new Event("genesis-interface-change"));
     window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
   }
   function restoreFromServerSession(session: ServerPlaySession, scenario: Scenario) {
@@ -1710,7 +1721,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       setStudioCopyProtectionLocked(payload.customCase.copyProtected === true);
       setPrompt("");
       setSelectedNodeId(restored.nodes[0]?.id ?? null);
-      navigate("studio");
+      navigate("studio", 4);
       showSessionNotice(locale === "en" ? "Workspace case opened in Studio" : "Кейс из workspace открыт в Studio");
     } catch {
       showSessionNotice(locale === "en" ? "The stored case failed integrity validation" : "Сохранённый кейс не прошёл проверку целостности");
@@ -1822,7 +1833,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     template = appendStudioHistory(template, { role: "studio", source: "prompt", action: "prompt_applied", message: "Loaded the compliance-first international tax graph. Future iterations preserve its entities, flows, rules and manual edits." }, createdAt);
     enterNewLocalDraft(template, "decision-1");
     setPrompt("");
-    navigate("studio");
+    navigate("studio", 3);
   }
   function deleteNode() {
     if (!selectedNodeId) return;
@@ -1900,7 +1911,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     const { buildCanopyPackage } = await import("./canopy-fixture");
     if (draftRef.current !== before) throw new Error("Draft changed while opening demo");
     const prepared = buildCanopyPackage(id, true);
-    enterNewLocalDraft(prepared.draft, prepared.draft.nodes[0]?.id ?? null);
+    enterNewLocalDraft(prepared.draft, prepared.draft.nodes.find(node => node.type === "decision")?.id ?? prepared.draft.nodes[0]?.id ?? null);
     setPrompt("");
     navigate("studio", 4);
   }
@@ -1910,12 +1921,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   async function openOperations() {
     starterCancelledRef.current = true;
     if (activeScenario) { navigate("play"); return; }
-    try {
-      const { buildCanopyPackage } = await import("./canopy-fixture");
-      const compiled = compileStudioDraft(buildCanopyPackage("base", true).draft);
-      if (!compiled.scenario) throw new Error("Canopy is not playable");
-      startScenario(compiled.scenario);
-    } catch { showSessionNotice(locale === "en" ? "The case could not be opened. Please try again." : "Не удалось открыть кейс. Попробуйте ещё раз."); }
+    navigate("play");
   }
 
   return (
@@ -1926,6 +1932,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
 
       {view === "demos" && <Suspense fallback={<main className="demo-library page-width" role="status">{locale === "en" ? "Opening demo cases…" : "Открываются демо-кейсы…"}</main>}><DemoCases locale={locale} records={bundledCatalogueRecords()} openCanopy={loadCanopyDemo} canopyWorkflowHref={workspaceDestination("/canopy", workspaceLocation)} playCase={async (id) => { const record = fallbackCatalogueRecords.find((item) => item.id === id); if (record) await launchCatalogueCase(record); }} openStudio={() => navigate("studio")} /></Suspense>}
       {view === "library" && <LibraryView locale={locale} workspaceLocation={workspaceLocation} restorePlaySession={() => playedCaseImportRef.current?.click()} text={text} records={catalogueRecords} loadedScenarios={catalogueScenarios} featuredRecord={featuredRecord} featuredScenario={featured} setFeaturedId={setFeaturedId} launchCase={(record) => void launchCatalogueCase(record)} requestFeedback={setFeedbackTarget} openCanopy={loadExampleDraft} searchCatalogue={refreshCatalogue} nextCursor={catalogueNextCursor} total={catalogueTotal} loading={catalogueLoading} error={catalogueError} />}
+      {view === "play" && !activeScenario && <main className="workspace-empty page-width"><span className="workspace-eyebrow">{locale === "en" ? "Operations" : "Операции"}</span><h1>{locale === "en" ? "Choose a case to work through" : "Выберите кейс для прохождения"}</h1><p>{locale === "en" ? "Open a playable demo, or restore a previous session to continue its decisions and deadlines." : "Откройте игровой демо-кейс или восстановите сессию, чтобы продолжить решения и задачи."}</p><div><button type="button" className="primary-cta" onClick={() => navigate("demos")}>{locale === "en" ? "Open demo case" : "Открыть демо-кейс"}</button><button type="button" className="secondary-cta" onClick={() => playedCaseImportRef.current?.click()}>{locale === "en" ? "Restore session" : "Восстановить сессию"}</button></div></main>}
       {view === "play" && activeScenario && stage && runLedger && <PlayView
         locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} ledger={runLedger}
         decisionLog={decisionLog} caseMinute={caseMinute} actionUseCounts={actionUseCounts} completedDeadlineIds={completedDeadlineIds}
@@ -1934,7 +1941,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         sessionSync={playSessionSync} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario, { legacyTiming: legacyTimingMode })}
         returnLibrary={() => navigate(playReturnView)} returnToStudio={playReturnView === "studio"} returnLabel={playReturnView === "demos" ? (locale === "en" ? "Demo cases" : "Демо-кейсы") : playReturnView === "help" ? text.help : playReturnView === "community" ? text.community : undefined} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })}
       />}
-      {view === "studio" && <StudioView key={studioOpenRevision} standalone={studioOnly} locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} packageRequiresPlayableRoute={packageRequiresPlayableRoute} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} applyCanonicalMarkdownDraft={applyCanonicalMarkdownDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} serverPublicationFingerprint={studioServerPublicationFingerprint} setServerPublicationFingerprint={setStudioServerPublicationFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate} reportReceiptStorageScope={studioStorageScope} persistReportReceiptOnDevice={reportReceiptDeviceEligible} aiEntitlement={studioAIEntitlement} />}
+      {view === "studio" && <StudioView key={studioOpenRevision} standalone={studioOnly} locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} packageRequiresPlayableRoute={packageRequiresPlayableRoute} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} applyCanonicalMarkdownDraft={applyCanonicalMarkdownDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} serverPublicationFingerprint={studioServerPublicationFingerprint} setServerPublicationFingerprint={setStudioServerPublicationFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate} reportReceiptStorageScope={studioStorageScope} persistReportReceiptOnDevice={reportReceiptDeviceEligible} aiEntitlement={studioAIEntitlement} restorePending={studioAIEntitlement === "loading" || (studioAIEntitlement !== "unavailable" && !studioRestoreReady)} />}
       {view === "community" && <CommunityView locale={locale} cases={catalogueRecords} openCustomCase={openWorkspaceCustomCase} refreshCatalogue={() => refreshCatalogue({ force: true })} clearDeviceDraft={purgeLocalStudioState} />}
       {view === "help" && <HelpView locale={locale} openCommunity={() => navigate("community")} openStudio={() => navigate("studio")} />}
       {(selectedOption || resultOption) && activeScenario && stage && <DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} busy={playSessionBusy} close={() => { if (!playSessionBusy) { setSelectedOption(null); setResultOption(null); } }} dispatch={dispatchDecision} advance={advanceStage} finalStage={Boolean(activeScenario.stages.find((item) => item.id === (selectedOption ?? resultOption)?.nextStageId)?.terminal)} />}
@@ -2254,7 +2261,7 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, ledger, 
               : authoredAvailability.available;
             const exhausted = scenario.mobileParity ? uses > 0 && option.repeatability === "once" : authoredAvailability.exhausted;
             const authoredCost = scenario.mobileParity ? option.costAuthored === true : true;
-            const economics = `${authoredCost ? `€ ${option.cost.toLocaleString()}` : (locale === "en" ? "COST NOT AUTHORED" : "ЗАТРАТЫ НЕ ЗАДАНЫ")} · ${option.minutes} MIN`;
+            const economics = `${option.minutes} ${locale === "en" ? "min" : "мин"} · ${authoredCost ? `€ ${option.cost.toLocaleString()}` : (locale === "en" ? "Cost not specified" : "Стоимость не указана")}`;
             const nextDay = option.completionDayOffset !== undefined && option.completionDayOffset > 0 ? (locale === "en" ? " · NEXT WORKDAY" : " · СЛЕДУЮЩИЙ РАБОЧИЙ ДЕНЬ") : "";
             const stateLabel = sessionSync === "opening"
               ? (locale === "en" ? "OPENING SERVER RUN" : "ЗАПУСК СЕРВЕРНОГО РАСЧЁТА")
@@ -2288,7 +2295,7 @@ function PlayView({ locale, text, scenario, stage, stageIndex, metrics, ledger, 
         />
       )}
     </section>
-    <OperationsDossier locale={locale} materials={visibleMaterials} activeMaterial={activeMaterial} selectMaterial={setDossierRef} caseId={scenario.caseId} decisions={decisionLog}/></main>;
+    <Suspense fallback={<aside className="dossier-pane" aria-busy="true">{locale === "en" ? "Loading documents…" : "Загрузка документов…"}</aside>}><OperationsDossier locale={locale} materials={visibleMaterials} activeMaterial={activeMaterial} selectMaterial={setDossierRef} caseId={scenario.caseId} decisions={decisionLog}/></Suspense></main>;
 }
 
 function DebriefView({ locale, text, scenario, metrics, ledger, decisionLog, outcome, canonicalOutcome, exportSession, replayCase, returnLibrary, returnToStudio = false, returnLabel, requestFeedback }: { locale: Locale; text: UiText; scenario: Scenario; metrics: Record<MetricKey, number>; ledger: RunLedger; decisionLog: DecisionRecord[]; outcome: OutcomeClass; canonicalOutcome?: NonNullable<DecisionOption["resolvedOutcome"]>; exportSession: () => void; replayCase: () => void; returnLibrary: () => void; returnToStudio?: boolean; returnLabel?: string; requestFeedback: () => void }) {
@@ -2515,7 +2522,7 @@ type StudioViewProps = {
   canManagePrivacy: boolean; setCanManagePrivacy: (value: boolean) => void;
   serverFingerprint: string | null; setServerFingerprint: (value: string | null) => void;
   serverPublicationFingerprint: string | null; setServerPublicationFingerprint: (value: string | null) => void;
-  copyProtectionLocked: boolean; setCopyProtectionLocked: (value: boolean) => void; canDuplicate: boolean; aiEntitlement: StudioAIEntitlement;
+  copyProtectionLocked: boolean; setCopyProtectionLocked: (value: boolean) => void; canDuplicate: boolean; aiEntitlement: StudioAIEntitlement; restorePending: boolean;
   reportReceiptStorageScope: string | null; persistReportReceiptOnDevice: boolean;
 };
 
@@ -2538,7 +2545,7 @@ function computeStudioDerivations(source: StudioDraft): StudioDerivations {
   };
 }
 
-function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, packageRequiresPlayableRoute, generateDraft, applyPromptIteration, applyReviewedAIPlan, applyCanonicalMarkdownDraft, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadExample, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, serverPublicationFingerprint, setServerPublicationFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, reportReceiptStorageScope, persistReportReceiptOnDevice, aiEntitlement }: StudioViewProps) {
+function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, packageRequiresPlayableRoute, generateDraft, applyPromptIteration, applyReviewedAIPlan, applyCanonicalMarkdownDraft, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadExample, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, serverPublicationFingerprint, setServerPublicationFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, reportReceiptStorageScope, persistReportReceiptOnDevice, aiEntitlement, restorePending }: StudioViewProps) {
   const [workspaceState, setWorkspaceState] = useState<"idle" | "saving" | "saved" | "submitted" | "conflict" | "auth_required" | "error">("idle");
   const [linkSourceId, setLinkSourceId] = useState<string | null>(null);
   const [relationStatus, setRelationStatus] = useState("");
@@ -2551,6 +2558,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   const [aiError, setAIError] = useState("");
   const [promptLimitNotice, setPromptLimitNotice] = useState(false);
   const [aiResult, setAIResult] = useState<{ key: string; baseFingerprint: string; plan: StudioPromptPlan; model: string | null; requestId: string | null } | null>(null);
+  const [editorOpened, setEditorOpened] = useState(false);
   const [displayMode, setDisplayMode] = useState<"user" | "developer">("user");
   const [guidedStep, setGuidedStep] = useState<GuidedStudioStep>(1);
   const [workspaceSavedFingerprint, setWorkspaceSavedFingerprint] = useState<string | null>(null);
@@ -2717,7 +2725,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     const width = viewport?.clientWidth ?? graphDeckRef.current?.clientWidth ?? 1_200;
     const bounds = graphBoundsRef.current;
     // Fit the width and let the reader scroll down through a long decision flow.
-    const scale = Math.max(0.85, Math.min(1, (width - 28) / bounds.width));
+    const scale = Math.max(0.95, Math.min(1, (width - 28) / bounds.width));
     setGraphZoom(scale);
     // Wait for CSS zoom and the new canvas bounds to settle, then return to a
     // deterministic origin. Smooth scrolling could be interrupted and leave
@@ -2783,6 +2791,18 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   }, [graphDraftIdentity, draft.nodes]);
 
   useEffect(() => {
+    function restoreEntry() {
+      const params = new URL(window.location.href).searchParams;
+      setEditorOpened(["studio_step", "example", "import", "auth_continue", "dossier"].some((key) => Boolean(params.get(key))));
+    }
+    restoreEntry();
+    window.addEventListener("popstate", restoreEntry);
+    window.addEventListener("genesis-studio-navigation", restoreEntry);
+    return () => { window.removeEventListener("popstate", restoreEntry); window.removeEventListener("genesis-studio-navigation", restoreEntry); };
+  }, []);
+
+  useEffect(() => {
+    if (!editorOpened || restorePending) return;
     guidedWorkflowRestoredRef.current = false;
     const timer = window.setTimeout(() => {
       const queryStep = parseStudioWorkflowStep(new URL(window.location.href).searchParams.get("studio_step"));
@@ -2790,29 +2810,27 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
       try { storedStep = parseStudioWorkflowStep(window.localStorage.getItem(guidedWorkflowKey)); } catch { /* URL state remains authoritative when device storage is unavailable. */ }
       const restoredStep = restoredStudioWorkflowStep(guidedDraftIsEmpty, queryStep, storedStep);
       guidedWorkflowRestoredRef.current = true;
-      if (guidedDraftIsEmpty) {
-        const stage = serializedStudioWorkflowStep(1);
-        try { window.localStorage.setItem(guidedWorkflowKey, stage); } catch { /* Guided navigation remains available without device persistence. */ }
-        const url = new URL(window.location.href);
-        if (url.searchParams.get("studio_step") !== stage) {
-          url.searchParams.set("studio_step", stage);
-          window.history.replaceState(window.history.state, "", url);
-        }
+      const stage = serializedStudioWorkflowStep(restoredStep);
+      try { window.localStorage.setItem(guidedWorkflowKey, stage); } catch { /* Guided navigation remains available without device persistence. */ }
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("studio_step") !== stage) {
+        url.searchParams.set("studio_step", stage);
+        window.history.replaceState(window.history.state, "", url);
       }
       setGuidedStep(restoredStep);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [guidedDraftIsEmpty, guidedWorkflowKey]);
+  }, [guidedDraftIsEmpty, guidedWorkflowKey, editorOpened, restorePending]);
 
   useEffect(() => {
-    if (!guidedWorkflowRestoredRef.current) return;
+    if (!editorOpened || !guidedWorkflowRestoredRef.current) return;
     const stage = serializedStudioWorkflowStep(guidedStep);
     try { window.localStorage.setItem(guidedWorkflowKey, stage); } catch { /* Guided navigation still works without device persistence. */ }
     const url = new URL(window.location.href);
     if (url.searchParams.get("studio_step") === stage) return;
     url.searchParams.set("studio_step", stage);
     window.history.replaceState(window.history.state, "", url);
-  }, [guidedStep, guidedWorkflowKey]);
+  }, [guidedStep, guidedWorkflowKey, editorOpened]);
 
   useEffect(() => {
     function restoreGuidedStepFromHistory() {
@@ -2820,7 +2838,8 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
       if (step) setGuidedStep(guidedDraftIsEmpty ? 1 : step);
     }
     window.addEventListener("popstate", restoreGuidedStepFromHistory);
-    return () => window.removeEventListener("popstate", restoreGuidedStepFromHistory);
+    window.addEventListener("genesis-studio-navigation", restoreGuidedStepFromHistory);
+    return () => { window.removeEventListener("popstate", restoreGuidedStepFromHistory); window.removeEventListener("genesis-studio-navigation", restoreGuidedStepFromHistory); };
   }, [guidedDraftIsEmpty]);
 
   useEffect(() => {
@@ -3030,8 +3049,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
       setDraft({ ...before, nodes });
       recordVisualEdit("node_moved", locale === "en" ? `Visual edit: applied ${orientation} auto-layout.` : `Визуальная правка: авто-раскладка ${orientation === "vertical" ? "сверху вниз" : "слева направо"}.`, before);
     }
-    const viewportWidth = graphViewportRef.current?.clientWidth ?? graphDeckRef.current?.clientWidth ?? 900;
-    setGraphZoom(Math.max(0.72, Math.min(1, viewportWidth / 900)));
+    setGraphZoom(1);
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => graphViewportRef.current?.scrollTo({ left: 0, top: 0, behavior: "auto" })));
     if (changed) setRelationStatus(locale === "en" ? `${orientation === "vertical" ? "Vertical" : "Horizontal"} layout applied.` : `Применена ${orientation === "vertical" ? "вертикальная" : "горизонтальная"} раскладка.`);
   }
@@ -3096,6 +3114,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
   function startBlankDraft() {
     const reset = resetDraft();
     if (reset !== false) { clearTransientEditorSelection(); setGraphOrientation("vertical"); selectGuidedStep(1); }
+    return reset !== false;
   }
 
   function startExampleDraft() {
@@ -3392,6 +3411,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     recordVisualEdit("node_moved", locale === "en" ? `Visual edit: nudged “${node.title}” ${event.key.replace("Arrow", "").toLowerCase()} by ${step}px.` : `Визуальная правка: узел «${node.title}» сдвинут на ${step}px.`, before);
   }
 
+  const visibleChecks = displayMode === "developer" ? checks : checks.filter((check) => check.level === "warn");
   const firstSubmissionWarning = checks.find((check) => check.level === "warn")?.text ?? "";
   const submitBlocker = !canDuplicate
     ? (locale === "en" ? "This protected case is available for inspection only." : "Этот защищённый кейс доступен только для просмотра.")
@@ -3426,17 +3446,28 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     const { applyCaseType } = await import("./case-type-registry");
     applyCaseChange(locale === "en" ? "case type" : "тип кейса", (current) => applyCaseType(current, id));
   }
+  function browseDemos() {
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", "demos");
+    url.searchParams.delete("studio_step");
+    window.history.pushState(window.history.state, "", url);
+    window.dispatchEvent(new Event("genesis-studio-navigation"));
+    window.dispatchEvent(new Event("genesis-interface-change"));
+  }
+  function enterEditor() { setEditorOpened(true); }
+  if (!editorOpened && displayMode === "user") return <>
+    <Suspense fallback={<main className="studio-entry"><p role="status">{locale === "en" ? "Loading your workspace…" : "Загрузка рабочего пространства…"}</p></main>}><StudioEntryScreen locale={locale} savedCasesHref={workspaceDestination("/matters", typeof window === "undefined" ? "/studio" : window.location.pathname + window.location.search + window.location.hash)} recentTitle={draft.title.trim() || (draft.nodes.length || prompt.trim() ? (locale === "en" ? "Untitled case" : "Кейс без названия") : "")}
+      onCreate={() => { if (startBlankDraft()) setEditorOpened(true); }} onImport={() => importRef.current?.click()} onDemo={browseDemos} onContinue={enterEditor}/></Suspense>
+    <input ref={importRef} className="visually-hidden" type="file" accept=".json,.md,.txt,application/json,text/markdown,text/plain" aria-label={locale === "en" ? "Import case or prompt" : "Импортировать кейс или промпт"} onChange={(event) => { const file = event.target.files?.[0]; if (file) { enterEditor(); void loadStudioFile(file); } event.target.value = ""; }}/>
+  </>;
   const portableStudioActions = <Suspense fallback={null}><StudioUserMoreActions grouped={displayMode === "user"} locale={locale} canDuplicate={canDuplicate} exportReady={derivationsSettled && Boolean(draft.title.trim()) && Boolean(draft.nodes.length)} feedbackLabel={text.feedback} importLabel={text.importCustom} exportLabel={text.exportCustom} startExample={startExampleDraft} startTax={startTaxTemplate} requestFeedback={requestFeedback} importJson={()=>importRef.current?.click()} exportJson={exportDraft} saveDevice={saveDraft} markdownLoaded={loadCasePrompt} markdownOpened={()=>{setCaseReportStatus("");setCaseMarkdownOpen(true);}} markdownFailed={setCaseReportStatus}/></Suspense>;
     return <main className={`studio-view studio-${displayMode}-view studio-guided-step-${guidedStep} ${canDuplicate ? "" : "studio-inspection-view"}`} data-readonly={!canDuplicate || undefined}>
       <section className="studio-hero page-width">
         <div>
-          <div className="eyebrow"><span className="live-dot"/>{standalone ? (locale === "en" ? "GENESIS: JURIS · CASE STUDIO" : "GENESIS: JURIS · СТУДИЯ КЕЙСОВ") : displayMode === "user" ? (locale === "en" ? "CASE STUDIO · GUIDED AUTHORING" : "СТУДИЯ КЕЙСОВ · ПОШАГОВОЕ СОЗДАНИЕ") : "AUTHORING LAB · VISUAL + PROMPT"}</div>
-          <h1>{standalone ? (locale === "en" ? "Turn a task into a decision" : "От задачи — к решению") : displayMode === "user" ? (locale === "en" ? "Build your case" : "Создайте свой кейс") : text.author}</h1>
-          <p>{standalone ? (locale === "en" ? "Open an example, load a case or describe your task. Compare options and prepare an analytical report." : "Откройте пример, загрузите кейс или опишите задачу. Сравните варианты и подготовьте аналитический отчёт.") : displayMode === "user" ? (locale === "en" ? "Describe the situation, review the proposed scheme, adjust it visually and test the result." : "Опишите ситуацию, проверьте предложенную схему, скорректируйте её визуально и протестируйте результат.") : text.authorLead}</p>
-          <div className="studio-display-mode" role="group" aria-label={locale === "en" ? "Studio interface mode" : "Режим интерфейса Студии"}>
-            <button type="button" className={displayMode === "user" ? "active" : ""} aria-pressed={displayMode === "user"} onClick={() => changeDisplayMode("user")}><Icon name="person"/>{locale === "en" ? "Guided · User view" : "Пошагово · Вид пользователя"}</button>
-            <button type="button" className={displayMode === "developer" ? "active" : ""} aria-pressed={displayMode === "developer"} onClick={() => changeDisplayMode("developer")}><Icon name="studio"/>{locale === "en" ? "Expert · Developer view" : "Экспертно · Вид разработчика"}</button>
-          </div>
+          <div className="studio-case-breadcrumb"><button type="button" onClick={() => { const url = new URL(window.location.href); url.searchParams.delete("studio_step"); window.history.pushState(window.history.state, "", url); setEditorOpened(false); }}>{locale === "en" ? "Case Studio" : "Студия кейсов"}</button><span aria-hidden="true">/</span><span>{locale === "en" ? "Working draft" : "Рабочий черновик"}</span></div>
+          <h1>{draft.title.trim() || (locale === "en" ? "Describe your case" : "Опишите свой кейс")}</h1>
+          <p>{locale === "en" ? "Documents, evidence and reasoning for one explainable decision." : "Документы, доказательства и обоснования для объяснимого решения."}</p>
+          <label className="studio-view-select"><span>{locale === "en" ? "View" : "Вид"}</span><select aria-label={locale === "en" ? "Studio view" : "Вид Студии"} value={displayMode} onChange={event => changeDisplayMode(event.target.value as "user" | "developer")}><option value="user">{locale === "en" ? "User view" : "Вид пользователя"}</option><option value="developer">{locale === "en" ? "Developer view" : "Вид разработчика"}</option></select></label>
         </div>
         <div className="studio-actions">
           <button className="secondary-cta" onClick={startBlankDraft}><Icon name="reset"/>{text.newDraft}</button>
@@ -3454,9 +3485,10 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     {!canDuplicate && <aside className="studio-readonly-notice page-width" role="status"><Icon name="file"/><div><b>{locale === "en" ? "Inspection-only case" : "Кейс только для просмотра"}</b><p>{locale === "en" ? "You can inspect the graph and rules, but this protected case cannot be edited, copied, exported or saved. Start a blank draft or open the worked example to author a separate case." : "Вы можете изучать схему и правила, но этот защищённый кейс нельзя редактировать, копировать, экспортировать или сохранять. Создайте новый черновик или откройте учебный пример для отдельной работы."}</p></div></aside>}
     <aside className="confidentiality-notice page-width"><Icon name="alert"/><p>{locale === "en" ? "Confidentiality: do not enter client-identifiable, privileged, personal or secret information. Use synthetic or de-identified facts and public legal sources." : "Конфиденциальность: не вводите сведения, идентифицирующие клиента, адвокатскую тайну, персональные данные или секреты. Используйте синтетические или обезличенные факты и публичные источники права."}</p></aside>
     {(displayMode === "developer" || !draftWithinEnvelope) && <div className={`draft-envelope page-width ${draftWithinEnvelope ? "" : "limit"}`} role={draftWithinEnvelope ? undefined : "alert"}><span>{locale === "en" ? "Studio case envelope" : "Объём кейса Studio"}</span><progress max={STUDIO_DRAFT_SERIALIZED_LIMIT} value={Math.min(draftBytes, STUDIO_DRAFT_SERIALIZED_LIMIT)}/><b>{Math.ceil(draftBytes / 1_000).toLocaleString()} / 900 KB</b>{!draftWithinEnvelope && <em>{locale === "en" ? "Shorten node or relation details before AI, workspace save or submission." : "Сократите описания узлов или связей перед AI-анализом, сохранением или отправкой."}</em>}</div>}
-    {displayMode === "user" && <Suspense fallback={null}><StudioGuidedWizard locale={locale} activeStep={guidedStep} readiness={guidedReadiness} caseName={draft.title} saveState={visibleWorkspaceState} validationReady={validationReady} onStepChange={selectGuidedStep} onFocusBrief={() => document.getElementById("studio-case-brief")?.focus()} onStartExample={startExampleDraft} onBrowseDemos={() => { const url = new URL(window.location.href); url.searchParams.set("view", "demos"); window.history.pushState(window.history.state, "", url); window.dispatchEvent(new PopStateEvent("popstate")); }} onImport={() => importRef.current?.click()}/></Suspense>}
+    {displayMode === "user" && <Suspense fallback={null}><StudioGuidedWizard locale={locale} activeStep={guidedStep} playableRoute={packageRequiresPlayableRoute} readiness={guidedReadiness} caseName={draft.title} saveState={visibleWorkspaceState} validationReady={validationReady} onStepChange={selectGuidedStep} onFocusBrief={() => document.getElementById("studio-case-brief")?.focus()} onStartExample={startExampleDraft} onBrowseDemos={() => { const url = new URL(window.location.href); url.searchParams.set("view", "demos"); window.history.pushState(window.history.state, "", url); window.dispatchEvent(new Event("genesis-studio-navigation"));
+    window.dispatchEvent(new Event("genesis-interface-change")); }} onImport={() => importRef.current?.click()}/></Suspense>}
     {(displayMode === "developer" || guidedStep === 3) && <Suspense fallback={null}><StudioCaseTypeSelector locale={locale} value={draft.caseType} disabled={!canDuplicate} onChange={changeCaseType}/><StudioCasePlaybook locale={locale} draft={draft} phase="intake"/></Suspense>}
-    {displayMode === "user" && <section className="studio-user-undo page-width" aria-label={locale === "en" ? "Recent changes" : "Последние изменения"} inert={!canDuplicate}><div><Icon name="file"/><span>{locale === "en" ? `${timeline.cursor} saved change${timeline.cursor === 1 ? "" : "s"} in this session` : `Изменений в этой сессии: ${timeline.cursor}`}</span></div><div><button onClick={undoDraft} disabled={timeline.cursor === 0 || !canDuplicate}><Icon name="arrow"/>{locale === "en" ? "Undo" : "Отменить"}</button><button onClick={redoDraft} disabled={timeline.cursor >= timeline.revisions.length || !canDuplicate}>{locale === "en" ? "Redo" : "Повторить"}<Icon name="arrow"/></button></div></section>}
+    {displayMode === "user" && timeline.revisions.length > 0 && <section className="studio-user-undo page-width" aria-label={locale === "en" ? "Recent changes" : "Последние изменения"} inert={!canDuplicate}><div><Icon name="file"/><span>{locale === "en" ? `${timeline.cursor} saved change${timeline.cursor === 1 ? "" : "s"} in this session` : `Изменений в этой сессии: ${timeline.cursor}`}</span></div><div><button onClick={undoDraft} disabled={timeline.cursor === 0 || !canDuplicate}><Icon name="arrow"/>{locale === "en" ? "Undo" : "Отменить"}</button><button onClick={redoDraft} disabled={timeline.cursor >= timeline.revisions.length || !canDuplicate}>{locale === "en" ? "Redo" : "Повторить"}<Icon name="arrow"/></button></div></section>}
     {displayMode === "developer" && <section className="studio-history page-width" aria-labelledby="studio-history-title" inert={!canDuplicate}>
       <header>
         <div><span>{locale === "en" ? "Prompt & edit history" : "История промпта и правок"}</span><h2 id="studio-history-title">{locale === "en" ? "One case, one continuous authoring record" : "Один кейс — единая история редактирования"}</h2></div>
@@ -3549,13 +3581,15 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
     {(editableDealModel || (taxDraft && taxResult)) && <Suspense fallback={null}><StudioOutcomeParameters locale={locale} dealModel={editableDealModel} taxModel={taxModel} taxResult={taxDraft ? taxResult : null} taxBaseBreakdown={taxBaseBreakdown} ratePrompt={derivedPrompt} rateDraft={draft} disabled={!canDuplicate} beginFieldEdit={beginFieldEdit} commitDealField={commitDealEconomicsField} setDealModel={setDealEconomicsChange} changeRepaymentBasis={(repaymentBasis) => { const before=draft; setDealEconomicsChange({repaymentBasis}); recordVisualEdit("case_updated", locale === "en" ? "Visual edit: changed cash-flow repayment basis." : "Визуальная правка: изменён вид погашения cash-flow.", before); }} applyTaxChange={applyTaxEconomicsChange} changeTaxCurrency={changeTaxEconomicsCurrency}/></Suspense>}
     {(draft.dealEconomics || draft.nodes.some((node) => node.type === "cash_flow")) && <Suspense fallback={<section className="deal-outcome deal-outcome-empty page-width" role="status"><p>{locale === "en" ? "Calculating case cash flow…" : "Расчёт денежного потока…"}</p></section>}><DealOutcomePanel locale={locale} draft={draft}/></Suspense>}
     </>}
-    {(displayMode === "developer" || guidedStep === 4) && <Suspense fallback={null}><StudioCaseViews locale={locale} draft={draft} developerView={displayMode === "developer"} onFocusNode={(nodeId) => { focusGraphNode(nodeId); document.querySelector(".studio-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}/></Suspense>}
+    {(displayMode === "developer" || guidedStep === 4) && <details className="studio-map-context page-width" open={displayMode === "developer" ? true : undefined}><summary>{locale === "en" ? "Explore evidence, issues & options" : "Доказательства, вопросы и варианты"}</summary><Suspense fallback={null}><StudioCaseViews locale={locale} draft={draft} developerView={displayMode === "developer"} onFocusNode={(nodeId) => { focusGraphNode(nodeId); document.querySelector(".studio-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}/></Suspense></details>}
     {(displayMode === "developer" || guidedStep === 4) && <section className="studio-workspace">
+      <details className="graph-add-controls" open={displayMode === "developer" ? true : undefined}><summary>{locale === "en" ? "Add to decision map" : "Добавить на карту решений"}</summary>
       <aside className="node-palette" inert={!canDuplicate}><div className="pane-heading"><span>{text.addNode}</span><b>{String(paletteNodeTypes.length).padStart(2,"0")}</b></div>{paletteNodeTypes.map((type) => <button key={type} disabled={!canDuplicate || draft.nodes.length >= 200} onClick={() => { addNode(type, visibleGraphCenter()); setRelationStatus(locale === "en" ? "Node added in view centre." : "Нода добавлена по центру."); }}><i style={{background:typeColors[type]}}/><span>{text.nodeTypes[type]}</span><Icon name="plus"/></button>)}<p>{locale === "en" ? "New nodes open in the visible centre. Connect OUT to IN; edits remain undoable." : "Ноды появляются по центру. Соединяйте ВЫХОД со ВХОДОМ; правки можно отменить."}</p></aside>
+      </details>
       <section className="graph-deck" ref={graphDeckRef}>
         <div className="graph-heading"><div><span>{text.graph}</span><b>{draft.title}</b></div><div className="graph-heading-actions"><div>{displayMode === "developer" ? <><code>{draft.nodes.length} NODES</code><code>{draft.links.length} LINKS</code></> : <span className="graph-counts">{draft.nodes.length} {locale === "en" ? "nodes" : "узлов"} · {draft.links.length} {locale === "en" ? "connections" : "связей"}</span>}</div><div className="graph-zoom-controls" aria-label={locale === "en" ? "Graph view controls" : "Управление видом схемы"}><label className="graph-orientation-control"><span>{locale === "en" ? "Flow" : "Поток"}</span><select disabled={!layoutEngine} value={graphOrientation} onChange={(event) => { const orientation = event.target.value as GraphOrientation; setGraphOrientation(orientation); void autoLayoutGraph(orientation); }} aria-label={locale === "en" ? "Graph orientation" : "Ориентация схемы"}><option value="vertical">{locale === "en" ? "Vertical" : "Вертикально"}</option><option value="horizontal">{locale === "en" ? "Horizontal" : "Горизонтально"}</option></select></label><button type="button" disabled={!canDuplicate || !layoutEngine || draft.nodes.length < 2} onClick={() => void autoLayoutGraph()}>{locale === "en" ? "Auto-layout" : "Авто-раскладка"}</button><button type="button" onClick={fitGraph}>{locale === "en" ? "Fit" : "Вместить"}</button><button type="button" onClick={() => setGraphZoom(1)}>100%</button><button type="button" onClick={centerGraph}>{locale === "en" ? "Center" : "По центру"}</button></div></div></div>
-        <div id="graph-connect-status" className="graph-connect-status" role="status" aria-live="polite" tabIndex={-1}><span className={linkSourceId || selectedRuleLinkId || selectedNodeId ? "armed" : ""}/>{relationStatus || (locale === "en" ? "Connect: select OUT then IN. Select a node or relation and press Delete to remove it." : "Связь: выберите ВЫХОД, затем ВХОД. Выделите узел или связь и нажмите Delete для удаления.")}{linkSourceId && <button onClick={() => { setLinkSourceId(null); setRelationStatus(""); }}>{locale === "en" ? "Cancel" : "Отмена"}</button>}</div>
-        <Suspense fallback={null}><GraphMilestones locale={locale} nodes={draft.nodes} select={focusGraphNode}/></Suspense>
+        <div id="graph-connect-status" className="graph-connect-status" role="status" aria-live="polite" tabIndex={-1}><span className={linkSourceId || selectedRuleLinkId || selectedNodeId ? "armed" : ""}/>{relationStatus || (displayMode === "user" ? (locale === "en" ? "Select a step to read its evidence and reasoning. Scroll down to follow the route." : "Выберите этап, чтобы изучить доказательства и обоснования. Прокрутите вниз по маршруту.") : (locale === "en" ? "Connect: select OUT then IN. Select a node or relation and press Delete to remove it." : "Связь: выберите ВЫХОД, затем ВХОД. Выделите узел или связь и нажмите Delete для удаления."))}{linkSourceId && <button onClick={() => { setLinkSourceId(null); setRelationStatus(""); }}>{locale === "en" ? "Cancel" : "Отмена"}</button>}</div>
+        <details className="graph-milestone-disclosure" open={displayMode === "developer" ? true : undefined}><summary>{locale === "en" ? "Timeline & milestones" : "Временная шкала и этапы"}</summary><Suspense fallback={null}><GraphMilestones locale={locale} nodes={draft.nodes} select={focusGraphNode}/></Suspense></details>
         <div className="graph-viewport" ref={graphViewportRef} aria-label={locale === "en" ? "Resizable graph viewport" : "Изменяемое окно схемы"}>
         <div className={`graph-canvas graph-orientation-${graphOrientation}`} style={{ zoom: graphZoom, width: graphBounds.width, height: graphBounds.height }}>
           <svg className="graph-links" aria-label={locale === "en" ? "Case relationships" : "Связи кейса"}>{draft.links.map((link) => { const from=nodeById.get(link.from); const to=nodeById.get(link.to); if(!from||!to)return null; const geometry=graphLinkGeometry(from,to,graphOrientation); const selected=selectedRuleLinkId===link.id; return <g key={link.id} className={`graph-link ${selected?"selected":""}`} role="button" tabIndex={0} aria-pressed={selected} aria-label={locale === "en" ? `Relation from ${from.title} to ${to.title}. Press Delete to remove.` : `Связь от «${from.title}» к «${to.title}». Нажмите Delete для удаления.`} onClick={() => selectGraphLink(link)} onKeyDown={(event) => { if(event.key==="Enter"||event.key===" "){event.preventDefault();selectGraphLink(link);} }}><title>{from.title} → {to.title}</title><path className="graph-link-hit" d={geometry.path}/><path className="graph-link-visible" d={geometry.path}/><circle cx={geometry.endX} cy={geometry.endY} r="3"/></g>; })}</svg>
@@ -3570,7 +3604,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
         </div></div>
         <div className="graph-resize-hint"><span aria-hidden="true">↕</span>{locale === "en" ? "Drag the lower edge to resize the graph window" : "Потяните нижний край, чтобы изменить высоту окна схемы"}</div>
         <div className="graph-legend">{(Object.keys(typeColors) as StudioNodeType[]).map((type)=><span key={type}><i style={{background:typeColors[type]}}/>{text.nodeTypes[type]}</span>)}</div>
-        <details className="graph-relations" open>
+        <details className="graph-relations" open={displayMode === "developer" ? true : undefined}>
           <summary>{displayMode === "developer" ? (locale === "en" ? "Relationship & Rules DSL editor" : "Редактор связей и Rules DSL") : (locale === "en" ? "Connections and player choices" : "Связи и выборы игрока")} · {draft.links.length}</summary>
           {draft.links.length ? <>
             {relationPageCount > 1 && <nav className="relation-pagination" aria-label={locale === "en" ? "Relationship pages" : "Страницы связей"}><button type="button" disabled={safeRelationPage === 0} onClick={() => setRelationPage((page) => Math.max(0, page - 1))}><Icon name="arrow"/>{locale === "en" ? "Previous" : "Назад"}</button><span>{safeRelationPage * relationPageSize + 1}–{Math.min(draft.links.length, (safeRelationPage + 1) * relationPageSize)} / {draft.links.length}</span><button type="button" disabled={safeRelationPage >= relationPageCount - 1} onClick={() => setRelationPage((page) => Math.min(relationPageCount - 1, page + 1))}>{locale === "en" ? "Next" : "Далее"}<Icon name="arrow"/></button></nav>}
@@ -3587,7 +3621,7 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
           </> : <p>{locale === "en" ? "No relations yet. Use node ports or the inspector to create one." : "Связей пока нет. Используйте порты узлов или инспектор."}</p>}
         </details>
       </section>
-      <aside className="node-inspector"><div className="pane-heading"><span>{text.inspector}</span><b>{selectedNode?"01":"00"}</b></div>{selectedNode?<div className="inspector-form" inert={!canDuplicate}>
+      <aside className="node-inspector"><div className="pane-heading"><span>{text.inspector}</span><b>{selectedNode?"01":"00"}</b></div>{selectedNode?<>{displayMode === "user" && <Suspense fallback={<p role="status">{locale === "en" ? "Loading step…" : "Загрузка шага…"}</p>}><StudioNodeSummary node={selectedNode} locale={locale}/></Suspense>}<details className="inspector-edit" open={displayMode === "developer" ? true : undefined}><summary>{locale === "en" ? "Edit this step" : "Редактировать шаг"}</summary><div className="inspector-form" inert={!canDuplicate}>
         <div className="selected-type"><i style={{background:typeColors[selectedNode.type]}}/><span>{text.nodeTypes[selectedNode.type]}</span>{displayMode === "developer" && <code>{selectedNode.id}</code>}</div>
         <label><span>{text.nodeType}</span><select value={selectedNode.type} onChange={(event)=>{ const type=event.target.value as StudioNodeType; if(type!==selectedNode.type){ const before=draft; updateNode({type,runtime:runtimeForNodeType(selectedNode.runtime,type)}); recordVisualEdit("node_updated", locale === "en" ? `Visual edit: changed “${selectedNode.title}” from ${text.nodeTypes[selectedNode.type]} to ${text.nodeTypes[type]}.` : `Визуальная правка: тип узла «${selectedNode.title}» изменён на «${text.nodeTypes[type]}».`, before); } }}>{(Object.keys(typeColors) as StudioNodeType[]).map((type)=><option key={type} value={type}>{text.nodeTypes[type]}</option>)}</select></label>
         <label><span>{text.title}</span><input value={selectedNode.title} onFocus={(event)=>beginFieldEdit(event.currentTarget.value)} onChange={(event)=>updateNode({title:event.target.value})} onBlur={(event)=>commitNodeField(text.title,event.currentTarget.value)}/></label>
@@ -3609,9 +3643,9 @@ function StudioView({ standalone = false, locale, text, prompt, setPrompt, draft
         </fieldset>}
         <div className="inspector-destination-picker">{destinationNodes.length > STUDIO_NODE_MENU_PAGE_SIZE && <label className="node-menu-search"><span>{locale === "en" ? "Find destination" : "Найти назначение"}</span><input type="search" value={destinationNodeQuery} placeholder={locale === "en" ? "Title, type or ID" : "Название, тип или ID"} onChange={(event) => { setDestinationNodeQuery(event.target.value); setDestinationNodePage(0); }}/></label>}<label><span>{locale === "en" ? "Connect selected node to" : "Связать выбранный узел с"}</span><select value="" onChange={(event) => { const target=event.target.value; if(!target)return; const issue=canUseRelation(selectedNode.id,target); if(issue){setRelationStatus(issue);return;} addLink(selectedNode.id,target); setRelationStatus(locale === "en" ? "Relation created." : "Связь создана."); }}><option value="">{locale === "en" ? "Choose destination…" : "Выберите узел…"}</option>{destinationNodeMenu.nodes.map((node)=><option key={node.id} value={node.id}>{text.nodeTypes[node.type]} · {node.title}{displayMode === "developer" ? ` · ${node.id}` : ""}</option>)}</select></label>{destinationNodeMenu.pageCount > 1 && <div className="node-menu-pagination"><span>{destinationNodeMenu.start}–{destinationNodeMenu.end} / {destinationNodeMenu.total}</span><button type="button" disabled={destinationNodeMenu.page === 0} onClick={() => setDestinationNodePage(destinationNodeMenu.page - 1)} aria-label={locale === "en" ? "Previous destinations" : "Предыдущие назначения"}><Icon name="arrow"/></button><button type="button" disabled={destinationNodeMenu.page >= destinationNodeMenu.pageCount - 1} onClick={() => setDestinationNodePage(destinationNodeMenu.page + 1)} aria-label={locale === "en" ? "Next destinations" : "Следующие назначения"}><Icon name="arrow"/></button></div>}</div>
         <button className="danger-button" onClick={() => { const relations=draft.links.filter((link)=>link.from===selectedNode.id||link.to===selectedNode.id).length; if(!relations || window.confirm(locale === "en" ? `Delete this node and ${relations} connected relation(s)?` : `Удалить узел и связанные связи (${relations})?`)) deleteNode(); }}><Icon name="trash"/>{text.deleteNode}</button>
-      </div>:<p className="empty-inspector">{text.noSelection}</p>}</aside>
+      </div></details></>:<p className="empty-inspector">{text.noSelection}</p>}</aside>
     </section>}
-    {(displayMode === "developer" || guidedStep === 5) && <section className="studio-bottom page-width"><div id="studio-checks" className="checks-panel"><div className="panel-title"><span>{text.checks}</span><b>{checks.filter((check)=>check.level==="warn").length.toString().padStart(2,"0")}</b></div>{checks.map((check,index)=><div key={index} className={`check-row ${check.level}`}><Icon name={check.level==="ok"?"check":"alert"}/><span>{check.text}</span></div>)}<p>{text.localNote}</p></div><div className="preview-panel"><div className="panel-title"><span>{locale === "en" ? "Test readiness" : "Готовность к тесту"}</span><b>{draft.nodes.length === 0 ? (locale === "en" ? "START" : "СТАРТ") : !derivationsSettled ? (locale === "en" ? "CHECKING" : "ПРОВЕРКА") : compiledDraft.scenario ? (locale === "en" ? "READY" : "ГОТОВО") : `${compiledDraft.issues.length} ${locale === "en" ? "TO FIX" : "ИСПРАВИТЬ"}`}</b></div><div className="preview-card compiler-card"><div className="preview-index">{locale === "en" ? "PLAYABLE CASE PREVIEW" : "ПРЕДПРОСМОТР ИГРАБЕЛЬНОГО КЕЙСА"}</div><h2>{locale === "en" ? "Test the case you built" : "Проверьте собранный кейс"}</h2>{draft.nodes.length === 0 ? <div className="compiler-empty"><p>{locale === "en" ? "Your new draft is empty. Return to the brief or decision map; validation will start after the first node appears." : "Новый черновик пуст. Вернитесь к описанию или карте решений — проверка начнётся после появления первого узла."}</p></div> : !derivationsSettled ? <div className="compiler-empty" role="status"><p>{locale === "en" ? "Checking the latest edit in the background. Test and save will unlock when this exact graph is ready." : "Последняя правка проверяется в фоне. Тест и сохранение станут доступны для этой точной версии схемы."}</p></div> : <><p>{locale === "en" ? `Case: ${draft.title || "Untitled case"}. Before testing, every route must start clearly and finish at an Outcome.` : `Кейс: ${draft.title || "Без названия"}. Перед тестом каждый маршрут должен иметь понятное начало и завершаться узлом «Исход».`}</p>{compiledDraft.scenario ? <><dl><div><dt>{locale === "en" ? "Playable stages" : "Игровых стадий"}</dt><dd>{compiledDraft.scenario.stages.length}</dd></div><div><dt>{locale === "en" ? "Player choices" : "Вариантов действий"}</dt><dd>{compiledDraft.scenario.stages.reduce((sum, stage) => sum + stage.options.length, 0)}</dd></div></dl>{compiledDraft.warnings.map((warning) => <p className="compiler-warning" key={warning}>{warning}</p>)}<button className="primary-cta" onClick={playDraft}><Icon name="play"/>{locale === "en" ? "Test this case" : "Протестировать кейс"}</button></> : <div className="compiler-issues">{compiledDraft.issues.map((issue) => <div key={issue.code}><Icon name="alert"/><span>{compilerIssueText(issue)}</span>{issue.nodeIds[0] && <button type="button" onClick={() => { const nodeId=issue.nodeIds[0]; selectGraphNode(nodeId); selectGuidedStep(4); }}>{locale === "en" ? "Fix on decision map" : "Исправить на карте"}</button>}</div>)}</div>}</>}</div></div></section>}
+    {(displayMode === "developer" || guidedStep === 5) && <section className="studio-bottom page-width"><div id="studio-checks" className="checks-panel"><div className="panel-title"><span>{displayMode === "developer" ? text.checks : (locale === "en" ? "Before final review" : "Перед итоговой проверкой")}</span><b>{checks.filter((check)=>check.level==="warn").length.toString().padStart(2,"0")}</b></div>{visibleChecks.length === 0 && displayMode === "user" && <p>{locale === "en" ? "Completeness checks passed. Review the evidence and reasoning before sharing." : "Проверки полноты пройдены. Проверьте доказательства и обоснование перед отправкой."}</p>}{visibleChecks.map((check,index)=><div key={index} className={`check-row ${check.level}`}><Icon name={check.level==="ok"?"check":"alert"}/><span>{check.text}</span></div>)}<p>{text.localNote}</p></div><div className="preview-panel"><div className="panel-title"><span>{locale === "en" ? "Test readiness" : "Готовность к тесту"}</span><b>{draft.nodes.length === 0 ? (locale === "en" ? "START" : "СТАРТ") : !derivationsSettled ? (locale === "en" ? "CHECKING" : "ПРОВЕРКА") : compiledDraft.scenario ? (locale === "en" ? "READY" : "ГОТОВО") : `${compiledDraft.issues.length} ${locale === "en" ? "TO FIX" : "ИСПРАВИТЬ"}`}</b></div><div className="preview-card compiler-card"><div className="preview-index">{locale === "en" ? "PLAYABLE CASE PREVIEW" : "ПРЕДПРОСМОТР ИГРАБЕЛЬНОГО КЕЙСА"}</div><h2>{locale === "en" ? "Test the case you built" : "Проверьте собранный кейс"}</h2>{draft.nodes.length === 0 ? <div className="compiler-empty"><p>{locale === "en" ? "Your new draft is empty. Return to the brief or decision map; validation will start after the first node appears." : "Новый черновик пуст. Вернитесь к описанию или карте решений — проверка начнётся после появления первого узла."}</p></div> : !derivationsSettled ? <div className="compiler-empty" role="status"><p>{locale === "en" ? "Checking the latest edit in the background. Test and save will unlock when this exact graph is ready." : "Последняя правка проверяется в фоне. Тест и сохранение станут доступны для этой точной версии схемы."}</p></div> : <><p>{locale === "en" ? `Case: ${draft.title || "Untitled case"}. Before testing, every route must start clearly and finish at an Outcome.` : `Кейс: ${draft.title || "Без названия"}. Перед тестом каждый маршрут должен иметь понятное начало и завершаться узлом «Исход».`}</p>{compiledDraft.scenario ? <><dl><div><dt>{locale === "en" ? "Playable stages" : "Игровых стадий"}</dt><dd>{compiledDraft.scenario.stages.length}</dd></div><div><dt>{locale === "en" ? "Player choices" : "Вариантов действий"}</dt><dd>{compiledDraft.scenario.stages.reduce((sum, stage) => sum + stage.options.length, 0)}</dd></div></dl>{compiledDraft.warnings.map((warning) => <p className="compiler-warning" key={warning}>{warning}</p>)}<button className="primary-cta" onClick={playDraft}><Icon name="play"/>{locale === "en" ? "Test this case" : "Протестировать кейс"}</button></> : <div className="compiler-issues">{compiledDraft.issues.map((issue) => <div key={issue.code}><Icon name="alert"/><span>{compilerIssueText(issue)}</span>{issue.nodeIds[0] && <button type="button" onClick={() => { const nodeId=issue.nodeIds[0]; selectGraphNode(nodeId); selectGuidedStep(4); }}>{locale === "en" ? "Fix on decision map" : "Исправить на карте"}</button>}</div>)}</div>}</>}</div></div></section>}
     {(displayMode === "developer" || guidedStep === 5) && !packageRequiresPlayableRoute && <Suspense fallback={null}><StudioPackageValidationCard locale={locale} draft={draft} warningCount={checks.filter((check) => check.level === "warn").length}/></Suspense>}
     {displayMode === "user" && guidedStep === 6 && <Suspense fallback={null}><StudioCasePlaybook locale={locale} draft={draft} phase="outputs"/></Suspense>}
     {displayMode === "user" && guidedStep === 6 && <section className="studio-finish page-width" aria-labelledby="studio-finish-title">

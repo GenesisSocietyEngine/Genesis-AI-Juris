@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, studioDeviceDraftKey, studioDeviceScope } from "../studio-device-storage";
 import styles from "./account.module.css";
 import WorkspaceNavigation from "../WorkspaceNavigation";
+import { workspaceDestination } from "../workspace-navigation";
 import { useInterfaceLocale } from "../use-interface-locale";
 
 export type AccountProfile = {
@@ -142,8 +143,7 @@ export default function AccountClient({
     }
   }
 
-  return <main className={styles.shell}>
-    <WorkspaceNavigation active="/account"/>
+  return <><WorkspaceNavigation active="/account"/><main className={styles.shell}>
     <header className={styles.hero}>
       <h1>{identity ? t("Your account", "Ваш аккаунт") : t("Sign in and start your case", "Войдите и начните работу")}</h1>
       <p>{t("Use your ChatGPT account. A separate password is optional. After sign-in you can return to your task.", "Используйте аккаунт ChatGPT. Отдельный пароль необязателен. После входа вы сможете вернуться к своей задаче.")}</p>
@@ -153,7 +153,7 @@ export default function AccountClient({
       <h2>{t("Start with ChatGPT", "Начать через ChatGPT")}</h2>
       <p>{t("Then open an example, import a case or describe your task.", "Затем откройте пример, загрузите кейс или опишите задачу.")}</p>
       <a className={styles.primaryLink} href={chatGPTSignInUrl} target="_top">{t("Continue with ChatGPT", "Продолжить через ChatGPT")}</a>
-      <a className={styles.secondaryLink} href={returnTo}>{t("Explore Studio first", "Сначала открыть Студию")}</a>
+      <a className={styles.secondaryLink} href={workspaceDestination("/studio", "/account?lang=" + locale + "&return_to=" + encodeURIComponent(returnTo))}>{t("Explore Studio first", "Сначала открыть Студию")}</a>
     </section>}
 
     {identity && <section className={styles.identity} aria-label="Current identity">
@@ -173,7 +173,7 @@ export default function AccountClient({
         <p>{t("No update subscriptions are enabled. You can edit your profile in Workspace.", "Подписки на обновления не включаются. Профиль можно изменить в рабочем пространстве.")}</p>
         <button className={styles.primaryLink} disabled={busy !== null}>{busy === "profile" ? t("Saving…", "Сохранение…") : t("Save profile and continue", "Сохранить профиль и продолжить")}</button>
       </form> : <p role="alert">{t("Your profile could not be loaded. Refresh before changing it.", "Не удалось загрузить профиль. Обновите страницу перед изменением.")}</p>}
-      <a className={styles.secondaryLink} href={returnTo}>{t("Explore Studio without completing registration", "Открыть Студию без завершения регистрации")}</a>
+      <a className={styles.secondaryLink} href={workspaceDestination("/studio", "/account?lang=" + locale + "&return_to=" + encodeURIComponent(returnTo))}>{t("Explore Studio without completing registration", "Открыть Студию без завершения регистрации")}</a>
     </section>}
     {recoveryCode && <section className={styles.recoveryReveal} aria-live="polite">
       <span>{t("DISPLAYED ONCE", "ПОКАЗЫВАЕТСЯ ОДИН РАЗ")}</span><h2>{t("Save your replacement recovery code", "Сохраните новый код восстановления")}</h2>
@@ -241,7 +241,7 @@ export default function AccountClient({
         <p>Сброс по email использует одноразовую ссылку на 15 минут и не выполняет автоматический вход. Администратор может только инициировать письмо на сохранённый адрес; пароль и токен ему не показываются. Офлайн-код и доверенный вход ChatGPT остаются резервными способами.</p>
       </div>
     </details>
-  </main>;
+  </main></>;
 }
 
 function PasswordFields({ locale }: { locale: "en" | "ru" }) {

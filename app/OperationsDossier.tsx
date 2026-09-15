@@ -24,12 +24,13 @@ export default function OperationsDossier({ locale, materials, activeMaterial, s
       <h3>{activeMaterial.title[locale]}</h3>
       <dl>
         <div><dt>{en ? "Source" : "Источник"}</dt><dd>{activeMaterial.source[locale].replace("Canonical mobile case record", "Case record")}</dd></div>
-        <div><dt>{en ? "Date / time" : "Дата / время"}</dt><dd>{activeMaterial.date}</dd></div>
+        <div><dt>{en ? "Date / time" : "Дата / время"}</dt><dd>{activeMaterial.date === "CANONICAL" ? (en ? "Not recorded" : "Не указано") : activeMaterial.date}</dd></div>
       </dl>
       <details className="material-record-details"><summary>{en ? "Record details" : "Сведения о записи"}</summary><dl>
         <div><dt>{en ? "Reference" : "Код документа"}</dt><dd><code>{activeMaterial.ref}</code></dd></div>
         <div><dt>{en ? "Case reference" : "Код кейса"}</dt><dd><code>{caseId}</code></dd></div>
         <div><dt>{en ? "Record type" : "Тип записи"}</dt><dd>{activeMaterial.type[locale]}</dd></div>
+        {activeMaterial.date === "CANONICAL" && <div><dt>{en ? "Original date field" : "Исходное поле даты"}</dt><dd>{activeMaterial.date}</dd></div>}
       </dl></details>
     </article> : <p className="pane-intro">{en ? "No documents are available at this stage." : "На этом этапе документы ещё недоступны."}</p>}
     {decisions.length > 0 && <section className="mini-log"><h3>{en ? "Decision record" : "Принятые решения"}</h3>{decisions.map((entry, index) => <div key={`${entry.option.id}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><p>{entry.option.label[locale]}</p></div>)}</section>}

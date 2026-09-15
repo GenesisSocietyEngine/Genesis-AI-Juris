@@ -44,6 +44,19 @@ export default function OrganizationBoundary({ children, signedIn, signInUrl }: 
     window.addEventListener("pageshow", onPageShow);
     return () => { controller.abort(); window.removeEventListener("pageshow", onPageShow); };
   }, [signedIn]);
+  if (!signedIn) return <>
+    <WorkspaceNavigation active={location.split("?")[0]}/>
+    <main className={styles.accessEmpty}>
+      <h1>{t("Your team's case workspace", "Рабочее пространство вашей команды")}</h1>
+      <p>{t("Sign in to continue saved cases, review evidence with your team and prepare reports for approval.", "Войдите, чтобы продолжить сохранённые дела, проверить доказательства с командой и подготовить отчёты к утверждению.")}</p>
+      <p>{t("Just exploring? Canopy and the playable demos are available without an account.", "Знакомитесь с продуктом? Canopy и игровые демо доступны без аккаунта.")}</p>
+      <div className={styles.accessEmptyActions}>
+        <a href={signInUrl} target="_top">{t("Sign in to continue", "Войти и продолжить")}</a>
+        <a href={workspaceDestination("/studio?view=demos", location)}>{t("Open demo case", "Открыть демо-кейс")}</a>
+        <a href={workspaceDestination("/account", location)}>{t("Account options", "Варианты входа")}</a>
+      </div>
+    </main>
+  </>;
   return <>
     <WorkspaceNavigation active={location.split("?")[0]}/>
     <div className={styles.contextBar}>
@@ -56,7 +69,7 @@ export default function OrganizationBoundary({ children, signedIn, signInUrl }: 
       <Link href={workspaceDestination("/organizations", location)}>{t("Manage organizations", "Управление организациями")}</Link>
 
     <small>{t("Changing organization opens its case list and clears the current case context.", "Смена организации откроет её список дел и сбросит контекст текущего дела.")}</small></div>
-    {issue && <p className={styles.issue} role="alert">{issue} <a href={signInUrl} target="_top">{t("Sign in", "Войти")}</a> · <a href={workspaceDestination("/account", location)}>{t("Account", "Аккаунт")}</a></p>}
+    {issue && <p className={styles.issue} role="alert">{issue.includes(" / ") ? issue.split(" / ")[locale === "ru" ? 1 : 0] : issue} <a href={signInUrl} target="_top">{t("Sign in", "Войти")}</a> · <a href={workspaceDestination("/account", location)}>{t("Account", "Аккаунт")}</a></p>}
     {active ? children : !issue ? <p className={styles.loading} role="status">{t("Loading your organization…", "Загрузка организации…")}</p> : null}
   </>;
 }

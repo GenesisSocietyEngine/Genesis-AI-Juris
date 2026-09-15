@@ -18,7 +18,7 @@ export function workspaceSignInPath(returnTo: string) {
 
 export function workspacePagePath(path: string, params: Record<string, string | string[] | undefined>) {
   const query = new URLSearchParams();
-  for (const key of ["organization", "dossier", "scenario", "run", "lang", "view", "studio_step", "return_to"]) {
+  for (const key of ["organization", "dossier", "scenario", "run", "lang", "view", "studio_step", "section", "return_to"]) {
     const value = params[key];
     if (typeof value === "string" && value.length <= 2048) query.set(key, key === "return_to" ? safeWorkspaceReturn(value) : value);
   }

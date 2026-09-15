@@ -100,10 +100,10 @@ test("the workspace exposes the seven bounded conceptual destinations in the req
     { key: "overview", label: "Overview" },
     { key: "documents", label: "Documents & evidence" },
     { key: "evidence", label: "Evidence review" },
-    { key: "decision-packages", label: "Decision packages" },
-    { key: "requests", label: "Requests & deadlines" },
-    { key: "outputs", label: "Outputs & approvals" },
-    { key: "activity", label: "Activity" },
+    { key: "decision-packages", label: "Decision package" },
+    { key: "requests", label: "Tasks & reviews" },
+    { key: "outputs", label: "Reports" },
+    { key: "activity", label: "Audit" },
   ]);
 });
 
@@ -320,10 +320,10 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.match(client, /role="tablist"/);
   assert.match(client, /mobileSectionSelect/);
   assert.match(boundary, /<WorkspaceNavigation active=/);
-  assert.match(navigation, /\["\/matters", "My cases", "Мои дела"\]/);
+  assert.match(navigation, /GenesisNavigation/);
   const navigationMarkup = renderToStaticMarkup(createElement(WorkspaceNavigation, { active: "/canopy" }));
-  assert.match(navigationMarkup, /href="\/studio\?view=demos" aria-current="page">Demo cases<\/a>/);
-  assert.match(navigationMarkup, /href="\/matters">My cases<\/a>/);
+  assert.match(navigationMarkup, /href="\/studio\?view=demos" aria-current="page"/);
+  assert.match(navigationMarkup, /href="\/matters"/);
   assert.match(client, /matter\.documentCount/);
   assert.match(client, /<details className=\{styles\.advancedFilters\}>/);
   assert.match(client, /view === "developer" \? ` · REVISION/);

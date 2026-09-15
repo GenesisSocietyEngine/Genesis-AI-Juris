@@ -2,10 +2,10 @@ export const MATTER_DESTINATIONS = [
   { key: "overview", label: "Overview", shortLabel: "Overview" },
   { key: "documents", label: "Documents & evidence", shortLabel: "Documents" },
   { key: "evidence", label: "Evidence review", shortLabel: "Evidence" },
-  { key: "decision-packages", label: "Decision packages", shortLabel: "Packages" },
-  { key: "requests", label: "Requests & deadlines", shortLabel: "Requests" },
-  { key: "outputs", label: "Outputs & approvals", shortLabel: "Outputs" },
-  { key: "activity", label: "Activity", shortLabel: "Activity" },
+  { key: "decision-packages", label: "Decision package", shortLabel: "Decision" },
+  { key: "requests", label: "Tasks & reviews", shortLabel: "Tasks" },
+  { key: "outputs", label: "Reports", shortLabel: "Reports" },
+  { key: "activity", label: "Audit", shortLabel: "Audit" },
 ] as const;
 
 export type MatterDestination = (typeof MATTER_DESTINATIONS)[number]["key"];

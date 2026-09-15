@@ -15,9 +15,9 @@ test("both Studio shells render real navigation links with locale and organizati
       hasActiveScenario: true, toggleLocale: noop, toggleTheme: noop, dark: false,
     }));
     assert.match(markup, /aria-current="page"[^>]*>.*?(Case Studio|Студия кейсов)/);
-    for (const view of ["studio", "play", "demos", "library"]) assert.ok(markup.includes(`view=${view}&amp;organization=org_example&amp;lang=${locale}`), view);
-    for (const route of ["/matters", "/account", "/organizations"]) assert.ok(markup.includes(`href="${route}?organization=org_example&amp;lang=${locale}"`), route);
-    assert.match(markup, /<details class="app-more"><summary>/, "secondary actions are closed on first render");
+    for (const view of ["play", "demos"]) assert.ok(markup.includes(`view=${view}&amp;organization=org_example&amp;lang=${locale}`), view);
+    for (const route of ["/studio", "/templates", "/matters", "/account", "/organizations"]) assert.ok(markup.includes(`href="${route}?organization=org_example&amp;lang=${locale}"`), route);
+    assert.match(markup, /<details class="genesis-nav-more"><summary>/, "secondary actions are closed on first render");
     assert.ok(markup.includes(locale === "en" ? "Restore a play session" : "Восстановить прохождение"));
     assert.ok(markup.includes(locale === "en" ? "Export play session" : "Экспорт прохождения"));
   }

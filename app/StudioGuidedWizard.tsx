@@ -43,13 +43,10 @@ export default function StudioGuidedWizard({
   activeStep,
   readiness,
   onStepChange,
-  onFocusBrief,
-  onStartExample,
-  onBrowseDemos,
-  onImport,
   caseName,
   saveState,
   validationReady,
+  playableRoute = true,
 }: {
   locale: Locale;
   activeStep: GuidedStudioStep;
@@ -62,8 +59,14 @@ export default function StudioGuidedWizard({
   caseName: string;
   saveState: "idle" | "saving" | "saved" | "submitted" | "conflict" | "auth_required" | "error";
   validationReady: boolean;
+  playableRoute?: boolean;
 }) {
-  const steps = copy[locale];
+  const steps = copy[locale].map((step, index) => {
+    if (playableRoute) return step;
+    if (index === 3) return { ...step, description: locale === "en" ? "Trace the issues through supporting evidence and options to a reasoned outcome. Make assumptions and unanswered questions visible." : "Свяжите вопросы с доказательствами, вариантами и обоснованным исходом. Покажите допущения и открытые вопросы." };
+    if (index === 4) return { ...step, title: locale === "en" ? "Review the decision package" : "Проверьте пакет решений", description: locale === "en" ? "Check evidence coverage and compare the options. Resolve the listed gaps before sharing a final report." : "Проверьте доказательства и сравните варианты. Устраните перечисленные пробелы перед выпуском итогового отчёта.", ready: locale === "en" ? "The decision package passes its completeness checks." : "Пакет решений прошёл проверку полноты." };
+    return step;
+  });
   const completed = readiness.filter(Boolean).length;
   const current = steps[activeStep - 1];
   const canContinue = activeStep === 6 || readiness[activeStep - 1];
@@ -80,15 +83,9 @@ export default function StudioGuidedWizard({
   }
 
   return <section className="studio-guide-shell page-width" id="studio-guided-workflow" aria-labelledby="studio-guided-title">
-    {activeStep === 1 && <div className="studio-quick-starts" aria-label={locale === "en" ? "Quick starts" : "Быстрый старт"}>
-      <button type="button" onClick={onStartExample}><span>01</span><b>{locale === "en" ? "Open Canopy" : "Открыть Canopy"}</b><small>{locale === "en" ? "Explore the prepared decision map" : "Изучите готовую карту решений"}</small></button>
-      <button type="button" onClick={onImport}><span>02</span><b>{locale === "en" ? "Load a case or prompt" : "Загрузить кейс или промпт"}</b><small>{locale === "en" ? "Saved case (.json), case prompt (.md) or text (.txt)" : "Кейс (.json), промпт (.md) или текст (.txt)"}</small></button>
-      <button type="button" onClick={onFocusBrief}><span>03</span><b>{locale === "en" ? "Describe a task" : "Описать задачу"}</b><small>{locale === "en" ? "Start with a plain-language brief" : "Начните с описания обычным языком"}</small></button>
-    </div>}
-    {activeStep === 1 && onBrowseDemos && <button type="button" className="studio-browse-demos" onClick={onBrowseDemos}>{locale === "en" ? "Browse all demo cases" : "Все демо-кейсы"}</button>}
     <header className="studio-guide-progress studio-guide-progress-compact">
       <div>
-        <h2 id="studio-guided-title">{caseName.trim() || (locale === "en" ? "New case" : "Новый кейс")}</h2>
+        <h2 className="visually-hidden" id="studio-guided-title">{caseName.trim() || (locale === "en" ? "New case" : "Новый кейс")}</h2>
         <p className={`studio-guide-save save-${saveState}`}><span>{saveLabel}</span><span aria-hidden="true"> · </span><span>{validationReady ? (locale === "en" ? "Ready to test" : "Готово к тесту") : (locale === "en" ? "Work in progress" : "В работе")}</span></p>
       </div>
       <div className="studio-guide-meter" aria-label={locale === "en" ? `${completed} of 6 sections contain data` : `Заполнено разделов: ${completed} из 6`}>
@@ -116,11 +113,13 @@ export default function StudioGuidedWizard({
       <div className="studio-guide-task-copy">
         <h3>{current.title}</h3>
         <p>{current.description}</p>
+        <div className="studio-step-context"><span><b>{locale === "en" ? "Input" : "Нужно"}</b>{(locale === "en" ? ["A brief or supported case file", "A proposed or imported structure", "Sources, facts and assumptions", "Choices, evidence and outcomes", "A complete decision route", "Your reviewed working case"] : ["Описание или файл кейса", "Предложенная или импортированная структура", "Источники, факты и допущения", "Варианты, доказательства и исходы", "Полный маршрут решения", "Проверенный рабочий кейс"])[activeStep-1]}</span><span><b>{locale === "en" ? "Next" : "Далее"}</b>{(locale === "en" ? ["Review before applying", "Confirm facts and evidence", "Connect the decision map", "Test the case", "Save and create a report", "Share for independent review"] : ["Проверить перед применением", "Подтвердить факты и материалы", "Связать карту решений", "Протестировать кейс", "Сохранить и создать отчёт", "Отправить на независимую рецензию"])[activeStep-1]}</span></div>
+        {!readiness[activeStep-1] && <small className="step-incomplete">{(locale === "en" ? ["To complete: create or import a structured draft.", "To complete: review and apply the proposed draft.", "To complete: confirm the title, jurisdiction and role.", "To complete: connect choices to outcomes.", "To complete: resolve the reported checks.", "To complete: save your work or submit it for review."] : ["Для завершения: создайте или импортируйте структуру.", "Для завершения: проверьте и примените черновик.", "Для завершения: укажите название, юрисдикцию и роль.", "Для завершения: свяжите варианты с исходами.", "Для завершения: устраните замечания проверки.", "Для завершения: сохраните или отправьте на рецензию."])[activeStep-1]}</small>}
         {readiness[activeStep - 1] && <small className="ready">✓ {current.ready}</small>}
       </div>
       <div className="studio-guide-navigation">
         {activeStep > 1 && <button type="button" className="secondary-cta" onClick={() => changeStep((activeStep - 1) as GuidedStudioStep)}>{locale === "en" ? "Back" : "Назад"}</button>}
-        {activeStep < 6 && <button type="button" className="primary-cta" disabled={!canContinue} onClick={() => changeStep((activeStep + 1) as GuidedStudioStep)}>{locale === "en" ? "Continue" : "Продолжить"}<span aria-hidden="true">→</span></button>}
+        {activeStep < 6 && canContinue && <button type="button" className="primary-cta" disabled={!canContinue} onClick={() => changeStep((activeStep + 1) as GuidedStudioStep)}>{locale === "en" ? "Continue" : "Продолжить"}<span aria-hidden="true">→</span></button>}
       </div>
     </div>
 

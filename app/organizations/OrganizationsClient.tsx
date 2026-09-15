@@ -58,11 +58,11 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
   }
   const roleLabel = (role: string) => ({ org_owner: t("Organization owner", "Владелец организации"), org_admin: t("Administrator", "Администратор"),
     member: t("Member", "Участник"), auditor: t("Auditor", "Аудитор") }[role] ?? role);
-  return <main className={styles.page} lang={locale}><WorkspaceNavigation active="/organizations"/>
-    <h1>{t("Organizations", "Организации")}</h1>
+  return <><WorkspaceNavigation active="/organizations"/><main className={styles.page} lang={locale}>
+    <h1>{t("Administration", "Администрирование")}</h1>
     <p>{t("Choose the team you are working with. Access to each case is assigned separately.", "Выберите команду для работы. Доступ к каждому делу назначается отдельно.")}</p>
     <p className={styles.pilot}>{t("Pilot workspace · synthetic or de-identified files only", "Пилотная версия · только синтетические или обезличенные файлы")}</p>
-    {issue && <p className={styles.issue} role="alert">{issue} <a href={signInUrl} target="_top">{t("Sign in", "Войти")}</a> · <Link href="/account">{t("Account", "Аккаунт")}</Link></p>}
+    {issue && <p className={styles.issue} role="alert">{issue.includes(" / ") ? issue.split(" / ")[locale === "ru" ? 1 : 0] : issue} <a href={signInUrl} target="_top">{t("Sign in", "Войти")}</a> · <Link href="/account">{t("Account", "Аккаунт")}</Link></p>}
     {notice && <p role="status">{notice}</p>}
     {!workspace && !issue && <p role="status">{t("Loading organizations…", "Загрузка организаций…")}</p>}
     {workspace && <>
@@ -91,6 +91,7 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
         </section>
       </div>
       {selected && <section className={styles.panel}><h2>{selected.name}</h2>
+        <p>{t("Organization roles control team administration. Access to each case is assigned separately. Review the person's role and status before changing access.", "Роли организации управляют командой. Доступ к каждому делу назначается отдельно. Перед изменением доступа проверьте роль и статус участника.")}</p>
         {workspace.members.length > 0 && <div className={styles.tableWrap}><table><caption>{t("Members and organization access", "Участники и доступ к организации")}</caption><thead><tr><th>{t("Name", "Имя")}</th><th>{t("Role", "Роль")}</th><th>{t("Status", "Статус")}</th><th>{t("Access", "Доступ")}</th></tr></thead><tbody>
           {workspace.members.map((m) => <tr key={m.actorId}><td>{m.name}</td><td>{roleLabel(m.role)}</td><td>{t(m.status, { active: "Активен", suspended: "Приостановлен", removed: "Удалён" }[m.status] ?? m.status)}</td><td>
             {owner && m.role !== "org_owner" && m.status !== "removed" && <button disabled={busy || selected.status !== "active"} onClick={() => void action({ action: "member", organizationId: selected.id, actorId: m.actorId, role: m.role,
@@ -113,5 +114,5 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
         <details><summary>{t("Organization activity", "История организации")}</summary><ul>{workspace.events.map((e) => <li key={e.id}>{e.occurredAt.slice(0,16).replace("T"," ")} · {e.action.replaceAll("_"," ")}</li>)}</ul></details>
       </section>}
     </>}
-  </main>;
+  </main></>;
 }
