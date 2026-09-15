@@ -62,3 +62,10 @@ test("late responses cannot publish completion into another case or a newer refr
   current = false; finish({ status: "updated", revision: 9 }); await pending;
   assert.deepEqual(states.map(state => state.phase), ["updating"]);
 });
+
+
+test("operation recovery requires the exact submitted idempotency key",()=>{
+  assert.equal(savedOutcomeReceipt(payload,{...expected,operationKey:"original-key"}),null);
+  assert.ok(savedOutcomeReceipt({...payload,disposition:{...payload.disposition,idempotencyKey:"original-key"}},{...expected,operationKey:"original-key"}));
+  assert.equal(savedOutcomeReceipt({...payload,disposition:{...payload.disposition,idempotencyKey:"other-key"}},{...expected,operationKey:"original-key"}),null);
+});

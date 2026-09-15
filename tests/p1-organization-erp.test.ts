@@ -40,6 +40,9 @@ let mf: Miniflare;
 let d1: D1Database;
 let bucket: R2Bucket;
 let alice: Actor, bob: Actor, reviewer: Actor, viewer: Actor;
+let beforeBatchSkip=0;
+let beforeBatch: (() => Promise<void>) | undefined;
+const phase2Migrations: string[] = [];
 let afterObjectRead: (() => Promise<void>) | undefined;
 let afterObjectWrite: (() => Promise<void>) | undefined;
 let orgA: string, orgB: string, dossierId: string, documentId: string, versionId: string;
@@ -55,6 +58,7 @@ const erpDraft = normalizeStudioDraft(JSON.parse(readFileSync(fixtureRoot + "erp
 const paths = {
   login: "app/api/auth/login/route.ts",
   register: "app/api/auth/register/route.ts", logout: "app/api/auth/logout/route.ts",
+  notes: "app/api/dossiers/[dossierId]/notes/route.ts",
   dispositions: "app/api/dossiers/[dossierId]/dispositions/route.ts",
   presentation: "app/api/dossiers/[dossierId]/outputs/[outputId]/presentation/route.ts",
   catalog: "app/api/catalog/[caseId]/route.ts",
@@ -120,10 +124,12 @@ before(async () => {
   const journal = JSON.parse(readFileSync("drizzle/meta/_journal.json", "utf8"));
   for (const entry of journal.entries) {
     const statements = readFileSync(`drizzle/${entry.tag}.sql`, "utf8").split("--> statement-breakpoint").map((s) => s.trim()).filter(Boolean);
-    await d1.batch(statements.map((s) => d1.prepare(s)));
+    if(entry.idx>=22)phase2Migrations.push(...statements);
+    else await d1.batch(statements.map((s) => d1.prepare(s)));
   }
   const observedD1 = new Proxy(d1, { get(target, property) {
     if (property === "batch") return async (statements: D1PreparedStatement[]) => {
+      const hook=beforeBatchSkip>0?(beforeBatchSkip--,undefined):beforeBatch;if(hook)beforeBatch=undefined;await hook?.();
       try { return await target.batch(statements); } catch (error) { lastBatchError = error; throw error; }
     };
     const value = Reflect.get(target, property, target);
@@ -392,8 +398,175 @@ test("Dependable actions: historical disposition and citation retirement persist
  const freshOutput=await json(await call("outputs",alice,orgA,"POST",{action:"generate",expectedRevision:revision,snapshotId:freshSnapshot.snapshot.snapshot_id,format:"json_manifest"},params),201);
  const freshReport=await (await call("outputDownload",alice,orgA,"GET",undefined,{dossierId,outputId:freshOutput.output.output_id})).text();assert.match(freshReport,/citation_retirements/);assert.match(freshReport,new RegExp(String(anchor.id)));
  writeFileSync(".artifacts/p1-route-tests/retirement-reviewed-report.json",freshReport);
+ const originalReplay=await json(await call("dispositions",reviewer,orgA,"POST",fields,params));assert.equal(originalReplay.dossier.revision,result.dossier.revision);
+ const recoveredOriginal=await json(await call("dispositions",reviewer,orgA,"GET",undefined,params,"?kind=deadline&id="+fields.recordId+"&operation_key="+fields.idempotencyKey));assert.equal(recoveredOriginal.dossier.revision,result.dossier.revision);
+ await json(await call("dispositions",alice,orgA,"GET",undefined,params,"?kind=deadline&id="+fields.recordId+"&operation_key="+fields.idempotencyKey),404);
  assert.equal((await d1.prepare("PRAGMA foreign_key_check").all()).results.length,0);
  writeFileSync(".artifacts/p1-route-tests/dependable-actions-evidence.json",JSON.stringify({environment:"Miniflare D1/R2 actual handlers; trusted-header simulation, not browser authentication",deadlineReceipt,audit,retirement:await d1.prepare("SELECT * FROM dossier_source_anchor_retirements WHERE dossier_id=?").bind(dossierId).first(),oldPdfBytesPreserved:true},null,2));
+});
+
+test("Phase 2: fresh schema and v86 upgrade preserve governed data and sealed bytes", async () => {
+  const { DatabaseSync }=await import("node:sqlite");
+  const fresh=new DatabaseSync(":memory:");fresh.exec("PRAGMA foreign_keys=ON");
+  const journal=JSON.parse(readFileSync("drizzle/meta/_journal.json","utf8"));
+  for(const entry of journal.entries){fresh.exec("BEGIN");for(const statement of readFileSync(`drizzle/${entry.tag}.sql`,"utf8").split("--> statement-breakpoint").filter(s=>s.trim()))fresh.exec(statement);fresh.exec("COMMIT");}
+  assert.equal(fresh.prepare("PRAGMA foreign_key_check").all().length,0);fresh.close();
+  const capture=async()=>{
+    const tables=["dossiers","dossier_deadline_dispositions","dossier_source_anchor_retirements","dossier_snapshots","dossier_governed_outputs","dossier_audit_events","dossier_revision_receipts"];
+    return Promise.all(tables.map(table=>d1.prepare(`SELECT * FROM ${table} ORDER BY 1,2`).all().then(r=>r.results)));
+  };
+  const before=await capture();
+  const pdf=new Uint8Array(await (await call("outputDownload",alice,orgA,"GET",undefined,{dossierId,outputId})).arrayBuffer());
+  await d1.batch(phase2Migrations.map(s=>d1.prepare(s)));
+  assert.deepEqual(await capture(),before);
+  assert.deepEqual(new Uint8Array(await (await call("outputDownload",alice,orgA,"GET",undefined,{dossierId,outputId})).arrayBuffer()),pdf);
+  assert.equal((await d1.prepare("PRAGMA foreign_key_check").all()).results.length,0);
+});
+
+test("Phase 2: working notes persist, replay, conflict and preserve governed outputs",async(t)=>{
+  type NoteResult={note:{id:string;caseId:string;revision:number;title:string;body:string};operation:{id:string;key:string;sourceLinkId:string};current?:{revision:number};replayed?:boolean;code?:string;sources?:Array<{id:string;retired:boolean;locator:unknown}>;count?:number;history?:Array<{revision:number;action:string}>};
+  const params={dossierId};
+  const notes=async(body:unknown,actor:Actor|null=alice,status=200)=>{
+    const response=await call("notes",actor,orgA,"POST",body,params);const result=await response.json() as NoteResult;
+    assert.equal(response.status,status,JSON.stringify(result)+" "+String(lastBatchError));return result;
+  };
+  const read=async(query:string,actor:Actor|null=alice,status=200)=>{
+    const response=await call("notes",actor,orgA,"GET",undefined,params,query);assert.equal(response.status,status,await response.clone().text());return response.json() as Promise<NoteResult>;
+  };
+  const state=async()=>({case:await d1.prepare("SELECT * FROM dossiers WHERE id=?").bind(dossierId).first(),
+    outputs:(await d1.prepare("SELECT * FROM dossier_governed_outputs WHERE dossier_id=? ORDER BY id").bind(dossierId).all()).results,
+    snapshots:(await d1.prepare("SELECT * FROM dossier_snapshots WHERE dossier_id=? ORDER BY id").bind(dossierId).all()).results,
+    events:(await d1.prepare("SELECT * FROM dossier_output_state_events WHERE dossier_id=? ORDER BY id").bind(dossierId).all()).results});
+  const contributor=await newActor("notes-contributor");await invite(contributor);
+  const enrolled=await json(await call("participants",alice,orgA,"POST",{actorId:contributor.actorId,role:"contributor",expectedRevision:revision},params),201);revision=enrolled.dossier.revision;
+  const before=await state();
+  const pdf=new Uint8Array(await (await call("outputDownload",alice,orgA,"GET",undefined,{dossierId,outputId})).arrayBuffer());
+  const created=await notes({action:"create",title:"Synthetic review notebook",type:"analysis",body:"Original working analysis",expectedRevision:0,idempotencyKey:"note-create-original"},alice,201);
+  const noteId=created.note.id;
+  let noteRevision=created.note.revision;
+  await t.test("save, independent reload and lost-response replay retain immutable original revision",async()=>{
+    const payload={action:"save",noteId,title:"Updated review notebook",type:"analysis",body:"Retained proposal",expectedRevision:noteRevision,idempotencyKey:"note-save-original"};
+    const saved=await notes(payload);noteRevision=saved.note.revision;
+    assert.equal((await read("?note_id="+noteId+"&organization="+orgA)).note.body,"Retained proposal");
+    const later=await notes({...payload,body:"Later authorized text",expectedRevision:noteRevision,idempotencyKey:"note-save-later"});noteRevision=later.note.revision;
+    const recovered=await read("?operation_key=note-save-original");assert.deepEqual(recovered.note,saved.note);assert.equal(recovered.operation.id,saved.operation.id);
+    const replay=await notes(payload);assert.deepEqual(replay.note,saved.note);assert.equal(replay.replayed,true);
+    assert.equal((await notes({...payload,body:"Changed payload under old key"},alice,409)).code,"operation_key_conflict");
+    assert.equal((await read("?note_id="+noteId)).note.body,"Later authorized text");
+  });
+  await t.test("concurrent same-revision saves have one winner and current comparison for loser",async()=>{
+    const a={action:"save",noteId,title:"Concurrent review",type:"analysis",body:"Proposal A",expectedRevision:noteRevision,idempotencyKey:"note-concurrent-a"};
+    const results=await Promise.all([call("notes",alice,orgA,"POST",a,params),call("notes",alice,orgA,"POST",{...a,body:"Proposal B",idempotencyKey:"note-concurrent-b"},params)]);
+    assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);
+    const loser=await results.find(r=>r.status===409)!.json() as NoteResult;assert.equal(loser.code,"revision_conflict");assert.equal(loser.current?.revision,noteRevision+1);
+    noteRevision++;
+  });
+  await t.test("link exact historical source, avoid duplicates, permission-filter backlinks and safely unlink",async()=>{
+    const anchor=await d1.prepare("SELECT id,document_version_id FROM dossier_source_anchors WHERE dossier_id=? AND document_id=? ORDER BY created_at LIMIT 1").bind(dossierId,documentId).first<{id:string;document_version_id:string}>();assert.ok(anchor);
+    const fields={action:"link",noteId,documentId,documentVersionId:anchor.document_version_id,sourceAnchorId:anchor.id,expectedRevision:noteRevision,idempotencyKey:"note-link-original"};
+    const linked=await notes(fields);noteRevision=linked.note.revision;
+    assert.equal((await notes(fields)).operation.id,linked.operation.id);
+    assert.equal((await notes({...fields,expectedRevision:noteRevision,idempotencyKey:"note-link-duplicate"},alice,409)).code,"already_linked");
+    const detail=await read("?note_id="+noteId);assert.equal(detail.sources!.length,1);assert.equal(detail.sources![0]!.retired,true);assert.ok(detail.sources![0]!.locator);
+    assert.equal((await read("?document_id="+documentId)).count,1);
+    await read("?document_id="+documentId,viewer);await read("?document_id="+documentId,null,401);
+    await json(await call("notes",bob,orgB,"GET",undefined,params,"?document_id="+documentId),404);
+    const another=await notes({action:"create",title:"Another shared note",type:"meeting",body:"",expectedRevision:0,idempotencyKey:"note-create-another"},alice,201);
+    await notes({...fields,noteId:another.note.id,expectedRevision:1,idempotencyKey:"note-link-another"});
+    const unlink={action:"unlink",noteId,sourceLinkId:linked.operation.sourceLinkId,expectedRevision:noteRevision,idempotencyKey:"note-unlink-once"};
+    const unlinked=await notes(unlink);noteRevision=unlinked.note.revision;
+    assert.equal((await notes(unlink)).operation.id,unlinked.operation.id);
+    assert.equal((await read("?note_id="+noteId)).sources!.length,0);
+    assert.equal((await read("?note_id="+noteId+"&revision="+linked.note.revision)).sources!.length,1);
+    assert.equal((await read("?document_id="+documentId)).count,1);
+    assert.equal((await call("download",alice,orgA,"GET",undefined,{dossierId,documentId,versionId:anchor.document_version_id})).status,200);
+    await notes({...fields,documentVersionId:versionId,sourceAnchorId:anchor.id,expectedRevision:noteRevision,idempotencyKey:"note-wrong-anchor"},alice,400);
+    await notes({...fields,documentId:"document_missing_foreign",expectedRevision:noteRevision,idempotencyKey:"note-foreign-document"},alice,400);
+    const foreignCase=await json(await call("dossiers",alice,orgA,"POST",{title:"Synthetic separate note-source case",jurisdictions:["Test"],classification:"internal"}),201);
+    const foreignId=foreignCase.dossier.dossier_id;
+    const form=new FormData();form.set("file",new File(["Synthetic source from a different case"],"other-case.md",{type:"text/markdown"}));form.set("title","Other case source");form.set("documentType","correspondence");form.set("classification","internal");form.set("privacyAcknowledged","true");form.set("expectedRevision","1");form.set("mediaType","text/markdown");
+    const foreignDocument=await json(await call("documents",alice,orgA,"POST",form,{dossierId:foreignId}),201);
+    await notes({...fields,documentId:foreignDocument.document_id,documentVersionId:foreignDocument.version.document_version_id,sourceAnchorId:null,expectedRevision:noteRevision,idempotencyKey:"note-existing-foreign-source"},alice,400);
+    await read("?document_id="+foreignDocument.document_id,alice,404);
+
+    await read("?note_id="+noteId+"&version_id="+versionId,alice,400);
+  });
+  await t.test("unauthorized readers/writers and late case role removal cannot save or recover confidential data",async()=>{
+    const payload={action:"save",noteId,title:"Denied edit",type:"analysis",body:"No write",expectedRevision:noteRevision,idempotencyKey:"note-denied-save"};
+    await notes(payload,viewer,404);await notes(payload,reviewer,404);await notes(payload,null,401);
+    await json(await call("notes",bob,orgB,"POST",payload,params),404);
+    await read("?operation_key=note-create-original",viewer,404);
+    const contributed=await notes({...payload,idempotencyKey:"note-contributor-save"},contributor);noteRevision=contributed.note.revision;payload.expectedRevision=noteRevision;
+    const beforeRevocation=await d1.prepare("SELECT count(*) AS n FROM dossier_working_note_versions WHERE dossier_id=?").bind(dossierId).first();
+    beforeBatchSkip=1;
+    beforeBatch=async()=>{await json(await call("organizations",alice,orgA,"POST",{action:"member",organizationId:orgA,actorId:contributor.actorId,role:"member",status:"suspended",expectedRevision:1}));};
+    await notes({...payload,idempotencyKey:"note-membership-revoked"},contributor,404);
+    assert.deepEqual(await d1.prepare("SELECT count(*) AS n FROM dossier_working_note_versions WHERE dossier_id=?").bind(dossierId).first(),beforeRevocation);
+    await read("?note_id="+noteId,contributor,404);
+    await json(await call("organizations",alice,orgA,"POST",{action:"member",organizationId:orgA,actorId:contributor.actorId,role:"member",status:"active",expectedRevision:2}));
+    // Controlled fixture-only identity change immediately before the real guarded D1 transaction.
+    const counts=()=>d1.prepare("SELECT count(*) AS n FROM dossier_working_note_versions WHERE dossier_id=?").bind(dossierId).first();
+    const count=await counts();
+    beforeBatchSkip=1; // Skip personal-workspace initialization; race the actual note batch.
+    beforeBatch=async()=>{
+      const guards=(await d1.prepare("SELECT name,sql FROM sqlite_master WHERE type='trigger' AND tbl_name='dossier_participants'").all<{name:string;sql:string}>()).results;
+      await d1.batch([...guards.map(g=>d1.prepare(`DROP TRIGGER "${g.name}"`)),d1.prepare("UPDATE dossier_participants SET role='viewer' WHERE dossier_id=? AND actor_id=?").bind(dossierId,contributor.actorId),...guards.map(g=>d1.prepare(g.sql))]);
+    };
+    await notes({...payload,idempotencyKey:"note-role-revoked"},contributor,404);
+    assert.deepEqual(await counts(),count);
+
+  });
+  await t.test("immutable content and reciprocal association application reject incomplete history",async()=>{
+    await assert.rejects(d1.prepare("UPDATE dossier_working_note_versions SET body='tampered' WHERE note_id=?").bind(noteId).run());
+    const old=await d1.prepare("SELECT * FROM dossier_working_note_versions WHERE note_id=? ORDER BY revision DESC LIMIT 1").bind(noteId).first<Record<string,unknown>>();assert.ok(old);
+    const malformed=[d1.prepare("INSERT INTO dossier_working_note_versions(id,dossier_id,note_id,revision,title,note_type,body,action,source_link_id,actor_user_id,actor_ref,actor_role,occurred_at,idempotency_key,request_digest) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").bind("note_event_missing_application",dossierId,noteId,noteRevision+1,old.title,old.note_type,old.body,"link","note_link_missing_application",alice.id,alice.actorId,"owner","2026-09-15T12:00:00.000Z","note-missing-application","sha256-"+"a".repeat(64)),d1.prepare("UPDATE dossier_working_notes SET revision=?,updated_at=? WHERE id=?").bind(noteRevision+1,"2026-09-15T12:00:00.000Z",noteId)];
+    await assert.rejects(d1.batch(malformed));
+    const liveLink=await d1.prepare("SELECT s.*,v.title,v.note_type,v.body,n.revision FROM dossier_working_note_sources s JOIN dossier_working_notes n ON n.dossier_id=s.dossier_id AND n.id=s.note_id JOIN dossier_working_note_versions v ON v.dossier_id=n.dossier_id AND v.note_id=n.id AND v.revision=n.revision WHERE s.dossier_id=? AND s.active=1 LIMIT 1").bind(dossierId).first<Record<string,unknown>>();assert.ok(liveLink);
+    await assert.rejects(d1.batch([d1.prepare("INSERT INTO dossier_working_note_versions(id,dossier_id,note_id,revision,title,note_type,body,action,source_link_id,actor_user_id,actor_ref,actor_role,occurred_at,idempotency_key,request_digest) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").bind("note_event_unapplied_unlink",dossierId,liveLink.note_id,Number(liveLink.revision)+1,liveLink.title,liveLink.note_type,liveLink.body,"unlink",liveLink.id,alice.id,alice.actorId,"owner","2026-09-15T12:00:00.000Z","note-unapplied-unlink","sha256-"+"b".repeat(64)),d1.prepare("UPDATE dossier_working_notes SET revision=?,updated_at=? WHERE id=?").bind(Number(liveLink.revision)+1,"2026-09-15T12:00:00.000Z",liveLink.note_id)]));
+
+    assert.equal((await read("?note_id="+noteId)).note.revision,noteRevision);
+    await notes({action:"create",title:"Invalid revision",type:"blank",body:"",expectedRevision:null,idempotencyKey:"note-null-revision"},alice,400);
+  });
+  // Enrollment precedes the baseline; note writes never change governed state.
+  const after=await state();assert.deepEqual(after.case,before.case);assert.deepEqual(after.events,before.events);
+  assert.deepEqual(after.outputs,before.outputs);assert.deepEqual(after.snapshots,before.snapshots);
+  assert.deepEqual(new Uint8Array(await (await call("outputDownload",alice,orgA,"GET",undefined,{dossierId,outputId})).arrayBuffer()),pdf);
+  const history=await read("?note_id="+noteId+"&history=true");assert.equal(history.history!.length,noteRevision);
+  assert.equal((await d1.prepare("PRAGMA foreign_key_check").all()).results.length,0);
+});
+
+test("Phase 2: information-request receipt survives lost response and later case revision",async()=>{
+  const params={dossierId};
+  const create={action:"create",question:"Synthetic missing reconciliation confirmation",reason:"Complete the review source set",expectedRevision:revision,idempotencyKey:"request-create-original"};
+  const created=await json(await call("requests",alice,orgA,"POST",create,params),201) as ApiResult & {request:{information_request_id:string};operation:{id:string}};revision=created.dossier.revision;
+  const requestId=created.request.information_request_id;
+  const receive={action:"update_status",requestId,status:"received",satisfyingDocumentId:documentId,expectedRevision:revision,idempotencyKey:"request-receipt-original"};
+  const saved=await json(await call("requests",reviewer,orgA,"POST",receive,params));revision=saved.dossier.revision;
+  const other=await json(await call("requests",alice,orgA,"POST",{...create,question:"Later information request",expectedRevision:revision,idempotencyKey:"request-create-later"},params),201);revision=other.dossier.revision;
+  const replay=await json(await call("requests",reviewer,orgA,"POST",receive,params)) as ApiResult & {replayed:boolean};
+  assert.equal(replay.dossier.revision,saved.dossier.revision);assert.equal(replay.replayed,true);
+  const recovered=await json(await call("requests",reviewer,orgA,"GET",undefined,params,"?operation_key=request-receipt-original"));assert.equal(recovered.dossier.revision,saved.dossier.revision);
+  await json(await call("requests",reviewer,orgA,"POST",{...receive,status:"waived"},params),409);
+  const exact=await (await call("requests",alice,orgA,"GET",undefined,params,"?request_id="+requestId)).json() as {requests:Array<{information_request_id:string;status:string}>};
+  assert.deepEqual(exact.requests.map(r=>r.information_request_id),[requestId]);assert.equal(exact.requests[0]!.status,"received");
+  await json(await call("requests",bob,orgB,"GET",undefined,params,"?request_id="+requestId),404);
+  await json(await call("requests",alice,orgA,"GET",undefined,params,"?operation_key=request-receipt-original"),404);
+  await json(await call("requests",alice,orgA,"POST",{...create,expectedRevision:revision,idempotencyKey:" "+"x".repeat(119)+" "},params),400);
+  await json(await call("requests",alice,orgA,"GET",undefined,params,"?request_id="+requestId+"&limit=10"),400);
+  const proposal={action:"update_status",requestId,status:"waived",expectedRevision:revision,idempotencyKey:"request-conflict-a"};
+  await json(await call("requests",viewer,orgA,"POST",proposal,params),404);
+  const races=await Promise.all([call("requests",reviewer,orgA,"POST",proposal,params),call("requests",reviewer,orgA,"POST",{...proposal,status:"cancelled",idempotencyKey:"request-conflict-b"},params)]);
+  assert.deepEqual(races.map(r=>r.status).sort(),[200,409]);revision++;
+  const fresh=await (await call("detail",alice,orgA,"GET",undefined,params)).json() as {dossier:{readiness:{computed_from_revision:number};revision:number}};
+  assert.equal(fresh.dossier.revision,revision);assert.equal(fresh.dossier.readiness.computed_from_revision,revision);
+  const current=await d1.prepare("SELECT revision FROM dossiers WHERE id=?").bind(dossierId).first<{revision:number}>();assert.equal(current?.revision,revision);
+  assert.equal((await d1.prepare("SELECT count(*) AS n FROM dossier_request_operations WHERE dossier_id=? AND idempotency_key=?").bind(dossierId,receive.idempotencyKey).first<{n:number}>())?.n,1);
+  const assertion=await d1.prepare("SELECT id FROM dossier_professional_assertions WHERE dossier_id=? ORDER BY updated_at LIMIT 1").bind(dossierId).first<{id:string}>();assert.ok(assertion);
+  const exactAssertion=await (await call("assertions",alice,orgA,"GET",undefined,params,"?assertion_id="+assertion.id)).json() as {assertions:Array<{assertion_id:string}>};
+  assert.equal(exactAssertion.assertions.length,1);assert.equal(exactAssertion.assertions[0]!.assertion_id,assertion.id);
+  await json(await call("assertions",bob,orgB,"GET",undefined,params,"?assertion_id="+assertion.id),404);
+  await json(await call("assertions",alice,orgA,"GET",undefined,params,"?assertion_id=assertion_missing"),404);
+  writeFileSync(".artifacts/p1-route-tests/phase2-evidence.json",JSON.stringify({environment:"Actual route handlers with isolated Miniflare D1/R2 and synthetic provider headers; not authenticated browser proof",freshAndV86Upgrade:true,notes:await d1.prepare("SELECT note_id,revision,action,actor_role,occurred_at FROM dossier_working_note_versions ORDER BY note_id,revision").all(),requestReceipts:await d1.prepare("SELECT id,request_id,revision,audit_event_id FROM dossier_request_operations ORDER BY revision").all(),sealedPdfBytesPreserved:true},null,2));
 });
 
 test("P1: every dossier route denies a foreign organization before reads or side effects", async () => {

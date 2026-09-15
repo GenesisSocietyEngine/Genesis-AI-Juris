@@ -74,6 +74,11 @@ export async function GET(request: Request, routeContext: RouteContext) {
   if (url.searchParams.getAll("limit").length > 1 || url.searchParams.getAll("cursor").length > 1) {
     return dossierJson({ error: "Assertion pagination parameters must be unique." }, 400);
   }
+  let exactId:string|null=null;
+  if(url.searchParams.has("assertion_id")) {
+    if(url.searchParams.getAll("assertion_id").length!==1||url.searchParams.has("cursor"))return dossierJson({error:"Choose an exact assertion without pagination."},400);
+    try{exactId=parseDossierOpaqueId(url.searchParams.get("assertion_id"),"assertion ID");}catch{return dossierNotFound();}
+  }
   const limit = evidencePageLimit(url.searchParams.get("limit"), MAX_PAGE_SIZE);
   if (limit === null) return dossierJson({ error: "The assertion page limit is invalid." }, 400);
 
@@ -99,6 +104,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
 
   const rows = await context.db.select().from(dossierProfessionalAssertions).where(and(
     eq(dossierProfessionalAssertions.dossierId, access.dossier.id),
+    exactId ? eq(dossierProfessionalAssertions.id,exactId) : undefined,
     cursor ? or(
       lt(dossierProfessionalAssertions.updatedAt, cursor.updatedAt),
       and(
@@ -110,6 +116,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
     desc(dossierProfessionalAssertions.updatedAt),
     desc(dossierProfessionalAssertions.id),
   ).limit(limit + 1);
+  if(exactId&&!rows.length)return dossierNotFound();
   const hasMore = rows.length > limit;
   const visible = rows.slice(0, limit);
   const sourceRows = visible.length === 0 ? [] : await context.db.select({

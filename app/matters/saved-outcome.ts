@@ -15,14 +15,14 @@ const optionalText = (value: unknown) => typeof value === "string" && value.leng
 /** A successful HTTP response is not enough: bind every disposition field to the submitted proposal. */
 export function savedOutcomeReceipt(payload: unknown, expected: {
   caseId: string; recordId: string; kind: "deadline" | "citation";
-  reason: string; revision: number; status: string; support: string;
+  reason: string; revision: number; status: string; support: string; operationKey?:string;
 }): SavedOutcome | null {
   const response = object(payload), row = object(response?.disposition), dossier = object(response?.dossier);
   if (!row || !dossier || !optionalText(response?.audit_event_id)
     || row.auditEventId !== response?.audit_event_id || row.dossierId !== expected.caseId
     || dossier.dossier_id !== expected.caseId || row.reason !== expected.reason.trim()
     || row.revisionBefore !== expected.revision || row.revisionAfter !== expected.revision + 1
-    || dossier.revision !== row.revisionAfter) return null;
+    || dossier.revision !== row.revisionAfter || (expected.operationKey !== undefined && row.idempotencyKey !== expected.operationKey)) return null;
   const deadline = expected.kind === "deadline";
   if ((deadline ? row.deadlineReferenceId : row.sourceAnchorId) !== expected.recordId
     || (deadline && row.newStatus !== expected.status)

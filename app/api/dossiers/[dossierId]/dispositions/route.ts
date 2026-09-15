@@ -22,6 +22,13 @@ export async function GET(request: Request, route: RouteContext) {
  const receiptTable=kind==="deadline"?dossierDeadlineDispositions:dossierSourceAnchorRetirements;
  const target=kind==="deadline"?dossierDeadlineDispositions.deadlineReferenceId:dossierSourceAnchorRetirements.sourceAnchorId;
  const [disposition]=await context.db.select().from(receiptTable).where(and(eq(receiptTable.dossierId,access.dossier.id),eq(target,id))).limit(1);
+ const operationKey=url.searchParams.get("operation_key");
+ if(operationKey!==null){
+  if(url.searchParams.getAll("operation_key").length!==1)return dossierNotFound();
+  try{if(boundedDossierText(operationKey,"Operation key",8,120)!==operationKey)return dossierNotFound();}catch{return dossierNotFound();}
+  if(!disposition||disposition.actorRef!==context.actor.actorId||disposition.idempotencyKey!==operationKey)return dossierNotFound();
+  return dossierJson({disposition,replayed:true,audit_event_id:disposition.auditEventId,dossier:{dossier_id:access.dossier.id,revision:disposition.revisionAfter}});
+ }
  const dependencies=kind==="citation"?await context.db.select({id:dossierProfessionalAssertions.id,status:dossierProfessionalAssertions.status,statement:dossierProfessionalAssertions.statement}).from(dossierAssertionSources).innerJoin(dossierProfessionalAssertions,and(eq(dossierProfessionalAssertions.dossierId,dossierAssertionSources.dossierId),eq(dossierProfessionalAssertions.id,dossierAssertionSources.assertionId))).where(and(eq(dossierAssertionSources.dossierId,access.dossier.id),eq(dossierAssertionSources.sourceAnchorId,id))):[];
  const outputs=await loadCurrentEvidenceOutputs(context,access.dossier.id);
  if(!outputs.ok)return dossierJson({error:"Review the output register before confirming this outcome."},409);
@@ -34,7 +41,7 @@ export async function GET(request: Request, route: RouteContext) {
  if(kind==="citation"&&"documentId" in record){const [current]=await context.db.select().from(dossierDocumentCurrentVersions).where(and(eq(dossierDocumentCurrentVersions.dossierId,access.dossier.id),eq(dossierDocumentCurrentVersions.documentId,record.documentId))).limit(1);
  if(record.reviewState!=="accepted"||!current||current.documentVersionId===record.documentVersionId)unavailable="Retirement requires an accepted citation to an older source version. Review current evidence first.";}
 
- return dossierJson({kind,record,disposition:disposition??null,dependent_assertions:dependencies,current_output_ids:outputs.current.map(o=>o.outputId),revision:access.dossier.revision,
+ return dossierJson({actor_id:context.actor.actorId,kind,record,disposition:disposition??null,dependent_assertions:dependencies,current_output_ids:outputs.current.map(o=>o.outputId),revision:access.dossier.revision,
  can_review:access.role!=="viewer"&&!unavailable, unavailable_reason:unavailable, readiness_effect:kind==="deadline"?"Closes this historical deadline only. The key case deadline is unchanged; a missing key deadline or other incomplete work can still block readiness. Current reports must be regenerated.":"Retires this citation for current use. Every assertion that relies on it still needs explicit review or supersession; choosing replacement evidence does not automatically support an assertion. Current reports become outdated."});
 }
 
@@ -44,12 +51,12 @@ export async function POST(request: Request, route: RouteContext) {
  const access=await requireDossierAccess(context,(await route.params).dossierId,"requests"); if(isResponse(access))return access;
  const payload=await readJsonObject(request); if(!payload)return dossierJson({error:"A review disposition is required."},400);
  let kind:typeof kinds[number],id:string,reason:string,key:string,expected:number,status:string|null,support:string|null;
+ try{reason=boundedDossierText(payload.reason,"Reason",5,2000);}catch{return dossierJson({error:"Explain the reason in 5–2000 characters.",code:"validation",field:"reason"},400);}
  try {
   const allowed=new Set(["kind","recordId","reason","idempotencyKey","expectedRevision","status","supportingSourceAnchorId","replacementSourceAnchorId"]);
   if(Object.keys(payload).some(k=>!allowed.has(k)))throw new Error("Unexpected disposition field.");
   kind=dossierEnum(payload.kind,kinds,"disposition kind");id=parseDossierOpaqueId(payload.recordId,"record ID");
-  reason=boundedDossierText(payload.reason,"Explain the reason in 5–2000 characters",5,2000);
-  key=boundedDossierText(payload.idempotencyKey,"Request identity",8,120);expected=expectedDossierRevision(payload.expectedRevision);
+  key=boundedDossierText(payload.idempotencyKey,"Request identity",8,120);if(key!==payload.idempotencyKey)throw new Error("Use the original operation key without whitespace.");expected=expectedDossierRevision(payload.expectedRevision);
   status=kind==="deadline"?dossierEnum(payload.status,["completed","waived","cancelled"] as const,"deadline outcome"):null;
   const supplied=kind==="deadline"?payload.supportingSourceAnchorId:payload.replacementSourceAnchorId;
   support=supplied?parseDossierOpaqueId(supplied,"supporting citation"):null;
@@ -58,7 +65,7 @@ export async function POST(request: Request, route: RouteContext) {
  const digest=await dossierSha256(canonicalDossierJson({kind,id,reason,status,support,expected}));
  const previous=async()=>{const [row]=await context.db.select().from(table).where(and(eq(table.dossierId,access.dossier.id),eq(table.actorRef,context.actor.actorId),eq(table.idempotencyKey,key))).limit(1);return row;};
  const respond=async(receipt:typeof dossierDeadlineDispositions.$inferSelect|typeof dossierSourceAnchorRetirements.$inferSelect,replayed=false)=>dossierJson({disposition:receipt,replayed,audit_event_id:receipt.auditEventId,dossier:{dossier_id:access.dossier.id,revision:receipt.revisionAfter},message:"Review outcome saved. Refresh the action queue to see current readiness."});
- const existing=await previous();if(existing)return existing.requestDigest===digest?respond(existing,true):conflict(access.dossier.revision);
+ const existing=await previous();if(existing)return existing.requestDigest===digest?respond(existing,true):dossierJson({error:"This operation key belongs to a different proposal. Resolve the original save before submitting changed input.",code:"operation_key_conflict"},409);
  if(expected!==access.dossier.revision)return conflict(access.dossier.revision);
  const now=canonicalDossierTimestamp(),next=expected+1;
  const [deadline]=kind==="deadline"?await context.db.select().from(dossierDeadlineReferences).where(and(eq(dossierDeadlineReferences.dossierId,access.dossier.id),eq(dossierDeadlineReferences.id,id))).limit(1):[];

@@ -141,10 +141,16 @@ export default function MattersClient() {
   const outcomeRefreshSequence = useRef(0);
   const currentOutcome = savedOutcome?.receipt.caseId === selectedId ? savedOutcome : null;
   const [actionTarget, setActionTarget] = useState<(MatterActionTarget & { caseId: string }) | null>(null);
+  const [mutationKey, setMutationKey] = useState<string | null>(null);
+  const [actionIssue, setActionIssue] = useState<ApiIssue | null>(null);
+  const caseGeneration = useRef(0);
   const selectedIdRef = useRef(selectedId);
   useEffect(() => { selectedIdRef.current = selectedId; }, [selectedId]);
   const selectMatter = useCallback((id: string | null) => {
     if (selectedIdRef.current !== id) {
+      caseGeneration.current++;
+      setMutationKey(null);
+      setActionIssue(null);
       outcomeRefreshSequence.current++;
       setSavedOutcome(null);
       setActionTarget(null);
@@ -173,8 +179,6 @@ export default function MattersClient() {
   const [recentFilter, setRecentFilter] = useState<"all" | "7" | "30" | "90">("all");
   const [filterReferenceTime] = useState(() => Date.now());
   const [createOpen, setCreateOpen] = useState(false);
-  const [mutationKey, setMutationKey] = useState<string | null>(null);
-  const [actionIssue, setActionIssue] = useState<ApiIssue | null>(null);
   const matterRequest = useRef(0);
   const matterAbort = useRef<AbortController | null>(null);
   const promptImportRef = useRef<HTMLInputElement | null>(null);
@@ -231,6 +235,7 @@ export default function MattersClient() {
     matterAbort.current?.abort();
     const controller = new AbortController();
     matterAbort.current = controller;
+    const generation=caseGeneration.current;
     const requestId = ++matterRequest.current;
     setWorkspacePhase("loading");
     setWorkspaceIssue(null);
@@ -250,7 +255,7 @@ export default function MattersClient() {
         settledRequest("/api/dossiers/" + encodedId + "/outputs", controller.signal),
         settledRequest("/api/dossiers/" + encodedId + "/activity?limit=100", controller.signal),
       ]);
-      if (requestId !== matterRequest.current || selectedIdRef.current !== dossierId) return { status: "superseded" };
+      if (generation!==caseGeneration.current || requestId !== matterRequest.current || selectedIdRef.current !== dossierId) return { status: "superseded" };
 
       const fallbackRequests = normalizeRequests(detailPayload);
       const requestData = requestsResult.payload ? normalizeRequests(requestsResult.payload) : fallbackRequests;
@@ -261,6 +266,7 @@ export default function MattersClient() {
         ["packages", packagesResult], ["snapshots", snapshotsResult], ["outputs", outputsResult], ["activity", activityResult],
       ];
       for (const [key, result] of results) if (result.issue) issues[key] = result.issue;
+      if(results.some(([,result])=>result.issue?.kind==="permission"))throw new WorkspaceApiError(404,{message:"Case access must be verified again."});
 
       setWorkspace({
         matter,
@@ -281,10 +287,11 @@ export default function MattersClient() {
         ? { status: "failed" } : { status: "updated", revision: matter.revision };
     } catch (caught) {
       if (caught instanceof DOMException && caught.name === "AbortError") return { status: "superseded" };
-      if (requestId !== matterRequest.current || selectedIdRef.current !== dossierId) return { status: "superseded" };
+      if (generation!==caseGeneration.current || requestId !== matterRequest.current || selectedIdRef.current !== dossierId) return { status: "superseded" };
       const issue = caught instanceof WorkspaceApiError
         ? apiIssueFor(caught.status, caught.payload)
         : apiIssueFor(500, { message: "The selected matter could not be loaded." });
+      if(issue.kind==="permission"){outcomeRefreshSequence.current++;setWorkspace(null);setSavedOutcome(null);setActionTarget(null);setNotice("");}
       setWorkspaceIssue(issue);
       setWorkspacePhase(issue.kind === "permission" ? "permission" : "error");
       return { status: "failed" };
@@ -385,6 +392,7 @@ export default function MattersClient() {
 
   async function mutate(path: string, key: string, body: Record<string, unknown>, successMessage: string, method: "POST" | "PUT" = "POST") {
     if (!workspace || mutationKey !== null) return;
+    const generation=caseGeneration.current;
     setMutationKey(key);
     setActionIssue(null);
     setNotice("");
@@ -394,17 +402,17 @@ export default function MattersClient() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(mutationPayload(workspace.matter.revision, body)),
       });
-      if (selectedIdRef.current !== workspace.matter.id) return;
+      if (generation!==caseGeneration.current || selectedIdRef.current !== workspace.matter.id) return;
       setNotice(successMessage);
       await loadCatalogue();
-      if (selectedIdRef.current === workspace.matter.id) await loadMatter(workspace.matter.id);
+      if (generation===caseGeneration.current && selectedIdRef.current === workspace.matter.id) await loadMatter(workspace.matter.id);
     } catch (caught) {
-      if (selectedIdRef.current !== workspace.matter.id) return;
+      if (generation!==caseGeneration.current || selectedIdRef.current !== workspace.matter.id) return;
       setActionIssue(caught instanceof WorkspaceApiError
         ? apiIssueFor(caught.status, caught.payload)
         : apiIssueFor(500, { message: "The write could not be confirmed." }));
     } finally {
-      setMutationKey(null);
+      if(generation===caseGeneration.current)setMutationKey(null);
     }
   }
 
