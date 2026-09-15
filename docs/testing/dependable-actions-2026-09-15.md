@@ -85,3 +85,8 @@ Build verification: the production bundle, strict typecheck and locked canonical
 The first publication attempt (saved version 84) failed before Worker upload with `incomplete input: SQLITE_ERROR`. The supported live database overview showed existing predecessor tables but no `dossier_deadline_dispositions` (the first table created by 0020), establishing that 0020 had not applied. No prior migration was changed. The repository's existing remote D1 formatting guard identified two missed requirements in 0020: `SELECT (CASE ... END);` and breakpoint comments attached to the preceding semicolon. The failed, unapplied 0020 was normalized without changing its domain SQL. The existing guard now discovers every journal migration, so future migrations cannot silently miss the check. Migration 0021 and applied migrations remain unchanged.
 
 Recovery verification: the journal-wide D1 formatting check passed, followed by all six focused organization/ERP/disposition server journeys against a fresh D1/R2 fixture using the corrected migrations.
+
+
+## Plane archive follow-up
+
+The direct upload `Plane web Sep 2025(2).zip` has now been extracted and visually inspected: 403 PNGs surveyed, 13 representative screenshots inspected individually. **Archive inspection is Verified.** See [the dated reference mapping and next-stage review](plane-reference-review-2026-09-15.md). Earlier download failures above describe the prior state. Browser and authenticated-journey limitations remain unresolved; this follow-up does not claim new product UI or PDF browser verification.

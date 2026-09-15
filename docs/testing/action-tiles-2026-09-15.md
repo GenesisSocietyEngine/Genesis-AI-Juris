@@ -81,3 +81,8 @@ Before: [passive task cards](action-tiles-images/tasks-before.jpg). This is the 
 After: [actionable task queue](action-tiles-images/tasks-after.jpg), in the explicitly labelled synthetic harness. The same request content now exposes a direct action from the case overview.
 
 [Studio actions](action-tiles-images/studio-actions.jpg) and [completed actions](action-tiles-images/studio-complete.jpg). These show the running Studio preview. The completed example uses a user-entered synthetic D09 reference and does not alter the canonical fixture.
+
+
+## Plane archive follow-up
+
+The direct upload `Plane web Sep 2025(2).zip` has now been extracted and visually inspected: 403 PNGs surveyed, 13 representative screenshots inspected individually. **Archive inspection is Verified.** See [the dated reference mapping and next-stage review](plane-reference-review-2026-09-15.md). Earlier download failures above describe the prior state. Browser and authenticated-journey limitations remain unresolved; this follow-up does not claim new product UI or PDF browser verification.
