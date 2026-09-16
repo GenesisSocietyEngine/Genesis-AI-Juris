@@ -4,5 +4,5 @@ import JurisApp from "../JurisApp";
 export const metadata: Metadata = { title: "Templates · GENESIS: JURIS" };
 
 export default function TemplatesPage() {
-  return <JurisApp initialView="library" autoStartCanopy={false} />;
+  return <JurisApp initialView="templates" autoStartCanopy={false} />;
 }

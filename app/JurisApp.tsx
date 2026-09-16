@@ -2,11 +2,14 @@
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { flushSync } from "react-dom";
 import { appendConnectedStudioItem } from "./studio-action-editing";
 import { focusActionTarget } from "./ActionTile";
 import type { StudioCheck } from "./studio-validation";
 import type { StudioActionTarget } from "./StudioActionPanel";
 import AppNavigation from "./AppNavigation";
+import CaseTemplates, { prepareCaseTemplate } from "./CaseTemplates";
+import HelpCenter from "./HelpCenter";
 import { canonicalFingerprint, caseFingerprint, casePublicationFingerprint, isRecord, isTaxDraft, legacyCaseFingerprintV15, normalizeStudioDraft, slugifyCaseId } from "./case-integrity";
 import { bundledCataloguePresentation, mayUseBundledCatalogueFallback } from "./catalogue-fallback";
 import { actionUseKey, decisionAvailability, resolveDecisionTiming, resolveLegacyDecisionTiming } from "./game-engine";
@@ -53,7 +56,7 @@ import type {
 } from "./types";
 
 type Locale = "en" | "ru";
-type View = "library" | "demos" | "play" | "studio" | "community" | "help";
+type View = "templates" | "library" | "demos" | "play" | "studio" | "community" | "help";
 type Theme = "office" | "after-hours";
 type GraphOrientation = "vertical" | "horizontal";
 type StudioAIEntitlement = "loading" | "anonymous" | "profile_required" | "ready" | "not_configured" | "unavailable";
@@ -94,7 +97,6 @@ const StudioEntryScreen = lazy(() => import("./StudioEntryScreen"));
 const StudioNodeSummary = lazy(() => import("./StudioNodeSummary"));
 const OperationsDossier = lazy(() => import("./OperationsDossier"));
 const FeedbackDialog = lazy(() => import("./FeedbackDialog"));
-const HelpFaq = lazy(() => import("./HelpFaq"));
 const DemoCases = lazy(() => import("./DemoCases"));
 const StudioAIReview = lazy(() => import("./StudioAIReview"));
 const StudioAIProgress = lazy(() => import("./StudioAIProgress"));
@@ -104,7 +106,6 @@ const GraphMilestones = lazy(() => import("./GraphMilestones"));
 const CaseReportDialog = lazy(() => import("./CaseReportDialog"));
 const CaseMarkdownDialog = lazy(() => import("./CaseMarkdownDialog"));
 const CanonicalMarkdownReview = lazy(() => import("./CanonicalMarkdownReview"));
-const StudioGuidedDemo = lazy(() => import("./StudioGuidedDemo"));
 const StudioGuidedWizard = lazy(() => import("./StudioGuidedWizard"));
 const StudioCaseTypeSelector = lazy(() => import("./StudioCaseTypeSelector"));
 const StudioCaseViews = lazy(() => import("./StudioCaseViews"));
@@ -235,8 +236,8 @@ type CustomCaseFile = {
 
 const ui = {
   en: {
-    library: "Templates", play: "Operations", studio: "Case Studio",
-    office: "Office", night: "After hours", catalogue: "Case templates",
+    library: "Practice cases", play: "Operations", studio: "Case Studio",
+    office: "Office", night: "After hours", catalogue: "Practice catalogue",
     openCase: "Open case file", launch: "Launch scenario", continue: "Continue operation",
     role: "Your role", jurisdiction: "Jurisdiction", dossier: "Dossier",
     situation: "Situation", attention: "Inbox attention", decisions: "Available decisions",
@@ -264,7 +265,7 @@ const ui = {
     nodeTypes: { trigger: "Trigger", actor: "Actor", fact: "Fact", evidence: "Evidence", deadline: "Deadline", decision: "Decision", outcome: "Outcome", entity: "Entity / jurisdiction", tax_rule: "Tax rule", cash_flow: "Cash flow" } as Record<StudioNodeType, string>,
   },
   ru: {
-    library: "Шаблоны", play: "Операции", studio: "Студия кейсов",
+    library: "Учебные кейсы", play: "Операции", studio: "Студия кейсов",
     office: "Офис", night: "После работы", catalogue: "Шаблоны кейсов",
     openCase: "Открыть дело", launch: "Запустить сценарий", continue: "Продолжить операцию",
     role: "Ваша роль", jurisdiction: "Юрисдикция", dossier: "Досье",
@@ -521,6 +522,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   const [prompt, setPrompt] = useState("");
   const [draft, setDraftState] = useState<StudioDraft>(initialBlankDraft);
   const [studioOpenRevision, setStudioOpenRevision] = useState(0);
+  const studioOperationPending = useRef(false);
   const [validatedDraft, setValidatedDraft] = useState<StudioDraft>(initialBlankDraft);
   const [studioPrivate, setStudioPrivate] = useState(false);
   const [studioCustomCaseId, setStudioCustomCaseId] = useState<number | null>(null);
@@ -600,7 +602,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   useEffect(() => {
     function restoreView() {
       const requested = new URLSearchParams(window.location.search).get("view");
-      if (requested === "library" || requested === "demos" || requested === "studio"
+      if (requested === "templates" || requested === "library" || requested === "demos" || requested === "studio"
         || requested === "help" || requested === "community") {
         setView(requested);
       } else if (requested === "play") {
@@ -956,7 +958,13 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     showSessionNotice(locale === "en" ? "Revision restored as a new change" : "Версия восстановлена как новая правка");
   }
 
+  function mayLeaveStudio() {
+    if (!studioOperationPending.current) return true;
+    showSessionNotice(locale === "en" ? "A Studio operation is still running. Keep this case open until its result is known." : "Операция Studio ещё выполняется. Оставьте кейс открытым до получения результата.");
+    return false;
+  }
   function navigate(next: View, step?: GuidedStudioStep) {
+    if (next !== "studio" && !mayLeaveStudio()) return;
     if (next !== "studio") starterCancelledRef.current = true;
     const destination = next;
     const url = new URL(window.location.href);
@@ -1674,8 +1682,14 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     link.click(); URL.revokeObjectURL(url);
   }
   function importDraft(file: File, loaded?: (draft: StudioDraft) => void) {
+    if (!mayLeaveStudio()) return;
+    const importGeneration = ++savedCaseRequestRef.current;
+    const source = draftRef.current;
+    const scope = currentStudioScopeRef.current;
+    const currentImport = () => importGeneration === savedCaseRequestRef.current && source === draftRef.current && scope === currentStudioScopeRef.current;
     if (file.size > 1_000_000) { setSessionNotice(locale === "en" ? "The case file exceeds 1 MB. Export a smaller Studio JSON file, or shorten node details before retrying. Your current case is unchanged." : "Файл больше 1 МБ. Экспортируйте меньший JSON Studio или сократите описания узлов. Текущий кейс сохранён без изменений."); return; }
     const reader = new FileReader(); reader.onload = async () => {
+      if (!currentImport()) return;
       try {
         const parsed: unknown = JSON.parse(String(reader.result));
         let imported: StudioDraft;
@@ -1713,6 +1727,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
           imported = normalizeStudioDraft(parsed);
           if (imported.protection) throw new Error("Protected cases require a sealed v3 export envelope");
         }
+        if (!currentImport() || !mayLeaveStudio()) return;
         const restored = { ...imported, updatedAt: new Date().toISOString() };
         savedCaseRequestRef.current += 1;
         const importUrl = new URL(window.location.href);
@@ -1733,7 +1748,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         navigate("studio");
         loaded?.(restored);
         showSessionNotice(importedCanDuplicate ? (locale === "en" ? "Custom case loaded in the visual editor" : "Custom-кейс открыт в визуальном редакторе") : (locale === "en" ? "Protected case seal verified; opened for inspection only" : "Печать защищённого кейса проверена; открыт режим просмотра"));
-      } catch { setSessionNotice(locale === "en" ? "The file could not be imported. Use a Studio draft JSON or an unchanged GENESIS custom-case export. Protected exports require sign-in and access to the original case. Your current case is unchanged." : "Не удалось импортировать файл. Используйте JSON-черновик Studio или неизменённый экспорт custom-кейса GENESIS. Защищённый экспорт требует входа и доступа к исходному кейсу. Текущий кейс не изменён."); }
+      } catch { if (!currentImport()) return; setSessionNotice(locale === "en" ? "The file could not be imported. Use a Studio draft JSON or an unchanged GENESIS custom-case export. Protected exports require sign-in and access to the original case. Your current case is unchanged." : "Не удалось импортировать файл. Используйте JSON-черновик Studio или неизменённый экспорт custom-кейса GENESIS. Защищённый экспорт требует входа и доступа к исходному кейсу. Текущий кейс не изменён."); }
     };
     reader.onerror = () => setSessionNotice(locale === "en" ? "The file could not be read. Download it again, then retry the import." : "Файл не читается. Скачайте его заново и повторите импорт.");
     reader.readAsText(file);
@@ -1924,12 +1939,19 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     syncStudioDraft(appendStudioHistory(draftRef.current, { role: "studio", source: "visual", action: "compiled_for_play", message: locale === "en" ? `Compiled the current ${draftRef.current.nodes.length}-node graph and opened it in the full case player.` : `Текущий граф из ${draftRef.current.nodes.length} узлов собран и открыт в полноценном проигрывателе.` }, createdAt));
     startScenario(compiled.scenario);
   }
-  function resetStudioDraft() {
+  function resetStudioDraft(next = blankStudioDraft(), nextPrompt = "") {
+    if (!mayLeaveStudio()) return false;
     const hasWork = Boolean(draftRef.current.nodes.length || draftRef.current.links.length || draftRef.current.title || draftRef.current.editHistory.length || prompt.trim());
     if (hasWork && !window.confirm(locale === "en" ? "Start a completely blank draft? The current local graph, prompt and undo history will be cleared." : "Создать полностью пустой черновик? Текущий локальный граф, промпт и история отмены будут очищены.")) return false;
-    enterNewLocalDraft(blankStudioDraft(), null);
-    setPrompt("");
+    enterNewLocalDraft(next, null);
+    setPrompt(nextPrompt);
     return true;
+  }
+  function startCaseTemplate(id: CaseTypeId) {
+    starterCancelledRef.current = true;
+    const prepared = prepareCaseTemplate(blankStudioDraft(), id, locale);
+    if (!resetStudioDraft(prepared.draft, prepared.prompt)) return;
+    navigate("studio", 1);
   }
   function purgeLocalStudioState() {
     studioChangedBeforeRestoreRef.current = true;
@@ -1975,11 +1997,12 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   return (
     <div className={`app-shell theme-${theme}${studioOnly ? " studio-only-shell studio-host-falcon" : ""}`}>
       <div className="atmosphere" aria-hidden="true"><span /><span /><span /></div>
-      <AppNavigation locale={locale} view={view} studioOnly={studioOnly} workspaceLocation={workspaceLocation} navigate={navigate} openOperations={() => void openOperations()} restoreSession={() => playedCaseImportRef.current?.click()} exportSession={exportPlayedCase} hasActiveScenario={Boolean(activeScenario)} toggleLocale={() => setLocale(locale === "en" ? "ru" : "en")} toggleTheme={() => setTheme(theme === "office" ? "after-hours" : "office")} dark={theme === "after-hours"}/>
+      <AppNavigation allowDeparture={mayLeaveStudio} newCase={() => { if (resetStudioDraft()) navigate("studio", 1); }} importCase={() => { if (!mayLeaveStudio()) return; flushSync(() => navigate("studio", 1)); importRef.current?.click(); }} locale={locale} view={view} studioOnly={studioOnly} workspaceLocation={workspaceLocation} navigate={navigate} openOperations={() => void openOperations()} restoreSession={() => playedCaseImportRef.current?.click()} exportSession={exportPlayedCase} hasActiveScenario={Boolean(activeScenario)} toggleLocale={() => setLocale(locale === "en" ? "ru" : "en")} toggleTheme={() => setTheme(theme === "office" ? "after-hours" : "office")} dark={theme === "after-hours"}/>
       <input ref={playedCaseImportRef} className="visually-hidden" type="file" accept=".json,application/json" aria-label={locale === "en" ? "Restore a play session" : "Восстановить прохождение"} onChange={(event) => { const file = event.target.files?.[0]; if (file) importPlayedCase(file); event.target.value = ""; }} />
 
-      {view === "demos" && <Suspense fallback={<main className="demo-library page-width" role="status">{locale === "en" ? "Opening demo cases…" : "Открываются демо-кейсы…"}</main>}><DemoCases locale={locale} records={bundledCatalogueRecords()} openCanopy={loadCanopyDemo} canopyWorkflowHref={workspaceDestination("/canopy", workspaceLocation)} playCase={async (id) => { const record = fallbackCatalogueRecords.find((item) => item.id === id); if (record) await launchCatalogueCase(record); }} openStudio={() => navigate("studio")} /></Suspense>}
-      {view === "library" && <LibraryView locale={locale} workspaceLocation={workspaceLocation} restorePlaySession={() => playedCaseImportRef.current?.click()} text={text} records={catalogueRecords} loadedScenarios={catalogueScenarios} featuredRecord={featuredRecord} featuredScenario={featured} setFeaturedId={setFeaturedId} launchCase={(record) => void launchCatalogueCase(record)} requestFeedback={setFeedbackTarget} openCanopy={loadExampleDraft} searchCatalogue={refreshCatalogue} nextCursor={catalogueNextCursor} total={catalogueTotal} loading={catalogueLoading} error={catalogueError} />}
+      {view === "demos" && <Suspense fallback={<main className="demo-library page-width" role="status">{locale === "en" ? "Opening demo cases…" : "Открываются демо-кейсы…"}</main>}><DemoCases locale={locale} records={[]} openPractice={() => navigate("library")} openTemplates={() => navigate("templates")} openCanopy={loadCanopyDemo} canopyWorkflowHref={workspaceDestination("/canopy", workspaceLocation)} playCase={async (id) => { const record = fallbackCatalogueRecords.find((item) => item.id === id); if (record) await launchCatalogueCase(record); }} openStudio={() => navigate("studio")} /></Suspense>}
+      {view === "templates" && <CaseTemplates locale={locale} onStart={startCaseTemplate} onDemo={() => navigate("demos")} />}
+      {view === "library" && <LibraryView locale={locale} workspaceLocation={workspaceLocation} restorePlaySession={() => playedCaseImportRef.current?.click()} text={text} records={catalogueRecords} loadedScenarios={catalogueScenarios} featuredRecord={featuredRecord} featuredScenario={featured} setFeaturedId={setFeaturedId} launchCase={(record) => void launchCatalogueCase(record)} requestFeedback={setFeedbackTarget} searchCatalogue={refreshCatalogue} nextCursor={catalogueNextCursor} total={catalogueTotal} loading={catalogueLoading} error={catalogueError} />}
       {view === "play" && !activeScenario && <main className="workspace-empty page-width"><span className="workspace-eyebrow">{locale === "en" ? "Operations" : "Операции"}</span><h1>{locale === "en" ? "Choose a case to work through" : "Выберите кейс для прохождения"}</h1><p>{locale === "en" ? "Open a playable demo, or restore a previous session to continue its decisions and deadlines." : "Откройте игровой демо-кейс или восстановите сессию, чтобы продолжить решения и задачи."}</p><div><button type="button" className="primary-cta" onClick={() => navigate("demos")}>{locale === "en" ? "Open demo case" : "Открыть демо-кейс"}</button><button type="button" className="secondary-cta" onClick={() => playedCaseImportRef.current?.click()}>{locale === "en" ? "Restore session" : "Восстановить сессию"}</button></div></main>}
       {view === "play" && activeScenario && stage && runLedger && <PlayView
         locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} ledger={runLedger}
@@ -1989,9 +2012,9 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         sessionSync={playSessionSync} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario, { legacyTiming: legacyTimingMode })}
         returnLibrary={() => navigate(playReturnView)} returnToStudio={playReturnView === "studio"} returnLabel={playReturnView === "demos" ? (locale === "en" ? "Demo cases" : "Демо-кейсы") : playReturnView === "help" ? text.help : playReturnView === "community" ? text.community : undefined} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })}
       />}
-      {view === "studio" && <StudioView key={studioOpenRevision} standalone={studioOnly} locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} packageRequiresPlayableRoute={packageRequiresPlayableRoute} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} applyCanonicalMarkdownDraft={applyCanonicalMarkdownDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} serverPublicationFingerprint={studioServerPublicationFingerprint} setServerPublicationFingerprint={setStudioServerPublicationFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate} reportReceiptStorageScope={studioStorageScope} persistReportReceiptOnDevice={reportReceiptDeviceEligible} aiEntitlement={studioAIEntitlement} restorePending={studioAIEntitlement === "loading" || (studioAIEntitlement !== "unavailable" && !studioRestoreReady)} />}
+      {view === "studio" && <StudioView onOperationInterrupted={() => showSessionNotice(locale === "en" ? "A Studio operation was interrupted. Its result may still have been saved. Inspect the saved version before repeating the operation." : "Операция Studio прервана. Результат мог сохраниться. Проверьте сохранённую версию перед повтором.")} operationPending={studioOperationPending} key={studioOpenRevision} standalone={studioOnly} locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} packageRequiresPlayableRoute={packageRequiresPlayableRoute} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} applyCanonicalMarkdownDraft={applyCanonicalMarkdownDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} serverPublicationFingerprint={studioServerPublicationFingerprint} setServerPublicationFingerprint={setStudioServerPublicationFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate} reportReceiptStorageScope={studioStorageScope} persistReportReceiptOnDevice={reportReceiptDeviceEligible} aiEntitlement={studioAIEntitlement} restorePending={studioAIEntitlement === "loading" || (studioAIEntitlement !== "unavailable" && !studioRestoreReady)} />}
       {view === "community" && <CommunityView locale={locale} cases={catalogueRecords} openCustomCase={openWorkspaceCustomCase} refreshCatalogue={() => refreshCatalogue({ force: true })} clearDeviceDraft={purgeLocalStudioState} />}
-      {view === "help" && <HelpView locale={locale} openCommunity={() => navigate("community")} openStudio={() => navigate("studio")} />}
+      {view === "help" && <HelpCenter locale={locale} onNavigate={navigate} />}
       {(selectedOption || resultOption) && activeScenario && stage && <DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} busy={playSessionBusy} close={() => { if (!playSessionBusy) { setSelectedOption(null); setResultOption(null); } }} dispatch={dispatchDecision} advance={advanceStage} finalStage={Boolean(activeScenario.stages.find((item) => item.id === (selectedOption ?? resultOption)?.nextStageId)?.terminal)} />}
       {sessionNotice && <div className="session-toast" role="status"><Icon name="check" />{sessionNotice}</div>}
       {feedbackTarget && <Suspense fallback={<p className="session-toast" role="status">{locale === "en" ? "Loading feedback form…" : "Загрузка формы отзыва…"}</p>}><FeedbackDialog Icon={Icon} locale={locale} target={feedbackTarget} close={() => setFeedbackTarget(null)} submitted={(audience) => { const privateProductFeedback = feedbackTarget.privateCase && audience !== "owner_private"; setFeedbackTarget(null); showSessionNotice(audience === "owner_private" ? (locale === "en" ? "Private note saved for you only." : "Приватная заметка сохранена только для вас.") : privateProductFeedback ? (locale === "en" ? "Redacted product feedback sent to Maxim." : "Обезличенный отзыв о продукте отправлен Максиму.") : (locale === "en" ? "Feedback submitted for expert review." : "Отзыв отправлен на экспертную проверку.")); }} /></Suspense>}
@@ -2087,7 +2110,7 @@ function editorialReviewLabel(level: string | undefined, locale: Locale) {
   return locale === "en" ? "Editorial preview" : "Редакционный предпросмотр";
 }
 
-function LibraryView({ locale, workspaceLocation, restorePlaySession, text, records, loadedScenarios, featuredRecord, featuredScenario, setFeaturedId, launchCase, requestFeedback, openCanopy, searchCatalogue, nextCursor, total, loading, error }: { locale: Locale; workspaceLocation: string; restorePlaySession: () => void; text: UiText; records: PublishedCaseSummary[]; loadedScenarios: Scenario[]; featuredRecord: PublishedCaseSummary; featuredScenario: Scenario | null; setFeaturedId: (id: string) => void; launchCase: (record: PublishedCaseSummary) => void; requestFeedback: (target: FeedbackTarget) => void; openCanopy: () => void; searchCatalogue: (options?: { filters?: CatalogueSearchFilters; cursor?: string | null; append?: boolean; force?: boolean }) => Promise<void>; nextCursor: string | null; total: number; loading: boolean; error: string }) {
+function LibraryView({ locale, workspaceLocation, restorePlaySession, text, records, loadedScenarios, featuredRecord, featuredScenario, setFeaturedId, launchCase, requestFeedback, searchCatalogue, nextCursor, total, loading, error }: { locale: Locale; workspaceLocation: string; restorePlaySession: () => void; text: UiText; records: PublishedCaseSummary[]; loadedScenarios: Scenario[]; featuredRecord: PublishedCaseSummary; featuredScenario: Scenario | null; setFeaturedId: (id: string) => void; launchCase: (record: PublishedCaseSummary) => void; requestFeedback: (target: FeedbackTarget) => void; searchCatalogue: (options?: { filters?: CatalogueSearchFilters; cursor?: string | null; append?: boolean; force?: boolean }) => Promise<void>; nextCursor: string | null; total: number; loading: boolean; error: string }) {
   const [query, setQuery] = useState("");
   const [practiceFilter, setPracticeFilter] = useState("all");
   const [jurisdictionFilter, setJurisdictionFilter] = useState("all");
@@ -2135,10 +2158,10 @@ function LibraryView({ locale, workspaceLocation, restorePlaySession, text, reco
         <h1>{text.library}</h1>
         <p className="hero-deck">{locale === "en" ? "Open a prepared case and explore its decisions. Bring your own case to Studio to build a decision map and create an analytical report." : "Откройте готовый кейс и изучите варианты решений. Загрузите свой кейс в Студию, чтобы собрать карту решений и сформировать аналитический отчёт."}</p>
         <div className="featured-actions library-start-actions">
-          <button className="primary-cta" onClick={openCanopy}>{locale === "en" ? "Open Canopy in Studio" : "Открыть Canopy в Студии"}<Icon name="arrow"/></button>
+          <Link className="primary-cta" href={workspaceDestination("/studio?view=demos", workspaceLocation)}>{locale === "en" ? "Back to Demo" : "Вернуться к демо"}</Link>
           <Link className="secondary-cta" href={workspaceDestination("/studio?studio_step=describe", workspaceLocation)}><Icon name="studio"/>{locale === "en" ? "Load a case or describe a task" : "Загрузить кейс или описать задачу"}</Link>
         </div>
-        <p className="library-start-note">{locale === "en" ? "Start with Canopy, or load your own case as JSON, Markdown or text." : "Начните с Canopy или загрузите свой кейс в формате JSON, Markdown или текста."}</p>
+        <p className="library-start-note">{locale === "en" ? "Choose a prepared simulation here. Use Templates to start your own case." : "Начните с Canopy или загрузите свой кейс в формате JSON, Markdown или текста."}</p>
         <div className="hero-facts"><span>{total.toString().padStart(2, "0")} {locale === "en" ? "guided cases" : "учебных кейсов"}</span><span>EN / RU</span></div>
       </div>
       <div className="hero-index" aria-label="Catalogue index"><span>CASE INDEX</span><b>{String(Math.max(1, records.findIndex((record) => record.id === featuredRecord.id) + 1)).padStart(2, "0")}</b><small>/ {total.toString().padStart(2, "0")}</small></div>
@@ -2552,6 +2575,8 @@ function DecisionModal({ locale, text, scenario, stageHeadline, option, isResult
 }
 
 type StudioViewProps = {
+  operationPending: React.RefObject<boolean>;
+  onOperationInterrupted: () => void;
   standalone?: boolean;
   locale: Locale; text: UiText; prompt: string; setPrompt: React.Dispatch<React.SetStateAction<string>>; draft: StudioDraft;
   setDraft: React.Dispatch<React.SetStateAction<StudioDraft>>; selectedNode: StudioNode | null; selectedNodeId: string | null;
@@ -2593,7 +2618,7 @@ function computeStudioDerivations(source: StudioDraft): StudioDerivations {
   };
 }
 
-function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, packageRequiresPlayableRoute, generateDraft, applyPromptIteration, applyReviewedAIPlan, applyCanonicalMarkdownDraft, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadExample, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, serverPublicationFingerprint, setServerPublicationFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, reportReceiptStorageScope, persistReportReceiptOnDevice, aiEntitlement, restorePending }: StudioViewProps) {
+function StudioView({ operationPending, onOperationInterrupted, locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, packageRequiresPlayableRoute, generateDraft, applyPromptIteration, applyReviewedAIPlan, applyCanonicalMarkdownDraft, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadExample, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, serverPublicationFingerprint, setServerPublicationFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, reportReceiptStorageScope, persistReportReceiptOnDevice, aiEntitlement, restorePending }: StudioViewProps) {
   const [workspaceState, setWorkspaceState] = useState<"idle" | "saving" | "saved" | "submitted" | "conflict" | "auth_required" | "error">(customCaseId && serverFingerprint && serverPublicationFingerprint ? "saved" : "idle");
   const [linkSourceId, setLinkSourceId] = useState<string | null>(null);
   const [relationStatus, setRelationStatus] = useState("");
@@ -2603,6 +2628,13 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
   const [selectedRevisionId, setSelectedRevisionId] = useState("");
   const [selectedRuleLinkId, setSelectedRuleLinkId] = useState<string | null>(null);
   const [aiState, setAIState] = useState<"idle" | "analysing" | "ready" | "error">("idle");
+  operationPending.current = workspaceState === "saving" || aiState === "analysing";
+  const interruptionNotice = useRef(onOperationInterrupted);
+  interruptionNotice.current = onOperationInterrupted;
+  useEffect(() => () => {
+    if (operationPending.current) interruptionNotice.current();
+    operationPending.current = false;
+  }, [operationPending]);
   const [aiError, setAIError] = useState("");
   const [promptLimitNotice, setPromptLimitNotice] = useState(false);
   const [aiResult, setAIResult] = useState<{ key: string; baseFingerprint: string; plan: StudioPromptPlan; model: string | null; requestId: string | null } | null>(null);
@@ -3124,10 +3156,16 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     window.requestAnimationFrame(() => document.getElementById("studio-case-brief")?.focus());
   }
 
+  const fileImportSequence = useRef(0);
+  const fileImportContext = useRef({ draft, prompt, scope: reportReceiptStorageScope });
+  fileImportContext.current = { draft, prompt, scope: reportReceiptStorageScope };
   async function loadStudioFile(file: File) {
-    if (!canDuplicate) return;
+    if (!canDuplicate || operationPending.current) return;
+    const sequence = ++fileImportSequence.current;
+    const current = () => saveMountedRef.current && sequence === fileImportSequence.current && fileImportContext.current.draft === draft && fileImportContext.current.prompt === prompt && fileImportContext.current.scope === reportReceiptStorageScope;
     try {
       const { studioImportFileKind, readStudioPromptFile, studioPromptFileError } = await import("./studio-prompt-file");
+      if (!current()) return;
       const kind = studioImportFileKind(file);
       if (kind === "case") {
         importDraft(file, (restored) => {
@@ -3138,12 +3176,13 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
           selectGuidedStep(!restored.title.trim() && !restored.nodes.length && !restored.links.length ? 1 : 4);
         });
       } else if (kind === "prompt") {
-        try { loadCasePrompt(await readStudioPromptFile(file)); }
-        catch (error) { setCaseReportStatus(studioPromptFileError(error, locale)); }
+        try { const value = await readStudioPromptFile(file); if (current()) loadCasePrompt(value); }
+        catch (error) { if (current()) setCaseReportStatus(studioPromptFileError(error, locale)); }
       } else {
         setCaseReportStatus(locale === "en" ? "Choose a Studio JSON case or a Markdown (.md) / text (.txt) prompt. Your current work is unchanged." : "Выберите JSON-кейс Studio или промпт Markdown (.md) / текст (.txt). Текущая работа не изменена.");
       }
     } catch {
+      if (!current()) return;
       setCaseReportStatus(locale === "en" ? "File tools could not be loaded. Refresh and retry. Your current work is unchanged." : "Не удалось загрузить модуль импорта. Обновите страницу и повторите. Текущая работа не изменена.");
     }
   }
@@ -3520,6 +3559,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     applyCaseChange(locale === "en" ? "case type" : "тип кейса", (current) => applyCaseType(current, id));
   }
   function browseDemos() {
+    if (operationPending.current) { setCaseReportStatus(locale === "en" ? "Wait for the current operation before opening Demo." : "Дождитесь завершения операции перед открытием демо."); return; }
     const url = new URL(window.location.href);
     url.searchParams.set("view", "demos");
     url.searchParams.delete("studio_step");
@@ -3563,7 +3603,7 @@ function StudioView({ locale, text, prompt, setPrompt, draft, setDraft, selected
     {!canDuplicate && <aside className="studio-readonly-notice page-width" role="status"><Icon name="file"/><div><b>{locale === "en" ? "Inspection-only case" : "Кейс только для просмотра"}</b><p>{locale === "en" ? "You can inspect the graph and rules, but this protected case cannot be edited, copied, exported or saved. Start a blank draft or open the worked example to author a separate case." : "Вы можете изучать схему и правила, но этот защищённый кейс нельзя редактировать, копировать, экспортировать или сохранять. Создайте новый черновик или откройте учебный пример для отдельной работы."}</p></div></aside>}
     <aside className="confidentiality-notice page-width"><Icon name="alert"/><p>{locale === "en" ? "Confidentiality: do not enter client-identifiable, privileged, personal or secret information. Use synthetic or de-identified facts and public legal sources." : "Конфиденциальность: не вводите сведения, идентифицирующие клиента, адвокатскую тайну, персональные данные или секреты. Используйте синтетические или обезличенные факты и публичные источники права."}</p></aside>
     {(displayMode === "developer" || !draftWithinEnvelope) && <div className={`draft-envelope page-width ${draftWithinEnvelope ? "" : "limit"}`} role={draftWithinEnvelope ? undefined : "alert"}><span>{locale === "en" ? "Studio case envelope" : "Объём кейса Studio"}</span><progress max={STUDIO_DRAFT_SERIALIZED_LIMIT} value={Math.min(draftBytes, STUDIO_DRAFT_SERIALIZED_LIMIT)}/><b>{Math.ceil(draftBytes / 1_000).toLocaleString()} / 900 KB</b>{!draftWithinEnvelope && <em>{locale === "en" ? "Shorten node or relation details before AI, workspace save or submission." : "Сократите описания узлов или связей перед AI-анализом, сохранением или отправкой."}</em>}</div>}
-    {displayMode === "user" && <Suspense fallback={null}><StudioGuidedWizard locale={locale} activeStep={guidedStep} playableRoute={packageRequiresPlayableRoute} readiness={guidedReadiness} caseName={draft.title} saveState={visibleWorkspaceState} validationReady={validationReady} onStepChange={selectGuidedStep} onFocusBrief={() => document.getElementById("studio-case-brief")?.focus()} onStartExample={startExampleDraft} onBrowseDemos={() => { const url = new URL(window.location.href); url.searchParams.set("view", "demos"); window.history.pushState(window.history.state, "", url); window.dispatchEvent(new Event("genesis-studio-navigation"));
+    {displayMode === "user" && <Suspense fallback={null}><StudioGuidedWizard locale={locale} activeStep={guidedStep} playableRoute={packageRequiresPlayableRoute} readiness={guidedReadiness} caseName={draft.title} saveState={visibleWorkspaceState} validationReady={validationReady} onStepChange={selectGuidedStep} onFocusBrief={() => document.getElementById("studio-case-brief")?.focus()} onStartExample={startExampleDraft} onBrowseDemos={() => { if (operationPending.current) return; const url = new URL(window.location.href); url.searchParams.set("view", "demos"); window.history.pushState(window.history.state, "", url); window.dispatchEvent(new Event("genesis-studio-navigation"));
     window.dispatchEvent(new Event("genesis-interface-change")); }} onImport={() => importRef.current?.click()}/></Suspense>}
     {(displayMode === "developer" || guidedStep === 3) && <Suspense fallback={null}><StudioCaseTypeSelector locale={locale} value={draft.caseType} disabled={!canDuplicate} onChange={changeCaseType}/><StudioCasePlaybook locale={locale} draft={draft} phase="intake"/></Suspense>}
     {displayMode === "user" && timeline.revisions.length > 0 && <section className="studio-user-undo page-width" aria-label={locale === "en" ? "Recent changes" : "Последние изменения"} inert={!canDuplicate}><div><Icon name="file"/><span>{locale === "en" ? `${timeline.cursor} draft change${timeline.cursor === 1 ? "" : "s"} in this session` : `Изменений в этой сессии: ${timeline.cursor}`}</span></div><div><button onClick={undoDraft} disabled={timeline.cursor === 0 || !canDuplicate}><Icon name="arrow"/>{locale === "en" ? "Undo" : "Отменить"}</button><button onClick={redoDraft} disabled={timeline.cursor >= timeline.revisions.length || !canDuplicate}>{locale === "en" ? "Redo" : "Повторить"}<Icon name="arrow"/></button></div></section>}
@@ -4195,77 +4235,3 @@ function AdminDesk({ locale, cases, customCases, reloadCustomCases, openCustomCa
 }
 
 function commaList(value: string) { return value.split(",").map((item) => item.trim()).filter(Boolean); }
-
-function HelpView({ locale, openCommunity, openStudio }: { locale: Locale; openCommunity: () => void; openStudio: () => void }) {
-  const steps = locale === "en" ? [
-    ["Choose a case", "Use search, practice filters, tags, difficulty and duration to select a relevant matter."],
-    ["Work the record", "Review the opening situation, inbox, evidence provenance, deadlines and available decisions."],
-    ["Inspect consequences", "Every confirmed action advances time and changes the legal, evidential and institutional position."],
-    ["Control access", "Keep a case on this device, save a restricted custom case to your workspace, mark it Private, or prepare a reviewed version for the General Library."],
-  ] : [
-    ["Выберите кейс", "Используйте поиск, фильтры практики, теги, сложность и длительность."],
-    ["Работайте с материалами", "Изучите ситуацию, Inbox, доказательства, сроки и доступные решения."],
-    ["Разберите последствия", "Каждое действие продвигает время и меняет правовую и институциональную позицию."],
-    ["Управляйте доступом", "Храните кейс на устройстве, сохраняйте ограниченный custom-кейс в workspace, включайте «Приватно» или готовьте проверенную версию для Общей библиотеки."],
-  ];
-  const editorTranscript = locale === "en" ? [
-    "Open Case Studio. Every prompt and visual change stays in one authoring record.",
-    "Add evidence, connect it to a decision, and rename an actor with the exact-command fallback.",
-    "Review the deterministic operation plan before applying graph changes.",
-    "Apply the plan as one transaction, inspect its exact diff, or undo it.",
-    "Add, rename and connect a node directly in the visual editor.",
-    "Relink an existing relationship, then check the graph and launch the player.",
-  ] : [
-    "Откройте Case Studio. Промпты и визуальные правки сохраняются в единой истории кейса.",
-    "Добавьте доказательство, связь и переименуйте участника через резервный режим точных команд.",
-    "До применения проверьте детерминированный план операций над графом.",
-    "Примените план одной транзакцией, изучите точный diff или отмените изменение.",
-    "Добавьте, переименуйте и соедините узел прямо в визуальном редакторе.",
-    "Перепривяжите существующую связь, проверьте граф и запустите плеер.",
-  ];
-  const playTranscript = locale === "en" ? [
-    "Confirm that Check & play reports the current graph as ready.",
-    "Launch your case in the same Operations player used by published scenarios.",
-    "Review the record, available evidence, deadline, and linked decision options.",
-    "Confirm a decision and observe its consequence, clock, metrics, and deadline state.",
-    "Finish the branch and inspect the complete debrief for your own case.",
-  ] : [
-    "Убедитесь, что раздел «Проверить и играть» отмечает текущий граф как готовый.",
-    "Запустите кейс в том же плеере Operations, что используется для опубликованных сценариев.",
-    "Изучите материалы, доказательства, срок и варианты связанного решения.",
-    "Подтвердите выбор и проследите его последствия, время, метрики и состояние срока.",
-    "Завершите ветвь и изучите полный разбор собственного кейса.",
-  ];
-  return <main className="help-view page-width">
-    <section className="help-hero"><span>QUICK HELP</span><h1>{locale === "en" ? "How GENESIS: JURIS works" : "Как работает GENESIS: JURIS"}</h1><p>{locale === "en" ? "A practical legal-simulation system: read the evolving matter, make consequential decisions, learn from the debrief and help practitioners improve the next version." : "Практическая система юридических симуляций: изучайте развивающееся дело, принимайте значимые решения, анализируйте результат и помогайте улучшать следующую версию."}</p></section>
-    <section className="help-steps">{steps.map(([title, body], index) => <article key={title}><span>{String(index + 1).padStart(2, "0")}</span><h2>{title}</h2><p>{body}</p></article>)}</section>
-    <section className="help-video-guides" aria-labelledby="help-video-guides-title">
-      <header><span>GUIDED DEMOS</span><h2 id="help-video-guides-title">{locale === "en" ? "Create, refine, then play" : "Создайте, доработайте и пройдите"}</h2><p>{locale === "en" ? "Watch the two-minute AI demo, then explore the editor and player clips." : "Посмотрите двухминутное AI-демо, затем короткие ролики редактора и плеера."}</p></header>
-      <div className="help-video-grid">
-        <Suspense fallback={null}><StudioGuidedDemo locale={locale}/></Suspense>
-        <article className="help-video-card">
-          <video controls preload="metadata" playsInline poster="/help/case-studio-iterative-editing-poster.jpg" aria-describedby="editor-video-description editor-video-transcript">
-            <source src="/help/case-studio-iterative-editing.mp4" type="video/mp4"/>
-            <track kind="captions" src="/help/case-studio-iterative-editing.en.vtt" srcLang="en" label="English" default={locale === "en"}/>
-            <track kind="captions" src="/help/case-studio-iterative-editing.ru.vtt" srcLang="ru" label="Русский" default={locale === "ru"}/>
-            {locale === "en" ? "Your browser does not support HTML video. Use the transcript below." : "Ваш браузер не поддерживает HTML-видео. Используйте расшифровку ниже."}
-          </video>
-          <div className="help-video-copy"><span>01 · 00:26</span><h3>{locale === "en" ? "Visual editing & exact-command fallback" : "Визуальные правки и точные команды"}</h3><p id="editor-video-description">{locale === "en" ? "This recording demonstrates the deterministic fallback and stable graph controls. In the current release, Understand with AI is the primary entry point and always requires review before apply." : "Запись показывает детерминированный резервный режим и стабильные элементы графа. В текущей версии основной вход — «Понять с ИИ» с обязательной проверкой до применения."}</p></div>
-          <details className="help-transcript" id="editor-video-transcript"><summary>{locale === "en" ? "Read transcript" : "Открыть расшифровку"}</summary><ol>{editorTranscript.map((item) => <li key={item}>{item}</li>)}</ol></details>
-        </article>
-        <article className="help-video-card">
-          <video controls preload="metadata" playsInline poster="/help/play-your-studio-case-poster.jpg" aria-describedby="play-video-description play-video-transcript">
-            <source src="/help/play-your-studio-case.mp4" type="video/mp4"/>
-            <track kind="captions" src="/help/play-your-studio-case.en.vtt" srcLang="en" label="English" default={locale === "en"}/>
-            <track kind="captions" src="/help/play-your-studio-case.ru.vtt" srcLang="ru" label="Русский" default={locale === "ru"}/>
-            {locale === "en" ? "Your browser does not support HTML video. Use the transcript below." : "Ваш браузер не поддерживает HTML-видео. Используйте расшифровку ниже."}
-          </video>
-          <div className="help-video-copy"><span>02 · 00:17</span><h3>{locale === "en" ? "Play your own Studio case" : "Прохождение своего кейса"}</h3><p id="play-video-description">{locale === "en" ? "Compile the current graph into the complete runtime, make a linked decision, observe its operational consequences, and finish with a full debrief." : "Скомпилируйте текущий граф в полный игровой сценарий, примите связанное решение, проследите операционные последствия и завершите кейс полным разбором."}</p></div>
-          <details className="help-transcript" id="play-video-transcript"><summary>{locale === "en" ? "Read transcript" : "Открыть расшифровку"}</summary><ol>{playTranscript.map((item) => <li key={item}>{item}</li>)}</ol></details>
-        </article>
-      </div>
-    </section>
-    <Suspense fallback={<section className="help-faq"><h2>{locale === "en" ? "Loading help…" : "Загрузка помощи…"}</h2></section>}><HelpFaq locale={locale}/></Suspense>
-    <div className="help-actions"><button className="secondary-cta" onClick={openCommunity}>{locale === "en" ? "Register or update profile" : "Регистрация и профиль"}</button><button className="primary-cta" onClick={openStudio}>{locale === "en" ? "Open Case Studio" : "Открыть Case Studio"}<Icon name="arrow"/></button></div>
-  </main>;
-}

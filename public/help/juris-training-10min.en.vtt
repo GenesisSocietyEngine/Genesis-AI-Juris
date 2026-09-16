@@ -1,0 +1,387 @@
+WEBVTT
+
+NOTE Only the opening screen is an actual application screenshot. Other visuals are labeled illustrations or account instructions, not acceptance recordings.
+
+1
+00:00:00.650 --> 00:00:03.390
+Welcome to Genesis: Juris Studio.
+
+2
+00:00:03.550 --> 00:00:10.350
+In ten minutes, we will follow a canonical case from import to review and reporting, then start a new case.
+
+3
+00:00:10.510 --> 00:00:13.240
+This is a narrated, illustrated walkthrough.
+
+4
+00:00:13.400 --> 00:00:20.880
+The opening screen shows the application; clearly labeled instruction segments explain account features that were not recorded.
+
+5
+00:00:21.040 --> 00:00:25.175
+Use fictional or de-identified material when you practise.
+
+6
+00:00:30.650 --> 00:00:35.620
+Choose Demo when you want to learn from a completed example such as Project Canopy.
+
+7
+00:00:35.780 --> 00:00:39.560
+Its Practice cases link opens the simulation catalogue.
+
+8
+00:00:39.720 --> 00:00:43.740
+Choose Templates when you want a starting structure for your own case.
+
+9
+00:00:43.900 --> 00:00:48.905
+A template opens a new draft with an intake prompt; you must supply and review its facts.
+
+10
+00:00:49.065 --> 00:00:52.595
+Neither action creates an approved organization record.
+
+11
+00:01:00.650 --> 00:01:06.995
+Our example is Five Flats, Three Borders, sometimes called Five Flats, Three Countries.
+
+12
+00:01:07.155 --> 00:01:12.075
+Use the complete final Markdown file, including its embedded case data.
+
+13
+00:01:12.235 --> 00:01:15.620
+From the entry screen, choose Import case or prompt.
+
+14
+00:01:15.780 --> 00:01:21.775
+Inside the editor, the equivalent route is More actions, then Import case prompt, dot m d.
+
+15
+00:01:21.935 --> 00:01:25.135
+Importing text is not yet applying its graph.
+
+16
+00:01:30.650 --> 00:01:32.955
+Choose Verify canonical case.
+
+17
+00:01:33.115 --> 00:01:39.355
+This path checks the embedded structure and fingerprint locally, without asking AI to reinterpret the file.
+
+18
+00:01:39.515 --> 00:01:44.365
+Review the verified title, version, twenty-three nodes and thirty-six relations.
+
+19
+00:01:44.525 --> 00:01:48.020
+A matching fingerprint confirms which case data you have.
+
+20
+00:01:48.180 --> 00:01:54.855
+It does not independently verify the evidence, legal conclusions, tax rates or any claimed review date.
+
+21
+00:02:00.650 --> 00:02:05.585
+When the verified preview matches your intended file, choose Apply exact case.
+
+22
+00:02:05.745 --> 00:02:09.430
+Studio reconstructs that graph and opens the working draft.
+
+23
+00:02:09.590 --> 00:02:16.310
+Follow the six steps: Brief, Draft review, Facts and evidence, Decision map, Test, and Finish.
+
+24
+00:02:16.470 --> 00:02:19.720
+The progress indicator describes filled sections.
+
+25
+00:02:19.880 --> 00:02:24.265
+It does not mean every assumption is proven or that the draft has been saved.
+
+26
+00:02:30.650 --> 00:02:35.000
+Read the title, jurisdiction, professional role and Case context.
+
+27
+00:02:35.160 --> 00:02:42.030
+This fictional matter concerns a PRC-resident client, five English flats and a proposed Liechtenstein structure.
+
+28
+00:02:42.190 --> 00:02:46.955
+The client's preferred structure is a request to investigate, not the answer.
+
+29
+00:02:47.115 --> 00:02:51.550
+Keep alternative routes, unresolved questions and stop conditions visible.
+
+30
+00:02:51.710 --> 00:02:56.210
+Preserve the original file before changing its reviewed working copy.
+
+31
+00:03:00.650 --> 00:03:03.495
+Inspect the evidence and the decision it supports.
+
+32
+00:03:03.655 --> 00:03:09.000
+For example, the KYC questionnaire connects to the ownership and funds investigation.
+
+33
+00:03:09.160 --> 00:03:13.940
+A named evidence node is not proof that its underlying document has been accepted.
+
+34
+00:03:14.100 --> 00:03:19.585
+Record what the source establishes, what remains uncertain, and which decision depends on it.
+
+35
+00:03:19.745 --> 00:03:23.600
+Use case actions to return directly to missing information.
+
+36
+00:03:30.650 --> 00:03:34.225
+Review the current file's economics rather than an older demo.
+
+37
+00:03:34.385 --> 00:03:44.095
+It specifies a one-million-pound price, eight hundred thousand pounds of debt, seven-point-five percent interest and a one-hundred-and-twenty-month amortizing term.
+
+38
+00:03:44.255 --> 00:03:49.080
+Gross annual rent is two hundred and forty-nine thousand, six hundred pounds.
+
+39
+00:03:49.240 --> 00:03:55.665
+Check repayment basis, operating costs and structure costs before interpreting any displayed result.
+
+40
+00:04:00.650 --> 00:04:03.980
+The requested ten-percent return needs a named measure.
+
+41
+00:04:04.140 --> 00:04:09.390
+Gross yield, cash-on-cash return and equity I R R answer different questions.
+
+42
+00:04:09.550 --> 00:04:13.765
+Compare the displayed calculations with their assumptions and source evidence.
+
+43
+00:04:13.925 --> 00:04:19.390
+This file contains provisional acquisition costs and unverified tax-rate sources.
+
+44
+00:04:19.550 --> 00:04:26.000
+We are demonstrating the review workflow, not confirming a tax advantage or promising that the target is achieved.
+
+45
+00:04:30.650 --> 00:04:33.395
+Open Decision map and select a decision.
+
+46
+00:04:33.555 --> 00:04:38.445
+Read the node detail, then follow its connections to the next question or outcome.
+
+47
+00:04:38.605 --> 00:04:43.625
+In this case, defining the return metric and checking lawful funding are meaningful gates.
+
+48
+00:04:43.785 --> 00:04:47.815
+Follow a stop or renegotiation route as well as a proceeding route.
+
+49
+00:04:47.975 --> 00:04:52.090
+A useful map explains why different evidence can change the decision.
+
+50
+00:05:00.650 --> 00:05:03.645
+Choose Test and read the checks for this case type.
+
+51
+00:05:03.805 --> 00:05:09.935
+A playable case needs intentional routes and outcomes; Test this case opens its simulation when ready.
+
+52
+00:05:10.095 --> 00:05:13.125
+Other decision packages use completeness checks.
+
+53
+00:05:13.285 --> 00:05:18.455
+If an action identifies a missing field or connection, open it and correct the draft.
+
+54
+00:05:18.615 --> 00:05:24.170
+A successful structural test does not replace evidence review or professional judgment.
+
+55
+00:05:30.650 --> 00:05:32.885
+Choose Create analytical report.
+
+56
+00:05:33.045 --> 00:05:40.920
+The Create case report dialog offers Preview PDF and Download PDF, with further options under Report settings and approval.
+
+57
+00:05:41.080 --> 00:05:43.350
+Begin with an internal review draft.
+
+58
+00:05:43.510 --> 00:05:49.285
+Inspect its case identity, assumptions, evidence register and portrait decision map.
+
+59
+00:05:49.445 --> 00:05:55.450
+Downloading a preliminary report does not create independent approval or a governed report in My cases.
+
+60
+00:06:00.650 --> 00:06:06.505
+After choosing Download PDF, check your browser's downloads and open the file yourself.
+
+61
+00:06:06.665 --> 00:06:11.395
+The message PDF download started confirms initiation, not delivery.
+
+62
+00:06:11.555 --> 00:06:18.720
+To preserve an editable canonical handoff, use More actions, then Export Final case prompt, dot m d.
+
+63
+00:06:18.880 --> 00:06:21.390
+Read its status controls carefully.
+
+64
+00:06:21.550 --> 00:06:27.640
+A filename containing Final does not supply missing evidence or create independent reviewer approval.
+
+65
+00:06:30.650 --> 00:06:35.110
+This account workflow is an instruction, not a recorded successful save.
+
+66
+00:06:35.270 --> 00:06:40.725
+With supported sign-in, Save to workspace stores a Studio draft under your account.
+
+67
+00:06:40.885 --> 00:06:45.275
+Reopen it through Open saved Studio drafts and check the restored content.
+
+68
+00:06:45.435 --> 00:06:48.405
+Organization cases in My cases are separate.
+
+69
+00:06:48.565 --> 00:06:54.610
+If a save is uncertain, preserve your export and investigate before repeating a potentially completed write.
+
+70
+00:07:00.650 --> 00:07:03.090
+Now create your own fictional case.
+
+71
+00:07:03.250 --> 00:07:07.835
+Preserve the current work first, return to Case Studio and choose Create a case.
+
+72
+00:07:07.995 --> 00:07:11.995
+Read any replacement or unsaved-work prompt before proceeding.
+
+73
+00:07:12.155 --> 00:07:14.930
+The new draft starts a separate authoring task.
+
+74
+00:07:15.090 --> 00:07:24.255
+Alternatively, choose a suitable starter in Templates; review its case type and intake questions instead of treating the starter as a finished example.
+
+75
+00:07:30.650 --> 00:07:38.330
+In Brief, describe who is involved, the decision required, the jurisdiction, known facts, available evidence and the deadline.
+
+76
+00:07:38.490 --> 00:07:44.190
+For practice, ask whether a fictional business should approve a supplier change before a planned launch.
+
+77
+00:07:44.350 --> 00:07:48.205
+Mark prices and delivery claims as unverified until supported.
+
+78
+00:07:48.365 --> 00:07:53.135
+State the alternatives and the conditions that would make you pause rather than proceed.
+
+79
+00:08:00.650 --> 00:08:05.660
+This optional AI path is an instruction, not a recorded authenticated request.
+
+80
+00:08:05.820 --> 00:08:10.735
+Where enabled, Understand with AI requires sign-in and a confirmed profile.
+
+81
+00:08:10.895 --> 00:08:14.340
+It proposes changes for review before you apply them.
+
+82
+00:08:14.500 --> 00:08:18.125
+Check the current data-handling notice before sending material.
+
+83
+00:08:18.285 --> 00:08:26.835
+If unavailable, continue with manual editing or the explicitly labeled local fallback; do not mistake fallback output for AI analysis.
+
+84
+00:08:30.650 --> 00:08:35.665
+For the new draft, complete Facts and evidence, then build or review the Decision map.
+
+85
+00:08:35.825 --> 00:08:40.295
+Give nodes concrete titles and connect each choice to a reasoned next step.
+
+86
+00:08:40.455 --> 00:08:44.175
+Add the missing evidence instead of writing an unsupported conclusion.
+
+87
+00:08:44.335 --> 00:08:53.210
+Use Test to find structural gaps, then Finish to choose a report, workspace save or expert-review submission when its requirements are met.
+
+88
+00:09:00.650 --> 00:09:07.350
+Creating a shared organization record is a separate authenticated workflow, described here rather than recorded.
+
+89
+00:09:07.510 --> 00:09:11.875
+Select the intended organization, open My cases and choose New case.
+
+90
+00:09:12.035 --> 00:09:17.395
+Create a pilot matter asks for Title, Jurisdiction, Classification and Priority.
+
+91
+00:09:17.555 --> 00:09:22.370
+After creation, verify the returned case before adding documents and reviews.
+
+92
+00:09:22.530 --> 00:09:28.050
+Importing a canonical Studio file alone does not create this organization record.
+
+93
+00:09:30.650 --> 00:09:40.720
+Your practice task is to import and verify the canonical file, explain one evidence-dependent decision, inspect a draft report, and start a new fictional case.
+
+94
+00:09:40.880 --> 00:09:42.965
+Preserve the work you want to keep.
+
+95
+00:09:43.125 --> 00:09:47.880
+Return to Help and guides for chapter links, instructions and troubleshooting.
+
+96
+00:09:48.040 --> 00:09:55.415
+You have learned the workflow; reliable evidence, confirmed saves and appropriate review determine when a real case is ready.
