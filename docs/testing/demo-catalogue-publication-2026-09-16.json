@@ -1,0 +1,56 @@
+{
+  "saved_version": {
+    "archive_storage": {
+      "archive_format": "tar",
+      "content_hash": "sha256:f493e5bf5fb352c67d03a6c88ed2625e3c9ff6bd58fd8a0ee589ce2bdc3c9a85",
+      "file_count": 370,
+      "sediment_file_id": "file_000000002a5c81f4bf0fba5759ed4fba",
+      "size_bytes": 36167680
+    },
+    "deployment_id": null,
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_ccc2d3317b58819186b42b04b0342044",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "screenshot_url": null,
+    "source": {
+      "commit_sha": "3986d9035b522044ad8423b50a5b620cbc13734f"
+    },
+    "version_number": 91
+  },
+  "deployment": {
+    "env_set_revision": 39,
+    "failure_message": null,
+    "id": "appgdep_6aaa5b2350a48191a71555c9168cc89e",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "screenshot_asset_pointer": null,
+    "status": "succeeded",
+    "title": "GENESIS: JURIS Web",
+    "type": "publish",
+    "updated_at": "2026-09-16T09:02:50.052505+00:00",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_ccc2d3317b58819186b42b04b0342044"
+  },
+  "private_review": {
+    "source": "ed4b41b06fceebbe04df347bf9301f92aa61896e",
+    "deployment": {
+      "env_set_revision": 0,
+      "failure_message": null,
+      "id": "appgdep_6aaa5a0c67008191b68e1c6acd9ddc96",
+      "project_id": "appgprj_6aaa2f1c99e48191a881588b928e80c5",
+      "provider_deployment_id": "site---6aaa2f1c99e48191a881588b928e80c5",
+      "screenshot_asset_pointer": null,
+      "status": "succeeded",
+      "title": "GENESIS: JURIS — Track S Private Review",
+      "type": "publish",
+      "updated_at": "2026-09-16T08:58:05.149938+00:00",
+      "url": "https://genesis-juris-track-s-review.maxim-hayan.chatgpt.site",
+      "version_id": "appgprj_6aaa2f1c99e48191a881588b928e80c5~appgver_6ce3d3db099081918e1423c260344567"
+    }
+  },
+  "package": {
+    "sha256": "d0833f8da53d54fb3f8f8e5dfa5f831796ecb18d9f29b7f6a3eac950a70533c6",
+    "bytes": 22884089,
+    "unchanged_migration_files": 44
+  },
+  "browser_acceptance": "Not performed for amended screens; source/model/render and build checks passed."
+}
