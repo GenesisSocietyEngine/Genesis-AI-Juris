@@ -55,7 +55,7 @@ export default function OrganizationBoundary({ children, signedIn, signInUrl }: 
     <main className={styles.accessEmpty}>
       <h1>{t("Your team's case workspace", "Рабочее пространство вашей команды")}</h1>
       <p>{t("Sign in to continue saved cases, review evidence with your team and prepare reports for approval.", "Войдите, чтобы продолжить сохранённые дела, проверить доказательства с командой и подготовить отчёты к утверждению.")}</p>
-      <p>{t("Just exploring? Canopy and the playable demos are available without an account.", "Знакомитесь с продуктом? Canopy и игровые демо доступны без аккаунта.")}</p>
+      <p>{t("Just exploring? The demo cases are available without an account.", "Знакомитесь с продуктом? Демо-кейсы доступны без аккаунта.")}</p>
       <div className={styles.accessEmptyActions}>
         <a href={signInUrl} target="_top">{t("Sign in to continue", "Войти и продолжить")}</a>
         <a href={workspaceDestination("/studio?view=demos", location)}>{t("Open demo case", "Открыть демо-кейс")}</a>

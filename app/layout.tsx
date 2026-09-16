@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./workspace-design.css";
+import "./demo-catalogue.css";
 import StaleChunkRecovery from "./StaleChunkRecovery";
 
 export const metadata: Metadata = {

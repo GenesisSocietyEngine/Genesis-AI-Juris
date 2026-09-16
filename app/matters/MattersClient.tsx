@@ -594,7 +594,7 @@ export default function MattersClient() {
           <button type="button" onClick={() => setCreateOpen(true)}>New case</button>
           <button type="button" onClick={() => promptImportRef.current?.click()}>Import case prompt (.md)</button>
           <Link href="/templates">Browse templates</Link>
-          <Link href={organizationWorkspaceUrl("/canopy")}>Featured demo · Project Canopy</Link>
+          <Link href={organizationWorkspaceUrl("/studio?view=demos")}>Browse demo cases</Link>
           <input ref={promptImportRef} className={styles.srOnly} type="file" accept=".md,text/markdown,text/plain" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importCasePrompt(file); event.target.value = ""; }}/>
         </div>
 

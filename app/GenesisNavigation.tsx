@@ -80,10 +80,9 @@ function ExpandedGenesisNavigation({ locale, location, active, onNavigate, onLan
         return <details className="genesis-nav-group" key={`${item.view}-${selected}`} open={selected}>
           <summary><WorkspaceIcon name={item.icon}/><span>{en ? item.en : item.ru}</span><span className="nav-chevron" aria-hidden="true">⌄</span></summary>
           <div className="genesis-nav-children">
-            <a href={href(item.path)} aria-current={selected && active !== "library" && active !== "community" ? "page" : undefined} onClick={event => follow(event,item.view)}>{en ? (item.view === "templates" ? "Choose a template" : `Open ${item.en}`) : (item.view === "templates" ? "Выбрать шаблон" : `Открыть: ${item.ru}`)}</a>
+            <a href={href(item.path)} aria-current={selected && active !== "community" ? "page" : undefined} onClick={event => follow(event,item.view)}>{en ? (item.view === "templates" ? "Choose a template" : item.view === "demos" ? "Browse demo cases" : `Open ${item.en}`) : (item.view === "templates" ? "Выбрать шаблон" : item.view === "demos" ? "Каталог демо-кейсов" : `Открыть: ${item.ru}`)}</a>
             {item.view === "studio" && <>{newCase && <button type="button" onClick={() => { if (allowDeparture && !allowDeparture()) return; newCase(); setMobileOpen(false); }}>{en ? "New blank case" : "Новый пустой кейс"}</button>}{importCase && <button type="button" onClick={() => { if (allowDeparture && !allowDeparture()) return; importCase(); setMobileOpen(false); }}>{en ? "Import case or prompt" : "Импорт кейса или промпта"}</button>}</>}
             {item.view === "matters" && <a href={href("/studio?view=community")} aria-current={active === "community" ? "page" : undefined} onClick={event => follow(event,"community")}>{en ? "Saved Studio drafts" : "Черновики Studio"}</a>}
-            {item.view === "demos" && <a href={href("/studio?view=library")} aria-current={active === "library" ? "page" : undefined} onClick={event => follow(event,"library")}>{en ? "Practice cases" : "Учебные кейсы"}</a>}
             {item.view === "play" && operationsActions}
           </div>
         </details>;

@@ -27,11 +27,11 @@
       "id": "02",
       "chapter": "Orientation",
       "title": "Demo, Templates and your own work",
-      "narration": "Choose Demo when you want to learn from a completed example such as Project Canopy. Its Practice cases link opens the simulation catalogue. Choose Templates when you want a starting structure for your own case. A template opens a new draft with an intake prompt; you must supply and review its facts. Neither action creates an approved organization record.",
+      "narration": "Choose Demo cases when you want to learn from prepared examples. Its single catalogue includes the Canopy guided walkthrough and five decision simulations. Choose Templates when you want a starting structure for your own case. A template opens a new draft with an intake prompt; you must supply and review its facts. Neither action creates an approved organization record.",
       "takeaways": [
-        "Demo: learn from worked examples",
+        "Demo cases: learn from examples",
         "Templates: begin your own draft",
-        "Practice cases: explore simulations"
+        "Canopy + five decision simulations"
       ],
       "screenKey": "demo-templates-orientation",
       "kind": "illustration"

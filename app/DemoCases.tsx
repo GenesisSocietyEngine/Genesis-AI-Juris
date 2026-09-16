@@ -5,7 +5,6 @@ import { CANOPY_QUESTION, CANOPY_SCENARIOS, CANOPY_SOURCES, type CanopyScenarioI
 import { WorkspaceIcon } from "./GenesisNavigation";
 
 type Locale = "en" | "ru";
-type DemoRecord = { id: string; title: string; summary: string; jurisdiction: string };
 const canopyExamples: Array<{ id: CanopyScenarioId; en: string; ru: string; detail: Record<Locale, string> }> = [
   { id: "base", en: "Base", ru: "Базовый", detail: { en: "Review a conditional 90-day pilot with outstanding evidence.", ru: "Проверьте условия 90-дневного пилота и недостающие подтверждения." } },
   { id: "upside", en: "Upside", ru: "Благоприятный", detail: { en: "See how stronger demand and accepted evidence change the decision.", ru: "Посмотрите, как подтверждённый спрос и новые доказательства меняют решение." } },
@@ -13,21 +12,17 @@ const canopyExamples: Array<{ id: CanopyScenarioId; en: string; ru: string; deta
   { id: "downside", en: "Downside", ru: "Неблагоприятный", detail: { en: "Test weaker demand, lower yield and higher energy costs.", ru: "Проверьте снижение спроса и выхода продукции при росте энергозатрат." } },
 ];
 
-export default function DemoCases({ locale, openCanopy, canopyWorkflowHref, openStudio, openPractice, openTemplates }: {
+export default function DemoCases({ locale, openCanopy, canopyWorkflowHref, busy = false }: {
   locale: Locale;
-  records: DemoRecord[];
+  busy?: boolean;
   openCanopy: (id: CanopyScenarioId) => Promise<void>;
   canopyWorkflowHref: string;
-  playCase: (id: string) => Promise<void>;
-  openStudio: () => void;
-  openPractice: () => void;
-  openTemplates: () => void;
 }) {
   const [selected, setSelected] = useState<CanopyScenarioId>("base");
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState("");
   async function open(id: string, action: () => Promise<void>) {
-    if (pending) return;
+    if (pending || busy) return;
     setPending(id);
     setError("");
     try { await action(); }
@@ -40,13 +35,7 @@ export default function DemoCases({ locale, openCanopy, canopyWorkflowHref, open
   const declaration = CANOPY_SCENARIOS.find(item => item.id === selected)!;
   const sourceVersions = new Map<string, number>([["D03", declaration.d03], ["D06", declaration.d06], ["D08", declaration.d08], ["D07", 2]]);
   const sources = CANOPY_SOURCES.filter(source => source.version === (sourceVersions.get(source.id) ?? 1));
-  return <main className="demo-library page-width">
-    <header className="demo-library-header">
-      <div><h1>{locale === "en" ? "Demo cases" : "Демо-кейсы"}</h1>
-        <p>{locale === "en" ? "Explore an example, then use the same steps for your own case." : "Изучите пример, затем пройдите те же шаги со своим кейсом."}</p>
-      </div>
-      <button type="button" className="secondary-cta" onClick={openStudio}>{locale === "en" ? "Back to Studio" : "Вернуться в Studio"}</button>
-    </header>
+  return <section className="demo-walkthrough">
     {error && <p className="demo-error" role="alert">{error}</p>}
     <section className="demo-canopy-feature" aria-labelledby="canopy-demo-title">
       <div className="demo-canopy-introduction">
@@ -64,7 +53,7 @@ export default function DemoCases({ locale, openCanopy, canopyWorkflowHref, open
         <h3>{locale === "en" ? "Choose a scenario" : "Выберите сценарий"}</h3>
         <p>{locale === "en" ? "Start with Base, then compare what changes." : "Начните с базового варианта, затем сравните изменения."}</p>
         <fieldset><legend className="visually-hidden">{locale === "en" ? "Canopy scenario" : "Сценарий Canopy"}</legend>{canopyExamples.map(example => <label key={example.id} className={selected === example.id ? "selected" : ""}><input type="radio" name="canopy-scenario" value={example.id} checked={selected === example.id} onChange={() => setSelected(example.id)}/><span><b>{example[locale]}</b><small>{example.detail[locale]}</small></span></label>)}</fieldset>
-        <button type="button" className="primary-cta" disabled={pending !== null} onClick={() => void open(selected, () => openCanopy(selected))}>{pending === selected ? (locale === "en" ? "Opening…" : "Открывается…") : (locale === "en" ? "Open Canopy in Studio" : "Открыть Canopy в Студии")}<WorkspaceIcon name="arrow"/></button>
+        <button type="button" className="primary-cta" disabled={pending !== null || busy} onClick={() => void open(selected, () => openCanopy(selected))}>{pending === selected ? (locale === "en" ? "Opening…" : "Открывается…") : (locale === "en" ? "Open Canopy in Studio" : "Открыть Canopy в Студии")}<WorkspaceIcon name="arrow"/></button>
         <small>{locale === "en" ? "Opens a separate working copy. The reference case is preserved." : "Открывается отдельный рабочий черновик. Эталонный кейс сохраняется."}</small>
       </div>
     </section>
@@ -74,6 +63,5 @@ export default function DemoCases({ locale, openCanopy, canopyWorkflowHref, open
       <div className="demo-source-list">{sources.map(source => <details key={source.id}><summary><WorkspaceIcon name="studio"/><span>{source.title}</span><small>{source.id} · v{source.version}</small></summary>{Object.entries(source.sections).map(([section,content]) => <section key={section}><h4>{section}</h4><p>{content}</p></section>)}</details>)}</div>
       <p className="demo-saved-walkthrough">{locale === "en" ? "For a saved case with source acceptance, review tasks and approved outputs:" : "Для сохранённого кейса с проверкой источников, задачами и утверждёнными результатами:"} <a href={canopyWorkflowHref}>{locale === "en" ? "Open the full Canopy walkthrough" : "Открыть полный процесс Canopy"}</a><small>{locale === "en" ? "Sign-in, organization access and reviewer permissions are required for the governed workflow." : "Для управляемого процесса необходимы вход, доступ к организации и права рецензента."}</small></p>
     </details>
-    <section className="demo-next-links"><div><h2>{locale === "en" ? "Practice cases" : "Учебные кейсы"}</h2><p>{locale === "en" ? "Explore the complete catalogue of playable scenarios. Each case appears in one catalogue." : "Откройте полный каталог игровых сценариев. Каждый кейс представлен в одном каталоге."}</p><button type="button" className="primary-cta" onClick={openPractice}>{locale === "en" ? "Browse practice cases" : "Открыть учебные кейсы"}</button></div><div><h2>{locale === "en" ? "Ready to build your own?" : "Готовы создать свой кейс?"}</h2><p>{locale === "en" ? "Templates start a fresh draft with intake questions, without copying a demo's facts or conclusions." : "Шаблоны создают новый черновик с вопросами, без фактов и выводов демо."}</p><button type="button" className="secondary-cta" onClick={openTemplates}>{locale === "en" ? "Choose a template" : "Выбрать шаблон"}</button></div></section>
-  </main>;
+  </section>;
 }

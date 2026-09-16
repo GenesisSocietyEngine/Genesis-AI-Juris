@@ -31,7 +31,7 @@ export default function StudioEntryScreen({ locale, recentTitle, savedCasesHref 
       <div className="studio-entry-demo">
         <span className="workspace-eyebrow">{en ? "Explore an example" : "Изучите пример"}</span>
         <h2>{en ? "See a decision take shape" : "Посмотрите, как формируется решение"}</h2>
-        <p>{en ? "Open Canopy or a playable case. Follow the evidence, compare options and preview the report." : "Откройте Canopy или игровой кейс. Изучите доказательства, сравните варианты и просмотрите отчёт."}</p>
+        <p>{en ? "Choose a guided walkthrough or decision simulation. Follow the evidence, compare options and preview the report." : "Выберите пошаговый обзор или симуляцию решений. Изучите доказательства, сравните варианты и просмотрите отчёт."}</p>
         <button type="button" className="primary-cta" onClick={onDemo}>{en ? "Open demo case" : "Открыть демо-кейс"}<WorkspaceIcon name="arrow"/></button>
         <small>{en ? "Prepared examples · No sign-in needed to explore" : "Готовые примеры · Можно изучать без входа"}</small>
       </div>

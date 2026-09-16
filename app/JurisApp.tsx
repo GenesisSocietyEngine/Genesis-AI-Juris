@@ -1,7 +1,6 @@
 "use client";
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { flushSync } from "react-dom";
 import { appendConnectedStudioItem } from "./studio-action-editing";
 import { focusActionTarget } from "./ActionTile";
@@ -9,6 +8,7 @@ import type { StudioCheck } from "./studio-validation";
 import type { StudioActionTarget } from "./StudioActionPanel";
 import AppNavigation from "./AppNavigation";
 import CaseTemplates, { prepareCaseTemplate } from "./CaseTemplates";
+import DemoCatalogueCards, { matchesCanopy, type DemoFormat } from "./DemoCatalogueCards";
 import HelpCenter from "./HelpCenter";
 import { canonicalFingerprint, caseFingerprint, casePublicationFingerprint, isRecord, isTaxDraft, legacyCaseFingerprintV15, normalizeStudioDraft, slugifyCaseId } from "./case-integrity";
 import { bundledCataloguePresentation, mayUseBundledCatalogueFallback } from "./catalogue-fallback";
@@ -97,7 +97,6 @@ const StudioEntryScreen = lazy(() => import("./StudioEntryScreen"));
 const StudioNodeSummary = lazy(() => import("./StudioNodeSummary"));
 const OperationsDossier = lazy(() => import("./OperationsDossier"));
 const FeedbackDialog = lazy(() => import("./FeedbackDialog"));
-const DemoCases = lazy(() => import("./DemoCases"));
 const StudioAIReview = lazy(() => import("./StudioAIReview"));
 const StudioAIProgress = lazy(() => import("./StudioAIProgress"));
 const DealOutcomePanel = lazy(() => import("./DealOutcomePanel"));
@@ -236,8 +235,8 @@ type CustomCaseFile = {
 
 const ui = {
   en: {
-    library: "Practice cases", play: "Operations", studio: "Case Studio",
-    office: "Office", night: "After hours", catalogue: "Practice catalogue",
+    library: "Demo cases", play: "Operations", studio: "Case Studio",
+    office: "Office", night: "After hours", catalogue: "Examples & training",
     openCase: "Open case file", launch: "Launch scenario", continue: "Continue operation",
     role: "Your role", jurisdiction: "Jurisdiction", dossier: "Dossier",
     situation: "Situation", attention: "Inbox attention", decisions: "Available decisions",
@@ -265,8 +264,8 @@ const ui = {
     nodeTypes: { trigger: "Trigger", actor: "Actor", fact: "Fact", evidence: "Evidence", deadline: "Deadline", decision: "Decision", outcome: "Outcome", entity: "Entity / jurisdiction", tax_rule: "Tax rule", cash_flow: "Cash flow" } as Record<StudioNodeType, string>,
   },
   ru: {
-    library: "Учебные кейсы", play: "Операции", studio: "Студия кейсов",
-    office: "Офис", night: "После работы", catalogue: "Шаблоны кейсов",
+    library: "Демо-кейсы", play: "Операции", studio: "Студия кейсов",
+    office: "Офис", night: "После работы", catalogue: "Примеры и обучение",
     openCase: "Открыть дело", launch: "Запустить сценарий", continue: "Продолжить операцию",
     role: "Ваша роль", jurisdiction: "Юрисдикция", dossier: "Досье",
     situation: "Ситуация", attention: "Требуют внимания", decisions: "Доступные решения",
@@ -494,7 +493,6 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   const [theme, setTheme] = useState<Theme>("office");
   const workspaceLocation = useWorkspaceLocation();
   const [view, setView] = useState<View>(initialView);
-  const [featuredId, setFeaturedId] = useState(fallbackCatalogueRecords[2].id);
   const [catalogueRecords, setCatalogueRecords] = useState<PublishedCaseSummary[]>(() => bundledCatalogueRecords());
   const [catalogueNextCursor, setCatalogueNextCursor] = useState<string | null>(null);
   const [catalogueTotal, setCatalogueTotal] = useState(fallbackCatalogueRecords.length);
@@ -601,6 +599,8 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
 
   useEffect(() => {
     function restoreView() {
+      catalogueLaunchRef.current += 1;
+      setCatalogueLoading(false);
       const requested = new URLSearchParams(window.location.search).get("view");
       if (requested === "templates" || requested === "library" || requested === "demos" || requested === "studio"
         || requested === "help" || requested === "community") {
@@ -797,7 +797,6 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       });
       setCatalogueNextCursor(typeof payload.nextCursor === "string" ? payload.nextCursor : null);
       setCatalogueTotal(typeof payload.total === "number" ? payload.total : records.length);
-      setFeaturedId((current) => records.some((item) => item.id === current) || append ? current : records[0]?.id ?? current);
     } catch {
       if (!catalogueRequestGateRef.current.isCurrent(requestTicket)) return;
       setCatalogueError(locale === "en" ? "The central catalogue is temporarily unavailable; bundled cases remain playable." : "Центральный каталог временно недоступен; встроенные кейсы остаются доступными.");
@@ -813,8 +812,6 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     }
   }, [locale]);
 
-  const featuredRecord = catalogueRecords.find((record) => record.id === featuredId) ?? catalogueRecords[0] ?? bundledCatalogueRecords()[0];
-  const featured = catalogueScenarios.find((scenario) => scenario.caseId === featuredRecord.id && scenario.version === featuredRecord.currentVersion && scenario.fingerprint === featuredRecord.fingerprint) ?? null;
   const stage = activeScenario?.stages[stageIndex] ?? null;
   const canonicalPlayState = activeScenario && serverPlaySession
     && serverPlaySession.caseId === activeScenario.caseId
@@ -1414,7 +1411,6 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
             const session = normalizeServerPlaySession(body?.session);
             const exactSession = requirePlayedCaseServerSession(response.ok, session, importedScenario, descriptor.sessionKey, descriptor.expectedRevision);
             setActiveScenario(importedScenario);
-            setFeaturedId(importedScenario.caseId);
             playSessionStartRef.current += 1;
             setLegacyTimingMode(false);
             setSelectedOption(null);
@@ -1463,7 +1459,6 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
           const exportedOutcome = playthroughFile.outcome === "strong" || playthroughFile.outcome === "mixed" || playthroughFile.outcome === "weak" ? playthroughFile.outcome : null;
           if (presentation.currentStageId !== currentStageId || presentation.clockMinute !== playthroughFile.clockMinute || restoredOutcome !== exportedOutcome || Boolean(restoredOutcome) !== (importedStatus === "completed")) throw new Error("Canonical replay snapshot mismatch");
           setActiveScenario(importedScenario);
-          setFeaturedId(importedScenario.caseId);
           playSessionStartRef.current += 1;
           setServerPlaySession(null);
           setLegacyTimingMode(false);
@@ -1518,7 +1513,6 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         if (currentStageId !== restoredStageId || (completed && !importedScenario.stages[restoredStageIndex].terminal) || (!completed && importedScenario.stages[restoredStageIndex].terminal)) throw new Error("Playthrough progress is inconsistent");
 
         setActiveScenario(importedScenario);
-        setFeaturedId(importedScenario.caseId);
         playSessionStartRef.current += 1;
         localCanonicalRuntimeRef.current = null;
         setLocalCanonicalState(null);
@@ -1978,7 +1972,9 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     if (hasWork && !window.confirm(locale === "en"
       ? "Open a fresh Canopy demo? Save your current draft first if you want to keep it."
       : "Открыть новый демо-кейс Canopy? Сначала сохраните текущий черновик, если он вам нужен.")) return;
+    const launchVersion = ++catalogueLaunchRef.current;
     const { buildCanopyPackage } = await import("./canopy-fixture");
+    if (launchVersion !== catalogueLaunchRef.current) return;
     if (draftRef.current !== before) throw new Error("Draft changed while opening demo");
     const prepared = buildCanopyPackage(id, true);
     enterNewLocalDraft(prepared.draft, prepared.draft.nodes.find(node => node.type === "decision")?.id ?? prepared.draft.nodes[0]?.id ?? null);
@@ -2000,9 +1996,8 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       <AppNavigation allowDeparture={mayLeaveStudio} newCase={() => { if (resetStudioDraft()) navigate("studio", 1); }} importCase={() => { if (!mayLeaveStudio()) return; flushSync(() => navigate("studio", 1)); importRef.current?.click(); }} locale={locale} view={view} studioOnly={studioOnly} workspaceLocation={workspaceLocation} navigate={navigate} openOperations={() => void openOperations()} restoreSession={() => playedCaseImportRef.current?.click()} exportSession={exportPlayedCase} hasActiveScenario={Boolean(activeScenario)} toggleLocale={() => setLocale(locale === "en" ? "ru" : "en")} toggleTheme={() => setTheme(theme === "office" ? "after-hours" : "office")} dark={theme === "after-hours"}/>
       <input ref={playedCaseImportRef} className="visually-hidden" type="file" accept=".json,application/json" aria-label={locale === "en" ? "Restore a play session" : "Восстановить прохождение"} onChange={(event) => { const file = event.target.files?.[0]; if (file) importPlayedCase(file); event.target.value = ""; }} />
 
-      {view === "demos" && <Suspense fallback={<main className="demo-library page-width" role="status">{locale === "en" ? "Opening demo cases…" : "Открываются демо-кейсы…"}</main>}><DemoCases locale={locale} records={[]} openPractice={() => navigate("library")} openTemplates={() => navigate("templates")} openCanopy={loadCanopyDemo} canopyWorkflowHref={workspaceDestination("/canopy", workspaceLocation)} playCase={async (id) => { const record = fallbackCatalogueRecords.find((item) => item.id === id); if (record) await launchCatalogueCase(record); }} openStudio={() => navigate("studio")} /></Suspense>}
       {view === "templates" && <CaseTemplates locale={locale} onStart={startCaseTemplate} onDemo={() => navigate("demos")} />}
-      {view === "library" && <LibraryView locale={locale} workspaceLocation={workspaceLocation} restorePlaySession={() => playedCaseImportRef.current?.click()} text={text} records={catalogueRecords} loadedScenarios={catalogueScenarios} featuredRecord={featuredRecord} featuredScenario={featured} setFeaturedId={setFeaturedId} launchCase={(record) => void launchCatalogueCase(record)} requestFeedback={setFeedbackTarget} searchCatalogue={refreshCatalogue} nextCursor={catalogueNextCursor} total={catalogueTotal} loading={catalogueLoading} error={catalogueError} />}
+      {(view === "library" || view === "demos") && <LibraryView locale={locale} restorePlaySession={() => playedCaseImportRef.current?.click()} text={text} records={catalogueRecords} loadedScenarios={catalogueScenarios} launchCase={(record) => void launchCatalogueCase(record)} requestFeedback={setFeedbackTarget} openCanopy={loadCanopyDemo} canopyWorkflowHref={workspaceDestination("/canopy", workspaceLocation)} openTemplates={() => navigate("templates")} searchCatalogue={refreshCatalogue} nextCursor={catalogueNextCursor} total={catalogueTotal} loading={catalogueLoading} error={catalogueError} />}
       {view === "play" && !activeScenario && <main className="workspace-empty page-width"><span className="workspace-eyebrow">{locale === "en" ? "Operations" : "Операции"}</span><h1>{locale === "en" ? "Choose a case to work through" : "Выберите кейс для прохождения"}</h1><p>{locale === "en" ? "Open a playable demo, or restore a previous session to continue its decisions and deadlines." : "Откройте игровой демо-кейс или восстановите сессию, чтобы продолжить решения и задачи."}</p><div><button type="button" className="primary-cta" onClick={() => navigate("demos")}>{locale === "en" ? "Open demo case" : "Открыть демо-кейс"}</button><button type="button" className="secondary-cta" onClick={() => playedCaseImportRef.current?.click()}>{locale === "en" ? "Restore session" : "Восстановить сессию"}</button></div></main>}
       {view === "play" && activeScenario && stage && runLedger && <PlayView
         locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} ledger={runLedger}
@@ -2110,7 +2105,8 @@ function editorialReviewLabel(level: string | undefined, locale: Locale) {
   return locale === "en" ? "Editorial preview" : "Редакционный предпросмотр";
 }
 
-function LibraryView({ locale, workspaceLocation, restorePlaySession, text, records, loadedScenarios, featuredRecord, featuredScenario, setFeaturedId, launchCase, requestFeedback, searchCatalogue, nextCursor, total, loading, error }: { locale: Locale; workspaceLocation: string; restorePlaySession: () => void; text: UiText; records: PublishedCaseSummary[]; loadedScenarios: Scenario[]; featuredRecord: PublishedCaseSummary; featuredScenario: Scenario | null; setFeaturedId: (id: string) => void; launchCase: (record: PublishedCaseSummary) => void; requestFeedback: (target: FeedbackTarget) => void; searchCatalogue: (options?: { filters?: CatalogueSearchFilters; cursor?: string | null; append?: boolean; force?: boolean }) => Promise<void>; nextCursor: string | null; total: number; loading: boolean; error: string }) {
+function LibraryView({ locale, restorePlaySession, text, records, loadedScenarios, launchCase, requestFeedback, openCanopy, canopyWorkflowHref, openTemplates, searchCatalogue, nextCursor, total, loading, error }: { locale: Locale; restorePlaySession: () => void; text: UiText; records: PublishedCaseSummary[]; loadedScenarios: Scenario[]; launchCase: (record: PublishedCaseSummary) => void; requestFeedback: (target: FeedbackTarget) => void; openCanopy: (id: CanopyScenarioId) => Promise<void>; canopyWorkflowHref: string; openTemplates: () => void; searchCatalogue: (options?: { filters?: CatalogueSearchFilters; cursor?: string | null; append?: boolean; force?: boolean }) => Promise<void>; nextCursor: string | null; total: number; loading: boolean; error: string }) {
+  const [format, setFormat] = useState<DemoFormat>("all");
   const [query, setQuery] = useState("");
   const [practiceFilter, setPracticeFilter] = useState("all");
   const [jurisdictionFilter, setJurisdictionFilter] = useState("all");
@@ -2118,7 +2114,6 @@ function LibraryView({ locale, workspaceLocation, restorePlaySession, text, reco
   const [durationFilter, setDurationFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("all");
   const cases = useMemo(() => records.map((record, index) => loadedScenarios.find((scenario) => scenario.caseId === record.id && scenario.version === record.currentVersion && scenario.fingerprint === record.fingerprint) ?? summaryScenario(record, index)), [loadedScenarios, records]);
-  const featured = featuredScenario ?? summaryScenario(featuredRecord, Math.max(0, records.findIndex((record) => record.id === featuredRecord.id)));
   const catalogueMeta = useMemo<Record<string, CaseMeta>>(() => Object.fromEntries(records.map((record) => [record.id, {
     practice: record.practiceArea, difficulty: record.difficulty, duration: record.durationMinutes, tags: record.tags,
     version: record.currentVersion, fingerprint: record.fingerprint, reviewLevel: record.reviewLevel, updatedAt: record.updatedAt,
@@ -2134,8 +2129,8 @@ function LibraryView({ locale, workspaceLocation, restorePlaySession, text, reco
     return fallbackCaseTaxonomy[scenario.caseId] ?? { practice: "General legal", difficulty: "Intermediate", duration: 30, tags: [], reviewLevel: "community_beta" };
   };
   const facetRecords = [...bundledCatalogueRecords(), ...records];
-  const practices = Array.from(new Set(facetRecords.map((item) => item.practiceArea))).sort();
-  const jurisdictions = Array.from(new Set(facetRecords.map((item) => item.jurisdiction))).sort();
+  const practices = Array.from(new Set(["Business decision", ...facetRecords.map((item) => item.practiceArea)])).sort();
+  const jurisdictions = Array.from(new Set(["Fictional Gulf market", ...facetRecords.map((item) => item.jurisdiction)])).sort();
   const difficulties = Array.from(new Set(facetRecords.map((item) => item.difficulty))).sort();
   const tags = Array.from(new Set(facetRecords.flatMap((item) => item.tags))).sort();
   const filteredCases = cases.filter((scenario) => {
@@ -2148,39 +2143,24 @@ function LibraryView({ locale, workspaceLocation, restorePlaySession, text, reco
       && (durationFilter === "all" || (durationFilter === "short" ? (meta?.duration ?? 0) <= 35 : durationFilter === "medium" ? (meta?.duration ?? 0) > 35 && (meta?.duration ?? 0) <= 45 : (meta?.duration ?? 0) > 45))
       && (tagFilter === "all" || meta?.tags.includes(tagFilter));
   });
-  const featuredMeta = metadataFor(featured);
-  const resetFilters = () => { setQuery(""); setPracticeFilter("all"); setJurisdictionFilter("all"); setDifficultyFilter("all"); setDurationFilter("all"); setTagFilter("all"); };
+  const resetFilters = () => { setFormat("all"); setQuery(""); setPracticeFilter("all"); setJurisdictionFilter("all"); setDifficultyFilter("all"); setDurationFilter("all"); setTagFilter("all"); };
 
-  return <main className="library-view">
-    <section className="library-hero page-width">
-      <div className="hero-copy">
-        <div className="eyebrow"><span className="live-dot" />{text.catalogue}</div>
-        <h1>{text.library}</h1>
-        <p className="hero-deck">{locale === "en" ? "Open a prepared case and explore its decisions. Bring your own case to Studio to build a decision map and create an analytical report." : "Откройте готовый кейс и изучите варианты решений. Загрузите свой кейс в Студию, чтобы собрать карту решений и сформировать аналитический отчёт."}</p>
-        <div className="featured-actions library-start-actions">
-          <Link className="primary-cta" href={workspaceDestination("/studio?view=demos", workspaceLocation)}>{locale === "en" ? "Back to Demo" : "Вернуться к демо"}</Link>
-          <Link className="secondary-cta" href={workspaceDestination("/studio?studio_step=describe", workspaceLocation)}><Icon name="studio"/>{locale === "en" ? "Load a case or describe a task" : "Загрузить кейс или описать задачу"}</Link>
-        </div>
-        <p className="library-start-note">{locale === "en" ? "Choose a prepared simulation here. Use Templates to start your own case." : "Начните с Canopy или загрузите свой кейс в формате JSON, Markdown или текста."}</p>
-        <div className="hero-facts"><span>{total.toString().padStart(2, "0")} {locale === "en" ? "guided cases" : "учебных кейсов"}</span><span>EN / RU</span></div>
-      </div>
-      <div className="hero-index" aria-label="Catalogue index"><span>CASE INDEX</span><b>{String(Math.max(1, records.findIndex((record) => record.id === featuredRecord.id) + 1)).padStart(2, "0")}</b><small>/ {total.toString().padStart(2, "0")}</small></div>
-    </section>
-    <section className="featured-case" style={{ "--case-accent": featured.accent } as React.CSSProperties}>
-      <div className="case-visual" aria-hidden="true"><div className="case-grid" /><div className="case-orbit orbit-one"/><div className="case-orbit orbit-two"/><div className="case-signal"><span/>{featured.id === "greenfire_first_72_hours" ? "72H" : `0${featured.order / 10}`}</div><div className="file-stamp">CASE FILE<br/><b>GUIDED</b></div></div>
-      <div className="featured-content"><div className="case-kicker"><span>{featured.jurisdiction}</span><span>{featured.sector[locale]}</span></div><h2>{featured.title[locale]}</h2><p className="case-subtitle">{featured.subtitle[locale]}</p><p className="case-brief">{featured.opening[locale]}</p><div className="case-depth">{featured.stages.length ? <><span>{featured.stages.length} {locale === "en" ? "stages" : "этапов"}</span><span>{featured.stages.reduce((sum, item) => sum + item.options.length, 0)} {locale === "en" ? "choices" : "решений"}</span><span>{featured.deadlines.length} {locale === "en" ? "deadlines" : "сроков"}</span></> : <span>{locale === "en" ? "Case details load when you open it" : "Материалы загрузятся при открытии кейса"}</span>}</div><dl className="case-meta"><div><dt>{text.role}</dt><dd>{featured.role[locale]}</dd></div><div><dt>{text.jurisdiction}</dt><dd>{featured.jurisdiction}</dd></div><div><dt>{locale === "en" ? "Practice" : "Практика"}</dt><dd>{featuredMeta.practice}</dd></div></dl><details className="case-trust-details"><summary>{locale === "en" ? "Editorial details" : "Редакционные сведения"}</summary><div className="case-trust"><span>{editorialReviewLabel(featuredMeta.reviewLevel, locale)}</span><span>{locale === "en" ? "Case version" : "Версия кейса"}: v{featured.version}</span><span>{locale === "en" ? "Author" : "Автор"}: {featuredMeta.authorName ?? "GENESIS: JURIS"}</span><span>{featuredMeta.legalAsOf ? `${locale === "en" ? "Law as of" : "Право на"} ${featuredMeta.legalAsOf}` : (locale === "en" ? "Legal review pending" : "Проверка актуальности ожидается")}</span></div></details><div className="featured-actions"><button className="primary-cta" disabled={loading} onClick={() => launchCase(featuredRecord)}>{loading ? (locale === "en" ? "Loading…" : "Загрузка…") : text.launch}<Icon name="arrow"/></button><button className="secondary-cta" onClick={() => requestFeedback({ caseId: featuredRecord.id, version: featuredRecord.currentVersion, title: featured.title[locale], source: "playable", fingerprint: featuredRecord.fingerprint })}>{text.feedback}</button></div></div>
-    </section>
-    <section className="catalogue-filters page-width"><label className="filter-search"><span>{locale === "en" ? "Search the library" : "Поиск по библиотеке"}</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={locale === "en" ? "Title, topic or jurisdiction…" : "Название, тема или юрисдикция…"}/></label><details className="catalogue-filter-more"><summary>{locale === "en" ? "More filters" : "Другие фильтры"}</summary><div><label><span>{locale === "en" ? "Practice area" : "Область практики"}</span><select value={practiceFilter} onChange={(event) => setPracticeFilter(event.target.value)}><option value="all">{locale === "en" ? "All practices" : "Все практики"}</option>{practices.map((practice) => <option key={practice}>{practice}</option>)}</select></label><label><span>{locale === "en" ? "Jurisdiction" : "Юрисдикция"}</span><select value={jurisdictionFilter} onChange={(event) => setJurisdictionFilter(event.target.value)}><option value="all">{locale === "en" ? "All jurisdictions" : "Все юрисдикции"}</option>{jurisdictions.map((jurisdiction) => <option key={jurisdiction}>{jurisdiction}</option>)}</select></label><label><span>{locale === "en" ? "Difficulty" : "Сложность"}</span><select value={difficultyFilter} onChange={(event) => setDifficultyFilter(event.target.value)}><option value="all">{locale === "en" ? "All levels" : "Все уровни"}</option>{difficulties.map((difficulty) => <option key={difficulty}>{difficulty}</option>)}</select></label><label><span>{locale === "en" ? "Duration" : "Длительность"}</span><select value={durationFilter} onChange={(event) => setDurationFilter(event.target.value)}><option value="all">{locale === "en" ? "Any duration" : "Любая"}</option><option value="short">≤ 35 min</option><option value="medium">36–45 min</option><option value="long">45+ min</option></select></label><label><span>{locale === "en" ? "Tag" : "Тег"}</span><select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}><option value="all">{locale === "en" ? "All tags" : "Все теги"}</option>{tags.map((tag) => <option key={tag}>{tag}</option>)}</select></label></div></details><div className="filter-result"><b>{filteredCases.length.toString().padStart(2, "0")} / {total.toString().padStart(2, "0")}</b><button onClick={resetFilters}>{locale === "en" ? "Reset" : "Сбросить"}</button></div></section>
+  const showCanopy = matchesCanopy({ query, practice: practiceFilter, jurisdiction: jurisdictionFilter, difficulty: difficultyFilter, duration: durationFilter, tag: tagFilter, format });
+  const cards = (format === "walkthrough" ? [] : filteredCases).map(scenario => {
+    const meta = metadataFor(scenario);
+    return { id: scenario.caseId, title: scenario.title[locale], summary: scenario.opening[locale], jurisdiction: scenario.jurisdiction, practice: meta.practice, duration: meta.duration, version: scenario.version, review: editorialReviewLabel(meta.reviewLevel, locale), author: meta.authorName ?? "GENESIS: JURIS", legalAsOf: meta.legalAsOf };
+  });
+  return <main className="library-view demo-catalogue">
+    <header className="demo-catalogue-header page-width"><div><h1>{text.library}</h1><p>{locale === "en" ? "Choose an example. Guided walkthroughs explain the workflow; decision simulations let you make the choices." : "Выберите пример. Пошаговый обзор объясняет процесс; в симуляции решения принимаете вы."}</p></div><button type="button" className="secondary-cta" onClick={openTemplates}>{locale === "en" ? "Start your own case · Templates" : "Создать свой кейс · Шаблоны"}</button></header>
+    <section className="catalogue-filters page-width"><label className="filter-search"><span>{locale === "en" ? "Search demo cases" : "Поиск демо-кейсов"}</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={locale === "en" ? "Title, topic or jurisdiction…" : "Название, тема или юрисдикция…"}/></label><label><span>{locale === "en" ? "Format" : "Формат"}</span><select value={format} onChange={event => setFormat(event.target.value as DemoFormat)}><option value="all">{locale === "en" ? "All formats" : "Все форматы"}</option><option value="walkthrough">{locale === "en" ? "Guided walkthrough" : "Пошаговый обзор"}</option><option value="simulation">{locale === "en" ? "Decision simulation" : "Симуляция решений"}</option></select></label><details className="catalogue-filter-more"><summary>{locale === "en" ? "More filters" : "Другие фильтры"}</summary><div><label><span>{locale === "en" ? "Practice area" : "Область практики"}</span><select value={practiceFilter} onChange={(event) => setPracticeFilter(event.target.value)}><option value="all">{locale === "en" ? "All practices" : "Все практики"}</option>{practices.map((practice) => <option key={practice}>{practice}</option>)}</select></label><label><span>{locale === "en" ? "Jurisdiction" : "Юрисдикция"}</span><select value={jurisdictionFilter} onChange={(event) => setJurisdictionFilter(event.target.value)}><option value="all">{locale === "en" ? "All jurisdictions" : "Все юрисдикции"}</option>{jurisdictions.map((jurisdiction) => <option key={jurisdiction}>{jurisdiction}</option>)}</select></label><label><span>{locale === "en" ? "Difficulty" : "Сложность"}</span><select value={difficultyFilter} onChange={(event) => setDifficultyFilter(event.target.value)}><option value="all">{locale === "en" ? "All levels" : "Все уровни"}</option>{difficulties.map((difficulty) => <option key={difficulty}>{difficulty}</option>)}</select></label><label><span>{locale === "en" ? "Duration" : "Длительность"}</span><select value={durationFilter} onChange={(event) => setDurationFilter(event.target.value)}><option value="all">{locale === "en" ? "Any duration" : "Любая"}</option><option value="short">≤ 35 min</option><option value="medium">36–45 min</option><option value="long">45+ min</option></select></label><label><span>{locale === "en" ? "Tag" : "Тег"}</span><select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}><option value="all">{locale === "en" ? "All tags" : "Все теги"}</option>{tags.map((tag) => <option key={tag}>{tag}</option>)}</select></label></div></details><div className="filter-result"><b>{cards.length + Number(showCanopy)} {locale === "en" ? "shown" : "показано"}</b><button onClick={resetFilters}>{locale === "en" ? "Reset" : "Сбросить"}</button></div></section>
+    {loading && <p className="catalogue-status page-width" role="status">{locale === "en" ? "Loading demo cases…" : "Загрузка демо-кейсов…"}</p>}
     {error && <p className="catalogue-status page-width" role="status">{error}</p>}
-    <section className="case-strip page-width"><div className="section-heading"><div><span>01 — {String(total).padStart(2,"0")}</span><h2>{locale === "en" ? "Choose the matter" : "Выберите дело"}</h2></div><p>{locale === "en" ? "Choose a case to explore its facts, evidence and decisions." : "Выберите кейс, чтобы изучить факты, доказательства и решения."}</p></div><div className="case-list">{filteredCases.map((scenario, index) => {
-      const meta = metadataFor(scenario);
-      const record = records.find((item) => item.id === scenario.caseId)!;
-      return <div key={scenario.caseId} className="case-row-wrap"><button className={`case-row ${scenario.caseId === featuredRecord.id ? "selected" : ""}`} onClick={() => { setFeaturedId(scenario.caseId); launchCase(record); }} aria-label={`${text.launch}: ${scenario.title[locale]}`}><span className="row-number">{String(index + 1).padStart(2, "0")}</span><span className="row-main"><b>{scenario.title[locale]}</b><small>{scenario.subtitle[locale]}</small><em>{meta.tags.map((tag) => <i key={tag}>{tag}</i>)}</em></span><span className="row-meta"><i>{scenario.jurisdiction}</i><i>{meta.practice}</i></span><span className={`urgency ${scenario.urgency}`}>{scenario.urgency}</span><Icon name="arrow"/></button><button className="case-row-feedback" onClick={() => requestFeedback({ caseId: scenario.caseId, version: scenario.version, title: scenario.title[locale], source: "playable", fingerprint: scenario.fingerprint })}>{text.feedback}</button></div>;
-    })}{filteredCases.length === 0 && !loading && <div className="catalogue-empty"><b>{locale === "en" ? "No cases match these filters." : "Кейсы по этим фильтрам не найдены."}</b><button className="secondary-cta" onClick={resetFilters}>{locale === "en" ? "Reset filters" : "Сбросить фильтры"}</button></div>}</div>{nextCursor && <button className="catalogue-load-more secondary-cta" disabled={loading} onClick={() => void searchCatalogue({ filters: { q: query, practiceArea: practiceFilter, jurisdiction: jurisdictionFilter, difficulty: difficultyFilter, tag: tagFilter }, cursor: nextCursor, append: true })}>{loading ? (locale === "en" ? "Loading…" : "Загрузка…") : (locale === "en" ? "Load next 24 cases" : "Загрузить следующие 24 кейса")}</button>}</section>
-    <div className="library-restore page-width"><span>{locale === "en" ? "Have saved progress?" : "Есть сохранённое прохождение?"}</span><button className="secondary-cta" onClick={restorePlaySession}><Icon name="upload"/>{locale === "en" ? "Restore a play session" : "Восстановить прохождение"}</button></div>
-    <section className="positioning-band page-width"><div><span>PROFESSIONAL JUDGMENT · SIMULATED</span><h2>{locale === "en" ? "Train the decisions that legal work rarely lets you repeat." : "Тренируйте решения, которые реальная юридическая работа редко позволяет повторить."}</h2></div><p>{locale === "en" ? "GENESIS: JURIS is a platform for building, reviewing and playing branching legal simulations. It develops judgment under uncertainty, evidence discipline and risk-aware action — with versioned cases and practitioner feedback." : "GENESIS: JURIS — платформа для создания, рецензирования и прохождения разветвлённых юридических симуляций. Она развивает профессиональное суждение в условиях неопределённости, дисциплину доказательств и управление рисками."}</p></section>
-
-    <section className="authority-note page-width"><span className="authority-seal">J</span><div><b>{text.adaptation}</b><p>{text.canonNote}</p></div></section>
+    <section className="page-width demo-catalogue-results" aria-label={text.library} aria-busy={loading}>
+      <DemoCatalogueCards locale={locale} cards={cards} showCanopy={showCanopy} busy={loading} openCanopy={openCanopy} canopyWorkflowHref={canopyWorkflowHref} launch={id => { const record = records.find(item => item.id === id); if (record) launchCase(record); }} feedback={id => { const record = records.find(item => item.id === id); if (record) requestFeedback({ caseId: record.id, version: record.currentVersion, title: record.title, source: "playable", fingerprint: record.fingerprint }); }}/>
+      {!showCanopy && cards.length === 0 && !loading && <div className="catalogue-empty"><b>{locale === "en" ? "No demo cases match these filters." : "По этим фильтрам демо-кейсы не найдены."}</b><button type="button" className="secondary-cta" onClick={resetFilters}>{locale === "en" ? "Reset filters" : "Сбросить фильтры"}</button></div>}
+      {nextCursor && format !== "walkthrough" && <button className="catalogue-load-more secondary-cta" disabled={loading} onClick={() => void searchCatalogue({ filters: { q: query, practiceArea: practiceFilter, jurisdiction: jurisdictionFilter, difficulty: difficultyFilter, tag: tagFilter }, cursor: nextCursor, append: true })}>{locale === "en" ? `More simulations (${records.length} / ${total})` : `Ещё симуляции (${records.length} / ${total})`}</button>}
+    </section>
+    <div className="library-restore page-width"><span>{locale === "en" ? "Have saved simulation progress?" : "Есть сохранённое прохождение?"}</span><button className="secondary-cta" onClick={restorePlaySession}><Icon name="upload"/>{locale === "en" ? "Restore a play session" : "Восстановить прохождение"}</button></div>
   </main>;
 }
 function PlayView({ locale, text, scenario, stage, stageIndex, metrics, ledger, decisionLog, caseMinute, actionUseCounts, completedDeadlineIds, missedDeadlineIds, canonicalState, dossierRef, setDossierRef, setSelectedOption, advanceTime, timeBusy, outcome, sessionSync, exportSession, replayCase, returnLibrary, returnToStudio = false, returnLabel, requestFeedback }: {
@@ -3573,7 +3553,7 @@ function StudioView({ operationPending, onOperationInterrupted, locale, text, pr
       onCreate={() => { if (startBlankDraft()) setEditorOpened(true); }} onImport={() => importRef.current?.click()} onDemo={browseDemos} onContinue={enterEditor}/></Suspense>
     <input ref={importRef} className="visually-hidden" type="file" accept=".json,.md,.txt,application/json,text/markdown,text/plain" aria-label={locale === "en" ? "Import case or prompt" : "Импортировать кейс или промпт"} onChange={(event) => { const file = event.target.files?.[0]; if (file) { enterEditor(); void loadStudioFile(file); } event.target.value = ""; }}/>
   </>;
-  const portableStudioActions = <Suspense fallback={null}><StudioUserMoreActions grouped={displayMode === "user"} locale={locale} canDuplicate={canDuplicate} exportReady={derivationsSettled && Boolean(draft.title.trim()) && Boolean(draft.nodes.length)} feedbackLabel={text.feedback} importLabel={text.importCustom} exportLabel={text.exportCustom} startExample={startExampleDraft} startTax={startTaxTemplate} requestFeedback={requestFeedback} importJson={()=>importRef.current?.click()} exportJson={exportDraft} saveDevice={saveDraft} markdownLoaded={loadCasePrompt} markdownOpened={()=>{setCaseReportStatus("");setCaseMarkdownOpen(true);}} markdownFailed={setCaseReportStatus}/></Suspense>;
+  const portableStudioActions = <Suspense fallback={null}><StudioUserMoreActions grouped={displayMode === "user"} locale={locale} canDuplicate={canDuplicate} exportReady={derivationsSettled && Boolean(draft.title.trim()) && Boolean(draft.nodes.length)} feedbackLabel={text.feedback} importLabel={text.importCustom} exportLabel={text.exportCustom} startExample={browseDemos} startTax={startTaxTemplate} requestFeedback={requestFeedback} importJson={()=>importRef.current?.click()} exportJson={exportDraft} saveDevice={saveDraft} markdownLoaded={loadCasePrompt} markdownOpened={()=>{setCaseReportStatus("");setCaseMarkdownOpen(true);}} markdownFailed={setCaseReportStatus}/></Suspense>;
     return <main className={`studio-view studio-${displayMode}-view studio-guided-step-${guidedStep} ${canDuplicate ? "" : "studio-inspection-view"}`} data-readonly={!canDuplicate || undefined}>
       <section className="studio-hero page-width">
         <div>

@@ -19,7 +19,7 @@ export default function HelpCenter({ locale, onNavigate }: { locale: "en" | "ru"
     ["Сохранение и повторное открытие", "Для сохранения в рабочем пространстве нужен вход. Откройте сохранённый черновик и проверьте изменения. Дела организации в «Мои дела» — отдельные записи. Перед выходом можно экспортировать файл."],
   ];
   const faq = en ? [
-    ["Are Demo and Templates duplicates?", "Demo contains worked fictional examples and links to the Practice cases catalogue. Templates create a fresh Studio draft with the selected case type and intake questions. They do not copy a demo's facts, documents or conclusions."],
+    ["Are Demo and Templates duplicates?", "Demo contains one catalogue of fictional examples: guided walkthroughs such as Canopy and decision simulations such as GreenFire. Templates create a fresh Studio draft with the selected case type and intake questions. They do not copy a demo's facts, documents or conclusions."],
     ["Does importing a file save it to My cases?", "No. Import opens an editable Studio draft. Save to workspace stores an account-owned Studio draft. My cases contains organization records with their own documents and reviews."],
     ["Why does canonical verification fail?", "Use the complete exported Markdown file, not copied visible text. If the embedded data or fingerprint is missing or mismatched, obtain an intact export. Do not treat ordinary text as an exact restoration."],
     ["What if sign-in is unavailable?", "Keep a permitted export of your work before leaving. Use Account on the published site to sign in. If the sign-in page fails, report the page address and time; do not enter credentials into an error page."],
@@ -27,7 +27,7 @@ export default function HelpCenter({ locale, onNavigate }: { locale: "en" | "ru"
     ["What if saving times out?", "Do not assume the save failed or repeat it immediately. Reopen the saved draft separately and check its content. Keep an export where permitted. If the result remains uncertain, report the case and operation without exposing private evidence."],
     ["Does a verified file mean the case is approved?", "No. Verification checks the file's structure and identity. Evidence acceptance, current legal sources and independent review remain separate. The Five Flats training file includes a future-dated review field; that field is not proof of legal currency."],
   ] : [
-    ["Демо и Шаблоны — одно и то же?", "Демо — готовые учебные примеры и каталог сценариев. Шаблоны создают новый черновик с типом кейса и вопросами, без фактов и выводов демо."],
+    ["Демо и Шаблоны — одно и то же?", "Демо — единый каталог пошаговых обзоров, таких как Canopy, и симуляций решений, таких как GreenFire. Шаблоны создают новый черновик с типом кейса и вопросами, без фактов и выводов демо."],
     ["Импорт сохраняет файл в «Мои дела»?", "Нет. Импорт открывает черновик Studio. Сохранение в workspace относится к аккаунту. «Мои дела» содержит отдельные дела организации."],
     ["Не проходит проверка файла", "Используйте полный экспорт Markdown со встроенными данными. Если данные или контрольная сумма отсутствуют, получите неповреждённый экспорт."],
     ["Не работает вход", "Сначала сохраните разрешённый экспорт. Откройте Аккаунт на опубликованном сайте. Сообщите адрес и время ошибки; не вводите пароль на странице ошибки."],

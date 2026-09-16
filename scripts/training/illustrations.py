@@ -32,7 +32,7 @@ def render_illustration(im,scene,font,block):
     sid=scene['id']
     if sid=='02':
         heading('Choose by intention','A worked example teaches. A template starts your own authoring task.')
-        card(88,426,606,384,'Demo','Explore a prepared case such as Project Canopy. Follow decisions and try a practice simulation.',1)
+        card(88,426,606,384,'Demo cases','Explore the Canopy guided walkthrough and five decision simulations in one catalogue.',1)
         card(741,426,606,384,'Templates','Open a new draft with a starting structure and intake questions. Supply your own reviewed facts.',2,color='#f4efe5')
         ribbon('Your organization case is a separate, authenticated record.')
     elif sid=='03':

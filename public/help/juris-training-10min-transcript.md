@@ -16,7 +16,7 @@ Welcome to Genesis: Juris Studio. In ten minutes, we will follow a canonical cas
 
 Mode: Illustrated workflow — not an application screenshot
 
-Choose Demo when you want to learn from a completed example such as Project Canopy. Its Practice cases link opens the simulation catalogue. Choose Templates when you want a starting structure for your own case. A template opens a new draft with an intake prompt; you must supply and review its facts. Neither action creates an approved organization record.
+Choose Demo cases when you want to learn from prepared examples. Its single catalogue includes the Canopy guided walkthrough and five decision simulations. Choose Templates when you want a starting structure for your own case. A template opens a new draft with an intake prompt; you must supply and review its facts. Neither action creates an approved organization record.
 
 ## 01:00 — Choose the complete Markdown file
 
