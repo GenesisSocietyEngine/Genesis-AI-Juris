@@ -10,7 +10,17 @@ import { WorkspaceController } from "../app/matters/workspace-controller";
 
 // Render the actual integrated parent. Data transport is simulated here; real
 // handler persistence is covered separately by p1-organization-erp.test.ts.
-const built = await build({ entryPoints: ["app/matters/MattersClient.tsx"], bundle: true, write: false, format: "esm", platform: "node", packages: "external", loader: { ".css": "empty", ".module.css": "empty" }, jsx: "automatic", plugins: [{name:"render-router", setup(build) { build.onResolve({filter:/^next\/navigation$/}, () => ({path:"router",namespace:"test"})); build.onLoad({filter:/.*/,namespace:"test"}, () => ({contents:"export function useRouter(){return {push(){}}}"})); }}] });
+const built = await build({ entryPoints: ["app/matters/MattersClient.tsx"], bundle: true, write: false, format: "esm", platform: "node", packages: "external", loader: { ".css": "empty", ".module.css": "empty" }, jsx: "automatic", plugins: [{name:"render-router", setup(build) {
+  build.onResolve({filter:/^next\/navigation$/}, () => ({path:"router",namespace:"test"}));
+  build.onLoad({filter:/.*/,namespace:"test"}, () => ({contents:"export function useRouter(){return {push(){}}}"}));
+  // SSR normally does not run effects. The navigation regressions capture the
+  // real parent callbacks and run only URL/focus effects against a small DOM
+  // adapter. This is a component-flow contract, not browser acceptance.
+  build.onResolve({filter:/^react$/}, args => args.namespace === "effect-react" ? {path:"react",external:true} : {path:"react",namespace:"effect-react"});
+  build.onLoad({filter:/.*/,namespace:"effect-react"}, () => ({contents:'export * from "react"; import { useRef as realUseRef } from "react"; export function useEffect(callback, dependencies) { globalThis.__b1Effects?.push({callback, dependencies}); } export function useLayoutEffect(callback, dependencies) { globalThis.__b1LayoutEffects?.push({callback, dependencies}); } export function useRef(value) { const ref=realUseRef(value); if (value===null && globalThis.__b1DraftRoot) ref.current=globalThis.__b1DraftRoot; return ref; }'}));
+  build.onResolve({filter:/^react\/jsx-runtime$/}, args => args.namespace === "capture-jsx" ? {path:"react/jsx-runtime",external:true} : {path:"jsx",namespace:"capture-jsx"});
+  build.onLoad({filter:/.*/,namespace:"capture-jsx"}, () => ({contents:'export * from "react/jsx-runtime"; import { jsx as realJsx, jsxs as realJsxs } from "react/jsx-runtime"; function capture(props) { if (props?.onChangeCapture) globalThis.__b1DraftRoots?.push(props); } export function jsx(type,props,key) { capture(props); return realJsx(type,props,key); } export function jsxs(type,props,key) { capture(props); return realJsxs(type,props,key); }'}));
+}}] });
 mkdirSync(".artifacts/b1-render", { recursive: true }); const file = resolve(".artifacts/b1-render/component.mjs"); writeFileSync(file, built.outputFiles[0].text);
 const Parent = (await import(pathToFileURL(file).href)).AuthorizedMattersClient;
 const identity = { actorId: "actor_test", organizationId: "signed_org" };
@@ -30,6 +40,129 @@ function harness() {
   const render = () => renderToStaticMarkup(createElement(Parent,{...identity,controller:owner}));
   return {owner,render,setStatus:(value:number)=>{status=value;},setOrgStatus:(value:number)=>{orgStatus=value;},setRequestStatus:(value:number)=>{requestStatus=value;},setMalformedAnchors:()=>{malformedAnchors=true;}};
 }
+
+type CapturedEffect = { callback: () => unknown; dependencies?: unknown[] };
+function navigationDom() {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  const originals = new Map(["window", "document", "requestAnimationFrame", "cancelAnimationFrame", "__b1Effects"].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+  const frames: Array<() => void> = [];
+  let href = "https://test.invalid/matters?organization=signed_org&dossier=case_a&lang=en&section=overview";
+  Object.assign(globals, {
+    window: { location: { get href() { return href; } }, history: { state: null, replaceState(_state: unknown, _title: string, url: string) { href = url; } }, dispatchEvent() {} },
+    document: { getElementById() { return null; }, querySelectorAll() { return []; } },
+    requestAnimationFrame(callback: () => void) { frames.push(callback); return frames.length; }, cancelAnimationFrame() {},
+  });
+  return {
+    url: () => new URL(href),
+    run(h: ReturnType<typeof harness>, flush = true) {
+      const effects: CapturedEffect[] = []; globals.__b1Effects = effects;
+      try { h.render(); } finally { delete globals.__b1Effects; }
+      const state = h.owner.getSnapshot();
+      for (const effect of effects) {
+        if (effect.dependencies?.includes(state.destination) && (effect.dependencies.includes(h.owner) || effect.dependencies.includes(state.visit?.caseId))) effect.callback();
+      }
+      if (flush) this.flush();
+    },
+    flush() { for (const frame of frames.splice(0)) frame(); },
+    restore() { for (const [key, descriptor] of originals) { if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete globals[key]; } },
+  };
+}
+
+for (const destination of ["documents", "overview"] as const) test(`B1 audit target and focus notice end on manual ${destination} navigation without losing the queue or drafts`, async () => {
+  const h = harness(), dom = navigationDom();
+  try {
+    const read = h.owner.options.transport;
+    h.owner.options.transport = (path, init) => path.includes("/activity?event_id=") ? Promise.resolve(Response.json({ events: [{ audit_event_id: "audit_a", event_type: "source_anchor_retired", summary_code: "SOURCE_ANCHOR_RETIRED" }] })) : read(path, init);
+    h.owner.enter("case_a"); await h.owner.load();
+    h.owner.setQueue({ filter: "blocking", showAll: true, scrollAnchor: "action-a" });
+    h.owner.rememberDraft("metadata-title", "Keep this unrelated draft");
+    await h.owner.open({ destination: "activity", id: "audit-audit_a", originActionKey: "action-a" });
+    const queue = h.owner.getSnapshot().queue;
+    dom.run(h);
+    assert.equal(dom.url().searchParams.get("target"), "audit-audit_a");
+    assert.match(h.render(), /This exact record or control is unavailable/);
+    // A previously queued focus callback is intentionally delivered after the
+    // navigation as well; it must not reinstate the obsolete target notice.
+    dom.run(h, false);
+    if (destination === "documents") h.owner.navigate(destination); else h.owner.returnToActions();
+    dom.run(h);
+    assert.equal(h.owner.getSnapshot().targetActive, false);
+    assert.equal(h.owner.getSnapshot().target?.id, "audit-audit_a", "Form and origin context remains available without driving focus or URL");
+    assert.equal(dom.url().searchParams.get("section"), destination);
+    assert.equal(dom.url().searchParams.get("target"), null);
+    assert.equal(dom.url().searchParams.get("request"), null);
+    assert.equal(dom.url().searchParams.get("organization"), identity.organizationId);
+    assert.equal(dom.url().searchParams.get("lang"), "en");
+    assert.doesNotMatch(h.render(), /This exact record or control is unavailable/);
+    assert.equal(h.owner.getSnapshot().queue, queue);
+    assert.equal(h.owner.draft("metadata-title"), "Keep this unrelated draft");
+    assert.equal(h.owner.departureRisk(), "dirty");
+    assert.equal(h.owner.getSnapshot().bundle?.activity[0].id, "audit_a");
+    // Explicitly reopening the original receipt still selects its exact target.
+    await h.owner.open({ destination: "activity", id: "audit-audit_a" }); dom.run(h);
+    assert.equal(dom.url().searchParams.get("section"), "activity");
+    assert.equal(dom.url().searchParams.get("target"), "audit-audit_a");
+  } finally { h.owner.dispose(); dom.restore(); }
+});
+
+test("B1 actual uncontrolled evidence draft restores after manual tab return while exact target is inactive", async () => {
+  const h = harness();
+  const globals = globalThis as unknown as Record<string, unknown>;
+  const names = ["__b1DraftRoot", "__b1DraftRoots", "__b1LayoutEffects", "HTMLInputElement", "HTMLTextAreaElement", "HTMLSelectElement"];
+  const originals = new Map(names.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+  class Input {}
+  class Select {}
+  const form = { id: "", closest: () => ({ id: "anchor-create" }) };
+  class TextArea { name = "paragraph"; form = form; value = ""; defaultValue = ""; closest() { return null; } }
+  const field = new TextArea();
+  const root = { querySelectorAll: (selector: string) => selector === "form" ? [form] : [field] };
+  Object.assign(globals, { HTMLInputElement: Input, HTMLTextAreaElement: TextArea, HTMLSelectElement: Select, __b1DraftRoot: root });
+  function mountDrafts() {
+    const roots: Array<{ onChangeCapture: (event: {target: unknown}) => void }> = [];
+    const effects: CapturedEffect[] = [];
+    globals.__b1DraftRoots = roots; globals.__b1LayoutEffects = effects;
+    try { h.render(); } finally { delete globals.__b1DraftRoots; delete globals.__b1LayoutEffects; }
+    assert.equal(roots.length, 1, "Actual WorkspaceDrafts capture handler");
+    const restorations = effects.filter(effect => effect.dependencies?.[0] === h.owner && typeof effect.dependencies[1] === "string");
+    assert.equal(restorations.length, 1, "Actual WorkspaceDrafts restore effect");
+    restorations[0].callback();
+    return { change: roots[0].onChangeCapture, scope: restorations[0].dependencies![1] };
+  }
+  try {
+    h.owner.enter("case_a"); await h.owner.load();
+    await h.owner.open({ destination: "evidence", id: "anchor-create" });
+    const initial = mountDrafts(); field.value = "Retain this exact paragraph locator"; initial.change({ target: field });
+    assert.equal(h.owner.departureRisk(), "dirty");
+    h.owner.navigate("documents"); h.owner.navigate("evidence");
+    field.value = ""; const returned = mountDrafts();
+    assert.equal(returned.scope, initial.scope);
+    assert.equal(field.value, "Retain this exact paragraph locator");
+    assert.equal(h.owner.getSnapshot().targetActive, false);
+    // A genuinely different exact form context must not receive this draft.
+    await h.owner.open({ destination: "evidence", id: "assertion-create" });
+    field.value = ""; const other = mountDrafts();
+    assert.notEqual(other.scope, initial.scope); assert.equal(field.value, "");
+    await h.owner.open({ destination: "evidence", id: "anchor-create" });
+    mountDrafts(); assert.equal(field.value, "Retain this exact paragraph locator");
+  } finally {
+    h.owner.dispose();
+    for (const [key, descriptor] of originals) { if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete globals[key]; }
+  }
+});
+
+test("B1 manual navigation preserves an unrelated save notice and request error", async () => {
+  const h = harness(); h.owner.enter("case_a"); await h.owner.load();
+  try {
+    h.owner.setNotice("Existing confirmed save receipt");
+    h.owner.setIssue({ kind: "error", title: "Existing request failure", message: "Preserve this error", detail: null });
+    const issue = h.owner.getSnapshot().issue;
+    for (const navigate of [() => h.owner.navigate("documents"), () => h.owner.returnToActions()]) {
+      navigate(); assert.equal(h.owner.getSnapshot().notice, "Existing confirmed save receipt");
+      assert.equal(h.owner.getSnapshot().issue, issue);
+      assert.match(h.render(), /Existing confirmed save receipt/); assert.match(h.render(), /Preserve this error/);
+    }
+  } finally { h.owner.dispose(); }
+});
 test("B1 actual parent hides header, record, draft and retained review through 401→500", async () => {
   const h=harness(); h.owner.enter("case_a"); await h.owner.load();
   assert.match(h.render(),/Confidential parent case title/);

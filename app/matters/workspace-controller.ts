@@ -7,7 +7,7 @@ import { normalizeActivity, normalizeAnchors, normalizeAssertions, normalizeRequ
 
 export type WorkspaceIdentity = { actorId: string; organizationId: string };
 export type Visit = WorkspaceIdentity & { caseId: string; generation: number };
-type State = { visit: Visit | null; authority: "checking" | "granted" | "session_expired" | "case_denied" | "account_changed"; bundle: WorkspaceBundle | null; loading: boolean; updating: boolean; issue: ApiIssue | null; notice: string; destination: MatterDestination; target: MatterActionTarget | null; targetIssue: ExactActionFailure | null; targetLoading: boolean; queue: QueueState | null; collection: ActionCollection; panel: DispositionRecoveryController | null; panelOpen: boolean; mutationKey: string | null; returnFocus: number; notebookOpen: boolean };
+type State = { visit: Visit | null; authority: "checking" | "granted" | "session_expired" | "case_denied" | "account_changed"; bundle: WorkspaceBundle | null; loading: boolean; updating: boolean; issue: ApiIssue | null; notice: string; destination: MatterDestination; target: MatterActionTarget | null; targetActive: boolean; targetNotice: string; targetIssue: ExactActionFailure | null; targetLoading: boolean; queue: QueueState | null; collection: ActionCollection; panel: DispositionRecoveryController | null; panelOpen: boolean; mutationKey: string | null; returnFocus: number; notebookOpen: boolean };
 type Options = { identity: WorkspaceIdentity; transport: (path: string, init?: RequestInit) => Promise<Response>; newKey?: () => string };
 const unavailable = (): ActionCollection => ({ availability: "unavailable", actions: [], total: 0 });
 const aborted = () => new DOMException("Obsolete workspace response", "AbortError");
@@ -15,7 +15,7 @@ const aborted = () => new DOMException("Obsolete workspace response", "AbortErro
 /** The actual workspace owner. UI panels borrow state from this object; they
  * cannot own or replace an unresolved server operation when they unmount. */
 export class WorkspaceController {
-  private state: State = { visit: null, authority: "checking", bundle: null, loading: false, updating: false, issue: null, notice: "", destination: "overview", target: null, targetIssue: null, targetLoading: false, queue: null, collection: unavailable(), panel: null, panelOpen: false, mutationKey: null, returnFocus: 0, notebookOpen: false };
+  private state: State = { visit: null, authority: "checking", bundle: null, loading: false, updating: false, issue: null, notice: "", destination: "overview", target: null, targetActive: false, targetNotice: "", targetIssue: null, targetLoading: false, queue: null, collection: unavailable(), panel: null, panelOpen: false, mutationKey: null, returnFocus: 0, notebookOpen: false };
   private listeners = new Set<() => void>();
   private generation = 0;
   private authorityEpoch = 0;
@@ -91,16 +91,16 @@ export class WorkspaceController {
     if (this.state.visit?.caseId === caseId && this.state.authority !== "case_denied") return;
     this.clearNotebook(); this.clearReviews(); this.denied.clear(); this.clearDrafts(); this.authorityEpoch++; this.readEpoch++; this.targetEpoch++; this.mutationEpoch++;
     const visit = { ...this.options.identity, caseId, generation: ++this.generation };
-    this.publish({ visit, notebookOpen: false, authority: "checking", bundle: null, queue: { ...enterActionQueue(null, visit.organizationId, caseId), generation: visit.generation }, collection: unavailable(), destination: "overview", target: null, targetIssue: null, targetLoading: false, panel: null, panelOpen: false, mutationKey: null, notice: "", issue: null, loading: true, updating: false });
+    this.publish({ visit, notebookOpen: false, authority: "checking", bundle: null, queue: { ...enterActionQueue(null, visit.organizationId, caseId), generation: visit.generation }, collection: unavailable(), destination: "overview", target: null, targetActive: false, targetNotice: "", targetIssue: null, targetLoading: false, panel: null, panelOpen: false, mutationKey: null, notice: "", issue: null, loading: true, updating: false });
   }
   private denyCase(account = false) {
     this.authorityEpoch++; this.readEpoch++; this.targetEpoch++; this.mutationEpoch++; this.clearNotebook(); this.clearReviews(); this.clearDrafts(); this.denied.clear();
-    this.publish({ authority: account ? "account_changed" : "case_denied", bundle: null, collection: unavailable(), queue: null, target: null, panel: null, panelOpen: false, targetIssue: null, targetLoading: false, mutationKey: null, loading: false, updating: false, notice: "", issue: null });
+    this.publish({ authority: account ? "account_changed" : "case_denied", bundle: null, collection: unavailable(), queue: null, target: null, targetActive: false, targetNotice: "", panel: null, panelOpen: false, targetIssue: null, targetLoading: false, mutationKey: null, loading: false, updating: false, notice: "", issue: null });
   }
   suspendAuthority() {
     if (!this.active || this.state.authority === "session_expired") return;
     this.authorityEpoch++; this.readEpoch++; this.targetEpoch++; this.mutationEpoch++;
-    this.publish({ authority: "session_expired", loading: false, updating: false, targetLoading: false, mutationKey: null, notice: "", issue: null });
+    this.publish({ authority: "session_expired", loading: false, updating: false, targetLoading: false, targetNotice: "", mutationKey: null, notice: "", issue: null });
     this.notebook?.suspend();
     this.reviews.forEach(review => review.suspendAuthority());
   }
@@ -158,10 +158,16 @@ export class WorkspaceController {
     } finally { if (this.current(ticket) && loadId === this.readEpoch) this.publish({ loading: false, updating: false }); }
   }
   setQueue(patch: Partial<Pick<QueueState, "filter" | "showAll" | "selectedKey" | "scrollAnchor">>) { if (this.state.queue) this.publish({ queue: { ...this.state.queue, ...patch } }); }
-  openNotes() { this.publish({notebookOpen:true,destination:"documents",panelOpen:false,target:null}); }
+  // Keep target-qualified form drafts and origin links across manual section
+  // changes; only an active target may drive URL selection, focus or its notice.
+  openNotes() { this.targetEpoch++; this.publish({notebookOpen:true,destination:"documents",panelOpen:false,target:null,targetActive:false,targetNotice:"",targetLoading:false,targetIssue:null}); }
   closeNotes() { this.publish({notebookOpen:false}); }
-  navigate(destination: MatterDestination) { this.targetEpoch++; this.publish({ destination, panelOpen: false, targetLoading: false, targetIssue: null }); }
-  returnToActions() { this.targetEpoch++; this.publish({ destination: "overview", panelOpen: false, targetLoading: false, targetIssue: null, returnFocus: this.state.returnFocus + 1 }); }
+  navigate(destination: MatterDestination) { this.targetEpoch++; this.publish({ destination, targetActive: false, targetNotice: "", panelOpen: false, targetLoading: false, targetIssue: null }); }
+  returnToActions() { this.targetEpoch++; this.publish({ destination: "overview", targetActive: false, targetNotice: "", panelOpen: false, targetLoading: false, targetIssue: null, returnFocus: this.state.returnFocus + 1 }); }
+  setTargetNotice(target: MatterActionTarget, notice: string) {
+    if (this.state.authority !== "granted" || !this.state.targetActive || this.state.target !== target || this.state.destination !== target.destination || this.state.targetNotice === notice) return;
+    this.publish({ targetNotice: notice });
+  }
   setNotice(notice: string) { this.publish({ notice }); }
   setIssue(issue: ApiIssue | null) { this.publish({ issue }); }
   private resourceDenied(target: MatterActionTarget | null) {
@@ -169,7 +175,7 @@ export class WorkspaceController {
     // Other review operations stay memory-only; the denied form clears itself.
     if (target) this.denied.add(target.requestId ? "request-" + target.requestId : target.id);
     this.notebook?.suspend(); this.clearDrafts(); this.authorityEpoch++; this.readEpoch++; this.mutationEpoch++;
-    this.publish({ authority: "checking", bundle: null, collection: unavailable(), target: this.state.target, targetLoading: false, mutationKey: null, loading: false, updating: false });
+    this.publish({ authority: "checking", bundle: null, collection: unavailable(), target: this.state.target, targetNotice: "", targetLoading: false, mutationKey: null, loading: false, updating: false });
   }
   async openReview(kind: "deadline" | "citation", recordId: string) {
     const visit = this.state.visit;
@@ -189,7 +195,7 @@ export class WorkspaceController {
       review.subscribe(() => { if (this.state.visit === visit) this.publish({}); });
     }
     const origin = this.reviewOrigins.get(key)!;
-    this.publish({ panel: review, panelOpen: true, targetLoading: false, targetIssue: null, target: origin.target, queue: origin.queue, destination: kind === "deadline" ? "requests" : "evidence" });
+    this.publish({ panel: review, panelOpen: true, targetLoading: false, targetIssue: null, targetNotice: "", target: origin.target, targetActive: true, queue: origin.queue, destination: kind === "deadline" ? "requests" : "evidence" });
     if (review.getSnapshot().phase === "idle") await review.open();
   }
   async open(target: MatterActionTarget) {
@@ -199,7 +205,7 @@ export class WorkspaceController {
     const next = { ...target, originActionKey: target.originActionKey ?? previous?.originActionKey, originOutputId: target.originOutputId ?? previous?.originOutputId, originSnapshotId: target.originSnapshotId ?? previous?.originSnapshotId, requestId: target.requestId ?? (target.id === "document-upload" ? previous?.requestId : undefined) };
     if (next.id.startsWith("output-")) { next.originOutputId = next.id.slice(7); next.originSnapshotId = this.state.bundle?.outputs.find(output => output.id === next.originOutputId)?.snapshotId ?? next.originSnapshotId; }
     const ticket = this.capture(), targetId = ++this.targetEpoch;
-    this.publish({ target: next, destination: next.destination, notebookOpen: false, targetIssue: null, targetLoading: true, panelOpen: false });
+    this.publish({ target: next, targetActive: true, destination: next.destination, notebookOpen: false, targetNotice: "", targetIssue: null, targetLoading: true, panelOpen: false });
     if (next.originActionKey) this.setQueue({ selectedKey: next.originActionKey });
     if (next.id.startsWith("deadline-") && next.id !== "deadline-register") return this.openReview("deadline", next.id.slice(9));
     if (next.id.startsWith("source-")) {

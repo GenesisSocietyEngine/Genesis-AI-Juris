@@ -161,10 +161,11 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
     if (!selectedId) return;
     const url = new URL(window.location.href);
     url.searchParams.set("dossier", selectedId); url.searchParams.set("section", destination);
-    if (state.target && destination !== "overview") url.searchParams.set("target", state.target.id); else url.searchParams.delete("target");
-    if (state.target?.requestId && destination !== "overview") url.searchParams.set("request", state.target.requestId); else url.searchParams.delete("request");
+    const target = state.targetActive && destination !== "overview" && state.target?.destination === destination ? state.target : null;
+    if (target) url.searchParams.set("target", target.id); else url.searchParams.delete("target");
+    if (target?.requestId) url.searchParams.set("request", target.requestId); else url.searchParams.delete("request");
     if(url.href!==window.location.href){window.history.replaceState(window.history.state, "", url);window.dispatchEvent(new Event("genesis-interface-change"));}
-  }, [selectedId, destination, state.target]);
+  }, [selectedId, destination, state.target, state.targetActive]);
   useEffect(() => {
     const pop = async () => { const params=new URL(window.location.href).searchParams;const id=params.get("dossier");if(id!==owner.getSnapshot().visit?.caseId)return;const section=MATTER_DESTINATIONS.find(item=>item.key===params.get("section"))?.key;if(section){const target=params.get("target");if(target)await owner.open({destination:section,id:target,requestId:params.get("request")??undefined});else owner.navigate(section);} };
     window.addEventListener("popstate", pop); return () => window.removeEventListener("popstate", pop);
@@ -172,16 +173,21 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
   useEffect(() => {
     if (state.authority !== "granted" || state.targetLoading || state.targetIssue) return;
     const frame = requestAnimationFrame(() => {
+      const current = owner.getSnapshot();
+      if (current.authority !== "granted" || current.target !== state.target || current.destination !== destination || current.targetActive !== state.targetActive) return;
       if (state.panelOpen) { focusActionTarget("disposition-review-panel"); return; }
       if (destination === "overview" && state.returnFocus) {
         const key = state.queue?.selectedKey;
         const item = key && Array.from(document.querySelectorAll<HTMLElement>("[data-action-key]")).find(el => el.dataset.actionKey === key);
         if (item) { item.focus(); item.scrollIntoView({ block: "center" }); }
         else focusActionTarget("matter-next-actions");
-      } else if (state.target && destination === state.target.destination && !focusActionTarget(state.target.id) && !(state.target.id === "package-link" && focusActionTarget("package-actions"))) owner.setNotice("This exact record or control is unavailable in the loaded register. Retry opening it or return to your actions; no other record was selected.");
+      } else if (state.targetActive && state.target && destination === state.target.destination) {
+        const focused = focusActionTarget(state.target.id) || state.target.id === "package-link" && focusActionTarget("package-actions");
+        owner.setTargetNotice(state.target, focused ? "" : "This exact record or control is unavailable in the loaded register. Retry opening it or return to your actions; no other record was selected.");
+      }
     });
     return () => cancelAnimationFrame(frame);
-  }, [owner, state.authority, state.targetLoading, state.panelOpen, state.targetIssue, state.target, state.returnFocus, state.queue?.selectedKey, destination]);
+  }, [owner, state.authority, state.targetLoading, state.panelOpen, state.targetIssue, state.target, state.targetActive, state.returnFocus, state.queue?.selectedKey, destination]);
   const filteredCatalogue = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
     const recentDays = recentFilter === "all" ? null : Number(recentFilter);
@@ -386,6 +392,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
         </section>}
 
         {notice && <div className={styles.successBanner} role="status">{notice}</div>}
+        {state.targetActive && state.targetNotice && state.target?.destination === destination && <div className={styles.pilotNotice} role="status">{state.targetNotice}</div>}
         {actionIssue && <IssueState issue={actionIssue} onRetry={actionIssue.kind === "stale" && workspace ? () => void loadMatter(workspace.matter.id) : undefined}/>}
 
         {cataloguePhase === "empty" && !createOpen && <EmptyWorkspace onCreate={() => setCreateOpen(true)}/>}
