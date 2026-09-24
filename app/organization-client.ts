@@ -5,12 +5,13 @@ export type ClientOrganization = {
   revision: number; membershipRevision: number; actorId: string; selection: string;
 };
 let selection: string | null = null;
+export function clearOrganizationSelection() { selection = null; }
 export function setOrganizationSelection(value: string) {
   if (selection !== value && typeof window !== "undefined") {
     // A deferred user-imported Studio prompt must not follow an organization switch.
-    window.sessionStorage.removeItem("genesis-juris-pending-case-prompt-v1");
+    try { window.sessionStorage.removeItem("genesis-juris-pending-case-prompt-v1");
     window.sessionStorage.removeItem("genesis-studio-auth-continuation-v1");
-    window.sessionStorage.removeItem("genesis.juris.pending-workspace-save.v2");
+    window.sessionStorage.removeItem("genesis.juris.pending-workspace-save.v2"); } catch { /* Storage cannot prevent a verified context change. */ }
   }
   selection = value;
 }

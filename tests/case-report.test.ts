@@ -148,6 +148,40 @@ test("PDF generation with financial assumptions preserves live case state and pe
   }
 });
 
+test("deterministic graph reconstruction does not claim AI authorship or expose raw input", () => {
+  const canonical = { ...draft, editHistory: [{ ...draft.editHistory[0], action: "graph_rebuilt" as const, message: "SECRET CANONICAL INPUT" }] };
+  const source = JSON.stringify(buildCaseReportDefinition(canonical, options).content);
+  assert.match(source, /Draft reconstruction recorded - raw input excluded/);
+  assert.doesNotMatch(source, /AI-assisted revision recorded|SECRET CANONICAL INPUT/);
+});
+
+test("the corrected reconstruction label invalidates its historical PDF receipt only when shown", () => {
+  const source = buildCanopyPackage("base").draft;
+  source.editHistory = [{ id: "rebuild-1", role: "studio", source: "prompt", action: "graph_rebuilt", message: "PRIVATE SYNTHETIC RAW INPUT", createdAt: "2026-09-23T00:00:00.000Z" }];
+  const opts: CaseReportOptions = {
+    language: "en", profileId: "decision_memorandum", profileLabel: "Decision memorandum", audience: "internal", confidentiality: "draft",
+    preparedBy: "", preparedFor: "", matterReference: "", includeEconomics: true, includeRegisters: true, includeSources: true,
+    includeAuditTrail: true, includeTechnicalIds: false, generatedAt: "2026-09-23T00:00:00.000Z", currentFingerprint: caseFingerprint(source),
+    workspaceFingerprint: null, currentPublicationFingerprint: casePublicationFingerprint(source), workspacePublicationFingerprint: null,
+    privateCase: false, reportReceiptStorageScope: null, persistReportReceiptOnDevice: false, status: "draft", reviewerName: "", reviewerApproved: false, redactedNodeIds: [],
+  };
+  const binding = caseReportReceiptBinding(source, opts);
+  const artifacts = buildCaseReportArtifacts(source, opts);
+  const receipt = reportReceipt(artifacts.reportModel, opts.generatedAt, {
+    layoutSchemaVersion: artifacts.layoutModel.layoutSchemaVersion,
+    layoutAlgorithmVersion: artifacts.layoutModel.layoutAlgorithmVersion,
+    layoutRendererVersion: artifacts.layoutModel.layoutRendererVersion,
+    layoutFingerprint: artifacts.layoutModel.layoutFingerprint,
+    presentationFingerprint: artifacts.presentationFingerprint,
+  });
+  // Captured from the actual be995b5 implementation using this exact fixture.
+  const old = { ...receipt, presentationFingerprint: "sha256-0886d6f0bbe017658cddf2e43d1f9bf5046544e776d1c8c5d9b5cd076be939a8" };
+  assert.equal(isReportReceiptStale(old, source, opts.profileId, binding), true);
+  assert.equal(isReportReceiptStale(receipt, source, opts.profileId, binding), false);
+  assert.equal(caseReportReceiptBinding(source, { ...opts, includeAuditTrail: false }).presentationFingerprint,
+    "sha256-62b63de20585d981ac34fa8d4470d924214b00f5a6b2cf5712f7a1288f7aa8dc");
+});
+
 test("professional report contains economics, registers, sign-off and a safe audit trail", () => {
   const report = buildCaseReportDefinition(draft, options);
   const source = JSON.stringify(report.content);

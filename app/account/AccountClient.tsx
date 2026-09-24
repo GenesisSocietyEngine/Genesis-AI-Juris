@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, MouseEvent, useId, useState } from "react";
+import { FormEvent, useId, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, studioDeviceDraftKey, studioDeviceScope } from "../studio-device-storage";
+import { useNavigationController, useNavigationSession } from "../NavigationSession";
+import { useNavigationFormGuard } from "../use-navigation-form-guard";
 import styles from "./account.module.css";
 import WorkspaceNavigation from "../WorkspaceNavigation";
 import { workspaceDestination } from "../workspace-navigation";
@@ -23,7 +24,6 @@ export default function AccountClient({
   isAdmin,
   emailResetAvailable,
   chatGPTSignInUrl,
-  chatGPTSignOutUrl,
   initialProfile, profileKnown, returnTo,
 }: {
   identity: Identity | null;
@@ -35,9 +35,11 @@ export default function AccountClient({
   initialProfile: AccountProfile | null; profileKnown: boolean; returnTo: string;
 }) {
   const router = useRouter();
+  const navigation = useNavigationController(), session = useNavigationSession();
   const [locale] = useInterfaceLocale();
   const t = (en: string, ru: string) => locale === "en" ? en : ru;
   const [busy, setBusy] = useState<AuthAction | null>(null);
+  const {root: formRef, committed: formCommitted} = useNavigationFormGuard(busy !== null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [recoveryCode, setRecoveryCode] = useState("");
@@ -47,7 +49,9 @@ export default function AccountClient({
     if (busy !== null) return;
     if (identity && action === "login") { setError(t("Sign out before signing in to another account.", "Выйдите перед входом в другой аккаунт.")); return; }
     setBusy(action); setError(""); setMessage(""); setRecoveryCode("");
-    const form = new FormData(event.currentTarget);
+    const element = event.currentTarget;
+    const authority = navigation.authorityVersion;
+    const form = new FormData(element);
     const passwordField = action === "login" ? "password" : "newPassword";
     const password = String(form.get(passwordField) ?? "");
     const confirmation = action === "login" ? password : String(form.get("confirmPassword") ?? "");
@@ -62,18 +66,20 @@ export default function AccountClient({
           ? { email: String(form.get("email") ?? ""), recoveryCode: String(form.get("recoveryCode") ?? ""), newPassword: password }
           : { newPassword: password };
     try {
-      const response = await fetch(`/api/auth/${action}`, {
+      const response = await accountRequest(`/api/auth/${action}`, {
         method: "POST",
         credentials: "same-origin",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
       const result = await response.json() as { code?: string; error?: string; recoveryCode?: string; recoveryNotice?: string };
+      if (navigation.authorityVersion!==authority) return;
       if (response.status === 409 && result.code === "already_authenticated") {
         // Another tab signed in: refresh the verified identity so sign-out is available.
         router.refresh();
       }
       if (!response.ok) throw new Error(result.error || "The credential request could not be completed.");
+      element.reset(); formCommitted(element);
       if (result.recoveryCode) setRecoveryCode(result.recoveryCode);
       setMessage(result.recoveryNotice || (action === "login" ? "Local sign-in completed." : "Credentials updated."));
       if (action === "login") { router.replace(returnTo); router.refresh(); }
@@ -88,9 +94,11 @@ export default function AccountClient({
     event.preventDefault();
     if (busy !== null || !identity || !profileKnown) return;
     setBusy("profile"); setError("");
-    const form = new FormData(event.currentTarget);
+    const element = event.currentTarget;
+    const authority = navigation.authorityVersion;
+    const form = new FormData(element);
     try {
-      const response = await fetch("/api/me", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({
+      const response = await accountRequest("/api/me", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({
         ...initialProfile, displayName: String(form.get("displayName") ?? identity.displayName),
         professionalRole: String(form.get("professionalRole") ?? "practitioner"), locale,
         productUpdates: initialProfile?.productUpdates ?? false,
@@ -98,8 +106,12 @@ export default function AccountClient({
         researchInvites: initialProfile?.researchInvites ?? false,
       }) });
       const result = await response.json() as { error?: string };
+      if (navigation.authorityVersion!==authority) return;
       if (!response.ok) throw new Error(result.error || t("The profile could not be saved.", "Не удалось сохранить профиль."));
-      router.replace(returnTo); router.refresh();
+      formCommitted(element);
+      // Recreate the shared session after profile creation; a retained layout can
+      // otherwise keep profileRequired=true after a successful client-side return.
+      window.location.assign(returnTo);
     } catch (caught) { setError(caught instanceof Error ? caught.message : t("Check your connection and retry.", "Проверьте соединение и повторите.")); }
     finally { setBusy(null); }
   }
@@ -108,60 +120,31 @@ export default function AccountClient({
     event.preventDefault();
     if (busy !== null) return;
     setBusy("forgot"); setError(""); setMessage(""); setRecoveryCode("");
-    const form = new FormData(event.currentTarget);
+    const element = event.currentTarget;
+    const authority = navigation.authorityVersion;
+    const form = new FormData(element);
     try {
-      const response = await fetch("/api/auth/forgot-password", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: String(form.get("email") ?? "") }) });
+      const response = await accountRequest("/api/auth/forgot-password", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: String(form.get("email") ?? "") }) });
       const result = await response.json() as { error?: string; message?: string };
+      if (navigation.authorityVersion!==authority) return;
       if (!response.ok) throw new Error(result.error || "The reset request could not be accepted.");
+      formCommitted(element);
       setMessage(result.message || "If an account exists, a password-reset link has been sent.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "The reset request could not be accepted.");
     } finally { setBusy(null); }
   }
 
-  async function logout() {
-    if (busy !== null) return;
-    setBusy("logout"); setError(""); setMessage(""); setRecoveryCode("");
-    try {
-      const response = await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
-      if (!response.ok) throw new Error("Local sign-out could not be completed.");
-      await clearDeviceStudioDraft();
-      // Discard account-scoped UI and pending callbacks after confirmed sign-out.
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- Sign-out must clear private client state.
-      window.location.assign("/account?lang=" + locale + "&return_to=" + encodeURIComponent(returnTo));
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Local sign-out could not be completed.");
-      setBusy(null);
-    }
+  async function accountRequest(path: string, init: RequestInit) {
+    const ticket = navigation.authorityVersion;
+    const response = await fetch(path, init);
+    if (navigation.authorityVersion!==ticket) throw new Error("Access changed. Check your session before continuing.");
+    if (identity && response.status === 401) navigation.invalidate("expired");
+    return response;
   }
+  if (identity && (session.phase !== "ready" || session.identity?.email.toLowerCase() !== identity.email.toLowerCase())) return <><WorkspaceNavigation active="/account"/><main className={styles.shell}><h1>{t("Check account access", "Проверить доступ к аккаунту")}</h1><p>{t("Private account details are hidden until your session is verified.", "Данные аккаунта скрыты до подтверждения сеанса.")}</p><button type="button" onClick={() => void navigation.refresh()}>{t("Refresh access", "Обновить доступ")}</button></main></>;
 
-  async function clearDeviceStudioDraft() {
-    window.sessionStorage.removeItem("genesis-studio-auth-continuation-v1");
-    window.sessionStorage.removeItem("genesis.juris.pending-workspace-save.v2");
-    window.sessionStorage.removeItem("genesis-juris-pending-case-prompt-v1");
-    window.localStorage.removeItem(LEGACY_STUDIO_DRAFT_KEY);
-    window.localStorage.removeItem(LEGACY_STUDIO_PRIVATE_KEY);
-    const scope = await studioDeviceScope(identity?.email);
-    if (scope) window.localStorage.removeItem(studioDeviceDraftKey(scope));
-  }
-
-  async function signOutChatGPT(event: MouseEvent<HTMLAnchorElement>) {
-    event.preventDefault();
-    if (busy !== null) return;
-    setBusy("logout");
-    setError("");
-    try {
-      const response = await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
-      if (!response.ok) throw new Error(t("Sign-out could not be confirmed. Retry before leaving this shared device.", "Не удалось подтвердить выход. Повторите попытку перед уходом с общего устройства."));
-      await clearDeviceStudioDraft();
-      window.location.assign(chatGPTSignOutUrl);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("Sign-out failed. Please retry.", "Не удалось выйти. Повторите попытку."));
-      setBusy(null);
-    }
-  }
-
-  return <><WorkspaceNavigation active="/account"/><main className={styles.shell}>
+  return <><WorkspaceNavigation active="/account"/><main className={styles.shell} ref={formRef}>
     <header className={styles.hero}>
       <h1>{identity ? t("Your account", "Ваш аккаунт") : t("Sign in and start your case", "Войдите и начните работу")}</h1>
       <p>{t("Use your ChatGPT account. A separate password is optional. After sign-in you can return to your task.", "Используйте аккаунт ChatGPT. Отдельный пароль необязателен. После входа вы сможете вернуться к своей задаче.")}</p>
@@ -177,9 +160,7 @@ export default function AccountClient({
     {identity && <section className={styles.identity} aria-label="Current identity">
       <div><span>{t("Current session", "Текущий сеанс")}</span><strong>{identity.displayName}</strong><small>{identity.email}</small></div>
       {initialProfile && <a className={styles.primaryLink} href={returnTo}>{t("Continue to your work", "Продолжить работу")}</a>}
-      {identity.authSource === "local" && <button onClick={logout} disabled={busy !== null}>{busy === "logout" ? t("Signing out…", "Выход…") : t("Sign out locally", "Выйти из локального сеанса")}</button>}
       <p>{t("To use a different account, sign out first. Organization administration and access to individual cases are managed separately.", "Для входа в другой аккаунт сначала выйдите. Управление организацией и доступ к отдельным делам назначаются отдельно.")}</p>
-      {identity.authSource === "chatgpt" && <a href={chatGPTSignOutUrl} onClick={signOutChatGPT} aria-disabled={busy !== null}>{t("Sign out", "Выйти")}</a>}
     </section>}
 
     {(message || error) && <div className={error ? styles.error : styles.success} role={error ? "alert" : "status"}>{error || message}</div>}

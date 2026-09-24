@@ -64,6 +64,7 @@
 .manageLink{display:inline-block;padding:10px 4px;min-height:44px}
 .you{display:inline-block;margin-left:8px;padding:2px 7px;border-radius:4px;background:var(--workspace-accent-soft);color:var(--workspace-accent);font:600 12px/1.5 var(--workspace-font)}
 .help{color:var(--workspace-muted);font:400 14px/1.6 var(--workspace-font)}
+.page .primaryLink{display:inline-flex;align-items:center;min-height:44px;padding:10px 16px;border-radius:7px;background:var(--workspace-accent);color:#fff;text-decoration:none;font:600 14px/1.5 var(--workspace-font)}
 .token input{font-size:14px}.panel{min-width:0}.page :is(p,td,caption,span){overflow-wrap:anywhere}
 .page input[aria-invalid=true]{border-color:var(--workspace-danger)}
 @media(max-width:640px){.heading{display:block}.organizations li .actions{margin-left:0}.page table{font-size:14px}.page :is(th,td){padding:10px 8px}.page button{white-space:normal}}

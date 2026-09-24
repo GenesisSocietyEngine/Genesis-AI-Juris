@@ -330,7 +330,9 @@ function buildCaseReportDefinitionFromModels(
     const redactionsActive = reportModel.governance.redactions.length > 0;
     const safeEntries = draft.editHistory.map((entry) => {
       const promptAction = entry.action === "prompt_submitted" || entry.action === "prompt_applied" || entry.action === "graph_rebuilt";
-      const safeMessage = promptAction
+      const safeMessage = entry.action === "graph_rebuilt"
+        ? tr(language, "Draft reconstruction recorded - raw input excluded", "Зафиксировано перестроение черновика - исходный ввод исключён")
+        : promptAction
         ? tr(language, "AI-assisted revision recorded - raw prompt excluded", "Зафиксирована AI-правка - исходный промпт исключён")
         : redactionsActive
           ? tr(language, "Authoring event recorded - message excluded because report redactions are active", "Событие подготовки записано - сообщение исключено из-за активного редактирования отчёта")
@@ -425,7 +427,9 @@ function caseReportPresentationFingerprint(
     ? draft.editHistory.map((entry) => ({
       action: entry.action,
       at: entry.createdAt,
-      message: ["prompt_submitted", "prompt_applied", "graph_rebuilt"].includes(entry.action)
+      message: entry.action === "graph_rebuilt"
+        ? "reconstruction-input-excluded-v1"
+        : ["prompt_submitted", "prompt_applied"].includes(entry.action)
         ? "prompt-excluded"
         : redactionsActive ? "redaction-excluded" : entry.message,
       source: entry.source,

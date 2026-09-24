@@ -1,0 +1,175 @@
+import assert from "node:assert/strict";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { test } from "node:test";
+import { build } from "esbuild";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { WorkspaceController } from "../app/matters/workspace-controller";
+
+// Render the actual integrated parent. Data transport is simulated here; real
+// handler persistence is covered separately by p1-organization-erp.test.ts.
+const built = await build({ entryPoints: ["app/matters/MattersClient.tsx"], bundle: true, write: false, format: "esm", platform: "node", packages: "external", loader: { ".css": "empty", ".module.css": "empty" }, jsx: "automatic", plugins: [{name:"render-router", setup(build) { build.onResolve({filter:/^next\/navigation$/}, () => ({path:"router",namespace:"test"})); build.onLoad({filter:/.*/,namespace:"test"}, () => ({contents:"export function useRouter(){return {push(){}}}"})); }}] });
+mkdirSync(".artifacts/b1-render", { recursive: true }); const file = resolve(".artifacts/b1-render/component.mjs"); writeFileSync(file, built.outputFiles[0].text);
+const Parent = (await import(pathToFileURL(file).href)).AuthorizedMattersClient;
+const identity = { actorId: "actor_test", organizationId: "signed_org" };
+const dossier = { dossier_id: "case_a", title: "Confidential parent case title", permissions:{role:"owner"}, revision: 7, readiness: { dossier_id:"case_a", ready:false, computed_from_revision:7, evaluated_at:"2026-09-15T10:00:00Z", dimensions:[{dimension:"information",state:"blocked",reasons:[{code:"CRITICAL_DEADLINE_OVERDUE",explanation:"Private deadline attention",related_object_type:"deadline_reference",related_object_id:"deadline_a"}]}] } };
+function harness() {
+  let status = 200, orgStatus = 200, requestStatus = 200, malformedAnchors = false;
+  const owner = new WorkspaceController({ identity, transport: async path => {
+    const url = new URL(path,"https://test.invalid");
+    if (status !== 200) return Response.json({}, {status});
+    if (url.pathname === "/api/organizations") return Response.json({selected:{...identity,selection:identity.organizationId,status:"active"}}, {status:orgStatus});
+    if (url.pathname === "/api/dossiers/case_a") return Response.json({dossier});
+    if (url.pathname.endsWith("/dispositions")) return Response.json({actor_id:identity.actorId,kind:"deadline",revision:7,can_review:true,disposition:null,readiness_effect:"Private readiness effect",record:{id:"deadline_a",title:"Private historical title"},dependent_assertions:[],current_output_ids:[]});
+    if (malformedAnchors && url.pathname.endsWith("/evidence/anchors")) return Response.json({});
+    if (url.pathname.endsWith("/requests")) return Response.json({requests:[],deadlines:[]}, {status:requestStatus});
+    return Response.json({documents:[],source_anchors:[],assertions:[],proposals:[],decision_packages:[],snapshots:[],outputs:[],events:[]});
+  }});
+  const render = () => renderToStaticMarkup(createElement(Parent,{...identity,controller:owner}));
+  return {owner,render,setStatus:(value:number)=>{status=value;},setOrgStatus:(value:number)=>{orgStatus=value;},setRequestStatus:(value:number)=>{requestStatus=value;},setMalformedAnchors:()=>{malformedAnchors=true;}};
+}
+test("B1 actual parent hides header, record, draft and retained review through 401→500", async () => {
+  const h=harness(); h.owner.enter("case_a"); await h.owner.load();
+  assert.match(h.render(),/Confidential parent case title/);
+  await h.owner.openReview("deadline","deadline_a");
+  const review=h.owner.getSnapshot().panel!;
+  review.setDraft({reason:"Private recovery proposal",status:"completed",support:""});
+  h.owner.rememberDraft("metadata-title","Private ordinary form draft");
+  assert.match(h.render(),/Private historical title/); assert.match(h.render(),/Private recovery proposal/);
+  for (const status of [401,500]) {
+    h.setStatus(status); await h.owner.load();
+    assert.equal(h.owner.getSnapshot().authority,"session_expired");
+    assert.doesNotMatch(h.render(),/Confidential parent case title|Private historical title|Private recovery proposal|Private ordinary form draft|<textarea|<iframe|Saved revision/);
+    assert.match(h.render(),/Private case content is hidden/);
+  }
+  h.setStatus(200); await h.owner.load();
+  assert.equal(h.owner.draft("metadata-title"),"Private ordinary form draft");
+  assert.doesNotMatch(h.render(),/Private historical title|Private recovery proposal/);
+  await review.open(); assert.match(h.render(),/Private recovery proposal/);
+  h.setOrgStatus(403); await h.owner.load();
+  assert.equal(h.owner.getSnapshot().authority,"account_changed"); assert.equal(h.owner.getSnapshot().bundle,null);
+  assert.equal(h.owner.draft("metadata-title"),undefined); assert.equal(review.getSnapshot().draft,null);
+  assert.doesNotMatch(h.render(),/Confidential parent case title|Private historical title|Private recovery proposal/);
+  h.owner.dispose();
+});
+test("B1 partial source retrieval cannot advertise an authoritative total or successful queue refresh", async () => {
+  const h=harness(); h.owner.enter("case_a"); await h.owner.load();
+  h.setRequestStatus(500);
+  await assert.rejects(h.owner.load(undefined,true));
+  assert.equal(h.owner.getSnapshot().collection.availability,"unavailable");
+  assert.match(h.render(),/Current total unavailable/); assert.doesNotMatch(h.render(),/No remaining actions/);
+  h.owner.dispose();
+});
+test("document upload controls emit the server acknowledgement and enforce its title bounds", async () => {
+  const h = harness(); h.owner.enter("case_a"); await h.owner.load(); h.owner.navigate("documents");
+  const html = h.render();
+  const checkbox = html.match(/<input[^>]*name="privacyAcknowledged"[^>]*>/u)?.[0];
+  assert.ok(checkbox); assert.match(checkbox, /type="checkbox"/u);
+  assert.match(checkbox, /value="true"/u); assert.match(checkbox, /required=""/u);
+  assert.doesNotMatch(checkbox, /checked=""/u);
+  const title = html.match(/<input[^>]*name="title"[^>]*>/u)?.[0];
+  assert.ok(title); assert.match(title, /minLength="2"/u); assert.match(title, /maxLength="240"/u);
+  h.owner.dispose();
+});
+test("version upload restores an exact eligible target with locked public metadata and excludes other origins", async () => {
+  const h = harness(); const read = h.owner.options.transport;
+  h.owner.options.transport = async (path, init) => new URL(path, "https://test.invalid").pathname.endsWith("/documents") ? Response.json({ documents: [
+    { document_id: "upload_a", title: "Exact public source", document_type: "analytical report", classification: "public", source_origin: "internal_upload" },
+    { document_id: "external_b", title: "External source", source_origin: "external_reference" },
+    { document_id: "missing_c", title: "Unknown source" },
+  ] }) : read(path, init);
+  h.owner.enter("case_a"); await h.owner.load(); h.owner.navigate("documents");
+  h.owner.rememberDraft("case_a:upload:documentId", "upload_a", "");
+  const html = h.render(); const form = html.match(/<form id="document-upload-form"[\s\S]*?<\/form>/u)?.[0];
+  assert.ok(form);
+  assert.match(form, /value="upload_a" selected=""/u);
+  assert.doesNotMatch(form, /value="external_b"|value="missing_c"/u);
+  assert.match(form.match(/<input[^>]*name="title"[^>]*>/u)?.[0] ?? "", /readOnly=""[^>]*value="Exact public source"/u);
+  assert.match(form.match(/<input[^>]*name="documentType"[^>]*>/u)?.[0] ?? "", /readOnly=""[^>]*value="analytical report"/u);
+  assert.equal((form.match(/name="classification"/gu) ?? []).length, 1);
+  assert.match(form, /type="hidden" name="classification" value="public"/u);
+  assert.match(form, /value="public" selected=""/u);
+  h.owner.rememberDraft("case_a:upload:documentId", "external_b", "");
+  const missing = h.render().match(/<form id="document-upload-form"[\s\S]*?<\/form>/u)?.[0] ?? "";
+  assert.match(missing, /Previously selected document is unavailable/u);
+  assert.match(missing, /role="alert"/u); assert.match(missing, /<button[^>]*disabled=""/u);
+  h.owner.dispose();
+});
+test("B1 owner attach replay is safe and final detachment rejects late callbacks", async () => {
+  const h=harness(); const release=h.owner.attach(); release(); const finalRelease=h.owner.attach();
+  await Promise.resolve(); h.owner.enter("case_a"); await h.owner.load(); assert.equal(h.owner.getSnapshot().authority,"granted");
+  const ticket=h.owner.capture(); finalRelease(); await Promise.resolve(); assert.equal(h.owner.current(ticket),false);
+});
+
+test("B1 malformed200 cannot silently delete citation reviews from a complete queue", async () => {
+  const h=harness(); h.owner.enter("case_a"); h.setMalformedAnchors(); await h.owner.load();
+  assert.equal(h.owner.getSnapshot().collection.availability,"unavailable");
+  assert.ok(h.owner.getSnapshot().bundle?.issues.anchors); h.owner.dispose();
+});
+test("B1 reopening an earlier uncertain review restores its own filter and exact origin", async () => {
+  const h=harness(); h.owner.enter("case_a"); await h.owner.load();
+  h.owner.setQueue({filter:"blocking",showAll:true});
+  await h.owner.open({destination:"requests",id:"deadline-deadline_a",originActionKey:"action-a"});
+  const review=h.owner.getSnapshot().panel!; review.setDraft({reason:"Synthetic unknown operation",status:"completed",support:""});
+  await review.save(); assert.equal(review.getSnapshot().phase,"unknown");
+  h.owner.returnToActions(); h.owner.setQueue({filter:"review",showAll:false});
+  await h.owner.open({destination:"documents",id:"document-upload",originActionKey:"action-b"});
+  h.owner.returnToActions(); await h.owner.openReview("deadline","deadline_a");
+  assert.equal(h.owner.getSnapshot().panel,review); assert.equal(h.owner.getSnapshot().target?.originActionKey,"action-a");
+  assert.equal(h.owner.getSnapshot().queue?.selectedKey,"action-a"); assert.equal(h.owner.getSnapshot().queue?.filter,"blocking"); assert.equal(h.owner.getSnapshot().queue?.showAll,true);
+  h.owner.dispose();
+});
+test("B1 case denial clears pending parent content and drafts until a new verified visit", async () => {
+  const h=harness(); h.owner.enter("case_a"); await h.owner.load();
+  await h.owner.openReview("deadline","deadline_a"); const review=h.owner.getSnapshot().panel!;
+  h.owner.rememberDraft("private","private input"); h.setStatus(403);
+  await assert.rejects(h.owner.request("/api/dossiers/case_a"));
+  assert.equal(h.owner.getSnapshot().authority,"case_denied"); assert.equal(h.owner.getSnapshot().bundle,null);
+  assert.equal(review.getSnapshot().draft,null); assert.equal(h.owner.draft("private"),undefined);
+  assert.doesNotMatch(h.render(),/Confidential parent case title|Private historical title|<textarea/);
+  h.setStatus(200); await h.owner.load(); assert.equal(h.owner.getSnapshot().authority,"case_denied");
+  h.owner.enter("case_a"); await h.owner.load(); assert.equal(h.owner.getSnapshot().authority,"granted"); h.owner.dispose();
+});
+test("B1 delayed write and finally from old A cannot alter or unlock the new A operation", async () => {
+  const h=harness(); const read=h.owner.options.transport;
+  const writes: Array<(response:Response)=>void> = [];
+  h.owner.options.transport = (path,init) => init?.method === "POST" ? new Promise(resolve => { writes.push(resolve); }) : read(path,init);
+  h.owner.enter("case_a"); await h.owner.load();
+  const obsolete=h.owner.mutate("/api/dossiers/case_a/requests","old-write",{method:"POST",body:"{}"},"Old save");
+  h.owner.enter("case_b"); h.owner.enter("case_a"); await h.owner.load();
+  const current=h.owner.mutate("/api/dossiers/case_a/requests","current-write",{method:"POST",body:"{}"},"Current save");
+  assert.equal(writes.length,2); writes[0](Response.json({ok:true})); await obsolete;
+  assert.equal(h.owner.getSnapshot().mutationKey,"current-write"); assert.doesNotMatch(h.owner.getSnapshot().notice,/Old save/);
+  writes[1](Response.json({ok:true})); await current;
+  assert.equal(h.owner.getSnapshot().mutationKey,null); assert.equal(h.owner.getSnapshot().notice,"Current save"); h.owner.dispose();
+});
+test("B1 parent create lock prevents concurrent independently keyed case creation", async () => {
+  const h=harness(); let resolveWrite!: (response:Response)=>void, posts=0;
+  const read=h.owner.options.transport;
+  h.owner.options.transport=(path,init)=>init?.method==="POST" ? (posts++,new Promise(resolve=>{resolveWrite=resolve;})) : read(path,init);
+  const first=h.owner.createCase({title:"Synthetic case",idempotencyKey:"first"});
+  assert.equal(await h.owner.createCase({title:"Synthetic case",idempotencyKey:"second"}),null);
+  assert.equal(posts,1); resolveWrite(Response.json({dossier})); await first; assert.equal(h.owner.busy,false); h.owner.dispose();
+});
+
+test("C1 actual parent retains note drafts across section changes and generic draft clearing",async()=>{
+  const h=harness();h.owner.enter("case_a");await h.owner.load();h.owner.openNotes();const notebook=h.owner.workingNotes()!;notebook.start("blank");const key=notebook.getSnapshot().selected!;notebook.edit(key,{title:"Confidential notebook",body:"Private notebook body"});
+  assert.match(h.render(),/Private notebook body/);h.owner.clearDrafts();h.owner.returnToActions();assert.doesNotMatch(h.render(),/Private notebook body/);h.owner.navigate("documents");assert.match(h.render(),/Private notebook body/);
+  assert.equal(await h.owner.createCase({title:"Another case"}),null);assert.equal(h.owner.getSnapshot().visit?.caseId,"case_a");assert.equal(notebook.getSnapshot().editors[key].draft.body,"Private notebook body");
+  h.setStatus(401);await h.owner.load();assert.doesNotMatch(h.render(),/Confidential notebook|Private notebook body|Confidential parent case/);h.setStatus(500);await h.owner.load();assert.doesNotMatch(h.render(),/Private notebook body/);
+  h.setStatus(200);await h.owner.load();assert.match(h.render(),/Private notebook body/);h.setOrgStatus(403);await h.owner.load();assert.deepEqual(notebook.getSnapshot().editors,{});assert.doesNotMatch(h.render(),/Private notebook body/);h.owner.dispose();
+});
+test("C1 pending note does not hijack exact document actions; recovery stays available",async()=>{
+  const h=harness();h.owner.enter("case_a");await h.owner.load();h.owner.openNotes();const notebook=h.owner.workingNotes()!;notebook.start("blank");const key=notebook.getSnapshot().selected!;notebook.edit(key,{title:"Pending notebook",body:"Private notebook body"});await notebook.save(key);assert.equal(notebook.pending,true);
+  await h.owner.open({destination:"documents",id:"document-upload"});assert.equal(h.owner.getSnapshot().notebookOpen,false);assert.doesNotMatch(h.render(),/Private notebook body/);assert.match(h.render(),/document-upload/);
+  assert.equal(await h.owner.createCase({title:"Cannot switch"}),null);assert.equal(h.owner.getSnapshot().visit?.caseId,"case_a");h.owner.reviewBeforeLeaving();assert.match(h.render(),/Recover this exact save/);h.owner.enter("case_b");assert.deepEqual(notebook.getSnapshot().editors,{});h.owner.dispose();
+});
+
+test("C1 catalogue delivery cannot switch after a draft appears during an asynchronous operation",async()=>{
+  const h=harness();h.owner.enter("case_a");await h.owner.load();const notes=h.owner.workingNotes()!;
+  notes.start("blank");const key=notes.getSnapshot().selected!;notes.edit(key,{title:"Late draft",body:"Keep this"});
+  assert.equal(h.owner.enterFromCatalogue("case_newly_created"),false);assert.equal(h.owner.getSnapshot().visit?.caseId,"case_a");assert.equal(notes.getSnapshot().editors[key].draft.body,"Keep this");
+  notes.discard(key);assert.equal(h.owner.enterFromCatalogue("case_newly_created"),true);h.owner.dispose();
+});

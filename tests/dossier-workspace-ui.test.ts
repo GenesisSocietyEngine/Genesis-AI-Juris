@@ -137,6 +137,7 @@ test("document normalisation separates logical documents from immutable ordered 
       document_id: "document_001",
       title: "Very long source title",
       document_type: "agreement",
+      source_origin: "internal_upload",
       status: "accepted_source",
       classification: "confidential",
       current_version_id: "version_002",
@@ -147,6 +148,7 @@ test("document normalisation separates logical documents from immutable ordered 
     ],
   });
   assert.equal(documents.length, 1);
+  assert.equal(documents[0].sourceOrigin, "internal_upload");
   assert.equal(documents[0].versions.length, 2);
   assert.deepEqual(documents[0].versions.map((version) => version.ordinal), [2, 1]);
   assert.equal(documents[0].versions[0].downloadUrl, "/api/dossiers/dossier_workspace_001/documents/document_001/download");
@@ -156,6 +158,16 @@ test("document normalisation separates logical documents from immutable ordered 
   assert.equal(destinationForDeepLink("/evidence/contradictions/assertion_001"), "evidence");
   assert.equal(destinationForDeepLink("/requests-deadlines/deadline_001"), "requests");
   assert.equal(safeMatterLink("https://attacker.example/source"), null);
+});
+
+test("document origin normalization does not invent upload eligibility", () => {
+  const documents = normalizeDocuments({ documents: [
+    { document_id: "uploaded", source_origin: "internal_upload" },
+    { document_id: "external", source_origin: "external_reference" },
+    { document_id: "unknown", source_origin: "future_origin" },
+    { document_id: "missing" },
+  ] });
+  assert.deepEqual(documents.map(document => document.sourceOrigin), ["internal_upload", "external_reference", "future_origin", null]);
 });
 
 test("proposal and activity pages are bounded and expose cursors without retaining unbounded bodies", () => {
@@ -256,7 +268,10 @@ test("failure states distinguish permission, stale revisions, unsupported pilot 
 test("the rendered client includes required states, endpoints, citations, privacy, and compact phone navigation", () => {
   const client = source("app/matters/MattersClient.tsx");
   const viewModel = source("app/matters/matter-view-model.ts");
-  const workspaceSource = client + viewModel;
+  const uploadForm = source("app/matters/DocumentUploadForm.tsx");
+  const controller = source("app/matters/workspace-controller.ts");
+  const workspaceSource = client + viewModel + uploadForm;
+  const requestSource = client + controller + source("app/matters/workspace-data.ts");
   const css = source("app/matters/matters.module.css");
   const page = source("app/matters/page.tsx");
   const runtimeConstants = source("app/runtime-constants.ts");
@@ -268,7 +283,7 @@ test("the rendered client includes required states, endpoints, citations, privac
     "/api/dossiers", "/documents", "/transitions", "/requests", "/proposals",
     "/decision-packages", "/snapshots", "/outputs", "/activity",
     "/evidence/anchors", "/evidence/assertions", "/evidence/links",
-  ]) assert.match(client, new RegExp(endpoint.replaceAll("/", "\\/")));
+  ]) assert.match(requestSource, new RegExp(endpoint.replaceAll("/", "\\/")));
   for (const copy of [
     "My cases", "New case", "Import case prompt (.md)", "Browse templates",
     "All case types", "Owned by me", "Shared with me", "Recent activity",
@@ -296,18 +311,19 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.match(client, /fixed pilot-default profile/);
   assert.doesNotMatch(client, /<option value="client">Client<\/option>/);
   assert.doesNotMatch(client, /name="redactionProfileId"/);
-  assert.match(client, /credentials: "same-origin"/);
-  assert.match(client, /cache: "no-store"/);
+  assert.match(controller, /credentials: "same-origin"/);
+  assert.match(controller, /cache: "no-store"/);
   assert.match(client, /aria-label=\{"Inspect AI proposal source/);
-  assert.match(client, /name="documentId"/);
+  assert.match(uploadForm, /name="documentId"/);
   assert.match(client, /action: "update_status", status: "received"/);
   assert.match(client, /action: "review", sourceAnchorId: anchor\.id, decision/);
   assert.match(client, /action: "review", assertionId: assertion\.id, decision/);
   assert.match(client, /decisionPackageReferenceId/);
   assert.match(client, /\/proposals\/generate/);
   assert.match(client, /expected_revision: workspace\.matter\.revision/);
-  assert.match(client, /document_version_ids: sortedDocumentVersionIds/);
-  assert.match(client, /idempotency_key: await proposalGenerationIdempotencyKey/);
+  assert.match(client, /ids = \[\.\.\.documentVersionIds\]\.sort\(\)/);
+  assert.match(client, /const key = await proposalGenerationIdempotencyKey\(workspace\.matter\.id, workspace\.matter\.revision, ids\)/);
+  assert.match(client, /document_version_ids: ids, idempotency_key: key/);
   assert.match(client, /data_classification: "synthetic_or_deidentified"/);
   assert.match(client, /privacy_disclosure_acknowledged: true/);
   assert.match(client, /form\.getAll\("documentVersionIds"\)/);
@@ -334,7 +350,8 @@ test("the rendered client includes required states, endpoints, citations, privac
   assert.doesNotMatch(client, /aria-label="Product navigation"/);
   assert.match(runtimeConstants, /PRODUCT_RELEASE = "v62"/);
   assert.match(app, /className="catalogue-filter-more"/);
-  assert.match(app, /className="case-trust-details"/);
+  assert.match(app, /<DemoCatalogueCards/);
+  assert.match(source("app/DemoCatalogueCards.tsx"), /<details className="demo-editorial">[\s\S]*?Editorial details/);
   assert.doesNotMatch(app, /GENESIS: JURIS · \{PRODUCT_RELEASE\}/);
   assert.match(client, /PENDING_CASE_PROMPT_KEY/);
   assert.match(client, /sessionStorage\.setItem/);
@@ -380,7 +397,9 @@ export {default as AccountClient} from "./app/account/AccountClient";`,resolveDi
   const props={hasLocalAccount:true,isAdmin:false,emailResetAvailable:false,chatGPTSignInUrl:signInUrl,chatGPTSignOutUrl:"/signout-with-chatgpt",initialProfile:null,profileKnown:true,returnTo:"/organizations"};
   const signedIn=renderToStaticMarkup(createElement(AccountClient,{...props,identity:{email:"synthetic@example.test",displayName:"Synthetic User",authSource:"chatgpt"}}));
   assert.doesNotMatch(signedIn,/name="password"|Sign in with password/);
-  assert.match(signedIn,/sign out first/);
+  assert.match(signedIn,/Check account access/);
+  assert.match(signedIn,/Private account details are hidden until your session is verified/);
+  assert.doesNotMatch(signedIn,/synthetic@example\.test|Synthetic User|name="displayName"/);
   const signedOut=renderToStaticMarkup(createElement(AccountClient,{...props,identity:null}));
   assert.match(signedOut,/name="password"/);
 });

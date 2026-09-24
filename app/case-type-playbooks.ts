@@ -60,6 +60,13 @@ export function evaluateCaseTypeDraft(draft: StudioDraft, locale: "en" | "ru"): 
   for (const group of playbook.requiredNodeGroups) {
     const count = draft.nodes.filter((node) => group.types.includes(node.type)).length;
     const label = group.label[locale];
+    if (group.types.includes("evidence")) {
+      checks.push({ id: `nodes:${group.id}`, level: count >= group.minimum ? "ok" : "warn", text: t(
+        `${label}: ${count} of ${group.minimum} required records present. This checks structure; evidence sufficiency needs review.`,
+        `${label}: добавлено ${count} из ${group.minimum} обязательных записей. Проверяется структура; достаточность доказательств требует проверки.`,
+      ) });
+      continue;
+    }
     checks.push(count >= group.minimum
       ? { id: `nodes:${group.id}`, level: "ok", text: t(`${label}: ${count} present`, `${label}: добавлено ${count}`) }
       : { id: `nodes:${group.id}`, level: "warn", text: t(`${label}: add ${group.minimum - count} more`, `${label}: добавьте ещё ${group.minimum - count}`) });
