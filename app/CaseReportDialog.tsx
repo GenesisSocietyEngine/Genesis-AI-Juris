@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { StudioDraft } from "./types";
 import { caseReportReceiptBinding, type CaseReportOptions } from "./case-report";
 import { caseTypePlaybook, primaryCaseOutput } from "./case-type-playbooks";
-import { isReportReceiptStale, readStoredReportReceipt, validateReportReadiness, type ReportReceipt } from "./report-model";
+import { isReportReceiptStale, readStoredReportReceipt, validateReportReadiness, type ReportReceipt, type ReportReceiptV2 } from "./report-model";
 import { reportGenerationErrorMessage } from "./report-generation-error";
+import { startReportDownload } from "./report-download";
 
 function storedReceipt(caseId: string, profileId: string, scope: string | null, eligible: boolean) {
   if (typeof window === "undefined") return null;
@@ -53,6 +54,11 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
   const [includeTechnicalIds, setIncludeTechnicalIds] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const receiptContext = useMemo(() => ({ caseId: draft.caseId, scope: reportReceiptStorageScope, canGenerateReport }), [draft.caseId, reportReceiptStorageScope, canGenerateReport]);
+  const currentReceiptContext = useRef<typeof receiptContext | null>(receiptContext);
+  currentReceiptContext.current = receiptContext;
+  const [completedDownload, setCompletedDownload] = useState<{ context: typeof receiptContext; receipt: ReportReceiptV2 } | null>(null);
+  const downloadReceipt = canGenerateReport && completedDownload?.context === receiptContext ? completedDownload.receipt : null;
   const [previewDocument, setPreviewDocument] = useState<{ url: string; options: CaseReportOptions; draft: StudioDraft } | null>(null);
   const dialogRef = useRef<HTMLElement | null>(null);
   const t = (en: string, ru: string) => locale === "en" ? en : ru;
@@ -98,10 +104,21 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
   const previousReceiptIsStale = previousReceipt === null
     || currentReceiptBinding === null
     || isReportReceiptStale(previousReceipt, draft, profileId, currentReceiptBinding);
+  const downloadReceiptIsStale = downloadReceipt === null
+    || currentReceiptBinding === null
+    || isReportReceiptStale(downloadReceipt, draft, profileId, currentReceiptBinding);
   const readiness = useMemo(() => validateReportReadiness(draft, {
     profileId, status, audience, preparedBy, preparedFor, reviewerName, reviewerApproved,
     currentFingerprint, workspaceFingerprint, currentPublicationFingerprint, workspacePublicationFingerprint, redactedNodeIds,
   }), [audience, currentFingerprint, currentPublicationFingerprint, draft, preparedBy, preparedFor, profileId, redactedNodeIds, reviewerApproved, reviewerName, status, workspaceFingerprint, workspacePublicationFingerprint]);
+
+  useEffect(() => {
+    currentReceiptContext.current = receiptContext;
+    setCompletedDownload(null);
+    setBusy(false);
+    setError("");
+    return () => { currentReceiptContext.current = null; };
+  }, [receiptContext]);
 
   useEffect(() => {
     const escape = (event: KeyboardEvent) => {
@@ -133,9 +150,10 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
     try {
       const { createCaseReportPreview } = await import("./case-report");
       const blob = await createCaseReportPreview(draft, { ...activeReportOptions, generatedAt: new Date().toISOString() }, { canGenerate: canGenerateReport });
+      if (currentReceiptContext.current !== receiptContext) return;
       setPreviewDocument({ url: URL.createObjectURL(blob), options: activeReportOptions, draft });
-    } catch (caught) { setError(reportGenerationErrorMessage(caught, locale)); }
-    finally { setBusy(false); }
+    } catch (caught) { if (currentReceiptContext.current === receiptContext) setError(reportGenerationErrorMessage(caught, locale)); }
+    finally { if (currentReceiptContext.current === receiptContext) setBusy(false); }
   };
 
   useEffect(() => {
@@ -163,15 +181,26 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
     setBusy(true); setError("");
     try {
       const { downloadCaseReport } = await import("./case-report");
-      await downloadCaseReport(draft, {
+      const receipt = await downloadCaseReport(draft, {
         ...activeReportOptions,
         generatedAt: new Date().toISOString(),
       }, { canGenerate: canGenerateReport });
+      if (currentReceiptContext.current !== receiptContext) return;
+      setCompletedDownload({ context: receiptContext, receipt });
       completed();
-      close();
     } catch (caught) {
-      setError(reportGenerationErrorMessage(caught, locale));
-    } finally { setBusy(false); }
+      if (currentReceiptContext.current === receiptContext) setError(reportGenerationErrorMessage(caught, locale));
+    } finally { if (currentReceiptContext.current === receiptContext) setBusy(false); }
+  };
+  const exportDownloadReceipt = () => {
+    if (!canGenerateReport || !downloadReceipt || busy || currentReceiptContext.current !== receiptContext) return;
+    try {
+      const filename = `${downloadReceipt.caseId}-v${downloadReceipt.caseVersion}-${downloadReceipt.profileId}-${downloadReceipt.generatedAt}-report-receipt.json`.replace(/[^a-zA-Z0-9._-]/g, "-");
+      startReportDownload(new Blob([JSON.stringify(downloadReceipt, null, 2)], { type: "application/json" }), filename);
+      setError("");
+    } catch {
+      setError(t("The receipt could not be downloaded. It remains available in this dialog.", "Не удалось скачать квитанцию. Она остаётся доступной в этом окне."));
+    }
   };
   const outputBlocked = !canGenerateReport || busy || !draft.title.trim() || !draft.nodes.length
     || ((status === "final" || audience === "client") && !readiness.ready);
@@ -188,6 +217,14 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
       {!canGenerateReport && <p className="case-report-error" role="status">{t("Report export is unavailable in inspection-only mode.", "Экспорт отчёта недоступен в режиме просмотра.")}</p>}
       {(status === "final" || audience === "client") && !readiness.ready && <p className="case-report-error" role="status">{readiness.blockers.join(" · ")}</p>}
       {error && <p className="case-report-error" role="alert">{error}</p>}
+      {downloadReceipt && <section className="case-report-receipt" aria-labelledby="case-report-receipt-title">
+        <h3 id="case-report-receipt-title">{t("Receipt for the last PDF download", "Квитанция последнего скачивания PDF")}</h3>
+        <p role="status">{downloadReceiptIsStale ? t("The case or report settings have changed. This receipt belongs to the earlier PDF download.", "Кейс или параметры отчёта изменились. Эта квитанция относится к предыдущему скачиванию PDF.") : t("This receipt matches the current case and report settings.", "Эта квитанция соответствует текущему кейсу и параметрам отчёта.")}</p>
+        <p>{downloadReceipt.caseId} · v{downloadReceipt.caseVersion} · {downloadReceipt.profileId} · {downloadReceipt.generatedAt}</p>
+        <p>{t("Save this content and layout receipt with the PDF whose download was started. It does not confirm that the file was saved or independently approved. Download the receipt before closing this dialog.", "Сохраните квитанцию содержания и макета вместе с PDF, скачивание которого началось. Она не подтверждает сохранение файла или независимое утверждение. Скачайте квитанцию перед закрытием этого окна.")}</p>
+        <button className="secondary-cta" type="button" onClick={exportDownloadReceipt} disabled={busy}>{t("Download receipt JSON", "Скачать квитанцию JSON")}</button>
+        <details><summary>{t("Receipt fields", "Поля квитанции")}</summary><pre>{JSON.stringify(downloadReceipt, null, 2)}</pre></details>
+      </section>}
       {previewUrl && <section className="case-report-preview"><h3>{t("PDF preview", "Предпросмотр PDF")}</h3><iframe src={previewUrl} title={t("Analytical PDF preview", "Предпросмотр аналитического PDF")}/><a href={previewUrl} target="_blank" rel="noreferrer">{t("Open preview in a new tab", "Открыть предпросмотр в новой вкладке")}</a></section>}
       <details className="case-report-settings" open={developerView}>
       <summary>{t("Report settings and approval", "Настройки отчёта и утверждение")}</summary>

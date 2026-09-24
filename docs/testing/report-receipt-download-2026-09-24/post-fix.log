@@ -1,0 +1,220 @@
+TAP version 13
+# Subtest: PDF generation with financial assumptions preserves live case state and permits reopening and a second report
+ok 1 - PDF generation with financial assumptions preserves live case state and permits reopening and a second report
+  ---
+  duration_ms: 2160.9937
+  type: 'test'
+  ...
+# Subtest: deterministic graph reconstruction does not claim AI authorship or expose raw input
+ok 2 - deterministic graph reconstruction does not claim AI authorship or expose raw input
+  ---
+  duration_ms: 36.2165
+  type: 'test'
+  ...
+# Subtest: the corrected reconstruction label invalidates its historical PDF receipt only when shown
+ok 3 - the corrected reconstruction label invalidates its historical PDF receipt only when shown
+  ---
+  duration_ms: 315.0064
+  type: 'test'
+  ...
+# Subtest: professional report contains economics, registers, sign-off and a safe audit trail
+ok 4 - professional report contains economics, registers, sign-off and a safe audit trail
+  ---
+  duration_ms: 28.0786
+  type: 'test'
+  ...
+# Subtest: Canopy opens with a bounded EN/RU decision brief and keeps draft, outcomes and approval distinct
+ok 5 - Canopy opens with a bounded EN/RU decision brief and keeps draft, outcomes and approval distinct
+  ---
+  duration_ms: 1965.3042
+  type: 'test'
+  ...
+# Subtest: executive brief does not disclose redacted input or opening records
+ok 6 - executive brief does not disclose redacted input or opening records
+  ---
+  duration_ms: 16.1477
+  type: 'test'
+  ...
+# Subtest: audit headings share a rendered page with a record in Bhopal and long Russian titles
+ok 7 - audit headings share a rendered page with a record in Bhopal and long Russian titles
+  ---
+  duration_ms: 908.1277
+  type: 'test'
+  ...
+# Subtest: client-facing report can omit audit trail and technical identifiers
+ok 8 - client-facing report can omit audit trail and technical identifiers
+  ---
+  duration_ms: 18.8211
+  type: 'test'
+  ...
+# Subtest: durable premise provenance excludes long and compacted raw prompts from internal and client rendered text
+ok 9 - durable premise provenance excludes long and compacted raw prompts from internal and client rendered text
+  ---
+  duration_ms: 1702.5718
+  type: 'test'
+  ...
+# Subtest: premise publication provenance changes presentation only, not canonical fingerprints
+ok 10 - premise publication provenance changes presentation only, not canonical fingerprints
+  ---
+  duration_ms: 100.6342
+  type: 'test'
+  ...
+# Subtest: report links are canonical HTTPS only and rejected values gate external output
+ok 11 - report links are canonical HTTPS only and rejected values gate external output
+  ---
+  duration_ms: 25.31
+  type: 'test'
+  ...
+# Subtest: active node redactions also suppress unscoped audit messages
+ok 12 - active node redactions also suppress unscoped audit messages
+  ---
+  duration_ms: 26.4403
+  type: 'test'
+  ...
+# Subtest: SVG text faces align exactly with pdfmake and svg-to-pdfkit Roboto weight resolution
+ok 13 - SVG text faces align exactly with pdfmake and svg-to-pdfkit Roboto weight resolution
+  ---
+  duration_ms: 101.2359
+  type: 'test'
+  ...
+# Subtest: graph appendix uses deterministic full-width portrait pages and paired connectors
+ok 14 - graph appendix uses deterministic full-width portrait pages and paired connectors
+  ---
+  duration_ms: 111.5297
+  type: 'test'
+  ...
+# Subtest: bounded graph register rows remain atomic at a real page boundary while oversized rows may flow
+ok 15 - bounded graph register rows remain atomic at a real page boundary while oversized rows may flow
+  ---
+  duration_ms: 1170.3749
+  type: 'test'
+  ...
+# Subtest: layout language changes do not mutate the canonical ReportModel fingerprint
+ok 16 - layout language changes do not mutate the canonical ReportModel fingerprint
+  ---
+  duration_ms: 41.084
+  type: 'test'
+  ...
+# Subtest: the complete PDF definition fails closed for unsupported font scalars and XML characters
+ok 17 - the complete PDF definition fails closed for unsupported font scalars and XML characters
+  ---
+  duration_ms: 71.5444
+  type: 'test'
+  ...
+# Subtest: receipt storage routing stays outside fingerprints and generation blocks sensitive cases
+ok 18 - receipt storage routing stays outside fingerprints and generation blocks sensitive cases
+  ---
+  duration_ms: 35.8873
+  type: 'test'
+  ...
+# Subtest: rendered protection identifiers participate in the presentation receipt only when visible
+ok 19 - rendered protection identifiers participate in the presentation receipt only when visible
+  ---
+  duration_ms: 114.1271
+  type: 'test'
+  ...
+# Subtest: receipt freshness derives the exact production layout and the legacy landscape path is absent
+ok 20 - receipt freshness derives the exact production layout and the legacy landscape path is absent
+  ---
+  duration_ms: 178.7267
+  type: 'test'
+  ...
+# Subtest: optional report imports reject locally while global stale-chunk recovery is suspended
+ok 21 - optional report imports reject locally while global stale-chunk recovery is suspended
+  ---
+  duration_ms: 6.2576
+  type: 'test'
+  ...
+# Subtest: concurrent report imports retain local recovery until every import settles
+ok 22 - concurrent report imports retain local recovery until every import settles
+  ---
+  duration_ms: 0.5522
+  type: 'test'
+  ...
+# Subtest: a later font failure cannot reload Studio after another report import already failed
+ok 23 - a later font failure cannot reload Studio after another report import already failed
+  ---
+  duration_ms: 0.7695
+  type: 'test'
+  ...
+# Subtest: asynchronous PDF chunk conversion errors reject instead of escaping the report catch
+ok 24 - asynchronous PDF chunk conversion errors reject instead of escaping the report catch
+  ---
+  duration_ms: 8.7768
+  type: 'test'
+  ...
+# Subtest: asynchronous Blob construction failure rejects and premature close cannot resolve a PDF
+ok 25 - asynchronous Blob construction failure rejects and premature close cannot resolve a PDF
+  ---
+  duration_ms: 1.1907
+  type: 'test'
+  ...
+# Subtest: PDF download keeps editor navigation separate and retains bytes until browser handoff
+ok 26 - PDF download keeps editor navigation separate and retains bytes until browser handoff
+  ---
+  duration_ms: 9.9427
+  type: 'test'
+  ...
+# Subtest: first report offers a preliminary preview before optional controls (en)
+ok 27 - first report offers a preliminary preview before optional controls (en)
+  ---
+  duration_ms: 316.3235
+  type: 'test'
+  ...
+# Subtest: first report offers a preliminary preview before optional controls (ru)
+ok 28 - first report offers a preliminary preview before optional controls (ru)
+  ---
+  duration_ms: 195.9808
+  type: 'test'
+  ...
+# Subtest: simplified report actions remain unavailable with inspection-only access
+ok 29 - simplified report actions remain unavailable with inspection-only access
+  ---
+  duration_ms: 110.9363
+  type: 'test'
+  ...
+# Subtest: immutable report profiles cover every case-package output
+ok 30 - immutable report profiles cover every case-package output
+  ---
+  duration_ms: 2.2338
+  type: 'test'
+  ...
+# Subtest: canonical report models are deterministic, governed and prompt-safe
+ok 31 - canonical report models are deterministic, governed and prompt-safe
+  ---
+  duration_ms: 89.6526
+  type: 'test'
+  ...
+# Subtest: external and final report gates fail closed until exact saved approval
+ok 32 - external and final report gates fail closed until exact saved approval
+  ---
+  duration_ms: 24.0013
+  type: 'test'
+  ...
+# Subtest: report receipts detect a changed case without storing case content
+ok 33 - report receipts detect a changed case without storing case content
+  ---
+  duration_ms: 44.9426
+  type: 'test'
+  ...
+# Subtest: legacy and superseded report receipts stay visible but are stale
+ok 34 - legacy and superseded report receipts stay visible but are stale
+  ---
+  duration_ms: 4.4009
+  type: 'test'
+  ...
+# Subtest: the dialog exposes the exact private PDF receipt, preserves it on failure and distinguishes changed options
+ok 35 - the dialog exposes the exact private PDF receipt, preserves it on failure and distinguishes changed options
+  ---
+  duration_ms: 1613.064
+  type: 'test'
+  ...
+1..35
+# tests 35
+# suites 0
+# pass 35
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11723.4829
