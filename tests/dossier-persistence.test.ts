@@ -187,6 +187,28 @@ test("every D1 migration breakpoint resolves to a non-empty platform statement",
   }
 });
 
+test("every D1 migration breakpoint in 0022 preserves legacy anchor SQL preparation", () => {
+  const entries = JSON.parse(readFileSync("drizzle/meta/_journal.json", "utf8")).entries as Array<{ idx: number; tag: string }>;
+  const pending = entries.find((entry) => entry.idx === 22);
+  assert.ok(pending, "the migration-only release must package 0022");
+  const db = new DatabaseSync(":memory:");
+  try {
+    db.exec("PRAGMA foreign_keys=ON");
+    for (const entry of entries.filter((entry) => entry.idx < 22)) db.exec(migration(`${entry.tag}.sql`));
+    const statements = migration(`${pending.tag}.sql`).split("--> statement-breakpoint");
+    for (let prefix = 0; prefix <= statements.length; prefix++) {
+      // EXPLAIN compiles the real table's FK/trigger program without weakening
+      // its authority guards or inserting invalid fixture rows. The old order
+      // failed here after statements 5–14 and also failed the actual handler.
+      assert.doesNotThrow(() => db.prepare("EXPLAIN INSERT INTO dossier_source_anchors DEFAULT VALUES"),
+        `legacy anchor INSERT must remain preparable after ${prefix} complete statements`);
+      assert.doesNotThrow(() => db.prepare("EXPLAIN UPDATE dossier_source_anchors SET review_state=review_state WHERE id=?"),
+        `legacy anchor review must remain preparable after ${prefix} complete statements`);
+      if (prefix < statements.length) db.exec(statements[prefix]);
+    }
+  } finally { db.close(); }
+});
+
 test("P1 forward migration preserves existing dossiers and receipts and binds only explicit participants", () => {
   const db = database();
   try {

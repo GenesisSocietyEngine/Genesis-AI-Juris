@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { check, foreignKey, index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { check, foreignKey, index, integer, real, sqliteTable, text, uniqueIndex, type SQLiteTableExtraConfigValue } from "drizzle-orm/sqlite-core";
 
 // P1 validation workspaces. Confidential data planes still require the frozen
 // per-tenant resource manifest and are never enabled by these shared-DB rows.
@@ -879,6 +879,7 @@ export const dossierSourceAnchors = sqliteTable("dossier_source_anchors", {
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   uniqueIndex("dossier_source_anchors_scope_uidx").on(table.dossierId, table.id),
+  uniqueIndex("dossier_source_anchors_exact_version_uidx").on(table.dossierId, table.documentId, table.documentVersionId, table.id),
   index("dossier_source_anchors_version_review_idx").on(table.dossierId, table.documentVersionId, table.reviewState),
   index("dossier_source_anchors_dossier_created_idx").on(table.dossierId, table.createdAt),
   foreignKey({ name: "dossier_source_anchors_version_fk", columns: [table.dossierId, table.documentId, table.documentVersionId], foreignColumns: [dossierDocumentVersions.dossierId, dossierDocumentVersions.documentId, dossierDocumentVersions.id] }),
@@ -1584,4 +1585,104 @@ export const dossierSourceAnchorRetirements = sqliteTable("dossier_source_anchor
   check("dossier_source_anchor_retirements_revision_check", sql`${t.revisionBefore} >= 1 and ${t.revisionAfter} = ${t.revisionBefore} + 1`),
   check("dossier_source_anchor_retirements_reason_check", sql`length(trim(${t.reason})) between 5 and 2000`),
   check("dossier_source_anchor_retirements_role_check", sql`${t.actorRole} in ('owner','contributor','reviewer')`),
+]);
+
+// Working material is shared with the case, with its own revision history.
+// It is deliberately absent from governed snapshots and report inputs.
+export const dossierWorkingNotes = sqliteTable("dossier_working_notes", {
+  id: text("id").primaryKey(),
+  dossierId: text("dossier_id").notNull(),
+  organizationId: text("organization_id").notNull(),
+  revision: integer("revision").notNull(),
+  createdBy: text("created_by").notNull(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+}, (t) => [
+  uniqueIndex("working_notes_scope_uidx").on(t.dossierId, t.id),
+  index("working_notes_case_updated_idx").on(t.dossierId, t.updatedAt, t.id),
+  foreignKey({columns:[t.organizationId,t.dossierId],foreignColumns:[dossierOrganizationBindings.organizationId,dossierOrganizationBindings.dossierId]}),
+  // SQL migration makes this current-version commitment deferred for atomic creation.
+  foreignKey({name:"working_notes_current_revision_fk", columns:[t.dossierId,t.id,t.revision],foreignColumns:[dossierWorkingNoteVersions.dossierId,dossierWorkingNoteVersions.noteId,dossierWorkingNoteVersions.revision]}),
+  check("working_notes_revision_check",sql`${t.revision}>=1`),
+]);
+
+export const dossierWorkingNoteVersions = sqliteTable("dossier_working_note_versions", {
+  id: text("id").primaryKey(),
+  dossierId: text("dossier_id").notNull(),
+  noteId: text("note_id").notNull(),
+  revision: integer("revision").notNull(),
+  title: text("title").notNull(),
+  noteType: text("note_type").notNull(),
+  body: text("body").notNull(),
+  action: text("action").notNull(),
+  sourceLinkId: text("source_link_id"),
+  actorUserId: integer("actor_user_id").notNull().references(()=>users.id),
+  actorRef: text("actor_ref").notNull(),
+  actorRole: text("actor_role").notNull(),
+  occurredAt: text("occurred_at").notNull(),
+  idempotencyKey: text("idempotency_key").notNull(),
+  requestDigest: text("request_digest").notNull(),
+}, (t): SQLiteTableExtraConfigValue[] => [
+  uniqueIndex("working_note_versions_revision_uidx").on(t.dossierId,t.noteId,t.revision),
+  uniqueIndex("working_note_versions_operation_uidx").on(t.dossierId,t.actorRef,t.idempotencyKey),
+  foreignKey({columns:[t.dossierId,t.noteId],foreignColumns:[dossierWorkingNotes.dossierId,dossierWorkingNotes.id]}),
+  foreignKey({name:"working_note_source_application_fk",columns:[t.dossierId,t.noteId,t.revision,t.sourceLinkId,t.action],foreignColumns:[dossierWorkingNoteApplications.dossierId,dossierWorkingNoteApplications.noteId,dossierWorkingNoteApplications.revision,dossierWorkingNoteApplications.sourceLinkId,dossierWorkingNoteApplications.action]}),
+  check("working_note_versions_content_check",sql`length(trim(${t.title})) between 1 and 200 and length(${t.body})<=100000 and ${t.noteType} in ('blank','meeting','analysis')`),
+  check("working_note_versions_action_check",sql`${t.action} in ('create','save','link','unlink') and ((${t.action} in ('link','unlink'))=(${t.sourceLinkId} is not null))`),
+  check("working_note_versions_role_check",sql`${t.actorRole} in ('owner','contributor')`),
+]);
+
+export const dossierWorkingNoteSources = sqliteTable("dossier_working_note_sources", {
+  id: text("id").primaryKey(),
+  dossierId: text("dossier_id").notNull(),
+  noteId: text("note_id").notNull(),
+  documentId: text("document_id").notNull(),
+  documentVersionId: text("document_version_id").notNull(),
+  sourceAnchorId: text("source_anchor_id"),
+  anchorKey: text("anchor_key").notNull().default(""),
+  active: integer("active",{mode:"boolean"}).notNull().default(true),
+  createdRevision: integer("created_revision").notNull(),
+  unlinkedRevision: integer("unlinked_revision"),
+}, (t)=>[
+  uniqueIndex("working_note_sources_scope_uidx").on(t.dossierId,t.id),
+  uniqueIndex("working_note_sources_active_uidx").on(t.dossierId,t.noteId,t.documentId,t.documentVersionId,t.anchorKey).where(sql`${t.active}=1`),
+  index("working_note_sources_backlinks_idx").on(t.dossierId,t.documentId,t.active),
+  foreignKey({columns:[t.dossierId,t.noteId],foreignColumns:[dossierWorkingNotes.dossierId,dossierWorkingNotes.id]}),
+  foreignKey({columns:[t.dossierId,t.noteId,t.createdRevision],foreignColumns:[dossierWorkingNoteVersions.dossierId,dossierWorkingNoteVersions.noteId,dossierWorkingNoteVersions.revision]}),
+  foreignKey({columns:[t.dossierId,t.noteId,t.unlinkedRevision],foreignColumns:[dossierWorkingNoteVersions.dossierId,dossierWorkingNoteVersions.noteId,dossierWorkingNoteVersions.revision]}),
+  foreignKey({columns:[t.dossierId,t.documentId,t.documentVersionId],foreignColumns:[dossierDocumentVersions.dossierId,dossierDocumentVersions.documentId,dossierDocumentVersions.id]}),
+  foreignKey({columns:[t.dossierId,t.documentId,t.documentVersionId,t.sourceAnchorId],foreignColumns:[dossierSourceAnchors.dossierId,dossierSourceAnchors.documentId,dossierSourceAnchors.documentVersionId,dossierSourceAnchors.id]}),
+  check("working_note_sources_anchor_key_check",sql`${t.anchorKey}=coalesce(${t.sourceAnchorId},'')`),
+  check("working_note_sources_state_check",sql`(${t.active}=1 and ${t.unlinkedRevision} is null) or (${t.active}=0 and ${t.unlinkedRevision}>${t.createdRevision})`),
+]);
+
+// Original request results, not mutable projections, make lost-response recovery safe.
+export const dossierRequestOperations = sqliteTable("dossier_request_operations", {
+  id: text("id").primaryKey(),
+  dossierId: text("dossier_id").notNull(),
+  actorRef: text("actor_ref").notNull(),
+  idempotencyKey: text("idempotency_key").notNull(),
+  requestDigest: text("request_digest").notNull(),
+  requestId: text("request_id").notNull(),
+  revision: integer("revision").notNull(),
+  auditEventId: text("audit_event_id").notNull(),
+  result: text("result").notNull(),
+  httpStatus: integer("http_status").notNull(),
+}, (t)=>[
+  uniqueIndex("request_operations_key_uidx").on(t.dossierId,t.actorRef,t.idempotencyKey),
+  foreignKey({columns:[t.dossierId,t.requestId],foreignColumns:[dossierInformationRequests.dossierId,dossierInformationRequests.id]}),
+  foreignKey({columns:[t.dossierId,t.auditEventId],foreignColumns:[dossierAuditEvents.dossierId,dossierAuditEvents.id]}),
+  check("request_operations_result_check",sql`json_valid(${t.result}) and ${t.httpStatus} in (200,201)`),
+]);
+
+
+// Deferred application certificates are emitted only by the exact link/unlink.
+export const dossierWorkingNoteApplications = sqliteTable("dossier_working_note_applications", {
+  eventId:text("event_id").primaryKey().references(()=>dossierWorkingNoteVersions.id),
+  dossierId:text("dossier_id").notNull(),noteId:text("note_id").notNull(),revision:integer("revision").notNull(),
+  sourceLinkId:text("source_link_id").notNull(),action:text("action").notNull(),
+},(t):SQLiteTableExtraConfigValue[]=>[
+  uniqueIndex("working_note_applications_binding_uidx").on(t.dossierId,t.noteId,t.revision,t.sourceLinkId,t.action),
+  foreignKey({columns:[t.dossierId,t.sourceLinkId],foreignColumns:[dossierWorkingNoteSources.dossierId,dossierWorkingNoteSources.id]}),
+  check("working_note_applications_action_check",sql`${t.action} in ('link','unlink')`),
 ]);

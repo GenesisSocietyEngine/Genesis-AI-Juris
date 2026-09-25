@@ -20,7 +20,9 @@ function reader(db: DatabaseSync) {
 function database(mode: "baseline" | "partial" | "complete") {
   const db = new DatabaseSync(":memory:");
   const journal = JSON.parse(readFileSync("drizzle/meta/_journal.json", "utf8"));
-  for (const entry of journal.entries) db.exec(readFileSync(`drizzle/${entry.tag}.sql`, "utf8"));
+  // Baseline/partial/complete fixtures remain explicitly pre-0022 even after
+  // the production migration chain includes the accepted 0022 file.
+  for (const entry of journal.entries.filter((item: { idx: number }) => item.idx < 22)) db.exec(readFileSync(`drizzle/${entry.tag}.sql`, "utf8"));
   db.exec("INSERT INTO users(email,display_name) VALUES ('private-canary@example.test','Customer private text')");
   const pending = readFileSync("tests/fixtures/m0-corrected-pending.sql", "utf8");
   if (mode === "complete") db.exec(pending);
