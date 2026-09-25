@@ -1,0 +1,23 @@
+{
+  "purpose": "Local generator review; not hosted download or approval evidence",
+  "sourceCaseSha256": "2deeb85544ca8b667c3c005bd95405de05ede81702223f0ecd357f80ece7f676",
+  "pdfSha256": "9fb7614f14cef3db6d3b8ad71f7f85d30d9517c2dbe521109e2e51a646747971",
+  "pdfBytes": 50868,
+  "receipt": {
+    "receiptSchemaVersion": 2,
+    "caseId": "five_flats_three_borders_rent146000_working_20260923",
+    "caseVersion": "1.0.0",
+    "profileId": "tax_position_memorandum",
+    "rendererVersion": "1.0.0",
+    "caseFingerprint": "sha256-f3cc75e5bf9fe0b5dca8957cd2d2be5788635701e8bc24279ebd9603dae32c39",
+    "reportFingerprint": "sha256-fd24d80723051d35a907343468cfeaba449632ab826975fd2861f4487372d3ff",
+    "generatedAt": "2026-09-25T13:25:40.369Z",
+    "status": "draft",
+    "audience": "internal",
+    "layoutSchemaVersion": 1,
+    "layoutAlgorithmVersion": "1.1.0",
+    "layoutRendererVersion": "2.1.0",
+    "layoutFingerprint": "sha256-c8bbb40ae7bf3939e983216311d47a3938b35289828f7afbc001fd77fddc486d",
+    "presentationFingerprint": "sha256-1a366829759728f73a1487ca60d44f7fc9d3ba71f2bc8a60fe09bc62c62cdf0c"
+  }
+}

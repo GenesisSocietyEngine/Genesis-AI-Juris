@@ -49,6 +49,7 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
     reportReceiptStorageScope,
     persistReportReceiptOnDevice,
   ));
+  const [presentationMode, setPresentationMode] = useState<"decision" | "full">("decision");
   const [includeEconomics, setIncludeEconomics] = useState(true);
   const [includeRegisters, setIncludeRegisters] = useState(true);
   const [includeSources, setIncludeSources] = useState(true);
@@ -74,6 +75,7 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
   const t = (en: string, ru: string) => locale === "en" ? en : ru;
   const activeReportOptions = useMemo<CaseReportOptions>(() => ({
     language: locale,
+    presentationMode,
     profileId,
     profileLabel: caseTypePlaybook(draft.caseType).outputs.find((output) => output.id === profileId)?.label[locale]
       ?? primaryCaseOutput(draft.caseType).label[locale],
@@ -101,7 +103,7 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
     reviewerApproved,
     redactedNodeIds,
   }), [
-    audience, confidentiality, currentFingerprint, includeAuditTrail, includeEconomics, includeRegisters,
+    audience, confidentiality, currentFingerprint, presentationMode, includeAuditTrail, includeEconomics, includeRegisters,
     includeSources, includeTechnicalIds, locale, matterReference, persistReportReceiptOnDevice, preparedBy, preparedFor, privateCase,
     reportReceiptStorageScope,
     currentPublicationFingerprint, draft.caseType, profileId, redactedNodeIds, reviewerApproved, reviewerName,
@@ -237,7 +239,7 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
       <p>{t("Generate a structured A4 PDF for review, circulation or the client file. The raw AI prompt is never included.", "Сформируйте структурированный PDF A4 для проверки, распространения или клиентского досье. Исходный AI-промпт никогда не включается.")}</p>
       <p className="report-draft-explainer">{t("Start with a preliminary analytical report. Previewing or downloading it does not create an independent approval. Governed outputs and a reviewer's decision are recorded separately in My cases → Reports.", "Начните с предварительного аналитического отчёта. Просмотр или скачивание не создаёт независимого утверждения. Контролируемые документы и решение проверяющего фиксируются отдельно: Мои дела → Отчёты.")}</p>
       <section className="case-report-quick-actions" aria-label={t("Create your report", "Создать отчёт")}>
-        <div><b>{activeReportOptions.profileLabel}</b><span>{status === "draft" ? t("Preliminary draft", "Предварительный черновик") : t("Final report", "Финальный отчёт")} · {audience === "internal" ? t("Internal review", "Внутренняя проверка") : t("For the client", "Для клиента")}</span></div>
+        <div><b>{presentationMode === "decision" ? t("Decision report", "Отчёт для принятия решения") : activeReportOptions.profileLabel}</b><span>{status === "draft" ? t("Preliminary draft", "Предварительный черновик") : t("Final report", "Финальный отчёт")} · {audience === "internal" ? t("Internal review", "Внутренняя проверка") : t("For the client", "Для клиента")}</span></div>
         <div className="case-report-buttons"><button data-report-preview className="primary-cta" type="button" onClick={preview} disabled={outputBlocked}>{busy ? t("Creating PDF…", "Создание PDF…") : t("Preview PDF", "Предпросмотр PDF")}</button><button className="secondary-cta" type="button" onClick={generate} disabled={outputBlocked}>{t("Download PDF", "Скачать PDF")}</button></div>
       </section>
       {!canGenerateReport && <p className="case-report-error" role="status">{t("Report export is unavailable in inspection-only mode.", "Экспорт отчёта недоступен в режиме просмотра.")}</p>}
@@ -252,6 +254,8 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
         <details><summary>{t("Receipt fields", "Поля квитанции")}</summary><pre>{JSON.stringify(downloadReceipt, null, 2)}</pre></details>
       </section>}
       {previewUrl && <section className="case-report-preview"><h3>{t("PDF preview", "Предпросмотр PDF")}</h3><iframe src={previewUrl} title={t("Analytical PDF preview", "Предпросмотр аналитического PDF")}/><a href={previewUrl} target="_blank" rel="noreferrer">{t("Open preview in a new tab", "Открыть предпросмотр в новой вкладке")}</a></section>}
+      <label className="report-format-choice"><span>{t("Report format", "Формат отчёта")}</span><select value={presentationMode} onChange={event => setPresentationMode(event.target.value as "decision" | "full")} disabled={busy}><option value="decision">{t("Decision report — findings, recommendations and calculations", "Отчёт для решения — выводы, рекомендации и расчёты")}</option><option value="full">{t("Full analysis — complete records, graph and audit options", "Полный анализ — все записи, граф и параметры аудита")}</option></select></label>
+      <p className="report-draft-explainer">{t("The decision report explains what the recorded inputs imply and what to do next. Calculated findings remain conditional on evidence; they do not create an approval.", "Отчёт объясняет значение записанных данных и следующие действия. Расчётные выводы зависят от подтверждения оснований и не создают утверждения.")}</p>
       <details className="case-report-settings" open={developerView}>
       <summary>{t("Report settings and approval", "Настройки отчёта и утверждение")}</summary>
       <div className="case-report-grid">
@@ -270,10 +274,10 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
           <label className="report-check"><input type="checkbox" checked={includeEconomics} onChange={(event) => setIncludeEconomics(event.target.checked)}/><span>{t("Economic analysis and assumptions", "Экономический анализ и допущения")}</span></label>
           <label className="report-check"><input type="checkbox" checked={includeRegisters} onChange={(event) => setIncludeRegisters(event.target.checked)}/><span>{t("Facts, evidence and rules register", "Реестр фактов, доказательств и правил")}</span></label>
           <label className="report-check"><input type="checkbox" checked={includeSources} onChange={(event) => setIncludeSources(event.target.checked)}/><span>{t("Authorities and source register", "Реестр правовых источников")}</span></label>
-          <label className="report-check"><input type="checkbox" checked={includeAuditTrail} disabled={audience === "client"} onChange={(event) => setIncludeAuditTrail(event.target.checked)}/><span>{t("Safe authoring and review trail", "Безопасная история подготовки и проверки")}</span></label>
-          <label className="report-check"><input type="checkbox" checked={includeTechnicalIds} disabled={audience === "client"} onChange={(event) => setIncludeTechnicalIds(event.target.checked)}/><span>{t("Technical node IDs and lineage", "Технические ID нодов и линия версий")}</span></label>
+          <label className="report-check"><input type="checkbox" checked={includeAuditTrail} disabled={audience === "client" || presentationMode === "decision"} onChange={(event) => setIncludeAuditTrail(event.target.checked)}/><span>{t("Safe authoring and review trail", "Безопасная история подготовки и проверки")}</span></label>
+          <label className="report-check"><input type="checkbox" checked={includeTechnicalIds} disabled={audience === "client" || presentationMode === "decision"} onChange={(event) => setIncludeTechnicalIds(event.target.checked)}/><span>{t("Technical node IDs and lineage", "Технические ID нодов и линия версий")}</span></label>
           <label><span>{t("Redact from report", "Скрыть из отчёта")}</span><select multiple size={4} value={redactedNodeIds} onChange={(event) => setRedactedNodeIds([...event.currentTarget.selectedOptions].map((option) => option.value))}>{draft.nodes.filter((node) => node.type === "fact" || node.type === "evidence").map((node) => <option key={node.id} value={node.id}>{node.title}</option>)}</select></label>
-          <aside><b>{t("Always included", "Всегда включается")}</b><p>{t("Executive summary, decision map, verification checklist, report status, page numbers, content fingerprint, the full portrait graph, and its complete text alternative.", "Резюме, карта решений, чек-лист проверки, статус отчёта, номера страниц, отпечаток содержания, полный граф в книжной ориентации и его полная текстовая альтернатива.")}</p></aside>
+          <aside><b>{t("Included in this format", "В выбранном формате")}</b><p>{presentationMode === "decision" ? t("Findings, proposed actions, calculation method and limitations. Full records, graph and technical details are available in Full analysis.", "Выводы, предлагаемые действия, метод расчёта и ограничения. Полные записи, граф и технические сведения доступны в полном анализе.") : t("Executive summary, decision map, verification checklist, report status, page numbers, content fingerprint, the full portrait graph, and its complete text alternative.", "Резюме, карта решений, чек-лист проверки, статус отчёта, номера страниц, отпечаток содержания, полный граф в книжной ориентации и его полная текстовая альтернатива.")}</p></aside>
         </fieldset>
       </div>
       <div className="case-report-status"><b>{workspaceFingerprint === currentFingerprint && workspacePublicationFingerprint === currentPublicationFingerprint ? t("Workspace-saved reviewed version", "Проверенная версия сохранена в workspace") : t("Working draft", "Рабочий черновик")}</b><span>{draft.nodes.length} {t("nodes", "нод")} · {draft.links.length} {t("connections", "связей")}</span></div>

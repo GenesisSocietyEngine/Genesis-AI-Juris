@@ -1,11 +1,12 @@
 import { pdfBlobFromDocument } from "./pdf-blob";
 import { startReportDownload } from "./report-download";
 import { withLocalChunkRecovery } from "./stale-chunk-recovery";
-import { calculateDealEconomics, estimateDealCashFlowProbabilities } from "./deal-economics";
+import { calculateDealEconomics } from "./deal-economics";
 import { calculateTaxEconomics } from "./tax-economics";
 import { buildReportGraphLayout, deriveReportGraphLayoutInput, reportGraphGovernedTextIssue, ReportGraphLayoutError, type ReportGraphLayoutModel } from "./report-graph-layout";
 import { buildReportGraphAppendix } from "./report-graph-pdf";
 import { canonicalFingerprint } from "./case-integrity";
+import { buildDecisionReport } from "./report-decision-pdf";
 import { caseReportBriefRows } from "./case-report-brief";
 import { CASE_REPORT_PDF_FONTS, REPORT_AUDIT_SYMBOL_FONT, REPORT_AUDIT_SYMBOL_FONT_SHA256, reportAuditText } from "./report-audit-symbols";
 import type { StudioDraft, StudioNodeType } from "./types";
@@ -14,6 +15,8 @@ import type { Content, ContentTable, ContentText, TDocumentDefinitions, TableCel
 
 export type CaseReportOptions = {
   language: "en" | "ru";
+  /** Existing API callers retain the full format; the dialog defaults to decision. */
+  presentationMode?: "decision" | "full";
   profileId: string;
   profileLabel: string;
   audience: "client" | "internal";
@@ -71,7 +74,7 @@ function reportSafePremise(draft: StudioDraft, language: CaseReportOptions["lang
 }
 
 function effectiveCaseReportOptions(options: CaseReportOptions): CaseReportOptions {
-  return options.audience === "client" && (options.includeAuditTrail || options.includeTechnicalIds)
+  return (options.audience === "client" || options.presentationMode === "decision") && (options.includeAuditTrail || options.includeTechnicalIds)
     ? { ...options, includeAuditTrail: false, includeTechnicalIds: false }
     : options;
 }
@@ -143,29 +146,15 @@ function buildEconomics(draft: StudioDraft, options: CaseReportOptions): Content
         scenario.cashOnCashReturnPercent === null ? "-" : `${scenario.cashOnCashReturnPercent.toFixed(1)}%`, scenario.dscr === null ? "-" : `${scenario.dscr.toFixed(2)}x`,
       ]), ["22%", "21%", "23%", "17%", "17%"]
     ));
-    const estimate = estimateDealCashFlowProbabilities(model, result);
-    if (estimate) {
-      const labels = language === "en"
-        ? { loss: "Loss", below_target: "Positive - below target", target_to_double: "Target to 2x target", strong_upside: "Strong upside" }
-        : { loss: "Убыток", below_target: "Плюс - ниже цели", target_to_double: "От цели до 2x", strong_upside: "Сильный рост" };
-      content.push({ text: tr(language, "Illustrative annual cash-flow probability ranges", "Иллюстративные диапазоны вероятности годового денежного потока"), style: "subheading" });
-      content.push(table(
-        [tr(language, "Range", "Диапазон"), tr(language, "Probability", "Вероятность"), tr(language, "Cash-flow boundary", "Граница потока")],
-        estimate.bands.map((band) => [labels[band.key], `${band.probabilityPercent.toFixed(1)}%`, band.minimum === null ? `< ${money(language, model.currency, band.maximum)}` : band.maximum === null ? `>= ${money(language, model.currency, band.minimum)}` : `${money(language, model.currency, band.minimum)} - ${money(language, model.currency, band.maximum)}`]),
-        ["38%", "20%", "42%"]
-      ));
-      content.push({ text: tr(language,
-        `Rationale: ${estimate.usesRepaymentBasisPrior ? `repayment-basis weights are ${(100 - model.scenarioProbabilities.interestOnlyBps / 100).toFixed(1)}% amortizing and ${(model.scenarioProbabilities.interestOnlyBps / 100).toFixed(1)}% interest-only; ` : "only the stated repayment basis is used; "}${estimate.usesOperatingCostStress ? `combined vacancy and operating-cost stresses are 10%, 20% and 30% of gross rent with weights ${(model.scenarioProbabilities.favorableBps / 100).toFixed(1)}%, ${(model.scenarioProbabilities.baseBps / 100).toFixed(1)}% and ${(model.scenarioProbabilities.stressedBps / 100).toFixed(1)}%.` : "the stated operating-cost amount is used without an extra stress deduction."}`,
-        `Обоснование: ${estimate.usesRepaymentBasisPrior ? `веса вида погашения составляют ${(100 - model.scenarioProbabilities.interestOnlyBps / 100).toFixed(1)}% для амортизации и ${(model.scenarioProbabilities.interestOnlyBps / 100).toFixed(1)}% для interest-only; ` : "используется только указанный вид погашения; "}${estimate.usesOperatingCostStress ? `совокупные потери от вакантности и операционные расходы моделируются на уровнях 10%, 20% и 30% валовой аренды с весами ${(model.scenarioProbabilities.favorableBps / 100).toFixed(1)}%, ${(model.scenarioProbabilities.baseBps / 100).toFixed(1)}% и ${(model.scenarioProbabilities.stressedBps / 100).toFixed(1)}%.` : "используется указанная сумма операционных расходов без дополнительного стресс-вычета."}`
-      ), style: "note" });
-    }
+    content.push({ text: tr(language, "These are deterministic calculations from supplied assumptions, not probabilities or a forecast. Currency effects, exit costs, tax and unpriced costs are excluded. Use the Decision report for explicit income sensitivities.", "Это детерминированные расчёты по указанным допущениям, не вероятности и не прогноз. Валютные эффекты, расходы выхода, налоги и неоценённые затраты исключены. Явные сценарии дохода доступны в отчёте для принятия решения."), style: "note" });
     if (result.missingInputs.length) content.push({ text: `${tr(language, "Open financial inputs", "Незаполненные финансовые параметры")}: ${result.missingInputs.join(", ")}.`, style: "warning" });
-    if (model.assumptions.length) content.push({ ul: [...model.assumptions], style: "bodySmall", margin: [8, 4, 0, 8] });
+    if (model.assumptions.length) content.push({ ul: model.assumptions.filter(item => !/scenario probabilit|вероятност[а-я]* сценар/iu.test(item)), style: "bodySmall", margin: [8, 4, 0, 8] });
   }
   if (draft.taxEconomics) {
     const model = draft.taxEconomics;
     const result = calculateTaxEconomics(model);
-    content.push({ text: tr(language, "Tax-structure economics", "Экономика налоговой структуры"), style: "subheading", margin: [0, 12, 0, 6] });
+    content.push({ text: tr(language, "The following figures are an arithmetic scenario only. Rate sources, taxable base, deductibility and eligibility are not established by this model. Do not treat the amounts as verified savings or offset them against a financing shortfall.", "Следующие суммы — только арифметический сценарий. Модель не устанавливает источники ставок, базу, вычеты и применимость. Не считайте суммы подтверждённой экономией и не компенсируйте ими дефицит финансирования."), style: "warning" });
+    content.push({ text: tr(language, "Unverified tax scenario — not a tax recommendation", "Непроверенный налоговый сценарий — не налоговая рекомендация"), style: "subheading", margin: [0, 12, 0, 6] });
     content.push(table(
       [tr(language, "Metric", "Показатель"), tr(language, "Result", "Результат")],
       [
@@ -203,6 +192,7 @@ function buildCaseReportDefinitionFromModels(
     const visibleIds = new Set(draft.nodes.filter((node) => !redactions.has(node.id)).map((node) => node.id));
     draft = { ...draft, nodes: draft.nodes.filter((node) => visibleIds.has(node.id)), links: draft.links.filter((link) => visibleIds.has(link.from) && visibleIds.has(link.to)) };
   }
+  if (options.presentationMode === "decision") return buildDecisionReport(draft, options, reportModel);
   const generated = new Date(options.generatedAt);
   const generatedLabel = Number.isNaN(generated.valueOf()) ? options.generatedAt : generated.toLocaleString(language === "en" ? "en-GB" : "ru-RU", { dateStyle: "long", timeStyle: "short", timeZone: "UTC" });
   const classification = draft.classification;
@@ -350,7 +340,7 @@ function buildCaseReportDefinitionFromModels(
       tr(language, "Facts and evidence reconciled to the underlying file.", "Факты и доказательства сверены с материалами дела."),
       tr(language, "Legal authorities remain current as of the stated date.", "Правовые источники актуальны на указанную дату."),
       tr(language, "Assumptions, exclusions and uncertainties are explicitly disclosed.", "Допущения, исключения и неопределённости раскрыты явно."),
-      tr(language, "Economics and probability weights are independently recalculated.", "Экономика и вероятностные веса пересчитаны независимо."),
+      tr(language, "Economics and scenario assumptions are independently checked.", "Экономика и сценарные допущения проверены независимо."),
       tr(language, "Confidentiality, privilege, conflicts and circulation scope are confirmed.", "Конфиденциальность, privilege, конфликты и круг распространения подтверждены."),
     ].map((item) => ({ text: `[ ] ${item}` })), style: "checklist", margin: [6, 6, 0, 16]
   });
@@ -437,7 +427,9 @@ function caseReportPresentationFingerprint(
     : [];
   return canonicalFingerprint({
     format: "genesis-juris-case-report-presentation-binding",
-    version: 3,
+    version: 4,
+    presentationMode: effectiveOptions.presentationMode ?? "full",
+    decisionRendererVersion: "1.0.0",
     auditSymbolFont: REPORT_AUDIT_SYMBOL_FONT_SHA256,
     reportFingerprint: reportModel.contentFingerprint,
     layoutFingerprint: layoutModel.layoutFingerprint,
