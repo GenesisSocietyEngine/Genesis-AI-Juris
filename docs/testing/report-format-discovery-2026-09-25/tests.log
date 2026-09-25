@@ -1,0 +1,28 @@
+✔ FiveFlats findings reconcile cash, amortization, sensitivity and thresholds (1.589444ms)
+✔ unknown costs stay unknown while adverse known-cost findings remain available (0.812995ms)
+✔ explicit zero, debt-free, zero-interest and nonviable cost ratios do not invent ratios (0.370779ms)
+✔ decision PDF foregrounds supported findings and removes technical/probability/tax-saving claims (147.476451ms)
+✔ full format removes probability labels and qualifies arithmetic tax estimates (153.685645ms)
+✔ formats have different exact receipt identities while non-visible audit controls are inert (203.814443ms)
+✔ decision-tree choice controls diagram and text appendix in both report formats (561.520365ms)
+✔ decision-tree appendix respects redactions and Russian report language (84.114878ms)
+✔ Medium retains base findings, adds visual graph pages and omits verbose graph registers (304.653104ms)
+✔ Medium keeps Canopy nonfinancial and respects graph redactions in Russian (119.486224ms)
+✔ redacted records and raw intake are absent and economics exclusion is respected (53.434027ms)
+✔ Russian decision report and interest-only report retain material qualifications (104.643524ms)
+✔ short loans and debt-free deficits do not misstate a financing conclusion (106.734364ms)
+✔ nonfinancial report uses a human objective and no invented financing agenda (59.124465ms)
+✔ first report offers a preliminary preview before optional controls (en) (89.395743ms)
+✔ first report offers a preliminary preview before optional controls (ru) (53.013364ms)
+✔ simplified report actions remain unavailable with inspection-only access (25.588975ms)
+✔ the dialog exposes the exact private PDF receipt, preserves it on failure and distinguishes changed options (726.972901ms)
+✔ actual PDF parent and helper reject a stale active tab, recheck after rendering and never revive old output after sign-in (207.412198ms)
+✔ actual Markdown download and clipboard callbacks share protected-output authority (50.021501ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2552.48386

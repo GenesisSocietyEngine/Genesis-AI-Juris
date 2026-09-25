@@ -19,6 +19,8 @@ for (const locale of ["en", "ru"] as const) {
     const html = renderToStaticMarkup(createElement(CaseReportDialog, { ...common, locale }));
     const previewButton = html.match(/<button[^>]*data-report-preview[^>]*>/)?.[0];
     assert.ok(previewButton);
+    assert.equal((html.match(/type="radio"/g)??[]).length,3);
+    assert.ok(html.indexOf('name="report-presentation-format"') < html.indexOf('data-report-preview'), "all three formats appear before preview and download");
     assert.doesNotMatch(previewButton, /disabled/);
     assert.ok(html.indexOf("data-report-preview") < html.indexOf('<details class="case-report-settings"'));
     assert.match(html, /<details class="case-report-settings">/);
