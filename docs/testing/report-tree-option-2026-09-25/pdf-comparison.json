@@ -1,0 +1,12 @@
+{
+  "off": {
+    "pages": 5,
+    "bytes": 50927,
+    "sha256": "7a69d79cdfad914dfbeeae4266d56c628e763a658ffc93443630fffd7a7b1b71"
+  },
+  "on": {
+    "pages": 18,
+    "bytes": 210461,
+    "sha256": "1a77472f297eac9f719c578006227e1d35382d1f1d0adaa8d9613f2185b96d4e"
+  }
+}

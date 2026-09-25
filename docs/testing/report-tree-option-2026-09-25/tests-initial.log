@@ -1,0 +1,239 @@
+✔ PDF generation with financial assumptions preserves live case state and permits reopening and a second report (674.846519ms)
+✔ deterministic graph reconstruction does not claim AI authorship or expose raw input (11.052698ms)
+✔ the corrected reconstruction label invalidates its historical PDF receipt only when shown (142.279429ms)
+✔ professional report contains economics, registers, sign-off and a safe audit trail (9.491156ms)
+✔ Canopy opens with a bounded EN/RU decision brief and keeps draft, outcomes and approval distinct (930.246058ms)
+✔ executive brief does not disclose redacted input or opening records (9.654953ms)
+✔ audit headings share a rendered page with a record in Bhopal and long Russian titles (455.107673ms)
+✔ client-facing report can omit audit trail and technical identifiers (9.785489ms)
+✔ durable premise provenance excludes long and compacted raw prompts from internal and client rendered text (696.359007ms)
+✔ premise publication provenance changes presentation only, not canonical fingerprints (43.348142ms)
+✔ report links are canonical HTTPS only and rejected values gate external output (11.104766ms)
+✔ active node redactions also suppress unscoped audit messages (9.538056ms)
+✔ SVG text faces align exactly with pdfmake and svg-to-pdfkit Roboto weight resolution (16.977412ms)
+✔ graph appendix uses deterministic full-width portrait pages and paired connectors (47.530382ms)
+✔ bounded graph register rows remain atomic at a real page boundary while oversized rows may flow (305.530547ms)
+✔ layout language changes do not mutate the canonical ReportModel fingerprint (18.955822ms)
+✔ the complete PDF definition fails closed for unsupported font scalars and XML characters (9.709905ms)
+✔ receipt storage routing stays outside fingerprints and generation blocks sensitive cases (7.211672ms)
+✔ rendered protection identifiers participate in the presentation receipt only when visible (27.226409ms)
+✖ receipt freshness derives the exact production layout and the legacy landscape path is absent (74.211179ms)
+✔ FiveFlats findings reconcile cash, amortization, sensitivity and thresholds (1.423755ms)
+✔ unknown costs stay unknown while adverse known-cost findings remain available (0.816781ms)
+✔ explicit zero, debt-free, zero-interest and nonviable cost ratios do not invent ratios (0.436507ms)
+✔ decision PDF foregrounds supported findings and removes technical/probability/tax-saving claims (168.238219ms)
+✔ full format removes probability labels and qualifies arithmetic tax estimates (141.962041ms)
+✔ formats have different exact receipt identities while non-visible audit controls are inert (238.468914ms)
+✔ redacted records and raw intake are absent and economics exclusion is respected (65.130628ms)
+✔ Russian decision report and interest-only report retain material qualifications (137.210714ms)
+✔ short loans and debt-free deficits do not misstate a financing conclusion (125.401346ms)
+✔ nonfinancial report uses a human objective and no invented financing agenda (55.423231ms)
+✔ the dialog exposes the exact private PDF receipt, preserves it on failure and distinguishes changed options (578.46591ms)
+✔ actual PDF parent and helper reject a stale active tab, recheck after rendering and never revive old output after sign-in (181.159041ms)
+✔ actual Markdown download and clipboard callbacks share protected-output authority (52.3614ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 32
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4452.228983
+
+✖ failing tests:
+
+test at tests/case-report.test.ts:1:36484
+✖ receipt freshness derives the exact production layout and the legacy landscape path is absent (74.211179ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /full portrait graph/. Input:
+  
+  '"use client";\n' +
+    '\n' +
+    'import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";\n' +
+    'import type { StudioDraft } from "./types";\n' +
+    'import { caseReportReceiptBinding, type CaseReportOptions } from "./case-report";\n' +
+    'import { caseTypePlaybook, primaryCaseOutput } from "./case-type-playbooks";\n' +
+    'import { isReportReceiptStale, readStoredReportReceipt, validateReportReadiness, type ReportReceipt, type ReportReceiptV2 } from "./report-model";\n' +
+    'import { reportGenerationErrorMessage } from "./report-generation-error";\n' +
+    'import { startReportDownload } from "./report-download";\n' +
+    '\n' +
+    'function storedReceipt(caseId: string, profileId: string, scope: string | null, eligible: boolean) {\n' +
+    '  if (typeof window === "undefined") return null;\n' +
+    '  try { return readStoredReportReceipt(window.localStorage, { scope, eligible, caseId, profileId }); }\n' +
+    '  catch { return null; }\n' +
+    '}\n' +
+    '\n' +
+    'export default function CaseReportDialog({ locale, draft, currentFingerprint, workspaceFingerprint, currentPublicationFingerprint, workspacePublicationFingerprint, privateCase, canGenerateReport, reportAuthorityEpoch = 0, verifyReportAuthority, developerView = false, reportReceiptStorageScope, persistReportReceiptOnDevice, close, completed }: {\n' +
+    '  locale: "en" | "ru";\n' +
+    '  draft: StudioDraft;\n' +
+    '  currentFingerprint: string;\n' +
+    '  workspaceFingerprint: string | null;\n' +
+    '  currentPublicationFingerprint: string;\n' +
+    '  workspacePublicationFingerprint: string | null;\n' +
+    '  privateCase: boolean;\n' +
+    '  canGenerateReport: boolean;\n' +
+    '  reportAuthorityEpoch?: number;\n' +
+    '  verifyReportAuthority?: () => Promise<() => boolean>;\n' +
+    '  developerView?: boolean;\n' +
+    '  reportReceiptStorageScope: string | null;\n' +
+    '  persistReportReceiptOnDevice: boolean;\n' +
+    '  close: () => void;\n' +
+    '  completed: () => void;\n' +
+    '}) {\n' +
+    '  const [audience, setAudience] = useState<CaseReportOptions["audience"]>("internal");\n' +
+    '  const playbook = caseTypePlaybook(draft.caseType);\n' +
+    '  const primaryOutput = primaryCaseOutput(draft.caseType);\n' +
+    '  const [profileId, setProfileId] = useState(primaryOutput.id);\n' +
+    '  const [confidentiality, setConfidentiality] = useState<CaseReportOptions["confidentiality"]>(privateCase ? "confidential" : "draft");\n' +
+    '  const [preparedBy, setPreparedBy] = useState("");\n' +
+    '  const [preparedFor, setPreparedFor] = useState("");\n' +
+    '  const [matterReference, setMatterReference] = useState("");\n' +
+    '  const [status, setStatus] = useState<"draft" | "final">("draft");\n' +
+    '  const [reviewerName, setReviewerName] = useState("");\n' +
+    '  const [reviewerApproved, setReviewerApproved] = useState(false);\n' +
+    '  const [redactedNodeIds, setRedactedNodeIds] = useState<string[]>([]);\n' +
+    '  const [previousReceipt, setPreviousReceipt] = useState<ReportReceipt | null>(() => storedReceipt(\n' +
+    '    draft.caseId,\n' +
+    '    primaryOutput.id,\n' +
+    '    reportReceiptStorageScope,\n' +
+    '    persistReportReceiptOnDevice,\n' +
+    '  ));\n' +
+    '  const [presentationMode, setPresentationMode] = useState<"decision" | "full">("decision");\n' +
+    '  const [includeDecisionTree, setIncludeDecisionTree] = useState(false);\n' +
+    '  const [includeEconomics, setIncludeEconomics] = useState(true);\n' +
+    '  const [includeRegisters, setIncludeRegisters] = useState(true);\n' +
+    '  const [includeSources, setIncludeSources] = useState(true);\n' +
+    '  const [includeAuditTrail, setIncludeAuditTrail] = useState(true);\n' +
+    '  const [includeTechnicalIds, setIncludeTechnicalIds] = useState(false);\n' +
+    '  const [busy, setBusy] = useState(false);\n' +
+    '  const [error, setError] = useState("");\n' +
+    '  const receiptContext = useMemo(() => ({ caseId: draft.caseId, scope: reportReceiptStorageScope, canGenerateReport, reportAuthorityEpoch }), [draft.caseId, reportReceiptStorageScope, canGenerateReport, reportAuthorityEpoch]);\n' +
+    '  const currentReceiptContext = useRef<typeof receiptContext | null>(receiptContext);\n' +
+    '  const [renderedReceiptContext, setRenderedReceiptContext] = useState(receiptContext);\n' +
+    '  const [completedDownload, setCompletedDownload] = useState<{ context: typeof receiptContext; receipt: ReportReceiptV2 } | null>(null);\n' +
+    '  // Reset context-bound UI before committing the new account/case/authority.\n' +
+    '  // An abandoned render must not change the committed async callback fence.\n' +
+    '  if (renderedReceiptContext !== receiptContext) {\n' +
+    '    setRenderedReceiptContext(receiptContext);\n' +
+    '    setCompletedDownload(null);\n' +
+    '    setBusy(false);\n' +
+    '    setError("");\n' +
+    '  }\n' +
+    '  const downloadReceipt = canGenerateReport && completedDownload?.context === receiptContext ? completedDownload.receipt : null;\n' +
+    '  const [previewDocument, setPreviewDocument] = useState<{ url: string; options: CaseReportOptions; draft: StudioDraft; context: typeof receiptContext } | null>(null);\n' +
+    '  const dialogRef = useRef<HTMLElement | null>(null);\n' +
+    '  const t = (en: string, ru: string) => locale === "en" ? en : ru;\n' +
+    '  const activeReportOptions = useMemo<CaseReportOptions>(() => ({\n' +
+    '    language: locale,\n' +
+    '    presentationMode,\n' +
+    '    includeDecisionTree,\n' +
+    '    profileId,\n' +
+    '    profileLabel: caseTypePlaybook(draft.caseType).outputs.find((output) => output.id === profileId)?.label[locale]\n' +
+    '      ?? primaryCaseOutput(draft.caseType).label[locale],\n' +
+    '    audience,\n' +
+    '    confidentiality,\n' +
+    '    preparedBy,\n' +
+    '    preparedFor,\n' +
+    '    matterReference,\n' +
+    '    includeEconomics,\n' +
+    '    includeRegisters,\n' +
+    '    includeSources,\n' +
+    '    includeAuditTrail,\n' +
+    '    includeTechnicalIds,\n' +
+    '    // Generation time is PDF metadata only and is excluded from both locked fingerprints.\n' +
+    '    generatedAt: "1970-01-01T00:00:00.000Z",\n' +
+    '    currentFingerprint,\n' +
+    '    workspaceFingerprint,\n' +
+    '    currentPublicationFingerprint,\n' +
+    '    workspacePublicationFingerprint,\n' +
+    '    privateCase,\n' +
+    '    reportReceiptStorageScope,\n' +
+    '    persistReportReceiptOnDevice,\n' +
+    '    status,\n' +
+    '    reviewerName,\n' +
+    '    reviewerApproved,\n' +
+    '    redactedNodeIds,\n' +
+    '  }), [\n' +
+    '    audience, confidentiality, currentFingerprint, presentationMode, includeDecisionTree, includeAuditTrail, includeEconomics, includeRegisters,\n' +
+    '    includeSources, includeTechnicalIds, locale, matterReference, persistReportReceiptOnDevice, preparedBy, preparedFor, privateCase,\n' +
+    '    reportReceiptStorageScope,\n' +
+    '    currentPublicationFingerprint, draft.caseType, profileId, redactedNodeIds, reviewerApproved, reviewerName,\n' +
+    '    status, workspaceFingerprint, workspacePublicationFingerprint,\n' +
+    '  ]);\n' +
+    '  const currentReceiptBinding = useMemo(() => {\n' +
+    '    try { return caseReportReceiptBinding(draft, activeReportOptions); }\n' +
+    '    catch { return null; }\n' +
+    '  }, [activeReportOptions, draft]);\n' +
+    '  const previousReceiptIsStale = previousReceipt === null\n' +
+    '    || currentReceiptBinding === null\n' +
+    '    || isReportReceiptStale(previousReceipt, draft, profileId, currentReceiptBinding);\n' +
+    '  const downloadReceiptIsStale = downloadReceipt === null\n' +
+    '    || currentReceiptBinding === null\n' +
+    '    || isReportReceiptStale(downloadReceipt, draft, profileId, currentReceiptBinding);\n' +
+    '  const readiness = useMemo(() => validateReportReadiness(draft, {\n' +
+    '    profileId, status, audience, preparedBy, preparedFor, reviewerName, reviewerApproved,\n' +
+    '    currentFingerprint, workspaceFingerprint, currentPublicationFingerprint, workspacePublicationFingerprint, redactedNodeIds,\n' +
+    '  }), [audience, currentFingerprint, currentPublicationFingerprint, draft, preparedBy, preparedFor, profileId, redactedNodeIds, reviewerApproved, reviewerName, status, workspaceFingerprint, workspacePublicationFingerprint]);\n' +
+    '\n' +
+    '  useLayoutEffect(() => {\n' +
+    '    currentReceiptContext.current = receiptContext;\n' +
+    '    return () => { currentReceiptContext.current = null; };\n' +
+    '  }, [receiptContext]);\n' +
+    '\n' +
+    '  useEffect(() => {\n' +
+    '    const escape = (event: KeyboardEvent) => {\n' +
+    '      if (event.key === "Escape" && !busy) close();\n' +
+    '      if (event.key === "Tab") {\n' +
+    "        const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),summary,a[href],iframe') ?? []).filter(element => element.getClientRects().length > 0);\n" +
+    '        const first = controls[0], last = controls.at(-1);\n' +
+    '        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }\n' +
+    '        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }\n' +
+    '      }\n' +
+    '    };\n' +
+    '    document.addEventListener("keydown", escape);\n' +
+    '    return () => document.removeEventListener("keydown", escape);\n' +
+    '  }, [busy, close]);\n' +
+    '\n' +
+    '  useEffect(() => {\n' +
+    '    const previous = document.activeElement as HTMLElement | null;\n' +
+    '    (dialogRef.current?.querySelector<HTMLButtonElement>("[data-report-preview]:not(:disabled)")\n' +
+    '      ?? dialogRef.current?.querySelector<HTMLButtonElement>("button"))?.focus();\n' +
+    '    return () => { if (previous?.isConnected) previous.focus(); };\n' +
+    '  }, []);\n' +
+    '  useEffect(() => () => { if (previewDocument) URL.revokeObjectURL(previewDocument.url); }, [previewDocument, receiptContext]);\n' +
+    '  // Derive visibility from the exact inputs, so stale previews disappear immediately.\n' +
+    '  const previewUrl = canGenerateReport && previewDocument?.context === receiptContext\n' +
+    '    && previewDocument.options === activeReportOptions && previewDocument.draft === draft ? previewDocument.url : null;\n' +
+    '\n' +
+    '  const verifyOutput = async () => {\n' +
+    '    if (currentReceiptContext.current !== receiptContext || !canGenerateReport) throw new Error("Report context is no longer active.");\n' +
+    '    // Private/workspace callers must provide server-backed authority. Anonymous\n' +
+    '    // local drafts retain their existing entirely local output behavior.\n' +
+    '    if (!verifyReportAuthority && (privateCase || workspaceFingerprint !== null)) throw new Error("Report access could not be verified. Sign in and refresh access.");\n' +
+    '    const authorized = verifyReportAuthority ? await verifyReportAuthority() : () => true;\n' +
+    '    const current = () => currentReceiptContext.current === receiptContext && authorized();\n' +
+    '    if (!current()) throw new Error("Report context is no longer active.");\n' +
+    '    return current;\n' +
+    '  };\n' +
+    '\n' +
+    '  const preview = async () => {\n' +
+    '    if (!canGenerateReport || busy || !draft.title.trim() || !draft.nodes.length) return;\n' +
+    '    setBusy(true); setError("");\n' +
+    '    try {\n' +
+    '      const current = await verifyOutput();\n' +
+    '      const { createCaseReportPreview } = await import("./case-report");\n' +
+    '      const blob = await createCaseReportPreview(draft, { ...'... 16678 more characters
+  
+      at TestContext.<anonymous> (/workspace/sites/genesis-juris-report-v99/tests/case-report.test.ts:752:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: `"use client";\n\nimport { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";\nimport type { StudioDraft } from "./types";\nimport { caseReportReceiptBinding, type CaseReportOptions } from "./case-report";\nimport { caseTypePlaybook, primaryCaseOutput } from "./case-type-playbooks";\nimport { isReportReceiptStale, readStoredReportReceipt, validateReportReadiness, type ReportReceipt, type ReportReceiptV2 } from "./report-model";\nimport { reportGenerationErrorMessage } from "./report-generation-error";\nimport { startReportDownload } from "./report-download";\n\nfunction storedReceipt(caseId: string, profileId: string, scope: string | null, eligible: boolean) {\n  if (typeof window === "undefined") return null;\n  try { return readStoredReportReceipt(window.localStorage, { scope, eligible, caseId, profileId }); }\n  catch { return null; }\n}\n\nexport default function CaseReportDialog({ locale, draft, currentFingerprint, workspaceFingerprint, currentPublicationFingerprint, workspacePublicationFingerprint, privateCase, canGenerateReport, reportAuthorityEpoch = 0, verifyReportAuthority, developerView = false, reportReceiptStorageScope, persistReportReceiptOnDevice, close, completed }: {\n  locale: "en" | "ru";\n  draft: StudioDraft;\n  currentFingerprint: string;\n  workspaceFingerprint: string | null;\n  currentPublicationFingerprint: string;\n  workspacePublicationFingerprint: string | null;\n  privateCase: boolean;\n  canGenerateReport: boolean;\n  reportAuthorityEpoch?: number;\n  verifyReportAuthority?: () => Promise<() => boolean>;\n  developerView?: boolean;\n  reportReceiptStorageScope: string | null;\n  persistReportReceiptOnDevice: boolean;\n  close: () => void;\n  completed: () => void;\n}) {\n  const [audience, setAudience] = useState<CaseReportOptions["audience"]>("internal");\n  const playbook = caseTypePlaybook(draft.caseType);\n  const primaryOutput = primaryCaseOutput(draft.caseType);\n  const [profileId, setProfileId] = useState(primaryOutput.id);\n  const [confidentiality, setConfidentiality] = useState<CaseReportOptions["confidentiality"]>(privateCase ? "confidential" : "draft");\n  const [preparedBy, setPreparedBy] = useState("");\n  const [preparedFor, setPreparedFor] = useState("");\n  const [matterReference, setMatterReference] = useState("");\n  const [status, setStatus] = useState<"draft" | "final">("draft");\n  const [reviewerName, setReviewerName] = useState("");\n  const [reviewerApproved, setReviewerApproved] = useState(false);\n  const [redactedNodeIds, setRedactedNodeIds] = useState<string[]>([]);\n  const [previousReceipt, setPreviousReceipt] = useState<ReportReceipt | null>(() => storedReceipt(\n    draft.caseId,\n    primaryOutput.id,\n    reportReceiptStorageScope,\n    persistReportReceiptOnDevice,\n  ));\n  const [presentationMode, setPresentationMode] = useState<"decision" | "full">("decision");\n  const [includeDecisionTree, setIncludeDecisionTree] = useState(false);\n  const [includeEconomics, setIncludeEconomics] = useState(true);\n  const [includeRegisters, setIncludeRegisters] = useState(true);\n  const [includeSources, setIncludeSources] = useState(true);\n  const [includeAuditTrail, setIncludeAuditTrail] = useState(true);\n  const [includeTechnicalIds, setIncludeTechnicalIds] = useState(false);\n  const [busy, setBusy] = useState(false);\n  const [error, setError] = useState("");\n  const receiptContext = useMemo(() => ({ caseId: draft.caseId, scope: reportReceiptStorageScope, canGenerateReport, reportAuthorityEpoch }), [draft.caseId, reportReceiptStorageScope, canGenerateReport, reportAuthorityEpoch]);\n  const currentReceiptContext = useRef<typeof receiptContext | null>(receiptContext);\n  const [renderedReceiptContext, setRenderedReceiptContext] = useState(receiptContext);\n  const [completedDownload, setCompletedDownload] = useState<{ context: typeof receiptContext; receipt: ReportReceiptV2 } | null>(null);\n  // Reset context-bound UI before committing the new account/case/authority.\n  // An abandoned render must not change the committed async callback fence.\n  if (renderedReceiptContext !== receiptContext) {\n    setRenderedReceiptContext(receiptContext);\n    setCompletedDownload(null);\n    setBusy(false);\n    setError("");\n  }\n  const downloadReceipt = canGenerateReport && completedDownload?.context === receiptContext ? completedDownload.receipt : null;\n  const [previewDocument, setPreviewDocument] = useState<{ url: string; options: CaseReportOptions; draft: StudioDraft; context: typeof receiptContext } | null>(null);\n  const dialogRef = useRef<HTMLElement | null>(null);\n  const t = (en: string, ru: string) => locale === "en" ? en : ru;\n  const activeReportOptions = useMemo<CaseReportOptions>(() => ({\n    language: locale,\n    presentationMode,\n    includeDecisionTree,\n    profileId,\n    profileLabel: caseTypePlaybook(draft.caseType).outputs.find((output) => output.id === profileId)?.label[locale]\n      ?? primaryCaseOutput(draft.caseType).label[locale],\n    audience,\n    confidentiality,\n    preparedBy,\n    preparedFor,\n    matterReference,\n    includeEconomics,\n    includeRegisters,\n    includeSources,\n    includeAuditTrail,\n    includeTechnicalIds,\n    // Generation time is PDF metadata only and is excluded from both locked fingerprints.\n    generatedAt: "1970-01-01T00:00:00.000Z",\n    currentFingerprint,\n    workspaceFingerprint,\n    currentPublicationFingerprint,\n    workspacePublicationFingerprint,\n    privateCase,\n    reportReceiptStorageScope,\n    persistReportReceiptOnDevice,\n    status,\n    reviewerName,\n    reviewerApproved,\n    redactedNodeIds,\n  }), [\n    audience, confidentiality, currentFingerprint, presentationMode, includeDecisionTree, includeAuditTrail, includeEconomics, includeRegisters,\n    includeSources, includeTechnicalIds, locale, matterReference, persistReportReceiptOnDevice, preparedBy, preparedFor, privateCase,\n    reportReceiptStorageScope,\n    currentPublicationFingerprint, draft.caseType, profileId, redactedNodeIds, reviewerApproved, reviewerName,\n    status, workspaceFingerprint, workspacePublicationFingerprint,\n  ]);\n  const currentReceiptBinding = useMemo(() => {\n    try { return caseReportReceiptBinding(draft, activeReportOptions); }\n    catch { return null; }\n  }, [activeReportOptions, draft]);\n  const previousReceiptIsStale = previousReceipt === null\n    || currentReceiptBinding === null\n    || isReportReceiptStale(previousReceipt, draft, profileId, currentReceiptBinding);\n  const downloadReceiptIsStale = downloadReceipt === null\n    || currentReceiptBinding === null\n    || isReportReceiptStale(downloadReceipt, draft, profileId, currentReceiptBinding);\n  const readiness = useMemo(() => validateReportReadiness(draft, {\n    profileId, status, audience, preparedBy, preparedFor, reviewerName, reviewerApproved,\n    currentFingerprint, workspaceFingerprint, currentPublicationFingerprint, workspacePublicationFingerprint, redactedNodeIds,\n  }), [audience, currentFingerprint, currentPublicationFingerprint, draft, preparedBy, preparedFor, profileId, redactedNodeIds, reviewerApproved, reviewerName, status, workspaceFingerprint, workspacePublicationFingerprint]);\n\n  useLayoutEffect(() => {\n    currentReceiptContext.current = receiptContext;\n    return () => { currentReceiptContext.current = null; };\n  }, [receiptContext]);\n\n  useEffect(() => {\n    const escape = (event: KeyboardEvent) => {\n      if (event.key === "Escape" && !busy) close();\n      if (event.key === "Tab") {\n        const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),summary,a[href],iframe') ?? []).filter(element => element.getClientRects().length > 0);\n        const first = controls[0], last = controls.at(-1);\n        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }\n        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }\n      }\n    };\n    document.addEventListener("keydown", escape);\n    return () => document.removeEventListener("keydown", escape);\n  }, [busy, close]);\n\n  useEffect(() => {\n    const previous = document.activeElement as HTMLElement | null;\n    (dialogRef.current?.querySelector<HTMLButtonElement>("[data-report-preview]:not(:disabled)")\n      ?? dialogRef.current?.querySelector<HTMLButtonElement>("button"))?.focus();\n    return () => { if (previous?.isConnected) previous.focus(); };\n  }, []);\n  useEffect(() => () => { if (previewDocument) URL.revokeObjectURL(previewDocument.url); }, [previewDocument, receiptContext]);\n  // Derive visibility from the exact inputs, so stale previews disappear immediately.\n  const previewUrl = canGenerateReport && previewDocument?.context === receiptContext\n    && previewDocument.options === activeReportOptions && previewDocument.draft === draft ? previewDocument.url : null;\n\n  const verifyOutput = async () => {\n    if (currentReceiptContext.current !== receiptContext || !canGenerateReport) throw new Error("Report context is no longer active.");\n    // Private/workspace callers must provide server-backed authority. Anonymous\n    // local drafts retain their existing entirely local output behavior.\n    if (!verifyReportAuthority && (privateCase || workspaceFingerprint !== null)) throw new Error("Report access could not be verified. Sign in and refresh access.");\n    const authorized = verifyReportAuthority ? await verifyReportAuthority() : () => true;\n    const current = () => currentReceiptContext.current === receiptContext && authorized();\n    if (!current()) throw new Error("Report context is no longer active.");\n    return current;\n  };\n\n  const preview = async () => {\n    if (!canGenerateReport || busy || !draft.title.trim() || !draft.nodes.length) return;\n    setBusy(true); setError("");\n    try {\n      const current = await verifyOutput();\n      const { createCaseReportPreview } = await import("./case-report");\n      const blob = await createCaseReportPreview(draft, { ...`... 16678 more characters,
+    expected: /full portrait graph/,
+    operator: 'match',
+    diff: 'simple'
+  }

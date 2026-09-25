@@ -4,14 +4,16 @@ import { resolve } from 'node:path';
 import { normalizeStudioDraft, caseFingerprint, casePublicationFingerprint } from '../app/case-integrity';
 import { buildCaseReportArtifacts, createCaseReportPreview, type CaseReportOptions } from '../app/case-report';
 import { reportReceipt } from '../app/report-model';
-const path = resolve('docs/testing/release-gate-2026-09-23/fiveflats-rent-146000-local-working-copy.studio-draft.json');
+const path = resolve('tests/fixtures/fiveflats-rent-146000.studio-draft.json');
 const input = readFileSync(path);
 const draft = normalizeStudioDraft(JSON.parse(input.toString()));
 const out = process.argv[2];
 if (!out) throw new Error('Supply output directory');
+if (process.argv[3] && process.argv[3] !== '--tree') throw new Error('Supported option: --tree');
+const includeDecisionTree = process.argv[3] === '--tree';
 mkdirSync(out, { recursive: true });
 const options: CaseReportOptions = {
- language:'en', presentationMode:'decision', profileId:'tax_position_memorandum', profileLabel:'Tax position memorandum',
+ language:'en', presentationMode:'decision', includeDecisionTree, profileId:'tax_position_memorandum', profileLabel:'Tax position memorandum',
  audience:'internal', confidentiality:'confidential', preparedBy:'', preparedFor:'', matterReference:'',
  includeEconomics:true, includeRegisters:true, includeSources:true, includeAuditTrail:false, includeTechnicalIds:false,
  generatedAt:new Date().toISOString(), currentFingerprint:caseFingerprint(draft), workspaceFingerprint:null,

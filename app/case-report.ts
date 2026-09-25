@@ -17,6 +17,8 @@ export type CaseReportOptions = {
   language: "en" | "ru";
   /** Existing API callers retain the full format; the dialog defaults to decision. */
   presentationMode?: "decision" | "full";
+  /** Decision reports omit the tree by default; legacy full exports retain it. */
+  includeDecisionTree?: boolean;
   profileId: string;
   profileLabel: string;
   audience: "client" | "internal";
@@ -74,9 +76,10 @@ function reportSafePremise(draft: StudioDraft, language: CaseReportOptions["lang
 }
 
 function effectiveCaseReportOptions(options: CaseReportOptions): CaseReportOptions {
+  const effective = { ...options, includeDecisionTree: options.includeDecisionTree ?? options.presentationMode !== "decision" };
   return (options.audience === "client" || options.presentationMode === "decision") && (options.includeAuditTrail || options.includeTechnicalIds)
-    ? { ...options, includeAuditTrail: false, includeTechnicalIds: false }
-    : options;
+    ? { ...effective, includeAuditTrail: false, includeTechnicalIds: false }
+    : effective;
 }
 
 function money(language: CaseReportOptions["language"], currency: string, value: number | null) {
@@ -192,7 +195,16 @@ function buildCaseReportDefinitionFromModels(
     const visibleIds = new Set(draft.nodes.filter((node) => !redactions.has(node.id)).map((node) => node.id));
     draft = { ...draft, nodes: draft.nodes.filter((node) => visibleIds.has(node.id)), links: draft.links.filter((link) => visibleIds.has(link.from) && visibleIds.has(link.to)) };
   }
-  if (options.presentationMode === "decision") return buildDecisionReport(draft, options, reportModel);
+  if (options.presentationMode === "decision") {
+    const definition = buildDecisionReport(draft, options, reportModel);
+    if (options.includeDecisionTree) {
+      definition.content = [
+        ...(Array.isArray(definition.content) ? definition.content : [definition.content]),
+        ...buildReportGraphAppendix(layoutModel, options, null, [507.28, 749.89]),
+      ];
+    }
+    return definition;
+  }
   const generated = new Date(options.generatedAt);
   const generatedLabel = Number.isNaN(generated.valueOf()) ? options.generatedAt : generated.toLocaleString(language === "en" ? "en-GB" : "ru-RU", { dateStyle: "long", timeStyle: "short", timeZone: "UTC" });
   const classification = draft.classification;
@@ -351,7 +363,7 @@ function buildCaseReportDefinitionFromModels(
   content.push({ text: `${tr(language, "Current content fingerprint", "Отпечаток текущего содержания")}: ${options.currentFingerprint || tr(language, "pending", "ожидается")}`, style: "fingerprint" });
   if (options.includeTechnicalIds && draft.protection) content.push({ text: `${tr(language, "Lineage code", "Код линии версий")}: ${draft.protection.currentCode || "pending"}\n${tr(language, "Copy policy", "Политика копирования")}: ${draft.protection.copyPolicy}`, style: "fingerprint" });
   content.push({ stack: content.splice(verificationStart), unbreakable: true });
-  content.push(...buildReportGraphAppendix(layoutModel, options, sectionNumber++));
+  if (options.includeDecisionTree) content.push(...buildReportGraphAppendix(layoutModel, options, sectionNumber++));
 
   const confidentialityLabel = options.confidentiality.toUpperCase();
   return {
@@ -427,9 +439,10 @@ function caseReportPresentationFingerprint(
     : [];
   return canonicalFingerprint({
     format: "genesis-juris-case-report-presentation-binding",
-    version: 4,
+    version: 5,
     presentationMode: effectiveOptions.presentationMode ?? "full",
-    decisionRendererVersion: "1.0.0",
+    decisionRendererVersion: "1.1.0",
+    includeDecisionTree: effectiveOptions.includeDecisionTree,
     auditSymbolFont: REPORT_AUDIT_SYMBOL_FONT_SHA256,
     reportFingerprint: reportModel.contentFingerprint,
     layoutFingerprint: layoutModel.layoutFingerprint,

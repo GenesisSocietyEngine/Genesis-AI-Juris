@@ -5,7 +5,7 @@ import { decisionEconomics } from "../app/report-decision-analysis";
 import { buildCaseReportArtifacts, caseReportReceiptBinding, type CaseReportOptions } from "../app/case-report";
 import { caseFingerprint, casePublicationFingerprint, normalizeStudioDraft } from "../app/case-integrity";
 
-const draft = normalizeStudioDraft(JSON.parse(readFileSync(new URL("../docs/testing/release-gate-2026-09-23/fiveflats-rent-146000-local-working-copy.studio-draft.json", import.meta.url), "utf8")));
+const draft = normalizeStudioDraft(JSON.parse(readFileSync(new URL("../tests/fixtures/fiveflats-rent-146000.studio-draft.json", import.meta.url), "utf8")));
 const options: CaseReportOptions = {
   language: "en", presentationMode: "decision", profileId: "tax_position_memorandum", profileLabel: "Tax position memorandum",
   audience: "internal", confidentiality: "confidential", preparedBy: "", preparedFor: "", matterReference: "",
@@ -62,6 +62,37 @@ test("formats have different exact receipt identities while non-visible audit co
   assert.equal(decision.reportFingerprint, full.reportFingerprint);
   assert.notEqual(decision.presentationFingerprint, full.presentationFingerprint);
   assert.deepEqual(decision, caseReportReceiptBinding(draft, { ...options, includeAuditTrail: true, includeTechnicalIds: true }));
+});
+test("decision-tree choice controls diagram and text appendix in both report formats", () => {
+  for (const presentationMode of ["decision", "full"] as const) {
+    const off = buildCaseReportArtifacts(draft, { ...options, presentationMode, includeDecisionTree: false });
+    const on = buildCaseReportArtifacts(draft, { ...options, presentationMode, includeDecisionTree: true });
+    const offText = JSON.stringify(off.definition.content), onText = JSON.stringify(on.definition.content);
+    assert.doesNotMatch(offText, /<svg|Complete graph text alternative/);
+    assert.match(onText, /<svg/); assert.match(onText, /Complete graph text alternative/);
+    assert.equal(off.reportModel.contentFingerprint, on.reportModel.contentFingerprint);
+    assert.notEqual(off.presentationFingerprint, on.presentationFingerprint);
+    if (presentationMode === "decision") {
+      assert.match(offText, /Tax position memorandum/);
+      assert.match(onText, /£14,453.70/); assert.match(offText, /£14,453.70/);
+      const base = off.definition.content as unknown[];
+      const appended = on.definition.content as unknown[];
+      // First four narrative pages and their findings do not depend on diagram inclusion.
+      const pageBreak = base.findIndex(item => JSON.stringify(item).includes("What this assessment rests on"));
+      assert.equal(JSON.stringify(appended.slice(0, pageBreak)), JSON.stringify(base.slice(0, pageBreak)));
+    }
+  }
+  assert.equal(caseReportReceiptBinding(draft, options).presentationFingerprint,
+    caseReportReceiptBinding(draft, { ...options, includeDecisionTree: false }).presentationFingerprint);
+  assert.equal(caseReportReceiptBinding(draft, { ...options, presentationMode: "full" }).presentationFingerprint,
+    caseReportReceiptBinding(draft, { ...options, presentationMode: "full", includeDecisionTree: true }).presentationFingerprint);
+});
+test("decision-tree appendix respects redactions and Russian report language", () => {
+  const redactedId = draft.nodes.find(n => n.type === "evidence")!.id;
+  const source = { ...draft, nodes: draft.nodes.map(n => n.id === redactedId ? { ...n, title: "SECRET TREE TITLE", detail: "SECRET TREE DETAIL" } : n) };
+  const s = JSON.stringify(buildCaseReportArtifacts(source, { ...options, includeDecisionTree: true, redactedNodeIds: [redactedId], language: "ru" }).definition.content);
+  assert.doesNotMatch(s, /SECRET TREE TITLE|SECRET TREE DETAIL/);
+  assert.match(s, /Полная текстовая альтернатива графа/);
 });
 test("redacted records and raw intake are absent and economics exclusion is respected", () => {
   const source = { ...draft, premise: "SECRET RAW INTAKE", premisePublication: undefined, nodes: draft.nodes.map(n => n.id === "evidence-1" ? { ...n, title: "SECRET EVIDENCE" } : n) };

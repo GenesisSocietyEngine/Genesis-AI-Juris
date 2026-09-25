@@ -134,6 +134,7 @@ export function caseReportGraphLayoutSvg(
   layout: ReportGraphLayoutModel,
   pageId: string,
   language: CaseReportOptions["language"],
+  transparentBackground = false,
 ) {
   const page = layout.graphPages.find((candidate) => candidate.id === pageId);
   if (!page) throw new Error(`Unknown report graph page ${pageId}`);
@@ -178,13 +179,13 @@ export function caseReportGraphLayoutSvg(
     svgLine(`${tr(language, "Layout", "Макет")} ${layout.layoutSchemaVersion} · ${layout.layoutAlgorithmVersion} · ${layout.layoutRendererVersion}`, layout.footerFrame.x, layout.footerFrame.y + 3_500, 6_200, "#53666e"),
     svgLine(layout.layoutFingerprint, layout.footerFrame.x, layout.footerFrame.y + 6_600, 5_800, "#66777e"),
   ].join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${layout.printableFrame.x} ${layout.printableFrame.y} ${layout.printableFrame.width} ${layout.printableFrame.height}" preserveAspectRatio="xMidYMid meet"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="${palette.cyan}"/></marker><marker id="arrowGold" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="${palette.gold}"/></marker></defs><rect x="${layout.printableFrame.x}" y="${layout.printableFrame.y}" width="${layout.printableFrame.width}" height="${layout.printableFrame.height}" fill="${palette.mist}"/>${header}${paths.join("")}${connectorParts.map((part) => part.line).join("")}${nodes.map((node) => svgNode(node, layout)).join("")}${connectorParts.map((part) => part.marker).join("")}${footer}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${layout.printableFrame.x} ${layout.printableFrame.y} ${layout.printableFrame.width} ${layout.printableFrame.height}" preserveAspectRatio="xMidYMid meet"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="${palette.cyan}"/></marker><marker id="arrowGold" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="${palette.gold}"/></marker></defs><rect x="${layout.printableFrame.x}" y="${layout.printableFrame.y}" width="${layout.printableFrame.width}" height="${layout.printableFrame.height}" fill="${transparentBackground ? "none" : palette.mist}"/>${header}${paths.join("")}${connectorParts.map((part) => part.line).join("")}${nodes.map((node) => svgNode(node, layout)).join("")}${connectorParts.map((part) => part.marker).join("")}${footer}</svg>`;
 }
 
 function graphTextAlternative(
   layout: ReportGraphLayoutModel,
   options: CaseReportOptions,
-  sectionIndex: number,
+  sectionIndex: number | null,
 ): Content[] {
   const { language } = options;
   const nodeById = new Map(layout.nodes.map((node) => [node.id, node]));
@@ -198,7 +199,7 @@ function graphTextAlternative(
   );
   const content: Content[] = [
     {
-      text: `${sectionIndex}. ${tr(language, "Complete graph text alternative", "Полная текстовая альтернатива графа")}`,
+      text: `${sectionIndex === null ? "" : `${sectionIndex}. `}${tr(language, "Complete graph text alternative", "Полная текстовая альтернатива графа")}`,
       style: "sectionTitle",
       pageBreak: "before",
       margin: [0, 0, 0, 8],
@@ -274,14 +275,15 @@ function graphTextAlternative(
 export function buildReportGraphAppendix(
   layout: ReportGraphLayoutModel,
   options: CaseReportOptions,
-  sectionIndex: number,
+  sectionIndex: number | null,
+  availableFrame?: [number, number],
 ): Content[] {
   const graphPages = layout.graphPages.map((page) => ({
     pageBreak: "before",
-    svg: caseReportGraphLayoutSvg(layout, page.id, options.language),
+    svg: caseReportGraphLayoutSvg(layout, page.id, options.language, options.presentationMode === "decision"),
     fit: [
-      micrometresToPoints(layout.printableFrame.width),
-      micrometresToPoints(layout.printableFrame.height),
+      Math.min(micrometresToPoints(layout.printableFrame.width), availableFrame?.[0] ?? Infinity),
+      Math.min(micrometresToPoints(layout.printableFrame.height), availableFrame?.[1] ?? Infinity),
     ],
     margin: [0, 0, 0, 0],
   } as Content));

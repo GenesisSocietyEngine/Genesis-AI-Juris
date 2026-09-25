@@ -749,8 +749,8 @@ test("receipt freshness derives the exact production layout and the legacy lands
   assert.match(dialogSource, /caseReportReceiptBinding\(draft, activeReportOptions\)/);
   assert.match(dialogSource, /isReportReceiptStale\(previousReceipt, draft, profileId, currentReceiptBinding\)/);
   assert.match(dialogSource, /Current content and layout receipt found/);
-  assert.match(dialogSource, /full portrait graph/);
-  assert.match(dialogSource, /complete text alternative/);
+  assert.match(dialogSource, /Include decision tree/);
+  assert.match(dialogSource, /The decision tree and its text alternative are omitted/);
   assert.match(dialogSource, /readStoredReportReceipt\(window\.localStorage/);
   assert.match(reportSource, /try \{\s+writeStoredReportReceipt\(window\.localStorage/, "blocked browser storage cannot fail a completed PDF download");
   assert.doesNotMatch(dialogSource, /localStorage\.getItem/);

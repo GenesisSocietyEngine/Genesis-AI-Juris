@@ -50,6 +50,7 @@ export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptio
     { text: "GENESIS: JURIS", style: "brand", margin: [0, 2, 0, 20] },
     { text: t("DECISION REPORT", "ОТЧЁТ ДЛЯ ПРИНЯТИЯ РЕШЕНИЯ"), style: "eyebrow", margin: [0, 0, 0, 10] },
     { text: draft.title, style: "h1", margin: [0, 0, 0, 10] },
+    { text: `${t("Report purpose", "Назначение отчёта")}: ${options.profileLabel.trim() || t("Case decision review", "Проверка решения по делу")}`, color: muted, fontSize: 10, margin: [0, 0, 0, 8] },
     { text: `${status} · ${options.confidentiality.toUpperCase()} · ${options.generatedAt.slice(0, 10)}`, style: "small", margin: [0, 0, 0, 10] },
     box(recommendation, rationale, adverse),
   ];
@@ -167,7 +168,9 @@ export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptio
   content.push(h(t("Reading the measures", "Как читать показатели")));
   content.push(p(t("Cash flow = gross income − operating costs − structure costs − debt service. Debt coverage = available income ÷ debt service. Cash-on-cash = cash after debt ÷ known initial cash. All figures here exclude tax and unpriced costs. Sensitivities are hypothetical, not likelihood estimates.", "Поток = валовой доход − операционные расходы − расходы структуры − обслуживание долга. Покрытие = доступный доход ÷ обслуживание долга. Доходность капитала = поток после долга ÷ известный первоначальный капитал. Показатели исключают налоги и неоценённые затраты. Сценарии гипотетические, не вероятностные.")));
   }
-  content.push(p(t("For the full graph, complete records and audit details, choose Full analysis in report settings. The separate download receipt binds the exact case content and report presentation.", "Полный граф, записи и аудит доступны в формате «Полный анализ» в настройках отчёта. Отдельная квитанция связывает точное содержание дела и представление отчёта.")));
+  content.push(p(options.includeDecisionTree
+    ? t("The decision tree and its text alternative follow as an appendix. Complete records and audit details remain available in Full analysis.", "Дерево решений и его текстовая альтернатива приведены в приложении. Полные записи и аудит доступны в формате «Полный анализ».")
+    : t("The decision tree is omitted. Enable Include decision tree in report settings to add it. Complete records and audit details remain available in Full analysis.", "Дерево решений не включено. Включите параметр «Включить дерево решений» в настройках отчёта, чтобы добавить его. Полные записи и аудит доступны в формате «Полный анализ».")));
   if (options.preparedBy || options.preparedFor || options.matterReference) content.push({ text: [options.preparedBy && `${t("Prepared by", "Подготовил")}: ${options.preparedBy}`, options.preparedFor && `${t("For", "Для")}: ${options.preparedFor}`, options.matterReference].filter(Boolean).join(" · "), style: "small" });
   content.push({ stack: content.splice(evidenceStart), fontSize: 9.4, lineHeight: 1.15 });
   return {
@@ -175,7 +178,11 @@ export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptio
     defaultStyle: { font: "Roboto", fontSize: 10.2, color: ink, lineHeight: 1.2 }, content,
     header: n => n === 1 ? null : ({ text: "GENESIS: JURIS  /  " + t("Decision report", "Отчёт для решения"), color: muted, fontSize: 8, margin: [44, 24, 44, 0] }),
     footer: (n, total) => ({ columns: [{ text: `${options.confidentiality.toUpperCase()} · ${status}` }, { text: `${n} / ${total}`, alignment: "right" }], color: muted, fontSize: 8, margin: [44, 0, 44, 20] }),
-    styles: { brand: { bold: true, fontSize: 11, color: teal, characterSpacing: 1.1 }, eyebrow: { bold: true, fontSize: 8, characterSpacing: 1.3, color: teal }, h1: { bold: true, fontSize: 24, lineHeight: 1.05 }, h2: { bold: true, fontSize: 13 }, small: { fontSize: 8.3, color: muted, lineHeight: 1.2 } },
+    styles: { brand: { bold: true, fontSize: 11, color: teal, characterSpacing: 1.1 }, eyebrow: { bold: true, fontSize: 8, characterSpacing: 1.3, color: teal }, h1: { bold: true, fontSize: 24, lineHeight: 1.05 }, h2: { bold: true, fontSize: 13 }, small: { fontSize: 8.3, color: muted, lineHeight: 1.2 },
+      sectionTitle: { bold: true, fontSize: 18, color: ink }, subheading: { bold: true, fontSize: 12, color: ink },
+      notice: { fontSize: 9, color: muted, margin: [0, 2, 0, 10] }, body: { fontSize: 10, lineHeight: 1.2 },
+      graphNodeType: { bold: true, fontSize: 8, color: teal }, graphNodeDetail: { fontSize: 9, color: ink, lineHeight: 1.2 },
+    },
     info: { title: `${draft.title} - Decision report`, author: options.preparedBy || "GENESIS: JURIS", creator: "GENESIS: JURIS", subject: `${draft.caseId} / v${draft.version} / decision-report-v1` },
   };
 }

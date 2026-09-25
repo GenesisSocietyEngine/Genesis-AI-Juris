@@ -166,6 +166,24 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
     assert.deepEqual(JSON.parse(await downloads[1].blob.text()), pdf.receipts[0], "export exactly the returned receipt, without fake PDF hash/output IDs");
     assert.deepEqual(storageWrites, [], "private sealed receipts must remain outside browser storage");
 
+    const treeSwitch = elements(tree).find(element => element.type === "input" && element.props.role === "switch");
+    assert.ok(treeSwitch); assert.equal(treeSwitch.props.checked, false, "decision tree defaults OFF");
+    await click(tree, "Preview PDF"); tree = render();
+    assert.ok(elements(tree).some(element => element.type === "iframe"), "OFF preview is available");
+    (treeSwitch.props.onChange as (event: unknown) => void)({ target: { checked: true } });
+    tree = render();
+    assert.match(text(tree), /earlier PDF download/, "tree change makes previous receipt stale");
+    assert.ok(!elements(tree).some(element => element.type === "iframe"), "tree change clears old preview");
+    const format = elements(tree).find(element => element.type === "select" && element.props.value === "decision")!;
+    (format.props.onChange as (event: unknown) => void)({ target: { value: "full" } });
+    tree = render();
+    assert.equal(elements(tree).find(element => element.type === "input" && element.props.role === "switch")?.props.checked, true, "format switch retains explicit tree selection");
+    const fullFormat = elements(tree).find(element => element.type === "select" && element.props.value === "full")!;
+    (fullFormat.props.onChange as (event: unknown) => void)({ target: { value: "decision" } });
+    (treeSwitch.props.onChange as (event: unknown) => void)({ target: { checked: false } });
+    tree = render();
+    assert.match(text(tree), /matches the current case and report settings/, "returning to exact options recovers receipt match");
+
     const preparedBy = elements(tree).find(element => element.type === "input" && element.props.placeholder === "Name / firm");
     assert.ok(preparedBy);
     (preparedBy.props.onChange as (event: unknown) => void)({ target: { value: "Synthetic changed preparer" } });
