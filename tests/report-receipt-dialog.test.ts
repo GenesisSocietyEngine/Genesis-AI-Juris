@@ -174,7 +174,8 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
     tree = render();
     assert.match(text(tree), /earlier PDF download/, "tree change makes previous receipt stale");
     assert.ok(!elements(tree).some(element => element.type === "iframe"), "tree change clears old preview");
-    const format = elements(tree).find(element => element.type === "select" && element.props.value === "decision")!;
+    const format = elements(tree).find(element => element.type === "select" && element.props.value === "medium")!;
+    assert.ok(format, "tree ON selects the Medium preset");
     (format.props.onChange as (event: unknown) => void)({ target: { value: "full" } });
     tree = render();
     assert.equal(elements(tree).find(element => element.type === "input" && element.props.role === "switch")?.props.checked, true, "format switch retains explicit tree selection");
@@ -183,6 +184,14 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
     (treeSwitch.props.onChange as (event: unknown) => void)({ target: { checked: false } });
     tree = render();
     assert.match(text(tree), /matches the current case and report settings/, "returning to exact options recovers receipt match");
+    const baseFormat = elements(tree).find(element => element.type === "select" && element.props.value === "decision")!;
+    (baseFormat.props.onChange as (event: unknown) => void)({ target: { value: "medium" } });
+    tree = render();
+    assert.equal(elements(tree).find(element => element.type === "input" && element.props.role === "switch")?.props.checked, true);
+    const mediumTreeSwitch = elements(tree).find(element => element.type === "input" && element.props.role === "switch")!;
+    (mediumTreeSwitch.props.onChange as (event: unknown) => void)({ target: { checked: false } });
+    tree = render();
+    assert.ok(elements(tree).some(element => element.type === "select" && element.props.value === "decision"), "Medium OFF returns to Base");
 
     const preparedBy = elements(tree).find(element => element.type === "input" && element.props.placeholder === "Name / firm");
     assert.ok(preparedBy);

@@ -5,6 +5,7 @@ import { workspaceDestination, workspaceSignInPath } from "./workspace-navigatio
 import { useNavigationController, useNavigationSession } from "./NavigationSession";
 import { isWorkspaceDepartureClick } from "./departure-click";
 import type { DepartureRisk, DeparturePlan } from "./navigation-controller";
+import { organizationDisplayLabel } from "./organization-label";
 
 export const WORKSPACE_PAGES = [
   { path: "/studio", view: "studio", en: "Case Studio", ru: "Студия кейсов", icon: "studio" },
@@ -53,6 +54,7 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
   const navigation = useNavigationController();
   const session = useNavigationSession();
   const en = locale === "en";
+  const organizationLabel = session.selected ? organizationDisplayLabel(session.selected, session.organizations, locale) : (en ? "No organization selected" : "Организация не выбрана");
   const href = (path: string) => workspaceDestination(path, location);
   function closeMore() { if (moreRef.current) moreRef.current.open = false; }
   function closeDrawer(focus = false) { drawerRef.current?.close();setDrawerOpen(false);if(focus)menuButton.current?.focus(); }
@@ -104,10 +106,10 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
     <div className="genesis-nav-lower">
       {session.phase==="ready"&&session.identity&&<nav className="genesis-nav-organization" aria-label={en?"Organization controls":"Организация"}>
         <details ref={organizationRef} className="genesis-organization-picker">
-          <summary><WorkspaceIcon name="organization"/><span><small>{en?"Organization":"Организация"}</small><b title={session.selected?.name}>{session.selected?.name??(en?"No organization selected":"Организация не выбрана")}</b></span><span aria-hidden="true">⌄</span></summary>
+          <summary><WorkspaceIcon name="organization"/><span><small>{en?"Organization":"Организация"}</small><b title={organizationLabel}>{session.selected?.name??organizationLabel}</b>{session.selected&&<small>{organizationLabel.slice(session.selected.name.length+3)}</small>}</span><span aria-hidden="true">⌄</span></summary>
           <div className="genesis-organization-options">
             <p>{en?"Switching organization opens its case list.":"Смена организации открывает её список дел."}</p>
-            {session.organizations.map(o=><button type="button" key={o.id} disabled={session.busy} aria-current={session.selected?.id===o.id?"true":undefined} onClick={()=>void depart("organization",o.id)}>{o.name}{session.selected?.id===o.id&&<small>{en?"Current":"Текущая"}</small>}</button>)}
+            {session.organizations.map(o=><button type="button" key={o.id} disabled={session.busy} aria-current={session.selected?.id===o.id?"true":undefined} onClick={()=>void depart("organization",o.id)}>{organizationDisplayLabel(o,session.organizations,locale)}{session.selected?.id===o.id&&<small>{en?"Current":"Текущая"}</small>}</button>)}
             {!session.organizations.length&&<p>{en?"No active memberships.":"Нет активного членства."}</p>}
           </div>
         </details>

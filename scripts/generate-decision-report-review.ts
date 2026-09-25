@@ -9,11 +9,12 @@ const input = readFileSync(path);
 const draft = normalizeStudioDraft(JSON.parse(input.toString()));
 const out = process.argv[2];
 if (!out) throw new Error('Supply output directory');
-if (process.argv[3] && process.argv[3] !== '--tree') throw new Error('Supported option: --tree');
-const includeDecisionTree = process.argv[3] === '--tree';
+if (process.argv[3] && !['--tree', '--medium'].includes(process.argv[3])) throw new Error('Supported options: --tree or --medium');
+const presentationMode = process.argv[3] === '--medium' ? 'medium' : 'decision';
+const includeDecisionTree = process.argv[3] === '--tree' || presentationMode === 'medium';
 mkdirSync(out, { recursive: true });
 const options: CaseReportOptions = {
- language:'en', presentationMode:'decision', includeDecisionTree, profileId:'tax_position_memorandum', profileLabel:'Tax position memorandum',
+ language:'en', presentationMode, includeDecisionTree, profileId:'tax_position_memorandum', profileLabel:'Tax position memorandum',
  audience:'internal', confidentiality:'confidential', preparedBy:'', preparedFor:'', matterReference:'',
  includeEconomics:true, includeRegisters:true, includeSources:true, includeAuditTrail:false, includeTechnicalIds:false,
  generatedAt:new Date().toISOString(), currentFingerprint:caseFingerprint(draft), workspaceFingerprint:null,

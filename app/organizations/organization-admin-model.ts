@@ -28,6 +28,8 @@ export function organizationIssue(issue: AdminIssue, locale: "en" | "ru") {
     message = t("This person's access is suspended. Use Restore access in the members list instead of creating an invitation.", "Доступ этого человека приостановлен. Используйте «Восстановить доступ» в списке участников вместо нового приглашения.");
   } else if (issue.code === "invitation_member_removed") {
     message = t("This membership was removed and cannot be reopened by invitation. Review its history with the organization owner.", "Это членство удалено; новое приглашение не может его восстановить. Обсудите историю доступа с владельцем организации.");
+  } else if (issue.code === "invitation_email_entered") {
+    message = t("Enter a member ID instead of an email address. Ask the recipient to sign in to this site, open Manage organizations, and copy Your member ID.", "Введите идентификатор участника вместо email. Попросите получателя войти на этот сайт, открыть «Управление организациями» и скопировать «Ваш идентификатор».");
   } else if (issue.code === "invitation_fields_invalid") {
     message = t("Enter the recipient's complete member ID, not an email address or your own ID.", "Введите полный идентификатор получателя, а не email или собственный идентификатор.");
   } else if (issue.scope === "accept" && issue.status === 404) {
@@ -57,6 +59,7 @@ export function organizationIssue(issue: AdminIssue, locale: "en" | "ru") {
 
 export function invitationRecipientIssue(value: string, actorId: string, members: Array<{ actorId: string; status: string }>) {
   const recipient = value.trim();
+  if (recipient.includes("@")) return "invitation_email_entered";
   if (recipient === actorId) return "invitation_self";
   if (!/^[A-Za-z0-9_-]{20,128}$/.test(recipient)) return "invitation_fields_invalid";
   const existing = members.find(member => member.actorId === recipient);

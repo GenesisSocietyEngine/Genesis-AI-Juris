@@ -8,6 +8,7 @@ import { useInterfaceLocale, useWorkspaceLocation } from "../use-interface-local
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import type { ClientOrganization } from "../organization-client";
+import { organizationDisplayLabel } from "../organization-label";
 import { workspaceDestination } from "../workspace-navigation";
 import { invitationRecipientIssue, organizationIssue, validOrganizationReceipt, type AdminIssue } from "./organization-admin-model";
 import { readWithTimeout, ReadTimeoutError } from "../read-with-timeout";
@@ -35,6 +36,8 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
   const refreshSelection = useRef<string | undefined>(undefined);
   const t = (en: string, ru: string) => locale === "ru" ? ru : en;
   const selected = workspace?.selected;
+  const recipientIsEmail = recipient.includes("@");
+  const organizationLabel = (o: ClientOrganization) => organizationDisplayLabel(o,workspace?.organizations??[],locale);
   const owner = selected?.role === "org_owner";
   const accountUrl = workspaceDestination("/account", location);
   const orgHref = (id:string) => "/organizations?organization="+encodeURIComponent(id)+"&lang="+locale;
@@ -165,12 +168,14 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
     {!needsProfile && !canLoad && session.phase!=="checking" && <section className={styles.panel}><p role="status">{t("Verify your account access to load organizations. Your private organization details remain hidden.", "Подтвердите доступ к аккаунту, чтобы загрузить организации. Приватные данные организации скрыты.")}</p><button type="button" disabled={busy||session.busy} onClick={()=>void refresh()}>{t("Refresh access", "Обновить доступ")}</button></section>}
     {workspace && visible && <>
       {workspace.selectionIssue&&<div className={styles.issue} role="alert">{t("Your previous organization selection is no longer current. Choose an available organization below.","Предыдущий выбор организации устарел. Выберите доступную организацию ниже.")}</div>}
-      <div className={styles.sessionContext}><span>{issue?.status===401?t("Session expired", "Сеанс истёк"):t("Account connected", "Аккаунт подключён")}</span><span>{selected?t("Managing: ","Управление: ")+selected.name:t("Choose an organization","Выберите организацию")}</span></div>
+      <div className={styles.sessionContext}><span>{issue?.status===401?t("Session expired", "Сеанс истёк"):t("Account connected", "Аккаунт подключён")}</span><span>{selected?t("Managing: ","Управление: ")+organizationLabel(selected):t("Choose an organization","Выберите организацию")}</span></div>
       <div className={styles.grid}>
         <section className={styles.panel}><h2>{t("Your organizations", "Ваши организации")}</h2>
+          <p className={styles.help}>{t("Access changed in another tab? Refresh to load your current organizations and membership details without submitting a form again.", "Доступ изменился в другой вкладке? Обновите список организаций и сведения о членстве без повторной отправки формы.")}</p>
+          <button type="button" className={styles.secondary} disabled={busy} onClick={()=>void refresh()}>{t("Refresh organization details", "Обновить данные организации")}</button>
           {feedback("select")}
           <ul className={styles.organizations}>{workspace.organizations.map((o) => <li key={o.id}>
-            <a href={orgHref(o.id)} onClick={event=>{if(!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();navigation.requestDeparture("link",orgHref(o.id));}}} aria-current={selected?.id === o.id ? "page" : undefined}>{o.name}</a>
+            <a href={orgHref(o.id)} onClick={event=>{if(!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();navigation.requestDeparture("link",orgHref(o.id));}}} aria-current={selected?.id === o.id ? "page" : undefined}>{organizationLabel(o)}</a>
             <span>{roleLabel(o.role)} · {t(o.status, { active: "Активна", suspended: "Приостановлена", closed: "Закрыта" }[o.status] ?? o.status)}</span>
             <span className={styles.actions}><a className={styles.manageLink} href={orgHref(o.id)} onClick={event=>{if(!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();navigation.requestDeparture("link",orgHref(o.id));}}}>{selected?.id===o.id?t("Selected", "Выбрана"):t("Manage", "Управлять")}</a>
             {o.status === "active" && <button disabled={busy} onClick={()=>navigation.requestDeparture(selected?.id===o.id?"link":"organization",selected?.id===o.id?"/matters?organization="+encodeURIComponent(o.selection)+"&lang="+locale:o.id)}>{t("Open cases", "Открыть дела")}</button>}</span>
@@ -181,13 +186,13 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
           </fieldset></form></details>
         </section>
         <section className={styles.panel}><h2>{t("Join an organization", "Вступить в организацию")}</h2>
-          <p>{t("Share your member ID with the organization owner to receive an invitation.", "Передайте свой идентификатор владельцу организации для получения приглашения.")}</p>
+          <p>{t("Share your member ID with the organization owner to receive an invitation. Copy it from this site: IDs from another review or production site may differ.", "Передайте свой идентификатор владельцу организации для получения приглашения. Скопируйте его с этого сайта: идентификаторы в тестовой и основной версиях могут различаться.")}</p>
           <label>{t("Your member ID — share with an owner", "Ваш идентификатор — передайте владельцу")}<input readOnly value={workspace.actorId} onFocus={(event) => event.target.select()} /></label>
           <form onSubmit={(event) => submit(event, { action: "accept" })}><fieldset disabled={busy}><label>{t("Invitation code", "Код приглашения")}<input name="token" autoComplete="off" required maxLength={200} /></label>
             <button disabled={busy}>{t("Accept invitation", "Принять приглашение")}</button>{feedback("accept")}</fieldset></form>
         </section>
       </div>
-      {selected && <section className={styles.panel} id="organization-users" tabIndex={-1} key={workspace.actorId+":"+selected.id}><h2>{selected.name}</h2>
+      {selected && <section className={styles.panel} id="organization-users" tabIndex={-1} key={workspace.actorId+":"+selected.id}><h2>{organizationLabel(selected)}</h2>
         <p>{t("Organization roles control team administration. Access to each case is assigned separately. Review the person's role and status before changing access.", "Роли организации управляют командой. Доступ к каждому делу назначается отдельно. Перед изменением доступа проверьте роль и статус участника.")}</p>
         {workspace.members.length > 0 && <div className={styles.tableWrap}><table><caption>{t("Members and organization access", "Участники и доступ к организации")}</caption><thead><tr><th>{t("Name", "Имя")}</th><th>{t("Role", "Роль")}</th><th>{t("Status", "Статус")}</th><th>{t("Access", "Доступ")}</th></tr></thead><tbody>
           {workspace.members.map((m) => <tr key={m.actorId}><td>{m.name}{m.actorId===workspace.actorId&&<small className={styles.you}>{t("You", "Вы")}</small>}</td><td>{roleLabel(m.role)}</td><td>{t(m.status, { active: "Активен", suspended: "Приостановлен", removed: "Удалён" }[m.status] ?? m.status)}</td><td>
@@ -198,10 +203,11 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
         {feedback("member")}
         {!owner&&<p className={styles.help}>{t("Only the organization owner can invite members and change their access. Administrator, auditor and case roles have separate permissions.","Только владелец организации может приглашать участников и менять их доступ. Администратор, аудитор и роли в делах имеют отдельные полномочия.")}</p>}
         {owner && selected.status === "active" && <form className={styles.invite} onSubmit={(event) => submit(event, { action: "invite", organizationId: selected.id })}>
-          <fieldset disabled={busy}><h3>{t("Invite another person", "Пригласить другого человека")}</h3><p className={styles.help}>{t("Ask the recipient to sign in and share their member ID from this page. Your own account already has access.","Попросите получателя войти и передать свой идентификатор с этой страницы. У вашего аккаунта уже есть доступ.")}</p>
-          <label>{t("Recipient member ID", "Идентификатор получателя")}<input name="recipientActorId" value={recipient} onChange={e=>{setRecipient(e.target.value);if(issue?.scope==="invite")setIssue(null);}} aria-invalid={issue?.scope==="invite"||undefined} aria-describedby={issue?.scope==="invite"?"admin-issue-invite":undefined} autoComplete="off" spellCheck={false} required minLength={20} maxLength={128} /></label>
+          <fieldset disabled={busy}><h3>{t("Invite another person", "Пригласить другого человека")}</h3><p className={styles.help} id="invite-recipient-help">{t("Ask the recipient to sign in to this site, open Manage organizations and copy Your member ID. Enter that ID here, not their email. People already in the members list do not need another invitation.","Попросите получателя войти на этот сайт, открыть «Управление организациями» и скопировать «Ваш идентификатор». Введите этот идентификатор, а не email. Участникам из списка не нужно повторное приглашение.")}</p>
+          <label>{t("Recipient member ID", "Идентификатор получателя")}<input name="recipientActorId" value={recipient} onChange={e=>{setRecipient(e.target.value);if(issue?.scope==="invite")setIssue(null);}} aria-invalid={recipientIsEmail||issue?.scope==="invite"||undefined} aria-describedby={["invite-recipient-help",recipientIsEmail?"invite-email-error":"",issue?.scope==="invite"?"admin-issue-invite":""].filter(Boolean).join(" ")} autoComplete="off" spellCheck={false} required minLength={20} maxLength={128} /></label>
+          {recipientIsEmail&&<p className={styles.issue} id="invite-email-error" role="status">{organizationIssue({code:"invitation_email_entered",status:400,scope:"invite"},locale).message}</p>}
           <label>{t("Organization role", "Роль в организации")}<select name="role"><option value="member">{roleLabel("member")}</option><option value="org_admin">{roleLabel("org_admin")}</option><option value="auditor">{roleLabel("auditor")}</option></select></label>
-          <button disabled={busy}>{t("Create invitation", "Создать приглашение")}</button>{feedback("invite")}</fieldset>
+          <button disabled={busy||recipientIsEmail}>{t("Create invitation", "Создать приглашение")}</button>{feedback("invite")}</fieldset>
         </form>}
         {invitation?.organizationId===selected.id && <div className={styles.token} role="status"><p>{t("Copy this code for the recipient. It expires in 24 hours and can be used once.", "Скопируйте код для получателя. Он действует 24 часа и может быть использован один раз.")}</p><input aria-label={t("Invitation code to share", "Код для передачи получателю")} readOnly value={invitation.token} onFocus={(e) => e.target.select()} /><button type="button" className={styles.secondary} onClick={()=>setInvitation(null)}>{t("I have copied the code — dismiss", "Код скопирован — скрыть")}</button></div>}
         {selected.kind === "team" && <details><summary>{t("Organization lifecycle", "Статус организации")}</summary>

@@ -16,7 +16,7 @@ import type { Content, ContentTable, ContentText, TDocumentDefinitions, TableCel
 export type CaseReportOptions = {
   language: "en" | "ru";
   /** Existing API callers retain the full format; the dialog defaults to decision. */
-  presentationMode?: "decision" | "full";
+  presentationMode?: "decision" | "medium" | "full";
   /** Decision reports omit the tree by default; legacy full exports retain it. */
   includeDecisionTree?: boolean;
   profileId: string;
@@ -76,8 +76,8 @@ function reportSafePremise(draft: StudioDraft, language: CaseReportOptions["lang
 }
 
 function effectiveCaseReportOptions(options: CaseReportOptions): CaseReportOptions {
-  const effective = { ...options, includeDecisionTree: options.includeDecisionTree ?? options.presentationMode !== "decision" };
-  return (options.audience === "client" || options.presentationMode === "decision") && (options.includeAuditTrail || options.includeTechnicalIds)
+  const effective = { ...options, includeDecisionTree: options.presentationMode === "medium" || (options.includeDecisionTree ?? options.presentationMode !== "decision") };
+  return (options.audience === "client" || options.presentationMode === "decision" || options.presentationMode === "medium") && (options.includeAuditTrail || options.includeTechnicalIds)
     ? { ...effective, includeAuditTrail: false, includeTechnicalIds: false }
     : effective;
 }
@@ -195,12 +195,12 @@ function buildCaseReportDefinitionFromModels(
     const visibleIds = new Set(draft.nodes.filter((node) => !redactions.has(node.id)).map((node) => node.id));
     draft = { ...draft, nodes: draft.nodes.filter((node) => visibleIds.has(node.id)), links: draft.links.filter((link) => visibleIds.has(link.from) && visibleIds.has(link.to)) };
   }
-  if (options.presentationMode === "decision") {
+  if (options.presentationMode === "decision" || options.presentationMode === "medium") {
     const definition = buildDecisionReport(draft, options, reportModel);
     if (options.includeDecisionTree) {
       definition.content = [
         ...(Array.isArray(definition.content) ? definition.content : [definition.content]),
-        ...buildReportGraphAppendix(layoutModel, options, null, [507.28, 749.89]),
+        ...buildReportGraphAppendix(layoutModel, options, null, [507.28, 749.89], options.presentationMode !== "medium"),
       ];
     }
     return definition;
@@ -441,7 +441,7 @@ function caseReportPresentationFingerprint(
     format: "genesis-juris-case-report-presentation-binding",
     version: 5,
     presentationMode: effectiveOptions.presentationMode ?? "full",
-    decisionRendererVersion: "1.1.0",
+    decisionRendererVersion: effectiveOptions.presentationMode === "medium" ? "1.2.0" : "1.1.0",
     includeDecisionTree: effectiveOptions.includeDecisionTree,
     auditSymbolFont: REPORT_AUDIT_SYMBOL_FONT_SHA256,
     reportFingerprint: reportModel.contentFingerprint,

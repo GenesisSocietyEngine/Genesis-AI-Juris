@@ -104,7 +104,7 @@ function svgLine(
   return `<text x="${x + inkLeft}" y="${y}" font-family="Roboto" font-size="${milliPointsToMicrometres(sizeMilliPoints)}" font-weight="${medium ? "bold" : "normal"}" data-font-face="${medium ? "Roboto-Medium" : "Roboto-Regular"}" fill="${color}" text-anchor="${anchor}">${xml(value)}</text>`;
 }
 
-function svgNode(node: ReportGraphLayoutNode, layout: ReportGraphLayoutModel) {
+function svgNode(node: ReportGraphLayoutNode, layout: ReportGraphLayoutModel, simplified = false, language: CaseReportOptions["language"] = "en") {
   const styles = layout.typography.styles;
   const paddingX = layout.nodeGeometry.paddingX;
   const paddingY = layout.nodeGeometry.paddingY;
@@ -123,7 +123,7 @@ function svgNode(node: ReportGraphLayoutNode, layout: ReportGraphLayoutModel) {
     cursor += styles.detail.lineHeight;
   }
   if (node.text.detail.referenceLine) {
-    lines.push(svgLine(node.text.detail.referenceLine.text, textX, cursor + styles.detailReference.lineHeight * 0.78, styles.detailReference.sizeMilliPoints, palette.red, "medium"));
+    lines.push(svgLine(simplified ? tr(language, "See Full analysis", "См. полный анализ") : node.text.detail.referenceLine.text, textX, cursor + styles.detailReference.lineHeight * 0.78, styles.detailReference.sizeMilliPoints, palette.red, "medium"));
   }
   return `<g data-node-id="${xml(node.id)}"><rect x="${node.box.x}" y="${node.box.y}" width="${node.box.width}" height="${node.box.height}" rx="1200" fill="#ffffff" stroke="${palette.line}" stroke-width="${REPORT_GRAPH_NODE_STROKE_WIDTH}"/><rect x="${node.box.x}" y="${node.box.y}" width="1800" height="${node.box.height}" rx="900" fill="${nodeStripe(node.type)}"/>${lines.join("")}</g>`;
 }
@@ -135,6 +135,7 @@ export function caseReportGraphLayoutSvg(
   pageId: string,
   language: CaseReportOptions["language"],
   transparentBackground = false,
+  simplified = false,
 ) {
   const page = layout.graphPages.find((candidate) => candidate.id === pageId);
   if (!page) throw new Error(`Unknown report graph page ${pageId}`);
@@ -169,17 +170,20 @@ export function caseReportGraphLayoutSvg(
   };
   appendHeaderLines(layout.headerLayout.reportTitle.lines, palette.navy);
   headerY += layout.headerLayout.groupGap;
-  appendHeaderLines(layout.headerLayout.sectionTitle.lines, palette.ink);
+  if (simplified) {
+    headerParts.push(svgLine(tr(language, "Decision tree", "Дерево решений"), layout.headerFrame.x, headerY + headerStyle.lineHeight * 0.78, headerStyle.sizeMilliPoints, palette.ink, "medium"));
+    headerY += headerStyle.lineHeight;
+  } else appendHeaderLines(layout.headerLayout.sectionTitle.lines, palette.ink);
   headerY += layout.headerLayout.groupGap;
-  appendHeaderLines(layout.headerLayout.identity.lines, "#53666e");
+  if (!simplified) appendHeaderLines(layout.headerLayout.identity.lines, "#53666e");
   headerY += layout.headerLayout.groupGap;
   appendHeaderLines([page.pageLine], palette.navy);
   const header = headerParts.join("");
-  const footer = [
+  const footer = simplified ? svgLine(tr(language, "Page labels connect branches across pages.", "Метки связывают ветви на разных страницах."), layout.footerFrame.x, layout.footerFrame.y + 3_500, 7_000, "#53666e") : [
     svgLine(`${tr(language, "Layout", "Макет")} ${layout.layoutSchemaVersion} · ${layout.layoutAlgorithmVersion} · ${layout.layoutRendererVersion}`, layout.footerFrame.x, layout.footerFrame.y + 3_500, 6_200, "#53666e"),
     svgLine(layout.layoutFingerprint, layout.footerFrame.x, layout.footerFrame.y + 6_600, 5_800, "#66777e"),
   ].join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${layout.printableFrame.x} ${layout.printableFrame.y} ${layout.printableFrame.width} ${layout.printableFrame.height}" preserveAspectRatio="xMidYMid meet"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="${palette.cyan}"/></marker><marker id="arrowGold" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="${palette.gold}"/></marker></defs><rect x="${layout.printableFrame.x}" y="${layout.printableFrame.y}" width="${layout.printableFrame.width}" height="${layout.printableFrame.height}" fill="${transparentBackground ? "none" : palette.mist}"/>${header}${paths.join("")}${connectorParts.map((part) => part.line).join("")}${nodes.map((node) => svgNode(node, layout)).join("")}${connectorParts.map((part) => part.marker).join("")}${footer}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${layout.printableFrame.x} ${layout.printableFrame.y} ${layout.printableFrame.width} ${layout.printableFrame.height}" preserveAspectRatio="xMidYMid meet"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="${palette.cyan}"/></marker><marker id="arrowGold" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="${palette.gold}"/></marker></defs><rect x="${layout.printableFrame.x}" y="${layout.printableFrame.y}" width="${layout.printableFrame.width}" height="${layout.printableFrame.height}" fill="${transparentBackground ? "none" : palette.mist}"/>${header}${paths.join("")}${connectorParts.map((part) => part.line).join("")}${nodes.map((node) => svgNode(node, layout, simplified, language)).join("")}${connectorParts.map((part) => part.marker).join("")}${footer}</svg>`;
 }
 
 function graphTextAlternative(
@@ -277,15 +281,16 @@ export function buildReportGraphAppendix(
   options: CaseReportOptions,
   sectionIndex: number | null,
   availableFrame?: [number, number],
+  includeTextAlternative = true,
 ): Content[] {
   const graphPages = layout.graphPages.map((page) => ({
     pageBreak: "before",
-    svg: caseReportGraphLayoutSvg(layout, page.id, options.language, options.presentationMode === "decision"),
+    svg: caseReportGraphLayoutSvg(layout, page.id, options.language, options.presentationMode === "decision" || options.presentationMode === "medium", options.presentationMode === "medium"),
     fit: [
       Math.min(micrometresToPoints(layout.printableFrame.width), availableFrame?.[0] ?? Infinity),
       Math.min(micrometresToPoints(layout.printableFrame.height), availableFrame?.[1] ?? Infinity),
     ],
     margin: [0, 0, 0, 0],
   } as Content));
-  return [...graphPages, ...graphTextAlternative(layout, options, sectionIndex)];
+  return [...graphPages, ...(includeTextAlternative ? graphTextAlternative(layout, options, sectionIndex) : [])];
 }

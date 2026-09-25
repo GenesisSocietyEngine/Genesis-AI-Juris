@@ -5,7 +5,11 @@ import { invitationRecipientIssue, organizationIssue, validOrganizationReceipt }
 const actor="actor_00000000000000000001", recipient="actor_00000000000000000002";
 test("invitation validation directs self and existing members to their supported action",()=>{
   assert.equal(invitationRecipientIssue(` ${actor} `,actor,[]),"invitation_self");
-  assert.equal(invitationRecipientIssue("email@example.test",actor,[]),"invitation_fields_invalid");
+  assert.equal(invitationRecipientIssue("email@example.test",actor,[]),"invitation_email_entered");
+  assert.equal(invitationRecipientIssue("short",actor,[]),"invitation_fields_invalid");
+  assert.equal(invitationRecipientIssue("actor invalid spaces",actor,[]),"invitation_fields_invalid");
+  const emailMessage=organizationIssue({code:"invitation_email_entered",status:400,scope:"invite"},"en");
+  assert.equal(emailMessage.recovery,"edit");assert.match(emailMessage.message,/this site/);assert.match(emailMessage.message,/Manage organizations/);
   for(const [status,code] of [["active","invitation_member_exists"],["suspended","invitation_member_suspended"],["removed","invitation_member_removed"]]){
     assert.equal(invitationRecipientIssue(recipient,actor,[{actorId:recipient,status}]),code);
     assert.equal(organizationIssue({code,status:409,scope:"invite"},"en").recovery,"edit");
@@ -27,7 +31,7 @@ test("organization feedback separates sign-in, profile, validation, concurrency 
   assert.doesNotMatch(organizationIssue({code:"arbitrary-private-error",status:500,scope:"page"},"en").message,/arbitrary-private-error/);
 });
 test("organization success receipts must match the actor, selection, active state and revisions",()=>{
-  const value={id:"org_00000000000000000001",actorId:actor,name:"Example",status:"active",revision:2,membershipRevision:1,selection:`org_00000000000000000001.2.1.${actor}`};
+  const value={id:"org_00000000000000000001",actorId:actor,name:"Example",role:"org_owner",status:"active",revision:2,membershipRevision:1,selection:`org_00000000000000000001.2.1.${actor}`};
   assert.equal(validOrganizationReceipt(value,actor,value.id),true);
   assert.equal(validOrganizationReceipt(value,recipient),false);
   assert.equal(validOrganizationReceipt(value,actor,"org_00000000000000000002"),false);

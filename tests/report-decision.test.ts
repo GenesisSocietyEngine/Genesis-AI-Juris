@@ -4,6 +4,8 @@ import test from "node:test";
 import { decisionEconomics } from "../app/report-decision-analysis";
 import { buildCaseReportArtifacts, caseReportReceiptBinding, type CaseReportOptions } from "../app/case-report";
 import { caseFingerprint, casePublicationFingerprint, normalizeStudioDraft } from "../app/case-integrity";
+import { buildCanopyPackage } from "../app/canopy-fixture";
+import { primaryCaseOutput } from "../app/case-type-playbooks";
 
 const draft = normalizeStudioDraft(JSON.parse(readFileSync(new URL("../tests/fixtures/fiveflats-rent-146000.studio-draft.json", import.meta.url), "utf8")));
 const options: CaseReportOptions = {
@@ -93,6 +95,37 @@ test("decision-tree appendix respects redactions and Russian report language", (
   const s = JSON.stringify(buildCaseReportArtifacts(source, { ...options, includeDecisionTree: true, redactedNodeIds: [redactedId], language: "ru" }).definition.content);
   assert.doesNotMatch(s, /SECRET TREE TITLE|SECRET TREE DETAIL/);
   assert.match(s, /Полная текстовая альтернатива графа/);
+});
+test("Medium retains base findings, adds visual graph pages and omits verbose graph registers", () => {
+  const base = buildCaseReportArtifacts(draft, options);
+  const mediumOptions = { ...options, presentationMode: "medium" as const };
+  const medium = buildCaseReportArtifacts(draft, mediumOptions);
+  const content = medium.definition.content as unknown[];
+  const baseContent = base.definition.content as unknown[];
+  const evidenceStart = baseContent.findIndex(item => JSON.stringify(item).includes("What this assessment rests on"));
+  assert.equal(JSON.stringify(content.slice(0, evidenceStart)), JSON.stringify(baseContent.slice(0, evidenceStart)));
+  const text = JSON.stringify(content);
+  assert.match(text, /£14,453.70/); assert.match(text, /£109,500/); assert.match(text, /<svg/);
+  assert.doesNotMatch(text, /Complete graph text alternative|Directed adjacency register|Paired connector index/);
+  assert.doesNotMatch(text, /BPMN-inspired off-page continuity|Layout 1\./);
+  assert.match(text, /Page labels connect branches across pages/);
+  assert.equal(content.filter(item => item && typeof item === "object" && "svg" in item).length, medium.layoutModel.graphPages.length);
+  assert.equal(base.reportModel.contentFingerprint, medium.reportModel.contentFingerprint);
+  assert.notEqual(base.presentationFingerprint, medium.presentationFingerprint);
+  assert.notEqual(medium.presentationFingerprint, buildCaseReportArtifacts(draft, { ...options, includeDecisionTree: true }).presentationFingerprint);
+  assert.deepEqual(caseReportReceiptBinding(draft, mediumOptions), caseReportReceiptBinding(draft, { ...mediumOptions, includeDecisionTree: false, includeAuditTrail: true, includeTechnicalIds: true }));
+});
+test("Medium keeps Canopy nonfinancial and respects graph redactions in Russian", () => {
+  const canopy = buildCanopyPackage("base").draft;
+  const profile = primaryCaseOutput(canopy.caseType);
+  const report = buildCaseReportArtifacts(canopy, { ...options, presentationMode: "medium", profileId: profile.id, profileLabel: profile.label.en });
+  assert.match(JSON.stringify(report.definition.content), /<svg/);
+  assert.doesNotMatch(JSON.stringify(report.definition.content), /Annual cash bridge|Finance adviser|Complete graph text alternative/);
+  const evidenceId = draft.nodes.find(n => n.type === "evidence")!.id;
+  const source = { ...draft, nodes: draft.nodes.map(n => n.id === evidenceId ? { ...n, title: "MEDIUM PRIVATE TITLE", detail: "MEDIUM PRIVATE DETAIL" } : n) };
+  const text = JSON.stringify(buildCaseReportArtifacts(source, { ...options, presentationMode: "medium", language: "ru", redactedNodeIds: [evidenceId] }).definition.content);
+  assert.doesNotMatch(text, /MEDIUM PRIVATE TITLE|MEDIUM PRIVATE DETAIL|Полная текстовая альтернатива графа/);
+  assert.match(text, /Визуальное дерево решений/);
 });
 test("redacted records and raw intake are absent and economics exclusion is respected", () => {
   const source = { ...draft, premise: "SECRET RAW INTAKE", premisePublication: undefined, nodes: draft.nodes.map(n => n.id === "evidence-1" ? { ...n, title: "SECRET EVIDENCE" } : n) };

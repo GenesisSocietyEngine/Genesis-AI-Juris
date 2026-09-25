@@ -168,7 +168,9 @@ export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptio
   content.push(h(t("Reading the measures", "Как читать показатели")));
   content.push(p(t("Cash flow = gross income − operating costs − structure costs − debt service. Debt coverage = available income ÷ debt service. Cash-on-cash = cash after debt ÷ known initial cash. All figures here exclude tax and unpriced costs. Sensitivities are hypothetical, not likelihood estimates.", "Поток = валовой доход − операционные расходы − расходы структуры − обслуживание долга. Покрытие = доступный доход ÷ обслуживание долга. Доходность капитала = поток после долга ÷ известный первоначальный капитал. Показатели исключают налоги и неоценённые затраты. Сценарии гипотетические, не вероятностные.")));
   }
-  content.push(p(options.includeDecisionTree
+  content.push(p(options.presentationMode === "medium"
+    ? t("The visual decision tree follows as a graph section. Full analysis with the tree enabled provides the detailed text alternative, complete records and audit options.", "Визуальное дерево решений приведено в следующем разделе. Полный анализ с включённым деревом содержит подробную текстовую альтернативу, полные записи и параметры аудита.")
+    : options.includeDecisionTree
     ? t("The decision tree and its text alternative follow as an appendix. Complete records and audit details remain available in Full analysis.", "Дерево решений и его текстовая альтернатива приведены в приложении. Полные записи и аудит доступны в формате «Полный анализ».")
     : t("The decision tree is omitted. Enable Include decision tree in report settings to add it. Complete records and audit details remain available in Full analysis.", "Дерево решений не включено. Включите параметр «Включить дерево решений» в настройках отчёта, чтобы добавить его. Полные записи и аудит доступны в формате «Полный анализ».")));
   if (options.preparedBy || options.preparedFor || options.matterReference) content.push({ text: [options.preparedBy && `${t("Prepared by", "Подготовил")}: ${options.preparedBy}`, options.preparedFor && `${t("For", "Для")}: ${options.preparedFor}`, options.matterReference].filter(Boolean).join(" · "), style: "small" });
@@ -183,6 +185,6 @@ export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptio
       notice: { fontSize: 9, color: muted, margin: [0, 2, 0, 10] }, body: { fontSize: 10, lineHeight: 1.2 },
       graphNodeType: { bold: true, fontSize: 8, color: teal }, graphNodeDetail: { fontSize: 9, color: ink, lineHeight: 1.2 },
     },
-    info: { title: `${draft.title} - Decision report`, author: options.preparedBy || "GENESIS: JURIS", creator: "GENESIS: JURIS", subject: `${draft.caseId} / v${draft.version} / decision-report-v1` },
+    info: { title: `${draft.title} - ${options.presentationMode === "medium" ? "Decision report + graph" : "Decision report"}`, author: options.preparedBy || "GENESIS: JURIS", creator: "GENESIS: JURIS", subject: `${draft.caseId} / v${draft.version} / ${options.presentationMode === "medium" ? "medium-report-v1" : "decision-report-v1"}` },
   };
 }
