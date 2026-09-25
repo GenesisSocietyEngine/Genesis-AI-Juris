@@ -26,6 +26,7 @@ import ReportErrorBoundary from "./ReportErrorBoundary";
 import { withLocalChunkRecovery } from "./stale-chunk-recovery";
 import { reportGenerationErrorMessage } from "./report-generation-error";
 import { savedStudioPath, verifiedStudioSaveReceipt } from "./studio-save-receipt";
+import { mayChooseImportedPrivacy } from "./studio-import-privacy";
 import { deviceDraftEnvelope, LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, mayPersistReportReceiptOnDevice, mayPersistStudioDraftOnDevice, studioDeviceDraftKey, studioDeviceScope, unwrapDeviceDraft } from "./studio-device-storage";
 import { addStudioLink, appendStudioHistory, applyStudioPromptIteration, deleteStudioLink, describeStudioPromptOperation, nextStudioLinkId, nextStudioNodeId, nextStudioNodePosition, planStudioPromptIteration, relinkStudioLink, type StudioPromptPlan } from "./studio-editing";
 import { applyValidatedAIStudioPlan, studioAIBaseFingerprint, toStudioAIContext } from "./studio-ai-plan";
@@ -1687,6 +1688,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       try {
         const parsed: unknown = JSON.parse(String(reader.result));
         let imported: StudioDraft;
+        let newUnsealedRawDraft = false;
         let importedPrivate = false;
         let importedCustomCaseId: number | null = null;
         let importedServerFingerprint: string | null = null;
@@ -1720,6 +1722,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         } else {
           imported = normalizeStudioDraft(parsed);
           if (imported.protection) throw new Error("Protected cases require a sealed v3 export envelope");
+          newUnsealedRawDraft = true;
         }
         if (!currentImport() || !mayLeaveStudio()) return;
         const restored = { ...imported, updatedAt: new Date().toISOString() };
@@ -1732,7 +1735,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         replaceStudioDraft(restored);
         setStudioPrivate(importedPrivate);
         setStudioCustomCaseId(importedCustomCaseId);
-        setStudioCanManagePrivacy(importedCustomCaseId !== null);
+        setStudioCanManagePrivacy(mayChooseImportedPrivacy({ newUnsealedRawDraft, verifiedOwnerCustomCaseId: importedCustomCaseId }));
         setStudioServerFingerprint(importedServerFingerprint);
         setStudioServerPublicationFingerprint(importedServerPublicationFingerprint);
         setStudioCanDuplicate(importedCanDuplicate);

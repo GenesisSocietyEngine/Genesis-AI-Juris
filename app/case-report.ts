@@ -330,7 +330,9 @@ function buildCaseReportDefinitionFromModels(
     const redactionsActive = reportModel.governance.redactions.length > 0;
     const safeEntries = draft.editHistory.map((entry) => {
       const promptAction = entry.action === "prompt_submitted" || entry.action === "prompt_applied" || entry.action === "graph_rebuilt";
-      const safeMessage = promptAction
+      const safeMessage = entry.action === "graph_rebuilt"
+        ? tr(language, "Draft reconstruction recorded - raw input excluded", "Зафиксировано перестроение черновика - исходный ввод исключён")
+        : promptAction
         ? tr(language, "AI-assisted revision recorded - raw prompt excluded", "Зафиксирована AI-правка - исходный промпт исключён")
         : redactionsActive
           ? tr(language, "Authoring event recorded - message excluded because report redactions are active", "Событие подготовки записано - сообщение исключено из-за активного редактирования отчёта")
@@ -425,7 +427,9 @@ function caseReportPresentationFingerprint(
     ? draft.editHistory.map((entry) => ({
       action: entry.action,
       at: entry.createdAt,
-      message: ["prompt_submitted", "prompt_applied", "graph_rebuilt"].includes(entry.action)
+      message: entry.action === "graph_rebuilt"
+        ? "reconstruction-input-excluded-v1"
+        : ["prompt_submitted", "prompt_applied"].includes(entry.action)
         ? "prompt-excluded"
         : redactionsActive ? "redaction-excluded" : entry.message,
       source: entry.source,
@@ -588,27 +592,37 @@ export function assertCaseReportGenerationAuthorized(canGenerate: boolean) {
   if (canGenerate !== true) throw new Error("Report generation is unavailable in inspection-only mode.");
 }
 
-async function renderCaseReport(draft: StudioDraft, options: CaseReportOptions, authorization: { canGenerate: boolean }) {
+type CaseReportAuthorization = { canGenerate: boolean; isCurrent?: () => boolean };
+
+function assertCurrentReportAuthority(authorization: CaseReportAuthorization) {
   assertCaseReportGenerationAuthorized(authorization?.canGenerate);
+  if (authorization.isCurrent && !authorization.isCurrent()) throw new Error("Report context is no longer active.");
+}
+
+async function renderCaseReport(draft: StudioDraft, options: CaseReportOptions, authorization: CaseReportAuthorization) {
+  assertCurrentReportAuthority(authorization);
   const [{ default: pdfMake }, { default: pdfFonts }, { default: auditFont }] = await Promise.all([
     withLocalChunkRecovery(() => import("pdfmake/build/pdfmake.js")),
     withLocalChunkRecovery(() => import("pdfmake/build/vfs_fonts.js")),
     withLocalChunkRecovery(() => import("./report-audit-symbol-font.v1.json")),
   ]);
+  assertCurrentReportAuthority(authorization);
   (pdfMake as unknown as { addVirtualFileSystem: (fonts: unknown) => void }).addVirtualFileSystem({ ...pdfFonts, ...auditFont.vfs });
   const { definition, reportModel, layoutModel, presentationFingerprint } = buildCaseReportArtifacts(draft, options);
   const blob = await pdfBlobFromDocument(pdfMake.createPdf(definition, undefined, CASE_REPORT_PDF_FONTS));
+  assertCurrentReportAuthority(authorization);
   return { blob, reportModel, layoutModel, presentationFingerprint };
 }
 
 /** The preview uses the export renderer and its authorization/readiness checks.
  * Viewing a preview does not record a download receipt or reviewer approval. */
-export async function createCaseReportPreview(draft: StudioDraft, options: CaseReportOptions, authorization: { canGenerate: boolean }) {
+export async function createCaseReportPreview(draft: StudioDraft, options: CaseReportOptions, authorization: CaseReportAuthorization) {
   return (await renderCaseReport(draft, options, authorization)).blob;
 }
 
-export async function downloadCaseReport(draft: StudioDraft, options: CaseReportOptions, authorization: { canGenerate: boolean }) {
+export async function downloadCaseReport(draft: StudioDraft, options: CaseReportOptions, authorization: CaseReportAuthorization) {
   const { blob, reportModel, layoutModel, presentationFingerprint } = await renderCaseReport(draft, options, authorization);
+  assertCurrentReportAuthority(authorization);
   startReportDownload(blob, `${draft.caseId || "case"}-v${draft.version || "0"}-${options.profileId || "case-report"}-${options.audience}.pdf`);
   const receipt = reportReceipt(reportModel, options.generatedAt, {
     layoutSchemaVersion: layoutModel.layoutSchemaVersion,
@@ -617,6 +631,7 @@ export async function downloadCaseReport(draft: StudioDraft, options: CaseReport
     layoutFingerprint: layoutModel.layoutFingerprint,
     presentationFingerprint,
   });
+  assertCurrentReportAuthority(authorization);
   try {
     writeStoredReportReceipt(window.localStorage, {
       scope: options.reportReceiptStorageScope,

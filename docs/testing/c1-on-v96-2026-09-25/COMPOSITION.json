@@ -1,0 +1,321 @@
+{
+  "base": "e44ed40e8aac8fa4812f8e8e5edf8af2a66ee475",
+  "candidateInput": "22e0a240f4ac0a958848119c2b0161a86fc2657d",
+  "reviewSource": "30873e6430effd282fd0ddf7859049311c34a71c",
+  "transfer": [
+    {
+      "path": "app/CaseReportDialog.tsx",
+      "sha256": "9a3d10776184e151bd3053d41813817e5afb4433486cc9b5ed7e3637a1cb7bc9"
+    },
+    {
+      "path": "app/JurisApp.tsx",
+      "sha256": "0ba4b836125813007c528ed86ba229c5e346a8fac89306dc7e8ee9e1537dfc87"
+    },
+    {
+      "path": "app/LegacyGenesisNavigation.tsx",
+      "sha256": "ea5e85370cab874e2e41b94a27ab6eeb4a8b9608642c6d3cf3b2dbfea0bc3d40"
+    },
+    {
+      "path": "app/NavigationSession.tsx",
+      "sha256": "d7d5524aff6414f0125db5bc5cc63f544eb3d262a1e0dec94fd7bb799925bd19"
+    },
+    {
+      "path": "app/StudioActionPanel.tsx",
+      "sha256": "a956944cd52f55e823eb11f0f222f121c3461389796bc13faa522a06ba271f5e"
+    },
+    {
+      "path": "app/account/AccountClient.tsx",
+      "sha256": "75d82f8df93d9cc2a1bd9138d137d0ee8ebe2abe96cb32b8553fa370a22aebfa"
+    },
+    {
+      "path": "app/api/auth/logout/route.ts",
+      "sha256": "4683c1f6f8c2d6f3d91da4334a7575256d65ccfddb588022649f350b2be4b613"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/evidence/anchors/route.ts",
+      "sha256": "8c949a1210cc6e23eafdc0a804f0d7757785ff6104e0c4e2110238cd5dd9a832"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/notes/route.ts",
+      "sha256": "7fec2dc2352084b21cef258b7f9b0ab0e34df027e4c57ce8f96210a4b1ecd000"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/requests/route.ts",
+      "sha256": "68ab10142e5cea688f60b2b56e763f8ab209ef75cf10bb7fc5990708d5fe11ae"
+    },
+    {
+      "path": "app/api/workspace-session/route.ts",
+      "sha256": "47986110d959b89e2a2ea631630a9d220e2e32e061949c965f64486d19d560a9"
+    },
+    {
+      "path": "app/case-report.ts",
+      "sha256": "bdf55ec5f7a8a321b4ecefd26d79cd02a122428b0e2a3f3e4444771ab4484991"
+    },
+    {
+      "path": "app/case-type-playbooks.ts",
+      "sha256": "0043ea7ff4bf31a3da8b1bdfeab9b8d5f07af1c1c34ff5e9554bf5ac807326b8"
+    },
+    {
+      "path": "app/departure-click.ts",
+      "sha256": "6368cf3bbaf09bbdc784b2f2a030a4c0d886739e26eb1f6e8298d6c4695a9efe"
+    },
+    {
+      "path": "app/departure-history.ts",
+      "sha256": "9bdf2ebc0f405105b746da72a6df66a9787db063ce4f4c1775fdfc8ee29f2e8e"
+    },
+    {
+      "path": "app/globals.css",
+      "sha256": "fea07d8cd27f1d3749508048f3aa0da5f059d5c41c93851941e168b76836994c"
+    },
+    {
+      "path": "app/layout.tsx",
+      "sha256": "ed6478c152284558bfb3f31cbe5ef544493074b26acb24f95a6176fa38fb0ad0"
+    },
+    {
+      "path": "app/matters/DispositionRecovery.tsx",
+      "sha256": "2c762a0c94ea56ec36ea4c423f4981e1fb29ca955b58ce6c5831453a778e5022"
+    },
+    {
+      "path": "app/matters/DocumentUploadForm.tsx",
+      "sha256": "dd662b7bbffef656af407975d912f88132eba57c776f759ffbe3d01d09f59735"
+    },
+    {
+      "path": "app/matters/MatterActionCenter.tsx",
+      "sha256": "a2deffb9e10743919c23e82fdbf97b77d8c16b1d8f004ac3e6f478f81a593378"
+    },
+    {
+      "path": "app/matters/MattersClient.tsx",
+      "sha256": "e22cc68736826bbe05c707a6646f5123ae6c638093512e870b7d0dd845935583"
+    },
+    {
+      "path": "app/matters/WorkingNotes.tsx",
+      "sha256": "48e1f1075a70975eb9c13c5f4514878ada5dd73c6e75195899e4b95982eeceee"
+    },
+    {
+      "path": "app/matters/WorkspaceDrafts.tsx",
+      "sha256": "7c28c8951545dd4fc993b9bf59ff911cee68dde3c952deef7f491cd6d5a68d58"
+    },
+    {
+      "path": "app/matters/action-collection.ts",
+      "sha256": "e91a83df26edf0a8ed0ceda9c8243b4e3f20d28f4a1f2f76ee1cabcd365614c4"
+    },
+    {
+      "path": "app/matters/case-prompt-departure.ts",
+      "sha256": "565dc3e3e77716eee515a02421e015d0a2b86bb6c9e23c31b76aefdef0598b87"
+    },
+    {
+      "path": "app/matters/disposition-recovery-controller.ts",
+      "sha256": "99ddb455b03b65a0e3a6f17db2c55a1b925687f1b4e534c98a4e017f6b631736"
+    },
+    {
+      "path": "app/matters/matter-actions.ts",
+      "sha256": "e2e2410bb3682dcb32f7fabf1c6526e43dcd2acda1e81fe7a88b531fe6afc915"
+    },
+    {
+      "path": "app/matters/matter-view-model.ts",
+      "sha256": "7f94ea2881dd10a2e239bc6cd1a4c4baa25d506e9d2b8f8877b48a4bd09af016"
+    },
+    {
+      "path": "app/matters/matters.module.css",
+      "sha256": "3ccb00d1b79b4a114420665c3cedec49fd1eab2c016482a91cc86456dc571558"
+    },
+    {
+      "path": "app/matters/note-formatting.ts",
+      "sha256": "a3b0f64585e940acf5df4892099f1183fa0b8bbb121766829ded153c5f2f9ea4"
+    },
+    {
+      "path": "app/matters/working-notes-controller.ts",
+      "sha256": "5aeec094be12193fd8e06920d4efc4496a9c780d4720ced5b9810328529d1936"
+    },
+    {
+      "path": "app/matters/working-notes.module.css",
+      "sha256": "d2a10577e140286a93059f01eede656c755014a759310feca0c0b3335c50502e"
+    },
+    {
+      "path": "app/matters/workspace-controller.ts",
+      "sha256": "bf4b7555cb72af9c1364bb4040ec9ac838d5dfd35994fe30a7135b6972adde49"
+    },
+    {
+      "path": "app/matters/workspace-data.ts",
+      "sha256": "c04775610749f186465498d10b6d3ad8e2eaef7e2032eb7f1f87bf68c314cc17"
+    },
+    {
+      "path": "app/navigation-controller.ts",
+      "sha256": "9ef85771deead201b1e0c72c8698910ef16944d896d04b909cb5e6658aae1cde"
+    },
+    {
+      "path": "app/organization-client.ts",
+      "sha256": "5f49ab0ec339dd09125ba87c845f1295d2626b756e8367deb07ddddd6bcc0d75"
+    },
+    {
+      "path": "app/organizations/OrganizationBoundary.tsx",
+      "sha256": "dfd0afae34bd2022ed15df6072bffa1dfcd86ec79adb72d278ae0363e8c973a1"
+    },
+    {
+      "path": "app/organizations/OrganizationsClient.tsx",
+      "sha256": "7235c2d36f313e14f813b4c9e0446cb51d6eed441863128d275319d62146bd5b"
+    },
+    {
+      "path": "app/organizations/organization-admin-model.ts",
+      "sha256": "12c63fa723a337ca9bfc2f8e1aa9328281b28e38a4a5f232391ccb07973f4580"
+    },
+    {
+      "path": "app/organizations/organization-context.ts",
+      "sha256": "483dab7c44d71da88f3eb744fbabd1493ece357735182aa9b8df2638836b9ab8"
+    },
+    {
+      "path": "app/organizations/organizations.module.css",
+      "sha256": "f261965f6a3f89a47e8fb03eff9757cea6b77e60a7dd1ee2a83e2806ed888b35"
+    },
+    {
+      "path": "app/read-with-timeout.ts",
+      "sha256": "6a6a3095cc409cc906771f9250b3860bf1e3d8f378dfc5bc693be97b90597b4d"
+    },
+    {
+      "path": "app/release-provenance.ts",
+      "sha256": "f2b2c88b68394572bed2f87df3cdab9414942261bdeb9c7b45e2a12df1803e5d"
+    },
+    {
+      "path": "app/server-observability.ts",
+      "sha256": "b1ffcd76bf787ca04c92dc8ea6be35222afba50e085b3332d89036b3854bc32a"
+    },
+    {
+      "path": "app/studio-import-privacy.ts",
+      "sha256": "25355490583d7f2a9cf553aaa5e58c60bc4e770a8a38c2b7ea524c896fee4b0b"
+    },
+    {
+      "path": "app/studio-save-receipt.ts",
+      "sha256": "960d29128da778edfb4d948e152e0fd64446f529f19ffe0d2dc610099b308827"
+    },
+    {
+      "path": "app/use-navigation-form-guard.ts",
+      "sha256": "6a129117478f987761ce571c3f195a04c83ac38f9549789cc13db7c8c73d3e37"
+    },
+    {
+      "path": "app/use-scoped-navigation.ts",
+      "sha256": "341441f8544033ca38081e010c4b7c6352776867fe89c037fdad5360cc398521"
+    },
+    {
+      "path": "app/workspace-design.css",
+      "sha256": "6277d9dbd829f934b1db07b6ac8a8340791ee8239c84374aa5e7177cab1b25c2"
+    },
+    {
+      "path": "build/release-identity.ts",
+      "sha256": "da687990e1e4d554bc65c05f65b6029d95d18681325f2193ab56ac995e2f0ee1"
+    },
+    {
+      "path": "build/sites-vite-plugin.ts",
+      "sha256": "1385f3d122c60b1d83b56a59646eebeced62cee84da0a9b8ddd620bd8e15e11c"
+    },
+    {
+      "path": "tests/b1-workspace-render.test.ts",
+      "sha256": "defa1777de1cefcefb4fbb74497c6c4df3d95a01fd8671b88334a5def8a1f47f"
+    },
+    {
+      "path": "tests/c1-amendment.test.ts",
+      "sha256": "5cf7cbb5b90cd45084e88e0b700490ad15d2aa7230260613c187c70e6987a99c"
+    },
+    {
+      "path": "tests/c1-notes-route.test.ts",
+      "sha256": "ee7b6f98cf371b31f1463dad6cc9170d1b3d9825c22ac4826de72226499c3c28"
+    },
+    {
+      "path": "tests/case-report.test.ts",
+      "sha256": "ab0aca9048c8c0cc1592e8fc314172d2c8f4f4d427ce6188a1e58a85e8e6a95f"
+    },
+    {
+      "path": "tests/disposition-recovery-controller.test.ts",
+      "sha256": "530f903c3aff898ac662eb571aa331cccf378303bffc92e230cf19701b1eecf4"
+    },
+    {
+      "path": "tests/disposition-recovery-render.test.ts",
+      "sha256": "e92722d8888afeaeb129c20795cea3a28c6173ee5c28081517af03eccfe145d5"
+    },
+    {
+      "path": "tests/dossier-workspace-ui.test.ts",
+      "sha256": "fd2317968b54c37083ae64353318f3ee324479fae6f186addfec3715213fe713"
+    },
+    {
+      "path": "tests/help-training-navigation.test.ts",
+      "sha256": "a99e06e86b63124325d73b9dbdbf64398d7301b95d0754010e6627cddb384aca"
+    },
+    {
+      "path": "tests/helpers/c1-migration-upgrade.ts",
+      "sha256": "633af23101b5547181b020a133a06c65f5ee480e1d85d2f00fd7490f57564775"
+    },
+    {
+      "path": "tests/organization-onboarding.test.ts",
+      "sha256": "ea62ac98cd5c5c62532a3d3a4086b2adaaab8650d9910456a4c7c8b974ea9c8d"
+    },
+    {
+      "path": "tests/p1-organization-erp.test.ts",
+      "sha256": "9c2b2b99a9ce550fcca40d4d1eaf6a18204386d2afd69eff1b519110d264333b"
+    },
+    {
+      "path": "tests/release-provenance.test.ts",
+      "sha256": "4e907df11d6f4af53b1ea533fafb336a3e22eba78318af35df61c662099f28fd"
+    },
+    {
+      "path": "tests/report-receipt-dialog.test.ts",
+      "sha256": "ca0cf4d3bf5e23b073a9bc0898ad3f87321579a24c90713616b05e58bd2db90b"
+    },
+    {
+      "path": "tests/sidebar-navigation.test.ts",
+      "sha256": "30a62a42b35b7d3c6d51fbdec8229451a08d6a861e5276c6365ce99c26fa8133"
+    },
+    {
+      "path": "tests/studio-import-privacy.test.ts",
+      "sha256": "2da6a2d0af728cd520b1836ea44773a054ccd93970272440fa7d14952e8b9c33"
+    },
+    {
+      "path": "tests/studio-save-receipt.test.ts",
+      "sha256": "272b92502c7fc08accfa46c248d37e778a8cdae88bd52c91f944eeca31ae6ae6"
+    },
+    {
+      "path": "tests/working-notes-controller.test.ts",
+      "sha256": "b5b121bd5ab393ebe8a1959ee82c8c7e6b412165f9e7a0ed9f00f8f4d5d214ac"
+    },
+    {
+      "path": "tests/working-notes-handler-contract.test.ts",
+      "sha256": "e3241818c8ae2c9b076f219a2c9deedd772b66e5bb2b1a9622ef39e82b9d1e85"
+    },
+    {
+      "path": "tests/working-notes-mode-switch.test.ts",
+      "sha256": "46f59a80ccba1a12dacf028ba29e228ce7b75fed27324f4998989625f79eeb8b"
+    },
+    {
+      "path": "vite.config.ts",
+      "sha256": "3fdcd3b8a2f1249ba5081980e22d10a03e3a7b46becf105aee234b1c817c066a"
+    }
+  ],
+  "preserved": [
+    "all production migrations and metadata",
+    "db/schema.ts",
+    "package.json",
+    "package-lock.json",
+    "scripts/build-verified.sh",
+    "app/api/admin/database-state/route.ts",
+    "app/database-state-diagnostics.ts",
+    "tests/database-state-diagnostics.test.ts",
+    "tests/dossier-persistence.test.ts",
+    ".openai/hosting.json",
+    "public"
+  ],
+  "postTransferAmendments": [
+    {
+      "path": "app/CaseReportDialog.tsx",
+      "finalSha256": "b535a0aa42f14cef6e015f8e5306c74c486807f8cab7fe9f57be200f9a5d826c",
+      "reason": "report side effects are fenced by committed authority; React lifecycle and targeted regression repaired"
+    },
+    {
+      "path": "app/case-report.ts",
+      "finalSha256": "0dfdc381f1affc1fd2f802ce54ea42d95380177cfd56ecfe2d844fc2c44d4d84",
+      "reason": "report side effects are fenced by committed authority; React lifecycle and targeted regression repaired"
+    },
+    {
+      "path": "tests/report-receipt-dialog.test.ts",
+      "finalSha256": "cde549197b5e059016b7b5746218ea0fa71c312a1934c82dc68131aa987eeb2b",
+      "reason": "report side effects are fenced by committed authority; React lifecycle and targeted regression repaired"
+    }
+  ]
+}

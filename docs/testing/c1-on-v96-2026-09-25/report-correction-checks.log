@@ -1,0 +1,31 @@
+✔ PDF generation with financial assumptions preserves live case state and permits reopening and a second report (799.908602ms)
+✔ deterministic graph reconstruction does not claim AI authorship or expose raw input (17.357645ms)
+✔ the corrected reconstruction label invalidates its historical PDF receipt only when shown (140.451237ms)
+✔ professional report contains economics, registers, sign-off and a safe audit trail (11.166467ms)
+✔ Canopy opens with a bounded EN/RU decision brief and keeps draft, outcomes and approval distinct (1030.473819ms)
+✔ executive brief does not disclose redacted input or opening records (10.617134ms)
+✔ audit headings share a rendered page with a record in Bhopal and long Russian titles (563.988363ms)
+✔ client-facing report can omit audit trail and technical identifiers (13.01167ms)
+✔ durable premise provenance excludes long and compacted raw prompts from internal and client rendered text (890.127038ms)
+✔ premise publication provenance changes presentation only, not canonical fingerprints (51.734633ms)
+✔ report links are canonical HTTPS only and rejected values gate external output (13.451176ms)
+✔ active node redactions also suppress unscoped audit messages (9.587221ms)
+✔ SVG text faces align exactly with pdfmake and svg-to-pdfkit Roboto weight resolution (21.981884ms)
+✔ graph appendix uses deterministic full-width portrait pages and paired connectors (52.562778ms)
+✔ bounded graph register rows remain atomic at a real page boundary while oversized rows may flow (307.981318ms)
+✔ layout language changes do not mutate the canonical ReportModel fingerprint (20.301298ms)
+✔ the complete PDF definition fails closed for unsupported font scalars and XML characters (13.182494ms)
+✔ receipt storage routing stays outside fingerprints and generation blocks sensitive cases (11.970826ms)
+✔ rendered protection identifiers participate in the presentation receipt only when visible (29.161915ms)
+✔ receipt freshness derives the exact production layout and the legacy landscape path is absent (72.463233ms)
+✔ Missing Boundary previews after deleting and undoing an edge, preserving the audit arrow in EN/RU (1072.662889ms)
+✔ audit glyph fallback is pinned, embedded and does not relax unsupported evidence or XML checks (123.813537ms)
+✔ the dialog exposes the exact private PDF receipt, preserves it on failure and distinguishes changed options (847.006301ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4560.061654

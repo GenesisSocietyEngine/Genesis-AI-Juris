@@ -2,6 +2,7 @@ import vinext from "vinext";
 import { defineConfig } from "vite";
 import hostingConfig from "./.openai/hosting.json" with { type: "json" };
 import { sites } from "./build/sites-vite-plugin.ts";
+import { buildReleaseIdentity } from "./build/release-identity.ts";
 
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   "00000000-0000-4000-8000-000000000000";
@@ -34,6 +35,8 @@ const localBindingConfig = {
 };
 
 export default defineConfig(async () => {
+  const identity = buildReleaseIdentity(process.cwd());
+  const { files: _files, ...packagedIdentity } = identity;
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
   // settings; application environment belongs in ignored `.env*` files.
   process.env.WRANGLER_WRITE_LOGS ??= "false";
@@ -44,6 +47,7 @@ export default defineConfig(async () => {
   const { cloudflare } = await import("@cloudflare/vite-plugin");
 
   return {
+    define: { __GENESIS_BUILD_IDENTITY__: JSON.stringify(packagedIdentity) },
     server: {
       host: "0.0.0.0",
       allowedHosts: ["terminal.local"],
@@ -53,7 +57,7 @@ export default defineConfig(async () => {
     },
     plugins: [
       vinext(),
-      sites(),
+      sites(identity),
       cloudflare({
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
         inspectorPort: false,
