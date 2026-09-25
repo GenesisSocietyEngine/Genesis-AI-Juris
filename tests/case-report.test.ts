@@ -178,7 +178,8 @@ test("the corrected reconstruction label invalidates its historical PDF receipt 
   const old = { ...receipt, presentationFingerprint: "sha256-0886d6f0bbe017658cddf2e43d1f9bf5046544e776d1c8c5d9b5cd076be939a8" };
   assert.equal(isReportReceiptStale(old, source, opts.profileId, binding), true);
   assert.equal(isReportReceiptStale(receipt, source, opts.profileId, binding), false);
-  assert.equal(caseReportReceiptBinding(source, { ...opts, includeAuditTrail: false }).presentationFingerprint,
+  // The presentation revision deliberately supersedes all old report layouts.
+  assert.notEqual(caseReportReceiptBinding(source, { ...opts, includeAuditTrail: false }).presentationFingerprint,
     "sha256-62b63de20585d981ac34fa8d4470d924214b00f5a6b2cf5712f7a1288f7aa8dc");
 });
 
@@ -187,7 +188,7 @@ test("professional report contains economics, registers, sign-off and a safe aud
   const source = JSON.stringify(report.content);
   assert.match(source, /TAX POSITION MEMORANDUM/);
   assert.match(source, /Investment and cash-flow analysis/);
-  assert.match(source, /Illustrative annual cash-flow probability ranges/);
+  assert.match(source, /deterministic calculations from supplied assumptions/);
   assert.match(source, /Facts, evidence and rules register/);
   assert.match(source, /Verification and sign-off/);
   assert.match(source, /Complete graph text alternative/);
