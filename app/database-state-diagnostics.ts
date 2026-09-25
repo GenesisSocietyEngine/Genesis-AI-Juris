@@ -1,6 +1,6 @@
 // Fixed, read-only platform-administrator diagnostics. No customer rows or raw
 // definitions leave this helper; this report never authorizes a migration.
-export const DATABASE_DIAGNOSTIC_REVISION = "m0-readonly-2026-09-25.1";
+export const DATABASE_DIAGNOSTIC_REVISION = "m0-readonly-2026-09-25.2";
 const MAX_OBJECTS = 1024;
 const MAX_LEDGER_ROWS = 128;
 const CATALOG_SQL = "SELECT type,name,tbl_name,sql FROM sqlite_schema ORDER BY type,name LIMIT 1025";
@@ -20,8 +20,71 @@ interface SchemaRow { type: string; name: string; tbl_name: string; sql: string 
 interface SchemaObject { type: string; name: string; table: string; definitionSha256: string | null }
 interface LedgerResult {
   name: string;
-  status: "absent" | "read" | "unsupported_columns" | "unsupported_value" | "truncated" | "read_failed";
+  status: "absent" | "read" | "unsupported_columns" | "unsupported_value" | "truncated" | "read_failed" | "changed_during_read";
   rows?: Record<string, string | number | null>[];
+  columns?: { name: string; type: string }[];
+  omittedValueColumns?: string[];
+  stable?: boolean;
+}
+
+// This exact table was observed in the production catalogue. Only identifiers
+// from this constant can enter the projection; discovered names and requests
+// never become SQL. Unknown provider values (including SQL/JSON) are not read.
+const PLATFORM_FIELDS = {
+  id: "identity", name: "migration", filename: "migration", migration_name: "migration",
+  version: "identity", hash: "hash", checksum: "hash", applied_at: "time",
+  created_at: "time", executed_at: "time", timestamp: "time", batch: "integer", status: "status",
+} as const;
+type PlatformField = keyof typeof PLATFORM_FIELDS;
+
+function safePlatformValue(column: PlatformField, value: unknown): value is string | number | null {
+  if (value === null) return true; // Recorded null is evidence, never proof of application.
+  const kind = PLATFORM_FIELDS[column];
+  const integer = typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+  const migration = typeof value === "string" && /^(?:drizzle\/)?[0-9]{4}_[A-Za-z0-9_-]{1,120}(?:\.sql)?$/.test(value);
+  if (kind === "integer") return integer;
+  if (kind === "identity") return integer || migration;
+  if (kind === "migration") return migration;
+  if (kind === "hash") return typeof value === "string" && /^(?:[a-fA-F0-9]{40}|[a-fA-F0-9]{64})$/.test(value);
+  if (kind === "status") return typeof value === "string" && ["applied", "succeeded", "completed", "pending", "failed", "running"].includes(value);
+  return integer || (typeof value === "string" && /^\d{4}-\d{2}-\d{2}[T ][0-9:.+Z-]{8,32}$/.test(value) && Number.isFinite(Date.parse(value)));
+}
+
+async function readPlatformLedger(db: Reader, objects: SchemaObject[]): Promise<LedgerResult> {
+  const name = "__appgarden_migrations";
+  if (!objects.some((object) => object.type === "table" && object.name === name)) return { name, status: "absent" };
+  let metadata: Pick<LedgerResult, "columns" | "omittedValueColumns"> = {};
+  try {
+    const schema = await db.prepare("SELECT name,type FROM pragma_table_info('__appgarden_migrations') LIMIT 65")
+      .all<{ name: string; type: string }>();
+    if (!schema.success || !Array.isArray(schema.results)) throw new Error("columns_unavailable");
+    if (schema.results.length > 64) return { name, status: "truncated" };
+    if (schema.results.length === 0 || !schema.results.every((c) =>
+      typeof c.name === "string" && /^[A-Za-z_][A-Za-z0-9_]{0,159}$/.test(c.name)
+      && typeof c.type === "string" && /^[A-Za-z0-9_(), ]{0,64}$/.test(c.type))) return { name, status: "unsupported_columns" };
+    const columns = schema.results.map((c) => ({ name: c.name, type: c.type }));
+    const selected = (Object.keys(PLATFORM_FIELDS) as PlatformField[]).filter((field) => columns.some((c) => c.name === field));
+    const omittedValueColumns = columns.filter((c) => !Object.hasOwn(PLATFORM_FIELDS, c.name)).map((c) => c.name);
+    metadata = { columns, omittedValueColumns };
+    if (selected.length === 0) return { name, status: "unsupported_columns", ...metadata };
+    const sql = `SELECT ${selected.map((field) => `"${field}"`).join(",")} FROM "__appgarden_migrations" LIMIT 129`;
+    async function readRows() {
+      const result = await db.prepare(sql).all<Record<string, unknown>>();
+      if (!result.success || !Array.isArray(result.results)) throw new Error("ledger_unavailable");
+      if (result.results.length > MAX_LEDGER_ROWS) return { status: "truncated" as const };
+      if (!result.results.every((row) => selected.every((field) => safePlatformValue(field, row[field])))) return { status: "unsupported_value" as const };
+      const rows = result.results.map((row) => Object.fromEntries(selected.map((field) => [field, row[field] as string | number | null])));
+      rows.sort((a, b) => { const x = JSON.stringify(a), y = JSON.stringify(b); return x < y ? -1 : x > y ? 1 : 0; });
+      return { status: "read" as const, rows };
+    }
+    const first = await readRows();
+    if (first.status !== "read") return { name, ...metadata, status: first.status };
+    const second = await readRows();
+    if (second.status !== "read") return { name, ...metadata, status: second.status };
+    const stable = JSON.stringify(first.rows) === JSON.stringify(second.rows);
+    return { name, ...metadata, stable, rows: first.rows,
+      status: !stable ? "changed_during_read" : omittedValueColumns.length ? "unsupported_columns" : "read" };
+  } catch { return { name, ...metadata, status: "read_failed" }; }
 }
 
 async function sha256(value: string) {
@@ -85,6 +148,7 @@ export async function collectDatabaseState(db: Reader) {
           Object.fromEntries(ledger.columns.map((column) => [column, row[column] as string | number | null]))) });
       } catch { ledgers.push({ name: ledger.name, status: "read_failed" }); }
     }
+    ledgers.push(await readPlatformLedger(db, before.objects));
     const after = await readCatalog(db);
     const schemaStable = before.digest === after.digest;
     return {

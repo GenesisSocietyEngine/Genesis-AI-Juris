@@ -85,6 +85,61 @@ test("catalog failure and schema changes never become complete evidence", async 
   } finally { db.close(); }
 });
 
+test("observed platform ledger is read through constant projections without selecting unknown values", async () => {
+  const db = database("baseline");
+  try {
+    db.exec("CREATE TABLE __appgarden_migrations(name TEXT PRIMARY KEY,applied_at TEXT,internal_payload TEXT)");
+    db.prepare("INSERT INTO __appgarden_migrations VALUES (?,?,?)").run("0000_synthetic.sql", "2026-09-25T09:11:37.880Z", "PRIVATE_SECRET_SQL".repeat(10000));
+    const beforeState = snapshot(db); issued.length = 0;
+    const report = await collectDatabaseState(reader(db)); const ledger = report.ledgers!.find((l) => l.name === "__appgarden_migrations")!;
+    assert.equal(report.state, "incomplete"); assert.equal(ledger.status, "unsupported_columns"); assert.equal(ledger.stable, true);
+    assert.deepEqual(ledger.omittedValueColumns, ["internal_payload"]);
+    assert.deepEqual(ledger.rows, [{ name: "0000_synthetic.sql", applied_at: "2026-09-25T09:11:37.880Z" }]);
+    assert.doesNotMatch(JSON.stringify(report), /PRIVATE_SECRET_SQL/);
+    assert.ok(issued.every((sql) => !sql.includes("internal_payload") && !sql.includes("SELECT *")));
+    assert.equal(snapshot(db), beforeState);
+    db.exec("ALTER TABLE __appgarden_migrations DROP COLUMN internal_payload");
+    const complete = await collectDatabaseState(reader(db));
+    assert.equal(complete.state, "collected"); assert.equal(complete.ledgers!.at(-1)!.status, "read");
+  } finally { db.close(); }
+});
+
+test("platform ledger incompatible values, row/column limits and read failure preserve schema evidence", async () => {
+  const db = database("baseline");
+  try {
+    db.exec("CREATE TABLE __appgarden_migrations(id INTEGER,name TEXT,hash TEXT,status TEXT)");
+    db.prepare("INSERT INTO __appgarden_migrations VALUES (1,?,?,?)").run("0000_synthetic", "a".repeat(64), "unknown-private-status");
+    let report = await collectDatabaseState(reader(db));
+    assert.equal(report.ledgers!.at(-1)!.status, "unsupported_value"); assert.doesNotMatch(JSON.stringify(report), /unknown-private-status/);
+    db.exec("UPDATE __appgarden_migrations SET status='applied',name=NULL,hash=NULL");
+    report = await collectDatabaseState(reader(db));
+    assert.deepEqual(report.ledgers!.at(-1)!.rows, [{ id: 1, name: null, hash: null, status: "applied" }]);
+    assert.ok(report.limitations!.includes("not_a_migration_execution_approval"));
+    for (let i = 2; i <= 129; i++) db.prepare("INSERT INTO __appgarden_migrations VALUES (?,NULL,NULL,'applied')").run(i);
+    assert.equal((await collectDatabaseState(reader(db))).ledgers!.at(-1)!.status, "truncated");
+    const failure = { prepare(sql: string) { if (sql.includes('FROM "__appgarden_migrations"')) throw new Error("private failure"); return reader(db).prepare(sql); } };
+    report = await collectDatabaseState(failure);
+    assert.equal(report.ledgers!.at(-1)!.status, "read_failed"); assert.ok(report.objects!.length > 591); assert.doesNotMatch(JSON.stringify(report), /private failure/);
+    db.exec("DROP TABLE __appgarden_migrations");
+    db.exec(`CREATE TABLE __appgarden_migrations(${Array.from({ length: 65 }, (_, i) => `column_${i} TEXT`).join(',')})`);
+    assert.equal((await collectDatabaseState(reader(db))).ledgers!.at(-1)!.status, "truncated");
+  } finally { db.close(); }
+});
+
+test("platform ledger changes during collection cannot become complete evidence", async () => {
+  const db = database("baseline"); let reads = 0;
+  try {
+    db.exec("CREATE TABLE __appgarden_migrations(name TEXT PRIMARY KEY,applied_at TEXT)");
+    db.exec("INSERT INTO __appgarden_migrations VALUES ('0000_synthetic.sql','2026-09-25T09:11:37Z')");
+    const changing = { prepare(sql: string) {
+      if (sql.includes('FROM "__appgarden_migrations"') && ++reads === 2) db.exec("INSERT INTO __appgarden_migrations VALUES ('0001_synthetic.sql','2026-09-25T09:12:37Z')");
+      return reader(db).prepare(sql);
+    } };
+    const report = await collectDatabaseState(changing);
+    assert.equal(report.state, "incomplete"); assert.equal(report.ledgers!.at(-1)!.status, "changed_during_read");
+  } finally { db.close(); }
+});
+
 test("actual D1 supports the fixed catalog and ledger queries without writes", async () => {
   const mf = new Miniflare({ workers: [{ config: { name: "diagnostics-test", type: "worker", compatibilityDate: "2026-09-01",
     manifest: { mainModule: "index.mjs", modules: { "index.mjs": { type: "esm", contents: "export default {fetch(){return new Response('test')}}" } } },
@@ -93,9 +148,12 @@ test("actual D1 supports the fixed catalog and ledger queries without writes", a
     const db = await mf.getD1Database("DB", "diagnostics-test") as unknown as D1Database;
     await db.prepare("CREATE TABLE __drizzle_migrations(id INTEGER,hash TEXT,created_at INTEGER)").run();
     await db.prepare("INSERT INTO __drizzle_migrations VALUES(1,?,123)").bind("c".repeat(64)).run();
+    await db.prepare("CREATE TABLE __appgarden_migrations(name TEXT PRIMARY KEY,applied_at TEXT)").run();
+    await db.prepare("INSERT INTO __appgarden_migrations VALUES('0000_synthetic.sql','2026-09-25T09:11:37Z')").run();
     const beforeState = await db.prepare("SELECT * FROM __drizzle_migrations").all();
     const report = await collectDatabaseState(db);
     assert.equal(report.state, "collected"); assert.equal(report.ledgers![0].status,"read");
+    assert.deepEqual(report.ledgers!.at(-1)!.rows, [{ name: "0000_synthetic.sql", applied_at: "2026-09-25T09:11:37Z" }]);
     assert.deepEqual((await db.prepare("SELECT * FROM __drizzle_migrations").all()).results, beforeState.results);
   } finally { await mf.dispose(); }
 });
