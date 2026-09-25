@@ -592,7 +592,7 @@ export function assertCaseReportGenerationAuthorized(canGenerate: boolean) {
   if (canGenerate !== true) throw new Error("Report generation is unavailable in inspection-only mode.");
 }
 
-type CaseReportAuthorization = { canGenerate: boolean; isCurrent?: () => boolean };
+type CaseReportAuthorization = { canGenerate: boolean; isCurrent?: () => boolean; revalidate?: () => Promise<void> };
 
 function assertCurrentReportAuthority(authorization: CaseReportAuthorization) {
   assertCaseReportGenerationAuthorized(authorization?.canGenerate);
@@ -610,6 +610,10 @@ async function renderCaseReport(draft: StudioDraft, options: CaseReportOptions, 
   (pdfMake as unknown as { addVirtualFileSystem: (fonts: unknown) => void }).addVirtualFileSystem({ ...pdfFonts, ...auditFont.vfs });
   const { definition, reportModel, layoutModel, presentationFingerprint } = buildCaseReportArtifacts(draft, options);
   const blob = await pdfBlobFromDocument(pdfMake.createPdf(definition, undefined, CASE_REPORT_PDF_FONTS));
+  assertCurrentReportAuthority(authorization);
+  // Logout may happen during PDF rendering even if a cross-tab signal is lost.
+  // Recheck the server before exposing the blob, download or receipt.
+  await authorization.revalidate?.();
   assertCurrentReportAuthority(authorization);
   return { blob, reportModel, layoutModel, presentationFingerprint };
 }

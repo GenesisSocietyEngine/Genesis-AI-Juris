@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { buildCaseMarkdown, type CaseMarkdownLanguage, type CaseMarkdownStatus } from "./case-markdown";
 import { caseMarkdownFilename, normalizeCaseMarkdownFilename } from "./case-markdown-filename";
 import type { StudioDraft } from "./types";
 
-export default function CaseMarkdownDialog({locale,draft,close,completed}:{locale:"en"|"ru";draft:StudioDraft;close:()=>void;completed:()=>void}){
+export default function CaseMarkdownDialog({locale,draft,canExport=true,verifyAuthority,close,completed}:{locale:"en"|"ru";draft:StudioDraft;canExport?:boolean;verifyAuthority?:()=>Promise<()=>boolean>;close:()=>void;completed:()=>void}){
   const [status,setStatus]=useState<CaseMarkdownStatus>("final");
   const [language,setLanguage]=useState<CaseMarkdownLanguage>(locale);
   const [markdown,setMarkdown]=useState("");
@@ -15,6 +15,16 @@ export default function CaseMarkdownDialog({locale,draft,close,completed}:{local
   const [openedAt]=useState(()=>new Date());
   const [filename,setFilename]=useState(()=>caseMarkdownFilename(draft,"final",openedAt));
   const [filenameEdited,setFilenameEdited]=useState(false);
+  const context=useMemo(()=>({draft,canExport}),[draft,canExport]);
+  const committedContext=useRef<typeof context|null>(null);
+  useLayoutEffect(()=>{committedContext.current=context;return()=>{committedContext.current=null;};},[context]);
+  async function verifyExport(){
+    if(!canExport||committedContext.current!==context)throw new Error("Export context changed");
+    const allowed=verifyAuthority?await verifyAuthority():()=>true;
+    const current=()=>committedContext.current===context&&allowed();
+    if(!current())throw new Error("Export context changed");
+    return current;
+  }
 
   useEffect(()=>{
     let cancelled=false;
@@ -25,10 +35,14 @@ export default function CaseMarkdownDialog({locale,draft,close,completed}:{local
   },[draft,language,locale,status]);
 
   async function copyMarkdown(){
-    try{await navigator.clipboard.writeText(markdown);setCopyState(locale==="en"?"Copied.":"Скопировано.");}
+    try{const current=await verifyExport();if(!current())return;await navigator.clipboard.writeText(markdown);if(current())setCopyState(locale==="en"?"Copied.":"Скопировано.");}
     catch{setCopyState(locale==="en"?"Copy failed; download the file instead.":"Не удалось скопировать; скачайте файл.");}
   }
-  function downloadMarkdown(){
+  async function downloadMarkdown(){
+    if(!canExport)return;
+    let current:()=>boolean;
+    try{current=await verifyExport();if(!current())return;}
+    catch{setError(locale==="en"?"Export needs verified access. Sign in and refresh access.":"Для экспорта нужен подтверждённый доступ. Войдите и обновите доступ.");return;}
     const url=URL.createObjectURL(new Blob([markdown],{type:"text/markdown;charset=utf-8"}));
     const link=document.createElement("a");
     link.href=url;
@@ -54,8 +68,8 @@ export default function CaseMarkdownDialog({locale,draft,close,completed}:{local
       <aside className="case-report-status"><b>{locale==="en"?"Deterministic hand-off":"Детерминированная передача"}</b><span>{locale==="en"?"Narrative edits outside Studio do not alter the embedded case. For canonical amendments, import, edit in Studio and regenerate.":"Правки текста вне Studio не меняют встроенный кейс. Для канонических изменений импортируйте файл, отредактируйте кейс в Studio и создайте файл заново."}</span></aside>
       <footer>
         <button className="secondary-cta" type="button" onClick={close}>{locale==="en"?"Cancel":"Отмена"}</button>
-        <button className="secondary-cta" type="button" disabled={!markdown} onClick={()=>void copyMarkdown()}>{locale==="en"?"Copy Markdown":"Копировать Markdown"}</button>
-        <button className="primary-cta" type="button" disabled={!markdown} onClick={downloadMarkdown}>{locale==="en"?"Download .md":"Скачать .md"}</button>
+        <button className="secondary-cta" type="button" disabled={!canExport||!markdown} onClick={()=>void copyMarkdown()}>{locale==="en"?"Copy Markdown":"Копировать Markdown"}</button>
+        <button className="primary-cta" type="button" disabled={!canExport||!markdown} onClick={downloadMarkdown}>{locale==="en"?"Download .md":"Скачать .md"}</button>
       </footer>
       {copyState&&<p className="case-markdown-copy" role="status">{copyState}</p>}
     </section>

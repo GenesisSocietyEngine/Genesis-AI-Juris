@@ -8,6 +8,7 @@ import { buildCanopyPackage } from "../app/canopy-fixture";
 import { caseFingerprint, casePublicationFingerprint } from "../app/case-integrity";
 import type { ReportReceiptV2 } from "../app/report-model";
 import type { StudioDraft } from "../app/types";
+import { StudioSessionAuthority } from "../app/studio-session-authority";
 
 // Execute the actual parent callbacks, report models, receipt construction,
 // privacy policy and download helper. Only React's hook scheduling/DOM and the
@@ -63,7 +64,7 @@ function hookRuntime() {
 }
 
 const bundle = await build({
-  entryPoints: ["app/CaseReportDialog.tsx"], bundle: true, write: false,
+  entryPoints: ["app/CaseReportDialog.tsx", "app/CaseMarkdownDialog.tsx"], outdir: ".artifacts/report-receipt-dialog/bundles", bundle: true, write: false,
   format: "esm", platform: "node", packages: "external", jsx: "automatic",
   plugins: [{ name: "report-dialog-contract-runtime", setup(builder) {
     builder.onResolve({ filter: /^react$/ }, () => ({ path: "hooks", namespace: "contract" }));
@@ -83,8 +84,11 @@ const bundle = await build({
 });
 mkdirSync(".artifacts/report-receipt-dialog", { recursive: true });
 const componentFile = resolve(".artifacts/report-receipt-dialog/component.mjs");
-writeFileSync(componentFile, bundle.outputFiles[0].text);
+writeFileSync(componentFile, bundle.outputFiles.find(file => file.path.endsWith("CaseReportDialog.js"))!.text);
 const Parent = (await import(pathToFileURL(componentFile).href)).default;
+const markdownComponentFile = resolve(".artifacts/report-receipt-dialog/markdown.mjs");
+writeFileSync(markdownComponentFile, bundle.outputFiles.find(file => file.path.endsWith("CaseMarkdownDialog.js"))!.text);
+const MarkdownParent = (await import(pathToFileURL(markdownComponentFile).href)).default;
 
 function elements(value: unknown): Element[] {
   if (Array.isArray(value)) return value.flatMap(elements);
@@ -137,6 +141,7 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
   let props = { locale: "en", draft, currentFingerprint: fingerprint, workspaceFingerprint: fingerprint,
     currentPublicationFingerprint: publication, workspacePublicationFingerprint: publication,
     privateCase: true, canGenerateReport: true, reportReceiptStorageScope: "a".repeat(64),
+    verifyReportAuthority: async () => () => true, // Existing receipt tests isolate an already-authorized boundary; the separate test below exercises real authority checks.
     persistReportReceiptOnDevice: false, close() { closed++; }, completed() { completed++; } };
   const render = () => {
     const hooks = fixtureGlobal.__reportHooks!;
@@ -270,5 +275,128 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
     URL.createObjectURL = oldCreate; URL.revokeObjectURL = oldRevoke;
     if (oldWindow) Object.defineProperty(globalThis, "window", oldWindow); else Reflect.deleteProperty(globalThis, "window");
     if (oldDocument) Object.defineProperty(globalThis, "document", oldDocument); else Reflect.deleteProperty(globalThis, "document");
+  }
+});
+
+test("actual PDF parent and helper reject a stale active tab, recheck after rendering and never revive old output after sign-in", async () => {
+  const oldWindow = Object.getOwnPropertyDescriptor(globalThis, "window"), oldDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
+  const oldCreate = URL.createObjectURL, oldRevoke = URL.revokeObjectURL;
+  const blobs = new Map<string, Blob>(), downloads: Blob[] = [], storageWrites: unknown[] = [];
+  let sequence = 0, completed = 0, signedIn = true;
+  const calls: string[] = [];
+  const authority = new StudioSessionAuthority(async path => {
+    calls.push(path);
+    if (!signedIn) return Response.json({ authenticated: false }, { status: 401 });
+    return Response.json(path === "/api/me"
+      ? { authenticated: true, registered: true, profile: { email: "owner@example.test" }, capabilities: { studioAI: false } }
+      : { customCase: { id: 1, isPrivate: true, access: "owner", copyProtected: false } });
+  });
+  await authority.refresh(false, 1);
+  const scope = authority.getSnapshot().scope;
+  fixtureGlobal.__reportHooks = hookRuntime();
+  const pdf: PdfState = fixtureGlobal.__reportPdf = { receipts: [], fail: false, hold: false, finish: [] };
+  URL.createObjectURL = blob => { const url = `blob:auth-${++sequence}`; blobs.set(url, blob as Blob); return url; };
+  URL.revokeObjectURL = url => { blobs.delete(url); };
+  Object.defineProperty(globalThis, "window", { configurable: true, value: {
+    localStorage: { getItem() { return null; }, setItem(...args: unknown[]) { storageWrites.push(args); }, removeItem() {} }, setTimeout() { return 1; }, clearTimeout() {},
+  } });
+  Object.defineProperty(globalThis, "document", { configurable: true, value: {
+    activeElement: null, addEventListener() {}, removeEventListener() {}, body: { appendChild() {} },
+    createElement() { return { href: "", download: "", remove() {}, click(this: { href: string }) { downloads.push(blobs.get(this.href)!); } }; },
+  } });
+  const draft = buildCanopyPackage("base").draft;
+  const fingerprint = caseFingerprint(draft), publication = casePublicationFingerprint(draft);
+  const render = () => {
+    const permission = authority.reportAuthority(true, scope, 1);
+    const props = { locale: "en", draft, currentFingerprint: fingerprint, workspaceFingerprint: fingerprint,
+      currentPublicationFingerprint: publication, workspacePublicationFingerprint: publication,
+      privateCase: true, canGenerateReport: permission.allowed, reportAuthorityEpoch: permission.epoch,
+      verifyReportAuthority: permission.verify, reportReceiptStorageScope: scope, persistReportReceiptOnDevice: false,
+      close() {}, completed() { completed++; } };
+    const hooks = fixtureGlobal.__reportHooks!;
+    let tree: unknown, attempts = 0;
+    do { hooks.begin(); tree = Parent(props); assert.ok(++attempts < 10); } while (hooks.needsRender());
+    hooks.flush(); return tree;
+  };
+  const finishRendering = async () => {
+    for (let attempt = 0; !pdf.finish.length && attempt < 20; attempt++) await new Promise(resolve => setImmediate(resolve));
+    assert.equal(pdf.finish.length, 1);
+  };
+  try {
+    let tree = render(); await click(tree, "Preview PDF"); tree = render();
+    assert.ok(elements(tree).some(element => element.type === "iframe"));
+    const previewUrl = [...blobs.keys()][0]; assert.ok(previewUrl);
+    // Confirmed hosted reproduction: old tab retains canGenerate=true, no focus or boundary signal, but the server is now signed out.
+    signedIn = false; const before = { downloads: downloads.length, receipts: pdf.receipts.length, completed };
+    await click(tree, "Download PDF"); tree = render();
+    assert.deepEqual({ downloads: downloads.length, receipts: pdf.receipts.length, completed }, before);
+    assert.equal(blobs.has(previewUrl), false, "actual completed preview URL is revoked after server denial");
+    assert.ok(!elements(tree).some(element => element.type === "iframe"));
+    assert.doesNotMatch(text(tree), /Download receipt JSON/);
+    signedIn = true; await authority.refresh(true, 1); tree = render();
+    assert.ok(!elements(tree).some(element => element.type === "iframe"), "same-account recovery must not revive the prior preview");
+
+    // No signal is delivered while rendering: the mandatory final server check still prevents issuance.
+    pdf.hold = true; const pending = click(tree, "Download PDF"); await finishRendering();
+    signedIn = false; pdf.finish.shift()!(); await pending; tree = render();
+    assert.deepEqual({ downloads: downloads.length, receipts: pdf.receipts.length, completed }, before);
+    assert.deepEqual(storageWrites, []);
+
+    signedIn = true; await authority.refresh(true, 1); tree = render();
+    const pendingBoundary = click(tree, "Download PDF"); await finishRendering();
+    authority.sessionBoundary("revoke"); // No React rerender before the late callback: synchronous epoch must suffice.
+    pdf.finish.shift()!(); await pendingBoundary;
+    assert.deepEqual({ downloads: downloads.length, receipts: pdf.receipts.length, completed }, before);
+    await authority.refresh(true, 1); tree = render(); pdf.hold = false;
+    await click(tree, "Download PDF"); tree = render();
+    assert.equal(downloads.length, 1); assert.equal(completed, 1); assert.equal(pdf.receipts.length, 1);
+    signedIn = false; await click(tree, "Download receipt JSON"); tree = render();
+    assert.equal(downloads.length, 1, "a receipt is also protected output, not a bypass around PDF authority");
+    assert.doesNotMatch(text(tree), /Download receipt JSON/);
+    assert.deepEqual(storageWrites, []);
+    assert.ok(calls.filter(path => path === "/api/custom-cases?id=1").length >= 4, "actual case permission is rechecked rather than guessed from /api/me");
+  } finally {
+    fixtureGlobal.__reportHooks?.unmount(); delete fixtureGlobal.__reportHooks; delete fixtureGlobal.__reportPdf;
+    URL.createObjectURL = oldCreate; URL.revokeObjectURL = oldRevoke;
+    if (oldWindow) Object.defineProperty(globalThis, "window", oldWindow); else Reflect.deleteProperty(globalThis, "window");
+    if (oldDocument) Object.defineProperty(globalThis, "document", oldDocument); else Reflect.deleteProperty(globalThis, "document");
+  }
+});
+
+test("actual Markdown download and clipboard callbacks share protected-output authority", async () => {
+  const oldDocument = Object.getOwnPropertyDescriptor(globalThis, "document"), oldNavigator = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  const oldCreate = URL.createObjectURL, oldRevoke = URL.revokeObjectURL;
+  let downloads = 0, copies = 0, signedIn = true;
+  const authority = new StudioSessionAuthority(async path => !signedIn ? Response.json({}, { status: 401 }) : Response.json(path === "/api/me"
+    ? { authenticated: true, registered: true, profile: { email: "owner@example.test" }, capabilities: { studioAI: false } }
+    : { customCase: { id: 1, isPrivate: true, access: "owner", copyProtected: false } }));
+  await authority.refresh(false, 1); const scope = authority.getSnapshot().scope;
+  fixtureGlobal.__reportHooks = hookRuntime();
+  URL.createObjectURL = () => "blob:markdown"; URL.revokeObjectURL = () => {};
+  Object.defineProperty(globalThis, "document", { configurable: true, value: { createElement() { return { href: "", click() { downloads++; } }; } } });
+  Object.defineProperty(globalThis, "navigator", { configurable: true, value: { clipboard: { async writeText() { copies++; } } } });
+  const draft = buildCanopyPackage("base").draft;
+  const render = () => {
+    const permission = authority.reportAuthority(true, scope, 1), hooks = fixtureGlobal.__reportHooks!;
+    hooks.begin(); const tree = MarkdownParent({ locale: "en", draft, canExport: permission.allowed, verifyAuthority: permission.verify, close() {}, completed() {} }); hooks.flush(); return tree;
+  };
+  try {
+    let tree = render();
+    for (let attempt = 0; button(tree, "Download .md").props.disabled && attempt < 100; attempt++) { await new Promise(resolve => setTimeout(resolve, 2)); tree = render(); }
+    assert.equal(button(tree, "Download .md").props.disabled, false);
+    const staleCopy = button(tree, "Copy Markdown").props.onClick as () => void;
+    signedIn = false; await click(tree, "Download .md"); staleCopy();
+    await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(downloads, 0); assert.equal(copies, 0);
+    signedIn = true; await authority.refresh(true, 1); tree = render(); await click(tree, "Download .md");
+    assert.equal(downloads, 1);
+    const oldDownload = button(tree, "Download .md").props.onClick as () => Promise<void>;
+    fixtureGlobal.__reportHooks!.unmount(); await oldDownload();
+    assert.equal(downloads, 1, "closing the dialog while authority is checked cannot create a late file");
+  } finally {
+    fixtureGlobal.__reportHooks?.unmount(); delete fixtureGlobal.__reportHooks;
+    URL.createObjectURL = oldCreate; URL.revokeObjectURL = oldRevoke;
+    if (oldDocument) Object.defineProperty(globalThis, "document", oldDocument); else Reflect.deleteProperty(globalThis, "document");
+    if (oldNavigator) Object.defineProperty(globalThis, "navigator", oldNavigator); else Reflect.deleteProperty(globalThis, "navigator");
   }
 });

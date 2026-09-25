@@ -2,6 +2,7 @@ import type { ClientOrganization } from "./organization-client";
 import { validOrganizationReceipt } from "./organizations/organization-admin-model";
 import type { WorkspaceController } from "./matters/workspace-controller";
 import { readWithTimeout } from "./read-with-timeout";
+import { publishSessionBoundary } from "./session-boundary";
 
 export type DepartureRisk = "clear" | "dirty" | "pending";
 export type NavigationIdentity = { displayName: string; email: string; authSource: "chatgpt" | "local" };
@@ -137,11 +138,13 @@ export class NavigationController {
     const ticket = ++this.epoch;
     this.authorityVersion++;
     this.publish({ ...empty(), phase:"expired", busy:true, endingSession:true });
+    publishSessionBoundary("suspend");
     this.guards.forEach(g=>{try{g.lock?.(false);g.suspend();}catch{/* A failing local form must not block session termination. */}});
     try {
       const response = await this.options.transport("/api/auth/logout",{method:"POST",credentials:"same-origin",signal:AbortSignal.timeout(15000)});
       if (!this.current(ticket)) return;
       if (!response.ok) throw new Error("Logout unconfirmed");
+      publishSessionBoundary("revoke");
       await Promise.resolve().then(()=>this.options.clear(identity?.email)).catch(()=>{});
       if(!this.current(ticket))return;
       this.publish({...empty(),phase:"leaving",busy:true,endingSession:true});

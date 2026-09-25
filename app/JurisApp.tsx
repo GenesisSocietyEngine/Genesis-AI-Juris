@@ -1,6 +1,6 @@
 "use client";
 
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 import { appendConnectedStudioItem } from "./studio-action-editing";
 import { focusActionTarget } from "./ActionTile";
@@ -27,7 +27,9 @@ import { withLocalChunkRecovery } from "./stale-chunk-recovery";
 import { reportGenerationErrorMessage } from "./report-generation-error";
 import { savedStudioPath, verifiedStudioSaveReceipt } from "./studio-save-receipt";
 import { mayChooseImportedPrivacy } from "./studio-import-privacy";
-import { deviceDraftEnvelope, LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, mayPersistReportReceiptOnDevice, mayPersistStudioDraftOnDevice, studioDeviceDraftKey, studioDeviceScope, unwrapDeviceDraft } from "./studio-device-storage";
+import { StudioSessionAuthority, shouldDiscardStudioDraft, type StudioReportAuthority } from "./studio-session-authority";
+import { subscribeSessionBoundary } from "./session-boundary";
+import { deviceDraftEnvelope, LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, mayPersistReportReceiptOnDevice, mayPersistStudioDraftOnDevice, studioDeviceDraftKey, unwrapDeviceDraft } from "./studio-device-storage";
 import { addStudioLink, appendStudioHistory, applyStudioPromptIteration, deleteStudioLink, describeStudioPromptOperation, nextStudioLinkId, nextStudioNodeId, nextStudioNodePosition, planStudioPromptIteration, relinkStudioLink, type StudioPromptPlan } from "./studio-editing";
 import { applyValidatedAIStudioPlan, studioAIBaseFingerprint, toStudioAIContext } from "./studio-ai-plan";
 import { compileStudioDraft } from "./studio-compiler";
@@ -501,6 +503,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   const [catalogueError, setCatalogueError] = useState("");
   const [catalogueScenarios, setCatalogueScenarios] = useState<Scenario[]>([]);
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(null);
+  const [privatePlayOrigin, setPrivatePlayOrigin] = useState<{ scope: string | null; customCaseId: number | null } | null>(null);
   const [playReturnView, setPlayReturnView] = useState<View>("studio");
   const [stageIndex, setStageIndex] = useState(0);
   const [metrics, setMetrics] = useState({ ...initialMetrics });
@@ -531,11 +534,21 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   const [studioCanDuplicate, setStudioCanDuplicate] = useState(true);
   const [studioCopyProtectionLocked, setStudioCopyProtectionLocked] = useState(false);
   const [studioStorageScope, setStudioStorageScope] = useState<string | null>(null);
+  const [studioSessionAuthority] = useState(() => new StudioSessionAuthority());
+  useSyncExternalStore(studioSessionAuthority.subscribe, studioSessionAuthority.getSnapshot, studioSessionAuthority.getSnapshot);
+  const studioDiscardVersion = useRef(0);
+  const activeProtectedCaseId = view === "play" && privatePlayOrigin ? privatePlayOrigin.customCaseId : studioCustomCaseId;
+  const studioCaseAccessRef = useRef(activeProtectedCaseId);
+  const studioReportAuthority = studioSessionAuthority.reportAuthority(
+    studioCustomCaseId !== null || studioPrivate, studioStorageScope, studioCustomCaseId,
+  );
+  const studioConcealed = (studioCustomCaseId !== null || studioPrivate) && !studioReportAuthority.visible;
+  const privatePlayAuthority = studioSessionAuthority.reportAuthority(Boolean(privatePlayOrigin), privatePlayOrigin?.scope ?? null, privatePlayOrigin?.customCaseId ?? null);
+  const privatePlayConcealed = Boolean(privatePlayOrigin) && !privatePlayAuthority.visible;
   const [studioAIEntitlement, setStudioAIEntitlement] = useState<StudioAIEntitlement>("loading");
   const [studioRestoreReady, setStudioRestoreReady] = useState(false);
   const savedCaseRequestRef = useRef(0);
   const currentStudioScopeRef = useRef<string | null>(null);
-  const knownStudioScopeRef = useRef<string | null>(null);
   const restoredSavedCaseRef = useRef<string | null>(null);
   const draftRef = useRef<StudioDraft>(initialBlankDraft);
   const [studioTimeline, setStudioTimelineState] = useState<StudioTimeline>(emptyStudioTimeline());
@@ -557,7 +570,6 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   const text = ui[locale];
 
   useEffect(() => {
-    let cancelled = false;
     // v12 used origin-wide keys that could cross account boundaries on shared
     // browsers. Never read them again; new drafts use an identity-scoped,
     // versioned envelope and workspace/private artifacts are excluded entirely.
@@ -566,37 +578,55 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       window.localStorage.removeItem(LEGACY_STUDIO_PRIVATE_KEY);
       window.sessionStorage.removeItem(PENDING_WORKSPACE_SAVE_KEY);
     } catch { /* Storage restrictions must not prevent identity resolution. */ }
-    const resolveIdentityBoundary = async () => {
-      try {
-        const response = await fetch("/api/me", { cache: "no-store" });
-        const payload = await readJsonResponse<{ authenticated?: boolean; registered?: boolean; profile?: { email?: string }; capabilities?: { studioAI?: boolean } }>(response);
-        const scope = await studioDeviceScope(response.ok && payload?.authenticated ? payload.profile?.email : null);
-        if (!cancelled) {
-          if (scope && knownStudioScopeRef.current && scope !== knownStudioScopeRef.current) {
-            savedCaseRequestRef.current += 1;
-            purgeLocalStudioState();
-            restoredSavedCaseRef.current = null;
-            setPrompt("");
-            setSessionNotice("The account changed. Reopen work through the signed-in account’s access checks. / Аккаунт изменён. Откройте работу с проверкой доступа нового аккаунта.");
-          }
-          currentStudioScopeRef.current = scope;
-          if (scope) knownStudioScopeRef.current = scope;
-          setStudioStorageScope(scope);
-          setStudioAIEntitlement(response.ok && payload?.authenticated
-            ? (payload.registered ? (payload.capabilities?.studioAI ? "ready" : "not_configured") : "profile_required")
-            : "anonymous");
-        }
-      } catch {
-        // Fail closed: without a resolved identity scope the app does not read
-        // or persist a device draft.
-        if (!cancelled) setStudioAIEntitlement("unavailable");
-      }
-    };
-    void resolveIdentityBoundary();
+    const resolveIdentityBoundary = () => { void studioSessionAuthority.refresh(false, studioCaseAccessRef.current); };
+    const visible = () => { if (document.visibilityState === "visible") resolveIdentityBoundary(); };
+    const restored = (event: PageTransitionEvent) => { if (event.persisted) { studioSessionAuthority.invalidate("suspend"); resolveIdentityBoundary(); } };
+    const unsubscribe = subscribeSessionBoundary(studioSessionAuthority.sessionBoundary);
+    resolveIdentityBoundary();
     window.addEventListener("focus", resolveIdentityBoundary);
-    return () => { cancelled = true; window.removeEventListener("focus", resolveIdentityBoundary); };
-    // This identity listener reads live scope/draft refs; editor renders must not restart it.
-  }, []);
+    document.addEventListener("visibilitychange", visible);
+    window.addEventListener("pageshow", restored);
+    return () => { unsubscribe(); window.removeEventListener("focus", resolveIdentityBoundary); document.removeEventListener("visibilitychange", visible); window.removeEventListener("pageshow", restored); };
+  }, [studioSessionAuthority]);
+
+  useEffect(() => {
+    studioCaseAccessRef.current = activeProtectedCaseId;
+    if (activeProtectedCaseId !== null) void studioSessionAuthority.refresh(false, activeProtectedCaseId);
+  }, [activeProtectedCaseId, studioSessionAuthority]);
+
+  const reconcileStudioSession = useEffectEvent((studioSession: ReturnType<typeof studioSessionAuthority.getSnapshot>) => {
+    if (privatePlayOrigin && studioSession.phase !== "ready" && (playSessionBusy || playSessionSync === "opening")) {
+      // An interrupted operation may have reached the server. Preserve the run,
+      // stop its stale callbacks, and let the user review it without auto-retry.
+      playSessionStartRef.current += 1;
+      setPlaySessionBusy(false);
+      setPlaySessionSync("error");
+    }
+    if (studioSession.discardVersion !== studioDiscardVersion.current) {
+      studioDiscardVersion.current = studioSession.discardVersion;
+      if (privatePlayOrigin) {
+        playSessionStartRef.current += 1;
+        setPrivatePlayOrigin(null); setActiveScenario(null); setSelectedOption(null); setResultOption(null);
+        setDecisionLog([]); setOutcome(null); setDossierRef(null); setServerPlaySession(null); setLocalCanonicalState(null);
+        localCanonicalRuntimeRef.current = null; setPlaySessionBusy(false); setFeedbackTarget(null);
+      }
+      if (shouldDiscardStudioDraft(studioSession.discardLocal, studioCustomCaseId, studioPrivate)) {
+        savedCaseRequestRef.current += 1;
+        purgeLocalStudioState();
+        setStudioOpenRevision((revision) => revision + 1);
+        restoredSavedCaseRef.current = null;
+        setPrompt("");
+        setFeedbackTarget(null);
+        setSessionNotice("Access ended or changed. Reopen saved work through the signed-in account’s access checks. / Доступ завершён или изменён. Откройте сохранённую работу после проверки доступа аккаунта.");
+      }
+    }
+    currentStudioScopeRef.current = studioSession.scope;
+    setStudioStorageScope(studioSession.scope);
+    setStudioAIEntitlement(studioSession.phase === "ready"
+      ? (studioSession.registered ? (studioSession.studioAI ? "ready" : "not_configured") : "profile_required")
+      : studioSession.phase === "checking" ? "loading" : studioSession.phase === "anonymous" ? "anonymous" : "unavailable");
+  });
+  useEffect(() => studioSessionAuthority.subscribe(() => reconcileStudioSession(studioSessionAuthority.getSnapshot())), [studioSessionAuthority]);
 
   useEffect(() => {
     function restoreView() {
@@ -1025,11 +1055,11 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     const visibleMaterial = scenario.materials.find((material) => state.availableEvidenceIds?.includes(material.ref));
     setDossierRef(visibleMaterial?.ref ?? scenario.materials[0]?.ref ?? null);
   }
-  async function beginLocalCanonicalSession(scenario: Scenario, requestVersion: number) {
+  async function beginLocalCanonicalSession(scenario: Scenario, requestVersion: number, authorityCurrent: () => boolean = () => true) {
     if (!scenario.mobileParity) return false;
     try {
       const runtimeModule = await import("./canonical-runtime");
-      if (requestVersion !== playSessionStartRef.current) return false;
+      if (requestVersion !== playSessionStartRef.current || !authorityCurrent()) return false;
       const seed = crypto.getRandomValues(new Uint32Array(1))[0];
       const runtime = runtimeModule.createCanonicalRuntime(scenario.caseId, seed);
       const state = storeLocalCanonicalRuntime(runtime, runtimeModule, [], []);
@@ -1042,42 +1072,46 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       return false;
     }
   }
-  async function beginServerPlaySession(scenario: Scenario, requestVersion: number) {
+  async function beginServerPlaySession(scenario: Scenario, requestVersion: number, authorityCurrent: () => boolean = () => true) {
     try {
       const response = await fetch("/api/play-sessions", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "start", caseId: scenario.caseId, version: scenario.version, fingerprint: scenario.fingerprint }),
       });
-      if (requestVersion !== playSessionStartRef.current) return;
+      if (requestVersion !== playSessionStartRef.current || !authorityCurrent()) return;
       if (response.status === 401 || response.status === 404) {
-        if (await beginLocalCanonicalSession(scenario, requestVersion)) return;
+        if (await beginLocalCanonicalSession(scenario, requestVersion, authorityCurrent)) return;
+        if (!authorityCurrent()) return;
         setPlaySessionSync("local");
         return;
       }
       const payload = await response.json().catch(() => null) as { session?: unknown } | null;
+      if (requestVersion !== playSessionStartRef.current || !authorityCurrent()) return;
       const session = normalizeServerPlaySession(payload?.session);
       if (!response.ok || !session || session.caseId !== scenario.caseId || session.version !== scenario.version || session.fingerprint !== scenario.fingerprint) {
-        if (!await beginLocalCanonicalSession(scenario, requestVersion)) setPlaySessionSync("error");
+        if (!await beginLocalCanonicalSession(scenario, requestVersion, authorityCurrent) && authorityCurrent()) setPlaySessionSync("error");
         return;
       }
       restoreFromServerSession(session, scenario);
       setPlaySessionSync("server");
     } catch {
-      if (requestVersion === playSessionStartRef.current && !await beginLocalCanonicalSession(scenario, requestVersion)) setPlaySessionSync("error");
+      if (requestVersion === playSessionStartRef.current && authorityCurrent() && !await beginLocalCanonicalSession(scenario, requestVersion, authorityCurrent) && authorityCurrent()) setPlaySessionSync("error");
     }
   }
-  function startScenario(scenario: Scenario, options: { legacyTiming?: boolean } = {}) {
+  function startScenario(scenario: Scenario, options: { legacyTiming?: boolean; privateOrigin?: typeof privatePlayOrigin } = {}) {
     if (view !== "play") setPlayReturnView(view);
     const sessionRequestVersion = playSessionStartRef.current + 1;
     playSessionStartRef.current = sessionRequestVersion;
     const initialIndex = Math.max(0, scenario.stages.findIndex((item) => item.id === scenario.initialStageId));
+    setPrivatePlayOrigin(options.privateOrigin ?? null);
     setActiveScenario(scenario); setStageIndex(initialIndex); setMetrics({ ...initialMetrics }); setDecisionLog([]);
     setCaseMinute(scenario.initialClockMinute); setActionUseCounts({}); setCompletedDeadlineIds([]); setMissedDeadlineIds([]);
     localCanonicalRuntimeRef.current = null; setLocalCanonicalState(null); setServerPlaySession(null); setPlaySessionSync("opening"); setPlaySessionBusy(false);
     setLegacyTimingMode(options.legacyTiming === true);
     setOutcome(null); setSelectedOption(null); setResultOption(null); setDossierRef(scenario.materials[0]?.ref ?? null); navigate("play");
-    void beginServerPlaySession(scenario, sessionRequestVersion);
+    const epoch = studioSessionAuthority.getSnapshot().epoch;
+    void beginServerPlaySession(scenario, sessionRequestVersion, () => !options.privateOrigin || studioSessionAuthority.getSnapshot().epoch === epoch);
   }
   async function launchCatalogueCase(record: PublishedCaseSummary) {
     const launchRequestVersion = catalogueLaunchRef.current + 1;
@@ -1124,6 +1158,9 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   }
   async function dispatchDecision() {
     if (!selectedOption || !stage || !activeScenario) return;
+    const operationVersion = playSessionStartRef.current, authorityEpoch = studioSessionAuthority.getSnapshot().epoch;
+    const current = () => operationVersion === playSessionStartRef.current && (!privatePlayOrigin || authorityEpoch === studioSessionAuthority.getSnapshot().epoch);
+    if (privatePlayConcealed) return;
     if (playSessionSync === "opening") {
       showSessionNotice(locale === "en" ? "The server run is still opening. Try again in a moment." : "Серверное прохождение ещё запускается. Повторите через мгновение.");
       setSelectedOption(null);
@@ -1192,6 +1229,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
           body: JSON.stringify({ action: "decision", sessionKey: activeServerSession.sessionKey, expectedRevision: activeServerSession.revision, eventId: crypto.randomUUID(), optionId: selected.id }),
         });
         const payload = await response.json().catch(() => null) as { session?: unknown; error?: string; code?: string } | null;
+        if (!current()) return;
         const authoritative = normalizeServerPlaySession(payload?.session);
         if (response.ok && authoritative) {
           setServerPlaySession(authoritative);
@@ -1209,11 +1247,12 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         showSessionNotice(payload?.error ?? (locale === "en" ? "The server could not record this decision. Retry without closing the review." : "Сервер не смог зафиксировать решение. Повторите, не закрывая окно."));
         return;
       } catch {
+        if (!current()) return;
         setPlaySessionSync("error");
         showSessionNotice(locale === "en" ? "The run could not be synchronised. Retry when the connection is restored." : "Не удалось синхронизировать прохождение. Повторите после восстановления соединения.");
         return;
       } finally {
-        setPlaySessionBusy(false);
+        if (current()) setPlaySessionBusy(false);
       }
     }
 
@@ -1221,6 +1260,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       setPlaySessionBusy(true);
       try {
         const runtimeModule = await import("./canonical-runtime");
+        if (!current()) return;
         const runtime = runtimeModule.dispatchCanonicalAction(localCanonicalRuntimeRef.current, selected.canonicalActionId);
         const currentDecisions = localCanonicalState?.decisions ?? [];
         const currentAdvances = localCanonicalState?.timeAdvances ?? [];
@@ -1229,10 +1269,11 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         applyTransition(nextState.metrics, nextState.clockMinute, nextState.completedDeadlineIds, nextState.missedDeadlineIds, nextState.actionUseCounts, nextState.currentStageId, nextState.canonicalOutcome);
         return;
       } catch {
+        if (!current()) return;
         showSessionNotice(locale === "en" ? "The canonical action could not be applied." : "Не удалось применить каноническое действие.");
         return;
       } finally {
-        setPlaySessionBusy(false);
+        if (current()) setPlaySessionBusy(false);
       }
     }
     if (activeScenario.mobileParity) {
@@ -1256,10 +1297,14 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   }
   async function advanceCaseTime(minutes: number) {
     if (!activeScenario?.mobileParity?.foregroundClock || playSessionBusy) return;
+    const operationVersion = playSessionStartRef.current, authorityEpoch = studioSessionAuthority.getSnapshot().epoch;
+    const current = () => operationVersion === playSessionStartRef.current && (!privatePlayOrigin || authorityEpoch === studioSessionAuthority.getSnapshot().epoch);
+    if (privatePlayConcealed) return;
     if ((!serverPlaySession || serverPlaySession.status !== "active") && localCanonicalRuntimeRef.current) {
       setPlaySessionBusy(true);
       try {
         const runtimeModule = await import("./canonical-runtime");
+        if (!current()) return;
         const runtime = runtimeModule.advanceCanonicalTime(localCanonicalRuntimeRef.current, minutes);
         const currentDecisions = localCanonicalState?.decisions ?? [];
         const currentAdvances = localCanonicalState?.timeAdvances ?? [];
@@ -1268,9 +1313,10 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         restoreLocalCanonicalView(state, activeScenario);
         showSessionNotice(locale === "en" ? `Case clock advanced by ${minutes / 60}h.` : `Время дела продвинуто на ${minutes / 60} ч.`);
       } catch {
+        if (!current()) return;
         showSessionNotice(locale === "en" ? "The case clock could not be advanced." : "Не удалось продвинуть время дела.");
       } finally {
-        setPlaySessionBusy(false);
+        if (current()) setPlaySessionBusy(false);
       }
       return;
     }
@@ -1283,6 +1329,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         body: JSON.stringify({ action: "advance_time", sessionKey: serverPlaySession.sessionKey, expectedRevision: serverPlaySession.revision, eventId: crypto.randomUUID(), minutes }),
       });
       const payload = await response.json().catch(() => null) as { session?: unknown; error?: string; code?: string } | null;
+      if (!current()) return;
       const authoritative = normalizeServerPlaySession(payload?.session);
       if (response.ok && authoritative) {
         restoreFromServerSession(authoritative, activeScenario);
@@ -1299,10 +1346,11 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       setPlaySessionSync("error");
       showSessionNotice(payload?.error ?? (locale === "en" ? "The case clock could not be advanced." : "Не удалось продвинуть время дела."));
     } catch {
+      if (!current()) return;
       setPlaySessionSync("error");
       showSessionNotice(locale === "en" ? "The case clock could not be synchronised." : "Не удалось синхронизировать время дела.");
     } finally {
-      setPlaySessionBusy(false);
+      if (current()) setPlaySessionBusy(false);
     }
   }
   function advanceStage() {
@@ -1318,8 +1366,12 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     setSessionNotice(message);
     window.setTimeout(() => setSessionNotice(null), 3200);
   }
-  function exportPlayedCase() {
+  async function exportPlayedCase() {
     if (!activeScenario) return;
+    if (privatePlayOrigin) {
+      try { const current = await privatePlayAuthority.verify(); if (!current()) return; }
+      catch { showSessionNotice(locale === "en" ? "Export needs verified access. Sign in and refresh access." : "Для экспорта нужен подтверждённый доступ. Войдите и обновите доступ."); return; }
+    }
     const displayedDecisions = decisionLog.map((entry, index) => {
       const sourceStage = activeScenario.stages.find((item) => item.id === entry.stageId);
       const sourceOption = sourceStage?.options.find((option) => option.id === entry.option.id);
@@ -1411,6 +1463,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
             const body = await response.json().catch(() => null) as { session?: unknown } | null;
             const session = normalizeServerPlaySession(body?.session);
             const exactSession = requirePlayedCaseServerSession(response.ok, session, importedScenario, descriptor.sessionKey, descriptor.expectedRevision);
+            setPrivatePlayOrigin(null);
             setActiveScenario(importedScenario);
             playSessionStartRef.current += 1;
             setLegacyTimingMode(false);
@@ -1459,6 +1512,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
           const restoredOutcome = runtimeModule.canonicalOutcomeClass(presentation.outcomeId);
           const exportedOutcome = playthroughFile.outcome === "strong" || playthroughFile.outcome === "mixed" || playthroughFile.outcome === "weak" ? playthroughFile.outcome : null;
           if (presentation.currentStageId !== currentStageId || presentation.clockMinute !== playthroughFile.clockMinute || restoredOutcome !== exportedOutcome || Boolean(restoredOutcome) !== (importedStatus === "completed")) throw new Error("Canonical replay snapshot mismatch");
+          setPrivatePlayOrigin(null);
           setActiveScenario(importedScenario);
           playSessionStartRef.current += 1;
           setServerPlaySession(null);
@@ -1513,6 +1567,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         const completed = importedStatus === "completed";
         if (currentStageId !== restoredStageId || (completed && !importedScenario.stages[restoredStageIndex].terminal) || (!completed && importedScenario.stages[restoredStageIndex].terminal)) throw new Error("Playthrough progress is inconsistent");
 
+        setPrivatePlayOrigin(null);
         setActiveScenario(importedScenario);
         playSessionStartRef.current += 1;
         localCanonicalRuntimeRef.current = null;
@@ -1650,10 +1705,16 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       showSessionNotice(locale === "en" ? "Save this exact version to the workspace before exporting its server-sealed JSON." : "Сохраните эту точную версию в workspace перед экспортом JSON с серверной печатью.");
       return;
     }
+    let current: () => boolean;
+    try { current = await studioReportAuthority.verify(); }
+    catch { showSessionNotice(locale === "en" ? "Export needs verified access. Sign in and refresh access." : "Для экспорта нужен подтверждённый доступ. Войдите и обновите доступ."); return; }
     const exportedAt = new Date().toISOString();
     const exportedDraft = { ...normalized, updatedAt: exportedAt };
     const resolvedCaseType = exportedDraft.caseType ?? caseTypeReference("general_advisory");
     const { projectCaseCoreV2 } = await import("./case-core");
+    if (!current()) return;
+    try { const refreshed = await studioReportAuthority.verify(); if (!current() || !refreshed()) return; }
+    catch { showSessionNotice(locale === "en" ? "Export needs verified access. Sign in and refresh access." : "Для экспорта нужен подтверждённый доступ. Войдите и обновите доступ."); return; }
     const payload: CustomCaseFile = {
       format: "genesis-juris-custom-case",
       schemaVersion: 4,
@@ -1927,6 +1988,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   }
 
   function playStudioDraft() {
+    if (!studioCanDuplicate || !studioReportAuthority.allowed) return;
     const compiled = compileStudioDraft(draftRef.current);
     if (!compiled.scenario) {
       window.alert((locale === "en" ? "This graph cannot be played yet:\n" : "Граф пока нельзя пройти:\n") + compiled.issues.map((issue) => `• ${issue.message}${issue.nodeIds.length ? ` (${issue.nodeIds.join(", ")})` : ""}`).join("\n"));
@@ -1934,7 +1996,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     }
     const createdAt = new Date().toISOString();
     syncStudioDraft(appendStudioHistory(draftRef.current, { role: "studio", source: "visual", action: "compiled_for_play", message: locale === "en" ? `Compiled the current ${draftRef.current.nodes.length}-node graph and opened it in the full case player.` : `Текущий граф из ${draftRef.current.nodes.length} узлов собран и открыт в полноценном проигрывателе.` }, createdAt));
-    startScenario(compiled.scenario);
+    startScenario(compiled.scenario, { privateOrigin: studioCustomCaseId !== null || studioPrivate ? { scope: studioStorageScope, customCaseId: studioCustomCaseId } : null });
   }
   function resetStudioDraft(next = blankStudioDraft(), nextPrompt = "") {
     if (!mayLeaveStudio()) return false;
@@ -1996,26 +2058,27 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   return (
     <div className={`app-shell theme-${theme}${studioOnly ? " studio-only-shell studio-host-falcon" : ""}`}>
       <div className="atmosphere" aria-hidden="true"><span /><span /><span /></div>
-      <AppNavigation allowDeparture={mayLeaveStudio} newCase={() => { if (resetStudioDraft()) navigate("studio", 1); }} importCase={() => { if (!mayLeaveStudio()) return; flushSync(() => navigate("studio", 1)); importRef.current?.click(); }} locale={locale} view={view} studioOnly={studioOnly} workspaceLocation={workspaceLocation} navigate={navigate} openOperations={() => void openOperations()} restoreSession={() => playedCaseImportRef.current?.click()} exportSession={exportPlayedCase} hasActiveScenario={Boolean(activeScenario)} toggleLocale={() => setLocale(locale === "en" ? "ru" : "en")} toggleTheme={() => setTheme(theme === "office" ? "after-hours" : "office")} dark={theme === "after-hours"}/>
+      <AppNavigation allowDeparture={mayLeaveStudio} newCase={() => { if (resetStudioDraft()) navigate("studio", 1); }} importCase={() => { if (!mayLeaveStudio()) return; flushSync(() => navigate("studio", 1)); importRef.current?.click(); }} locale={locale} view={view} studioOnly={studioOnly} workspaceLocation={workspaceLocation} navigate={navigate} openOperations={() => void openOperations()} restoreSession={() => playedCaseImportRef.current?.click()} exportSession={exportPlayedCase} hasActiveScenario={Boolean(activeScenario) && !privatePlayConcealed} toggleLocale={() => setLocale(locale === "en" ? "ru" : "en")} toggleTheme={() => setTheme(theme === "office" ? "after-hours" : "office")} dark={theme === "after-hours"}/>
       <input ref={playedCaseImportRef} className="visually-hidden" type="file" accept=".json,application/json" aria-label={locale === "en" ? "Restore a play session" : "Восстановить прохождение"} onChange={(event) => { const file = event.target.files?.[0]; if (file) importPlayedCase(file); event.target.value = ""; }} />
 
       {view === "templates" && <CaseTemplates locale={locale} onStart={startCaseTemplate} onDemo={() => navigate("demos")} />}
       {(view === "library" || view === "demos") && <LibraryView locale={locale} restorePlaySession={() => playedCaseImportRef.current?.click()} text={text} records={catalogueRecords} loadedScenarios={catalogueScenarios} launchCase={(record) => void launchCatalogueCase(record)} requestFeedback={setFeedbackTarget} openCanopy={loadCanopyDemo} canopyWorkflowHref={workspaceDestination("/canopy", workspaceLocation)} openTemplates={() => navigate("templates")} searchCatalogue={refreshCatalogue} nextCursor={catalogueNextCursor} total={catalogueTotal} loading={catalogueLoading} error={catalogueError} />}
       {view === "play" && !activeScenario && <main className="workspace-empty page-width"><span className="workspace-eyebrow">{locale === "en" ? "Operations" : "Операции"}</span><h1>{locale === "en" ? "Choose a case to work through" : "Выберите кейс для прохождения"}</h1><p>{locale === "en" ? "Open a playable demo, or restore a previous session to continue its decisions and deadlines." : "Откройте игровой демо-кейс или восстановите сессию, чтобы продолжить решения и задачи."}</p><div><button type="button" className="primary-cta" onClick={() => navigate("demos")}>{locale === "en" ? "Open demo case" : "Открыть демо-кейс"}</button><button type="button" className="secondary-cta" onClick={() => playedCaseImportRef.current?.click()}>{locale === "en" ? "Restore session" : "Восстановить сессию"}</button></div></main>}
-      {view === "play" && activeScenario && stage && runLedger && <PlayView
+      {view === "play" && !privatePlayConcealed && activeScenario && stage && runLedger && <PlayView
         locale={locale} text={text} scenario={activeScenario} stage={stage} stageIndex={stageIndex} metrics={metrics} ledger={runLedger}
         decisionLog={decisionLog} caseMinute={caseMinute} actionUseCounts={actionUseCounts} completedDeadlineIds={completedDeadlineIds}
         missedDeadlineIds={missedDeadlineIds} canonicalState={canonicalPlayState ?? undefined} dossierRef={dossierRef} setDossierRef={setDossierRef}
         setSelectedOption={setSelectedOption} advanceTime={(minutes) => void advanceCaseTime(minutes)} timeBusy={playSessionBusy} outcome={outcome}
-        sessionSync={playSessionSync} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario, { legacyTiming: legacyTimingMode })}
+        sessionSync={playSessionSync} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario, { legacyTiming: legacyTimingMode, privateOrigin: privatePlayOrigin })}
         returnLibrary={() => navigate(playReturnView)} returnToStudio={playReturnView === "studio"} returnLabel={playReturnView === "demos" ? (locale === "en" ? "Demo cases" : "Демо-кейсы") : playReturnView === "help" ? text.help : playReturnView === "community" ? text.community : undefined} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })}
       />}
-      {view === "studio" && <StudioView onOperationInterrupted={() => showSessionNotice(locale === "en" ? "A Studio operation was interrupted. Its result may still have been saved. Inspect the saved version before repeating the operation." : "Операция Studio прервана. Результат мог сохраниться. Проверьте сохранённую версию перед повтором.")} operationPending={studioOperationPending} key={studioOpenRevision} standalone={studioOnly} locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} packageRequiresPlayableRoute={packageRequiresPlayableRoute} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} applyCanonicalMarkdownDraft={applyCanonicalMarkdownDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} serverPublicationFingerprint={studioServerPublicationFingerprint} setServerPublicationFingerprint={setStudioServerPublicationFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate} reportReceiptStorageScope={studioStorageScope} persistReportReceiptOnDevice={reportReceiptDeviceEligible} aiEntitlement={studioAIEntitlement} restorePending={studioAIEntitlement === "loading" || (studioAIEntitlement !== "unavailable" && !studioRestoreReady)} />}
+      {view === "studio" && <><div hidden={studioConcealed} inert={studioConcealed ? true : undefined}><StudioView onOperationInterrupted={() => showSessionNotice(locale === "en" ? "A Studio operation was interrupted. Its result may still have been saved. Inspect the saved version before repeating the operation." : "Операция Studio прервана. Результат мог сохраниться. Проверьте сохранённую версию перед повтором.")} operationPending={studioOperationPending} key={studioOpenRevision} standalone={studioOnly} locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} packageRequiresPlayableRoute={packageRequiresPlayableRoute} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} applyCanonicalMarkdownDraft={applyCanonicalMarkdownDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} serverPublicationFingerprint={studioServerPublicationFingerprint} setServerPublicationFingerprint={setStudioServerPublicationFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate && studioReportAuthority.allowed} reportAuthority={studioReportAuthority} reportReceiptStorageScope={studioStorageScope} persistReportReceiptOnDevice={reportReceiptDeviceEligible} aiEntitlement={studioAIEntitlement} restorePending={studioAIEntitlement === "loading" || (studioAIEntitlement !== "unavailable" && !studioRestoreReady)} /></div></>}
+      {((view === "studio" && studioConcealed) || (view === "play" && privatePlayConcealed)) && <section className="studio-entry"><h2>{locale === "en" ? "Verify access to this workspace" : "Подтвердите доступ к workspace"}</h2><p role="status">{locale === "en" ? "Private content is concealed. Sign in, then refresh access. Unsaved input stays in this tab while access is unconfirmed." : "Приватное содержимое скрыто. Войдите и обновите доступ. Пока доступ не подтверждён, несохранённый ввод остаётся в памяти этой вкладки."}</p><a href="/account">{locale === "en" ? "Account" : "Аккаунт"}</a><button type="button" onClick={() => void studioSessionAuthority.refresh(true, activeProtectedCaseId)}>{locale === "en" ? "Refresh access" : "Обновить доступ"}</button></section>}
       {view === "community" && <CommunityView locale={locale} cases={catalogueRecords} openCustomCase={openWorkspaceCustomCase} refreshCatalogue={() => refreshCatalogue({ force: true })} clearDeviceDraft={purgeLocalStudioState} />}
       {view === "help" && <HelpCenter locale={locale} onNavigate={navigate} />}
-      {(selectedOption || resultOption) && activeScenario && stage && <DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} busy={playSessionBusy} close={() => { if (!playSessionBusy) { setSelectedOption(null); setResultOption(null); } }} dispatch={dispatchDecision} advance={advanceStage} finalStage={Boolean(activeScenario.stages.find((item) => item.id === (selectedOption ?? resultOption)?.nextStageId)?.terminal)} />}
+      {!privatePlayConcealed && (selectedOption || resultOption) && activeScenario && stage && <DecisionModal locale={locale} text={text} scenario={activeScenario} stageHeadline={local(stage.headline, locale)} option={selectedOption ?? resultOption!} isResult={Boolean(resultOption)} busy={playSessionBusy} close={() => { if (!playSessionBusy) { setSelectedOption(null); setResultOption(null); } }} dispatch={dispatchDecision} advance={advanceStage} finalStage={Boolean(activeScenario.stages.find((item) => item.id === (selectedOption ?? resultOption)?.nextStageId)?.terminal)} />}
       {sessionNotice && <div className="session-toast" role="status"><Icon name="check" />{sessionNotice}</div>}
-      {feedbackTarget && <Suspense fallback={<p className="session-toast" role="status">{locale === "en" ? "Loading feedback form…" : "Загрузка формы отзыва…"}</p>}><FeedbackDialog Icon={Icon} locale={locale} target={feedbackTarget} close={() => setFeedbackTarget(null)} submitted={(audience) => { const privateProductFeedback = feedbackTarget.privateCase && audience !== "owner_private"; setFeedbackTarget(null); showSessionNotice(audience === "owner_private" ? (locale === "en" ? "Private note saved for you only." : "Приватная заметка сохранена только для вас.") : privateProductFeedback ? (locale === "en" ? "Redacted product feedback sent to Maxim." : "Обезличенный отзыв о продукте отправлен Максиму.") : (locale === "en" ? "Feedback submitted for expert review." : "Отзыв отправлен на экспертную проверку.")); }} /></Suspense>}
+      {feedbackTarget && !studioConcealed && !privatePlayConcealed && <Suspense fallback={<p className="session-toast" role="status">{locale === "en" ? "Loading feedback form…" : "Загрузка формы отзыва…"}</p>}><FeedbackDialog Icon={Icon} locale={locale} target={feedbackTarget} close={() => setFeedbackTarget(null)} submitted={(audience) => { const privateProductFeedback = feedbackTarget.privateCase && audience !== "owner_private"; setFeedbackTarget(null); showSessionNotice(audience === "owner_private" ? (locale === "en" ? "Private note saved for you only." : "Приватная заметка сохранена только для вас.") : privateProductFeedback ? (locale === "en" ? "Redacted product feedback sent to Maxim." : "Обезличенный отзыв о продукте отправлен Максиму.") : (locale === "en" ? "Feedback submitted for expert review." : "Отзыв отправлен на экспертную проверку.")); }} /></Suspense>}
     </div>
   );
 }
@@ -2579,7 +2642,7 @@ type StudioViewProps = {
   serverFingerprint: string | null; setServerFingerprint: (value: string | null) => void;
   serverPublicationFingerprint: string | null; setServerPublicationFingerprint: (value: string | null) => void;
   copyProtectionLocked: boolean; setCopyProtectionLocked: (value: boolean) => void; canDuplicate: boolean; aiEntitlement: StudioAIEntitlement; restorePending: boolean;
-  reportReceiptStorageScope: string | null; persistReportReceiptOnDevice: boolean;
+  reportReceiptStorageScope: string | null; persistReportReceiptOnDevice: boolean; reportAuthority: StudioReportAuthority;
 };
 
 type StudioDerivations = {
@@ -2601,7 +2664,7 @@ function computeStudioDerivations(source: StudioDraft): StudioDerivations {
   };
 }
 
-function StudioView({ operationPending, onOperationInterrupted, locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, packageRequiresPlayableRoute, generateDraft, applyPromptIteration, applyReviewedAIPlan, applyCanonicalMarkdownDraft, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadExample, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, serverPublicationFingerprint, setServerPublicationFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, reportReceiptStorageScope, persistReportReceiptOnDevice, aiEntitlement, restorePending }: StudioViewProps) {
+function StudioView({ operationPending, onOperationInterrupted, locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, packageRequiresPlayableRoute, generateDraft, applyPromptIteration, applyReviewedAIPlan, applyCanonicalMarkdownDraft, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadExample, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, serverPublicationFingerprint, setServerPublicationFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, reportAuthority, reportReceiptStorageScope, persistReportReceiptOnDevice, aiEntitlement, restorePending }: StudioViewProps) {
   const [workspaceState, setWorkspaceState] = useState<"idle" | "saving" | "saved" | "submitted" | "conflict" | "auth_required" | "error">(customCaseId && serverFingerprint && serverPublicationFingerprint ? "saved" : "idle");
   const [linkSourceId, setLinkSourceId] = useState<string | null>(null);
   const [relationStatus, setRelationStatus] = useState("");
@@ -3770,7 +3833,9 @@ function StudioView({ operationPending, onOperationInterrupted, locale, text, pr
       currentPublicationFingerprint={casePublicationFingerprint(draft)}
       workspacePublicationFingerprint={serverPublicationFingerprint}
       privateCase={isPrivate}
-      canGenerateReport={canDuplicate}
+      canGenerateReport={canDuplicate && reportAuthority.allowed}
+      reportAuthorityEpoch={reportAuthority.epoch}
+      verifyReportAuthority={reportAuthority.verify}
       developerView={displayMode === "developer"}
       reportReceiptStorageScope={reportReceiptStorageScope}
       persistReportReceiptOnDevice={persistReportReceiptOnDevice}
@@ -3779,7 +3844,7 @@ function StudioView({ operationPending, onOperationInterrupted, locale, text, pr
         setCaseReportStatus(locale === "en" ? "PDF download started." : "Скачивание PDF началось.");
       }}
     /></Suspense></ReportErrorBoundary>}
-    {caseMarkdownOpen && <Suspense fallback={null}><CaseMarkdownDialog locale={locale} draft={draft} close={() => setCaseMarkdownOpen(false)} completed={() => setCaseReportStatus(locale === "en" ? "Markdown downloaded." : "Markdown скачан.")}/></Suspense>}
+    {caseMarkdownOpen && <Suspense fallback={null}><CaseMarkdownDialog key={reportAuthority.epoch} locale={locale} draft={draft} canExport={canDuplicate && reportAuthority.allowed} verifyAuthority={reportAuthority.verify} close={() => setCaseMarkdownOpen(false)} completed={() => setCaseReportStatus(locale === "en" ? "Markdown downloaded." : "Markdown скачан.")}/></Suspense>}
   </main>;
 }
 

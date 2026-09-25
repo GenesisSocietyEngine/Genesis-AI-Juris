@@ -14,7 +14,7 @@ function storedReceipt(caseId: string, profileId: string, scope: string | null, 
   catch { return null; }
 }
 
-export default function CaseReportDialog({ locale, draft, currentFingerprint, workspaceFingerprint, currentPublicationFingerprint, workspacePublicationFingerprint, privateCase, canGenerateReport, developerView = false, reportReceiptStorageScope, persistReportReceiptOnDevice, close, completed }: {
+export default function CaseReportDialog({ locale, draft, currentFingerprint, workspaceFingerprint, currentPublicationFingerprint, workspacePublicationFingerprint, privateCase, canGenerateReport, reportAuthorityEpoch = 0, verifyReportAuthority, developerView = false, reportReceiptStorageScope, persistReportReceiptOnDevice, close, completed }: {
   locale: "en" | "ru";
   draft: StudioDraft;
   currentFingerprint: string;
@@ -23,6 +23,8 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
   workspacePublicationFingerprint: string | null;
   privateCase: boolean;
   canGenerateReport: boolean;
+  reportAuthorityEpoch?: number;
+  verifyReportAuthority?: () => Promise<() => boolean>;
   developerView?: boolean;
   reportReceiptStorageScope: string | null;
   persistReportReceiptOnDevice: boolean;
@@ -54,7 +56,7 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
   const [includeTechnicalIds, setIncludeTechnicalIds] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const receiptContext = useMemo(() => ({ caseId: draft.caseId, scope: reportReceiptStorageScope, canGenerateReport }), [draft.caseId, reportReceiptStorageScope, canGenerateReport]);
+  const receiptContext = useMemo(() => ({ caseId: draft.caseId, scope: reportReceiptStorageScope, canGenerateReport, reportAuthorityEpoch }), [draft.caseId, reportReceiptStorageScope, canGenerateReport, reportAuthorityEpoch]);
   const currentReceiptContext = useRef<typeof receiptContext | null>(receiptContext);
   const [renderedReceiptContext, setRenderedReceiptContext] = useState(receiptContext);
   const [completedDownload, setCompletedDownload] = useState<{ context: typeof receiptContext; receipt: ReportReceiptV2 } | null>(null);
@@ -150,15 +152,27 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
   const previewUrl = canGenerateReport && previewDocument?.context === receiptContext
     && previewDocument.options === activeReportOptions && previewDocument.draft === draft ? previewDocument.url : null;
 
+  const verifyOutput = async () => {
+    if (currentReceiptContext.current !== receiptContext || !canGenerateReport) throw new Error("Report context is no longer active.");
+    // Private/workspace callers must provide server-backed authority. Anonymous
+    // local drafts retain their existing entirely local output behavior.
+    if (!verifyReportAuthority && (privateCase || workspaceFingerprint !== null)) throw new Error("Report access could not be verified. Sign in and refresh access.");
+    const authorized = verifyReportAuthority ? await verifyReportAuthority() : () => true;
+    const current = () => currentReceiptContext.current === receiptContext && authorized();
+    if (!current()) throw new Error("Report context is no longer active.");
+    return current;
+  };
+
   const preview = async () => {
     if (!canGenerateReport || busy || !draft.title.trim() || !draft.nodes.length) return;
     setBusy(true); setError("");
     try {
+      const current = await verifyOutput();
       const { createCaseReportPreview } = await import("./case-report");
       const blob = await createCaseReportPreview(draft, { ...activeReportOptions, generatedAt: new Date().toISOString() }, {
-        canGenerate: canGenerateReport, isCurrent: () => currentReceiptContext.current === receiptContext,
+        canGenerate: canGenerateReport, isCurrent: current, revalidate: async () => { await verifyOutput(); },
       });
-      if (currentReceiptContext.current !== receiptContext) return;
+      if (!current()) return;
       setPreviewDocument({ url: URL.createObjectURL(blob), options: activeReportOptions, draft, context: receiptContext });
     } catch (caught) { if (currentReceiptContext.current === receiptContext) setError(reportGenerationErrorMessage(caught, locale)); }
     finally { if (currentReceiptContext.current === receiptContext) setBusy(false); }
@@ -188,27 +202,31 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
     if (!draft.title.trim() || !draft.nodes.length || busy) return;
     setBusy(true); setError("");
     try {
+      const current = await verifyOutput();
       const { downloadCaseReport } = await import("./case-report");
       const receipt = await downloadCaseReport(draft, {
         ...activeReportOptions,
         generatedAt: new Date().toISOString(),
-      }, { canGenerate: canGenerateReport, isCurrent: () => currentReceiptContext.current === receiptContext });
-      if (currentReceiptContext.current !== receiptContext) return;
+      }, { canGenerate: canGenerateReport, isCurrent: current, revalidate: async () => { await verifyOutput(); } });
+      if (!current()) return;
       setCompletedDownload({ context: receiptContext, receipt });
       completed();
     } catch (caught) {
       if (currentReceiptContext.current === receiptContext) setError(reportGenerationErrorMessage(caught, locale));
     } finally { if (currentReceiptContext.current === receiptContext) setBusy(false); }
   };
-  const exportDownloadReceipt = () => {
+  const exportDownloadReceipt = async () => {
     if (!canGenerateReport || !downloadReceipt || busy || currentReceiptContext.current !== receiptContext) return;
+    setBusy(true); setError("");
     try {
+      const current = await verifyOutput();
+      if (!current()) return;
       const filename = `${downloadReceipt.caseId}-v${downloadReceipt.caseVersion}-${downloadReceipt.profileId}-${downloadReceipt.generatedAt}-report-receipt.json`.replace(/[^a-zA-Z0-9._-]/g, "-");
       startReportDownload(new Blob([JSON.stringify(downloadReceipt, null, 2)], { type: "application/json" }), filename);
       setError("");
     } catch {
-      setError(t("The receipt could not be downloaded. It remains available in this dialog.", "Не удалось скачать квитанцию. Она остаётся доступной в этом окне."));
-    }
+      if (currentReceiptContext.current === receiptContext) setError(t("The receipt could not be downloaded. Verify access and try again.", "Не удалось скачать квитанцию. Подтвердите доступ и повторите."));
+    } finally { if (currentReceiptContext.current === receiptContext) setBusy(false); }
   };
   const outputBlocked = !canGenerateReport || busy || !draft.title.trim() || !draft.nodes.length
     || ((status === "final" || audience === "client") && !readiness.ready);
