@@ -1,4 +1,4 @@
-import { and, desc, eq, getTableColumns, gte, lt, lte, or } from "drizzle-orm";
+import { and, desc, eq, gte, lt, lte, or } from "drizzle-orm";
 import {
   dossierAuditEvents,
   dossierDocuments,
@@ -7,7 +7,6 @@ import {
   dossierExtractionResults,
   dossierRevisionReceipts,
   dossierSourceAnchors,
-  dossierSourceAnchorRetirements,
   dossiers,
 } from "../../../../../../db/schema";
 import { canonicalDossierJson } from "../../../../../dossier-contract";
@@ -83,11 +82,6 @@ export async function GET(request: Request, routeContext: RouteContext) {
   if (url.searchParams.getAll("limit").length > 1 || url.searchParams.getAll("cursor").length > 1) {
     return dossierJson({ error: "Source-anchor pagination parameters must be unique." }, 400);
   }
-  let exactId: string | null = null;
-  if (url.searchParams.has("anchor_id")) {
-    if (url.searchParams.getAll("anchor_id").length !== 1 || url.searchParams.has("cursor")) return dossierJson({ error: "Choose an exact citation without pagination." }, 400);
-    try { exactId = parseDossierOpaqueId(url.searchParams.get("anchor_id"), "citation ID"); } catch { return dossierNotFound(); }
-  }
   const limit = evidencePageLimit(url.searchParams.get("limit"), MAX_PAGE_SIZE);
   if (limit === null) return dossierJson({ error: "The source-anchor page limit is invalid." }, 400);
 
@@ -111,13 +105,8 @@ export async function GET(request: Request, routeContext: RouteContext) {
     cursor = storedCursor;
   }
 
-  const rows = await context.db.select({ ...getTableColumns(dossierSourceAnchors), documentTitle: dossierDocuments.title, versionOrdinal: dossierDocumentVersions.ordinal, retiredAt: dossierSourceAnchorRetirements.occurredAt }).from(dossierSourceAnchors)
-    .innerJoin(dossierDocuments, and(eq(dossierDocuments.dossierId, dossierSourceAnchors.dossierId), eq(dossierDocuments.id, dossierSourceAnchors.documentId)))
-    .innerJoin(dossierDocumentVersions, and(eq(dossierDocumentVersions.dossierId, dossierSourceAnchors.dossierId), eq(dossierDocumentVersions.id, dossierSourceAnchors.documentVersionId)))
-    .leftJoin(dossierSourceAnchorRetirements, and(eq(dossierSourceAnchorRetirements.dossierId, dossierSourceAnchors.dossierId), eq(dossierSourceAnchorRetirements.sourceAnchorId, dossierSourceAnchors.id)))
-    .where(and(
+  const rows = await context.db.select().from(dossierSourceAnchors).where(and(
     eq(dossierSourceAnchors.dossierId, access.dossier.id),
-    exactId ? eq(dossierSourceAnchors.id, exactId) : undefined,
     cursor ? or(
       lt(dossierSourceAnchors.createdAt, cursor.createdAt),
       and(
@@ -126,11 +115,10 @@ export async function GET(request: Request, routeContext: RouteContext) {
       ),
     ) : undefined,
   )).orderBy(desc(dossierSourceAnchors.createdAt), desc(dossierSourceAnchors.id)).limit(limit + 1);
-  if (exactId && !rows.length) return dossierNotFound();
   const hasMore = rows.length > limit;
   const visible = rows.slice(0, limit);
   return dossierJson({
-    source_anchors: visible.map(anchor => ({ ...projectSourceAnchor(anchor), document_title: anchor.documentTitle, version_ordinal: anchor.versionOrdinal, retired_at: anchor.retiredAt })),
+    source_anchors: visible.map(projectSourceAnchor),
     page: {
       limit,
       has_more: hasMore,

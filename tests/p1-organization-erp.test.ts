@@ -25,7 +25,7 @@ type Actor = { id: number; actorId: string; email: string };
 type ApiResult = {
   organization: OrganizationAuthority; token: string; id: string;
   dossier: { dossier_id: string; revision: number }; dossier_id: string; dossier_revision: number;
-  dossiers: unknown[]; documents: Array<{ document_id: string; classification: string; source_origin: string; current_version_id: string; versions: Array<{ original_filename: string }> }>; document_id: string;
+  dossiers: unknown[]; documents: Array<{ document_id: string }>; document_id: string;
   version: { document_version_id: string; predecessor_version_id: string; content_sha256: string };
   source_anchor: { source_anchor_id: string }; assertion: { assertion_id: string }; professional_assertion?: { assertion_id: string };
   session: { sessionKey: string; status: string; revision: number; state: { currentStageId: string; decisions: unknown[] } };
@@ -231,76 +231,6 @@ test("Administration: invitations respect existing membership and restoration wi
   assert.equal(final.members.find(m=>m.actorId===member.actorId)?.status,"removed");
   assert.equal(final.members.find(m=>m.actorId===member.actorId)?.revision,4);
   assert.equal(final.events.filter(e=>e.action==="membership_changed").length,3);
-});
-
-test("Upload acknowledgement and immutable versions: rejection preserves state; checked PDF upload persists and downloads", async () => {
-  const actor = await newActor("upload-contract");
-  const organization = (await json(await call("organizations", actor, null, "POST", { action: "create", name: "Upload contract test" }), 201)).organization.id;
-  const created = await json(await call("dossiers", actor, organization, "POST", { title: "Synthetic upload contract", jurisdictions: ["Test"], classification: "confidential" }), 201);
-  const id = created.dossier.dossier_id;
-  const currentRevision = created.dossier.revision;
-  const pdf = new Uint8Array(readFileSync("docs/testing/next-stage-2026-09-15/canopy-controlled.pdf"));
-  function form(acknowledgements: string[]) {
-    const value = new FormData();
-    value.set("file", new File([pdf], "synthetic-canopy.pdf", { type: "application/pdf" }));
-    value.set("title", "Synthetic PDF"); value.set("documentType", "analytical report");
-    value.set("classification", "public"); value.set("documentId", "");
-    value.set("expectedRevision", String(currentRevision)); value.set("mediaType", "application/pdf");
-    for (const acknowledgement of acknowledgements) value.append("privacyAcknowledged", acknowledgement);
-    return value;
-  }
-  const state = () => d1.prepare(`SELECT revision,
-    (SELECT count(*) FROM dossier_documents WHERE dossier_id=?) AS documents,
-    (SELECT count(*) FROM dossier_revision_receipts WHERE dossier_id=?) AS receipts,
-    (SELECT count(*) FROM dossier_upload_intents WHERE dossier_id=?) AS intents
-    FROM dossiers WHERE id=?`).bind(id, id, id, id).first();
-  const beforeState = await state();
-  const beforeObjects = (await bucket.list()).objects.map(object => object.key).sort();
-  for (const acknowledgement of [[], ["false"], ["yes"], ["true", "true"]]) {
-    const response = await call("documents", actor, organization, "POST", form(acknowledgement), { dossierId: id });
-    assert.equal(response.status, 400);
-    assert.equal((await response.json() as {code:string}).code, "document_upload_invalid");
-    assert.deepEqual(await state(), beforeState);
-    assert.deepEqual((await bucket.list()).objects.map(object => object.key).sort(), beforeObjects);
-  }
-  const accepted = await json(await call("documents", actor, organization, "POST", form(["true"]), { dossierId: id }), 201);
-  assert.equal(accepted.dossier_revision, currentRevision + 1);
-  const reopened = await json(await call("documents", actor, organization, "GET", undefined, { dossierId: id }));
-  assert.equal(reopened.documents.length, 1); assert.equal(reopened.documents[0].document_id, accepted.document_id);
-  const download = await call("download", actor, organization, "GET", undefined, { dossierId: id, documentId: accepted.document_id, versionId: accepted.version.document_version_id });
-  assert.equal(download.status, 200); assert.deepEqual(new Uint8Array(await download.arrayBuffer()), pdf);
-  const versionForm = () => {
-    const value = form(["true"]);
-    value.set("documentId", accepted.document_id); value.set("expectedRevision", String(accepted.dossier_revision));
-    value.set("file", new File(["# Synthetic replacement\nDifferent file, same logical document."], "renamed-replacement.md", { type: "text/markdown" }));
-    value.set("mediaType", "text/markdown"); return value;
-  };
-  const versionState = () => d1.prepare(`SELECT document_version_id,
-    (SELECT count(*) FROM dossier_document_versions WHERE dossier_id=?) AS versions
-    FROM dossier_document_current_versions WHERE dossier_id=? AND document_id=?`).bind(id, id, accepted.document_id).first();
-  const beforeVersionState = await versionState(), beforeVersionCase = await state();
-  const beforeVersionObjects = (await bucket.list()).objects.map(object => object.key).sort();
-  for (const [field, replacement] of [["title", "Wrong title"], ["documentType", "wrong type"], ["classification", "confidential"]]) {
-    const mismatched = versionForm(); mismatched.set(field, replacement);
-    const response = await call("documents", actor, organization, "POST", mismatched, { dossierId: id });
-    assert.equal(response.status, 409); assert.equal((await response.json() as {code:string}).code, "document_metadata_conflict");
-    assert.deepEqual(await versionState(), beforeVersionState); assert.deepEqual(await state(), beforeVersionCase);
-    assert.deepEqual((await bucket.list()).objects.map(object => object.key).sort(), beforeVersionObjects);
-  }
-  const second = await json(await call("documents", actor, organization, "POST", versionForm(), { dossierId: id }), 201);
-  assert.equal(second.document_id, accepted.document_id); assert.equal(second.version.predecessor_version_id, accepted.version.document_version_id);
-  assert.equal(second.dossier_revision, accepted.dossier_revision + 1);
-  const versionList = await json(await call("documents", actor, organization, "GET", undefined, { dossierId: id }));
-  assert.equal(versionList.documents.length, 1); assert.equal(versionList.documents[0].versions.length, 2);
-  assert.equal(versionList.documents[0].classification, "public"); assert.equal(versionList.documents[0].source_origin, "internal_upload");
-  assert.equal(versionList.documents[0].current_version_id, second.version.document_version_id);
-  assert.equal(versionList.documents[0].versions[0].original_filename, "renamed-replacement.md");
-  const originalAgain = await call("download", actor, organization, "GET", undefined, { dossierId: id, documentId: accepted.document_id, versionId: accepted.version.document_version_id });
-  assert.equal(originalAgain.status, 200); assert.deepEqual(new Uint8Array(await originalAgain.arrayBuffer()), pdf);
-  const replacementDownload = await call("download", actor, organization, "GET", undefined, { dossierId: id, documentId: accepted.document_id, versionId: second.version.document_version_id });
-  assert.equal(replacementDownload.status, 200); assert.equal(await replacementDownload.text(), "# Synthetic replacement\nDifferent file, same logical document.");
-  await json(await call("documents", null, organization, "POST", form(["true"]), { dossierId: id }), 401);
-  await json(await call("documents", bob, orgB, "POST", form(["true"]), { dossierId: id }), 404);
 });
 
 test("P1 ERP 1: create, reopen, filter and page a dossier in exactly one organization", async () => {

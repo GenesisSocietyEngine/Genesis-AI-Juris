@@ -1,6 +1,6 @@
 import type { MatterDestination, ReadinessReason, SnapshotItem, OutputItem } from './matter-view-model';
 
-export type MatterActionTarget = { destination: MatterDestination; id: string; requestId?: string; packageRefId?: string; originActionKey?: string; originOutputId?: string; originSnapshotId?: string };
+export type MatterActionTarget = { destination: MatterDestination; id: string; requestId?: string; packageRefId?: string };
 export type MatterAction = { title: string; detail: string; target: MatterActionTarget };
 
 /** Only local, known controls are addressable. Server-provided URLs never become navigation code. */
@@ -22,7 +22,6 @@ export function actionForFinding(finding: ReadinessReason, snapshots: SnapshotIt
     case 'SIMULATION_FAILED':
     case 'SIMULATION_REQUIRED': return { ...target('decision-packages', 'package-link', 'Attach a completed simulation'), target: {destination:'decision-packages', id:'package-link', packageRefId:id ?? undefined} };
     case 'REVIEWER_APPROVAL_MISSING': {
-      if (id) return { ...target('outputs', `output-${id}`, 'Review the current report'), target: { destination: 'outputs', id: `output-${id}`, originOutputId: id } };
       const output = id ? outputs.find(output => output.id === id && output.state === 'current') : outputs.find(output => output.state === 'current');
       if (output) return target('outputs', `output-${output.id}`, 'Review the current report');
       break;

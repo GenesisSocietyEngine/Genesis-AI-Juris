@@ -152,7 +152,6 @@ export interface DocumentItem {
   id: string;
   title: string;
   type: string;
-  sourceOrigin?: string | null;
   status: string;
   classification: string;
   currentVersionId: string;
@@ -327,7 +326,7 @@ function stringArray(source: UnknownRecord, keys: readonly string[], limit = 100
   return value.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0).slice(0, limit);
 }
 
-function recordsFrom(value: unknown, keys: readonly string[], limit?: number): UnknownRecord[] {
+function recordsFrom(value: unknown, keys: readonly string[], limit: number): UnknownRecord[] {
   const outer = record(value);
   const data = record(outer.data);
   for (const source of [outer, data]) {
@@ -353,9 +352,7 @@ function readinessFrom(source: UnknownRecord): MatterReadiness {
   const dimensions = recordsFrom(readiness, ["dimensions"], 10).map((dimension) => {
     const stateValue = textValue(dimension, ["state"], "blocked");
     const state = stateValue === "ready" || stateValue === "not_applicable" ? stateValue : "blocked";
-    // This is the authoritative readiness collection, not a paginated record
-    // preview. Client disclosure limits must not discard outstanding actions.
-    const reasons = recordsFrom(dimension, ["reasons", "findings"]).map((reason) => ({
+    const reasons = recordsFrom(dimension, ["reasons", "findings"], 100).map((reason) => ({
       code: textValue(reason, ["code"], "READINESS_ATTENTION_REQUIRED"),
       explanation: boundedText(textValue(reason, ["explanation", "message"], "Professional review is required."), 500),
       deepLink: safeMatterLink(nullableText(reason, ["deep_link", "deepLink"])),
@@ -475,7 +472,7 @@ export function normalizeMatterDetail(payload: unknown): MatterDetail | null {
   };
 }
 
-export function normalizeAnchors(payload: unknown): SourceAnchorItem[] {
+function normalizeAnchors(payload: unknown): SourceAnchorItem[] {
   return recordsFrom(payload, ["source_anchors", "sourceAnchors", "anchors"], 1_000).map((anchor) => ({
     id: textValue(anchor, ["source_anchor_id", "sourceAnchorId", "id"]),
     documentId: textValue(anchor, ["document_id", "documentId"]),
@@ -493,7 +490,7 @@ export function normalizeAnchors(payload: unknown): SourceAnchorItem[] {
   })).filter((anchor) => anchor.id);
 }
 
-export function normalizeAssertions(payload: unknown): AssertionItem[] {
+function normalizeAssertions(payload: unknown): AssertionItem[] {
   return recordsFrom(payload, ["professional_assertions", "professionalAssertions", "assertions"], 1_000).map((assertion) => ({
     id: textValue(assertion, ["assertion_id", "assertionId", "id"]),
     type: textValue(assertion, ["assertion_type", "assertionType", "type"], "fact"),
@@ -517,7 +514,6 @@ export function normalizeDocuments(payload: unknown): DocumentItem[] {
       id,
       title: boundedText(textValue(document, ["title", "name"], "Untitled document"), 500),
       type: textValue(document, ["document_type", "documentType", "type"], "source_document"),
-      sourceOrigin: nullableText(document, ["source_origin", "sourceOrigin"]),
       status: textValue(document, ["status"], "received"),
       classification: textValue(document, ["classification"], "confidential"),
       currentVersionId: textValue(document, ["current_version_id", "currentVersionId"]),
@@ -674,9 +670,7 @@ export function nextPageCursor(payload: unknown): string | null {
   const outer = record(payload);
   const data = record(outer.data);
   return nullableText(outer, ["next_cursor", "nextCursor"])
-    ?? nullableText(data, ["next_cursor", "nextCursor"])
-    ?? nullableText(record(outer.page), ["next_cursor", "nextCursor"])
-    ?? nullableText(record(data.page), ["next_cursor", "nextCursor"]);
+    ?? nullableText(data, ["next_cursor", "nextCursor"]);
 }
 
 export interface TransitionOption {

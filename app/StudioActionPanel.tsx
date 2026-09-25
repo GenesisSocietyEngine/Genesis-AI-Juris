@@ -18,7 +18,7 @@ export default function StudioActionPanel({ draft, checks, locale, checking, can
   function action(check: StudioCheck): { title: string; target: StudioActionTarget } {
     if (!draft.nodes.length) return { title: en ? "Build the initial case draft" : "Создайте начальный черновик", target: { step: 1, id: "studio-case-brief" } };
     const group = playbook.requiredNodeGroups.find(group => `nodes:${group.id}` === check.id);
-    if (group) return { title: group.types.includes("evidence") ? (en ? "Complete facts or evidence records" : "Дополните записи фактов или доказательств") : `${en ? "Add" : "Добавьте"} ${group.label[locale].toLowerCase()}`, target: { step: 3, id: "studio-evidence-composer", nodeType: group.types.includes("evidence") ? "evidence" : group.types[0] } };
+    if (group) return { title: group.types.includes("evidence") ? (en ? "Add missing evidence" : "Добавьте недостающие доказательства") : `${en ? "Add" : "Добавьте"} ${group.label[locale].toLowerCase()}`, target: { step: 3, id: "studio-evidence-composer", nodeType: group.types.includes("evidence") ? "evidence" : group.types[0] } };
     if (check.id === "brief") return { title: en ? "Complete the case title and context" : "Заполните название и контекст", target: { step: 3, id: draft.title.trim() ? "studio-publishable-context" : "studio-title" } };
     if (check.id === "context") return { title: en ? "Review case context" : "Проверьте контекст кейса", target: { step: 3, id: "studio-publishable-context" } };
     if (check.id === "identity" || check.id === "version") return { title: en ? "Correct case identity" : "Исправьте идентификатор кейса", target: { step: 3, id: check.id === "version" ? "studio-case-version" : "studio-case-identity", developer: true } };

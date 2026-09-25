@@ -1,5 +1,4 @@
 import { env, waitUntil } from "cloudflare:workers";
-import { releaseProvenanceRecord } from "./release-provenance";
 import canonicalBundle from "./canonical-case-bundle.json";
 import { CANONICAL_RUNTIME_REVISION } from "./canonical-runtime";
 import {
@@ -110,17 +109,10 @@ export function observeWorkerRequestEvent(
 ): ObservabilityEventV1 | null {
   try {
     const bindings = options.bindings ?? env as unknown as ObservabilityBindings;
-    const event = observeWorkerRequestEventCore(input, {
+    return observeWorkerRequestEventCore(input, {
       identity: currentObservabilityReleaseIdentity(bindings),
       sink: options.sink,
     });
-    if (event) {
-      try {
-        const provenance = releaseProvenanceRecord(event.requestId, bindings);
-        if (provenance) console.info(JSON.stringify(provenance));
-      } catch { /* Attribution logging must not fail the request or v1 event. */ }
-    }
-    return event;
   } catch {
     return null;
   }

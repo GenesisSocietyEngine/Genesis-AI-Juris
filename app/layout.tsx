@@ -3,7 +3,6 @@ import "./globals.css";
 import "./workspace-design.css";
 import "./demo-catalogue.css";
 import StaleChunkRecovery from "./StaleChunkRecovery";
-import NavigationSession from "./NavigationSession";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://genesis-juris-web.maxim-hayan.chatgpt.site"),
@@ -43,7 +42,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased" data-genesis-juris-release="v62"><StaleChunkRecovery/><NavigationSession>{children}</NavigationSession></body>
+      <body className="antialiased" data-genesis-juris-release="v62"><StaleChunkRecovery/>{children}</body>
     </html>
   );
 }

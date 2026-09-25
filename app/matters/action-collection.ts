@@ -33,64 +33,14 @@ export function enterActionQueue(previous:QueueState|null,organizationId:string,
   return previous?.organizationId===organizationId&&previous.caseId===caseId?previous:{organizationId,caseId,generation:(previous?.generation??0)+1,filter:"all",showAll:false,selectedKey:null,scrollAnchor:null};
 }
 export function visibleActions(collection:ActionCollection,state:QueueState){const filtered=collection.actions.filter(a=>state.filter==="all"||(state.filter==="blocking"?a.blocking:a.requiresReview));return {items:state.showAll?filtered:filtered.slice(0,6),filteredCount:filtered.length,total:collection.total,empty:collection.availability!=="current"?collection.availability:!collection.total?"complete":!filtered.length?"no_matches":null};}
-export type ExactActionSelection = {
-  organizationId: string; caseId: string; generation: number; recordId: string;
-  kind: "assertion" | "request" | "anchor"; originActionKey: string;
-  originOutputId?: string; originSnapshotId?: string;
-};
-export type ExactActionFailure = {
-  purpose: "exact_record";
-  kind: "session_expired" | "resource_denied" | "not_found" | "server_error" | "network_error" | "invalid_response" | "request_error";
-  httpStatus: number | null;
-  recovery: "sign_in" | "check_case_access" | "retry_read" | "return_to_origin";
-};
-export type ExactActionResult =
-  | { status: "loaded"; record: Record<string, unknown>; selection: ExactActionSelection }
-  | { status: "superseded"; selection: ExactActionSelection }
-  | { status: "unavailable"; selection: ExactActionSelection; failure: ExactActionFailure };
-
-function exactRecordFailure(error: unknown): ExactActionFailure {
-  const status = error !== null && typeof error === "object" && "status" in error
-    && typeof error.status === "number" && Number.isInteger(error.status)
-    && error.status >= 400 && error.status <= 599 ? error.status : null;
-  const base = { purpose: "exact_record" as const, httpStatus: status };
-  if (status === 401) return { ...base, kind: "session_expired", recovery: "sign_in" };
-  // A record read is not a current-case authority check. Remove the prohibited
-  // resource and resolve case authority before deciding what else must clear.
-  if (status === 403) return { ...base, kind: "resource_denied", recovery: "check_case_access" };
-  if (status === 404) return { ...base, kind: "not_found", recovery: "return_to_origin" };
-  if (status !== null && status >= 500) return { ...base, kind: "server_error", recovery: "retry_read" };
-  if (status === null) return { ...base, kind: "network_error", recovery: "retry_read" };
-  return { ...base, kind: "request_error", recovery: "return_to_origin" };
-}
-
-/** These reads locate a record; they neither confirm nor replay a mutation.
- * Retain the captured origin on every result, including rejected late replies.
- * Consumers must ignore superseded results rather than restore their context. */
-export async function resolveExactAction(
-  selection: ExactActionSelection,
-  read: (path: string) => Promise<unknown>,
-  isCurrent: () => boolean,
-): Promise<ExactActionResult> {
-  const captured = { ...selection };
-  const superseded = (): ExactActionResult => ({ status: "superseded", selection: captured });
-  if (!isCurrent()) return superseded();
-  const path = `/api/dossiers/${encodeURIComponent(captured.caseId)}/${captured.kind === "assertion" ? "evidence/assertions?assertion_id=" : captured.kind === "anchor" ? "evidence/anchors?anchor_id=" : "requests?request_id="}${encodeURIComponent(captured.recordId)}&organization=${encodeURIComponent(captured.organizationId)}`;
-  try {
-    const payload = await read(path);
-    if (!isCurrent()) return superseded();
-    const data = payload as Record<string, unknown> | null;
-    const rows = data?.[captured.kind === "assertion" ? "assertions" : captured.kind === "anchor" ? "source_anchors" : "requests"];
-    const record = Array.isArray(rows) && rows.length === 1 ? rows[0] as Record<string, unknown> | null : null;
-    if (!record || record[captured.kind === "assertion" ? "assertion_id" : captured.kind === "anchor" ? "source_anchor_id" : "information_request_id"] !== captured.recordId || record.dossier_id !== captured.caseId) {
-      return { status: "unavailable", selection: captured, failure: {
-        purpose: "exact_record", kind: "invalid_response", httpStatus: null, recovery: "retry_read",
-      } };
-    }
-    return { status: "loaded", record, selection: captured };
-  } catch (error) {
-    return isCurrent()
-      ? { status: "unavailable", selection: captured, failure: exactRecordFailure(error) }
-      : superseded();
-  }
+export type ExactActionSelection={organizationId:string;caseId:string;generation:number;recordId:string;kind:"assertion"|"request";originActionKey:string;originOutputId?:string};
+export async function resolveExactAction(selection:ExactActionSelection,read:(path:string)=>Promise<unknown>,isCurrent:()=>boolean):Promise<{status:"loaded";record:Record<string,unknown>;selection:ExactActionSelection}|{status:"superseded"|"unavailable"}> {
+  const path=`/api/dossiers/${encodeURIComponent(selection.caseId)}/${selection.kind==="assertion"?"evidence/assertions?assertion_id=":"requests?request_id="}${encodeURIComponent(selection.recordId)}&organization=${encodeURIComponent(selection.organizationId)}`;
+  try{
+    const payload=await read(path);if(!isCurrent())return {status:"superseded"};
+    const data=payload as Record<string,unknown>;const rows=data?.[selection.kind==="assertion"?"assertions":"requests"];
+    if(!Array.isArray(rows)||rows.length!==1)return {status:"unavailable"};
+    const record=rows[0] as Record<string,unknown>;if(record?.[selection.kind==="assertion"?"assertion_id":"information_request_id"]!==selection.recordId||record.dossier_id!==selection.caseId)return {status:"unavailable"};
+    return {status:"loaded",record,selection};
+  }catch{return {status:isCurrent()?"unavailable":"superseded"};}
 }

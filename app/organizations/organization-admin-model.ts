@@ -17,9 +17,6 @@ export function organizationIssue(issue: AdminIssue, locale: "en" | "ru") {
   } else if (issue.refreshOnly) {
     recovery = "refresh";
     message = t("The change was saved, but the updated organization could not be loaded. Refresh the details; do not submit the change again.", "Изменение сохранено, но обновлённые данные не загрузились. Обновите данные; не отправляйте изменение повторно.");
-  } else if (issue.code === "read_timeout") {
-    recovery = "refresh";
-    message = t("Loading organizations took too long. Check your connection and refresh the details. Your entered information is retained.", "Загрузка организаций заняла слишком много времени. Проверьте соединение и обновите данные. Введённая информация сохранена.");
   } else if (issue.code === "invitation_self") {
     message = t("This is your own member ID. You already have access. Enter the other person's member ID.", "Это ваш идентификатор. У вас уже есть доступ. Введите идентификатор другого человека.");
   } else if (issue.code === "invitation_unavailable" || issue.code === "invitation_member_exists") {
@@ -70,7 +67,6 @@ export function validOrganizationReceipt(value: unknown, actorId: string, expect
   return typeof o.id === "string" && /^[A-Za-z0-9_-]{20,128}$/.test(o.id)
     && (!expectedId || o.id === expectedId) && o.actorId === actorId
     && typeof o.name === "string" && o.status === "active"
-    && ["org_owner","org_admin","member","auditor"].includes(String(o.role))
     && Number.isSafeInteger(o.revision) && o.revision! >= 1 && Number.isSafeInteger(o.membershipRevision) && o.membershipRevision! >= 1
     && o.selection === `${o.id}.${o.revision}.${o.membershipRevision}.${o.actorId}`;
 }

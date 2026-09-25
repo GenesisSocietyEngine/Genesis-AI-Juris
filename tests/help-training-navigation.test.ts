@@ -3,9 +3,6 @@ import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import GenesisNavigation from "../app/GenesisNavigation";
-import NavigationSession from "../app/NavigationSession";
-import { NavigationController } from "../app/navigation-controller";
-import type { ClientOrganization } from "../app/organization-client";
 import CaseTemplates, { prepareCaseTemplate } from "../app/CaseTemplates";
 import { CASE_TYPE_REGISTRY } from "../app/case-type-registry";
 import { caseTypeReference } from "../app/case-type-reference";
@@ -43,40 +40,8 @@ test("expanded Studio navigation marks saved drafts and keeps account destinatio
   assert.match(html, /10-minute training/);
 });
 
-test("workspace navigation without a verified session offers sign-in and hides organization controls", () => {
+test("authenticated workspace keeps its existing navigation until separate acceptance", () => {
   const html = renderToStaticMarkup(createElement(GenesisNavigation, { locale: "en", active: "/organizations", location: "/organizations", onLanguage: () => {} }));
   assert.doesNotMatch(html, /genesis-sidebar-content|genesis-mobile-toggle/);
-  assert.match(html, /Sign in/);
-  assert.doesNotMatch(html, /Manage organizations|Users &amp; access|Sign out/);
-});
-
-test("verified owner workspace navigation keeps scoped organization and account destinations", async () => {
-  const actorId = "actor_synthetic_navigation_owner";
-  const organization: ClientOrganization = {
-    id: "org_synthetic_navigation_a", name: "Synthetic organization A", kind: "team",
-    status: "active", role: "org_owner", revision: 1, membershipRevision: 1, actorId,
-    selection: "org_synthetic_navigation_a.1.1." + actorId,
-  };
-  const controller = new NavigationController({
-    transport: async () => Response.json({ authenticated: true, actorId,
-      identity: { displayName: "Synthetic owner", email: "navigation@example.test", authSource: "chatgpt" },
-      organizations: [organization], selected: organization, profileRequired: false }),
-    leave: () => {}, clear: () => {},
-  });
-  await controller.refresh(organization.selection);
-  assert.equal(controller.getSnapshot().phase, "ready");
-  const location = "/organizations?organization=" + encodeURIComponent(organization.selection);
-  // React receives the required child as the positional argument below.
-  const html = renderToStaticMarkup(createElement(NavigationSession,
-    { controller } as Parameters<typeof NavigationSession>[0],
-    createElement(GenesisNavigation, { locale: "en", active: "/organizations", location, onLanguage: () => {} }),
-  ));
-  assert.doesNotMatch(html, /genesis-sidebar-content|genesis-mobile-toggle|Sign in/);
-  assert.match(html, /Manage organizations/);
-  assert.match(html, /Users &amp; access/);
-  assert.ok(html.includes('href="' + location + '"'));
-  assert.ok(html.includes('href="' + location + '#organization-users"'));
-  assert.ok(html.includes('href="/account?organization=' + encodeURIComponent(organization.selection) + '&amp;return_to=' + encodeURIComponent(location) + '"'));
-  assert.match(html, /Synthetic owner/);
-  assert.match(html, /Sign out/);
+  assert.match(html, /Administration/);
 });

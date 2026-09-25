@@ -20,5 +20,5 @@ export function verifiedStudioSaveReceipt(value: unknown, draft: StudioDraft, ac
 
 export function savedStudioPath(id: number, step = 'run_compare', locale = 'en') {
   if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Invalid saved case');
-  return '/studio?' + new URLSearchParams({ view: 'studio', custom_case: String(id), studio_step: step, lang: locale }).toString();
+  return '/studio?' + new URLSearchParams({ custom_case: String(id), studio_step: step, lang: locale }).toString();
 }
