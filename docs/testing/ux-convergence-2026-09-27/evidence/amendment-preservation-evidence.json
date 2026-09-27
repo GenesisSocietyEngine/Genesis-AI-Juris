@@ -1,0 +1,76 @@
+{
+  "startedAt": "2026-09-27T20:31:16.834Z",
+  "completedAt": "2026-09-27T20:31:17.410Z",
+  "status": "PASS",
+  "scope": "Independent fresh API readback of complete fact/contradiction assertion read models, not database row/audit history equality",
+  "applicationCommit": "8ee07c0fcf5a6ea78f5fd9c435bfe4b013e052b6",
+  "buildDigest": "25d6309ef9adf2ff039c02fe0bffef4a8a754dde11334a3d8f7f621e7dcc34ec",
+  "assumptionReceiptSha256": "bd0bb844442ed236cb953b92b89d62068f1fbfeb8a85610ef429a11ed3a8f77c",
+  "revision": 21,
+  "events": [
+    {
+      "path": "/api/auth/login",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+      "method": "GET",
+      "status": 200
+    }
+  ],
+  "records": [
+    {
+      "kind": "fact",
+      "before": {
+        "assertion_id": "assertion_58eb24a87dee4866a745f5cec428d5a7",
+        "assertion_type": "fact",
+        "statement": "SYNTHETIC FACT: The signed register records 300 commitments at the review date.",
+        "status": "accepted",
+        "reviewed_by": "actor_d3211013b2843dc47ca5d20e77d1b907",
+        "reviewed_at": "2026-09-27T18:15:45.088Z",
+        "source_anchor_ids": [
+          "source_anchor_fa77117d12af4bd3ac5aed14e75a7cb4"
+        ]
+      },
+      "after": {
+        "assertion_id": "assertion_58eb24a87dee4866a745f5cec428d5a7",
+        "assertion_type": "fact",
+        "statement": "SYNTHETIC FACT: The signed register records 300 commitments at the review date.",
+        "status": "accepted",
+        "reviewed_by": "actor_d3211013b2843dc47ca5d20e77d1b907",
+        "reviewed_at": "2026-09-27T18:15:45.088Z",
+        "source_anchor_ids": [
+          "source_anchor_fa77117d12af4bd3ac5aed14e75a7cb4"
+        ]
+      },
+      "completeReadModelEquality": true
+    },
+    {
+      "kind": "contradiction",
+      "before": {
+        "assertion_id": "assertion_8ba00fde69e1412a8ecca2e7fec689eb",
+        "assertion_type": "contradiction",
+        "statement": "SYNTHETIC CONTRADICTION: The draft sales summary claims 600 signed commitments, inconsistent with the register.",
+        "status": "needs_review",
+        "reviewed_by": null,
+        "reviewed_at": null,
+        "source_anchor_ids": [
+          "source_anchor_ec671348329e4d92bc19eb60b3501a48"
+        ]
+      },
+      "after": {
+        "assertion_id": "assertion_8ba00fde69e1412a8ecca2e7fec689eb",
+        "assertion_type": "contradiction",
+        "statement": "SYNTHETIC CONTRADICTION: The draft sales summary claims 600 signed commitments, inconsistent with the register.",
+        "status": "needs_review",
+        "reviewed_by": null,
+        "reviewed_at": null,
+        "source_anchor_ids": [
+          "source_anchor_ec671348329e4d92bc19eb60b3501a48"
+        ]
+      },
+      "completeReadModelEquality": true
+    }
+  ]
+}
