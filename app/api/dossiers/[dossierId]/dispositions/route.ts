@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { dossierDeadlineDispositions, dossierSourceAnchorRetirements, dossierDeadlineReferences, dossierSourceAnchors, dossierDocumentCurrentVersions, dossierAssertionSources, dossierProfessionalAssertions, dossiers, dossierAuditEvents, dossierRevisionReceipts } from "../../../../../db/schema";
-import { boundedDossierText, canonicalDossierTimestamp, dossierEnum, dossierJson, dossierNotFound, dossierSha256, expectedDossierRevision, isResponse, newDossierOpaqueId, prepareDossierRevisionAuditBatch, requireDossierAccess, resolveDossierServerContext } from "../../../../dossier-server";
+import { finalizeDossierRead, boundedDossierText, canonicalDossierTimestamp, dossierEnum, dossierJson, dossierNotFound, dossierSha256, expectedDossierRevision, isResponse, newDossierOpaqueId, prepareDossierRevisionAuditBatch, requireDossierAccess, resolveDossierServerContext } from "../../../../dossier-server";
 import { parseDossierOpaqueId } from "../../../../dossier-security";
 import { canonicalDossierJson } from "../../../../dossier-contract";
 import { computeStoredDossierReadiness } from "../../../../dossier-readiness-server";
@@ -27,7 +27,7 @@ export async function GET(request: Request, route: RouteContext) {
   if(url.searchParams.getAll("operation_key").length!==1)return dossierNotFound();
   try{if(boundedDossierText(operationKey,"Operation key",8,120)!==operationKey)return dossierNotFound();}catch{return dossierNotFound();}
   if(!disposition||disposition.actorRef!==context.actor.actorId||disposition.idempotencyKey!==operationKey)return dossierNotFound();
-  return dossierJson({disposition,replayed:true,audit_event_id:disposition.auditEventId,dossier:{dossier_id:access.dossier.id,revision:disposition.revisionAfter}});
+  return finalizeDossierRead(context, access, dossierJson({disposition,replayed:true,audit_event_id:disposition.auditEventId,dossier:{dossier_id:access.dossier.id,revision:disposition.revisionAfter}}));
  }
  const dependencies=kind==="citation"?await context.db.select({id:dossierProfessionalAssertions.id,status:dossierProfessionalAssertions.status,statement:dossierProfessionalAssertions.statement}).from(dossierAssertionSources).innerJoin(dossierProfessionalAssertions,and(eq(dossierProfessionalAssertions.dossierId,dossierAssertionSources.dossierId),eq(dossierProfessionalAssertions.id,dossierAssertionSources.assertionId))).where(and(eq(dossierAssertionSources.dossierId,access.dossier.id),eq(dossierAssertionSources.sourceAnchorId,id))):[];
  const outputs=await loadCurrentEvidenceOutputs(context,access.dossier.id);
@@ -41,8 +41,8 @@ export async function GET(request: Request, route: RouteContext) {
  if(kind==="citation"&&"documentId" in record){const [current]=await context.db.select().from(dossierDocumentCurrentVersions).where(and(eq(dossierDocumentCurrentVersions.dossierId,access.dossier.id),eq(dossierDocumentCurrentVersions.documentId,record.documentId))).limit(1);
  if(record.reviewState!=="accepted"||!current||current.documentVersionId===record.documentVersionId)unavailable="Retirement requires an accepted citation to an older source version. Review current evidence first.";}
 
- return dossierJson({actor_id:context.actor.actorId,kind,record,disposition:disposition??null,dependent_assertions:dependencies,current_output_ids:outputs.current.map(o=>o.outputId),revision:access.dossier.revision,
- can_review:access.role!=="viewer"&&!unavailable, unavailable_reason:unavailable, readiness_effect:kind==="deadline"?"Closes this historical deadline only. The key case deadline is unchanged; a missing key deadline or other incomplete work can still block readiness. Current reports must be regenerated.":"Retires this citation for current use. Every assertion that relies on it still needs explicit review or supersession; choosing replacement evidence does not automatically support an assertion. Current reports become outdated."});
+ return finalizeDossierRead(context, access, dossierJson({actor_id:context.actor.actorId,kind,record,disposition:disposition??null,dependent_assertions:dependencies,current_output_ids:outputs.current.map(o=>o.outputId),revision:access.dossier.revision,
+ can_review:access.role!=="viewer"&&!unavailable, unavailable_reason:unavailable, readiness_effect:kind==="deadline"?"Closes this historical deadline only. The key case deadline is unchanged; a missing key deadline or other incomplete work can still block readiness. Current reports must be regenerated.":"Retires this citation for current use. Every assertion that relies on it still needs explicit review or supersession; choosing replacement evidence does not automatically support an assertion. Current reports become outdated."}));
 }
 
 export async function POST(request: Request, route: RouteContext) {

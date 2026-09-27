@@ -1,0 +1,62 @@
+00:00 +0: loading C:/PROJECTS/Genesis-AI-Juris/.worktrees/pr45-mobile-5200/apps/juris-mobile/integration_test/native_android_persistence_smoke_test.dart
+Running Gradle task 'assembleDebug'...                          
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>if "Windows_NT" == "Windows_NT" setlocal
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>set DEFAULT_JVM_OPTS= 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>set DIRNAME=C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android\ 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>if "C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android\" == "" set DIRNAME=. 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>set APP_BASE_NAME=gradlew 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>set APP_HOME=C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android\ 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>if defined JAVA_HOME goto findJavaFromJavaHome 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>set JAVA_HOME=C:\Program Files\Android\Android Studio\jbr 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>set JAVA_EXE=C:\Program Files\Android\Android Studio\jbr/bin/java.exe 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>if exist "C:\Program Files\Android\Android Studio\jbr/bin/java.exe" goto init 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>if not "Windows_NT" == "Windows_NT" goto win9xME_args 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>if "@eval[2+2]" == "4" goto 4NT_args 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>set CMD_LINE_ARGS= 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>set _SKIP=2 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>if "x-q" == "x" goto execute 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>set CMD_LINE_ARGS=-q -PskipDependencyChecks=true -Ptarget-platform=android-x64 -Ptarget=C:\Users\User\AppData\Local\Temp\flutter_tools.c05b91f4\flutter_test_listener.f2086553/listener.dart -Pbase-application-name=android.app.Application -Pdart-defines=RkxVVFRFUl9WRVJTSU9OPTMuNDQuOA==,RkxVVFRFUl9DSEFOTkVMPXN0YWJsZQ==,RkxVVFRFUl9HSVRfVVJMPWh0dHBzOi8vZ2l0aHViLmNvbS9mbHV0dGVyL2ZsdXR0ZXIuZ2l0,RkxVVFRFUl9GUkFNRVdPUktfUkVWSVNJT049MDU4ZTBhZjJjMg==,RkxVVFRFUl9FTkdJTkVfUkVWSVNJT049MGNkNjEwNzE3Yg==,RkxVVFRFUl9EQVJUX1ZFUlNJT049My4xMi4y,SU5URUdSQVRJT05fVEVTVF9TSE9VTERfUkVQT1JUX1JFU1VMVFNfVE9fTkFUSVZFPWZhbHNl -Pdart-obfuscation=false -Ptrack-widget-creation=true -Ptree-shake-icons=false assembleDebug 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>goto execute 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>set CLASSPATH=C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android\\gradle\wrapper\gradle-wrapper.jar 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>"C:\Program Files\Android\Android Studio\jbr/bin/java.exe"   -Dorg.gradle.jvmargs="-Xmx3G -XX:MaxMetaspaceSize=1G -XX:ReservedCodeCacheSize=256m -XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.workers.max=2 "-Dorg.gradle.appname=gradlew" -classpath "C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android\\gradle\wrapper\gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain -q -PskipDependencyChecks=true -Ptarget-platform=android-x64 -Ptarget=C:\Users\User\AppData\Local\Temp\flutter_tools.c05b91f4\flutter_test_listener.f2086553/listener.dart -Pbase-application-name=android.app.Application -Pdart-defines=RkxVVFRFUl9WRVJTSU9OPTMuNDQuOA==,RkxVVFRFUl9DSEFOTkVMPXN0YWJsZQ==,RkxVVFRFUl9HSVRfVVJMPWh0dHBzOi8vZ2l0aHViLmNvbS9mbHV0dGVyL2ZsdXR0ZXIuZ2l0,RkxVVFRFUl9GUkFNRVdPUktfUkVWSVNJT049MDU4ZTBhZjJjMg==,RkxVVFRFUl9FTkdJTkVfUkVWSVNJT049MGNkNjEwNzE3Yg==,RkxVVFRFUl9EQVJUX1ZFUlNJT049My4xMi4y,SU5URUdSQVRJT05fVEVTVF9TSE9VTERfUkVQT1JUX1JFU1VMVFNfVE9fTkFUSVZFPWZhbHNl -Pdart-obfuscation=false -Ptrack-widget-creation=true -Ptree-shake-icons=false assembleDebug 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>if "0" == "0" goto mainEnd 
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200\apps\juris-mobile\android>if "Windows_NT" == "Windows_NT" endlocal
+Running Gradle task 'assembleDebug'...                             24.9s
+√ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...        1,122ms
+00:00 +0: (setUpAll)
+00:00 +0: debug pressure fixture activates, restores, responds, and countermoves
+00:03 +1: GreenFire RU saves actions and foreground time
+00:04 +2: production GreenFire pressure survives native save load and UI response
+00:32 +3: historical GreenFire routes to retained content across native resave
+00:33 +4: GoldenShell RU replays either side of a deadline boundary
+00:34 +5: terminal Logistics outcome survives save and load
+00:34 +6: corrupted platform save leaves the live session intact
+00:34 +7: Failed ERP RU claimant state survives native save load and corruption
+00:36 +8: debug-only lost-but-open lifecycle restores authoritative mobile state
+00:52 +9: native Training Debrief appears only after resolution and restores exactly
+00:59 +10: native raw snapshot visibility survives Desert Water save restart load
+00:59 +11: production Desert Water reveals, restores, appeals, and closes natively
+01:07 +12: (tearDownAll)
+01:09 +12: All tests passed!

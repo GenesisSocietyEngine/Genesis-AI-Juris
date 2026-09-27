@@ -134,6 +134,60 @@ export async function requireDossierAccess(
   return { ...record, role: decision.effectiveRole };
 }
 
+/** Recheck the accepted request's live identity without selecting or provisioning
+ * a replacement organization. A provider assertion cannot introspect a later
+ * provider logout; local sessions are checked against their current store. */
+export async function revalidateDossierIdentity(context: DossierServerContext): Promise<Response | undefined> {
+  let current: DossierServerContext | Response;
+  try {
+    current = await resolveDossierServerContext(undefined, { identityOnly: true });
+  } catch {
+    return dossierJson({ error: "Matter access is temporarily unavailable.", code: "dossier_authority_unavailable" }, 503);
+  }
+  if (isResponse(current)) return current;
+  if (current.actor.userId !== context.actor.userId
+    || current.actor.actorId !== context.actor.actorId
+    || current.actor.email.toLowerCase() !== context.actor.email.toLowerCase()) {
+    return dossierJson({ error: "Your sign-in changed. Sign in again before opening this Matter.", code: "identity_changed" }, 401);
+  }
+}
+
+/** Fence private reads against live identity and the original authority. Never
+ * refresh the captured organization selection: suspend/resume must invalidate
+ * an in-flight request. A changed participant must refresh stale permissions. */
+export async function revalidateDossierReadAccess(
+  context: DossierServerContext,
+  captured: DossierAccess,
+  action: "read" | "audit" | "download" = "read",
+): Promise<DossierAccess | Response> {
+  const identity = await revalidateDossierIdentity(context);
+  if (identity) return identity;
+  const current = await requireDossierAccess(context, captured.dossier.id, action);
+  if (isResponse(current)) return current;
+  if (current.participant.id !== captured.participant.id
+    || current.participant.role !== captured.participant.role
+    || current.role !== captured.role) {
+    return dossierJson({ error: "Matter access changed. Refresh the Matter before continuing.", code: "dossier_access_changed" }, 409);
+  }
+  return current;
+}
+
+/** Prepare the response only after its data reads finish, then fence delivery.
+ * Returning the same response preserves successful status, headers and bytes. */
+export async function finalizeDossierRead(
+  context: DossierServerContext,
+  captured: DossierAccess,
+  response: Response,
+  action: "read" | "audit" | "download" = "read",
+): Promise<Response> {
+  const current = await revalidateDossierReadAccess(context, captured, action);
+  if (isResponse(current)) {
+    await response.body?.cancel().catch(() => undefined);
+    return current;
+  }
+  return response;
+}
+
 export function dossierNotFound() {
   return dossierJson({ error: "Matter not found." }, 404);
 }

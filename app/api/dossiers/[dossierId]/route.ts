@@ -15,6 +15,7 @@ import {
 import { DOSSIER_WIRE_ENUMS } from "../../../dossier-contract";
 import { computeStoredDossierReadiness } from "../../../dossier-readiness-server";
 import {
+  finalizeDossierRead,
   boundedDossierText,
   canonicalDossierTimestamp,
   dossierEnum,
@@ -41,7 +42,7 @@ export async function GET(_request: Request, routeContext: RouteContext) {
   const { dossierId } = await routeContext.params;
   const access = await requireDossierAccess(context, dossierId, "read");
   if (isResponse(access)) return access;
-  return dossierJson(await detailPayload(context, access));
+  return finalizeDossierRead(context, access, dossierJson(await detailPayload(context, access)));
 }
 
 export async function PUT(request: Request, routeContext: RouteContext) {
@@ -89,7 +90,7 @@ export async function PUT(request: Request, routeContext: RouteContext) {
     return dossierJson({ error: "The Matter changed before this update.", code: "revision_conflict", currentRevision: access.dossier.revision }, 409);
   }
   const changedFields = Object.entries(set).filter(([key, value]) => !sameValue(access.dossier[key as keyof typeof access.dossier], value)).map(([key]) => key);
-  if (changedFields.length === 0) return dossierJson({ ...(await detailPayload(context, access)), unchanged: true });
+  if (changedFields.length === 0) return finalizeDossierRead(context, access, dossierJson({ ...(await detailPayload(context, access)), unchanged: true }));
   const now = canonicalDossierTimestamp();
   const staleOutputs = await currentOutputStates(context, access.dossier.id);
   const { revisionReceipt, auditEvents } = await prepareDossierRevisionAuditBatch(context, access.dossier.id, expectedRevision + 1, [
@@ -138,7 +139,7 @@ export async function PUT(request: Request, routeContext: RouteContext) {
   }
   const nextAccess = await requireDossierAccess(context, access.dossier.id, "read");
   if (isResponse(nextAccess)) return nextAccess;
-  return dossierJson(await detailPayload(context, nextAccess));
+  return finalizeDossierRead(context, access, dossierJson(await detailPayload(context, nextAccess)));
 }
 
 async function detailPayload(context: DossierServerContext, access: DossierAccess) {

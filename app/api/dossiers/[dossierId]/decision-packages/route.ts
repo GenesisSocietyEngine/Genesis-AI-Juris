@@ -27,6 +27,7 @@ import {
 import { computeStoredDossierReadiness } from "../../../../dossier-readiness-server";
 import { parseDossierOpaqueId } from "../../../../dossier-security";
 import {
+  finalizeDossierRead,
   boundedDossierText,
   canonicalDossierTimestamp,
   dossierJson,
@@ -122,7 +123,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
 
   const hasMore = rows.length > limit;
   const visible = rows.slice(0, limit);
-  return dossierJson({
+  return finalizeDossierRead(context, access, dossierJson({
     decision_packages: visible.map(projectPackageReference),
     page: {
       limit,
@@ -130,7 +131,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
       next_cursor: hasMore ? visible.at(-1)?.id ?? null : null,
     },
     contract_version: "1.0.0",
-  });
+  }));
 }
 
 export async function POST(request: Request, routeContext: RouteContext) {

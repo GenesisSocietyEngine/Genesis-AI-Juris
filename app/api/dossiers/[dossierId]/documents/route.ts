@@ -20,6 +20,7 @@ import {
 } from "../../../../dossier-private-upload";
 import { parseDossierOpaqueId } from "../../../../dossier-security";
 import {
+  finalizeDossierRead,
   boundedDossierText,
   dossierEnum,
   dossierJson,
@@ -137,7 +138,7 @@ export async function GET(_request: Request, routeContext: RouteContext) {
     );
   }
 
-  return dossierJson({
+  return finalizeDossierRead(context, access, dossierJson({
     documents: documents.map((document) => ({
       schema_version: 1,
       document_id: document.documentId,
@@ -180,7 +181,7 @@ export async function GET(_request: Request, routeContext: RouteContext) {
       maximum_versions: MAX_VERSIONS,
       truncated: documents.length === MAX_DOCUMENTS || versions.length === MAX_VERSIONS,
     },
-  });
+  }));
 }
 
 export async function POST(request: Request, routeContext: RouteContext) {

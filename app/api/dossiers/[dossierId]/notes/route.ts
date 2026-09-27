@@ -3,7 +3,7 @@ import { dossierWorkingNotes as notes, dossierWorkingNoteVersions as versions, d
   dossierDocuments, dossierDocumentVersions, dossierSourceAnchors, dossierSourceAnchorRetirements, dossierDocumentCurrentVersions, organizationCasGuards } from "../../../../../db/schema";
 import { canonicalDossierJson } from "../../../../dossier-contract";
 import { parseDossierOpaqueId } from "../../../../dossier-security";
-import { boundedDossierText, canonicalDossierTimestamp, dossierEnum, dossierJson, dossierNotFound, dossierSha256,
+import { finalizeDossierRead, boundedDossierText, canonicalDossierTimestamp, dossierEnum, dossierJson, dossierNotFound, dossierSha256,
   isResponse, newDossierOpaqueId, requireDossierAccess, resolveDossierServerContext, type DossierServerContext } from "../../../../dossier-server";
 import { isSameOriginMutation, readJsonObject } from "../../../../request-security";
 
@@ -54,7 +54,7 @@ export async function GET(request: Request, route: RouteContext) {
     if(params.has("operation_key")) {
       if(params.size!==1) return failure("Operation recovery cannot be combined with another selection.","invalid_selection");
       const key=boundedDossierText(params.get("operation_key"),"Operation key",8,120);
-      const row=await operation(context,caseId,key); return row ? receipt(row,true) : dossierNotFound();
+      const row=await operation(context,caseId,key); return row ? finalizeDossierRead(context, access, receipt(row,true)) : dossierNotFound();
     }
     if(params.has("document_id")) {
       if([...params.keys()].some(key=>!["document_id","version_id","cursor"].includes(key))) return failure("Choose a source without note pagination.","invalid_selection");
@@ -70,7 +70,7 @@ export async function GET(request: Request, route: RouteContext) {
         .innerJoin(versions,and(eq(versions.dossierId,notes.dossierId),eq(versions.noteId,notes.id),eq(versions.revision,notes.revision)))
         .where(and(eq(sources.dossierId,caseId),eq(sources.documentId,documentId),eq(sources.active,true),versionId?eq(sources.documentVersionId,versionId):undefined,cursor?gt(sources.id,cursor):undefined)).orderBy(sources.id).limit(51);
       const [total]=await context.db.select({count:sql<number>`count(*)`}).from(sources).where(and(eq(sources.dossierId,caseId),eq(sources.documentId,documentId),eq(sources.active,true),versionId?eq(sources.documentVersionId,versionId):undefined));
-      return dossierJson({caseId,documentId,backlinks:backlinks.slice(0,50),count:total!.count,nextCursor:backlinks.length>50?backlinks[49]!.linkId:null,label:LABEL});
+      return finalizeDossierRead(context, access, dossierJson({caseId,documentId,backlinks:backlinks.slice(0,50),count:total!.count,nextCursor:backlinks.length>50?backlinks[49]!.linkId:null,label:LABEL}));
     }
     if(params.has("note_id")) {
       if(params.has("version_id")||(params.has("history")&&params.has("source_cursor")))return failure("Choose note history or source pagination, separately.","invalid_selection");
@@ -81,7 +81,7 @@ export async function GET(request: Request, route: RouteContext) {
         const cursor=params.has("cursor")?Number(params.get("cursor")):null;
         if(cursor!==null&&(!Number.isSafeInteger(cursor)||cursor<1))return failure("The history cursor is invalid.","invalid_selection");
         const history=await context.db.select({id:versions.id,noteId:versions.noteId,revision:versions.revision,title:versions.title,noteType:versions.noteType,actorRef:versions.actorRef,actorRole:versions.actorRole,occurredAt:versions.occurredAt,action:versions.action,sourceLinkId:versions.sourceLinkId}).from(versions).where(and(eq(versions.dossierId,caseId),eq(versions.noteId,noteId),cursor?lt(versions.revision,cursor):undefined)).orderBy(desc(versions.revision)).limit(51);
-        return dossierJson({caseId,noteId,history:history.slice(0,50).map(v=>({id:v.noteId,revision:v.revision,title:v.title,type:v.noteType,savedAt:v.occurredAt,savedBy:v.actorRef,savedByRole:v.actorRole,eventId:v.id,action:v.action,sourceLinkId:v.sourceLinkId})),nextCursor:history.length>50?history[49]!.revision:null});
+        return finalizeDossierRead(context, access, dossierJson({caseId,noteId,history:history.slice(0,50).map(v=>({id:v.noteId,revision:v.revision,title:v.title,type:v.noteType,savedAt:v.occurredAt,savedBy:v.actorRef,savedByRole:v.actorRole,eventId:v.id,action:v.action,sourceLinkId:v.sourceLinkId})),nextCursor:history.length>50?history[49]!.revision:null}));
       }
       if(params.has("cursor"))return failure("History is required for a revision cursor.","invalid_selection");
       const selectedRevision=params.has("revision")?Number(params.get("revision")):row.revision;
@@ -97,14 +97,14 @@ export async function GET(request: Request, route: RouteContext) {
         .leftJoin(dossierDocumentCurrentVersions,and(eq(dossierDocumentCurrentVersions.dossierId,sources.dossierId),eq(dossierDocumentCurrentVersions.documentId,sources.documentId)))
         .where(and(eq(sources.dossierId,caseId),eq(sources.noteId,noteId),sourceCursor?gt(sources.id,sourceCursor):undefined,sql`${sources.createdRevision}<=${selectedRevision} AND (${sources.unlinkedRevision} IS NULL OR ${sources.unlinkedRevision}>${selectedRevision})`)).orderBy(sources.id).limit(51);
       const [total]=await context.db.select({count:sql<number>`count(*)`}).from(sources).where(and(eq(sources.dossierId,caseId),eq(sources.noteId,noteId),sql`${sources.createdRevision}<=${selectedRevision} AND (${sources.unlinkedRevision} IS NULL OR ${sources.unlinkedRevision}>${selectedRevision})`));
-      return dossierJson({note:project(selected),currentRevision:row.revision,sourceCount:total!.count,nextSourceCursor:linked.length>50?linked[49]!.link.id:null,sources:linked.slice(0,50).map(({link,document,version,anchor,retirement,currentVersionId})=>({id:link.id,documentId:link.documentId,documentTitle:document.title,documentVersionId:link.documentVersionId,version:version.ordinal,sourceAnchorId:link.sourceAnchorId,reviewState:anchor?.reviewState??null,retired:Boolean(retirement),documentStatus:document.status,locator:anchor?{page:anchor.pageNumber,section:anchor.section,paragraph:anchor.paragraph,heading:anchor.heading,excerpt:anchor.excerpt}:null,currentSourceVersion:currentVersionId===link.documentVersionId,createdRevision:link.createdRevision,
-        downloadPath:`/api/dossiers/${caseId}/documents/${link.documentId}/versions/${link.documentVersionId}/download`}))});
+      return finalizeDossierRead(context, access, dossierJson({note:project(selected),currentRevision:row.revision,sourceCount:total!.count,nextSourceCursor:linked.length>50?linked[49]!.link.id:null,sources:linked.slice(0,50).map(({link,document,version,anchor,retirement,currentVersionId})=>({id:link.id,documentId:link.documentId,documentTitle:document.title,documentVersionId:link.documentVersionId,version:version.ordinal,sourceAnchorId:link.sourceAnchorId,reviewState:anchor?.reviewState??null,retired:Boolean(retirement),documentStatus:document.status,locator:anchor?{page:anchor.pageNumber,section:anchor.section,paragraph:anchor.paragraph,heading:anchor.heading,excerpt:anchor.excerpt}:null,currentSourceVersion:currentVersionId===link.documentVersionId,createdRevision:link.createdRevision,
+        downloadPath:`/api/dossiers/${caseId}/documents/${link.documentId}/versions/${link.documentVersionId}/download`}))}));
     }
     if(params.has("revision")||params.has("history")||params.has("version_id")||params.has("source_cursor"))return failure("Select the note or source first.","invalid_selection");
     const cursor=params.has("cursor")?parseDossierOpaqueId(params.get("cursor"),"note cursor"):null;
     const rows=await context.db.select({id:notes.id,title:versions.title,type:versions.noteType,revision:notes.revision,savedAt:versions.occurredAt,savedBy:versions.actorRef,savedByRole:versions.actorRole}).from(notes).innerJoin(versions,and(eq(versions.dossierId,notes.dossierId),eq(versions.noteId,notes.id),eq(versions.revision,notes.revision)))
       .where(and(eq(notes.dossierId,caseId),cursor?lt(notes.id,cursor):undefined)).orderBy(desc(notes.id)).limit(51);
-    return dossierJson({caseId,notes:rows.slice(0,50).map(r=>({...r,label:LABEL})),nextCursor:rows.length>50?rows[49]!.id:null,label:LABEL});
+    return finalizeDossierRead(context, access, dossierJson({caseId,notes:rows.slice(0,50).map(r=>({...r,label:LABEL})),nextCursor:rows.length>50?rows[49]!.id:null,label:LABEL}));
   } catch { return failure("The note or source selection is invalid or unavailable. Retry loading it.","note_read_unavailable",503); }
 }
 

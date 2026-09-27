@@ -22,6 +22,7 @@ import {
 } from "../../dossier-contract";
 import { computeDossierReadiness, type DossierReadinessFinding } from "../../dossier-readiness";
 import {
+  revalidateDossierIdentity,
   boundedDossierText,
   canonicalDossierTimestamp,
   dossierEnum,
@@ -74,6 +75,7 @@ export async function GET(request: Request) {
 
   const rows = await context.db.select({
     dossier: dossiers,
+    participantId: dossierParticipants.id,
     role: dossierParticipants.role,
     documentCount: sql<number>`(select count(*) from ${dossierDocuments} where ${dossierDocuments.dossierId} = ${dossiers.id} and ${dossierDocuments.isProvisional} = false)`,
     openRequestCount: sql<number>`(select count(*) from ${dossierInformationRequests} where ${dossierInformationRequests.dossierId} = ${dossiers.id} and ${dossierInformationRequests.status} = 'open')`,
@@ -96,8 +98,31 @@ export async function GET(request: Request) {
   const evaluatedAt = canonicalDossierTimestamp();
   const items = page.map((row) => projectSummary(row, ownerName.get(row.dossier.ownerUserId) ?? "Assigned matter owner", evaluatedAt));
   const last = page.at(-1)?.dossier;
+  const identity = await revalidateDossierIdentity(context);
+  if (identity) return identity;
   try { await assertOrganizationCurrent(context.db, context.actor, context.organization!); }
   catch { return dossierJson({ error: "Organization access changed. Refresh your organizations." }, 404); }
+  // Recheck the page and pagination lookahead in one bounded query after owner-name reads.
+  // Keep the original organization and exact participant grants; do not revive
+  // a removed grant or return a role projection captured before a role change.
+  const currentParticipants = rows.length ? await context.db.select({
+    dossierId: dossierParticipants.dossierId,
+    participantId: dossierParticipants.id,
+    role: dossierParticipants.role,
+  }).from(dossierParticipants).innerJoin(dossierOrganizationBindings, and(
+    eq(dossierOrganizationBindings.dossierId, dossierParticipants.dossierId),
+    eq(dossierOrganizationBindings.organizationId, context.organization!.id),
+  )).where(and(
+    eq(dossierParticipants.userId, context.actor.userId),
+    eq(dossierParticipants.actorId, context.actor.actorId),
+    eq(dossierParticipants.status, "active"),
+    inArray(dossierParticipants.dossierId, rows.map(({ dossier }) => dossier.id)),
+  )).limit(MAX_PAGE_SIZE + 1) : [];
+  const currentByDossier = new Map(currentParticipants.map((participant) => [participant.dossierId, participant]));
+  if (currentParticipants.length !== rows.length || rows.some((row) => {
+    const current = currentByDossier.get(row.dossier.id);
+    return !current || current.participantId !== row.participantId || current.role !== row.role;
+  })) return dossierJson({ error: "Matter access changed. Refresh the Matter list before continuing.", code: "dossier_access_changed" }, 409);
   return dossierJson({
     dossiers: items,
     next_cursor: rows.length > limit && last ? encodeCursor(last.updatedAt, last.id, scope) : null,

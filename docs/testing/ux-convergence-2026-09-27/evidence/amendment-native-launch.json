@@ -1,0 +1,25 @@
+{
+    "launchedAt":  "2026-09-27T20:35:08.4960795Z",
+    "pid":  4116,
+    "serial":  "emulator-5580",
+    "avd":  "UXGatePixel",
+    "taskRoot":  "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\.artifacts\\amendment-android-native",
+    "args":  [
+                 "-avd",
+                 "UXGatePixel",
+                 "-port",
+                 "5580",
+                 "-read-only",
+                 "-no-snapshot-load",
+                 "-no-snapshot-save",
+                 "-no-window",
+                 "-no-audio",
+                 "-gpu",
+                 "swiftshader",
+                 "-memory",
+                 "2048",
+                 "-cores",
+                 "2"
+             ],
+    "bootTimeoutSeconds":  120
+}

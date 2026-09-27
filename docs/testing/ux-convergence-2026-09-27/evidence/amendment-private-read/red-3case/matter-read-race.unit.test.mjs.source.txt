@@ -1,0 +1,124 @@
+import assert from 'node:assert/strict';
+import { test, after } from 'node:test';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { resolve, dirname, extname, relative } from 'node:path';
+import { createRequire } from 'node:module';
+import { createHash } from 'node:crypto';
+import ts from 'typescript';
+
+// Strictly in-process synthetic unit fixture. No HTTP server, credentials,
+// sessions, real accounts/database, uploads, browser, network or subprocesses.
+// Production handler, context/organization/access/policy implementations run.
+// Only identity, DB records and unrelated readiness aggregation are test doubles.
+const root=process.cwd(), out=resolve(root,'.artifacts/ux-reconciliation-auth');
+const requireExternal=createRequire(import.meta.url);
+const {getTableName}=requireExternal('drizzle-orm');
+globalThis.fetch=async()=>{throw new Error('Network is forbidden in this unit fixture');};
+const identity={email:'synthetic-unit@example.test',displayName:'Synthetic unit actor',fullName:null,authSource:'local'};
+const actorId='actor_synthetic_unit_reader', dossierId='dossier_synthetic_unit', organizationId='org_synthetic_unit_fixture';
+const statement='SYNTHETIC UNIT PRIVATE ASSERTION';
+const excerpt='SYNTHETIC UNIT PRIVATE SOURCE EXCERPT';
+const participant={id:'participant_synthetic_unit',dossierId,userId:1,actorId,role:'contributor',status:'active',displayName:identity.displayName};
+const dossier={id:dossierId,reference:'SYNTHETIC-UNIT',title:'Synthetic in-memory Matter',ownerActorId:'actor_synthetic_unit_owner',revision:1,status:'draft',classification:'internal',priority:'normal',jurisdictions:[],terminology:{},dossierTypeRegistry:'synthetic',dossierTypeId:'synthetic',dossierTypeVersion:'1',keyDeadlineAt:null,keyDeadlineTimezone:'UTC'};
+const organization={id:organizationId,name:'Synthetic organization',kind:'team',status:'active',revision:1};
+let membership={userId:1,actorId,organizationId,role:'member',status:'active',revision:1};
+let barrier=null, authorityReads=0, accessReads=0;
+const observations=[];
+
+function queryDouble(selection){
+  let table;
+  const q={from(value){table=getTableName(value);return q;},innerJoin(){return q;},leftJoin(){return q;},where(){return q;},orderBy(){return q;},limit(){return q;},then(ok,fail){return execute().then(ok,fail);}};
+  async function execute(){
+    if(table==='users')return [{id:1,actorId,displayName:identity.displayName}];
+    if(table==='organizations'){
+      authorityReads++;
+      // Match the production query's WHERE membership.status='active'.
+      return membership.status==='active'?[{organization:structuredClone(organization),membership:structuredClone(membership)}]:[];
+    }
+    if(table==='dossiers' && selection?.dossier && selection?.participant){
+      accessReads++;
+      return participant.status==='active'?[{dossier:structuredClone(dossier),participant:structuredClone(participant)}]:[];
+    }
+    if(table==='dossier_participants')return [{participant_id:participant.id,actor_id:actorId,display_name:identity.displayName,role:participant.role,status:participant.status}];
+    if(table==='dossier_source_anchors'){
+      const activeBarrier=barrier;barrier=null;
+      if(activeBarrier){activeBarrier.started();await activeBarrier.resume;}
+      return [{source_anchor_id:'anchor_synthetic_unit',document_id:'document_synthetic_unit',document_version_id:'version_synthetic_unit',document_title:'Synthetic unit document',excerpt,review_state:'accepted'}];
+    }
+    if(table==='dossier_professional_assertions')return [{assertion_id:'assertion_synthetic_unit',assertion_type:'fact',statement,status:'accepted'}];
+    if(table==='dossier_assertion_sources')return [];
+    throw new Error('Unexpected fixture read: '+table);
+  }
+  return q;
+}
+const db={select:queryDouble,insert(){return {values(){return {onConflictDoNothing(){return {syntheticInsert:true};}};}};},async batch(){return [];}};
+const cache=new Map();
+const overridden=new Map([
+  [resolve(root,'db/index.ts'),{getDb:()=>db}],
+  [resolve(root,'app/chatgpt-auth.ts'),{getChatGPTUser:async()=>structuredClone(identity)}],
+  [resolve(root,'app/dossier-readiness-server.ts'),{computeStoredDossierReadiness:async()=>({status:'synthetic-unit-unassessed',issues:[]})}],
+]);
+function load(file){
+  if(overridden.has(file))return overridden.get(file);
+  if(cache.has(file))return cache.get(file).exports;
+  if(extname(file)==='.json')return JSON.parse(readFileSync(file,'utf8'));
+  const module={exports:{}};cache.set(file,module);
+  const source=readFileSync(file,'utf8');
+  const compiled=ts.transpileModule(source,{fileName:file,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,esModuleInterop:true}}).outputText;
+  function localRequire(name){
+    if(name==='cloudflare:workers')return {env:{}};
+    if(name==='next/headers')return {headers:async()=>new Headers()};
+    if(!name.startsWith('.'))return requireExternal(name);
+    const base=resolve(dirname(file),name);
+    const found=[base,base+'.ts',base+'.tsx',base+'.json',resolve(base,'index.ts')].find(p=>existsSync(p)&&extname(p));
+    if(!found)throw new Error('Unresolved local module: '+name);
+    return load(found);
+  }
+  new Function('require','module','exports','__filename','__dirname',compiled)(localRequire,module,module.exports,file,dirname(file));
+  return module.exports;
+}
+const routeFile=resolve(root,'app/api/dossiers/[dossierId]/route.ts');
+const route=load(routeFile);
+async function read(){
+  const response=await route.GET(new Request('https://synthetic-unit.invalid/api/dossiers/'+dossierId,{headers:{'x-genesis-organization':organizationId}}),{params:Promise.resolve({dossierId})});
+  return {response,body:await response.json()};
+}
+function reset(){membership={...membership,status:'active',revision:1};authorityReads=0;accessReads=0;}
+
+test('synthetic in-process baseline: actual detail handler returns authorized fixture',async()=>{
+  reset();const {response,body}=await read();
+  assert.equal(response.status,200);
+  assert.equal(body.dossier.assertions[0].statement,statement);
+  assert.equal(body.dossier.source_anchors[0].excerpt,excerpt);
+  assert.equal(body.dossier.permissions.can_write,true);
+  assert.ok(authorityReads>=2);assert.equal(accessReads,1);
+  observations.push({name:'baseline',status:response.status,authorizedDataPresent:true,authorityReads,accessReads});
+});
+
+test('regression: detail response must use current membership after awaited private read',async()=>{
+  reset();let started,release;
+  const reached=new Promise(resolve=>{started=resolve;});
+  const resume=new Promise(resolve=>{release=resolve;});
+  barrier={started,resume};
+  const pending=read();await reached;
+  assert.ok(authorityReads>=2,'Production organization authority resolved before barrier');
+  assert.equal(accessReads,1,'Production joined Matter access read completed before barrier');
+  membership={...membership,status:'suspended',revision:2};
+  release();
+  const {response,body}=await pending;
+  observations.push({name:'suspended_during_read',status:response.status,membershipStatus:membership.status,membershipRevision:membership.revision,privateAssertionPresent:JSON.stringify(body).includes(statement),privateExcerptPresent:JSON.stringify(body).includes(excerpt),oldWritePermission:body.dossier?.permissions?.can_write??null,authorityReads,accessReads});
+  assert.equal(response.status,404,'Suspended membership must not receive an already-started private response');
+  assert.ok(!JSON.stringify(body).includes(statement));assert.ok(!JSON.stringify(body).includes(excerpt));
+});
+
+test('synthetic in-process control: a fresh read denies the same suspended membership',async()=>{
+  assert.equal(membership.status,'suspended');
+  const {response,body}=await read();
+  observations.push({name:'fresh_read_after_suspension',status:response.status,privateDataPresent:JSON.stringify(body).includes(statement)||JSON.stringify(body).includes(excerpt)});
+  assert.equal(response.status,404);assert.ok(!JSON.stringify(body).includes(statement));
+});
+
+after(()=>{
+  const receipt={observedAt:new Date().toISOString(),scope:'Strictly in-process unit test, synthetic records and identity. No HTTP server, credentials, real accounts/DB, uploads, browser or network. Authorization functions are production code; DB and identity are explicit test doubles.',route:relative(root,routeFile),routeSha256:createHash('sha256').update(readFileSync(routeFile)).digest('hex'),productionAuthorizationModules:['app/dossier-server.ts','app/organization-store.ts','app/dossier-security.ts'],observations};
+  writeFileSync(resolve(out,'matter-read-race.unit.receipt.json'),JSON.stringify(receipt,null,2)+'\n');
+});

@@ -1,0 +1,168 @@
+{
+  "archivedAt": "2026-09-27T21:51:29.988Z",
+  "scope": "Exact-byte archival of independently reviewed private-read correction evidence and pre-fix aggregate baseline critical review. Historical unbound baseline source receipt remains distinct from later bound receipt. Synthetic unit fixtures only, not real session/login/browser coverage; historical test source renamed .source.txt without modifying bytes. Pending implementation-agent logs excluded.",
+  "files": [
+    {
+      "source": ".artifacts/ux-reconciliation-auth/amendment-read-fence-independent-review.md",
+      "destination": "AMENDMENT_PRIVATE_READ_REVIEW.md",
+      "sha256": "273206688eef758c55d4783ca48105aca4560db82828ba2195332ec303630fff",
+      "bytes": 10061
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/amendment-aggregate-baseline-critical-review.md",
+      "destination": "AMENDMENT_AGGREGATE_BASELINE_CRITICAL_REVIEW.md",
+      "sha256": "bfc8388b85b880e7205693195bcf6c41f138e5cb48993cb13eb04e8518298354",
+      "bytes": 5169
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-baseline/matter-read-race.unit.execution.json",
+      "destination": "evidence/amendment-private-read/red-3case/matter-read-race.unit.execution.json",
+      "sha256": "08cf75194bd095e22aa78d0b9dd8f47a37b79a300a71129fa4ea1e0b5ceed985",
+      "bytes": 1418
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-baseline/matter-read-race.unit.receipt.json",
+      "destination": "evidence/amendment-private-read/red-3case/matter-read-race.unit.receipt.json",
+      "sha256": "5658ca6eedb0ef30ba604d5d50988bc8cd1b99fac7973493cfe26afceab3dbac",
+      "bytes": 1151
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-baseline/matter-read-race.unit.stderr.log",
+      "destination": "evidence/amendment-private-read/red-3case/matter-read-race.unit.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-baseline/matter-read-race.unit.tap.log",
+      "destination": "evidence/amendment-private-read/red-3case/matter-read-race.unit.tap.log",
+      "sha256": "b27f81ffec5127acd7b9331efd6891e3a21ea063aa48565c535e83eae271eddd",
+      "bytes": 1545
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-baseline/matter-read-race.unit.test.mjs",
+      "destination": "evidence/amendment-private-read/red-3case/matter-read-race.unit.test.mjs.source.txt",
+      "sha256": "ca9c1a5cd82fbe783afd37a5d8b0a5e88b6d737bc36ccfa9378d4d39d24249d4",
+      "bytes": 8693
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-15case-preapply/matter-read-race.frozen.receipt.json",
+      "destination": "evidence/amendment-private-read/red-proposal-15case/matter-read-race.frozen.receipt.json",
+      "sha256": "b0be16aab8c2f7ca147e9f26187ab33735b56130f60d72b821aeef781fd9017e",
+      "bytes": 6742
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-15case-preapply/matter-read-race.frozen.tap.log",
+      "destination": "evidence/amendment-private-read/red-proposal-15case/matter-read-race.frozen.tap.log",
+      "sha256": "89b419ac1e9adfb1cc0a97f7bd86d8d97dfe9a88f3579ef6b21671f032215703",
+      "bytes": 11052
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-15case-preapply/matter-read-race.proposal.receipt.json",
+      "destination": "evidence/amendment-private-read/red-proposal-15case/matter-read-race.proposal.receipt.json",
+      "sha256": "c427889ac3a0cdafbb430fd1cfcad5db79706e24d0e40b9e7b8a5cadae8224bf",
+      "bytes": 7011
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-15case-preapply/matter-read-race.proposal.tap.log",
+      "destination": "evidence/amendment-private-read/red-proposal-15case/matter-read-race.proposal.tap.log",
+      "sha256": "f20c0667b8660265210e7a19a6094c83897650c2258501bfae3b9ea695a05bf5",
+      "bytes": 3395
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-15case-preapply/matter-read-race.typed.execution.json",
+      "destination": "evidence/amendment-private-read/red-proposal-15case/matter-read-race.typed.execution.json",
+      "sha256": "95930cbf26319ae6bc85b6d1bd3fd6c4b663c59d8a15a7d834924c4d9ee3848e",
+      "bytes": 2493
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-15case-preapply/matter-read-race.unit.test.ts",
+      "destination": "evidence/amendment-private-read/red-proposal-15case/matter-read-race.unit.test.ts.source.txt",
+      "sha256": "b4b643ea9f29ed6f0dc2bb6627bb61c0fa6f1bff44ee7d434b05ef44f6d42850",
+      "bytes": 21049
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-prelint/dossier-read-access.test.ts.source.txt",
+      "destination": "evidence/amendment-private-read/prelint-17case/dossier-read-access.test.ts.source.txt",
+      "sha256": "33ad605555018437b8fcb76025c5614947c7bb7539a367bba96992a59c4031f4",
+      "bytes": 21781
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-prelint/matter-read-race.actual.execution.json",
+      "destination": "evidence/amendment-private-read/prelint-17case/matter-read-race.actual.execution.json",
+      "sha256": "37ac0ba8086fff498bf9433c703a4e7d61bfb1e8281f9f42f3dbdb0e03b2c017",
+      "bytes": 715
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-prelint/matter-read-race.actual.stderr.log",
+      "destination": "evidence/amendment-private-read/prelint-17case/matter-read-race.actual.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-prelint/matter-read-race.actual.tap.log",
+      "destination": "evidence/amendment-private-read/prelint-17case/matter-read-race.actual.tap.log",
+      "sha256": "546b5181b02beb859d7b08bc80ebfcddebed0b2ec88f42504cefd9bdad70808f",
+      "bytes": 3836
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-prelint/matter-read-race.current.receipt.json",
+      "destination": "evidence/amendment-private-read/prelint-17case/matter-read-race.current.receipt.json",
+      "sha256": "5f859239c16493b7ec2501cea43ea134f05a703388b06f8b5fd2672aa150f90b",
+      "bytes": 7265
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race.actual.execution.json",
+      "destination": "evidence/amendment-private-read/actual/matter-read-race.actual.execution.json",
+      "sha256": "cd1bb9013816602d674d85eb94ad91c1f515e34487ce0a4c71431b157a76c8dd",
+      "bytes": 862
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race.actual.stderr.log",
+      "destination": "evidence/amendment-private-read/actual/matter-read-race.actual.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race.actual.tap.log",
+      "destination": "evidence/amendment-private-read/actual/matter-read-race.actual.tap.log",
+      "sha256": "d4d7b9281a96e934d203d10ecae6c463473435d260d0e83f9ec90918694802c0",
+      "bytes": 3837
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race.current.receipt.json",
+      "destination": "evidence/amendment-private-read/actual/matter-read-race.current.receipt.json",
+      "sha256": "e27f5cfb0df975ed6b610114b711934aa337def7abc814c8f68e371b53e4fcdf",
+      "bytes": 7265
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-race-scope.md",
+      "destination": "evidence/amendment-private-read/actual/matter-read-race-scope.md",
+      "sha256": "e92f0a09bfad153b6a6bdbfa18d9a8be896bf132767178f05e54d0cd76a419fa",
+      "bytes": 7688
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/applied.receipt.json",
+      "destination": "evidence/amendment-private-read/patch/applied.receipt.json",
+      "sha256": "f2a056616b719368e47ed5e8d501dca25814d40bddcb9a17107fcd841c9be822",
+      "bytes": 7221
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/proposal.receipt.json",
+      "destination": "evidence/amendment-private-read/patch/proposal.receipt.json",
+      "sha256": "cf79d6a5fee45c0a2185f41ee2398e3aeb6c734536fa70a49925da43f4e23bcc",
+      "bytes": 8289
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/proposal.patch",
+      "destination": "evidence/amendment-private-read/patch/proposal.patch",
+      "sha256": "4c044bc5548945a9ee639d750c1452e0a41475cc79f02434afd14ec80191d5bf",
+      "bytes": 40619
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/aggregate-baseline-source.json",
+      "destination": "evidence/amendment-private-read/baseline/aggregate-baseline-source-unbound.json",
+      "sha256": "965092a570962db91f0d086e1bd46ae6c7d7397945d8ea580732b2ae3773d8d8",
+      "bytes": 537
+    }
+  ]
+}

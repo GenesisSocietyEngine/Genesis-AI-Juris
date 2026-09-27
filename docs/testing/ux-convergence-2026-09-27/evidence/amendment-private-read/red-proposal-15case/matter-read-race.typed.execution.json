@@ -1,0 +1,48 @@
+{
+    "recordedAt":  "2026-09-27T21:37:53.2794068Z",
+    "node":  "v22.23.2",
+    "testCommand":  "node --import tsx --test .artifacts/ux-reconciliation-auth/matter-read-race.unit.test.ts",
+    "frozenSourceHead":  "6ab091d830ccfd9d6b76c0adc177341bca96e081",
+    "frozenStatus":  "",
+    "frozenTestExit":  1,
+    "frozenPassed":  6,
+    "frozenFailed":  9,
+    "proposalTestExit":  0,
+    "proposalPassed":  15,
+    "proposalFailed":  0,
+    "proposalSourceMode":  "PROPOSAL_OVERLAY only, ignored matter-read-fence/after files",
+    "typecheckExit":  0,
+    "scope":  "Synthetic in-process unit fixture. Initial broader HTTP/login plan was superseded by coordinator restriction before any server, credential, real database, account or network action. No actual-login/session-store/browser coverage claimed.",
+    "artifacts":  [
+                      {
+                          "file":  "matter-read-race.unit.test.ts",
+                          "bytes":  21049,
+                          "sha256":  "b4b643ea9f29ed6f0dc2bb6627bb61c0fa6f1bff44ee7d434b05ef44f6d42850"
+                      },
+                      {
+                          "file":  "matter-read-race.frozen.tap.log",
+                          "bytes":  11052,
+                          "sha256":  "89b419ac1e9adfb1cc0a97f7bd86d8d97dfe9a88f3579ef6b21671f032215703"
+                      },
+                      {
+                          "file":  "matter-read-race.frozen.receipt.json",
+                          "bytes":  6742,
+                          "sha256":  "b0be16aab8c2f7ca147e9f26187ab33735b56130f60d72b821aeef781fd9017e"
+                      },
+                      {
+                          "file":  "matter-read-race.proposal.tap.log",
+                          "bytes":  3395,
+                          "sha256":  "f20c0667b8660265210e7a19a6094c83897650c2258501bfae3b9ea695a05bf5"
+                      },
+                      {
+                          "file":  "matter-read-race.proposal.receipt.json",
+                          "bytes":  7011,
+                          "sha256":  "c427889ac3a0cdafbb430fd1cfcad5db79706e24d0e40b9e7b8a5cadae8224bf"
+                      },
+                      {
+                          "file":  "matter-read-race.types.log",
+                          "bytes":  0,
+                          "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                      }
+                  ]
+}

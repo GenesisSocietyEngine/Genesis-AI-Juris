@@ -1,0 +1,253 @@
+TAP version 13
+# Subtest: synthetic in-process baseline: actual detail handler returns authorized fixture
+ok 1 - synthetic in-process baseline: actual detail handler returns authorized fixture
+  ---
+  duration_ms: 58.4255
+  type: 'test'
+  ...
+# Subtest: regression: detail response must use current membership after awaited private read
+not ok 2 - regression: detail response must use current membership after awaited private read
+  ---
+  duration_ms: 11.3188
+  type: 'test'
+  location: 'C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\.artifacts\\ux-reconciliation-auth\\matter-read-race.unit.test.ts:1:12338'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 404
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 404
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    assertDenied (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:150:10)
+    TestContext.<anonymous> (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:167:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: synthetic in-process control: a fresh read denies the same suspended membership
+ok 3 - synthetic in-process control: a fresh read denies the same suspended membership
+  ---
+  duration_ms: 1.8991
+  type: 'test'
+  ...
+# Subtest: untouched authority remains successful across the same awaited data barrier
+ok 4 - untouched authority remains successful across the same awaited data barrier
+  ---
+  duration_ms: 4.3474
+  type: 'test'
+  ...
+# Subtest: identity disappearance during read must hide prepared private response
+not ok 5 - identity disappearance during read must hide prepared private response
+  ---
+  duration_ms: 5.4798
+  type: 'test'
+  location: 'C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\.artifacts\\ux-reconciliation-auth\\matter-read-race.unit.test.ts:1:13313'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 401
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 401
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    assertDenied (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:150:10)
+    TestContext.<anonymous> (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:183:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: identity switch during read must not deliver a prior principal response
+not ok 6 - identity switch during read must not deliver a prior principal response
+  ---
+  duration_ms: 4.1252
+  type: 'test'
+  location: 'C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\.artifacts\\ux-reconciliation-auth\\matter-read-race.unit.test.ts:1:13497'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 401
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 401
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    assertDenied (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:150:10)
+    TestContext.<anonymous> (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:187:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: same participant role downgrade during read must invalidate captured permissions
+not ok 7 - same participant role downgrade during read must invalidate captured permissions
+  ---
+  duration_ms: 3.8093
+  type: 'test'
+  location: 'C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\.artifacts\\ux-reconciliation-auth\\matter-read-race.unit.test.ts:1:13691'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 409
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 409
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    assertDenied (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:150:10)
+    TestContext.<anonymous> (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:191:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: fresh viewer read returns current viewer permissions
+ok 8 - fresh viewer read returns current viewer permissions
+  ---
+  duration_ms: 4.1736
+  type: 'test'
+  ...
+# Subtest: collection unchanged at awaited owner read preserves response and hides internal grant ID
+ok 9 - collection unchanged at awaited owner read preserves response and hides internal grant ID
+  ---
+  duration_ms: 6.2195
+  type: 'test'
+  ...
+# Subtest: collection removal during owner-name read withholds prepared private summary
+not ok 10 - collection removal during owner-name read withholds prepared private summary
+  ---
+  duration_ms: 3.6695
+  type: 'test'
+  location: 'C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\.artifacts\\ux-reconciliation-auth\\matter-read-race.unit.test.ts:1:16262'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 409
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 409
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    assertDenied (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:150:10)
+    TestContext.<anonymous> (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:218:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: collection role change during owner-name read withholds old permissions
+not ok 11 - collection role change during owner-name read withholds old permissions
+  ---
+  duration_ms: 2.8004
+  type: 'test'
+  location: 'C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\.artifacts\\ux-reconciliation-auth\\matter-read-race.unit.test.ts:1:16479'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 409
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 409
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    assertDenied (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:150:10)
+    TestContext.<anonymous> (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:221:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: collection lookahead grant is checked before returning its pagination cursor
+not ok 12 - collection lookahead grant is checked before returning its pagination cursor
+  ---
+  duration_ms: 4.729
+  type: 'test'
+  location: 'C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\.artifacts\\ux-reconciliation-auth\\matter-read-race.unit.test.ts:1:16693'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 409
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 409
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    assertDenied (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:150:10)
+    TestContext.<anonymous> (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:224:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: empty collection still rechecks disappearing identity
+not ok 13 - empty collection still rechecks disappearing identity
+  ---
+  duration_ms: 3.037
+  type: 'test'
+  location: 'C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\.artifacts\\ux-reconciliation-auth\\matter-read-race.unit.test.ts:1:17141'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 401
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 401
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    assertDenied (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:150:10)
+    TestContext.<anonymous> (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:229:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: unchanged note operation recovery preserves successful 201, content and cache headers
+ok 14 - unchanged note operation recovery preserves successful 201, content and cache headers
+  ---
+  duration_ms: 5.3934
+  type: 'test'
+  ...
+# Subtest: note operation recovery after suspended membership withholds prior 201 payload
+not ok 15 - note operation recovery after suspended membership withholds prior 201 payload
+  ---
+  duration_ms: 3.9695
+  type: 'test'
+  location: 'C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\.artifacts\\ux-reconciliation-auth\\matter-read-race.unit.test.ts:1:17811'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    201 !== 404
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 404
+  actual: 201
+  operator: 'strictEqual'
+  stack: |-
+    assertDenied (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:150:10)
+    TestContext.<anonymous> (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\ux-reconciliation-auth\matter-read-race.unit.test.ts:236:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..15
+# tests 15
+# suites 0
+# pass 6
+# fail 9
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4979.9721

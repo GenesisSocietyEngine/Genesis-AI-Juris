@@ -1,0 +1,78 @@
+{
+  "archivedAt": "2026-09-27T21:52:00.398Z",
+  "scope": "Exact-byte final focused-verification archival after all implementation-agent checks completed: retained bootstrap/partial/lint-failure attempts, final17 new+49 contracts+26 existing scoped tests, full typecheck and changed-file lint; explicit Canopy1parent6children NOT_RUN in the focused selection. This supplements the first private-read copy receipt, not a fresh complete release aggregate.",
+  "files": [
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-handler-auth-p1-filtered.log",
+      "destination": "evidence/amendment-private-read/verification/actual-handler-auth-p1-filtered.log",
+      "sha256": "0114597b3114495414524e478e4b63546f083d5eaf3929bb0f23b6a91b3bf52d",
+      "bytes": 13402
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-handler-auth-p1.log",
+      "destination": "evidence/amendment-private-read/verification/actual-handler-auth-p1.log",
+      "sha256": "b506e583bbdec76ea79f49f5dba1f299de3b985b3852d8a88d75950e9adba92f",
+      "bytes": 12606
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-lint-final.log",
+      "destination": "evidence/amendment-private-read/verification/actual-lint-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-lint.log",
+      "destination": "evidence/amendment-private-read/verification/actual-lint.log",
+      "sha256": "d1d2a25d18f1beb65679f88f8a4da046cac74697209316112917f05cf92cc6d1",
+      "bytes": 604
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-route-contracts-host.log",
+      "destination": "evidence/amendment-private-read/verification/actual-route-contracts-host.log",
+      "sha256": "9eb870876be7a2fab08ab4cb2b4e6bba30593f03079b2e48ae3dd51e2d54771e",
+      "bytes": 23622
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-route-contracts.log",
+      "destination": "evidence/amendment-private-read/verification/actual-route-contracts.log",
+      "sha256": "aa70a4d6a7e59e011fb1efba2d49e9850559d459080313aec6b6e9e7fa96584c",
+      "bytes": 20734
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-typecheck-final.log",
+      "destination": "evidence/amendment-private-read/verification/actual-typecheck-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-typecheck.log",
+      "destination": "evidence/amendment-private-read/verification/actual-typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-verification.receipt.json",
+      "destination": "evidence/amendment-private-read/verification/actual-verification.receipt.json",
+      "sha256": "72c71a618003b5e2bb2b8f96032678765b43fbbe4a88a7399871dab4781ff8fc",
+      "bytes": 9082
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/FILTER_SCOPE.md",
+      "destination": "evidence/amendment-private-read/verification/FILTER_SCOPE.md",
+      "sha256": "2598d557671bd963d980679af98d082dc6acb09af32e47d3424d80986c449db5",
+      "bytes": 2727
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/node-exact-skip-probe.log",
+      "destination": "evidence/amendment-private-read/verification/node-exact-skip-probe.log",
+      "sha256": "cffb990d6004b62a7a573cee11b76d5f86478adb937101830d0573a0695f1f6e",
+      "bytes": 438
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/node-negative-name-probe.log",
+      "destination": "evidence/amendment-private-read/verification/node-negative-name-probe.log",
+      "sha256": "8bbdee5233e8512be05ff0b93059d1f49170e2d4e399ba95da27441e6ec0a38e",
+      "bytes": 1172
+    }
+  ]
+}

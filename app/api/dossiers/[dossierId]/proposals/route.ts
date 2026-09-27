@@ -27,6 +27,7 @@ import { exactCurrentGraphEntityExists, graphEntityId } from "../../../../dossie
 import { computeStoredDossierReadiness } from "../../../../dossier-readiness-server";
 import { parseDossierOpaqueId } from "../../../../dossier-security";
 import {
+  finalizeDossierRead,
   boundedDossierText,
   canonicalDossierTimestamp,
   dossierEnum,
@@ -155,7 +156,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
     access.dossier.id,
     visibleRows.map((proposal) => proposal.id),
   );
-  return dossierJson({
+  return finalizeDossierRead(context, access, dossierJson({
     proposals: visibleRows.map((proposal) => projectProposal(
       proposal,
       associations.versionIdsByProposal.get(proposal.id) ?? [],
@@ -167,7 +168,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
       next_cursor: hasMore ? visibleRows.at(-1)?.id ?? null : null,
     },
     contract_version: "1.0.0",
-  });
+  }));
 }
 
 export async function POST(request: Request, routeContext: RouteContext) {

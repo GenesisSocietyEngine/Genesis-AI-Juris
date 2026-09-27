@@ -14,6 +14,7 @@ import {
 import { computeStoredDossierReadiness } from "../../../../dossier-readiness-server";
 import { parseDossierOpaqueId } from "../../../../dossier-security";
 import {
+  finalizeDossierRead,
   boundedDossierText,
   canonicalDossierTimestamp,
   dossierEnum,
@@ -188,7 +189,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
     sourcesByDeadline.set(source.deadlineReferenceId, sources);
   }
 
-  return dossierJson({
+  return finalizeDossierRead(context, access, dossierJson({
     requests: visibleRequests.map(projectInformationRequest),
     deadlines: deadlineRows.map((deadline) => ({
       object_type: "deadline_reference",
@@ -210,7 +211,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
       updated_by: deadline.updatedBy,
     })),
     next_cursor: hasMore ? visibleRequests[visibleRequests.length - 1]?.informationRequestId ?? null : null,
-  });
+  }));
 }
 
 export async function POST(request: Request, routeContext: RouteContext) {

@@ -1,0 +1,627 @@
+diff --git a/app/api/dossiers/[dossierId]/activity/route.ts b/app/api/dossiers/[dossierId]/activity/route.ts
+index eb0d166..151bb23 100644
+--- a/app/api/dossiers/[dossierId]/activity/route.ts
++++ b/app/api/dossiers/[dossierId]/activity/route.ts
+@@ -2,6 +2,7 @@ import { and, desc, eq, lt } from "drizzle-orm";
+ import { dossierAuditEvents } from "../../../../../db/schema";
+ import { parseDossierOpaqueId } from "../../../../dossier-security";
+ import {
++  finalizeDossierRead,
+   dossierJson,
+   dossierNotFound,
+   isResponse,
+@@ -75,7 +76,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
+   if (eventId !== null && rows.length === 0) return dossierNotFound();
+   const hasMore = eventId === null && rows.length > limit;
+   const visible = rows.slice(0, limit);
+-  return dossierJson({
++  return finalizeDossierRead(context, access, dossierJson({
+     activity: visible.map((event) => ({
+       object_type: "audit_event",
+       schema_version: 1,
+@@ -94,7 +95,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
+       event_digest: event.eventDigest,
+     })),
+     next_cursor: hasMore ? visible[visible.length - 1]?.auditEventId ?? null : null,
+-  });
++  }), "audit");
+ }
+ 
+ function pageLimit(value: string | null): number | null {
+diff --git a/app/api/dossiers/[dossierId]/decision-packages/route.ts b/app/api/dossiers/[dossierId]/decision-packages/route.ts
+index 70780bf..e4ec401 100644
+--- a/app/api/dossiers/[dossierId]/decision-packages/route.ts
++++ b/app/api/dossiers/[dossierId]/decision-packages/route.ts
+@@ -27,6 +27,7 @@ import {
+ import { computeStoredDossierReadiness } from "../../../../dossier-readiness-server";
+ import { parseDossierOpaqueId } from "../../../../dossier-security";
+ import {
++  finalizeDossierRead,
+   boundedDossierText,
+   canonicalDossierTimestamp,
+   dossierJson,
+@@ -122,7 +123,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
+ 
+   const hasMore = rows.length > limit;
+   const visible = rows.slice(0, limit);
+-  return dossierJson({
++  return finalizeDossierRead(context, access, dossierJson({
+     decision_packages: visible.map(projectPackageReference),
+     page: {
+       limit,
+@@ -130,7 +131,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
+       next_cursor: hasMore ? visible.at(-1)?.id ?? null : null,
+     },
+     contract_version: "1.0.0",
+-  });
++  }));
+ }
+ 
+ export async function POST(request: Request, routeContext: RouteContext) {
+diff --git a/app/api/dossiers/[dossierId]/dispositions/route.ts b/app/api/dossiers/[dossierId]/dispositions/route.ts
+index a6cfdfc..3713fcd 100644
+--- a/app/api/dossiers/[dossierId]/dispositions/route.ts
++++ b/app/api/dossiers/[dossierId]/dispositions/route.ts
+@@ -1,6 +1,6 @@
+ import { and, eq } from "drizzle-orm";
+ import { dossierDeadlineDispositions, dossierSourceAnchorRetirements, dossierDeadlineReferences, dossierSourceAnchors, dossierDocumentCurrentVersions, dossierAssertionSources, dossierProfessionalAssertions, dossiers, dossierAuditEvents, dossierRevisionReceipts } from "../../../../../db/schema";
+-import { boundedDossierText, canonicalDossierTimestamp, dossierEnum, dossierJson, dossierNotFound, dossierSha256, expectedDossierRevision, isResponse, newDossierOpaqueId, prepareDossierRevisionAuditBatch, requireDossierAccess, resolveDossierServerContext } from "../../../../dossier-server";
++import { finalizeDossierRead, boundedDossierText, canonicalDossierTimestamp, dossierEnum, dossierJson, dossierNotFound, dossierSha256, expectedDossierRevision, isResponse, newDossierOpaqueId, prepareDossierRevisionAuditBatch, requireDossierAccess, resolveDossierServerContext } from "../../../../dossier-server";
+ import { parseDossierOpaqueId } from "../../../../dossier-security";
+ import { canonicalDossierJson } from "../../../../dossier-contract";
+ import { computeStoredDossierReadiness } from "../../../../dossier-readiness-server";
+@@ -27,7 +27,7 @@ export async function GET(request: Request, route: RouteContext) {
+   if(url.searchParams.getAll("operation_key").length!==1)return dossierNotFound();
+   try{if(boundedDossierText(operationKey,"Operation key",8,120)!==operationKey)return dossierNotFound();}catch{return dossierNotFound();}
+   if(!disposition||disposition.actorRef!==context.actor.actorId||disposition.idempotencyKey!==operationKey)return dossierNotFound();
+-  return dossierJson({disposition,replayed:true,audit_event_id:disposition.auditEventId,dossier:{dossier_id:access.dossier.id,revision:disposition.revisionAfter}});
++  return finalizeDossierRead(context, access, dossierJson({disposition,replayed:true,audit_event_id:disposition.auditEventId,dossier:{dossier_id:access.dossier.id,revision:disposition.revisionAfter}}));
+  }
+  const dependencies=kind==="citation"?await context.db.select({id:dossierProfessionalAssertions.id,status:dossierProfessionalAssertions.status,statement:dossierProfessionalAssertions.statement}).from(dossierAssertionSources).innerJoin(dossierProfessionalAssertions,and(eq(dossierProfessionalAssertions.dossierId,dossierAssertionSources.dossierId),eq(dossierProfessionalAssertions.id,dossierAssertionSources.assertionId))).where(and(eq(dossierAssertionSources.dossierId,access.dossier.id),eq(dossierAssertionSources.sourceAnchorId,id))):[];
+  const outputs=await loadCurrentEvidenceOutputs(context,access.dossier.id);
+@@ -41,8 +41,8 @@ export async function GET(request: Request, route: RouteContext) {
+  if(kind==="citation"&&"documentId" in record){const [current]=await context.db.select().from(dossierDocumentCurrentVersions).where(and(eq(dossierDocumentCurrentVersions.dossierId,access.dossier.id),eq(dossierDocumentCurrentVersions.documentId,record.documentId))).limit(1);
+  if(record.reviewState!=="accepted"||!current||current.documentVersionId===record.documentVersionId)unavailable="Retirement requires an accepted citation to an older source version. Review current evidence first.";}
+ 
+- return dossierJson({actor_id:context.actor.actorId,kind,record,disposition:disposition??null,dependent_assertions:dependencies,current_output_ids:outputs.current.map(o=>o.outputId),revision:access.dossier.revision,
+- can_review:access.role!=="viewer"&&!unavailable, unavailable_reason:unavailable, readiness_effect:kind==="deadline"?"Closes this historical deadline only. The key case deadline is unchanged; a missing key deadline or other incomplete work can still block readiness. Current reports must be regenerated.":"Retires this citation for current use. Every assertion that relies on it still needs explicit review or supersession; choosing replacement evidence does not automatically support an assertion. Current reports become outdated."});
++ return finalizeDossierRead(context, access, dossierJson({actor_id:context.actor.actorId,kind,record,disposition:disposition??null,dependent_assertions:dependencies,current_output_ids:outputs.current.map(o=>o.outputId),revision:access.dossier.revision,
++ can_review:access.role!=="viewer"&&!unavailable, unavailable_reason:unavailable, readiness_effect:kind==="deadline"?"Closes this historical deadline only. The key case deadline is unchanged; a missing key deadline or other incomplete work can still block readiness. Current reports must be regenerated.":"Retires this citation for current use. Every assertion that relies on it still needs explicit review or supersession; choosing replacement evidence does not automatically support an assertion. Current reports become outdated."}));
+ }
+ 
+ export async function POST(request: Request, route: RouteContext) {
+diff --git a/app/api/dossiers/[dossierId]/documents/[documentId]/versions/[versionId]/download/route.ts b/app/api/dossiers/[dossierId]/documents/[documentId]/versions/[versionId]/download/route.ts
+index 36ba6cc..b3aba47 100644
+--- a/app/api/dossiers/[dossierId]/documents/[documentId]/versions/[versionId]/download/route.ts
++++ b/app/api/dossiers/[dossierId]/documents/[documentId]/versions/[versionId]/download/route.ts
+@@ -10,6 +10,7 @@ import {
+   parseDossierOpaqueId,
+ } from "../../../../../../../../dossier-security";
+ import {
++  revalidateDossierReadAccess,
+   dossierJson,
+   dossierNotFound,
+   isResponse,
+@@ -94,7 +95,7 @@ export async function GET(_request: Request, routeContext: RouteContext) {
+     ) {
+       return privateIntegrityError();
+     }
+-    const current = await requireDossierAccess(context, routeIds.dossierId, "download");
++    const current = await revalidateDossierReadAccess(context, access, "download");
+     if (isResponse(current)) { await object.body.cancel(); return current; }
+     return new Response(object.body, {
+       status: decision.status,
+diff --git a/app/api/dossiers/[dossierId]/documents/route.ts b/app/api/dossiers/[dossierId]/documents/route.ts
+index d47c1f6..990eba6 100644
+--- a/app/api/dossiers/[dossierId]/documents/route.ts
++++ b/app/api/dossiers/[dossierId]/documents/route.ts
+@@ -20,6 +20,7 @@ import {
+ } from "../../../../dossier-private-upload";
+ import { parseDossierOpaqueId } from "../../../../dossier-security";
+ import {
++  finalizeDossierRead,
+   boundedDossierText,
+   dossierEnum,
+   dossierJson,
+@@ -137,7 +138,7 @@ export async function GET(_request: Request, routeContext: RouteContext) {
+     );
+   }
+ 
+-  return dossierJson({
++  return finalizeDossierRead(context, access, dossierJson({
+     documents: documents.map((document) => ({
+       schema_version: 1,
+       document_id: document.documentId,
+@@ -180,7 +181,7 @@ export async function GET(_request: Request, routeContext: RouteContext) {
+       maximum_versions: MAX_VERSIONS,
+       truncated: documents.length === MAX_DOCUMENTS || versions.length === MAX_VERSIONS,
+     },
+-  });
++  }));
+ }
+ 
+ export async function POST(request: Request, routeContext: RouteContext) {
+diff --git a/app/api/dossiers/[dossierId]/evidence/anchors/route.ts b/app/api/dossiers/[dossierId]/evidence/anchors/route.ts
+index 59ebfab..f7660e0 100644
+--- a/app/api/dossiers/[dossierId]/evidence/anchors/route.ts
++++ b/app/api/dossiers/[dossierId]/evidence/anchors/route.ts
+@@ -22,6 +22,7 @@ import {
+ import { computeStoredDossierReadiness } from "../../../../../dossier-readiness-server";
+ import { parseDossierOpaqueId } from "../../../../../dossier-security";
+ import {
++  finalizeDossierRead,
+   canonicalDossierTimestamp,
+   dossierEnum,
+   dossierJson,
+@@ -129,7 +130,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
+   if (exactId && !rows.length) return dossierNotFound();
+   const hasMore = rows.length > limit;
+   const visible = rows.slice(0, limit);
+-  return dossierJson({
++  return finalizeDossierRead(context, access, dossierJson({
+     source_anchors: visible.map(anchor => ({ ...projectSourceAnchor(anchor), document_title: anchor.documentTitle, version_ordinal: anchor.versionOrdinal, retired_at: anchor.retiredAt })),
+     page: {
+       limit,
+@@ -137,7 +138,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
+       next_cursor: hasMore ? visible.at(-1)?.id ?? null : null,
+     },
+     contract_version: "1.0.0",
+-  });
++  }));
+ }
+ 
+ export async function POST(request: Request, routeContext: RouteContext) {
+diff --git a/app/api/dossiers/[dossierId]/evidence/assertions/route.ts b/app/api/dossiers/[dossierId]/evidence/assertions/route.ts
+index d0f8d78..cf4e717 100644
+--- a/app/api/dossiers/[dossierId]/evidence/assertions/route.ts
++++ b/app/api/dossiers/[dossierId]/evidence/assertions/route.ts
+@@ -18,6 +18,7 @@ import {
+ import { computeStoredDossierReadiness } from "../../../../../dossier-readiness-server";
+ import { parseDossierOpaqueId } from "../../../../../dossier-security";
+ import {
++  finalizeDossierRead,
+   boundedDossierText,
+   canonicalDossierTimestamp,
+   dossierEnum,
+@@ -139,7 +140,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
+     sources.push(source.sourceAnchorId);
+     sourcesByAssertion.set(source.assertionId, sources);
+   }
+-  return dossierJson({
++  return finalizeDossierRead(context, access, dossierJson({
+     assertions: visible.map((assertion) => projectAssertion(
+       assertion,
+       sourcesByAssertion.get(assertion.id) ?? [],
+@@ -150,7 +151,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
+       next_cursor: hasMore ? visible.at(-1)?.id ?? null : null,
+     },
+     contract_version: "1.0.0",
+-  });
++  }));
+ }
+ 
+ export async function POST(request: Request, routeContext: RouteContext) {
+diff --git a/app/api/dossiers/[dossierId]/evidence/links/route.ts b/app/api/dossiers/[dossierId]/evidence/links/route.ts
+index 992448f..6581e98 100644
+--- a/app/api/dossiers/[dossierId]/evidence/links/route.ts
++++ b/app/api/dossiers/[dossierId]/evidence/links/route.ts
+@@ -20,6 +20,7 @@ import {
+ import { computeStoredDossierReadiness } from "../../../../../dossier-readiness-server";
+ import { parseDossierOpaqueId } from "../../../../../dossier-security";
+ import {
++  finalizeDossierRead,
+   boundedDossierText,
+   canonicalDossierTimestamp,
+   dossierEnum,
+@@ -109,7 +110,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
+   )).orderBy(desc(dossierEvidenceLinks.createdAt), desc(dossierEvidenceLinks.id)).limit(limit + 1);
+   const hasMore = rows.length > limit;
+   const visible = rows.slice(0, limit);
+-  return dossierJson({
++  return finalizeDossierRead(context, access, dossierJson({
+     evidence_links: visible.map(projectEvidenceLink),
+     page: {
+       limit,
+@@ -117,7 +118,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
+       next_cursor: hasMore ? visible.at(-1)?.id ?? null : null,
+     },
+     contract_version: "1.0.0",
+-  });
++  }));
+ }
+ 
+ export async function POST(request: Request, routeContext: RouteContext) {
+diff --git a/app/api/dossiers/[dossierId]/notes/route.ts b/app/api/dossiers/[dossierId]/notes/route.ts
+index 05b4fbd..add150a 100644
+--- a/app/api/dossiers/[dossierId]/notes/route.ts
++++ b/app/api/dossiers/[dossierId]/notes/route.ts
+@@ -3,7 +3,7 @@ import { dossierWorkingNotes as notes, dossierWorkingNoteVersions as versions, d
+   dossierDocuments, dossierDocumentVersions, dossierSourceAnchors, dossierSourceAnchorRetirements, dossierDocumentCurrentVersions, organizationCasGuards } from "../../../../../db/schema";
+ import { canonicalDossierJson } from "../../../../dossier-contract";
+ import { parseDossierOpaqueId } from "../../../../dossier-security";
+-import { boundedDossierText, canonicalDossierTimestamp, dossierEnum, dossierJson, dossierNotFound, dossierSha256,
++import { finalizeDossierRead, boundedDossierText, canonicalDossierTimestamp, dossierEnum, dossierJson, dossierNotFound, dossierSha256,
+   isResponse, newDossierOpaqueId, requireDossierAccess, resolveDossierServerContext, type DossierServerContext } from "../../../../dossier-server";
+ import { isSameOriginMutation, readJsonObject } from "../../../../request-security";
+ 
+@@ -54,7 +54,7 @@ export async function GET(request: Request, route: RouteContext) {
+     if(params.has("operation_key")) {
+       if(params.size!==1) return failure("Operation recovery cannot be combined with another selection.","invalid_selection");
+       const key=boundedDossierText(params.get("operation_key"),"Operation key",8,120);
+-      const row=await operation(context,caseId,key); return row ? receipt(row,true) : dossierNotFound();
++      const row=await operation(context,caseId,key); return row ? finalizeDossierRead(context, access, receipt(row,true)) : dossierNotFound();
+     }
+     if(params.has("document_id")) {
+       if([...params.keys()].some(key=>!["document_id","version_id","cursor"].includes(key))) return failure("Choose a source without note pagination.","invalid_selection");
+@@ -70,7 +70,7 @@ export async function GET(request: Request, route: RouteContext) {
+         .innerJoin(versions,and(eq(versions.dossierId,notes.dossierId),eq(versions.noteId,notes.id),eq(versions.revision,notes.revision)))
+         .where(and(eq(sources.dossierId,caseId),eq(sources.documentId,documentId),eq(sources.active,true),versionId?eq(sources.documentVersionId,versionId):undefined,cursor?gt(sources.id,cursor):undefined)).orderBy(sources.id).limit(51);
+       const [total]=await context.db.select({count:sql<number>`count(*)`}).from(sources).where(and(eq(sources.dossierId,caseId),eq(sources.documentId,documentId),eq(sources.active,true),versionId?eq(sources.documentVersionId,versionId):undefined));
+-      return dossierJson({caseId,documentId,backlinks:backlinks.slice(0,50),count:total!.count,nextCursor:backlinks.length>50?backlinks[49]!.linkId:null,label:LABEL});
++      return finalizeDossierRead(context, access, dossierJson({caseId,documentId,backlinks:backlinks.slice(0,50),count:total!.count,nextCursor:backlinks.length>50?backlinks[49]!.linkId:null,label:LABEL}));
+     }
+     if(params.has("note_id")) {
+       if(params.has("version_id")||(params.has("history")&&params.has("source_cursor")))return failure("Choose note history or source pagination, separately.","invalid_selection");
+@@ -81,7 +81,7 @@ export async function GET(request: Request, route: RouteContext) {
+         const cursor=params.has("cursor")?Number(params.get("cursor")):null;
+         if(cursor!==null&&(!Number.isSafeInteger(cursor)||cursor<1))return failure("The history cursor is invalid.","invalid_selection");
+         const history=await context.db.select({id:versions.id,noteId:versions.noteId,revision:versions.revision,title:versions.title,noteType:versions.noteType,actorRef:versions.actorRef,actorRole:versions.actorRole,occurredAt:versions.occurredAt,action:versions.action,sourceLinkId:versions.sourceLinkId}).from(versions).where(and(eq(versions.dossierId,caseId),eq(versions.noteId,noteId),cursor?lt(versions.revision,cursor):undefined)).orderBy(desc(versions.revision)).limit(51);
+-        return dossierJson({caseId,noteId,history:history.slice(0,50).map(v=>({id:v.noteId,revision:v.revision,title:v.title,type:v.noteType,savedAt:v.occurredAt,savedBy:v.actorRef,savedByRole:v.actorRole,eventId:v.id,action:v.action,sourceLinkId:v.sourceLinkId})),nextCursor:history.length>50?history[49]!.revision:null});
++        return finalizeDossierRead(context, access, dossierJson({caseId,noteId,history:history.slice(0,50).map(v=>({id:v.noteId,revision:v.revision,title:v.title,type:v.noteType,savedAt:v.occurredAt,savedBy:v.actorRef,savedByRole:v.actorRole,eventId:v.id,action:v.action,sourceLinkId:v.sourceLinkId})),nextCursor:history.length>50?history[49]!.revision:null}));
+       }
+       if(params.has("cursor"))return failure("History is required for a revision cursor.","invalid_selection");
+       const selectedRevision=params.has("revision")?Number(params.get("revision")):row.revision;
+@@ -97,14 +97,14 @@ export async function GET(request: Request, route: RouteContext) {
+         .leftJoin(dossierDocumentCurrentVersions,and(eq(dossierDocumentCurrentVersions.dossierId,sources.dossierId),eq(dossierDocumentCurrentVersions.documentId,sources.documentId)))
+         .where(and(eq(sources.dossierId,caseId),eq(sources.noteId,noteId),sourceCursor?gt(sources.id,sourceCursor):undefined,sql`${sources.createdRevision}<=${selectedRevision} AND (${sources.unlinkedRevision} IS NULL OR ${sources.unlinkedRevision}>${selectedRevision})`)).orderBy(sources.id).limit(51);
+       const [total]=await context.db.select({count:sql<number>`count(*)`}).from(sources).where(and(eq(sources.dossierId,caseId),eq(sources.noteId,noteId),sql`${sources.createdRevision}<=${selectedRevision} AND (${sources.unlinkedRevision} IS NULL OR ${sources.unlinkedRevision}>${selectedRevision})`));
+-      return dossierJson({note:project(selected),currentRevision:row.revision,sourceCount:total!.count,nextSourceCursor:linked.length>50?linked[49]!.link.id:null,sources:linked.slice(0,50).map(({link,document,version,anchor,retirement,currentVersionId})=>({id:link.id,documentId:link.documentId,documentTitle:document.title,documentVersionId:link.documentVersionId,version:version.ordinal,sourceAnchorId:link.sourceAnchorId,reviewState:anchor?.reviewState??null,retired:Boolean(retirement),documentStatus:document.status,locator:anchor?{page:anchor.pageNumber,section:anchor.section,paragraph:anchor.paragraph,heading:anchor.heading,excerpt:anchor.excerpt}:null,currentSourceVersion:currentVersionId===link.documentVersionId,createdRevision:link.createdRevision,
+-        downloadPath:`/api/dossiers/${caseId}/documents/${link.documentId}/versions/${link.documentVersionId}/download`}))});
++      return finalizeDossierRead(context, access, dossierJson({note:project(selected),currentRevision:row.revision,sourceCount:total!.count,nextSourceCursor:linked.length>50?linked[49]!.link.id:null,sources:linked.slice(0,50).map(({link,document,version,anchor,retirement,currentVersionId})=>({id:link.id,documentId:link.documentId,documentTitle:document.title,documentVersionId:link.documentVersionId,version:version.ordinal,sourceAnchorId:link.sourceAnchorId,reviewState:anchor?.reviewState??null,retired:Boolean(retirement),documentStatus:document.status,locator:anchor?{page:anchor.pageNumber,section:anchor.section,paragraph:anchor.paragraph,heading:anchor.heading,excerpt:anchor.excerpt}:null,currentSourceVersion:currentVersionId===link.documentVersionId,createdRevision:link.createdRevision,
++        downloadPath:`/api/dossiers/${caseId}/documents/${link.documentId}/versions/${link.documentVersionId}/download`}))}));
+     }
+     if(params.has("revision")||params.has("history")||params.has("version_id")||params.has("source_cursor"))return failure("Select the note or source first.","invalid_selection");
+     const cursor=params.has("cursor")?parseDossierOpaqueId(params.get("cursor"),"note cursor"):null;
+     const rows=await context.db.select({id:notes.id,title:versions.title,type:versions.noteType,revision:notes.revision,savedAt:versions.occurredAt,savedBy:versions.actorRef,savedByRole:versions.actorRole}).from(notes).innerJoin(versions,and(eq(versions.dossierId,notes.dossierId),eq(versions.noteId,notes.id),eq(versions.revision,notes.revision)))
+       .where(and(eq(notes.dossierId,caseId),cursor?lt(notes.id,cursor):undefined)).orderBy(desc(notes.id)).limit(51);
+-    return dossierJson({caseId,notes:rows.slice(0,50).map(r=>({...r,label:LABEL})),nextCursor:rows.length>50?rows[49]!.id:null,label:LABEL});
++    return finalizeDossierRead(context, access, dossierJson({caseId,notes:rows.slice(0,50).map(r=>({...r,label:LABEL})),nextCursor:rows.length>50?rows[49]!.id:null,label:LABEL}));
+   } catch { return failure("The note or source selection is invalid or unavailable. Retry loading it.","note_read_unavailable",503); }
+ }
+ 
+diff --git a/app/api/dossiers/[dossierId]/outputs/[outputId]/download/route.ts b/app/api/dossiers/[dossierId]/outputs/[outputId]/download/route.ts
+index 608c0aa..f6f12aa 100644
+--- a/app/api/dossiers/[dossierId]/outputs/[outputId]/download/route.ts
++++ b/app/api/dossiers/[dossierId]/outputs/[outputId]/download/route.ts
+@@ -4,6 +4,7 @@ import {
+   downloadDossierGovernedOutput,
+ } from "../../../../../../dossier-governed-output-server";
+ import {
++  revalidateDossierReadAccess,
+   dossierNotFound,
+   dossierJson,
+   isResponse,
+@@ -39,7 +40,7 @@ export async function GET(_request: Request, routeContext: RouteContext) {
+       dossierId: access.dossier.id,
+       outputId,
+     });
+-    const current = await requireDossierAccess(context, dossierId, "download");
++    const current = await revalidateDossierReadAccess(context, access, "download");
+     if (isResponse(current)) { await response.body?.cancel(); return current; }
+     return response;
+   } catch (error) {
+diff --git a/app/api/dossiers/[dossierId]/outputs/[outputId]/presentation/route.ts b/app/api/dossiers/[dossierId]/outputs/[outputId]/presentation/route.ts
+index f51611a..a055db6 100644
+--- a/app/api/dossiers/[dossierId]/outputs/[outputId]/presentation/route.ts
++++ b/app/api/dossiers/[dossierId]/outputs/[outputId]/presentation/route.ts
+@@ -1,6 +1,6 @@
+ import { env } from "cloudflare:workers";
+ import { dossierGovernedErrorResponse, downloadDossierGovernedOutput, renderCanopyPresentationExtract, type DossierReportModelV1 } from "../../../../../../dossier-governed-output-server";
+-import { dossierJson, dossierNotFound, isResponse, requireDossierAccess, resolveDossierServerContext } from "../../../../../../dossier-server";
++import { revalidateDossierReadAccess, dossierJson, dossierNotFound, isResponse, requireDossierAccess, resolveDossierServerContext } from "../../../../../../dossier-server";
+ import { parseDossierOpaqueId } from "../../../../../../dossier-security";
+ 
+ export const dynamic = "force-dynamic";
+@@ -13,13 +13,13 @@ export async function GET(request:Request,routeContext:{params:Promise<{dossierI
+  if(!bucket)return dossierJson({error:"Private Matter storage is unavailable."},503);
+  try{
+   const source=await downloadDossierGovernedOutput({context,bucket,dossierId:access.dossier.id,outputId});
+-  const afterRead=await requireDossierAccess(context,dossierId,"download");if(isResponse(afterRead)){await source.body?.cancel();return afterRead;}
++  const afterRead=await revalidateDossierReadAccess(context, access, "download");if(isResponse(afterRead)){await source.body?.cancel();return afterRead;}
+   if(!source.ok)return source;
+   if(!source.headers.get("content-type")?.includes("application/json")){await source.body?.cancel();return dossierJson({error:"Select the exact governed JSON output for this presentation extract."},400);}
+   const model=await source.json() as DossierReportModelV1;
+   const bytes=await renderCanopyPresentationExtract(model);
+   const hash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new Uint8Array(bytes))),b=>b.toString(16).padStart(2,"0")).join("");
+-  const current=await requireDossierAccess(context,dossierId,"download");if(isResponse(current))return current;
++  const current=await revalidateDossierReadAccess(context, access, "download");if(isResponse(current))return current;
+   return new Response(bytes as BodyInit,{headers:{"content-type":"application/pdf","content-disposition":`attachment; filename="${model.snapshot.snapshot_id}-presentation-not-approved.pdf"`,"cache-control":"no-store","x-content-type-options":"nosniff","x-genesis-presentation-sha256":hash,"x-genesis-presentation-approval":"none","x-genesis-source-output":outputId}});
+  }catch(error){return dossierGovernedErrorResponse(error);}
+ }
+diff --git a/app/api/dossiers/[dossierId]/outputs/route.ts b/app/api/dossiers/[dossierId]/outputs/route.ts
+index ff2390b..50af589 100644
+--- a/app/api/dossiers/[dossierId]/outputs/route.ts
++++ b/app/api/dossiers/[dossierId]/outputs/route.ts
+@@ -6,6 +6,7 @@ import {
+   listDossierGovernedOutputs,
+ } from "../../../../dossier-governed-output-server";
+ import {
++  finalizeDossierRead,
+   dossierEnum,
+   dossierJson,
+   expectedDossierRevision,
+@@ -39,10 +40,10 @@ export async function GET(_request: Request, routeContext: RouteContext) {
+   const access = await requireDossierAccess(context, dossierId, "read");
+   if (isResponse(access)) return access;
+   try {
+-    return dossierJson({
++    return finalizeDossierRead(context, access, dossierJson({
+       outputs: await listDossierGovernedOutputs(context, access.dossier.id),
+       contract_version: "1.0.0",
+-    });
++    }));
+   } catch (error) {
+     return dossierGovernedErrorResponse(error);
+   }
+diff --git a/app/api/dossiers/[dossierId]/proposals/route.ts b/app/api/dossiers/[dossierId]/proposals/route.ts
+index 3e16a7b..f9dd92e 100644
+--- a/app/api/dossiers/[dossierId]/proposals/route.ts
++++ b/app/api/dossiers/[dossierId]/proposals/route.ts
+@@ -27,6 +27,7 @@ import { exactCurrentGraphEntityExists, graphEntityId } from "../../../../dossie
+ import { computeStoredDossierReadiness } from "../../../../dossier-readiness-server";
+ import { parseDossierOpaqueId } from "../../../../dossier-security";
+ import {
++  finalizeDossierRead,
+   boundedDossierText,
+   canonicalDossierTimestamp,
+   dossierEnum,
+@@ -155,7 +156,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
+     access.dossier.id,
+     visibleRows.map((proposal) => proposal.id),
+   );
+-  return dossierJson({
++  return finalizeDossierRead(context, access, dossierJson({
+     proposals: visibleRows.map((proposal) => projectProposal(
+       proposal,
+       associations.versionIdsByProposal.get(proposal.id) ?? [],
+@@ -167,7 +168,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
+       next_cursor: hasMore ? visibleRows.at(-1)?.id ?? null : null,
+     },
+     contract_version: "1.0.0",
+-  });
++  }));
+ }
+ 
+ export async function POST(request: Request, routeContext: RouteContext) {
+diff --git a/app/api/dossiers/[dossierId]/requests/route.ts b/app/api/dossiers/[dossierId]/requests/route.ts
+index 7da6891..6add148 100644
+--- a/app/api/dossiers/[dossierId]/requests/route.ts
++++ b/app/api/dossiers/[dossierId]/requests/route.ts
+@@ -14,6 +14,7 @@ import {
+ import { computeStoredDossierReadiness } from "../../../../dossier-readiness-server";
+ import { parseDossierOpaqueId } from "../../../../dossier-security";
+ import {
++  finalizeDossierRead,
+   boundedDossierText,
+   canonicalDossierTimestamp,
+   dossierEnum,
+@@ -188,7 +189,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
+     sourcesByDeadline.set(source.deadlineReferenceId, sources);
+   }
+ 
+-  return dossierJson({
++  return finalizeDossierRead(context, access, dossierJson({
+     requests: visibleRequests.map(projectInformationRequest),
+     deadlines: deadlineRows.map((deadline) => ({
+       object_type: "deadline_reference",
+@@ -210,7 +211,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
+       updated_by: deadline.updatedBy,
+     })),
+     next_cursor: hasMore ? visibleRequests[visibleRequests.length - 1]?.informationRequestId ?? null : null,
+-  });
++  }));
+ }
+ 
+ export async function POST(request: Request, routeContext: RouteContext) {
+diff --git a/app/api/dossiers/[dossierId]/route.ts b/app/api/dossiers/[dossierId]/route.ts
+index 17bf324..374bad3 100644
+--- a/app/api/dossiers/[dossierId]/route.ts
++++ b/app/api/dossiers/[dossierId]/route.ts
+@@ -15,6 +15,7 @@ import {
+ import { DOSSIER_WIRE_ENUMS } from "../../../dossier-contract";
+ import { computeStoredDossierReadiness } from "../../../dossier-readiness-server";
+ import {
++  finalizeDossierRead,
+   boundedDossierText,
+   canonicalDossierTimestamp,
+   dossierEnum,
+@@ -41,7 +42,7 @@ export async function GET(_request: Request, routeContext: RouteContext) {
+   const { dossierId } = await routeContext.params;
+   const access = await requireDossierAccess(context, dossierId, "read");
+   if (isResponse(access)) return access;
+-  return dossierJson(await detailPayload(context, access));
++  return finalizeDossierRead(context, access, dossierJson(await detailPayload(context, access)));
+ }
+ 
+ export async function PUT(request: Request, routeContext: RouteContext) {
+@@ -89,7 +90,7 @@ export async function PUT(request: Request, routeContext: RouteContext) {
+     return dossierJson({ error: "The Matter changed before this update.", code: "revision_conflict", currentRevision: access.dossier.revision }, 409);
+   }
+   const changedFields = Object.entries(set).filter(([key, value]) => !sameValue(access.dossier[key as keyof typeof access.dossier], value)).map(([key]) => key);
+-  if (changedFields.length === 0) return dossierJson({ ...(await detailPayload(context, access)), unchanged: true });
++  if (changedFields.length === 0) return finalizeDossierRead(context, access, dossierJson({ ...(await detailPayload(context, access)), unchanged: true }));
+   const now = canonicalDossierTimestamp();
+   const staleOutputs = await currentOutputStates(context, access.dossier.id);
+   const { revisionReceipt, auditEvents } = await prepareDossierRevisionAuditBatch(context, access.dossier.id, expectedRevision + 1, [
+@@ -138,7 +139,7 @@ export async function PUT(request: Request, routeContext: RouteContext) {
+   }
+   const nextAccess = await requireDossierAccess(context, access.dossier.id, "read");
+   if (isResponse(nextAccess)) return nextAccess;
+-  return dossierJson(await detailPayload(context, nextAccess));
++  return finalizeDossierRead(context, access, dossierJson(await detailPayload(context, nextAccess)));
+ }
+ 
+ async function detailPayload(context: DossierServerContext, access: DossierAccess) {
+diff --git a/app/api/dossiers/[dossierId]/snapshots/[snapshotId]/manifest/route.ts b/app/api/dossiers/[dossierId]/snapshots/[snapshotId]/manifest/route.ts
+index 5e3ead7..a7b1467 100644
+--- a/app/api/dossiers/[dossierId]/snapshots/[snapshotId]/manifest/route.ts
++++ b/app/api/dossiers/[dossierId]/snapshots/[snapshotId]/manifest/route.ts
+@@ -4,6 +4,7 @@ import {
+   downloadDossierSnapshotManifest,
+ } from "../../../../../../dossier-governed-output-server";
+ import {
++  revalidateDossierReadAccess,
+   dossierNotFound,
+   dossierJson,
+   isResponse,
+@@ -39,7 +40,7 @@ export async function GET(_request: Request, routeContext: RouteContext) {
+       dossierId: access.dossier.id,
+       snapshotId,
+     });
+-    const current = await requireDossierAccess(context, dossierId, "download");
++    const current = await revalidateDossierReadAccess(context, access, "download");
+     if (isResponse(current)) { await response.body?.cancel(); return current; }
+     return response;
+   } catch (error) {
+diff --git a/app/api/dossiers/[dossierId]/snapshots/route.ts b/app/api/dossiers/[dossierId]/snapshots/route.ts
+index c7d0c01..8b1015b 100644
+--- a/app/api/dossiers/[dossierId]/snapshots/route.ts
++++ b/app/api/dossiers/[dossierId]/snapshots/route.ts
+@@ -7,6 +7,7 @@ import {
+   listDossierSnapshots,
+ } from "../../../../dossier-governed-output-server";
+ import {
++  finalizeDossierRead,
+   dossierJson,
+   expectedDossierRevision,
+   isResponse,
+@@ -36,10 +37,10 @@ export async function GET(_request: Request, routeContext: RouteContext) {
+   const access = await requireDossierAccess(context, dossierId, "read");
+   if (isResponse(access)) return access;
+   try {
+-    return dossierJson({
++    return finalizeDossierRead(context, access, dossierJson({
+       snapshots: await listDossierSnapshots(context, access.dossier.id),
+       contract_version: "1.0.0",
+-    });
++    }));
+   } catch (error) {
+     return dossierGovernedErrorResponse(error);
+   }
+diff --git a/app/api/dossiers/route.ts b/app/api/dossiers/route.ts
+index 377148d..69e6d15 100644
+--- a/app/api/dossiers/route.ts
++++ b/app/api/dossiers/route.ts
+@@ -22,6 +22,7 @@ import {
+ } from "../../dossier-contract";
+ import { computeDossierReadiness, type DossierReadinessFinding } from "../../dossier-readiness";
+ import {
++  revalidateDossierIdentity,
+   boundedDossierText,
+   canonicalDossierTimestamp,
+   dossierEnum,
+@@ -74,6 +75,7 @@ export async function GET(request: Request) {
+ 
+   const rows = await context.db.select({
+     dossier: dossiers,
++    participantId: dossierParticipants.id,
+     role: dossierParticipants.role,
+     documentCount: sql<number>`(select count(*) from ${dossierDocuments} where ${dossierDocuments.dossierId} = ${dossiers.id} and ${dossierDocuments.isProvisional} = false)`,
+     openRequestCount: sql<number>`(select count(*) from ${dossierInformationRequests} where ${dossierInformationRequests.dossierId} = ${dossiers.id} and ${dossierInformationRequests.status} = 'open')`,
+@@ -96,8 +98,31 @@ export async function GET(request: Request) {
+   const evaluatedAt = canonicalDossierTimestamp();
+   const items = page.map((row) => projectSummary(row, ownerName.get(row.dossier.ownerUserId) ?? "Assigned matter owner", evaluatedAt));
+   const last = page.at(-1)?.dossier;
++  const identity = await revalidateDossierIdentity(context);
++  if (identity) return identity;
+   try { await assertOrganizationCurrent(context.db, context.actor, context.organization!); }
+   catch { return dossierJson({ error: "Organization access changed. Refresh your organizations." }, 404); }
++  // Recheck the page and pagination lookahead in one bounded query after owner-name reads.
++  // Keep the original organization and exact participant grants; do not revive
++  // a removed grant or return a role projection captured before a role change.
++  const currentParticipants = rows.length ? await context.db.select({
++    dossierId: dossierParticipants.dossierId,
++    participantId: dossierParticipants.id,
++    role: dossierParticipants.role,
++  }).from(dossierParticipants).innerJoin(dossierOrganizationBindings, and(
++    eq(dossierOrganizationBindings.dossierId, dossierParticipants.dossierId),
++    eq(dossierOrganizationBindings.organizationId, context.organization!.id),
++  )).where(and(
++    eq(dossierParticipants.userId, context.actor.userId),
++    eq(dossierParticipants.actorId, context.actor.actorId),
++    eq(dossierParticipants.status, "active"),
++    inArray(dossierParticipants.dossierId, rows.map(({ dossier }) => dossier.id)),
++  )).limit(MAX_PAGE_SIZE + 1) : [];
++  const currentByDossier = new Map(currentParticipants.map((participant) => [participant.dossierId, participant]));
++  if (currentParticipants.length !== rows.length || rows.some((row) => {
++    const current = currentByDossier.get(row.dossier.id);
++    return !current || current.participantId !== row.participantId || current.role !== row.role;
++  })) return dossierJson({ error: "Matter access changed. Refresh the Matter list before continuing.", code: "dossier_access_changed" }, 409);
+   return dossierJson({
+     dossiers: items,
+     next_cursor: rows.length > limit && last ? encodeCursor(last.updatedAt, last.id, scope) : null,
+diff --git a/app/dossier-server.ts b/app/dossier-server.ts
+index 5956439..ee4e381 100644
+--- a/app/dossier-server.ts
++++ b/app/dossier-server.ts
+@@ -134,6 +134,60 @@ export async function requireDossierAccess(
+   return { ...record, role: decision.effectiveRole };
+ }
+ 
++/** Recheck the accepted request's live identity without selecting or provisioning
++ * a replacement organization. A provider assertion cannot introspect a later
++ * provider logout; local sessions are checked against their current store. */
++export async function revalidateDossierIdentity(context: DossierServerContext): Promise<Response | undefined> {
++  let current: DossierServerContext | Response;
++  try {
++    current = await resolveDossierServerContext(undefined, { identityOnly: true });
++  } catch {
++    return dossierJson({ error: "Matter access is temporarily unavailable.", code: "dossier_authority_unavailable" }, 503);
++  }
++  if (isResponse(current)) return current;
++  if (current.actor.userId !== context.actor.userId
++    || current.actor.actorId !== context.actor.actorId
++    || current.actor.email.toLowerCase() !== context.actor.email.toLowerCase()) {
++    return dossierJson({ error: "Your sign-in changed. Sign in again before opening this Matter.", code: "identity_changed" }, 401);
++  }
++}
++
++/** Fence private reads against live identity and the original authority. Never
++ * refresh the captured organization selection: suspend/resume must invalidate
++ * an in-flight request. A changed participant must refresh stale permissions. */
++export async function revalidateDossierReadAccess(
++  context: DossierServerContext,
++  captured: DossierAccess,
++  action: "read" | "audit" | "download" = "read",
++): Promise<DossierAccess | Response> {
++  const identity = await revalidateDossierIdentity(context);
++  if (identity) return identity;
++  const current = await requireDossierAccess(context, captured.dossier.id, action);
++  if (isResponse(current)) return current;
++  if (current.participant.id !== captured.participant.id
++    || current.participant.role !== captured.participant.role
++    || current.role !== captured.role) {
++    return dossierJson({ error: "Matter access changed. Refresh the Matter before continuing.", code: "dossier_access_changed" }, 409);
++  }
++  return current;
++}
++
++/** Prepare the response only after its data reads finish, then fence delivery.
++ * Returning the same response preserves successful status, headers and bytes. */
++export async function finalizeDossierRead(
++  context: DossierServerContext,
++  captured: DossierAccess,
++  response: Response,
++  action: "read" | "audit" | "download" = "read",
++): Promise<Response> {
++  const current = await revalidateDossierReadAccess(context, captured, action);
++  if (isResponse(current)) {
++    await response.body?.cancel().catch(() => undefined);
++    return current;
++  }
++  return response;
++}
++
+ export function dossierNotFound() {
+   return dossierJson({ error: "Matter not found." }, 404);
+ }

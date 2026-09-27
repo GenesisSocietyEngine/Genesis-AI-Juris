@@ -1,0 +1,233 @@
+{
+  "observedAt": "2026-09-27T21:40:10.984Z",
+  "sourceMode": "CURRENT_SOURCE",
+  "scope": "Strictly in-process unit test, synthetic records and identity. No HTTP server, credentials, real accounts/DB, uploads, browser or network. Authorization functions are actual selected source code; DB and identity are explicit test doubles. Identity disappearance is not a token/session-store integration test.",
+  "route": "app\\api\\dossiers\\[dossierId]\\route.ts",
+  "routeSha256": "6d25bbad92d63b10278c2c53ae070a6e9cc901f6f7e2952c41079c56b9f79dac",
+  "productionAuthorizationModules": [
+    "app/dossier-server.ts",
+    "app/organization-store.ts",
+    "app/dossier-security.ts"
+  ],
+  "loadedSources": [
+    {
+      "source": "app\\api\\dossiers\\[dossierId]\\route.ts",
+      "loadedFrom": "app\\api\\dossiers\\[dossierId]\\route.ts",
+      "sha256": "6d25bbad92d63b10278c2c53ae070a6e9cc901f6f7e2952c41079c56b9f79dac"
+    },
+    {
+      "source": "db\\schema.ts",
+      "loadedFrom": "db\\schema.ts",
+      "sha256": "0dac7e54757b34fac8b8bb8a2784ffcb9fd2dc1841ea2122a55ec2ad0316928b"
+    },
+    {
+      "source": "app\\dossier-contract.ts",
+      "loadedFrom": "app\\dossier-contract.ts",
+      "sha256": "d516971131015068558eff2c91a232bfbba513ad046a538ea27cf096d1d04b9c"
+    },
+    {
+      "source": "app\\dossier-server.ts",
+      "loadedFrom": "app\\dossier-server.ts",
+      "sha256": "590ac011975b5d904f4d972172cfb9216b92597509627ef25a08d743808a1048"
+    },
+    {
+      "source": "app\\dossier-security.ts",
+      "loadedFrom": "app\\dossier-security.ts",
+      "sha256": "5fc467f621446421a61f7ea4e22b04d424559f58e1317bc7e70ee17ef3d0a0dc"
+    },
+    {
+      "source": "app\\server-authorization.ts",
+      "loadedFrom": "app\\server-authorization.ts",
+      "sha256": "11b55645706a9d1b56b7cf1b64877df2bdd0052d3176ffaf04d6694e55447081"
+    },
+    {
+      "source": "app\\organization-store.ts",
+      "loadedFrom": "app\\organization-store.ts",
+      "sha256": "43f2ed437b7c39df264b7f6b2a2cec458b2280604b6ad36e8cbf6d083961623c"
+    },
+    {
+      "source": "app\\tenant-foundation.ts",
+      "loadedFrom": "app\\tenant-foundation.ts",
+      "sha256": "e7c8d982cbbc11e291ff7954aa3b77e438691a963ff62552ffbb2e52b96e540a"
+    },
+    {
+      "source": "app\\request-security.ts",
+      "loadedFrom": "app\\request-security.ts",
+      "sha256": "2ae159d9c2221af16a03077e22948af4483e115d8bf8ba2ad186d628ac1daffc"
+    },
+    {
+      "source": "app\\api\\dossiers\\route.ts",
+      "loadedFrom": "app\\api\\dossiers\\route.ts",
+      "sha256": "7b16ddaeb5c8151cb4bcddde18019de6eeee1b25ce6a669ffb364ba4bcd9ad5c"
+    },
+    {
+      "source": "app\\dossier-readiness.ts",
+      "loadedFrom": "app\\dossier-readiness.ts",
+      "sha256": "f159cf1b9372d472d1aeb5dbc32097b55e720da13048bbb16765ea57b608eb83"
+    },
+    {
+      "source": "app\\api\\dossiers\\[dossierId]\\notes\\route.ts",
+      "loadedFrom": "app\\api\\dossiers\\[dossierId]\\notes\\route.ts",
+      "sha256": "45de9c1c4af871d2e33104007268cc57e61c4f096e564d282a0cdf4f6f605af0"
+    }
+  ],
+  "observations": [
+    {
+      "name": "baseline",
+      "status": 200,
+      "authorizedDataPresent": true,
+      "authorityReads": 3,
+      "accessReads": 2
+    },
+    {
+      "name": "suspended_during_read",
+      "status": 404,
+      "membershipStatus": "suspended",
+      "membershipRevision": 2,
+      "currentIdentity": "initial",
+      "participantRole": "contributor",
+      "privateAssertionPresent": false,
+      "privateExcerptPresent": false,
+      "oldWritePermission": null,
+      "authorityReads": 3,
+      "accessReads": 1
+    },
+    {
+      "name": "fresh_read_after_suspension",
+      "status": 404,
+      "privateDataPresent": false
+    },
+    {
+      "name": "unchanged_during_read",
+      "status": 200,
+      "membershipStatus": "active",
+      "membershipRevision": 1,
+      "currentIdentity": "initial",
+      "participantRole": "contributor",
+      "privateAssertionPresent": true,
+      "privateExcerptPresent": true,
+      "oldWritePermission": true,
+      "authorityReads": 3,
+      "accessReads": 2
+    },
+    {
+      "name": "identity_missing_during_read",
+      "status": 401,
+      "membershipStatus": "active",
+      "membershipRevision": 1,
+      "currentIdentity": "none",
+      "participantRole": "contributor",
+      "privateAssertionPresent": false,
+      "privateExcerptPresent": false,
+      "oldWritePermission": null,
+      "authorityReads": 2,
+      "accessReads": 1
+    },
+    {
+      "name": "identity_changed_during_read",
+      "status": 401,
+      "membershipStatus": "active",
+      "membershipRevision": 1,
+      "currentIdentity": "other",
+      "participantRole": "contributor",
+      "privateAssertionPresent": false,
+      "privateExcerptPresent": false,
+      "oldWritePermission": null,
+      "authorityReads": 2,
+      "accessReads": 1
+    },
+    {
+      "name": "role_changed_during_read",
+      "status": 409,
+      "membershipStatus": "active",
+      "membershipRevision": 1,
+      "currentIdentity": "initial",
+      "participantRole": "viewer",
+      "privateAssertionPresent": false,
+      "privateExcerptPresent": false,
+      "oldWritePermission": null,
+      "authorityReads": 3,
+      "accessReads": 2
+    },
+    {
+      "name": "fresh_viewer_read",
+      "status": 200,
+      "currentRole": "viewer",
+      "canWrite": false
+    },
+    {
+      "name": "membership_suspended_and_resumed",
+      "status": 404,
+      "membershipStatus": "active",
+      "membershipRevision": 3,
+      "currentIdentity": "initial",
+      "participantRole": "contributor",
+      "privateAssertionPresent": false,
+      "privateExcerptPresent": false,
+      "oldWritePermission": null,
+      "authorityReads": 3,
+      "accessReads": 1
+    },
+    {
+      "name": "fresh_after_membership_resumption",
+      "status": 200,
+      "membershipRevision": 3
+    },
+    {
+      "name": "collection_unchanged",
+      "status": 200,
+      "point": "owners",
+      "collectionCount": 1,
+      "collectionGrantQueries": 1,
+      "privateNotePresent": false
+    },
+    {
+      "name": "collection_removed",
+      "status": 409,
+      "point": "owners",
+      "collectionCount": null,
+      "collectionGrantQueries": 1,
+      "privateNotePresent": false
+    },
+    {
+      "name": "collection_role_changed",
+      "status": 409,
+      "point": "owners",
+      "collectionCount": null,
+      "collectionGrantQueries": 1,
+      "privateNotePresent": false
+    },
+    {
+      "name": "collection_lookahead_removed",
+      "status": 409,
+      "point": "owners",
+      "collectionCount": null,
+      "collectionGrantQueries": 1,
+      "privateNotePresent": false
+    },
+    {
+      "name": "empty_collection_identity_missing",
+      "status": 401,
+      "point": "collection",
+      "collectionCount": null,
+      "collectionGrantQueries": 0,
+      "privateNotePresent": false
+    },
+    {
+      "name": "note_recovery_unchanged",
+      "status": 201,
+      "point": "note",
+      "collectionCount": null,
+      "collectionGrantQueries": 0,
+      "privateNotePresent": true
+    },
+    {
+      "name": "note_recovery_membership_suspended",
+      "status": 404,
+      "point": "note",
+      "collectionCount": null,
+      "collectionGrantQueries": 0,
+      "privateNotePresent": false
+    }
+  ]
+}

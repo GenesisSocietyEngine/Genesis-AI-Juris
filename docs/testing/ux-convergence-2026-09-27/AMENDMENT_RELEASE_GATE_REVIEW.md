@@ -1,5 +1,7 @@
 # Amendment: applicable release gates and local availability
 
+**Historical inventory, superseded for execution availability:** the complete unchanged release script subsequently passed on exact web `6ab091d830ccfd9d6b76c0adc177341bca96e081` and mobile `5200b30cc50c77393c6f48b52ce91c0f30e70c64`. [Completed baseline gate and limits](AMENDMENT_AGGREGATE_BASELINE.md). The earlier dirty-document/device/dependency-resolution blockers below describe this inventory's original checkpoint. They are retained as history, not current blockers. A later independent review found a P1 private-read race; passing the existing baseline gate does not close that separate finding or acceptance gaps.
+
 27 September 2026. Reviewed `C:/Users/User/Downloads/RELEASE_DECISION-amended.md`, the complete original UX runbook, repository `AGENTS.md`, current release script/guards/lock, closure ledger and retained release receipts. This report follows the coordinator's bounded local validation assignment; the attachment's statements about its separate offline review session are not evidence that this execution checkout is unavailable.
 
 ## Current scope and preserved state

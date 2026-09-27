@@ -24,3 +24,9 @@ npm audit --omit=dev --json --registry=https://registry.npmjs.org
 - Package-lock SHA-256 remained `43155d8e1650cf89ded732133384173b260becea9b8b1edcdcfbc02ed628f729` before and after both commands. `git diff --exit-code -- package.json package-lock.json` also passed. No dependency, configuration, application-source or lockfile edit was made; no `audit fix` or install ran.
 
 The results report known npm advisories at execution time. They close this dependency audit gate; they do not replace hosted workflow, accessibility, human-validation or publication requirements. The earlier verified application/build identity remains unchanged.
+
+## Amendment reruns
+
+The authorized **full audit passed again at 21:21:33 UTC**, Node22.23.2/npm10.9.8, explicit public registry, zero vulnerabilities at every severity, exit0. [Exact JSON](evidence/amendment-audit-full-20260927.json), [command/exit/hash receipt](evidence/amendment-audit-full-20260927.receipt.json). `--include=dev --include=optional --include=peer --ignore-scripts` was used; no install or fix ran. Package and lockfile hashes remained unchanged and both exact checkouts remained clean.
+
+The **production audit also passed within the completed baseline release command**, with `npm audit --omit=dev` and the recorded `npm_config_registry=https://registry.npmjs.org/` environment. The complete [raw gate log](evidence/amendment-aggregate-baseline.log) retains its `found 0 vulnerabilities` result and continuation to the successful terminal exit. This is a fresh production audit result, not a replacement JSON receipt. [Aggregate scope](AMENDMENT_AGGREGATE_BASELINE.md). Application authorization findings remain separate from dependency advisories.

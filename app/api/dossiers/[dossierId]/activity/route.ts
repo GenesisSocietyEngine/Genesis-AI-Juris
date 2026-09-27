@@ -2,6 +2,7 @@ import { and, desc, eq, lt } from "drizzle-orm";
 import { dossierAuditEvents } from "../../../../../db/schema";
 import { parseDossierOpaqueId } from "../../../../dossier-security";
 import {
+  finalizeDossierRead,
   dossierJson,
   dossierNotFound,
   isResponse,
@@ -75,7 +76,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
   if (eventId !== null && rows.length === 0) return dossierNotFound();
   const hasMore = eventId === null && rows.length > limit;
   const visible = rows.slice(0, limit);
-  return dossierJson({
+  return finalizeDossierRead(context, access, dossierJson({
     activity: visible.map((event) => ({
       object_type: "audit_event",
       schema_version: 1,
@@ -94,7 +95,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
       event_digest: event.eventDigest,
     })),
     next_cursor: hasMore ? visible[visible.length - 1]?.auditEventId ?? null : null,
-  });
+  }), "audit");
 }
 
 function pageLimit(value: string | null): number | null {

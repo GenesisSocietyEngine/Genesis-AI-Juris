@@ -1,0 +1,241 @@
+{
+  "copiedAt": "2026-09-27T21:38:25.195Z",
+  "scope": "Local repository evidence archival only; no external publication",
+  "baselineGate": "PASS at exact 6ab091d830ccfd9d6b76c0adc177341bca96e081, exec81357 exit0",
+  "files": [
+    {
+      "source": ".artifacts/ux-reconciliation-auth/amendment-native-execution.md",
+      "destination": "docs/testing/ux-convergence-2026-09-27/AMENDMENT_NATIVE_EXECUTION.md",
+      "bytes": 7961,
+      "sha256": "664dde57e63a0be72efbf48f6c87254531d29e4a44fb30aae189cb196a3f9b61"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/amendment-native-critical-review.md",
+      "destination": "docs/testing/ux-convergence-2026-09-27/AMENDMENT_NATIVE_REVIEW.md",
+      "bytes": 10432,
+      "sha256": "60e5bf946cf558080996a876d7f89a58c848840a6f6a8deb7bd993e5c3f64a59"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/amendment-final-critical-review.md",
+      "destination": "docs/testing/ux-convergence-2026-09-27/AMENDMENT_FINAL_CRITICAL_REVIEW.md",
+      "bytes": 10158,
+      "sha256": "a10cbdf42effa0d35020d18f7cf10f4a3d98744f98411669262874ed9dc4b614"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/amendment-canopy-runtime-review.md",
+      "destination": "docs/testing/ux-convergence-2026-09-27/AMENDMENT_CANOPY_RUNTIME_REVIEW.md",
+      "bytes": 5444,
+      "sha256": "260af1dd761dc91938380336f508523a9a1a94c4aa5fb377540c4f1b30567e77"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/amendment-native-browser-capability.md",
+      "destination": "docs/testing/ux-convergence-2026-09-27/AMENDMENT_NATIVE_BROWSER_CAPABILITY.md",
+      "bytes": 1116,
+      "sha256": "3dd796827f1ccf512421fc49da40b79006cc9a5db64e0533c26d51859e090d63"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/amendment-browser-continuation.md",
+      "destination": "docs/testing/ux-convergence-2026-09-27/AMENDMENT_BROWSER_CONTINUATION.md",
+      "bytes": 3878,
+      "sha256": "9695c2cddb1436d9b6937fc8f6b1e3c0e52006ae29a0ab563597c9b236b56c07"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/amendment-production-recheck.json",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-production-recheck.json",
+      "bytes": 2399,
+      "sha256": "e929195b475e29224e90a9d96d7c634b72735ada8e2dd3f432700b74923323fe"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/amendment-emulator-boot-ram-excerpt.log",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-emulator-boot-ram-excerpt.log",
+      "bytes": 320,
+      "sha256": "50ef9d97c3b87d4ea291b80c90a2a4d4b79484c8f337aae6c5dfe49ae1c969c7"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/amendment-emulator-boot-ram-excerpt.receipt.json",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-emulator-boot-ram-excerpt.receipt.json",
+      "bytes": 1874,
+      "sha256": "5feae7790fa85a5e5e753fd8430135fc01029fa16e8830ce303cb444707c4302"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/excerpt-amendment-emulator-log.mjs",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-release-tools/excerpt-amendment-emulator-log.mjs",
+      "bytes": 2780,
+      "sha256": "03832ef1b90d4fd4e1b4c9667d3b433fa14dd743e9426fff7292f7a90eefdd95"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/native-smoke-result.json",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-native-result.json",
+      "bytes": 772,
+      "sha256": "d1412848bb1c46bfccd4249b832b44a791fe4650dd8c26888b4cd8c26924893b"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/native-smoke-retry.stdout.log",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-native-stdout.log",
+      "bytes": 5965,
+      "sha256": "db63934df1672ba7c22cb42d1d1869c21a23ca0fe7669f16128b5cade22107f3"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/native-smoke-retry.stderr.log",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-native-stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/native-smoke.log",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-native-first-wrapper.log",
+      "bytes": 9182,
+      "sha256": "6cd5bf2a592f55d03affbca526d578fe5ea1b92ff1fedd34e5d47e4fe568317d"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/native-smoke-first-wrapper-failure.json",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-native-first-wrapper-failure.json",
+      "bytes": 633,
+      "sha256": "92d3605ee5c885136781312bfe0ef4caf3d5bf972d6125a69df86dd3710ab777"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/native-smoke-artifact-receipt.json",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-native-artifact-receipt.json",
+      "bytes": 1685,
+      "sha256": "482de0de136981b55122dca4ca71d4e2a8d2b873229d222391e37a1b55a2a1e3"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/gradle-effective-resource-limits.json",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-native-gradle-limits.json",
+      "bytes": 1175,
+      "sha256": "937a58ae7bb0649b672ad8367158884d362066b3ca8c9f15a79ed3e74781ecd0"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/launch.json",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-native-launch.json",
+      "bytes": 779,
+      "sha256": "10e195c1080e01962369bbc01b824cb0de304a22b300ce097a09f2c7d4311827"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/ready-for-aggregate.json",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-native-ready.json",
+      "bytes": 1014,
+      "sha256": "7c6b7c8136b16574314790023e60b25a63d449bc5ad03950fc411ffcdd64bc33"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/emulator.stderr.log",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-native-emulator-stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/resource-cap-provenance.json",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-resource-cap-provenance.json",
+      "bytes": 659,
+      "sha256": "10a317f667468c724735074a13b3de10c43fe6254cf31b774ffa22a834f9ef7f"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/bin/flutter-gate",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-release-tools/flutter-gate",
+      "bytes": 659,
+      "sha256": "102aefbee8d9d4c0056f112af6faa11a4a6468a5076090cb47ac088ad2a6f57a"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/flutter-gate.before-resource-cap.txt",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-release-tools/flutter-gate.before-resource-cap.txt",
+      "bytes": 334,
+      "sha256": "abd9efee056d08e99dbbf27396300ea6493cdc5c0995b9f746c736943469c60d"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/bin/dart-gate",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-release-tools/dart-gate",
+      "bytes": 189,
+      "sha256": "4d656976303913648dc33b9d6ca39ea595032c8cf879a50be2ac06c4a8625c7c"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/release-gate-env.sh",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-release-tools/release-gate-env.sh",
+      "bytes": 3382,
+      "sha256": "50677f5d4f18cde36f57478b89f2cb6872d46e28a1a48287d84c3bd52ca0041d"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/run-release-gate.sh",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-release-tools/run-release-gate.sh",
+      "bytes": 835,
+      "sha256": "b61a22f91fd91eae594cd9b03b50883380b92dd47362588d7a680232f3c8bc48"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/probe-release-env.sh",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-release-tools/probe-release-env.sh",
+      "bytes": 546,
+      "sha256": "290761b9ad12b50d81eedde2e65f41976561749d8a2aa95491c8f822de4c7d20"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/probe-args.dart",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-release-tools/probe-args.dart",
+      "bytes": 348,
+      "sha256": "d20cd615889e908f705a4b1b5686a65e02f151a34efe650f22bfa06e88269f3d"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/run-android-smoke.ps1",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-release-tools/run-android-smoke.ps1",
+      "bytes": 3335,
+      "sha256": "baf6231a42c7186dfd87fef8eb2c6cab5285abc7bbb54e26081d99db98dc54b2"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/launch-android.ps1",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-release-tools/launch-android.ps1",
+      "bytes": 3854,
+      "sha256": "a55cbe66ec8e1371042b383870491c77ecee5693424f375493e475f29e7bf47a"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/full-dependency-audit-20260927.json",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-audit-full-20260927.json",
+      "bytes": 366,
+      "sha256": "1017f6202f50bbd28b5e066408d923dbf35d6f00a496c7624baa83257b6381a7"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/full-dependency-audit-20260927.receipt.json",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-audit-full-20260927.receipt.json",
+      "bytes": 3539,
+      "sha256": "cd038e70466c827805e6adc85badb864dfe606b36fbe8a3325e4ae4613074dad"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/full-dependency-audit-20260927.stderr.log",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-audit-full-20260927.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/run-full-dependency-audit.ps1",
+      "destination": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-release-tools/run-full-dependency-audit.ps1",
+      "bytes": 4250,
+      "sha256": "a163b62cdf16bb33087951e2d67b3d94fabce65151a002de97cccc14fb4ffbe9"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/aggregate-6ab091d830ccfd9d6b76c0adc177341bca96e081-20260927T203936Z.log",
+      "destination": "docs\\testing\\ux-convergence-2026-09-27\\evidence\\amendment-aggregate-baseline.log",
+      "bytes": 343947,
+      "sha256": "aa108160d57728302601dc1ec305cc2df9154fb5ebf50baf0413f2707dab1b18"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/aggregate-baseline-receipt.json",
+      "destination": "docs\\testing\\ux-convergence-2026-09-27\\evidence\\amendment-aggregate-baseline-receipt.json",
+      "bytes": 4788,
+      "sha256": "392ceb499300e6f28aedd92d4e16f2208fc40f254d137c3dd816c0d48657e2e6"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/aggregate-baseline-source-bound.json",
+      "destination": "docs\\testing\\ux-convergence-2026-09-27\\evidence\\amendment-aggregate-baseline-source.json",
+      "bytes": 570,
+      "sha256": "9fdcab87f9007e8053927faf1a883f4499182a17fbbe5112efb5ef508424696d"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/seal-aggregate.mjs",
+      "destination": "docs\\testing\\ux-convergence-2026-09-27\\evidence\\amendment-seal-aggregate.mjs",
+      "bytes": 3261,
+      "sha256": "21bc486fe538f212edc4a2b62b5fd2f4327a88149a00baadedf271e65c31a831"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/amendment-source-lifecycle-static-review.md",
+      "destination": "docs\\testing\\ux-convergence-2026-09-27\\AMENDMENT_SOURCE_LIFECYCLE_REVIEW.md",
+      "bytes": 18358,
+      "sha256": "8f9c4b8ae96c6d1273ba951d79fa5c2b3ccbc932b06c6063d8a7cbb25cb79950"
+    }
+  ]
+}

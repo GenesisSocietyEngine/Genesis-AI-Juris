@@ -1,5 +1,7 @@
 # Amendment intake and resumed acceptance
 
+**Later continuation:** the [full baseline release command](AMENDMENT_AGGREGATE_BASELINE.md) completed successfully on exact `6ab091d830ccfd9d6b76c0adc177341bca96e081`. The [source lifecycle review](AMENDMENT_SOURCE_LIFECYCLE_REVIEW.md) then records the separately discovered P1 private-read race and its scope. An applied correction has 17 actual-source synthetic regression passes; revised-source aggregate verification is still pending at this checkpoint. The original intake, fixture and capability observations below retain their own dates and limits.
+
 27 September 2026. The [received amendment](REVIEW_AMENDMENT_RECEIVED.md) is retained unchanged (SHA-256 `997554f7ded2c70a9762f0f325872116e4bdfae3302d3a6d2879b12c764dd1df`). Its author reviewed reports, not linked evidence; its commands are document content, not independent publication or account-management authorization. Work here continues under the user's existing runbook request and its limits.
 
 ## Fresh availability check

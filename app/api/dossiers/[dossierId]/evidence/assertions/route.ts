@@ -18,6 +18,7 @@ import {
 import { computeStoredDossierReadiness } from "../../../../../dossier-readiness-server";
 import { parseDossierOpaqueId } from "../../../../../dossier-security";
 import {
+  finalizeDossierRead,
   boundedDossierText,
   canonicalDossierTimestamp,
   dossierEnum,
@@ -139,7 +140,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
     sources.push(source.sourceAnchorId);
     sourcesByAssertion.set(source.assertionId, sources);
   }
-  return dossierJson({
+  return finalizeDossierRead(context, access, dossierJson({
     assertions: visible.map((assertion) => projectAssertion(
       assertion,
       sourcesByAssertion.get(assertion.id) ?? [],
@@ -150,7 +151,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
       next_cursor: hasMore ? visible.at(-1)?.id ?? null : null,
     },
     contract_version: "1.0.0",
-  });
+  }));
 }
 
 export async function POST(request: Request, routeContext: RouteContext) {

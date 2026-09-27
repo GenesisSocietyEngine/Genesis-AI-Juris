@@ -1,0 +1,76 @@
+{
+    "startedAt":  "2026-09-27T21:21:22.6161229Z",
+    "completedAt":  "2026-09-27T21:21:33.7567241Z",
+    "command":  "npm audit --json --registry=https://registry.npmjs.org --include=dev --include=optional --include=peer --ignore-scripts",
+    "registry":  "https://registry.npmjs.org",
+    "scope":  "Full production, development, optional and peer dependency audit; no audit fix or install",
+    "nodeVersion":  "v22.23.2",
+    "npmVersion":  "10.9.8",
+    "nodeExecutable":  {
+                           "file":  "node.exe",
+                           "bytes":  86997320,
+                           "sha256":  "0d0f5e39f9f3d9587bc19f73eab3c2c9c4903fd02d6dbf9c853dd81b3d95fad4"
+                       },
+    "npmCli":  {
+                   "file":  "npm-cli.js",
+                   "bytes":  56,
+                   "sha256":  "3ce7cba6f5128dd5f54c98b6a5036b0f850496878cc2e21044b675fe3c594e3e"
+               },
+    "exitCode":  0,
+    "auditReportVersion":  2,
+    "vulnerabilities":  {
+                            "info":  0,
+                            "low":  0,
+                            "moderate":  0,
+                            "high":  0,
+                            "critical":  0,
+                            "total":  0
+                        },
+    "dependencies":  {
+                         "prod":  74,
+                         "dev":  628,
+                         "optional":  223,
+                         "peer":  45,
+                         "peerOptional":  0,
+                         "total":  736
+                     },
+    "output":  {
+                   "file":  "full-dependency-audit-20260927.json",
+                   "bytes":  366,
+                   "sha256":  "1017f6202f50bbd28b5e066408d923dbf35d6f00a496c7624baa83257b6381a7"
+               },
+    "stderr":  {
+                   "file":  "full-dependency-audit-20260927.stderr.log",
+                   "bytes":  0,
+                   "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+               },
+    "packageJsonUnchanged":  true,
+    "packageLockUnchanged":  true,
+    "packageJson":  {
+                        "file":  "package.json",
+                        "bytes":  2360,
+                        "sha256":  "3e54dff98fe54f3c5976988cefe8e0ca87e6c1d08566d2dafbbe57a9277d8715"
+                    },
+    "packageLock":  {
+                        "file":  "package-lock.json",
+                        "bytes":  390378,
+                        "sha256":  "43155d8e1650cf89ded732133384173b260becea9b8b1edcdcfbc02ed628f729"
+                    },
+    "beforeWeb":  {
+                      "head":  "6ab091d830ccfd9d6b76c0adc177341bca96e081",
+                      "status":  ""
+                  },
+    "afterWeb":  {
+                     "head":  "6ab091d830ccfd9d6b76c0adc177341bca96e081",
+                     "status":  ""
+                 },
+    "beforeMobile":  {
+                         "head":  "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+                         "status":  ""
+                     },
+    "afterMobile":  {
+                        "head":  "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+                        "status":  ""
+                    },
+    "notes":  "The JSON file is exact npm stdout. It contains package/advisory data only; no credentials/cookies/authorization headers were printed or recorded. npm cache is isolated under ignored artifacts. Aggregate production-only audit remains a separate step."
+}

@@ -22,6 +22,7 @@ import {
 import { computeStoredDossierReadiness } from "../../../../../dossier-readiness-server";
 import { parseDossierOpaqueId } from "../../../../../dossier-security";
 import {
+  finalizeDossierRead,
   canonicalDossierTimestamp,
   dossierEnum,
   dossierJson,
@@ -129,7 +130,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
   if (exactId && !rows.length) return dossierNotFound();
   const hasMore = rows.length > limit;
   const visible = rows.slice(0, limit);
-  return dossierJson({
+  return finalizeDossierRead(context, access, dossierJson({
     source_anchors: visible.map(anchor => ({ ...projectSourceAnchor(anchor), document_title: anchor.documentTitle, version_ordinal: anchor.versionOrdinal, retired_at: anchor.retiredAt })),
     page: {
       limit,
@@ -137,7 +138,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
       next_cursor: hasMore ? visible.at(-1)?.id ?? null : null,
     },
     contract_version: "1.0.0",
-  });
+  }));
 }
 
 export async function POST(request: Request, routeContext: RouteContext) {

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Use the already-installed tool snapshot; no .bat bootstrap or SDK update.
+# Retain normal MSYS native-exec argument conversion; do not set MSYS_NO_PATHCONV.
+# Bound local build resources; verified with the standalone native preflight.
+# These process-only limits do not alter the tracked gate or its test assertions.
+export GRADLE_OPTS='-Dorg.gradle.jvmargs="-Xmx3G -XX:MaxMetaspaceSize=1G -XX:ReservedCodeCacheSize=256m -XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.workers.max=2'
+exec /c/Users/User/source/flutter/bin/cache/dart-sdk/bin/dart.exe \
+  /c/Users/User/source/flutter/bin/cache/flutter_tools.snapshot "$@"
