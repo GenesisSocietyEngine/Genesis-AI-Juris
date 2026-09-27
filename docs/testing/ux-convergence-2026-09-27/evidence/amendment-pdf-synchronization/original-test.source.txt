@@ -17,36 +17,11 @@ import { reportReceiptStorageKey } from "../app/report-model";
 // PDF byte renderer are modeled. This is not browser or PDF-render acceptance.
 type Element = { type: unknown; props: Record<string, unknown> & { children?: unknown } };
 type HookSlot = { initialized?: boolean; value?: unknown; dependencies?: unknown[]; cleanup?: () => void };
-type PdfState = { receipts: ReportReceiptV2[]; fail: boolean; hold: boolean; finish: Array<() => void>; paused?: () => void };
+type PdfState = { receipts: ReportReceiptV2[]; fail: boolean; hold: boolean; finish: Array<() => void> };
 const fixtureGlobal = globalThis as typeof globalThis & {
   __reportHooks?: ReturnType<typeof hookRuntime>;
   __reportPdf?: PdfState;
 };
-async function awaitPdfPaused(pdf: PdfState, operation: Promise<void>, expected = 1) {
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  try {
-    await Promise.race([
-      new Promise<void>((resolve, reject) => {
-        timeout = setTimeout(() => reject(new Error("PDF renderer did not reach its paused boundary within 5 seconds")), 5_000);
-        pdf.paused = () => { if (pdf.finish.length >= expected) resolve(); };
-        pdf.paused();
-      }),
-      operation.then(() => { throw new Error("PDF operation completed before reaching its paused boundary"); }),
-    ]);
-  } catch (error) {
-    // Fence late side effects before releasing any held work on a failed setup.
-    fixtureGlobal.__reportHooks?.unmount();
-    pdf.hold = false;
-    for (const finish of pdf.finish.splice(0)) finish();
-    let cleanupTimeout: ReturnType<typeof setTimeout> | undefined;
-    await Promise.race([operation.catch(() => undefined), new Promise<void>(resolve => { cleanupTimeout = setTimeout(resolve, 1_000); })]);
-    clearTimeout(cleanupTimeout);
-    throw error;
-  } finally {
-    clearTimeout(timeout);
-    delete pdf.paused;
-  }
-}
 function sameDependencies(a?: unknown[], b?: unknown[]) {
   return Boolean(a && b && a.length === b.length && a.every((value, index) => Object.is(value, b[index])));
 }
@@ -105,7 +80,7 @@ const bundle = await build({
         : args.path === "report"
           ? `import * as actual from './app/case-report.ts'; export * from './app/case-report.ts'; export async function downloadCaseReport(...args) { const receipt = await actual.downloadCaseReport(...args); globalThis.__reportPdf.receipts.push(receipt); return receipt; }`
           : args.path === "fonts" ? "export default {};"
-            : `import { EventEmitter } from 'node:events'; export default { addVirtualFileSystem() {}, createPdf() { const state = globalThis.__reportPdf; if(state.fail) throw new Error('Controlled PDF failure'); return { getStream() { const stream = new EventEmitter(); stream.end = () => { const finish = () => { stream.emit('data', Buffer.from('%PDF-modeled-renderer')); stream.emit('end'); }; if(state.hold) { state.finish.push(finish); state.paused?.(); } else queueMicrotask(finish); }; return stream; } }; } };`,
+            : `import { EventEmitter } from 'node:events'; export default { addVirtualFileSystem() {}, createPdf() { if(globalThis.__reportPdf.fail) throw new Error('Controlled PDF failure'); return { getStream() { const stream = new EventEmitter(); stream.end = () => { const finish = () => { stream.emit('data', Buffer.from('%PDF-modeled-renderer')); stream.emit('end'); }; if(globalThis.__reportPdf.hold) globalThis.__reportPdf.finish.push(finish); else queueMicrotask(finish); }; return stream; } }; } };`,
     }));
   } }],
 });
@@ -394,7 +369,7 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
 
     pdf.fail = false; pdf.hold = true;
     const pending = click(tree, "Download PDF");
-    await awaitPdfPaused(pdf, pending);
+    for (let attempt = 0; !pdf.finish.length && attempt < 10; attempt++) await new Promise(resolve => setImmediate(resolve));
     assert.equal(pdf.finish.length, 1);
     tree = render();
     const changedAgain = elements(tree).find(element => element.type === "input" && element.props.placeholder === "Name / firm")!;
@@ -409,7 +384,7 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
     assert.deepEqual(JSON.parse(await downloads.at(-1)!.blob.text()), pdf.receipts[1]);
 
     const pendingAcrossScope = click(tree, "Download PDF");
-    await awaitPdfPaused(pdf, pendingAcrossScope);
+    for (let attempt = 0; !pdf.finish.length && attempt < 10; attempt++) await new Promise(resolve => setImmediate(resolve));
     assert.equal(pdf.finish.length, 1);
     const downloadsBeforeScopeChange = downloads.length;
     props = { ...props, reportReceiptStorageScope: "c".repeat(64) };
@@ -423,12 +398,12 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
     assert.deepEqual(storageWrites, []);
 
     const pendingPreview = click(tree, "Preview PDF");
-    await awaitPdfPaused(pdf, pendingPreview);
+    for (let attempt = 0; !pdf.finish.length && attempt < 10; attempt++) await new Promise(resolve => setImmediate(resolve));
     assert.equal(pdf.finish.length, 1);
     props = { ...props, reportReceiptStorageScope: "d".repeat(64) };
     tree = render(); tree = render(); // Apply the new scope's reset before its own operation.
     const newScopePdf = click(tree, "Download PDF");
-    await awaitPdfPaused(pdf, newScopePdf, 2);
+    for (let attempt = 0; pdf.finish.length < 2 && attempt < 10; attempt++) await new Promise(resolve => setImmediate(resolve));
     assert.equal(pdf.finish.length, 2);
     const urlsBeforeOldPreview = blobs.size;
     pdf.finish.shift()!(); await pendingPreview;
@@ -462,7 +437,7 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
     assert.ok(!elements(tree).some(element => element.type === "iframe"), "restored authority cannot revive an old-context preview");
     pdf.hold = true;
     const pendingRevoked = click(tree, "Download PDF");
-    await awaitPdfPaused(pdf, pendingRevoked);
+    for (let attempt = 0; !pdf.finish.length && attempt < 10; attempt++) await new Promise(resolve => setImmediate(resolve));
     assert.equal(pdf.finish.length, 1);
     props = { ...props, canGenerateReport: false };
     tree = render();
@@ -474,7 +449,7 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
     props = { ...props, canGenerateReport: true };
     tree = render();
     const pendingUnmounted = click(tree, "Download PDF");
-    await awaitPdfPaused(pdf, pendingUnmounted);
+    for (let attempt = 0; !pdf.finish.length && attempt < 10; attempt++) await new Promise(resolve => setImmediate(resolve));
     assert.equal(pdf.finish.length, 1);
     fixtureGlobal.__reportHooks!.unmount();
     const beforeUnmount = { downloads: downloads.length, receipts: pdf.receipts.length, completed };
@@ -499,8 +474,6 @@ test("actual PDF parent and helper reject a stale active tab, recheck after rend
   const calls: string[] = [];
   const authority = new StudioSessionAuthority(async path => {
     calls.push(path);
-    // Real authority work can outlast any fixed number of event-loop turns.
-    await new Promise(resolve => setTimeout(resolve, 50));
     if (!signedIn) return Response.json({ authenticated: false }, { status: 401 });
     return Response.json(path === "/api/me"
       ? { authenticated: true, registered: true, profile: { email: "owner@example.test" }, capabilities: { studioAI: false } }
@@ -533,6 +506,10 @@ test("actual PDF parent and helper reject a stale active tab, recheck after rend
     do { hooks.begin(); tree = Parent(props); assert.ok(++attempts < 10); } while (hooks.needsRender());
     hooks.flush(); return tree;
   };
+  const finishRendering = async () => {
+    for (let attempt = 0; !pdf.finish.length && attempt < 20; attempt++) await new Promise(resolve => setImmediate(resolve));
+    assert.equal(pdf.finish.length, 1);
+  };
   try {
     let tree = render(); await click(tree, "Preview PDF"); tree = render();
     assert.ok(elements(tree).some(element => element.type === "iframe"));
@@ -548,15 +525,13 @@ test("actual PDF parent and helper reject a stale active tab, recheck after rend
     assert.ok(!elements(tree).some(element => element.type === "iframe"), "same-account recovery must not revive the prior preview");
 
     // No signal is delivered while rendering: the mandatory final server check still prevents issuance.
-    pdf.hold = true; const pending = click(tree, "Download PDF"); await awaitPdfPaused(pdf, pending);
-    assert.equal(pdf.finish.length, 1);
+    pdf.hold = true; const pending = click(tree, "Download PDF"); await finishRendering();
     signedIn = false; pdf.finish.shift()!(); await pending; tree = render();
     assert.deepEqual({ downloads: downloads.length, receipts: pdf.receipts.length, completed }, before);
     assert.deepEqual(storageWrites, []);
 
     signedIn = true; await authority.refresh(true, 1); tree = render();
-    const pendingBoundary = click(tree, "Download PDF"); await awaitPdfPaused(pdf, pendingBoundary);
-    assert.equal(pdf.finish.length, 1);
+    const pendingBoundary = click(tree, "Download PDF"); await finishRendering();
     authority.sessionBoundary("revoke"); // No React rerender before the late callback: synchronous epoch must suffice.
     pdf.finish.shift()!(); await pendingBoundary;
     assert.deepEqual({ downloads: downloads.length, receipts: pdf.receipts.length, completed }, before);

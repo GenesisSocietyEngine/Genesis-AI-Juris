@@ -1,0 +1,23 @@
+{
+  "startedAt": "2026-09-27T23:50:45.957Z",
+  "completedAt": "2026-09-27T23:50:52.661Z",
+  "command": {
+    "node": "C:/PROJECTS/Genesis-AI-Juris/.worktrees/demo-readiness-canopy-2026-09-06/.artifacts/toolchains/node-v22.23.2-win-x64/node.exe",
+    "args": [
+      "--experimental-sqlite",
+      "--import",
+      "tsx",
+      "--test",
+      "tests/report-receipt-dialog.test.ts"
+    ]
+  },
+  "exitCode": 0,
+  "signal": null,
+  "spawnError": null,
+  "source": {
+    "path": "tests/report-receipt-dialog.test.ts",
+    "sha256": "02cef47fa0bf4d1c926b1460a6a78a74bd49959ac0e9503de3275b0dc8497340"
+  },
+  "stdoutSha256": "8cbb6f81a45ba680ed735301f15fa0b8628e38992d468e2addcfd9d02f5dbf0e",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

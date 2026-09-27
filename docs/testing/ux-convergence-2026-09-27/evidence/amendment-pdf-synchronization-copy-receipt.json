@@ -1,0 +1,90 @@
+{
+  "archivedAt": "2026-09-27T23:54:59.461Z",
+  "scope": "Failed e6 aggregate, reproduced test scheduling defect, corrected targeted checks and independent review; application source unchanged.",
+  "files": [
+    {
+      "source": ".artifacts/amendment-release-gate/aggregate-e6c6adc6fe01129b2e3d442072c532e08591fae9-20260927T215707Z.log",
+      "destination": "evidence/amendment-pdf-synchronization/failed-aggregate.log",
+      "bytes": 233663,
+      "sha256": "2a3b4302ab0aa117361d83e5d56f5220e5efcbae2dff1b399fdd67bccb50edaa"
+    },
+    {
+      "source": ".artifacts/pdf-render-scheduling/failed-aggregate-receipt.json",
+      "destination": "evidence/amendment-pdf-synchronization/failed-aggregate-receipt.json",
+      "bytes": 1440,
+      "sha256": "257c69608554dae060a7ae878cc93f49e3a610d5686a1e792d895ff6ffa99221"
+    },
+    {
+      "source": ".artifacts/pdf-render-scheduling/focused-checks.json",
+      "destination": "evidence/amendment-pdf-synchronization/focused-checks.json",
+      "bytes": 693,
+      "sha256": "69e404efee4e9887d1cee6e9cadea33e6ebb08872be50a94f38f3bce679530f9"
+    },
+    {
+      "source": ".artifacts/pdf-render-scheduling/original-source.txt",
+      "destination": "evidence/amendment-pdf-synchronization/original-test.source.txt",
+      "bytes": 44436,
+      "sha256": "281521c32e25c1613f11f811bcb65c6b495a857048f373363457116468c3920b"
+    },
+    {
+      "source": ".artifacts/pdf-render-scheduling/delayed-authority-old.test.ts",
+      "destination": "evidence/amendment-pdf-synchronization/delayed-authority-old.source.txt",
+      "bytes": 44555,
+      "sha256": "277b333a771b98b8fc40e0600c0dde73235282b97d3c63c3120eaca29e723590"
+    },
+    {
+      "source": ".artifacts/pdf-render-scheduling/authority-delay-preparation.json",
+      "destination": "evidence/amendment-pdf-synchronization/authority-delay-preparation.json",
+      "bytes": 407,
+      "sha256": "d3b97d4e2047e0e0116cf47e5774b59223dbbe5464b41aef8bbe69c9ac185b2d"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/run-pdf-scheduling-check.mjs",
+      "destination": "evidence/amendment-pdf-synchronization/runner.source.txt",
+      "bytes": 1780,
+      "sha256": "a80b908f85a6deb59f035db2ee2167fea39e17ee46e840b5cdfd4d430c93f866"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/pdf-renderer-start-wait-review.md",
+      "destination": "evidence/amendment-pdf-synchronization/independent-review.source.txt",
+      "bytes": 13253,
+      "sha256": "831198f9e4eb466a514d5a0a37b89f3080f5b47dae6111a57d7a80deeb938d25"
+    },
+    {
+      "source": ".artifacts/pdf-render-scheduling/delayed-authority-red/execution.json",
+      "destination": "evidence/amendment-pdf-synchronization/delayed-authority-red/execution.json",
+      "bytes": 981,
+      "sha256": "7967999953f72b527be19c9630fa2a6d24f6a1d58f2591eaab039091808b9481"
+    },
+    {
+      "source": ".artifacts/pdf-render-scheduling/delayed-authority-red/stdout.log",
+      "destination": "evidence/amendment-pdf-synchronization/delayed-authority-red/stdout.log",
+      "bytes": 1283,
+      "sha256": "6f24bf1b3ce433b6f8580522157d7770c09aba51802ac9f0d4150c42d2f352c6"
+    },
+    {
+      "source": ".artifacts/pdf-render-scheduling/delayed-authority-red/stderr.log",
+      "destination": "evidence/amendment-pdf-synchronization/delayed-authority-red/stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": ".artifacts/pdf-render-scheduling/corrected-file/execution.json",
+      "destination": "evidence/amendment-pdf-synchronization/corrected-file/execution.json",
+      "bytes": 774,
+      "sha256": "363df6e47dc3fcff0d9589754c73ce9f32cb9e20ded4d0f2f99b95bffb9631d1"
+    },
+    {
+      "source": ".artifacts/pdf-render-scheduling/corrected-file/stdout.log",
+      "destination": "evidence/amendment-pdf-synchronization/corrected-file/stdout.log",
+      "bytes": 1717,
+      "sha256": "8cbb6f81a45ba680ed735301f15fa0b8628e38992d468e2addcfd9d02f5dbf0e"
+    },
+    {
+      "source": ".artifacts/pdf-render-scheduling/corrected-file/stderr.log",
+      "destination": "evidence/amendment-pdf-synchronization/corrected-file/stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}
