@@ -1,0 +1,32 @@
+﻿# Composer continuity and recorded relation labels
+
+Date: 27 September 2026. Source: the current UX worktree based on `bf5799383a52b6617cd9d4a0acf47af780086218`, uncommitted. Independent source review found two material issues; coordinating root browser work confirmed the form-loss scenario.
+
+## Intended outcome and criteria before correction
+
+A partially written connected working item must survive moving between Sources, Overview, Decision and other in-app views. Ordinary external departure must warn even when the case itself has a verified saved baseline. Replacement must preserve the form when cancelled; explicit replacement and authority reconciliation that discards a protected or account-bound draft must clear its buffer. An unrelated anonymous/local draft and its buffer must survive another tab's logout under the existing discard policy. Saving/exporting the graph must not imply that an unadded form is included. Decision list must preserve recorded branch labels, destination identities and explanations without inventing an active or approved route.
+
+## Findings and changes
+
+- **Form loss:** Sources -> Add a connected working record -> enter synthetic title/detail -> Overview -> Sources returned an empty uncontrolled form. Root reproduced this in the browser. Inputs now live in parent JurisApp memory, with separate controlled buffers per item type. Switching sections or leaving/reentering the mounted Studio view preserves them. A visible notice explains that unadded items are excluded from graph saves/reports and provides a return to each unfinished form. A successful graph insertion clears only the committed buffer; rejected insertion retains input. Missing related steps are explained without erasing source text.
+- **Departure and replacement:** The existing Studio departure guard reads the live buffer reference and treats it as unsaved work. All ordinary explicit graph replacement paths pass through a confirmation before clearing buffers; Cancel preserves the graph and form. Canonical/tax callbacks honor cancellation before clearing their UI/prompt state. Authority reconciliation uses the existing `shouldDiscardStudioDraft` decision: actual identity changes and protected/server-owned drafts invoke purge and clear buffer memory; unrelated anonymous/local work survives another tab's revoke signal. No new browser persistence or auth/permission rule was added. When an unadded form exists, the direct Studio sign-in action keeps the current tab and offers Account in a separate tab because the existing auth continuation excludes that form.
+- **Hidden branch labels:** Rendered Canopy list omitted all 13 relation labels. The list now shows the exact recorded label, followed by the existing destination and explanation. Parallel relations remain distinct and ordered; no relation data changes.
+- **Save wording review:** Root's receipt timestamp remains tied to an exact validated server save response; only the recognized Overview panel parameter survives save/reopen. Header storage wording is now neutral `Studio draft`, since opened cases may be shared. Guest wording no longer promises device saving before account verification.
+
+## Evidence and limitations
+
+- Reproduction render: [decision-list-label-review.log](evidence/preservation-review/decision-list-label-review.log), 13/13 Canopy labels absent before correction.
+- Initial bounded graph/Overview retest: 16/16 PASS, [decision-map-targeted.log](evidence/preservation-review/decision-map-targeted.log).
+- Composer and neighboring regression run: 35/35 PASS, [composer-targeted.log](evidence/preservation-review/composer-targeted.log). Final 28-test rerun after cancellation refinements: 28/28 PASS, [composer-targeted-final.log](evidence/preservation-review/composer-targeted-final.log).
+- Tests execute the real controlled form and extracted parent input/replacement/addition/auth handlers. They cover component remount, per-type buffers, successful/failed add, cancelled/confirmed replacement, authority purge helper, missing relationship target, saved-baseline dirty guard and protected sign-in departure. Existing source, graph, save-receipt and navigation contracts remain covered by their tests.
+- Full `tsc --noEmit --incremental false`: PASS, exit 0, after final refinements; [log](evidence/preservation-review/composer-typecheck-final.log) is empty on success. Pinned Node v22.23.2 was used throughout this iteration.
+- Focused ESLint: exit 0, no errors, one existing no-unused-expressions warning in the pre-existing history test; [log](evidence/preservation-review/composer-lint.log). `git diff --check` passed.
+- React checklist: parent-owned controlled form state, direct helper import, no new network/storage effects, immutable per-type updates, existing authority guard, explicit submit/discard actions. No material finding remained in this source review.
+
+The subagent CUA inventory exposed no browser surfaces. Browser reproduction is attributed to root; root owns the post-fix browser retest, actual narrow-layout/focus checks and hosted acceptance. Component/handler tests do not establish end-to-end hosted Save/reopen, real logout or native dialog usability. No commit, hosted data mutation or publication occurred in this iteration.
+
+## Independent reconciliation follow-up
+
+Independent source review by baseline_discovery found that the initial buffer implementation cleared memory unconditionally on every discard-version update, even when the existing policy retained the unrelated local draft. The actual parent reconciliation branch was extracted into the existing synthetic harness, and a regression reproduced loss of the local buffer: [red log](evidence/continuation-buffer-revoke-red.log).
+
+The bounded correction removes that unconditional call. The existing guarded `purgeLocalStudioState` still clears buffers for actual account changes and protected/server-owned drafts. The same regression verifies that unrelated local draft/prompt/buffer remain, while those protected cases and identity changes invoke purge without asking for confirmation. Combined composer, session-authority and departure checks pass **36/36**, no skips, with pinned Node 22.23.2: [green log](evidence/continuation-buffer-revoke-green.log). This is actual-branch/controller evidence with modeled browser storage/state, not a hosted multi-tab logout result. Earlier typecheck and lint records above precede this one-line follow-up; final integration checks remain coordinator-owned.

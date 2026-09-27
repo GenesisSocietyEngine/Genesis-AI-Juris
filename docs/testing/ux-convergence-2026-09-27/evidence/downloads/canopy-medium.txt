@@ -1,0 +1,284 @@
+GENESIS: JURIS
+D E C I S I O N R E P O RT
+Project Canopy — Managed-site expansion 
+gate
+Report purpose: Decision memorandum
+REVIEW DRAFT · DRAFT · 2026-09-27
+Resolve the material evidence gaps before deciding
+The available records support a review agenda, not a selected outcome. Complete the missing inputs and 
+document the reasoning for the chosen route.
+Recorded objective
+Should Verdant Atelier accept a managed-site expansion opportunity now, approve a conditional 90-day 
+transition pilot, renegotiate/defer, or decline? This demonstration uses entirely fictional organisations, 
+documents, people and figures. It is inspired only by publicly described industry patterns and does not represent 
+Greeneration data, performance, controls or decisions.
+Detailed pinned scenario inputs remain in the case and Full analysis export.
+Analytical recommendation only. No selected case outcome or independent professional approval is implied.
+DRAFT · REVIEW DRAFT
+1 / 7
+
+R E C O M M E N D AT I O N A N D A CT I O N S
+A practical route to a decision
+These are recorded review questions, not automatically selected decisions. Read the complete conditions in the 
+case before acting.
+Is this within the committee mandate?
+D01 v1 § Mandate: The fictional Investment and Operating Committee has ten days from dossier opening to 
+choose a controlled managed-site opportunity. This mandate covers premium crops and a 90-day transition 
+pilot, not commodity-volume expansion.
+Do mandatory safety and traceability clearances permit proceeding?
+D01 v1 § Safety: A failed or unavailable mandatory independent food-safety or traceability clearance at the 
+production release gate means no-go regardless of financial attractiveness. No production release is permitted 
+under the conditional pilot until all release conditions are independently accepted. Clearance state: 
+no_critical_failure_identified. D06 v1 § Clearance: Base declaration: no critical safety failure is identified. Hard-
+stop stress declaration: mandatory independent food-safety or traceability clearance fails or is unavailable at the 
+production release gate. That declaration requires no-go even with upside economics.
+Is sufficient demand signed, not merely indicated?
+D03 v1 § Demand: Total indicated demand is 600 packs per week: 300 signed, 180 non-binding LOI and 120 
+expressions of interest. Only 300 count as signed commitments against the 450 minimum.
+Priority actions before commitment
+Proposed owner
+Deliverable / completion condition
+Case lead / client
+Confirm the objective, decision criteria, scope and acceptable downside; reconcile 
+material facts to original evidence.
+Relevant specialists
+Provide current, source-supported legal/tax conclusions for the available routes; 
+identify prerequisites and unresolved risks.
+Independent reviewer
+Challenge the recommendation and record the actual decision, conditions and 
+approval in the case workflow.
+Roles are proposed responsibilities, not assigned tasks or completed approvals.
+GENESIS: JURIS  /  Decision report
+DRAFT · REVIEW DRAFT
+2 / 7
+
+E V I D E N C E A N D M E T H O D
+What this assessment rests on
+The calculations use the recorded case assumptions; their inclusion does not verify them. Findings are rule-based 
+interpretations of those calculations and visible case records. No independent expert approval, completed scenario run or 
+AI prediction is inferred.
+Evidence to reconcile
+Is independent commissioning evidence accepted?
+These titles index the recorded material; they do not certify it. Full text, conditions and provenance remain in the case and 
+the full analysis export.
+Recorded source references
+No public source references recorded. Obtain authoritative sources for material conclusions.
+Case-entered legal reference date: 2026-09-06. This is not a verified legal currency check; future-dated entries require 
+correction.
+The visual decision tree follows as a graph section. Full analysis with the tree enabled provides the detailed text 
+alternative, complete records and audit options.
+GENESIS: JURIS  /  Decision report
+DRAFT · REVIEW DRAFT
+3 / 7
+
+Project Canopy — Managed-site expansion gate
+Decision tree
+Graph page 1 of 4 | G001
+N01 | TRIGGER
+Review the declared scenario
+Should Verdant Atelier accept a
+managed-site expansion opportunity
+now, approve a conditional 90-day
+transition pilot, renegotiate/defer, or
+decline? This demonstration uses
+entirely fictional organisations,
+documents, people and figures. It is
+inspired only by publicly described
+industry patterns and does not represent
+Greeneration data, performance,
+controls or decisions. Pinned reviewed
+inputs:
+{"sourceBaselineSignedPacksPerWeek":
+300,"assumedDemandPacksPerWeek":3
+00,"capacityPacksPerWeek":480,"assum
+edYieldPercent":92,"annualRevenueCredi
+ts":720000,"annualEnergyCredits":80000,
+"annualOtherCostsCredits":520000,"setu
+pCredits":240000,"conservativePaybackY
+ears":3,"staffing":"unresolved","commissi
+oning":"pending","clearance":"no_critical_
+failure_identified","policy":{"minimumSig
+nedPacksPerWeek":450,"minimumYieldP
+ercent":90,"maximumPaybackYears":3}}
+N02 | DECISION
+Is this within the committee
+mandate?
+D01 v1 § Mandate: The fictional
+Investment and Operating Committee
+has ten days from dossier opening to
+choose a controlled managed-site
+opportunity. This mandate covers
+premium crops and a 90-day transition
+pilot, not commodity-volume expansion.
+C003
+OUT G002
+N03
+Page labels connect branches across pages.
+GENESIS: JURIS  /  Decision report
+DRAFT · REVIEW DRAFT
+4 / 7
+
+Project Canopy — Managed-site expansion gate
+Decision tree
+Graph page 2 of 4 | G002
+N03 | DECISION
+Do mandatory safety and
+traceability clearances permit
+proceeding?
+D01 v1 § Safety: A failed or unavailable
+mandatory independent food-safety or
+traceability clearance at the production
+release gate means no-go regardless of
+financial attractiveness. No production
+release is permitted under the
+conditional pilot until all release
+conditions are independently accepted.
+Clearance state:
+no_critical_failure_identified. D06 v1 §
+Clearance: Base declaration: no critical
+safety failure is identified. Hard-stop
+stress declaration: mandatory
+independent food-safety or traceability
+clearance fails or is unavailable at the
+production release gate. That
+declaration requires no-go even with
+upside economics.
+N04 | DECISION
+Is sufficient demand signed, not
+merely indicated?
+D03 v1 § Demand: Total indicated
+demand is 600 packs per week: 300
+signed, 180 non-binding LOI and 120
+expressions of interest. Only 300 count
+as signed commitments against the 450
+minimum.
+N05 | OUTCOME
+Decline / no-go
+Mandatory failed or unavailable
+clearance prohibits production. See the
+exact current clearance record.
+N06 | DECISION
+Is the site suitable for
+high-value crops?
+D04 v1 § Capacity: Evidenced
+premium-crop transition capacity is 480
+packs per week. The candidate is
+suitable for the specified high-value crop
+mix. Commodity-volume expansion is
+excluded.
+C002
+OUT G003
+N07
+C003
+IN G001
+N02
+Page labels connect branches across pages.
+GENESIS: JURIS  /  Decision report
+DRAFT · REVIEW DRAFT
+5 / 7
+
+Project Canopy — Managed-site expansion gate
+Decision tree
+Graph page 3 of 4 | G003
+N07 | EVIDENCE
+Is independent commissioning
+evidence accepted?
+D06 v1 § Commissioning: Independent
+closure evidence for batch-to-delivery
+traceability reconciliation is pending.
+This material readiness gap blocks full
+operation but is not a failed critical
+safety control. Controlled non-production
+pilot work may resolve it.
+N08 | ACTOR
+Can the accountable leader and
+minimum team be in place?
+D08 v1 § Leadership: Base: transition
+leader appointment and minimum-team
+commitment are unresolved. Upside
+declared assumption: transition lead
+Inez Reed and the minimum team are
+confirmed before release. Operating
+owner Noah Wren must evidence
+confirmation by day 10.
+N09 | DECISION
+Does cold-chain capacity
+satisfy the service model?
+D09 v1 § Service: The fictional service
+model supports same-day hospitality
+deliveries for up to 480 packs per week.
+Cold-chain capacity matches the scoped
+upside volume. Delivery owner Sol Hart
+retains a contingency carrier and may
+pause deliveries.
+C001
+OUT G004
+N10
+C002
+IN G002
+N06
+Page labels connect branches across pages.
+GENESIS: JURIS  /  Decision report
+DRAFT · REVIEW DRAFT
+6 / 7
+
+Project Canopy — Managed-site expansion gate
+Decision tree
+Graph page 4 of 4 | G004
+N10 | DECISION
+Does downside payback meet
+the mandate?
+D07 v2 § Underwriting: Conservative
+Base: 690000 - 90000 - 520000 = 80000
+annual contribution. Conservative
+Upside: 780000 - 100000 - 600000 =
+80000. Both: 240000 / 80000 = 3.00
+years. Downside stress: 240000 / 70000
+= 3.43 years (rounded), above the
+inclusive 3-year maximum. This is
+transparent fixture arithmetic, not a new
+financial engine. D07 v2 § Base: Source
+baseline: 300 signed packs/week (D03
+v1). Scenario assumptions: demand 300,
+yield 92%; annual revenue 720000,
+energy 80000, other costs 520000;
+contribution 120000; setup 240000;
+simple payback 2.00 years. Conservative
+payback 3.00 years. Unresolved source
+conditions prohibit production.
+N11 | OUTCOME
+Renegotiate and defer
+Renegotiate and defer under the
+reviewed stress assumptions.
+Production is not authorized.
+N12 | DECISION
+Can remaining risks be bounded
+by pilot and exit conditions?
+D02 v1 § Exit: The pilot lasts 90 days
+with reviews on days 30, 60 and 90. Exit
+without expansion is required if signed
+demand, yield, independent release
+clearance or staffing conditions fail.
+Commercial owner: Mara Vale; decision
+deadline: day 10.
+N13 | OUTCOME
+Approve managed-site
+operation
+Recommend managed-site operation
+within 480 packs/week, subject to
+accepted release conditions and 90-day
+review/exit controls.
+N14 | OUTCOME
+Conditional 90-day transition
+pilot
+Approve only a conditional 90-day
+transition pilot. Production release is
+prohibited until all recorded conditions
+are accepted.
+C001
+IN G003
+N09
+Page labels connect branches across pages.
+GENESIS: JURIS  /  Decision report
+DRAFT · REVIEW DRAFT
+7 / 7

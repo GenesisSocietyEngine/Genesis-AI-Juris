@@ -1,0 +1,1061 @@
+﻿{
+    "environment":  "http://localhost:5281",
+    "workerSession":  48515,
+    "startedAt":  "2026-09-27T18:15:11.233Z",
+    "completedAt":  "2026-09-27T18:15:47.054Z",
+    "localOnly":  true,
+    "baseCommit":  "bf5799383a52b6617cd9d4a0acf47af780086218",
+    "buildIdentity":  "7b1aacc7540a5738277f98f2d0c4b9d413999e4277cd497cc8421a3926b96b79; root confirmed active build 2026-09-27T18:18:01Z, 380 source files",
+    "authentication":  "Ordinary password login, returned cookies in memory, no provider headers or session seeding",
+    "roleSetup":  "API organization create + local-only invite/accept + participant enrollment; no external delivery",
+    "organization":  {
+                         "id":  "org_15eba3abeeb241c6899481f557186dd4",
+                         "name":  "Synthetic UX evidence C-D 2026-09-27",
+                         "kind":  "team",
+                         "status":  "active",
+                         "revision":  1,
+                         "membershipRevision":  1,
+                         "role":  "org_owner",
+                         "actorId":  "actor_f2cda772e48213c433230b4319b195d5",
+                         "selection":  "org_15eba3abeeb241c6899481f557186dd4.1.1.actor_f2cda772e48213c433230b4319b195d5"
+                     },
+    "dossierId":  "dossier_4c45577c6bc54528b9330d018a893312",
+    "documentId":  "document_544afe4d7e6345d7a8bb82d3640f3db4",
+    "version1Id":  "document_version_74cafe3815474c808a7adfea87340a1d",
+    "assertions":  [
+                       {
+                           "object_type":  "professional_assertion",
+                           "schema_version":  1,
+                           "assertion_id":  "assertion_58eb24a87dee4866a745f5cec428d5a7",
+                           "dossier_id":  "dossier_4c45577c6bc54528b9330d018a893312",
+                           "assertion_type":  "fact",
+                           "statement":  "SYNTHETIC FACT: The signed register records 300 commitments at the review date.",
+                           "status":  "accepted",
+                           "source_anchor_ids":  [
+                                                     "source_anchor_fa77117d12af4bd3ac5aed14e75a7cb4"
+                                                 ],
+                           "originating_proposal_id":  null,
+                           "reviewed_by":  "actor_d3211013b2843dc47ca5d20e77d1b907",
+                           "reviewed_at":  "2026-09-27T18:15:45.088Z",
+                           "created_by":  "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+                           "created_at":  "2026-09-27T18:15:43.471Z",
+                           "updated_by":  "actor_d3211013b2843dc47ca5d20e77d1b907",
+                           "updated_at":  "2026-09-27T18:15:45.088Z"
+                       },
+                       {
+                           "object_type":  "professional_assertion",
+                           "schema_version":  1,
+                           "assertion_id":  "assertion_8ba00fde69e1412a8ecca2e7fec689eb",
+                           "dossier_id":  "dossier_4c45577c6bc54528b9330d018a893312",
+                           "assertion_type":  "contradiction",
+                           "statement":  "SYNTHETIC CONTRADICTION: The draft sales summary claims 600 signed commitments, inconsistent with the register.",
+                           "status":  "needs_review",
+                           "source_anchor_ids":  [
+                                                     "source_anchor_ec671348329e4d92bc19eb60b3501a48"
+                                                 ],
+                           "originating_proposal_id":  null,
+                           "reviewed_by":  null,
+                           "reviewed_at":  null,
+                           "created_by":  "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+                           "created_at":  "2026-09-27T18:15:44.866Z",
+                           "updated_by":  "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+                           "updated_at":  "2026-09-27T18:15:44.866Z"
+                       },
+                       {
+                           "object_type":  "professional_assertion",
+                           "schema_version":  1,
+                           "assertion_id":  "assertion_1dcba2f364e54b73b2928a9be1cf3809",
+                           "dossier_id":  "dossier_4c45577c6bc54528b9330d018a893312",
+                           "assertion_type":  "assumption",
+                           "statement":  "SYNTHETIC ASSUMPTION: A further 150 commitments may arrive; this forecast is not verified.",
+                           "status":  "needs_review",
+                           "source_anchor_ids":  [
+                                                     "source_anchor_8d7d2626aca042a0bda0f7b3329edabf"
+                                                 ],
+                           "originating_proposal_id":  null,
+                           "reviewed_by":  null,
+                           "reviewed_at":  null,
+                           "created_by":  "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+                           "created_at":  "2026-09-27T18:15:44.161Z",
+                           "updated_by":  "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+                           "updated_at":  "2026-09-27T18:15:44.161Z"
+                       }
+                   ],
+    "anchors":  {
+                    "source_anchors":  [
+                                           {
+                                               "object_type":  "source_anchor",
+                                               "schema_version":  1,
+                                               "source_anchor_id":  "source_anchor_ec671348329e4d92bc19eb60b3501a48",
+                                               "dossier_id":  "dossier_4c45577c6bc54528b9330d018a893312",
+                                               "document_id":  "document_544afe4d7e6345d7a8bb82d3640f3db4",
+                                               "document_version_id":  "document_version_74cafe3815474c808a7adfea87340a1d",
+                                               "page_number":  null,
+                                               "section":  "contradiction",
+                                               "heading":  null,
+                                               "paragraph":  null,
+                                               "character_start":  205,
+                                               "character_end":  316,
+                                               "excerpt":  "SYNTHETIC CONTRADICTION: The draft sales summary claims 600 signed commitments, inconsistent with the register.",
+                                               "anchor_checksum":  "sha256-43f79061b070c9a32555be9f87f3a10eb3f30447dfa1c0851d47c7f84d4897b0",
+                                               "extraction_version":  "genesis-dossier-strict-utf8-v1",
+                                               "creator":  "human",
+                                               "review_state":  "accepted",
+                                               "reviewer_actor_id":  "actor_d3211013b2843dc47ca5d20e77d1b907",
+                                               "reviewed_at":  "2026-09-27T18:15:44.604Z",
+                                               "created_by":  "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+                                               "created_at":  "2026-09-27T18:15:44.379Z",
+                                               "document_title":  "SYNTHETIC commitment register",
+                                               "version_ordinal":  1,
+                                               "retired_at":  null
+                                           },
+                                           {
+                                               "object_type":  "source_anchor",
+                                               "schema_version":  1,
+                                               "source_anchor_id":  "source_anchor_8d7d2626aca042a0bda0f7b3329edabf",
+                                               "dossier_id":  "dossier_4c45577c6bc54528b9330d018a893312",
+                                               "document_id":  "document_544afe4d7e6345d7a8bb82d3640f3db4",
+                                               "document_version_id":  "document_version_74cafe3815474c808a7adfea87340a1d",
+                                               "page_number":  null,
+                                               "section":  "assumption",
+                                               "heading":  null,
+                                               "paragraph":  null,
+                                               "character_start":  113,
+                                               "character_end":  203,
+                                               "excerpt":  "SYNTHETIC ASSUMPTION: A further 150 commitments may arrive; this forecast is not verified.",
+                                               "anchor_checksum":  "sha256-86807764c833478393b4f4d52dd833e717cc01cc5f7239cdddcd881e38190cda",
+                                               "extraction_version":  "genesis-dossier-strict-utf8-v1",
+                                               "creator":  "human",
+                                               "review_state":  "accepted",
+                                               "reviewer_actor_id":  "actor_d3211013b2843dc47ca5d20e77d1b907",
+                                               "reviewed_at":  "2026-09-27T18:15:43.944Z",
+                                               "created_by":  "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+                                               "created_at":  "2026-09-27T18:15:43.719Z",
+                                               "document_title":  "SYNTHETIC commitment register",
+                                               "version_ordinal":  1,
+                                               "retired_at":  null
+                                           },
+                                           {
+                                               "object_type":  "source_anchor",
+                                               "schema_version":  1,
+                                               "source_anchor_id":  "source_anchor_fa77117d12af4bd3ac5aed14e75a7cb4",
+                                               "dossier_id":  "dossier_4c45577c6bc54528b9330d018a893312",
+                                               "document_id":  "document_544afe4d7e6345d7a8bb82d3640f3db4",
+                                               "document_version_id":  "document_version_74cafe3815474c808a7adfea87340a1d",
+                                               "page_number":  null,
+                                               "section":  "fact",
+                                               "heading":  null,
+                                               "paragraph":  null,
+                                               "character_start":  32,
+                                               "character_end":  111,
+                                               "excerpt":  "SYNTHETIC FACT: The signed register records 300 commitments at the review date.",
+                                               "anchor_checksum":  "sha256-9aa5443f1acd0e3402ff29fa2e790bac2941e16e381a57db50bf145cfdd9562f",
+                                               "extraction_version":  "genesis-dossier-strict-utf8-v1",
+                                               "creator":  "human",
+                                               "review_state":  "accepted",
+                                               "reviewer_actor_id":  "actor_d3211013b2843dc47ca5d20e77d1b907",
+                                               "reviewed_at":  "2026-09-27T18:15:43.214Z",
+                                               "created_by":  "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+                                               "created_at":  "2026-09-27T18:15:42.979Z",
+                                               "document_title":  "SYNTHETIC commitment register",
+                                               "version_ordinal":  1,
+                                               "retired_at":  null
+                                           }
+                                       ],
+                    "page":  {
+                                 "limit":  50,
+                                 "has_more":  false,
+                                 "next_cursor":  null
+                             },
+                    "contract_version":  "1.0.0"
+                },
+    "requests":  {
+                     "requests":  [
+                                      {
+                                          "object_type":  "information_request",
+                                          "schema_version":  1,
+                                          "information_request_id":  "request_1c2477b0c9ba424896cc88487c2ad4ea",
+                                          "dossier_id":  "dossier_4c45577c6bc54528b9330d018a893312",
+                                          "question":  "SYNTHETIC missing basis: provide the delivery-capacity document.",
+                                          "owner_actor_id":  "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+                                          "requested_from_participant_id":  null,
+                                          "requested_from_display_name":  null,
+                                          "priority":  "normal",
+                                          "due_at":  null,
+                                          "timezone":  null,
+                                          "status":  "open",
+                                          "reason":  "No document supports the assumed delivery capacity; do not treat the forecast as established.",
+                                          "readiness_reason_code":  "INFORMATION_REQUEST_OPEN",
+                                          "satisfying_document_id":  null,
+                                          "satisfying_evidence_link_id":  null,
+                                          "created_at":  "2026-09-27T18:15:45.277Z",
+                                          "created_by":  "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+                                          "updated_at":  "2026-09-27T18:15:45.277Z",
+                                          "updated_by":  "actor_f78c538ebcf56693e1a6ef6dd3f244ca"
+                                      }
+                                  ],
+                     "deadlines":  [
+
+                                   ],
+                     "next_cursor":  null
+                 },
+    "revision":  18,
+    "readiness":  {
+                      "schema_version":  1,
+                      "dossier_id":  "dossier_4c45577c6bc54528b9330d018a893312",
+                      "computed_from_revision":  18,
+                      "evaluated_at":  "2026-09-27T18:15:46.825Z",
+                      "ready":  false,
+                      "dimensions":  [
+                                         {
+                                             "dimension":  "document_completeness",
+                                             "state":  "ready",
+                                             "reasons":  [
+
+                                                         ]
+                                         },
+                                         {
+                                             "dimension":  "information_requests",
+                                             "state":  "blocked",
+                                             "reasons":  [
+                                                             {
+                                                                 "code":  "INFORMATION_REQUEST_OPEN",
+                                                                 "explanation":  "Required information is still outstanding.",
+                                                                 "deep_link":  "/requests/request_1c2477b0c9ba424896cc88487c2ad4ea",
+                                                                 "related_object_type":  "information_request",
+                                                                 "related_object_id":  "request_1c2477b0c9ba424896cc88487c2ad4ea"
+                                                             }
+                                                         ]
+                                         },
+                                         {
+                                             "dimension":  "ai_proposals",
+                                             "state":  "ready",
+                                             "reasons":  [
+
+                                                         ]
+                                         },
+                                         {
+                                             "dimension":  "contradictions",
+                                             "state":  "blocked",
+                                             "reasons":  [
+                                                             {
+                                                                 "code":  "CONTRADICTION_UNRESOLVED",
+                                                                 "explanation":  "A material contradiction remains unresolved.",
+                                                                 "deep_link":  "/evidence/contradictions/assertion_8ba00fde69e1412a8ecca2e7fec689eb",
+                                                                 "related_object_type":  "professional_assertion",
+                                                                 "related_object_id":  "assertion_8ba00fde69e1412a8ecca2e7fec689eb"
+                                                             }
+                                                         ]
+                                         },
+                                         {
+                                             "dimension":  "critical_deadlines",
+                                             "state":  "blocked",
+                                             "reasons":  [
+                                                             {
+                                                                 "code":  "CRITICAL_DEADLINE_MISSING",
+                                                                 "explanation":  "A required critical deadline has not been recorded.",
+                                                                 "deep_link":  "/requests-deadlines",
+                                                                 "related_object_type":  null,
+                                                                 "related_object_id":  null
+                                                             }
+                                                         ]
+                                         },
+                                         {
+                                             "dimension":  "source_provenance",
+                                             "state":  "ready",
+                                             "reasons":  [
+
+                                                         ]
+                                         },
+                                         {
+                                             "dimension":  "decision_graph",
+                                             "state":  "blocked",
+                                             "reasons":  [
+                                                             {
+                                                                 "code":  "DECISION_GRAPH_INVALID",
+                                                                 "explanation":  "A linked decision graph has not passed canonical validation.",
+                                                                 "deep_link":  "/decision-packages",
+                                                                 "related_object_type":  null,
+                                                                 "related_object_id":  null
+                                                             }
+                                                         ]
+                                         },
+                                         {
+                                             "dimension":  "simulation_tests",
+                                             "state":  "blocked",
+                                             "reasons":  [
+                                                             {
+                                                                 "code":  "SIMULATION_REQUIRED",
+                                                                 "explanation":  "A required deterministic simulation or package test has not run.",
+                                                                 "deep_link":  "/decision-packages",
+                                                                 "related_object_type":  null,
+                                                                 "related_object_id":  null
+                                                             }
+                                                         ]
+                                         },
+                                         {
+                                             "dimension":  "report_freshness",
+                                             "state":  "blocked",
+                                             "reasons":  [
+                                                             {
+                                                                 "code":  "OUTPUT_REQUIRED",
+                                                                 "explanation":  "A governed output has not been generated from the current dossier snapshot.",
+                                                                 "deep_link":  "/outputs",
+                                                                 "related_object_type":  null,
+                                                                 "related_object_id":  null
+                                                             }
+                                                         ]
+                                         },
+                                         {
+                                             "dimension":  "reviewer_approval",
+                                             "state":  "blocked",
+                                             "reasons":  [
+                                                             {
+                                                                 "code":  "REVIEWER_APPROVAL_MISSING",
+                                                                 "explanation":  "The current governed output lacks an attributable reviewer approval.",
+                                                                 "deep_link":  "/outputs/approvals",
+                                                                 "related_object_type":  null,
+                                                                 "related_object_id":  null
+                                                             }
+                                                         ]
+                                         }
+                                     ]
+                  },
+    "roleChecks":  {
+                       "status":  "PASS",
+                       "rows":  [
+                                    {
+                                        "alias":  "owner",
+                                        "readStatus":  200,
+                                        "actualRole":  "owner"
+                                    },
+                                    {
+                                        "alias":  "contributor",
+                                        "readStatus":  200,
+                                        "actualRole":  "contributor"
+                                    },
+                                    {
+                                        "alias":  "reviewer",
+                                        "readStatus":  200,
+                                        "actualRole":  "reviewer"
+                                    },
+                                    {
+                                        "alias":  "viewer",
+                                        "readStatus":  200,
+                                        "actualRole":  "viewer"
+                                    }
+                                ],
+                       "viewerWriteStatus":  404,
+                       "revisionUnchanged":  18,
+                       "foreignDetailStatuses":  [
+                                                     404,
+                                                     404
+                                                 ],
+                       "foreignListDoesNotContainFixture":  true
+                   },
+    "conflictCheck":  {
+                          "status":  "PASS",
+                          "staleRevision":  17,
+                          "currentRevision":  18,
+                          "conflictCode":  "revision_conflict",
+                          "priorityPreserved":  "high"
+                      },
+    "exactFileReadback":  {
+                              "status":  "PASS",
+                              "byteLength":  422,
+                              "sha256":  "f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e",
+                              "versionId":  "document_version_74cafe3815474c808a7adfea87340a1d",
+                              "viewerReadStatus":  200,
+                              "foreignReadStatus":  404
+                          },
+    "originalScriptFailure":  {
+                                  "at":  "2026-09-27T18:15:15.711Z",
+                                  "message":  "contributor GET /api/dossiers/dossier_4c45577c6bc54528b9330d018a893312: HTTP 409, code organization_context_changed"
+                              },
+    "events":  [
+                   {
+                       "at":  "2026-09-27T18:15:11.887Z",
+                       "alias":  "owner",
+                       "method":  "POST",
+                       "path":  "/api/auth/login",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:11.968Z",
+                       "alias":  "owner",
+                       "method":  "GET",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:12.503Z",
+                       "alias":  "contributor",
+                       "method":  "POST",
+                       "path":  "/api/auth/login",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:12.579Z",
+                       "alias":  "contributor",
+                       "method":  "GET",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:13.123Z",
+                       "alias":  "reviewer",
+                       "method":  "POST",
+                       "path":  "/api/auth/login",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:13.211Z",
+                       "alias":  "reviewer",
+                       "method":  "GET",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:13.687Z",
+                       "alias":  "viewer",
+                       "method":  "POST",
+                       "path":  "/api/auth/login",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:13.748Z",
+                       "alias":  "viewer",
+                       "method":  "GET",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:14.444Z",
+                       "alias":  "foreign",
+                       "method":  "POST",
+                       "path":  "/api/auth/login",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:14.506Z",
+                       "alias":  "foreign",
+                       "method":  "GET",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:14.566Z",
+                       "alias":  "owner",
+                       "method":  "POST",
+                       "path":  "/api/organizations",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:14.622Z",
+                       "alias":  "owner",
+                       "method":  "POST",
+                       "path":  "/api/organizations",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:14.692Z",
+                       "alias":  "contributor",
+                       "method":  "POST",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:14.762Z",
+                       "alias":  "owner",
+                       "method":  "POST",
+                       "path":  "/api/organizations",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:14.826Z",
+                       "alias":  "reviewer",
+                       "method":  "POST",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:14.886Z",
+                       "alias":  "owner",
+                       "method":  "POST",
+                       "path":  "/api/organizations",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:14.946Z",
+                       "alias":  "viewer",
+                       "method":  "POST",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:15.014Z",
+                       "alias":  "owner",
+                       "method":  "POST",
+                       "path":  "/api/dossiers",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:15.129Z",
+                       "alias":  "owner",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:15.254Z",
+                       "alias":  "owner",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/participants",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:15.368Z",
+                       "alias":  "owner",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:15.467Z",
+                       "alias":  "owner",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/participants",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:15.579Z",
+                       "alias":  "owner",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:15.668Z",
+                       "alias":  "owner",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/participants",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:15.711Z",
+                       "alias":  "contributor",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  409,
+                       "code":  "organization_context_changed",
+                       "expected":  false
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:39.591Z",
+                       "alias":  "owner",
+                       "method":  "POST",
+                       "path":  "/api/auth/login",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:39.659Z",
+                       "alias":  "owner",
+                       "method":  "GET",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:40.109Z",
+                       "alias":  "contributor",
+                       "method":  "POST",
+                       "path":  "/api/auth/login",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:40.182Z",
+                       "alias":  "contributor",
+                       "method":  "GET",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:40.625Z",
+                       "alias":  "reviewer",
+                       "method":  "POST",
+                       "path":  "/api/auth/login",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:40.701Z",
+                       "alias":  "reviewer",
+                       "method":  "GET",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:41.261Z",
+                       "alias":  "viewer",
+                       "method":  "POST",
+                       "path":  "/api/auth/login",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:41.333Z",
+                       "alias":  "viewer",
+                       "method":  "GET",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:41.825Z",
+                       "alias":  "foreign",
+                       "method":  "POST",
+                       "path":  "/api/auth/login",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:41.899Z",
+                       "alias":  "foreign",
+                       "method":  "GET",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:42.005Z",
+                       "alias":  "owner",
+                       "method":  "GET",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:42.100Z",
+                       "alias":  "contributor",
+                       "method":  "GET",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:42.221Z",
+                       "alias":  "reviewer",
+                       "method":  "GET",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:42.282Z",
+                       "alias":  "viewer",
+                       "method":  "GET",
+                       "path":  "/api/organizations",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:42.406Z",
+                       "alias":  "contributor",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:42.627Z",
+                       "alias":  "contributor",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/documents",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:42.723Z",
+                       "alias":  "reviewer",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:42.829Z",
+                       "alias":  "reviewer",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/documents/document_544afe4d7e6345d7a8bb82d3640f3db4/review",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:42.925Z",
+                       "alias":  "contributor",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:43.043Z",
+                       "alias":  "contributor",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/anchors",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:43.154Z",
+                       "alias":  "reviewer",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:43.282Z",
+                       "alias":  "reviewer",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/anchors",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:43.400Z",
+                       "alias":  "contributor",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:43.534Z",
+                       "alias":  "contributor",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/assertions",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:43.638Z",
+                       "alias":  "contributor",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:43.789Z",
+                       "alias":  "contributor",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/anchors",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:43.889Z",
+                       "alias":  "reviewer",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:44.001Z",
+                       "alias":  "reviewer",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/anchors",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:44.109Z",
+                       "alias":  "contributor",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:44.215Z",
+                       "alias":  "contributor",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/assertions",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:44.327Z",
+                       "alias":  "contributor",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:44.437Z",
+                       "alias":  "contributor",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/anchors",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:44.540Z",
+                       "alias":  "reviewer",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:44.687Z",
+                       "alias":  "reviewer",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/anchors",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:44.805Z",
+                       "alias":  "contributor",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:44.923Z",
+                       "alias":  "contributor",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/assertions",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:45.022Z",
+                       "alias":  "reviewer",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:45.144Z",
+                       "alias":  "reviewer",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/assertions",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:45.242Z",
+                       "alias":  "contributor",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:45.343Z",
+                       "alias":  "contributor",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/requests",
+                       "status":  201,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:45.448Z",
+                       "alias":  "owner",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:45.598Z",
+                       "alias":  "owner",
+                       "method":  "PUT",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:45.647Z",
+                       "alias":  "contributor",
+                       "method":  "PUT",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  409,
+                       "code":  "revision_conflict",
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:45.785Z",
+                       "alias":  "owner",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:45.919Z",
+                       "alias":  "owner",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:46.044Z",
+                       "alias":  "contributor",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:46.162Z",
+                       "alias":  "reviewer",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:46.258Z",
+                       "alias":  "viewer",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:46.358Z",
+                       "alias":  "owner",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:46.409Z",
+                       "alias":  "viewer",
+                       "method":  "POST",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/assertions",
+                       "status":  404,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:46.519Z",
+                       "alias":  "owner",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:46.573Z",
+                       "alias":  "foreign",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  404,
+                       "code":  "organization_unavailable",
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:46.622Z",
+                       "alias":  "foreign",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  404,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:46.675Z",
+                       "alias":  "foreign",
+                       "method":  "GET",
+                       "path":  "/api/dossiers",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:46.740Z",
+                       "alias":  "viewer",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/documents/document_544afe4d7e6345d7a8bb82d3640f3db4/versions/document_version_74cafe3815474c808a7adfea87340a1d/download",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:46.775Z",
+                       "alias":  "foreign",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/documents/document_544afe4d7e6345d7a8bb82d3640f3db4/versions/document_version_74cafe3815474c808a7adfea87340a1d/download",
+                       "status":  404,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:46.872Z",
+                       "alias":  "owner",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:46.929Z",
+                       "alias":  "reviewer",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/assertions",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:46.981Z",
+                       "alias":  "reviewer",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/anchors",
+                       "status":  200,
+                       "expected":  true
+                   },
+                   {
+                       "at":  "2026-09-27T18:15:47.052Z",
+                       "alias":  "reviewer",
+                       "method":  "GET",
+                       "path":  "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/requests",
+                       "status":  200,
+                       "expected":  true
+                   }
+               ],
+    "version2NotUploaded":  true
+}

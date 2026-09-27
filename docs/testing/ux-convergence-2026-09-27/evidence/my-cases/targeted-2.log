@@ -1,0 +1,131 @@
+﻿TAP version 13
+# Subtest: My cases preserves exact Matter deep links and collection links clear obsolete case targeting
+ok 1 - My cases preserves exact Matter deep links and collection links clear obsolete case targeting
+  ---
+  duration_ms: 2.5385
+  type: 'test'
+  ...
+# Subtest: authorized catalogue paginates by server ID, never by title, and sends only no-store authenticated reads
+ok 2 - authorized catalogue paginates by server ID, never by title, and sends only no-store authenticated reads
+  ---
+  duration_ms: 49.6938
+  type: 'test'
+  ...
+# Subtest: expiry clears existing private metadata and a late response cannot restore it across renewed authority
+ok 3 - expiry clears existing private metadata and a late response cannot restore it across renewed authority
+  ---
+  duration_ms: 11.7995
+  type: 'test'
+  ...
+# Subtest: denied/failed and malformed reads remove private results and retry returns only a current valid page
+ok 4 - denied/failed and malformed reads remove private results and retry returns only a current valid page
+  ---
+  duration_ms: 12.2612
+  type: 'test'
+  ...
+# Subtest: rendered cards retain separate source IDs, role/version/privacy and exact Studio continuation
+ok 5 - rendered cards retain separate source IDs, role/version/privacy and exact Studio continuation
+  ---
+  duration_ms: 18.4027
+  type: 'test'
+  ...
+# Subtest: wrapper retains the existing Matter owner for deep links, exposes normal guarded links, and hides Personal private metadata before verification
+ok 6 - wrapper retains the existing Matter owner for deep links, exposes normal guarded links, and hides Personal private metadata before verification
+  ---
+  duration_ms: 11.7936
+  type: 'test'
+  ...
+# Subtest: Studio recent work uses unified My cases and preserves current-draft continuation
+ok 7 - Studio recent work uses unified My cases and preserves current-draft continuation
+  ---
+  duration_ms: 9.0556
+  type: 'test'
+  ...
+# Subtest: sidebar switch blocks dirty and uncertain work, validates receipt and clears case context
+ok 8 - sidebar switch blocks dirty and uncertain work, validates receipt and clears case context
+  ---
+  duration_ms: 49.7137
+  type: 'test'
+  ...
+# Subtest: sidebar expired switch releases the actual B1 departure lock before recovery
+ok 9 - sidebar expired switch releases the actual B1 departure lock before recovery
+  ---
+  duration_ms: 3.2324
+  type: 'test'
+  ...
+# Subtest: sidebar 401 then 500 hides identity and late success cannot resurrect it
+ok 10 - sidebar 401 then 500 hides identity and late success cannot resurrect it
+  ---
+  duration_ms: 2.9226
+  type: 'test'
+  ...
+# Subtest: sidebar authority generation is stable for focus refresh but rejects account and membership loss
+ok 11 - sidebar authority generation is stable for focus refresh but rejects account and membership loss
+  ---
+  duration_ms: 3.5413
+  type: 'test'
+  ...
+# Subtest: sidebar failed or wrong-actor switch preserves the old workspace without navigation
+ok 12 - sidebar failed or wrong-actor switch preserves the old workspace without navigation
+  ---
+  duration_ms: 1.5365
+  type: 'test'
+  ...
+# Subtest: sidebar sign-out tolerates unavailable device storage and hides private data on failure
+ok 13 - sidebar sign-out tolerates unavailable device storage and hides private data on failure
+  ---
+  duration_ms: 1.4939
+  type: 'test'
+  ...
+# Subtest: sidebar operation ownership survives cancel, close, and revisit with its original recovery key
+ok 14 - sidebar operation ownership survives cancel, close, and revisit with its original recovery key
+  ---
+  duration_ms: 24.517
+  type: 'test'
+  ...
+# Subtest: sidebar dirty comparison clears when the actual B1 input returns to its baseline
+ok 15 - sidebar dirty comparison clears when the actual B1 input returns to its baseline
+  ---
+  duration_ms: 0.509
+  type: 'test'
+  ...
+# Subtest: sidebar selected authorization loss also hides non-B1 scoped consumers
+ok 16 - sidebar selected authorization loss also hides non-B1 scoped consumers
+  ---
+  duration_ms: 1.6795
+  type: 'test'
+  ...
+# Subtest: logout bypasses pending work, hides immediately, rejects late switch and permits retry
+ok 17 - logout bypasses pending work, hides immediately, rejects late switch and permits retry
+  ---
+  duration_ms: 1.7911
+  type: 'test'
+  ...
+# Subtest: local form failure cannot trap session termination
+ok 18 - local form failure cannot trap session termination
+  ---
+  duration_ms: 1.0033
+  type: 'test'
+  ...
+# Subtest: failed authority check invalidates old private response tickets before recovery
+ok 19 - failed authority check invalidates old private response tickets before recovery
+  ---
+  duration_ms: 1.2273
+  type: 'test'
+  ...
+# Subtest: reload warning protects drafts while explicit departure and sign-out remain available
+ok 20 - reload warning protects drafts while explicit departure and sign-out remain available
+  ---
+  duration_ms: 0.5006
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 790.966
+exit_code=0

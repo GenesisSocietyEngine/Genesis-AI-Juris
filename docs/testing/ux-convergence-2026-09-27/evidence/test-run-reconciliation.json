@@ -1,0 +1,156 @@
+{
+  "initialRun": {
+    "tests": 873,
+    "pass": 849,
+    "fail": 21,
+    "skipped": 3,
+    "durationMs": 2949267.7719,
+    "exitCode": 1,
+    "whollyPassing": false
+  },
+  "currentRunExcludingP1": {
+    "tests": 863,
+    "pass": 860,
+    "fail": 0,
+    "skipped": 3,
+    "exitCode": 0
+  },
+  "initialFailureReconciliation": [
+    {
+      "name": "profile deletion clears local auth data and all identity responses are no-store",
+      "currentName": "profile deletion clears local auth data and all identity responses are no-store",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "Scenario A - a manual professional matter reaches reviewed snapshot outputs and a source change stales them",
+      "currentName": "Scenario A - a manual professional matter reaches reviewed snapshot outputs and a source change stales them",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "snapshot sealing enforces the pilot redaction contract and persists exact normalized sources",
+      "currentName": "snapshot sealing enforces the pilot redaction contract and persists exact normalized sources",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "snapshot sealing fails closed when deterministic simulation receipts are absent",
+      "currentName": "snapshot sealing fails closed when deterministic simulation receipts are absent",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "snapshot sealing rejects tampered v61 or graph bindings and cross-package receipt replay",
+      "currentName": "snapshot sealing rejects tampered v61 or graph bindings and cross-package receipt replay",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "JSON, Markdown, and PDF outputs are exact-snapshot bound, private, current, and idempotent",
+      "currentName": "JSON, Markdown, and PDF outputs are exact-snapshot bound, private, current, and idempotent",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "a replacement snapshot output stales prior-snapshot formats and approval is exact-output reviewer-only",
+      "currentName": "a replacement snapshot output stales prior-snapshot formats and approval is exact-output reviewer-only",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "R2 objects are deleted when snapshot or output D1 batches fail",
+      "currentName": "R2 objects are deleted when snapshot or output D1 batches fail",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "protected downloads fail closed on R2 checksum or metadata tampering",
+      "currentName": "protected downloads fail closed on R2 checksum or metadata tampering",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "organization-gated pages render a safe sign-in state before client hydration",
+      "currentName": "organization-gated pages render a safe sign-in state before client hydration",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "leaving a restricted Studio context cannot carry snapshots or history into a local draft",
+      "currentName": "leaving a restricted Studio context cannot carry snapshots or history into a local draft",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "late identity and catalogue responses cannot overwrite newer user intent",
+      "currentName": "late identity and catalogue responses cannot overwrite newer user intent",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "Studio opens in Office and the English demo keeps one Five Flats case without subtitles",
+      "currentName": "Studio opens in Office and current captioned training preserves the earlier Five Flats demo",
+      "currentSourceRetestPassed": true,
+      "note": "Renamed stale assertion to the retained captioned training behavior; earlier Five Flats demo assets remain checked."
+    },
+    {
+      "name": "standalone Studio exposes persistent professional destinations",
+      "currentName": "standalone Studio exposes persistent professional destinations",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "account uses the shared navigation without losing professional destinations",
+      "currentName": "account uses the shared navigation without losing professional destinations",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "actual parent registers anonymous Canopy and prompt work without creating a storage fallback",
+      "currentName": "actual parent registers anonymous Canopy and prompt work without creating a storage fallback",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "exact verified workspace baseline is clear; changed version/history/prompt and stale receipt remain dirty",
+      "currentName": "exact verified workspace baseline is clear; changed version/history/prompt and stale receipt remain dirty",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "pending work takes precedence over a saved baseline; logout stays available",
+      "currentName": "pending work takes precedence over a saved baseline; logout stays available",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "real history guard retains anonymous Studio on Stay and completes only explicit original departure",
+      "currentName": "real history guard retains anonymous Studio on Stay and completes only explicit original departure",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "actual sign-in continuation approves departure only after its write; storage or navigation failure retains warning",
+      "currentName": "actual sign-in continuation approves departure only after its write; storage or navigation failure retains warning",
+      "currentSourceRetestPassed": true
+    },
+    {
+      "name": "actual parent boundary preserves local drafts, stops interrupted private runs and clears revoked protected work",
+      "currentName": "actual parent boundary preserves local drafts, stops interrupted private runs and clears revoked protected work",
+      "currentSourceRetestPassed": true
+    }
+  ],
+  "retainedP1Selection": {
+    "passed": 22,
+    "failed": 0,
+    "names": [
+      "Administration: authenticated password login cannot silently switch the effective identity",
+      "Administration: password sign-in still works after explicit local sign-out",
+      "Administration: invitations respect existing membership and restoration with durable audit",
+      "Upload acknowledgement and immutable versions: rejection preserves state; checked PDF upload persists and downloads",
+      "P1 ERP 1: create, reopen, filter and page a dossier in exactly one organization",
+      "P1 ERP 2: immutable source versions retain their hashes and private downloads",
+      "P1 ERP 4: invitations are identity-bound, single-use, and confer no dossier role",
+      "P1 ERP 3: source anchors and assertions require explicit review before linking the ERP decision package",
+      "P1 ERP 5: snapshot-bound PDF and JSON export, independent approval, reopen, and staleness",
+      "Dependable actions: historical disposition and citation retirement persist with exact audit, denial, replay and conflicts",
+      "P1: every dossier route denies a foreign organization before reads or side effects",
+      "P1: revocation during an R2 read prevents delivery of private bytes",
+      "P1: revocation during upload aborts metadata, revision and success receipts",
+      "P1: independent lifecycle approval invalidates contexts and outstanding invitations",
+      "P1: selection, cursor, CSRF and unavailable compliance features fail closed",
+      "Canopy V2 scenario: base",
+      "Canopy V2 scenario: upside",
+      "Canopy V2 scenario: hard_stop",
+      "Canopy V2 scenario: downside",
+      "Canopy V2 causal walkthrough: Base to Upside to clearance-only Hard stop preserves other copies",
+      "Canopy V2 runtime: failed and unavailable cannot bypass controls; label alone cannot change outcome",
+      "Canopy V2: independent reviewed copies, causal walkthrough and exact output governance"
+    ],
+    "inputContinuityEvidence": "p1-route-bundle-receipt.json",
+    "scope": "P1 source inputs unchanged since before initial runner launch; only this passing selection retained"
+  }
+}

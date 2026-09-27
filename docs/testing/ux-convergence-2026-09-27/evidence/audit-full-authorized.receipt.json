@@ -1,0 +1,21 @@
+{
+    "startedAt":  "2026-09-27T17:54:55.0452512Z",
+    "finishedAt":  "2026-09-27T17:55:08.8895053Z",
+    "node":  "v22.23.2",
+    "npm":  "10.9.8",
+    "executable":  "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\demo-readiness-canopy-2026-09-06\\.artifacts\\toolchains\\node-v22.23.2-win-x64\\node.exe",
+    "cli":  "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\demo-readiness-canopy-2026-09-06\\.artifacts\\toolchains\\node-v22.23.2-win-x64\\node_modules\\npm\\bin\\npm-cli.js",
+    "arguments":  [
+                      "audit",
+                      "--json",
+                      "--include=dev",
+                      "--include=optional",
+                      "--include=peer",
+                      "--registry=https://registry.npmjs.org"
+                  ],
+    "exitCode":  0,
+    "packageLockSha256Before":  "43155d8e1650cf89ded732133384173b260becea9b8b1edcdcfbc02ed628f729",
+    "packageLockSha256After":  "43155d8e1650cf89ded732133384173b260becea9b8b1edcdcfbc02ed628f729",
+    "reportSha256":  "a8063202bdc312b25e76f782214b49dff43080a6b27c8d3c9461c3e0ce3d11be",
+    "authorization":  "User explicitly approved full and production dependency audits against the public npm registry in this turn."
+}

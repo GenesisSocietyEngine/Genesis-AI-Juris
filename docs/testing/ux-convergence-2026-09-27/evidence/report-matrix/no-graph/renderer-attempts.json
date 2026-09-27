@@ -1,0 +1,44 @@
+{
+  "verifiedAt": "2026-09-27T09:50:42.267Z",
+  "node": "v22.23.2",
+  "scope": "Direct production renderer attempts for a synthetic zero-node draft; no browser delivery, auth save, receipt or approval claimed",
+  "fixture": {
+    "caseId": "synthetic_no_graph_verification",
+    "version": "1.0.0",
+    "nodes": 0,
+    "links": 0,
+    "fingerprint": "sha256-c6c3dd1977ada689519970acefa44de83f1c7ddd3c066bf52bca57fa642304f8"
+  },
+  "readiness": {
+    "ready": false,
+    "blockers": [
+      "The case needs a title and structured content."
+    ],
+    "warnings": [
+      "Responsible participants: add 1 more",
+      "Facts or evidence: 0 of 2 required records present. This checks structure; evidence sufficiency needs review.",
+      "Issue or decision: add 1 more",
+      "Reasoned outcome: add 1 more"
+    ]
+  },
+  "attempts": [
+    {
+      "presentationMode": "full",
+      "includeDecisionTree": true,
+      "outcome": "blocked-before-pdf",
+      "pdfBytes": 0,
+      "errorName": "ReportGraphLayoutError",
+      "message": "presentation.sourceNodeCount must be between 1 and 200",
+      "code": "INPUT_INVALID"
+    },
+    {
+      "presentationMode": "decision",
+      "includeDecisionTree": false,
+      "outcome": "blocked-before-pdf",
+      "pdfBytes": 0,
+      "errorName": "ReportGraphLayoutError",
+      "message": "presentation.sourceNodeCount must be between 1 and 200",
+      "code": "INPUT_INVALID"
+    }
+  ]
+}

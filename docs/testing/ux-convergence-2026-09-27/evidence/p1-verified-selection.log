@@ -1,0 +1,133 @@
+# Subtest: Administration: authenticated password login cannot silently switch the effective identity
+ok 482 - Administration: authenticated password login cannot silently switch the effective identity
+  ---
+  duration_ms: 19662.9512
+  type: 'test'
+  ...
+# Subtest: Administration: password sign-in still works after explicit local sign-out
+ok 483 - Administration: password sign-in still works after explicit local sign-out
+  ---
+  duration_ms: 4616.2391
+  type: 'test'
+  ...
+# Subtest: Administration: invitations respect existing membership and restoration with durable audit
+ok 484 - Administration: invitations respect existing membership and restoration with durable audit
+  ---
+  duration_ms: 9247.5908
+  type: 'test'
+  ...
+# Subtest: Upload acknowledgement and immutable versions: rejection preserves state; checked PDF upload persists and downloads
+ok 485 - Upload acknowledgement and immutable versions: rejection preserves state; checked PDF upload persists and downloads
+  ---
+  duration_ms: 20024.9773
+  type: 'test'
+  ...
+# Subtest: P1 ERP 1: create, reopen, filter and page a dossier in exactly one organization
+ok 486 - P1 ERP 1: create, reopen, filter and page a dossier in exactly one organization
+  ---
+  duration_ms: 4648.3532
+  type: 'test'
+  ...
+# Subtest: P1 ERP 2: immutable source versions retain their hashes and private downloads
+ok 487 - P1 ERP 2: immutable source versions retain their hashes and private downloads
+  ---
+  duration_ms: 16723.5931
+  type: 'test'
+  ...
+# Subtest: P1 ERP 4: invitations are identity-bound, single-use, and confer no dossier role
+ok 488 - P1 ERP 4: invitations are identity-bound, single-use, and confer no dossier role
+  ---
+  duration_ms: 10485.8321
+  type: 'test'
+  ...
+# Subtest: P1 ERP 3: source anchors and assertions require explicit review before linking the ERP decision package
+ok 489 - P1 ERP 3: source anchors and assertions require explicit review before linking the ERP decision package
+  ---
+  duration_ms: 26024.2954
+  type: 'test'
+  ...
+# Subtest: P1 ERP 5: snapshot-bound PDF and JSON export, independent approval, reopen, and staleness
+ok 490 - P1 ERP 5: snapshot-bound PDF and JSON export, independent approval, reopen, and staleness
+  ---
+  duration_ms: 22072.3434
+  type: 'test'
+  ...
+# Subtest: Dependable actions: historical disposition and citation retirement persist with exact audit, denial, replay and conflicts
+ok 491 - Dependable actions: historical disposition and citation retirement persist with exact audit, denial, replay and conflicts
+  ---
+  duration_ms: 48763.0522
+  type: 'test'
+  ...
+# Subtest: P1: every dossier route denies a foreign organization before reads or side effects
+ok 492 - P1: every dossier route denies a foreign organization before reads or side effects
+  ---
+  duration_ms: 16298.9158
+  type: 'test'
+  ...
+# Subtest: P1: revocation during an R2 read prevents delivery of private bytes
+ok 493 - P1: revocation during an R2 read prevents delivery of private bytes
+  ---
+  duration_ms: 2583.8053
+  type: 'test'
+  ...
+# Subtest: P1: revocation during upload aborts metadata, revision and success receipts
+ok 494 - P1: revocation during upload aborts metadata, revision and success receipts
+  ---
+  duration_ms: 11645.4553
+  type: 'test'
+  ...
+# Subtest: P1: independent lifecycle approval invalidates contexts and outstanding invitations
+ok 495 - P1: independent lifecycle approval invalidates contexts and outstanding invitations
+  ---
+  duration_ms: 7588.1126
+  type: 'test'
+  ...
+# Subtest: P1: selection, cursor, CSRF and unavailable compliance features fail closed
+ok 496 - P1: selection, cursor, CSRF and unavailable compliance features fail closed
+  ---
+  duration_ms: 2864.0146
+  type: 'test'
+  ...
+# Subtest: Canopy V2: independent reviewed copies, causal walkthrough and exact output governance
+    # Subtest: Canopy V2 scenario: base
+    ok 1 - Canopy V2 scenario: base
+      ---
+      duration_ms: 501201.354
+      type: 'test'
+      ...
+    # Subtest: Canopy V2 scenario: upside
+    ok 2 - Canopy V2 scenario: upside
+      ---
+      duration_ms: 528089.308
+      type: 'test'
+      ...
+    # Subtest: Canopy V2 scenario: hard_stop
+    ok 3 - Canopy V2 scenario: hard_stop
+      ---
+      duration_ms: 510598.2161
+      type: 'test'
+      ...
+    # Subtest: Canopy V2 scenario: downside
+    ok 4 - Canopy V2 scenario: downside
+      ---
+      duration_ms: 532719.3496
+      type: 'test'
+      ...
+    # Subtest: Canopy V2 causal walkthrough: Base to Upside to clearance-only Hard stop preserves other copies
+    ok 5 - Canopy V2 causal walkthrough: Base to Upside to clearance-only Hard stop preserves other copies
+      ---
+      duration_ms: 474825.659
+      type: 'test'
+      ...
+    # Subtest: Canopy V2 runtime: failed and unavailable cannot bypass controls; label alone cannot change outcome
+    ok 6 - Canopy V2 runtime: failed and unavailable cannot bypass controls; label alone cannot change outcome
+      ---
+      duration_ms: 11782.0184
+      type: 'test'
+      ...
+    1..6
+ok 497 - Canopy V2: independent reviewed copies, causal walkthrough and exact output governance
+  ---
+  duration_ms: 2567133.7155
+  type: 'test'
+  ...

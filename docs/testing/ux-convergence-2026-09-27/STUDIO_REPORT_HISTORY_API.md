@@ -1,0 +1,37 @@
+# Saved Studio report receipt history — local implementation
+
+27 September 2026. Candidate worktree `ux-convergence-2026-09-27`, implemented in `8ee07c0fcf5a6ea78f5fd9c435bfe4b013e052b6` over `bf5799383a52b6617cd9d4a0acf47af780086218`. This implements the server contract missing in the earlier [contract review](EXPORT_HISTORY_CONTRACT_REVIEW.md). It does not change the governed Matter output contract or establish deployment/browser acceptance.
+
+## Acceptance and implementation
+
+| Criterion | Implementation and scoped evidence |
+| --- | --- |
+| Persist a saved Studio download receipt across reload | New `GET/POST /api/custom-cases/report-receipts` uses existing `audit_events`, without a migration or PDF upload. GET returns the current actor's bounded history for an authorized saved custom case. Isolated real-route test reload/readback and pagination PASS. Root owns dialog integration and final browser proof. |
+| Truthful event and report identity | Public event is `client_report_download_started`; receipt preserves original case/version, report profile, renderer, canonical content/report/layout/presentation fingerprints, generation timestamp, audience and draft/final declaration. Safe format metadata records actual effective presentation mode and tree choice. This is client-reported metadata; it cannot attest that a PDF existed, was saved by the user, or was independently approved. |
+| Exact saved artifact | POST recomputes the existing `caseReportReceiptBinding` using the normalized stored draft and supplied bounded options. Case ID/version, canonical/publication fingerprints, workspace bindings and private flag must match. Options and PDF bytes are not persisted. Malformed metadata, changed displayed recipient, stale renderer/version/hash, absent saved publication binding and unknown fields are rejected. |
+| Existing export authority | Ordinary authentication; strict same-origin mutation; expected account scope. Owner is allowed, including a correctly sealed protected case. Shared export requires an actual current grant, unprotected case and nonprivate visibility. Inspection-only platform admin is not a bypass. Current stored protection is verified with the existing signing helper. |
+| Late changes cannot create a mismatched row | Atomic `INSERT … SELECT` requires the same account/actor, valid local session, exact current custom-case identity/privacy, captured grant ID and latest exact stored payload. Tests revoke/recreate a grant, change publication metadata with unchanged canonical fingerprint, and revoke the real session between validation and insertion: all return409 and persist no row. |
+| Idempotent retry | A canonical receipt/format digest plus actor/case scope is checked in that atomic statement. Two simultaneous exact POSTs return201/200 and the same one row. No schema/index alteration. |
+| Account-only read and history retention | Current authority is checked before the query, within the row query and after it. A late revoked grant returns409, rather than a misleading empty200. Each row is bound to immutable `users.actorId` as well as normalized email; a recreated same-email account cannot inherit old-actor rows. Read response is private/no-store. |
+| Prior version remains recognizable | Advancing the saved case to1.0.1 rejects a v1.0.0 POST while GET retains the original v1.0.0 receipt unchanged. Client freshness uses the original bindings; the server never relabels an old receipt current. |
+| Strict response contract | `app/studio-report-history.ts` exports the agreed record/page types and strict parsers. Invalid timestamps, event names, formats, unknown fields, receipt bindings, duplicate/out-of-order page IDs and mismatched cursors are rejected. Historic valid V2 version strings remain readable for stale display; POST requires current renderer contracts. |
+
+Owned implementation: `app/studio-report-history.ts`, `app/studio-report-history-server.ts`, `app/api/custom-cases/report-receipts/route.ts`, `tests/studio-report-history-route.test.ts`. Root-owned dialog/history UI is reviewed separately. `expectedScope` is a boundary check, not authentication; ordinary session authority is always required.
+
+## Retention boundaries
+
+These are account-retained Studio receipt records in generic audit storage. Existing `DELETE /api/me` deletes the departing actor's `audit_events`; the actual route is tested. Deleting the case owner also removes its custom cases/grants, making other actors' old rows inaccessible. Loss of grant or a private/protected transition blocks former shared exporters from reading history. Recreated same-email accounts have a new immutable actor ID; a deliberately restored old-actor fixture row remains invisible.
+
+This is neither permanent append-only Matter history nor retained PDF-byte storage. It adds no Dossier association, snapshot, reviewer approval, file-save confirmation or secret persistence. The endpoint cannot recover the original PDF. Unsaved Studio exports remain a client capability; only an exact saved version qualifies for account history. Provider-header authentication/admin exclusions received independent source review; the executable API suite uses ordinary local password sessions, without provider header stubs or session seeding.
+
+## Verification receipts
+
+- Initial sandbox invocation failed before tests (`uv_os_get_passwd ENOMEM`). Host execution used pinned Node22.23.2 and isolated Miniflare D1 with all current migrations; no localhost fixture, hosted service, external account or secret was touched by the suite.
+- First executable pass found a test-setup error: attempting to mutate immutable actor ID triggered the existing guard. The guard was preserved; the test now uses actual account deletion, fixture reprovisioning and another ordinary password login. Original test outcome7/8 was not accepted as product validation.
+- Expanded suite PASS11/11, zero skipped, `.artifacts/report-history-tests/api-tests.log` (62.506s). It uses actual route handlers, identity resolver, password verification, report binding and D1 statements. Only Cloudflare/Next runtime transport is adapted. Synthetic users and saved artifacts are fixture setup; authentication sessions are never seeded. A deliberate old-actor audit fixture restoration tests noninheritance after deletion/recreation.
+- Full TypeScript initially exposed unknown JSON response types in the new tests. Responses now pass the same strict parsers used by the client. Full `tsc --noEmit` retry PASS, exit0: [typecheck receipt](evidence/reconciliation-history-types-retry.log). Original root failure log is retained.
+- Scoped ESLint over all four owned files PASS, exit0: [lint receipt](evidence/reconciliation-history-lint.log).
+- Final executable suite after strict test response parsing PASS11/11, zero failed/skipped, exit0,55.728s: [API test receipt](evidence/reconciliation-history-api-tests.log).
+- Independent reviewer found a read race where a revoked grant could appear as empty history. The post-query check and a delayed read-revocation regression now cover it. [Independent audit](STUDIO_REPORT_HISTORY_INDEPENDENT_REVIEW.md) found no unresolved material server authorization issue in the reviewed source.
+
+Remaining: root's final candidate build, integrated browser export→account history→reload→stale observation and hosted candidate verification. This document does not close the complete Stage6/runbook acceptance row by API tests alone.

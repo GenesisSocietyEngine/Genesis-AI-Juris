@@ -1,0 +1,4 @@
+# Preserve byte-exact verification receipts and artifacts, including original logs.
+# Raw command output can contain CRLF/trailing spaces; do not rewrite evidence
+# to satisfy source whitespace rules. Application/source checks are unchanged.
+* -text -whitespace

@@ -1,0 +1,45 @@
+{
+  "scope": "Actual local browser download, account history reload and settings-stale check; synthetic saved case only",
+  "sourceCommit": "8ee07c0fcf5a6ea78f5fd9c435bfe4b013e052b6",
+  "buildDigest": "25d6309ef9adf2ff039c02fe0bffef4a8a754dde11334a3d8f7f621e7dcc34ec",
+  "customCaseId": 1,
+  "recordedAt": "2026-09-27T18:37:41.398Z",
+  "receipt": {
+    "receiptSchemaVersion": 2,
+    "caseId": "project_canopy_managed_site_expansion",
+    "caseVersion": "2.0.0",
+    "profileId": "decision_memorandum",
+    "rendererVersion": "1.0.0",
+    "caseFingerprint": "sha256-c71b93d118025446ed4323fd9b1b19a7f4c5b8b28a68783ddfd612f2583440ab",
+    "reportFingerprint": "sha256-96c07f591f37dcd7f5590ce1bc40e72b89d4e79c023270d69377a84240cbabfb",
+    "generatedAt": "2026-09-27T18:37:39.849Z",
+    "status": "draft",
+    "audience": "internal",
+    "layoutSchemaVersion": 1,
+    "layoutAlgorithmVersion": "1.1.0",
+    "layoutRendererVersion": "2.1.0",
+    "layoutFingerprint": "sha256-495537ebfa1c4340b63bebf30669ed485fc06a68ff06cac7d33db56485c861bf",
+    "presentationFingerprint": "sha256-75aea7b979e5e4bec0d7302e836dd4168f6652beb3a3be43f02f6376a741a5c3"
+  },
+  "fileObserved": {
+    "name": "project_canopy_managed_site_expansion-v2.0.0-decision_memorandum-internal (3).pdf",
+    "directory": "User Downloads",
+    "bytes": 33738,
+    "lastWriteUtc": "2026-09-27T18:37:40Z",
+    "sha256": "ca025876662db35c0879874daa8ded21839022e15ba1b47e9e3c94676336ae7d"
+  },
+  "afterFullReload": "Base / Tree OFF / v2.0.0 / 18:37:39 UTC receipt remains and matches current content and report settings",
+  "afterTreeOn": "Earlier version or settings — not the current report",
+  "narrow": {
+    "viewportWidth": 390,
+    "viewportHeight": 844,
+    "pageClientWidth": 375,
+    "pageScrollWidth": 375,
+    "dialogClientWidth": 342,
+    "dialogScrollWidth": 342,
+    "expandedReceiptClientWidth": 269,
+    "expandedReceiptScrollWidth": 269,
+    "viewportResetAfterward": true
+  },
+  "limits": "History records client-reported download start, not file delivery or independent approval. File existence/hash was checked separately. No governed output or approval was created. Screenshots emitted in tool transcript; no local screenshot file claimed."
+}

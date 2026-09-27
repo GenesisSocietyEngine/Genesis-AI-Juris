@@ -1,0 +1,50 @@
+{
+  "scope": "Production dependencies only; explicitly authorized public npm registry audit; no audit fix/install/config/package/lock changes requested or performed",
+  "executable": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\demo-readiness-canopy-2026-09-06\\.artifacts\\toolchains\\node-v22.23.2-win-x64\\node.exe",
+  "args": [
+    "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\demo-readiness-canopy-2026-09-06\\.artifacts\\toolchains\\node-v22.23.2-win-x64\\node_modules\\npm\\bin\\npm-cli.js",
+    "audit",
+    "--omit=dev",
+    "--json",
+    "--registry=https://registry.npmjs.org"
+  ],
+  "command": "& 'C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\demo-readiness-canopy-2026-09-06\\.artifacts\\toolchains\\node-v22.23.2-win-x64\\node.exe' 'C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\demo-readiness-canopy-2026-09-06\\.artifacts\\toolchains\\node-v22.23.2-win-x64\\node_modules\\npm\\bin\\npm-cli.js' 'audit' '--omit=dev' '--json' '--registry=https://registry.npmjs.org'",
+  "cwd": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27",
+  "startedAtUtc": "2026-09-27T17:55:25.557Z",
+  "endedAtUtc": "2026-09-27T17:55:27.755Z",
+  "exitCode": 0,
+  "signal": null,
+  "nodeVersion": "v22.23.2",
+  "npmVersion": "10.9.8",
+  "registry": "https://registry.npmjs.org",
+  "lockPath": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\package-lock.json",
+  "expectedLockSha256": "43155d8e1650cf89ded732133384173b260becea9b8b1edcdcfbc02ed628f729",
+  "lockSha256Before": "43155d8e1650cf89ded732133384173b260becea9b8b1edcdcfbc02ed628f729",
+  "lockSha256After": "43155d8e1650cf89ded732133384173b260becea9b8b1edcdcfbc02ed628f729",
+  "lockUnchanged": true,
+  "outputPath": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\docs\\testing\\ux-convergence-2026-09-27\\evidence\\audit-production-authorized.json",
+  "stderrPath": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\docs\\testing\\ux-convergence-2026-09-27\\evidence\\audit-production-authorized.stderr.log",
+  "outputEncoding": "UTF-8 without BOM",
+  "outputBytes": 366,
+  "stderrBytes": 0,
+  "responseKind": "vulnerability-report",
+  "parseError": null,
+  "executionError": null,
+  "auditError": null,
+  "counts": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "dependencies": {
+    "prod": 74,
+    "dev": 628,
+    "optional": 223,
+    "peer": 45,
+    "peerOptional": 0,
+    "total": 736
+  }
+}

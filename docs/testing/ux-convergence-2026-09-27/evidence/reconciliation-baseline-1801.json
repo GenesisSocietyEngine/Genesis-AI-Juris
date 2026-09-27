@@ -1,0 +1,34 @@
+{
+  "checkedAt": "2026-09-27T18:01:00Z",
+  "source": "Fresh Sites get_site, list_site_versions, get_deployment_status responses",
+  "projectId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+  "title": "GENESIS: JURIS Web",
+  "accessMode": "public",
+  "currentLiveUrl": "https://studio.falcon-merlin.com",
+  "currentPreviewUrl": null,
+  "latestVersionNumber": 102,
+  "liveCommit": "bf5799383a52b6617cd9d4a0acf47af780086218",
+  "deployment": {
+    "id": "appgdep_6ab6ed70ee488191ba95f30293b6e6a1",
+    "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_37dbecce77848191a3dc4397ee48dc73",
+    "status": "succeeded",
+    "type": "publish",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "environmentRevision": 39,
+    "updatedAt": "2026-09-25T21:55:07.113680+00:00"
+  },
+  "implementation": {
+    "worktree": "C:/PROJECTS/Genesis-AI-Juris/.worktrees/ux-convergence-2026-09-27",
+    "branch": "codex/ux-convergence-2026-09-27",
+    "head": "bf5799383a52b6617cd9d4a0acf47af780086218",
+    "gitCommonDir": "C:/PROJECTS/Genesis-AI-Juris/.worktrees/c1-production-v97-source-2026-09-25/.git",
+    "configuredRemotes": [],
+    "state": "dirty; completed implementation is not yet committed or deployed",
+    "applicationInputDigest": "849295fa05be74ecc8c44d46d288637e3cc9e2910456816f7f6009e308974db2"
+  },
+  "unrelatedRoot": {
+    "head": "6ca50f24ab3a763ac80e5cd221c15db4a7592fd8",
+    "branch": "feat/professional-product-ui-redesign-pilot-v2",
+    "state": "root/mobile lineage; unrelated changes preserved"
+  }
+}

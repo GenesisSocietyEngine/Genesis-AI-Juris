@@ -1,0 +1,57 @@
+﻿TAP version 13
+# Subtest: My cases preserves exact Matter deep links and collection links clear obsolete case targeting
+ok 1 - My cases preserves exact Matter deep links and collection links clear obsolete case targeting
+  ---
+  duration_ms: 3.1712
+  type: 'test'
+  ...
+# Subtest: authorized catalogue paginates by server ID, never by title, and sends only no-store authenticated reads
+ok 2 - authorized catalogue paginates by server ID, never by title, and sends only no-store authenticated reads
+  ---
+  duration_ms: 58.7386
+  type: 'test'
+  ...
+# Subtest: expiry clears existing private metadata and a late response cannot restore it across renewed authority
+ok 3 - expiry clears existing private metadata and a late response cannot restore it across renewed authority
+  ---
+  duration_ms: 31.4499
+  type: 'test'
+  ...
+# Subtest: denied/failed and malformed reads remove private results and retry returns only a current valid page
+ok 4 - denied/failed and malformed reads remove private results and retry returns only a current valid page
+  ---
+  duration_ms: 16.8367
+  type: 'test'
+  ...
+# X [ERROR] Could not resolve "react"
+#     fixture:existing-matter-owner:1:28:
+#       1 │ import {createElement} from 'react'; export default function Matter...
+#         ╵                             ~~~~~~~
+#   The plugin "matter-owner-boundary" didn't set a resolve directory for the file "fixture:existing-matter-owner", so esbuild did not search for "react" on the file system.
+# X [ERROR] Cannot import "app/matters/my-cases.module.css" into a JavaScript file without an output path configured
+#     app/matters/MyCasesClient.tsx:9:19:
+#       9 │ import styles from "./my-cases.module.css";
+#         ╵                    ~~~~~~~~~~~~~~~~~~~~~~~
+# Error: A resource generated asynchronous activity after the test ended. This activity created the error "Error: Build failed with 2 errors:\\napp/matters/MyCasesClient.tsx:9:19: ERROR: Cannot import "app/matters/my-cases.module.css" into a JavaScript file without an output path configured\\nfixture:existing-matter-owner:1:28: ERROR: Could not resolve "react"" which triggered an uncaughtException event, caught by the test runner.
+# Subtest: tests\\my-cases.test.ts
+not ok 1 - tests\\my-cases.test.ts
+  ---
+  duration_ms: 836.1335
+  type: 'test'
+  location: 'C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\tests\\my-cases.test.ts:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 4
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 856.8697
+exit_code=1
