@@ -1,0 +1,10 @@
+.switcher,.personal{max-width:1320px;margin:0 auto;padding:24px clamp(16px,4vw,48px);color:var(--ink);font-family:var(--workspace-font,Arial,sans-serif)}
+.switcher{border-bottom:1px solid var(--rule)}
+.switcher h1{margin:0 0 16px;font-size:28px}.switcher p,.personal p{line-height:1.55;overflow-wrap:anywhere}
+.switcher nav,.tools{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.switcher nav a{display:block;padding:12px 18px;border:1px solid var(--rule);border-radius:8px;color:inherit;text-decoration:none;min-width:140px}
+.switcher nav a[aria-current=page]{border-color:var(--cyan-dark);background:var(--cyan-soft,#eefafa);font-weight:700}
+.switcher small{display:block;margin-top:4px;font-weight:400}.tools label{display:grid;gap:6px;min-width:0}.tools input{max-width:100%;min-height:44px;border:1px solid var(--rule);padding:8px;background:var(--paper,#fff);color:inherit}
+.personal button,.tools a,.cards a{display:inline-flex;align-items:center;min-height:44px;padding:8px 12px;border:1px solid var(--rule);border-radius:6px;background:var(--paper,#fff);color:inherit;font:inherit;overflow-wrap:anywhere}
+.group{margin:28px 0}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px}.cards article{min-width:0;padding:20px;border:1px solid var(--rule);border-radius:8px}.cards h4{margin:0;font-size:19px;overflow-wrap:anywhere}.cards time{font-size:13px}
+.switcher a:focus-visible,.personal a:focus-visible,.personal button:focus-visible,.personal input:focus-visible{outline:3px solid var(--cyan-dark,#16757c);outline-offset:3px}

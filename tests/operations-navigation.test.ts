@@ -6,7 +6,7 @@ import AppNavigation from "../app/AppNavigation";
 import OperationsDossier from "../app/OperationsDossier";
 import { scenarios } from "../app/scenarios";
 
-test("both Studio shells render real navigation links with locale and organization context", () => {
+test("both Studio shells retain public routes and operation actions without inventing a verified session", () => {
   const noop = () => undefined;
   for (const studioOnly of [true, false]) for (const locale of ["en", "ru"] as const) {
     const markup = renderToStaticMarkup(createElement(AppNavigation, {
@@ -16,7 +16,9 @@ test("both Studio shells render real navigation links with locale and organizati
     }));
     assert.match(markup, /aria-current="page"[^>]*>.*?(Case Studio|Студия кейсов)/);
     for (const view of ["play", "demos"]) assert.ok(markup.includes(`view=${view}&amp;organization=org_example&amp;lang=${locale}`), view);
-    for (const route of ["/studio", "/templates", "/matters", "/account", "/organizations"]) assert.ok(markup.includes(`href="${route}?organization=org_example&amp;lang=${locale}"`), route);
+    for (const route of ["/studio", "/templates", "/matters"]) assert.ok(markup.includes(`href="${route}?organization=org_example&amp;lang=${locale}"`), route);
+    assert.ok(markup.includes(locale === "en" ? "Sign in" : "Войти"));
+    assert.doesNotMatch(markup, /Manage organizations|Users &amp; access|Sign out/);
     assert.match(markup, /<details class="genesis-nav-more"><summary>/, "secondary actions are closed on first render");
     assert.ok(markup.includes(locale === "en" ? "Restore a play session" : "Восстановить прохождение"));
     assert.ok(markup.includes(locale === "en" ? "Export play session" : "Экспорт прохождения"));

@@ -43,6 +43,10 @@ const migrations = [
   "0016_polite_sentinels.sql",
   "0017_perfect_marvex.sql",
   "0018_low_calypso.sql",
+  "0019_p1_organization_scope.sql",
+  "0020_dependable_actions.sql",
+  "0021_disposition_audit_binding.sql",
+  "0022_loving_juggernaut.sql",
 ] as const;
 
 let miniflare: Miniflare | undefined;
@@ -312,8 +316,11 @@ after(async () => {
   await miniflare?.dispose();
 });
 
-test("migration 0018 and private R2 support governed artifacts", async () => {
-  assert.deepEqual(await drizzle(d1, { schema }).select().from(schema.dossierSnapshots), []);
+test("current migrated schema and private R2 support governed artifacts", async () => {
+  const database = drizzle(d1, { schema });
+  assert.deepEqual(await database.select().from(schema.dossierSnapshots), []);
+  assert.deepEqual(await database.select().from(schema.dossierSourceAnchorRetirements), []);
+  assert.deepEqual(await database.select().from(schema.dossierWorkingNotes), []);
   await bucket.put("private/governed-output-probe", "ok");
   assert.equal(await (await bucket.get("private/governed-output-probe"))?.text(), "ok");
   await bucket.delete("private/governed-output-probe");
@@ -1367,8 +1374,8 @@ test("a replacement snapshot output stales prior-snapshot formats and approval i
   assert.deepEqual(approvalBoundSnapshot.snapshot.generator, {
     contract_version: "1.0.0",
     report_model_schema_version: 1,
-    renderer_version: "1.2.0",
-    build_version: "canopy-local-candidate-2",
+    renderer_version: "1.3.0",
+    build_version: "dependable-actions-2026-09-15",
   });
   const approvalBoundPdf = await generateOutput(
     harness,
@@ -1409,7 +1416,7 @@ test("a replacement snapshot output stales prior-snapshot formats and approval i
   assert.match(visibleAppendixText, /Snapshot contract/u);
   assert.match(visibleAppendixText, /Snapshot report-model schema/u);
   assert.match(visibleAppendixText, /Snapshot renderer \/ build/u);
-  assert.match(visibleAppendixText, /canopy-local-candidate-2/u);
+  assert.match(visibleAppendixText, /dependable-actions-2026-09-15/u);
   assert.match(visibleAppendixText, /Sealed simulation and parameter inputs/u);
   assert.ok(visibleAppendixText.includes("parameter_binding_digest"));
   assert.ok(visibleAppendixText.includes(harness.packageFingerprint));
@@ -1657,8 +1664,25 @@ async function seedHarness(
   const initialAuditDigest = await digest(`${label}:audit:1`);
   const participantAuditId = opaque("audit");
   const participantAuditDigest = await digest(`${label}:audit:2`);
+  const organizationId = opaque("organization");
 
   await d1.batch([
+    d1.prepare(`INSERT INTO organizations (
+      id, name, kind, status, revision, created_by_actor_id, created_at
+    ) VALUES (?, ?, 'team', 'active', 1, ?, ?)`)
+      .bind(organizationId, `Workspace ${label}`, owner.actor_id, createdAt),
+    d1.prepare(`INSERT INTO organization_memberships (
+      organization_id, user_id, actor_id, role, status, revision, created_at
+    ) VALUES (?, ?, ?, 'org_owner', 'active', 1, ?)`)
+      .bind(organizationId, owner.id, owner.actor_id, createdAt),
+    d1.prepare(`INSERT INTO organization_memberships (
+      organization_id, user_id, actor_id, role, status, revision, created_at
+    ) VALUES (?, ?, ?, 'member', 'active', 1, ?)`)
+      .bind(organizationId, reviewer.id, reviewer.actor_id, createdAt),
+    d1.prepare(`INSERT INTO dossier_organization_bindings (
+      dossier_id, organization_id, created_by_actor_id, created_at
+    ) VALUES (?, ?, ?, ?)`)
+      .bind(dossierId, organizationId, owner.actor_id, createdAt),
     d1.prepare(`INSERT INTO dossiers (
       id, reference, title, dossier_type_registry, dossier_type_id,
       dossier_type_version, owner_user_id, owner_actor_id, jurisdictions,

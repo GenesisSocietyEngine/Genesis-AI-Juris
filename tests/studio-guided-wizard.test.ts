@@ -62,7 +62,7 @@ test("guided Studio renders numbered bilingual stages and explicit input and nex
     assert.ok(markup.includes(locale === "en" ? "Input" : "Нужно"));
     assert.ok(markup.includes(locale === "en" ? "Next" : "Далее"));
     const entry = renderToStaticMarkup(createElement(StudioEntryScreen, {locale, recentTitle: "Canopy", onCreate: noop, onImport: noop, onDemo: noop, onContinue: noop}));
-    assert.ok(entry.includes(locale === "en" ? "Open demo case" : "Открыть демо-кейс"));
+    assert.ok(entry.includes(locale === "en" ? "Open Canopy overview" : "Открыть обзор Canopy"));
     assert.ok(entry.includes(locale === "en" ? "Create a case" : "Создать кейс"));
     assert.ok(entry.includes("JSON · Markdown · TXT"));
     assert.ok(entry.includes("Canopy"));
@@ -70,13 +70,13 @@ test("guided Studio renders numbered bilingual stages and explicit input and nex
 });
 
 test("guided stages progressively disclose the existing canonical editor", () => {
-  assert.match(appSource, /guidedStep === 1\) && <section className="prompt-deck/);
-  assert.match(appSource, /guidedStep === 2\) && activeAIResult/);
-  assert.match(appSource, /guidedStep === 3\) && <><div id="studio-case-settings"/);
-  assert.match(appSource, /guidedStep === 4\) && <section className="studio-workspace"/);
-  assert.match(appSource, /guidedStep === 5\) && <section className="studio-bottom/);
-  assert.match(appSource, /guidedStep === 6 && <section className="studio-finish/);
-  assert.match(appSource, /displayMode === "developer" \|\| guidedStep/);
+  assert.match(appSource, /visibleStep === 1\) && <section className="prompt-deck/);
+  assert.match(appSource, /visibleStep === 2\) && activeAIResult/);
+  assert.match(appSource, /visibleStep === 3\) && <><details id="studio-case-settings"/);
+  assert.match(appSource, /visibleStep === 4\) && <section className="studio-workspace"/);
+  assert.match(appSource, /visibleStep === 5 && packageRequiresPlayableRoute\)\) && <details className="studio-simulation-tools/);
+  assert.match(appSource, /visibleStep === 6 && <section className="studio-finish/);
+  assert.match(appSource, /displayMode === "developer" \|\| visibleStep/);
   assert.match(appSource, /User view/);
   assert.match(appSource, /Developer view/);
   assert.match(appSource, /window\.history\.pushState/);

@@ -248,7 +248,9 @@ function buildCaseReportDefinitionFromModels(
     numberedSection("Decision brief", "Резюме для принятия решения"),
     { text: reportStatus, style: "warning" },
     table([tr(language, "Review question", "Вопрос проверки"), tr(language, "Case model summary", "Краткое содержание модели")], caseReportBriefRows(draft, reportModel, language, options.includeEconomics), ["25%", "75%"]),
-    { text: tr(language, "Selected records and labelled extracts are shown above. The appendices retain all visible records, conditions and source references. Text supplied in the case keeps its original language.", "Выше приведены выбранные записи и обозначенные фрагменты. Приложения содержат все открытые записи, условия и ссылки на источники. Текст самого кейса сохраняет исходный язык."), style: "note" },
+    { text: options.includeDecisionTree
+      ? tr(language, "Selected records and labelled extracts are shown above. The complete graph appendix retains all visible node and connection text. Text supplied in the case keeps its original language.", "Выше приведены выбранные записи и обозначенные фрагменты. Полное приложение к графу сохраняет весь открытый текст узлов и связей. Текст самого кейса сохраняет исходный язык.")
+      : tr(language, "Selected records and labelled extracts are shown above. The complete graph text appendix is omitted. Review the case for full node and connection conditions. Text supplied in the case keeps its original language.", "Выше приведены выбранные записи и обозначенные фрагменты. Полное текстовое приложение к графу исключено. Полные условия узлов и связей проверяйте в деле. Текст самого кейса сохраняет исходный язык."), style: "note" },
     { text: "", pageBreak: "after" },
     numberedSection("Case overview", "Обзор кейса"),
     table([tr(language, "Field", "Поле"), tr(language, "Value", "Значение")], [
@@ -442,6 +444,9 @@ function caseReportPresentationFingerprint(
     version: 5,
     presentationMode: effectiveOptions.presentationMode ?? "full",
     decisionRendererVersion: effectiveOptions.presentationMode === "medium" ? "1.2.0" : "1.1.0",
+    // Full's brief describes optional graph text accurately from this revision.
+    // Keep existing Base/Medium receipts stable; earlier Full output is stale.
+    ...((effectiveOptions.presentationMode ?? "full") === "full" ? { fullBriefRendererVersion: 2 } : {}),
     includeDecisionTree: effectiveOptions.includeDecisionTree,
     auditSymbolFont: REPORT_AUDIT_SYMBOL_FONT_SHA256,
     reportFingerprint: reportModel.contentFingerprint,

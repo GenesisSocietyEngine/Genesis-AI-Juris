@@ -5,6 +5,7 @@ import { caseTypePlaybook } from "./case-type-playbooks";
 import type { StudioDraft, StudioNodeType } from "./types";
 import type { StudioCheck } from "./studio-validation";
 import type { StudioWorkflowStep } from "./studio-workflow";
+import type { StudioEvidenceInput } from "./studio-evidence-buffer";
 
 export type StudioActionTarget = { step: StudioWorkflowStep; id: string; nodeType?: StudioNodeType; nodeId?: string; developer?: boolean };
 
@@ -42,19 +43,23 @@ export default function StudioActionPanel({ draft, checks, locale, checking, can
   </section>;
 }
 
-export function StudioEvidenceComposer({ draft, type, locale, canEdit, onSave }: {
+export function StudioEvidenceComposer({ draft, type, locale, canEdit, value, onChange, onClear, onSave }: {
   draft: StudioDraft; type: StudioNodeType; locale: "en" | "ru"; canEdit: boolean;
+  value: StudioEvidenceInput; onChange: (patch: Partial<StudioEvidenceInput>) => void; onClear: () => void;
   onSave: (value: { type: StudioNodeType; title: string; detail: string; relatedId: string }) => void;
 }) {
   const en = locale === "en";
   return <section id="studio-evidence-composer" className="action-editor page-width" tabIndex={-1}>
     <h2>{en ? "Add a connected case item" : "Добавьте связанный элемент кейса"}</h2>
     <p>{en ? "Record the source or reasoning and choose the step it supports. This adds to your working draft; it does not certify the evidence." : "Укажите источник или обоснование и выберите связанный шаг. Запись добавляется в черновик, но не подтверждает достоверность доказательств."}</p>
-    {!canEdit ? <p>{en ? "An editable working copy is required." : "Требуется редактируемая рабочая копия."}</p> : <form key={type} onSubmit={event => { event.preventDefault(); const form = event.currentTarget; const fields = new FormData(form); onSave({ type, title: String(fields.get("title")).trim(), detail: String(fields.get("detail")).trim(), relatedId: String(fields.get("relatedId")) }); }}>
-      <label><span>{en ? "Item title" : "Название элемента"}</span><input name="title" required maxLength={160}/></label>
-      <label><span>{en ? "Source and explanation" : "Источник и пояснение"}</span><textarea name="detail" required maxLength={8000}/></label>
-      <label><span>{en ? "Connect to this step" : "Связать с шагом"}</span><select name="relatedId" required defaultValue=""><option value="">{en ? "Choose the related step" : "Выберите связанный шаг"}</option>{draft.nodes.map(node => <option key={node.id} value={node.id}>{node.title}</option>)}</select></label>
+    {!canEdit ? <p>{en ? "An editable working copy is required." : "Требуется редактируемая рабочая копия."}</p> : <form onSubmit={event => { event.preventDefault(); onSave({ type, title: value.title.trim(), detail: value.detail.trim(), relatedId: value.relatedId }); }}>
+      <p>{en ? "This form stays in this tab when you change sections. Add the item before saving or exporting the case." : "Форма остаётся в этой вкладке при смене разделов. Добавьте элемент перед сохранением или экспортом кейса."}</p>
+      <label><span>{en ? "Item title" : "Название элемента"}</span><input name="title" required maxLength={160} value={value.title} onChange={event => onChange({ title: event.target.value })}/></label>
+      <label><span>{en ? "Source and explanation" : "Источник и пояснение"}</span><textarea name="detail" required maxLength={8000} value={value.detail} onChange={event => onChange({ detail: event.target.value })}/></label>
+      <label><span>{en ? "Connect to this step" : "Связать с шагом"}</span><select name="relatedId" required value={draft.nodes.some(node => node.id === value.relatedId) ? value.relatedId : ""} onChange={event => onChange({ relatedId: event.target.value })}><option value="">{en ? "Choose the related step" : "Выберите связанный шаг"}</option>{draft.nodes.map(node => <option key={node.id} value={node.id}>{node.title}</option>)}</select></label>
+      {value.relatedId && !draft.nodes.some(node => node.id === value.relatedId) && <p role="alert">{en ? "The previously selected step is no longer in this case. Choose another step." : "Выбранного ранее шага больше нет в кейсе. Выберите другой шаг."}</p>}
       <button className="primary-cta" disabled={draft.nodes.length >= 200 || draft.links.length >= 500 || !draft.nodes.length}>{en ? "Add item and return to actions" : "Добавить и вернуться к действиям"}</button>
+      <button type="button" className="secondary-cta" onClick={onClear}>{en ? "Discard this unadded item" : "Отменить недобавленный элемент"}</button>
       {(draft.nodes.length >= 200 || draft.links.length >= 500) && <p>{en ? "The case item or connection limit is reached. Combine or remove an item on the decision map first." : "Достигнут лимит элементов или связей. Сначала объедините или удалите элемент на карте."}</p>}
     </form>}
   </section>;

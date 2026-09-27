@@ -276,8 +276,9 @@ test("leaving a restricted Studio context cannot carry snapshots or history into
   assert.match(taxTemplate, /editHistory: \[\]/);
   assert.match(taxTemplate, /enterNewLocalDraft\(template/);
   assert.doesNotMatch(taxTemplate, /current\.editHistory|commitStudioDraft/);
-  assert.match(resetDraft, /enterNewLocalDraft\(blankStudioDraft\(\), null\)/);
-  assert.match(resetDraft, /setPrompt\(""\)/);
+  assert.match(resetDraft, /function resetStudioDraft\(next = blankStudioDraft\(\), nextPrompt = ""\)/);
+  assert.match(resetDraft, /if \(!enterNewLocalDraft\(next, null\)\) return false/);
+  assert.match(resetDraft, /setPrompt\(nextPrompt\)/);
   assert.doesNotMatch(resetDraft, /defaultDraft|appendStudioHistory/);
   assert.doesNotMatch(resetDraft, /commitStudioDraft/);
 });
@@ -303,20 +304,23 @@ test("compact catalogue metadata retains Russian presentation, urgency and dark-
 test("late identity and catalogue responses cannot overwrite newer user intent", () => {
   const source = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   assert.match(source, /studioChangedBeforeRestoreRef\.current/);
-  assert.match(source, /if \(studioChangedBeforeRestoreRef\.current\) return/);
+  assert.match(source, /if \(studioChangedBeforeRestoreRef\.current \|\| new URLSearchParams\(window\.location\.search\)\.has\("custom_case"\)\) return/);
   assert.match(source, /catalogueLaunchRef\.current = launchRequestVersion/);
   assert.ok((source.match(/launchRequestVersion !== catalogueLaunchRef\.current/g) ?? []).length >= 2);
   assert.match(source, /launchRequestVersion === catalogueLaunchRef\.current\) setCatalogueLoading\(false\)/);
 });
 
-test("Studio opens in Office and the English demo keeps one Five Flats case without subtitles", () => {
+test("Studio opens in Office and current captioned training preserves the earlier Five Flats demo", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   const demoPage = readFileSync(new URL("../app/help/studio-demo/page.tsx", import.meta.url), "utf8");
   const demoBuilder = readFileSync(new URL("../scripts/build-studio-demo-video.sh", import.meta.url), "utf8");
+  const trainingPlayer = readFileSync(new URL("../app/TrainingVideo.tsx", import.meta.url), "utf8");
 
   assert.match(appSource, /useState<Theme>\("office"\)/);
-  assert.match(demoPage, /English narration · No subtitles · Studio only/);
-  assert.doesNotMatch(demoPage, /<track|\.vtt|Burned-in English captions/);
+  assert.match(demoPage, /<TrainingVideo\/>/);
+  assert.match(trainingPlayer, /Five Flats, Three Borders/);
+  assert.match(trainingPlayer, /<track kind="captions" src="\/help\/juris-training-10min\.en\.vtt"/);
+  assert.match(trainingPlayer, /\/help\/juris-training-10min-transcript\.md/);
   assert.match(demoBuilder, /voice=slt/);
   assert.match(demoBuilder, /studio-ai-guided-demo\.en\.mp4/);
   assert.match(demoBuilder, /Every following screen uses this exact Five Flats case/);
@@ -326,7 +330,11 @@ test("Studio opens in Office and the English demo keeps one Five Flats case with
 test("standalone Studio exposes persistent professional destinations", () => {
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   const navigation = readFileSync(new URL("../app/AppNavigation.tsx", import.meta.url), "utf8");
-  for (const destination of ["/account", "/organizations", "/matters", "/studio"]) assert.ok(navigation.includes('"' + destination + '"'));
+  const sharedNavigation = readFileSync(new URL("../app/LegacyGenesisNavigation.tsx", import.meta.url), "utf8");
+  const shell = readFileSync(new URL("../app/GenesisNavigation.tsx", import.meta.url), "utf8");
+  assert.match(navigation, /<GenesisNavigation/);
+  assert.match(shell, /<LegacyGenesisNavigation/);
+  for (const destination of ["/account", "/organizations", "/matters", "/studio"]) assert.ok(sharedNavigation.includes('"' + destination + '"'));
   assert.match(appSource, /<AppNavigation/);
   assert.match(appSource, /sessionStorage\.getItem\(PENDING_CASE_PROMPT_KEY\)/);
   assert.doesNotMatch(appSource, /ADVISORY · BETA v0\.1\.0/);
@@ -335,8 +343,10 @@ test("standalone Studio exposes persistent professional destinations", () => {
 test("account uses the shared navigation without losing professional destinations", () => {
   const accountSource = readFileSync(new URL("../app/account/AccountClient.tsx", import.meta.url), "utf8");
   const navigationSource = readFileSync(new URL("../app/WorkspaceNavigation.tsx", import.meta.url), "utf8");
+  const sharedNavigation = readFileSync(new URL("../app/LegacyGenesisNavigation.tsx", import.meta.url), "utf8");
   assert.match(accountSource, /<WorkspaceNavigation active="\/account"/);
-  for (const destination of ["/matters", "/templates", "/studio", "/canopy", "/organizations", "/account"]) assert.ok(navigationSource.includes('"' + destination + '"'));
+  assert.match(navigationSource, /<GenesisNavigation/);
+  for (const destination of ["/matters", "/templates", "/studio", "/canopy", "/organizations", "/account"]) assert.ok(sharedNavigation.includes('"' + destination + '"'));
 });
 
 function contrastRatio(foreground: string, background: string) {

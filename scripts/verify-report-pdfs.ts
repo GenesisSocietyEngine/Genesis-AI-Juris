@@ -16,6 +16,7 @@ import {
 import type { CanonicalReportModel } from "../app/report-model";
 import type { StudioDraft } from "../app/types";
 import { reportPdfFixtures, type ReportPdfFixture } from "./tests/report-pdf-fixtures";
+import { assertReportPdfVisualBaseline, REPORT_PDF_BASELINE_ARTIFACT_ROOT } from "./tests/report-pdf-visual-baseline";
 import {
   assertA4Portrait,
   assertPdfDocumentMetadata,
@@ -129,7 +130,7 @@ if (updateVisualBaselineValue !== "" && updateVisualBaselineValue !== "1") throw
 const UPDATE_VISUAL_BASELINE = updateVisualBaselineValue === "1";
 const outputArguments = process.argv.slice(2);
 if (outputArguments.length > 1 || outputArguments.some((value) => value.startsWith("--"))) throw new Error("PDF QA accepts at most one artifact output path and no mutation flags");
-const requestedOutput = outputArguments[0] ?? ".artifacts/v62-report-qa";
+const requestedOutput = outputArguments[0] ?? REPORT_PDF_BASELINE_ARTIFACT_ROOT;
 const OUTPUT_ROOT = resolve(PROJECT_ROOT, requestedOutput);
 const FIXTURE_LOCK_PATH = resolve(PROJECT_ROOT, "parity/report-graph-layout-fixtures.v1.json");
 const VISUAL_BASELINE_PATH = resolve(PROJECT_ROOT, "parity/report-pdf-visual-baseline.v1.json");
@@ -904,23 +905,7 @@ function verifyOrUpdateVisualBaseline(candidate: ReturnType<typeof buildVisualBa
   } catch (error) {
     throw new Error(`Versioned PDF visual baseline is required at ${relative(PROJECT_ROOT, VISUAL_BASELINE_PATH)}; normal verification never creates it. Run the full reviewed corpus once with ${UPDATE_VISUAL_BASELINE_ENV}=1 only after intentional visual approval`, { cause: error });
   }
-  const expectedEntries = array(expected.entries, "PDF visual baseline.entries");
-  invariant(expectedEntries.length > 0, `PDF visual baseline has no hashes; populate it explicitly with ${UPDATE_VISUAL_BASELINE_ENV}=1 after the final layout is approved`);
-  const expectedMetadata = { ...expected };
-  delete expectedMetadata.entries;
-  const currentMetadata: JsonRecord = { ...candidate };
-  delete currentMetadata.entries;
-  assert.deepEqual(expectedMetadata, currentMetadata, `PDF visual baseline metadata changed; inspect the final corpus before using ${UPDATE_VISUAL_BASELINE_ENV}=1`);
-  const expectedByKey = new Map<string, JsonRecord>();
-  for (const [index, value] of expectedEntries.entries()) {
-    const entry = record(value, `PDF visual baseline.entries[${index}]`);
-    const key = visualBaselineEntryKey(entry, `PDF visual baseline.entries[${index}]`);
-    invariant(!expectedByKey.has(key), `PDF visual baseline duplicates ${key}`);
-    expectedByKey.set(key, entry);
-  }
-  const currentByKey = new Map(candidate.entries.map((entry, index) => [visualBaselineEntryKey(entry, `current visual baseline entry ${index}`), entry]));
-  assert.deepEqual([...expectedByKey.keys()].sort(), [...currentByKey.keys()].sort(), `PDF visual baseline page selection changed; inspect before using ${UPDATE_VISUAL_BASELINE_ENV}=1`);
-  for (const [key, current] of currentByKey) assert.deepEqual(expectedByKey.get(key), current, `PDF visual regression for ${key}; PNG hash or governed page metadata changed`);
+  assertReportPdfVisualBaseline(expected, candidate, relative(PROJECT_ROOT, OUTPUT_ROOT).split("\\").join("/"));
   return { mode: "verified" as const, entries: candidate.entries.length, sha256: sha256File(VISUAL_BASELINE_PATH) };
 }
 

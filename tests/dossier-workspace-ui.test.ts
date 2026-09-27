@@ -376,7 +376,11 @@ test("organization-gated pages render a safe sign-in state before client hydrati
     assert.match(page, /signedIn=\{Boolean\(identity\)\}/);
   }
   assert.match(organizationsPage, /chatGPTSignInPath\(workspacePagePath\("\/organizations", await searchParams\)\)/);
-  assert.match(mattersPage, /chatGPTSignInPath\(workspacePagePath\("\/matters", await searchParams\)\)/);
+  assert.match(mattersPage, /new URL\(workspacePagePath\("\/matters", params\)/);
+  assert.match(mattersPage, /params\.collection === "personal" \|\| params\.collection === "team"/);
+  assert.match(mattersPage, /const initialLocation = location\.pathname \+ location\.search/);
+  assert.match(mattersPage, /signInUrl=\{chatGPTSignInPath\(initialLocation\)\}/);
+  assert.match(mattersPage, /<MyCasesClient initialLocation=\{initialLocation\}/);
 
   // Render actual components; adapt only routing and CSS for Node SSR, not state or callbacks.
   const result=await build({stdin:{contents: `export {default as OrganizationsClient} from "./app/organizations/OrganizationsClient";

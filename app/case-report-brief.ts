@@ -15,7 +15,7 @@ function excerpt(value: string, limit: number, language: Language) {
 
 function records(nodes: StudioNode[], maximum: number, language: Language, details = false) {
   const selected = nodes.slice(0, maximum).map((node) => `${excerpt(node.title, 100, language)}${details && node.detail.trim() ? `: ${excerpt(node.detail, 150, language)}` : ""}`);
-  if (nodes.length > maximum) selected.push(tr(language, `+ ${nodes.length - maximum} more in the appendix.`, `Ещё ${nodes.length - maximum} в приложении.`));
+  if (nodes.length > maximum) selected.push(tr(language, `+ ${nodes.length - maximum} more in the case.`, `Ещё ${nodes.length - maximum} в деле.`));
   return selected.join("\n");
 }
 
@@ -44,8 +44,8 @@ export function caseReportBriefRows(draft: StudioDraft, model: CanonicalReportMo
     [tr(language, "Possible outcomes", "Возможные решения"), records(outcomes, 6, language)
       || tr(language, "No outcome has been modelled.", "Возможные решения ещё не заданы.")],
     [tr(language, "Conclusion and basis", "Вывод и обоснование"), tr(language,
-      "This PDF describes the case model. It does not establish a selected outcome or prove that a run was completed. Check each branch's full conditions in the appendix before recommending an outcome.",
-      "PDF описывает модель кейса. Он не устанавливает выбранное решение и не подтверждает завершённый запуск. Перед рекомендацией проверьте полные условия соответствующей ветви в приложении.")],
+      "This PDF describes the case model. It does not establish a selected outcome or prove that a run was completed. Check each branch's full conditions in the case before recommending an outcome.",
+      "PDF описывает модель кейса. Он не устанавливает выбранное решение и не подтверждает завершённый запуск. Перед рекомендацией проверьте полные условия соответствующей ветви в деле.")],
     [tr(language, "Assumptions", "Допущения"), !includeEconomics
       ? tr(language, "Economic assumptions are excluded by report settings. Review conditions and uncertainties in the detailed records.", "Экономические допущения исключены настройками отчёта. Проверьте условия и неопределённости в подробных записях.")
       : assumptions.length

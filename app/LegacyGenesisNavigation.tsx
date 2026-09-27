@@ -34,7 +34,7 @@ export function WorkspaceIcon({ name }: { name: string }) {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] ?? paths.studio}</svg>;
 }
 
-export default function GenesisNavigation({ locale, location, active, onNavigate, onLanguage, menu, returnTo }: {
+export type GenesisNavigationProps = {
   locale: "en" | "ru";
   location: string;
   active: string;
@@ -42,7 +42,13 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
   onLanguage: () => void;
   menu?: ReactNode;
   returnTo?: string;
-}) {
+  allowDeparture?: () => boolean;
+  newCase?: () => void;
+  importCase?: () => void;
+  operationsActions?: ReactNode;
+};
+
+export default function GenesisNavigation({ locale, location, active, onNavigate, onLanguage, menu, returnTo, allowDeparture, newCase, importCase, operationsActions }: GenesisNavigationProps) {
   const moreRef = useRef<HTMLDetailsElement>(null);
   const organizationRef = useRef<HTMLDetailsElement>(null);
   const drawerRef = useRef<HTMLDialogElement>(null);
@@ -64,16 +70,18 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
   async function depart(kind:"organization"|"signout"|"link",id="",discard=false,target="",plan?:DeparturePlan) {
     if(plan&&!plan.current()){plan.cancel?.();setPending(null);return;}
     if(kind==="signout"){setPending(null);closeDrawer();await navigation.signOut(locale);return;}
+    if(allowDeparture&&!allowDeparture()){plan?.cancel?.();setPending(null);return;}
     const risk=kind==="organization"?await navigation.select(id,locale,discard):navigation.risk();
     if(risk!=="clear"&&!(risk==="dirty"&&discard)){setPending({kind,id,risk,authority:navigation.authorityVersion,target,plan});return;}
     setPending(null);
     if(kind==="link"){if(plan&&(!plan.current()||!plan.commit())){plan.cancel?.();return;}navigation.approvePageDeparture();closeDrawer();if(plan?.navigate)plan.navigate();else if(target==="_top"||target==="_parent")window.open(id,target);else window.location.assign(id);}
   }
-  useEffect(()=>navigation.registerDeparture((kind,id,plan)=>{void depart(kind,id,false,plan?.target??"",plan);}),[navigation,locale]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(()=>navigation.registerDeparture((kind,id,plan)=>{void depart(kind,id,false,plan?.target??"",plan);}),[navigation,locale,allowDeparture]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(()=>navigation.subscribe(()=>setPending(current=>{if(current&&(current.authority!==navigation.authorityVersion||current.plan&&!current.plan.current())){current.plan?.cancel?.();return null;}return current;})),[navigation]);
   function guardedLink(event:MouseEvent<HTMLAnchorElement>) {
     if(!isWorkspaceDepartureClick(event,event.currentTarget,window.location.href))return;
     if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+    if(allowDeparture&&!allowDeparture()){event.preventDefault();return;}
     if(navigation.risk()!=="clear"){event.preventDefault();navigation.requestDeparture("link",event.currentTarget.href);return;}
     closeDrawer();
   }
@@ -94,14 +102,31 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
   function follow(event: MouseEvent<HTMLAnchorElement>, view: string) {
     if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
     if (!onNavigate || view === "matters") { guardedLink(event);return; }
+    if(event.defaultPrevented)return;
+    if(allowDeparture&&!allowDeparture()){event.preventDefault();return;}
     if(navigation.risk()!=="clear"){event.preventDefault();navigation.requestDeparture("link",event.currentTarget.href);return;}
     event.preventDefault(); closeDrawer();onNavigate(view);
     requestAnimationFrame(()=>{const main=document.querySelector<HTMLElement>("main h1, main");if(main){main.tabIndex=-1;main.focus();}});
   }
+  function studioAction(action: () => void) {
+    if(allowDeparture&&!allowDeparture())return;
+    action();closeDrawer();
+  }
   const contents=<>
     <span className="genesis-nav-label">{en ? "Workspace" : "Рабочее пространство"}</span>
     <nav className="genesis-nav-pages" aria-label={en ? "Workspace navigation" : "Навигация по рабочему пространству"}>
-      {WORKSPACE_PAGES.map(item => <a key={item.view} href={href(item.path)} aria-current={(active === item.view || active === item.path || ((active === "/canopy" || active === "library") && item.view === "demos")) ? "page" : undefined} onClick={event => follow(event,item.view)}><WorkspaceIcon name={item.icon}/><span>{en ? item.en : item.ru}</span></a>)}
+      {WORKSPACE_PAGES.map(item => {
+        const selected = active === item.view || active === item.path || ((active === "/canopy" || active === "library") && item.view === "demos") || (active === "community" && item.view === "matters");
+        return <details className="genesis-nav-group" key={`${item.view}-${selected}`} open={selected}>
+          <summary><WorkspaceIcon name={item.icon}/><span>{en ? item.en : item.ru}</span><span className="nav-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="genesis-nav-children">
+            <a href={href(item.path)} aria-current={selected && active !== "community" ? "page" : undefined} onClick={event => follow(event,item.view)}>{en ? (item.view === "templates" ? "Choose a template" : item.view === "demos" ? "Browse demo cases" : `Open ${item.en}`) : (item.view === "templates" ? "Выбрать шаблон" : item.view === "demos" ? "Каталог демо-кейсов" : `Открыть: ${item.ru}`)}</a>
+            {item.view === "studio" && <>{newCase && <button type="button" onClick={() => studioAction(newCase)}>{en ? "New blank case" : "Новый пустой кейс"}</button>}{importCase && <button type="button" onClick={() => studioAction(importCase)}>{en ? "Import case or prompt" : "Импорт кейса или промпта"}</button>}</>}
+            {item.view === "matters" && <a href={href("/studio?view=community")} aria-current={active === "community" ? "page" : undefined} onClick={event => follow(event,"community")}>{en ? "Saved Studio drafts" : "Черновики Studio"}</a>}
+            {item.view === "play" && operationsActions}
+          </div>
+        </details>;
+      })}
     </nav>
     <div className="genesis-nav-lower">
       {session.phase==="ready"&&session.identity&&<nav className="genesis-nav-organization" aria-label={en?"Organization controls":"Организация"}>
@@ -118,7 +143,10 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
       </nav>}
       <div className="genesis-nav-footer">
         {returnTo&&<a className="genesis-return" href={returnTo} onClick={guardedLink}>{en?"Return to your case":"Вернуться к делу"}</a>}
-        <a href={href("/studio?view=help")} onClick={event=>follow(event,"help")} aria-current={active==="help"?"page":undefined}><WorkspaceIcon name="help"/>{en?"Help & guides":"Помощь"}</a>
+        <details className="genesis-nav-group" key={`help-${active === "help" || active === "/help/studio-demo"}`} open={active === "help" || active === "/help/studio-demo"}>
+          <summary><WorkspaceIcon name="help"/><span>{en ? "Help & training" : "Помощь и обучение"}</span><span className="nav-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="genesis-nav-children"><a href={href("/studio?view=help")} onClick={event=>follow(event,"help")} aria-current={active === "help" ? "page" : undefined}>{en ? "Help & guides" : "Инструкции"}</a><a href={href("/help/studio-demo")} target="_blank" rel="noreferrer" aria-current={active === "/help/studio-demo" ? "page" : undefined}>{en ? "10-minute training ↗" : "Обучение за 10 минут ↗"}</a></div>
+        </details>
         {session.phase==="ready"&&session.identity?<>
           <a href={href("/account")} onClick={guardedLink} aria-current={active==="/account"?"page":undefined}><WorkspaceIcon name="account"/><span>{en?"Account":"Аккаунт"}<small className="genesis-account-name">{session.identity.displayName}</small></span></a>
           <button type="button" className="genesis-nav-action" onClick={()=>void depart("signout")}><WorkspaceIcon name="exit"/>{en?"Sign out":"Выйти"}</button>
@@ -144,7 +172,7 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
   </header>
   <dialog className="genesis-navigation-confirm" ref={confirmRef} onCancel={cancelPending} aria-labelledby="navigation-confirm-title">
     <h2 id="navigation-confirm-title">{pending?.risk==="pending"?(en?"Check the pending save first":"Сначала проверьте сохранение"):(en?"Leave unsaved changes?":"Покинуть несохранённые изменения?")}</h2>
-    <p>{pending?.risk==="pending"?(en?"A save could not be confirmed. Check the pending action before switching. You can always sign out; signing out closes this recovery view. Check the record before trying again.":"Сохранение не подтверждено. Перед переключением проверьте текущее действие. Вы можете выйти; выход закроет это окно восстановления. Проверьте запись перед повторной попыткой."):(en?"Your unsaved input will be discarded. Saved work stays available in its organization.":"Несохранённый ввод будет удалён. Сохранённая работа останется в своей организации.")}</p>
+    <p>{pending?.risk==="pending"?(en?"A save could not be confirmed. Check the pending action before switching. You can always sign out; signing out closes this recovery view. Check the record before trying again.":"Сохранение не подтверждено. Перед переключением проверьте текущее действие. Вы можете выйти; выход закроет это окно восстановления. Проверьте запись перед повторной попыткой."):(en?"Your unsaved input will be discarded. Stay here to save your work or use an available export first. Saved workspace work remains available to your authorized account.":"Несохранённый ввод будет удалён. Останьтесь, чтобы сохранить работу или сначала выполнить доступный экспорт. Сохранённая работа останется доступна авторизованному аккаунту.")}</p>
     <div><button type="button" onClick={cancelPending} autoFocus>{en?"Stay here":"Остаться"}</button>{pending?.risk==="pending"?<button type="button" onClick={()=>{cancelPending();closeDrawer();navigation.reviewPending();}}>{en?"Return to current work":"Вернуться к работе"}</button>:<button type="button" onClick={()=>{if(pending&&pending.authority===navigation.authorityVersion)void depart(pending.kind,pending.id,true,pending.target,pending.plan);else setPending(null);}}>{en?"Discard and continue":"Отменить изменения и продолжить"}</button>}{pending?.risk==="pending"&&navigation.canSignOut&&<button type="button" onClick={()=>void depart("signout")}>{en?"Sign out now":"Выйти сейчас"}</button>}</div>
   </dialog></>;
 }

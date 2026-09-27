@@ -2,9 +2,20 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import CaseReportDialog from "../app/CaseReportDialog";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { build } from "esbuild";
 import { buildCanopyPackage } from "../app/canopy-fixture";
 import { caseFingerprint, casePublicationFingerprint } from "../app/case-integrity";
+
+// Render the actual component; CSS geometry is verified separately in the browser.
+const bundle = await build({ entryPoints: ["app/CaseReportDialog.tsx"], bundle: true, write: false,
+  format: "esm", platform: "node", packages: "external", jsx: "automatic", loader: { ".css": "empty", ".module.css": "empty" } });
+mkdirSync(".artifacts/report-first-use", { recursive: true });
+const componentFile = resolve(".artifacts/report-first-use/component.mjs");
+writeFileSync(componentFile, bundle.outputFiles[0].text);
+const CaseReportDialog = (await import(pathToFileURL(componentFile).href)).default;
 
 const draft = buildCanopyPackage("base").draft;
 const common = {

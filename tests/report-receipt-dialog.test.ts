@@ -9,6 +9,8 @@ import { caseFingerprint, casePublicationFingerprint } from "../app/case-integri
 import type { ReportReceiptV2 } from "../app/report-model";
 import type { StudioDraft } from "../app/types";
 import { StudioSessionAuthority } from "../app/studio-session-authority";
+import { primaryCaseOutput } from "../app/case-type-playbooks";
+import { reportReceiptStorageKey } from "../app/report-model";
 
 // Execute the actual parent callbacks, report models, receipt construction,
 // privacy policy and download helper. Only React's hook scheduling/DOM and the
@@ -64,8 +66,8 @@ function hookRuntime() {
 }
 
 const bundle = await build({
-  entryPoints: ["app/CaseReportDialog.tsx", "app/CaseMarkdownDialog.tsx"], outdir: ".artifacts/report-receipt-dialog/bundles", bundle: true, write: false,
-  format: "esm", platform: "node", packages: "external", jsx: "automatic",
+  entryPoints: ["app/CaseReportDialog.tsx", "app/CaseMarkdownDialog.tsx", "app/StudioReportHistory.tsx"], outdir: ".artifacts/report-receipt-dialog/bundles", bundle: true, write: false,
+  format: "esm", platform: "node", packages: "external", jsx: "automatic", loader: { ".css": "empty", ".module.css": "empty" },
   plugins: [{ name: "report-dialog-contract-runtime", setup(builder) {
     builder.onResolve({ filter: /^react$/ }, () => ({ path: "hooks", namespace: "contract" }));
     builder.onResolve({ filter: /^\.\/case-report$/ }, args => args.importer.endsWith("CaseReportDialog.tsx") ? { path: "report", namespace: "contract" } : undefined);
@@ -89,6 +91,92 @@ const Parent = (await import(pathToFileURL(componentFile).href)).default;
 const markdownComponentFile = resolve(".artifacts/report-receipt-dialog/markdown.mjs");
 writeFileSync(markdownComponentFile, bundle.outputFiles.find(file => file.path.endsWith("CaseMarkdownDialog.js"))!.text);
 const MarkdownParent = (await import(pathToFileURL(markdownComponentFile).href)).default;
+const historyComponentFile = resolve(".artifacts/report-receipt-dialog/history.mjs");
+writeFileSync(historyComponentFile, bundle.outputFiles.find(file => file.path.endsWith("StudioReportHistory.js"))!.text);
+const HistoryParent = (await import(pathToFileURL(historyComponentFile).href)).default;
+
+test("account export history clears immediately on identity loss and ignores late previous-account pages", async () => {
+  const oldFetch = globalThis.fetch;
+  fixtureGlobal.__reportHooks = hookRuntime();
+  const pending: Array<(response: Response) => void> = [];
+  globalThis.fetch = async () => new Promise<Response>(resolve => pending.push(resolve));
+  const draft = buildCanopyPackage("base").draft;
+  let props = { customCaseId: 27, scope: "a".repeat(64), authorityEpoch: 1, allowed: true, draft, profileId: "synthetic", binding: null, recorded: null, locale: "en" };
+  const record = (id: number, version: string) => ({ id, recordedAt: "2026-09-27T00:00:00.000Z", event: "client_report_download_started", format: { presentationMode: "decision", includeDecisionTree: false }, receipt: {
+    receiptSchemaVersion: 2, caseId: "synthetic_case", caseVersion: version, profileId: "synthetic", rendererVersion: "1.0.0", generatedAt: "2026-09-27T00:00:00.000Z", status: "draft", audience: "internal",
+    caseFingerprint: "sha256-" + "a".repeat(64), reportFingerprint: "sha256-" + "b".repeat(64), layoutSchemaVersion: 1, layoutAlgorithmVersion: "1", layoutRendererVersion: "1", layoutFingerprint: "sha256-" + "c".repeat(64), presentationFingerprint: "sha256-" + "d".repeat(64),
+  } });
+  const render = () => { const hooks = fixtureGlobal.__reportHooks!; hooks.begin(); const tree = HistoryParent(props); hooks.flush(); return tree; };
+  try {
+    render(); assert.equal(pending.length, 1);
+    props = { ...props, scope: "b".repeat(64), authorityEpoch: 2 }; let tree = render();
+    assert.equal(pending.length, 2); assert.doesNotMatch(text(tree), /v1\.0\.0/);
+    pending[1](Response.json({ receipts: [record(22, "2.0.0")], nextCursor: null }));
+    await new Promise(resolve => setTimeout(resolve, 5)); tree = render(); assert.match(text(tree), /v2\.0\.0/);
+    pending[0](Response.json({ receipts: [record(21, "1.0.0")], nextCursor: null }));
+    await new Promise(resolve => setTimeout(resolve, 5)); tree = render();
+    assert.doesNotMatch(text(tree), /v1\.0\.0/); assert.match(text(tree), /v2\.0\.0/);
+    props = { ...props, allowed: false, authorityEpoch: 3 }; assert.equal(render(), null);
+    assert.equal(pending.length, 2, "no read without live output authority");
+  } finally { fixtureGlobal.__reportHooks?.unmount(); delete fixtureGlobal.__reportHooks; globalThis.fetch = oldFetch; }
+});
+
+test("an older account-history retry cannot replace a newer export result", async () => {
+  const oldWindow = Object.getOwnPropertyDescriptor(globalThis, "window"), oldDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
+  const oldFetch = globalThis.fetch, oldCreate = URL.createObjectURL, oldRevoke = URL.revokeObjectURL;
+  fixtureGlobal.__reportHooks = hookRuntime();
+  const pdf = fixtureGlobal.__reportPdf = { receipts: [], fail: false, hold: false, finish: [] } as PdfState;
+  const pending: Array<{ body: { receipt: ReportReceiptV2 }; resolve: (value: Response) => void }> = [];
+  globalThis.fetch = async (_url, init) => new Promise<Response>(resolve => pending.push({ body: JSON.parse(String(init?.body)), resolve }));
+  URL.createObjectURL = () => "blob:synthetic-history"; URL.revokeObjectURL = () => {};
+  Object.defineProperty(globalThis, "window", { configurable: true, value: { localStorage: { getItem() { return null; }, removeItem() {} }, setTimeout() { return 1; }, clearTimeout() {} } });
+  Object.defineProperty(globalThis, "document", { configurable: true, value: { activeElement: null, addEventListener() {}, removeEventListener() {}, body: { appendChild() {} }, createElement() { return { remove() {}, click() {} }; } } });
+  const draft = buildCanopyPackage("base").draft;
+  const fp = caseFingerprint(draft), publication = casePublicationFingerprint(draft);
+  const props = { locale: "en", draft, customCaseId: 27, currentFingerprint: fp, workspaceFingerprint: fp, currentPublicationFingerprint: publication, workspacePublicationFingerprint: publication,
+    privateCase: false, canGenerateReport: true, reportReceiptStorageScope: "a".repeat(64), persistReportReceiptOnDevice: false,
+    verifyReportAuthority: async () => () => true, close() {}, completed() {} };
+  const render = () => {
+    const hooks = fixtureGlobal.__reportHooks!; let tree: unknown, attempts = 0;
+    do { hooks.begin(); tree = Parent(props); assert.ok(++attempts < 10); } while (hooks.needsRender());
+    hooks.flush(); return tree;
+  };
+  const waitFor = async (count: number) => { for (let index = 0; pending.length < count && index < 500; index++) await new Promise(resolve => setTimeout(resolve, 2)); assert.equal(pending.length, count); };
+  try {
+    let tree = render();
+    const first = click(tree, "Download PDF"); await waitFor(1);
+    pending[0].resolve(new Response("unavailable", { status: 503 })); await first; tree = render();
+    assert.match(text(tree), /account history was not confirmed/);
+    await click(tree, "Retry recording receipt"); await waitFor(2);
+    // The user can start another download while this manual recording retry waits.
+    tree = render();
+    const second = click(tree, "Download PDF"); await waitFor(3);
+    pending[2].resolve(new Response("unavailable", { status: 503 })); await second; tree = render();
+    const oldReceipt = pending[1].body.receipt;
+    pending[1].resolve(Response.json({ record: { id: 21, recordedAt: new Date().toISOString(), event: "client_report_download_started", receipt: oldReceipt, format: { presentationMode: "decision", includeDecisionTree: false } }, alreadyRecorded: true }));
+    await new Promise(resolve => setTimeout(resolve, 5)); tree = render();
+    assert.equal(pdf.receipts.length, 2);
+    assert.match(text(tree), /account history was not confirmed/);
+    assert.doesNotMatch(text(tree), /Export receipt recorded in your account/);
+    // Retry B, with a response for A: a different receipt must not be accepted.
+    await click(tree, "Retry recording receipt"); await waitFor(4);
+    const currentReceipt = pending[3].body.receipt;
+    pending[3].resolve(Response.json({ record: { id: 22, recordedAt: new Date().toISOString(), event: "client_report_download_started", receipt: { ...currentReceipt, generatedAt: "2026-09-01T00:00:00.000Z" }, format: { presentationMode: "decision", includeDecisionTree: false } }, alreadyRecorded: false }));
+    await new Promise(resolve => setTimeout(resolve, 5)); tree = render();
+    assert.match(text(tree), /account history was not confirmed/);
+    assert.equal(pdf.receipts.length, 2, "recording retries never create another PDF");
+    await click(tree, "Retry recording receipt"); await waitFor(5);
+    pending[4].resolve(Response.json({ record: { id: 23, recordedAt: new Date().toISOString(), event: "client_report_download_started", receipt: pending[4].body.receipt, format: { presentationMode: "decision", includeDecisionTree: false } }, alreadyRecorded: false }));
+    await new Promise(resolve => setTimeout(resolve, 5)); tree = render();
+    assert.match(text(tree), /Export receipt recorded in your account/);
+    assert.equal(pdf.receipts.length, 2);
+  } finally {
+    fixtureGlobal.__reportHooks?.unmount(); delete fixtureGlobal.__reportHooks; delete fixtureGlobal.__reportPdf;
+    globalThis.fetch = oldFetch; URL.createObjectURL = oldCreate; URL.revokeObjectURL = oldRevoke;
+    if (oldWindow) Object.defineProperty(globalThis, "window", oldWindow); else Reflect.deleteProperty(globalThis, "window");
+    if (oldDocument) Object.defineProperty(globalThis, "document", oldDocument); else Reflect.deleteProperty(globalThis, "document");
+  }
+});
 
 function elements(value: unknown): Element[] {
   if (Array.isArray(value)) return value.flatMap(elements);
@@ -112,6 +200,47 @@ async function click(tree: unknown, label: string) {
   assert.notEqual(element.props.disabled, true, label + " must be enabled");
   await (element.props.onClick as () => unknown)();
 }
+
+test("a stored receipt is a collapsed device record and disappears synchronously across account or eligibility changes", () => {
+  const oldWindow = Object.getOwnPropertyDescriptor(globalThis, "window"), oldDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
+  const draft = buildCanopyPackage("base").draft, scope = "a".repeat(64), profile = primaryCaseOutput(draft.caseType).id;
+  const receipt = { caseId: draft.caseId, caseVersion: draft.version, profileId: profile, rendererVersion: "1.0.0", generatedAt: "2026-09-27T10:11:12.000Z", status: "draft", audience: "internal", caseFingerprint: caseFingerprint(draft), reportFingerprint: "sha256-" + "c".repeat(64) };
+  const key = reportReceiptStorageKey(scope, draft.caseId, profile);
+  const timers = new Map<number, () => void>(); let sequence = 0;
+  Object.defineProperty(globalThis, "window", { configurable: true, value: {
+    localStorage: { getItem(candidate: string) { return candidate === key ? JSON.stringify(receipt) : null; }, removeItem() {} },
+    setTimeout(callback: () => void) { timers.set(++sequence, callback); return sequence; }, clearTimeout(id: number) { timers.delete(id); },
+  } });
+  Object.defineProperty(globalThis, "document", { configurable: true, value: { activeElement: null, addEventListener() {}, removeEventListener() {} } });
+  fixtureGlobal.__reportHooks = hookRuntime();
+  let props = { locale: "en", draft, currentFingerprint: caseFingerprint(draft), workspaceFingerprint: null,
+    currentPublicationFingerprint: casePublicationFingerprint(draft), workspacePublicationFingerprint: null,
+    privateCase: false, canGenerateReport: true, reportReceiptStorageScope: scope, persistReportReceiptOnDevice: true, close() {}, completed() {} };
+  const render = () => {
+    const hooks = fixtureGlobal.__reportHooks!; let tree: unknown, attempts = 0;
+    do { hooks.begin(); tree = Parent(props); assert.ok(++attempts < 10); } while (hooks.needsRender());
+    hooks.flush(); return tree;
+  };
+  try {
+    let tree = render();
+    const disclosure = elements(tree).find(element => element.type === "details" && text(element).includes("Latest receipt stored on this device"));
+    assert.ok(disclosure); assert.notEqual(disclosure.props.open, true);
+    assert.ok(text(disclosure).includes(receipt.generatedAt)); assert.match(text(disclosure), /not a complete export history/);
+    props = { ...props, reportReceiptStorageScope: "b".repeat(64) }; tree = render();
+    assert.ok(!text(tree).includes(receipt.generatedAt), "do not expose the old account record while its replacement read waits");
+    for (const callback of timers.values()) callback(); timers.clear(); tree = render();
+    assert.ok(!text(tree).includes(receipt.generatedAt));
+    props = { ...props, reportReceiptStorageScope: scope }; tree = render();
+    for (const callback of timers.values()) callback(); timers.clear(); tree = render();
+    assert.ok(text(tree).includes(receipt.generatedAt));
+    props = { ...props, persistReportReceiptOnDevice: false }; tree = render();
+    assert.ok(!text(tree).includes(receipt.generatedAt), "privacy policy removal hides a stored receipt before the cleanup timer");
+  } finally {
+    fixtureGlobal.__reportHooks!.unmount(); delete fixtureGlobal.__reportHooks;
+    if (oldWindow) Object.defineProperty(globalThis, "window", oldWindow); else Reflect.deleteProperty(globalThis, "window");
+    if (oldDocument) Object.defineProperty(globalThis, "document", oldDocument); else Reflect.deleteProperty(globalThis, "document");
+  }
+});
 
 test("the dialog exposes the exact private PDF receipt, preserves it on failure and distinguishes changed options", async () => {
   const oldWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
@@ -157,7 +286,12 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
     assert.equal(closed, 0, "PDF success must retain the dialog so its actual receipt is reachable");
     assert.equal(completed, 1);
     assert.equal(pdf.receipts.length, 1);
+    assert.match(text(tree), /PDF generated · download started/);
     assert.match(text(tree), /matches the current case and report settings/);
+    const receiptDisclosure = elements(tree).find(element => element.type === "details" && text(element.props.children).includes("Receipt details and storage"));
+    assert.ok(receiptDisclosure);
+    assert.notEqual(receiptDisclosure.props.open, true, "technical receipt fields start collapsed");
+    assert.match(text(receiptDisclosure), /does not confirm that the file was saved by you or independently approved/);
     assert.ok(text(tree).includes(pdf.receipts[0].reportFingerprint));
     await click(tree, "Download receipt JSON");
     assert.equal(downloads.length, 2);
@@ -168,6 +302,18 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
 
     const treeSwitch = elements(tree).find(element => element.type === "input" && element.props.role === "switch");
     assert.ok(treeSwitch); assert.equal(treeSwitch.props.checked, false, "decision tree defaults OFF");
+    (elements(tree).find(element => element.type === "input" && element.props.type === "radio" && element.props.value === "full")!.props.onChange as () => void)();
+    tree = render();
+    const fullTreeSwitch = elements(tree).find(element => element.type === "input" && element.props.role === "switch")!;
+    assert.equal(fullTreeSwitch.props.checked, true, "choosing Full from Base initializes tree ON");
+    (fullTreeSwitch.props.onChange as (event: unknown) => void)({ target: { checked: false } });
+    tree = render();
+    assert.equal(elements(tree).find(element => element.type === "input" && element.props.role === "switch")?.props.checked, false);
+    assert.ok(elements(tree).some(element => element.type === "input" && element.props.type === "radio" && element.props.value === "full" && element.props.checked), "turning the tree OFF preserves Full analysis");
+    assert.match(text(tree), /OFF omits both; selected case sections and available calculations remain in Full analysis/);
+    assert.doesNotMatch(text(tree), /Full records and calculations remain included with either setting/);
+    (elements(tree).find(element => element.type === "input" && element.props.type === "radio" && element.props.value === "decision")!.props.onChange as () => void)();
+    tree = render();
     await click(tree, "Preview PDF"); tree = render();
     assert.ok(elements(tree).some(element => element.type === "iframe"), "OFF preview is available");
     (treeSwitch.props.onChange as (event: unknown) => void)({ target: { checked: true } });
@@ -178,7 +324,7 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
     assert.ok(format, "tree ON selects the Medium preset");
     (elements(tree).find(element => element.type === "input" && element.props.type === "radio" && element.props.value === "full")!.props.onChange as () => void)();
     tree = render();
-    assert.equal(elements(tree).find(element => element.type === "input" && element.props.role === "switch")?.props.checked, true, "format switch retains explicit tree selection");
+    assert.equal(elements(tree).find(element => element.type === "input" && element.props.role === "switch")?.props.checked, true, "choosing Full from Medium initializes tree ON");
     assert.ok(elements(tree).some(element => element.type === "input" && element.props.type === "radio" && element.props.value === "full" && element.props.checked));
     (elements(tree).find(element => element.type === "input" && element.props.type === "radio" && element.props.value === "decision")!.props.onChange as () => void)();
     (treeSwitch.props.onChange as (event: unknown) => void)({ target: { checked: false } });
@@ -191,6 +337,22 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
     (mediumTreeSwitch.props.onChange as (event: unknown) => void)({ target: { checked: false } });
     tree = render();
     assert.ok(elements(tree).some(element => element.type === "input" && element.props.type === "radio" && element.props.value === "decision" && element.props.checked), "Medium OFF returns to Base");
+
+    const declaration = () => elements(tree).find(element => element.type === "label" && text(element.props.children).includes("I confirm reviewer approval"))!;
+    const declarationInput = () => elements(declaration()).find(element => element.type === "input")!;
+    (declarationInput().props.onChange as (event: unknown) => void)({ target: { checked: true } });
+    tree = render();
+    assert.equal(declarationInput().props.checked, true);
+    assert.match(text(tree), /Exact version saved to workspace/);
+    assert.doesNotMatch(text(tree), /Workspace-saved reviewed version|Approved final|Report gate ready/);
+    const originalProps = props;
+    const changedDraft = { ...draft, title: draft.title + " — changed after review" };
+    props = { ...props, draft: changedDraft, currentFingerprint: caseFingerprint(changedDraft), currentPublicationFingerprint: casePublicationFingerprint(changedDraft), workspaceFingerprint: caseFingerprint(changedDraft), workspacePublicationFingerprint: casePublicationFingerprint(changedDraft) };
+    tree = render();
+    assert.equal(declarationInput().props.checked, false, "a newly saved changed version cannot inherit the reviewer declaration");
+    assert.match(text(tree), /earlier PDF download/);
+    props = originalProps; tree = render();
+    assert.equal(declarationInput().props.checked, false, "returning to an earlier draft does not revive its cleared declaration");
 
     const preparedBy = elements(tree).find(element => element.type === "input" && element.props.placeholder === "Name / firm");
     assert.ok(preparedBy);

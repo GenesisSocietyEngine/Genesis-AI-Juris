@@ -96,6 +96,37 @@ test("decision-tree appendix respects redactions and Russian report language", (
   assert.doesNotMatch(s, /SECRET TREE TITLE|SECRET TREE DETAIL/);
   assert.match(s, /Полная текстовая альтернатива графа/);
 });
+
+test("Full brief describes the selected graph appendix and supersedes only earlier Full receipts", () => {
+  const canopy = buildCanopyPackage("base").draft;
+  const profile = primaryCaseOutput(canopy.caseType);
+  const common: CaseReportOptions = {
+    ...options, profileId: profile.id, profileLabel: profile.label.en, confidentiality: "draft", status: "draft",
+    includeAuditTrail: true, privateCase: false, currentFingerprint: caseFingerprint(canopy),
+    currentPublicationFingerprint: casePublicationFingerprint(canopy),
+  };
+  for (const language of ["en", "ru"] as const) {
+    for (const includeDecisionTree of [false, true]) {
+      const content = JSON.stringify(buildCaseReportArtifacts(canopy, { ...common, language, presentationMode: "full", includeDecisionTree }).definition.content);
+      assert.doesNotMatch(content, /The appendices retain all visible records|Приложения содержат все открытые записи|full conditions in the appendix|условия соответствующей ветви в приложении/);
+      assert.match(content, language === "en" ? /full conditions in the case/ : /условия соответствующей ветви в деле/);
+      assert.match(content, includeDecisionTree
+        ? language === "en" ? /complete graph appendix retains all visible node and connection text/ : /Полное приложение к графу сохраняет весь открытый текст узлов и связей/
+        : language === "en" ? /complete graph text appendix is omitted/ : /Полное текстовое приложение к графу исключено/);
+    }
+  }
+  // Captured from the real pre-correction Canopy matrix; settings match this fixture.
+  const prior = {
+    decision: "sha256-30865ef814096bd5661b5c6a0cdf84b38df74a9032c1944bc2e5d0888d4ced17",
+    medium: "sha256-7372eec3a2ec97f039763f3ae1a76eb0948ca0c78d27a1f17817b56749f4941f",
+    fullOn: "sha256-8b12b12aa7ef8f90b2f14b69bd9afd5fea56934e15b965167ffae9fcf7044f8b",
+    fullOff: "sha256-79b75051cba3abe4f75c5283f5567e469f6f7eb4c260ef2bc884218fa10484a9",
+  };
+  assert.equal(caseReportReceiptBinding(canopy, { ...common, presentationMode: "decision", includeDecisionTree: false }).presentationFingerprint, prior.decision);
+  assert.equal(caseReportReceiptBinding(canopy, { ...common, presentationMode: "medium", includeDecisionTree: true }).presentationFingerprint, prior.medium);
+  assert.notEqual(caseReportReceiptBinding(canopy, { ...common, presentationMode: "full", includeDecisionTree: true }).presentationFingerprint, prior.fullOn);
+  assert.notEqual(caseReportReceiptBinding(canopy, { ...common, presentationMode: "full", includeDecisionTree: false }).presentationFingerprint, prior.fullOff);
+});
 test("Medium retains base findings, adds visual graph pages and omits verbose graph registers", () => {
   const base = buildCaseReportArtifacts(draft, options);
   const mediumOptions = { ...options, presentationMode: "medium" as const };

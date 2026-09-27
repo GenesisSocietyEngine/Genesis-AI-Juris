@@ -2,13 +2,14 @@
 
 import { WorkspaceIcon } from "./GenesisNavigation";
 
-export default function StudioEntryScreen({ locale, recentTitle, savedCasesHref = "/matters", onCreate, onImport, onDemo, onContinue }: {
+export default function StudioEntryScreen({ locale, recentTitle, savedCasesHref = "/matters", onCreate, onImport, onDemo, onBrowseDemos, onContinue }: {
   locale: "en" | "ru";
   recentTitle: string;
   savedCasesHref?: string;
   onCreate: () => void;
   onImport: () => void;
   onDemo: () => void;
+  onBrowseDemos?: () => void;
   onContinue: () => void;
 }) {
   const en = locale === "en";
@@ -31,14 +32,14 @@ export default function StudioEntryScreen({ locale, recentTitle, savedCasesHref 
       <div className="studio-entry-demo">
         <span className="workspace-eyebrow">{en ? "Explore an example" : "Изучите пример"}</span>
         <h2>{en ? "See a decision take shape" : "Посмотрите, как формируется решение"}</h2>
-        <p>{en ? "Choose a guided walkthrough or decision simulation. Follow the evidence, compare options and preview the report." : "Выберите пошаговый обзор или симуляцию решений. Изучите доказательства, сравните варианты и просмотрите отчёт."}</p>
-        <button type="button" className="primary-cta" onClick={onDemo}>{en ? "Open demo case" : "Открыть демо-кейс"}<WorkspaceIcon name="arrow"/></button>
-        <small>{en ? "Prepared examples · No sign-in needed to explore" : "Готовые примеры · Можно изучать без входа"}</small>
+        <p>{en ? "Start with Project Canopy: read the provisional decision, inspect its sources and explore what still needs review." : "Начните с Project Canopy: изучите предварительный вывод, источники и вопросы, требующие проверки."}</p>
+        <button type="button" className="primary-cta" onClick={onDemo}>{en ? "Open Canopy overview" : "Открыть обзор Canopy"}<WorkspaceIcon name="arrow"/></button>
+        <small>{en ? "Base scenario · Separate working copy · No sign-in needed" : "Сценарий Base · Отдельная рабочая копия · Без входа"}</small>
+        {onBrowseDemos && <button type="button" className="secondary-cta" onClick={onBrowseDemos}>{en ? "All demos & training simulations" : "Все демо и учебные симуляции"}</button>}
       </div>
     </section>
     <section className="studio-entry-recent" aria-labelledby="entry-recent-title">
-      <div className="workspace-section-heading"><h2 id="entry-recent-title">{en ? "Continue recent work" : "Продолжите работу"}</h2><a href={savedCasesHref}>{en ? "Organization cases" : "Дела организации"}<span aria-hidden="true"> →</span></a></div>
-      <p className="entry-saved-links"><a href="/studio?view=community">{en ? "Open saved Studio drafts →" : "Открыть сохранённые черновики Studio →"}</a></p>
+      <div className="workspace-section-heading"><h2 id="entry-recent-title">{en ? "Continue recent work" : "Продолжите работу"}</h2><a href={savedCasesHref}>{en ? "My cases — Personal / Team" : "Мои кейсы — Личные / Команда"}<span aria-hidden="true"> →</span></a></div>
       {recentTitle ? <button type="button" className="entry-recent-case" onClick={onContinue}><WorkspaceIcon name="studio"/><span><b>{recentTitle}</b><small>{en ? "Current working draft" : "Текущий рабочий черновик"}</small></span><WorkspaceIcon name="arrow"/></button>
         : <div className="entry-recent-empty"><WorkspaceIcon name="cases"/><p>{en ? "Your current draft will appear here. Saved Studio drafts belong to your account; organization cases have their own shared evidence and reviews." : "Здесь появится текущий черновик. Черновики Studio принадлежат вашему аккаунту; дела организации содержат общие доказательства и рецензии."}</p></div>}
     </section>

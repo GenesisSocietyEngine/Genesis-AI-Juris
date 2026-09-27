@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildCanopyPackage } from "../app/canopy-fixture";
-import { caseFingerprint } from "../app/case-integrity";
+import { caseFingerprint, normalizeStudioDraft } from "../app/case-integrity";
 import { createStudioAuthContinuation, readStudioAuthContinuation } from "../app/studio-auth-continuation";
 import { safeWorkspaceReturn, workspaceDestination, workspacePagePath, workspaceSignInPath } from "../app/workspace-navigation";
 import { createCaseReportPreview } from "../app/case-report";
@@ -14,6 +14,44 @@ test("same-tab sign-in retains exact imported coordinates, prompt and selected n
   assert.equal(restored.prompt, saved.prompt);
   assert.equal(restored.selectedNodeId, draft.nodes[1].id);
   assert.deepEqual(restored.draft.nodes.map(({ x, y }) => [x, y]), draft.nodes.map(({ x, y }) => [x, y]));
+});
+
+test("an untitled prompt-only case survives guest cancellation and ordinary sign-in without inventing graph content", () => {
+  const draft = { ...buildCanopyPackage("base").draft, caseId: "untitled_case", title: "", parent: null, premise: "", nodes: [], links: [], editHistory: [] };
+  const prompt = "Should the synthetic business renew its maintenance agreement?\nCheck the costs before deciding.";
+  const saved = createStudioAuthContinuation({ draft, prompt, selectedNodeId: null, scope: null, customCaseId: null, isPrivate: false, canDuplicate: true, action: "save" }, 1000);
+  for (const scope of [null, "new-signed-in-scope"]) {
+    const restored = readStudioAuthContinuation(JSON.stringify(saved), saved.id, scope, 21_000);
+    assert.ok(restored, "incomplete authoring work is a valid temporary continuation");
+    assert.equal(restored.prompt, prompt);
+    assert.equal(restored.action, "save");
+    assert.equal(restored.draft.caseId, "untitled_case");
+    assert.equal(restored.draft.title, "");
+    assert.equal(restored.draft.premise, "");
+    assert.deepEqual(restored.draft.nodes, []);
+    assert.deepEqual(restored.draft.links, []);
+    assert.equal(restored.selectedNodeId, null);
+    assert.throws(() => normalizeStudioDraft(restored.draft), "continuation support must not relax the save/import model");
+  }
+  assert.equal(readStudioAuthContinuation(JSON.stringify(saved), saved.id, null, 901001), null);
+});
+
+test("incomplete continuations retain field validation, account scope and protected-data exclusions", () => {
+  const base = buildCanopyPackage("base").draft;
+  const draft = { ...base, title: "", nodes: [], links: [] };
+  const saved = createStudioAuthContinuation({ draft, prompt: "Unfinished authoring", selectedNodeId: null, scope: "account-A", customCaseId: null, isPrivate: false, canDuplicate: true }, 1000);
+  const restore = (changedDraft: unknown, scope: string | null = "account-A") => readStudioAuthContinuation(JSON.stringify({ ...saved, draft: changedDraft }), saved.id, scope, 2000);
+  assert.equal(restore(draft, "account-B"), null);
+  assert.equal(restore(draft, null), null);
+  assert.equal(restore({ ...draft, links: [base.links[0]] }), null, "an empty graph cannot carry dangling links");
+  assert.equal(restore({ ...draft, caseId: "invalid case ID" }), null);
+  assert.equal(restore({ ...draft, title: " ".repeat(201) }), null);
+  assert.equal(restore({ ...draft, nodes: [{ ...base.nodes[0], x: -1 }] }), null);
+  assert.equal(restore({ ...draft, protection: { kind: "case-protection-v1", copyProtected: true, copyPolicy: "lineage_locked", parentCode: null, currentCode: "protected-case", seal: "protected-seal" } }), null);
+  const untitledGraph = restore({ ...base, title: "" });
+  assert.ok(untitledGraph);
+  assert.equal(untitledGraph.draft.title, "");
+  assert.deepEqual(untitledGraph.draft.nodes.map(node => node.id), base.nodes.map(node => node.id));
 });
 
 test("expired, mismatched and cross-account continuations cannot be restored", () => {

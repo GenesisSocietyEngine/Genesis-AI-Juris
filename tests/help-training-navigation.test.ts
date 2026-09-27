@@ -34,12 +34,12 @@ test("Templates has its own destination and no playable-case launch controls", (
   assert.doesNotMatch(html, /Launch scenario|Open Canopy in Studio|Play case/);
 });
 
-test("expanded Studio navigation marks saved drafts and keeps account destinations reachable", () => {
+test("Studio navigation marks saved drafts and retains training with the shared signed-out state", () => {
   const html = renderToStaticMarkup(createElement(GenesisNavigation, { expandable: true, locale: "en", active: "community", location: "/studio?organization=org_A&view=community", onLanguage: () => {} }));
-  assert.match(html, /aria-controls="genesis-sidebar-content"/);
+  assert.match(html, /class="genesis-nav-body"/);
   assert.match(html, /aria-current="page"[^>]*>Saved Studio drafts/);
-  assert.match(html, /href="\/account\?organization=org_A"/);
-  assert.match(html, /href="\/organizations\?organization=org_A"/);
+  assert.match(html, /Sign in/);
+  assert.doesNotMatch(html, /Manage organizations|Users &amp; access|Sign out/);
   assert.match(html, /10-minute training/);
 });
 
@@ -67,16 +67,18 @@ test("verified owner workspace navigation keeps scoped organization and account 
   assert.equal(controller.getSnapshot().phase, "ready");
   const location = "/organizations?organization=" + encodeURIComponent(organization.selection);
   // React receives the required child as the positional argument below.
-  const html = renderToStaticMarkup(createElement(NavigationSession,
-    { controller } as Parameters<typeof NavigationSession>[0],
-    createElement(GenesisNavigation, { locale: "en", active: "/organizations", location, onLanguage: () => {} }),
-  ));
-  assert.doesNotMatch(html, /genesis-sidebar-content|genesis-mobile-toggle|Sign in/);
-  assert.match(html, /Manage organizations/);
-  assert.match(html, /Users &amp; access/);
-  assert.ok(html.includes('href="' + location + '"'));
-  assert.ok(html.includes('href="' + location + '#organization-users"'));
-  assert.ok(html.includes('href="/account?organization=' + encodeURIComponent(organization.selection) + '&amp;return_to=' + encodeURIComponent(location) + '"'));
-  assert.match(html, /Synthetic owner/);
-  assert.match(html, /Sign out/);
+  for (const expandable of [false, true]) {
+    const html = renderToStaticMarkup(createElement(NavigationSession,
+      { controller } as Parameters<typeof NavigationSession>[0],
+      createElement(GenesisNavigation, { expandable, locale: "en", active: "/organizations", location, onLanguage: () => {} }),
+    ));
+    assert.doesNotMatch(html, /genesis-sidebar-content|genesis-mobile-toggle|Sign in/);
+    assert.match(html, /Manage organizations/);
+    assert.match(html, /Users &amp; access/);
+    assert.ok(html.includes('href="' + location + '"'));
+    assert.ok(html.includes('href="' + location + '#organization-users"'));
+    assert.ok(html.includes('href="/account?organization=' + encodeURIComponent(organization.selection) + '&amp;return_to=' + encodeURIComponent(location) + '"'));
+    assert.match(html, /Synthetic owner/);
+    assert.match(html, /Sign out/);
+  }
 });
