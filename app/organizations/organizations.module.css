@@ -27,6 +27,10 @@
 .page caption, .page th, .page td { text-align: left; padding: 12px; border-bottom: 1px solid #dce4ef; }
 .page summary { cursor: pointer; font-weight: 650; padding: 14px 0; }
 .invite { max-width: 580px; margin-top: 18px; }
+.invitationList { padding-left: 22px; overflow-wrap: anywhere; }
+.invitationList li { padding: 16px 0; border-bottom: 1px solid var(--workspace-border); }
+.page fieldset { min-width: 0; }
+.page legend { max-width: 100%; overflow-wrap: anywhere; }
 @media (max-width: 680px) { .page { padding: 16px; } .grid { grid-template-columns: 1fr; } .panel { padding: 16px; } .contextBar { padding: 12px 16px; } .language { margin-left: 0; } }
 
 /* Shared office theme and readable administrative context. */

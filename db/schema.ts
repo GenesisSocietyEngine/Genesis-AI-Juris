@@ -72,6 +72,43 @@ export const organizationInvitations = sqliteTable("organization_invitations", {
   check("organization_invitations_status_check", sql`${t.status} in ('pending','accepted','revoked')`),
 ]);
 
+// INV01 is additive: legacy actor-bound invitations retain their exact contract.
+export const emailInvitations = sqliteTable("email_invitations", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  recipientEmail: text("recipient_email").notNull(),
+  tokenDigest: text("token_digest").notNull(),
+  origin: text("origin").notNull(),
+  role: text("role").notNull(),
+  status: text("status").notNull().default("pending"),
+  invitedByActorId: text("invited_by_actor_id").notNull(),
+  inviterRevision: integer("inviter_revision").notNull(),
+  organizationRevision: integer("organization_revision").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  createdAt: text("created_at").notNull(),
+  delivery: text("delivery").notNull().default("unknown"),
+  acceptedByUserId: integer("accepted_by_user_id").references(() => users.id),
+  acceptedByActorId: text("accepted_by_actor_id"),
+  acceptedAt: text("accepted_at"),
+}, t => [uniqueIndex("email_invitations_digest_uidx").on(t.tokenDigest),
+  uniqueIndex("email_invitations_pending_uidx").on(t.organizationId, t.recipientEmail).where(sql`${t.status}='pending'`),
+  check("email_invitations_role_check", sql`${t.role} in ('member','org_admin','auditor')`),
+  check("email_invitations_status_check", sql`${t.status} in ('pending','accepted','revoked','superseded')`),
+  check("email_invitations_delivery_check", sql`${t.delivery} in ('unknown','not_configured','provider_accepted','failed')`),
+  check("email_invitations_acceptance_check", sql`(${t.status}='accepted' AND ${t.acceptedByUserId} IS NOT NULL AND ${t.acceptedByActorId} IS NOT NULL AND ${t.acceptedAt} IS NOT NULL) OR (${t.status}<>'accepted' AND ${t.acceptedByUserId} IS NULL AND ${t.acceptedByActorId} IS NULL AND ${t.acceptedAt} IS NULL)`)]);
+
+export const invitationMailboxProofs = sqliteTable("invitation_mailbox_proofs", {
+  id: text("id").primaryKey(),
+  invitationId: text("invitation_id").notNull().references(() => emailInvitations.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  actorId: text("actor_id").notNull(),
+  email: text("email").notNull(),
+  tokenDigest: text("token_digest").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  usedAt: text("used_at"),
+}, t => [uniqueIndex("invitation_mailbox_digest_uidx").on(t.tokenDigest),
+  uniqueIndex("invitation_mailbox_account_uidx").on(t.invitationId, t.userId)]);
+
 export const organizationLifecycleRequests = sqliteTable("organization_lifecycle_requests", {
   id: text("id").primaryKey(),
   organizationId: text("organization_id").notNull().references(() => organizations.id),

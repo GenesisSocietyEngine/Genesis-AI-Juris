@@ -2,7 +2,7 @@ import type { ClientOrganization } from "./organization-client";
 import { validOrganizationReceipt } from "./organizations/organization-admin-model";
 import type { WorkspaceController } from "./matters/workspace-controller";
 import { readWithTimeout } from "./read-with-timeout";
-import { publishSessionBoundary } from "./session-boundary";
+import { publishSessionBoundary, type SessionBoundary } from "./session-boundary";
 
 export type DepartureRisk = "clear" | "dirty" | "pending";
 export type NavigationIdentity = { displayName: string; email: string; authSource: "chatgpt" | "local" };
@@ -29,6 +29,7 @@ export class NavigationController {
   private logoutIdentity: NavigationIdentity | null = null;
   private logoutAttempt = false;
   private terminationRequested = false;
+  private boundarySuspended = false;
   private pageDepartureApproved = false;
   approvePageDeparture() { this.pageDepartureApproved = true; }
   cancelPageDeparture() { this.pageDepartureApproved = false; }
@@ -40,6 +41,16 @@ export class NavigationController {
   private publish(patch: Partial<NavigationState>) { this.state = { ...this.state, ...patch }; this.listeners.forEach(fn => fn()); }
   capture() { return this.epoch; }
   current(ticket: number) { return ticket === this.epoch; }
+  /** A broadcast can only withdraw authority, never establish an identity. */
+  sessionBoundary = (phase: SessionBoundary) => {
+    if (this.terminationRequested) return;
+    const email = this.state.identity?.email ?? this.logoutIdentity?.email;
+    this.boundarySuspended = phase === "suspend";
+    const deniedPhase = phase === "revoke" ? "denied" : "expired";
+    if (this.state.phase === deniedPhase) { this.epoch++; this.authorityVersion++; }
+    else this.invalidate(deniedPhase);
+    if (phase === "revoke") void Promise.resolve().then(() => this.options.clear(email)).catch(() => {});
+  };
   invalidate(phase: "expired" | "denied") {
     if (this.terminationRequested) return;
     if (this.state.phase === phase) return;
@@ -68,7 +79,7 @@ export class NavigationController {
   risk(): DepartureRisk { const risks = [...this.guards.values()].map(g => g.risk()); return risks.includes("pending") ? "pending" : risks.includes("dirty") ? "dirty" : "clear"; }
   reviewPending() { this.guards.forEach(g => { if (g.risk() === "pending") g.review?.(); }); }
   async refresh(selection?: string) {
-    if (this.terminationRequested || this.state.busy || this.state.phase === "leaving") return;
+    if (this.terminationRequested || this.boundarySuspended || this.state.busy || this.state.phase === "leaving") return;
     const ticket = ++this.epoch;
     try {
       const { response, data } = await readWithTimeout(async signal => {

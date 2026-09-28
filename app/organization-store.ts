@@ -121,7 +121,7 @@ export async function organizationMemberActive(db: DossierDb, organizationId: st
   return row ?? null;
 }
 
-async function securityEvent(db: DossierDb, actor: OrganizationActor, authority: OrganizationAuthority,
+export async function securityEvent(db: DossierDb, actor: OrganizationActor, authority: OrganizationAuthority,
   action: string, targetId: string) {
   const [last] = await db.select().from(organizationSecurityEvents)
     .where(eq(organizationSecurityEvents.organizationId, authority.id)).orderBy(desc(organizationSecurityEvents.sequence)).limit(1);

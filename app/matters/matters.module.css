@@ -85,3 +85,6 @@
 .documentModeSwitch button:focus-visible{outline:2px solid var(--cyan);outline-offset:-2px}
 
 .uploadContext{grid-column:1/-1;margin:0;color:var(--muted);font-size:14px;line-height:1.5}.uploadForm input[readonly],.uploadForm select:disabled{background:#f5f7fa;color:var(--ink);opacity:1}
+.sourceRegister li[id^="source-"]{scroll-margin-block:90px;overflow-wrap:anywhere}
+.sourceRegister li[id^="source-"]:focus{outline:3px solid var(--workspace-accent,#315caf);outline-offset:5px}
+@media(forced-colors:active){.sourceRegister li[id^="source-"]:focus{outline-color:Highlight}}

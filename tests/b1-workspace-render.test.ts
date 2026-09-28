@@ -19,7 +19,7 @@ const built = await build({ entryPoints: ["app/matters/MattersClient.tsx"], bund
   build.onResolve({filter:/^react$/}, args => args.namespace === "effect-react" ? {path:"react",external:true} : {path:"react",namespace:"effect-react"});
   build.onLoad({filter:/.*/,namespace:"effect-react"}, () => ({contents:'export * from "react"; import { useRef as realUseRef } from "react"; export function useEffect(callback, dependencies) { globalThis.__b1Effects?.push({callback, dependencies}); } export function useLayoutEffect(callback, dependencies) { globalThis.__b1LayoutEffects?.push({callback, dependencies}); } export function useRef(value) { const ref=realUseRef(value); if (value===null && globalThis.__b1DraftRoot) ref.current=globalThis.__b1DraftRoot; return ref; }'}));
   build.onResolve({filter:/^react\/jsx-runtime$/}, args => args.namespace === "capture-jsx" ? {path:"react/jsx-runtime",external:true} : {path:"jsx",namespace:"capture-jsx"});
-  build.onLoad({filter:/.*/,namespace:"capture-jsx"}, () => ({contents:'export * from "react/jsx-runtime"; import { jsx as realJsx, jsxs as realJsxs } from "react/jsx-runtime"; function capture(props) { if (props?.onChangeCapture) globalThis.__b1DraftRoots?.push(props); } export function jsx(type,props,key) { capture(props); return realJsx(type,props,key); } export function jsxs(type,props,key) { capture(props); return realJsxs(type,props,key); }'}));
+  build.onLoad({filter:/.*/,namespace:"capture-jsx"}, () => ({contents:'export * from "react/jsx-runtime"; import { jsx as realJsx, jsxs as realJsxs } from "react/jsx-runtime"; function capture(props) { if (props?.onChangeCapture) globalThis.__b1DraftRoots?.push(props); if (props?.href?.startsWith("#source-")) globalThis.__b1Citations?.push(props); } export function jsx(type,props,key) { capture(props); return realJsx(type,props,key); } export function jsxs(type,props,key) { capture(props); return realJsxs(type,props,key); }'}));
 }}] });
 mkdirSync(".artifacts/b1-render", { recursive: true }); const file = resolve(".artifacts/b1-render/component.mjs"); writeFileSync(file, built.outputFiles[0].text);
 const Parent = (await import(pathToFileURL(file).href)).AuthorizedMattersClient;
@@ -40,6 +40,39 @@ function harness() {
   const render = () => renderToStaticMarkup(createElement(Parent,{...identity,controller:owner}));
   return {owner,render,setStatus:(value:number)=>{status=value;},setOrgStatus:(value:number)=>{orgStatus=value;},setRequestStatus:(value:number)=>{requestStatus=value;},setMalformedAnchors:()=>{malformedAnchors=true;}};
 }
+
+test("source review parent distinguishes exact audit version and focuses citation containers", async () => {
+  const h=harness(),read=h.owner.options.transport;
+  let pointer="version_2";
+  const anchor={source_anchor_id:"anchor_a",document_id:"doc_a",document_version_id:"version_1",document_title:"Synthetic long source title",version_ordinal:1,heading:"Capacity",excerpt:"300 confirmed slots",review_state:"pending"};
+  h.owner.options.transport=async(path,init)=>{
+    const url=new URL(path,"https://test.invalid");
+    if(url.pathname.endsWith("/documents")) return Response.json({documents:[{document_id:"doc_a",title:"Synthetic long source title",status:"accepted_source",current_version_id:pointer}],document_versions:[{document_id:"doc_a",document_version_id:"version_1",ordinal:1},{document_id:"doc_a",document_version_id:"version_2",ordinal:2}]});
+    if(url.pathname.endsWith("/activity")) return Response.json({events:[{audit_event_id:"audit_accept",event_type:"dossier_updated",object_ref_type:"document",object_ref_id:"doc_a",summary_code:"DOCUMENT_ACCEPTED_SOURCE",actor_id:"reviewer",occurred_at:"2026-09-28T00:00:00Z",detail:{action:"review",status:"accepted_source",current_version_id:"version_1"}}],next_cursor:"unloaded_history"});
+    if(url.pathname.endsWith("/evidence/anchors")) return Response.json({source_anchors:[anchor]});
+    if(url.pathname.endsWith("/evidence/assertions")) return Response.json({assertions:[{assertion_id:"assertion_a",assertion_type:"fact",statement:"Synthetic assertion",status:"needs_review",source_anchor_ids:["anchor_a","missing"]}]});
+    if(url.pathname.endsWith("/proposals")) return Response.json({proposals:[{proposal_id:"proposal_a",proposal_type:"fact",proposed_value:"Synthetic proposal",source_anchor_ids:["anchor_a"],review_state:"pending"}]});
+    return read(path,init);
+  };
+  const globals=globalThis as unknown as Record<string,unknown>,previousDocument=Object.getOwnPropertyDescriptor(globalThis,"document");
+  try {
+    h.owner.enter("case_a");await h.owner.load();h.owner.navigate("documents");
+    const html=h.render();
+    assert.match(html,/Document status: Accepted source/);assert.match(html,/Version 2<\/strong><span>Current file/);
+    assert.match(html,/Version 1 accepted as source/);assert.match(html,/Review of the current file is not established from loaded audit records/);
+    assert.match(html,/Open acceptance record/);
+    pointer="unavailable_version";await h.owner.load();assert.match(h.render(),/Current version unavailable/);assert.doesNotMatch(h.render(),/Version [12]<\/strong><span>Current file/);
+    h.owner.navigate("evidence");const links:Array<{href:string;onClick:(event:unknown)=>void}>=[];globals.__b1Citations=links;
+    const evidence=h.render();
+    assert.match(evidence,/id="source-anchor_a"[^>]*tabindex="-1"[^>]*aria-label="Source citation: Synthetic long source title, version 1, Capacity"[^>]*aria-describedby="source-excerpt-anchor_a source-status-anchor_a"/);
+    assert.match(evidence,/id="source-excerpt-anchor_a">300 confirmed slots/);assert.match(evidence,/Source citation unavailable/);assert.doesNotMatch(evidence,/href="#source-missing"/);
+    const focused:string[]=[];
+    Object.defineProperty(globalThis,"document",{configurable:true,value:{getElementById(id:string){return {focus(){focused.push(id);},querySelector(){throw Error("review button must not get focus");}};}}});
+    assert.equal(links.length,2,"assertion and AI-proposal links use exact sources");
+    for(const link of links) { assert.equal(link.href,"#source-anchor_a");link.onClick({button:0,ctrlKey:false,metaKey:false,altKey:false,shiftKey:false,defaultPrevented:false}); }
+    assert.deepEqual(focused,["source-anchor_a","source-anchor_a"]);
+  } finally {delete globals.__b1Citations;if(previousDocument)Object.defineProperty(globalThis,"document",previousDocument);else delete globals.document;h.owner.dispose();}
+});
 
 type CapturedEffect = { callback: () => unknown; dependencies?: unknown[] };
 function navigationDom() {

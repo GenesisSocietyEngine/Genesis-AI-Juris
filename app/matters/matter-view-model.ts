@@ -253,6 +253,7 @@ export interface ActivityItem {
   summaryCode: string;
   reviewReason?: string | null;
   reviewRecordId?: string | null;
+  reviewedDocumentVersionId?: string | null;
   actorId: string | null;
   actorRole: string | null;
   occurredAt: string | null;
@@ -654,6 +655,10 @@ export function normalizeActivity(payload: unknown): { items: ActivityItem[]; ne
     eventType: textValue(item, ["event_type", "eventType", "type"], "dossier_updated"),
     reviewReason: nullableText(record(valueAt(item,"detail")), ["reason"]),
     reviewRecordId: nullableText(record(valueAt(item,"detail")), ["deadline_reference_id", "source_anchor_id"]),
+    reviewedDocumentVersionId: textValue(item, ["event_type", "eventType", "type"]) === "dossier_updated"
+      && textValue(item, ["summary_code", "summaryCode", "summary"]) === "DOCUMENT_ACCEPTED_SOURCE"
+      && textValue(record(item.detail), ["action"]) === "review" && textValue(record(item.detail), ["status"]) === "accepted_source"
+      ? nullableText(record(item.detail), ["current_version_id"]) : null,
     summaryCode: textValue(item, ["summary_code", "summaryCode", "summary"], "Matter record updated"),
     actorId: nullableText(item, ["actor_id", "actorId"]),
     actorRole: nullableText(item, ["actor_role", "actorRole"]),

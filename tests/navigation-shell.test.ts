@@ -10,8 +10,31 @@ import ts from "typescript";
 import GenesisNavigation from "../app/GenesisNavigation";
 import NavigationSession from "../app/NavigationSession";
 import { NavigationController } from "../app/navigation-controller";
+import { SESSION_BOUNDARY_KEY, subscribeSessionBoundary } from "../app/session-boundary";
 
 const noop = () => {};
+test("cross-tab logout suspends refresh, fences late identity and clears even an unmounted invitation", async () => {
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  const bus = new EventTarget();
+  Object.defineProperty(globalThis, "window", { configurable: true, value: bus });
+  let finish!: (response: Response) => void;
+  let calls = 0, clears = 0;
+  const navigation = new NavigationController({ transport: () => { calls++; return new Promise<Response>(resolve => { finish = resolve; }); }, leave: noop, clear: () => { clears++; } });
+  const stop = subscribeSessionBoundary(navigation.sessionBoundary);
+  const broadcast = (phase: "suspend" | "revoke") => { const event = new Event("storage"); Object.assign(event, { key: SESSION_BOUNDARY_KEY, newValue: JSON.stringify({ version: 1, phase, nonce: "synthetic" }) }); bus.dispatchEvent(event); };
+  try {
+    const pending = navigation.refresh(); const epoch = navigation.authorityVersion;
+    broadcast("suspend");
+    assert.equal(navigation.getSnapshot().phase, "expired"); assert.ok(navigation.authorityVersion > epoch);
+    await navigation.refresh(); assert.equal(calls, 1, "focus cannot revive a failed/in-flight logout");
+    broadcast("revoke");
+    finish(Response.json({ authenticated: true, identity: { displayName: "Old account", email: "old@example.test", authSource: "local" }, actorId: null, organizations: [], selected: null, profileRequired: true }));
+    await pending;
+    assert.equal(navigation.getSnapshot().phase, "denied"); assert.equal(navigation.getSnapshot().identity, null); assert.equal(clears, 1);
+    const secondRead = navigation.refresh(); broadcast("revoke"); finish(new Response(null, {status:401})); await secondRead;
+    assert.equal(navigation.getSnapshot().phase, "denied", "repeated revocation fences a read begun while denied");
+  } finally { stop(); if (previousWindow) Object.defineProperty(globalThis, "window", previousWindow); else Reflect.deleteProperty(globalThis, "window"); }
+});
 test("Studio and workspace pages share expandable routes, labels and exact active contexts", () => {
   for (const locale of ["en", "ru"] as const) for (const active of ["studio", "matters", "/templates", "community", "/canopy", "help", "/help/studio-demo"]) {
     const props = { locale, active, location: "/studio?organization=org_synthetic&lang=" + locale, onLanguage: noop };

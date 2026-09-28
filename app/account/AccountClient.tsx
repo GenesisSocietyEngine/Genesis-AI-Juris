@@ -82,7 +82,11 @@ export default function AccountClient({
       element.reset(); formCommitted(element);
       if (result.recoveryCode) setRecoveryCode(result.recoveryCode);
       setMessage(result.recoveryNotice || (action === "login" ? "Local sign-in completed." : "Credentials updated."));
-      if (action === "login") { router.replace(returnTo); router.refresh(); }
+      if (action === "login") {
+        // Start a new shared session from the confirmed cookie. A retained layout
+        // can otherwise keep the pre-login anonymous authority after navigation.
+        window.location.assign(returnTo);
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("The credential request could not be completed.", "Не удалось выполнить запрос. Проверьте соединение и повторите."));
     } finally {

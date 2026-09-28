@@ -162,6 +162,13 @@
       "when": 1789476610565,
       "tag": "0022_loving_juggernaut",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1790553600000,
+      "tag": "0023_email_invitations",
+      "breakpoints": true
     }
   ]
 }

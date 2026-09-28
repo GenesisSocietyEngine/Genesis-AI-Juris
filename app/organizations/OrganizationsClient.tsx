@@ -13,6 +13,7 @@ import { workspaceDestination } from "../workspace-navigation";
 import { invitationRecipientIssue, organizationIssue, validOrganizationReceipt, type AdminIssue } from "./organization-admin-model";
 import { readWithTimeout, ReadTimeoutError } from "../read-with-timeout";
 import styles from "./organizations.module.css";
+import EmailInvitationManager from "./EmailInvitationManager";
 
 type Member = { actorId: string; name: string; role: string; status: string; revision: number };
 type LifecycleRequest = { id: string; command: string; requestedByActorId: string; expiresAt: string };
@@ -186,10 +187,13 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
           </fieldset></form></details>
         </section>
         <section className={styles.panel}><h2>{t("Join an organization", "Вступить в организацию")}</h2>
+          <p>{t("Open the direct link in your invitation. Sign in with the invited email, verify your mailbox and review the organization and role before accepting.", "Откройте ссылку из приглашения. Войдите с приглашённым email, подтвердите почту и проверьте организацию и роль перед принятием.")}</p>
+          <a href="/invitations">{t("Continue an invitation", "Продолжить приглашение")}</a>
+          <details><summary>{t("Legacy invitation code", "Старое приглашение по коду")}</summary>
           <p>{t("Share your member ID with the organization owner to receive an invitation. Copy it from this site: IDs from another review or production site may differ.", "Передайте свой идентификатор владельцу организации для получения приглашения. Скопируйте его с этого сайта: идентификаторы в тестовой и основной версиях могут различаться.")}</p>
           <label>{t("Your member ID — share with an owner", "Ваш идентификатор — передайте владельцу")}<input readOnly value={workspace.actorId} onFocus={(event) => event.target.select()} /></label>
           <form onSubmit={(event) => submit(event, { action: "accept" })}><fieldset disabled={busy}><label>{t("Invitation code", "Код приглашения")}<input name="token" autoComplete="off" required maxLength={200} /></label>
-            <button disabled={busy}>{t("Accept invitation", "Принять приглашение")}</button>{feedback("accept")}</fieldset></form>
+            <button disabled={busy}>{t("Accept invitation", "Принять приглашение")}</button>{feedback("accept")}</fieldset></form></details>
         </section>
       </div>
       {selected && <section className={styles.panel} id="organization-users" tabIndex={-1} key={workspace.actorId+":"+selected.id}><h2>{organizationLabel(selected)}</h2>
@@ -202,13 +206,14 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
           </td></tr>)}</tbody></table></div>}
         {feedback("member")}
         {!owner&&<p className={styles.help}>{t("Only the organization owner can invite members and change their access. Administrator, auditor and case roles have separate permissions.","Только владелец организации может приглашать участников и менять их доступ. Администратор, аудитор и роли в делах имеют отдельные полномочия.")}</p>}
-        {owner && selected.status === "active" && <form className={styles.invite} onSubmit={(event) => submit(event, { action: "invite", organizationId: selected.id })}>
+        {owner && selected.status === "active" && <EmailInvitationManager organization={selected} label={`${selected.name} · ${selected.id.slice(-8).toUpperCase()}`} locale={locale} />}
+        {owner && selected.status === "active" && <details><summary>{t("Legacy invitation by member ID", "Старое приглашение по идентификатору")}</summary><form className={styles.invite} onSubmit={(event) => submit(event, { action: "invite", organizationId: selected.id })}>
           <fieldset disabled={busy}><h3>{t("Invite another person", "Пригласить другого человека")}</h3><p className={styles.help} id="invite-recipient-help">{t("Ask the recipient to sign in to this site, open Manage organizations and copy Your member ID. Enter that ID here, not their email. People already in the members list do not need another invitation.","Попросите получателя войти на этот сайт, открыть «Управление организациями» и скопировать «Ваш идентификатор». Введите этот идентификатор, а не email. Участникам из списка не нужно повторное приглашение.")}</p>
           <label>{t("Recipient member ID", "Идентификатор получателя")}<input name="recipientActorId" value={recipient} onChange={e=>{setRecipient(e.target.value);if(issue?.scope==="invite")setIssue(null);}} aria-invalid={recipientIsEmail||issue?.scope==="invite"||undefined} aria-describedby={["invite-recipient-help",recipientIsEmail?"invite-email-error":"",issue?.scope==="invite"?"admin-issue-invite":""].filter(Boolean).join(" ")} autoComplete="off" spellCheck={false} required minLength={20} maxLength={128} /></label>
           {recipientIsEmail&&<p className={styles.issue} id="invite-email-error" role="status">{organizationIssue({code:"invitation_email_entered",status:400,scope:"invite"},locale).message}</p>}
           <label>{t("Organization role", "Роль в организации")}<select name="role"><option value="member">{roleLabel("member")}</option><option value="org_admin">{roleLabel("org_admin")}</option><option value="auditor">{roleLabel("auditor")}</option></select></label>
           <button disabled={busy||recipientIsEmail}>{t("Create invitation", "Создать приглашение")}</button>{feedback("invite")}</fieldset>
-        </form>}
+        </form></details>}
         {invitation?.organizationId===selected.id && <div className={styles.token} role="status"><p>{t("Copy this code for the recipient. It expires in 24 hours and can be used once.", "Скопируйте код для получателя. Он действует 24 часа и может быть использован один раз.")}</p><input aria-label={t("Invitation code to share", "Код для передачи получателю")} readOnly value={invitation.token} onFocus={(e) => e.target.select()} /><button type="button" className={styles.secondary} onClick={()=>setInvitation(null)}>{t("I have copied the code — dismiss", "Код скопирован — скрыть")}</button></div>}
         {selected.kind === "team" && <details><summary>{t("Organization lifecycle", "Статус организации")}</summary>
           <p>{t("Suspension, resumption and closure require a request from the owner and approval by a different administrator.", "Приостановка, возобновление и закрытие требуют запроса владельца и подтверждения другим администратором.")}</p>

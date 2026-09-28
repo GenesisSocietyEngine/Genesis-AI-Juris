@@ -341,7 +341,7 @@ test("shared Account sign-out clears the verified account's device state only af
   const ownDraft = studioDeviceDraftKey((await studioDeviceScope(email))!);
   const otherDraft = studioDeviceDraftKey((await studioDeviceScope("other-synthetic@example.test"))!);
   const ownKeys = [LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, ownDraft];
-  const continuationKeys = ["genesis-studio-auth-continuation-v1", "genesis.juris.pending-workspace-save.v2", "genesis-juris-pending-case-prompt-v1"];
+  const continuationKeys = ["genesis-invitation-continuation-v1", "genesis-studio-auth-continuation-v1", "genesis.juris.pending-workspace-save.v2", "genesis-juris-pending-case-prompt-v1"];
   const local = new Map([...ownKeys, otherDraft, "unrelated-preference"].map(key => [key, "synthetic"]));
   const session = new Map([...continuationKeys, "unrelated-tab-state"].map(key => [key, "synthetic"]));
   const storage = (values: Map<string, string>) => ({

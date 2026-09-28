@@ -6,6 +6,7 @@ import { LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, studioDeviceDraftKe
 import { useWorkspaceLocation } from "./use-interface-locale";
 import { isWorkspaceDepartureClick } from "./departure-click";
 import { installDepartureHistory } from "./departure-history";
+import { subscribeSessionBoundary } from "./session-boundary";
 
 const NavigationSessionContext = createContext<NavigationController | null>(null);
 // Unmounted component tests and SSR never resolve or share a user's identity.
@@ -14,7 +15,7 @@ export function useNavigationController() { return useContext(NavigationSessionC
 export function useNavigationSession() { const controller = useNavigationController(); return useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot); }
 export async function clearNavigationStorage(email?: string) {
   clearOrganizationSelection();
-  try { for (const key of ["genesis-studio-auth-continuation-v1", "genesis.juris.pending-workspace-save.v2", "genesis-juris-pending-case-prompt-v1"]) window.sessionStorage.removeItem(key); } catch { /* Navigation and privacy must not depend on storage availability. */ }
+  try { for (const key of ["genesis-invitation-continuation-v1", "genesis-studio-auth-continuation-v1", "genesis.juris.pending-workspace-save.v2", "genesis-juris-pending-case-prompt-v1"]) window.sessionStorage.removeItem(key); } catch { /* Navigation and privacy must not depend on storage availability. */ }
   if (email) {
     try { window.localStorage.removeItem(LEGACY_STUDIO_DRAFT_KEY); window.localStorage.removeItem(LEGACY_STUDIO_PRIVATE_KEY); const scope = await studioDeviceScope(email); if (scope) window.localStorage.removeItem(studioDeviceDraftKey(scope)); } catch { /* Server sign-out remains authoritative. */ }
   }
@@ -25,6 +26,7 @@ export default function NavigationSession({ children, controller: supplied }: {c
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
   const selection = new URL(location, "https://workspace.invalid").searchParams.get("organization") ?? undefined;
   const en=new URL(location,"https://workspace.invalid").searchParams.get("lang")!=="ru";
+  useEffect(() => subscribeSessionBoundary(controller.sessionBoundary), [controller]);
   useEffect(() => {
     const refresh = () => { void controller.refresh(selection); };
     refresh(); window.addEventListener("focus",refresh);

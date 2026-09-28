@@ -1,0 +1,23 @@
+{
+  "observedAt": "2026-09-28 04:50:19 UTC",
+  "scope": "Read-only metadata; no publication, environment change, live exploit test or invitation",
+  "site": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "status": "active",
+    "latestVersion": 102,
+    "access": "public",
+    "preview": null
+  },
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_37dbecce77848191a3dc4397ee48dc73",
+    "number": 102,
+    "sourceCommit": "bf5799383a52b6617cd9d4a0acf47af780086218"
+  },
+  "deployment": {
+    "id": "appgdep_6ab6ed70ee488191ba95f30293b6e6a1",
+    "status": "succeeded",
+    "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_37dbecce77848191a3dc4397ee48dc73",
+    "environmentRevision": 39
+  },
+  "candidateDeployed": false
+}
