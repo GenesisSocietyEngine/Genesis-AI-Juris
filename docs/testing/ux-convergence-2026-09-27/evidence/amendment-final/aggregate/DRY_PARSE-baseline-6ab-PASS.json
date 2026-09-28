@@ -1,0 +1,231 @@
+{
+  "schema": "genesis.candidate-aggregate-observation.v1",
+  "recordedAt": "2026-09-28T00:00:01.115Z",
+  "testedWebHead": "6ab091d830ccfd9d6b76c0adc177341bca96e081",
+  "observedExecExitCode": 0,
+  "completionObservedAt": "2026-09-27T21:37:11Z",
+  "logLastWriteAt": "2026-09-27T21:37:01.087Z",
+  "result": "PASS",
+  "log": {
+    "path": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-aggregate-baseline.log",
+    "bytes": 343947,
+    "sha256": "aa108160d57728302601dc1ec305cc2df9154fb5ebf50baf0413f2707dab1b18"
+  },
+  "preflight": {
+    "format": "genesis-juris-web-checkout-receipt",
+    "head": "6ab091d830ccfd9d6b76c0adc177341bca96e081",
+    "tree": "304691141ac66bf456e02aed1a21b4d6596fc05d",
+    "trackedFileCount": 1538,
+    "trackedByteSha256": "00086da019493d75ce259c4601e40f8f204b81be1edc7e451bd00fbaa04d9d3b"
+  },
+  "stages": [
+    {
+      "group": "web",
+      "number": 1,
+      "total": 10,
+      "label": "exact clean HEAD, tracked-byte, and untracked-file preflight"
+    },
+    {
+      "group": "web",
+      "number": 2,
+      "total": 10,
+      "label": "strict TypeScript"
+    },
+    {
+      "group": "web",
+      "number": 3,
+      "total": 10,
+      "label": "lint"
+    },
+    {
+      "group": "web",
+      "number": 4,
+      "total": 10,
+      "label": "tests (including verified build and dossier gates)"
+    },
+    {
+      "group": "web",
+      "number": 5,
+      "total": 10,
+      "label": "five required decision-centric dossier E2E scenarios"
+    },
+    {
+      "group": "web",
+      "number": 6,
+      "total": 10,
+      "label": "bilingual professional PDF structural, text, and visual verification"
+    },
+    {
+      "group": "web",
+      "number": 7,
+      "total": 10,
+      "label": "production dependency audit"
+    },
+    {
+      "group": "web",
+      "number": 8,
+      "total": 10,
+      "label": "patch hygiene"
+    },
+    {
+      "group": "web",
+      "number": 9,
+      "total": 10,
+      "label": "final verified build"
+    },
+    {
+      "group": "mobile",
+      "number": 1,
+      "total": 9,
+      "label": "exact-SHA checkout and 18-route runtime parity"
+    },
+    {
+      "group": "mobile",
+      "number": 2,
+      "total": 9,
+      "label": "executable report-layout fixture and fingerprint parity"
+    },
+    {
+      "group": "mobile",
+      "number": 3,
+      "total": 9,
+      "label": "fail-closed Dart formatting"
+    },
+    {
+      "group": "mobile",
+      "number": 4,
+      "total": 9,
+      "label": "dependency resolution"
+    },
+    {
+      "group": "mobile",
+      "number": 5,
+      "total": 9,
+      "label": "Flutter analysis"
+    },
+    {
+      "group": "mobile",
+      "number": 6,
+      "total": 9,
+      "label": "Flutter tests"
+    },
+    {
+      "group": "mobile",
+      "number": 7,
+      "total": 9,
+      "label": "locked Rust formatting"
+    },
+    {
+      "group": "mobile",
+      "number": 8,
+      "total": 9,
+      "label": "locked Rust Clippy"
+    },
+    {
+      "group": "mobile",
+      "number": 9,
+      "total": 9,
+      "label": "locked Rust workspace tests"
+    },
+    {
+      "group": "native",
+      "number": 1,
+      "total": 3,
+      "label": "Android FFI persistence smoke"
+    },
+    {
+      "group": "native",
+      "number": 2,
+      "total": 3,
+      "label": "exact-SHA hosted Rust, Flutter, Android, and iOS evidence lock"
+    },
+    {
+      "group": "native",
+      "number": 3,
+      "total": 3,
+      "label": "final exact-HEAD and tracked-byte immutability guard"
+    },
+    {
+      "group": "web",
+      "number": 10,
+      "total": 10,
+      "label": "final exact-source immutability guard"
+    }
+  ],
+  "stageCounts": {
+    "web": 10,
+    "mobile": 9,
+    "native": 3
+  },
+  "webTests": {
+    "tests": 915,
+    "pass": 912,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 3,
+    "todo": 0
+  },
+  "dossierE2E": {
+    "tests": 5,
+    "pass": 5,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "pdf": {
+    "files": 47,
+    "pages": 758,
+    "renderedPngs": 758,
+    "goldenPngs": 55
+  },
+  "productionAuditZeroVulnerabilities": true,
+  "flutterTests": 275,
+  "rust": {
+    "groups": 73,
+    "passed": 359,
+    "failed": 0,
+    "ignored": 0
+  },
+  "androidIntegrationTests": 12,
+  "hostedLockValidated": [
+    {
+      "target": "android",
+      "workflow": "33536571436",
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64"
+    },
+    {
+      "target": "flutter",
+      "workflow": "33536571515",
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64"
+    },
+    {
+      "target": "ios",
+      "workflow": "33536571586",
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64"
+    },
+    {
+      "target": "rust",
+      "workflow": "33536571536",
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64"
+    }
+  ],
+  "finalGuards": {
+    "web": true,
+    "mobileHead": "5200b30cc50c77393c6f48b52ce91c0f30e70c64"
+  },
+  "terminalPass": true,
+  "explicitSkippedTests": [
+    "Migration rehearsal: exact v91 operates on C1 schema without discarding new note records",
+    "Migration rehearsal: request operation SQL guards bind one immutable receipt to the actual legacy audit",
+    "Migration rehearsal: current B1 writes and historical receipt recovery work after C1 and v91 writes"
+  ],
+  "limits": [
+    "This parser does not execute the gate; exit code and completion-observation timestamp come from the coordinator tool result.",
+    "Last-write time is file metadata, not an independently measured process completion timestamp.",
+    "PDF totals are parsed automated checks, not new manual inspection of every page.",
+    "Hosted workflow-lock validation is not new hosted or iOS execution.",
+    "Android coverage is local debug emulator integration, not physical hardware or a release APK.",
+    "Technical gate PASS does not close browser, hosted, accessibility or human acceptance."
+  ]
+}

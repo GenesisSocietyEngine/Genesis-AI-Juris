@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-09-28T00:57:41.164Z",
+  "schema": "genesis.juris.build-identity.v1",
+  "inputPolicy": "web-source-v1",
+  "applicationInputsSha256": "5597958a0a870757e75cfbdfba930007d475f782035db4ee8503a97aa1723afc",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "sourceCommit": "a1fae95bc2624e28e6232b8867ad2a94c8d9f0ab",
+  "nodeVersion": "v22.23.2",
+  "builtInputDigests": [
+    "5597958a0a870757e75cfbdfba930007d475f782035db4ee8503a97aa1723afc"
+  ],
+  "buildMatchesCurrentSource": true,
+  "inputFileCount": 385
+}

@@ -1,0 +1,184 @@
+param(
+    [switch]$Execute,
+    [switch]$FinalGateComplete,
+    [string]$FinalGateCompletionEvidence = ''
+)
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+# Default invocation only verifies ownership/preservation and writes an ignored receipt.
+# Execute only after root explicitly confirms that the final new-source gate is done.
+$taskWorkspace = 'C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27'
+$taskRoot = Join-Path $taskWorkspace '.artifacts\amendment-android-native'
+$taskMobile = 'C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200'
+$taskOriginalAvd = 'C:\Users\User\.android\avd\Pixel.avd'
+$taskSdk = 'C:\Users\User\AppData\Local\Android\Sdk'
+$taskAdb = Join-Path $taskSdk 'platform-tools\adb.exe'
+$taskLaunchPath = Join-Path $taskRoot 'launch.json'
+$taskReadyPath = Join-Path $taskRoot 'ready-for-aggregate.json'
+$taskAcceptancePath = Join-Path $taskRoot 'acceptance-before-launch.json'
+$taskLaunch = Get-Content -LiteralPath $taskLaunchPath -Raw | ConvertFrom-Json
+$taskReady = Get-Content -LiteralPath $taskReadyPath -Raw | ConvertFrom-Json
+$taskAcceptance = Get-Content -LiteralPath $taskAcceptancePath -Raw | ConvertFrom-Json
+$taskMode = if ($Execute) { 'EXECUTE' } else { 'PREPARATION_ONLY' }
+$taskStamp = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ')
+$taskReceiptPath = Join-Path $taskRoot ('cleanup-' + $taskMode.ToLowerInvariant() + '-' + $taskStamp + '.json')
+$taskCommands = [Collections.Generic.List[object]]::new()
+$taskActions = [Collections.Generic.List[object]]::new()
+$taskAdbCounter = 0
+$env:ANDROID_USER_HOME = 'C:\Users\User\.android'
+
+if ($taskLaunch.pid -ne 4116 -or $taskLaunch.serial -ne 'emulator-5580' -or $taskLaunch.avd -ne 'UXGatePixel') { throw 'Unexpected immutable launch identity.' }
+if ($taskReady.launcherPid -ne 4116 -or $taskReady.qemuPid -ne 25048 -or $taskReady.serial -ne $taskLaunch.serial) { throw 'Unexpected readiness identity.' }
+if ([IO.Path]::GetFullPath($taskLaunch.taskRoot) -ne $taskRoot) { throw 'Launch artifact path is not the exact task directory.' }
+if ($taskAcceptance.mobileCommit -ne '5200b30cc50c77393c6f48b52ce91c0f30e70c64' -or @($taskAcceptance.sourceAvdFileMetadata).Count -ne 18661) { throw 'Unexpected preservation baseline.' }
+
+# These exact creation timestamps were read through Win32_Process on the host during
+# preparation and agree with launch time and the recorded QEMU parent relationship.
+# Native handle creation times were read separately for these same two processes:
+# CIM retains microseconds, while GetProcessTimes/.NET retains 100ns ticks. Keep
+# both exact identities rather than comparing unlike precision or allowing a window.
+$taskExpectedProcesses = @(
+    [pscustomobject]@{ id=4116; parent=26372; executable=(Join-Path $taskSdk 'emulator\emulator.exe'); creationUtc='2026-09-27T20:35:08.4851430Z'; nativeCreationUtc='2026-09-27T20:35:08.4851438Z' },
+    [pscustomobject]@{ id=25048; parent=4116; executable=(Join-Path $taskSdk 'emulator\qemu\windows-x86_64\qemu-system-x86_64-headless.exe'); creationUtc='2026-09-27T20:35:09.6325920Z'; nativeCreationUtc='2026-09-27T20:35:09.6325926Z' }
+)
+
+function Get-TaskProcess([int]$TaskProcessId) {
+    return Get-CimInstance Win32_Process -Filter ('ProcessId = ' + $TaskProcessId) -ErrorAction Stop
+}
+
+function Assert-TaskProcess($Expected, [switch]$AllowAbsent) {
+    $taskProcess = Get-TaskProcess $Expected.id
+    if ($null -eq $taskProcess) {
+        if ($AllowAbsent) { return $null }
+        throw ('Task process is absent: ' + $Expected.id)
+    }
+    if ([string]::IsNullOrWhiteSpace($taskProcess.ExecutablePath) -or [IO.Path]::GetFullPath($taskProcess.ExecutablePath) -ne $Expected.executable) { throw ('Executable identity mismatch: ' + $Expected.id) }
+    $taskCreation = $taskProcess.CreationDate.ToUniversalTime().ToString('o')
+    if ($taskCreation -ne $Expected.creationUtc) { throw ('Creation-time mismatch; possible PID reuse: ' + $Expected.id) }
+    if ($taskProcess.ParentProcessId -ne $Expected.parent) { throw ('Parent identity mismatch: ' + $Expected.id) }
+    $taskLaunchTime = [DateTime]::Parse($taskLaunch.launchedAt).ToUniversalTime()
+    if ([Math]::Abs(($taskProcess.CreationDate.ToUniversalTime() - $taskLaunchTime).TotalSeconds) -gt 10) { throw 'Process creation does not agree with launch receipt.' }
+    $taskLine = [string]$taskProcess.CommandLine
+    foreach ($taskRequiredToken in @('-avd UXGatePixel', '-port 5580', '-read-only', '-no-snapshot-load', '-no-snapshot-save', '-no-window')) {
+        if ($taskLine -notmatch ('(?:^|\s)' + [regex]::Escape($taskRequiredToken) + '(?=\s|$)')) { throw ('Required task-only command-line token missing: ' + $Expected.id) }
+    }
+    return [pscustomobject]@{ processId=[int]$taskProcess.ProcessId; parentProcessId=[int]$taskProcess.ParentProcessId; executablePath=$taskProcess.ExecutablePath; creationUtc=$taskCreation; commandLine=$taskLine }
+}
+
+function Invoke-TaskAdb([string[]]$TaskArguments, [int]$TimeoutMilliseconds=5000) {
+    $script:taskAdbCounter++
+    $taskCommandBase = Join-Path $taskRoot ('cleanup-' + $taskStamp + '-adb-' + $script:taskAdbCounter)
+    $taskCommand = Start-Process -FilePath $taskAdb -ArgumentList $TaskArguments -WindowStyle Hidden -PassThru -RedirectStandardOutput ($taskCommandBase + '.stdout.log') -RedirectStandardError ($taskCommandBase + '.stderr.log')
+    # Retain the native handle before waiting; Windows PowerShell otherwise can
+    # report a null ExitCode for a short-lived Start-Process -PassThru child.
+    $null = $taskCommand.Handle
+    $taskFinished = $taskCommand.WaitForExit($TimeoutMilliseconds)
+    if (-not $taskFinished) {
+        # Only this just-created ADB client handle; never the ADB server or another client.
+        $taskCommand.Kill()
+        $null = $taskCommand.WaitForExit(1000)
+    } else { $taskCommand.WaitForExit() }
+    $taskResponse = [pscustomobject]@{ arguments=$TaskArguments; completed=$taskFinished; exitCode=if($taskFinished){$taskCommand.ExitCode}else{$null}; stdout=([IO.File]::ReadAllText($taskCommandBase + '.stdout.log')).Trim(); stderr=([IO.File]::ReadAllText($taskCommandBase + '.stderr.log')).Trim() }
+    $taskCommands.Add($taskResponse)
+    return $taskResponse
+}
+
+function Get-TaskPreservation {
+    $taskConfigSha = (Get-FileHash -LiteralPath (Join-Path $taskOriginalAvd 'config.ini') -Algorithm SHA256).Hash.ToLowerInvariant()
+    $taskExpectedFiles = @{}
+    foreach ($taskFile in $taskAcceptance.sourceAvdFileMetadata) { $taskExpectedFiles[[string]$taskFile.relative] = $taskFile }
+    $taskActualFiles = @(Get-ChildItem -LiteralPath $taskOriginalAvd -Recurse -File)
+    $taskDifferences = [Collections.Generic.List[object]]::new()
+    foreach ($taskFile in $taskActualFiles) {
+        $taskRelative = $taskFile.FullName.Substring($taskOriginalAvd.Length)
+        if (-not $taskExpectedFiles.ContainsKey($taskRelative)) { $taskDifferences.Add([pscustomobject]@{relative=$taskRelative;issue='ADDED'}); continue }
+        $taskBefore = $taskExpectedFiles[$taskRelative]
+        if ($taskFile.Length -ne $taskBefore.length -or $taskFile.LastWriteTimeUtc.ToString('o') -ne $taskBefore.lastWriteUtc) { $taskDifferences.Add([pscustomobject]@{relative=$taskRelative;issue='SIZE_OR_MTIME_CHANGED'}) }
+        $taskExpectedFiles.Remove($taskRelative)
+    }
+    foreach ($taskMissing in $taskExpectedFiles.Keys) { $taskDifferences.Add([pscustomobject]@{relative=$taskMissing;issue='MISSING'}) }
+    $taskMobileHead = (& git -c ('safe.directory=' + $taskMobile) -C $taskMobile rev-parse HEAD | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw 'Mobile HEAD read failed.' }
+    $taskMobileStatus = (& git -c ('safe.directory=' + $taskMobile) -C $taskMobile status --porcelain=v1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw 'Mobile status read failed.' }
+    return [pscustomobject]@{
+        originalAvd=$taskOriginalAvd; configSha256=$taskConfigSha; expectedConfigSha256=$taskAcceptance.originalProfileConfigSha256;
+        configUnchanged=($taskConfigSha -eq $taskAcceptance.originalProfileConfigSha256); expectedFileCount=18661; actualFileCount=$taskActualFiles.Count;
+        metadataUnchanged=($taskDifferences.Count -eq 0 -and $taskActualFiles.Count -eq 18661); metadataDifferenceCount=$taskDifferences.Count; firstDifferences=@($taskDifferences | Select-Object -First 20);
+        mobileHead=$taskMobileHead; mobileExpectedHead=$taskAcceptance.mobileCommit; mobileStatus=$taskMobileStatus; mobileExactAndClean=($taskMobileHead -eq $taskAcceptance.mobileCommit -and $taskMobileStatus -eq '');
+        limitation='Config is byte-hashed; other original AVD files are compared by full relative path, size and UTC mtime, not by content hash.'
+    }
+}
+
+function Test-OwnedProcessesGone {
+    foreach ($taskExpected in $taskExpectedProcesses) {
+        $taskRemaining = Assert-TaskProcess $taskExpected -AllowAbsent
+        if ($null -ne $taskRemaining) { return $false }
+    }
+    return $true
+}
+
+$taskResult = [ordered]@{ schema='genesis.juris.owned-emulator-cleanup.v1'; startedAt=[DateTime]::UtcNow.ToString('o'); mode=$taskMode; executed=$false; serial=$taskLaunch.serial; avd=$taskLaunch.avd; status='STARTED'; actions=$taskActions; adbCommands=$taskCommands }
+try {
+    if ($Execute) {
+        if (-not $FinalGateComplete -or [string]::IsNullOrWhiteSpace($FinalGateCompletionEvidence)) { throw 'Execution requires explicit final-gate-complete assertion and its evidence path; preparation remains read-only.' }
+        $taskGateEvidencePath = [IO.Path]::GetFullPath($FinalGateCompletionEvidence)
+        if (-not $taskGateEvidencePath.StartsWith($taskWorkspace + '\', [StringComparison]::OrdinalIgnoreCase) -or -not (Test-Path -LiteralPath $taskGateEvidencePath -PathType Leaf)) { throw 'Completion evidence must be an existing file inside the canonical workspace.' }
+        $taskResult.finalGateCompletionEvidence = [pscustomobject]@{path=$taskGateEvidencePath;sha256=(Get-FileHash -LiteralPath $taskGateEvidencePath -Algorithm SHA256).Hash.ToLowerInvariant();meaning='Root-confirmed completion; this cleanup script does not independently certify gate results.'}
+    }
+    $taskResult.ownershipBefore = @($taskExpectedProcesses | ForEach-Object { Assert-TaskProcess $_ })
+    $taskAvdName = Invoke-TaskAdb @('-s', $taskLaunch.serial, 'shell', 'getprop', 'ro.boot.qemu.avd_name')
+    $taskAdbState = Invoke-TaskAdb @('-s', $taskLaunch.serial, 'get-state')
+    if (-not $taskAvdName.completed -or $taskAvdName.exitCode -ne 0 -or $taskAvdName.stdout -ne 'UXGatePixel' -or -not $taskAdbState.completed -or $taskAdbState.exitCode -ne 0 -or $taskAdbState.stdout -ne 'device') { throw 'Exact serial/AVD identity is not confirmed; no shutdown authorized by this script.' }
+    $taskResult.preservationBefore = Get-TaskPreservation
+    if (-not $taskResult.preservationBefore.configUnchanged -or -not $taskResult.preservationBefore.metadataUnchanged -or -not $taskResult.preservationBefore.mobileExactAndClean) { throw 'Preservation preflight mismatch; stop for review before any shutdown.' }
+    if (-not $Execute) { $taskResult.status='READY_NOT_EXECUTED' }
+    else {
+        # Revalidate exact owned identities immediately before the graceful operation.
+        foreach ($taskExpected in $taskExpectedProcesses) { $null = Assert-TaskProcess $taskExpected }
+        $taskKill = Invoke-TaskAdb @('-s', $taskLaunch.serial, 'emu', 'kill')
+        $taskResult.executed=$true
+        $taskActions.Add([pscustomobject]@{at=[DateTime]::UtcNow.ToString('o');action='GRACEFUL_ADB_EMU_KILL';serial=$taskLaunch.serial;commandCompleted=$taskKill.completed;exitCode=$taskKill.exitCode})
+        $taskDeadline = [DateTime]::UtcNow.AddSeconds(15)
+        while (-not (Test-OwnedProcessesGone) -and [DateTime]::UtcNow -lt $taskDeadline) { Start-Sleep -Milliseconds 1000 }
+        if (-not (Test-OwnedProcessesGone)) {
+            # QEMU first, then launcher. Every fallback gets a fresh exact identity check.
+            foreach ($taskExpected in @($taskExpectedProcesses[1], $taskExpectedProcesses[0])) {
+                $taskRemaining = Assert-TaskProcess $taskExpected -AllowAbsent
+                if ($null -ne $taskRemaining) {
+                    $taskHandle = Get-Process -Id $taskExpected.id -ErrorAction Stop
+                    try {
+                        # Pin this exact native instance before the final identity
+                        # reads and termination; an object variable alone is not a handle.
+                        $null = $taskHandle.Handle
+                        # Recheck the original CIM identity after acquiring the handle,
+                        # then compare that handle to its separately recorded exact time.
+                        $null = Assert-TaskProcess $taskExpected
+                        $taskNativeCreationUtc = $taskHandle.StartTime.ToUniversalTime().ToString('o')
+                        if ($taskNativeCreationUtc -ne $taskExpected.nativeCreationUtc -or [IO.Path]::GetFullPath($taskHandle.Path) -ne $taskExpected.executable) { throw 'Fallback process handle no longer matches owned native instance.' }
+                        Stop-Process -InputObject $taskHandle -Force -ErrorAction Stop
+                        $taskActions.Add([pscustomobject]@{at=[DateTime]::UtcNow.ToString('o');action='REVALIDATED_OWNED_PROCESS_FALLBACK';processId=$taskExpected.id;creationUtc=$taskExpected.creationUtc;nativeCreationUtc=$taskNativeCreationUtc})
+                    } finally { $taskHandle.Dispose() }
+                }
+            }
+            $taskDeadline = [DateTime]::UtcNow.AddSeconds(10)
+            while (-not (Test-OwnedProcessesGone) -and [DateTime]::UtcNow -lt $taskDeadline) { Start-Sleep -Milliseconds 500 }
+        }
+        $taskResult.ownedProcessesGone = Test-OwnedProcessesGone
+        $taskDevices = Invoke-TaskAdb @('devices')
+        $taskResult.serialAbsent = ($taskDevices.completed -and $taskDevices.exitCode -eq 0 -and $taskDevices.stdout -notmatch '(?m)^emulator-5580\s')
+        $taskResult.preservationAfter = Get-TaskPreservation
+        if (-not $taskResult.ownedProcessesGone -or -not $taskResult.serialAbsent -or -not $taskResult.preservationAfter.configUnchanged -or -not $taskResult.preservationAfter.metadataUnchanged -or -not $taskResult.preservationAfter.mobileExactAndClean) { throw 'Cleanup or final preservation readback did not meet acceptance; retained evidence requires review.' }
+        $taskResult.status='OWNED_EMULATOR_STOPPED_AND_PRESERVATION_CONFIRMED'
+    }
+} catch {
+    $taskResult.status='STOPPED_FOR_REVIEW'
+    $taskResult.error=$_.Exception.Message
+} finally {
+    $taskResult.finishedAt=[DateTime]::UtcNow.ToString('o')
+    $taskResult.noOtherProcessOrFileMutation='No other emulator, ADB server, Gradle service or file deletion is targeted. Task AVD data/logs are retained.'
+    [IO.File]::WriteAllText($taskReceiptPath, ($taskResult | ConvertTo-Json -Depth 9) + "`n", [Text.UTF8Encoding]::new($false))
+    [pscustomobject]@{status=$taskResult.status;mode=$taskMode;executed=$taskResult.executed;receipt=$taskReceiptPath} | ConvertTo-Json -Compress
+}
+if ($taskResult.status -eq 'STOPPED_FOR_REVIEW') { exit 1 }

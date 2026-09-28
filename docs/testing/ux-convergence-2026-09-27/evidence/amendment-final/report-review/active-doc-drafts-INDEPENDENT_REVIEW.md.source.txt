@@ -1,0 +1,35 @@
+# Independent review of prepared active documents
+
+Reviewed 28 September 2026 by the sibling acceptance/browser reviewer, separately from the draft author and coordinating agent. **No substantive status or scope overclaim found in the exact drafts below.** They are suitable as prepared replacements for later evidence reconciliation, not as final acceptance documents while their placeholders remain unresolved.
+
+| Reviewed draft | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `RELEASE_DECISION.md` | 22,904 | `f2a396e17e9836ebdd76f77c53c8c9ac440c14d0a5ad9a583478ca3edc0cba55` |
+| `POST_RECONCILIATION_CLOSURE.md` | 46,169 | `f927f9daf37643964fb24def090e5bbb5bb98e728541962fdd0455d3e9a8ea13` |
+
+## Checks and findings
+
+- **Gate/source history is separate and unresolved where required.** Historical C/8ee browser and build evidence, 6ab/25d6 complete baseline PASS, e6/559795 build and failed aggregate, and current R/a1fae95 IN_PROGRESS are distinguished. The 6/6 PDF scheduling correction is not presented as a full rerun. The failed e6 command retains its 928 PASS/1 FAIL/3 SKIP result and absent downstream stages. This review did not independently determine the eventual R result or parse a completed R receipt; none exists in the reviewed drafts. Final aggregate/source-build placeholders remain visible.
+- **The two Studio-history races are not conflated with the later Matter-read P1.** Older retry versus newer download status and mid-read grant loss appearing as empty history retain their earlier scope. The later 19-application-file correction has a distinct final read-authorization boundary, source review and regression record. The maintained test is additional to those 19 application files, not included in that source count.
+- **Modeled schedules and ordinary integration remain distinct.** The 17 tests exercise actual detail/collection/note/helper code with explicit in-process identity/storage doubles. Stage 6, UX12, A11 and A13 correctly identify governed-output/audit/review wiring as source-reviewed, not executed by those 17 tests. The e6 smoke is separately 9 groups/39 HTTP responses using genuine ordinary local sessions: 20×200, 7×404, 12×401, three script-owned logouts. Its exact v1 source reads and cookie denials are not output delivery, Save recovery, a mid-request real-session race, provider logout, browser or hosted evidence.
+- **Browser, file and study evidence is not promoted.** Saved-section/conflict/history passes remain bound to their recorded earlier builds. Four actual PDFs/33 visually inspected pages are distinct from the automated 47-PDF/758-page corpus and separate browser Base file. Current-candidate four-format browser delivery, source-dependent report lifecycle, actual 200% zoom, real screen reader, remaining role/context/recovery states and FiveFlats exercise remain open. Zero recorded human sessions stays zero; no success rate or measured silent-loss rate is invented.
+- **Governed prerequisites and authority are truthful.** The five incomplete fixture prerequisites are retained. Snapshot refusal is not called a generator failure. A synthetic administrative deadline is acknowledged as possible deliberate configuration, while the existing capacity gap and contradiction cannot be fabricated away for readiness. A relevant published graph and genuine exact-package simulation are required. Platform publication authority is separate from Matter roles; unapproved baseline output for staleness is separate from reviewer-only output approval. Zero outputs in the actual assumption check is not output-invalidation evidence.
+- **Tool and hosting blockers are specific.** The source-v2 chooser security/permission failure is kept separate from the later CUA connection failure. No alternative upload transport is authorized. A distinct Sites project is recognized as technically possible; its independent storage and intended ordinary-auth audience remain unestablished. Current production does not become candidate QA.
+- **Production risk and rollback limits are explicit.** The 20:55 production metadata observation remains dated, with a fresh-recheck placeholder. Exact Git source continuity of the 19 pre-fix files is not claimed as deployed-binary attestation, a live exploit or an observed disclosure. The correction is not deployed. V102 rollback is explicitly not a cure for that known source pattern; operational owner and safe mitigation choice remain to be established.
+- **No overall acceptance promotion.** Engineering and production stay BLOCKED; external pilot stays NO-GO. A later aggregate PASS alone cannot change those decisions without their separately listed acceptance evidence. Existing authorization is not revoked, and neither attachment nor draft is treated as a new publication/invitation/access grant.
+
+## Independent ledger preservation check
+
+Read the current tracked original and prepared draft as UTF-8 text and compared the unique table IDs and complete row lines. Both have all 42 unique IDs: Stage 0–8, UX01–16 and A01–17. Exactly 28 row texts are unchanged; exactly 14 differ:
+
+`Stage 3`, `Stage 5`, `Stage 6`, `Stage 7`, `UX04`, `UX09`, `UX12`, `UX13`, `UX16`, `A03`, `A09`, `A10`, `A11`, `A13`.
+
+The changed rows were inspected against the original diff; they add the inherited correction, bounded proof and remaining limits without deleting the earlier verification or remaining-action scope. This is a normalized text-row comparison, not a claim that the entire document or all line-ending bytes are unchanged. Draft file hashes above were independently read and match the author's receipts.
+
+## Final assembly conditions, not findings
+
+The five planned `AMENDMENT_*` documents are known assembly dependencies and were not counted as broken-link defects. Links are intentionally relative to the final documentation destination. Preserve these draft bytes as preparation evidence if later edits insert results; do not retroactively present the draft as final.
+
+Before using the active replacements, the coordinator must resolve `FINAL_R_AGGREGATE_RESULT_PENDING`, `FINAL_R_BUILD_IDENTITY_PENDING`, `FRESH_PRODUCTION_RECHECK_PENDING` and `OWNED_RESOURCE_CLEANUP_PENDING` from actual independent receipts, then perform the separate final-result review. Preparation/dry-run cleanup cannot fill the executed-cleanup field. Check for any new source/deployment drift at that time. Historical C references in retained row cells remain historical evidence labels; future acceptance should target the current candidate designated by the final R receipt.
+
+Review actions were file reads, an exact draft/original diff, row/hash comparisons and this ignored report write only. No tracked file was edited, and no test, browser, API, credential read, worker, emulator, deployment or personal-data action was performed. This is a document consistency review; it neither repeats the underlying historical executions nor certifies the still-running gate.

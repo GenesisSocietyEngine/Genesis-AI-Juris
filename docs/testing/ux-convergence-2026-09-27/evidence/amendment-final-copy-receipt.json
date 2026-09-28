@@ -1,0 +1,192 @@
+{
+  "archivedAt": "2026-09-28T01:00:58.870Z",
+  "scope": "Byte-preserving archive of already completed local read smoke, production-attributed source comparison, governed baseline feasibility, cleanup preparation and independent archive integrity; no new runtime acceptance inferred.",
+  "files": [
+    {
+      "source": ".artifacts/ux-reconciliation-auth/local-read-smoke.mjs",
+      "destination": "evidence/amendment-final/local-read-smoke/local-read-smoke.mjs.source.txt",
+      "bytes": 17457,
+      "sha256": "4374127f667065141e1b77c902ab47f4910bff11ee2361ad740391e73a2a4ec5"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/run-approved-local-read-smoke.mjs",
+      "destination": "evidence/amendment-final/local-read-smoke/run-approved-local-read-smoke.mjs.source.txt",
+      "bytes": 2424,
+      "sha256": "196b475abe5d486c401570c9368fbb06b92849d1d20a733598c2beecf80d86dc"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/ACTUAL_LOCAL_READ_SMOKE.md",
+      "destination": "evidence/amendment-final/local-read-smoke/ACTUAL_LOCAL_READ_SMOKE.md.source.txt",
+      "bytes": 5526,
+      "sha256": "8216dcac3d2bdf21504c45d403d1a675dc1e819c7f516f9acc859c870102e5e3"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/LOCAL_READ_SMOKE_PLAN.md",
+      "destination": "evidence/amendment-final/local-read-smoke/LOCAL_READ_SMOKE_PLAN.md.source.txt",
+      "bytes": 5502,
+      "sha256": "82fbcfd22204ce4446a464cf78e6e901a68b88997e81925f3d55d165a65832b8"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/local-read-smoke-independent-review.md",
+      "destination": "evidence/amendment-final/local-read-smoke/independent-review.md",
+      "bytes": 7480,
+      "sha256": "73992abc0c690e1ee1d06a4ce3e16ad374dbe10cef194578c8eedee178598880"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/local-read-smoke-publication-review.json",
+      "destination": "evidence/amendment-final/local-read-smoke/publication-review.json",
+      "bytes": 3020,
+      "sha256": "6d23a15ceabed5463fa4936acf22bbb86f5d3866c5d61c1f5334b7ca19dc4e5c"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/local-read-smoke-execution-2026-09-27T220210153Z/execution.json",
+      "destination": "evidence/amendment-final/local-read-smoke/local-read-smoke-execution-2026-09-27T220210153Z/execution.json",
+      "bytes": 1333,
+      "sha256": "7da0a7286cb0b72fcf9d54ec4a23468a5b15bb338a69d1211b9c24924f4e342e"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/local-read-smoke-execution-2026-09-27T220210153Z/stdout.log",
+      "destination": "evidence/amendment-final/local-read-smoke/local-read-smoke-execution-2026-09-27T220210153Z/stdout.log",
+      "bytes": 229,
+      "sha256": "3d045c1e0123b09ced56c9b2531aae1a12469fe041fd5268a3f08fcbfd80c8ee"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/local-read-smoke-execution-2026-09-27T220210153Z/stderr.log",
+      "destination": "evidence/amendment-final/local-read-smoke/local-read-smoke-execution-2026-09-27T220210153Z/stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/local-read-smoke-runs/2026-09-27T220210764Z-e6c6adc6/receipt.json",
+      "destination": "evidence/amendment-final/local-read-smoke/local-read-smoke-runs/2026-09-27T220210764Z-e6c6adc6/receipt.json",
+      "bytes": 15971,
+      "sha256": "55dc56f124dc52ad567f0921c1d39a554dcf4c53b89665bc36683f2b6032aa44"
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/candidate-initial-source.json",
+      "destination": "evidence/amendment-final/local-read-smoke/candidate-initial-source.json",
+      "bytes": 570,
+      "sha256": "8a481df14b07c8e5ccc14574edd3bde1b84af7d56ebe68432fb8c353cda241fc"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/production-read-fence-source-continuity.json",
+      "destination": "evidence/amendment-final/production-source/production-read-fence-source-continuity.json",
+      "bytes": 21520,
+      "sha256": "f965ab950d2122aedb2a2a26db6b6d609acc92e6a95b83f325b4e54d62eea46b"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/production-read-fence-source-continuity.md",
+      "destination": "evidence/amendment-final/production-source/production-read-fence-source-continuity.md",
+      "bytes": 3147,
+      "sha256": "d1318ad7cc3cbea5d58fad2a207c1b5718d6c2fcc584ddf74558d441af88a197"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/check-production-read-fence-source-continuity.mjs",
+      "destination": "evidence/amendment-final/production-source/check-production-read-fence-source-continuity.mjs.source.txt",
+      "bytes": 8462,
+      "sha256": "7b5afc36c0b614801cb691b718ab138f36fbce378dc6460bd5cf717dd2b5eea2"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/governed-v1-baseline-plan.md",
+      "destination": "AMENDMENT_GOVERNED_BASELINE_PLAN.md",
+      "bytes": 12162,
+      "sha256": "a8cc44fe97361fc1e3a1e2c3e76f9292cf824387eec4f98dc51c57698e4a9ceb"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/FINAL_ACCEPTANCE_GAPS_REVIEW.md",
+      "destination": "AMENDMENT_ACCEPTANCE_GAPS_REVIEW.md",
+      "bytes": 17804,
+      "sha256": "c47db63738aeed9a9b5dbff15a62901e28bef25b7132cc52c9fb5cb73cd1e04f"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/po-ux-draft-critical-review.md",
+      "destination": "evidence/amendment-final/report-review/po-ux-draft-critical-review.md.source.txt",
+      "bytes": 10886,
+      "sha256": "674bfb320b7934ccbf4e93cef84d92c34ba2140d4da75954115c0fe87c07fd26"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/po-ux-final-completeness-review.md",
+      "destination": "evidence/amendment-final/report-review/po-ux-final-completeness-review.md.source.txt",
+      "bytes": 8327,
+      "sha256": "e6932387344cc5a47663db73d5110475f7d23e56cf26c973398127ebe90a6f5b"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/cleanup-owned-emulator.ps1",
+      "destination": "evidence/amendment-final/native-cleanup/cleanup-owned-emulator.ps1.source.txt",
+      "bytes": 14442,
+      "sha256": "6ec23539a69f8074a2841fc3a7ec32d68e6407bb908ab187d8006fff6350f631"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/cleanup-before-handle-pinning.ps1.source.txt",
+      "destination": "evidence/amendment-final/native-cleanup/cleanup-before-handle-pinning.ps1.source.txt",
+      "bytes": 14123,
+      "sha256": "2efb2390e401af6ebf7fddc6b5e274311e5a85a2bed793388d2a70ea4c68d415"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/cleanup-handle-pinning-review.txt",
+      "destination": "evidence/amendment-final/native-cleanup/cleanup-handle-pinning-review.txt",
+      "bytes": 1187,
+      "sha256": "cb69a287f141918379821af829c3c6c15f69c50b901d5e5111c849970d7b51f3"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/cleanup-preparation_only-20260927T235106735Z.json",
+      "destination": "evidence/amendment-final/native-cleanup/cleanup-preparation_only-20260927T235106735Z.json",
+      "bytes": 4416,
+      "sha256": "85e21f8ef743bb37cb413950e22d9a3bc53168619954198e67021fff7bb30060"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/cleanup-handle-pinning-receipt.json",
+      "destination": "evidence/amendment-final/native-cleanup/cleanup-handle-pinning-receipt.json",
+      "bytes": 1923,
+      "sha256": "77a5aa39a414973d79676ff422665573c8edcd5c059b0e369da98e12b7333294"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/cleanup-handle-pinning-independent-review.md",
+      "destination": "evidence/amendment-final/native-cleanup/cleanup-handle-pinning-independent-review.md",
+      "bytes": 3225,
+      "sha256": "e538f7d8f1687880530b18eaaa314410f6c70a5426386da4320578159bbf38f1"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/final-archive-provenance-review.json",
+      "destination": "evidence/amendment-final/archive-integrity/final-archive-provenance-review.json",
+      "bytes": 106958,
+      "sha256": "6a84cb39fa41fa14ad82dbffb6d8778f86e3c10127fbd7fd9172137a17865aef"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/final-archive-provenance-review.md",
+      "destination": "evidence/amendment-final/archive-integrity/final-archive-provenance-review.md",
+      "bytes": 3198,
+      "sha256": "f26ff1a63399a8dd45eb088ada1823e159d045034ecc815e8ba016c720d5d158"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/assemble-final-status.mjs",
+      "destination": "evidence/amendment-final/report-review/assemble-final-status.mjs.source.txt",
+      "sha256": "b5b4c2182a33edb7a978c051e0e27703ad833329c57619d21e9048eaefe47c62",
+      "bytes": 33199
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/FINAL_ASSEMBLY_SCRIPT_REVIEW.md",
+      "destination": "evidence/amendment-final/report-review/FINAL_ASSEMBLY_SCRIPT_REVIEW.md.source.txt",
+      "sha256": "19fb64d6a79b9f14200b7f022db6d0d8f337aabe641e96d7e2e98a456bcb6f7a",
+      "bytes": 8841
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/FINAL_ASSEMBLY_INDEPENDENT_REVIEW.md",
+      "destination": "evidence/amendment-final/report-review/FINAL_ASSEMBLY_INDEPENDENT_REVIEW.md.source.txt",
+      "sha256": "0dfa7937a29299458d23439c34e7b36f279a198e0dfc051244cb58aacf5a90d9",
+      "bytes": 7613
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/active-doc-drafts/INDEPENDENT_REVIEW.md",
+      "destination": "evidence/amendment-final/report-review/active-doc-drafts-INDEPENDENT_REVIEW.md.source.txt",
+      "sha256": "65f6dc7ac5d82e0bfc9c055e19d76c41569819f1133f1e643c05d1d382327a26",
+      "bytes": 6946
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/active-doc-drafts/SELF_REVIEW.md",
+      "destination": "evidence/amendment-final/report-review/active-doc-drafts-SELF_REVIEW.md.source.txt",
+      "sha256": "298c1523b3c4b4c3eb9aef65891cdfe5241df62a031d0bd912954870c25c5208",
+      "bytes": 4171
+    }
+  ]
+}

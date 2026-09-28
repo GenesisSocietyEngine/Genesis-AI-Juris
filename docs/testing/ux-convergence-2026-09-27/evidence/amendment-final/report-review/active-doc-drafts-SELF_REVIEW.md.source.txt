@@ -1,0 +1,26 @@
+# Authored active-document revisions: self-review
+
+2026-09-28T00:17:47.561Z. This review is by the author of the ignored revisions. It is not an independent review or final release decision. No tracked file, application source, test, browser, API, deployment or access state was changed by preparation/checking.
+
+## Intended outcome and result
+
+Produce complete replacements for the two stale active documents, ready for the coordinator to update from final evidence and place at their existing documentation destinations after the immutable gate ends. Both complete drafts now exist; the previous paragraph-plan artifact alone was insufficient.
+
+- All 42 unique IDs remain: Stage 0–8, UX01–16 and A01–17. The 28 unrelated row lines remain identical to the original normalized text. Only the 14 assigned rows have additive cells, and every original cell prefix, ID/history link and remaining-action text remains intact. The machine receipt records those IDs.
+- Current committed R is a1fae95bc2624e28e6232b8867ad2a94c8d9f0ab and its full gate is explicitly IN_PROGRESS. Baseline6ab PASS, e6 FAIL (928/1/3) and R are separate. No downstream absent e6 stage receives a baseline count. The passing six-test scheduling repair does not imply a full-gate pass; the valid latency reproduction and unexecuted incompatible experiment remain distinct.
+- The 19 application files are distinguished from the maintained test. The 17 modeled regressions cover real handler/helper paths using synthetic identity/database doubles (detail, collection and note recovery); they do not execute governed-output delivery. Output/read-route wiring is identified as source review. The 9-group/39-response e6 smoke adds ordinary local sequential session-store/v1 access evidence, not an in-flight real-session, browser, natural-expiry or hosted pass.
+- The exact C/25d6 browser observations, report bytes, four earlier PDFs/33 visual pages, automated47/758 scope and saved Studio receipt limits remain historical. No R browser or complete source-v2/governed lifecycle is inferred.
+- All five governed snapshot prerequisites and their proper role boundaries remain open. A synthetic administrative deadline is possible; no evidential contradiction or missing capacity basis may be fabricated away. Zero outputs means no output invalidation was tested. Upload security refusal and later browser connection failure are separate blockers.
+- Latest recorded production remains the actual20:55 metadata observation. A visible fresh-recheck placeholder remains. Source-attributed pre-fix continuity is stated without claiming deployed-binary attestation, exploitation or disclosure; historical rollback retains that pattern. The local fix is not deployed.
+- Engineering and production remain BLOCKED; external pilot remains NO-GO, 0/5 real sessions. True200%, real screen reader, remaining integrated roles/recovery/FiveFlats/hosted routes remain unclosed. No attachment or draft creates new publication/access permission.
+- All destination-relative links resolve except the five explicitly planned AMENDMENT_* destination documents requested by the coordinator. No email pattern was found. Existing tracked source hashes are unchanged. Existing evidence byte-preservation policy is described without inventing a new attributes change.
+
+## Required final handoff
+
+Do not publish these drafts with placeholders. The coordinator must insert the actual R final aggregate and exact build/source receipt, fresh production readback and owned-resource cleanup outcome; resolve planned destination links; then perform final independent review. Neither PASS nor failure is predicted here. A final aggregate PASS alone cannot remove the separately listed acceptance gaps.
+
+Draft hashes:
+- RELEASE_DECISION.md: f2a396e17e9836ebdd76f77c53c8c9ac440c14d0a5ad9a583478ca3edc0cba55, 22904 bytes.
+- POST_RECONCILIATION_CLOSURE.md: f927f9daf37643964fb24def090e5bbb5bb98e728541962fdd0455d3e9a8ea13, 46169 bytes.
+
+Evidence of these document-only checks is in draft-preparation-receipt.json and draft-self-review-receipt.json. Sibling independent review was requested separately and is not claimed by this self-review.

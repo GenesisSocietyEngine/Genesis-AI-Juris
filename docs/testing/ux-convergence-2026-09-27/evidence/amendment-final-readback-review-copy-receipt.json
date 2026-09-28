@@ -1,0 +1,24 @@
+{
+  "archivedAt": "2026-09-28T01:01:56.776Z",
+  "scope": "Final fresh production readback and independent exact-candidate gate review. Byte-exact source evidence; no application or hosted mutation.",
+  "files": [
+    {
+      "source": ".artifacts/ux-reconciliation-auth/final-production-readback.json",
+      "destination": "evidence/amendment-final/production-readback.json",
+      "bytes": 2321,
+      "sha256": "e72dc5c1a67d58e33961a92d38234f2d7add41735a3315b1674a5ba572a83f3d"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/amendment-aggregate-candidate-critical-review.md",
+      "destination": "AMENDMENT_AGGREGATE_CANDIDATE_REVIEW.md",
+      "sha256": "507aa66d8e09a7767eef0d1f8e00f9af15c6519f19da65c102f8be096a4bcb18",
+      "bytes": 8691
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/aggregate-candidate-independent-check.json",
+      "destination": "evidence/amendment-final/aggregate/independent-check.json",
+      "bytes": 8276,
+      "sha256": "7cf9ca9a70ef625e8aad4a0e00bf4380eeedfffbfaabdd204acd0c934687842d"
+    }
+  ]
+}

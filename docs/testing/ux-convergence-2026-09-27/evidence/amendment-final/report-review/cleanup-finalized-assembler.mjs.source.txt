@@ -1,0 +1,416 @@
+// Prepared only: do not execute before the coordinator has final receipts.
+// No subprocesses, network, Git writes, receipt generation or tracked writes.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const WORK = path.join(ROOT, '.artifacts/ux-reconciliation-auth');
+const DOCS = path.join(ROOT, 'docs/testing/ux-convergence-2026-09-27');
+const R = 'a1fae95bc2624e28e6232b8867ad2a94c8d9f0ab';
+const APP = '5597958a0a870757e75cfbdfba930007d475f782035db4ee8503a97aa1723afc';
+const HOSTING = '20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe';
+const MOBILE = '5200b30cc50c77393c6f48b52ce91c0f30e70c64';
+const START = '2026-09-27T23:55:25Z';
+const sha = b => crypto.createHash('sha256').update(b).digest('hex');
+const iso = (value, label) => {
+  assert.equal(typeof value, 'string', `${label}: missing timestamp`);
+  assert.match(value, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:\d\d)$/, `${label}: invalid timestamp`);
+  const valueMs = Date.parse(value);
+  assert.ok(Number.isFinite(valueMs) && valueMs <= Date.now() + 60_000, `${label}: invalid/future timestamp`);
+  return valueMs;
+};
+const under = (child, base) => {
+  const rel = path.relative(base, child);
+  return rel !== '' && rel !== '..' && !rel.startsWith('..' + path.sep) && !path.isAbsolute(rel);
+};
+function localFile(input) {
+  assert.equal(typeof input, 'string', 'Missing input path');
+  const absolute = path.resolve(ROOT, input);
+  assert.ok(under(absolute, ROOT), 'Input must be a file in the canonical checkout');
+  const real = fs.realpathSync(absolute);
+  assert.ok(under(real, fs.realpathSync(ROOT)), 'Input resolves outside canonical checkout');
+  assert.ok(fs.statSync(real).isFile(), 'Input is not a file');
+  return { absolute: real, bytes: fs.readFileSync(real) };
+}
+function jsonInput(input) {
+  const f = localFile(input);
+  return { ...f, hash: sha(f.bytes), value: JSON.parse(f.bytes.toString('utf8').replace(/^\uFEFF/, '')) };
+}
+function parseArgs() {
+  const allowed = new Set(['gate', 'source', 'production', 'cleanup', 'out']);
+  const result = {};
+  const values = process.argv.slice(2);
+  assert.equal(values.length, 10, 'Usage: node assemble-final-status.mjs --gate PATH --source PATH --production PATH --cleanup PATH --out NEW_IGNORED_DIRECTORY');
+  for (let i = 0; i < values.length; i += 2) {
+    const key = values[i].replace(/^--/, '');
+    assert.ok(values[i].startsWith('--') && allowed.has(key) && !Object.hasOwn(result, key), 'Unknown/duplicate flag');
+    assert.ok(values[i + 1] && !values[i + 1].startsWith('--'), 'Missing flag value');
+    result[key] = values[i + 1];
+  }
+  return result;
+}
+const args = parseArgs();
+// Read/validate everything before creating any directory or output.
+const inputs = Object.fromEntries(['gate', 'source', 'production', 'cleanup'].map(k => [k, jsonInput(args[k])]));
+const g = inputs.gate.value, s = inputs.source.value, p = inputs.production.value;
+let c = inputs.cleanup.value;
+let cleanupFinalization = null;
+// A separate read-only proof can finish the recorded stops' postconditions. Never
+// rewrite the prior STOPPED_FOR_REVIEW receipt or claim this proof executed stops.
+if(c.schema === 'genesis.juris.owned-emulator-finalization.v1') {
+  const finalization = c;
+  assert.equal(finalization.mode, 'READ_ONLY_FINALIZATION');
+  assert.equal(finalization.executedStop, false);
+  assert.equal(finalization.status, 'PRIOR_OWNED_STOPS_AND_CURRENT_PRESERVATION_CONFIRMED');
+  assert.ok(!finalization.error);
+  assert.equal(finalization.serial, 'emulator-5580');
+  assert.equal(finalization.avd, 'UXGatePixel');
+  const prior = jsonInput(finalization.priorExecutionReceipt?.path);
+  assert.equal(prior.hash,'b1a780e7f56f81579f386f6bcfe1f42efddb969d23236d7e75179abefbe66c25');
+  assert.equal(finalization.priorExecutionReceipt.sha256, prior.hash);
+  assert.equal(prior.value.status, 'STOPPED_FOR_REVIEW');
+  assert.equal(prior.value.error, 'Executable identity mismatch: 25048');
+  assert.equal(finalization.priorExecutionReceipt.status, prior.value.status);
+  assert.equal(finalization.priorExecutionReceipt.error, prior.value.error);
+  assert.equal(finalization.priorExecutionReceipt.finishedAt, prior.value.finishedAt);
+  assert.equal(prior.value.actions.length,3);
+  assert.deepEqual(prior.value.actions.slice(1).map(action=>action.processId),[25048,4116]);
+  const start = iso(finalization.startedAt,'read-only finalization start');
+  const end = iso(finalization.finishedAt,'read-only finalization finish');
+  assert.ok(start >= iso(prior.value.finishedAt,'prior stopped-for-review receipt') && end >= start);
+  assert.deepEqual(finalization.processAbsence?.map(item=>({processId:item.processId,absent:item.absent})),[{processId:4116,absent:true},{processId:25048,absent:true}]);
+  for(const item of finalization.processAbsence) assert.ok(iso(item.checkedAt,'process absence') >= start && iso(item.checkedAt,'process absence') <= end);
+  assert.deepEqual(finalization.adbCommand?.arguments,['devices']);
+  assert.equal(finalization.adbCommand.completed,true);
+  assert.equal(finalization.adbCommand.exitCode,0);
+  assert.ok(iso(finalization.adbCommand.checkedAt,'ADB absence') >= start && iso(finalization.adbCommand.checkedAt,'ADB absence') <= end);
+  assert.equal(finalization.ownedProcessesGone,true);
+  assert.equal(finalization.serialAbsent,true);
+  // Only an internal validation view combines the two scopes. The original input
+  // bytes copied to execution.json retain the distinct finalization schema.
+  const {error:priorError,...priorFields}=prior.value;
+  assert.ok(priorError);
+  c={...priorFields,status:'OWNED_EMULATOR_STOPPED_AND_PRESERVATION_CONFIRMED',finishedAt:finalization.finishedAt,ownedProcessesGone:true,serialAbsent:true,preservationAfter:finalization.preservationAfter,adbCommands:[...prior.value.adbCommands,finalization.adbCommand]};
+  cleanupFinalization={startedAt:finalization.startedAt,finishedAt:finalization.finishedAt,priorReceiptSha256:prior.hash,priorReceiptStatus:prior.value.status,priorStopTimes:prior.value.actions.slice(1).map(action=>action.at)};
+}
+assert.equal(g.schema, 'genesis.candidate-aggregate-observation.v1');
+assert.equal(g.result, 'PASS');
+assert.equal(g.observedExecExitCode, 0);
+assert.equal(g.testedWebHead, R);
+assert.equal(g.preflight?.head, R);
+assert.equal(g.terminalPass, true);
+assert.equal(g.finalGuards?.web, true);
+assert.equal(g.finalGuards?.mobileHead, MOBILE);
+assert.deepEqual(g.stageCounts, { web: 10, mobile: 9, native: 3 });
+for (const [group, total] of Object.entries(g.stageCounts)) {
+  const actual = g.stages.filter(item => item.group === group);
+  assert.equal(actual.length, total, `${group}: duplicate/absent stages`);
+  assert.deepEqual(actual.map(item => item.number).sort((a,b) => a-b), Array.from({length:total},(_,i)=>i+1));
+  assert.ok(actual.every(item => item.total === total && typeof item.label === 'string'));
+}
+const observed = iso(g.completionObservedAt, 'gate completion observation');
+assert.ok(observed >= iso(START, 'gate start'));
+assert.ok(iso(g.logLastWriteAt, 'gate log timestamp') <= observed);
+assert.ok(iso(g.recordedAt, 'gate receipt timestamp') >= observed);
+const rawLog = localFile(g.log?.path);
+assert.equal(rawLog.bytes.length, g.log.bytes, 'Gate log length mismatch');
+assert.equal(sha(rawLog.bytes), g.log.sha256, 'Gate log hash mismatch');
+const log = rawLog.bytes.toString('utf8').replace(/\u001b\[[0-9;]*m/g, '');
+const section = (a,b) => { assert.equal(log.split(a).length, 2, `Absent/duplicate stage ${a}`); return log.split(a)[1].split(b)[0]; };
+assert.ok(log.includes('PASS v62 Decision-Centric Dossier Workspace release verification on exact web and mobile heads.'));
+assert.ok(log.includes(`PASS final mobile checkout guard: tracked bytes still equal ${MOBILE}`));
+const preflightText = log.match(/^PASS (\{"format":"genesis-juris-web-checkout-receipt"[^\r\n]+\})$/m)?.[1];
+assert.ok(preflightText, 'Missing raw preflight');
+assert.deepEqual(JSON.parse(preflightText), g.preflight, 'Raw preflight mismatch');
+const rawStages = [...log.matchAll(/^\[(web|mobile|native) (\d+)\/(\d+)\] (.+)$/gm)].map(m => ({group:m[1],number:+m[2],total:+m[3],label:m[4]}));
+assert.deepEqual(rawStages, g.stages, 'Raw stage list mismatch');
+function suite(text) {
+  return Object.fromEntries(['tests','pass','fail','cancelled','skipped','todo'].map(key => {
+    const matches = [...text.matchAll(new RegExp('^# '+key+' (\\d+)$','gm'))];
+    assert.ok(matches.length, `Missing suite count ${key}`);
+    return [key, Number(matches.at(-1)[1])];
+  }));
+}
+for (const [field,a,b] of [['webTests','[web 4/10]','[web 5/10]'],['dossierE2E','[web 5/10]','[web 6/10]']]) {
+  const counts = suite(section(a,b));
+  assert.deepEqual(counts, g[field], `Raw ${field} counts mismatch`);
+  assert.ok(counts.pass > 0 && counts.fail === 0 && counts.cancelled === 0 && counts.todo === 0);
+  assert.equal(counts.tests, counts.pass + counts.skipped, `${field}: unexplained test count`);
+}
+const rawSkips = [...log.matchAll(/^ok \d+ - (.+) # SKIP$/gm)].map(m=>m[1]);
+assert.deepEqual(g.explicitSkippedTests, rawSkips);
+assert.equal(g.webTests.skipped + g.dossierE2E.skipped, rawSkips.length);
+const pdfText = section('[web 6/10]', '[web 7/10]');
+const pdfMatch = pdfText.match(/PASS (\d+) PDFs, (\d+) pages and (\d+) rendered PNGs/);
+const goldMatch = pdfText.match(/\((\d+) PNGs,/);
+assert.ok(pdfMatch && goldMatch);
+assert.deepEqual(g.pdf, {files:+pdfMatch[1],pages:+pdfMatch[2],renderedPngs:+pdfMatch[3],goldenPngs:+goldMatch[1]});
+assert.ok(Object.values(g.pdf).every(n => Number.isInteger(n) && n > 0));
+assert.equal(g.pdf.pages, g.pdf.renderedPngs);
+assert.equal(g.productionAuditZeroVulnerabilities, true);
+assert.ok(section('[web 7/10]', '[web 8/10]').includes('found 0 vulnerabilities'));
+const flutterCount = text => { const m=[...text.matchAll(/\+(\d+): All tests passed!/g)]; assert.ok(m.length); return Number(m.at(-1)[1]); };
+assert.equal(g.flutterTests, flutterCount(section('[mobile 6/9]', '[mobile 7/9]')));
+assert.equal(g.androidIntegrationTests, flutterCount(section('[native 1/3]', '[native 2/3]')));
+const rustMatches = [...section('[mobile 9/9]','[native 1/3]').matchAll(/test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;/g)];
+assert.ok(rustMatches.length);
+assert.deepEqual(g.rust, {groups:rustMatches.length,passed:rustMatches.reduce((a,m)=>a+(+m[1]),0),failed:rustMatches.reduce((a,m)=>a+(+m[2]),0),ignored:rustMatches.reduce((a,m)=>a+(+m[3]),0)});
+assert.equal(g.rust.failed, 0);
+const hosted = [...section('[native 2/3]','[native 3/3]').matchAll(/PASS (\w+) workflow (\d+) for ([a-f0-9]{40})/g)].map(m=>({target:m[1],workflow:m[2],commit:m[3]}));
+assert.ok(hosted.length, 'Hosted lock validation is absent');
+assert.deepEqual(hosted, g.hostedLockValidated);
+
+assert.equal(s.schema, 'genesis.juris.build-identity.v1');
+assert.equal(s.sourceCommit, R);
+assert.equal(s.applicationInputsSha256, APP);
+assert.equal(s.hostingConfigSha256, HOSTING);
+assert.equal(s.inputPolicy, 'web-source-v1');
+assert.equal(s.nodeVersion, 'v22.23.2');
+assert.equal(s.inputFileCount, 385);
+assert.equal(s.buildMatchesCurrentSource, true);
+assert.deepEqual(s.builtInputDigests, [APP]);
+assert.ok(iso(s.checkedAt, 'source receipt') >= iso(g.logLastWriteAt, 'gate final log write'), 'Source binding predates final run');
+
+// Fail on any production drift: this assembler may not invent a release decision.
+assert.equal(p.schema, 'genesis.juris.production-readback.v1');
+assert.ok(iso(p.startedAt, 'production start') >= observed, 'Production readback is not fresh after the completed gate');
+assert.ok(iso(p.completedAt, 'production completion') >= iso(p.startedAt, 'production start'));
+const baselineProductionInput = jsonInput('.artifacts/ux-reconciliation-auth/amendment-production-recheck.json');
+assert.equal(baselineProductionInput.hash, 'e929195b475e29224e90a9d96d7c634b72735ada8e2dd3f432700b74923323fe', 'Historical production comparison receipt changed');
+const baselineProduction = baselineProductionInput.value;
+for (const [object, keys] of Object.entries({site:['id','status','latestVersionNumber','liveUrl','previewUrl','accessMode','currentUserRole','accessPolicy'],version:['id','number','sourceCommit','deploymentId'],deployment:['id','status','type','versionId','environmentRevision','url','failureMessage'],environment:['projectId','revision','entryCount']})) {
+  for (const key of keys) assert.deepEqual(p[object]?.[key], baselineProduction[object]?.[key], `Production drift/missing ${object}.${key}`);
+}
+for (const key of Object.keys(baselineProduction.checks)) assert.equal(p.checks?.[key], true, `Production check failed/absent: ${key}`);
+assert.equal(p.noObservedDrift, true);
+assert.equal(p.candidatePublishedToThisProject, false);
+assert.deepEqual(p.mutatingOperations, []);
+assert.deepEqual(p.readOperations, baselineProduction.readOperations);
+
+assert.equal(c.schema, 'genesis.juris.owned-emulator-cleanup.v1');
+assert.equal(c.mode, 'EXECUTE');
+assert.equal(c.executed, true);
+assert.equal(c.status, 'OWNED_EMULATOR_STOPPED_AND_PRESERVATION_CONFIRMED');
+assert.equal(c.serial, 'emulator-5580');
+assert.equal(c.avd, 'UXGatePixel');
+assert.equal(c.ownedProcessesGone, true);
+assert.equal(c.serialAbsent, true);
+assert.ok(iso(c.startedAt, 'cleanup start') >= observed, 'Cleanup predates observed final gate');
+assert.ok(iso(c.finishedAt, 'cleanup completion') >= iso(c.startedAt, 'cleanup start'));
+assert.ok(!c.error, 'Cleanup has an error');
+const cleanupPreparation = jsonInput('.artifacts/amendment-android-native/cleanup-preparation_only-20260927T235106735Z.json');
+assert.equal(cleanupPreparation.hash, '85e21f8ef743bb37cb413950e22d9a3bc53168619954198e67021fff7bb30060', 'Reviewed cleanup ownership/preservation baseline changed');
+const priorCleanup = cleanupPreparation.value;
+assert.deepEqual(c.ownershipBefore, priorCleanup.ownershipBefore, 'Cleanup process identities differ from the reviewed owned instances');
+assert.equal(c.preservationBefore?.originalAvd, priorCleanup.preservationBefore.originalAvd);
+assert.equal(c.preservationAfter?.originalAvd, priorCleanup.preservationBefore.originalAvd);
+for (const key of ['preservationBefore','preservationAfter']) {
+  const value = c[key];
+  assert.equal(value?.configUnchanged, true);
+  assert.equal(value?.metadataUnchanged, true);
+  assert.equal(value?.mobileExactAndClean, true);
+  assert.equal(value?.mobileHead, MOBILE);
+  assert.equal(value?.mobileExpectedHead, MOBILE);
+  assert.equal(value?.mobileStatus, '');
+  assert.equal(value?.metadataDifferenceCount, 0);
+  assert.deepEqual(value?.firstDifferences, []);
+  assert.equal(value?.actualFileCount, value?.expectedFileCount);
+  assert.equal(value?.actualFileCount, priorCleanup.preservationBefore.actualFileCount);
+  assert.equal(value?.expectedFileCount, priorCleanup.preservationBefore.expectedFileCount);
+  assert.equal(value?.configSha256, value?.expectedConfigSha256);
+  assert.equal(value?.configSha256, priorCleanup.preservationBefore.configSha256);
+}
+assert.equal(c.preservationBefore.configSha256, c.preservationAfter.configSha256);
+assert.equal(c.preservationBefore.actualFileCount, c.preservationAfter.actualFileCount);
+assert.ok(Array.isArray(c.actions) && c.actions.length > 0);
+assert.ok(c.actions.length <= 3);
+assert.equal(c.actions[0]?.action, 'GRACEFUL_ADB_EMU_KILL');
+const fallenBack = new Set();
+// Independently observed native times for the exact original CIM-owned processes.
+// These are exact 100ns identities, not a tolerance around the CIM microseconds.
+const ownedNativeCreationUtc = new Map([
+  [4116, '2026-09-27T20:35:08.4851438Z'],
+  [25048, '2026-09-27T20:35:09.6325926Z'],
+]);
+for(const [index,item] of c.actions.entries()) {
+  assert.ok(iso(item.at,'cleanup action') >= iso(c.startedAt,'cleanup start') && iso(item.at,'cleanup action') <= iso(c.finishedAt,'cleanup finish'));
+  if(index === 0) {
+    assert.equal(item.serial, priorCleanup.serial);
+    assert.equal(typeof item.commandCompleted,'boolean');
+    assert.ok(item.exitCode === null || Number.isInteger(item.exitCode));
+  } else {
+    assert.equal(item.action,'REVALIDATED_OWNED_PROCESS_FALLBACK');
+    const owned = priorCleanup.ownershipBefore.find(instance=>instance.processId===item.processId);
+    assert.ok(owned && !fallenBack.has(item.processId),'Unknown/repeated process targeted by cleanup');
+    assert.equal(item.creationUtc, owned.creationUtc, 'Cleanup fallback process creation identity mismatch');
+    assert.equal(item.nativeCreationUtc, ownedNativeCreationUtc.get(item.processId), 'Cleanup fallback native-handle creation identity mismatch');
+    fallenBack.add(item.processId);
+  }
+}
+const expectedAdbArguments = [
+  ['-s',priorCleanup.serial,'shell','getprop','ro.boot.qemu.avd_name'],
+  ['-s',priorCleanup.serial,'get-state'],
+  ['-s',priorCleanup.serial,'emu','kill'],
+  ['devices'],
+];
+assert.deepEqual(c.adbCommands?.map(command=>command.arguments), expectedAdbArguments, 'Unexpected cleanup command/target');
+for(const index of [0,1,3]) { assert.equal(c.adbCommands[index].completed,true); assert.equal(c.adbCommands[index].exitCode,0); }
+assert.equal(c.adbCommands[0].stdout, priorCleanup.avd);
+assert.equal(c.adbCommands[1].stdout, 'device');
+assert.doesNotMatch(c.adbCommands[3].stdout, /^emulator-5580\s/m, 'Owned serial still present in actual ADB readback');
+const cleanupProof = localFile(c.finalGateCompletionEvidence?.path);
+assert.equal(sha(cleanupProof.bytes), c.finalGateCompletionEvidence.sha256, 'Cleanup completion-proof bytes mismatch');
+assert.ok([inputs.gate.hash, g.log.sha256].includes(c.finalGateCompletionEvidence.sha256), 'Cleanup proof must be this exact final gate receipt or complete raw log');
+
+// Reviewed template bytes are pinned: changed templates need a new source review.
+const templates = {
+  'RELEASE_DECISION.md': {path:'active-doc-drafts/RELEASE_DECISION.md',hash:'f2a396e17e9836ebdd76f77c53c8c9ac440c14d0a5ad9a583478ca3edc0cba55'},
+  'POST_RECONCILIATION_CLOSURE.md': {path:'active-doc-drafts/POST_RECONCILIATION_CLOSURE.md',hash:'f927f9daf37643964fb24def090e5bbb5bb98e728541962fdd0455d3e9a8ea13'},
+  'PO_UX_STATUS.md': {path:'po-ux-status-draft.md',hash:'714a82e38af5a56169981f55c5f09c074eb82c387e2609df63052dfec1bf7c9c'},
+};
+for (const item of Object.values(templates)) {
+  item.bytes = fs.readFileSync(path.join(WORK,item.path));
+  assert.equal(sha(item.bytes), item.hash, `Reviewed template changed: ${item.path}`);
+  item.text = item.bytes.toString('utf8').replace(/\r\n/g,'\n');
+}
+function paragraph(text, start, replacement) {
+  const blocks = text.split('\n\n'), ids = blocks.flatMap((b,i)=>b.startsWith(start)?[i]:[]);
+  assert.equal(ids.length, 1, `Missing/duplicate template paragraph: ${start}`);
+  blocks[ids[0]] = replacement;
+  return blocks.join('\n\n');
+}
+function uniqueLine(text, start, replacement) {
+  assert.ok(!replacement.includes('\n'), 'Line replacement contains newlines');
+  const lines = text.split('\n'), ids = lines.flatMap((line,i)=>line.startsWith(start)?[i]:[]);
+  assert.equal(ids.length, 1, `Missing/duplicate template line: ${start}`);
+  lines[ids[0]] = replacement;
+  return lines.join('\n');
+}
+function exact(text, old, next) {
+  assert.ok(text.includes(old), `Template phrase absent: ${old}`);
+  return text.replaceAll(old,next);
+}
+const paths = {
+  gate:'evidence/amendment-final/aggregate/receipt.json',
+  source:'evidence/amendment-final/aggregate/source.json',
+  production:'evidence/amendment-final/production-readback.json',
+  cleanup:'evidence/amendment-final/native-cleanup/execution.json',
+};
+const counts = `Web: ${g.webTests.pass} PASS / ${g.webTests.fail} FAIL / ${g.webTests.skipped} SKIP (${g.webTests.tests} total); separate Dossier: ${g.dossierE2E.pass} PASS / ${g.dossierE2E.skipped} SKIP; PDF: ${g.pdf.files} files, ${g.pdf.pages} pages, ${g.pdf.renderedPngs} rendered PNGs and ${g.pdf.goldenPngs} goldens; Flutter: ${g.flutterTests}; Rust: ${g.rust.passed} PASS / ${g.rust.failed} FAIL / ${g.rust.ignored} ignored across ${g.rust.groups} result groups; Android debug emulator/FFI: ${g.androidIntegrationTests}.`;
+const gateSummary = `**Exact R technical aggregate PASS, exit 0**, tested web commit \`${R}\`, mobile \`${MOBILE}\`; started \`${START}\`, completion observed \`${g.completionObservedAt}\` (observation time, not a measured process-end timestamp). All ${g.stageCounts.web} web, ${g.stageCounts.mobile} mobile and ${g.stageCounts.native} native stages and final source guards passed. ${counts} Production dependency audit reports zero vulnerabilities. Stored hosted workflow-lock validation is not a new hosted/iOS run; native scope is a local debug emulator, not hardware or a release APK. Automated PDF totals are not new visual inspection of every page. [Actual aggregate receipt](${paths.gate}), [candidate scope](AMENDMENT_AGGREGATE_CANDIDATE.md).`;
+const sourceSummary = `Final source readback at \`${s.checkedAt}\` binds tested commit \`${R}\` to application digest \`${APP}\`, ${s.inputFileCount} inputs and a matching built digest; hosting digest is unchanged. [Source receipt](${paths.source}). A later documentation/archive commit is not the tested application checkpoint and must not replace R in these claims.`;
+const cleanupSummary = cleanupFinalization
+  ? `The two exact owned-process stop actions were recorded at ${cleanupFinalization.priorStopTimes.join(' and ')}, but the immediate postcheck failed; that [second receipt](evidence/amendment-final/native-cleanup/second-execution-stopped.json) remains STOPPED_FOR_REVIEW. The [first failed attempt](evidence/amendment-final/native-cleanup/first-execution-stopped.json) is also retained. Separate read-only finalization at \`${cleanupFinalization.finishedAt}\` confirmed both process IDs and the emulator serial absent, original AVD configuration/hash and metadata unchanged, and clean exact mobile source. It executed no stop or emulator launch. [Read-only finalization and prior-action binding](${paths.cleanup}). Original AVD content beyond its configuration was checked by metadata, not all-file hashes.`
+  : `Owned-emulator cleanup completed at \`${c.finishedAt}\`: only task emulator \`${c.serial}\` / \`${c.avd}\` was stopped, its serial and owned processes are absent, original AVD configuration/hash and metadata plus the clean exact mobile source were preserved. Other original AVD bytes were not all content-hashed. [Execution receipt](${paths.cleanup}).`;
+const freshSummary = `Fresh read-only production readback completed at \`${p.completedAt}\`: public v${p.version.number}, source \`${p.version.sourceCommit}\`, environment ${p.environment.revision}, succeeded deployment, unchanged audience and no preview or observed drift. The correction remains local and is not deployed. [Fresh readback](${paths.production}). The earlier 20:55:35.286 UTC observation remains historical [evidence](evidence/amendment-production-recheck.json).`;
+const assembled = `Evidence assembled from completed receipts; all timestamps are explicitly UTC. This is an authored status update, not a substitute for independent review of the final outputs. It records completed technical automation and separately incomplete product acceptance. The tested application checkpoint remains R even if these documents are later committed under a new documentation SHA.`;
+const current = `**Current tested checkpoint R = \`${R}\`: complete technical release gate PASS.** R inherits the application private-read correction from \`e6c6adc6fe01129b2e3d442072c532e08591fae9\` and adds the reviewed test-only PDF scheduling correction.\n\n${gateSummary}\n\n${sourceSummary}`;
+const aggregateReplacements = [
+  ['R requires its own completed full command.', 'R now has its own completed full command and source-bound receipt; neither historical result is overwritten.'],
+  ['even if the automation eventually passes', 'despite the completed technical automation'],
+  ['R has no completed aggregate result or hosted acceptance.', 'R has a completed technical aggregate PASS but no hosted acceptance.'],
+  ['R has not yet passed its complete gate.', 'R has now passed its complete technical gate; the earlier e6 failure remains historical.'],
+  ['the current complete R release run remains PASS.', 'the current complete R technical release run has passed.'],
+  ['its full gate remains PASS.', 'its complete technical gate has passed.'],
+  ['R aggregate remains PASS.', 'R technical aggregate has passed.'],
+  ['Neither the attached amendment nor this draft grants', 'Neither the attached amendment nor this status report grants'],
+  ['Its final build/source receipt and aggregate outcome are pending in the [candidate record](AMENDMENT_AGGREGATE_CANDIDATE.md).', 'Its completed build/source receipt and aggregate outcome are recorded in the [candidate record](AMENDMENT_AGGREGATE_CANDIDATE.md).'],
+  ['Final R lint/counts/stages must come from its own completed [receipt](AMENDMENT_AGGREGATE_CANDIDATE.md).', 'Final R stage/count claims come from its own completed [receipt](AMENDMENT_AGGREGATE_CANDIDATE.md); no new warning total is inferred from earlier runs.'],
+  ['Even a later aggregate PASS cannot supply', 'This technical aggregate PASS does not supply'],
+  ['final fresh recheck is pending', `fresh readback at ${p.completedAt} confirms it unchanged`],
+  ['R is PASS; its own [candidate receipt](AMENDMENT_AGGREGATE_CANDIDATE.md) must supply its eventual result/counts, not inherited baseline totals.', 'R is PASS with its own [candidate receipt](AMENDMENT_AGGREGATE_CANDIDATE.md); its actual totals are recorded above and are not inherited baseline counts.'],
+];
+function active(text, ledger) {
+  if(ledger) text=exact(text,'; additive draft 28 September Europe/Paris','; completed technical-evidence reconciliation 28 September Europe/Paris');
+  text = paragraph(text, '**DRAFT —', assembled);
+  text = paragraph(text, '**Current checkpoint R =', current);
+  text = text.replaceAll('IN_PROGRESS','PASS');
+  for (const [from,to] of aggregateReplacements) if(text.includes(from)) text=exact(text,from,to);
+  const prodPrefix = ledger ? '- The latest recorded read-only Sites recheck' : 'The latest recorded read-only Sites recheck';
+  const prodReplacement = (ledger?'- ':'') + freshSummary + ' Independent static comparison found all 19 source blobs attributed to bf5799 equal to the pre-fix 6ab versions and all corrected local files changed as expected. [Production-attributed source comparison](AMENDMENT_PRODUCTION_SOURCE_REVIEW.md). This is source provenance, not deployed-binary attestation, a live exploit or evidence of disclosure. Historical rollback to v102 retains that source pattern.';
+  text = ledger ? uniqueLine(text, prodPrefix, prodReplacement) : paragraph(text, prodPrefix, prodReplacement);
+  text = text.replace(/\[\[FINAL_R_AGGREGATE_RESULT_PENDING(?::[^\]]*)?\]\]/g, `Technical aggregate PASS; [actual receipt](${paths.gate}).`)
+    .replace(/\[\[FINAL_R_BUILD_IDENTITY_PENDING(?::[^\]]*)?\]\]/g, `[Final exact R source readback](${paths.source}).`)
+    .replace(/\[\[OWNED_RESOURCE_CLEANUP_PENDING(?::[^\]]*)?\]\]/g, cleanupSummary);
+  return text;
+}
+const output = {
+  'RELEASE_DECISION.md':active(templates['RELEASE_DECISION.md'].text,false),
+  'POST_RECONCILIATION_CLOSURE.md':active(templates['POST_RECONCILIATION_CLOSURE.md'].text,true),
+};
+let po = templates['PO_UX_STATUS.md'].text;
+po = paragraph(po, '**PRIVATE WORKING DRAFT', 'Prepared for the product owner and chief UX designer from completed technical receipts and scoped product evidence. Dates below retain their original UTC identities. This report is not a claim that the full runbook is accepted: engineering/production remain BLOCKED and external pilot remains NO-GO. A later documentation commit is distinct from tested application R.');
+po = exact(po, "alongside the current candidate's complete technical gate", 'after the now completed candidate technical gate');
+po = exact(po, 'The corrected-source aggregate failed one test setup barrier. Its reviewed test-only correction passes targeted checks; a complete rerun is pending. Integrated source/change/review, remaining recovery/role paths and accessibility acceptance remain incomplete even if that rerun passes.', 'The historical e6 aggregate failed one test setup barrier; the corrected R rerun has passed its complete technical gate. Integrated source/change/review, remaining recovery/role paths and accessibility acceptance remain incomplete.');
+po = paragraph(po, '**Current execution checkpoint:**', `**Current tested checkpoint:** \`${R}\` includes the reviewed test correction and its evidence.\n\n${gateSummary}\n\n${sourceSummary}\n\n${cleanupSummary}\n\nThe prior \`6ab091d\` PASS and \`e6c6adc\` FAIL remain separate historical results. This technical result does not provide unexecuted browser, hosted, accessibility or human evidence.`);
+po = exact(po, 'it requires its own source/build binding and aggregate result.', 'its own final source/build binding and passing R aggregate are now recorded above.');
+po = paragraph(po, 'The latest read-only production check at', freshSummary + ' Existing production is not a candidate QA deployment. No candidate was published, and no production organization, invitation or data change was made to manufacture acceptance.');
+po = exact(po, 'A fresh production metadata recheck is pending for the final report.', `The fresh production readback at ${p.completedAt} confirms that metadata unchanged.`);
+po = exact(po, 'Evidence links require the accompanying repository/evidence packet and must be adjusted if this draft is moved into the final report directory.', 'Evidence links require the accompanying repository/evidence packet; they are relative to this report’s final documentation directory.');
+po = exact(po, 'current rerun is in progress (E11)', 'the exact R technical rerun passed (E11), without closing the remaining UX scopes');
+po = exact(po, '1. Finish the unchanged full gate now running against clean checkpoint `a1fae95`, then verify its final application/build identity. Insert the observed result while retaining the failed `e6c6adc` aggregate and controlled reproduction. A green rerun removes that technical prerequisite only.', '1. Retain the completed R aggregate/source receipts and independent final-output review. The failed e6 aggregate and controlled reproduction remain in history. The technical prerequisite is satisfied; the integrated product/hosted/accessibility/human obligations below are not.');
+po = paragraph(po, 'The final report should link the active', 'Accompanying records: [release decisions](RELEASE_DECISION.md), [all 42 requirements](POST_RECONCILIATION_CLOSURE.md), [private-read slice](SLICE_PRIVATE_READ_AUTHORITY.md), [independent private-read review](AMENDMENT_PRIVATE_READ_REVIEW.md), [actual aggregate receipt](' + paths.gate + '), [source receipt](' + paths.source + '), [historical browser scope](RECONCILIATION_BROWSER.md), [PDF review](REPORTS.md), [hosting capability](AMENDMENT_CANDIDATE_HOSTING_REVIEW.md) and [human protocol](HUMAN_VALIDATION.md). Implementation, automated tests, browser observations, actual-file inspection, hosted execution and human research retain their separate scopes.');
+po = po.replaceAll('../../docs/testing/ux-convergence-2026-09-27/','');
+const linkMap = {
+  'local-read-smoke-independent-review.md':'AMENDMENT_LOCAL_READ_SMOKE.md',
+  'production-read-fence-source-continuity.md':'AMENDMENT_PRODUCTION_SOURCE_REVIEW.md',
+  'governed-v1-baseline-plan.md':'AMENDMENT_GOVERNED_BASELINE_PLAN.md',
+  'pdf-renderer-start-wait-review.md':'AMENDMENT_PDF_SYNCHRONIZATION_REVIEW.md',
+  '../amendment-release-gate/candidate-initial-source.json':'evidence/amendment-final/local-read-smoke/candidate-initial-source.json',
+};
+for (const [from,to] of Object.entries(linkMap)) po=exact(po,`(${from})`,`(${to})`);
+po = exact(po, '**E11** [aggregate baseline]', '**E11** [completed R aggregate](AMENDMENT_AGGREGATE_CANDIDATE.md), [actual final receipt](' + paths.gate + ') and [aggregate baseline]');
+output['PO_UX_STATUS.md'] = po;
+
+// Document acceptance guards: never turn a whole UX/browser requirement green.
+const ids = (text, poStyle=false) => [...text.matchAll(poStyle ? /^\| \*\*((?:Stage \d)|(?:UX\d{2})|(?:A\d{2}))\b/gm : /^\| \[((?:Stage \d)|(?:UX\d{2})|(?:A\d{2}))\]/gm)].map(m=>m[1]);
+assert.equal(new Set(ids(output['POST_RECONCILIATION_CLOSURE.md'])).size,42);
+assert.deepEqual(ids(output['POST_RECONCILIATION_CLOSURE.md']),ids(templates['POST_RECONCILIATION_CLOSURE.md'].text));
+assert.equal(new Set(ids(po,true)).size,42);
+assert.deepEqual(ids(po,true),ids(templates['PO_UX_STATUS.md'].text,true));
+const countToken = (text, token) => text.split(token).length-1;
+for(const name of Object.keys(output)) {
+  const text=output[name], before=templates[name].text;
+  assert.equal(countToken(text,'NOT_RUN'),countToken(before,'NOT_RUN'), `${name}: unexecuted scope changed`);
+  assert.equal(countToken(text,'BLOCKED'),countToken(before,'BLOCKED') + (name==='PO_UX_STATUS.md'?1:0), `${name}: blocker promotion`);
+  assert.ok(text.includes('NO-GO') && text.includes('6ab091d') && text.includes('e6c6adc') && text.includes('928'));
+  assert.doesNotMatch(text,/\bIN_PROGRESS\b|\bIN PROGRESS\b|\bin progress\b|\bDRAFT\b|ROOT TO COMPLETE|\[\[|\[complete a1fae95|rerun is pending|fresh recheck is pending|recheck is pending|R has not yet passed|gate now running|must supply its eventual|still be bound/);
+  assert.doesNotMatch(text,/\([^)]*\.artifacts\/|\(\.\.\/amendment-release-gate\/|\(\.\.\/\.\.\/docs\/testing\//);
+  assert.doesNotMatch(text,/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i, 'Email pattern in final document');
+}
+// Four provided receipts will be copied byte-exact into the ignored output packet.
+// Other destination-relative links must already exist in the final docs directory;
+// otherwise refuse assembly rather than present a broken final handoff.
+const expectedCopies = new Map(Object.keys(paths).map(key=>[paths[key],inputs[key]]));
+const linkAudit=[];
+for (const [name,text] of Object.entries(output)) {
+  const targets=[...new Set([...text.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)].map(m=>m[1]))];
+  for(const target of targets) {
+    if(/^https?:/.test(target)) continue;
+    const targetPath=target.split('#')[0];
+    if(Object.hasOwn(output,targetPath)||expectedCopies.has(targetPath)) continue;
+    const resolved=path.resolve(DOCS,targetPath);
+    assert.ok(resolved===DOCS||under(resolved,DOCS),`Unexpected link outside documentation destination: ${target}`);
+    assert.ok(fs.existsSync(resolved)&&fs.statSync(resolved).isFile(),`Missing final support document/evidence: ${target}; archive it before assembly`);
+  }
+  linkAudit.push({name,uniqueLinks:targets.length});
+}
+
+// A new output directory only, strictly inside the ignored task directory.
+const out = path.resolve(ROOT,args.out);
+assert.ok(under(out,WORK),'Output must be inside .artifacts/ux-reconciliation-auth');
+assert.ok(!fs.existsSync(out),'Output path exists; refusing overwrite');
+let ancestor=path.dirname(out);
+while(!fs.existsSync(ancestor)) ancestor=path.dirname(ancestor);
+assert.ok(fs.realpathSync(ancestor)===fs.realpathSync(WORK)||under(fs.realpathSync(ancestor),fs.realpathSync(WORK)),'Output ancestor escapes task directory');
+const manifest={schema:'genesis.juris.final-status-assembly.v1',assembledAt:new Date().toISOString(),testedWebHead:R,applicationInputsSha256:APP,result:'COMPLETED_RECEIPTS_ASSEMBLED_FOR_INDEPENDENT_OUTPUT_REVIEW',technicalGate:'PASS',engineering:'BLOCKED',production:'BLOCKED',externalPilot:'NO-GO',trackedFilesWritten:false,scriptSha256:sha(fs.readFileSync(fileURLToPath(import.meta.url))),inputs:Object.fromEntries(Object.entries(inputs).map(([key,value])=>[key,{path:path.relative(ROOT,value.absolute).replaceAll('\\','/'),sha256:value.hash,bytes:value.bytes.length}])),gateLog:{sha256:g.log.sha256,bytes:g.log.bytes},templates:Object.fromEntries(Object.entries(templates).map(([name,value])=>[name,{sha256:value.hash}])),outputs:Object.fromEntries(Object.entries(output).map(([name,text])=>[name,{sha256:sha(Buffer.from(text)),bytes:Buffer.byteLength(text)}])),linkAudit,limits:['Assembler validates supplied evidence and raw-log consistency; it does not execute tests or independently observe production/cleanup.','No commit, deployment, invitation, permission change or browser action occurs.','Final Markdown still requires coordinator and independent output review; completed technical automation does not close remaining acceptance.','Document links assume the stated final repository location; copying or publishing these files is a separate authorized action.']};
+manifest.cleanupFinalization=cleanupFinalization;
+fs.mkdirSync(out,{recursive:true});
+assert.ok(under(fs.realpathSync(out),fs.realpathSync(WORK)) && !fs.lstatSync(out).isSymbolicLink(),'Created output directory escapes task directory');
+for(const [name,text] of Object.entries(output)) fs.writeFileSync(path.join(out,name),text,{encoding:'utf8',flag:'wx'});
+for(const [relative,input] of expectedCopies) { const file=path.join(out,relative); fs.mkdirSync(path.dirname(file),{recursive:true}); fs.writeFileSync(file,input.bytes,{flag:'wx'}); }
+fs.writeFileSync(path.join(out,'ASSEMBLY_RECEIPT.json'),JSON.stringify(manifest,null,2)+'\n',{encoding:'utf8',flag:'wx'});
+console.log(JSON.stringify({out,outputs:manifest.outputs,technicalGate:manifest.technicalGate,engineering:manifest.engineering,production:manifest.production,externalPilot:manifest.externalPilot}));

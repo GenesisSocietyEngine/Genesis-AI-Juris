@@ -1,0 +1,498 @@
+{
+  "schema": "genesis.juris.local-read-smoke.v1",
+  "startedAt": "2026-09-27T22:02:10.764Z",
+  "status": "PASS",
+  "localOnly": true,
+  "origin": "http://localhost:5281",
+  "build": {
+    "sourceCommit": "e6c6adc6fe01129b2e3d442072c532e08591fae9",
+    "applicationInputsSha256": "5597958a0a870757e75cfbdfba930007d475f782035db4ee8503a97aa1723afc",
+    "buildReceiptSha256": "8a481df14b07c8e5ccc14574edd3bde1b84af7d56ebe68432fb8c353cda241fc",
+    "binding": "Operator-confirmed built worker/port plus exact local source-bound receipt; not an HTTP build attestation."
+  },
+  "fixture": {
+    "organizationSha256": "bc340acb198901b029e14ae4f8c3d18e091088467b99c2039c3d23341209f4c2",
+    "dossierSha256": "274c11e96749e8d0184f66b6bc9807e9cd3f9f560b63181d044fcece514e658d",
+    "documentSha256": "374325c18cb2ab9401627a002afbccbf6866cac48972ed0b36456b297fc04ee8",
+    "versionSha256": "ea6bc958584bd7896f210d8d64ffcea9774bb882956a8a8eebf44fde0c535abc",
+    "sourceSha256": "f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e"
+  },
+  "events": [
+    {
+      "at": "2026-09-27T22:02:12.620Z",
+      "alias": "owner",
+      "operation": "login",
+      "status": 200,
+      "expectedStatus": 200,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:14.190Z",
+      "alias": "viewer",
+      "operation": "login",
+      "status": 200,
+      "expectedStatus": 200,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:15.460Z",
+      "alias": "foreign",
+      "operation": "login",
+      "status": 200,
+      "expectedStatus": 200,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:15.568Z",
+      "alias": "owner",
+      "operation": "fresh_organization_selection",
+      "status": 200,
+      "expectedStatus": 200,
+      "responseSha256": "f32973b92585a19000406507587bc2fdb35d6c19667f18870097467157d3d9a5",
+      "responseBytes": 6828,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:15.723Z",
+      "alias": "owner",
+      "operation": "collection",
+      "status": 200,
+      "expectedStatus": 200,
+      "responseSha256": "7b88c4ad445d70c1694a01fa60f77637fbf879f7c03c5aec11b146cc973957d1",
+      "responseBytes": 2885,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:15.936Z",
+      "alias": "owner",
+      "operation": "detail",
+      "status": 200,
+      "expectedStatus": 200,
+      "responseSha256": "b9b366c081b535f054376afb3b76e80d4249cf55f4cd0e66eb7aabd5cac2778f",
+      "responseBytes": 7483,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:16.067Z",
+      "alias": "owner",
+      "operation": "documents",
+      "status": 200,
+      "expectedStatus": 200,
+      "responseSha256": "5a9891bfbd1515b04264bda10c57d56dae339ce84cd3a7bb7347d16c6e1a7a2e",
+      "responseBytes": 1282,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:16.205Z",
+      "alias": "owner",
+      "operation": "source",
+      "status": 200,
+      "expectedStatus": 200,
+      "responseSha256": "f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e",
+      "responseBytes": 422,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:16.279Z",
+      "alias": "viewer",
+      "operation": "fresh_organization_selection",
+      "status": 200,
+      "expectedStatus": 200,
+      "responseSha256": "3287b39772b01761f3c84059baf29a4e0f91ce6ac17a510e29e7c6a3695c3a16",
+      "responseBytes": 1259,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:16.382Z",
+      "alias": "viewer",
+      "operation": "collection",
+      "status": 200,
+      "expectedStatus": 200,
+      "responseSha256": "abbbe27ee1cac393f3d8ba8581fa16747a98b57010072fdfb9afbd4432e61e7e",
+      "responseBytes": 2892,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:16.624Z",
+      "alias": "viewer",
+      "operation": "detail",
+      "status": 200,
+      "expectedStatus": 200,
+      "responseSha256": "5209bcf147f9ca4d89b4aaf02aa9941565c81dff4d1185c09f290d3acb7b92a3",
+      "responseBytes": 7490,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:16.782Z",
+      "alias": "viewer",
+      "operation": "documents",
+      "status": 200,
+      "expectedStatus": 200,
+      "responseSha256": "5a9891bfbd1515b04264bda10c57d56dae339ce84cd3a7bb7347d16c6e1a7a2e",
+      "responseBytes": 1282,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:16.891Z",
+      "alias": "viewer",
+      "operation": "source",
+      "status": 200,
+      "expectedStatus": 200,
+      "responseSha256": "f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e",
+      "responseBytes": 422,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:16.971Z",
+      "alias": "foreign",
+      "operation": "foreign_unavailable_target_organization",
+      "status": 200,
+      "expectedStatus": 200,
+      "responseSha256": "7710e88f98c6fb477854ad2319eb2dfb0a6339921e04e033fb0e4970e581a166",
+      "responseBytes": 644,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:17.039Z",
+      "alias": "foreign",
+      "operation": "foreign_target_collection_denied",
+      "status": 404,
+      "expectedStatus": 404,
+      "responseSha256": "ee3e14e8963bb624e0cce491f600942e2372f7f520d15b767be2859a9a893375",
+      "responseBytes": 91,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:17.096Z",
+      "alias": "foreign",
+      "operation": "foreign_target_detail_denied",
+      "status": 404,
+      "expectedStatus": 404,
+      "responseSha256": "ee3e14e8963bb624e0cce491f600942e2372f7f520d15b767be2859a9a893375",
+      "responseBytes": 91,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:17.161Z",
+      "alias": "foreign",
+      "operation": "foreign_target_documents_denied",
+      "status": 404,
+      "expectedStatus": 404,
+      "responseSha256": "ee3e14e8963bb624e0cce491f600942e2372f7f520d15b767be2859a9a893375",
+      "responseBytes": 91,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:17.239Z",
+      "alias": "foreign",
+      "operation": "foreign_target_source_denied",
+      "status": 404,
+      "expectedStatus": 404,
+      "responseSha256": "ee3e14e8963bb624e0cce491f600942e2372f7f520d15b767be2859a9a893375",
+      "responseBytes": 91,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:17.316Z",
+      "alias": "foreign",
+      "operation": "foreign_wrong_context_detail_denied",
+      "status": 404,
+      "expectedStatus": 404,
+      "responseSha256": "658ba3ca4d328b99b45b3a9ac6334ae8af722b6b1b21b9b24601574a28152838",
+      "responseBytes": 29,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:17.411Z",
+      "alias": "foreign",
+      "operation": "foreign_wrong_context_documents_denied",
+      "status": 404,
+      "expectedStatus": 404,
+      "responseSha256": "658ba3ca4d328b99b45b3a9ac6334ae8af722b6b1b21b9b24601574a28152838",
+      "responseBytes": 29,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:17.534Z",
+      "alias": "foreign",
+      "operation": "foreign_wrong_context_source_denied",
+      "status": 404,
+      "expectedStatus": 404,
+      "responseSha256": "658ba3ca4d328b99b45b3a9ac6334ae8af722b6b1b21b9b24601574a28152838",
+      "responseBytes": 29,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:17.711Z",
+      "alias": "owner",
+      "operation": "owner_preservation_readback",
+      "status": 200,
+      "expectedStatus": 200,
+      "responseSha256": "cded29f0b9aa566f9c7a84ad641a9d250cce2e21a19d0deeb097709f4dc6f273",
+      "responseBytes": 7483,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:17.849Z",
+      "alias": "owner",
+      "operation": "documents_preservation_readback",
+      "status": 200,
+      "expectedStatus": 200,
+      "responseSha256": "5a9891bfbd1515b04264bda10c57d56dae339ce84cd3a7bb7347d16c6e1a7a2e",
+      "responseBytes": 1282,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:17.942Z",
+      "alias": "owner",
+      "operation": "membership_preservation_readback",
+      "status": 200,
+      "expectedStatus": 200,
+      "responseSha256": "f32973b92585a19000406507587bc2fdb35d6c19667f18870097467157d3d9a5",
+      "responseBytes": 6828,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:18.011Z",
+      "alias": "foreign",
+      "operation": "script_owned_logout",
+      "status": 200,
+      "expectedStatus": 200,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:18.054Z",
+      "alias": "foreign",
+      "operation": "revoked_cookie_collection_denied",
+      "status": 401,
+      "expectedStatus": 401,
+      "responseSha256": "570b0fe645c5e5eff3a73aeb53e58deb5cac795a2285d1c27790adef8f0cdc53",
+      "responseBytes": 32,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:18.089Z",
+      "alias": "foreign",
+      "operation": "revoked_cookie_detail_denied",
+      "status": 401,
+      "expectedStatus": 401,
+      "responseSha256": "570b0fe645c5e5eff3a73aeb53e58deb5cac795a2285d1c27790adef8f0cdc53",
+      "responseBytes": 32,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:18.149Z",
+      "alias": "foreign",
+      "operation": "revoked_cookie_documents_denied",
+      "status": 401,
+      "expectedStatus": 401,
+      "responseSha256": "570b0fe645c5e5eff3a73aeb53e58deb5cac795a2285d1c27790adef8f0cdc53",
+      "responseBytes": 32,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:18.189Z",
+      "alias": "foreign",
+      "operation": "revoked_cookie_source_denied",
+      "status": 401,
+      "expectedStatus": 401,
+      "responseSha256": "570b0fe645c5e5eff3a73aeb53e58deb5cac795a2285d1c27790adef8f0cdc53",
+      "responseBytes": 32,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:18.265Z",
+      "alias": "viewer",
+      "operation": "script_owned_logout",
+      "status": 200,
+      "expectedStatus": 200,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:18.307Z",
+      "alias": "viewer",
+      "operation": "revoked_cookie_collection_denied",
+      "status": 401,
+      "expectedStatus": 401,
+      "responseSha256": "570b0fe645c5e5eff3a73aeb53e58deb5cac795a2285d1c27790adef8f0cdc53",
+      "responseBytes": 32,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:18.338Z",
+      "alias": "viewer",
+      "operation": "revoked_cookie_detail_denied",
+      "status": 401,
+      "expectedStatus": 401,
+      "responseSha256": "570b0fe645c5e5eff3a73aeb53e58deb5cac795a2285d1c27790adef8f0cdc53",
+      "responseBytes": 32,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:18.381Z",
+      "alias": "viewer",
+      "operation": "revoked_cookie_documents_denied",
+      "status": 401,
+      "expectedStatus": 401,
+      "responseSha256": "570b0fe645c5e5eff3a73aeb53e58deb5cac795a2285d1c27790adef8f0cdc53",
+      "responseBytes": 32,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:18.417Z",
+      "alias": "viewer",
+      "operation": "revoked_cookie_source_denied",
+      "status": 401,
+      "expectedStatus": 401,
+      "responseSha256": "570b0fe645c5e5eff3a73aeb53e58deb5cac795a2285d1c27790adef8f0cdc53",
+      "responseBytes": 32,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:18.465Z",
+      "alias": "owner",
+      "operation": "script_owned_logout",
+      "status": 200,
+      "expectedStatus": 200,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:18.509Z",
+      "alias": "owner",
+      "operation": "revoked_cookie_collection_denied",
+      "status": 401,
+      "expectedStatus": 401,
+      "responseSha256": "570b0fe645c5e5eff3a73aeb53e58deb5cac795a2285d1c27790adef8f0cdc53",
+      "responseBytes": 32,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:18.559Z",
+      "alias": "owner",
+      "operation": "revoked_cookie_detail_denied",
+      "status": 401,
+      "expectedStatus": 401,
+      "responseSha256": "570b0fe645c5e5eff3a73aeb53e58deb5cac795a2285d1c27790adef8f0cdc53",
+      "responseBytes": 32,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:18.597Z",
+      "alias": "owner",
+      "operation": "revoked_cookie_documents_denied",
+      "status": 401,
+      "expectedStatus": 401,
+      "responseSha256": "570b0fe645c5e5eff3a73aeb53e58deb5cac795a2285d1c27790adef8f0cdc53",
+      "responseBytes": 32,
+      "noStore": true
+    },
+    {
+      "at": "2026-09-27T22:02:18.630Z",
+      "alias": "owner",
+      "operation": "revoked_cookie_source_denied",
+      "status": 401,
+      "expectedStatus": 401,
+      "responseSha256": "570b0fe645c5e5eff3a73aeb53e58deb5cac795a2285d1c27790adef8f0cdc53",
+      "responseBytes": 32,
+      "noStore": true
+    }
+  ],
+  "checks": [
+    {
+      "name": "Ordinary password login",
+      "status": "PASS",
+      "at": "2026-09-27T22:02:12.621Z",
+      "alias": "owner"
+    },
+    {
+      "name": "Ordinary password login",
+      "status": "PASS",
+      "at": "2026-09-27T22:02:14.192Z",
+      "alias": "viewer"
+    },
+    {
+      "name": "Ordinary password login",
+      "status": "PASS",
+      "at": "2026-09-27T22:02:15.461Z",
+      "alias": "foreign"
+    },
+    {
+      "name": "Fresh actor-specific organization selection",
+      "status": "PASS",
+      "at": "2026-09-27T22:02:15.598Z",
+      "alias": "owner",
+      "selectionSha256": "8da2ea9fda5352c619c8491b7f88f529e8acf2122031018ada17e9fcf160f1af"
+    },
+    {
+      "name": "Authenticated list/detail/documents/exact-v1 and role permissions",
+      "status": "PASS",
+      "at": "2026-09-27T22:02:16.208Z",
+      "alias": "owner",
+      "permissionsSha256": "c953ee25c7271929b420de7da5b3d144627744d8f5bbf5518f58d8865658279d",
+      "sourceSha256": "f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e",
+      "sourceBytes": 422
+    },
+    {
+      "name": "Fresh actor-specific organization selection",
+      "status": "PASS",
+      "at": "2026-09-27T22:02:16.281Z",
+      "alias": "viewer",
+      "selectionSha256": "9ff03d35836b4c09dd63617b005057cb8fde6ac978c3887e2e6d24d41aef33d9"
+    },
+    {
+      "name": "Authenticated list/detail/documents/exact-v1 and role permissions",
+      "status": "PASS",
+      "at": "2026-09-27T22:02:16.892Z",
+      "alias": "viewer",
+      "permissionsSha256": "a851180de09efa68e8568306126374d3d6e0c68562379e67cfa637608b01c8e6",
+      "sourceSha256": "f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e",
+      "sourceBytes": 422
+    },
+    {
+      "name": "Foreign target and wrong personal organization conceal private records",
+      "status": "PASS",
+      "at": "2026-09-27T22:02:17.535Z",
+      "alias": "foreign"
+    },
+    {
+      "name": "Dossier/source metadata and organization memberships unchanged",
+      "status": "PASS",
+      "at": "2026-09-27T22:02:17.945Z",
+      "alias": "owner",
+      "dossierSha256": "e6ad78ce04e4dcb2dfef3faf9a24b39959027cbd4e92458c33eec89a272a19ce",
+      "documentsSha256": "cf72de5dc181abb66e72aeeeea2b249a5220b31234de4c2a61bfaedb0f6409d7",
+      "membersSha256": "0c57a77a7a2e8eb2176cb106f0e9136d5e2ea129723dbd54f363183abcba2614"
+    }
+  ],
+  "sessionCleanup": [
+    {
+      "alias": "foreign",
+      "status": "PASS",
+      "logoutConfirmed": true,
+      "oldCookieDenied": true,
+      "attempts": 1
+    },
+    {
+      "alias": "viewer",
+      "status": "PASS",
+      "logoutConfirmed": true,
+      "oldCookieDenied": true,
+      "attempts": 1
+    },
+    {
+      "alias": "owner",
+      "status": "PASS",
+      "logoutConfirmed": true,
+      "oldCookieDenied": true,
+      "attempts": 1
+    }
+  ],
+  "limitations": [
+    "Sequential ordinary local API requests, not concurrent revocation or expiry-race proof.",
+    "No provider-header, token, DB or mocked-auth transport.",
+    "Only script-owned login/logout session and ordinary auth-audit effects; no application-content or membership mutation requests.",
+    "No hosted, upload/source-v2, browser, human or accessibility acceptance."
+  ],
+  "completedAt": "2026-09-27T22:02:18.632Z",
+  "interrupted": false
+}

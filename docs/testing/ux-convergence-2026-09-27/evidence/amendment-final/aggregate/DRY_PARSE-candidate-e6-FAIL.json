@@ -1,0 +1,85 @@
+{
+  "schema": "genesis.candidate-aggregate-observation.v1",
+  "recordedAt": "2026-09-28T00:00:01.390Z",
+  "testedWebHead": "e6c6adc6fe01129b2e3d442072c532e08591fae9",
+  "observedExecExitCode": 1,
+  "completionObservedAt": "2026-09-27T23:45:49Z",
+  "logLastWriteAt": "2026-09-27T22:48:33.565Z",
+  "result": "FAIL_OR_INCOMPLETE",
+  "log": {
+    "path": "docs/testing/ux-convergence-2026-09-27/evidence/amendment-pdf-synchronization/failed-aggregate.log",
+    "bytes": 233663,
+    "sha256": "2a3b4302ab0aa117361d83e5d56f5220e5efcbae2dff1b399fdd67bccb50edaa"
+  },
+  "preflight": {
+    "format": "genesis-juris-web-checkout-receipt",
+    "head": "e6c6adc6fe01129b2e3d442072c532e08591fae9",
+    "tree": "21cbb6108f882cd347e022cda366fdfd7dfa4804",
+    "trackedFileCount": 1624,
+    "trackedByteSha256": "42c6ae8f72245114b35b4b14cf9ff1b9278eb8b8ed3363442321f12264494d57"
+  },
+  "stages": [
+    {
+      "group": "web",
+      "number": 1,
+      "total": 10,
+      "label": "exact clean HEAD, tracked-byte, and untracked-file preflight"
+    },
+    {
+      "group": "web",
+      "number": 2,
+      "total": 10,
+      "label": "strict TypeScript"
+    },
+    {
+      "group": "web",
+      "number": 3,
+      "total": 10,
+      "label": "lint"
+    },
+    {
+      "group": "web",
+      "number": 4,
+      "total": 10,
+      "label": "tests (including verified build and dossier gates)"
+    }
+  ],
+  "stageCounts": {
+    "web": 4,
+    "mobile": 0,
+    "native": 0
+  },
+  "webTests": {
+    "tests": 932,
+    "pass": 928,
+    "fail": 1,
+    "cancelled": 0,
+    "skipped": 3,
+    "todo": 0
+  },
+  "dossierE2E": null,
+  "pdf": null,
+  "productionAuditZeroVulnerabilities": null,
+  "flutterTests": null,
+  "rust": null,
+  "androidIntegrationTests": null,
+  "hostedLockValidated": null,
+  "finalGuards": {
+    "web": null,
+    "mobileHead": null
+  },
+  "terminalPass": false,
+  "explicitSkippedTests": [
+    "Migration rehearsal: exact v91 operates on C1 schema without discarding new note records",
+    "Migration rehearsal: request operation SQL guards bind one immutable receipt to the actual legacy audit",
+    "Migration rehearsal: current B1 writes and historical receipt recovery work after C1 and v91 writes"
+  ],
+  "limits": [
+    "This parser does not execute the gate; exit code and completion-observation timestamp come from the coordinator tool result.",
+    "Last-write time is file metadata, not an independently measured process completion timestamp.",
+    "PDF totals are parsed automated checks, not new manual inspection of every page.",
+    "Hosted workflow-lock validation is not new hosted or iOS execution.",
+    "Android coverage is local debug emulator integration, not physical hardware or a release APK.",
+    "Technical gate PASS does not close browser, hosted, accessibility or human acceptance."
+  ]
+}

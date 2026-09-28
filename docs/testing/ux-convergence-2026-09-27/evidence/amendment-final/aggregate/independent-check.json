@@ -1,0 +1,283 @@
+{
+  "schema": "genesis.juris.independent-completed-gate-review.v1",
+  "checkedAt": "2026-09-28T01:00:08.751Z",
+  "status": "PASS_LOG_RECEIPT_SOURCE_AND_GUARDS_AGREE",
+  "scope": "Independent full raw-file hash and indexed-log extraction, Git object/source-boundary checks, and receipt comparison; no parser/gate/test/HTTP rerun.",
+  "log": {
+    "path": ".artifacts/amendment-release-gate/aggregate-a1fae95bc2624e28e6232b8867ad2a94c8d9f0ab-20260927T235525Z.log",
+    "bytes": 347190,
+    "sha256": "610b1889977dced153f096f2cadbeb16295ea441806ab230f3afe6a2cb8c73b6",
+    "lineCount": 7363
+  },
+  "artifacts": [
+    {
+      "path": ".artifacts/amendment-release-gate/aggregate-candidate-receipt.json",
+      "sha256": "c78db67704b8e2f82508711e5e7eb5256a287d915e17b6442d0df2ee6dc76e80",
+      "bytes": 5883
+    },
+    {
+      "path": ".artifacts/amendment-release-gate/aggregate-candidate-source.json",
+      "sha256": "76286e5baa151ea25be0092c7350437fe2fd128fe8863d91ccd31728ddb0581f",
+      "bytes": 570
+    },
+    {
+      "path": "scripts/verify-release.sh",
+      "sha256": "03de33bb2d14b689447cb26d32544492b314ab2145d8584b7cd284f75c2a42a4",
+      "bytes": 5568
+    }
+  ],
+  "testedWebHead": "a1fae95bc2624e28e6232b8867ad2a94c8d9f0ab",
+  "source": {
+    "checkedAt": "2026-09-28T00:57:41.164Z",
+    "schema": "genesis.juris.build-identity.v1",
+    "inputPolicy": "web-source-v1",
+    "applicationInputsSha256": "5597958a0a870757e75cfbdfba930007d475f782035db4ee8503a97aa1723afc",
+    "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+    "sourceCommit": "a1fae95bc2624e28e6232b8867ad2a94c8d9f0ab",
+    "nodeVersion": "v22.23.2",
+    "builtInputDigests": [
+      "5597958a0a870757e75cfbdfba930007d475f782035db4ee8503a97aa1723afc"
+    ],
+    "buildMatchesCurrentSource": true,
+    "inputFileCount": 385
+  },
+  "stages": [
+    {
+      "group": "web",
+      "number": 1,
+      "total": 10,
+      "label": "exact clean HEAD, tracked-byte, and untracked-file preflight",
+      "line": 2
+    },
+    {
+      "group": "web",
+      "number": 2,
+      "total": 10,
+      "label": "strict TypeScript",
+      "line": 4
+    },
+    {
+      "group": "web",
+      "number": 3,
+      "total": 10,
+      "label": "lint",
+      "line": 5
+    },
+    {
+      "group": "web",
+      "number": 4,
+      "total": 10,
+      "label": "tests (including verified build and dossier gates)",
+      "line": 22
+    },
+    {
+      "group": "web",
+      "number": 5,
+      "total": 10,
+      "label": "five required decision-centric dossier E2E scenarios",
+      "line": 5875
+    },
+    {
+      "group": "web",
+      "number": 6,
+      "total": 10,
+      "label": "bilingual professional PDF structural, text, and visual verification",
+      "line": 5916
+    },
+    {
+      "group": "web",
+      "number": 7,
+      "total": 10,
+      "label": "production dependency audit",
+      "line": 5972
+    },
+    {
+      "group": "web",
+      "number": 8,
+      "total": 10,
+      "label": "patch hygiene",
+      "line": 5974
+    },
+    {
+      "group": "web",
+      "number": 9,
+      "total": 10,
+      "label": "final verified build",
+      "line": 5975
+    },
+    {
+      "group": "mobile",
+      "number": 1,
+      "total": 9,
+      "label": "exact-SHA checkout and 18-route runtime parity",
+      "line": 6171
+    },
+    {
+      "group": "mobile",
+      "number": 2,
+      "total": 9,
+      "label": "executable report-layout fixture and fingerprint parity",
+      "line": 6178
+    },
+    {
+      "group": "mobile",
+      "number": 3,
+      "total": 9,
+      "label": "fail-closed Dart formatting",
+      "line": 6180
+    },
+    {
+      "group": "mobile",
+      "number": 4,
+      "total": 9,
+      "label": "dependency resolution",
+      "line": 6182
+    },
+    {
+      "group": "mobile",
+      "number": 5,
+      "total": 9,
+      "label": "Flutter analysis",
+      "line": 6207
+    },
+    {
+      "group": "mobile",
+      "number": 6,
+      "total": 9,
+      "label": "Flutter tests",
+      "line": 6210
+    },
+    {
+      "group": "mobile",
+      "number": 7,
+      "total": 9,
+      "label": "locked Rust formatting",
+      "line": 6489
+    },
+    {
+      "group": "mobile",
+      "number": 8,
+      "total": 9,
+      "label": "locked Rust Clippy",
+      "line": 6490
+    },
+    {
+      "group": "mobile",
+      "number": 9,
+      "total": 9,
+      "label": "locked Rust workspace tests",
+      "line": 6492
+    },
+    {
+      "group": "native",
+      "number": 1,
+      "total": 3,
+      "label": "Android FFI persistence smoke",
+      "line": 7291
+    },
+    {
+      "group": "native",
+      "number": 2,
+      "total": 3,
+      "label": "exact-SHA hosted Rust, Flutter, Android, and iOS evidence lock",
+      "line": 7354
+    },
+    {
+      "group": "native",
+      "number": 3,
+      "total": 3,
+      "label": "final exact-HEAD and tracked-byte immutability guard",
+      "line": 7359
+    },
+    {
+      "group": "web",
+      "number": 10,
+      "total": 10,
+      "label": "final exact-source immutability guard",
+      "line": 7361
+    }
+  ],
+  "web": {
+    "tests": 932,
+    "pass": 929,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 3,
+    "todo": 0
+  },
+  "dossier": {
+    "tests": 5,
+    "pass": 5,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "pdf": {
+    "files": 47,
+    "pages": 758,
+    "renderedPngs": 758,
+    "goldenPngs": 55
+  },
+  "visualBaselineFingerprint": "bac3a7bdebd662edd043a297e39c1c4000716327ac110b0db7453b1d8a3323c8",
+  "rust": {
+    "groups": 73,
+    "passed": 359,
+    "failed": 0,
+    "ignored": 0
+  },
+  "flutterTests": 275,
+  "androidIntegrationTests": 12,
+  "hostedLockValidated": [
+    {
+      "target": "android",
+      "workflow": "33536571436",
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64"
+    },
+    {
+      "target": "flutter",
+      "workflow": "33536571515",
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64"
+    },
+    {
+      "target": "ios",
+      "workflow": "33536571586",
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64"
+    },
+    {
+      "target": "rust",
+      "workflow": "33536571536",
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64"
+    }
+  ],
+  "negativeTapCount": 0,
+  "explicitSkippedTests": [
+    "Migration rehearsal: exact v91 operates on C1 schema without discarding new note records",
+    "Migration rehearsal: request operation SQL guards bind one immutable receipt to the actual legacy audit",
+    "Migration rehearsal: current B1 writes and historical receipt recovery work after C1 and v91 writes"
+  ],
+  "keyPasses": [
+    "ok 62 - Canopy V2 retains eleven historical versions and appends four provenance corrections",
+    "    ok 1 - Canopy V2 scenario: base",
+    "    ok 2 - Canopy V2 scenario: upside",
+    "    ok 3 - Canopy V2 scenario: hard_stop",
+    "    ok 4 - Canopy V2 scenario: downside",
+    "    ok 5 - Canopy V2 causal walkthrough: Base to Upside to clearance-only Hard stop preserves other copies",
+    "    ok 6 - Canopy V2 runtime: failed and unavailable cannot bypass controls; label alone cannot change outcome",
+    "ok 517 - Canopy V2: independent reviewed copies, causal walkthrough and exact output governance",
+    "ok 677 - actual PDF parent and helper reject a stale active tab, recheck after rendering and never revive old output after sign-in"
+  ],
+  "originalExecObservation": {
+    "source": "Coordinator tool9a59bd,session41217; explicit completion message",
+    "exitCode": 0,
+    "observedAt": "2026-09-28T00:57:19.740Z",
+    "independentlyReran": false
+  },
+  "limits": [
+    "The raw log was read and hashed in full; this is independent programmatic extraction plus targeted manual inspection, not a claim every log line was visually examined.",
+    "The observed process exit comes from coordinator tool evidence, not from log text alone.",
+    "The final web guard compares the exact preflight/postflight JSON receipts before the terminal marker; only preflight JSON is printed in the log.",
+    "Source binding is the completed root readback; this review checks its contents and Git application continuity, not a second build or 385-file recomputation.",
+    "No fresh visual inspection of758PDFpages, hosted/provider/browser/human acceptance or emulator cleanup is claimed."
+  ]
+}
