@@ -1,6 +1,9 @@
 /** A same-origin invalidation signal, never an authentication credential or grant. */
 export type SessionBoundary = "suspend" | "revoke";
 export const SESSION_BOUNDARY_KEY = "genesis-juris-session-boundary-v1";
+export const pendingSignOutMessage = (locale: string) => locale === "ru"
+  ? "Подтверждение выхода ожидается в другой вкладке. Вернитесь в неё и при необходимости повторите выход. Приватное содержимое скрыто. Несохранённый ввод остаётся в этой вкладке, пока выход не подтверждён."
+  : "Sign-out confirmation is pending in another tab. Return to that tab and retry sign-out there if needed. Private content stays hidden. Unsaved input remains in this tab while sign-out is unconfirmed.";
 const localEvent = "genesis-juris-session-boundary";
 
 function boundary(value: unknown): SessionBoundary | null {

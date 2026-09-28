@@ -56,7 +56,9 @@ export default function StudioExpandedGraph({ nodes, links, locale, onClose, onN
     if (!dialog.open) dialog.showModal();
     return () => {
       if (dialog.open) dialog.close();
-      if (previous instanceof HTMLElement && previous.isConnected) previous.focus({ preventScroll: true });
+      if (previous instanceof HTMLElement && previous.isConnected
+        && !previous.closest('[hidden], [inert], [aria-hidden="true"]')
+        && previous.getClientRects().length > 0) previous.focus({ preventScroll: true });
     };
   }, []);
 

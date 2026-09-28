@@ -1,0 +1,102 @@
+{
+  "observedAt": "2026-09-28T04:55:16.555Z",
+  "runs": [
+    {
+      "scope": "invitation-navigation-auth",
+      "log": "final-invitation-navigation-tests.log",
+      "tests": 58,
+      "passed": 58,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "source-presentation",
+      "log": "source-review-tests.log",
+      "tests": 42,
+      "passed": 42,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "migrations-legacy",
+      "log": "migration-legacy-retest.log",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "built-entry",
+      "log": "built-entry-tests.log",
+      "tests": 2,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "final-mail-dependency",
+      "log": "mail-final-retest.log",
+      "tests": 2,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "recovery-disclosure-invitation-races",
+      "log": "final-recovery-disclosure-tests.log",
+      "tests": 78,
+      "passed": 78,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "save-departure-existing-regression",
+      "log": "save-recovery-regression.log",
+      "tests": 13,
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "countsAreSeparateScopes": true,
+  "typecheck": {
+    "exitCode": 0,
+    "log": "typecheck-candidate.log"
+  },
+  "focusedLint": {
+    "exitCode": 0,
+    "warnings": 0,
+    "log": "lint-candidate.log"
+  },
+  "parityLock": {
+    "exitCode": 0,
+    "routes": 18,
+    "log": "parity-lock.log"
+  },
+  "build": {
+    "exitCode": 0,
+    "receipt": "candidate-build-receipt.json",
+    "source": "committed-source.json"
+  },
+  "fullAggregate": "NOT_RUN for this candidate",
+  "hostedCandidate": "BLOCKED",
+  "realHumans": 0,
+  "pilot": "NO-GO",
+  "published": false,
+  "initialApplicationCommit": "23575c62863f299fec0faef9a6f5adb254094f91",
+  "continuedApplicationCommit": "pending_final_commit",
+  "continuedTypecheck": {
+    "exitCode": 0,
+    "log": "typecheck-post-save-wording.log"
+  },
+  "continuedLint": {
+    "exitCode": 0,
+    "logs": [
+      "lint-recovery-disclosures.log",
+      "lint-post-save-wording.log"
+    ]
+  },
+  "browserScope": "ordinary local auth, synthetic D1/R2; INV01 negative/continuation and delivery unavailable; FiveFlats text entry and actual reports; recovery faults described in REVIEW",
+  "pdfEvidence": "fiveflats-pdfs/inspection.json and fiveflats-pdfs/disclosures/inspection.json",
+  "remainingP3": "Full page8 lone carried-over word; no substantive loss"
+}

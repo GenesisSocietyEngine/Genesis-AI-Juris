@@ -6,7 +6,7 @@ type Identity = { scope: string; registered: boolean; studioAI: boolean };
 type Snapshot = {
   phase: "checking" | "ready" | "anonymous" | "unavailable" | "suspended" | "revoked";
   scope: string | null; epoch: number; discardVersion: number; discardLocal: boolean; registered: boolean; studioAI: boolean;
-  caseId: number | null; caseCanDuplicate: boolean | null;
+  caseId: number | null; caseCanDuplicate: boolean | null; signOutPending: boolean;
 };
 export type StudioReportAuthority = { epoch: number; visible: boolean; allowed: boolean; verify: () => Promise<() => boolean> };
 const unavailable = () => new Error("Report access could not be verified. Sign in, then refresh access and try again.");
@@ -17,7 +17,7 @@ export function shouldDiscardStudioDraft(discardLocal: boolean, customCaseId: nu
 
 /** Memory-only authority. Neither focus events nor a cached permission grant output. */
 export class StudioSessionAuthority {
-  private state: Snapshot = { phase: "checking", scope: null, epoch: 0, discardVersion: 0, discardLocal: false, registered: false, studioAI: false, caseId: null, caseCanDuplicate: null };
+  private state: Snapshot = { phase: "checking", scope: null, epoch: 0, discardVersion: 0, discardLocal: false, registered: false, studioAI: false, caseId: null, caseCanDuplicate: null, signOutPending: false };
   private listeners = new Set<() => void>();
   private request = 0;
   private knownScope: string | null = null;
@@ -25,7 +25,7 @@ export class StudioSessionAuthority {
   constructor(private transport: Transport = (path, init) => fetch(path, init)) {}
   getSnapshot = () => this.state;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
-  private publish(patch: Partial<Snapshot>) { this.state = { ...this.state, ...patch }; this.listeners.forEach(listener => listener()); }
+  private publish(patch: Partial<Snapshot>) { this.state = { ...this.state, ...patch, signOutPending: this.termination === "pending" }; this.listeners.forEach(listener => listener()); }
   invalidate = (phase: SessionBoundary, accountChanged = false) => {
     this.request++;
     this.publish({ phase: phase === "revoke" ? "revoked" : "suspended", scope: null, epoch: this.state.epoch + 1,

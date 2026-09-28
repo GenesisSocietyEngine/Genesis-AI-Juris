@@ -68,6 +68,28 @@ type PdfMakePage = {
   }>;
 };
 
+test("Full reports disclose authored legal dates and all supplied tax scenario controls without changing the case", () => {
+  const working = normalizeStudioDraft(JSON.parse(readFileSync("tests/fixtures/fiveflats-rent-146000.studio-draft.json", "utf8")));
+  const before = JSON.stringify(working);
+  for (const language of ["en", "ru"] as const) for (const includeDecisionTree of [false, true]) {
+    const content = JSON.stringify(buildCaseReportDefinition(working, { ...options, presentationMode: "full", language, includeDecisionTree, generatedAt: "2026-09-28T05:00:00.000Z" }).content);
+    assert.match(content, /2026-10-31/);
+    if (language === "en") {
+      assert.match(content, /case-entered reference date is not a verified legal currency check/);
+      assert.match(content, /Future-dated entries require correction/);
+      for (const label of ["Supplied benefit adjustment", "Analysis horizon", "Annual discount rate", "One-off implementation", "Annual maintenance", "Terminal tax / unwind cost"]) assert.ok(content.includes(label), label);
+      for (const value of ["85.0%", "36 months", "8.0%", "£25,000"]) assert.ok(content.includes(value), value);
+      assert.match(content, /not an evidenced probability/);
+      assert.match(content, /68\.6 months exceeds the 36-month analysis horizon/);
+    } else {
+      assert.match(content, /Будущие даты требуют исправления/);
+      assert.match(content, /не подтверждённая вероятность/);
+      assert.match(content, /68\.6 мес\. превышает горизонт анализа 36 мес/);
+    }
+  }
+  assert.equal(JSON.stringify(working), before);
+});
+
 const pdfMakeRuntime = pdfMake as unknown as {
   addVirtualFileSystem: (fonts: unknown) => void;
   createPdf: (definition: TDocumentDefinitions) => {

@@ -118,3 +118,16 @@ test("reload warning protects drafts while explicit departure and sign-out remai
   navigation.register({}, {risk:()=>"pending",suspend:()=>{},deny:()=>{}});assert.equal(navigation.warnBeforeUnload(),true);await navigation.signOut("en");assert.equal(navigation.warnBeforeUnload(),false);
   const next=new NavigationController({transport:async()=>Response.json({}),leave:()=>{},clear:()=>{}});next.register({}, {risk:()=>"dirty",suspend:()=>{},deny:()=>{}});assert.equal(next.warnBeforeUnload(),true);next.approvePageDeparture();assert.equal(next.warnBeforeUnload(),false);
 });
+
+test('receiving tab publishes pending sign-out even after ordinary expiry and never refreshes through it',async()=>{
+ const h=harness(); await h.nav.refresh();h.nav.invalidate('expired');assert.equal(h.nav.getSnapshot().signOutPending,false);
+ let notices=0;const stop=h.nav.subscribe(()=>notices++);h.nav.sessionBoundary('suspend');
+ assert.equal(h.nav.getSnapshot().signOutPending,true);assert.match(h.nav.getSnapshot().issue,/pending in another tab/);assert.ok(notices>0);
+ const count=h.calls.length;await h.nav.refresh();assert.equal(h.calls.length,count);
+ h.nav.sessionBoundary('revoke');assert.equal(h.nav.getSnapshot().signOutPending,false);assert.equal(h.nav.getSnapshot().phase,'denied');stop();
+});
+
+test('revoke clears pending wording even if another access denial arrived first',async()=>{
+ const h=harness();await h.nav.refresh();h.nav.sessionBoundary('suspend');h.nav.invalidate('denied');h.nav.sessionBoundary('revoke');
+ assert.equal(h.nav.getSnapshot().signOutPending,false);assert.doesNotMatch(h.nav.getSnapshot().issue,/pending in another tab/);assert.match(h.nav.getSnapshot().issue,/Access changed/);
+});

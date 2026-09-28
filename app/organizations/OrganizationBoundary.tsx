@@ -1,5 +1,7 @@
 "use client";
 
+import { pendingSignOutMessage } from "../session-boundary";
+
 import { useEffect, useState, type ReactNode } from "react";
 import WorkspaceNavigation from "../WorkspaceNavigation";
 import { useInterfaceLocale, useWorkspaceLocation } from "../use-interface-locale";
@@ -45,8 +47,8 @@ export default function OrganizationBoundary({ children, signedIn, signInUrl }: 
       </div>
     </main> : !active && <main className={styles.accessEmpty}>
       <h1>{t("Your workspace", "Ваше рабочее пространство")}</h1>
-      <p role="status">{session.phase === "checking" ? t("Checking your access…", "Проверяем доступ…") : session.profileRequired ? t("Complete your profile to open saved work.", "Заполните профиль для доступа к сохранённым делам.") : t("Choose an available organization in the sidebar, or refresh your access.", "Выберите доступную организацию в боковом меню или обновите доступ.")}</p>
-      <button type="button" onClick={()=>void navigation.refresh(new URL(location,"https://workspace.invalid").searchParams.get("organization")??undefined)}>{t("Refresh access", "Обновить доступ")}</button>
+      <p id="organization-access-status" role="status">{session.signOutPending ? pendingSignOutMessage(locale) : session.phase === "checking" ? t("Checking your access…", "Проверяем доступ…") : session.profileRequired ? t("Complete your profile to open saved work.", "Заполните профиль для доступа к сохранённым делам.") : t("Choose an available organization in the sidebar, or refresh your access.", "Выберите доступную организацию в боковом меню или обновите доступ.")}</p>
+      <button type="button" disabled={session.signOutPending} aria-describedby="organization-access-status" onClick={()=>void navigation.refresh(new URL(location,"https://workspace.invalid").searchParams.get("organization")??undefined)}>{t("Refresh access", "Обновить доступ")}</button>
     </main>}
     {active && (session.phase === "ready" || location.split("?")[0] === "/matters") && <OrganizationContext.Provider key={active.selection} value={active}>{children}</OrganizationContext.Provider>}
   </>;

@@ -521,7 +521,7 @@ function artifactWriteGuard(artifact: StoredCaseArtifact | null, viewerEmail: st
   )`;
 }
 
-function staleDraft(customCase: Pick<typeof customCases.$inferSelect, "id" | "currentVersion" | "fingerprint" | "updatedAt"> | null | undefined, draft: { fingerprint?: string; updatedAt?: string } | null | undefined, message = "This case changed in another session. Reopen it before saving your edits.") {
+function staleDraft(customCase: Pick<typeof customCases.$inferSelect, "id" | "currentVersion" | "fingerprint" | "updatedAt"> | null | undefined, draft: { fingerprint?: string; updatedAt?: string } | null | undefined, message = "The saved case version changed. An earlier unconfirmed save may have completed. Inspect the saved version separately before saving your edits.") {
   return privateJson({
     error: message,
     code: "stale_draft",

@@ -1,5 +1,7 @@
 "use client";
 
+import { pendingSignOutMessage } from "../session-boundary";
+
 import { FormEvent, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useNavigationController, useNavigationSession } from "../NavigationSession";
@@ -146,7 +148,7 @@ export default function AccountClient({
     if (identity && response.status === 401) navigation.invalidate("expired");
     return response;
   }
-  if (identity && (session.phase !== "ready" || session.identity?.email.toLowerCase() !== identity.email.toLowerCase())) return <><WorkspaceNavigation active="/account"/><main className={styles.shell}><h1>{t("Check account access", "Проверить доступ к аккаунту")}</h1><p>{t("Private account details are hidden until your session is verified.", "Данные аккаунта скрыты до подтверждения сеанса.")}</p><button type="button" onClick={() => void navigation.refresh()}>{t("Refresh access", "Обновить доступ")}</button></main></>;
+  if (identity && (session.phase !== "ready" || session.identity?.email.toLowerCase() !== identity.email.toLowerCase())) return <><WorkspaceNavigation active="/account"/><main className={styles.shell}><h1>{t("Check account access", "Проверить доступ к аккаунту")}</h1><p id="account-access-status" role="status">{session.signOutPending ? pendingSignOutMessage(locale) : t("Private account details are hidden until your session is verified.", "Данные аккаунта скрыты до подтверждения сеанса.")}</p><button type="button" disabled={session.signOutPending} aria-describedby="account-access-status" onClick={() => void navigation.refresh()}>{t("Refresh access", "Обновить доступ")}</button></main></>;
 
   return <><WorkspaceNavigation active="/account"/><main className={styles.shell} ref={formRef}>
     <header className={styles.hero}>

@@ -6,6 +6,7 @@ import { useNavigationFormGuard } from "../use-navigation-form-guard";
 import { useInterfaceLocale } from "../use-interface-locale";
 import { INVITATION_CONTINUATION_KEY, invitationFromFragment, parseInvitationContinuation, invitationDeliveryText, invitationErrorText, invitationRoleText, postInvitation, type InvitationContinuation } from "../invitation-client";
 import { readWithTimeout } from "../read-with-timeout";
+import { pendingSignOutMessage } from "../session-boundary";
 import { validOrganizationReceipt } from "../organizations/organization-admin-model";
 import styles from "../organizations/organizations.module.css";
 
@@ -97,7 +98,8 @@ export default function InvitationClient() {
       {!ready && <p role="status">{t("Opening invitation…", "Открытие приглашения…")}</p>}
       {storageUnavailable && <p role="alert">{t("This browser cannot retain the invitation through sign-in. After signing in, reopen the original invitation link.", "Браузер не может сохранить приглашение на время входа. После входа снова откройте исходную ссылку.")}</p>}
       {ready && !continuation && <p>{t("Open your invitation link to continue. If you signed out or changed accounts, reopen the original link using the invited email.", "Откройте ссылку приглашения. Если вы вышли или сменили аккаунт, повторно откройте исходную ссылку с приглашённым email.")}</p>}
-      {continuation && session.phase !== "ready" && <><p>{t("Sign in or register with the email that received this invitation. The link will be retained in this tab while you sign in. Joining requires your explicit acceptance.", "Войдите или зарегистрируйтесь с email получателя приглашения. Ссылка сохранится в этой вкладке на время входа. Вступление требует явного согласия.")}</p><a href={account}>{t("Sign in or register", "Войти или зарегистрироваться")}</a></>}
+      {session.signOutPending && <p id="invitation-access-status" role="status">{pendingSignOutMessage(locale)}</p>}
+      {continuation && session.phase !== "ready" && !session.signOutPending && <><p>{t("Sign in or register with the email that received this invitation. The link will be retained in this tab while you sign in. Joining requires your explicit acceptance.", "Войдите или зарегистрируйтесь с email получателя приглашения. Ссылка сохранится в этой вкладке на время входа. Вступление требует явного согласия.")}</p><a href={account}>{t("Sign in or register", "Войти или зарегистрироваться")}</a></>}
       {continuation && session.phase === "ready" && <p>{t("Signed in as", "Вы вошли как")}: {session.identity?.email}. <a href={account}>{t("Manage or change account", "Управлять или сменить аккаунт")}</a></p>}
       {continuation && session.profileRequired && <a href={account}>{t("Complete your profile to continue", "Заполнить профиль для продолжения")}</a>}
       {issue && <p className={styles.issue} role="alert">{invitationErrorText(issue, locale)}</p>}
@@ -115,7 +117,7 @@ export default function InvitationClient() {
         </>}
         {membership && <><p role="status">{t("This invitation has been accepted. Your current membership was checked.", "Приглашение принято. Ваше текущее членство проверено.")}</p><a href={`/organizations?organization=${encodeURIComponent(membership)}&lang=${locale}`}>{t("Open organization", "Открыть организацию")}</a></>}
       </>}
-      {continuation && !accepted && <button disabled={busy} onClick={() => void navigation.refresh()}>{t("Refresh invitation access", "Обновить доступ к приглашению")}</button>}
+      {continuation && !accepted && <button disabled={busy || session.signOutPending} aria-describedby={session.signOutPending ? "invitation-access-status" : undefined} onClick={() => void navigation.refresh()}>{t("Refresh invitation access", "Обновить доступ к приглашению")}</button>}
       <p><a href={`/organizations?lang=${locale}`}>{t("Back to organizations", "К организациям")}</a></p>
     </section>
   </main></>;

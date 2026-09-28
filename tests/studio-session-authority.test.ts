@@ -138,3 +138,12 @@ test("same-account recovery rechecks VIEW access before revealing retained priva
     assert.equal(policy.allowed, false, "inspection does not grant report/copy authority");
   }
 });
+
+test('pending sign-out is distinct from recoverable identity failure',async()=>{
+ const h=harness();await h.authority.refresh(false,1);h.respond(async()=>Response.json({}, {status:503}));await h.authority.refresh(false,1);
+ assert.equal(h.authority.getSnapshot().signOutPending,false);assert.equal(h.authority.getSnapshot().phase,'unavailable');
+ h.respond(async path=>path==='/api/me'?me():permitted());await h.authority.refresh(true,1);assert.equal(h.authority.getSnapshot().phase,'ready');
+ h.authority.sessionBoundary('suspend');assert.equal(h.authority.getSnapshot().signOutPending,true);
+ const count=h.calls.length;await h.authority.refresh(true,1);await h.authority.refresh(false,1);assert.equal(h.calls.length,count);
+ h.authority.sessionBoundary('revoke');assert.equal(h.authority.getSnapshot().signOutPending,false);assert.equal(h.authority.getSnapshot().phase,'revoked');
+});

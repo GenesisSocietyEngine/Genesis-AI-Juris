@@ -86,7 +86,13 @@ test("native modal lifecycle and Escape request closure; cleanup restores the or
   const tree = component({ nodes, links, locale: "en", onClose: () => events.push("close-request"), onNode() {} });
   const originalDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
   const originalHTMLElement = Object.getOwnPropertyDescriptor(globalThis, "HTMLElement");
-  class Control { isConnected = true; focus() { events.push("focus-return"); } }
+  class Control {
+    isConnected = true;
+    concealed = false;
+    closest() { return this.concealed ? {} : null; }
+    getClientRects() { return [1]; }
+    focus() { events.push("focus-return"); }
+  }
   const fakeDialog = { open: false, showModal() { this.open = true; events.push("showModal"); }, close() { this.open = false; events.push("close-native"); } };
   try {
     Object.defineProperty(globalThis, "document", { configurable: true, value: { activeElement: new Control() } });
@@ -99,6 +105,13 @@ test("native modal lifecycle and Escape request closure; cleanup restores the or
     assert.equal(typeof cleanup, "function");
     (cleanup as () => void)();
     assert.deepEqual(events.slice(-2), ["close-native", "focus-return"]);
+    events.length = 0;
+    const inaccessible = new Control();
+    Object.defineProperty(globalThis, "document", { configurable: true, value: { activeElement: inaccessible } });
+    const concealedCleanup = bindings.effects[0]!();
+    inaccessible.concealed = true;
+    (concealedCleanup as () => void)();
+    assert.deepEqual(events, ["showModal", "close-native"], "authority closure cannot focus the concealed former control");
   } finally {
     if (originalDocument) Object.defineProperty(globalThis, "document", originalDocument); else Reflect.deleteProperty(globalThis, "document");
     if (originalHTMLElement) Object.defineProperty(globalThis, "HTMLElement", originalHTMLElement); else Reflect.deleteProperty(globalThis, "HTMLElement");

@@ -1,5 +1,7 @@
 "use client";
 
+import { pendingSignOutMessage } from "../session-boundary";
+
 import Link from "next/link";
 import WorkspaceNavigation from "../WorkspaceNavigation";
 import { useNavigationController, useNavigationSession } from "../NavigationSession";
@@ -163,10 +165,10 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
       <button type="button" className={styles.secondary} disabled={busy} onClick={()=>void refresh()}>{t("I've completed my profile — check again", "Профиль заполнен — проверить снова")}</button></div>
     </section> : feedback("page")}
     {notice && visible && <p className={styles.notice} role="status">{notice}</p>}
-    {!needsProfile && !visible && workspace && <p role="status">{t("Private organization details are hidden while access is checked. Use Refresh access in the sidebar.","Данные организации скрыты до проверки доступа. Используйте «Обновить доступ» в боковом меню.")}</p>}
+    {!needsProfile && !visible && workspace && <p role="status">{session.signOutPending ? pendingSignOutMessage(locale) : t("Private organization details are hidden while access is checked. Use Refresh access in the sidebar.","Данные организации скрыты до проверки доступа. Используйте «Обновить доступ» в боковом меню.")}</p>}
     {!workspace && !issue && canLoad && <p role="status">{t("Loading organizations…", "Загрузка организаций…")}</p>}
     {!workspace && !issue && session.phase==="checking" && <p role="status">{t("Checking account access…", "Проверка доступа к аккаунту…")}</p>}
-    {!needsProfile && !canLoad && session.phase!=="checking" && <section className={styles.panel}><p role="status">{t("Verify your account access to load organizations. Your private organization details remain hidden.", "Подтвердите доступ к аккаунту, чтобы загрузить организации. Приватные данные организации скрыты.")}</p><button type="button" disabled={busy||session.busy} onClick={()=>void refresh()}>{t("Refresh access", "Обновить доступ")}</button></section>}
+    {!needsProfile && !canLoad && session.phase!=="checking" && <section className={styles.panel}><p id="organizations-access-status" role="status">{session.signOutPending ? pendingSignOutMessage(locale) : t("Verify your account access to load organizations. Your private organization details remain hidden.", "Подтвердите доступ к аккаунту, чтобы загрузить организации. Приватные данные организации скрыты.")}</p><button type="button" disabled={busy||session.busy||session.signOutPending} aria-describedby="organizations-access-status" onClick={()=>void refresh()}>{t("Refresh access", "Обновить доступ")}</button></section>}
     {workspace && visible && <>
       {workspace.selectionIssue&&<div className={styles.issue} role="alert">{t("Your previous organization selection is no longer current. Choose an available organization below.","Предыдущий выбор организации устарел. Выберите доступную организацию ниже.")}</div>}
       <div className={styles.sessionContext}><span>{issue?.status===401?t("Session expired", "Сеанс истёк"):t("Account connected", "Аккаунт подключён")}</span><span>{selected?t("Managing: ","Управление: ")+organizationLabel(selected):t("Choose an organization","Выберите организацию")}</span></div>

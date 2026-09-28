@@ -2,17 +2,17 @@ import type { ClientOrganization } from "./organization-client";
 import { validOrganizationReceipt } from "./organizations/organization-admin-model";
 import type { WorkspaceController } from "./matters/workspace-controller";
 import { readWithTimeout } from "./read-with-timeout";
-import { publishSessionBoundary, type SessionBoundary } from "./session-boundary";
+import { pendingSignOutMessage, publishSessionBoundary, type SessionBoundary } from "./session-boundary";
 
 export type DepartureRisk = "clear" | "dirty" | "pending";
 export type NavigationIdentity = { displayName: string; email: string; authSource: "chatgpt" | "local" };
-export type NavigationState = { phase: "checking" | "ready" | "anonymous" | "expired" | "denied" | "error" | "leaving"; identity: NavigationIdentity | null; actorId: string | null; organizations: ClientOrganization[]; selected: ClientOrganization | null; profileRequired: boolean; issue: string; busy: boolean; endingSession: boolean };
+export type NavigationState = { phase: "checking" | "ready" | "anonymous" | "expired" | "denied" | "error" | "leaving"; identity: NavigationIdentity | null; actorId: string | null; organizations: ClientOrganization[]; selected: ClientOrganization | null; profileRequired: boolean; issue: string; busy: boolean; endingSession: boolean; signOutPending: boolean };
 type Guard = { risk: () => DepartureRisk; suspend: () => void; deny: () => void; review?: () => void; lock?: (value:boolean) => void };
 type Options = { transport: (path: string, init?: RequestInit) => Promise<Response>; leave: (url: string) => void; clear: (email?: string) => Promise<void> | void };
 export type DeparturePlan = { current: () => boolean; commit: () => boolean; cancel?: () => void; target?: string; navigate?: () => void };
 type DepartureIntent = (kind:"organization"|"signout"|"link", id:string, plan?:DeparturePlan) => void;
 type SessionPayload = { authenticated?:boolean; identity?:NavigationIdentity; actorId?:string|null; organizations?:unknown[]; selected?:ClientOrganization|null; profileRequired?:boolean;selectionIssue?:string|null };
-const empty = (): NavigationState => ({ phase: "checking", identity: null, actorId: null, organizations: [], selected: null, profileRequired: false, issue: "", busy: false, endingSession: false });
+const empty = (): NavigationState => ({ phase: "checking", identity: null, actorId: null, organizations: [], selected: null, profileRequired: false, issue: "", busy: false, endingSession: false, signOutPending: false });
 
 /** One memory-only authority epoch for the rail and the active workspace. */
 export class NavigationController {
@@ -38,7 +38,8 @@ export class NavigationController {
   constructor(private options: Options) {}
   getSnapshot = () => this.state;
   subscribe = (fn: () => void) => { this.listeners.add(fn); return () => { this.listeners.delete(fn); }; };
-  private publish(patch: Partial<NavigationState>) { this.state = { ...this.state, ...patch }; this.listeners.forEach(fn => fn()); }
+  private publish(patch: Partial<NavigationState>) { this.state = { ...this.state, ...patch, signOutPending: this.boundarySuspended,
+    ...(this.boundarySuspended ? { issue: pendingSignOutMessage("en") } : {}) }; this.listeners.forEach(fn => fn()); }
   capture() { return this.epoch; }
   current(ticket: number) { return ticket === this.epoch; }
   /** A broadcast can only withdraw authority, never establish an identity. */
@@ -47,7 +48,7 @@ export class NavigationController {
     const email = this.state.identity?.email ?? this.logoutIdentity?.email;
     this.boundarySuspended = phase === "suspend";
     const deniedPhase = phase === "revoke" ? "denied" : "expired";
-    if (this.state.phase === deniedPhase) { this.epoch++; this.authorityVersion++; }
+    if (this.state.phase === deniedPhase) { this.epoch++; this.authorityVersion++; this.publish({ issue: phase === "revoke" ? "Access changed. Refresh access or reopen your authorized workspace." : pendingSignOutMessage("en") }); }
     else this.invalidate(deniedPhase);
     if (phase === "revoke") void Promise.resolve().then(() => this.options.clear(email)).catch(() => {});
   };

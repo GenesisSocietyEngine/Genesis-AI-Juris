@@ -1,5 +1,7 @@
 "use client";
 
+import { pendingSignOutMessage } from "./session-boundary";
+
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { workspaceDestination, workspaceSignInPath } from "./workspace-navigation";
 import { useNavigationController, useNavigationSession } from "./NavigationSession";
@@ -152,7 +154,7 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
           <button type="button" className="genesis-nav-action" onClick={()=>void depart("signout")}><WorkspaceIcon name="exit"/>{en?"Sign out":"Выйти"}</button>
         </>:session.phase!=="leaving"&&!session.endingSession&&<a href={workspaceSignInPath(location)} target="_top" onClick={guardedLink}><WorkspaceIcon name="account"/>{en?"Sign in":"Войти"}</a>}
         {session.phase!=="ready"&&!session.endingSession&&navigation.canSignOut&&<button type="button" className="genesis-nav-action" onClick={()=>void depart("signout")}>{en?"Sign out":"Выйти"}</button>}
-        {session.issue&&<div className="genesis-nav-issue" role="alert"><p>{en?session.issue:"Не удалось проверить доступ. Обновите данные или повторите действие."}</p><button type="button" disabled={session.busy} onClick={()=>void navigation.refresh(new URL(location,"https://workspace.invalid").searchParams.get("organization")??undefined)} hidden={session.endingSession}>{en?"Refresh access":"Обновить доступ"}</button>{navigation.canRetrySignOut&&<button type="button" disabled={session.busy} onClick={()=>void depart("signout")}>{en?"Retry sign out":"Повторить выход"}</button>}</div>}
+        {session.issue&&<div className="genesis-nav-issue" role="alert"><p id="navigation-access-status">{session.signOutPending ? pendingSignOutMessage(en ? "en" : "ru") : en?session.issue:"Не удалось проверить доступ. Обновите данные или повторите действие."}</p><button type="button" disabled={session.busy || session.signOutPending} aria-describedby="navigation-access-status" onClick={()=>void navigation.refresh(new URL(location,"https://workspace.invalid").searchParams.get("organization")??undefined)} hidden={session.endingSession}>{en?"Refresh access":"Обновить доступ"}</button>{navigation.canRetrySignOut&&<button type="button" disabled={session.busy} onClick={()=>void depart("signout")}>{en?"Retry sign out":"Повторить выход"}</button>}</div>}
         <div className="genesis-nav-utilities">
           <button type="button" onClick={onLanguage} aria-label={en?"Switch language":"Сменить язык"}>{locale.toUpperCase()}</button>
           <details ref={moreRef} className="genesis-nav-more"><summary>{en?"More":"Ещё"}<span aria-hidden="true">⌄</span></summary>

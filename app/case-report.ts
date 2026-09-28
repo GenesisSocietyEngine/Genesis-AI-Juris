@@ -166,6 +166,12 @@ function buildEconomics(draft: StudioDraft, options: CaseReportOptions): Content
           [tr(language, "Baseline / optimized tax rates", "Базовая / оптимизированная ставки"), `${pct(model.baselineTaxRateBps)} / ${pct(model.optimizedTaxRateBps)}`],
           [tr(language, "Derived baseline / optimized tax", "Расчётный базовый / оптимизированный налог"), `${money(language, model.currency, result.baselineAnnualTaxCost)} / ${money(language, model.currency, result.optimizedAnnualTaxCost)}`],
         ] : []),
+        [tr(language, "Supplied benefit adjustment", "Заданная корректировка выгоды"), pct(model.benefitRealizationBps)],
+        [tr(language, "Analysis horizon", "Горизонт анализа"), `${model.analysisHorizonMonths} ${tr(language, "months", "мес.")}`],
+        [tr(language, "Annual discount rate", "Годовая ставка дисконтирования"), pct(model.annualDiscountRateBps)],
+        [tr(language, "One-off implementation", "Разовые затраты на внедрение"), money(language, model.currency, model.implementationCost)],
+        [tr(language, "Annual maintenance", "Годовые затраты на сопровождение"), money(language, model.currency, model.annualMaintenanceCost)],
+        [tr(language, "Terminal tax / unwind cost", "Налог / затраты при завершении"), money(language, model.currency, model.terminalTaxOrUnwindCost)],
         [tr(language, "Gross annual tax saving", "Валовая годовая налоговая экономия"), money(language, model.currency, result.grossAnnualTaxSaving)],
         [tr(language, "Recognized annual saving", "Признанная годовая экономия"), money(language, model.currency, result.recognizedAnnualTaxSaving)],
         [tr(language, "Annualized implementation", "Внедрение в пересчёте на год"), money(language, model.currency, result.annualizedImplementationCost)],
@@ -175,6 +181,10 @@ function buildEconomics(draft: StudioDraft, options: CaseReportOptions): Content
         ["NPV", money(language, model.currency, result.npv)],
       ], ["62%", "38%"]
     ));
+    content.push({ text: tr(language, "The supplied benefit adjustment scales only positive modeled savings; it is not an evidenced probability. It does not reduce a modeled downside.", "Заданная корректировка применяется только к положительной расчётной экономии; это не подтверждённая вероятность. Она не уменьшает расчётный отрицательный результат."), style: "note" });
+    if (result.paybackMonths !== null && result.paybackMonths > model.analysisHorizonMonths) content.push({ text: tr(language,
+      `Simple payback of ${result.paybackMonths.toFixed(1)} months exceeds the ${model.analysisHorizonMonths}-month analysis horizon.`,
+      `Простая окупаемость ${result.paybackMonths.toFixed(1)} мес. превышает горизонт анализа ${model.analysisHorizonMonths} мес.`), style: "warning" });
     if (model.fx) content.push({ text: `ECB ${model.fx.asOf}: 1 ${model.fx.sourceCurrency} = ${model.fx.rate.toPrecision(8)} ${model.fx.targetCurrency}.`, style: "note" });
     if (model.assumptions) content.push({ text: `${tr(language, "Assumptions", "Допущения")}: ${model.assumptions}`, style: "note" });
   }
@@ -259,7 +269,7 @@ function buildCaseReportDefinitionFromModels(
       [tr(language, "Professional role", "Профессиональная роль"), clean(draft.role)],
       [tr(language, "Practice area", "Область практики"), clean(classification?.practiceArea)],
       [tr(language, "Difficulty", "Сложность"), clean(classification?.difficulty)],
-      [tr(language, "Legal / guidance as of", "Право / guidance на дату"), clean(classification?.legalAsOf)],
+      [tr(language, "Case-entered legal reference date", "Дата правовых источников, указанная в кейсе"), clean(classification?.legalAsOf)],
       [tr(language, "Tags", "Теги"), classification?.tags?.join(", ") || "-"],
       [tr(language, "Tax topics", "Налоговые темы"), classification?.taxTopics?.join(", ") || "-"],
       [tr(language, "Case package", "Пакет кейса"), `${reportModel.case.type.id}@${reportModel.case.type.version}`],
@@ -267,6 +277,7 @@ function buildCaseReportDefinitionFromModels(
       [tr(language, "Graph layout contract", "Контракт макета графа"), `${layoutModel.layoutSchemaVersion} · ${layoutModel.layoutAlgorithmVersion} · ${layoutModel.layoutRendererVersion}`],
       [tr(language, "Report state", "Состояние отчёта"), `${reportModel.publication.status.toUpperCase()} · ${reportModel.publication.audience.toUpperCase()}`],
     ], ["38%", "62%"]),
+    { text: tr(language, "The case-entered reference date is not a verified legal currency check. Future-dated entries require correction; verify applicable authorities before reliance.", "Дата источников, указанная в кейсе, не подтверждает актуальность права. Будущие даты требуют исправления; проверьте применимые источники перед использованием."), style: "warning" },
     { text: tr(language, "Executive case context", "Ключевой контекст кейса"), style: "subheading", headlineLevel: 2 },
     { text: safePremise, style: "body" },
     { text: tr(language, "Model inventory", "Состав модели"), style: "subheading", headlineLevel: 2, margin: [0, 12, 0, 5] },
@@ -444,9 +455,9 @@ function caseReportPresentationFingerprint(
     version: 5,
     presentationMode: effectiveOptions.presentationMode ?? "full",
     decisionRendererVersion: effectiveOptions.presentationMode === "medium" ? "1.2.0" : "1.1.0",
-    // Full's brief describes optional graph text accurately from this revision.
+    // Full now qualifies authored dates and discloses the modeled economic controls.
     // Keep existing Base/Medium receipts stable; earlier Full output is stale.
-    ...((effectiveOptions.presentationMode ?? "full") === "full" ? { fullBriefRendererVersion: 2 } : {}),
+    ...((effectiveOptions.presentationMode ?? "full") === "full" ? { fullBriefRendererVersion: 3 } : {}),
     includeDecisionTree: effectiveOptions.includeDecisionTree,
     auditSymbolFont: REPORT_AUDIT_SYMBOL_FONT_SHA256,
     reportFingerprint: reportModel.contentFingerprint,
