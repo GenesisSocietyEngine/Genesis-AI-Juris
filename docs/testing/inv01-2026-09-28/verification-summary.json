@@ -1,5 +1,5 @@
 {
-  "observedAt": "2026-09-28T04:55:16.555Z",
+  "observedAt": "2026-09-28T05:44:44.787853+00:00",
   "runs": [
     {
       "scope": "invitation-navigation-auth",
@@ -56,6 +56,14 @@
       "passed": 13,
       "failed": 0,
       "skipped": 0
+    },
+    {
+      "scope": "continued-build-entry",
+      "log": "final-built-entry-tests.log",
+      "tests": 2,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0
     }
   ],
   "countsAreSeparateScopes": true,
@@ -73,18 +81,13 @@
     "routes": 18,
     "log": "parity-lock.log"
   },
-  "build": {
-    "exitCode": 0,
-    "receipt": "candidate-build-receipt.json",
-    "source": "committed-source.json"
-  },
   "fullAggregate": "NOT_RUN for this candidate",
   "hostedCandidate": "BLOCKED",
   "realHumans": 0,
   "pilot": "NO-GO",
   "published": false,
   "initialApplicationCommit": "23575c62863f299fec0faef9a6f5adb254094f91",
-  "continuedApplicationCommit": "pending_final_commit",
+  "continuedApplicationCommit": "2116fb350dacd1dadb3a5b9baa8960b105907bfc",
   "continuedTypecheck": {
     "exitCode": 0,
     "log": "typecheck-post-save-wording.log"
@@ -98,5 +101,16 @@
   },
   "browserScope": "ordinary local auth, synthetic D1/R2; INV01 negative/continuation and delivery unavailable; FiveFlats text entry and actual reports; recovery faults described in REVIEW",
   "pdfEvidence": "fiveflats-pdfs/inspection.json and fiveflats-pdfs/disclosures/inspection.json",
-  "remainingP3": "Full page8 lone carried-over word; no substantive loss"
+  "remainingP3": "Full page8 lone carried-over word; no substantive loss",
+  "initialBuild": {
+    "exitCode": 0,
+    "receipt": "candidate-build-receipt.json",
+    "source": "committed-source.json"
+  },
+  "continuedBuild": {
+    "exitCode": 0,
+    "receipt": "final-candidate-build-receipt.json",
+    "source": "final-committed-source.json",
+    "applicationInputsSha256": "641e0e912697b0c061a34d71e7ef5337ad71b9f2f5e8c56856543bb42a008d19"
+  }
 }
