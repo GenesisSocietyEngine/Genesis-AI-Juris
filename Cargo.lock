@@ -220,6 +220,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "juris-tax-economics"
+version = "0.5.0"
+dependencies = [
+ "juris-core",
+ "juris-domain",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.189"
 source = "registry+https://github.com/rust-lang/crates.io-index"

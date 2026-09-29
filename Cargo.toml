@@ -16,6 +16,7 @@ members = [
     "crates/juris-scenario-simulator",
     "crates/juris-mobile-bridge",
     "crates/juris-mobile-ffi",
+    "crates/juris-tax-economics",
 ]
 resolver = "2"
 
