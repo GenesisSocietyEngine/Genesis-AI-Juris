@@ -1,0 +1,15 @@
+{
+  "sourceBase": "bd8b0e07fe4b9c0eded527e1825f0fa3eb66956c",
+  "cssSha256": "74849b5b9221665fad2d97310a2ae0cfd79f33185d0ef227a69dc1ebce14af25",
+  "node": "22.23.2",
+  "command": "node --import tsx --test tests/studio-guided-wizard.test.ts tests/graph-viewport.test.ts tests/studio-expanded-graph.test.ts",
+  "observedExitCode": 0,
+  "counts": {
+    "tests": 12,
+    "pass": 12,
+    "fail": 0,
+    "skipped": 0
+  },
+  "logSha256": "4da8d60539613924ba80d9cb7e4fef213f67b2d3a6c7d2de84d8fb84bc1c0f8f",
+  "reviewedAt": "2026-09-29T10:59:14.075877+00:00"
+}

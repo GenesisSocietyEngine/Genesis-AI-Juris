@@ -1,0 +1,901 @@
+{
+  "result": "PASS for recorded DS-1 text contrast and state checks only",
+  "sourceBase": "bd8b0e07fe4b9c0eded527e1825f0fa3eb66956c",
+  "cssSha256": "74849b5b9221665fad2d97310a2ae0cfd79f33185d0ef227a69dc1ebce14af25",
+  "ordinaryViewportScenarios": 12,
+  "scopedTextMeasurements": 420,
+  "unchangedDesktopFilledNodeMeasurements": 120,
+  "focusOutlineMeasurements": 92,
+  "focusOutline": {
+    "color": "rgb(41, 88, 184)",
+    "offset": "3px",
+    "style": "solid",
+    "width": "3px"
+  },
+  "minimumContrast": 5.11184069479057,
+  "scenarios": [
+    {
+      "host": "falcon",
+      "theme": "office",
+      "width": 1366,
+      "height": 768,
+      "ranges": {
+        "guide": {
+          "min": 5.975209659052851,
+          "max": 5.975209659052851,
+          "count": 3
+        },
+        "nodeIdle": {
+          "min": 13.63332885708218,
+          "max": 13.63332885708218,
+          "count": 10
+        },
+        "nodeSelected": {
+          "min": 6.315402736336494,
+          "max": 11.554148688161105,
+          "count": 10
+        },
+        "nodeFocus": {
+          "min": 6.315402736336494,
+          "max": 11.554148688161105,
+          "count": 10
+        },
+        "nodeHover": {
+          "min": 6.315402736336494,
+          "max": 11.554148688161105,
+          "count": 10
+        },
+        "source_normal": {
+          "min": 6.192288020477505,
+          "max": 6.192288020477505,
+          "count": 1
+        },
+        "source_hover": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "source_focus": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "source_active": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_normal": {
+          "min": 6.212025810009287,
+          "max": 6.212025810009287,
+          "count": 1
+        },
+        "destination_hover": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_focus": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_active": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        }
+      }
+    },
+    {
+      "host": "falcon",
+      "theme": "office",
+      "width": 1024,
+      "height": 768,
+      "ranges": {
+        "guide": {
+          "min": 5.975209659052851,
+          "max": 5.975209659052851,
+          "count": 3
+        },
+        "nodeIdle": {
+          "min": 13.63332885708218,
+          "max": 13.63332885708218,
+          "count": 10
+        },
+        "nodeSelected": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeFocus": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeHover": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "source_normal": {
+          "min": 6.192288020477505,
+          "max": 6.192288020477505,
+          "count": 1
+        },
+        "source_hover": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "source_focus": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "source_active": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_normal": {
+          "min": 6.212025810009287,
+          "max": 6.212025810009287,
+          "count": 1
+        },
+        "destination_hover": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_focus": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_active": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        }
+      }
+    },
+    {
+      "host": "falcon",
+      "theme": "office",
+      "width": 390,
+      "height": 844,
+      "ranges": {
+        "guide": {
+          "min": 5.975209659052851,
+          "max": 5.975209659052851,
+          "count": 3
+        },
+        "nodeIdle": {
+          "min": 13.63332885708218,
+          "max": 13.63332885708218,
+          "count": 10
+        },
+        "nodeSelected": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeFocus": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeHover": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "source_normal": {
+          "min": 6.192288020477505,
+          "max": 6.192288020477505,
+          "count": 1
+        },
+        "source_hover": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "source_focus": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "source_active": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_normal": {
+          "min": 6.212025810009287,
+          "max": 6.212025810009287,
+          "count": 1
+        },
+        "destination_hover": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_focus": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_active": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        }
+      }
+    },
+    {
+      "host": "falcon",
+      "theme": "after-hours",
+      "width": 1366,
+      "height": 768,
+      "ranges": {
+        "guide": {
+          "min": 5.708949295542022,
+          "max": 5.708949295542022,
+          "count": 3
+        },
+        "nodeIdle": {
+          "min": 12.50706837362834,
+          "max": 12.50706837362834,
+          "count": 10
+        },
+        "nodeSelected": {
+          "min": 6.315402736336494,
+          "max": 11.554148688161105,
+          "count": 10
+        },
+        "nodeFocus": {
+          "min": 6.315402736336494,
+          "max": 11.554148688161105,
+          "count": 10
+        },
+        "nodeHover": {
+          "min": 6.315402736336494,
+          "max": 11.554148688161105,
+          "count": 10
+        },
+        "source_normal": {
+          "min": 6.82468331561094,
+          "max": 6.82468331561094,
+          "count": 1
+        },
+        "source_hover": {
+          "min": 10.006046859896866,
+          "max": 10.006046859896866,
+          "count": 1
+        },
+        "source_focus": {
+          "min": 10.006046859896866,
+          "max": 10.006046859896866,
+          "count": 1
+        },
+        "source_active": {
+          "min": 10.006046859896866,
+          "max": 10.006046859896866,
+          "count": 1
+        },
+        "destination_normal": {
+          "min": 5.11184069479057,
+          "max": 5.11184069479057,
+          "count": 1
+        },
+        "destination_hover": {
+          "min": 7.403810224417329,
+          "max": 7.403810224417329,
+          "count": 1
+        },
+        "destination_focus": {
+          "min": 7.403810224417329,
+          "max": 7.403810224417329,
+          "count": 1
+        },
+        "destination_active": {
+          "min": 7.403810224417329,
+          "max": 7.403810224417329,
+          "count": 1
+        }
+      }
+    },
+    {
+      "host": "falcon",
+      "theme": "after-hours",
+      "width": 1024,
+      "height": 768,
+      "ranges": {
+        "guide": {
+          "min": 5.708949295542022,
+          "max": 5.708949295542022,
+          "count": 3
+        },
+        "nodeIdle": {
+          "min": 12.50706837362834,
+          "max": 12.50706837362834,
+          "count": 10
+        },
+        "nodeSelected": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeFocus": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeHover": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "source_normal": {
+          "min": 6.82468331561094,
+          "max": 6.82468331561094,
+          "count": 1
+        },
+        "source_hover": {
+          "min": 10.006046859896866,
+          "max": 10.006046859896866,
+          "count": 1
+        },
+        "source_focus": {
+          "min": 10.006046859896866,
+          "max": 10.006046859896866,
+          "count": 1
+        },
+        "source_active": {
+          "min": 10.006046859896866,
+          "max": 10.006046859896866,
+          "count": 1
+        },
+        "destination_normal": {
+          "min": 5.11184069479057,
+          "max": 5.11184069479057,
+          "count": 1
+        },
+        "destination_hover": {
+          "min": 7.403810224417329,
+          "max": 7.403810224417329,
+          "count": 1
+        },
+        "destination_focus": {
+          "min": 7.403810224417329,
+          "max": 7.403810224417329,
+          "count": 1
+        },
+        "destination_active": {
+          "min": 7.403810224417329,
+          "max": 7.403810224417329,
+          "count": 1
+        }
+      }
+    },
+    {
+      "host": "falcon",
+      "theme": "after-hours",
+      "width": 390,
+      "height": 844,
+      "ranges": {
+        "guide": {
+          "min": 5.708949295542022,
+          "max": 5.708949295542022,
+          "count": 3
+        },
+        "nodeIdle": {
+          "min": 12.50706837362834,
+          "max": 12.50706837362834,
+          "count": 10
+        },
+        "nodeSelected": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeFocus": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeHover": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "source_normal": {
+          "min": 6.82468331561094,
+          "max": 6.82468331561094,
+          "count": 1
+        },
+        "source_hover": {
+          "min": 10.006046859896866,
+          "max": 10.006046859896866,
+          "count": 1
+        },
+        "source_focus": {
+          "min": 10.006046859896866,
+          "max": 10.006046859896866,
+          "count": 1
+        },
+        "source_active": {
+          "min": 10.006046859896866,
+          "max": 10.006046859896866,
+          "count": 1
+        },
+        "destination_normal": {
+          "min": 5.11184069479057,
+          "max": 5.11184069479057,
+          "count": 1
+        },
+        "destination_hover": {
+          "min": 7.403810224417329,
+          "max": 7.403810224417329,
+          "count": 1
+        },
+        "destination_focus": {
+          "min": 7.403810224417329,
+          "max": 7.403810224417329,
+          "count": 1
+        },
+        "destination_active": {
+          "min": 7.403810224417329,
+          "max": 7.403810224417329,
+          "count": 1
+        }
+      }
+    },
+    {
+      "host": "generic",
+      "theme": "office",
+      "width": 1366,
+      "height": 768,
+      "ranges": {
+        "guide": {
+          "min": 5.975209659052851,
+          "max": 5.975209659052851,
+          "count": 3
+        },
+        "nodeIdle": {
+          "min": 13.63332885708218,
+          "max": 13.63332885708218,
+          "count": 10
+        },
+        "nodeSelected": {
+          "min": 6.315402736336494,
+          "max": 11.554148688161105,
+          "count": 10
+        },
+        "nodeFocus": {
+          "min": 6.315402736336494,
+          "max": 11.554148688161105,
+          "count": 10
+        },
+        "nodeHover": {
+          "min": 6.315402736336494,
+          "max": 11.554148688161105,
+          "count": 10
+        },
+        "source_normal": {
+          "min": 6.192288020477505,
+          "max": 6.192288020477505,
+          "count": 1
+        },
+        "source_hover": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "source_focus": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "source_active": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_normal": {
+          "min": 6.212025810009287,
+          "max": 6.212025810009287,
+          "count": 1
+        },
+        "destination_hover": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_focus": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_active": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        }
+      }
+    },
+    {
+      "host": "generic",
+      "theme": "office",
+      "width": 1024,
+      "height": 768,
+      "ranges": {
+        "guide": {
+          "min": 5.975209659052851,
+          "max": 5.975209659052851,
+          "count": 3
+        },
+        "nodeIdle": {
+          "min": 13.63332885708218,
+          "max": 13.63332885708218,
+          "count": 10
+        },
+        "nodeSelected": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeFocus": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeHover": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "source_normal": {
+          "min": 6.192288020477505,
+          "max": 6.192288020477505,
+          "count": 1
+        },
+        "source_hover": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "source_focus": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "source_active": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_normal": {
+          "min": 6.212025810009287,
+          "max": 6.212025810009287,
+          "count": 1
+        },
+        "destination_hover": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_focus": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_active": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        }
+      }
+    },
+    {
+      "host": "generic",
+      "theme": "office",
+      "width": 390,
+      "height": 844,
+      "ranges": {
+        "guide": {
+          "min": 5.975209659052851,
+          "max": 5.975209659052851,
+          "count": 3
+        },
+        "nodeIdle": {
+          "min": 13.63332885708218,
+          "max": 13.63332885708218,
+          "count": 10
+        },
+        "nodeSelected": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeFocus": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeHover": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "source_normal": {
+          "min": 6.192288020477505,
+          "max": 6.192288020477505,
+          "count": 1
+        },
+        "source_hover": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "source_focus": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "source_active": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_normal": {
+          "min": 6.212025810009287,
+          "max": 6.212025810009287,
+          "count": 1
+        },
+        "destination_hover": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_focus": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        },
+        "destination_active": {
+          "min": 6.598977671933137,
+          "max": 6.598977671933137,
+          "count": 1
+        }
+      }
+    },
+    {
+      "host": "generic",
+      "theme": "after-hours",
+      "width": 1366,
+      "height": 768,
+      "ranges": {
+        "guide": {
+          "min": 8.322157183255962,
+          "max": 8.322157183255962,
+          "count": 3
+        },
+        "nodeIdle": {
+          "min": 14.911338294761002,
+          "max": 14.911338294761002,
+          "count": 10
+        },
+        "nodeSelected": {
+          "min": 6.315402736336494,
+          "max": 11.554148688161105,
+          "count": 10
+        },
+        "nodeFocus": {
+          "min": 6.315402736336494,
+          "max": 11.554148688161105,
+          "count": 10
+        },
+        "nodeHover": {
+          "min": 6.315402736336494,
+          "max": 11.554148688161105,
+          "count": 10
+        },
+        "source_normal": {
+          "min": 6.716723423292261,
+          "max": 6.716723423292261,
+          "count": 1
+        },
+        "source_hover": {
+          "min": 8.301990111674467,
+          "max": 8.301990111674467,
+          "count": 1
+        },
+        "source_focus": {
+          "min": 8.301990111674467,
+          "max": 8.301990111674467,
+          "count": 1
+        },
+        "source_active": {
+          "min": 8.301990111674467,
+          "max": 8.301990111674467,
+          "count": 1
+        },
+        "destination_normal": {
+          "min": 7.047949930844672,
+          "max": 7.047949930844672,
+          "count": 1
+        },
+        "destination_hover": {
+          "min": 8.67144174995415,
+          "max": 8.67144174995415,
+          "count": 1
+        },
+        "destination_focus": {
+          "min": 8.67144174995415,
+          "max": 8.67144174995415,
+          "count": 1
+        },
+        "destination_active": {
+          "min": 8.67144174995415,
+          "max": 8.67144174995415,
+          "count": 1
+        }
+      }
+    },
+    {
+      "host": "generic",
+      "theme": "after-hours",
+      "width": 1024,
+      "height": 768,
+      "ranges": {
+        "guide": {
+          "min": 8.322157183255962,
+          "max": 8.322157183255962,
+          "count": 3
+        },
+        "nodeIdle": {
+          "min": 14.911338294761002,
+          "max": 14.911338294761002,
+          "count": 10
+        },
+        "nodeSelected": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeFocus": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeHover": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "source_normal": {
+          "min": 6.716723423292261,
+          "max": 6.716723423292261,
+          "count": 1
+        },
+        "source_hover": {
+          "min": 8.301990111674467,
+          "max": 8.301990111674467,
+          "count": 1
+        },
+        "source_focus": {
+          "min": 8.301990111674467,
+          "max": 8.301990111674467,
+          "count": 1
+        },
+        "source_active": {
+          "min": 8.301990111674467,
+          "max": 8.301990111674467,
+          "count": 1
+        },
+        "destination_normal": {
+          "min": 7.047949930844672,
+          "max": 7.047949930844672,
+          "count": 1
+        },
+        "destination_hover": {
+          "min": 8.67144174995415,
+          "max": 8.67144174995415,
+          "count": 1
+        },
+        "destination_focus": {
+          "min": 8.67144174995415,
+          "max": 8.67144174995415,
+          "count": 1
+        },
+        "destination_active": {
+          "min": 8.67144174995415,
+          "max": 8.67144174995415,
+          "count": 1
+        }
+      }
+    },
+    {
+      "host": "generic",
+      "theme": "after-hours",
+      "width": 390,
+      "height": 844,
+      "ranges": {
+        "guide": {
+          "min": 8.322157183255962,
+          "max": 8.322157183255962,
+          "count": 3
+        },
+        "nodeIdle": {
+          "min": 14.911338294761002,
+          "max": 14.911338294761002,
+          "count": 10
+        },
+        "nodeSelected": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeFocus": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "nodeHover": {
+          "min": 6.315402736336494,
+          "max": 7.14245852487595,
+          "count": 2
+        },
+        "source_normal": {
+          "min": 6.716723423292261,
+          "max": 6.716723423292261,
+          "count": 1
+        },
+        "source_hover": {
+          "min": 8.301990111674467,
+          "max": 8.301990111674467,
+          "count": 1
+        },
+        "source_focus": {
+          "min": 8.301990111674467,
+          "max": 8.301990111674467,
+          "count": 1
+        },
+        "source_active": {
+          "min": 8.301990111674467,
+          "max": 8.301990111674467,
+          "count": 1
+        },
+        "destination_normal": {
+          "min": 7.047949930844672,
+          "max": 7.047949930844672,
+          "count": 1
+        },
+        "destination_hover": {
+          "min": 8.67144174995415,
+          "max": 8.67144174995415,
+          "count": 1
+        },
+        "destination_focus": {
+          "min": 8.67144174995415,
+          "max": 8.67144174995415,
+          "count": 1
+        },
+        "destination_active": {
+          "min": 8.67144174995415,
+          "max": 8.67144174995415,
+          "count": 1
+        }
+      }
+    }
+  ],
+  "limits": [
+    "Synthetic local fixture; not governed source-v2 upload acceptance.",
+    "Ordinary viewport sizes are emulation, not native zoom; native-zoom has separate receipts.",
+    "Focus modality checks are not a whole-product sequential keyboard/screen-reader audit.",
+    "Before ordinary matrix covers desktop only; after covers all three viewports.",
+    "Visibility means nonzero box and CSS visibility, not every sample simultaneously inside the viewport."
+  ]
+}

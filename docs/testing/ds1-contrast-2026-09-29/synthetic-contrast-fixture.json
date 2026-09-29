@@ -1,0 +1,143 @@
+{
+  "caseId": "ds1_contrast_fixture",
+  "version": "1.0.0",
+  "caseType": {
+    "registry": "genesis-juris-case-types",
+    "id": "training_simulation",
+    "version": "1.0.0"
+  },
+  "parent": null,
+  "title": "DS-1 synthetic contrast fixture",
+  "jurisdiction": "Synthetic",
+  "role": "Test reviewer",
+  "premise": "Synthetic interface verification; no client data.",
+  "nodes": [
+    {
+      "id": "ds1_trigger",
+      "type": "trigger",
+      "title": "Synthetic trigger",
+      "detail": "Contrast verification fixture.",
+      "x": 60,
+      "y": 60
+    },
+    {
+      "id": "ds1_actor",
+      "type": "actor",
+      "title": "Synthetic actor",
+      "detail": "Contrast verification fixture.",
+      "x": 380,
+      "y": 60
+    },
+    {
+      "id": "ds1_fact",
+      "type": "fact",
+      "title": "Synthetic fact",
+      "detail": "Contrast verification fixture.",
+      "x": 60,
+      "y": 190
+    },
+    {
+      "id": "ds1_evidence",
+      "type": "evidence",
+      "title": "Synthetic evidence",
+      "detail": "Contrast verification fixture.",
+      "x": 380,
+      "y": 190
+    },
+    {
+      "id": "ds1_deadline",
+      "type": "deadline",
+      "title": "Synthetic deadline",
+      "detail": "Contrast verification fixture.",
+      "x": 60,
+      "y": 320
+    },
+    {
+      "id": "ds1_decision",
+      "type": "decision",
+      "title": "Synthetic decision",
+      "detail": "Contrast verification fixture.",
+      "x": 380,
+      "y": 320
+    },
+    {
+      "id": "ds1_entity",
+      "type": "entity",
+      "title": "Synthetic entity",
+      "detail": "Contrast verification fixture.",
+      "x": 60,
+      "y": 450
+    },
+    {
+      "id": "ds1_tax_rule",
+      "type": "tax_rule",
+      "title": "Synthetic tax_rule",
+      "detail": "Contrast verification fixture.",
+      "x": 380,
+      "y": 450
+    },
+    {
+      "id": "ds1_cash_flow",
+      "type": "cash_flow",
+      "title": "Synthetic cash_flow",
+      "detail": "Contrast verification fixture.",
+      "x": 60,
+      "y": 580
+    },
+    {
+      "id": "ds1_outcome",
+      "type": "outcome",
+      "title": "Synthetic outcome",
+      "detail": "Contrast verification fixture.",
+      "x": 380,
+      "y": 580
+    }
+  ],
+  "links": [
+    {
+      "id": "ds1_link_1",
+      "from": "ds1_trigger",
+      "to": "ds1_actor"
+    },
+    {
+      "id": "ds1_link_2",
+      "from": "ds1_actor",
+      "to": "ds1_fact"
+    },
+    {
+      "id": "ds1_link_3",
+      "from": "ds1_fact",
+      "to": "ds1_evidence"
+    },
+    {
+      "id": "ds1_link_4",
+      "from": "ds1_evidence",
+      "to": "ds1_deadline"
+    },
+    {
+      "id": "ds1_link_5",
+      "from": "ds1_deadline",
+      "to": "ds1_decision"
+    },
+    {
+      "id": "ds1_link_6",
+      "from": "ds1_decision",
+      "to": "ds1_entity"
+    },
+    {
+      "id": "ds1_link_7",
+      "from": "ds1_entity",
+      "to": "ds1_tax_rule"
+    },
+    {
+      "id": "ds1_link_8",
+      "from": "ds1_tax_rule",
+      "to": "ds1_cash_flow"
+    },
+    {
+      "id": "ds1_link_9",
+      "from": "ds1_cash_flow",
+      "to": "ds1_outcome"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "utc": "2026-09-29T11:10:32.639769+00:00",
+  "closedSessions": [
+    {
+      "session": "ds1-contrast",
+      "exit": 0,
+      "closed": true
+    },
+    {
+      "session": "ds1-generic",
+      "exit": 0,
+      "closed": true
+    },
+    {
+      "session": "ds1-zoom-probe",
+      "status": "independent native verifier reported closed"
+    }
+  ],
+  "server": {
+    "pid": 25040,
+    "action": "CommandLine verified to contain the owned DS1 worktree before Stop-Process",
+    "stopped": true
+  },
+  "remainingOwnedNodeWorkerd": [],
+  "port4197Listeners": "0",
+  "limits": "No global process termination. Only recorded owned sessions/server and exact owned worktree node/workerd processes were eligible. Profiles, tool binaries and raw captures preserved outside Git."
+}

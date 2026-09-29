@@ -1,0 +1,410 @@
+{
+  "phase": "after",
+  "validated": true,
+  "cases": [
+    {
+      "key": "generic-office",
+      "shell": "app-shell theme-office",
+      "baseline": {
+        "width": 1044,
+        "height": 656,
+        "dpr": 1.25,
+        "outerWidth": 1059,
+        "outerHeight": 806
+      },
+      "zoom": {
+        "factor": 2,
+        "width": 522,
+        "height": 328,
+        "dpr": 2.5,
+        "outerWidth": 1059,
+        "outerHeight": 806,
+        "cssZoom": "1",
+        "bodyZoom": "1"
+      },
+      "guideRatio": 5.975209659052851,
+      "sourceActiveRatio": 6.598977671933137,
+      "destinationActiveRatio": 6.598977671933137,
+      "sourceFocusRatio": 6.598977671933137,
+      "destinationFocusRatio": 6.598977671933137,
+      "idleMin": 13.63332885708218,
+      "idleMax": 13.63332885708218,
+      "idleNodes": [
+        {
+          "number": "N01",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N02",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N03",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N04",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N05",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N06",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N07",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N08",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N09",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N10",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        }
+      ],
+      "selectedMin": 6.315402736336494,
+      "selectedMax": 11.554148688161105,
+      "focusVisibleConfirmed": true,
+      "screenshots": [
+        "generic-office-guide.png",
+        "generic-office-graph.png",
+        "generic-office-source-active.png",
+        "generic-office-destination-active.png",
+        "generic-office-source-focus.png",
+        "generic-office-destination-focus.png"
+      ]
+    },
+    {
+      "key": "generic-after-hours",
+      "shell": "app-shell theme-after-hours",
+      "baseline": {
+        "width": 1044,
+        "height": 656,
+        "dpr": 1.25,
+        "outerWidth": 1059,
+        "outerHeight": 806
+      },
+      "zoom": {
+        "factor": 2,
+        "width": 522,
+        "height": 328,
+        "dpr": 2.5,
+        "outerWidth": 1059,
+        "outerHeight": 806,
+        "cssZoom": "1",
+        "bodyZoom": "1"
+      },
+      "guideRatio": 8.322157183255962,
+      "sourceActiveRatio": 8.301990111674467,
+      "destinationActiveRatio": 8.67144174995415,
+      "sourceFocusRatio": 8.301990111674467,
+      "destinationFocusRatio": 8.67144174995415,
+      "idleMin": 14.911338294761002,
+      "idleMax": 14.911338294761002,
+      "idleNodes": [
+        {
+          "number": "N01",
+          "foreground": "rgb(237, 240, 235)",
+          "background": "rgb(13, 29, 41)",
+          "ratio": 14.911338294761002
+        },
+        {
+          "number": "N02",
+          "foreground": "rgb(237, 240, 235)",
+          "background": "rgb(13, 29, 41)",
+          "ratio": 14.911338294761002
+        },
+        {
+          "number": "N03",
+          "foreground": "rgb(237, 240, 235)",
+          "background": "rgb(13, 29, 41)",
+          "ratio": 14.911338294761002
+        },
+        {
+          "number": "N04",
+          "foreground": "rgb(237, 240, 235)",
+          "background": "rgb(13, 29, 41)",
+          "ratio": 14.911338294761002
+        },
+        {
+          "number": "N05",
+          "foreground": "rgb(237, 240, 235)",
+          "background": "rgb(13, 29, 41)",
+          "ratio": 14.911338294761002
+        },
+        {
+          "number": "N06",
+          "foreground": "rgb(237, 240, 235)",
+          "background": "rgb(13, 29, 41)",
+          "ratio": 14.911338294761002
+        },
+        {
+          "number": "N07",
+          "foreground": "rgb(237, 240, 235)",
+          "background": "rgb(13, 29, 41)",
+          "ratio": 14.911338294761002
+        },
+        {
+          "number": "N08",
+          "foreground": "rgb(237, 240, 235)",
+          "background": "rgb(13, 29, 41)",
+          "ratio": 14.911338294761002
+        },
+        {
+          "number": "N09",
+          "foreground": "rgb(237, 240, 235)",
+          "background": "rgb(13, 29, 41)",
+          "ratio": 14.911338294761002
+        },
+        {
+          "number": "N10",
+          "foreground": "rgb(237, 240, 235)",
+          "background": "rgb(13, 29, 41)",
+          "ratio": 14.911338294761002
+        }
+      ],
+      "selectedMin": 6.315402736336494,
+      "selectedMax": 11.554148688161105,
+      "focusVisibleConfirmed": true,
+      "screenshots": [
+        "generic-after-hours-guide.png",
+        "generic-after-hours-graph.png",
+        "generic-after-hours-source-active.png",
+        "generic-after-hours-destination-active.png",
+        "generic-after-hours-source-focus.png",
+        "generic-after-hours-destination-focus.png"
+      ]
+    },
+    {
+      "key": "falcon-office",
+      "shell": "app-shell theme-office studio-only-shell studio-host-falcon",
+      "baseline": {
+        "width": 1046,
+        "height": 658,
+        "dpr": 1.25,
+        "outerWidth": 1061,
+        "outerHeight": 807
+      },
+      "zoom": {
+        "factor": 2,
+        "width": 523,
+        "height": 329,
+        "dpr": 2.5,
+        "outerWidth": 1061,
+        "outerHeight": 807,
+        "cssZoom": "1",
+        "bodyZoom": "1"
+      },
+      "guideRatio": 5.975209659052851,
+      "sourceActiveRatio": 6.598977671933137,
+      "destinationActiveRatio": 6.598977671933137,
+      "sourceFocusRatio": 6.598977671933137,
+      "destinationFocusRatio": 6.598977671933137,
+      "idleMin": 13.63332885708218,
+      "idleMax": 13.63332885708218,
+      "idleNodes": [
+        {
+          "number": "N01",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N02",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N03",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N04",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N05",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N06",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N07",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N08",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N09",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        },
+        {
+          "number": "N10",
+          "foreground": "rgb(32, 43, 60)",
+          "background": "rgb(248, 250, 252)",
+          "ratio": 13.63332885708218
+        }
+      ],
+      "selectedMin": 6.315402736336494,
+      "selectedMax": 11.554148688161105,
+      "focusVisibleConfirmed": true,
+      "screenshots": [
+        "falcon-office-guide.png",
+        "falcon-office-graph.png",
+        "falcon-office-source-active.png",
+        "falcon-office-destination-active.png",
+        "falcon-office-source-focus.png",
+        "falcon-office-destination-focus.png"
+      ]
+    },
+    {
+      "key": "falcon-after-hours",
+      "shell": "app-shell theme-after-hours studio-only-shell studio-host-falcon",
+      "baseline": {
+        "width": 1046,
+        "height": 658,
+        "dpr": 1.25,
+        "outerWidth": 1061,
+        "outerHeight": 807
+      },
+      "zoom": {
+        "factor": 2,
+        "width": 523,
+        "height": 329,
+        "dpr": 2.5,
+        "outerWidth": 1061,
+        "outerHeight": 807,
+        "cssZoom": "1",
+        "bodyZoom": "1"
+      },
+      "guideRatio": 5.708949295542022,
+      "sourceActiveRatio": 10.006046859896866,
+      "destinationActiveRatio": 7.403810224417329,
+      "sourceFocusRatio": 10.006046859896866,
+      "destinationFocusRatio": 7.403810224417329,
+      "idleMin": 12.50706837362834,
+      "idleMax": 12.50706837362834,
+      "idleNodes": [
+        {
+          "number": "N01",
+          "foreground": "rgb(247, 245, 239)",
+          "background": "rgb(13, 45, 90)",
+          "ratio": 12.50706837362834
+        },
+        {
+          "number": "N02",
+          "foreground": "rgb(247, 245, 239)",
+          "background": "rgb(13, 45, 90)",
+          "ratio": 12.50706837362834
+        },
+        {
+          "number": "N03",
+          "foreground": "rgb(247, 245, 239)",
+          "background": "rgb(13, 45, 90)",
+          "ratio": 12.50706837362834
+        },
+        {
+          "number": "N04",
+          "foreground": "rgb(247, 245, 239)",
+          "background": "rgb(13, 45, 90)",
+          "ratio": 12.50706837362834
+        },
+        {
+          "number": "N05",
+          "foreground": "rgb(247, 245, 239)",
+          "background": "rgb(13, 45, 90)",
+          "ratio": 12.50706837362834
+        },
+        {
+          "number": "N06",
+          "foreground": "rgb(247, 245, 239)",
+          "background": "rgb(13, 45, 90)",
+          "ratio": 12.50706837362834
+        },
+        {
+          "number": "N07",
+          "foreground": "rgb(247, 245, 239)",
+          "background": "rgb(13, 45, 90)",
+          "ratio": 12.50706837362834
+        },
+        {
+          "number": "N08",
+          "foreground": "rgb(247, 245, 239)",
+          "background": "rgb(13, 45, 90)",
+          "ratio": 12.50706837362834
+        },
+        {
+          "number": "N09",
+          "foreground": "rgb(247, 245, 239)",
+          "background": "rgb(13, 45, 90)",
+          "ratio": 12.50706837362834
+        },
+        {
+          "number": "N10",
+          "foreground": "rgb(247, 245, 239)",
+          "background": "rgb(13, 45, 90)",
+          "ratio": 12.50706837362834
+        }
+      ],
+      "selectedMin": 6.315402736336494,
+      "selectedMax": 11.554148688161105,
+      "focusVisibleConfirmed": true,
+      "screenshots": [
+        "falcon-after-hours-guide.png",
+        "falcon-after-hours-graph.png",
+        "falcon-after-hours-source-active.png",
+        "falcon-after-hours-destination-active.png",
+        "falcon-after-hours-source-focus.png",
+        "falcon-after-hours-destination-focus.png"
+      ]
+    }
+  ]
+}
