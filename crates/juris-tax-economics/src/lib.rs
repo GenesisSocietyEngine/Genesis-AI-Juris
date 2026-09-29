@@ -368,6 +368,12 @@ fn apply_bps(amount: i64, bps: i64) -> i64 {
 // PART B: BENEFIT CALCULATION ENGINE
 // ============================================================================
 
+fn recognized_benefit_amount(item: &TaxBenefitItem, global_realization_bps: u16) -> i64 {
+    let realization = item.realization_bps.unwrap_or(global_realization_bps) as i128;
+    let probability = item.probability_bps.unwrap_or(10000) as i128;
+    ((item.amount as i128 * realization * probability) / (10_000i128 * 10_000i128)) as i64
+}
+
 /// Calculate recognized benefits from items with realization and probability
 pub fn calculate_recognized_benefits(
     items: &[TaxBenefitItem],
@@ -381,11 +387,7 @@ pub fn calculate_recognized_benefits(
             continue;
         }
 
-        let realization = item.realization_bps.unwrap_or(global_realization_bps) as i64;
-        let probability = item.probability_bps.unwrap_or(10000) as i64;
-
-        let net_amount = ((item.amount as i128 * realization as i128 * probability as i128)
-            / (10_000i128 * 10_000i128)) as i64;
+        let net_amount = recognized_benefit_amount(item, global_realization_bps);
 
         match item.timing {
             BenefitTiming::RecurringAnnual => {
@@ -428,6 +430,7 @@ pub struct TaxEconomicsCalculationResult {
     pub optimized_annual_tax_cost: i64,
     pub recognized_annual_tax_saving: i64,
     pub recognized_recurring_benefits: i64,
+    /// Unfiltered total of included one-off benefits, including dates beyond the horizon.
     pub recognized_one_off_benefits: i64,
     pub gross_recognized_annual_benefit: i64,
     pub operating_annual_benefit: i64,
@@ -473,6 +476,10 @@ fn resolve_annual_tax_costs(
 }
 
 /// Calculate complete tax economics with benefits integration
+///
+/// Implementation cost occurs at t = 0; month m means the end of month m.
+/// A one-off benefit occurs at its start month (month 0 is undiscounted) and
+/// contributes to NPV and lifecycle totals only when it is within the horizon.
 pub fn calculate_tax_economics_v2(
     model: &TaxEconomicsV2,
 ) -> Result<TaxEconomicsCalculationResult, TaxEconomicsError> {
@@ -492,6 +499,22 @@ pub fn calculate_tax_economics_v2(
     // Recognized benefits from items
     let benefits =
         calculate_recognized_benefits(&model.benefit_items, model.benefit_realization_bps);
+    let one_offs: Vec<_> = model
+        .benefit_items
+        .iter()
+        .filter(|item| {
+            item.include_in_base_case
+                && item.timing == BenefitTiming::OneOff
+                && item.start_month <= model.analysis_horizon_months
+        })
+        .map(|item| {
+            (
+                item.start_month,
+                recognized_benefit_amount(item, model.benefit_realization_bps),
+            )
+        })
+        .collect();
+    let in_horizon_one_off_benefits: i64 = one_offs.iter().map(|(_, amount)| amount).sum();
 
     // Gross recognized annual benefit = tax saving + recurring benefits
     let gross_recognized_annual_benefit = recognized_annual_tax_saving + benefits.recurring_annual;
@@ -507,7 +530,7 @@ pub fn calculate_tax_economics_v2(
     // Lifecycle: operating benefit (already net of maintenance) over the horizon,
     // plus one-off benefits, less one-off costs
     let horizon_operating = (operating_annual_benefit * model.analysis_horizon_months as i64) / 12;
-    let lifecycle_net_benefit = horizon_operating + benefits.one_off
+    let lifecycle_net_benefit = horizon_operating + in_horizon_one_off_benefits
         - model.implementation_cost
         - model.terminal_tax_or_unwind_cost;
 
@@ -527,7 +550,11 @@ pub fn calculate_tax_economics_v2(
         let discount_factor = 1.0 / (1.0 + monthly_discount).powi(month as i32);
         npv += monthly_benefit * discount_factor;
     }
-    npv -= model.terminal_tax_or_unwind_cost as f64;
+    for (month, amount) in one_offs {
+        npv += amount as f64 / (1.0 + monthly_discount).powf(month as f64);
+    }
+    npv -= model.terminal_tax_or_unwind_cost as f64
+        / (1.0 + monthly_discount).powf(model.analysis_horizon_months as f64);
 
     let lifecycle_cost = (model.implementation_cost as i128
         + model.annual_maintenance_cost as i128 * model.analysis_horizon_months as i128 / 12
@@ -1424,6 +1451,100 @@ mod tests {
         assert_eq!(result.lifecycle_cost, 1);
         assert_eq!(result.lifecycle_net_benefit, 300_000);
         assert_eq!(result.lifecycle_roi_bps, None);
+    }
+
+    fn benefit_item(
+        timing: BenefitTiming,
+        amount: i64,
+        start_month: u32,
+        end_month: Option<u32>,
+    ) -> TaxBenefitItem {
+        TaxBenefitItem {
+            id: "benefit".to_string(),
+            label: "Documented benefit".to_string(),
+            benefit_type: BenefitType::Other,
+            timing,
+            amount,
+            start_month,
+            end_month,
+            realization_bps: None,
+            probability_bps: None,
+            source_node_ids: vec![],
+            note: None,
+            include_in_base_case: true,
+        }
+    }
+
+    #[test]
+    fn test_npv_discounts_terminal_cost_at_horizon() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.analysis_horizon_months = 12;
+        model.annual_discount_rate_bps = 1_000;
+        model.terminal_tax_or_unwind_cost = 12_100;
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        // One year at 10%: -12,100 / 1.1 = -11,000.
+        assert!((result.npv as f64 - (-11_000.0)).abs() <= 1.0);
+        assert_eq!(result.lifecycle_net_benefit, -12_100);
+    }
+
+    #[test]
+    fn test_npv_one_off_benefits_at_month_zero_and_twelve() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.analysis_horizon_months = 12;
+        model.annual_discount_rate_bps = 1_000;
+        model.benefit_items = vec![
+            benefit_item(BenefitTiming::OneOff, 48_400, 0, None),
+            benefit_item(BenefitTiming::OneOff, 48_400, 12, None),
+        ];
+        for item in &mut model.benefit_items {
+            item.realization_bps = Some(5_000);
+            item.probability_bps = Some(5_000);
+        }
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        // Each recognizes 48,400 * 50% * 50% = 12,100;
+        // NPV is 12,100 now + 12,100 / 1.1 at month 12 = 23,100.
+        assert_eq!(result.recognized_one_off_benefits, 24_200);
+        assert_eq!(result.lifecycle_net_benefit, 24_200);
+        assert!((result.npv as f64 - 23_100.0).abs() <= 1.0);
+    }
+
+    #[test]
+    fn test_one_off_beyond_horizon_is_excluded_from_npv_and_lifecycle() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.analysis_horizon_months = 12;
+        model.benefit_items = vec![benefit_item(BenefitTiming::OneOff, 12_345, 13, None)];
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        assert_eq!(result.recognized_one_off_benefits, 12_345);
+        assert_eq!(result.lifecycle_net_benefit, 0);
+        assert_eq!(result.npv, 0);
+    }
+
+    #[test]
+    fn test_zero_discount_npv_is_plain_cash_flow_sum() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.analysis_horizon_months = 18;
+        model.annual_discount_rate_bps = 0;
+        model.baseline_annual_tax_cost = 100_000;
+        model.optimized_annual_tax_cost = 70_000;
+        model.implementation_cost = 10_000;
+        model.annual_maintenance_cost = 5_000;
+        model.terminal_tax_or_unwind_cost = 2_000;
+        let mut excluded = benefit_item(BenefitTiming::OneOff, 99_999, 0, None);
+        excluded.include_in_base_case = false;
+        model.benefit_items = vec![
+            benefit_item(BenefitTiming::OneOff, 1_000, 0, None),
+            benefit_item(BenefitTiming::OneOff, 3_000, 12, None),
+            excluded,
+        ];
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        // (30,000 - 5,000) * 18 / 12 + 1,000 + 3,000 - 10,000 - 2,000.
+        assert_eq!(result.recognized_one_off_benefits, 4_000);
+        assert_eq!(result.lifecycle_net_benefit, 29_500);
+        assert_eq!(result.npv, 29_500);
     }
 
     #[test]
