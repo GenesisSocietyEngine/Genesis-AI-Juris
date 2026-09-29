@@ -1,0 +1,96 @@
+{
+  "sourceCommit": "c86c83bd6dc62c5eee2ae825272e65e3821e7aa5",
+  "cssSha256": "146d1323a6fa485c2e5d8bcf65e1405182ef0a21ae250447229e36ff4eeeae23",
+  "files": [
+    {
+      "file": "BASELINE_MEASUREMENTS.json",
+      "bytes": 8726,
+      "sha256": "7a59a43d12131272de3d1818fcb5bb1377b75ae14576a8cb327b27379f18e44c"
+    },
+    {
+      "file": "BROWSER_MEASUREMENTS.json",
+      "bytes": 77664,
+      "sha256": "a705e173aa6d983cbb6f52ef64a9ddbbf944bf97018ba20dc657ba375df904fb"
+    },
+    {
+      "file": "c3d-1024-shot.png",
+      "bytes": 64933,
+      "sha256": "75721b557157b4bb0eca9621798e95f39ef16e6fbfe528a137ec244a27930ed6"
+    },
+    {
+      "file": "c3d-390-shot.png",
+      "bytes": 30033,
+      "sha256": "72155ac75cc86c2cc3c6aead7a52c99c450b687273883d2e413e643d1a5f400e"
+    },
+    {
+      "file": "continuation-snapshot.txt",
+      "bytes": 1144,
+      "sha256": "50ab1c8865d76ee96e8523ab77ed0f7f9a1ba574daff2294f6b369abc616eb85"
+    },
+    {
+      "file": "dark-1024.png",
+      "bytes": 61318,
+      "sha256": "b98b15a94f6e6cac9a8a21e1dddae0d326f640b7a2a65142e6649a0aad640286"
+    },
+    {
+      "file": "dark-1366.png",
+      "bytes": 62310,
+      "sha256": "44a003f4d46607faedb1a9426d863e161707a41f6aeeeee6b0cc13df48ee9c5e"
+    },
+    {
+      "file": "dark-390-keyboard.png",
+      "bytes": 30991,
+      "sha256": "2bf48e9e8a862bfa476624a91572dedf4e58c85341cd91ac8481bb1922f9660b"
+    },
+    {
+      "file": "dark-390.png",
+      "bytes": 30339,
+      "sha256": "c73bfa0e608f8468ceff7403fb270b81dc46a85f85c95a2335a53254c90b29ab"
+    },
+    {
+      "file": "light-1024.png",
+      "bytes": 61318,
+      "sha256": "b98b15a94f6e6cac9a8a21e1dddae0d326f640b7a2a65142e6649a0aad640286"
+    },
+    {
+      "file": "light-1366.png",
+      "bytes": 61854,
+      "sha256": "ebc427bee7fede173494b4a7cf103b15db3c4765e1a134bd1b408d1746ef3ceb"
+    },
+    {
+      "file": "light-390-keyboard.png",
+      "bytes": 30991,
+      "sha256": "2bf48e9e8a862bfa476624a91572dedf4e58c85341cd91ac8481bb1922f9660b"
+    },
+    {
+      "file": "light-390.png",
+      "bytes": 30339,
+      "sha256": "c73bfa0e608f8468ceff7403fb270b81dc46a85f85c95a2335a53254c90b29ab"
+    },
+    {
+      "file": "menu-mobile-shot.png",
+      "bytes": 32159,
+      "sha256": "49833565f9e26bd69dfce786a3b5673862a85870bd71dc3ed17d1bb3f8e39862"
+    },
+    {
+      "file": "menu-mobile-snapshot.txt",
+      "bytes": 414,
+      "sha256": "568cd00b9f9141b38eb22ae0004c0d812ff029088f3174a56961f4b2f468a703"
+    },
+    {
+      "file": "recovered-card.txt",
+      "bytes": 485,
+      "sha256": "570d645814f9e284f3b2b64d57363d160da3c68cad92035556ad1bd44aa50b83"
+    },
+    {
+      "file": "REVIEW.md",
+      "bytes": 6407,
+      "sha256": "d5d32172659bf2a9d82eabc61472d25fc5a7a00761e007c13697411d01c70d61"
+    },
+    {
+      "file": "VALIDATION.json",
+      "bytes": 1149,
+      "sha256": "5af5bdc5bfeacb6f227dcbd27851fe36d8226bf39f93d35459f4d38bda7e5e80"
+    }
+  ]
+}

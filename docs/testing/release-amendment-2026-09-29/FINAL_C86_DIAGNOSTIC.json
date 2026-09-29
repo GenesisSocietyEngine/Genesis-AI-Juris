@@ -1,0 +1,232 @@
+{
+  "format": "genesis-juris-native-blocked-diagnostic-v1",
+  "observedUtc": "2026-09-29T14:45:40.786Z",
+  "status": "BLOCKED",
+  "source": {
+    "format": "genesis-juris-web-checkout-receipt",
+    "head": "c86c83bd6dc62c5eee2ae825272e65e3821e7aa5",
+    "tree": "484669cc62614527b7a1848b24b68d255f724fb1",
+    "trackedFileCount": 2088,
+    "trackedByteSha256": "b522a031596db6abc4a3201a6a4e5a50efd65494b4be7a88bac64a6af944dc32"
+  },
+  "lockedMobile": "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+  "completedApplicableStages": 18,
+  "totalRequiredStages": 22,
+  "execution": {
+    "startedUtc": "2026-09-29T14:11:18.4352511Z",
+    "aggregateStartedUtc": "2026-09-29T14:11:25Z",
+    "finishedUtc": "2026-09-29T14:41:10Z",
+    "outerFinishedUtc": "2026-09-29T14:41:10.2350403Z",
+    "exits": {
+      "aggregate-exit-code.txt": 1,
+      "launcher-exit-code.txt": 1,
+      "audit-full-exit-code.txt": 0,
+      "audit-production-exit-code.txt": 0
+    },
+    "outerExit": 1
+  },
+  "counts": {
+    "web": {
+      "tests": 1003,
+      "pass": 1000,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 3
+    },
+    "dossier": {
+      "tests": 5,
+      "pass": 5,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "pdf": {
+      "files": 47,
+      "pages": 760,
+      "renderedPngs": 760,
+      "baselinePngs": 55,
+      "baselineSha256": "2df39a97f06359c4cc228bf12a9120e8c2a7491a60884a152e0a909a1383ff60"
+    },
+    "flutter": {
+      "passed": 275
+    },
+    "rust": {
+      "groups": 73,
+      "passed": 359,
+      "failed": 0,
+      "ignored": 0
+    },
+    "native": {
+      "testsExecuted": false,
+      "passed": null
+    }
+  },
+  "stages": [
+    {
+      "id": "web 1/10",
+      "description": "exact clean HEAD, tracked-byte, and untracked-file preflight",
+      "status": "PASS"
+    },
+    {
+      "id": "web 2/10",
+      "description": "strict TypeScript",
+      "status": "PASS"
+    },
+    {
+      "id": "web 3/10",
+      "description": "lint",
+      "status": "PASS"
+    },
+    {
+      "id": "web 4/10",
+      "description": "tests (including verified build and dossier gates)",
+      "status": "PASS"
+    },
+    {
+      "id": "web 5/10",
+      "description": "five required decision-centric dossier E2E scenarios",
+      "status": "PASS"
+    },
+    {
+      "id": "web 6/10",
+      "description": "bilingual professional PDF structural, text, and visual verification",
+      "status": "PASS"
+    },
+    {
+      "id": "web 7/10",
+      "description": "production dependency audit",
+      "status": "PASS"
+    },
+    {
+      "id": "web 8/10",
+      "description": "patch hygiene",
+      "status": "PASS"
+    },
+    {
+      "id": "web 9/10",
+      "description": "final verified build",
+      "status": "PASS"
+    },
+    {
+      "id": "mobile 1/9",
+      "description": "exact-SHA checkout and 18-route runtime parity",
+      "status": "PASS"
+    },
+    {
+      "id": "mobile 2/9",
+      "description": "executable report-layout fixture and fingerprint parity",
+      "status": "PASS"
+    },
+    {
+      "id": "mobile 3/9",
+      "description": "fail-closed Dart formatting",
+      "status": "PASS"
+    },
+    {
+      "id": "mobile 4/9",
+      "description": "dependency resolution",
+      "status": "PASS"
+    },
+    {
+      "id": "mobile 5/9",
+      "description": "Flutter analysis",
+      "status": "PASS"
+    },
+    {
+      "id": "mobile 6/9",
+      "description": "Flutter tests",
+      "status": "PASS"
+    },
+    {
+      "id": "mobile 7/9",
+      "description": "locked Rust formatting",
+      "status": "PASS"
+    },
+    {
+      "id": "mobile 8/9",
+      "description": "locked Rust Clippy",
+      "status": "PASS"
+    },
+    {
+      "id": "mobile 9/9",
+      "description": "locked Rust workspace tests",
+      "status": "PASS"
+    },
+    {
+      "id": "native 1/3",
+      "description": "Android FFI persistence smoke",
+      "status": "BLOCKED_PRIVATE_ADB_UNAVAILABLE"
+    },
+    {
+      "id": "native 2/3",
+      "status": "NOT_RUN",
+      "reason": "Unchanged fail-fast source script stopped at native 1/3"
+    },
+    {
+      "id": "native 3/3",
+      "status": "NOT_RUN",
+      "reason": "Unchanged fail-fast source script stopped at native 1/3"
+    },
+    {
+      "id": "web 10/10",
+      "status": "NOT_RUN",
+      "reason": "Unchanged fail-fast source script stopped at native 1/3"
+    }
+  ],
+  "nativeFailure": {
+    "classification": "PRIVATE_ADB_SOCKET_UNAVAILABLE_AFTER_OWNED_RUNTIME_CLEANUP",
+    "safeTerminalMessages": [
+      "* cannot start server on remote host",
+      "adb.exe: failed to check server version: cannot connect to daemon at tcp:127.0.0.1:5041: cannot connect to 127.0.0.1:5041: No connection could be made because the target machine actively refused it. (10061)"
+    ],
+    "preexistingBlockReceiptSha256": "c9a66c13ee4b12c07ffea143b9edb9791f629fa1b0aaecd227e377c1b8849274"
+  },
+  "finalGuards": {
+    "web": 0,
+    "mobile": 0,
+    "sourceReceiptComparison": 0,
+    "basis": "Additional task wrapper guards ran on exit; not a claim that skipped source-script terminal stages ran."
+  },
+  "audits": {
+    "fullVulnerabilities": 0,
+    "productionVulnerabilities": 0
+  },
+  "cleanup": {
+    "priorFailedRuntimeCleanup": "Recorded in NATIVE_RECONNECT_BLOCK.json",
+    "nativeTestsExecuted": false,
+    "globalAdbTouched": false,
+    "cleanupPerformedDuringDiagnostic": false,
+    "ports": [
+      5041,
+      5582,
+      5583
+    ],
+    "reason": "Diagnostic native discovery could not connect to absent task-private ADB; no new runtime side effect observed; no extra process termination",
+    "newAdbDaemonObserved": false,
+    "atUtc": "2026-09-29T14:42:26.2386288Z",
+    "status": "CLEAN",
+    "listenerCount": 0,
+    "activeAvdProfileAbsent": true
+  },
+  "stageExitBasis": "Each of the first 18 stages is followed by the next stage in the unchanged fail-fast script; native 1/3 returned 1, so the final three source-script stages were not reached. The separate wrapper guards ran on exit.",
+  "provenance": {
+    "runDir": "C:\\PROJECTS\\Genesis-Juris-Release-Gate-2026-09-29\\runs\\native-blocked-diagnostic-c86c83bd6dc62c5eee2ae825272e65e3821e7aa5-20260929T141125Z",
+    "launcherDir": "C:\\PROJECTS\\Genesis-Juris-Release-Gate-2026-09-29\\runs\\launcher-native-blocked-diagnostic-c86c83bd6dc62c5eee2ae825272e65e3821e7aa5-20260929T141118Z",
+    "sourceReleaseScriptSha256": "03de33bb2d14b689447cb26d32544492b314ab2145d8584b7cd284f75c2a42a4",
+    "diagnosticRunnerSha256": "9e95e06c4882ef0ccbc76c03cb16a9f41d43bfc275d23564c9869f91f838febd",
+    "diagnosticLauncherSha256": "5624f3784df8a9101b0e29871fcafbe63be8135bc98b6515bffa19006df5c51a",
+    "aggregateLogSha256": "3264a7254b3ddae793ecbb1914c31b18ad43dc1851628c41a2546760615183ef",
+    "sourceReceiptSha256": "ef7144a81cb50f41784a8da04ae4829e66d910405648cbbb74f4488096e189a6",
+    "sourceReleaseScriptModified": false,
+    "stagesSkippedByWrapper": false,
+    "aggregateTimeoutSeconds": 7200
+  },
+  "limits": [
+    "This is not a full 22-stage PASS.",
+    "Prior549 full aggregate PASS remains separate exact-source evidence.",
+    "Native device discovery failed against the absent task-private ADB socket; no Android test ran.",
+    "Stored native hosted lock and final source-script guards after native 1/3 were not reached.",
+    "No deployment or hosted authentication/invitation/user acceptance is established.",
+    "Counts overlap and must not be summed."
+  ]
+}

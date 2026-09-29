@@ -59,3 +59,11 @@ Device outage prevents current liveness and cleanup verification. Re-identify PI
 - Tax is still a standalone reviewed `rlib`, without mobile/native/Flutter UI, persistence or report integration. Do not import the duplicate parallel tax branch or claim a user-facing tax feature.
 
 Root owns the GitHub-only continuation branch. The local account writer is paused and will not resume source edits automatically; coordinator handoff edits and unfinished receipt helper remain preserved for explicit reconciliation. No automatic background continuation or production deployment is promised by this record.
+
+## Reconnection update — 29 September 2026
+
+The device reconnected and its actual source, logs and ownership were inventoried. The earlier sections remain the dated outage record. The [current release status](RELEASE_STATUS.md) and linked receipts now supersede their outstanding-action state.
+
+The [independent frozen-549 readback](FROZEN_549_READBACK.json) reconciles the captured receipt with retained terminal logs. Ordinary Account browser verification subsequently reproduced narrow-screen overflow, leading to the separately reviewed CSS-only `c86c83bd6dc62c5eee2ae825272e65e3821e7aa5` amendment, pushed to PR #58. Account browser evidence and exact-source validation are recorded in the current status; old 549 and c3d checks must not be assigned to the new source.
+
+Two task-owned Android emulator restarts failed their unchanged 420-second readiness bound. Their evidence is retained; this is a blocked final native prerequisite, not a passed aggregate or a reproduced product assertion. No gate, baseline or timeout was weakened. Production remains the separately observed v102. The new tax integration plan is reconciled as a future implementation track, with application integration still pending.

@@ -1,0 +1,550 @@
+{
+  "schema": "hosted-ci-and-main-integration/v1",
+  "observedAt": "2026-09-29T12:06:31.783061+00:00",
+  "repository": "GenesisSocietyEngine/Genesis-AI-Juris",
+  "readOnlyReview": true,
+  "pullRequests": [
+    {
+      "number": 56,
+      "url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/56",
+      "headSha": "a23035a0e8f59331db292031d5b6c0253acac969",
+      "state": "closed",
+      "draft": false,
+      "merged": true,
+      "mergedAt": "2026-09-29T12:00:51Z",
+      "mergeCommitSha": "4ce2accbe216b822fd1ee83390a70ce63604c53d"
+    },
+    {
+      "number": 57,
+      "url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/57",
+      "headSha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+      "state": "closed",
+      "draft": false,
+      "merged": true,
+      "mergedAt": "2026-09-29T12:03:33Z",
+      "mergeCommitSha": "bc4cd1d8fe3f8835c056401bfd873e72b7bc91ae"
+    }
+  ],
+  "mainReadback": {
+    "sha": "bc4cd1d8fe3f8835c056401bfd873e72b7bc91ae",
+    "tree": "f8fa0d837567c32c4f8ab3469c9b2906e7ada86b",
+    "testedCandidateSha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+    "testedCandidateTree": "f8fa0d837567c32c4f8ab3469c9b2906e7ada86b",
+    "exactTrackedTreeEquality": true
+  },
+  "mergeCommits": [
+    {
+      "sha": "4ce2accbe216b822fd1ee83390a70ce63604c53d",
+      "tree": "a9f3259aac82fe7b1ac6a765e391253c2f46cb54",
+      "parents": [
+        "688c57fc27020033e7e3bd827d2d690b0966eb99",
+        "a23035a0e8f59331db292031d5b6c0253acac969"
+      ]
+    },
+    {
+      "sha": "bc4cd1d8fe3f8835c056401bfd873e72b7bc91ae",
+      "tree": "f8fa0d837567c32c4f8ab3469c9b2906e7ada86b",
+      "parents": [
+        "4ce2accbe216b822fd1ee83390a70ce63604c53d",
+        "54987950f86f75fb20a1fdbbf2e806719e56680e"
+      ]
+    }
+  ],
+  "hostedCi": [
+    {
+      "pr": 56,
+      "headSha": "a23035a0e8f59331db292031d5b6c0253acac969",
+      "tree": "aed9056531c9b0942034ab17d707c45fbde2b29a",
+      "result": "5/5 PR-event workflows and 7/7 jobs SUCCESS, attempt 1",
+      "prEventRuns": [
+        {
+          "id": 36562474730,
+          "name": "iOS Native FFI",
+          "head_sha": "a23035a0e8f59331db292031d5b6c0253acac969",
+          "event": "pull_request",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562474730"
+        },
+        {
+          "id": 36562474757,
+          "name": "Rust CI",
+          "head_sha": "a23035a0e8f59331db292031d5b6c0253acac969",
+          "event": "pull_request",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562474757"
+        },
+        {
+          "id": 36562474819,
+          "name": "Flutter Mobile UI",
+          "head_sha": "a23035a0e8f59331db292031d5b6c0253acac969",
+          "event": "pull_request",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562474819"
+        },
+        {
+          "id": 36562474796,
+          "name": "Android Native FFI",
+          "head_sha": "a23035a0e8f59331db292031d5b6c0253acac969",
+          "event": "pull_request",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562474796"
+        },
+        {
+          "id": 36562474618,
+          "name": "Root Web and PDF",
+          "head_sha": "a23035a0e8f59331db292031d5b6c0253acac969",
+          "event": "pull_request",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562474618"
+        }
+      ],
+      "separatePushRuns": [
+        {
+          "id": 36562467090,
+          "name": "Rust CI",
+          "head_sha": "a23035a0e8f59331db292031d5b6c0253acac969",
+          "event": "push",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562467090"
+        },
+        {
+          "id": 36562467047,
+          "name": "Flutter Mobile UI",
+          "head_sha": "a23035a0e8f59331db292031d5b6c0253acac969",
+          "event": "push",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562467047"
+        },
+        {
+          "id": 36562467116,
+          "name": "Android Native FFI",
+          "head_sha": "a23035a0e8f59331db292031d5b6c0253acac969",
+          "event": "push",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562467116"
+        },
+        {
+          "id": 36562467049,
+          "name": "Root Web and PDF",
+          "head_sha": "a23035a0e8f59331db292031d5b6c0253acac969",
+          "event": "push",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562467049"
+        },
+        {
+          "id": 36562466997,
+          "name": "iOS Native FFI",
+          "head_sha": "a23035a0e8f59331db292031d5b6c0253acac969",
+          "event": "push",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562466997"
+        }
+      ],
+      "jobs": [
+        {
+          "id": 109386369853,
+          "name": "quality",
+          "run_id": 36562474757,
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562474757/job/109386369853"
+        },
+        {
+          "id": 109386370068,
+          "name": "msrv",
+          "run_id": 36562474757,
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562474757/job/109386370068"
+        },
+        {
+          "id": 109386370582,
+          "name": "analyze-and-test",
+          "run_id": 36562474819,
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562474819/job/109386370582"
+        },
+        {
+          "id": 109386369818,
+          "name": "debug-apk",
+          "run_id": 36562474796,
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562474796/job/109386369818"
+        },
+        {
+          "id": 109386368974,
+          "name": "pdf-visual",
+          "run_id": 36562474618,
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562474618/job/109386368974"
+        },
+        {
+          "id": 109386369054,
+          "name": "web-and-pdf",
+          "run_id": 36562474618,
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562474618/job/109386369054"
+        },
+        {
+          "id": 109386369532,
+          "name": "simulator-smoke",
+          "run_id": 36562474730,
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562474730/job/109386369532"
+        }
+      ],
+      "summary": {
+        "web": {
+          "tests": 1003,
+          "passed": 1000,
+          "failed": 0,
+          "skipped": 3,
+          "history_input_tests_passed": 2,
+          "history_revisions": [
+            "bf5799383a52b6617cd9d4a0acf47af780086218",
+            "e256660f5e7d5c88ffe4dc0076ead74a70d18b1b"
+          ],
+          "full_audit_vulnerabilities": 0,
+          "production_audit_vulnerabilities": 0
+        },
+        "pdf": {
+          "pdfs": 47,
+          "pages": 760,
+          "rendered_pngs": 760,
+          "baseline_pngs": 55,
+          "baseline_sha256": "2df39a97f06359c4cc228bf12a9120e8c2a7491a60884a152e0a909a1383ff60"
+        },
+        "rust": {
+          "passed": 359,
+          "failed": 0,
+          "ignored": 0,
+          "result_groups": 73,
+          "msrv": "1.78.0"
+        },
+        "flutter": {
+          "passed": 278,
+          "skipped": 12,
+          "analysis": "No issues found"
+        },
+        "android": {
+          "apk": "app-debug.apk",
+          "packaged_arm64_library": "lib/arm64-v8a/libjuris_mobile_ffi.so",
+          "packaged_library_bytes": 4527016
+        },
+        "ios": {
+          "native_test_passed": true,
+          "native_test_seconds": 0.841,
+          "simulator": "iPhone 16 Pro",
+          "job_duration_seconds": 1625,
+          "build_seconds": 399,
+          "export_verify_seconds": 13,
+          "boot_seconds": 245,
+          "lifecycle_step_seconds": 737,
+          "fake_verifier_passed": 19,
+          "real_universal_fixture_passed": 3,
+          "actual_archive_slices": [
+            "arm64",
+            "x86_64"
+          ]
+        }
+      }
+    },
+    {
+      "pr": 57,
+      "headSha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+      "tree": "f8fa0d837567c32c4f8ab3469c9b2906e7ada86b",
+      "result": "5/5 PR-event workflows and 7/7 jobs SUCCESS, attempt 1",
+      "prEventRuns": [
+        {
+          "id": 36562687665,
+          "name": "Rust CI",
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "event": "pull_request",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562687665"
+        },
+        {
+          "id": 36562687537,
+          "name": "Flutter Mobile UI",
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "event": "pull_request",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562687537"
+        },
+        {
+          "id": 36562687522,
+          "name": "Android Native FFI",
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "event": "pull_request",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562687522"
+        },
+        {
+          "id": 36562687534,
+          "name": "Root Web and PDF",
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "event": "pull_request",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562687534"
+        },
+        {
+          "id": 36562687546,
+          "name": "iOS Native FFI",
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "event": "pull_request",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562687546"
+        }
+      ],
+      "separatePushRuns": [
+        {
+          "id": 36562620335,
+          "name": "Flutter Mobile UI",
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "event": "push",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562620335"
+        },
+        {
+          "id": 36562620286,
+          "name": "Rust CI",
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "event": "push",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562620286"
+        },
+        {
+          "id": 36562620291,
+          "name": "Android Native FFI",
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "event": "push",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562620291"
+        },
+        {
+          "id": 36562620355,
+          "name": "Root Web and PDF",
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "event": "push",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562620355"
+        },
+        {
+          "id": 36562620265,
+          "name": "iOS Native FFI",
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "event": "push",
+          "status": "completed",
+          "conclusion": "success",
+          "run_attempt": 1,
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562620265"
+        }
+      ],
+      "jobs": [
+        {
+          "id": 109387060385,
+          "name": "msrv",
+          "run_id": 36562687665,
+          "run_attempt": 1,
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-29T11:35:26Z",
+          "completed_at": "2026-09-29T11:35:46Z",
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562687665/job/109387060385"
+        },
+        {
+          "id": 109387060762,
+          "name": "quality",
+          "run_id": 36562687665,
+          "run_attempt": 1,
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-29T11:35:26Z",
+          "completed_at": "2026-09-29T11:36:31Z",
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562687665/job/109387060762"
+        },
+        {
+          "id": 109387060280,
+          "name": "analyze-and-test",
+          "run_id": 36562687537,
+          "run_attempt": 1,
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-29T11:35:26Z",
+          "completed_at": "2026-09-29T11:37:07Z",
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562687537/job/109387060280"
+        },
+        {
+          "id": 109387060461,
+          "name": "debug-apk",
+          "run_id": 36562687522,
+          "run_attempt": 1,
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-29T11:35:27Z",
+          "completed_at": "2026-09-29T11:40:22Z",
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562687522/job/109387060461"
+        },
+        {
+          "id": 109387059999,
+          "name": "web-and-pdf",
+          "run_id": 36562687534,
+          "run_attempt": 1,
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-29T11:35:26Z",
+          "completed_at": "2026-09-29T11:44:22Z",
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562687534/job/109387059999"
+        },
+        {
+          "id": 109387060353,
+          "name": "pdf-visual",
+          "run_id": 36562687534,
+          "run_attempt": 1,
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-29T11:35:26Z",
+          "completed_at": "2026-09-29T11:40:05Z",
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562687534/job/109387060353"
+        },
+        {
+          "id": 109387060289,
+          "name": "simulator-smoke",
+          "run_id": 36562687546,
+          "run_attempt": 1,
+          "head_sha": "54987950f86f75fb20a1fdbbf2e806719e56680e",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-29T11:35:28Z",
+          "completed_at": "2026-09-29T11:56:39Z",
+          "html_url": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36562687546/job/109387060289"
+        }
+      ],
+      "summary": {
+        "web": {
+          "passed": 1000,
+          "failed": 0,
+          "skipped": 3,
+          "total": 1003,
+          "historicalInputTestsPassed": 2,
+          "auditsFullAndProduction": "zero vulnerabilities"
+        },
+        "pdf": {
+          "pdfs": 47,
+          "pages": 760,
+          "renderedPngs": 760,
+          "baselineComparisons": 55,
+          "baselineSha256": "2df39a97f06359c4cc228bf12a9120e8c2a7491a60884a152e0a909a1383ff60"
+        },
+        "rust": {
+          "passed": 405,
+          "failed": 0,
+          "ignored": 0,
+          "groups": 76,
+          "msrv": "Actual Rust 1.78.0 workspace check PASS"
+        },
+        "flutter": {
+          "passed": 278,
+          "skipped": 12,
+          "analysis": "clean"
+        },
+        "android": "arm64 debug APK and packaged Rust bridge check PASS",
+        "ios": {
+          "test": "RunnerTests.testNativeLogisticsLifecycle()",
+          "result": "passed; TEST SUCCEEDED",
+          "nativeStepSeconds": 588,
+          "nativeStepStartedAt": "2026-09-29T11:46:41Z",
+          "nativeStepCompletedAt": "2026-09-29T11:56:29Z",
+          "jobCompletedAt": "2026-09-29T11:56:39Z",
+          "unchangedTimeoutMinutes": 15,
+          "exportFakeMatrix": "19/19 PASS",
+          "exportUniversalFixtures": "3/3 PASS"
+        }
+      }
+    }
+  ],
+  "sourceReceipts": [
+    {
+      "path": "pr56/PR56_A23035A0_HOSTED_CI_RECEIPT.json",
+      "sha256": "30e4fad5d8629335840c5e6ed99fb9a553248ec746a8b484cf0d316fe5854ae1"
+    },
+    {
+      "path": "pr57/FINAL_HOSTED_RECEIPT.json",
+      "sha256": "55e835906597c695be6eba503988bd6647e52e6d0add0b22216d3ad6da7a754e"
+    },
+    {
+      "path": "pr57/completed-job-summary.json",
+      "sha256": "8dfa91f0e0357fc0f8c60bee15f0f3869b600b16e25ed649d2974916c2c49006"
+    },
+    {
+      "path": "pr57/pdf-android-summary.json",
+      "sha256": "5f8b6ea24170077c0e251fe782e7776f00507487412a09f5430655116ea96ffe"
+    },
+    {
+      "path": "pr57/web-history-audits-summary.json",
+      "sha256": "10ccce2cc63f09e16578fb8b049ce24e566a36d019573d789dada994d5d96d7b"
+    },
+    {
+      "path": "pr57/ios-terminal-summary.json",
+      "sha256": "340c7b3ce60f4f2dc029e3c838a2b45318fa42c643fe1500722c339882b98434"
+    }
+  ],
+  "limitations": [
+    "PR56 Rust 359 and PR57 Rust 405 are distinct source totals; tax 46 cases are included in 405. Do not sum overlapping suites.",
+    "Three web historical migration rehearsals and 12 Flutter tests were skipped; skipped coverage is not PASS.",
+    "Duplicate push events are retained separately and were not substituted for PR-event results.",
+    "Main has the exact tracked tree tested at 54987950; hosted checks were run on the recorded source heads, not relabelled as new-main runs.",
+    "Local unchanged 22-stage release gate is separately owned and not certified by this receipt.",
+    "No production, hosted-user, real-mail, restore or human-pilot acceptance is claimed.",
+    "Reviewer performed no source/Git/CI-control/merge mutation; merge events are readbacks of root-coordinated integration."
+  ]
+}

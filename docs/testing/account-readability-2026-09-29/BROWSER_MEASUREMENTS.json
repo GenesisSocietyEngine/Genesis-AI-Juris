@@ -1,0 +1,2761 @@
+{
+  "observedAt": "2026-09-29T14:00:16.478757+00:00",
+  "browser": "Chrome for Testing154.0.8037.57",
+  "fixture": "local synthetic account; ordinary password login",
+  "scenarios": [
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 1366,
+        "height": 900,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 272,
+          "y": 132,
+          "width": 1054,
+          "height": 163.1875,
+          "right": 1326,
+          "bottom": 295.1875,
+          "clientWidth": 1052,
+          "scrollWidth": 1052
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "774.578px 207.422px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 297,
+              "y": 153,
+              "width": 774.578125,
+              "height": 75.1875,
+              "right": 1071.578125,
+              "bottom": 228.1875,
+              "clientWidth": 775,
+              "scrollWidth": 775
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "774.578px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 1093.578125,
+              "y": 163.59375,
+              "width": 207.421875,
+              "height": 54,
+              "right": 1301,
+              "bottom": 217.59375,
+              "clientWidth": 205,
+              "scrollWidth": 205
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(255, 255, 255) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 297,
+              "y": 250.1875,
+              "width": 1004,
+              "height": 24,
+              "right": 1301,
+              "bottom": 274.1875,
+              "clientWidth": 1004,
+              "scrollWidth": 1004
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 1093.578125,
+          "y": 163.59375,
+          "width": 207.421875,
+          "height": 54,
+          "right": 1301,
+          "bottom": 217.59375,
+          "clientWidth": 205,
+          "scrollWidth": 205
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(255, 255, 255) none 3px",
+          "outlineOffset": "0px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": false,
+        "focusVisible": false
+      },
+      "documentWidth": 1366,
+      "bodyWidth": 1366,
+      "signOut": [
+        {
+          "box": {
+            "x": 19,
+            "y": 764.125,
+            "width": 178,
+            "height": 44,
+            "right": 197,
+            "bottom": 808.125,
+            "clientWidth": 178,
+            "scrollWidth": 178
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "light-1366-default"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 1366,
+        "height": 900,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 272,
+          "y": 132,
+          "width": 1054,
+          "height": 163.1875,
+          "right": 1326,
+          "bottom": 295.1875,
+          "clientWidth": 1052,
+          "scrollWidth": 1052
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "774.578px 207.422px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 297,
+              "y": 153,
+              "width": 774.578125,
+              "height": 75.1875,
+              "right": 1071.578125,
+              "bottom": 228.1875,
+              "clientWidth": 775,
+              "scrollWidth": 775
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "774.578px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 1093.578125,
+              "y": 163.59375,
+              "width": 207.421875,
+              "height": 54,
+              "right": 1301,
+              "bottom": 217.59375,
+              "clientWidth": 205,
+              "scrollWidth": 205
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(255, 255, 255) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 297,
+              "y": 250.1875,
+              "width": 1004,
+              "height": 24,
+              "right": 1301,
+              "bottom": 274.1875,
+              "clientWidth": 1004,
+              "scrollWidth": 1004
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 1093.578125,
+          "y": 163.59375,
+          "width": 207.421875,
+          "height": 54,
+          "right": 1301,
+          "bottom": 217.59375,
+          "clientWidth": 205,
+          "scrollWidth": 205
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(255, 255, 255) none 3px",
+          "outlineOffset": "0px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": true,
+        "focusVisible": false
+      },
+      "documentWidth": 1366,
+      "bodyWidth": 1366,
+      "signOut": [
+        {
+          "box": {
+            "x": 19,
+            "y": 764.125,
+            "width": 178,
+            "height": 44,
+            "right": 197,
+            "bottom": 808.125,
+            "clientWidth": 178,
+            "scrollWidth": 178
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "light-1366-hover"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 1366,
+        "height": 900,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 272,
+          "y": 132,
+          "width": 1054,
+          "height": 163.1875,
+          "right": 1326,
+          "bottom": 295.1875,
+          "clientWidth": 1052,
+          "scrollWidth": 1052
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "774.578px 207.422px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 297,
+              "y": 153,
+              "width": 774.578125,
+              "height": 75.1875,
+              "right": 1071.578125,
+              "bottom": 228.1875,
+              "clientWidth": 775,
+              "scrollWidth": 775
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "774.578px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 1093.578125,
+              "y": 163.59375,
+              "width": 207.421875,
+              "height": 54,
+              "right": 1301,
+              "bottom": 217.59375,
+              "clientWidth": 205,
+              "scrollWidth": 205
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(41, 88, 184) solid 2px",
+              "outlineOffset": "3px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 297,
+              "y": 250.1875,
+              "width": 1004,
+              "height": 24,
+              "right": 1301,
+              "bottom": 274.1875,
+              "clientWidth": 1004,
+              "scrollWidth": 1004
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 1093.578125,
+          "y": 163.59375,
+          "width": 207.421875,
+          "height": 54,
+          "right": 1301,
+          "bottom": 217.59375,
+          "clientWidth": 205,
+          "scrollWidth": 205
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(41, 88, 184) solid 2px",
+          "outlineOffset": "3px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": true,
+        "focusVisible": true
+      },
+      "documentWidth": 1366,
+      "bodyWidth": 1366,
+      "signOut": [
+        {
+          "box": {
+            "x": 19,
+            "y": 764.125,
+            "width": 178,
+            "height": 44,
+            "right": 197,
+            "bottom": 808.125,
+            "clientWidth": 178,
+            "scrollWidth": 178
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "light-1366-keyboard"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 1024,
+        "height": 900,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 272,
+          "y": 156,
+          "width": 712,
+          "height": 187.1875,
+          "right": 984,
+          "bottom": 343.1875,
+          "clientWidth": 710,
+          "scrollWidth": 710
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "432.578px 207.422px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 297,
+              "y": 177,
+              "width": 432.578125,
+              "height": 75.1875,
+              "right": 729.578125,
+              "bottom": 252.1875,
+              "clientWidth": 433,
+              "scrollWidth": 433
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "432.578px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 751.578125,
+              "y": 187.59375,
+              "width": 207.421875,
+              "height": 54,
+              "right": 959,
+              "bottom": 241.59375,
+              "clientWidth": 205,
+              "scrollWidth": 205
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(255, 255, 255) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 297,
+              "y": 274.1875,
+              "width": 662,
+              "height": 48,
+              "right": 959,
+              "bottom": 322.1875,
+              "clientWidth": 662,
+              "scrollWidth": 662
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 751.578125,
+          "y": 187.59375,
+          "width": 207.421875,
+          "height": 54,
+          "right": 959,
+          "bottom": 241.59375,
+          "clientWidth": 205,
+          "scrollWidth": 205
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(255, 255, 255) none 3px",
+          "outlineOffset": "0px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": false,
+        "focusVisible": false
+      },
+      "documentWidth": 1024,
+      "bodyWidth": 1024,
+      "signOut": [
+        {
+          "box": {
+            "x": 19,
+            "y": 764.125,
+            "width": 178,
+            "height": 44,
+            "right": 197,
+            "bottom": 808.125,
+            "clientWidth": 178,
+            "scrollWidth": 178
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "light-1024-default"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 1024,
+        "height": 900,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 272,
+          "y": 156,
+          "width": 712,
+          "height": 187.1875,
+          "right": 984,
+          "bottom": 343.1875,
+          "clientWidth": 710,
+          "scrollWidth": 710
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "432.578px 207.422px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 297,
+              "y": 177,
+              "width": 432.578125,
+              "height": 75.1875,
+              "right": 729.578125,
+              "bottom": 252.1875,
+              "clientWidth": 433,
+              "scrollWidth": 433
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "432.578px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 751.578125,
+              "y": 187.59375,
+              "width": 207.421875,
+              "height": 54,
+              "right": 959,
+              "bottom": 241.59375,
+              "clientWidth": 205,
+              "scrollWidth": 205
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(255, 255, 255) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 297,
+              "y": 274.1875,
+              "width": 662,
+              "height": 48,
+              "right": 959,
+              "bottom": 322.1875,
+              "clientWidth": 662,
+              "scrollWidth": 662
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 751.578125,
+          "y": 187.59375,
+          "width": 207.421875,
+          "height": 54,
+          "right": 959,
+          "bottom": 241.59375,
+          "clientWidth": 205,
+          "scrollWidth": 205
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(255, 255, 255) none 3px",
+          "outlineOffset": "0px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": true,
+        "focusVisible": false
+      },
+      "documentWidth": 1024,
+      "bodyWidth": 1024,
+      "signOut": [
+        {
+          "box": {
+            "x": 19,
+            "y": 764.125,
+            "width": 178,
+            "height": 44,
+            "right": 197,
+            "bottom": 808.125,
+            "clientWidth": 178,
+            "scrollWidth": 178
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "light-1024-hover"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 1024,
+        "height": 900,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 272,
+          "y": 156,
+          "width": 712,
+          "height": 187.1875,
+          "right": 984,
+          "bottom": 343.1875,
+          "clientWidth": 710,
+          "scrollWidth": 710
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "432.578px 207.422px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 297,
+              "y": 177,
+              "width": 432.578125,
+              "height": 75.1875,
+              "right": 729.578125,
+              "bottom": 252.1875,
+              "clientWidth": 433,
+              "scrollWidth": 433
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "432.578px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 751.578125,
+              "y": 187.59375,
+              "width": 207.421875,
+              "height": 54,
+              "right": 959,
+              "bottom": 241.59375,
+              "clientWidth": 205,
+              "scrollWidth": 205
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(41, 88, 184) solid 2px",
+              "outlineOffset": "3px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 297,
+              "y": 274.1875,
+              "width": 662,
+              "height": 48,
+              "right": 959,
+              "bottom": 322.1875,
+              "clientWidth": 662,
+              "scrollWidth": 662
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 751.578125,
+          "y": 187.59375,
+          "width": 207.421875,
+          "height": 54,
+          "right": 959,
+          "bottom": 241.59375,
+          "clientWidth": 205,
+          "scrollWidth": 205
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(41, 88, 184) solid 2px",
+          "outlineOffset": "3px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": true,
+        "focusVisible": true
+      },
+      "documentWidth": 1024,
+      "bodyWidth": 1024,
+      "signOut": [
+        {
+          "box": {
+            "x": 19,
+            "y": 764.125,
+            "width": 178,
+            "height": 44,
+            "right": 197,
+            "bottom": 808.125,
+            "clientWidth": 178,
+            "scrollWidth": 178
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "light-1024-keyboard"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 18,
+          "y": 236,
+          "width": 339,
+          "height": 326.375,
+          "right": 357,
+          "bottom": 562.375,
+          "clientWidth": 337,
+          "scrollWidth": 337
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "301px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 37,
+              "y": 255,
+              "width": 301,
+              "height": 118.375,
+              "right": 338,
+              "bottom": 373.375,
+              "clientWidth": 301,
+              "scrollWidth": 301
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "301px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 37,
+              "y": 395.375,
+              "width": 301,
+              "height": 54,
+              "right": 338,
+              "bottom": 449.375,
+              "clientWidth": 299,
+              "scrollWidth": 299
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(255, 255, 255) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 37,
+              "y": 471.375,
+              "width": 301,
+              "height": 72,
+              "right": 338,
+              "bottom": 543.375,
+              "clientWidth": 301,
+              "scrollWidth": 301
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 37,
+          "y": 395.375,
+          "width": 301,
+          "height": 54,
+          "right": 338,
+          "bottom": 449.375,
+          "clientWidth": 299,
+          "scrollWidth": 299
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(255, 255, 255) none 3px",
+          "outlineOffset": "0px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": false,
+        "focusVisible": false
+      },
+      "documentWidth": 375,
+      "bodyWidth": 375,
+      "signOut": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0,
+            "clientWidth": 0,
+            "scrollWidth": 0
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "light-390-default"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 18,
+          "y": 236,
+          "width": 339,
+          "height": 326.375,
+          "right": 357,
+          "bottom": 562.375,
+          "clientWidth": 337,
+          "scrollWidth": 337
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "301px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 37,
+              "y": 255,
+              "width": 301,
+              "height": 118.375,
+              "right": 338,
+              "bottom": 373.375,
+              "clientWidth": 301,
+              "scrollWidth": 301
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "301px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 37,
+              "y": 395.375,
+              "width": 301,
+              "height": 54,
+              "right": 338,
+              "bottom": 449.375,
+              "clientWidth": 299,
+              "scrollWidth": 299
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(255, 255, 255) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 37,
+              "y": 471.375,
+              "width": 301,
+              "height": 72,
+              "right": 338,
+              "bottom": 543.375,
+              "clientWidth": 301,
+              "scrollWidth": 301
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 37,
+          "y": 395.375,
+          "width": 301,
+          "height": 54,
+          "right": 338,
+          "bottom": 449.375,
+          "clientWidth": 299,
+          "scrollWidth": 299
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(255, 255, 255) none 3px",
+          "outlineOffset": "0px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": true,
+        "focusVisible": false
+      },
+      "documentWidth": 375,
+      "bodyWidth": 375,
+      "signOut": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0,
+            "clientWidth": 0,
+            "scrollWidth": 0
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "light-390-hover"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 18,
+          "y": 236,
+          "width": 339,
+          "height": 326.375,
+          "right": 357,
+          "bottom": 562.375,
+          "clientWidth": 337,
+          "scrollWidth": 337
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "301px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 37,
+              "y": 255,
+              "width": 301,
+              "height": 118.375,
+              "right": 338,
+              "bottom": 373.375,
+              "clientWidth": 301,
+              "scrollWidth": 301
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "301px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 37,
+              "y": 395.375,
+              "width": 301,
+              "height": 54,
+              "right": 338,
+              "bottom": 449.375,
+              "clientWidth": 299,
+              "scrollWidth": 299
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(41, 88, 184) solid 2px",
+              "outlineOffset": "3px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 37,
+              "y": 471.375,
+              "width": 301,
+              "height": 72,
+              "right": 338,
+              "bottom": 543.375,
+              "clientWidth": 301,
+              "scrollWidth": 301
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 37,
+          "y": 395.375,
+          "width": 301,
+          "height": 54,
+          "right": 338,
+          "bottom": 449.375,
+          "clientWidth": 299,
+          "scrollWidth": 299
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(41, 88, 184) solid 2px",
+          "outlineOffset": "3px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": true,
+        "focusVisible": true
+      },
+      "documentWidth": 375,
+      "bodyWidth": 375,
+      "signOut": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0,
+            "clientWidth": 0,
+            "scrollWidth": 0
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "light-390-keyboard"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 1366,
+        "height": 900,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 272,
+          "y": 132,
+          "width": 1054,
+          "height": 163.1875,
+          "right": 1326,
+          "bottom": 295.1875,
+          "clientWidth": 1052,
+          "scrollWidth": 1052
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "774.578px 207.422px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 297,
+              "y": 153,
+              "width": 774.578125,
+              "height": 75.1875,
+              "right": 1071.578125,
+              "bottom": 228.1875,
+              "clientWidth": 775,
+              "scrollWidth": 775
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "774.578px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 1093.578125,
+              "y": 163.59375,
+              "width": 207.421875,
+              "height": 54,
+              "right": 1301,
+              "bottom": 217.59375,
+              "clientWidth": 205,
+              "scrollWidth": 205
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(255, 255, 255) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 297,
+              "y": 250.1875,
+              "width": 1004,
+              "height": 24,
+              "right": 1301,
+              "bottom": 274.1875,
+              "clientWidth": 1004,
+              "scrollWidth": 1004
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 1093.578125,
+          "y": 163.59375,
+          "width": 207.421875,
+          "height": 54,
+          "right": 1301,
+          "bottom": 217.59375,
+          "clientWidth": 205,
+          "scrollWidth": 205
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(255, 255, 255) none 3px",
+          "outlineOffset": "0px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": false,
+        "focusVisible": false
+      },
+      "documentWidth": 1366,
+      "bodyWidth": 1366,
+      "signOut": [
+        {
+          "box": {
+            "x": 19,
+            "y": 825.125,
+            "width": 178,
+            "height": 44,
+            "right": 197,
+            "bottom": 869.125,
+            "clientWidth": 178,
+            "scrollWidth": 178
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "dark-1366-default"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 1366,
+        "height": 900,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 272,
+          "y": 132,
+          "width": 1054,
+          "height": 163.1875,
+          "right": 1326,
+          "bottom": 295.1875,
+          "clientWidth": 1052,
+          "scrollWidth": 1052
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "774.578px 207.422px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 297,
+              "y": 153,
+              "width": 774.578125,
+              "height": 75.1875,
+              "right": 1071.578125,
+              "bottom": 228.1875,
+              "clientWidth": 775,
+              "scrollWidth": 775
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "774.578px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 1093.578125,
+              "y": 163.59375,
+              "width": 207.421875,
+              "height": 54,
+              "right": 1301,
+              "bottom": 217.59375,
+              "clientWidth": 205,
+              "scrollWidth": 205
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(255, 255, 255) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 297,
+              "y": 250.1875,
+              "width": 1004,
+              "height": 24,
+              "right": 1301,
+              "bottom": 274.1875,
+              "clientWidth": 1004,
+              "scrollWidth": 1004
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 1093.578125,
+          "y": 163.59375,
+          "width": 207.421875,
+          "height": 54,
+          "right": 1301,
+          "bottom": 217.59375,
+          "clientWidth": 205,
+          "scrollWidth": 205
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(255, 255, 255) none 3px",
+          "outlineOffset": "0px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": true,
+        "focusVisible": false
+      },
+      "documentWidth": 1366,
+      "bodyWidth": 1366,
+      "signOut": [
+        {
+          "box": {
+            "x": 19,
+            "y": 825.125,
+            "width": 178,
+            "height": 44,
+            "right": 197,
+            "bottom": 869.125,
+            "clientWidth": 178,
+            "scrollWidth": 178
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "dark-1366-hover"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 1366,
+        "height": 900,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 272,
+          "y": 132,
+          "width": 1054,
+          "height": 163.1875,
+          "right": 1326,
+          "bottom": 295.1875,
+          "clientWidth": 1052,
+          "scrollWidth": 1052
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "774.578px 207.422px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 297,
+              "y": 153,
+              "width": 774.578125,
+              "height": 75.1875,
+              "right": 1071.578125,
+              "bottom": 228.1875,
+              "clientWidth": 775,
+              "scrollWidth": 775
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "774.578px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 1093.578125,
+              "y": 163.59375,
+              "width": 207.421875,
+              "height": 54,
+              "right": 1301,
+              "bottom": 217.59375,
+              "clientWidth": 205,
+              "scrollWidth": 205
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(41, 88, 184) solid 2px",
+              "outlineOffset": "3px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 297,
+              "y": 250.1875,
+              "width": 1004,
+              "height": 24,
+              "right": 1301,
+              "bottom": 274.1875,
+              "clientWidth": 1004,
+              "scrollWidth": 1004
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 1093.578125,
+          "y": 163.59375,
+          "width": 207.421875,
+          "height": 54,
+          "right": 1301,
+          "bottom": 217.59375,
+          "clientWidth": 205,
+          "scrollWidth": 205
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(41, 88, 184) solid 2px",
+          "outlineOffset": "3px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": true,
+        "focusVisible": true
+      },
+      "documentWidth": 1366,
+      "bodyWidth": 1366,
+      "signOut": [
+        {
+          "box": {
+            "x": 19,
+            "y": 764.125,
+            "width": 178,
+            "height": 44,
+            "right": 197,
+            "bottom": 808.125,
+            "clientWidth": 178,
+            "scrollWidth": 178
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "dark-1366-keyboard"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 1024,
+        "height": 900,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 272,
+          "y": 156,
+          "width": 712,
+          "height": 187.1875,
+          "right": 984,
+          "bottom": 343.1875,
+          "clientWidth": 710,
+          "scrollWidth": 710
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "432.578px 207.422px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 297,
+              "y": 177,
+              "width": 432.578125,
+              "height": 75.1875,
+              "right": 729.578125,
+              "bottom": 252.1875,
+              "clientWidth": 433,
+              "scrollWidth": 433
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "432.578px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 751.578125,
+              "y": 187.59375,
+              "width": 207.421875,
+              "height": 54,
+              "right": 959,
+              "bottom": 241.59375,
+              "clientWidth": 205,
+              "scrollWidth": 205
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(255, 255, 255) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 297,
+              "y": 274.1875,
+              "width": 662,
+              "height": 48,
+              "right": 959,
+              "bottom": 322.1875,
+              "clientWidth": 662,
+              "scrollWidth": 662
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 751.578125,
+          "y": 187.59375,
+          "width": 207.421875,
+          "height": 54,
+          "right": 959,
+          "bottom": 241.59375,
+          "clientWidth": 205,
+          "scrollWidth": 205
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(255, 255, 255) none 3px",
+          "outlineOffset": "0px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": false,
+        "focusVisible": false
+      },
+      "documentWidth": 1024,
+      "bodyWidth": 1024,
+      "signOut": [
+        {
+          "box": {
+            "x": 19,
+            "y": 764.125,
+            "width": 178,
+            "height": 44,
+            "right": 197,
+            "bottom": 808.125,
+            "clientWidth": 178,
+            "scrollWidth": 178
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "dark-1024-default"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 1024,
+        "height": 900,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 272,
+          "y": 156,
+          "width": 712,
+          "height": 187.1875,
+          "right": 984,
+          "bottom": 343.1875,
+          "clientWidth": 710,
+          "scrollWidth": 710
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "432.578px 207.422px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 297,
+              "y": 177,
+              "width": 432.578125,
+              "height": 75.1875,
+              "right": 729.578125,
+              "bottom": 252.1875,
+              "clientWidth": 433,
+              "scrollWidth": 433
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "432.578px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 751.578125,
+              "y": 187.59375,
+              "width": 207.421875,
+              "height": 54,
+              "right": 959,
+              "bottom": 241.59375,
+              "clientWidth": 205,
+              "scrollWidth": 205
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(255, 255, 255) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 297,
+              "y": 274.1875,
+              "width": 662,
+              "height": 48,
+              "right": 959,
+              "bottom": 322.1875,
+              "clientWidth": 662,
+              "scrollWidth": 662
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 751.578125,
+          "y": 187.59375,
+          "width": 207.421875,
+          "height": 54,
+          "right": 959,
+          "bottom": 241.59375,
+          "clientWidth": 205,
+          "scrollWidth": 205
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(255, 255, 255) none 3px",
+          "outlineOffset": "0px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": true,
+        "focusVisible": false
+      },
+      "documentWidth": 1024,
+      "bodyWidth": 1024,
+      "signOut": [
+        {
+          "box": {
+            "x": 19,
+            "y": 764.125,
+            "width": 178,
+            "height": 44,
+            "right": 197,
+            "bottom": 808.125,
+            "clientWidth": 178,
+            "scrollWidth": 178
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "dark-1024-hover"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 1024,
+        "height": 900,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 272,
+          "y": 156,
+          "width": 712,
+          "height": 187.1875,
+          "right": 984,
+          "bottom": 343.1875,
+          "clientWidth": 710,
+          "scrollWidth": 710
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "432.578px 207.422px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 297,
+              "y": 177,
+              "width": 432.578125,
+              "height": 75.1875,
+              "right": 729.578125,
+              "bottom": 252.1875,
+              "clientWidth": 433,
+              "scrollWidth": 433
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "432.578px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 751.578125,
+              "y": 187.59375,
+              "width": 207.421875,
+              "height": 54,
+              "right": 959,
+              "bottom": 241.59375,
+              "clientWidth": 205,
+              "scrollWidth": 205
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(41, 88, 184) solid 2px",
+              "outlineOffset": "3px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 297,
+              "y": 274.1875,
+              "width": 662,
+              "height": 48,
+              "right": 959,
+              "bottom": 322.1875,
+              "clientWidth": 662,
+              "scrollWidth": 662
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 751.578125,
+          "y": 187.59375,
+          "width": 207.421875,
+          "height": 54,
+          "right": 959,
+          "bottom": 241.59375,
+          "clientWidth": 205,
+          "scrollWidth": 205
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(41, 88, 184) solid 2px",
+          "outlineOffset": "3px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": true,
+        "focusVisible": true
+      },
+      "documentWidth": 1024,
+      "bodyWidth": 1024,
+      "signOut": [
+        {
+          "box": {
+            "x": 19,
+            "y": 764.125,
+            "width": 178,
+            "height": 44,
+            "right": 197,
+            "bottom": 808.125,
+            "clientWidth": 178,
+            "scrollWidth": 178
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "dark-1024-keyboard"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 18,
+          "y": 236,
+          "width": 339,
+          "height": 326.375,
+          "right": 357,
+          "bottom": 562.375,
+          "clientWidth": 337,
+          "scrollWidth": 337
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "301px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 37,
+              "y": 255,
+              "width": 301,
+              "height": 118.375,
+              "right": 338,
+              "bottom": 373.375,
+              "clientWidth": 301,
+              "scrollWidth": 301
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "301px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 37,
+              "y": 395.375,
+              "width": 301,
+              "height": 54,
+              "right": 338,
+              "bottom": 449.375,
+              "clientWidth": 299,
+              "scrollWidth": 299
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(255, 255, 255) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 37,
+              "y": 471.375,
+              "width": 301,
+              "height": 72,
+              "right": 338,
+              "bottom": 543.375,
+              "clientWidth": 301,
+              "scrollWidth": 301
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 37,
+          "y": 395.375,
+          "width": 301,
+          "height": 54,
+          "right": 338,
+          "bottom": 449.375,
+          "clientWidth": 299,
+          "scrollWidth": 299
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(255, 255, 255) none 3px",
+          "outlineOffset": "0px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": false,
+        "focusVisible": false
+      },
+      "documentWidth": 375,
+      "bodyWidth": 375,
+      "signOut": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0,
+            "clientWidth": 0,
+            "scrollWidth": 0
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "dark-390-default"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 18,
+          "y": 236,
+          "width": 339,
+          "height": 326.375,
+          "right": 357,
+          "bottom": 562.375,
+          "clientWidth": 337,
+          "scrollWidth": 337
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "301px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 37,
+              "y": 255,
+              "width": 301,
+              "height": 118.375,
+              "right": 338,
+              "bottom": 373.375,
+              "clientWidth": 301,
+              "scrollWidth": 301
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "301px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 37,
+              "y": 395.375,
+              "width": 301,
+              "height": 54,
+              "right": 338,
+              "bottom": 449.375,
+              "clientWidth": 299,
+              "scrollWidth": 299
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(255, 255, 255) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 37,
+              "y": 471.375,
+              "width": 301,
+              "height": 72,
+              "right": 338,
+              "bottom": 543.375,
+              "clientWidth": 301,
+              "scrollWidth": 301
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 37,
+          "y": 395.375,
+          "width": 301,
+          "height": 54,
+          "right": 338,
+          "bottom": 449.375,
+          "clientWidth": 299,
+          "scrollWidth": 299
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(255, 255, 255) none 3px",
+          "outlineOffset": "0px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": true,
+        "focusVisible": false
+      },
+      "documentWidth": 375,
+      "bodyWidth": 375,
+      "signOut": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0,
+            "clientWidth": 0,
+            "scrollWidth": 0
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "dark-390-hover"
+    },
+    {
+      "url": "/account",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "dpr": 1
+      },
+      "title": "Account access \u00b7 GENESIS: JURIS",
+      "hasContent": true,
+      "errorOverlay": false,
+      "card": {
+        "box": {
+          "x": 18,
+          "y": 236,
+          "width": 339,
+          "height": 326.375,
+          "right": 357,
+          "bottom": 562.375,
+          "clientWidth": 337,
+          "scrollWidth": 337
+        },
+        "css": {
+          "color": "rgb(32, 43, 60)",
+          "backgroundColor": "rgb(255, 255, 255)",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "outline": "rgb(32, 43, 60) none 3px",
+          "outlineOffset": "0px",
+          "display": "grid",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "301px"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "box": {
+              "x": 37,
+              "y": 255,
+              "width": 301,
+              "height": 118.375,
+              "right": 338,
+              "bottom": 373.375,
+              "clientWidth": 301,
+              "scrollWidth": 301
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "grid",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "301px"
+            }
+          },
+          {
+            "tag": "A",
+            "box": {
+              "x": 37,
+              "y": 395.375,
+              "width": 301,
+              "height": 54,
+              "right": 338,
+              "bottom": 449.375,
+              "clientWidth": 299,
+              "scrollWidth": 299
+            },
+            "css": {
+              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "rgb(41, 88, 184)",
+              "fontSize": "16px",
+              "fontWeight": "800",
+              "outline": "rgb(41, 88, 184) solid 2px",
+              "outlineOffset": "3px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          },
+          {
+            "tag": "P",
+            "box": {
+              "x": 37,
+              "y": 471.375,
+              "width": 301,
+              "height": 72,
+              "right": 338,
+              "bottom": 543.375,
+              "clientWidth": 301,
+              "scrollWidth": 301
+            },
+            "css": {
+              "color": "rgb(32, 43, 60)",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "fontSize": "16px",
+              "fontWeight": "400",
+              "outline": "rgb(32, 43, 60) none 3px",
+              "outlineOffset": "0px",
+              "display": "block",
+              "overflowWrap": "normal",
+              "gridTemplateColumns": "none"
+            }
+          }
+        ]
+      },
+      "button": {
+        "text": "Continue to your work",
+        "href": "/studio",
+        "box": {
+          "x": 37,
+          "y": 395.375,
+          "width": 301,
+          "height": 54,
+          "right": 338,
+          "bottom": 449.375,
+          "clientWidth": 299,
+          "scrollWidth": 299
+        },
+        "css": {
+          "color": "rgb(255, 255, 255)",
+          "backgroundColor": "rgb(41, 88, 184)",
+          "fontSize": "16px",
+          "fontWeight": "800",
+          "outline": "rgb(41, 88, 184) solid 2px",
+          "outlineOffset": "3px",
+          "display": "block",
+          "overflowWrap": "normal",
+          "gridTemplateColumns": "none"
+        },
+        "hover": true,
+        "focusVisible": true
+      },
+      "documentWidth": 375,
+      "bodyWidth": 375,
+      "signOut": [
+        {
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0,
+            "clientWidth": 0,
+            "scrollWidth": 0
+          },
+          "inSidebar": true
+        }
+      ],
+      "scenario": "dark-390-keyboard"
+    }
+  ]
+}

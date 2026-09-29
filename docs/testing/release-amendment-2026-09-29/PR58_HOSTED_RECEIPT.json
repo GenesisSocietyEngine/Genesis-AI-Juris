@@ -1,0 +1,17 @@
+{
+  "schema": "genesis-pr-hosted-review/v1",
+  "compiled_at_utc": "2026-09-29T13:42:31.134Z",
+  "repository": "GenesisSocietyEngine/Genesis-AI-Juris",
+  "pr": 58,
+  "head": "c3d915a8ea0c21174345029e4faf9fc340b60e39",
+  "tree": "319c174a0036d4eece57be663aa17335f2eda8ae",
+  "provenance": "Independent Codex account_hosted_review read actual workflow/job logs. Root independently re-read all five workflow API results. No new run or mutation.",
+  "pr_event_runs": [{"id":36569858351,"name":"Root Web and PDF","head":"c3d915a8ea0c21174345029e4faf9fc340b60e39","event":"pull_request","status":"completed","conclusion":"success","attempt":1,"url":"https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36569858351"},{"id":36569858486,"name":"Rust CI","head":"c3d915a8ea0c21174345029e4faf9fc340b60e39","event":"pull_request","status":"completed","conclusion":"success","attempt":1,"url":"https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36569858486"},{"id":36569858572,"name":"Flutter Mobile UI","head":"c3d915a8ea0c21174345029e4faf9fc340b60e39","event":"pull_request","status":"completed","conclusion":"success","attempt":1,"url":"https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36569858572"},{"id":36569858101,"name":"Android Native FFI","head":"c3d915a8ea0c21174345029e4faf9fc340b60e39","event":"pull_request","status":"completed","conclusion":"success","attempt":1,"url":"https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36569858101"},{"id":36569858632,"name":"iOS Native FFI","head":"c3d915a8ea0c21174345029e4faf9fc340b60e39","event":"pull_request","status":"completed","conclusion":"success","attempt":1,"url":"https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36569858632"}],
+  "jobs": {"web":109410863568,"pdf":109410863193,"rust_quality":109410864431,"rust_msrv":109410864951,"flutter":109410864411,"android":109410862278,"ios":109410866131},
+  "counts": {"web":{"pass":1000,"fail":0,"skip":3,"total":1003},"history":{"pass":2,"total":2},"pdf":{"files":47,"pages":760,"pngs":760,"reference_pngs":55},"rust":{"pass":405,"fail":0,"ignored":0,"result_groups":76,"msrv":"1.78.0"},"flutter":{"pass":278,"skip":12,"analysis":"no issues"},"android":{"packaged_bridge":"lib/arm64-v8a/libjuris_mobile_ffi.so","result":"PASS"},"ios":{"test":"RunnerTests.testNativeLogisticsLifecycle","test_seconds":0.865,"result":"TEST SUCCEEDED","native_started_utc":"2026-09-29T12:50:27Z","native_finished_utc":"2026-09-29T12:56:09Z","export_matrices":["19/19","3/3"]}},
+  "audits": {"full_vulnerabilities":0,"production_vulnerabilities":0},
+  "pdf_baseline_sha256": "2df39a97f06359c4cc228bf12a9120e8c2a7491a60884a152e0a909a1383ff60",
+  "retained_skips": "Three existing opt-in web migration rehearsals; six catalogue and six visual-foundation Flutter goldens. Successful jobs do not turn test skips into acceptance.",
+  "separate_push_runs": {"status":"all success, attempt 1","android":36569616731,"rust":36569616857,"flutter":36569616788,"web_pdf":36569616781,"ios":36569616730},
+  "scope": "Exact c3d hosted checks only. Counts are separate overlapping suites. Actual browser, final-source local aggregate, hosted user acceptance and production deployment remain separate."
+}
