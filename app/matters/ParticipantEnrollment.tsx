@@ -39,9 +39,9 @@ export default function ParticipantEnrollment({ roster, participants, mutationKe
   </div>;
   return <div className={styles.sectionStack}>
     {roster.status === "ready" ? <>
-      <p id="enrollment-roster-help">{t("Choose from the organization members your current access allows you to see. This list shows up to 100 returned memberships; it is not a complete directory.",
-        "Выберите участника организации из доступного вам списка. Здесь показаны до 100 полученных записей, а не полный каталог.")}</p>
-      {roster.limited && <p>{t("Other organization members may be outside this returned list.", "Другие участники организации могут не попасть в этот список.")}</p>}
+      <p id="enrollment-roster-help">{t("Choose an organization member you can view. If someone is missing, refresh the list or use their Member ID.",
+        "Выберите участника организации из доступного вам списка. Если нужного человека нет, обновите список или используйте его идентификатор.")}</p>
+      {roster.limited && <p>{t("This list shows up to 100 members. Others may not be shown.", "В списке показаны до 100 участников. Другие участники могут не отображаться.")}</p>}
       {ambiguous && <p>{t("People with missing or matching names require their exact Member ID below.",
         "Для людей без имени или с совпадающими именами укажите точный идентификатор участника ниже.")}</p>}
       {choices.length ? <form className={styles.actionForm} data-own-drafts onSubmit={event => {
@@ -56,8 +56,8 @@ export default function ParticipantEnrollment({ roster, participants, mutationKe
           <p>{selected.name}</p><code style={{ overflowWrap: "anywhere" }}>{selected.actorId}</code></details>}
         {roles}{consequences}
         <button className={styles.primaryButton} disabled={busy || !selected}>{enrolling ? t("Adding participant…", "Добавление участника…") : t("Add to this case", "Добавить в дело")}</button>
-      </form> : <p role="status">{t("No eligible person is available in the returned member list. Existing case participants, inactive memberships and ambiguous names are excluded.",
-        "В полученном списке нет подходящих участников. Уже добавленные в дело люди, неактивные участники и неоднозначные имена исключены.")}</p>}
+      </form> : <p role="status">{t("No one in this list can be added. Existing case participants, inactive members and ambiguous names are excluded.",
+        "В этом списке нет людей, которых можно добавить. Уже добавленные в дело люди, неактивные участники и неоднозначные имена исключены.")}</p>}
     </> : <p role="status">{roster.status === "loading" ? t("Checking current organization members…", "Проверяем текущих участников организации…")
       : roster.status === "restricted" ? t("Your organization role does not include access to its member list. You can still add an existing member using their exact Member ID.",
         "Ваша роль в организации не даёт доступа к списку участников. Вы можете добавить существующего участника по его точному идентификатору.")
