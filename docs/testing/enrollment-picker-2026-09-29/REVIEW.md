@@ -1,0 +1,22 @@
+# Existing-member case enrollment amendment — 29 September 2026
+
+Baseline: canonical main `7d8fe2741a7c1fda45fc23e5be88f6592c7c94c9`; clean owned worktree `C:/PROJECTS/Genesis-Juris-Enrollment-Picker-2026-09-29`, branch `codex/enrollment-picker-2026-09-29`. Other checkouts and pending Cargo/progress/integration-plan work are untouched.
+
+## Outcome and scope
+Case owners with existing organization-directory visibility can choose a named active member for case enrollment. Ordinary organization-member case owners retain an explained advanced exact Member ID form. This is the bounded UX09/UX15/A10 amendment, with affected UX14 accessibility checks; it does not close INV01 email-invitation acceptance.
+The existing organization response is reused. Only org_owner/org_admin/auditor roster visibility intersects with case-owner enrollment authority. No API, permission, database migration, email lookup, invitation or production grant is added.
+The server still resolves the exact Actor ID and permits only contributor/reviewer/viewer. Existing owner checks, organization membership, expected revision, duplicate/capacity protection, audit and output-staleness consequences remain authoritative.
+
+## Design and recursive review
+- Names are ephemeral and installed only after matching actor/organization, current visit/read epoch and confirmed case-owner permission. Loading, authority loss, account/case changes and disposal conceal or clear the roster.
+- Picker choices exclude inactive memberships and every prior case participant. Missing/duplicate names use the exact-ID path. Duplicate detection includes ineligible namesakes. No first person is auto-selected.
+- The roster is explicitly a returned window of at most 100 memberships, not a complete directory; exact IDs remain available for identity confirmation.
+- EN/RU copy explains immediate case-role grant, stale governed outputs, and the distinction from organization invitations. Manual email input is rejected clearly without identity resolution.
+- Both forms use existing memory-only workspace drafts, preserve failed submissions and disable controls while pending.
+- Independent read-only reviewer found two issues: initial-character ID validation differed from the server, and confirmed POST followed by failed refresh could leave consumed controlled fields. Both were fixed. Confirmed enrollment now advances a completion counter before refresh, resetting only the completed form even if reload fails.
+- Independent source review accepted the corrected bounded change, subject to the recorded verification limits.
+
+## Verification
+Pinned Node 22.23.2. Affected selection: `participant-enrollment-picker`, `dossier-participant-route`, `dossier-participant-enrollment-integration`, `b1-workspace-render`, and `organization-context-continuity` tests: **51 passed, 0 failed/skipped**, including 7 new behavioral groups. See `targeted-final.log`.
+Strict TypeScript and focused ESLint passed (exit 0 each). `git diff --check` passed. Initial selection was 49/50: its single failure was an old source-shape assertion locating the reviewer default in the parent; it now checks the extracted controlled form and retains all three allowed-role/no-owner criteria.
+Rendered synthetic component/CSS checks are in progress and will be appended as a separate evidence update. This checkpoint does not claim browser acceptance, hosted acceptance, genuine 200% zoom, screen-reader acceptance, full web CI, deployment or INV01 delivery.

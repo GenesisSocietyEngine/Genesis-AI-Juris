@@ -95,10 +95,11 @@ test("the participant register stays visible while enrollment is an explicit own
   assert.match(client, /matter\.participants\.map/u);
   assert.match(client, /matter\.permissions\.canManageParticipants/u);
   assert.match(client, /dossierPath \+ "\/participants"/u);
-  assert.match(client, /defaultValue="reviewer"/u);
-  assert.match(client, /<option value="reviewer">Reviewer<\/option>/u);
-  assert.match(client, /<option value="contributor">Contributor<\/option>/u);
-  assert.match(client, /<option value="viewer">Viewer<\/option>/u);
-  assert.doesNotMatch(client, /<option value="owner">Owner<\/option>/u);
-  assert.doesNotMatch(client, /name="email"/u);
+  const form = readFileSync(new URL("../app/matters/ParticipantEnrollment.tsx", import.meta.url), "utf8");
+  assert.match(form, /useWorkspaceDraft\("enrollment-role", "reviewer"\)/u);
+  assert.match(form, /<option value="reviewer">/u);
+  assert.match(form, /<option value="contributor">/u);
+  assert.match(form, /<option value="viewer">/u);
+  assert.doesNotMatch(form, /<option value="owner">/u);
+  assert.doesNotMatch(form, /name="email"/u);
 });
