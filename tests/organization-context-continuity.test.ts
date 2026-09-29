@@ -111,3 +111,22 @@ test("revocation during a refresh read fences its late workspace result", async 
   assert.equal(h.record.workspace, h.workspace); assert.equal(h.record.verifiedEpoch, undefined);
   assert.deepEqual(h.navigations, []);
 });
+
+for (const operation of ["refresh", "action"] as const) test(`${operation} cannot restore obsolete error feedback after authority withdrawal`, async () => {
+  const h = await harness(); let fail!: (error: unknown) => void;
+  if (operation === "refresh") h.deferLoad(() => new Promise((_resolve, reject) => { fail = reject; }));
+  else h.defer(() => new Promise<Response>((_resolve, reject) => { fail = reject; }));
+  const pending = operation === "refresh" ? h.refresh() : h.action({ action: "create", name: added.name }, h.form);
+  h.navigation.sessionBoundary("revoke"); fail({ code: "obsolete", status: 0 }); await pending;
+  assert.equal(h.navigation.getSnapshot().phase, "denied");
+  assert.ok(h.record.issue == null, "denied access must not promise retained input or suggest resubmitting an obsolete operation");
+  assert.equal(h.record.notice, operation === "action" ? "" : undefined);
+  assert.equal(h.resets(), 0); assert.deepEqual(h.navigations, []);
+});
+
+test("a current refresh failure still offers ordinary retry", async () => {
+  const h = await harness(); h.failLoad(); await h.refresh();
+  assert.equal(h.navigation.getSnapshot().phase, "ready");
+  assert.equal((h.record.issue as { code: string }).code, "read_timeout");
+  assert.equal(h.record.recipient, "unsaved@example.test");
+});

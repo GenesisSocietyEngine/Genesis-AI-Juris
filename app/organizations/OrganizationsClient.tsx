@@ -69,15 +69,15 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
       .catch((error: AdminIssue) => { if (!controller.signal.aborted && navigation.authorityVersion===ticket) setIssue({code:error.code??"network",status:error.status??0,scope:"page"}); });
     return () => { mounted.current=false;controller.abort(); };
   }, [load, signedIn, session, navigation]);
-  useEffect(()=>navigation.subscribe(()=>{if(navigation.getSnapshot().phase==="denied"){setWorkspace(null);setInvitation(null);setRecipient("");}}),[navigation]);
+  useEffect(()=>navigation.subscribe(()=>{if(navigation.getSnapshot().phase==="denied"){setWorkspace(null);setInvitation(null);setRecipient("");setIssue(null);setNotice("");}}),[navigation]);
   useEffect(()=>{if(workspace&&verifiedEpoch===navigation.authorityVersion&&window.location.hash==="#organization-users"){const target=document.getElementById("organization-users");target?.scrollIntoView({block:"start"});target?.focus();}},[workspace,verifiedEpoch,navigation]);
   async function refresh() {
     if(busyRef.current)return;
     busyRef.current=true;setBusy(true);
+    const ticket=navigation.authorityVersion;
     try {
       const access=navigation.getSnapshot();
       if(access.phase!=="ready" || access.profileRequired){await navigation.refresh(new URL(window.location.href).searchParams.get("organization")??undefined);return;}
-      const ticket=navigation.authorityVersion;
       const next=await load(undefined,refreshSelection.current??selected?.id);
       if(!mounted.current||navigation.authorityVersion!==ticket)return;
       if(workspace&&next.actorId!==workspace.actorId){window.location.reload();return;}
@@ -87,7 +87,7 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
       setWorkspace(next);setVerifiedEpoch(navigation.authorityVersion);setIssue(null);
       // A refreshed organization hint never grants authority; every write is checked on the server.
       if(next.selected){const url=new URL(window.location.href);url.searchParams.set("organization",next.selected.id);window.history.replaceState(window.history.state,"",url);window.dispatchEvent(new Event("genesis-interface-change"));}
-    } catch(error){if(mounted.current){const e=error as AdminIssue;setIssue({code:e.code??"network",status:e.status??0,scope:"page",refreshOnly:issue?.refreshOnly});}}
+    } catch(error){if(mounted.current&&navigation.authorityVersion===ticket){const e=error as AdminIssue;setIssue({code:e.code??"network",status:e.status??0,scope:"page",refreshOnly:issue?.refreshOnly});}}
     finally{busyRef.current=false;if(mounted.current)setBusy(false);}
   }
   async function action(payload: Record<string, unknown>, form?: HTMLFormElement) {
@@ -134,7 +134,7 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
       if(next.actorId!==actorId){window.location.reload();return;}
       setWorkspace(next);setVerifiedEpoch(navigation.authorityVersion);
     } catch (error) {
-      if(!mounted.current)return;
+      if(!mounted.current||navigation.authorityVersion!==ticket)return;
       const e=error as AdminIssue;
       setIssue({code:e.code??"network",status:e.status??0,scope:confirmed?"page":scope,refreshOnly:confirmed});
     } finally {busyRef.current=false;if(mounted.current)setBusy(false);}
