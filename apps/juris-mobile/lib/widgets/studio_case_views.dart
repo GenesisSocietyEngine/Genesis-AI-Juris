@@ -9,11 +9,13 @@ final class StudioCaseViews extends StatefulWidget {
   const StudioCaseViews({
     required this.draft,
     required this.locale,
+    this.onTaxEconomics,
     super.key,
   });
 
   final StudioScenarioDraft draft;
   final String locale;
+  final VoidCallback? onTaxEconomics;
 
   @override
   State<StudioCaseViews> createState() => _StudioCaseViewsState();
@@ -45,8 +47,10 @@ final class _StudioCaseViewsState extends State<StudioCaseViews> {
 
   @override
   Widget build(BuildContext context) {
-    final StudioCaseViewProjection projection =
-        projectStudioCaseView(widget.draft, _activeView);
+    final StudioCaseViewProjection projection = projectStudioCaseView(
+      widget.draft,
+      _activeView,
+    );
     return SectionCard(
       title: _t(
         'Professional case views',
@@ -103,6 +107,15 @@ final class _StudioCaseViewsState extends State<StudioCaseViews> {
               ),
             ],
           ),
+          if (_activeView == StudioCaseViewId.economics &&
+              widget.onTaxEconomics != null)
+            FilledButton.icon(
+              onPressed: widget.onTaxEconomics,
+              icon: const Icon(Icons.calculate_outlined),
+              label: Text(
+                _t('Edit tax analysis', 'Редактировать налоговый анализ'),
+              ),
+            ),
           const SizedBox(height: 12),
           if (projection.items.isEmpty)
             Container(
@@ -254,8 +267,10 @@ final class _ProjectionItem extends StatelessWidget {
                   style: Theme.of(context).textTheme.labelSmall,
                 ),
                 const SizedBox(height: 4),
-                Text(item.title,
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  item.title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 if (item.detail.isNotEmpty) ...<Widget>[
                   const SizedBox(height: 5),
                   Text(item.detail),

@@ -1,5 +1,6 @@
 import '../models/studio_scenario_draft.dart';
 import 'scenario_bridge_client.dart';
+import 'tax_authoring_repository.dart';
 
 final class StudioDiagnostic {
   const StudioDiagnostic({
@@ -50,6 +51,8 @@ final class StudioAuthoringRepository {
 
   final ScenarioBridgeClient _bridgeClient;
 
+  TaxAuthoringRepository get tax => TaxAuthoringRepository(_bridgeClient);
+
   StudioValidationResult validate(StudioScenarioDraft draft) {
     final ScenarioBridgeResponse response = _execute(
       ScenarioBridgeCommand.validateScenario(draft.toJson()),
@@ -76,10 +79,7 @@ final class StudioAuthoringRepository {
 
   StudioRouteTestResult runFirstAvailableRoute(StudioScenarioDraft draft) {
     final ScenarioBridgeResponse created = _execute(
-      ScenarioBridgeCommand.createSession(
-        scenario: draft.toJson(),
-        seed: 54,
-      ),
+      ScenarioBridgeCommand.createSession(scenario: draft.toJson(), seed: 54),
     );
     if (created.isError ||
         created.sessionId == null ||

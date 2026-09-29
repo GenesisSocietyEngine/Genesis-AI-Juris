@@ -46,6 +46,13 @@ enum TaxCommand {
 }
 
 fn source(scenario: &ScenarioDefinition) -> Result<CurrentSource, AdapterError> {
+    if scenario.schema_version != juris_scenario_schema::SCENARIO_SCHEMA_VERSION_V1 {
+        return Err(transport::BoundaryError::UnsupportedVersion {
+            field: "scenario.schema_version".into(),
+            value: scenario.schema_version.clone(),
+        }
+        .into());
+    }
     Ok(CurrentSource {
         case_id: scenario.metadata.id.as_str().into(),
         scenario_fingerprint: scenario_fingerprint(scenario).map_err(|_| {

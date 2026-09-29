@@ -128,6 +128,10 @@ case "$FAKE_NM_CASE" in
       print_exact
     fi
     ;;
+  universal_tax_export)
+    print_exact
+    echo juris_calculate_tax_economics
+    ;;
   universal_fourth_arm64)
     print_exact
     if [[ "$architecture" == "arm64" ]]; then
@@ -432,6 +436,7 @@ run_case universal_darwin pass 'arm64 x86_64' 0 '' 2 'arm64 x86_64' ''
 run_case universal_duplicate_symbols pass 'x86_64 arm64' 0 '' 2 \
   'arm64 x86_64' ''
 run_case universal_missing_arm64 fail 'x86_64 arm64' 0 '' 1 'arm64' 'arm64'
+run_case universal_tax_export fail 'arm64 x86_64' 0 '' 1 'arm64' 'arm64'
 run_case universal_fourth_arm64 fail 'arm64 x86_64' 0 '' 1 'arm64' 'arm64'
 run_case universal_missing_x86_64 fail 'x86_64 arm64' 0 '' 2 \
   'arm64 x86_64' 'x86_64'
@@ -457,7 +462,7 @@ run_case universal_malformed_arm64 fail 'x86_64 arm64' 0 '' 1 'arm64' 'arm64'
 run_case inspector_diagnostic fail 'x86_64' 0 \
   'lipo: error: zero-status synthetic diagnostic' 0 '' ''
 
-echo 'fake verifier matrix: PASS (19/19)'
+echo 'fake verifier matrix: PASS (20/20)'
 
 if [[ "$#" -eq 0 ]]; then
   echo 'real macOS universal fixture matrix: SKIP (non-Darwin fake-only run)'

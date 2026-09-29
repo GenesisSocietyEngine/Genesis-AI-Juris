@@ -1,0 +1,45 @@
+# Native tax bridge and Flutter authoring — review and runbook comparison
+
+Started 2026-09-29 from independently fetched main `4cb050f51a3448f6e051d11d16e58d5ee547e9ec`. Root owns clean initial Windows worktree `C:/PROJECTS/Genesis-Juris-Tax-Mobile-2026-09-29`, branch `codex/tax-native-editor-2026-09-29`; Linux drafting mirror is `/workspace/scratch/063510afe76e/tax-mobile-p2p3`. Only named task files are staged. Original `C:/PROJECTS/Genesis-AI-Juris` changes remain outside ownership. Production publication preceded mobile implementation; see [v104 receipt](../release-amendment-2026-09-29/WEB_PRODUCTION_V104.md).
+
+## Outcome and implementation
+
+P2 adds `tax_capabilities`, `tax_prepare`, `tax_calculate` and explicit `tax_import` over existing ABI 1 and existing allocate/free ownership. Tax commands have a 256 KiB raw cap before typed allocation, supported scenario-version checks, pure-crate dependency without standalone FFI, and typed result/error payloads. The engine's existing canonical fingerprint routine is exposed read-only; no new fingerprint algorithm or gameplay session is introduced. Source indices are recomputed from the current canonical scenario, not accepted as caller-supplied ID lists. This establishes source consistency, not authentication; the local Studio supplies its current authored scenario. Derived components are reconstructed from confirmed bindings; manual provenance remains mandatory. Incomplete calculations never become successful zero results.
+
+P3 adds the editor in the existing Economics view, with exact decimal money conversion, amounts/rates, documented manual bases, confirmed components, dated recurring/one-off benefits, draft save, legacy import and full original preservation. Currency cannot silently relabel nonzero or previously saved monetary inputs. Unknown imported rates require explicit confirmation. Source replacement preserves the old artifact and clears component confirmation. Local artifact revisions advance on saves, including incomplete edits. Fresh native calculation is required before a stored result is displayed as current; older native libraries expose preserved data without active editing/calculation.
+
+The separate `tax_authoring_v1` sidecar retains editor text, excluded unfinished bindings/benefits, the complete typed binding draft when available, required IDs, legacy JSON/FX/inactive-base metadata, both hash identities, context and calculation version. Writes serialize within a store, flush/verify a temporary file, retain a last-good backup and recover interrupted replacement. Future envelope versions are read-only and cannot be overwritten. Export includes the source scenario and analysis; the existing clipboard scenario importer can restore this aggregate as well as ordinary scenario JSON. Unsupported imports leave the current draft intact, with rejected bounded raw text retained. Runtime scenario/save schemas and financial formulas are unchanged.
+
+## Recursive review and corrections
+
+Independent read-only review found no native implementation blocker and requested successful manual/derived binding and real FFI coverage; those tests were added. The Flutter review found six material issues: unvalidated stored results with old native libraries; currency reinterpretation; edits racing Save; excluded unfinished rows blocking calculation; revision changes only during Calculate; malformed same-version import crashes. Corrections gate results on fresh native validation, lock denomination, block mutations during writes, retain excluded drafts outside calculation projection, version successful saves and validate editable shapes before replacement. A subsequent malformed-cache cast finding was corrected by gating cache access before casting. Capability negotiation also checks the result schema.
+
+Narrow rendered review caused a further bounded UX correction: feedback now scrolls into view, unused rate fields are hidden in amounts mode, dropdown values use human-readable EN/RU labels, and calculation buttons do not expose implementation details. The original rendered observation and subsequent source adjustment are not confused with operating-system accessibility acceptance.
+
+## Verification at the implementation checkpoint
+
+- Rust bridge/FFI suites passed, including four tax bridge regressions and a 100-iteration allocated/free success/error test; existing gameplay/save protocol tests passed. Clippy with warnings denied and Rust 1.78 all-target bridge check passed. The final scenario-version guard was followed by bridge/FFI test and native library rebuild.
+- Actual Windows DLL exports are exactly `juris_mobile_bridge_abi_version`, `juris_mobile_bridge_execute`, `juris_mobile_bridge_string_free`. The iOS gate now examines all `juris_*` exports, with 20 passing fake-platform cases including deliberate standalone-tax export rejection. Real macOS artifact proof remains hosted evidence, not this fake-platform run.
+- Flutter analysis passed. Full pre-copy-adjustment suite: 292 passed. Real Rust DLL editor tests prove exact EUR amounts, downside/incomplete outcomes, edit/calculate/save/dispose/reopen. Separate terminated Flutter test processes also passed write then read against the same durable sidecar; this is actual desktop-native process restart, not an Android/iOS app restart claim.
+- Storage tests passed exact/incomplete/original roundtrip, interrupted replacement recovery and future-version write refusal. Narrow 390×844 rendered evidence uses the real editor/theme and synthetic data. Real OS screen-reader and device accessibility checks remain unrun.
+- Earlier test-harness failures are retained in execution history: missing `ProgramFiles(x86)` in the tool process; real filesystem work incorrectly pumped on the fake test clock; an ambiguous test-only `Size` import. They were corrected without changing product assertions. Initial Clippy enum naming and Dart import-order findings were corrected.
+
+## Planned versus realized
+
+| Plan/runbook requirement | Realized in this slice | Acceptance still required |
+| --- | --- | --- |
+| Deploy reviewed web amendments | v104 succeeded on `4cb050f`, environment 40 preserved | Original hosted operational and INV01 gaps are not closed by publication |
+| P0/P1 frozen semantics and adapters | Reused unchanged; no second financial calculator | None reopened by this slice |
+| P2 compatible native bridge | Stateless commands, capabilities, strict source/binding validation, typed errors, current ABI/free ownership | Exact final-source hosted Android/iOS builds and complete symbol checks; actual Android tax execution is not established by APK packaging |
+| P3 edit → Rust calculate → save → restart → reopen | Implemented and exercised using real Windows native code and two separate Flutter test processes | Actual Android/iOS application restart journey, full mobile keyboard/screen-reader and broader imported-data journey matrix |
+| Durable incomplete/legacy/future data | Editor text, legacy originals/FX/inactive values and excluded unfinished entries retained; backup recovery/future refusal tested | OS termination at every filesystem boundary and old-binary downgrade rehearsal not run |
+| Aggregate import/export | Source scenario + analysis export; existing clipboard importer restores both; scenario-only import retained | Complete process-interruption rehearsal across the two separate workspace/sidecar writes remains open; fingerprint checks prevent treating mismatched source as current |
+| P4 Rust web execution | Not implemented, intentionally outside this mobile slice | WASM/runtime packaging, same fixtures in browser/worker/Node |
+| P5 version-bound web/PDF output | Not implemented; existing PDFs untouched | Shared result projection, version/freshness and historical/recomputed presentation |
+| P6 full release/pilot acceptance | Not claimed | Complete applicable hosted, native-device, accessibility, recovery and human pilot gates |
+
+Original ledger applicability: this provides scoped evidence for persistence/draft handling (Stage 5, UX08/UX12, A08/A09 where applicable), economic source consistency (Stage 3, UX13), and a narrow responsive check (Stage 7, UX14). It does not turn whole original rows into PASS. All nine stages, sixteen UX findings, seventeen scenarios and INV01 remain visible in the existing [crosswalk](../runbook-convergence-2026-09-29/RUNBOOK_STATUS_CROSSWALK.md) and [remaining instructions](../release-amendment-2026-09-29/NEXT_ACTIONS.md). No score or percentage substitutes for missing evidence.
+
+## Delivery
+
+The v104 receipt was committed as `dfd2d20`; the initial native implementation checkpoint was pushed as `75132924b176fd8be13ba5623b9f89321652bb32`. Flutter edits remained explicitly root-owned while their review and affected verification ran. The final task PR records the reviewed source, later fixes, remote readback, hosted results and main containment. A pending target acceptance check permits a clearly labeled development checkpoint; it does not establish distribution or full release GO.
