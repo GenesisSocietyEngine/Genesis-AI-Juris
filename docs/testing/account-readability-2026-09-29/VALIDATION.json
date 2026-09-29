@@ -1,0 +1,43 @@
+{
+  "sourceCommit": "c86c83bd6dc62c5eee2ae825272e65e3821e7aa5",
+  "cssSha256": "146d1323a6fa485c2e5d8bcf65e1405182ef0a21ae250447229e36ff4eeeae23",
+  "targetedTests": {
+    "files": [
+      "tests/auth-security.test.ts",
+      "tests/b1-workspace-render.test.ts"
+    ],
+    "passed": 28,
+    "failed": 0,
+    "skipped": 0,
+    "exitCode": 0
+  },
+  "renderedStates": {
+    "count": 18,
+    "cardHorizontalOverflow": 0,
+    "pageHorizontalOverflow": 0,
+    "keyboardFocusStates": 6,
+    "keyboardFocusVisible": 6,
+    "colorPreference": "OS light/dark; Account workspace tokens fixed, not Studio Office/Afterhours"
+  },
+  "journey": {
+    "ordinarySyntheticLogin": {
+      "method": "native pointer",
+      "route": "POST /api/auth/login",
+      "status": 200,
+      "observedAt": "2026-09-29T13:52:28.826Z"
+    },
+    "continuation": {
+      "method": "native pointer",
+      "destination": "/studio",
+      "renderedHeading": "Case Studio",
+      "sessionReadStatus": 200
+    },
+    "signOut": {
+      "desktopSidebar": true,
+      "mobileMenu": true,
+      "minHeightPx": 44,
+      "sessionRevocationRetested": false
+    }
+  },
+  "localOnly": true
+}
