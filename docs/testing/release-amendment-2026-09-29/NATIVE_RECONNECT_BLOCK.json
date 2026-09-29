@@ -1,0 +1,205 @@
+{
+  "format": "genesis-juris-native-reconnect-block-v1",
+  "observedUtc": "2026-09-29T14:13:18.294Z",
+  "status": "BLOCKED",
+  "scope": "Final-source local aggregate native prerequisite only; prior549 aggregate PASS remains source-specific.",
+  "finalWebCandidate": "c86c83bd6dc62c5eee2ae825272e65e3821e7aa5",
+  "lockedMobile": "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+  "attempts": [
+    {
+      "name": "Reconnect with retained task AVD",
+      "bootBoundSeconds": 420,
+      "outerBoundSeconds": 450,
+      "startedUtc": "2026-09-29T13:43:54.5708391Z",
+      "terminalObservedUtc": "2026-09-29T13:50:57.7882663Z",
+      "finishedUtc": null,
+      "actualExit": 1,
+      "emulator": {
+        "pid": 21304,
+        "path": "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\emulator.exe",
+        "startedUtc": "2026-09-29T13:43:54.5708391Z"
+      },
+      "adb": {
+        "pid": 7768,
+        "path": "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe",
+        "startedUtc": "2026-09-29T13:43:52.2898991Z"
+      },
+      "qemu": {
+        "pid": 18752,
+        "parentPid": 21304,
+        "startedUtc": "2026-09-29T13:43:55.3555903Z"
+      },
+      "result": "Readiness timeout; device offline; no ready receipt. No timeout extension."
+    },
+    {
+      "name": "Single fresh task-profile retry",
+      "bootBoundSeconds": 420,
+      "outerBoundSeconds": 450,
+      "startedUtc": "2026-09-29T13:56:19.7200241Z",
+      "finishedUtc": "2026-09-29T14:03:21.9996978Z",
+      "actualExit": 1,
+      "emulator": {
+        "pid": 15816,
+        "path": "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\emulator.exe",
+        "startedUtc": "2026-09-29T13:56:19.7200241Z"
+      },
+      "adb": {
+        "pid": 21996,
+        "path": "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe",
+        "startedUtc": "2026-09-29T13:56:19.0250624Z"
+      },
+      "qemu": {
+        "pid": 9136,
+        "parentPid": 15816,
+        "startedUtc": "2026-09-29T13:56:19.8630616Z"
+      },
+      "result": "Same readiness timeout; identical reviewed config/image, no reused userdata.",
+      "recovery": {
+        "copiedUserdata": false,
+        "retryBoundSeconds": 420,
+        "configSha256": "4EE2277D79137223C935AC73AF5666A0403D3F5B65771FECE07A6EE0E393FCBF",
+        "oldProfileArchived": true,
+        "reason": "Single bounded recovery after retained offline boot timeout; identical config and image, fresh task-only disposable data",
+        "atUtc": "2026-09-29T13:55:45.2598997Z",
+        "profile": "JurisFinalGatePixel",
+        "systemImage": "android-37.0/google_apis_playstore/x86_64",
+        "systemImagePropertiesSha256": "8F5147A9E816C77A6761DA5A55E6470468B2502DF513263327C80D498C5CCCB8"
+      }
+    }
+  ],
+  "cleanup": {
+    "first": {
+      "globalAdbTouched": false,
+      "ownership": "Each PID, full path and UTC start time revalidated; QEMU parent21304 validated",
+      "atUtc": "2026-09-29T13:54:56.0894973Z",
+      "reason": "Owned emulator console graceful stop rejected missing token; exact owned processes stopped through verified OS ownership",
+      "stoppedPids": [
+        18752,
+        21304,
+        7768
+      ]
+    },
+    "freshRetry": {
+      "globalAdbTouched": false,
+      "ownership": "PID/fullpath/UTCstarttime plusQEMUparent revalidated",
+      "atUtc": "2026-09-29T14:05:32.5425977Z",
+      "reason": "Single fresh-profile retry failed original420sbootbound; coordinator authorized exactownedcleanup",
+      "stoppedPids": [
+        9136,
+        15816,
+        21996
+      ]
+    },
+    "profilesArchived": true,
+    "activeProfileAbsent": true,
+    "globalAdbTouched": false
+  },
+  "evidence": [
+    {
+      "path": "native/history/restart-20260929T134354Z/launch.json",
+      "sha256": "4fe046f00f91a042f9f8e80bf067f215755a30ea5681e99c6041d7541b6aa7e9"
+    },
+    {
+      "path": "native/history/restart-20260929T134354Z/emulator.stdout.log",
+      "sha256": "8e34b14e17d7372df9b4bf2bc527e701f4a7cb0ed4879397011500c936e6f21e"
+    },
+    {
+      "path": "native/history/restart-20260929T134354Z/emulator.stderr.log",
+      "sha256": "a18191b1c77ff6fea3f34ed600b964421d10ac1888a56efc8c795d8e0a6b09cd"
+    },
+    {
+      "path": "native/history/restart-20260929T134354Z/restart-20260929.stderr.log",
+      "sha256": "7a31406e4e09445a372182b5daea695ee8187ac823746036dce3cf4b63b9798b"
+    },
+    {
+      "path": "native/history/restart-20260929T134354Z/restart-20260929.exit-code.txt",
+      "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+    },
+    {
+      "path": "native/history/restart-20260929T134354Z/scoped-timeout-stop.json",
+      "sha256": "aac538092990701d5c8763b086f716c70de71b186c3cfbd966cd809b9ed76ce3"
+    },
+    {
+      "path": "native/history/fresh-retry-20260929T135619Z/launch.json",
+      "sha256": "ccea14f00a0910a8c6c05911deb83d2cb39c3bea6b0e7be3cc2f3de1664dd14c"
+    },
+    {
+      "path": "native/history/fresh-retry-20260929T135619Z/emulator.stdout.log",
+      "sha256": "520a7fa7c003359495fb987f07594769b53968ded33229fc89d7356f4edf3f94"
+    },
+    {
+      "path": "native/history/fresh-retry-20260929T135619Z/emulator.stderr.log",
+      "sha256": "07cec3ba2c5942ea9ee9308e3ccd9875fe2ffea40366b5eb528b6ce2d3a2d353"
+    },
+    {
+      "path": "native/history/fresh-retry-20260929T135619Z/retry-fresh-20260929.stderr.log",
+      "sha256": "7a31406e4e09445a372182b5daea695ee8187ac823746036dce3cf4b63b9798b"
+    },
+    {
+      "path": "native/history/fresh-retry-20260929T135619Z/retry-fresh-20260929.exit-code.txt",
+      "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+    },
+    {
+      "path": "native/history/fresh-retry-20260929T135619Z/fresh-profile-recovery.json",
+      "sha256": "80e59efa1acd18c538c7a30d7d1cd7e9e8fe9f046fc3e323da36420c7a555896"
+    },
+    {
+      "path": "native/history/fresh-retry-20260929T135619Z/fresh-retry-cleanup.json",
+      "sha256": "ca1b598f3dff9a5320cf44bd5b42c13c250810af251df63991e56f11cb385fa7"
+    }
+  ],
+  "command": {
+    "helper": "start-native.ps1 -ExpectedWebHead 54987950f86f75fb20a1fdbbf2e806719e56680e",
+    "helperSha256": "4c4a4030015fbc1e6ea665c76fc9e520c1762915f31bf081eac9efc466d6c884",
+    "serial": "emulator-5582",
+    "privateAdbPort": 5041,
+    "emulatorPorts": [
+      5582,
+      5583
+    ],
+    "avd": "JurisFinalGatePixel",
+    "flags": [
+      "-port",
+      "5582",
+      "-read-only",
+      "-no-snapshot-load",
+      "-no-snapshot-save",
+      "-no-window",
+      "-no-audio",
+      "-no-metrics",
+      "-gpu",
+      "swiftshader",
+      "-memory",
+      "2048",
+      "-cores",
+      "2"
+    ]
+  },
+  "additionalFailures": [
+    {
+      "action": "Direct PowerShell script invocation",
+      "result": "Rejected by local execution policy before native launch; no persistent policy changed."
+    },
+    {
+      "action": "Graceful stop of first failed owned emulator",
+      "result": "Console reported missing authentication token; bounded cleanup failed. Exact verified OS-owned PIDs were subsequently stopped; no token bypass."
+    },
+    {
+      "action": "Extra long-wait diagnostic monitor",
+      "result": "Automatic approval review rejected before execution, interpreting 7900000 as seconds; .NET API uses milliseconds. Rejected command was not retried.",
+      "saferAlternative": "Removed redundant blocking monitor; immediate-return dispatch and explicit7200-second diagnostic watchdog, independently reviewed and accepted."
+    }
+  ],
+  "diagnosis": {
+    "observed": "The first guest explicitly reported device offline. Both attempts failed readiness after WHPX startup; the second guest transport state was not separately recorded. No explicit fatal error appeared in retained emulator logs. Fresh disposable data did not restore readiness.",
+    "notEstablished": "No application defect or precise host/emulator root cause established.",
+    "remainingRequirement": "Recover an isolated authorized Android runtime that reaches device state and boot_completed=1 within reviewed420-second bound, then run unchanged full22-stage gate on final functional source. Current diagnostic subset cannot substitute for that gate."
+  },
+  "limits": [
+    "No third boot retry and no timeout extension.",
+    "No shared/user AVD or global ADB modified.",
+    "No deployment, hosted auth or real invitation acceptance proved.",
+    "Both native failures remain failures even if separate web/PDF/mobile checks pass.",
+    "Original549 full22-stage evidence must not be relabeled as c86."
+  ]
+}
