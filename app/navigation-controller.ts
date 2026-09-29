@@ -114,8 +114,11 @@ export class NavigationController {
       this.guards.forEach(g => g.suspend());
     }
   }
-  async select(id: string, locale: string, discard = false): Promise<DepartureRisk> {
-    this.beginIntent();
+  async select(id: string, locale: string, discard = false, continuation?: Pick<DeparturePlan, "current">): Promise<DepartureRisk> {
+    // A staged departure already owns an intent; dirty confirmation resumes it.
+    // Direct selection still supersedes previous intents, including no-op attempts.
+    if (continuation) { if (!continuation.current()) return "clear"; }
+    else this.beginIntent();
     if (this.state.busy || this.state.phase !== "ready" || !this.state.actorId) return "clear";
     const target = this.state.organizations.find(o => o.id === id);
     if (!target || target.selection === this.state.selected?.selection) return "clear";

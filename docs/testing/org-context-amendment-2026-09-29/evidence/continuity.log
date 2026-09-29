@@ -1,0 +1,124 @@
+TAP version 13
+# Subtest: create refreshes the choices while retaining managed organization and unrelated input
+ok 1 - create refreshes the choices while retaining managed organization and unrelated input
+  ---
+  duration_ms: 54.9674
+  type: 'test'
+  ...
+# Subtest: accept refreshes the choices while retaining managed organization and unrelated input
+ok 2 - accept refreshes the choices while retaining managed organization and unrelated input
+  ---
+  duration_ms: 1.7058
+  type: 'test'
+  ...
+# Subtest: confirmed create followed by read failure offers refresh without replay or context switch
+ok 3 - confirmed create followed by read failure offers refresh without replay or context switch
+  ---
+  duration_ms: 3.8115
+  type: 'test'
+  ...
+# Subtest: revocation during create fences its successful late receipt
+ok 4 - revocation during create fences its successful late receipt
+  ---
+  duration_ms: 1.7555
+  type: 'test'
+  ...
+# Subtest: refresh withdraws stale navigation authority for a successful missing-membership response
+ok 5 - refresh withdraws stale navigation authority for a successful missing-membership response
+  ---
+  duration_ms: 1.1382
+  type: 'test'
+  ...
+# Subtest: refresh withdraws stale navigation authority for a changed role revision
+ok 6 - refresh withdraws stale navigation authority for a changed role revision
+  ---
+  duration_ms: 0.7103
+  type: 'test'
+  ...
+# Subtest: refresh with unchanged membership retains ready navigation and unrelated input
+ok 7 - refresh with unchanged membership retains ready navigation and unrelated input
+  ---
+  duration_ms: 1.0823
+  type: 'test'
+  ...
+# Subtest: revocation during a refresh read fences its late workspace result
+ok 8 - revocation during a refresh read fences its late workspace result
+  ---
+  duration_ms: 0.602
+  type: 'test'
+  ...
+# Subtest: refresh cannot restore obsolete error feedback after authority withdrawal
+ok 9 - refresh cannot restore obsolete error feedback after authority withdrawal
+  ---
+  duration_ms: 1.0109
+  type: 'test'
+  ...
+# Subtest: action cannot restore obsolete error feedback after authority withdrawal
+ok 10 - action cannot restore obsolete error feedback after authority withdrawal
+  ---
+  duration_ms: 0.8913
+  type: 'test'
+  ...
+# Subtest: a current refresh failure still offers ordinary retry
+ok 11 - a current refresh failure still offers ordinary retry
+  ---
+  duration_ms: 0.4881
+  type: 'test'
+  ...
+# Subtest: refresh keeps the page sign-in recovery when the session expires
+ok 12 - refresh keeps the page sign-in recovery when the session expires
+  ---
+  duration_ms: 0.6053
+  type: 'test'
+  ...
+# Subtest: confirmed action keeps the page sign-in recovery when the session expires
+ok 13 - confirmed action keeps the page sign-in recovery when the session expires
+  ---
+  duration_ms: 0.6607
+  type: 'test'
+  ...
+# Subtest: rejected action keeps the page sign-in recovery when the session expires
+ok 14 - rejected action keeps the page sign-in recovery when the session expires
+  ---
+  duration_ms: 0.6849
+  type: 'test'
+  ...
+# Subtest: create lets the rail open the added organization without switching context
+ok 15 - create lets the rail open the added organization without switching context
+  ---
+  duration_ms: 15.6799
+  type: 'test'
+  ...
+# Subtest: accept lets the rail open the added organization without switching context
+ok 16 - accept lets the rail open the added organization without switching context
+  ---
+  duration_ms: 2.7262
+  type: 'test'
+  ...
+# Subtest: create followed by read failure does not point to an absent Manage entry
+ok 17 - create followed by read failure does not point to an absent Manage entry
+  ---
+  duration_ms: 0.7745
+  type: 'test'
+  ...
+# Subtest: create withdraws rather than adopts a changed managed selection
+ok 18 - create withdraws rather than adopts a changed managed selection
+  ---
+  duration_ms: 1.6444
+  type: 'test'
+  ...
+# Subtest: refresh after a failed post-create read lets the rail open the added organization
+ok 19 - refresh after a failed post-create read lets the rail open the added organization
+  ---
+  duration_ms: 4.177
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2248.2394

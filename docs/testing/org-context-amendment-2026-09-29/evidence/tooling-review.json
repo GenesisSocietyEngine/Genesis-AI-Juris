@@ -1,0 +1,16 @@
+{
+    "observedAt":  "2026-09-29T10:39:00.2374919Z",
+    "executedHelperSha256":  "e04b7edc01235a9338908ebc3ac66a2d4522243b838b295e4fdb91cc6b666f73",
+    "publishedHelperSha256":  "95cf979748f8f9e6f086b7ddb2acd731556c567181e4ec0f5e77d2b921422b14",
+    "initialHelperLint":  "FAIL: five CommonJS require-import findings in newly authored evidence helper",
+    "correction":  "Equivalent ESM imports; source guard compares fixed reviewed blob identities without needing unpublished upstream history",
+    "publishedHelperSyntaxExit":  0,
+    "publishedHelperLintExit":  0,
+    "reviewedBlobs":  {
+                          "tests/organization-context-continuity.test.ts":  "1caa4300098dd7e3662dfc662a27c41b1186fec5",
+                          "app/organizations/OrganizationsClient.tsx":  "7b28ffffdd17615f99e33e3bc716cc7bfd63a607"
+                      },
+    "blobComparisons":  "PASS",
+    "nodeModulesIsReparsePoint":  false,
+    "browserJourneys":  "NOT_RUN"
+}
