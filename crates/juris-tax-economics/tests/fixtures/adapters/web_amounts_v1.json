@@ -1,0 +1,1 @@
+{"kind":"tax-economics-v1","currency":"EUR","baselineAnnualTaxCost":50000,"optimizedAnnualTaxCost":30000,"implementationCost":1000,"annualMaintenanceCost":200,"terminalTaxOrUnwindCost":500,"analysisHorizonMonths":18,"annualDiscountRateBps":0,"benefitRealizationBps":10000,"assumptions":"  Synthetic legacy assumptions preserved verbatim.  "}

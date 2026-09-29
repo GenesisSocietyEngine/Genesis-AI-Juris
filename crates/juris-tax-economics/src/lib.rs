@@ -34,8 +34,10 @@
 //! ## FFI Module
 //! The `ffi` module exposes all core functionality as C-callable interfaces for Flutter/Dart integration.
 
+pub mod adapters;
 #[cfg(feature = "standalone-ffi")]
 pub mod ffi;
+pub mod hashing;
 pub mod money;
 pub mod transport;
 
