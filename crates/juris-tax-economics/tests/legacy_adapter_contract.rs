@@ -156,11 +156,9 @@ fn current_amounts_optional_unused_fields_remain_explicitly_unavailable() {
         LegacySchema::WebRatesFxV1,
         &change(CURRENT, "taxInputBasis", json!("amounts")),
     );
-    // Retaining an aggregate base deliberately retains its pending provenance.
-    assert!(matches!(
-        calculate_authoring(draft.request),
-        Err(AdapterError::MissingOverrideProvenance { .. })
-    ));
+    assert!(draft.inactive_tax_base.is_some());
+    assert!(draft.missing_override_provenance.is_empty());
+    assert!(calculate_authoring(draft.request).is_ok());
 }
 #[test]
 fn exact_integral_legacy_number_tokens_never_use_float() {
@@ -271,4 +269,133 @@ fn explicit_manual_override_requires_actual_complete_provenance() {
     assert!(calculate_authoring(draft.request.clone()).is_ok());
     draft.request.input.override_reason = Some(" ".into());
     assert!(validate_override_provenance(&draft.request.input).is_err());
+}
+
+#[test]
+fn amounts_import_retains_zero_and_nonzero_inactive_bases_without_blocking() {
+    let mut prior_hash = None;
+    for major in [0, 250_000] {
+        let source = CURRENT
+            .replace(
+                "\"taxInputBasis\":\"rates\"",
+                "\"taxInputBasis\":\"amounts\"",
+            )
+            .replace(
+                "\"annualTaxBase\":250000",
+                &format!("\"annualTaxBase\":{major}"),
+            );
+        let record = import_legacy(LegacySchema::WebRatesFxV1, source.clone(), context());
+        assert_eq!(record.original_json, source);
+        assert_eq!(
+            record,
+            import_legacy(LegacySchema::WebRatesFxV1, source, context())
+        );
+        let ImportStatus::Converted { draft } = &record.status else {
+            panic!()
+        };
+        let candidate = draft.inactive_tax_base.as_ref().unwrap();
+        assert_eq!(candidate.amount.value(), major * 100);
+        assert_eq!(candidate.currency, "EUR");
+        assert_eq!(candidate.source_original_sha256, record.original_sha256);
+        assert_eq!(
+            candidate.provenance,
+            juris_tax_economics::adapters::legacy::LegacyBaseProvenance::Unknown
+        );
+        assert_eq!(draft.request.input.annual_tax_base_override, None);
+        assert_eq!(draft.request.input.derived_annual_tax_base, None);
+        assert!(draft.request.input.tax_base_components.is_empty());
+        assert_eq!(draft.request.input.override_owner, None);
+        assert_eq!(draft.request.input.override_as_of, None);
+        assert!(draft.missing_override_provenance.is_empty());
+        assert_eq!(
+            draft.fx_json,
+            converted(LegacySchema::WebRatesFxV1, CURRENT).fx_json
+        );
+        let roundtrip = serde_json::to_string(&record).unwrap();
+        assert_eq!(
+            serde_json::from_str::<juris_tax_economics::adapters::legacy::LegacyImport>(&roundtrip)
+                .unwrap(),
+            record
+        );
+        let output = calculate_authoring(draft.request.clone()).unwrap();
+        assert_eq!(output.result.baseline_annual_tax_cost.value(), 5_000_000);
+        assert_eq!(output.result.optimized_annual_tax_cost.value(), 3_000_000);
+        assert_eq!(output.result.effective_annual_tax_base, None);
+        if let Some(previous) = prior_hash {
+            assert_eq!(draft.input_hash, previous);
+        }
+        prior_hash = Some(draft.input_hash.clone());
+    }
+}
+#[test]
+fn inactive_base_never_activates_on_bare_basis_or_currency_toggle() {
+    let source = change(CURRENT, "taxInputBasis", json!("amounts"));
+    let mut draft = converted(LegacySchema::WebRatesFxV1, &source);
+    let candidate = draft.inactive_tax_base.clone().unwrap();
+    draft.request.input.currency = "USD".into();
+    assert_eq!(draft.inactive_tax_base.as_ref().unwrap().currency, "EUR");
+    draft.request.input.tax_input_basis = "rates".into();
+    assert!(matches!(
+        calculate_authoring(draft.request.clone()),
+        Err(AdapterError::Boundary {
+            detail: transport::BoundaryError::Calculation {
+                detail: transport::CalculationErrorDetail::MissingTaxBase { .. }
+            }
+        })
+    ));
+    draft.request.input.currency = candidate.currency;
+    draft.request.input.tax_base_mode = juris_tax_economics::TaxBaseMode::ManualOverride;
+    draft.request.input.annual_tax_base_override = Some(candidate.amount);
+    draft.request.input.missing_tax_base_inputs.clear();
+    draft.request.input.override_reason = Some("User chose retained aggregate after review".into());
+    assert!(matches!(
+        calculate_authoring(draft.request.clone()),
+        Err(AdapterError::MissingOverrideProvenance { .. })
+    ));
+    draft.request.input.override_owner = Some("synthetic_reviewer".into());
+    draft.request.input.override_as_of = Some("2026-09-29".into());
+    assert_eq!(
+        calculate_authoring(draft.request)
+            .unwrap()
+            .result
+            .effective_annual_tax_base,
+        Some(candidate.amount)
+    );
+}
+#[test]
+fn inactive_metadata_does_not_turn_absent_rates_or_base_into_confirmed_zero() {
+    let mut value: Value = serde_json::from_str(CURRENT).unwrap();
+    value["taxInputBasis"] = json!("amounts");
+    for field in ["baselineTaxRateBps", "optimizedTaxRateBps"] {
+        value.as_object_mut().unwrap().remove(field);
+    }
+    let mut draft = converted(LegacySchema::WebRatesFxV1, &value.to_string());
+    assert!(draft.inactive_tax_base.is_some());
+    assert_eq!(
+        draft.unavailable_legacy_fields,
+        ["baselineTaxRateBps", "optimizedTaxRateBps"]
+    );
+    assert!(calculate_authoring(draft.request.clone()).is_ok());
+    draft.request.input.tax_input_basis = "rates".into();
+    assert!(matches!(
+        calculate_authoring(draft.request),
+        Err(AdapterError::Boundary {
+            detail: transport::BoundaryError::Calculation {
+                detail: transport::CalculationErrorDetail::MissingTaxBase { .. }
+            }
+        })
+    ));
+    for state in [None, Some(Value::Null)] {
+        if let Some(null) = state {
+            value["annualTaxBase"] = null;
+        } else {
+            value.as_object_mut().unwrap().remove("annualTaxBase");
+        }
+        let draft = converted(LegacySchema::WebRatesFxV1, &value.to_string());
+        assert_eq!(draft.inactive_tax_base, None);
+        assert!(draft
+            .unavailable_legacy_fields
+            .contains(&"annualTaxBase".into()));
+        assert!(calculate_authoring(draft.request).is_ok());
+    }
 }

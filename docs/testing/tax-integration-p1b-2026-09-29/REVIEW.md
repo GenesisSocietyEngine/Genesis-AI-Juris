@@ -17,8 +17,8 @@ Independent reviewer `tax_boundary_review` inspected source, pinned historical n
 | Final command | Observed result |
 | --- | --- |
 | `cargo fmt -p juris-tax-economics -- --check` | pass |
-| `cargo test -p juris-tax-economics --locked` | 79 passed: 21 unit, 25 accepted regressions, 15 P1a transport, 18 P1b |
-| same test command with `--no-default-features` | 74 passed: 19 unit, 22 accepted regressions, 15 transport, 18 P1b; only five FFI tests omitted |
+| `cargo test -p juris-tax-economics --locked` | 82 passed: 21 unit, 25 accepted regressions, 15 P1a transport, 21 P1b |
+| same test command with `--no-default-features` | 77 passed: 19 unit, 22 accepted regressions, 15 transport, 21 P1b; only five FFI tests omitted |
 | `cargo clippy -p juris-tax-economics --all-targets --locked -- -D warnings` | pass |
 | same Clippy command with `--no-default-features` before `--` | pass |
 | `cargo +1.78.0 check -p juris-tax-economics --all-targets --locked` | pass |
@@ -27,3 +27,7 @@ Independent reviewer `tax_boundary_review` inspected source, pinned historical n
 Final commands exited 0. A SHA256 manifest of crate files plus workspace Cargo.toml/Cargo.lock was compared before and after the final gate sequence; compiled sources were unchanged. Per-command logs and exit receipts are in the sibling P1B evidence directory. The independent golden calculation hash was computed separately with Python hashlib. Test fixtures are synthetic. Initial test-only string/byte API mismatch was corrected before the final green runs.
 
 The core formula implementation and standalone `src/ffi.rs` are unchanged. Existing pure regression coverage remains enabled in both feature modes. Existing sha2 is reused; Cargo.lock adds one dependency edge without upgrading packages. No original checkout, bridge, Flutter/UI, persistence, web/PDF, mobile configuration, deployment or version activation changed. Full workspace/mobile/hosted acceptance is not claimed for this unlinked pure boundary.
+
+## PO migration correction after be57e97
+Pinned web defaults/normalization always include an annual base and the basis selector retains it. Activating that unused aggregate blocked ordinary amounts imports on unnecessary provenance. The follow-up preserves the base as explicitly inactive typed metadata (cents, original currency/source SHA256, unknown provenance), while the active amounts request has no base. Rates imports and the existing manual provenance gate are unchanged.
+Independent reviewer approved the correction and three additional regressions: zero/nonzero inactive bases with original/FX/round-trip/idempotence, bare basis/currency toggle refusal followed by explicit approval, and unavailable rates/base retained distinctly from zero. Future activation responsibilities are specified in CONTRACT.md. The final counts above include this correction; every listed gate was rerun with an unchanged SHA256 source guard (inactive-* evidence receipts). The prior be57e97 checkpoint remains in branch history.

@@ -2,6 +2,7 @@
 use super::AdapterError;
 use crate::{
     hashing::{input_hash, sha256},
+    money::MoneyCents,
     transport::{
         CalculationContext, TaxInput, TaxRequest, APPLICATION_POLICY, INPUT_SCHEMA,
         MAX_REQUEST_BYTES, TRANSPORT_PROTOCOL,
@@ -31,12 +32,29 @@ pub enum ImportStatus {
     Converted { draft: Box<LegacyDraft> },
     Unavailable { reason: AdapterError },
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LegacyBaseProvenance {
+    Unknown,
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct InactiveLegacyBase {
+    pub amount: MoneyCents,
+    /// Retain the original denomination even if the active draft later changes currency.
+    pub currency: String,
+    pub source_original_sha256: String,
+    pub provenance: LegacyBaseProvenance,
+}
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LegacyDraft {
     pub request: TaxRequest,
     pub input_hash: String,
     /// Exact JSON token for FX metadata already applied by the old web app.
     pub fx_json: Option<String>,
+    /// Saved amounts-mode aggregate: preserved, never an active or approved base.
+    pub inactive_tax_base: Option<InactiveLegacyBase>,
+    /// Active override blockers only; inactive candidate provenance is separate.
     /// Import does not invent an approving owner or as-of date.
     pub missing_override_provenance: Vec<String>,
     /// Unknown unused slots are explicit, not declared factual zero values.
@@ -253,7 +271,7 @@ pub fn import_legacy(
     context: CalculationContext,
 ) -> LegacyImport {
     let original_sha256 = sha256(original_json.as_bytes());
-    let status = match convert(schema, &original_json, context) {
+    let status = match convert(schema, &original_json, &original_sha256, context) {
         Ok(draft) => ImportStatus::Converted {
             draft: Box::new(draft),
         },
@@ -269,6 +287,7 @@ pub fn import_legacy(
 fn convert(
     schema: LegacySchema,
     source: &str,
+    original_sha256: &str,
     context: CalculationContext,
 ) -> Result<LegacyDraft, AdapterError> {
     if source.len() > MAX_REQUEST_BYTES {
@@ -362,9 +381,24 @@ fn convert(
         unavailable.push("assumptions".into());
     }
     core.assumptions = common.assumptions.unwrap_or_default();
-    let missing_override_provenance = if let Some(base) = base {
+    let saved_base = base
+        .as_deref()
+        .map(|raw| money(raw, "annualTaxBase"))
+        .transpose()?;
+    let inactive_tax_base = if core.tax_input_basis == "amounts" {
+        saved_base.map(|amount| InactiveLegacyBase {
+            amount: MoneyCents::new(amount),
+            currency: core.currency.clone(),
+            source_original_sha256: original_sha256.into(),
+            provenance: LegacyBaseProvenance::Unknown,
+        })
+    } else {
+        None
+    };
+    let active_base = saved_base.filter(|_| core.tax_input_basis == "rates");
+    let missing_override_provenance = if let Some(base) = active_base {
         core.tax_base_mode = TaxBaseMode::ManualOverride;
-        core.annual_tax_base_override = Some(money(&base, "annualTaxBase")?);
+        core.annual_tax_base_override = Some(base);
         core.missing_tax_base_inputs.clear();
         core.override_reason = Some(
             "Imported saved legacy aggregate; derivation and approval provenance unavailable"
@@ -387,6 +421,7 @@ fn convert(
         request,
         input_hash,
         fx_json,
+        inactive_tax_base,
         missing_override_provenance,
         unavailable_legacy_fields: unavailable,
     })
