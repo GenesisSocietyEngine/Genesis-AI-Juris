@@ -1,24 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Bash 3.2 does not reliably apply errexit to compound conditions; guards exit explicitly.
 
 phase="${1:?prepare or test is required}"
 simulator_id="${2:?simulator UUID is required}"
 evidence="${3:?job-local evidence directory is required}"
-[[ "$phase" == prepare || "$phase" == test ]]
-[[ "$simulator_id" =~ ^[0-9A-F-]{36}$ ]]
-[[ -n "${RUNNER_TEMP:-}" && "$RUNNER_TEMP" == /* ]]
+[[ "$phase" == prepare || "$phase" == test ]] || exit 2
+[[ "$simulator_id" =~ ^[0-9A-F-]{36}$ ]] || exit 2
+[[ -n "${RUNNER_TEMP:-}" && "$RUNNER_TEMP" == /* ]] || exit 2
 case "$evidence" in "$RUNNER_TEMP"/ios-native-*) ;; *) echo "Evidence path is not job-local" >&2; exit 2 ;; esac
-[[ "$evidence" != */../* && "$evidence" != */./* && ! -L "$evidence" ]]
-repository="$(cd "$(dirname "$0")/../.." && pwd)"
-cd "$repository/apps/juris-mobile"
-source_sha="$(git -C "$repository" rev-parse HEAD)"
-[[ "$source_sha" =~ ^[a-f0-9]{40}$ ]]
+[[ "$evidence" != */../* && "$evidence" != */./* && ! -L "$evidence" ]] || exit 2
+repository="$(cd "$(dirname "$0")/../.." && pwd)" || exit 1
+cd "$repository/apps/juris-mobile" || exit 1
+source_sha="$(git -C "$repository" rev-parse HEAD)" || exit 1
+[[ "$source_sha" =~ ^[a-f0-9]{40}$ ]] || exit 1
 derived="$evidence/DerivedData"
 selector="RunnerTests/RunnerTests/testNativeLogisticsLifecycle"
-[[ "$phase" != prepare || ! -e "$evidence" ]]
-mkdir -p "$evidence"
+[[ "$phase" != prepare || ! -e "$evidence" ]] || { echo "Preparation evidence already exists" >&2; exit 1; }
+mkdir -p "$evidence" || exit 1
 stamp() {
-  printf 'utc=%s phase=%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$phase" "$*" | tee -a "$evidence/phases.log"
+  local timestamp
+  timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" || return 1
+  printf 'utc=%s phase=%s %s\n' "$timestamp" "$phase" "$*" | tee -a "$evidence/phases.log"
 }
 plan() {
   shopt -s nullglob
@@ -27,11 +30,11 @@ plan() {
   test_plan="${plans[0]}"
   test -d "$derived/Build/Products/Debug-iphonesimulator/Runner.app/PlugIns/RunnerTests.xctest"
 }
-stamp "event=start source=$source_sha simulator=$simulator_id"
+stamp "event=start source=$source_sha simulator=$simulator_id" || exit 1
 
 if [[ "$phase" == prepare ]]; then
   # A fresh run/attempt owns this location; never reuse global or stale products.
-  [[ ! -e "$derived" && ! -e "$evidence/prepared.identity" ]]
+  [[ ! -e "$derived" && ! -e "$evidence/prepared.identity" ]] || exit 1
   set +e
   xcodebuild build-for-testing \
     -workspace ios/Runner.xcworkspace \
@@ -47,13 +50,13 @@ if [[ "$phase" == prepare ]]; then
   status="${statuses[0]}"
   capture_status="${statuses[1]}"
   set -e
-  stamp "event=build_finished exit=$status capture_exit=$capture_status"
+  stamp "event=build_finished exit=$status capture_exit=$capture_status" || exit 1
   [[ "$status" -eq 0 ]] || exit "$status"
   [[ "$capture_status" -eq 0 ]] || exit "$capture_status"
-  plan
-  shasum -a 256 "$test_plan" > "$evidence/test-plan.sha256"
-  printf '%s\n%s\n%s\n' "$source_sha" "$simulator_id" "$test_plan" > "$evidence/prepared.identity"
-  stamp "event=prepared plan=$test_plan"
+  plan || exit 1
+  shasum -a 256 "$test_plan" > "$evidence/test-plan.sha256" || exit 1
+  printf '%s\n%s\n%s\n' "$source_sha" "$simulator_id" "$test_plan" > "$evidence/prepared.identity" || exit 1
+  stamp "event=prepared plan=$test_plan" || exit 1
   exit 0
 fi
 
@@ -98,7 +101,7 @@ run_lifecycle() {
 }
 
 if run_lifecycle 1; then
-  stamp "event=passed attempt=1"
+  stamp "event=passed attempt=1" || exit 1
   exit 0
 fi
 first_log="$evidence/lifecycle-attempt-1.log"
@@ -108,10 +111,10 @@ if [[ "$bootstrap_eligible" != true ]] \
   echo "iOS lifecycle failed outside the allowed pre-test simulator-bootstrap retry class" >&2
   exit 1
 fi
-stamp "event=bootstrap_retry"
+stamp "event=bootstrap_retry" || exit 1
 xcrun simctl shutdown "$simulator_id" || true
-xcrun simctl erase "$simulator_id"
-xcrun simctl boot "$simulator_id"
-xcrun simctl bootstatus "$simulator_id" -b
-run_lifecycle 2
-stamp "event=passed attempt=2"
+xcrun simctl erase "$simulator_id" || exit 1
+xcrun simctl boot "$simulator_id" || exit 1
+xcrun simctl bootstatus "$simulator_id" -b || exit 1
+run_lifecycle 2 || exit 1
+stamp "event=passed attempt=2" || exit 1

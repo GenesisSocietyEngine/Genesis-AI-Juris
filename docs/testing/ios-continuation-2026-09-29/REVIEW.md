@@ -60,3 +60,20 @@ YAML parsing had missed a GitHub Actions expression-context error: `runner.temp`
 Actionlint v1.7.12 reproduced the original definition error at line 16 and exited 1. The official Windows archive SHA-256 was checked against its release metadata (`6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9`). The correction moves the identical evidence path into the prepare, test and upload steps' supported `env` scopes. It changes no helper behavior, timeout or check. Initial failure history is preserved.
 
 The corrected workflow passes actionlint's GitHub Actions schema/expression validation (exit 0; optional ShellCheck/Pyflakes integrations disabled because this check targets the workflow context). GitHub acceptance of the new workflow and actual native execution remain pending; local validation is not substituted for either.
+
+## Hosted shell portability failure and correction
+
+GitHub accepted source `ca6ea0ca9c131221ca8266624e5788c253a17ce0` and started both iOS jobs. Both failed the orchestration self-test on the stale-preparation case:
+
+| Event | Run | Job | Self-test ended |
+| --- | --- | --- | --- |
+| Push | [36615125835](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36615125835) | 109566068006 | 18:54:47Z |
+| Pull request | [36615133042](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36615133042) | 109566091722 | 18:54:27Z |
+
+A second preparation was incorrectly allowed on an existing evidence directory. These jobs did not execute the Flutter app build, real test-bundle preparation or XCTest. Upload found no real lifecycle artifacts; the self-test failure remains in each job log.
+
+The observed behavior is consistent with Bash 3.2 applying `errexit` to simple commands, while `[[ ... ]]` is a compound command. Windows Bash 5.3.15 had exited at those bare guards. The correction makes failure exits explicit for all helper preconditions, preparation writes/plan/hash checks, timestamps and simulator recovery commands; it also makes stub argument checks explicit. It does not rely on an unproven inheritance explanation.
+
+The self-test now records its Bash version and runs immediately after checkout/source recording, before Rust/Flutter setup. All original 17 cases remain; three additional invalid phase/destination/traversal cases require rejection before preparation. The same real macOS gate must pass before native work proceeds. No assertion, export check, selected native test or deadline is weakened.
+
+Primary corrected-source checks: both scripts passed individual Bash syntax checks; actionlint passed the workflow; all 14 groups / 20 cases passed on Bash 5.3.15 (exit 0, 23.07s). These remain local orchestration checks, pending the next actual macOS run.

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+printf 'Orchestration shell: Bash %s\n' "$BASH_VERSION"
 repository="$(cd "$(dirname "$0")/../.." && pwd)"
 script="$repository/.github/scripts/run_ios_native_lifecycle.sh"
 sandbox="$(mktemp -d "${TMPDIR:-/tmp}/juris-ios-orchestration.XXXXXX")"
@@ -19,7 +20,7 @@ if ! command -v shasum >/dev/null 2>&1; then
   cat > "$sandbox/bin/shasum" <<'MOCK'
 #!/usr/bin/env bash
 set -euo pipefail
-[[ "$1" == -a && "$2" == 256 ]]
+[[ "$1" == -a && "$2" == 256 ]] || exit 2
 shift 2
 exec sha256sum "$@"
 MOCK
@@ -45,8 +46,8 @@ while [[ "$#" -gt 0 ]]; do
   esac
 done
 printf '%s|%s|%s|%s|%s\n' "$mode" "$plan" "$destination" "$selector" "$result" >> "$MOCK_ROOT/calls.log"
-[[ "$selector" == "RunnerTests/RunnerTests/testNativeLogisticsLifecycle" ]]
-[[ "$destination" == "platform=iOS Simulator,id=11111111-1111-1111-1111-111111111111" ]]
+[[ "$selector" == "RunnerTests/RunnerTests/testNativeLogisticsLifecycle" ]] || exit 2
+[[ "$destination" == "platform=iOS Simulator,id=11111111-1111-1111-1111-111111111111" ]] || exit 2
 mkdir -p "$result"
 if [[ "$mode" == build-for-testing ]]; then
   if [[ "${MOCK_MODE:-}" == build-failure ]]; then echo "Synthetic compiler failure"; exit 65; fi
@@ -56,7 +57,7 @@ if [[ "$mode" == build-for-testing ]]; then
   if [[ "${MOCK_MODE:-}" == ambiguous-plan ]]; then cp "$derived/Build/Products/Runner.xctestrun" "$derived/Build/Products/Other.xctestrun"; fi
   exit 0
 fi
-[[ "$mode" == test-without-building && -f "$plan" ]]
+[[ "$mode" == test-without-building && -f "$plan" ]] || exit 2
 attempts="$(grep -c '^test-without-building|' "$MOCK_ROOT/calls.log")"
 case "${MOCK_MODE:-pass}" in
   assertion) echo "Test case 'RunnerTests.testNativeLogisticsLifecycle()' failed"; exit 65 ;;
@@ -191,4 +192,15 @@ prepare; export MOCK_MODE=bootstrap; export MOCK_CAPTURE_FAILURE=stamp-attempt_f
 test "$(test_calls)" -eq 1
 test ! -s "$sandbox/simulator.log"
 passed "failed completion timestamp cannot authorize bootstrap retry"
-printf 'PASS 13 orchestration groups (%s isolated cases); no Xcode or simulator was used\n' "$count"
+for scenario in phase destination traversal; do
+  new_case
+  case "$scenario" in
+    phase) fails bash "$script" unknown "$device" "$evidence" ;;
+    destination) fails bash "$script" prepare invalid "$evidence" ;;
+    traversal) fails bash "$script" prepare "$device" "$evidence/../outside" ;;
+  esac
+  test ! -e "$evidence"
+  test ! -s "$sandbox/calls.log"
+done
+passed "invalid phase, simulator and traversal path stop before preparation"
+printf 'PASS 14 orchestration groups (%s isolated cases); no Xcode or simulator was used\n' "$count"

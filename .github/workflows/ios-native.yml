@@ -23,6 +23,10 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: echo "sha=$(git rev-parse HEAD) tree=$(git rev-parse HEAD^{tree})"
 
+      - name: Verify lifecycle orchestration failure handling
+        timeout-minutes: 2
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/test_ios_native_lifecycle.sh"
+
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.95.0
@@ -39,10 +43,6 @@ jobs:
           test "$(dart --version 2>&1 | sed -E 's/^Dart SDK version: ([0-9.]+).*/\1/')" = "3.12.2"
           flutter pub get --enforce-lockfile
           git diff --exit-code -- pubspec.lock
-
-      - name: Verify lifecycle orchestration failure handling
-        timeout-minutes: 2
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/test_ios_native_lifecycle.sh"
 
       - name: Build Runner and Rust static library for iOS Simulator
         timeout-minutes: 15
