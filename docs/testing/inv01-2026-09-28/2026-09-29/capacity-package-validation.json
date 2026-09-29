@@ -1,0 +1,15 @@
+{
+  "structural": [],
+  "compileIssues": [],
+  "compileWarnings": [],
+  "nodes": 10,
+  "links": 9,
+  "publication": {
+    "ok": false,
+    "status": 422,
+    "error": "Publishable case context must be deliberately reviewed by the author before publication."
+  },
+  "actuallyPublished": false,
+  "actualSimulationCompleted": false,
+  "actualSourceReviewRecorded": false
+}

@@ -1,0 +1,10 @@
+{
+  "genesis-juris-production-rollout": {
+    "migrationFilesPreserved": 46,
+    "migration0022Sha256": "dbc92b2762b5186b8a359869067cc11dd6a990dda2162ecab5f5728eb53f9628"
+  },
+  "genesis-juris-review-successor": {
+    "migrationFilesPreserved": 46,
+    "migration0022Sha256": "5a7d2c2ca5b724e5f29bf27660a45191fb68b6d676491a1af7414e55f2f3760a"
+  }
+}

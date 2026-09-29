@@ -1,0 +1,11 @@
+{
+    "observedAt":  "2026-09-27T21:05:23.6034729Z",
+    "status":  "HARNESS_ERROR",
+    "firstExecSession":  61846,
+    "error":  "Windows PowerShell NativeCommandError on ordinary Cargo compilation progress sent to stderr under ErrorActionPreference=Stop",
+    "testAssertionsReached":  "unconfirmed, no test completion receipt",
+    "buildFinishedAt":  "2026-09-27T21:04:33.628Z",
+    "activeOwnedFlutterOrGradleClientsBeforeRetry":  0,
+    "preservedLog":  "native-smoke.log",
+    "retry":  "Identical test and resource environment using Start-Process with separate raw stdout/stderr files; no tracked source changes"
+}

@@ -1,0 +1,10 @@
+{
+  "archive_bytes": 23005190,
+  "archive_sha256": "3fdf9fa9685c9677be62c89ca715af9f75a04e869f3b8308291baa4b7daa1e84",
+  "file_count": 370,
+  "migration_files_identical_to_v89": 44,
+  "video_paths": [
+    "dist/client/help/juris-training-10min.en.mp4"
+  ],
+  "source": "1e150dbec617e65a4e07d437cbc02b277c2efac1"
+}

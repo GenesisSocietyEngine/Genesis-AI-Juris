@@ -1,0 +1,35 @@
+{
+    "recordedAt":  "2026-09-27T23:51:24.2355659Z",
+    "scope":  "Ignored cleanup script hardening and read-only preparation only; no emulator shutdown",
+    "change":  "Native Handle is retained before fallback StartTime/Path validation and Stop-Process; the same Process object is disposed in finally.",
+    "parserErrors":  0,
+    "dryRunStatus":  "READY_NOT_EXECUTED",
+    "executed":  false,
+    "originalAvdConfigUnchanged":  true,
+    "originalAvdMetadataUnchanged":  true,
+    "originalAvdMetadataCount":  18661,
+    "mobileExactAndClean":  true,
+    "terminationBranchExecution":  "NOT_RUN; reviewed source only. Root must explicitly confirm final gate completion before future execution.",
+    "files":  [
+                  {
+                      "path":  ".artifacts/amendment-android-native/cleanup-owned-emulator.ps1",
+                      "sha256":  "6ec23539a69f8074a2841fc3a7ec32d68e6407bb908ab187d8006fff6350f631",
+                      "bytes":  14442
+                  },
+                  {
+                      "path":  ".artifacts/amendment-android-native/cleanup-before-handle-pinning.ps1.source.txt",
+                      "sha256":  "2efb2390e401af6ebf7fddc6b5e274311e5a85a2bed793388d2a70ea4c68d415",
+                      "bytes":  14123
+                  },
+                  {
+                      "path":  ".artifacts/amendment-android-native/cleanup-handle-pinning-review.txt",
+                      "sha256":  "cb69a287f141918379821af829c3c6c15f69c50b901d5e5111c849970d7b51f3",
+                      "bytes":  1187
+                  },
+                  {
+                      "path":  ".artifacts/amendment-android-native/cleanup-preparation_only-20260927T235106735Z.json",
+                      "sha256":  "85e21f8ef743bb37cb413950e22d9a3bc53168619954198e67021fff7bb30060",
+                      "bytes":  4416
+                  }
+              ]
+}

@@ -1,0 +1,34 @@
+✔ Administration: authenticated password login cannot silently switch the effective identity (6345.536405ms)
+✔ Administration: password sign-in still works after explicit local sign-out (585.980121ms)
+✔ Administration: invitations respect existing membership and restoration with durable audit (1516.528734ms)
+✔ P1 ERP 1: create, reopen, filter and page a dossier in exactly one organization (721.111887ms)
+✔ P1 ERP 2: immutable source versions retain their hashes and private downloads (2667.885571ms)
+✔ P1 ERP 4: invitations are identity-bound, single-use, and confer no dossier role (1610.977005ms)
+✔ P1 ERP 3: source anchors and assertions require explicit review before linking the ERP decision package (3741.465259ms)
+✔ P1 ERP 5: snapshot-bound PDF and JSON export, independent approval, reopen, and staleness (3510.820473ms)
+✔ Dependable actions: historical disposition and citation retirement persist with exact audit, denial, replay and conflicts (6333.12025ms)
+✔ Phase 2: fresh schema and v86 upgrade preserve governed data and sealed bytes (631.263819ms)
+▶ Phase 2: working notes persist, replay, conflict and preserve governed outputs
+  ✔ invalid operation whitespace and opaque cursor are deterministic caller errors (232.67847ms)
+  ✔ save, independent reload and lost-response replay retain immutable original revision (846.99069ms)
+  ✔ concurrent same-revision saves have one winner and current comparison for loser (369.185398ms)
+  ✔ link exact historical source, avoid duplicates, permission-filter backlinks and safely unlink (3851.328075ms)
+  ✔ unauthorized readers/writers and late case role removal cannot save or recover confidential data (1493.316987ms)
+  ✔ immutable content and reciprocal association application reject incomplete history (341.48072ms)
+✔ Phase 2: working notes persist, replay, conflict and preserve governed outputs (8433.257791ms)
+﹣ Migration rehearsal: exact v91 operates on C1 schema without discarding new note records (0.258552ms) # SKIP
+﹣ Migration rehearsal: request operation SQL guards bind one immutable receipt to the actual legacy audit (0.073519ms) # SKIP
+﹣ Migration rehearsal: current B1 writes and historical receipt recovery work after C1 and v91 writes (0.052458ms) # SKIP
+✔ P1: every dossier route denies a foreign organization before reads or side effects (2728.001441ms)
+✔ P1: revocation during an R2 read prevents delivery of private bytes (380.943425ms)
+✔ P1: revocation during upload aborts metadata, revision and success receipts (1857.997746ms)
+✔ P1: independent lifecycle approval invalidates contexts and outstanding invitations (1190.88592ms)
+✔ P1: selection, cursor, CSRF and unavailable compliance features fail closed (430.129275ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 3
+ℹ todo 0
+ℹ duration_ms 44333.595256

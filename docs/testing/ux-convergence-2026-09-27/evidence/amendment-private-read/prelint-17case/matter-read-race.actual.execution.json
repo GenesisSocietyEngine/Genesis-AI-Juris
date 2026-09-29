@@ -1,0 +1,14 @@
+{
+    "startedAt":  "2026-09-27T21:40:07.8194710Z",
+    "completedAt":  "2026-09-27T21:40:11.8844956Z",
+    "command":  "node --import tsx --test tests/dossier-read-access.test.ts",
+    "node":  "v22.23.2",
+    "exitCode":  0,
+    "sourceMode":  "ACTUAL_APPLIED_SOURCE",
+    "testPath":  "tests/dossier-read-access.test.ts",
+    "testSha256":  "33ad605555018437b8fcb76025c5614947c7bb7539a367bba96992a59c4031f4",
+    "sourceApplicationReceipt":  "matter-read-fence/applied.receipt.json",
+    "stdoutSha256":  "546b5181b02beb859d7b08bc80ebfcddebed0b2ec88f42504cefd9bdad70808f",
+    "stderrBytes":  0,
+    "currentSourceReceiptSha256":  "5f859239c16493b7ec2501cea43ea134f05a703388b06f8b5fd2672aa150f90b"
+}

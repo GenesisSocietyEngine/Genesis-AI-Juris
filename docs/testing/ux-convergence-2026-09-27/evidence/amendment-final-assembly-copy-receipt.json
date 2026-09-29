@@ -1,0 +1,42 @@
+{
+  "archivedAt": "2026-09-28T01:10:44.070Z",
+  "scope": "Actual successful final report assembly with retained source-only reviews and the separate read-only cleanup review. No new runtime or acceptance claims.",
+  "files": [
+    {
+      "source": ".artifacts/ux-reconciliation-auth/assemble-final-status-complete.mjs",
+      "destination": "evidence/amendment-final/report-review/final-assembler.mjs.source.txt",
+      "sha256": "f27d31db3da7ff6e0cb20d53d1396a5ae5ac0837f8789da77851dc0239f2bd4d",
+      "bytes": 37868
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/FINAL_ASSEMBLY_WORDING_CORRECTION.md",
+      "destination": "evidence/amendment-final/report-review/wording-correction.md",
+      "bytes": 1487,
+      "sha256": "2731393507ffa9cb02059fc43afff31f5bcc066e6c0574662029311e6a7da8db"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/FINAL_ASSEMBLY_PHRASE_DELTA_REVIEW.md",
+      "destination": "evidence/amendment-final/report-review/wording-independent-review.md",
+      "bytes": 1226,
+      "sha256": "c1500de655d2638c0c2474d30fbb8f35f036c295763a5a5de5483d7673bdb6e2"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/cleanup-readonly-finalization-independent-review.md",
+      "destination": "evidence/amendment-final/native-cleanup/readonly-finalization-independent-review.md",
+      "sha256": "1196b3d69596caa840df406993837023eacf20eb1f6b8758f67fc5bc79ffe7d3",
+      "bytes": 4026
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/final-status-20260928T0109/ASSEMBLY_RECEIPT.json",
+      "destination": "evidence/amendment-final/report-review/assembly-receipt.json",
+      "bytes": 3560,
+      "sha256": "af5599d6e3049ae3aaacc4d5c048a41078178ef33d655ec5f27243075c53489a"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/verify-amendment-docs.mjs",
+      "destination": "evidence/amendment-final/report-review/verify-documents.mjs.source.txt",
+      "bytes": 2152,
+      "sha256": "768c2a7fa9b67f4f83156eeae9ee29c5af936f0b3742133912dd8223019ca153"
+    }
+  ]
+}

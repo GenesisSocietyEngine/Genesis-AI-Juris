@@ -1,0 +1,150 @@
+{
+  "format": "genesis-juris-mobile-parity-lock",
+  "lockVersion": 3,
+  "mobile": {
+    "repository": "https://github.com/GenesisSocietyEngine/Genesis-AI-Juris.git",
+    "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+    "appVersion": "0.11.0+18",
+    "rustWorkspaceVersion": "0.5.0"
+  },
+  "bundle": {
+    "webPath": "app/canonical-case-bundle.json",
+    "mobilePath": "apps/juris-mobile/assets/case_catalog/mobile_case_bundle.json",
+    "bundleVersion": 5,
+    "catalogVersion": 1,
+    "sha256": "18144245b2eb11345a96d86a18ead0804ceef7d26aa3492ad67c6924ebbbe012",
+    "mobileGitBlob": "435813920cee88308ca58989a3735502efff2815"
+  },
+  "caseTypes": {
+    "webPath": "app/case-type-registry.v1.json",
+    "mobilePath": "contracts/case-type-registry.v1.json",
+    "schemaVersion": 1,
+    "registry": "genesis-juris-case-types",
+    "sha256": "1c3a21adeb41c55d2a2ebf240f2189706c557e2e997e2451fcd796e0abc3fe2f",
+    "mobileGitBlob": "6fcf5b3987cad7e459f9bf302b0ab9a8c4abd87b"
+  },
+  "playbooks": {
+    "webPath": "app/case-type-playbooks.v1.json",
+    "mobilePath": "contracts/case-type-playbooks.v1.json",
+    "schemaVersion": 1,
+    "registry": "genesis-juris-case-playbooks",
+    "sha256": "9e20cd9e26c8b541df717f3d48b232f18f3a765106f567e3d80076cf52c88af9",
+    "mobileGitBlob": "4b0e0b9ab6b4e096734061da5171cd81dbe2191a"
+  },
+  "contracts": {
+    "scenarioSchemaRevision": "1.0",
+    "runtimeAdapter": "rust_scenario_v1",
+    "webRuntimeRevision": "canonical-runtime-v1",
+    "playedCaseSchemaRevision": 3,
+    "mobileSaveSchemaId": "genesis.ai-juris.command-log",
+    "mobileSaveSchemaRevision": 1,
+    "mobileRuntimeCompatibility": "scenario-runtime-v2",
+    "mobileSnapshotSchemaRevision": 1,
+    "mobileProjectionSchemaRevision": 1,
+    "mobileBridgeAbi": 1
+  },
+  "identities": [
+    {
+      "caseId": "be_commercial_failed_erp_001",
+      "version": "1.0.0",
+      "fingerprint": "ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8",
+      "schemaRevision": "1.0"
+    },
+    {
+      "caseId": "be_commercial_logistics_001",
+      "version": "1.0.0",
+      "fingerprint": "1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8",
+      "schemaRevision": "1.0"
+    },
+    {
+      "caseId": "greenfire_first_72_hours",
+      "version": "0.2.0",
+      "fingerprint": "173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438",
+      "schemaRevision": "1.0"
+    },
+    {
+      "caseId": "nl_food_safety_goldenshell_001",
+      "version": "0.1.0",
+      "fingerprint": "7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4",
+      "schemaRevision": "1.0"
+    },
+    {
+      "caseId": "us_environmental_desert_water_001",
+      "version": "0.1.0",
+      "fingerprint": "636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af",
+      "schemaRevision": "1.0"
+    }
+  ],
+  "fixtures": {
+    "path": "parity/mobile-parity-fixtures.json",
+    "schemaVersion": 2,
+    "sha256": "a2bfc44aea172350a7f307990929d017c8f953765d2f02b93d580f5fb6137bd7",
+    "probePath": "scripts/mobile-parity-probe.rs",
+    "probeSha256": "322a2e3b9d4e730a14ef05cdc974c67fcdb9d8a493773c6a9f0c2a57f94c57ec",
+    "routeCount": 18,
+    "checkpointCount": 290,
+    "judicialResultCheckpoints": 45,
+    "routeHashes": {
+      "failed-erp-settlement": "0a41290d73850ab5c29dd8b0f6ac7b3d0012ee62e30e3319f4d3bcd38168ea87",
+      "failed-erp-prepared": "e512d8924768b53a90a013916ebf0652a6f4be3a3173355a0db7b6c6ddc48980",
+      "logistics-judgment": "3b6222509ebc37efd85294d493727ee10879a7229eb4efee7c7295d5d001eaf9",
+      "greenfire-protected": "49fb7c756e39ff6d064e7e5a9210b913b21491e5355f58c12708e4a0397f3278",
+      "greenfire-compromised": "00c0a5e0f6e6e6e6f3ccc389eacf7c1f398e5e078b63472c47b1d96fb98de40e",
+      "goldenshell-coordinated": "cf9b0651fd127f983861eff7f582c2a12c09c67d33a3a598f2f46ad1ca01c6d6",
+      "goldenshell-fragmented": "dc4043b5b42087a57efcf7ddb180e4f69901fc07ddb126bcde0349ed18c4c3f9",
+      "desert-water-coordinated": "d0a4d8dc3d9daec06a68ea2ce97b6487103dca3f4e45b9313b96ed667841f300",
+      "desert-water-compromised": "66286a5f427937972c2cf1409cb1d89a4fcb347606199051ee08ee6152e85b06",
+      "failed-erp-inactivity-termination": "9ee11550c4379e5545896f0f3569b9b8c0d51aa5d9ec19e6fab57fc9bc2ab5ab",
+      "failed-erp-procedural-default": "d3cd6775424f9856b749d0429c44d04e7c2fe5cee1611693464c4b1ee0882d17",
+      "failed-erp-first-instance-final": "9b2b651c2a186bfc09365078ae040ea3f524fd3d284d72a838f99fdb6348aa69",
+      "failed-erp-mixed-accepted": "54550a22948455536b9fb1ccbb690c233ab066b5196fecf6c2c09de68745346d",
+      "failed-erp-appeal-win": "9133b4f13b757f022cb92c3c075a76737ac760915f2ee36dda152e4d7472abfe",
+      "failed-erp-appeal-loss": "a6af22bc336efcbde5f36ecbedd71d90aceab5864f21b469f26a7a0ee8a4767e",
+      "failed-erp-cassation-dismissed": "d0d2c562ccc907d191925e680deefe2ecacccade7289a053f694143335ed8ffa",
+      "failed-erp-remitted-rehearing": "e8c5a99425488801729a082dec5c5330df42f9f607939adb7fca0873b3f66073",
+      "logistics-negotiated": "ea7f83196d738a2a010c1e672dc650eacbff787b31a1b2ebf60a56ef09310fdd"
+    },
+    "mobileSaveDigests": {
+      "failed-erp-settlement": "fd77a45422e4abd7f141fc7b1db767524ebf48d9674bd25c21354fb7a2b8c029",
+      "failed-erp-prepared": "f25604fc0225d7ac5a7e98d192ce3b82114970158a3662aee7575b128430ca0c",
+      "logistics-judgment": "c5eff235021441ef6add943d6126a5f064411a3c1f16b681489fbbf4d05993f2",
+      "greenfire-protected": "8bb31d17cb2a5d50edff28fc00c6b2bb863da4edc1ea0811abaccbefb3aaab56",
+      "greenfire-compromised": "0c747d32d34b7d33d3d43efc7b226c5966567dd3453d00c7751f416177ae7cd7",
+      "goldenshell-coordinated": "ed4461cbf6eda809aca8f3442a3d2f3085738f0ddec8d101b5cfc7a0b30c07db",
+      "goldenshell-fragmented": "9596d226b3c1b506b33790faf5998408d16f136e1facd815c87848dad2856152",
+      "desert-water-coordinated": "c05cc31484ecbf4b3cec7de9775ebe0de05494b4e8e99effa400f0f71fdeb145",
+      "desert-water-compromised": "94fb0b50c8a79b7c0c929528620724f0f94075b32bfb9f1822bc80b7c7a57a33",
+      "failed-erp-inactivity-termination": "490449305eb5a56c7c389169e6a5ba64b8e64f00b50af3ef03e2fd7bf317e586",
+      "failed-erp-procedural-default": "f30e1b6c646d31975c92f85d1c3bada8208cb640389736c8d3a935ff3d3dc88c",
+      "failed-erp-first-instance-final": "a03605b49fc9d89dd5b03b8c9c4dfb34cea87678ee1aa21851b1e842cdb00a00",
+      "failed-erp-mixed-accepted": "83b19f2f06ae7cb0b1e14b83e63dda83285db2442a882e52da4a528b3a146530",
+      "failed-erp-appeal-win": "adbd82c8122da4395a1747b195e6e70398ce5625e8157fb7cb37e88cf7e999bb",
+      "failed-erp-appeal-loss": "fbb4338c3f704bbfc5b14ee0bd54b40cffeb77ab30caedbebc4748b3853045d6",
+      "failed-erp-cassation-dismissed": "ea7389e1e5e0b4d4ceb03385ebf34a18de809521ca9abe1ef42dcaf0527eb318",
+      "failed-erp-remitted-rehearing": "268f27867fd1f45a417c0e999819165bd79f76a74f3ab2e65ee075e193cbc34a",
+      "logistics-negotiated": "82702ca85ace17d4b3b6e06366fcd2d32c3929a8b0108130585e48ae3cf79111"
+    }
+  },
+  "hostedEvidence": {
+    "rust": {
+      "run": 33536571536,
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+      "conclusion": "success"
+    },
+    "flutter": {
+      "run": 33536571515,
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+      "conclusion": "success"
+    },
+    "android": {
+      "run": 33536571436,
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+      "conclusion": "success"
+    },
+    "ios": {
+      "run": 33536571586,
+      "commit": "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+      "conclusion": "success"
+    }
+  }
+}

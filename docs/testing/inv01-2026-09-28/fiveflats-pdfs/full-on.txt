@@ -1,0 +1,1484 @@
+GENESIS: JURIS CODEX
+
+
+
+TA X P O S IT I O N M E M O R A N D U M
+
+
+
+
+Five Flats, Three Borders - rent 146,000
+GBP - LOCAL WORKING COPY
+Publishable case context has not been author-reviewed; raw intake text is excluded.
+
+
+
+P R E PA R E D F O R                                                     P R E PA R E D B Y
+
+Not specified                                                            Not specified
+
+M AT T E R R E F E R E N C E                                             R E P O R T S TAT U S
+
+-                                                                        DRAFT - preliminary analysis
+                                                                         Workspace-saved version
+
+
+
+
+Classification: DRAFT
+
+
+
+Professional-use notice
+This report is generated from the Studio graph. It is a structured working product, not a substitute for jurisdiction-specific legal,
+tax, financial or regulatory advice. Validate facts, authorities, assumptions and calculations before reliance or circulation.
+
+Studio review information does not establish independent workflow approval. Recorded runs and independently approved outputs are available
+through the case workflow.
+
+
+
+
+Generated: 28 September 2026 at 05:12 UTC
+
+
+
+
+    DRAFT                                                                                                                              1 / 22
+ GENESIS: JURIS CODEX                                                              five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+
+
+
+1. Decision brief
+DRAFT - preliminary analysis
+
+
+ Review question                      Case model summary
+
+ Objective                            The client seeks advice on acquiring five English flats and prefers a Liechtenstein fund
+                                      while demanding an undefined 10% annual return.
+
+ Recorded inputs                      Five-flat acquisition and amortizing debt profile: Price is £1,000,000 with £800,000 debt,
+                                      £200,000 deposit, 7.5% rate, 120-month amortization, £146,000 corrected annual gross rent
+                                      (owner-provided [extract]
+                                      Annual rental income: Annual gross rental income: £146,000 per year. Source status:
+                                      Owner-revised assumption. Expenses under the 25% rule: 25% × £146,000 = £36,500 per
+                                      [extract]
+                                      + 1 more in the case.
+
+ Decision criteria                    Set the scope of the engagement
+                                      Define the 10% return metric
+                                      Obtain residence, UBO, wealth and funds evidence
+                                      Commission asset, rent, title and lender diligence
+                                      Decide whether to reserve the property
+                                      Obtain coordinated UK, PRC and Liechtenstein opinions
+                                      Accept or reject the proposed funding route
+                                      Compare ownership and financing routes
+                                      Test the Liechtenstein AIF evidence package
+                                      + 3 more in the case.
+
+ Possible outcomes                    Proportionate, evidenced and financially reconciled route
+                                      Timely stop or renegotiation protects the client
+                                      Lawful but uneconomic or materially defective execution
+
+ Conclusion and basis                 This PDF describes the case model. It does not establish a selected outcome or prove that
+                                      a run was completed. Check each branch's full conditions in the case before recommending
+                                      an outcome.
+
+ Assumptions                          Initial deposit is £200,000.
+                                      The acquisition-cost input is 7% of the £1,000,000 price and is provisional rather than a
+                                      calculated SDLT amount.
+                                      Further assumptions are in the economics appendix.
+
+ Sources and limits                   1 public HTTPS source(s); 1 evidence record(s). Individual fact-verification status is not
+                                      recorded in this Studio model. Source references within records also require checking.
+
+ Next actions                         Verify inputs and assumptions against sources; run the relevant scenarios; document the
+                                      chosen outcome and its conditions; obtain independent approval through the case
+                                      workflow.
+
+
+Selected records and labelled extracts are shown above. The complete graph appendix retains all visible node and connection text. Text supplied
+in the case keeps its original language.
+
+
+
+
+ DRAFT                                                                                                                                    2 / 22
+ GENESIS: JURIS CODEX                                                  five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+
+
+
+2. Case overview
+
+ Field                                         Value
+
+ Case ID / version                             five_flats_three_borders_rent146000_working_20260923 / v1.0.0
+
+ Jurisdiction                                  England and Wales; People's Republic of China; Liechtenstein
+
+ Professional role                             Lead cross-border adviser coordinating UK, PRC and Liechtenstein
+                                               specialists
+
+ Practice area                                 Tax planning
+
+ Difficulty                                    Intermediate
+
+ Legal / guidance as of                        2026-10-31
+
+ Tags                                          cross-border, England residential property, PRC resident investor,
+                                               Liechtenstein AIF, UK property SPV, residential letting, financing, AML and
+                                               UBO, transaction structuring
+
+ Tax topics                                    SDLT purchaser and residence analysis, UK property income taxation,
+                                               corporate finance-cost treatment, non-resident landlord obligations, ATED
+                                               relief and return distinction, VAT-exempt residential rent, UK disposal and
+                                               inheritance tax exposure, UK–China treaty and foreign tax credits, PRC
+                                               worldwide income and gains, PRC outbound-funds compliance, tax
+                                               transparency and treaty entitlement, PPT and anti-avoidance, ROE and
+                                               beneficial ownership filings
+
+ Case package                                  tax_planning@1.0.0
+
+ Report profile / renderer                     tax_position_memorandum@1.0.0
+
+ Graph layout contract                         1 · 1.1.0 · 2.1.0
+
+ Report state                                  DRAFT · INTERNAL
+
+
+Executive case context
+Publishable case context has not been author-reviewed; raw intake text is excluded.
+
+Model inventory
+
+ Measure                                                                                        Count
+
+ Nodes                                                                                          23
+
+ Connections                                                                                    36
+
+ Evidence items                                                                                 1
+
+ Decisions                                                                                      12
+
+ Outcomes                                                                                       3
+
+ Public HTTPS sources                                                                           1
+
+
+ DRAFT                                                                                                                        3 / 22
+ GENESIS: JURIS CODEX                                                                    five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+Type-aware report scope
+executive summary · facts evidence · authorities · economics · options · tax position · sources · approval
+Canonical report-model fingerprint: sha256-b00889b3a884618ca13b79d2ca7b88a5c25cbdb7a5c0fd8dc0600aceda349457
+
+Presentation layout fingerprint: sha256-5197ff1ab03dc6ea955e39fdae0e3c228810cd9e929e2111d1d68583c01386d5
+
+
+
+
+3. Profile-specific analysis
+
+  Facts and evidence
+
+  Item                                                  Professional record
+
+  Five-flat acquisition and amortizing debt             Price is £1,000,000 with £800,000 debt, £200,000 deposit, 7.5% rate, 120-
+  profile                                               month amortization, £146,000 corrected annual gross rent (owner-provided
+                                                        input; independent evidence pending), and a 1.25x lender DSCR threshold. The
+                                                        broker's separate £150,000 claim is unsupported. Owner-revised expenses
+                                                        under the 25% rule: 25% × £146,000 = £36,500 per year. Rent after these
+                                                        expenses, before financing and other costs: £146,000 − £36,500 = £109,500
+                                                        per year.
+
+  Client KYC profile                                    Client should provide a completed KYC questionnaire
+
+
+
+
+  Authorities
+
+  Item                                                  Professional record
+
+  Three-country legal and tax gates require             Purchaser-specific UK tax and filings, PRC worldwide tax and lawful outbound
+  verification                                          funding, and Liechtenstein AIF eligibility, regulation, substance, transparency,
+                                                        treaty, and distribution treatment must be documented. Formation alone
+                                                        creates no treaty access.
+
+
+
+
+  Options
+
+  Item                                                  Professional record
+
+  Set the scope of the engagement                       Choose whether to test the requested fund against lawful alternatives or
+                                                        initially limit work to the requested structure, subject to professional
+                                                        independence.
+
+  Define the 10% return metric                          Require a named metric and present gross yield, NOI yield, after-tax cash-on-
+                                                        cash return, and 10-year after-tax equity IRR separately.
+
+  Obtain residence, UBO, wealth and funds               Decide whether the file supports lawful ownership and funding or whether
+  evidence                                              advice must pause pending satisfactory evidence.
+
+  Commission asset, rent, title and lender              Test title, five-dwelling status, licensing and landlord obligations, achievable
+  diligence                                             rent, operating costs, amortization, security, and borrower conditions.
+
+  Decide whether to reserve the property                Choose whether to reserve conditionally, renegotiate timing or economics, or
+                                                        avoid commitment while material evidence remains outstanding.
+
+
+
+
+ DRAFT                                                                                                                                          4 / 22
+GENESIS: JURIS CODEX                                                    five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+
+
+Options
+
+Item                                        Professional record
+
+Obtain coordinated UK, PRC and              Commission current, source-supported advice addressing tax, filings,
+Liechtenstein opinions                      outbound funds, AIF availability, transparency, treaty access, substance,
+                                            leverage, and distributions.
+
+Accept or reject the proposed funding       Proceed only with documented wealth and a lawful bank or SAFE-compliant
+route                                       route; unresolved or misdescribed funds require a pause or refusal.
+
+Compare ownership and financing             Compare direct individual ownership, a UK property SPV, an available
+routes                                      Liechtenstein AIF, and an AIF holding a UK SPV, together with stopping or
+                                            renegotiating.
+
+Test the Liechtenstein AIF evidence         Require an FMA-authorised AIFM letter covering eligibility, approval, providers,
+package                                     leverage, legal form, substance, AML, UBO, CRS, tax transparency, treaty and
+                                            PPT analysis, lender security, PRC distributions, timing, and complete fees.
+
+Complete purchaser-specific tax and         Calculate SDLT only after purchaser, title, residence, and relief facts are known.
+cash-flow modeling                          Reconcile NOI, amortizing debt, DSCR, country taxes, distributions, full initial
+                                            equity, returns, break-even points, exit, FX, and fund payback.
+
+Recommend, renegotiate, condition or        Set conditions for KYC, lawful funds, lender approval, regulatory feasibility, tax
+decline execution                           filings, transaction documents, and a reconciled base, downside and
+                                            evidenced-upside model.
+
+Review year-one results and compliance      Compare actual rent, vacancy, repairs, DSCR, loan balance, taxes, ATED return
+                                            position, distributions, fees, and FX against the approved model and covenant
+                                            conditions.
+
+Proportionate, evidenced and financially    The chosen route is supported by lawful funds, purchaser-specific tax analysis,
+reconciled route                            lender approval, full-cost return metrics, complete filings, and evidence
+                                            appropriate to its complexity. This may be a simple route rather than a fund.
+
+Timely stop or renegotiation protects the   The adviser pauses, renegotiates, or declines because evidence, funding,
+client                                      financing, economics, timing, or legal feasibility is unresolved. The decision
+                                            preserves compliance and avoids unsupported execution.
+
+Lawful but uneconomic or materially         The route suffers a financing or DSCR mismatch, unsupported treaty position,
+defective execution                         purchaser-tax error, compliance failure, excessive fund costs, trapped
+                                            distributions, or operational underperformance. Concealed ownership or
+                                            unlawful funding is a failure condition.
+
+
+
+
+Tax position
+
+Item                                        Professional record
+
+Three-country legal and tax gates require   Purchaser-specific UK tax and filings, PRC worldwide tax and lawful outbound
+verification                                funding, and Liechtenstein AIF eligibility, regulation, substance, transparency,
+                                            treaty, and distribution treatment must be documented. Formation alone
+                                            creates no treaty access.
+
+
+
+
+DRAFT                                                                                                                          5 / 22
+GENESIS: JURIS CODEX                                                    five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+
+
+Tax position
+
+Item                                        Professional record
+
+Set the scope of the engagement             Choose whether to test the requested fund against lawful alternatives or
+                                            initially limit work to the requested structure, subject to professional
+                                            independence.
+
+Define the 10% return metric                Require a named metric and present gross yield, NOI yield, after-tax cash-on-
+                                            cash return, and 10-year after-tax equity IRR separately.
+
+Obtain residence, UBO, wealth and funds     Decide whether the file supports lawful ownership and funding or whether
+evidence                                    advice must pause pending satisfactory evidence.
+
+Commission asset, rent, title and lender    Test title, five-dwelling status, licensing and landlord obligations, achievable
+diligence                                   rent, operating costs, amortization, security, and borrower conditions.
+
+Decide whether to reserve the property      Choose whether to reserve conditionally, renegotiate timing or economics, or
+                                            avoid commitment while material evidence remains outstanding.
+
+Obtain coordinated UK, PRC and              Commission current, source-supported advice addressing tax, filings,
+Liechtenstein opinions                      outbound funds, AIF availability, transparency, treaty access, substance,
+                                            leverage, and distributions.
+
+Accept or reject the proposed funding       Proceed only with documented wealth and a lawful bank or SAFE-compliant
+route                                       route; unresolved or misdescribed funds require a pause or refusal.
+
+Compare ownership and financing             Compare direct individual ownership, a UK property SPV, an available
+routes                                      Liechtenstein AIF, and an AIF holding a UK SPV, together with stopping or
+                                            renegotiating.
+
+Test the Liechtenstein AIF evidence         Require an FMA-authorised AIFM letter covering eligibility, approval, providers,
+package                                     leverage, legal form, substance, AML, UBO, CRS, tax transparency, treaty and
+                                            PPT analysis, lender security, PRC distributions, timing, and complete fees.
+
+Complete purchaser-specific tax and         Calculate SDLT only after purchaser, title, residence, and relief facts are known.
+cash-flow modeling                          Reconcile NOI, amortizing debt, DSCR, country taxes, distributions, full initial
+                                            equity, returns, break-even points, exit, FX, and fund payback.
+
+Recommend, renegotiate, condition or        Set conditions for KYC, lawful funds, lender approval, regulatory feasibility, tax
+decline execution                           filings, transaction documents, and a reconciled base, downside and
+                                            evidenced-upside model.
+
+Review year-one results and compliance      Compare actual rent, vacancy, repairs, DSCR, loan balance, taxes, ATED return
+                                            position, distributions, fees, and FX against the approved model and covenant
+                                            conditions.
+
+Proportionate, evidenced and financially    The chosen route is supported by lawful funds, purchaser-specific tax analysis,
+reconciled route                            lender approval, full-cost return metrics, complete filings, and evidence
+                                            appropriate to its complexity. This may be a simple route rather than a fund.
+
+Timely stop or renegotiation protects the   The adviser pauses, renegotiates, or declines because evidence, funding,
+client                                      financing, economics, timing, or legal feasibility is unresolved. The decision
+                                            preserves compliance and avoids unsupported execution.
+
+
+
+
+DRAFT                                                                                                                          6 / 22
+ GENESIS: JURIS CODEX                                                                five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+
+
+  Tax position
+
+  Item                                               Professional record
+
+  Lawful but uneconomic or materially                The route suffers a financing or DSCR mismatch, unsupported treaty position,
+  defective execution                                purchaser-tax error, compliance failure, excessive fund costs, trapped
+                                                     distributions, or operational underperformance. Concealed ownership or
+                                                     unlawful funding is a failure condition.
+
+
+
+
+4. Economics and scenario analysis
+
+Investment and cash-flow analysis
+
+  Input                                                                                      Value
+
+  Purchase price                                                                             £1,000,000
+
+  LTV                                                                                        80.0%
+
+  Interest rate                                                                              7.5%
+
+  Term                                                                                       120 months
+
+  Gross annual income                                                                        £146,000
+
+  Known operating costs                                                                      £36,500
+
+  One-off structure cost                                                                     £15,000
+
+  Annual structure cost                                                                      £10,000
+
+  Target cash-on-cash return                                                                 10.0%
+
+
+
+  Repayment basis                  Debt service                  Annual cash flow                    CoC                     DSCR
+
+  Amortizing                       £113,954                      -£14,454                            -5.1%                   0.87x
+
+
+These are deterministic calculations from supplied assumptions, not probabilities or a forecast. Currency effects, exit costs, tax and unpriced
+costs are excluded. Use the Decision report for explicit income sensitivities.
+
+
+    Initial deposit is £200,000.
+    The acquisition-cost input is 7% of the £1,000,000 price and is provisional rather than a calculated SDLT amount.
+    Owner-revised annual gross rent: £146,000. Expenses: 25% × £146,000 = £36,500/year. Rent after these expenses: £109,500/year
+    before financing and other costs. After £10,000 structure cost and £113,953.70 amortizing debt service, cash flow is −£14,453.70/year
+    before tax and unknown costs. Independent evidence and outcome approval are pending.
+    Known initial cash is at least £285,000 before currently unpriced professional, lender, valuation, registration, and reserve costs.
+    Scheduled amortizing debt service uses the supplied control of £9,496.14 monthly and £113,953.70 annually, subject to confirmation.
+    The lender's minimum DSCR is 1.25x, calculated as NOI divided by scheduled debt service.
+    Interest-only debt service of £60,000 annually plus an £800,000 balloon remains a comparison control, not the selected repayment
+    basis.
+
+
+The following figures are an arithmetic scenario only. Rate sources, taxable base, deductibility and eligibility are not established by
+this model. Do not treat the amounts as verified savings or offset them against a financing shortfall.
+
+ DRAFT                                                                                                                                       7 / 22
+ GENESIS: JURIS CODEX                                                                five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+Unverified tax scenario — not a tax recommendation
+
+ Metric                                                                                      Result
+
+ Annual taxable base                                                                         £49,500
+
+ Baseline / optimized tax rates                                                              35.0% / 5.0%
+
+ Derived baseline / optimized tax                                                            £17,325 / £2,475
+
+ Gross annual tax saving                                                                     £14,850
+
+ Recognized annual saving                                                                    £12,623
+
+ Annualized implementation                                                                   £5,000
+
+ Annualized net benefit                                                                      -£2,378
+
+ Simple payback                                                                              68.6 months
+
+ Lifecycle ROI                                                                               -45.9%
+
+ NPV                                                                                         -£27,843
+
+
+Assumptions: Tax base is prefilled as gross annual rent less rental-property expenses less annual loan-interest expense. Verify every case input
+and tax rate before relying on the estimate.
+Tax-rate sources: baseline=unset; optimized=unset.
+
+
+
+
+ 5. Scenario and decision map
+
+ Type                        Issue / step                                                  Leads to
+
+ Trigger                     Client requests a five-flat cross-border structure            PRC-resident, non-UK-resident client
+
+ Actor                       PRC-resident, non-UK-resident client                          Five-flat acquisition and amortizing debt
+                                                                                           profile; UK real estate object
+
+ Fact                        Five-flat acquisition and amortizing debt profile             Transaction and review milestones; Client
+                                                                                           KYC profile
+
+ Deadline                    Transaction and review milestones                             Three-country legal and tax gates require
+                                                                                           verification
+
+ Tax rule                    Three-country legal and tax gates require                     Set the scope of the engagement
+                             verification
+
+ Decision                    Set the scope of the engagement                               Define the 10% return metric; Obtain
+                                                                                           residence, UBO, wealth and funds evidence
+
+ Decision                    Define the 10% return metric                                  Obtain residence, UBO, wealth and funds
+                                                                                           evidence; Timely stop or renegotiation
+                                                                                           protects the client
+
+ Decision                    Obtain residence, UBO, wealth and funds evidence              Commission asset, rent, title and lender
+                                                                                           diligence; Timely stop or renegotiation
+                                                                                           protects the client
+
+ DRAFT                                                                                                                                      8 / 22
+GENESIS: JURIS CODEX                                                      five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+
+
+
+5. Scenario and decision map
+
+Type                   Issue / step                                             Leads to
+
+Decision               Commission asset, rent, title and lender diligence       Decide whether to reserve the property;
+                                                                                Obtain coordinated UK, PRC and
+                                                                                Liechtenstein opinions
+
+Decision               Decide whether to reserve the property                   Obtain coordinated UK, PRC and
+                                                                                Liechtenstein opinions; Timely stop or
+                                                                                renegotiation protects the client
+
+Decision               Obtain coordinated UK, PRC and Liechtenstein             Accept or reject the proposed funding route;
+                       opinions                                                 Timely stop or renegotiation protects the
+                                                                                client
+
+Decision               Accept or reject the proposed funding route              Compare ownership and financing routes;
+                                                                                Timely stop or renegotiation protects the
+                                                                                client
+
+Decision               Compare ownership and financing routes                   Test the Liechtenstein AIF evidence package;
+                                                                                Complete purchaser-specific tax and cash-
+                                                                                flow modeling; Timely stop or renegotiation
+                                                                                protects the client
+
+Decision               Test the Liechtenstein AIF evidence package              Complete purchaser-specific tax and cash-
+                                                                                flow modeling; Lawful but uneconomic or
+                                                                                materially defective execution; Timely stop or
+                                                                                renegotiation protects the client
+
+Decision               Complete purchaser-specific tax and cash-flow            Recommend, renegotiate, condition or decline
+                       modeling                                                 execution; Timely stop or renegotiation
+                                                                                protects the client; Annual rental income
+
+Decision               Recommend, renegotiate, condition or decline             Review year-one results and compliance;
+                       execution                                                Timely stop or renegotiation protects the
+                                                                                client; Lawful but uneconomic or materially
+                                                                                defective execution
+
+Decision               Review year-one results and compliance                   Proportionate, evidenced and financially
+                                                                                reconciled route; Lawful but uneconomic or
+                                                                                materially defective execution; Timely stop or
+                                                                                renegotiation protects the client
+
+Outcome                Proportionate, evidenced and financially                 Terminal / no outgoing path
+                       reconciled route
+
+Outcome                Timely stop or renegotiation protects the client         Terminal / no outgoing path
+
+Outcome                Lawful but uneconomic or materially defective            Terminal / no outgoing path
+                       execution
+
+Cash flow              Annual rental income                                     Terminal / no outgoing path
+
+Evidence               Client KYC profile                                       Terminal / no outgoing path
+
+
+DRAFT                                                                                                                            9 / 22
+ GENESIS: JURIS CODEX                                                               five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+
+
+
+ 5. Scenario and decision map
+
+ Type                        Issue / step                                                  Leads to
+
+ Entity / jurisdiction       UK real estate object                                         Terminal / no outgoing path
+
+
+
+
+ 6. Facts, evidence and rules register
+
+ Category                     Item                                          Detail / verification note
+
+ Fact                         Five-flat acquisition and amortizing          Price is £1,000,000 with £800,000 debt, £200,000 deposit,
+                              debt profile                                  7.5% rate, 120-month amortization, £146,000 corrected
+                                                                            annual gross rent (owner-provided input; independent
+                                                                            evidence pending), and a 1.25x lender DSCR threshold.
+                                                                            The broker's separate £150,000 claim is unsupported.
+                                                                            Owner-revised expenses under the 25% rule: 25% ×
+                                                                            £146,000 = £36,500 per year. Rent after these expenses,
+                                                                            before financing and other costs: £146,000 − £36,500 =
+                                                                            £109,500 per year.
+
+ Deadline                     Transaction and review milestones             Preliminary view: Day 3; lender structure: Day 10;
+                                                                            reservation: Day 15; exchange: Day 25; completion: Day 45;
+                                                                            post-completion review: Day 365. No clock times were
+                                                                            supplied.
+
+ Tax rule                     Three-country legal and tax gates             Purchaser-specific UK tax and filings, PRC worldwide tax
+                              require verification                          and lawful outbound funding, and Liechtenstein AIF
+                                                                            eligibility, regulation, substance, transparency, treaty, and
+                                                                            distribution treatment must be documented. Formation
+                                                                            alone creates no treaty access.
+
+ Evidence                     Client KYC profile                            Client should provide a completed KYC questionnaire
+
+ Entity / jurisdiction        UK real estate object                         1 mGBP 5 apartment rental units
+
+
+Each material item should be marked by the reviewer as verified, source-backed, judgment, confirmation required or uncertain before external
+circulation.
+
+
+
+
+7. Authorities and source register
+   1. https://horizonukts.com/guides/non-residents-holding-uk-property
+
+
+
+
+ DRAFT                                                                                                                                    10 / 22
+ GENESIS: JURIS CODEX                                                                    five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+
+
+
+  8. Authoring and review trail
+
+  UTC                        Source              Action                         Record
+
+  2026-09-28 05:02           prompt              graph_rebuilt                  Draft reconstruction recorded - raw input excluded
+
+
+
+
+9. Verification and sign-off
+    [ ] Facts and evidence reconciled to the underlying file.
+    [ ] Legal authorities remain current as of the stated date.
+    [ ] Assumptions, exclusions and uncertainties are explicitly disclosed.
+    [ ] Economics and scenario assumptions are independently checked.
+    [ ] Confidentiality, privilege, conflicts and circulation scope are confirmed.
+
+
+
+  Reviewer                            Role                           Date                        Sign-off / qualification
+
+
+
+
+Current content fingerprint: sha256-f3cc75e5bf9fe0b5dca8957cd2d2be5788635701e8bc24279ebd9603dae32c39
+
+
+
+
+ DRAFT                                                                                                                                         11 / 22
+GENESIS: JURIS CODEX                                                                         five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+
+ Five Flats, Three Borders - rent 146,000 GBP - LOCAL WORKING COPY
+ Professional report graph | BPMN-inspired off-page continuity
+ Case five_flats_three_borders_rent146000_working_20260923 | version 1.0.0 | profile tax_position_memorandum | tax_planning
+ Graph page 1 of 5 | G001
+
+
+
+                                                            N01 | TRIGGER
+
+                                                            Client requests a five-flat
+                                                            cross-border structure
+                                                            The client seeks advice on acquiring five
+                                                            English flats and prefers a Liechtenstein
+                                                            fund while demanding an undefined 10%
+                                                            annual return.
+
+
+
+
+                                                            N02 | ACTOR
+
+                                                            PRC-resident, non-UK-resident
+                                                            client
+                                                            Residence, UBO identity, wealth, funds
+                                                            location, lawful outbound route, and
+                                                            purchaser capacity require documentary
+                                                            evidence.
+
+
+
+
+                               N03 | ENTITY                                             N04 | FACT
+
+                                UK real estate object                                   Five-flat acquisition and
+                               1 mGBP 5 apartment rental units
+                                                                                        amortizing debt profile
+                                                                                        Price is £1,000,000 with £800,000 debt,
+                                                                                        £200,000 deposit, 7.5% rate, 120-month
+                                                                                        amortization, £146,000 corrected annual
+                                                                                        gross rent (owner-provided input;
+                                                                                        independent evidence pending), and a
+                                                                                        1.25x lender DSCR threshold. The
+                                                                                        broker's separate £150,000 claim is
+                                                                                        unsupported. Owner-revised expenses
+                                                                                        under the 25% rule: 25% × £146,000 =
+                                                                                        £36,500 per year. Rent after these
+                                                                                        expenses, before financing and other
+                                                                                        costs: £146,000 − £36,500 = £109,500
+                                                                                        per year.
+
+
+
+
+                               N05 | DEADLINE                                           N06 | EVIDENCE
+
+                                Transaction and review                                  Client KYC profile
+                                milestones                                              Client should provide a completed KYC
+                               Preliminary view: Day 3; lender structure:               questionnaire
+                               Day 10; reservation: Day 15; exchange:
+                               Day 25; completion: Day 45;
+                               post-completion review: Day 365. No
+                               clock times were supplied.
+
+
+
+
+OUT G002
+           C013
+N07
+
+
+
+
+Layout 1 · 1.1.0 · 2.1.0
+sha256-5197ff1ab03dc6ea955e39fdae0e3c228810cd9e929e2111d1d68583c01386d5
+
+DRAFT                                                                                                                                              12 / 22
+GENESIS: JURIS CODEX                                                                          five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+
+ Five Flats, Three Borders - rent 146,000 GBP - LOCAL WORKING COPY
+ Professional report graph | BPMN-inspired off-page continuity
+ Case five_flats_three_borders_rent146000_working_20260923 | version 1.0.0 | profile tax_position_memorandum | tax_planning
+ Graph page 2 of 5 | G002
+
+
+IN G001
+           C013
+N05
+
+
+
+
+                                                            N07 | TAX RULE
+
+                                                            Three-country legal and tax
+                                                            gates require verification
+                                                            Purchaser-specific UK tax and filings,
+                                                            PRC worldwide tax and lawful outbound
+                                                            funding, and Liechtenstein AIF eligibility,
+                                                            regulation, substance, transparency,
+                                                            treaty, and distribution treatment must
+                                                            be documented. Formation alone creates
+                                                            no treaty access.
+
+
+
+
+                                                            N08 | DECISION
+
+                                                            Set the scope of the
+                                                            engagement
+                                                            Choose whether to test the requested
+                                                            fund against lawful alternatives or
+                                                            initially limit work to the requested
+                                                            structure, subject to professional
+                                                            independence.
+
+
+
+
+                                                            N09 | DECISION
+
+                                                            Define the 10% return metric
+                                                            Require a named metric and present
+                                                            gross yield, NOI yield, after-tax
+                                                            cash-on-cash return, and 10-year
+                                                            after-tax equity IRR separately.
+
+
+
+
+                                                            N10 | DECISION
+
+                                                            Obtain residence, UBO, wealth
+                                                            and funds evidence
+                                                            Decide whether the file supports lawful
+                                                            ownership and funding or whether
+                                                            advice must pause pending satisfactory
+                                                            evidence.
+
+
+
+
+OUT G003                   OUT G005           OUT G005
+           C001                       C002               C014
+N11                        N22                N22
+
+
+
+
+Layout 1 · 1.1.0 · 2.1.0
+sha256-5197ff1ab03dc6ea955e39fdae0e3c228810cd9e929e2111d1d68583c01386d5
+
+DRAFT                                                                                                                                               13 / 22
+GENESIS: JURIS CODEX                                                                          five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+
+ Five Flats, Three Borders - rent 146,000 GBP - LOCAL WORKING COPY
+ Professional report graph | BPMN-inspired off-page continuity
+ Case five_flats_three_borders_rent146000_working_20260923 | version 1.0.0 | profile tax_position_memorandum | tax_planning
+ Graph page 3 of 5 | G003
+
+
+IN G002
+           C001
+N10
+
+
+
+
+                                                            N11 | DECISION
+
+                                                            Commission asset, rent, title
+                                                            and lender diligence
+                                                            Test title, five-dwelling status, licensing
+                                                            and landlord obligations, achievable rent,
+                                                            operating costs, amortization, security,
+                                                            and borrower conditions.
+
+
+
+
+                                                            N12 | DECISION
+
+                                                            Decide whether to reserve the
+                                                            property
+                                                            Choose whether to reserve conditionally,
+                                                            renegotiate timing or economics, or
+                                                            avoid commitment while material
+                                                            evidence remains outstanding.
+
+
+
+
+                                                            N13 | DECISION
+
+                                                            Obtain coordinated UK, PRC and
+                                                            Liechtenstein opinions
+                                                            Commission current, source-supported
+                                                            advice addressing tax, filings, outbound
+                                                            funds, AIF availability, transparency,
+                                                            treaty access, substance, leverage, and
+                                                            distributions.
+
+
+
+
+                                                            N14 | DECISION
+
+                                                            Accept or reject the proposed
+                                                            funding route
+                                                            Proceed only with documented wealth
+                                                            and a lawful bank or SAFE-compliant
+                                                            route; unresolved or misdescribed funds
+                                                            require a pause or refusal.
+
+
+
+
+OUT G005                   OUT G005           OUT G004               OUT G005
+           C003                       C004               C005                   C006
+N22                        N22                N15                    N22
+
+
+
+
+Layout 1 · 1.1.0 · 2.1.0
+sha256-5197ff1ab03dc6ea955e39fdae0e3c228810cd9e929e2111d1d68583c01386d5
+
+DRAFT                                                                                                                                               14 / 22
+GENESIS: JURIS CODEX                                                                           five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+
+ Five Flats, Three Borders - rent 146,000 GBP - LOCAL WORKING COPY
+ Professional report graph | BPMN-inspired off-page continuity
+ Case five_flats_three_borders_rent146000_working_20260923 | version 1.0.0 | profile tax_position_memorandum | tax_planning
+ Graph page 4 of 5 | G004
+
+
+IN G003
+           C005
+N14
+
+
+
+
+                                                            N15 | DECISION
+
+                                                            Compare ownership and
+                                                            financing routes
+                                                            Compare direct individual ownership, a
+                                                            UK property SPV, an available
+                                                            Liechtenstein AIF, and an AIF holding a
+                                                            UK SPV, together with stopping or
+                                                            renegotiating.
+
+
+
+
+                                                            N16 | DECISION
+
+                                                            Test the Liechtenstein AIF
+                                                            evidence package
+                                                            Require an FMA-authorised AIFM letter
+                                                            covering eligibility, approval, providers,
+                                                            leverage, legal form, substance, AML,
+                                                            UBO, CRS, tax transparency, treaty and
+                                                            PPT analysis, lender security, PRC
+                                                            distributions, timing, and complete fees.
+
+
+
+
+                                                            N17 | DECISION
+
+                                                            Complete purchaser-specific
+                                                            tax and cash-flow modeling
+                                                            Calculate SDLT only after purchaser,
+                                                            title, residence, and relief facts are
+                                                            known. Reconcile NOI, amortizing debt,
+                                                            DSCR, country taxes, distributions, full
+                                                            initial equity, returns, break-even points,
+                                                            exit, FX, and fund payback.
+
+
+
+
+OUT G005                   OUT G005           OUT G005                OUT G005                 OUT G005            OUT G005
+           C007                       C008               C009                    C010                     C011                C012
+N22                        N23                N22                     N19                      N22                 N18
+
+
+
+
+Layout 1 · 1.1.0 · 2.1.0
+sha256-5197ff1ab03dc6ea955e39fdae0e3c228810cd9e929e2111d1d68583c01386d5
+
+DRAFT                                                                                                                                                15 / 22
+GENESIS: JURIS CODEX                                                                              five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+
+ Five Flats, Three Borders - rent 146,000 GBP - LOCAL WORKING COPY
+ Professional report graph | BPMN-inspired off-page continuity
+ Case five_flats_three_borders_rent146000_working_20260923 | version 1.0.0 | profile tax_position_memorandum | tax_planning
+ Graph page 5 of 5 | G005
+
+
+IN G002                    IN G003                 IN G003               IN G003                 IN G004                  IN G004                IN G004
+            C002                     C003                    C004                  C006                     C007                     C008                   C009
+N10                        N12                     N13                   N14                     N15                      N16                    N16
+
+
+IN G004                    IN G004                 IN G004               IN G002
+            C010                     C011                    C012                  C014
+N17                        N17                     N17                   N09
+
+
+
+
+                                     N18 | CASH FLOW                                         N19 | DECISION
+
+                                     Annual rental income                                    Recommend, renegotiate,
+                                     Annual gross rental income: £146,000
+                                                                                             condition or decline execution
+                                     per year. Source status: Owner-revised                  Set conditions for KYC, lawful funds,
+                                     assumption. Expenses under the 25%                      lender approval, regulatory feasibility, tax
+                                     rule: 25% × £146,000 = £36,500 per year.                filings, transaction documents, and a
+                                     Rent after these expenses, before                       reconciled base, downside and
+                                     financing and other costs: £146,000 −                   evidenced-upside model.
+                                     £36,500 = £109,500 per year. The
+                                     retained £10,000 annual structure cost
+                                     reduces model NOI to £99,500. Selected
+                                     amortizing debt service of £113,953.70
+                                     leaves negative annual cash flow of
+                                     −£14,453.70 before tax and unknown
+                                     costs. Independent rent/budget evidence
+                                     and outcome approval remain pending.
+
+
+
+
+                                                                N20 | DECISION
+
+                                                                Review year-one results and
+                                                                compliance
+                                                                Compare actual rent, vacancy, repairs,
+                                                                DSCR, loan balance, taxes, ATED return
+                                                                position, distributions, fees, and FX
+                                                                against the approved model and
+                                                                covenant conditions.
+
+
+
+
+      N21 | OUTCOME                                             N22 | OUTCOME                                              N23 | OUTCOME
+
+      Proportionate, evidenced and                              Timely stop or renegotiation                               Lawful but uneconomic or
+      financially reconciled route                              protects the client                                        materially defective execution
+      The chosen route is supported by lawful                   The adviser pauses, renegotiates, or                       The route suffers a financing or DSCR
+      funds, purchaser-specific tax analysis,                   declines because evidence, funding,                        mismatch, unsupported treaty position,
+      lender approval, full-cost return metrics,                financing, economics, timing, or legal                     purchaser-tax error, compliance failure,
+      complete filings, and evidence                            feasibility is unresolved. The decision                    excessive fund costs, trapped
+      appropriate to its complexity. This may                   preserves compliance and avoids                            distributions, or operational
+      be a simple route rather than a fund.                     unsupported execution.                                     underperformance. Concealed
+                                                                                                                           ownership or unlawful funding is a
+                                                                                                                           failure condition.
+
+
+
+
+Layout 1 · 1.1.0 · 2.1.0
+sha256-5197ff1ab03dc6ea955e39fdae0e3c228810cd9e929e2111d1d68583c01386d5
+
+DRAFT                                                                                                                                                          16 / 22
+ GENESIS: JURIS CODEX                                                                           five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+
+10. Complete graph text alternative
+This logical-order alternative contains every graph node, directed adjacency and paired page connector. The visual treatment is
+BPMN-inspired off-page continuity; the GENESIS graph is not a BPMN model. This accessibility-improved PDF is not certified as
+PDF/UA.
+
+
+Diagram summary
+Components: 1 · Disconnected: no · Roots: N01 · Terminals: N18, N03, N06, N21, N22, N23 · Cyclic repairs: 0
+
+
+Node register
+Graph page 1
+N01 | TRIGGER | Client requests a five-flat cross-border structure
+The client seeks advice on acquiring five English flats and prefers a Liechtenstein fund while demanding an undefined 10% annual return.
+
+Graph page 1
+N02 | ACTOR | PRC-resident, non-UK-resident client
+Residence, UBO identity, wealth, funds location, lawful outbound route, and purchaser capacity require documentary evidence.
+
+Graph page 1
+N03 | ENTITY | UK real estate object
+1 mGBP 5 apartment rental units
+
+Graph page 1
+N04 | FACT | Five-flat acquisition and amortizing debt profile
+Price is £1,000,000 with £800,000 debt, £200,000 deposit, 7.5% rate, 120-month amortization, £146,000 corrected annual gross rent (owner-provided input;
+independent evidence pending), and a 1.25x lender DSCR threshold. The broker's separate £150,000 claim is unsupported. Owner-revised expenses under the
+25% rule: 25% × £146,000 = £36,500 per year. Rent after these expenses, before financing and other costs: £146,000 − £36,500 = £109,500 per year.
+
+Graph page 1
+N05 | DEADLINE | Transaction and review milestones
+Preliminary view: Day 3; lender structure: Day 10; reservation: Day 15; exchange: Day 25; completion: Day 45; post-completion review: Day 365. No clock times
+were supplied.
+
+Graph page 1
+N06 | EVIDENCE | Client KYC profile
+Client should provide a completed KYC questionnaire
+
+Graph page 2
+N07 | TAX RULE | Three-country legal and tax gates require verification
+Purchaser-specific UK tax and filings, PRC worldwide tax and lawful outbound funding, and Liechtenstein AIF eligibility, regulation, substance, transparency,
+treaty, and distribution treatment must be documented. Formation alone creates no treaty access.
+
+Graph page 2
+N08 | DECISION | Set the scope of the engagement
+Choose whether to test the requested fund against lawful alternatives or initially limit work to the requested structure, subject to professional independence.
+
+Graph page 2
+N09 | DECISION | Define the 10% return metric
+Require a named metric and present gross yield, NOI yield, after-tax cash-on-cash return, and 10-year after-tax equity IRR separately.
+
+Graph page 2
+N10 | DECISION | Obtain residence, UBO, wealth and funds evidence
+Decide whether the file supports lawful ownership and funding or whether advice must pause pending satisfactory evidence.
+
+Graph page 3
+N11 | DECISION | Commission asset, rent, title and lender diligence
+Test title, five-dwelling status, licensing and landlord obligations, achievable rent, operating costs, amortization, security, and borrower conditions.
+
+Graph page 3
+N12 | DECISION | Decide whether to reserve the property
+Choose whether to reserve conditionally, renegotiate timing or economics, or avoid commitment while material evidence remains outstanding.
+
+Graph page 3
+N13 | DECISION | Obtain coordinated UK, PRC and Liechtenstein opinions
+Commission current, source-supported advice addressing tax, filings, outbound funds, AIF availability, transparency, treaty access, substance, leverage, and
+distributions.
+
+Graph page 3
+N14 | DECISION | Accept or reject the proposed funding route
+Proceed only with documented wealth and a lawful bank or SAFE-compliant route; unresolved or misdescribed funds require a pause or refusal.
+
+ DRAFT                                                                                                                                                     17 / 22
+ GENESIS: JURIS CODEX                                                                           five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+Graph page 4
+N15 | DECISION | Compare ownership and financing routes
+Compare direct individual ownership, a UK property SPV, an available Liechtenstein AIF, and an AIF holding a UK SPV, together with stopping or renegotiating.
+
+Graph page 4
+N16 | DECISION | Test the Liechtenstein AIF evidence package
+Require an FMA-authorised AIFM letter covering eligibility, approval, providers, leverage, legal form, substance, AML, UBO, CRS, tax transparency, treaty and PPT
+analysis, lender security, PRC distributions, timing, and complete fees.
+
+Graph page 4
+N17 | DECISION | Complete purchaser-specific tax and cash-flow modeling
+Calculate SDLT only after purchaser, title, residence, and relief facts are known. Reconcile NOI, amortizing debt, DSCR, country taxes, distributions, full initial
+equity, returns, break-even points, exit, FX, and fund payback.
+
+Graph page 5
+N18 | CASH FLOW | Annual rental income
+Annual gross rental income: £146,000 per year. Source status: Owner-revised assumption. Expenses under the 25% rule: 25% × £146,000 = £36,500 per year.
+Rent after these expenses, before financing and other costs: £146,000 − £36,500 = £109,500 per year. The retained £10,000 annual structure cost reduces
+model NOI to £99,500. Selected amortizing debt service of £113,953.70 leaves negative annual cash flow of −£14,453.70 before tax and unknown costs.
+Independent rent/budget evidence and outcome approval remain pending.
+
+Graph page 5
+N19 | DECISION | Recommend, renegotiate, condition or decline execution
+Set conditions for KYC, lawful funds, lender approval, regulatory feasibility, tax filings, transaction documents, and a reconciled base, downside and evidenced-
+upside model.
+
+Graph page 5
+N20 | DECISION | Review year-one results and compliance
+Compare actual rent, vacancy, repairs, DSCR, loan balance, taxes, ATED return position, distributions, fees, and FX against the approved model and covenant
+conditions.
+
+Graph page 5
+N21 | OUTCOME | Proportionate, evidenced and financially reconciled route
+The chosen route is supported by lawful funds, purchaser-specific tax analysis, lender approval, full-cost return metrics, complete filings, and evidence
+appropriate to its complexity. This may be a simple route rather than a fund.
+
+Graph page 5
+N22 | OUTCOME | Timely stop or renegotiation protects the client
+The adviser pauses, renegotiates, or declines because evidence, funding, financing, economics, timing, or legal feasibility is unresolved. The decision preserves
+compliance and avoids unsupported execution.
+
+Graph page 5
+N23 | OUTCOME | Lawful but uneconomic or materially defective execution
+The route suffers a financing or DSCR mismatch, unsupported treaty position, purchaser-tax error, compliance failure, excessive fund costs, trapped
+distributions, or operational underperformance. Concealed ownership or unlawful funding is a failure condition.
+
+
+
+
+Directed adjacency register
+A001 · N01 -> N02
+N01 -> N02 | label=Open the client file | detail=Record the stated residence and investment objective without treating identity, residence, wealth, or funding as
+verified. | result=The client profile becomes the first evidence gate. | cost=0 | effect.evidence=0 | effect.exposure=0 | effect.position=0 | effect.trust=0 |
+repeatability=once
+
+A002 · N10 -> N11
+N10 -> N11 | label=Accept satisfactory preliminary evidence | detail=Proceed after obtaining credible residence, UBO, wealth, funds-location and lawful-transfer
+materials. | result=Asset and lender diligence may begin, subject to specialist confirmation. | cost=0 | effect.evidence=3 | effect.exposure=-2 | effect.position=2 |
+effect.trust=1 | repeatability=once
+
+A003 · N10 -> N22
+N10 -> N22 | label=Stop for unresolved ownership or funds | detail=Pause or decline where beneficial ownership, wealth, source of funds or transfer purpose
+cannot be supported. | result=The transaction is not facilitated on an unsafe evidential basis. | cost=0 | effect.evidence=1 | effect.exposure=-3 |
+effect.position=2 | effect.trust=0 | repeatability=once
+
+A004 · N11 -> N12
+N11 -> N12 | label=Commission title, licensing and valuation work | detail=Order the £4,000 title and licensing review and £3,500 valuation and rent review; seek
+the £1,500 lender confirmation. | result=Reservation can be considered using a stronger property and debt record. | cost=9000 | effect.evidence=4 |
+effect.exposure=-2 | effect.position=2 | effect.trust=1 | repeatability=once
+
+A005 · N11 -> N13
+N11 -> N13 | label=Defer reservation while specialists investigate | detail=Avoid immediate reservation and direct the available time toward the legal and tax
+gates. | result=Property evidence remains incomplete, but specialist feasibility work proceeds. | cost=0 | effect.evidence=1 | effect.exposure=0 |
+effect.position=0 | effect.trust=0 | repeatability=once
+
+
+
+
+ DRAFT                                                                                                                                                        18 / 22
+ GENESIS: JURIS CODEX                                                                           five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+A006 · N12 -> N13
+N12 -> N13 | label=Reserve subject to documented conditions | detail=Use conditions addressing title, licensing, lender approval, lawful funds, tax analysis and
+structural feasibility. | result=The transaction remains live without treating unresolved conditions as satisfied. | cost=0 | effect.evidence=0 | effect.exposure=1 |
+effect.position=1 | effect.trust=1 | repeatability=once
+
+A007 · N12 -> N22
+N12 -> N22 | label=Decline or renegotiate the reservation | detail=Seek more time, different economics or withdrawal where the current timetable cannot
+support reliable advice. | result=Premature commitment is avoided. | cost=0 | effect.evidence=0 | effect.exposure=-2 | effect.position=2 | effect.trust=0 |
+repeatability=once
+
+A008 · N13 -> N14
+N13 -> N14 | label=Commission coordinated specialist opinions | detail=Obtain UK tax work for £7,500, PRC and SAFE work for £6,000, and the AIFM letter for
+£4,500. | result=The file receives jurisdiction-specific analysis and identified confirmation requirements. | cost=18000 | effect.evidence=5 | effect.exposure=-3 |
+effect.position=3 | effect.trust=1 | repeatability=once
+
+A009 · N13 -> N22
+N13 -> N22 | label=Pause when specialist coverage is unavailable | detail=Do not substitute promoter assertions or assumptions for necessary jurisdictional
+analysis. | result=The structure is not advanced without adequate professional coverage. | cost=0 | effect.evidence=0 | effect.exposure=-2 | effect.position=2 |
+effect.trust=0 | repeatability=once
+
+A010 · N14 -> N15
+N14 -> N15 | label=Confirm a lawful funding route | detail=Document ownership, wealth, source and movement of equity through lawful banking and applicable
+outbound procedures. | result=The ownership routes can be compared on a compliant funding premise. | cost=0 | effect.evidence=4 | effect.exposure=-3 |
+effect.position=3 | effect.trust=2 | repeatability=once
+
+A011 · N14 -> N22
+N14 -> N22 | label=Reject unsupported funding alternatives | detail=Refuse quota pooling, false purpose, hidden nominees, underground banking or other
+unsupported routes. | result=The matter stops or waits for a lawful alternative. | cost=0 | effect.evidence=1 | effect.exposure=-4 | effect.position=3 |
+effect.trust=0 | repeatability=once
+
+A012 · N02 -> N04
+N02 -> N04 | label=Record the proposed transaction | detail=Capture the five-flat asset, price, deposit, debt and rental facts as scenario inputs. | result=The
+asset and financing file is available for testing. | cost=0 | effect.evidence=0 | effect.exposure=0 | effect.position=0 | effect.trust=0 | repeatability=once
+
+A013 · N15 -> N16
+N15 -> N16 | label=Continue testing an AIF-based route | detail=Test both a Liechtenstein AIF and an AIF holding a UK SPV without assuming availability or
+treaty access. | result=The fund route proceeds to regulatory and economic proof. | cost=0 | effect.evidence=1 | effect.exposure=1 | effect.position=1 |
+effect.trust=0 | repeatability=once
+
+A014 · N15 -> N17
+N15 -> N17 | label=Model direct and UK SPV routes | detail=Advance the simpler lawful baselines for purchaser-specific tax, financing and return comparison. |
+result=The baseline routes proceed without unnecessary fund assumptions. | cost=0 | effect.evidence=1 | effect.exposure=-1 | effect.position=2 | effect.trust=1
+| repeatability=once
+
+A015 · N15 -> N22
+N15 -> N22 | label=Stop or renegotiate before structuring | detail=Use this option where no route presently meets the legal, evidential, financing or economic
+constraints. | result=A proportionate stop remains available as a positive advisory result. | cost=0 | effect.evidence=0 | effect.exposure=-2 | effect.position=2 |
+effect.trust=0 | repeatability=once
+
+A016 · N16 -> N17
+N16 -> N17 | label=Accept a complete AIFM evidence package | detail=Carry the evidenced regulatory form, providers, leverage, substance, transparency, treaty,
+lender, distribution and fee facts into the model. | result=The fund can be compared without presuming legal or economic superiority. | cost=0 |
+effect.evidence=4 | effect.exposure=-2 | effect.position=2 | effect.trust=1 | repeatability=once
+
+A017 · N16 -> N23
+N16 -> N23 | label=Proceed despite missing fund proof | detail=Advance the vehicle without complete eligibility, provider, substance, treaty, financing or fee
+evidence. | result=The route is exposed to treaty-shopping failure, financing defects, hidden costs or regulatory infeasibility. | cost=0 | effect.evidence=-2 |
+effect.exposure=4 | effect.position=-3 | effect.trust=-2 | repeatability=once
+
+A018 · N16 -> N22
+N16 -> N22 | label=Reject an unsupported or uneconomic fund | detail=Use the missing evidence or unfavorable cost-benefit result to stop the fund route while
+preserving simpler alternatives for a later mandate. | result=Unsupported complexity is not implemented. | cost=0 | effect.evidence=2 | effect.exposure=-3 |
+effect.position=3 | effect.trust=1 | repeatability=once
+
+A019 · N17 -> N19
+N17 -> N19 | label=Build the full-cost comparison model | detail=Spend £2,500 to reconcile gross rent, 25% operating-cost assumption, NOI, amortizing debt,
+DSCR, taxes, distributions, full initial cash, four return metrics, fund benefit, payback, exit and FX. | result=Execution choices rest on a model that identifies
+assumptions and does not use only the deposit as equity. | cost=2500 | effect.evidence=3 | effect.exposure=-3 | effect.position=3 | effect.trust=2 |
+repeatability=once
+
+A020 · N17 -> N22
+N17 -> N22 | label=Pause for irreconcilable tax or model inputs | detail=Do not calculate purchaser tax or claim the target is met while purchaser identity, title
+treatment, residence, costs or return metric remains unresolved. | result=The recommendation is withheld until the model can be reconciled. | cost=0 |
+effect.evidence=1 | effect.exposure=-2 | effect.position=2 | effect.trust=1 | repeatability=once
+
+A021 · N19 -> N20
+N19 -> N20 | label=Execute subject to closing conditions | detail=Proceed with the selected route only after KYC, funds, lender, tax, regulatory, filing and
+document conditions are satisfied; count the £15,000 setup fee once. | result=The completed transaction moves to monitored year-one performance. |
+cost=15000 | effect.evidence=2 | effect.exposure=0 | effect.position=2 | effect.trust=1 | repeatability=once
+
+ DRAFT                                                                                                                                                         19 / 22
+ GENESIS: JURIS CODEX                                                                           five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+A022 · N19 -> N22
+N19 -> N22 | label=Decline or renegotiate execution | detail=Stop, change debt, seek a lower price, extend timing or select a simpler route where DSCR, costs,
+evidence or compliance conditions fail. | result=The adviser avoids forcing completion on defective terms. | cost=0 | effect.evidence=1 | effect.exposure=-3 |
+effect.position=3 | effect.trust=1 | repeatability=once
+
+A023 · N04 -> N05
+N04 -> N05 | label=Map the transaction calendar | detail=Place the supplied advice, lender, reservation, exchange, completion and review milestones on the file. |
+result=Time pressure is visible without inventing clock times. | cost=0 | effect.evidence=0 | effect.exposure=0 | effect.position=0 | effect.trust=0 |
+repeatability=once
+
+A024 · N19 -> N23
+N19 -> N23 | label=Complete with unresolved conditions | detail=Proceed despite an unproven tax position, financing mismatch, incomplete filings, unsupported
+treaty access or omitted costs. | result=Execution creates material compliance, financing or economic exposure. | cost=0 | effect.evidence=-2 |
+effect.exposure=5 | effect.position=-4 | effect.trust=-3 | repeatability=once
+
+A025 · N20 -> N21
+N20 -> N21 | label=Reconcile and remediate year-one performance | detail=Complete required filings, compare actual results with the model, preserve covenant
+compliance, and address variances transparently. Include the £10,000 annual structure cost where applicable. | result=The route remains proportionate,
+evidenced and monitored. | cost=10000 | effect.evidence=4 | effect.exposure=-3 | effect.position=4 | effect.trust=3 | repeatability=once
+
+A026 · N20 -> N23
+N20 -> N23 | label=Ignore material year-one variances | detail=Fail to address vacancy, repairs, covenant pressure, filing obligations, distribution restrictions,
+fees or divergence from the approved return model. | result=Operational underperformance or compliance defects impair the transaction. | cost=0 |
+effect.evidence=-2 | effect.exposure=4 | effect.position=-3 | effect.trust=-3 | repeatability=once
+
+A027 · N20 -> N22
+N20 -> N22 | label=Renegotiate, refinance or plan an orderly exit | detail=Respond to a sustained mismatch by changing debt or operations, or by planning a
+compliant exit rather than preserving an unsuitable structure. | result=A controlled corrective decision limits further exposure. | cost=0 | effect.evidence=2 |
+effect.exposure=-2 | effect.position=2 | effect.trust=1 | repeatability=once
+
+A028 · N17 -> N18
+N17 -> N18
+
+A029 · N04 -> N06
+N04 -> N06
+
+A030 · N02 -> N03
+N02 -> N03
+
+A031 · N05 -> N07
+N05 -> N07 | label=Identify cross-border gates | detail=Separate the UK, PRC and Liechtenstein questions that require specialist evidence. | result=Formation
+and completion are made conditional on legal and evidential feasibility. | cost=0 | effect.evidence=1 | effect.exposure=-1 | effect.position=1 | effect.trust=0 |
+repeatability=once
+
+A032 · N07 -> N08
+N07 -> N08 | label=Present the engagement choices | detail=Explain the difference between implementing the preferred vehicle and conducting an independent
+comparative review. | result=The player must define a defensible mandate. | cost=0 | effect.evidence=0 | effect.exposure=0 | effect.position=1 | effect.trust=0 |
+repeatability=once
+
+A033 · N08 -> N09
+N08 -> N09 | label=Authorize a comparative review | detail=Test the requested fund against direct ownership, a UK SPV, an AIF holding a UK SPV, and stopping
+or renegotiating. | result=The return target must be defined before structures are ranked. | cost=0 | effect.evidence=1 | effect.exposure=-1 | effect.position=2 |
+effect.trust=1 | repeatability=once
+
+A034 · N08 -> N10
+N08 -> N10 | label=Start with a narrow fund mandate | detail=Preserve professional independence and make any implementation subject to identity, funds and
+feasibility evidence. | result=The review advances, but the economic metric remains unresolved for later modeling. | cost=0 | effect.evidence=0 |
+effect.exposure=1 | effect.position=0 | effect.trust=0 | repeatability=once
+
+A035 · N09 -> N10
+N09 -> N10 | label=Name and document the return metric | detail=Select a metric while retaining all four required measures in the final comparison. | result=The
+10% target can be tested without conflating yield, cash flow and IRR. | cost=0 | effect.evidence=1 | effect.exposure=-1 | effect.position=2 | effect.trust=1 |
+repeatability=once
+
+A036 · N09 -> N22
+N09 -> N22 | label=Pause over an undefined target | detail=Decline to state that the target is met until the client identifies the intended measure. | result=The
+engagement pauses without issuing a misleading return conclusion. | cost=0 | effect.evidence=0 | effect.exposure=-2 | effect.position=1 | effect.trust=0 |
+repeatability=once
+
+
+
+Paired connector index
+
+
+
+
+ DRAFT                                                                                                                                                       20 / 22
+ GENESIS: JURIS CODEX                                                                        five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+C001 · directed edge
+OUT N10 (Obtain residence, UBO, wealth and funds evidence) · G002 -> IN N11 (Commission asset, rent, title and lender diligence) · G003
+C001 OUT | A002 | N10 | G002 -> G003 | label=Accept satisfactory preliminary evidence | detail=Proceed after obtaining credible residence, UBO, wealth, funds-
+location and lawful-transfer materials. | result=Asset and lender diligence may begin, subject to specialist confirmation. | annotations=cost=0;
+effect.evidence=3; effect.exposure=-2; effect.position=2; effect.trust=1; repeatability=once
+C001 IN | A002 | N11 | G002 -> G003 | label=Accept satisfactory preliminary evidence | detail=Proceed after obtaining credible residence, UBO, wealth, funds-
+location and lawful-transfer materials. | result=Asset and lender diligence may begin, subject to specialist confirmation. | annotations=cost=0;
+effect.evidence=3; effect.exposure=-2; effect.position=2; effect.trust=1; repeatability=once
+
+C002 · directed edge
+OUT N10 (Obtain residence, UBO, wealth and funds evidence) · G002 -> IN N22 (Timely stop or renegotiation protects the client) · G005
+C002 OUT | A003 | N10 | G002 -> G005 | label=Stop for unresolved ownership or funds | detail=Pause or decline where beneficial ownership, wealth, source of
+funds or transfer purpose cannot be supported. | result=The transaction is not facilitated on an unsafe evidential basis. | annotations=cost=0;
+effect.evidence=1; effect.exposure=-3; effect.position=2; effect.trust=0; repeatability=once
+C002 IN | A003 | N22 | G002 -> G005 | label=Stop for unresolved ownership or funds | detail=Pause or decline where beneficial ownership, wealth, source of
+funds or transfer purpose cannot be supported. | result=The transaction is not facilitated on an unsafe evidential basis. | annotations=cost=0;
+effect.evidence=1; effect.exposure=-3; effect.position=2; effect.trust=0; repeatability=once
+
+C003 · directed edge
+OUT N12 (Decide whether to reserve the property) · G003 -> IN N22 (Timely stop or renegotiation protects the client) · G005
+C003 OUT | A007 | N12 | G003 -> G005 | label=Decline or renegotiate the reservation | detail=Seek more time, different economics or withdrawal where the
+current timetable cannot support reliable advice. | result=Premature commitment is avoided. | annotations=cost=0; effect.evidence=0; effect.exposure=-2;
+effect.position=2; effect.trust=0; repeatability=once
+C003 IN | A007 | N22 | G003 -> G005 | label=Decline or renegotiate the reservation | detail=Seek more time, different economics or withdrawal where the current
+timetable cannot support reliable advice. | result=Premature commitment is avoided. | annotations=cost=0; effect.evidence=0; effect.exposure=-2;
+effect.position=2; effect.trust=0; repeatability=once
+
+C004 · directed edge
+OUT N13 (Obtain coordinated UK, PRC and Liechtenstein opinions) · G003 -> IN N22 (Timely stop or renegotiation protects the client) · G005
+C004 OUT | A009 | N13 | G003 -> G005 | label=Pause when specialist coverage is unavailable | detail=Do not substitute promoter assertions or assumptions for
+necessary jurisdictional analysis. | result=The structure is not advanced without adequate professional coverage. | annotations=cost=0; effect.evidence=0;
+effect.exposure=-2; effect.position=2; effect.trust=0; repeatability=once
+C004 IN | A009 | N22 | G003 -> G005 | label=Pause when specialist coverage is unavailable | detail=Do not substitute promoter assertions or assumptions for
+necessary jurisdictional analysis. | result=The structure is not advanced without adequate professional coverage. | annotations=cost=0; effect.evidence=0;
+effect.exposure=-2; effect.position=2; effect.trust=0; repeatability=once
+
+C005 · directed edge
+OUT N14 (Accept or reject the proposed funding route) · G003 -> IN N15 (Compare ownership and financing routes) · G004
+C005 OUT | A010 | N14 | G003 -> G004 | label=Confirm a lawful funding route | detail=Document ownership, wealth, source and movement of equity through
+lawful banking and applicable outbound procedures. | result=The ownership routes can be compared on a compliant funding premise. | annotations=cost=0;
+effect.evidence=4; effect.exposure=-3; effect.position=3; effect.trust=2; repeatability=once
+C005 IN | A010 | N15 | G003 -> G004 | label=Confirm a lawful funding route | detail=Document ownership, wealth, source and movement of equity through lawful
+banking and applicable outbound procedures. | result=The ownership routes can be compared on a compliant funding premise. | annotations=cost=0;
+effect.evidence=4; effect.exposure=-3; effect.position=3; effect.trust=2; repeatability=once
+
+C006 · directed edge
+OUT N14 (Accept or reject the proposed funding route) · G003 -> IN N22 (Timely stop or renegotiation protects the client) · G005
+C006 OUT | A011 | N14 | G003 -> G005 | label=Reject unsupported funding alternatives | detail=Refuse quota pooling, false purpose, hidden nominees,
+underground banking or other unsupported routes. | result=The matter stops or waits for a lawful alternative. | annotations=cost=0; effect.evidence=1;
+effect.exposure=-4; effect.position=3; effect.trust=0; repeatability=once
+C006 IN | A011 | N22 | G003 -> G005 | label=Reject unsupported funding alternatives | detail=Refuse quota pooling, false purpose, hidden nominees,
+underground banking or other unsupported routes. | result=The matter stops or waits for a lawful alternative. | annotations=cost=0; effect.evidence=1;
+effect.exposure=-4; effect.position=3; effect.trust=0; repeatability=once
+
+C007 · directed edge
+OUT N15 (Compare ownership and financing routes) · G004 -> IN N22 (Timely stop or renegotiation protects the client) · G005
+C007 OUT | A015 | N15 | G004 -> G005 | label=Stop or renegotiate before structuring | detail=Use this option where no route presently meets the legal, evidential,
+financing or economic constraints. | result=A proportionate stop remains available as a positive advisory result. | annotations=cost=0; effect.evidence=0;
+effect.exposure=-2; effect.position=2; effect.trust=0; repeatability=once
+C007 IN | A015 | N22 | G004 -> G005 | label=Stop or renegotiate before structuring | detail=Use this option where no route presently meets the legal, evidential,
+financing or economic constraints. | result=A proportionate stop remains available as a positive advisory result. | annotations=cost=0; effect.evidence=0;
+effect.exposure=-2; effect.position=2; effect.trust=0; repeatability=once
+
+C008 · directed edge
+OUT N16 (Test the Liechtenstein AIF evidence package) · G004 -> IN N23 (Lawful but uneconomic or materially defective execution) · G005
+C008 OUT | A017 | N16 | G004 -> G005 | label=Proceed despite missing fund proof | detail=Advance the vehicle without complete eligibility, provider, substance,
+treaty, financing or fee evidence. | result=The route is exposed to treaty-shopping failure, financing defects, hidden costs or regulatory infeasibility. |
+annotations=cost=0; effect.evidence=-2; effect.exposure=4; effect.position=-3; effect.trust=-2; repeatability=once
+C008 IN | A017 | N23 | G004 -> G005 | label=Proceed despite missing fund proof | detail=Advance the vehicle without complete eligibility, provider, substance,
+treaty, financing or fee evidence. | result=The route is exposed to treaty-shopping failure, financing defects, hidden costs or regulatory infeasibility. |
+annotations=cost=0; effect.evidence=-2; effect.exposure=4; effect.position=-3; effect.trust=-2; repeatability=once
+
+
+
+
+ DRAFT                                                                                                                                                   21 / 22
+ GENESIS: JURIS CODEX                                                                          five_flats_three_borders_rent146000_working_20260923 · v1.0.0
+
+C009 · directed edge
+OUT N16 (Test the Liechtenstein AIF evidence package) · G004 -> IN N22 (Timely stop or renegotiation protects the client) · G005
+C009 OUT | A018 | N16 | G004 -> G005 | label=Reject an unsupported or uneconomic fund | detail=Use the missing evidence or unfavorable cost-benefit result to
+stop the fund route while preserving simpler alternatives for a later mandate. | result=Unsupported complexity is not implemented. | annotations=cost=0;
+effect.evidence=2; effect.exposure=-3; effect.position=3; effect.trust=1; repeatability=once
+C009 IN | A018 | N22 | G004 -> G005 | label=Reject an unsupported or uneconomic fund | detail=Use the missing evidence or unfavorable cost-benefit result to
+stop the fund route while preserving simpler alternatives for a later mandate. | result=Unsupported complexity is not implemented. | annotations=cost=0;
+effect.evidence=2; effect.exposure=-3; effect.position=3; effect.trust=1; repeatability=once
+
+C010 · directed edge
+OUT N17 (Complete purchaser-specific tax and cash-flow modeling) · G004 -> IN N19 (Recommend, renegotiate, condition or decline execution) · G005
+C010 OUT | A019 | N17 | G004 -> G005 | label=Build the full-cost comparison model | detail=Spend £2,500 to reconcile gross rent, 25% operating-cost
+assumption, NOI, amortizing debt, DSCR, taxes, distributions, full initial cash, four return metrics, fund benefit, payback, exit and FX. | result=Execution choices
+rest on a model that identifies assumptions and does not use only the deposit as equity. | annotations=cost=2500; effect.evidence=3; effect.exposure=-3;
+effect.position=3; effect.trust=2; repeatability=once
+C010 IN | A019 | N19 | G004 -> G005 | label=Build the full-cost comparison model | detail=Spend £2,500 to reconcile gross rent, 25% operating-cost assumption,
+NOI, amortizing debt, DSCR, taxes, distributions, full initial cash, four return metrics, fund benefit, payback, exit and FX. | result=Execution choices rest on a
+model that identifies assumptions and does not use only the deposit as equity. | annotations=cost=2500; effect.evidence=3; effect.exposure=-3;
+effect.position=3; effect.trust=2; repeatability=once
+
+C011 · directed edge
+OUT N17 (Complete purchaser-specific tax and cash-flow modeling) · G004 -> IN N22 (Timely stop or renegotiation protects the client) · G005
+C011 OUT | A020 | N17 | G004 -> G005 | label=Pause for irreconcilable tax or model inputs | detail=Do not calculate purchaser tax or claim the target is met
+while purchaser identity, title treatment, residence, costs or return metric remains unresolved. | result=The recommendation is withheld until the model can be
+reconciled. | annotations=cost=0; effect.evidence=1; effect.exposure=-2; effect.position=2; effect.trust=1; repeatability=once
+C011 IN | A020 | N22 | G004 -> G005 | label=Pause for irreconcilable tax or model inputs | detail=Do not calculate purchaser tax or claim the target is met while
+purchaser identity, title treatment, residence, costs or return metric remains unresolved. | result=The recommendation is withheld until the model can be
+reconciled. | annotations=cost=0; effect.evidence=1; effect.exposure=-2; effect.position=2; effect.trust=1; repeatability=once
+
+C012 · directed edge
+OUT N17 (Complete purchaser-specific tax and cash-flow modeling) · G004 -> IN N18 (Annual rental income) · G005
+C012 OUT | A028 | N17 | G004 -> G005 | label=(none) | detail=(none) | result=(none) | annotations=(none)
+C012 IN | A028 | N18 | G004 -> G005 | label=(none) | detail=(none) | result=(none) | annotations=(none)
+
+C013 · directed edge
+OUT N05 (Transaction and review milestones) · G001 -> IN N07 (Three-country legal and tax gates require verification) · G002
+C013 OUT | A031 | N05 | G001 -> G002 | label=Identify cross-border gates | detail=Separate the UK, PRC and Liechtenstein questions that require specialist
+evidence. | result=Formation and completion are made conditional on legal and evidential feasibility. | annotations=cost=0; effect.evidence=1;
+effect.exposure=-1; effect.position=1; effect.trust=0; repeatability=once
+C013 IN | A031 | N07 | G001 -> G002 | label=Identify cross-border gates | detail=Separate the UK, PRC and Liechtenstein questions that require specialist
+evidence. | result=Formation and completion are made conditional on legal and evidential feasibility. | annotations=cost=0; effect.evidence=1;
+effect.exposure=-1; effect.position=1; effect.trust=0; repeatability=once
+
+C014 · directed edge
+OUT N09 (Define the 10% return metric) · G002 -> IN N22 (Timely stop or renegotiation protects the client) · G005
+C014 OUT | A036 | N09 | G002 -> G005 | label=Pause over an undefined target | detail=Decline to state that the target is met until the client identifies the
+intended measure. | result=The engagement pauses without issuing a misleading return conclusion. | annotations=cost=0; effect.evidence=0;
+effect.exposure=-2; effect.position=1; effect.trust=0; repeatability=once
+C014 IN | A036 | N22 | G002 -> G005 | label=Pause over an undefined target | detail=Decline to state that the target is met until the client identifies the intended
+measure. | result=The engagement pauses without issuing a misleading return conclusion. | annotations=cost=0; effect.evidence=0; effect.exposure=-2;
+effect.position=1; effect.trust=0; repeatability=once
+
+
+
+
+ DRAFT                                                                                                                                                      22 / 22
+

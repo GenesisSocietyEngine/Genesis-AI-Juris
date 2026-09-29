@@ -1,148 +1,108 @@
-# GENESIS: JURIS
+# GENESIS: JURIS Web
 
-A deterministic, AI-native legal-career simulation with an authoritative Rust
-engine and a smartphone-first Flutter interface.
+Professional web platform for building, reviewing and playing versioned legal simulations. The product combines a searchable case library, a visual Case Studio, practitioner feedback, targeted updates and a compliance-first international tax authoring model.
 
-The local production catalogue contains five declarative, Rust-backed cases.
-The combined Desert Water branch has passed its local gates and owner
-playtest. Publication proceeds through a Draft PR and the mandatory hosted
-Rust, Flutter, MSRV, and iOS gates.
+The hosted professional beta is available at <https://genesis-juris-web.maxim-hayan.chatgpt.site>.
 
-## Current production catalogue
+## Product scope
 
-| Sort | Scenario | Public case | Canonical fingerprint |
-| ---: | --- | --- | --- |
-| 10 | `be_commercial_failed_erp_001` | Failed ERP Implementation | `ed3e67464797d8dcfd4acd90a2f3c0ab769fab1b9b7fc87c1a8857b43e2fd2f8` |
-| 20 | `be_commercial_logistics_001` | Unpaid Logistics Invoices | `1c6a26a53f0a0d05161812787a0e36f342271b4f9f3bdd7afa9a5068f52a8dd8` |
-| 30 | `greenfire_first_72_hours` | The First 72 Hours | `173140f010723c50f580fe9fd4e91417d3a20f51ca0b5315d94e900c1bde2438` |
-| 40 | `goldenshell_recall_at_dawn` | Contaminated Egg Supply Chain | `7b0d2d7f07e3d5cb61d951afaf80d43d014893696bb16632d1beae5074d18ba4` |
-| 50 | `desert_water_groundwater_claim` | Desert Water | `636e7b78ddccf01b23476e53ab77f3c8b0c82406be7c567afbd9f1edc41a28af` |
+- Trusted ChatGPT identity plus an optional local email/password credential, 15-minute email reset, offline recovery and professional profiles with opt-in communications controls.
+- Paginated metadata library with server-side search/classification and lazy loading of immutable versioned manifests.
+- Five mobile-parity library cases with their complete canonical stages/actions, deterministic events, clocks, deadlines, visible evidence/inbox state, resumable authoritative sessions, live spend/workload ledgers and verdict economics.
+- Case Studio workspace with a default low-noise User view, an opt-in Developer view, reviewed AI prompt-to-scheme planning, deterministic graph materialisation, visual authoring, graph validation, draft submission and case/node feedback.
+- Central publication and addressed release updates with immutable version lineage and read receipts.
+- Moderated practitioner feedback tied to an exact case version and fingerprint.
+- Tax / offshore tax-engineering template restricted to lawful planning, with implementation economics, source provenance and a named, structured publication attestation.
 
-The Rust engine models:
+Bundled cases are labelled as professional beta material unless an independent verified practitioner review is attached to the exact submitted fingerprint. The product is an educational simulation platform, not legal or tax advice.
 
-- active messages and professional deadlines;
-- time, overtime, fatigue, and cumulative strain;
-- delegation, evidence, budgets, settlement, and litigation;
-- AI work product constrained to authorized facts;
-- explainable deterministic judgments.
+## Architecture
 
-The Flutter shell presents:
-
-- Inbox with unread, action-required, resolved, and archived states;
-- matter strength, evidence, budget, workload, ethics, and client trust;
-- deadlines and professional capacity;
-- AI work product and authority boundaries;
-- adaptive Material 3 navigation;
-- action review with visible time, cost, and known risk.
-
-## Repository layout
-
-```text
-crates/
-  juris-core        deterministic time, RNG, and scheduler
-  juris-domain      legal state, actions, events, and outcomes
-  juris-content     typed JSON scenario loading
-  juris-ai          read-only AI actor boundary
-  juris-engine      authoritative state transitions
-  juris-mobile-bridge transport-neutral mobile JSON command protocol
-  juris-mobile-ffi  Android/iOS C ABI for the mobile bridge
-  juris-cli         terminal presentation
-
-apps/
-  juris-mobile      Flutter mobile shell and APK scripts
+```mermaid
+flowchart TD
+    UI["Next.js / React UI"] --> META["Paginated catalogue metadata"]
+    UI --> MANIFEST["Lazy immutable manifest"]
+    UI --> API["Authenticated API routes"]
+    API --> AUTH["ChatGPT identity / hashed local session"]
+    API --> D1["Cloudflare D1"]
+    UI --> PREVIEW["Deterministic browser preview"]
+    UI --> AIPLAN["Reviewed AI authoring proposal"]
+    AIPLAN --> API
+    API --> SESSION["Authoritative canonical reducer"]
+    SESSION --> D1
+    API --> GATES["Integrity and publication gates"]
+    GATES --> D1
 ```
 
-## Authority rule
+The Cloudflare Worker adds CSP, HSTS and browser hardening headers while preserving public immutable caching and private/no-store APIs. Write routes enforce same-origin JSON mutations, bounded streaming bodies, server-side authorization and canonical SHA-256 fingerprints. Request outcomes, exceptions, and D1 busy/timeout/internal failures are emitted only as privacy-safe structured Worker logs and never create product-D1 telemetry writes. v53 D1 failure logging covers instrumented operations only: normalized routes `catalog`, `play_sessions`, and `admin`, and logical repositories `cases`, `case_versions`, `play_sessions`, `play_events`, and `operational_events`. This is not platform-wide, auth, users, or all-D1 coverage. A covered D1 capacity failure clears queued anomaly rows and opens a 60-second circuit with zero telemetry prepare/batch work in the triggering request. Product D1 retains only bounded, low-volume replay/history/revision/fingerprint anomalies from play/admin operations; routine successes are not collected or shown as zero. See [the v16 architecture and trust boundaries](docs/ARCHITECTURE.md), [the v53 observability contract](docs/V53-OBSERVABILITY.md), and the [full v16 product, security and scalability audit](docs/AUDIT-V16.md).
 
-Only `juris-engine` may mutate authoritative `MatterState`.
+### Core data model
 
-All production cases use the generic engine-side scenario session and the
-transport-neutral JSON command protocol:
+- `users`: profile, locale, practice areas and explicit communication preferences.
+- `local_accounts`, `auth_sessions`, `account_recovery_codes`, `password_reset_tokens`: email-bound password credentials, hashed opaque sessions, one-time offline recovery and hash-only email-reset proofs. Passwords and bearer secrets are never stored in plaintext.
+- `auth_rate_limit_events`, `auth_audit_events`: credential-abuse throttling and a security-event trail; `studio_ai_leases` holds at most eight short-lived pseudonymous provider-capacity leases; `platform_secrets` holds server-only cryptographic material.
+- `cases`: current catalogue metadata and current immutable content identity.
+- `case_versions`: payload history, parent identity, studio fingerprint and publication record.
+- `custom_cases`, `custom_case_grants`: owner envelope, privacy state and explicit restricted-case grants, listed through a bounded cursor rather than an unbounded workspace payload.
+- `case_drafts`: per-user Studio workspace and independent review evidence.
+- `play_sessions`, `play_events`: revisioned authoritative runtime state and idempotent decision history.
+- `case_feedback`: exact-version feedback, context, severity, citations and moderation state.
+- `case_subscriptions`, `updates`, `update_reads`: addressed release communication.
+- `audit_events`: privileged publication and moderation trail.
+- `operational_events`: 14-day, privacy-safe coarse replay/history/revision/fingerprint anomaly rows from authenticated play/admin operations, aggregated at read time with no request-success, D1-capacity, public-catalog, user, case, payload, URL, SQL or fingerprint fields.
 
-```text
-Flutter action ID
-      ↓
-Rust command API
-      ↓
-juris-engine
-      ↓
-immutable mobile snapshot
+Migrations live in `drizzle/`. A fresh database must apply them in numeric order.
+
+## Integrity and governance
+
+- Central publication deterministically compiles the normalized Studio graph on the server; client previews cannot replace the authoritative manifest.
+- AI authoring is advisory: an authenticated, burst/hour/day-limited server route asks the OpenAI Responses API for a strict semantic proposal, converts it to the bounded Studio operation DSL with deterministic IDs/coordinates, and revalidates the resulting draft. A read-only candidate graph plus the complete, untruncated content of every authored field is shown before one atomic undoable apply. The raw source prompt stays in publication-stripped authoring history; only the separately reviewed publishable case context enters the case. It never executes model-authored code or silently replaces a graph. A normalized draft is capped at 900 KB inside the consistent 1 MB import/API envelope, while one provider analysis is separately capped at 128 KB and 6,000 output tokens. A tenant-wide eight-call D1 lease gate self-recovers after 60 seconds; audit rows retain only pseudonymous identity, outcome, latency and token counts, never prompt or graph content.
+- Rules DSL v1 uses bounded declarative node runtime fields, action effects, guards and repeatability without authored code execution.
+- A saved JSON artifact can carry `case-protection-v1`: the server binds its current-version code, parent code, Studio fingerprint and copy policy with HMAC-SHA256. Stable relationship IDs are included because they become playable option IDs. A locked parent makes all descendants locked; recipients receive inspection-only product access. This is tamper-evident lineage and authorization, not encryption or DRM.
+- v15 JSON exports remain readable through an explicit legacy-fingerprint path. For a sealed export, the server also compares its new relationship-aware fingerprint with the authoritative stored payload before accepting it; the next save upgrades the artifact to the v16 fingerprint.
+- Option IDs are globally unique; stages, clocks, timing and deadline routes are checked for ambiguity or dead ends.
+- Current bundled content and retained v13 beta versions have stable fingerprints; pinned v13 sessions continue to resolve against their archived manifests.
+- A case version can have only one child for a parent identity and only one root, preventing concurrent publication forks.
+- Studio saves use optimistic fingerprint concurrency and fail stale writers with `409` rather than silently overwriting another tab.
+- Elevated review labels require timestamped accepted review evidence bound to the exact Studio/playable artifacts and, for custom promotion, the selected workspace source draft.
+- An `expert` label additionally requires an independent verified practitioner; the author, publisher and reviewer cannot collapse into the same identity.
+- Tax cases are fail-closed to lawful/compliance scope, complete publication metadata and a named structured attestation bound to both fingerprints.
+- `Private` custom cases are owner-only at the application API; owner notes use the exact custom-case ID and cannot be rerouted to a content-identical shared case. This is authorization, not encryption or DRM.
+- Browser-only Studio persistence is available to signed-in users, identity-scoped and limited to local, unprotected, non-Private drafts. It is cleared on sign-out; anonymous, workspace, protected and Private artifacts are never cached in local storage.
+
+## Local development
+
+Requirements: Node.js `>=22.13.0`, Linux, `flock`, `curl` and GNU `timeout`.
+
+```bash
+npm run install:ci
+npm run dev
 ```
 
-The Android/iOS C ABI transport and snapshot mapper connect canonical scenarios
-to Flutter. Each scenario JSON is bundled, validated by Rust at session
-creation, and executed without case-specific transition code in Flutter.
-`DemoGameRepository` remains only as historical Failed ERP characterization
-infrastructure and is not reachable from the production runtime factory.
+The local runtime reads `.openai/hosting.json` for the D1 binding name. Production secrets belong in Sites runtime configuration, never in the repository. Copy `.env.example` only as a variable-name reference. `OPENAI_API_KEY` enables reviewed AI authoring, while `RESEND_API_KEY`, `GENESIS_RESET_FROM_EMAIL` and `GENESIS_PUBLIC_ORIGIN` enable transactional reset email. `GENESIS_OPENAI_MODEL` optionally overrides the default AI model; `GENESIS_AI_DAILY_REQUEST_LIMIT` sets the tenant-wide daily circuit breaker (default 500). Production observability requires `GENESIS_DEPLOYMENT_VERSION` to equal the saved Site version and `GENESIS_WEB_COMMIT` to equal the exact 40-character pushed release SHA; local or unknown values deliberately produce a partial dashboard state.
 
-## Run the Rust game
+## Verification
 
-```powershell
-cargo run -p juris-cli -- start-day --mode assisted --seed 20260724
+```bash
+npx tsc --noEmit --incremental false
+npm run lint
+npm test
+npm audit --omit=dev
+git diff --check
 ```
 
-## Prepare the Flutter mobile shell on Windows
+`npm test` performs a production build and verifies 18 authoritative web/mobile reference routes across all five bundled cases, including every canonical terminal outcome, exact checkpoints, serialization, save/load/re-save receipts, alert-source truthfulness, privacy-safe request/D1-capacity log isolation, bounded retained-anomaly storage/migrations, legacy session compatibility, tax/graph gates, request limits and immutable lineage constraints. The separate v53 contention command documented in `docs/V53-OPERATIONS-RUNBOOK.md` must also be green before release.
 
-Install Flutter and Android tooling, then run:
+## Authentication and authorization
 
-```powershell
-powershell -ExecutionPolicy Bypass -File apps/juris-mobile/tool/bootstrap_flutter_windows.ps1
-```
+Sites dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt` and `/callback`, including OAuth cookies and trusted identity-header injection. `app/chatgpt-auth.ts` exposes safe helpers for optional sign-in and same-origin return paths.
 
-The script generates Android platform scaffolding using the developer's installed Flutter version, then runs analysis and widget tests.
+After a trusted ChatGPT identity confirms the account email once, `/account` can enroll a local password. The password policy is 10–128 characters with at least one uppercase letter, one digit and one special character. The database stores PBKDF2-HMAC-SHA256 output (600,000 iterations) and a per-account random salt, never the password. Local sessions, recovery codes and email-reset tokens are high-entropy opaque values stored only as SHA-256 hashes. When mail is configured, forgot-password and administrator-initiated recovery send the saved address a 15-minute single-use link; the administrator never sees a password or token. Completion revokes earlier sessions and tokens, rotates the offline recovery code and does not automatically sign the browser in. Generic responses prevent account enumeration. Trusted ChatGPT reset and the display-once offline code remain independent fallback paths.
 
-## Run on Android
+The public catalogue is anonymous-compatible. Profiles, feedback, subscriptions and Studio submissions use server-side identity. Local identity can exercise the same email-based case ACL after enrollment proved by a trusted ChatGPT identity, but never confers platform-administrator status. Administration requires both the trusted ChatGPT identity source and the runtime `GENESIS_ADMIN_EMAILS` allowlist.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File apps/juris-mobile/tool/run_android_windows.ps1
-```
+See [the local-authentication threat model and lifecycle](docs/AUTHENTICATION.md) for storage, recovery, deletion and operational limits.
 
-## Build the first debug APK
+## Deployment
 
-```powershell
-powershell -ExecutionPolicy Bypass -File apps/juris-mobile/tool/build_debug_apk_windows.ps1
-```
-
-Expected output:
-
-```text
-dist/genesis-ai-juris-v0.5.0-debug.apk
-```
-
-## Quality gates
-
-Rust:
-
-```powershell
-cargo fmt --all
-cargo fmt --all -- --check
-cargo check --workspace
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
-```
-
-Flutter:
-
-```powershell
-cd apps/juris-mobile
-flutter pub get
-flutter analyze
-flutter test
-```
-
-GitHub Actions runs Rust, Flutter, and native iOS quality gates.
-
-## Documentation
-
-- [`VISION.md`](VISION.md) — product vision and long-term principles.
-- [`development-journal.md`](development-journal.md) — engineering decisions and milestone history.
-- [`ROADMAP.md`](ROADMAP.md) — release sequence.
-- [Mobile UI specification](docs/design/MOBILE_UI_SPEC.md) — screen model and v0.5.1 bridge contract.
-- [`RELEASE_NOTES_v0.5.0.md`](docs/releases/RELEASE_NOTES_v0.5.0.md) — mobile-shell scope.
-- [`UPGRADE_FROM_v0.4.2.md`](UPGRADE_FROM_v0.4.2.md) — installation and upgrade steps.
-
-## Status
-
-This remains an alpha simulation, not legal advice. All five production cases
-execute through the authoritative Rust runtime and the version-1 native bridge.
-The local Desert Water integration is not a published release.
+This project is deployed through ChatGPT Sites. `.openai/hosting.json` declares the `DB` D1 binding. The release workflow validates and commits source, saves a Sites version, applies migrations and deploys that saved version to production.

@@ -15,18 +15,20 @@ import '../widgets/action_picker_sheet.dart';
 import '../widgets/case_report_sheet.dart';
 import '../widgets/inbox_message_sheet.dart';
 import 'gameplay_locale.dart';
+import 'product_navigation.dart';
 
 /// Adaptive application shell shared by phone, tablet, and desktop previews.
 ///
 /// Below 700 logical pixels it uses a Material 3 [NavigationBar]. Wider
 /// windows switch to [NavigationRail] without changing the destination state.
 class HomeShell extends StatefulWidget {
-  const HomeShell(
-      {required this.repository,
-      this.locale = 'en',
-      this.onExitToCaseCatalog,
-      this.enableLiveClockInTests = false,
-      super.key});
+  const HomeShell({
+    required this.repository,
+    this.locale = 'en',
+    this.onExitToCaseCatalog,
+    this.enableLiveClockInTests = false,
+    super.key,
+  });
 
   final GameRuntimeRepository repository;
   final String locale;
@@ -38,8 +40,9 @@ class HomeShell extends StatefulWidget {
 }
 
 class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
-  static const bool _runningUnderFlutterTest =
-      bool.fromEnvironment('FLUTTER_TEST');
+  static const bool _runningUnderFlutterTest = bool.fromEnvironment(
+    'FLUTTER_TEST',
+  );
 
   int _selectedIndex = 0;
   Timer? _liveClockTimer;
@@ -92,45 +95,39 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       return;
     }
 
-    _liveClockTimer = Timer.periodic(
-      _clockSpeed.tickInterval,
-      (Timer timer) {
-        if (!mounted ||
-            _clockPaused ||
-            _openModalCount > 0 ||
-            _clockTickInProgress ||
-            !widget.repository.supportsLiveClock ||
+    _liveClockTimer = Timer.periodic(_clockSpeed.tickInterval, (Timer timer) {
+      if (!mounted ||
+          _clockPaused ||
+          _openModalCount > 0 ||
+          _clockTickInProgress ||
+          !widget.repository.supportsLiveClock ||
+          widget.repository.isTerminal) {
+        if (!widget.repository.supportsLiveClock ||
             widget.repository.isTerminal) {
-          if (!widget.repository.supportsLiveClock ||
-              widget.repository.isTerminal) {
-            timer.cancel();
-            _liveClockTimer = null;
-          }
-          return;
-        }
-
-        _clockTickInProgress = true;
-        try {
-          widget.repository.advanceTimeByMinutes(1);
-        } on Object catch (error) {
           timer.cancel();
           _liveClockTimer = null;
-          if (mounted) {
-            setState(() => _clockPaused = true);
-            final String message = widget.repository.clockErrorMessage ??
-                'Simulation clock stopped: $error';
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(message),
-                showCloseIcon: true,
-              ),
-            );
-          }
-        } finally {
-          _clockTickInProgress = false;
         }
-      },
-    );
+        return;
+      }
+
+      _clockTickInProgress = true;
+      try {
+        widget.repository.advanceTimeByMinutes(1);
+      } on Object catch (error) {
+        timer.cancel();
+        _liveClockTimer = null;
+        if (mounted) {
+          setState(() => _clockPaused = true);
+          final String message = widget.repository.clockErrorMessage ??
+              'Simulation clock stopped: $error';
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message), showCloseIcon: true));
+        }
+      } finally {
+        _clockTickInProgress = false;
+      }
+    });
   }
 
   void _toggleClock() {
@@ -241,8 +238,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                       : IconButton(
                           tooltip: GameplayLocale.text(
                             context,
-                            'Back to case library',
-                            'Назад в библиотеку дел',
+                            'Back to templates',
+                            'Назад к шаблонам',
                           ),
                           onPressed: _persistenceInProgress
                               ? null
@@ -257,14 +254,18 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                         '${snapshot.dayLabel} · ${snapshot.timeLabel} · ${snapshot.stage}',
                         style:
                             Theme.of(context).textTheme.labelMedium?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                       ),
                     ],
                   ),
                   actions: <Widget>[
+                    ScopedJurisProductNavigation(
+                      locale: widget.locale,
+                      current: JurisProductDestination.templates,
+                    ),
                     PopupMenuButton<SimulationClockSpeed>(
                       key: const ValueKey<String>('simulation-speed-menu'),
                       tooltip: GameplayLocale.of(context) == 'ru'
@@ -280,7 +281,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                       itemBuilder: (BuildContext context) =>
                           SimulationClockSpeed.values
                               .map(
-                                (SimulationClockSpeed speed) =>
+                                (
+                                  SimulationClockSpeed speed,
+                                ) =>
                                     PopupMenuItem<SimulationClockSpeed>(
                                   value: speed,
                                   height: 64,
@@ -291,9 +294,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                                     children: <Widget>[
                                       Text(
                                         speed.label,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelLarge,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.labelLarge,
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
@@ -302,9 +305,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                                                 'игровых мин / реальную мин'
                                             : '${speed.gameMinutesPerRealMinute} '
                                                 'game min / real min',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
                                       ),
                                     ],
                                   ),
@@ -383,7 +386,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                           key: const ValueKey<String>('load-game-action'),
                           value: _PersistenceAction.load,
                           child: ListTile(
-                            leading: const Icon(Icons.restore_page_outlined),
+                            leading: const Icon(
+                              Icons.restore_page_outlined,
+                            ),
                             title: Text(
                               GameplayLocale.text(
                                 context,
@@ -431,8 +436,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                                     (_Destination destination) =>
                                         NavigationRailDestination(
                                       icon: Icon(destination.icon),
-                                      selectedIcon:
-                                          Icon(destination.selectedIcon),
+                                      selectedIcon: Icon(
+                                        destination.selectedIcon,
+                                      ),
                                       label: Text(destination.label),
                                     ),
                                   )
@@ -475,7 +481,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                         : FloatingActionButton.extended(
                             onPressed: () => _showActions(snapshot),
                             icon: const Icon(
-                                Icons.playlist_add_check_circle_outlined),
+                              Icons.playlist_add_check_circle_outlined,
+                            ),
                             label: Text(
                               '${GameplayLocale.text(context, 'Actions', 'Действия')}'
                               ' · ${snapshot.actions.length}',
@@ -504,10 +511,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           onShowActions: () => _showActions(snapshot),
           onShowDossier: () => _showDossier(snapshot),
           onShowTrainingDebrief: () => _showTrainingDebrief(snapshot),
-          onShowPressureResponses: (List<String> actionIds) => _showActions(
-            snapshot,
-            onlyActionIds: actionIds,
-          ),
+          onShowPressureResponses: (List<String> actionIds) =>
+              _showActions(snapshot, onlyActionIds: actionIds),
         ),
       2 => CalendarScreen(
           snapshot: snapshot,
@@ -516,10 +521,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               ? _restUntilNextWorkday
               : null,
           onModalVisibilityChanged: _setModalVisible,
-          onOpenRelatedAction: (String actionId) => _showActions(
-            snapshot,
-            onlyActionId: actionId,
-          ),
+          onOpenRelatedAction: (String actionId) =>
+              _showActions(snapshot, onlyActionId: actionId),
         ),
       3 => AiAssociateScreen(
           snapshot: snapshot,
@@ -586,8 +589,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       return;
     }
 
-    final ActionExecutionResult result =
-        widget.repository.applyAction(actionId);
+    final ActionExecutionResult result = widget.repository.applyAction(
+      actionId,
+    );
     if (!mounted) {
       return;
     }
@@ -646,10 +650,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           },
         'cfo-pressure' => <String>{'reply-cfo'},
         'proceedings-commenced' => <String>{'prepare-statement-of-claim'},
-        'settlement-offer' => <String>{
-            'future-settle',
-            'reject-settlement',
-          },
+        'settlement-offer' => <String>{'future-settle', 'reject-settlement'},
         _ => const <String>{},
       };
     }
@@ -671,10 +672,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         useSafeArea: true,
         isScrollControlled: true,
         showDragHandle: true,
-        builder: (BuildContext context) => CaseReportSheet(
-          snapshot: snapshot,
-          summary: summary,
-        ),
+        builder: (BuildContext context) =>
+            CaseReportSheet(snapshot: snapshot, summary: summary),
       ),
     );
   }
@@ -690,10 +689,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         MaterialPageRoute<String>(
           builder: (BuildContext routeContext) => GameplayLocale(
             locale: widget.locale,
-            child: DossierScreen(
-              dossier: dossier,
-              locale: widget.locale,
-            ),
+            child: DossierScreen(dossier: dossier, locale: widget.locale),
           ),
         ),
       ),
@@ -702,10 +698,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     if (actionId == null || !mounted) {
       return;
     }
-    await _showActions(
-      widget.repository.snapshot,
-      onlyActionId: actionId,
-    );
+    await _showActions(widget.repository.snapshot, onlyActionId: actionId);
   }
 
   Future<void> _showTrainingDebrief(GameSnapshot snapshot) async {
@@ -750,9 +743,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
             .toList(growable: false)
         : onlyActionId != null
             ? snapshot.actions
-                .where(
-                  (GameActionView action) => action.id == onlyActionId,
-                )
+                .where((GameActionView action) => action.id == onlyActionId)
                 .toList(growable: false)
             : aiOnly
                 ? snapshot.actions
@@ -788,10 +779,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         useSafeArea: true,
         isScrollControlled: true,
         showDragHandle: true,
-        builder: (BuildContext context) => ActionPickerSheet(
-          actions: actions,
-          locale: widget.locale,
-        ),
+        builder: (BuildContext context) =>
+            ActionPickerSheet(actions: actions, locale: widget.locale),
       ),
     );
 
@@ -799,8 +788,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       return;
     }
 
-    final ActionExecutionResult result =
-        widget.repository.applyAction(actionId);
+    final ActionExecutionResult result = widget.repository.applyAction(
+      actionId,
+    );
     if (!mounted) {
       return;
     }
@@ -836,15 +826,11 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text(
-                GameplayLocale.text(context, 'Cancel', 'Отмена'),
-              ),
+              child: Text(GameplayLocale.text(context, 'Cancel', 'Отмена')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: Text(
-                GameplayLocale.text(context, 'Reset', 'Сбросить'),
-              ),
+              child: Text(GameplayLocale.text(context, 'Reset', 'Сбросить')),
             ),
           ],
         ),
@@ -877,10 +863,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         ..showSnackBar(
           SnackBar(
             content: Text(
-              _localized(
-                'Game saved successfully.',
-                'Игра успешно сохранена.',
-              ),
+              _localized('Game saved successfully.', 'Игра успешно сохранена.'),
             ),
             showCloseIcon: true,
           ),
@@ -913,10 +896,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         context: context,
         builder: (BuildContext context) => AlertDialog(
           title: Text(
-            _localized(
-              'Load saved game?',
-              'Загрузить сохранённую игру?',
-            ),
+            _localized('Load saved game?', 'Загрузить сохранённую игру?'),
           ),
           content: Text(
             _localized(
@@ -928,16 +908,12 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
             TextButton(
               key: const ValueKey<String>('cancel-load-game'),
               onPressed: () => Navigator.pop(context, false),
-              child: Text(
-                _localized('Cancel', 'Отмена'),
-              ),
+              child: Text(_localized('Cancel', 'Отмена')),
             ),
             FilledButton(
               key: const ValueKey<String>('confirm-load-game'),
               onPressed: () => Navigator.pop(context, true),
-              child: Text(
-                _localized('Load', 'Загрузить'),
-              ),
+              child: Text(_localized('Load', 'Загрузить')),
             ),
           ],
         ),
@@ -955,10 +931,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         ..showSnackBar(
           SnackBar(
             content: Text(
-              _localized(
-                'Saved game loaded.',
-                'Сохранённая игра загружена.',
-              ),
+              _localized('Saved game loaded.', 'Сохранённая игра загружена.'),
             ),
             showCloseIcon: true,
           ),
@@ -1009,12 +982,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     };
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          showCloseIcon: true,
-        ),
-      );
+      ..showSnackBar(SnackBar(content: Text(message), showCloseIcon: true));
   }
 
   String _localized(String english, String russian) =>

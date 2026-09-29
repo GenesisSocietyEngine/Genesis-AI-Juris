@@ -1,0 +1,36 @@
+{
+  "observedAt": "2026-09-27T21:28:28.784Z",
+  "scope": "Strictly in-process unit test, synthetic records and identity. No HTTP server, credentials, real accounts/DB, uploads, browser or network. Authorization functions are production code; DB and identity are explicit test doubles.",
+  "route": "app\\api\\dossiers\\[dossierId]\\route.ts",
+  "routeSha256": "4a8ed84bf8abe347ebe44c6d661d35715109c725ea9642df94596ebab2162ea4",
+  "productionAuthorizationModules": [
+    "app/dossier-server.ts",
+    "app/organization-store.ts",
+    "app/dossier-security.ts"
+  ],
+  "observations": [
+    {
+      "name": "baseline",
+      "status": 200,
+      "authorizedDataPresent": true,
+      "authorityReads": 2,
+      "accessReads": 1
+    },
+    {
+      "name": "suspended_during_read",
+      "status": 200,
+      "membershipStatus": "suspended",
+      "membershipRevision": 2,
+      "privateAssertionPresent": true,
+      "privateExcerptPresent": true,
+      "oldWritePermission": true,
+      "authorityReads": 2,
+      "accessReads": 1
+    },
+    {
+      "name": "fresh_read_after_suspension",
+      "status": 404,
+      "privateDataPresent": false
+    }
+  ]
+}

@@ -1,0 +1,396 @@
+{
+  "capturedAt": "2026-09-25T09:34:31.652Z",
+  "requestId": "a288563f-a718-476b-8bfe-9a501c2209d5",
+  "schemaDigest": "ade40d85440012056cb32af1cf2605689525e9948bf9afa65051ef1d609b06bc",
+  "reportDigest": "10ecbaf3cf452972d37ffb125dcf507140bd583015cd70645303af6fd7468090",
+  "nativeChunksVerified": 45,
+  "baselineObjectMatch": 591,
+  "0022ObjectsPresent": 0,
+  "ledgerTable": "__appgarden_migrations",
+  "ledgerEntries": [
+    {
+      "id": 1,
+      "name": "0000_worthless_supreme_intelligence.sql",
+      "applied_at": "2026-08-21 22:16:13"
+    },
+    {
+      "id": 2,
+      "name": "0001_right_talon.sql",
+      "applied_at": "2026-08-21 22:16:13"
+    },
+    {
+      "id": 3,
+      "name": "0002_greedy_darkstar.sql",
+      "applied_at": "2026-08-21 22:16:13"
+    },
+    {
+      "id": 4,
+      "name": "0003_unusual_zarda.sql",
+      "applied_at": "2026-08-22 00:51:37"
+    },
+    {
+      "id": 5,
+      "name": "0004_petite_komodo.sql",
+      "applied_at": "2026-08-22 00:51:37"
+    },
+    {
+      "id": 6,
+      "name": "0005_dapper_nightcrawler.sql",
+      "applied_at": "2026-08-22 06:01:30"
+    },
+    {
+      "id": 7,
+      "name": "0006_concerned_korath.sql",
+      "applied_at": "2026-08-22 06:01:30"
+    },
+    {
+      "id": 8,
+      "name": "0007_ambitious_phoenix.sql",
+      "applied_at": "2026-08-22 10:38:06"
+    },
+    {
+      "id": 9,
+      "name": "0008_first_hitman.sql",
+      "applied_at": "2026-08-23 01:28:49"
+    },
+    {
+      "id": 10,
+      "name": "0009_medical_princess_powerful.sql",
+      "applied_at": "2026-08-23 11:05:59"
+    },
+    {
+      "id": 11,
+      "name": "0010_square_scalphunter.sql",
+      "applied_at": "2026-08-23 11:05:59"
+    },
+    {
+      "id": 12,
+      "name": "0011_operational_events.sql",
+      "applied_at": "2026-08-31 00:10:27"
+    },
+    {
+      "id": 13,
+      "name": "0012_sleepy_magma_core.sql",
+      "applied_at": "2026-09-01 19:31:01"
+    },
+    {
+      "id": 14,
+      "name": "0013_sleepy_magma_guards_a.sql",
+      "applied_at": "2026-09-01 20:09:24"
+    },
+    {
+      "id": 15,
+      "name": "0014_sleepy_magma_guards_b.sql",
+      "applied_at": "2026-09-01 20:09:24"
+    },
+    {
+      "id": 16,
+      "name": "0015_sleepy_magma_guards_c.sql",
+      "applied_at": "2026-09-01 20:09:24"
+    },
+    {
+      "id": 17,
+      "name": "0016_polite_sentinels.sql",
+      "applied_at": "2026-09-01 20:09:25"
+    },
+    {
+      "id": 18,
+      "name": "0017_perfect_marvex.sql",
+      "applied_at": "2026-09-01 20:09:25"
+    },
+    {
+      "id": 19,
+      "name": "0018_low_calypso.sql",
+      "applied_at": "2026-09-01 20:09:25"
+    },
+    {
+      "id": 20,
+      "name": "0019_p1_organization_scope.sql",
+      "applied_at": "2026-09-05 16:07:12"
+    },
+    {
+      "id": 21,
+      "name": "0020_dependable_actions.sql",
+      "applied_at": "2026-09-15 09:47:18"
+    },
+    {
+      "id": 22,
+      "name": "0021_disposition_audit_binding.sql",
+      "applied_at": "2026-09-15 09:47:18"
+    }
+  ],
+  "ledgerComplete": true,
+  "ledgerHashesAvailable": false,
+  "0022Recorded": false,
+  "applicationAndBindingsUnchangedFromV95": true,
+  "migrationFiles": [
+    {
+      "path": "drizzle/0000_worthless_supreme_intelligence.sql",
+      "sha256Before": "5ec11a8e3b6ab0f81d97edceb1f307dc44b1ddf2b950212e9ef1b32d50dba6bc",
+      "sha256After": "5ec11a8e3b6ab0f81d97edceb1f307dc44b1ddf2b950212e9ef1b32d50dba6bc",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0001_right_talon.sql",
+      "sha256Before": "d504e8e363cc60afd3366465909f210cc7cffc74b3d9760ad7849da7169f8b3b",
+      "sha256After": "d504e8e363cc60afd3366465909f210cc7cffc74b3d9760ad7849da7169f8b3b",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0002_greedy_darkstar.sql",
+      "sha256Before": "80b1f3cdae7b46f37cd28219661150f64f972b356b57577841cdf4471370e4f9",
+      "sha256After": "80b1f3cdae7b46f37cd28219661150f64f972b356b57577841cdf4471370e4f9",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0003_unusual_zarda.sql",
+      "sha256Before": "a01c0c3ee8471f8f1a62755e3a3eb3abad379878c48132cf46e3722f2bc657e9",
+      "sha256After": "a01c0c3ee8471f8f1a62755e3a3eb3abad379878c48132cf46e3722f2bc657e9",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0004_petite_komodo.sql",
+      "sha256Before": "3644a749b01776c10d8713d944906c8e6713a3be1b6b3ded71c048bcc644f4c0",
+      "sha256After": "3644a749b01776c10d8713d944906c8e6713a3be1b6b3ded71c048bcc644f4c0",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0005_dapper_nightcrawler.sql",
+      "sha256Before": "cd2288671ca10c53405cb40bd3760a4db98b90a27b51f58502a6437b596a78c1",
+      "sha256After": "cd2288671ca10c53405cb40bd3760a4db98b90a27b51f58502a6437b596a78c1",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0006_concerned_korath.sql",
+      "sha256Before": "a8d4f88df11145286a12bb0731ef7dafdc7aca8af113fbc605d506005838dfca",
+      "sha256After": "a8d4f88df11145286a12bb0731ef7dafdc7aca8af113fbc605d506005838dfca",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0007_ambitious_phoenix.sql",
+      "sha256Before": "7f0747877ab435e8daf5c27abdc33c86533ed3192d939b47c02928cf0044a181",
+      "sha256After": "7f0747877ab435e8daf5c27abdc33c86533ed3192d939b47c02928cf0044a181",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0008_first_hitman.sql",
+      "sha256Before": "58952abe328d069c136b09a49e51fabfb10a299014be767ae540a2e658e994ec",
+      "sha256After": "58952abe328d069c136b09a49e51fabfb10a299014be767ae540a2e658e994ec",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0009_medical_princess_powerful.sql",
+      "sha256Before": "a151ae42b2badddc9c40df4eb0c8ce1d99338397fd7515634f357af15bd3ca4c",
+      "sha256After": "a151ae42b2badddc9c40df4eb0c8ce1d99338397fd7515634f357af15bd3ca4c",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0010_square_scalphunter.sql",
+      "sha256Before": "807c48fa33a5014e3e094a25ff4e48a475e004712f754f7a080dd901e2f06a39",
+      "sha256After": "807c48fa33a5014e3e094a25ff4e48a475e004712f754f7a080dd901e2f06a39",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0011_operational_events.sql",
+      "sha256Before": "0b556f390a83eec0dccd6dc76d12340a3083620b79e34ea1fa0cd4e83711e6c7",
+      "sha256After": "0b556f390a83eec0dccd6dc76d12340a3083620b79e34ea1fa0cd4e83711e6c7",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0012_sleepy_magma_core.sql",
+      "sha256Before": "f7287a42b2afb176de4f892fe476d6242dffb62e6d336484fbae55c077a0fe8c",
+      "sha256After": "f7287a42b2afb176de4f892fe476d6242dffb62e6d336484fbae55c077a0fe8c",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0013_sleepy_magma_guards_a.sql",
+      "sha256Before": "18332d50e4b12c729187280a3dc397c35ef95e3daacc7a33419bfe327338022e",
+      "sha256After": "18332d50e4b12c729187280a3dc397c35ef95e3daacc7a33419bfe327338022e",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0014_sleepy_magma_guards_b.sql",
+      "sha256Before": "0eb85af54bea36fc6bd57319e4d0ae9761154fb497ab741dcb5830086da0c37b",
+      "sha256After": "0eb85af54bea36fc6bd57319e4d0ae9761154fb497ab741dcb5830086da0c37b",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0015_sleepy_magma_guards_c.sql",
+      "sha256Before": "82f696cc99ed5fd5b921d064cf7a4fc14b3ce77f06375c1c8b8aa631417429e5",
+      "sha256After": "82f696cc99ed5fd5b921d064cf7a4fc14b3ce77f06375c1c8b8aa631417429e5",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0016_polite_sentinels.sql",
+      "sha256Before": "50a12891dbc6376d0dadf0b8008ad39815f7c5255204f745c3a2687f1e549c83",
+      "sha256After": "50a12891dbc6376d0dadf0b8008ad39815f7c5255204f745c3a2687f1e549c83",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0017_perfect_marvex.sql",
+      "sha256Before": "0c98f442f7652b859d90b0ad7e070a762b18686357e013e807933d08ab2f4036",
+      "sha256After": "0c98f442f7652b859d90b0ad7e070a762b18686357e013e807933d08ab2f4036",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0018_low_calypso.sql",
+      "sha256Before": "5e4c6cfed12d3e4e59be200829473630d665e71ad2289fb8a46f572a30653f84",
+      "sha256After": "5e4c6cfed12d3e4e59be200829473630d665e71ad2289fb8a46f572a30653f84",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0019_p1_organization_scope.sql",
+      "sha256Before": "4a4f4fa9990103f668dde2a4a70962408a702bc69480641fa4b6280ea4b2dd3b",
+      "sha256After": "4a4f4fa9990103f668dde2a4a70962408a702bc69480641fa4b6280ea4b2dd3b",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0020_dependable_actions.sql",
+      "sha256Before": "54afcf58b6261e4cf299e682bd456d8b0f250a87fd1886403ae76a35420d1f04",
+      "sha256After": "54afcf58b6261e4cf299e682bd456d8b0f250a87fd1886403ae76a35420d1f04",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/0021_disposition_audit_binding.sql",
+      "sha256Before": "c1290b9597b54b9d9ce207a30f0769ba01a817cb653e177a657a00e73db8904a",
+      "sha256After": "c1290b9597b54b9d9ce207a30f0769ba01a817cb653e177a657a00e73db8904a",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0000_snapshot.json",
+      "sha256Before": "8decf13cc0df48fd292a36d9aa93aa21b50576db761c132321f512b7c1019995",
+      "sha256After": "8decf13cc0df48fd292a36d9aa93aa21b50576db761c132321f512b7c1019995",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0001_snapshot.json",
+      "sha256Before": "2b017ccd1be9c20eb8243f643e8d930560db33da97dbcacad7b8afca41fce336",
+      "sha256After": "2b017ccd1be9c20eb8243f643e8d930560db33da97dbcacad7b8afca41fce336",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0002_snapshot.json",
+      "sha256Before": "6252aa58752cfe668b4c7d9a9280c11a03e3a4ca95c4e18cf7b5e67a9dc22a9f",
+      "sha256After": "6252aa58752cfe668b4c7d9a9280c11a03e3a4ca95c4e18cf7b5e67a9dc22a9f",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0003_snapshot.json",
+      "sha256Before": "2d462a59cd1c4e770478f391c92c8cb0eb941e0845dc5ca89d0511efcde82502",
+      "sha256After": "2d462a59cd1c4e770478f391c92c8cb0eb941e0845dc5ca89d0511efcde82502",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0004_snapshot.json",
+      "sha256Before": "d3b056bb3cd8220ae6d7dfc23a7b7efd39f12ba33333c1b236652b757b251469",
+      "sha256After": "d3b056bb3cd8220ae6d7dfc23a7b7efd39f12ba33333c1b236652b757b251469",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0005_snapshot.json",
+      "sha256Before": "3ffce39384ac76e9d0b3ce85899ae5fdd66dabefe9a4320c537dbea6f3e3c5fa",
+      "sha256After": "3ffce39384ac76e9d0b3ce85899ae5fdd66dabefe9a4320c537dbea6f3e3c5fa",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0006_snapshot.json",
+      "sha256Before": "9380bc2fd9166f5774b39bcf7f01f3a897c16017bdf6cd0193ead41afbe78601",
+      "sha256After": "9380bc2fd9166f5774b39bcf7f01f3a897c16017bdf6cd0193ead41afbe78601",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0008_snapshot.json",
+      "sha256Before": "c70759aa5e66c50e2f3327fd2b36f101f50754e90ebfb8a51c3f776ac900196a",
+      "sha256After": "c70759aa5e66c50e2f3327fd2b36f101f50754e90ebfb8a51c3f776ac900196a",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0009_snapshot.json",
+      "sha256Before": "bbb00dd5764813119526a89061bf86e24aeb3efa72675f877ee189c656e13b41",
+      "sha256After": "bbb00dd5764813119526a89061bf86e24aeb3efa72675f877ee189c656e13b41",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0010_snapshot.json",
+      "sha256Before": "d17e29b8310f121b36fbdcb40386d1bb02e9ec2467e9e59cc7b44e2538d750e1",
+      "sha256After": "d17e29b8310f121b36fbdcb40386d1bb02e9ec2467e9e59cc7b44e2538d750e1",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0011_snapshot.json",
+      "sha256Before": "1b8c402a12eaf85bec3ed91b2c0e6f67606c630fcb5400c04e6aad64b25bc096",
+      "sha256After": "1b8c402a12eaf85bec3ed91b2c0e6f67606c630fcb5400c04e6aad64b25bc096",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0012_snapshot.json",
+      "sha256Before": "2b3b06d685ac2b685a5fcc778a89c0ac1b9fc7d6c08a49bd3fc955e1ac850077",
+      "sha256After": "2b3b06d685ac2b685a5fcc778a89c0ac1b9fc7d6c08a49bd3fc955e1ac850077",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0013_snapshot.json",
+      "sha256Before": "1386270c72349407c35eb2f215ad0c05b47a1bf2b949ef4d2de4c1d9243a46ca",
+      "sha256After": "1386270c72349407c35eb2f215ad0c05b47a1bf2b949ef4d2de4c1d9243a46ca",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0014_snapshot.json",
+      "sha256Before": "7d5eb459839a9cf29fa141bdc4b99b56f250a6c97d8178c05ca27d42a7cee8b4",
+      "sha256After": "7d5eb459839a9cf29fa141bdc4b99b56f250a6c97d8178c05ca27d42a7cee8b4",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0015_snapshot.json",
+      "sha256Before": "00b16cd0c60210e458e4781e56446e3b4a2fa81c624cd1087ba91dc6683f0ab5",
+      "sha256After": "00b16cd0c60210e458e4781e56446e3b4a2fa81c624cd1087ba91dc6683f0ab5",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0016_snapshot.json",
+      "sha256Before": "eab3ea213949697fff163ebcbb5816ecffe92365b3ff43b483a85ff33c1f74de",
+      "sha256After": "eab3ea213949697fff163ebcbb5816ecffe92365b3ff43b483a85ff33c1f74de",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0017_snapshot.json",
+      "sha256Before": "e7c49630218c2803f166c85decebb2d2e2a27693f88d2d66341ae7b9046d2dd9",
+      "sha256After": "e7c49630218c2803f166c85decebb2d2e2a27693f88d2d66341ae7b9046d2dd9",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0018_snapshot.json",
+      "sha256Before": "2bc294e56636a5fff773c85aaa8c192870d8661f5dd032b14b68a34ea44aeafa",
+      "sha256After": "2bc294e56636a5fff773c85aaa8c192870d8661f5dd032b14b68a34ea44aeafa",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0019_snapshot.json",
+      "sha256Before": "05401a31fde0b0e7195ebc0f1a58c308ea8be812c2866f53ecfe7fee2b3a2e89",
+      "sha256After": "05401a31fde0b0e7195ebc0f1a58c308ea8be812c2866f53ecfe7fee2b3a2e89",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0020_snapshot.json",
+      "sha256Before": "3c9274d16139ccef03171094f120b7110db3ab0e0b8cda4ce091c1b43103158c",
+      "sha256After": "3c9274d16139ccef03171094f120b7110db3ab0e0b8cda4ce091c1b43103158c",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/0021_snapshot.json",
+      "sha256Before": "8ff6c813352b0043445c0f794335173361d7ff8d5f88d883f562b5af374e8098",
+      "sha256After": "8ff6c813352b0043445c0f794335173361d7ff8d5f88d883f562b5af374e8098",
+      "status": "byte_identical"
+    },
+    {
+      "path": "drizzle/meta/_journal.json",
+      "sha256Before": "73431b8055b567d1a95077a518a7a9db74cf5ba3ef758d58cfb1942902a00c52",
+      "sha256After": "29b3db4d77be1d0d4067e59b9506b824e37084dac95e38c9764ec399154d1325",
+      "status": "journal_append_only"
+    }
+  ],
+  "scope": "pre-execution_state_and_source_comparison_not_backup_or_browser_acceptance",
+  "priorCorrected0022Sha256": "5a7d2c2ca5b724e5f29bf27660a45191fb68b6d676491a1af7414e55f2f3760a",
+  "production0022Sha256": "dbc92b2762b5186b8a359869067cc11dd6a990dda2162ecab5f5728eb53f9628",
+  "orderAmendment": "Existing parent-index statement moved from15to1; all31 trimmed bodies and final schema unchanged"
+}

@@ -1,0 +1,42 @@
+{
+  "archivedAt": "2026-09-28T01:05:46.193Z",
+  "scope": "Preserved cleanup execution attempts and reviewed timestamp correction; neither failed execution receipt is relabeled successful.",
+  "files": [
+    {
+      "source": ".artifacts/amendment-android-native/cleanup-execute-20260928T010043566Z.json",
+      "destination": "evidence/amendment-final/native-cleanup/first-execution-stopped.json",
+      "bytes": 5966,
+      "sha256": "087923b2ab0f86bb33d42da1fdf0cf47116f4f89f075a77eb7d71ab18a6cc97f"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/cleanup-execute-20260928T010425773Z.json",
+      "destination": "evidence/amendment-final/native-cleanup/second-execution-stopped.json",
+      "bytes": 6707,
+      "sha256": "b1a780e7f56f81579f386f6bcfe1f42efddb969d23236d7e75179abefbe66c25"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/cleanup-native-identity-diagnosis.json",
+      "destination": "evidence/amendment-final/native-cleanup/native-identity-diagnosis.json",
+      "bytes": 2559,
+      "sha256": "1e6f90e993e2f4182704ffbaa2c6531f5ec17a781cdecb63d4b16cbab1989474"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/cleanup-owned-emulator-native-identity.ps1",
+      "destination": "evidence/amendment-final/native-cleanup/native-identity-cleanup.ps1.source.txt",
+      "sha256": "a1dcc3fb93efa2bc2042a88fe487386ffbfe434d1ea563e6dda7883e76342dad",
+      "bytes": 15159
+    },
+    {
+      "source": ".artifacts/amendment-android-native/cleanup-native-identity-independent-review.md",
+      "destination": "evidence/amendment-final/native-cleanup/native-identity-independent-review.md",
+      "sha256": "b30f6f38c7a6c8dd96ff138213f8c2cdb4a083c60a6133f8051d0f07b19f4c64",
+      "bytes": 5271
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/assemble-final-status-native-identity.mjs",
+      "destination": "evidence/amendment-final/report-review/native-identity-assembler.mjs.source.txt",
+      "sha256": "b3e1909306d7338a8923fa85ea12fee92a68bf516882cad087f31c65e2a91d16",
+      "bytes": 33641
+    }
+  ]
+}

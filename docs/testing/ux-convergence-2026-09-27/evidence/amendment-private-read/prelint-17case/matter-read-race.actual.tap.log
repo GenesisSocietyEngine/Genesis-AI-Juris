@@ -1,0 +1,112 @@
+TAP version 13
+# Subtest: synthetic in-process baseline: actual detail handler returns authorized fixture
+ok 1 - synthetic in-process baseline: actual detail handler returns authorized fixture
+  ---
+  duration_ms: 34.2192
+  type: 'test'
+  ...
+# Subtest: regression: detail response must use current membership after awaited private read
+ok 2 - regression: detail response must use current membership after awaited private read
+  ---
+  duration_ms: 4.9596
+  type: 'test'
+  ...
+# Subtest: synthetic in-process control: a fresh read denies the same suspended membership
+ok 3 - synthetic in-process control: a fresh read denies the same suspended membership
+  ---
+  duration_ms: 2.0391
+  type: 'test'
+  ...
+# Subtest: untouched authority remains successful across the same awaited data barrier
+ok 4 - untouched authority remains successful across the same awaited data barrier
+  ---
+  duration_ms: 2.8451
+  type: 'test'
+  ...
+# Subtest: identity disappearance during read must hide prepared private response
+ok 5 - identity disappearance during read must hide prepared private response
+  ---
+  duration_ms: 2.9782
+  type: 'test'
+  ...
+# Subtest: identity switch during read must not deliver a prior principal response
+ok 6 - identity switch during read must not deliver a prior principal response
+  ---
+  duration_ms: 7.2669
+  type: 'test'
+  ...
+# Subtest: same participant role downgrade during read must invalidate captured permissions
+ok 7 - same participant role downgrade during read must invalidate captured permissions
+  ---
+  duration_ms: 3.6635
+  type: 'test'
+  ...
+# Subtest: fresh viewer read returns current viewer permissions
+ok 8 - fresh viewer read returns current viewer permissions
+  ---
+  duration_ms: 2.5007
+  type: 'test'
+  ...
+# Subtest: suspend and resume during read cannot revive the captured organization grant
+ok 9 - suspend and resume during read cannot revive the captured organization grant
+  ---
+  duration_ms: 3.653
+  type: 'test'
+  ...
+# Subtest: fresh request after resumption can establish the new organization authority
+ok 10 - fresh request after resumption can establish the new organization authority
+  ---
+  duration_ms: 2.9889
+  type: 'test'
+  ...
+# Subtest: collection unchanged at awaited owner read preserves response and hides internal grant ID
+ok 11 - collection unchanged at awaited owner read preserves response and hides internal grant ID
+  ---
+  duration_ms: 5.7362
+  type: 'test'
+  ...
+# Subtest: collection removal during owner-name read withholds prepared private summary
+ok 12 - collection removal during owner-name read withholds prepared private summary
+  ---
+  duration_ms: 2.3126
+  type: 'test'
+  ...
+# Subtest: collection role change during owner-name read withholds old permissions
+ok 13 - collection role change during owner-name read withholds old permissions
+  ---
+  duration_ms: 8.7299
+  type: 'test'
+  ...
+# Subtest: collection lookahead grant is checked before returning its pagination cursor
+ok 14 - collection lookahead grant is checked before returning its pagination cursor
+  ---
+  duration_ms: 3.7096
+  type: 'test'
+  ...
+# Subtest: empty collection still rechecks disappearing identity
+ok 15 - empty collection still rechecks disappearing identity
+  ---
+  duration_ms: 2.1888
+  type: 'test'
+  ...
+# Subtest: unchanged note operation recovery preserves successful 201, content and cache headers
+ok 16 - unchanged note operation recovery preserves successful 201, content and cache headers
+  ---
+  duration_ms: 6.2553
+  type: 'test'
+  ...
+# Subtest: note operation recovery after suspended membership withholds prior 201 payload
+ok 17 - note operation recovery after suspended membership withholds prior 201 payload
+  ---
+  duration_ms: 3.3443
+  type: 'test'
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3142.8935

@@ -1,0 +1,94 @@
+TAP version 13
+# Subtest: invitation validation directs self and existing members to their supported action
+ok 1 - invitation validation directs self and existing members to their supported action
+  ---
+  duration_ms: 3.3869
+  type: 'test'
+  ...
+# Subtest: organization feedback separates sign-in, profile, validation, concurrency and confirmed persistence
+ok 2 - organization feedback separates sign-in, profile, validation, concurrency and confirmed persistence
+  ---
+  duration_ms: 1.0159
+  type: 'test'
+  ...
+# Subtest: organization success receipts must match the actor, selection, active state and revisions
+ok 3 - organization success receipts must match the actor, selection, active state and revisions
+  ---
+  duration_ms: 2.6758
+  type: 'test'
+  ...
+# Subtest: create refreshes the choices while retaining managed organization and unrelated input
+ok 4 - create refreshes the choices while retaining managed organization and unrelated input
+  ---
+  duration_ms: 66.0414
+  type: 'test'
+  ...
+# Subtest: accept refreshes the choices while retaining managed organization and unrelated input
+ok 5 - accept refreshes the choices while retaining managed organization and unrelated input
+  ---
+  duration_ms: 5.6688
+  type: 'test'
+  ...
+# Subtest: confirmed create followed by read failure offers refresh without replay or context switch
+ok 6 - confirmed create followed by read failure offers refresh without replay or context switch
+  ---
+  duration_ms: 2.6358
+  type: 'test'
+  ...
+# Subtest: revocation during create fences its successful late receipt
+ok 7 - revocation during create fences its successful late receipt
+  ---
+  duration_ms: 7.5672
+  type: 'test'
+  ...
+# Subtest: refresh withdraws stale navigation authority for a successful missing-membership response
+ok 8 - refresh withdraws stale navigation authority for a successful missing-membership response
+  ---
+  duration_ms: 1.6805
+  type: 'test'
+  ...
+# Subtest: refresh withdraws stale navigation authority for a changed role revision
+ok 9 - refresh withdraws stale navigation authority for a changed role revision
+  ---
+  duration_ms: 2.2387
+  type: 'test'
+  ...
+# Subtest: refresh with unchanged membership retains ready navigation and unrelated input
+ok 10 - refresh with unchanged membership retains ready navigation and unrelated input
+  ---
+  duration_ms: 2.4761
+  type: 'test'
+  ...
+# Subtest: revocation during a refresh read fences its late workspace result
+ok 11 - revocation during a refresh read fences its late workspace result
+  ---
+  duration_ms: 1.3915
+  type: 'test'
+  ...
+# Subtest: refresh cannot restore obsolete error feedback after authority withdrawal
+ok 12 - refresh cannot restore obsolete error feedback after authority withdrawal
+  ---
+  duration_ms: 1.7963
+  type: 'test'
+  ...
+# Subtest: action cannot restore obsolete error feedback after authority withdrawal
+ok 13 - action cannot restore obsolete error feedback after authority withdrawal
+  ---
+  duration_ms: 2.2515
+  type: 'test'
+  ...
+# Subtest: a current refresh failure still offers ordinary retry
+ok 14 - a current refresh failure still offers ordinary retry
+  ---
+  duration_ms: 0.9527
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2373.9411

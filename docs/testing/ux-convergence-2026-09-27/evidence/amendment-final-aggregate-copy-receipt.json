@@ -1,0 +1,78 @@
+{
+  "archivedAt": "2026-09-28T01:01:07.567Z",
+  "scope": "Completed exact a1fae95 aggregate, final source binding and reproduced parser scope. Prior failed e6 aggregate remains preserved separately.",
+  "files": [
+    {
+      "source": ".artifacts/amendment-release-gate/aggregate-a1fae95bc2624e28e6232b8867ad2a94c8d9f0ab-20260927T235525Z.log",
+      "destination": "evidence/amendment-final/aggregate/aggregate.log",
+      "sha256": "610b1889977dced153f096f2cadbeb16295ea441806ab230f3afe6a2cb8c73b6",
+      "bytes": 347190
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/aggregate-candidate-receipt.json",
+      "destination": "evidence/amendment-final/aggregate/receipt.json",
+      "sha256": "c78db67704b8e2f82508711e5e7eb5256a287d915e17b6442d0df2ee6dc76e80",
+      "bytes": 5883
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/aggregate-candidate-source.json",
+      "destination": "evidence/amendment-final/aggregate/source.json",
+      "sha256": "76286e5baa151ea25be0092c7350437fe2fd128fe8863d91ccd31728ddb0581f",
+      "bytes": 570
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/seal-candidate.mjs",
+      "destination": "evidence/amendment-final/aggregate/seal-candidate.mjs.source.txt",
+      "sha256": "607a30f9ae20580fbea0e6311820de23eb964d96a7491fa1ea959bdb0e333868",
+      "bytes": 4524
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/seal-candidate.before-null-unrun.mjs.source.txt",
+      "destination": "evidence/amendment-final/aggregate/seal-candidate.before-null-unrun.mjs.source.txt",
+      "sha256": "397ad7c22702b2a558310ef731132de213fa3e40b455a6abbd1636b2e7ce9b82",
+      "bytes": 4352
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/seal-candidate-dry-review.json",
+      "destination": "evidence/amendment-final/aggregate/seal-candidate-dry-review.json",
+      "sha256": "091039e1bd83f16da91c99f9adbe3fe035bbb98ae7e5638fdb6022e2a5049d9a",
+      "bytes": 4706
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/DRY_PARSE-baseline-6ab-PASS.json",
+      "destination": "evidence/amendment-final/aggregate/DRY_PARSE-baseline-6ab-PASS.json",
+      "sha256": "036a6786991c6da2364be11a2fd6ec4ac3af143a6f85d70980030a6ff4c88c58",
+      "bytes": 5854
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/DRY_PARSE-candidate-e6-FAIL.json",
+      "destination": "evidence/amendment-final/aggregate/DRY_PARSE-candidate-e6-FAIL.json",
+      "sha256": "2b969857179954b64c0df6e16781ebf09e4b64c05c011ce7dbc8565c87c2203d",
+      "bytes": 2809
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/run-release-gate.sh",
+      "destination": "evidence/amendment-final/aggregate/run-release-gate.sh.source.txt",
+      "sha256": "b61a22f91fd91eae594cd9b03b50883380b92dd47362588d7a680232f3c8bc48",
+      "bytes": 835
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/release-gate-env.sh",
+      "destination": "evidence/amendment-final/aggregate/release-gate-env.sh.source.txt",
+      "sha256": "50677f5d4f18cde36f57478b89f2cb6872d46e28a1a48287d84c3bd52ca0041d",
+      "bytes": 3382
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/candidate-packet-independent-review.md",
+      "destination": "evidence/amendment-final/aggregate/candidate-packet-independent-review.md.source.txt",
+      "sha256": "3f12fc7525b306fbf3ea8648a5ebd5abd9451516e97241aabb43fac14a544ae9",
+      "bytes": 7593
+    },
+    {
+      "source": ".artifacts/amendment-release-gate/prepare-candidate-packet.mjs",
+      "destination": "evidence/amendment-final/aggregate/prepare-candidate-packet.mjs.source.txt",
+      "sha256": "8c8c6aaab6352408708af194dfbb00ec826d50496e17c0f2eb2a27bfd8fe614c",
+      "bytes": 6860
+    }
+  ]
+}

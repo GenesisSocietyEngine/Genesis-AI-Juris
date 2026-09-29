@@ -1,0 +1,50 @@
+# Final status assembly: authored source self-review
+
+Prepared 28 September 2026 while the exact a1fae95 aggregate is still running. This note reviews source written by the same author; independent source review was requested from `review_flows` using a follow-up task. The assembler has **not been executed**, including with dummy receipts. No final Markdown or successful assembly receipt is claimed. No tracked files, Git state, runtime service, browser, session, emulator or hosted state was changed by this preparation.
+
+## Intended result and acceptance
+
+`assemble-final-status.mjs` consumes the actual complete aggregate, final source identity, fresh production metadata and executed owned-emulator cleanup receipts. It prepares complete ignored replacements for `RELEASE_DECISION.md`, `POST_RECONCILIATION_CLOSURE.md` and `PO_UX_STATUS.md`, plus byte-exact copies of the four supplied receipts and an assembly manifest. It does not publish, commit, deploy, run tests or cleanup, change a gate decision, or contact a service.
+
+The script must refuse missing, failed, incomplete, mismatched or drifted evidence. A successful technical gate does not make the engineering/production decision PASS: both remain BLOCKED, external pilot remains NO-GO, and the original governed/hosted/zoom/screen-reader/human gaps remain. R remains the tested application/test commit; a later documentation commit is explicitly different.
+
+## Source checks performed by the author
+
+- The four receipt files and complete raw gate log are required inside the canonical checkout. Gate identity is exact `a1fae95bc2624e28e6232b8867ad2a94c8d9f0ab`; schema/result/exit, preflight, all stage identities and final web/mobile guards must agree. Raw-log hash/length and parsed web, Dossier, PDF, Flutter, Rust, Android, audit and hosted-lock data are compared with receipt values. Numerical test/page totals are derived from actual inputs, not filled with predicted current totals. Missing later stages or a failed test refuse output.
+- The source receipt requires application digest `5597958a0a870757e75cfbdfba930007d475f782035db4ee8503a97aa1723afc`, 385 inputs, matching built digest, exact R, pinned Node and unchanged hosting digest. Its timestamp cannot predate the completed gate log's final write.
+- Fresh production must start after the gate's recorded completion-observation timestamp. Comparison uses the hash-pinned historical 20:55 receipt. Project, deployment, version/source, environment, public audience/policy counts, live URL and null preview must agree; all declared unchanged checks must be true, no mutation operation may be present, and candidate-published must be false. Drift is rejected for explicit review, not rewritten as a harmless status change. The output retains source-provenance versus deployed-binary/exploit limits.
+- Cleanup must be actual EXECUTE, successful, after gate completion observation, with the owned serial/AVD/processes absent and before/after preservation checks satisfied. READY_NOT_EXECUTED, error, partial cleanup and mismatched mobile source fail. Its completion-proof hash must bind the same complete aggregate receipt or its exact complete raw log. This assembler does not rerun process ownership checks or claim it independently observed shutdown.
+- All three input template hashes are pinned to the reviewed drafts. Complete paragraph and exact-phrase replacements resolve aggregate/production/cleanup placeholders and future-tense aggregate prose. The original e6 FAIL and baseline6ab PASS remain separate. Abandoned async-renderer preparation remains NOT_RUN; six passing targeted tests are not retroactively presented as the failed aggregate passing.
+- Both 42-ID tables retain the exact ordered IDs; NOT_RUN token totals and BLOCKED token totals are guarded (the PO report adds one explanatory BLOCKED in its finalized introduction). Product meanings such as a pending assumption or an unexecuted browser check are deliberately preserved. Literal DRAFT banners, IN_PROGRESS status, explicit completion placeholders and identified stale aggregate phrases are rejected after transformation. Governed-output source wiring remains separate from the 17 modeled detail/collection/note regressions and 9-group/39-response sequential token-store smoke.
+- The PO report links are rebased to the requested final documentation paths. Every other relative final link must already resolve at the destination, except the three produced documents and four receipt files being staged in the ignored packet. Thus it refuses a broken handoff before creating output. Final archive/support documents must be prepared by the coordinator first.
+- Output is a new directory under `.artifacts/ux-reconciliation-auth` only. Inputs and existing templates are read-only. Existing output directories are rejected; no overwrite or deletion is implemented. Input/output real-path checks reject escapes. All validations and transformations precede writes. Receipt bytes are copied exactly; the manifest records source/template/output hashes and does not record credentials. Final output still needs coordinator and independent review against the actual receipts.
+
+This is static source review, not proof of executable success. Because the coordinator expressly prohibited execution during preparation, no syntax-run, fixture test, dummy PASS, or real-receipt run was performed. A legitimate receipt with a different schema or cleanup proof requires an explicit source adjustment and review; the script must not guess or bypass a validation to continue.
+
+Independent review found one concrete preparation defect: the ledger production bullet belongs to a contiguous list block, so selecting it through the paragraph helper would always refuse assembly. It was corrected with a dedicated unique-line replacement that requires exactly one match and preserves every other evidence bullet. This was a fail-closed assembly failure, not a false verification claim. Independent final source review remains separate from this authored note. Source at this correction has SHA-256 `1ac5cf3b6fc0a5a80590eaed4dd11f2b9e68d52d88d9d700882c9d7b86a3910b`.
+
+A second independent finding identified a receipt-validation gap: allowed cleanup action names and outer serial alone did not bind every fallback action to the reviewed process identity. The current script now pins the exact preparation receipt (`85e21f8ef743bb37cb413950e22d9a3bc53168619954198e67021fff7bb30060`), requires both exact prior process objects, original AVD path/config hash/18,661-file metadata basis, and validates each graceful/fallback target, creation time and action timestamp. It also checks the precise four ADB command argument sequences and final serial absence. No actual misdirected cleanup is alleged. These were source-only findings before execution. Current corrected assembler SHA-256: `b5b4c2182a33edb7a978c051e0e27703ad833329c57619d21e9048eaefe47c62`.
+
+## Invocation contract for the coordinator after the gate
+
+Use the pinned Node executable and five explicit arguments. The placeholder paths below are explanatory and must be replaced with actual files; they are not executable instructions to run now.
+
+```text
+node .artifacts/ux-reconciliation-auth/assemble-final-status.mjs
+  --gate <actual completed candidate aggregate receipt>
+  --source <actual final exact-R source receipt>
+  --production <actual fresh unchanged production metadata receipt>
+  --cleanup <actual owned-emulator cleanup execution receipt>
+  --out .artifacts/ux-reconciliation-auth/final-status-assembly-<unique-time>
+```
+
+Prerequisites beyond the four CLI receipts: the original complete gate log must still exist at its receipt path; the cleanup completion-proof file must exist and hash to that gate receipt or raw log; the pinned historical production receipt and reviewed templates must remain exact; all final supporting documents must be archived at the requested relative destinations. This includes `AMENDMENT_AGGREGATE_CANDIDATE.md`, `AMENDMENT_LOCAL_READ_SMOKE.md`, `AMENDMENT_PRODUCTION_SOURCE_REVIEW.md`, `AMENDMENT_ACCEPTANCE_GAPS_REVIEW.md`, `AMENDMENT_GOVERNED_BASELINE_PLAN.md`, `AMENDMENT_PDF_SYNCHRONIZATION_REVIEW.md` and `evidence/amendment-final/local-read-smoke/candidate-initial-source.json`.
+
+The output packet uses these exact final receipt links:
+
+- `evidence/amendment-final/aggregate/receipt.json`
+- `evidence/amendment-final/aggregate/source.json`
+- `evidence/amendment-final/production-readback.json`
+- `evidence/amendment-final/native-cleanup/execution.json`
+
+After a legitimate successful assembly, independently read the actual generated documents and manifest before moving anything into tracked documentation. Do not treat successful assembly as publication approval, human validation, actual browser completion or a change to the three release decisions.

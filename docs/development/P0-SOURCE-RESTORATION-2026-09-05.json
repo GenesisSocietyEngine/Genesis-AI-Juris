@@ -1,0 +1,191 @@
+{
+  "checkpoint": "P0a",
+  "deliberately_not_restored": [
+    {
+      "path": "apps/juris-web",
+      "reason": "The recovered root web application is authoritative; do not introduce an old second web tree."
+    },
+    {
+      "path": "dist",
+      "reason": "Historical generated/distribution artifacts are not required source inputs for this restoration."
+    },
+    {
+      "path": "README.md",
+      "reason": "Preserve current root web documentation."
+    },
+    {
+      "path": "DEVELOPMENT.md",
+      "reason": "Case-insensitive collision with current development.md; history remains available at the source commit."
+    },
+    {
+      "path": "ROADMAP.md",
+      "reason": "Case-insensitive collision with current roadmap.md; preserve current root file."
+    },
+    {
+      "path": "development-journal.md",
+      "reason": "Preserve existing web journal; native history remains in source commit and restored docs."
+    },
+    {
+      "path": "CodexToInstructions.md",
+      "reason": "Use the amended September 5 brief, not historical instructions."
+    },
+    {
+      "path": ".vscode",
+      "reason": "Editor preferences are not a source/build dependency for this checkpoint."
+    },
+    {
+      "path": "genesis-ai-juris.code-workspace",
+      "reason": "Old workspace references the obsolete nested web layout."
+    },
+    {
+      "path": "query.md",
+      "reason": "Historical query notes are not required source input."
+    },
+    {
+      "path": "VISION.md",
+      "reason": "Historical product narrative is not required to restore executable source."
+    }
+  ],
+  "evidence_scope": {
+    "application_tests": "not run at manifest creation",
+    "next_checkpoint": "P0b",
+    "release_gate": "not satisfied",
+    "tree_identity": "must be checked on the committed candidate"
+  },
+  "existing_path_changes": [
+    {
+      "base_blob": "f53493dc5ab8fda8f38f2384f46de417dd3e4877",
+      "path": ".gitignore",
+      "reason": "Append scoped Rust/Flutter generated-output ignores; retain every existing web rule."
+    }
+  ],
+  "format": "genesis-p0-source-restoration-v1",
+  "notes": [
+    "Inherited workflows and rust-toolchain.toml deliberately remain exact source copies at P0a; floating versions and missing locked flags are P0b work.",
+    "Restored docs preserve historical checkpoints. The new restoration receipt carries current integration status.",
+    "A successful tree-identity check proves source restoration, not cross-runtime compatibility or release readiness."
+  ],
+  "prepared_at": "2026-09-05",
+  "preservation": {
+    "hosting_manifest": "unchanged",
+    "migrations_through_0018": "unchanged",
+    "package_lock": "unchanged",
+    "site_versions": "unchanged",
+    "web_application": "unchanged"
+  },
+  "repository": "GenesisSocietyEngine/Genesis-AI-Juris",
+  "restore_source_commit": "c088200138332cd212b87e266746ea85b53a2f77",
+  "source_files_restored": 487,
+  "source_groups": [
+    {
+      "mode": "100644",
+      "path": ".gitattributes",
+      "sha": "e748376c6bdb583c60b2a154f06e190aea46a6db",
+      "type": "blob"
+    },
+    {
+      "mode": "040000",
+      "path": ".github",
+      "sha": "358830e6aacf690633fd10d9a982dba43535e529",
+      "type": "tree"
+    },
+    {
+      "mode": "100644",
+      "path": "Cargo.toml",
+      "sha": "eac4f37068f985034a7531efa4f7168a7372e1bc",
+      "type": "blob"
+    },
+    {
+      "mode": "100644",
+      "path": "Cargo.lock",
+      "sha": "fbbf3f27c3744dab2673dcbda4174397bb2f0db2",
+      "type": "blob"
+    },
+    {
+      "mode": "100644",
+      "path": "rust-toolchain.toml",
+      "sha": "85f36062a19af87c331c34b45a166a79d5270a06",
+      "type": "blob"
+    },
+    {
+      "mode": "040000",
+      "path": "crates",
+      "sha": "2e496aafbbe6999d6cf28b1cd0645d97a87c60ef",
+      "type": "tree"
+    },
+    {
+      "mode": "040000",
+      "path": "content",
+      "sha": "e1d225ad2cb52e252b0aad8a706ca73343b3fd36",
+      "type": "tree"
+    },
+    {
+      "mode": "040000",
+      "path": "contracts",
+      "sha": "73e7152509c72873ee72ed0df15b23871571f44f",
+      "type": "tree"
+    },
+    {
+      "mode": "040000",
+      "path": "apps/juris-mobile",
+      "sha": "c39ae5f97b9370a285cd67ca3c44cbb81e39414c",
+      "type": "tree"
+    },
+    {
+      "mode": "040000",
+      "path": "docs/architecture",
+      "sha": "827736b5d6eefa5598033411fce7cf4d4fdbbba5",
+      "type": "tree"
+    },
+    {
+      "mode": "040000",
+      "path": "docs/authoring",
+      "sha": "7fdf4be5b239cb1fb3abb1dbd580f166b8a44391",
+      "type": "tree"
+    },
+    {
+      "mode": "040000",
+      "path": "docs/design",
+      "sha": "8fc1dc72052a3debd3f08905c29e543cc532ba91",
+      "type": "tree"
+    },
+    {
+      "mode": "040000",
+      "path": "docs/development",
+      "sha": "319d002567b06a03d51dfd3d0919d02f4c1ec4a4",
+      "type": "tree"
+    },
+    {
+      "mode": "040000",
+      "path": "docs/patches",
+      "sha": "2e7be6cd838ae158d21225082c23bf88cce06f39",
+      "type": "tree"
+    },
+    {
+      "mode": "040000",
+      "path": "docs/releases",
+      "sha": "baf097ed487344756daae71cc75ff4967f976309",
+      "type": "tree"
+    },
+    {
+      "mode": "040000",
+      "path": "docs/setup",
+      "sha": "7dcb1b6d1ce82e6c68cc01203427609b2b173b04",
+      "type": "tree"
+    },
+    {
+      "mode": "040000",
+      "path": "docs/testing",
+      "sha": "9b2b8cece4d07ee6504b5566f79e131981dd00c9",
+      "type": "tree"
+    },
+    {
+      "mode": "040000",
+      "path": "docs/upgrades",
+      "sha": "3e1d86c5d844df45bf7f80f4ba6133fccd70e032",
+      "type": "tree"
+    }
+  ],
+  "web_base_commit": "280394640f0fc4d2a87e098edd6d34001393c557",
+  "web_base_tree": "d3e14e34db68830f4eb73fc84bc27bce5713577c"
+}

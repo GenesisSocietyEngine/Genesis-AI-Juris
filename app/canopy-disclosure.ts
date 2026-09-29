@@ -1,0 +1,1 @@
+export const CANOPY_DISCLOSURE = "This demonstration uses entirely fictional organisations, documents, people and figures. It is inspired only by publicly described industry patterns and does not represent Greeneration data, performance, controls or decisions.";

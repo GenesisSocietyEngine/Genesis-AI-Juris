@@ -1,0 +1,64 @@
+# Independent PO/UX draft review
+
+27 September 2026. Reviewed the complete original runbook (sections 0–17), the private PO/UX draft, current release/42-row closure ledgers, human protocol, report review, actual C/D fixture, amendment execution and browser/source-lifecycle reviews. This is a report-accuracy review, not new application, browser or human acceptance. No tracked file, running gate or emulator was changed.
+
+Reviewed draft SHA-256: `49e7e6711bbff247ca39ee11fba5914cf10dfaa42004ec5798f49bdbc034c576`.
+Original runbook SHA-256: `21620589a14b7fc03365e6f3ea13c5d3af3a44eec0a16bab609b1c65bb00761e`.
+Canonical source HEAD observed: `e6c6adc6fe01129b2e3d442072c532e08591fae9`, clean. Its new complete gate is still running at this review checkpoint; preserve the draft's final-result placeholders. The active tracked ledgers intentionally retain their pre-run checkpoint under the tracked freeze.
+
+## Assessment
+
+The draft is suitable for refinement, not final delivery yet. It correctly withholds whole-runbook acceptance, separates engineering/production/pilot, labels zero human sessions, distinguishes API/browser/file/rendered evidence, and preserves the pending exact-source gate. It does not invent a measured usability improvement or conflate the baseline aggregate with the private-read correction. No false positive stage or A01–A17 completion claim was found.
+
+Four changes would make the PO handoff materially more actionable and prevent acceptance drift. These are report findings, not newly reproduced product defects.
+
+### R1 — carry forward the actual acceptance thresholds
+
+The stage table and human priority (draft lines 43–51 and 77) mention a 90-second task but omit the numerical success thresholds and the two separate two-action technical limits. A PO cannot tell what will count as success from this summary alone. Add a compact acceptance-target paragraph/table, linked to the protocol, retaining the runbook's distinction between mandatory technical criteria and *proposed* human targets:
+
+| Scope | Exact runbook criterion or proposed target | Evidence boundary |
+| --- | --- | --- |
+| Stage 1 / UX02, A01 | At 1366×768 and 100%, meaningful case content and the main action visible before first scroll | Observed layout; no human time inference |
+| Stage 2 / A01 | First screen to demo Overview in at most two meaningful actions | Count actual actions; separate from 90 seconds |
+| Stage 3 / A03 | Significant conclusion to accessible source in at most two actions | Exact authorized fragment/version, not merely a link |
+| Stage 7 / A14–A15 | 1366×768, 1024×768, 390×844; actual desktop browser 200%; complete keyboard and screen-reader routes | Viewport/AX alone cannot supply zoom or screen-reader evidence |
+| Stage 8 / A17, proposed target | At least 4/5 find conclusion and source within 90 seconds | New real target participants, timer start and all assistance recorded |
+| Stage 8 / A17, proposed target | At least 4/5 complete create → save → reopen → export without help; 5/5 distinguish preliminary from approved | Preserve failed/assisted participants in denominator |
+| Loss/finding closure | No silent data loss; all discovered P0/P1 in mandatory scenarios fixed and retested | Zero observed incidents cannot be claimed before observations |
+
+The detailed human protocol already implements these targets correctly; do not redefine them or upgrade them to achieved outcomes. The runbook also calls for default body text 16px, regular labels approximately 14px, visible/returned modal focus, non-color-only statuses and field-associated errors. The summary can point to that checklist without repeating every criterion. Human A17 remains separate from A01–A16 engineering checks and does not retroactively prevent completing technical iterations.
+
+### R2 — specify the pre-change governed-output prerequisite
+
+Draft lines 63 and 71 correctly admit zero outputs in the actual assumption fixture, then propose showing stale outputs after v2. The action sequence should explicitly require preparing a valid *pre-change* governed package/snapshot/output through the existing authorized workflow before v2. Otherwise the next pass could repeat an assertion-only exercise and still be unable to demonstrate output invalidation or non-inherited approval.
+
+The actual `AMENDMENT_EXECUTION.md` receipt lists `INFORMATION_REQUEST_OPEN`, `CONTRADICTION_UNRESOLVED`, `CRITICAL_DEADLINE_MISSING`, `DECISION_GRAPH_INVALID`, and `SIMULATION_REQUIRED`; there were zero packages and outputs. The browser capability review likewise observed no exact package or immutable snapshot. These are concrete application prerequisites independent of the file-chooser blocker.
+
+Recommended sequence: resolve the intended missing evidence/deadline and actual graph/simulation prerequisites; prepare a valid exact package/snapshot and baseline output; use only the allowed review/approval role if approval is part of the chosen scenario; retain its bytes and receipt; then perform permitted v2 replacement → explicit citation/assertion reassessment → fresh snapshot/output → independent authorized output approval where applicable. Observe old bytes/history and stale state at each step. Do not seed an approval, invent a package association or fill missing evidence merely to obtain green status. Synthetic QA approval demonstrates software behavior, not professional endorsement.
+
+### R3 — make the browser restriction and connection prerequisite exact
+
+Draft line 71 says “Resolve the permitted chooser capability **or an explicitly authorized supported workflow**.” In isolation, that alternative could be read as permission to bypass the already rejected chooser operation with another transport. The current capability receipt explicitly prohibits an indirect workaround and allows retry after the original security/permission prerequisite is resolved. The report should say that directly; ordinary scope authorization alone did not resolve that tool restriction.
+
+Also include the later CUA connection timeout: wrong-organization concealment was observed, but return to the correct organization was not confirmed after the dispatch deadline/reset. Restoring a responsive documented browser connection is a separate prerequisite for the remaining browser work. Do not classify the tool timeout or upload check as an application defect. No alternative upload was attempted by this review.
+
+### R4 — expose the actual role coverage and conditional expiry limit
+
+The draft's generic “real synthetic account roles” and “proper role” language is accurate but underspecified for A10/A11 and the next integrated route. Name the actual fixture roles **owner, contributor (the editor equivalent), reviewer and viewer**, plus a foreign actor for isolation checks. Actual ordinary local APIs cover those roles; the browser observations largely use the owner. Hosted Chrome/Edge actors are not an established same-group owner/member pair. Additional browser role logins remain NOT_RUN.
+
+The inspected model permits owner/contributor/reviewer evidence actions; **only the reviewer may approve a governed output**. Do not assume every evidence acceptance must be a separate actor or imply owner acceptance is output approval. Tie the next scenario to these real permissions, not generic role names alone.
+
+Add one explicit sentence preserving the amendment decision: controlled real-session expiry is valid scoped A09 evidence; naturally elapsed expiry is unexecuted but is **not an additional mandatory blocker unless policy or an identified timing-specific risk requires it**. The original runbook requires expiry/logout behavior; it does not prescribe waiting out a natural TTL. The draft does not currently impose that extra gate, but its omission makes later acceptance drift easier.
+
+## Correctly preserved boundaries
+
+- **Stages/IDs:** all nine stages are represented and the stated ledger contains the 16 UX and 17 A rows. A01–A06 entry/evidence/map, A07–A10 auth/save/recovery/roles, A11–A13 review/files/freshness, A14–A15 accessibility, A16 legacy/training and A17 real users are retained. No requirement needs a new invented identifier or a pass percentage.
+- **Formats:** Base, Medium, Full ON/OFF are retained. For PO clarity add the exact compatibility rule: Base ON becomes Medium; Medium OFF becomes Base; Full starts ON and remains Full with OFF. Full OFF's coupled graph-text omission is honestly disclosed and supported by `REPORTS.md`; a separate legacy appendix control did not exist. Do not promise all Full records remain in the PDF when tree is OFF.
+- **Actual files versus controls:** four earlier Canopy configurations and their scoped all-page inspection are separate from later actual browser Base delivery. The draft correctly leaves final-candidate browser format/failure coverage open and does not claim visual inspection of all automated matrix pages.
+- **History:** account-scoped saved-Studio receipts are metadata, not PDF storage, user-file-save confirmation or professional approval. A short qualification that current access is required and account deletion removes records would be useful if “history” is presented as a durability promise; no permanent-archive claim currently appears.
+- **Source review semantics:** the retained logical `accepted_source` badge is explicitly distinguished from new version review and output approval. The static review supports this caveat; it does not prove automatic output-approval inheritance or a newly reproduced second P1.
+- **FiveFlats:** available canonical material means the complete exercise remains NOT_RUN, not unavailable-material N/A. Before exercising it, keep the exact matching source/version and current values; do not lift values from memory or use a different similarly named file. The draft states the availability limit correctly.
+- **Human validation:** 0 participants and no measured rates are stated; agents, test fixtures and technical expert review are not human research. Five people can expose UX defects, not prove product-market fit. Invitations and study execution remain within existing authorization; the draft is not itself a request to send any.
+- **Release separation:** no candidate deployment, exact hosted acceptance, operational smoke or pilot GO is invented. Source/build/new aggregate fields must remain placeholders until observed. A green technical script alone would not close the blocked integrated journey, hosted role/context acceptance, actual zoom/screen-reader or human study.
+
+The shortest useful draft revision is to add the target table, name the governed-output prerequisites and actual roles, remove the ambiguous alternate-upload phrase, and append the conditional-expiry/connection sentences. No implementation redesign or duplicate technical gate is indicated by this report review.

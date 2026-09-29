@@ -1,0 +1,54 @@
+{
+  "providerReadiness": {
+    "observedAt": "2026-09-29T02:21:51.779Z",
+    "projectId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "revision": 39,
+    "updatedAt": "2026-09-11T16:00:25.969297+00:00",
+    "entries": [
+      {
+        "key": "RESEND_API_KEY",
+        "present": true,
+        "secret": true,
+        "valueReadable": false
+      },
+      {
+        "key": "GENESIS_INVITATION_FROM_EMAIL",
+        "present": false,
+        "secret": null,
+        "valueReadable": false
+      },
+      {
+        "key": "GENESIS_INVITATION_MAIL_ENABLED",
+        "present": false,
+        "secret": null,
+        "valueReadable": false
+      },
+      {
+        "key": "GENESIS_PUBLIC_ORIGIN",
+        "present": true,
+        "secret": false,
+        "valueReadable": true
+      },
+      {
+        "key": "GENESIS_ADMIN_EMAILS",
+        "present": true,
+        "secret": true,
+        "valueReadable": false
+      }
+    ],
+    "valuesExposed": false
+  },
+  "site": {
+    "observedAt": "2026-09-29T02:44:17.407Z",
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "latest_version_number": 102,
+    "status": "active",
+    "access_mode": "public",
+    "current_user_role": "owner",
+    "hasPreview": false,
+    "hasLive": true,
+    "authConfigured": true,
+    "secretsExposed": false,
+    "mutated": false
+  }
+}

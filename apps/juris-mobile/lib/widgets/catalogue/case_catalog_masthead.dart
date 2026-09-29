@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/product_navigation.dart';
 import '../../design/juris_design.dart';
 import '../../models/case_catalog.dart';
 import '../../visual_identity/cinematic_catalogue_strings.dart';
@@ -36,8 +37,9 @@ final class CaseCatalogMasthead extends StatelessWidget {
         'CaseCatalogMasthead requires spacing, typography, and surfaces.',
       );
     }
-    final CinematicCatalogueStrings chrome =
-        CinematicCatalogueStrings.of(locale);
+    final CinematicCatalogueStrings chrome = CinematicCatalogueStrings.of(
+      locale,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,9 +54,7 @@ final class CaseCatalogMasthead extends StatelessWidget {
               header: true,
               child: Text(
                 chrome.applicationName.toUpperCase(),
-                style: typography.caseIndex.copyWith(
-                  color: surfaces.brandGold,
-                ),
+                style: typography.caseIndex.copyWith(color: surfaces.brandGold),
               ),
             ),
             Wrap(
@@ -62,6 +62,10 @@ final class CaseCatalogMasthead extends StatelessWidget {
               runSpacing: spacing.sm,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: <Widget>[
+                ScopedJurisProductNavigation(
+                  locale: locale,
+                  current: JurisProductDestination.templates,
+                ),
                 if (onOpenStudio != null)
                   FilledButton.icon(
                     key: const ValueKey<String>('open-guided-studio'),

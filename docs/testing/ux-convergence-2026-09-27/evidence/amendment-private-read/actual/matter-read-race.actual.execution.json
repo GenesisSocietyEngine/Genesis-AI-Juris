@@ -1,0 +1,15 @@
+{
+    "startedAt":  "2026-09-27T21:44:13.1475184Z",
+    "completedAt":  "2026-09-27T21:44:17.2014979Z",
+    "command":  "node --import tsx --test tests/dossier-read-access.test.ts",
+    "node":  "v22.23.2",
+    "exitCode":  0,
+    "sourceMode":  "ACTUAL_APPLIED_SOURCE",
+    "testPath":  "tests/dossier-read-access.test.ts",
+    "testSha256":  "066b96e4cd96786c1cc97a7666453bd9f74a5f6a7817cecf7fa50f3309946c8a",
+    "sourceApplicationReceipt":  "matter-read-fence/applied.receipt.json",
+    "change":  "Lint-only local binding module renamed compiledModule; previous test source/logs/receipts preserved in matter-read-race-prelint",
+    "stdoutSha256":  "d4d7b9281a96e934d203d10ecae6c463473435d260d0e83f9ec90918694802c0",
+    "stderrBytes":  0,
+    "currentSourceReceiptSha256":  "e27f5cfb0df975ed6b610114b711934aa337def7abc814c8f68e371b53e4fcdf"
+}

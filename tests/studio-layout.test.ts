@@ -1,0 +1,122 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { layoutStudioNodes, studioGraphBounds, studioNodeEstimatedHeight, studioNodesOverlap } from "../app/studio-layout";
+import type { StudioLink, StudioNode } from "../app/types";
+
+test("default vertical Studio layout is deterministic, collision-free and generously spaced", () => {
+  const nodes: StudioNode[] = Array.from({ length: 27 }, (_, index) => ({
+    id: `fact-${index + 1}`, type: "fact", title: `Node ${index + 1}`, detail: "", x: 400, y: 240,
+  }));
+  const links: StudioLink[] = [
+    ...Array.from({ length: 8 }, (_, index) => ({ id: `link-${index + 1}`, from: nodes[0].id, to: nodes[index + 1].id })),
+    ...Array.from({ length: 9 }, (_, index) => ({ id: `link-${index + 9}`, from: nodes[index + 1].id, to: nodes[index + 9].id })),
+    ...Array.from({ length: 9 }, (_, index) => ({ id: `link-${index + 18}`, from: nodes[index + 9].id, to: nodes[index + 18].id })),
+  ];
+  const first = layoutStudioNodes(nodes, links);
+  const second = layoutStudioNodes(nodes, links);
+  assert.deepEqual(first, second);
+  for (let left = 0; left < first.length; left += 1) {
+    for (let right = left + 1; right < first.length; right += 1) assert.equal(studioNodesOverlap(first[left], first[right]), false, `${first[left].id} overlaps ${first[right].id}`);
+  }
+  const byId = new Map(first.map((node) => [node.id, node]));
+  for (const link of links) {
+    const from = byId.get(link.from)!;
+    const to = byId.get(link.to)!;
+    assert.ok(to.y > from.y, `${link.id} must flow top to bottom`);
+    assert.ok(to.y - (from.y + studioNodeEstimatedHeight(from)) >= 150, `${link.id} must retain a clear vertical lane gap`);
+  }
+  const bounds = studioGraphBounds(first);
+  assert.ok(bounds.width >= Math.max(...first.map((node) => node.x + 165)));
+  assert.ok(bounds.height >= Math.max(...first.map((node) => node.y + 96)));
+  for (const y of new Set(first.map((node) => node.y))) assert.ok(first.filter((node) => node.y === y).length <= 5, "wide topology layers should wrap for vertical scrolling");
+});
+
+test("horizontal orientation remains available with spaced branch lanes", () => {
+  const nodes: StudioNode[] = Array.from({ length: 9 }, (_, index) => ({ id: `fact-${index + 1}`, type: "fact", title: `Node ${index + 1}`, detail: "", x: 0, y: 0 }));
+  const links: StudioLink[] = Array.from({ length: 8 }, (_, index) => ({ id: `link-${index + 1}`, from: nodes[0].id, to: nodes[index + 1].id }));
+  const laidOut = layoutStudioNodes(nodes, links, "horizontal");
+  const byId = new Map(laidOut.map((node) => [node.id, node]));
+  for (const link of links) assert.ok(byId.get(link.to)!.x > byId.get(link.from)!.x, `${link.id} must flow left to right`);
+  const branch = laidOut.filter((node) => node.id !== nodes[0].id).sort((left, right) => left.y - right.y);
+  for (let index = 1; index < branch.length; index += 1) {
+    const previousBottom = branch[index - 1].y + studioNodeEstimatedHeight(branch[index - 1]);
+    assert.ok(branch[index].y - previousBottom >= 88, "horizontal layout should preserve generous vertical branch spacing");
+  }
+});
+
+test("cyclic repair state still receives unique non-overlapping slots", () => {
+  const nodes: StudioNode[] = [
+    { id: "fact-1", type: "fact", title: "One", detail: "", x: 1, y: 1 },
+    { id: "fact-2", type: "fact", title: "Two", detail: "", x: 1, y: 1 },
+    { id: "fact-3", type: "fact", title: "Three", detail: "", x: 1, y: 1 },
+  ];
+  const links: StudioLink[] = [
+    { id: "link-1", from: "fact-1", to: "fact-2" },
+    { id: "link-2", from: "fact-2", to: "fact-1" },
+  ];
+  const laidOut = layoutStudioNodes(nodes, links);
+  assert.equal(studioNodesOverlap(laidOut[0], laidOut[1]), false);
+  assert.equal(studioNodesOverlap(laidOut[1], laidOut[2]), false);
+});
+
+test("layout reserves real vertical space for wrapped titles and runtime summaries", () => {
+  const longTitle = "Commission the three-country legal and tax work across every reviewed ownership vehicle";
+  const nodes: StudioNode[] = Array.from({ length: 8 }, (_, index) => ({
+    id: `decision-${index + 1}`, type: "decision", title: `${longTitle} ${index + 1}`, detail: "", x: 0, y: 0,
+    runtime: index % 2 === 0 ? { budgetCostEur: 12_000, durationMinutes: 1_440 } : undefined,
+  }));
+  const laidOut = layoutStudioNodes(nodes, []);
+  assert.ok(studioNodeEstimatedHeight(laidOut[0]) > 96);
+  for (let left = 0; left < laidOut.length; left += 1) {
+    for (let right = left + 1; right < laidOut.length; right += 1) assert.equal(studioNodesOverlap(laidOut[left], laidOut[right]), false);
+  }
+  assert.ok(Math.min(...laidOut.map((node) => node.y)) >= 70, "the first row retains a visible top gutter");
+});
+
+test("disconnected subgraphs receive separate vertical bands", () => {
+  const nodes: StudioNode[] = [
+    { id: "trigger-1", type: "trigger", title: "First component", detail: "", x: 0, y: 0 },
+    { id: "outcome-1", type: "outcome", title: "First result", detail: "", x: 0, y: 0 },
+    { id: "trigger-2", type: "trigger", title: "Second component", detail: "", x: 0, y: 0 },
+    { id: "outcome-2", type: "outcome", title: "Second result", detail: "", x: 0, y: 0 },
+  ];
+  const links: StudioLink[] = [
+    { id: "link-1", from: "trigger-1", to: "outcome-1" },
+    { id: "link-2", from: "trigger-2", to: "outcome-2" },
+  ];
+  const laidOut = layoutStudioNodes(nodes, links);
+  const byId = new Map(laidOut.map((node) => [node.id, node]));
+  const firstBottom = Math.max(byId.get("trigger-1")!.y + studioNodeEstimatedHeight(byId.get("trigger-1")), byId.get("outcome-1")!.y + studioNodeEstimatedHeight(byId.get("outcome-1")));
+  const secondTop = Math.min(byId.get("trigger-2")!.y, byId.get("outcome-2")!.y);
+  assert.ok(secondTop - firstBottom >= 100, "components should be visibly separated rather than interleaved");
+});
+
+test("every edge in a multi-parent acyclic graph advances to a later visual layer", () => {
+  const nodes: StudioNode[] = Array.from({ length: 14 }, (_, index) => ({
+    id: `node-${index}`,
+    type: index === 0 ? "trigger" : index === 13 ? "outcome" : "decision",
+    title: `Cross-border decision with a deliberately wrapped title ${index}`,
+    detail: "",
+    x: 0,
+    y: 0,
+  }));
+  const links: StudioLink[] = [
+    { id: "e01", from: "node-0", to: "node-1" }, { id: "e02", from: "node-0", to: "node-2" },
+    { id: "e13", from: "node-1", to: "node-3" }, { id: "e23", from: "node-2", to: "node-3" },
+    { id: "e14", from: "node-1", to: "node-4" }, { id: "e24", from: "node-2", to: "node-4" },
+    { id: "e35", from: "node-3", to: "node-5" }, { id: "e45", from: "node-4", to: "node-5" },
+    ...Array.from({ length: 8 }, (_, index) => ({ id: `tail-${index}`, from: `node-${index + 5}`, to: `node-${index + 6}` })),
+  ];
+  const first = layoutStudioNodes(nodes, links);
+  const second = layoutStudioNodes(nodes, links);
+  const byId = new Map(first.map((node) => [node.id, node]));
+  assert.deepEqual(first, second, "the same topology must always produce the same coordinates");
+  for (const link of links) {
+    const from = byId.get(link.from)!;
+    const to = byId.get(link.to)!;
+    assert.ok(to.y > from.y + studioNodeEstimatedHeight(from), `${link.id} must advance below its source card`);
+  }
+  for (let left = 0; left < first.length; left += 1) {
+    for (let right = left + 1; right < first.length; right += 1) assert.equal(studioNodesOverlap(first[left], first[right]), false);
+  }
+});

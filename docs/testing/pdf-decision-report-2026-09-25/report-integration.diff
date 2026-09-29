@@ -1,0 +1,159 @@
+diff --git a/app/CaseReportDialog.tsx b/app/CaseReportDialog.tsx
+index cb7da27..9b2afcf 100644
+--- a/app/CaseReportDialog.tsx
++++ b/app/CaseReportDialog.tsx
+@@ -47,6 +47,7 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
+     reportReceiptStorageScope,
+     persistReportReceiptOnDevice,
+   ));
++  const [presentationMode, setPresentationMode] = useState<"decision" | "full">("decision");
+   const [includeEconomics, setIncludeEconomics] = useState(true);
+   const [includeRegisters, setIncludeRegisters] = useState(true);
+   const [includeSources, setIncludeSources] = useState(true);
+@@ -72,6 +73,7 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
+   const t = (en: string, ru: string) => locale === "en" ? en : ru;
+   const activeReportOptions = useMemo<CaseReportOptions>(() => ({
+     language: locale,
++    presentationMode,
+     profileId,
+     profileLabel: caseTypePlaybook(draft.caseType).outputs.find((output) => output.id === profileId)?.label[locale]
+       ?? primaryCaseOutput(draft.caseType).label[locale],
+@@ -99,7 +101,7 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
+     reviewerApproved,
+     redactedNodeIds,
+   }), [
+-    audience, confidentiality, currentFingerprint, includeAuditTrail, includeEconomics, includeRegisters,
++    audience, confidentiality, currentFingerprint, presentationMode, includeAuditTrail, includeEconomics, includeRegisters,
+     includeSources, includeTechnicalIds, locale, matterReference, persistReportReceiptOnDevice, preparedBy, preparedFor, privateCase,
+     reportReceiptStorageScope,
+     currentPublicationFingerprint, draft.caseType, profileId, redactedNodeIds, reviewerApproved, reviewerName,
+@@ -219,7 +221,7 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
+       <p>{t("Generate a structured A4 PDF for review, circulation or the client file. The raw AI prompt is never included.", "Сформируйте структурированный PDF A4 для проверки, распространения или клиентского досье. Исходный AI-промпт никогда не включается.")}</p>
+       <p className="report-draft-explainer">{t("Start with a preliminary analytical report. Previewing or downloading it does not create an independent approval. Governed outputs and a reviewer's decision are recorded separately in My cases → Reports.", "Начните с предварительного аналитического отчёта. Просмотр или скачивание не создаёт независимого утверждения. Контролируемые документы и решение проверяющего фиксируются отдельно: Мои дела → Отчёты.")}</p>
+       <section className="case-report-quick-actions" aria-label={t("Create your report", "Создать отчёт")}>
+-        <div><b>{activeReportOptions.profileLabel}</b><span>{status === "draft" ? t("Preliminary draft", "Предварительный черновик") : t("Final report", "Финальный отчёт")} · {audience === "internal" ? t("Internal review", "Внутренняя проверка") : t("For the client", "Для клиента")}</span></div>
++        <div><b>{presentationMode === "decision" ? t("Decision report", "Отчёт для принятия решения") : activeReportOptions.profileLabel}</b><span>{status === "draft" ? t("Preliminary draft", "Предварительный черновик") : t("Final report", "Финальный отчёт")} · {audience === "internal" ? t("Internal review", "Внутренняя проверка") : t("For the client", "Для клиента")}</span></div>
+         <div className="case-report-buttons"><button data-report-preview className="primary-cta" type="button" onClick={preview} disabled={outputBlocked}>{busy ? t("Creating PDF…", "Создание PDF…") : t("Preview PDF", "Предпросмотр PDF")}</button><button className="secondary-cta" type="button" onClick={generate} disabled={outputBlocked}>{t("Download PDF", "Скачать PDF")}</button></div>
+       </section>
+       {!canGenerateReport && <p className="case-report-error" role="status">{t("Report export is unavailable in inspection-only mode.", "Экспорт отчёта недоступен в режиме просмотра.")}</p>}
+@@ -234,6 +236,8 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
+         <details><summary>{t("Receipt fields", "Поля квитанции")}</summary><pre>{JSON.stringify(downloadReceipt, null, 2)}</pre></details>
+       </section>}
+       {previewUrl && <section className="case-report-preview"><h3>{t("PDF preview", "Предпросмотр PDF")}</h3><iframe src={previewUrl} title={t("Analytical PDF preview", "Предпросмотр аналитического PDF")}/><a href={previewUrl} target="_blank" rel="noreferrer">{t("Open preview in a new tab", "Открыть предпросмотр в новой вкладке")}</a></section>}
++      <label className="report-format-choice"><span>{t("Report format", "Формат отчёта")}</span><select value={presentationMode} onChange={event => setPresentationMode(event.target.value as "decision" | "full")} disabled={busy}><option value="decision">{t("Decision report — findings, recommendations and calculations", "Отчёт для решения — выводы, рекомендации и расчёты")}</option><option value="full">{t("Full analysis — complete records, graph and audit options", "Полный анализ — все записи, граф и параметры аудита")}</option></select></label>
++      <p className="report-draft-explainer">{t("The decision report explains what the recorded inputs imply and what to do next. Calculated findings remain conditional on evidence; they do not create an approval.", "Отчёт объясняет значение записанных данных и следующие действия. Расчётные выводы зависят от подтверждения оснований и не создают утверждения.")}</p>
+       <details className="case-report-settings" open={developerView}>
+       <summary>{t("Report settings and approval", "Настройки отчёта и утверждение")}</summary>
+       <div className="case-report-grid">
+@@ -252,10 +256,10 @@ export default function CaseReportDialog({ locale, draft, currentFingerprint, wo
+           <label className="report-check"><input type="checkbox" checked={includeEconomics} onChange={(event) => setIncludeEconomics(event.target.checked)}/><span>{t("Economic analysis and assumptions", "Экономический анализ и допущения")}</span></label>
+           <label className="report-check"><input type="checkbox" checked={includeRegisters} onChange={(event) => setIncludeRegisters(event.target.checked)}/><span>{t("Facts, evidence and rules register", "Реестр фактов, доказательств и правил")}</span></label>
+           <label className="report-check"><input type="checkbox" checked={includeSources} onChange={(event) => setIncludeSources(event.target.checked)}/><span>{t("Authorities and source register", "Реестр правовых источников")}</span></label>
+-          <label className="report-check"><input type="checkbox" checked={includeAuditTrail} disabled={audience === "client"} onChange={(event) => setIncludeAuditTrail(event.target.checked)}/><span>{t("Safe authoring and review trail", "Безопасная история подготовки и проверки")}</span></label>
+-          <label className="report-check"><input type="checkbox" checked={includeTechnicalIds} disabled={audience === "client"} onChange={(event) => setIncludeTechnicalIds(event.target.checked)}/><span>{t("Technical node IDs and lineage", "Технические ID нодов и линия версий")}</span></label>
++          <label className="report-check"><input type="checkbox" checked={includeAuditTrail} disabled={audience === "client" || presentationMode === "decision"} onChange={(event) => setIncludeAuditTrail(event.target.checked)}/><span>{t("Safe authoring and review trail", "Безопасная история подготовки и проверки")}</span></label>
++          <label className="report-check"><input type="checkbox" checked={includeTechnicalIds} disabled={audience === "client" || presentationMode === "decision"} onChange={(event) => setIncludeTechnicalIds(event.target.checked)}/><span>{t("Technical node IDs and lineage", "Технические ID нодов и линия версий")}</span></label>
+           <label><span>{t("Redact from report", "Скрыть из отчёта")}</span><select multiple size={4} value={redactedNodeIds} onChange={(event) => setRedactedNodeIds([...event.currentTarget.selectedOptions].map((option) => option.value))}>{draft.nodes.filter((node) => node.type === "fact" || node.type === "evidence").map((node) => <option key={node.id} value={node.id}>{node.title}</option>)}</select></label>
+-          <aside><b>{t("Always included", "Всегда включается")}</b><p>{t("Executive summary, decision map, verification checklist, report status, page numbers, content fingerprint, the full portrait graph, and its complete text alternative.", "Резюме, карта решений, чек-лист проверки, статус отчёта, номера страниц, отпечаток содержания, полный граф в книжной ориентации и его полная текстовая альтернатива.")}</p></aside>
++          <aside><b>{t("Included in this format", "В выбранном формате")}</b><p>{presentationMode === "decision" ? t("Findings, proposed actions, calculation method and limitations. Full records, graph and technical details are available in Full analysis.", "Выводы, предлагаемые действия, метод расчёта и ограничения. Полные записи, граф и технические сведения доступны в полном анализе.") : t("Executive summary, decision map, verification checklist, report status, page numbers, content fingerprint, the full portrait graph, and its complete text alternative.", "Резюме, карта решений, чек-лист проверки, статус отчёта, номера страниц, отпечаток содержания, полный граф в книжной ориентации и его полная текстовая альтернатива.")}</p></aside>
+         </fieldset>
+       </div>
+       <div className="case-report-status"><b>{workspaceFingerprint === currentFingerprint && workspacePublicationFingerprint === currentPublicationFingerprint ? t("Workspace-saved reviewed version", "Проверенная версия сохранена в workspace") : t("Working draft", "Рабочий черновик")}</b><span>{draft.nodes.length} {t("nodes", "нод")} · {draft.links.length} {t("connections", "связей")}</span></div>
+diff --git a/app/case-report.ts b/app/case-report.ts
+index 0bf7738..b05d1e7 100644
+--- a/app/case-report.ts
++++ b/app/case-report.ts
+@@ -1,11 +1,12 @@
+ import { pdfBlobFromDocument } from "./pdf-blob";
+ import { startReportDownload } from "./report-download";
+ import { withLocalChunkRecovery } from "./stale-chunk-recovery";
+-import { calculateDealEconomics, estimateDealCashFlowProbabilities } from "./deal-economics";
++import { calculateDealEconomics } from "./deal-economics";
+ import { calculateTaxEconomics } from "./tax-economics";
+ import { buildReportGraphLayout, deriveReportGraphLayoutInput, reportGraphGovernedTextIssue, ReportGraphLayoutError, type ReportGraphLayoutModel } from "./report-graph-layout";
+ import { buildReportGraphAppendix } from "./report-graph-pdf";
+ import { canonicalFingerprint } from "./case-integrity";
++import { buildDecisionReport } from "./report-decision-pdf";
+ import { caseReportBriefRows } from "./case-report-brief";
+ import { CASE_REPORT_PDF_FONTS, REPORT_AUDIT_SYMBOL_FONT, REPORT_AUDIT_SYMBOL_FONT_SHA256, reportAuditText } from "./report-audit-symbols";
+ import type { StudioDraft, StudioNodeType } from "./types";
+@@ -14,6 +15,8 @@ import type { Content, ContentTable, ContentText, TDocumentDefinitions, TableCel
+ 
+ export type CaseReportOptions = {
+   language: "en" | "ru";
++  /** Existing API callers retain the full format; the dialog defaults to decision. */
++  presentationMode?: "decision" | "full";
+   profileId: string;
+   profileLabel: string;
+   audience: "client" | "internal";
+@@ -71,7 +74,7 @@ function reportSafePremise(draft: StudioDraft, language: CaseReportOptions["lang
+ }
+ 
+ function effectiveCaseReportOptions(options: CaseReportOptions): CaseReportOptions {
+-  return options.audience === "client" && (options.includeAuditTrail || options.includeTechnicalIds)
++  return (options.audience === "client" || options.presentationMode === "decision") && (options.includeAuditTrail || options.includeTechnicalIds)
+     ? { ...options, includeAuditTrail: false, includeTechnicalIds: false }
+     : options;
+ }
+@@ -143,29 +146,15 @@ function buildEconomics(draft: StudioDraft, options: CaseReportOptions): Content
+         scenario.cashOnCashReturnPercent === null ? "-" : `${scenario.cashOnCashReturnPercent.toFixed(1)}%`, scenario.dscr === null ? "-" : `${scenario.dscr.toFixed(2)}x`,
+       ]), ["22%", "21%", "23%", "17%", "17%"]
+     ));
+-    const estimate = estimateDealCashFlowProbabilities(model, result);
+-    if (estimate) {
+-      const labels = language === "en"
+-        ? { loss: "Loss", below_target: "Positive - below target", target_to_double: "Target to 2x target", strong_upside: "Strong upside" }
+-        : { loss: "Убыток", below_target: "Плюс - ниже цели", target_to_double: "От цели до 2x", strong_upside: "Сильный рост" };
+-      content.push({ text: tr(language, "Illustrative annual cash-flow probability ranges", "Иллюстративные диапазоны вероятности годового денежного потока"), style: "subheading" });
+-      content.push(table(
+-        [tr(language, "Range", "Диапазон"), tr(language, "Probability", "Вероятность"), tr(language, "Cash-flow boundary", "Граница потока")],
+-        estimate.bands.map((band) => [labels[band.key], `${band.probabilityPercent.toFixed(1)}%`, band.minimum === null ? `< ${money(language, model.currency, band.maximum)}` : band.maximum === null ? `>= ${money(language, model.currency, band.minimum)}` : `${money(language, model.currency, band.minimum)} - ${money(language, model.currency, band.maximum)}`]),
+-        ["38%", "20%", "42%"]
+-      ));
+-      content.push({ text: tr(language,
+-        `Rationale: ${estimate.usesRepaymentBasisPrior ? `repayment-basis weights are ${(100 - model.scenarioProbabilities.interestOnlyBps / 100).toFixed(1)}% amortizing and ${(model.scenarioProbabilities.interestOnlyBps / 100).toFixed(1)}% interest-only; ` : "only the stated repayment basis is used; "}${estimate.usesOperatingCostStress ? `combined vacancy and operating-cost stresses are 10%, 20% and 30% of gross rent with weights ${(model.scenarioProbabilities.favorableBps / 100).toFixed(1)}%, ${(model.scenarioProbabilities.baseBps / 100).toFixed(1)}% and ${(model.scenarioProbabilities.stressedBps / 100).toFixed(1)}%.` : "the stated operating-cost amount is used without an extra stress deduction."}`,
+-        `Обоснование: ${estimate.usesRepaymentBasisPrior ? `веса вида погашения составляют ${(100 - model.scenarioProbabilities.interestOnlyBps / 100).toFixed(1)}% для амортизации и ${(model.scenarioProbabilities.interestOnlyBps / 100).toFixed(1)}% для interest-only; ` : "используется только указанный вид погашения; "}${estimate.usesOperatingCostStress ? `совокупные потери от вакантности и операционные расходы моделируются на уровнях 10%, 20% и 30% валовой аренды с весами ${(model.scenarioProbabilities.favorableBps / 100).toFixed(1)}%, ${(model.scenarioProbabilities.baseBps / 100).toFixed(1)}% и ${(model.scenarioProbabilities.stressedBps / 100).toFixed(1)}%.` : "используется указанная сумма операционных расходов без дополнительного стресс-вычета."}`
+-      ), style: "note" });
+-    }
++    content.push({ text: tr(language, "These are deterministic calculations from supplied assumptions, not probabilities or a forecast. Currency effects, exit costs, tax and unpriced costs are excluded. Use the Decision report for explicit income sensitivities.", "Это детерминированные расчёты по указанным допущениям, не вероятности и не прогноз. Валютные эффекты, расходы выхода, налоги и неоценённые затраты исключены. Явные сценарии дохода доступны в отчёте для принятия решения."), style: "note" });
+     if (result.missingInputs.length) content.push({ text: `${tr(language, "Open financial inputs", "Незаполненные финансовые параметры")}: ${result.missingInputs.join(", ")}.`, style: "warning" });
+-    if (model.assumptions.length) content.push({ ul: [...model.assumptions], style: "bodySmall", margin: [8, 4, 0, 8] });
++    if (model.assumptions.length) content.push({ ul: model.assumptions.filter(item => !/scenario probabilit|вероятност[а-я]* сценар/iu.test(item)), style: "bodySmall", margin: [8, 4, 0, 8] });
+   }
+   if (draft.taxEconomics) {
+     const model = draft.taxEconomics;
+     const result = calculateTaxEconomics(model);
+-    content.push({ text: tr(language, "Tax-structure economics", "Экономика налоговой структуры"), style: "subheading", margin: [0, 12, 0, 6] });
++    content.push({ text: tr(language, "The following figures are an arithmetic scenario only. Rate sources, taxable base, deductibility and eligibility are not established by this model. Do not treat the amounts as verified savings or offset them against a financing shortfall.", "Следующие суммы — только арифметический сценарий. Модель не устанавливает источники ставок, базу, вычеты и применимость. Не считайте суммы подтверждённой экономией и не компенсируйте ими дефицит финансирования."), style: "warning" });
++    content.push({ text: tr(language, "Unverified tax scenario — not a tax recommendation", "Непроверенный налоговый сценарий — не налоговая рекомендация"), style: "subheading", margin: [0, 12, 0, 6] });
+     content.push(table(
+       [tr(language, "Metric", "Показатель"), tr(language, "Result", "Результат")],
+       [
+@@ -203,6 +192,7 @@ function buildCaseReportDefinitionFromModels(
+     const visibleIds = new Set(draft.nodes.filter((node) => !redactions.has(node.id)).map((node) => node.id));
+     draft = { ...draft, nodes: draft.nodes.filter((node) => visibleIds.has(node.id)), links: draft.links.filter((link) => visibleIds.has(link.from) && visibleIds.has(link.to)) };
+   }
++  if (options.presentationMode === "decision") return buildDecisionReport(draft, options, reportModel);
+   const generated = new Date(options.generatedAt);
+   const generatedLabel = Number.isNaN(generated.valueOf()) ? options.generatedAt : generated.toLocaleString(language === "en" ? "en-GB" : "ru-RU", { dateStyle: "long", timeStyle: "short", timeZone: "UTC" });
+   const classification = draft.classification;
+@@ -350,7 +340,7 @@ function buildCaseReportDefinitionFromModels(
+       tr(language, "Facts and evidence reconciled to the underlying file.", "Факты и доказательства сверены с материалами дела."),
+       tr(language, "Legal authorities remain current as of the stated date.", "Правовые источники актуальны на указанную дату."),
+       tr(language, "Assumptions, exclusions and uncertainties are explicitly disclosed.", "Допущения, исключения и неопределённости раскрыты явно."),
+-      tr(language, "Economics and probability weights are independently recalculated.", "Экономика и вероятностные веса пересчитаны независимо."),
++      tr(language, "Economics and scenario assumptions are independently checked.", "Экономика и сценарные допущения проверены независимо."),
+       tr(language, "Confidentiality, privilege, conflicts and circulation scope are confirmed.", "Конфиденциальность, privilege, конфликты и круг распространения подтверждены."),
+     ].map((item) => ({ text: `[ ] ${item}` })), style: "checklist", margin: [6, 6, 0, 16]
+   });
+@@ -437,7 +427,9 @@ function caseReportPresentationFingerprint(
+     : [];
+   return canonicalFingerprint({
+     format: "genesis-juris-case-report-presentation-binding",
+-    version: 3,
++    version: 4,
++    presentationMode: effectiveOptions.presentationMode ?? "full",
++    decisionRendererVersion: "1.0.0",
+     auditSymbolFont: REPORT_AUDIT_SYMBOL_FONT_SHA256,
+     reportFingerprint: reportModel.contentFingerprint,
+     layoutFingerprint: layoutModel.layoutFingerprint,

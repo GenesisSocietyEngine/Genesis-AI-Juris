@@ -1,0 +1,78 @@
+{
+  "schema": "genesis.juris.local-read-smoke-publication-review.v1",
+  "reviewedAt": "2026-09-27T22:03:33.818Z",
+  "status": "PASS_SAFE_FOR_LATER_BOUNDED_PUBLICATION",
+  "sourceCommit": "e6c6adc6fe01129b2e3d442072c532e08591fae9",
+  "applicationInputsSha256": "5597958a0a870757e75cfbdfba930007d475f782035db4ee8503a97aa1723afc",
+  "execution": {
+    "startedAt": "2026-09-27T22:02:10.153Z",
+    "completedAt": "2026-09-27T22:02:18.733Z",
+    "exitCode": 0
+  },
+  "run": {
+    "startedAt": "2026-09-27T22:02:10.764Z",
+    "completedAt": "2026-09-27T22:02:18.632Z",
+    "status": "PASS",
+    "checks": 9,
+    "responses": 39,
+    "statuses": {
+      "200": 20,
+      "401": 12,
+      "404": 7
+    },
+    "ownedSessionCleanupConfirmed": 3
+  },
+  "artifacts": [
+    {
+      "path": "local-read-smoke.mjs",
+      "bytes": 17457,
+      "sha256": "4374127f667065141e1b77c902ab47f4910bff11ee2361ad740391e73a2a4ec5",
+      "knownCredentialValueMatches": 0,
+      "emailLikeStrings": 0,
+      "cookieValueAssignments": 0
+    },
+    {
+      "path": "run-approved-local-read-smoke.mjs",
+      "bytes": 2424,
+      "sha256": "196b475abe5d486c401570c9368fbb06b92849d1d20a733598c2beecf80d86dc",
+      "knownCredentialValueMatches": 0,
+      "emailLikeStrings": 0,
+      "cookieValueAssignments": 0
+    },
+    {
+      "path": "local-read-smoke-runs/2026-09-27T220210764Z-e6c6adc6/receipt.json",
+      "bytes": 15971,
+      "sha256": "55dc56f124dc52ad567f0921c1d39a554dcf4c53b89665bc36683f2b6032aa44",
+      "knownCredentialValueMatches": 0,
+      "emailLikeStrings": 0,
+      "cookieValueAssignments": 0
+    },
+    {
+      "path": "local-read-smoke-execution-2026-09-27T220210153Z/execution.json",
+      "bytes": 1333,
+      "sha256": "7da0a7286cb0b72fcf9d54ec4a23468a5b15bb338a69d1211b9c24924f4e342e",
+      "knownCredentialValueMatches": 0,
+      "emailLikeStrings": 0,
+      "cookieValueAssignments": 0
+    },
+    {
+      "path": "local-read-smoke-execution-2026-09-27T220210153Z/stdout.log",
+      "bytes": 229,
+      "sha256": "3d045c1e0123b09ced56c9b2531aae1a12469fe041fd5268a3f08fcbfd80c8ee",
+      "knownCredentialValueMatches": 0,
+      "emailLikeStrings": 0,
+      "cookieValueAssignments": 0
+    },
+    {
+      "path": "local-read-smoke-execution-2026-09-27T220210153Z/stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "knownCredentialValueMatches": 0,
+      "emailLikeStrings": 0,
+      "cookieValueAssignments": 0
+    }
+  ],
+  "screening": "Exact known synthetic credential/email values checked in memory; email and cookie-value patterns checked. Matching values never emitted. Narrow review, not a universal secret proof.",
+  "scope": "Sequential ordinary local password/cookie reads and logout revocation. No concurrent revocation/expiry injection or provider logout claim. Separate synthetic in-flight regression remains distinct.",
+  "publication": "All files remain ignored during the tracked full-gate freeze; root owns any later tracked copy."
+}

@@ -1,0 +1,221 @@
+{
+  "manifest_version": "phase-b-role-action-policy.v1",
+  "contract_version": "organization-contract.v1",
+  "organization_statuses": [
+    "provisioning",
+    "active",
+    "suspended",
+    "closed"
+  ],
+  "request_classes": {
+    "identity": [
+      "oidc_callback",
+      "invitation_acceptance"
+    ],
+    "organization": [
+      "organization_read",
+      "member_remove",
+      "member_role_assign",
+      "identity_connection_read",
+      "organization_audit_read"
+    ],
+    "dossier": [
+      "dossier_read",
+      "dossier_update",
+      "dossier_member_enrol",
+      "dossier_member_remove",
+      "dossier_owner_transfer",
+      "document_upload",
+      "document_read",
+      "document_delete_request",
+      "extraction_request",
+      "ocr_request",
+      "citation_read",
+      "citation_manage",
+      "evidence_read",
+      "evidence_manage",
+      "task_read",
+      "task_manage",
+      "review_read",
+      "review_submit",
+      "report_read",
+      "report_generate",
+      "dossier_export_request",
+      "retention_purge_request",
+      "legal_hold_read",
+      "legal_hold_create_request",
+      "legal_hold_release_request",
+      "dossier_audit_read"
+    ],
+    "compliance_export": [
+      "tenant_export_request"
+    ],
+    "security": [
+      "organization_update",
+      "member_invite",
+      "member_suspend",
+      "identity_connection_manage",
+      "policy_read",
+      "policy_manage",
+      "legal_hold_create_approve",
+      "legal_hold_release_approve"
+    ]
+  },
+  "action_scopes": {
+    "legal_hold_create_approve": [
+      "organization",
+      "dossier"
+    ],
+    "legal_hold_release_approve": [
+      "organization",
+      "dossier"
+    ]
+  },
+  "organization_roles": {
+    "org_owner": [
+      "organization_read",
+      "organization_update",
+      "member_invite",
+      "member_suspend",
+      "member_remove",
+      "member_role_assign",
+      "identity_connection_read",
+      "identity_connection_manage",
+      "policy_read",
+      "policy_manage",
+      "organization_audit_read",
+      "tenant_export_request"
+    ],
+    "org_admin": [
+      "organization_read",
+      "organization_update",
+      "member_invite",
+      "member_suspend",
+      "identity_connection_read",
+      "identity_connection_manage",
+      "policy_read",
+      "policy_manage",
+      "organization_audit_read",
+      "tenant_export_request",
+      "legal_hold_create_approve",
+      "legal_hold_release_approve"
+    ],
+    "member": [
+      "organization_read",
+      "identity_connection_read",
+      "policy_read"
+    ],
+    "auditor": [
+      "organization_read",
+      "identity_connection_read",
+      "policy_read",
+      "organization_audit_read"
+    ]
+  },
+  "dossier_roles": {
+    "owner": [
+      "dossier_read",
+      "dossier_update",
+      "dossier_member_enrol",
+      "dossier_member_remove",
+      "dossier_owner_transfer",
+      "document_upload",
+      "document_read",
+      "document_delete_request",
+      "extraction_request",
+      "ocr_request",
+      "citation_read",
+      "citation_manage",
+      "evidence_read",
+      "evidence_manage",
+      "task_read",
+      "task_manage",
+      "review_read",
+      "review_submit",
+      "report_read",
+      "report_generate",
+      "dossier_export_request",
+      "retention_purge_request",
+      "legal_hold_read",
+      "legal_hold_create_request",
+      "legal_hold_release_request",
+      "dossier_audit_read"
+    ],
+    "contributor": [
+      "dossier_read",
+      "dossier_update",
+      "document_upload",
+      "document_read",
+      "extraction_request",
+      "ocr_request",
+      "citation_read",
+      "citation_manage",
+      "evidence_read",
+      "evidence_manage",
+      "task_read",
+      "task_manage",
+      "review_read",
+      "report_read",
+      "report_generate",
+      "legal_hold_read",
+      "dossier_audit_read"
+    ],
+    "reviewer": [
+      "dossier_read",
+      "document_read",
+      "citation_read",
+      "evidence_read",
+      "task_read",
+      "review_read",
+      "review_submit",
+      "report_read",
+      "report_generate",
+      "legal_hold_read",
+      "legal_hold_create_approve",
+      "legal_hold_release_approve",
+      "dossier_audit_read"
+    ],
+    "viewer": [
+      "dossier_read",
+      "document_read",
+      "citation_read",
+      "evidence_read",
+      "task_read",
+      "review_read",
+      "report_read",
+      "legal_hold_read"
+    ]
+  },
+  "delegated_authority": {
+    "role": "org_admin",
+    "actions": [
+      "member_invite",
+      "member_suspend"
+    ]
+  },
+  "compliance_authority_actions": [
+    "tenant_export_request"
+  ],
+  "separation_of_duties_actions": [
+    "legal_hold_create_approve",
+    "legal_hold_release_approve"
+  ],
+  "tenant_manifest_required_actions": [
+    "document_upload",
+    "document_read",
+    "document_delete_request",
+    "extraction_request",
+    "ocr_request",
+    "report_generate",
+    "dossier_export_request",
+    "retention_purge_request",
+    "tenant_export_request"
+  ],
+  "confidential_activation_required_actions": [
+    "document_upload",
+    "extraction_request",
+    "ocr_request"
+  ],
+  "confidential_upload_warning": "Confidential document mode is not active. Do not upload privileged, client-identifying, or live production documents. Use only synthetic or properly de-identified material.",
+  "validation_data_restriction": "synthetic_or_deidentified_only"
+}

@@ -1,0 +1,9 @@
+{
+  "draftId": 1,
+  "customCaseId": 1,
+  "fingerprint": "sha256-5d55e2cd3c9d9b57e8e4741ebb07fe04a85b9e60bbfc37e84b2e41cb2d7d62f0",
+  "updatedAt": "2026-09-28T05:35:24.211Z",
+  "payloadStillIdenticalAfterTwoRejectedRetries": true,
+  "draftCount": 1,
+  "payloadSha256": "0fd4697e0e1be25b5878aa969b9e3e32bebfb24773e230a9fa26a8696973fe79"
+}

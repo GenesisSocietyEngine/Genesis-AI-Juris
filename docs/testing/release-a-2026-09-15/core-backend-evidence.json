@@ -1,0 +1,41 @@
+{
+  "environment": "Miniflare D1/R2 actual handlers; trusted-header simulation, not browser authentication",
+  "deadlineReceipt": {
+    "id": "disposition_17271c671b034c4199215228458cc267",
+    "dossier_id": "dossier_9487a2b387cf4a47a1df9948ce11067c",
+    "deadline_reference_id": "deadline_historical_review",
+    "new_status": "completed",
+    "supporting_source_anchor_id": null,
+    "reason": "Synthetic filing acknowledged by the receiving office.",
+    "actor_user_id": 3,
+    "actor_ref": "actor_8e850715495caf54595a2fab45f6b3ca",
+    "actor_role": "reviewer",
+    "occurred_at": "2026-09-15T13:53:52.577Z",
+    "revision_before": 16,
+    "revision_after": 17,
+    "idempotency_key": "deadline-review-once",
+    "request_digest": "sha256-aa6cfba72145bb75cb1408fdec508207b8b72506a5d498b15d7a1553f36cb72e",
+    "audit_event_id": "audit_e90cd3d53f5f4c669d5a09704b309d2a"
+  },
+  "audit": {
+    "summary_code": "HISTORICAL_DEADLINE_DISPOSED",
+    "detail": "{\"action\":\"dispose_historical_deadline\",\"action_schema_version\":1,\"deadline_reference_id\":\"deadline_historical_review\",\"disposition_id\":\"disposition_17271c671b034c4199215228458cc267\",\"new_status\":\"completed\",\"original_due_at\":\"2020-01-01T12:00:00.000Z\",\"original_timezone\":\"Europe/Brussels\",\"previous_status\":\"open\",\"reason\":\"Synthetic filing acknowledged by the receiving office.\",\"revision_after\":17,\"revision_before\":16,\"supporting_source_anchor_id\":null}"
+  },
+  "retirement": {
+    "id": "disposition_e6a36b05acab4e81ab03a9d5b8d179bc",
+    "dossier_id": "dossier_9487a2b387cf4a47a1df9948ce11067c",
+    "source_anchor_id": "source_anchor_6ad5ca60a512499284bf8245f0cc2700",
+    "replacement_source_anchor_id": null,
+    "reason": "Superseded by the synthetic reconciliation source update.",
+    "actor_user_id": 3,
+    "actor_ref": "actor_8e850715495caf54595a2fab45f6b3ca",
+    "actor_role": "reviewer",
+    "occurred_at": "2026-09-15T13:53:53.820Z",
+    "revision_before": 17,
+    "revision_after": 18,
+    "idempotency_key": "citation-retire-once",
+    "request_digest": "sha256-bb70cb783349ffa0a963ccfce08ea1f3ef4e8acd5c608f25c2853b5659e3c55e",
+    "audit_event_id": "audit_57d9f7de57dc485a9897cfcb20ce3194"
+  },
+  "oldPdfBytesPreserved": true
+}

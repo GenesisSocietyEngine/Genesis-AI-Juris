@@ -1,0 +1,118 @@
+import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+
+const root = process.cwd();
+const out = '.artifacts/ux-reconciliation-auth/production-read-fence-source-continuity';
+const appliedPath = '.artifacts/ux-reconciliation-auth/matter-read-fence/applied.receipt.json';
+const deploymentReceiptPath = 'docs/testing/ux-convergence-2026-09-27/evidence/amendment-production-recheck.json';
+const appliedBytes = readFileSync(appliedPath);
+const applied = JSON.parse(appliedBytes);
+const sha = bytes => createHash('sha256').update(bytes).digest('hex');
+const git = args => execFileSync('git', args, { cwd: root, maxBuffer: 8 * 1024 * 1024, windowsHide: true });
+const gitText = args => git(args).toString('utf8').trim();
+const deployedSource = 'bf5799383a52b6617cd9d4a0acf47af780086218';
+const prePatchSource = '6ab091d830ccfd9d6b76c0adc177341bca96e081';
+const correctedSource = 'e6c6adc6fe01129b2e3d442072c532e08591fae9';
+assert.equal(applied.originalCheckpoint, prePatchSource);
+assert.equal(applied.files.length, 19);
+assert.equal(new Set(applied.files.map(file => file.path)).size, 19);
+const headBefore = gitText(['rev-parse', 'HEAD']);
+const trackedStatusBefore = gitText(['status', '--porcelain=v1']);
+assert.equal(headBefore, correctedSource);
+assert.equal(trackedStatusBefore, '');
+
+const files = applied.files.map(file => {
+  assert.ok(file.path.startsWith('app/') && !file.path.includes('..') && !file.path.includes('\\'));
+  const deployedBytes = git(['cat-file', 'blob', `${deployedSource}:${file.path}`]);
+  const baselineBytes = git(['cat-file', 'blob', `${prePatchSource}:${file.path}`]);
+  const correctedBytes = git(['cat-file', 'blob', `${correctedSource}:${file.path}`]);
+  const deployedSha256 = sha(deployedBytes);
+  const baselineSha256 = sha(baselineBytes);
+  const correctedSha256 = sha(correctedBytes);
+  return {
+    path: file.path,
+    receiptBeforeSha256: file.beforeSha256,
+    deployedBlob: gitText(['rev-parse', `${deployedSource}:${file.path}`]),
+    deployedBytes: deployedBytes.length,
+    deployedSha256,
+    baselineBlob: gitText(['rev-parse', `${prePatchSource}:${file.path}`]),
+    baselineBytes: baselineBytes.length,
+    baselineSha256,
+    correctedBlob: gitText(['rev-parse', `${correctedSource}:${file.path}`]),
+    correctedBytes: correctedBytes.length,
+    correctedSha256,
+    receiptAfterSha256: file.actualAfterSha256,
+    deployedMatchesRecordedBefore: deployedSha256 === file.beforeSha256,
+    baselineMatchesRecordedBefore: baselineSha256 === file.beforeSha256,
+    correctedMatchesRecordedAfter: correctedSha256 === file.actualAfterSha256,
+    correctedDiffersFromDeployed: correctedSha256 !== deployedSha256,
+  };
+});
+const headAfter = gitText(['rev-parse', 'HEAD']);
+const trackedStatusAfter = gitText(['status', '--porcelain=v1']);
+assert.equal(headAfter, headBefore);
+assert.equal(trackedStatusAfter, trackedStatusBefore);
+const allMatched = files.every(file => file.deployedMatchesRecordedBefore && file.baselineMatchesRecordedBefore && file.correctedMatchesRecordedAfter && file.correctedDiffersFromDeployed);
+const receipt = {
+  schema: 'genesis.juris.production-read-fence-source-continuity.v1',
+  checkedAt: new Date().toISOString(),
+  status: allMatched ? 'PASS_STATIC_SOURCE_CONTINUITY' : 'MISMATCH',
+  scope: 'Read-only local Git blob provenance; no production HTTP, authentication, account data, runtime probe, exploit reproduction or deployment.',
+  deploymentAttribution: {
+    source: deployedSource,
+    version: 102,
+    environmentRevision: 39,
+    lastRecordedMetadataCheckUtc: '2026-09-27T20:55:35.286Z',
+    receipt: deploymentReceiptPath,
+    receiptSha256: sha(readFileSync(deploymentReceiptPath)),
+    freshlyRecheckedByThisTask: false,
+  },
+  prePatchSource,
+  correctedSource,
+  appliedReceipt: appliedPath,
+  appliedReceiptSha256: sha(appliedBytes),
+  patchSha256: applied.patchSha256,
+  method: 'git cat-file blob <exact-commit>:<path> via execFileSync Buffer; SHA-256 raw blob bytes, not shell-decoded text or checkout line endings. git rev-parse records each blob object ID.',
+  counts: {
+    files: files.length,
+    deployedMatchesBefore: files.filter(file => file.deployedMatchesRecordedBefore).length,
+    baselineMatchesBefore: files.filter(file => file.baselineMatchesRecordedBefore).length,
+    correctedMatchesAfter: files.filter(file => file.correctedMatchesRecordedAfter).length,
+    correctedDiffersFromDeployed: files.filter(file => file.correctedDiffersFromDeployed).length,
+  },
+  preservation: { headBefore, headAfter, trackedStatusBefore, trackedStatusAfter },
+  interpretation: 'The source commit recorded for production contains the same 19 pre-patch files as the baseline on which the private-read authorization gap was reviewed and synthetically reproduced. The correction exists in the local e6c6adc source and is not thereby deployed. This is not live exploit evidence, deployed binary attestation, evidence of actual disclosure, or a new production metadata check.',
+  files,
+};
+writeFileSync(`${out}.json`, JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' });
+const report = `# Production private-read source continuity — static provenance only
+
+Checked ${receipt.checkedAt}. **${receipt.status}: ${receipt.counts.deployedMatchesBefore}/19 deployed-source Git blobs match the exact pre-patch SHA-256 values in the applied-patch receipt.** All 19 also match the pre-correction baseline; all 19 corrected local blobs match the recorded after hashes and differ from those deployed-source blobs.
+
+The last recorded production metadata check (${receipt.deploymentAttribution.lastRecordedMetadataCheckUtc}) identifies public v102/environment 39 with source \`${deployedSource}\`. This task did not refresh production metadata. The coordinating agent plans a separate fresh read-only metadata recheck; if its source has changed, reassess this attribution before claiming a current production conclusion.
+
+## Exact evidence
+
+- Production-attributed source: \`${deployedSource}\`.
+- Pre-patch baseline: \`${prePatchSource}\`.
+- Corrected local source: \`${correctedSource}\`.
+- Applied-patch receipt: \`${appliedPath}\`, SHA-256 \`${receipt.appliedReceiptSha256}\`.
+- Reviewed patch SHA-256: \`${applied.patchSha256}\`.
+- Per-file raw Git blob IDs, byte lengths and SHA-256 comparisons: \`production-read-fence-source-continuity.json\` beside this note.
+- Reproducible checker: \`check-production-read-fence-source-continuity.mjs\` beside this note.
+
+Each file was read as raw bytes using \`git cat-file blob <commit>:<path>\`; no PowerShell text conversion or worktree line-ending normalization participates in the hash. Canonical HEAD stayed exact and the tracked worktree stayed clean. The aggregate and owned emulator were left untouched.
+
+## Interpretation and limits
+
+The source commit recorded for production contains the **same pre-patch implementation** reviewed for the Matter private-read authority race, including the detail route used by the synthetic paused-read regression. The current correction is **local and not deployed by this task**. A previously green aggregate on the pre-patch baseline does not remove the subsequently identified source-level defect.
+
+This is not a claim that all 19 paths share an identical missing guard: the patch includes JSON/list final-authority fences and strengthens some existing private-byte delivery guards with the shared live-identity boundary. The source inventory and independent patch review describe those distinctions. The equality proof transfers the inspected source provenance; it does not expand the in-process regression to every route or authenticate a live production session.
+
+No production HTTP/authentication, user data, browser action, upload, audit query or exploit reproduction was attempted. No actual disclosure or affected account is asserted. A source commit association is not an independent hash attestation of the deployed binary. The corrected candidate's running aggregate, remaining hosted/browser/UX acceptance and any release action keep their separate status; this static PASS does not close them.
+`;
+writeFileSync(`${out}.md`, report, { flag: 'wx' });
+console.log(JSON.stringify({ status: receipt.status, checkedAt: receipt.checkedAt, counts: receipt.counts, json: `${out}.json`, note: `${out}.md` }));
+if (!allMatched) process.exitCode = 1;

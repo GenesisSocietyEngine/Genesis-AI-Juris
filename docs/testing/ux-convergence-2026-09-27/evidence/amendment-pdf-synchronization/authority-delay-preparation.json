@@ -1,0 +1,5 @@
+{
+  "at": "2026-09-27T23:48:30.875Z",
+  "scope": "Controlled 50ms delay in the existing modeled asynchronous authority transport. Synchronous PDF getStream contract and all application code/assertions are unchanged. Prior async-getStream preparation was rejected by independent review before execution and is NOT_RUN.",
+  "sourceSha256": "277b333a771b98b8fc40e0600c0dde73235282b97d3c63c3120eaca29e723590"
+}

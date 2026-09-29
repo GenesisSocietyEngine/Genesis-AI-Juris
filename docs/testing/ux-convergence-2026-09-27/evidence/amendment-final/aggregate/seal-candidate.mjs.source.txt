@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync,statSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+const [logPath,outPath,head,exitText,observedAt]=process.argv.slice(2);
+assert.match(head??'',/^[a-f0-9]{40}$/);assert.ok(outPath&&observedAt);
+const raw=readFileSync(logPath),log=raw.toString('utf8').replace(/\u001b\[[0-9;]*m/g,'');
+const exitCode=Number(exitText);assert.ok(Number.isInteger(exitCode));
+const section=(a,b)=>log.split(a)[1]?.split(b)[0]??'';
+const suite=s=>Object.fromEntries(['tests','pass','fail','cancelled','skipped','todo'].map(k=>{const m=[...s.matchAll(new RegExp('^# '+k+' (\\d+)$','gm'))];return[k,m.length?Number(m.at(-1)[1]):null];}));
+const stages=[...log.matchAll(/^\[(web|mobile|native) (\d+)\/(\d+)\] (.+)$/gm)].map(m=>({group:m[1],number:+m[2],total:+m[3],label:m[4]}));
+const hasStage=(group,number)=>stages.some(stage=>stage.group===group&&stage.number===number);
+const preflightText=log.match(/^PASS (\{"format":"genesis-juris-web-checkout-receipt"[^\r\n]+\})$/m)?.[1];
+const preflight=preflightText?JSON.parse(preflightText):null;
+assert.equal(preflight?.head,head);
+const pdfText=section('[web 6/10]','[web 7/10]');
+const pdfMatch=pdfText.match(/PASS (\d+) PDFs, (\d+) pages and (\d+) rendered PNGs/);
+const goldenMatch=pdfText.match(/\((\d+) PNGs,/);
+const flutterCount=s=>{const m=[...s.matchAll(/\+(\d+): All tests passed!/g)];return m.length?+m.at(-1)[1]:null;};
+const rustText=section('[mobile 9/9]','[native 1/3]');
+const rust=[...rustText.matchAll(/test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;/g)];
+const terminal=log.includes('PASS v62 Decision-Centric Dossier Workspace release verification on exact web and mobile heads.');
+const finalMobile=log.match(/PASS final mobile checkout guard: tracked bytes still equal ([a-f0-9]{40})/)?.[1]??null;
+const finalWeb=hasStage('web',10)?terminal:null;
+const stageCounts=Object.fromEntries(['web','mobile','native'].map(group=>[group,new Set(stages.filter(s=>s.group===group).map(s=>s.number)).size]));
+const web=suite(section('[web 4/10]','[web 5/10]'));
+const dossier=hasStage('web',5)?suite(section('[web 5/10]','[web 6/10]')):null;
+const npmZero=hasStage('web',7)?section('[web 7/10]','[web 8/10]').includes('found 0 vulnerabilities'):null;
+const hostedLock=hasStage('native',2)?[...section('[native 2/3]','[native 3/3]').matchAll(/PASS (\w+) workflow (\d+) for ([a-f0-9]{40})/g)].map(m=>({target:m[1],workflow:m[2],commit:m[3]})):null;
+const passed=exitCode===0&&terminal;
+if(passed){
+ assert.deepEqual(stageCounts,{web:10,mobile:9,native:3});assert.equal(web.fail,0);assert.equal(web.cancelled,0);assert.equal(dossier.fail,0);assert.ok(pdfMatch&&goldenMatch);assert.ok(npmZero&&finalMobile&&finalWeb);
+}
+const receipt={schema:'genesis.candidate-aggregate-observation.v1',recordedAt:new Date().toISOString(),testedWebHead:head,observedExecExitCode:exitCode,completionObservedAt:observedAt,logLastWriteAt:statSync(logPath).mtime.toISOString(),result:passed?'PASS':'FAIL_OR_INCOMPLETE',log:{path:logPath,bytes:raw.length,sha256:createHash('sha256').update(raw).digest('hex')},preflight,stages,stageCounts,webTests:web,dossierE2E:dossier,pdf:pdfMatch?{files:+pdfMatch[1],pages:+pdfMatch[2],renderedPngs:+pdfMatch[3],goldenPngs:goldenMatch?+goldenMatch[1]:null}:null,productionAuditZeroVulnerabilities:npmZero,flutterTests:flutterCount(section('[mobile 6/9]','[mobile 7/9]')),rust:rust.length?{groups:rust.length,passed:rust.reduce((n,m)=>n+(+m[1]),0),failed:rust.reduce((n,m)=>n+(+m[2]),0),ignored:rust.reduce((n,m)=>n+(+m[3]),0)}:null,androidIntegrationTests:flutterCount(section('[native 1/3]','[native 2/3]')),hostedLockValidated:hostedLock,finalGuards:{web:finalWeb,mobileHead:finalMobile},terminalPass:terminal,explicitSkippedTests:[...log.matchAll(/^ok \d+ - (.+) # SKIP$/gm)].map(m=>m[1]),limits:['This parser does not execute the gate; exit code and completion-observation timestamp come from the coordinator tool result.','Last-write time is file metadata, not an independently measured process completion timestamp.','PDF totals are parsed automated checks, not new manual inspection of every page.','Hosted workflow-lock validation is not new hosted or iOS execution.','Android coverage is local debug emulator integration, not physical hardware or a release APK.','Technical gate PASS does not close browser, hosted, accessibility or human acceptance.']};
+writeFileSync(outPath,JSON.stringify(receipt,null,2)+'\n',{flag:'wx'});console.log(JSON.stringify(receipt));

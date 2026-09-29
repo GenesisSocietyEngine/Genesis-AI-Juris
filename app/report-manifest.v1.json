@@ -1,0 +1,43 @@
+{
+  "format": "genesis-juris-report-manifest",
+  "schemaVersion": 1,
+  "manifest": "genesis-juris-report-manifest",
+  "reportModel": {
+    "schemaVersion": 1
+  },
+  "semanticRenderer": {
+    "profileRegistry": "genesis-juris-report-profiles",
+    "profileSchemaVersion": 1,
+    "rendererVersion": "1.0.0"
+  },
+  "layout": {
+    "scope": "presentation_only",
+    "layoutSchemaVersion": 1,
+    "layoutAlgorithmVersion": "1.1.0",
+    "layoutRendererVersion": "2.1.0"
+  },
+  "outputs": [
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "general_advisory", "version": "1.0.0" }, "profileId": "decision_memorandum", "primary": true },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "general_advisory", "version": "1.0.0" }, "profileId": "evidence_schedule", "primary": false },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "general_advisory", "version": "1.0.0" }, "profileId": "option_comparison", "primary": false },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "litigation_strategy", "version": "1.0.0" }, "profileId": "strategy_risk_report", "primary": true },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "litigation_strategy", "version": "1.0.0" }, "profileId": "evidence_schedule", "primary": false },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "contract_review", "version": "1.0.0" }, "profileId": "redline_risk_report", "primary": true },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "contract_review", "version": "1.0.0" }, "profileId": "obligation_matrix", "primary": false },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "tax_planning", "version": "1.0.0" }, "profileId": "tax_position_memorandum", "primary": true },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "tax_planning", "version": "1.0.0" }, "profileId": "economic_assessment", "primary": false },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "compliance", "version": "1.0.0" }, "profileId": "gap_remediation_plan", "primary": true },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "compliance", "version": "1.0.0" }, "profileId": "control_matrix", "primary": false },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "tax_compliance", "version": "1.0.0" }, "profileId": "tax_position_memorandum", "primary": true },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "tax_compliance", "version": "1.0.0" }, "profileId": "economic_assessment", "primary": false },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "tax_compliance", "version": "1.0.0" }, "profileId": "compliance_schedule", "primary": false },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "erp_incident", "version": "1.0.0" }, "profileId": "solution_design", "primary": true },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "erp_incident", "version": "1.0.0" }, "profileId": "root_cause_brief", "primary": false },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "erp_incident", "version": "1.0.0" }, "profileId": "test_pack", "primary": false },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "investigation", "version": "1.0.0" }, "profileId": "findings_chronology_report", "primary": true },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "investigation", "version": "1.0.0" }, "profileId": "evidence_inventory", "primary": false },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "training_simulation", "version": "1.0.0" }, "profileId": "playable_scenario", "primary": true },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "training_simulation", "version": "1.0.0" }, "profileId": "facilitator_guide", "primary": false },
+    { "caseType": { "registry": "genesis-juris-case-types", "id": "training_simulation", "version": "1.0.0" }, "profileId": "route_coverage", "primary": false }
+  ]
+}

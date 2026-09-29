@@ -1,0 +1,20 @@
+# Applied private Matter read fence
+
+The independently reviewed 19-source patch was applied at 2026-09-27T21:39:29.590Z after the baseline 6ab aggregate exited successfully and root released the source freeze. Patch SHA-256: `4c044bc5548945a9ee639d750c1452e0a41475cc79f02434afd14ec80191d5bf`. All original-file hashes were checked before application; all 19 applied hashes matched the reviewed proposal and still matched when final checks were sealed. `applied.receipt.json` lists every filename and hash. No commit or full build was performed by this agent.
+
+The changed behavior is a final private-read authorization check after payload preparation: fresh identity, original captured organization authority, and the exact participant ID/role. A late loss of identity or access suppresses prepared content and permissions. Successful responses keep their existing status, headers and body. Notes operation recovery keeps its existing 201 status. Audit and download actions remain distinct. The collection verifies at most 51 exact grants in one query, including the pagination lookahead. Suspension followed by resumption does not revive the old organization selection. No speculative dossier revision or updatedAt check was added.
+
+Focused actual-source results:
+
+- Maintained `tests/dossier-read-access.test.ts`: 17/17 PASS, including detail, collection, note-recovery, suspension/resumption and authorized controls. Final test SHA-256: `066b96e4cd96786c1cc97a7666453bd9f74a5f6a7817cecf7fa50f3309946c8a`. Production handlers and authorization functions run with explicitly synthetic in-process storage/identity fixtures.
+- Eight existing Matter route-contract files: 49/49 PASS on pinned Node 22.23.2 host execution.
+- Existing `working-notes-handler-contract`, `auth-security`, and `p1-organization-erp`: 26/26 PASS, exit 0, 261999.684 ms. The exact long Canopy parent and its six nested tests were excluded with a verified `--test-skip-pattern`; those seven nodes are NOT_RUN in this focused command. Node omitted them from TAP, whose skipped count is zero. This is not an unfiltered whole-suite pass.
+- Actual project TypeScript check: exit 0, no diagnostics. Focused lint across the 19 application files and maintained test: exit 0, no warnings or errors. Final `git diff --check` passed.
+
+`actual-verification.receipt.json` gives exact commands, tool-observed exits, log hashes/sizes, filesystem timestamps and the Node runner duration. Per-command process start/end wall-clock times were not instrumented and are not invented. Empty type/lint logs are preserved alongside the observed successful terminal exit codes.
+
+Earlier attempts remain available: sandbox tsx failed while reading Windows account metadata before assertions; the identical selection passed on the approved host. Initial lint found a reserved local `module` binding in the maintained test; a binding-only rename fixed it, with pre-rename evidence retained by the test agent. The first existing-handler run used an ineffective negative name pattern and was interrupted after 25 passing subtests; it has no completed suite result. `FILTER_SCOPE.md` records that attempt and the verified correction, with both isolated filter-probe logs retained.
+
+Independent review found no substantive source defect. The reviewer requested a fresh-checkout receipt-directory creation and suspension/resumption tests; the maintained test contains both. The old frozen 6ab read-race failures and proposed-overlay passes remain distinct from the applied-source results.
+
+Limits: these checks do not establish ordinary-browser session-store races, provider-side logout introspection, hosted candidate acceptance, blocked source-v2 upload, human comprehension, real screen-reader or actual 200% zoom acceptance. Sequential final checks are not a cross-store atomic snapshot. Root owns the source checkpoint, updated artifact identity, and the post-change unfiltered full release gate. The earlier successful 6ab aggregate predates this patch and must not be used as its full release result.

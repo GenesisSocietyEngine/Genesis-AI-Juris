@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Use the already-installed tool snapshot; no .bat bootstrap or SDK update.
+# Retain normal MSYS native-exec argument conversion; do not set MSYS_NO_PATHCONV.
+exec /c/Users/User/source/flutter/bin/cache/dart-sdk/bin/dart.exe \
+  /c/Users/User/source/flutter/bin/cache/flutter_tools.snapshot "$@"

@@ -1,0 +1,11 @@
+{
+  "at": "2026-09-27T18:30:09.279Z",
+  "environment": "localhost:5281 isolated synthetic fixture only",
+  "action": "Controlled expiry of exact ordinary-browser-login session; no session creation or auth bypass",
+  "sessionId": 13,
+  "originalCreatedAt": "2026-09-27T18:29:02.664Z",
+  "priorExpiresAt": "2026-10-04T18:29:02.664Z",
+  "expiredAt": "2026-09-27T18:29:09.267Z",
+  "changedRows": 1,
+  "allOtherSessionsUnchanged": true
+}

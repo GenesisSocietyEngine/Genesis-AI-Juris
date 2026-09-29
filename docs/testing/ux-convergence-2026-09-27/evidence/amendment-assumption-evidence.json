@@ -1,0 +1,926 @@
+{
+  "startedAt": "2026-09-27T20:27:40.278Z",
+  "sourceCommit": "8ee07c0fcf5a6ea78f5fd9c435bfe4b013e052b6",
+  "buildDigest": "25d6309ef9adf2ff039c02fe0bffef4a8a754dde11334a3d8f7f621e7dcc34ec",
+  "environment": "http://localhost:5281",
+  "scope": "Ordinary local synthetic role APIs; assumption review/supersession/replacement, no source upload",
+  "dossierId": "dossier_4c45577c6bc54528b9330d018a893312",
+  "events": [
+    {
+      "at": "2026-09-27T20:27:42.325Z",
+      "alias": "owner",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:43.590Z",
+      "alias": "contributor",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:44.943Z",
+      "alias": "reviewer",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:46.514Z",
+      "alias": "viewer",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:46.670Z",
+      "alias": "owner",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:46.758Z",
+      "alias": "owner",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/outputs",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:46.847Z",
+      "alias": "owner",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/decision-packages",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:46.945Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/documents/document_544afe4d7e6345d7a8bb82d3640f3db4/versions/document_version_74cafe3815474c808a7adfea87340a1d/download",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:47.108Z",
+      "alias": "owner",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:47.185Z",
+      "alias": "viewer",
+      "method": "POST",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/assertions",
+      "status": 404,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:47.342Z",
+      "alias": "owner",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:47.482Z",
+      "alias": "reviewer",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:47.667Z",
+      "alias": "reviewer",
+      "method": "POST",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/assertions",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:47.915Z",
+      "alias": "contributor",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:48.072Z",
+      "alias": "contributor",
+      "method": "POST",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/assertions",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:48.204Z",
+      "alias": "contributor",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:48.359Z",
+      "alias": "contributor",
+      "method": "POST",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/evidence/assertions",
+      "status": 201,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:48.493Z",
+      "alias": "owner",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:48.627Z",
+      "alias": "owner",
+      "method": "POST",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/snapshots",
+      "status": 409,
+      "expected": true,
+      "code": "snapshot_not_ready"
+    },
+    {
+      "at": "2026-09-27T20:27:48.830Z",
+      "alias": "owner",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:48.910Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/documents/document_544afe4d7e6345d7a8bb82d3640f3db4/versions/document_version_74cafe3815474c808a7adfea87340a1d/download",
+      "status": 200,
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:27:49.218Z",
+      "alias": "owner",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/outputs",
+      "status": 200,
+      "expected": true
+    }
+  ],
+  "steps": {
+    "before": {
+      "revision": 18,
+      "assertions": [
+        {
+          "assertion_id": "assertion_58eb24a87dee4866a745f5cec428d5a7",
+          "assertion_type": "fact",
+          "statement": "SYNTHETIC FACT: The signed register records 300 commitments at the review date.",
+          "status": "accepted",
+          "reviewed_by": "actor_d3211013b2843dc47ca5d20e77d1b907",
+          "reviewed_at": "2026-09-27T18:15:45.088Z",
+          "source_anchor_ids": [
+            "source_anchor_fa77117d12af4bd3ac5aed14e75a7cb4"
+          ]
+        },
+        {
+          "assertion_id": "assertion_8ba00fde69e1412a8ecca2e7fec689eb",
+          "assertion_type": "contradiction",
+          "statement": "SYNTHETIC CONTRADICTION: The draft sales summary claims 600 signed commitments, inconsistent with the register.",
+          "status": "needs_review",
+          "reviewed_by": null,
+          "reviewed_at": null,
+          "source_anchor_ids": [
+            "source_anchor_ec671348329e4d92bc19eb60b3501a48"
+          ]
+        },
+        {
+          "assertion_id": "assertion_1dcba2f364e54b73b2928a9be1cf3809",
+          "assertion_type": "assumption",
+          "statement": "SYNTHETIC ASSUMPTION: A further 150 commitments may arrive; this forecast is not verified.",
+          "status": "needs_review",
+          "reviewed_by": null,
+          "reviewed_at": null,
+          "source_anchor_ids": [
+            "source_anchor_8d7d2626aca042a0bda0f7b3329edabf"
+          ]
+        }
+      ],
+      "readiness": {
+        "schema_version": 1,
+        "dossier_id": "dossier_4c45577c6bc54528b9330d018a893312",
+        "computed_from_revision": 18,
+        "evaluated_at": "2026-09-27T20:27:46.600Z",
+        "ready": false,
+        "dimensions": [
+          {
+            "dimension": "document_completeness",
+            "state": "ready",
+            "reasons": []
+          },
+          {
+            "dimension": "information_requests",
+            "state": "blocked",
+            "reasons": [
+              {
+                "code": "INFORMATION_REQUEST_OPEN",
+                "explanation": "Required information is still outstanding.",
+                "deep_link": "/requests/request_1c2477b0c9ba424896cc88487c2ad4ea",
+                "related_object_type": "information_request",
+                "related_object_id": "request_1c2477b0c9ba424896cc88487c2ad4ea"
+              }
+            ]
+          },
+          {
+            "dimension": "ai_proposals",
+            "state": "ready",
+            "reasons": []
+          },
+          {
+            "dimension": "contradictions",
+            "state": "blocked",
+            "reasons": [
+              {
+                "code": "CONTRADICTION_UNRESOLVED",
+                "explanation": "A material contradiction remains unresolved.",
+                "deep_link": "/evidence/contradictions/assertion_8ba00fde69e1412a8ecca2e7fec689eb",
+                "related_object_type": "professional_assertion",
+                "related_object_id": "assertion_8ba00fde69e1412a8ecca2e7fec689eb"
+              }
+            ]
+          },
+          {
+            "dimension": "critical_deadlines",
+            "state": "blocked",
+            "reasons": [
+              {
+                "code": "CRITICAL_DEADLINE_MISSING",
+                "explanation": "A required critical deadline has not been recorded.",
+                "deep_link": "/requests-deadlines",
+                "related_object_type": null,
+                "related_object_id": null
+              }
+            ]
+          },
+          {
+            "dimension": "source_provenance",
+            "state": "ready",
+            "reasons": []
+          },
+          {
+            "dimension": "decision_graph",
+            "state": "blocked",
+            "reasons": [
+              {
+                "code": "DECISION_GRAPH_INVALID",
+                "explanation": "A linked decision graph has not passed canonical validation.",
+                "deep_link": "/decision-packages",
+                "related_object_type": null,
+                "related_object_id": null
+              }
+            ]
+          },
+          {
+            "dimension": "simulation_tests",
+            "state": "blocked",
+            "reasons": [
+              {
+                "code": "SIMULATION_REQUIRED",
+                "explanation": "A required deterministic simulation or package test has not run.",
+                "deep_link": "/decision-packages",
+                "related_object_type": null,
+                "related_object_id": null
+              }
+            ]
+          },
+          {
+            "dimension": "report_freshness",
+            "state": "blocked",
+            "reasons": [
+              {
+                "code": "OUTPUT_REQUIRED",
+                "explanation": "A governed output has not been generated from the current dossier snapshot.",
+                "deep_link": "/outputs",
+                "related_object_type": null,
+                "related_object_id": null
+              }
+            ]
+          },
+          {
+            "dimension": "reviewer_approval",
+            "state": "blocked",
+            "reasons": [
+              {
+                "code": "REVIEWER_APPROVAL_MISSING",
+                "explanation": "The current governed output lacks an attributable reviewer approval.",
+                "deep_link": "/outputs/approvals",
+                "related_object_type": null,
+                "related_object_id": null
+              }
+            ]
+          }
+        ]
+      },
+      "outputCount": 0,
+      "packageCount": 0,
+      "sourceVersion": "document_version_74cafe3815474c808a7adfea87340a1d",
+      "sourceSha256": "f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e"
+    },
+    "viewer-review-denied": {
+      "status": 404,
+      "revisionUnchanged": 18
+    },
+    "original-reviewed": {
+      "assertion": {
+        "object_type": "professional_assertion",
+        "schema_version": 1,
+        "assertion_id": "assertion_1dcba2f364e54b73b2928a9be1cf3809",
+        "dossier_id": "dossier_4c45577c6bc54528b9330d018a893312",
+        "assertion_type": "assumption",
+        "statement": "SYNTHETIC ASSUMPTION: A further 150 commitments may arrive; this forecast is not verified.",
+        "status": "accepted",
+        "source_anchor_ids": [
+          "source_anchor_8d7d2626aca042a0bda0f7b3329edabf"
+        ],
+        "originating_proposal_id": null,
+        "reviewed_by": "actor_d3211013b2843dc47ca5d20e77d1b907",
+        "reviewed_at": "2026-09-27T20:27:47.556Z",
+        "created_by": "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+        "created_at": "2026-09-27T18:15:44.161Z",
+        "updated_by": "actor_d3211013b2843dc47ca5d20e77d1b907",
+        "updated_at": "2026-09-27T20:27:47.556Z"
+      },
+      "dossier": {
+        "dossier_id": "dossier_4c45577c6bc54528b9330d018a893312",
+        "revision": 19,
+        "readiness": {
+          "schema_version": 1,
+          "dossier_id": "dossier_4c45577c6bc54528b9330d018a893312",
+          "computed_from_revision": 19,
+          "evaluated_at": "2026-09-27T20:27:47.578Z",
+          "ready": false,
+          "dimensions": [
+            {
+              "dimension": "document_completeness",
+              "state": "ready",
+              "reasons": []
+            },
+            {
+              "dimension": "information_requests",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "INFORMATION_REQUEST_OPEN",
+                  "explanation": "Required information is still outstanding.",
+                  "deep_link": "/requests/request_1c2477b0c9ba424896cc88487c2ad4ea",
+                  "related_object_type": "information_request",
+                  "related_object_id": "request_1c2477b0c9ba424896cc88487c2ad4ea"
+                }
+              ]
+            },
+            {
+              "dimension": "ai_proposals",
+              "state": "ready",
+              "reasons": []
+            },
+            {
+              "dimension": "contradictions",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "CONTRADICTION_UNRESOLVED",
+                  "explanation": "A material contradiction remains unresolved.",
+                  "deep_link": "/evidence/contradictions/assertion_8ba00fde69e1412a8ecca2e7fec689eb",
+                  "related_object_type": "professional_assertion",
+                  "related_object_id": "assertion_8ba00fde69e1412a8ecca2e7fec689eb"
+                }
+              ]
+            },
+            {
+              "dimension": "critical_deadlines",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "CRITICAL_DEADLINE_MISSING",
+                  "explanation": "A required critical deadline has not been recorded.",
+                  "deep_link": "/requests-deadlines",
+                  "related_object_type": null,
+                  "related_object_id": null
+                }
+              ]
+            },
+            {
+              "dimension": "source_provenance",
+              "state": "ready",
+              "reasons": []
+            },
+            {
+              "dimension": "decision_graph",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "DECISION_GRAPH_INVALID",
+                  "explanation": "A linked decision graph has not passed canonical validation.",
+                  "deep_link": "/decision-packages",
+                  "related_object_type": null,
+                  "related_object_id": null
+                }
+              ]
+            },
+            {
+              "dimension": "simulation_tests",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "SIMULATION_REQUIRED",
+                  "explanation": "A required deterministic simulation or package test has not run.",
+                  "deep_link": "/decision-packages",
+                  "related_object_type": null,
+                  "related_object_id": null
+                }
+              ]
+            },
+            {
+              "dimension": "report_freshness",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "OUTPUT_REQUIRED",
+                  "explanation": "A governed output has not been generated from the current dossier snapshot.",
+                  "deep_link": "/outputs",
+                  "related_object_type": null,
+                  "related_object_id": null
+                }
+              ]
+            },
+            {
+              "dimension": "reviewer_approval",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "REVIEWER_APPROVAL_MISSING",
+                  "explanation": "The current governed output lacks an attributable reviewer approval.",
+                  "deep_link": "/outputs/approvals",
+                  "related_object_type": null,
+                  "related_object_id": null
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "audit_event_id": "audit_96bc8871c2cd47c89b0a88d69341cd8a",
+      "contract_version": "1.0.0"
+    },
+    "original-superseded": {
+      "assertion": {
+        "object_type": "professional_assertion",
+        "schema_version": 1,
+        "assertion_id": "assertion_1dcba2f364e54b73b2928a9be1cf3809",
+        "dossier_id": "dossier_4c45577c6bc54528b9330d018a893312",
+        "assertion_type": "assumption",
+        "statement": "SYNTHETIC ASSUMPTION: A further 150 commitments may arrive; this forecast is not verified.",
+        "status": "superseded",
+        "source_anchor_ids": [
+          "source_anchor_8d7d2626aca042a0bda0f7b3329edabf"
+        ],
+        "originating_proposal_id": null,
+        "reviewed_by": "actor_d3211013b2843dc47ca5d20e77d1b907",
+        "reviewed_at": "2026-09-27T20:27:47.556Z",
+        "created_by": "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+        "created_at": "2026-09-27T18:15:44.161Z",
+        "updated_by": "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+        "updated_at": "2026-09-27T20:27:47.991Z"
+      },
+      "dossier": {
+        "dossier_id": "dossier_4c45577c6bc54528b9330d018a893312",
+        "revision": 20,
+        "readiness": {
+          "schema_version": 1,
+          "dossier_id": "dossier_4c45577c6bc54528b9330d018a893312",
+          "computed_from_revision": 20,
+          "evaluated_at": "2026-09-27T20:27:48.005Z",
+          "ready": false,
+          "dimensions": [
+            {
+              "dimension": "document_completeness",
+              "state": "ready",
+              "reasons": []
+            },
+            {
+              "dimension": "information_requests",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "INFORMATION_REQUEST_OPEN",
+                  "explanation": "Required information is still outstanding.",
+                  "deep_link": "/requests/request_1c2477b0c9ba424896cc88487c2ad4ea",
+                  "related_object_type": "information_request",
+                  "related_object_id": "request_1c2477b0c9ba424896cc88487c2ad4ea"
+                }
+              ]
+            },
+            {
+              "dimension": "ai_proposals",
+              "state": "ready",
+              "reasons": []
+            },
+            {
+              "dimension": "contradictions",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "CONTRADICTION_UNRESOLVED",
+                  "explanation": "A material contradiction remains unresolved.",
+                  "deep_link": "/evidence/contradictions/assertion_8ba00fde69e1412a8ecca2e7fec689eb",
+                  "related_object_type": "professional_assertion",
+                  "related_object_id": "assertion_8ba00fde69e1412a8ecca2e7fec689eb"
+                }
+              ]
+            },
+            {
+              "dimension": "critical_deadlines",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "CRITICAL_DEADLINE_MISSING",
+                  "explanation": "A required critical deadline has not been recorded.",
+                  "deep_link": "/requests-deadlines",
+                  "related_object_type": null,
+                  "related_object_id": null
+                }
+              ]
+            },
+            {
+              "dimension": "source_provenance",
+              "state": "ready",
+              "reasons": []
+            },
+            {
+              "dimension": "decision_graph",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "DECISION_GRAPH_INVALID",
+                  "explanation": "A linked decision graph has not passed canonical validation.",
+                  "deep_link": "/decision-packages",
+                  "related_object_type": null,
+                  "related_object_id": null
+                }
+              ]
+            },
+            {
+              "dimension": "simulation_tests",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "SIMULATION_REQUIRED",
+                  "explanation": "A required deterministic simulation or package test has not run.",
+                  "deep_link": "/decision-packages",
+                  "related_object_type": null,
+                  "related_object_id": null
+                }
+              ]
+            },
+            {
+              "dimension": "report_freshness",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "OUTPUT_REQUIRED",
+                  "explanation": "A governed output has not been generated from the current dossier snapshot.",
+                  "deep_link": "/outputs",
+                  "related_object_type": null,
+                  "related_object_id": null
+                }
+              ]
+            },
+            {
+              "dimension": "reviewer_approval",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "REVIEWER_APPROVAL_MISSING",
+                  "explanation": "The current governed output lacks an attributable reviewer approval.",
+                  "deep_link": "/outputs/approvals",
+                  "related_object_type": null,
+                  "related_object_id": null
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "audit_event_id": "audit_9a518c84656040a58fd9d77b1371012d",
+      "contract_version": "1.0.0"
+    },
+    "replacement-created": {
+      "assertion": {
+        "object_type": "professional_assertion",
+        "schema_version": 1,
+        "assertion_id": "assertion_a86da5ae64664b73aa96dd19d88122fe",
+        "dossier_id": "dossier_4c45577c6bc54528b9330d018a893312",
+        "assertion_type": "assumption",
+        "statement": "SYNTHETIC sensitivity assumption: the cited v1 passage forecasts 150 additional commitments. For a separate cautious sensitivity, suppose only 120 arrive. The 120 quantity is an unverified analyst assumption, not a fact supplied by that source; delivery-capacity evidence remains missing.",
+        "status": "needs_review",
+        "source_anchor_ids": [
+          "source_anchor_8d7d2626aca042a0bda0f7b3329edabf"
+        ],
+        "originating_proposal_id": null,
+        "reviewed_by": null,
+        "reviewed_at": null,
+        "created_by": "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+        "created_at": "2026-09-27T20:27:48.274Z",
+        "updated_by": "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+        "updated_at": "2026-09-27T20:27:48.274Z"
+      },
+      "dossier": {
+        "dossier_id": "dossier_4c45577c6bc54528b9330d018a893312",
+        "revision": 21,
+        "readiness": {
+          "schema_version": 1,
+          "dossier_id": "dossier_4c45577c6bc54528b9330d018a893312",
+          "computed_from_revision": 21,
+          "evaluated_at": "2026-09-27T20:27:48.290Z",
+          "ready": false,
+          "dimensions": [
+            {
+              "dimension": "document_completeness",
+              "state": "ready",
+              "reasons": []
+            },
+            {
+              "dimension": "information_requests",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "INFORMATION_REQUEST_OPEN",
+                  "explanation": "Required information is still outstanding.",
+                  "deep_link": "/requests/request_1c2477b0c9ba424896cc88487c2ad4ea",
+                  "related_object_type": "information_request",
+                  "related_object_id": "request_1c2477b0c9ba424896cc88487c2ad4ea"
+                }
+              ]
+            },
+            {
+              "dimension": "ai_proposals",
+              "state": "ready",
+              "reasons": []
+            },
+            {
+              "dimension": "contradictions",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "CONTRADICTION_UNRESOLVED",
+                  "explanation": "A material contradiction remains unresolved.",
+                  "deep_link": "/evidence/contradictions/assertion_8ba00fde69e1412a8ecca2e7fec689eb",
+                  "related_object_type": "professional_assertion",
+                  "related_object_id": "assertion_8ba00fde69e1412a8ecca2e7fec689eb"
+                }
+              ]
+            },
+            {
+              "dimension": "critical_deadlines",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "CRITICAL_DEADLINE_MISSING",
+                  "explanation": "A required critical deadline has not been recorded.",
+                  "deep_link": "/requests-deadlines",
+                  "related_object_type": null,
+                  "related_object_id": null
+                }
+              ]
+            },
+            {
+              "dimension": "source_provenance",
+              "state": "ready",
+              "reasons": []
+            },
+            {
+              "dimension": "decision_graph",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "DECISION_GRAPH_INVALID",
+                  "explanation": "A linked decision graph has not passed canonical validation.",
+                  "deep_link": "/decision-packages",
+                  "related_object_type": null,
+                  "related_object_id": null
+                }
+              ]
+            },
+            {
+              "dimension": "simulation_tests",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "SIMULATION_REQUIRED",
+                  "explanation": "A required deterministic simulation or package test has not run.",
+                  "deep_link": "/decision-packages",
+                  "related_object_type": null,
+                  "related_object_id": null
+                }
+              ]
+            },
+            {
+              "dimension": "report_freshness",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "OUTPUT_REQUIRED",
+                  "explanation": "A governed output has not been generated from the current dossier snapshot.",
+                  "deep_link": "/outputs",
+                  "related_object_type": null,
+                  "related_object_id": null
+                }
+              ]
+            },
+            {
+              "dimension": "reviewer_approval",
+              "state": "blocked",
+              "reasons": [
+                {
+                  "code": "REVIEWER_APPROVAL_MISSING",
+                  "explanation": "The current governed output lacks an attributable reviewer approval.",
+                  "deep_link": "/outputs/approvals",
+                  "related_object_type": null,
+                  "related_object_id": null
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "audit_event_id": "audit_e39c04e6355a4af6bba528fdd3765bf8",
+      "contract_version": "1.0.0"
+    },
+    "snapshot-prerequisites": {
+      "status": 409,
+      "code": "snapshot_not_ready",
+      "error": "The Matter is not ready to seal for reporting (INFORMATION_REQUEST_OPEN, CONTRADICTION_UNRESOLVED, CRITICAL_DEADLINE_MISSING, DECISION_GRAPH_INVALID, SIMULATION_REQUIRED)."
+    },
+    "after": {
+      "revision": 21,
+      "oldAssertion": {
+        "assertion_id": "assertion_1dcba2f364e54b73b2928a9be1cf3809",
+        "assertion_type": "assumption",
+        "statement": "SYNTHETIC ASSUMPTION: A further 150 commitments may arrive; this forecast is not verified.",
+        "status": "superseded",
+        "reviewed_by": "actor_d3211013b2843dc47ca5d20e77d1b907",
+        "reviewed_at": "2026-09-27T20:27:47.556Z",
+        "source_anchor_ids": [
+          "source_anchor_8d7d2626aca042a0bda0f7b3329edabf"
+        ]
+      },
+      "replacementAssertion": {
+        "assertion_id": "assertion_a86da5ae64664b73aa96dd19d88122fe",
+        "assertion_type": "assumption",
+        "statement": "SYNTHETIC sensitivity assumption: the cited v1 passage forecasts 150 additional commitments. For a separate cautious sensitivity, suppose only 120 arrive. The 120 quantity is an unverified analyst assumption, not a fact supplied by that source; delivery-capacity evidence remains missing.",
+        "status": "needs_review",
+        "reviewed_by": null,
+        "reviewed_at": null,
+        "source_anchor_ids": [
+          "source_anchor_8d7d2626aca042a0bda0f7b3329edabf"
+        ]
+      },
+      "readiness": {
+        "schema_version": 1,
+        "dossier_id": "dossier_4c45577c6bc54528b9330d018a893312",
+        "computed_from_revision": 21,
+        "evaluated_at": "2026-09-27T20:27:48.759Z",
+        "ready": false,
+        "dimensions": [
+          {
+            "dimension": "document_completeness",
+            "state": "ready",
+            "reasons": []
+          },
+          {
+            "dimension": "information_requests",
+            "state": "blocked",
+            "reasons": [
+              {
+                "code": "INFORMATION_REQUEST_OPEN",
+                "explanation": "Required information is still outstanding.",
+                "deep_link": "/requests/request_1c2477b0c9ba424896cc88487c2ad4ea",
+                "related_object_type": "information_request",
+                "related_object_id": "request_1c2477b0c9ba424896cc88487c2ad4ea"
+              }
+            ]
+          },
+          {
+            "dimension": "ai_proposals",
+            "state": "ready",
+            "reasons": []
+          },
+          {
+            "dimension": "contradictions",
+            "state": "blocked",
+            "reasons": [
+              {
+                "code": "CONTRADICTION_UNRESOLVED",
+                "explanation": "A material contradiction remains unresolved.",
+                "deep_link": "/evidence/contradictions/assertion_8ba00fde69e1412a8ecca2e7fec689eb",
+                "related_object_type": "professional_assertion",
+                "related_object_id": "assertion_8ba00fde69e1412a8ecca2e7fec689eb"
+              }
+            ]
+          },
+          {
+            "dimension": "critical_deadlines",
+            "state": "blocked",
+            "reasons": [
+              {
+                "code": "CRITICAL_DEADLINE_MISSING",
+                "explanation": "A required critical deadline has not been recorded.",
+                "deep_link": "/requests-deadlines",
+                "related_object_type": null,
+                "related_object_id": null
+              }
+            ]
+          },
+          {
+            "dimension": "source_provenance",
+            "state": "ready",
+            "reasons": []
+          },
+          {
+            "dimension": "decision_graph",
+            "state": "blocked",
+            "reasons": [
+              {
+                "code": "DECISION_GRAPH_INVALID",
+                "explanation": "A linked decision graph has not passed canonical validation.",
+                "deep_link": "/decision-packages",
+                "related_object_type": null,
+                "related_object_id": null
+              }
+            ]
+          },
+          {
+            "dimension": "simulation_tests",
+            "state": "blocked",
+            "reasons": [
+              {
+                "code": "SIMULATION_REQUIRED",
+                "explanation": "A required deterministic simulation or package test has not run.",
+                "deep_link": "/decision-packages",
+                "related_object_type": null,
+                "related_object_id": null
+              }
+            ]
+          },
+          {
+            "dimension": "report_freshness",
+            "state": "blocked",
+            "reasons": [
+              {
+                "code": "OUTPUT_REQUIRED",
+                "explanation": "A governed output has not been generated from the current dossier snapshot.",
+                "deep_link": "/outputs",
+                "related_object_type": null,
+                "related_object_id": null
+              }
+            ]
+          },
+          {
+            "dimension": "reviewer_approval",
+            "state": "blocked",
+            "reasons": [
+              {
+                "code": "REVIEWER_APPROVAL_MISSING",
+                "explanation": "The current governed output lacks an attributable reviewer approval.",
+                "deep_link": "/outputs/approvals",
+                "related_object_type": null,
+                "related_object_id": null
+              }
+            ]
+          }
+        ]
+      },
+      "sourceVersion": "document_version_74cafe3815474c808a7adfea87340a1d",
+      "sourceSha256": "f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e",
+      "outputCount": 0
+    }
+  },
+  "completedAt": "2026-09-27T20:27:49.220Z",
+  "status": "PASS scoped assumption and denial checks; governed output remains blocked by recorded readiness prerequisites"
+}

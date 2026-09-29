@@ -1,0 +1,27 @@
+{
+  "format": "genesis-juris-report-profile-registry",
+  "schemaVersion": 1,
+  "registry": "genesis-juris-report-profiles",
+  "rendererVersion": "1.0.0",
+  "profiles": [
+    { "id": "decision_memorandum", "kind": "legal_advisory", "caseTypes": ["general_advisory"], "sections": ["executive_summary", "issues", "facts_evidence", "authorities", "options", "recommendation", "sources", "approval"] },
+    { "id": "evidence_schedule", "kind": "evidence_schedule", "caseTypes": ["general_advisory", "litigation_strategy"], "sections": ["executive_summary", "facts_evidence", "chronology", "sources", "custody", "approval"] },
+    { "id": "option_comparison", "kind": "option_comparison", "caseTypes": ["general_advisory"], "sections": ["executive_summary", "issues", "options", "economics", "recommendation", "approval"] },
+    { "id": "strategy_risk_report", "kind": "litigation_strategy", "caseTypes": ["litigation_strategy"], "sections": ["executive_summary", "issues", "chronology", "facts_evidence", "authorities", "options", "risk_scenarios", "recommendation", "approval"] },
+    { "id": "redline_risk_report", "kind": "contract_review", "caseTypes": ["contract_review"], "sections": ["executive_summary", "issues", "obligations", "risk_scenarios", "options", "recommendation", "approval"] },
+    { "id": "obligation_matrix", "kind": "obligation_matrix", "caseTypes": ["contract_review"], "sections": ["executive_summary", "obligations", "deadlines", "risk_scenarios", "approval"] },
+    { "id": "tax_position_memorandum", "kind": "tax_planning", "caseTypes": ["tax_planning", "tax_compliance"], "sections": ["executive_summary", "facts_evidence", "authorities", "economics", "options", "tax_position", "sources", "approval"] },
+    { "id": "economic_assessment", "kind": "economic_assessment", "caseTypes": ["tax_planning", "tax_compliance"], "sections": ["executive_summary", "economics", "risk_scenarios", "options", "approval"] },
+    { "id": "gap_remediation_plan", "kind": "compliance", "caseTypes": ["compliance"], "sections": ["executive_summary", "controls", "gaps", "remediation", "deadlines", "approval"] },
+    { "id": "control_matrix", "kind": "control_matrix", "caseTypes": ["compliance"], "sections": ["executive_summary", "controls", "gaps", "facts_evidence", "approval"] },
+    { "id": "compliance_schedule", "kind": "compliance_schedule", "caseTypes": ["tax_compliance"], "sections": ["executive_summary", "authorities", "controls", "deadlines", "sources", "approval"] },
+    { "id": "solution_design", "kind": "erp_incident", "caseTypes": ["erp_incident"], "sections": ["executive_summary", "chronology", "root_cause", "process_design", "controls", "test_plan", "approval"] },
+    { "id": "root_cause_brief", "kind": "root_cause", "caseTypes": ["erp_incident"], "sections": ["executive_summary", "chronology", "facts_evidence", "root_cause", "remediation", "approval"] },
+    { "id": "test_pack", "kind": "test_pack", "caseTypes": ["erp_incident"], "sections": ["executive_summary", "process_design", "test_plan", "expected_results", "approval"] },
+    { "id": "findings_chronology_report", "kind": "investigation", "caseTypes": ["investigation"], "sections": ["executive_summary", "chronology", "actors", "facts_evidence", "findings", "custody", "approval"] },
+    { "id": "evidence_inventory", "kind": "evidence_inventory", "caseTypes": ["investigation"], "sections": ["executive_summary", "facts_evidence", "chronology", "custody", "redactions", "approval"] },
+    { "id": "playable_scenario", "kind": "training_simulation", "caseTypes": ["training_simulation"], "sections": ["executive_summary", "scenario_map", "routes", "expected_results", "approval"] },
+    { "id": "facilitator_guide", "kind": "facilitator_debrief", "caseTypes": ["training_simulation"], "sections": ["executive_summary", "learning_objectives", "scenario_map", "facilitation", "debrief", "routes", "approval"] },
+    { "id": "route_coverage", "kind": "route_coverage", "caseTypes": ["training_simulation"], "sections": ["executive_summary", "routes", "expected_results", "approval"] }
+  ]
+}

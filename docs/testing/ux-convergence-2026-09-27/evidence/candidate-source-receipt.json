@@ -1,0 +1,10 @@
+{
+  "checkedAt": "2026-09-27T10:00:36.375Z",
+  "baseCommit": "bf5799383a52b6617cd9d4a0acf47af780086218",
+  "sourceCommit": "unknown",
+  "applicationInputsSha256": "849295fa05be74ecc8c44d46d288637e3cc9e2910456816f7f6009e308974db2",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "nodeVersion": "v22.23.2",
+  "packageLockSha256": "43155d8e1650cf89ded732133384173b260becea9b8b1edcdcfbc02ed628f729",
+  "buildMatchesCurrentSource": true
+}

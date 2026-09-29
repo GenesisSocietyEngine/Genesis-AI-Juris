@@ -1,0 +1,1 @@
+{"status":"PASS","checks":9,"cleanup":[{"alias":"foreign","status":"PASS"},{"alias":"viewer","status":"PASS"},{"alias":"owner","status":"PASS"}],"receiptSha256":"55dc56f124dc52ad567f0921c1d39a554dcf4c53b89665bc36683f2b6032aa44"}

@@ -1,0 +1,32 @@
+# Planned local API read smoke — NOT_RUN
+
+`local-read-smoke.mjs` is an ignored harness only. It has not signed in, read an API, started a worker, touched the local database, or changed hosted state. The committed source is now `e6c6adc6fe01129b2e3d442072c532e08591fae9`; the full tracked freeze remains in effect. Run only after root confirms the new initial build, source-bound receipt and permitted local port.
+
+Intended outcome: prove the built candidate's ordinary Matter reads continue working with real local password sessions, fresh organization context and the correct owner/viewer permission projections; confirm foreign-context concealment and rejection of script-owned cookies after ordinary logout. This is sequential smoke coverage, **not** an in-flight revocation/expiry race or provider logout proof. It complements the maintained synthetic scheduling regression.
+
+The harness reads only the existing ignored local fixture/credentials and source-v1 file. It requires an explicit loopback HTTP origin, the new `genesis.juris.build-identity.v1` receipt, its exact expected commit and application-input digest, and `--run-approved`. It rejects the old 6ab/25d6 build. The build receipt must be inside this worktree's ignored artifacts, report matching current source, and contain the supplied digest in its built digest list. That is an operator-confirmed worker/receipt binding, not an HTTP build attestation.
+
+Planned checks:
+
+1. Create separate script-owned owner, viewer and foreign sessions through ordinary `/api/auth/login` calls. No existing browser cookies are read. Passwords and returned cookies stay in memory.
+2. Owner and viewer fetch `/api/organizations` with the raw existing organization ID, receive current actor-specific selections, and verify stable actor/organization roles. The old stored viewer selection is used only for a freshness comparison; it is never sent as authority.
+3. Each reads the Matter collection, exact detail, document/version register and exact v1 source. The source must be the retained 422 bytes with SHA-256 `f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e`. Owner and viewer permission projections must match the actual route contract. Responses must be `no-store`.
+4. The foreign account receives no target organization authority and no target collection/detail/document/source content. Its fresh personal organization context must also fail to open the foreign Matter. Denials may contain only the generic error/code envelope.
+5. Owner reads back the Matter excluding volatile readiness, document metadata and organization member roster; their hashes must remain unchanged. No upload, source-version, membership, invitation, professional review, output or other application-content mutation is requested.
+6. In `finally`, call ordinary logout for every script-created session, retrying at most twice on failure. Reuse only the saved server-returned cookie to confirm collection/detail/documents/source requests return 401 after logout. Leave all pre-existing browser/other sessions untouched.
+
+The only POST operations implemented are login and logout; the request dispatcher rejects business mutation bodies. There is no trusted-provider identity header, invented token, direct DB operation, hosted URL, alternate upload or deployment capability in this script. Normal server-side auth session/audit effects and ordinary read-route maintenance are distinct from application-content mutations requested by the harness.
+
+Receipts are created under ignored `local-read-smoke-runs/<UTC>-<commit-prefix>/receipt.json`. They contain aliases, status/boolean/count metadata, source/build digests and response digests; never passwords, cookies, raw emails, raw API bodies or unredacted actor/resource identifiers. Unexpected exception messages and stacks are not emitted. Login/logout bodies are not even hashed into event records.
+
+Cleanup is attempted on assertion/transport failures and handled SIGINT/SIGTERM. If a login request loses its response before any cookie arrives, the script cannot invent a cookie to revoke an ambiguous session: it marks the outcome unconfirmed and fails. Likewise, unreachable logout or post-logout verification is an explicit failure, never a cleanup success. Forced process termination can prevent `finally`; root should let this bounded harness finish before stopping its worker.
+
+After root's explicit readiness/port confirmation, the intended invocation is:
+
+```powershell
+& '<pinned Node 22.23.2 path>/node.exe' '.artifacts/ux-reconciliation-auth/local-read-smoke.mjs' --run-approved '--origin=http://localhost:<confirmed-port>' '--build-receipt=.artifacts/<new-source-bound-receipt>.json' '--expected-commit=e6c6adc6fe01129b2e3d442072c532e08591fae9' '--expected-input-digest=<confirmed-new-64-hex-digest>'
+```
+
+Preparation validation: pinned Node `--check` parses the harness successfully. No network invocation or mocked execution was performed; runtime outcomes remain NOT_RUN until the authorized new built worker is available.
+
+Independent read-only review cleared harness SHA-256 `4374127f667065141e1b77c902ab47f4910bff11ee2361ad740391e73a2a4ec5` with no substantive defect in this stated sequential scope. The reviewer checked loopback/redirect/build gates, actual login/logout/organization and permission contracts, fresh selection, safe receipts and owned-session cleanup. The review performed no HTTP request or credential read and does not turn this plan into runtime acceptance.

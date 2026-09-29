@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ios-native-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   simulator-smoke:
     runs-on: macos-15-intel
@@ -12,20 +16,29 @@ jobs:
       run:
         working-directory: apps/juris-mobile
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1; Node 24
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Record checked-out source
+        working-directory: ${{ github.workspace }}
+        run: echo "sha=$(git rev-parse HEAD) tree=$(git rev-parse HEAD^{tree})"
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.95.0
           components: llvm-tools-preview
           targets: aarch64-apple-ios-sim,x86_64-apple-ios
 
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: "3.44.8"
           cache: true
 
-      - name: Resolve Flutter dependencies
-        run: flutter pub get
+      - name: Resolve locked Flutter dependencies
+        run: |
+          test "$(dart --version 2>&1 | sed -E 's/^Dart SDK version: ([0-9.]+).*/\1/')" = "3.12.2"
+          flutter pub get --enforce-lockfile
+          git diff --exit-code -- pubspec.lock
 
       - name: Build Runner and Rust static library for iOS Simulator
         run: flutter build ios --simulator --debug --no-codesign
@@ -38,8 +51,8 @@ jobs:
           archive="ios/Generated/libjuris_mobile_ffi.a"
           test -f "$archive"
 
-          host="$(rustc +stable -vV | sed -n 's/^host: //p')"
-          sysroot="$(rustc +stable --print sysroot)"
+          host="$(rustc -vV | sed -n 's/^host: //p')"
+          sysroot="$(rustc --print sysroot)"
           llvm_nm="$sysroot/lib/rustlib/$host/bin/llvm-nm"
           lipo="$(xcrun --find lipo)"
           clang="$(xcrun --sdk macosx --find clang)"
@@ -52,7 +65,7 @@ jobs:
           test -x "$clang"
           test -x "$libtool"
 
-          rustc_version="$(rustc +stable -vV)"
+          rustc_version="$(rustc -vV)"
           llvm_nm_version="$("$llvm_nm" --version)"
           llvm_nm_help="$("$llvm_nm" --help)"
           printf '%s\n' "$rustc_version"
@@ -131,12 +144,45 @@ jobs:
 
       - name: Run native Logistics lifecycle on iOS Simulator
         timeout-minutes: 15
+        shell: bash
         run: |
-          xcodebuild test \
-            -workspace ios/Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Debug \
-            -destination \
-              "platform=iOS Simulator,id=${{ steps.simulator.outputs.id }}" \
-            -only-testing:RunnerTests/RunnerTests/testNativeLogisticsLifecycle \
-            CODE_SIGNING_ALLOWED=NO
+          set -euo pipefail
+
+          simulator_id="${{ steps.simulator.outputs.id }}"
+
+          run_lifecycle() {
+            local log_path="$1"
+            set +e
+            xcodebuild test \
+              -workspace ios/Runner.xcworkspace \
+              -scheme Runner \
+              -configuration Debug \
+              -destination "platform=iOS Simulator,id=$simulator_id" \
+              -only-testing:RunnerTests/RunnerTests/testNativeLogisticsLifecycle \
+              CODE_SIGNING_ALLOWED=NO \
+              2>&1 | tee "$log_path"
+            local xcode_status="${PIPESTATUS[0]}"
+            set -e
+            return "$xcode_status"
+          }
+
+          first_log="$RUNNER_TEMP/ios-native-lifecycle-attempt-1.log"
+          if run_lifecycle "$first_log"; then
+            exit 0
+          fi
+
+          if ! grep -Fq \
+            "Early unexpected exit, operation never finished bootstrapping" \
+            "$first_log"; then
+            echo "iOS lifecycle failed outside the allowed simulator-bootstrap retry class" >&2
+            exit 1
+          fi
+
+          echo "Retrying once after a verified pre-test simulator bootstrap failure"
+          xcrun simctl shutdown "$simulator_id" || true
+          xcrun simctl erase "$simulator_id"
+          xcrun simctl boot "$simulator_id"
+          xcrun simctl bootstatus "$simulator_id" -b
+
+          second_log="$RUNNER_TEMP/ios-native-lifecycle-attempt-2.log"
+          run_lifecycle "$second_log"

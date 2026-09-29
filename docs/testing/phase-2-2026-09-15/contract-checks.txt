@@ -1,0 +1,47 @@
+✔ actions ignore remote deep links and preserve the exact request and evidence identity (1.553029ms)
+✔ report actions disclose prerequisites and retain an outdated output as the exact target (0.263347ms)
+✔ request normalization preserves exact receipt proof without substituting the first document (0.376296ms)
+✔ Studio action check identifiers are stable and complete (26.89374ms)
+✔ adding evidence preserves the original graph and adds a reachable node without mutating source data (10.294422ms)
+✔ package actions retain the exact package reference and unsealed snapshots remain unavailable (0.217548ms)
+✔ snapshot normalization requires an explicit sealed flag (0.240041ms)
+✔ request and activity reads use viewer-safe joined participant actions (1.23537ms)
+✔ request and deadline retrieval is bounded, cursor-paged and metadata-only (0.339561ms)
+✔ request mutation rejects ambient authority and uses server actor identity (0.318269ms)
+✔ create and status update stale outputs and append audits before their receipt (0.467574ms)
+✔ received status requires a same-dossier satisfying source and unknown request IDs do not disclose (0.260653ms)
+✔ activity pages the immutable audit sequence with bounded metadata detail (0.263697ms)
+✔ the workspace exposes the seven bounded conceptual destinations in the required order (1.423073ms)
+✔ matter normalisation preserves safe professional metadata, explicit readiness, owner, and role (1.287258ms)
+✔ document normalisation separates logical documents from immutable ordered versions (0.492181ms)
+✔ proposal and activity pages are bounded and expose cursors without retaining unbounded bodies (3.351027ms)
+✔ canonical lifecycle actions are role-scoped and explain output/readiness consequences (0.291579ms)
+✔ every client mutation binds an explicit optimistic-concurrency revision (0.528997ms)
+✔ AI generation idempotency survives lost responses and source-order changes (7.829551ms)
+✔ pilot file validation rejects paths, mismatched media, empty files, and exact size overflows (0.592633ms)
+✔ failure states distinguish permission, stale revisions, unsupported pilot operations, and generic errors (0.388455ms)
+✔ the rendered client includes required states, endpoints, citations, privacy, and compact phone navigation (14.366414ms)
+✔ organization-gated pages render a safe sign-in state before client hydration (77.817527ms)
+✔ uncertain save keeps immutable operation apart from a subsequently edited draft (1.311154ms)
+✔ conflict requires current/proposed comparison and an explicit new operation (0.262385ms)
+✔ session expiry retains input in memory, validation identifies its field, and lost access clears private material (0.675357ms)
+✔ A to B to A generations discard earlier success, failure and cleanup (0.208695ms)
+✔ canonical collection retains all reasons, stable order and distinct same-control request identities (7.602739ms)
+✔ historical deadline eligibility matches server time and excludes simulated/future/closed dates (0.173742ms)
+✔ exact target resolver rejects wrong records and discards late success and errors without losing origin (0.513072ms)
+✔ distinct package actions remain stable under reordered findings and pending AI proposals stay in review (0.588066ms)
+✔ review receipt binds record, outcome, support, reason, audit and both revisions (0.826885ms)
+✔ citation retirement receipts require the exact replacement and retain separate review consequences (0.207472ms)
+✔ confirmed write stays saved while its deferred refresh is pending (0.811392ms)
+✔ refresh failure preserves the receipt and retry performs reads only (0.288795ms)
+✔ an older or partial refresh cannot establish current queue readiness (0.175875ms)
+✔ late responses cannot publish completion into another case or a newer refresh (0.222825ms)
+✔ operation recovery requires the exact submitted idempotency key (0.214943ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 39
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 343.68358

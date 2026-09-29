@@ -1,0 +1,55 @@
+
+> genesis-juris-web@0.1.0 reports:verify
+> node --import tsx scripts/verify-report-pdfs.ts
+
+PASS golden-general_advisory-en-internal
+PASS golden-general_advisory-en-client
+PASS golden-general_advisory-ru-internal
+PASS golden-general_advisory-ru-client
+PASS golden-litigation_strategy-en-internal
+PASS golden-litigation_strategy-en-client
+PASS golden-litigation_strategy-ru-internal
+PASS golden-litigation_strategy-ru-client
+PASS golden-contract_review-en-internal
+PASS golden-contract_review-en-client
+PASS golden-contract_review-ru-internal
+PASS golden-contract_review-ru-client
+PASS golden-tax_planning-en-internal
+PASS golden-tax_planning-en-client
+PASS golden-tax_planning-ru-internal
+PASS golden-tax_planning-ru-client
+PASS golden-compliance-en-internal
+PASS golden-compliance-en-client
+PASS golden-compliance-ru-internal
+PASS golden-compliance-ru-client
+PASS golden-erp_incident-en-internal
+PASS golden-erp_incident-en-client
+PASS golden-erp_incident-ru-internal
+PASS golden-erp_incident-ru-client
+PASS golden-investigation-en-internal
+PASS golden-investigation-en-client
+PASS golden-investigation-ru-internal
+PASS golden-investigation-ru-client
+PASS golden-training_simulation-en-internal
+PASS golden-training_simulation-en-client
+PASS golden-training_simulation-ru-internal
+PASS golden-training_simulation-ru-client
+PASS long-content-litigation_strategy
+PASS long-content-training_simulation
+PASS golden-bhopal-decision-memorandum
+PASS stress-deep
+PASS stress-wide
+PASS stress-fan-out
+PASS stress-fan-in-ru
+PASS stress-disconnected
+PASS stress-cyclic-repair
+PASS stress-long-title-en
+PASS stress-long-title-ru
+PASS stress-long-detail-ru
+PASS stress-unicode-en
+PASS stress-unicode-ru
+PASS stress-max-200
+CANDIDATE .artifacts\v62-report-qa\visual-baseline-candidate.json hashes every review-set page plus every Bhopal graph page
+UPDATED visual baseline parity\report-pdf-visual-baseline.v1.json (55 PNGs, 2df39a97f06359c4cc228bf12a9120e8c2a7491a60884a152e0a909a1383ff60)
+PASS 47 PDFs, 760 pages and 760 rendered PNGs in .artifacts\v62-report-qa
+REVIEW 54 representative first/middle/last PNGs under .artifacts\v62-report-qa\review

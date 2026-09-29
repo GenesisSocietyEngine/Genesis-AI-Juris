@@ -1,8 +1,27 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-branch: docs/visual-identity-catalogue-v1-publication
-base_commit: 920077c29b8578727ca6cb61b0de3c99c4c6bb5c
+current_release_track: demo_readiness_isolated_local
+current_release_pr: null
+current_release_checkpoint: null
+current_release_tree: null
+current_release_status: production_mapping_not_verified
+current_release_site_version: null
+current_release_receipt: null
+current_release_deployment_id: null
+current_release_deployment_status: not_verified
+historical_recovery_pr: 47
+historical_recovery_checkpoint: 83c97a78547c131570df1b752814353ba0cb1fdb
+historical_recovery_tree: 777d1111fa3f7d3442b5eecfcade2205487cf6bc
+historical_recovery_site_version: 70
+historical_recovery_receipt: https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/47#issuecomment-5551289624
+historical_recovery_deployment_id: appgdep_6a9bf44b2da08191aea2b4fa86b3f2bd
+historical_recovery_deployment_status: succeeded
+current_release_erp_browser_journeys: not_run
+next_milestone: production_receipt_and_authenticated_manual_acceptance
+current_release_instruction: CodexToInstructions.md
+branch: codex/demo-readiness-canopy-2026-09-06
+base_commit: 47d99d08dc730e15ab881ba09de09692a4c7ba7c
 ios_per_slice_export_audit_status: merged_and_corrected_main_accepted
 ios_per_slice_export_audit_pr: 30
 ios_per_slice_export_audit_initial_commit: 23c12822a2e6f7e8940663bf2b3a877032ffcc3c
@@ -117,10 +136,124 @@ decision_dossier_v62_slice5_gate: frozen_migrations_0012_0015_adversarial_audit_
 decision_dossier_v62_web_gate: strict_type_lint_build_audit_pdf_and_493_of_493_green
 decision_dossier_v62_browser_gate: local_http_green_visual_controller_service_unavailable
 decision_dossier_v62_remote_state: no_production_site_version_or_deployment
-last_updated: 2026-09-01
+last_updated: 2026-09-06
 ---
 
 # Current Progress
+
+## 6 September 2026 — Isolated Canopy development authorized independently
+
+The owner's later clarification releases local lane B from the production P0
+stop. Work continues from `47d99d08dc730e15ab881ba09de09692a4c7ba7c` in the isolated
+`codex/demo-readiness-canopy-2026-09-06` worktree; both earlier documentation
+commits and the original dirty checkout are preserved.
+
+The local candidate adds D01–D09 with immutable D03/D06 versions, four reviewed
+scenario declarations through existing Studio/play-session contracts, normal-API
+copy/review/replay/output orchestration, a private Featured packet entry, scenario
+explanation and accepted-assertion executive PDF pages. Existing organization,
+CAS, source-version, review, simulation, snapshot, output-approval and stale-state
+authority is reused. No migration, auth bypass, financial engine or reset endpoint
+is added. Readiness for reporting and production-release conditions stay distinct.
+
+Fresh local evidence is 558/558 passing tests, including the four Canopy API
+outcomes, clean-copy check, unchanged ERP path and migration fixtures; type/build/
+parity/lint passed. The 47-PDF, 702-page corpus matches 55 visual baseline images;
+four Canopy PDFs total 170 rendered pages. The [final handoff](../testing/demo-readiness-2026-09-06/handoff.md)
+records exact candidate identity, artifacts, visual review and remaining limits.
+Historical e025 CI results remain separate and are not tests of this candidate.
+
+Production lane A remains blocked: current deployment mapping, full applied0019
+schema/journal/backup evidence and safe recovery are unverified. No environment,
+production DB/R2, remote Git or deployment changes are authorized by this update.
+Ordinary synthetic account registration remains authorized when its production
+and browser gates can be met. Browser controller access, complete authenticated
+UI path, phone handoff, ten presentation runs, three cold users and real video are
+not verified. Signature Crop remains a storyboard.
+
+References: [local demo](../testing/demo-readiness-2026-09-06/local-demo.md),
+[live plan](../testing/demo-readiness-2026-09-06/plan.md),
+[production matrix](../testing/demo-readiness-2026-09-06/production-verification.md),
+[presenter script](../testing/demo-readiness-2026-09-06/presenter-script.md),
+[fallback plan](../testing/demo-readiness-2026-09-06/fallback-plan.md).
+
+The earlier preflight section remains historical. Prior PR47/Site70 frontmatter
+values are retained under `historical_recovery_*`; today's `current_release_*`
+identity fields are explicitly unverified. The former all-work stop is superseded
+only for isolated local development.
+
+## 6 September 2026 — Demo Readiness preflight; P0 blocked
+
+Current sprint evidence: [preflight](../testing/demo-readiness-2026-09-06/preflight.md)
+and [live plan](../testing/demo-readiness-2026-09-06/plan.md). Main is
+`e025131d87e35d4364d542acc5c84b6097eb657b`, tree
+`c47f1951d1573e8f72b6c7e6872239f8beb23c39`; PR #49 is merged and all five
+exact-main workflows passed. Provider saved version72 has that source. The
+current active deployment ID and complete migration/rollback acceptance are
+unverified, while configured revision33 retains version69/source6019e473 labels.
+Two live organization binding tables exist and are empty; this is partial
+migration evidence, not proof of every guard/index or authenticated behavior.
+
+The frontmatter's PR47/Site70 `current_release_*` values and prior P1 draft or
+unreleased headlines are preserved historical claims, not today's execution
+instructions. No new product code, migration, remote change or deployment has
+occurred in this sprint. Feature work waits at the brief's P0 boundary; no
+authenticated browser, phone, ten-run or cold-user pass is claimed.
+
+## 5 September 2026 — P1 organizations and ERP implementation candidate
+
+Draft PR #49 contains the additive organization-isolation implementation and
+five synthetic ERP journeys. Core head
+`f74ce2f0384e9ae19a9f83a3086cbbe24018e76f` passed Root Web and PDF, Rust,
+Flutter, Android and iOS workflows. Its web run passed 543/543 tests and all PDF
+gates; the follow-up safe sign-in fallback passes the complete local suite at
+544/544. Read PR #49 for the exact current-head receipts before merge.
+
+The anonymous `/organizations` and `/matters` routes now render a top-level
+sign-in action from server-known identity state instead of waiting indefinitely
+for client hydration. Supervised desktop preview verifies that fallback. It did
+not hydrate any client route, including the unchanged main Studio, after one
+clean restart, so authenticated browser interaction remains unclaimed. Physical
+phone handoff and professional ERP trials are also still pending. No production
+migration, saved Site version or P1 deployment has been performed.
+
+## 5 September 2026 — recovery released and publication unblocked
+
+This is the current status; older entries and legacy release-specific frontmatter
+are historical receipts. PR #47 is merged. Its released source is
+`83c97a78547c131570df1b752814353ba0cb1fdb`, tree
+`777d1111fa3f7d3442b5eecfcade2205487cf6bc`. All five required workflows passed on
+that exact merged source, and the native Sites provider reconfirmed deployment
+`appgdep_6a9bf44b2da08191aea2b4fa86b3f2bd` as `succeeded` for saved version 70.
+
+| Required workflow on released source | Outcome and source evidence |
+| --- | --- |
+| Rust / MSRV | [PASS](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33961085067) |
+| Flutter Mobile UI | [PASS](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33961085037), with 12 Windows-only pixel goldens platform-skipped |
+| Android Native FFI | [PASS](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33961085002) |
+| iOS Native FFI | [PASS](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33961085025) |
+| Root Web and PDF | [PASS](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/33961084998), including 496 web tests and 47 PDFs / 702 pages |
+
+[Live Studio](https://genesis-juris-web.maxim-hayan.chatgpt.site) and the
+[full release receipt](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/47#issuecomment-5551289624)
+identify the exact deployed source independently of later documentation changes.
+
+The old P0b cloud task's missing-origin/authentication message is superseded: its
+patch was recovered with matching tree identity, published as `4d585cc`, corrected
+at `5875dec`, and included in this release. Follow the publication handoff in
+`CodexToInstructions.md` if a future runner has the same access limitation.
+
+P0 source/build recovery and its technical release gates are complete. The five
+synthetic ERP browser/user journeys remain **NOT RUN**. The 12 platform-skipped
+Flutter goldens are not counted as passed; Windows PDF baseline validation did
+run and pass. Protected Tenant Foundation remains P1. Tenant/OIDC completion,
+confidential-data activation, Phase C and app-store distribution remain separate.
+
+## 5 September 2026 — historical pre-deployment checkpoint
+
+This entry supersedes older current-status headings below without rewriting their historical receipts. PR #47 restored 487 native/shared files and published deterministic-toolchain CI. At checkpoint `4d585cc94fd9010a5ab970fae60eaf16c7f3c0a9`, all 496 web tests passed; PDF QA failed because Ubuntu installed Poppler 24.02.0 instead of the approved Windows/x64 25.07.0 rasterizer. The current patch corrects that environment and artifact handling, preserving the visual baseline and frozen migrations.
+
+The owner has now authorized the verified recovery merge and deployment to the existing Studio. Required final-head checks and a succeeded Sites receipt are still necessary; this entry does not claim either is complete. Follow the latest `CodexToInstructions.md`. The synthetic ERP acceptance packet is in `docs/testing/erp-pilot-2026-09-05/`; its five journeys are prepared and not yet executed. Protected Tenant Foundation remains P1, with no Phase C or confidential activation.
 
 ## Decision-Centric Dossier Workspace v62 release-candidate checkpoint - 2026-09-01
 

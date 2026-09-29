@@ -20,22 +20,21 @@ void main() {
     encodedManifest = await rootBundle.loadString(_manifestAsset);
   });
 
-  test('production asset has the exact default and five current treatments',
-      () async {
-    final List<Object> diagnostics = <Object>[];
-    final CaseVisualManifest manifest = await CaseVisualManifestRepository(
-      onDiagnostic: (Object error, StackTrace _) => diagnostics.add(error),
-    ).load();
+  test(
+    'production asset has the exact default and five current treatments',
+    () async {
+      final List<Object> diagnostics = <Object>[];
+      final CaseVisualManifest manifest = await CaseVisualManifestRepository(
+        onDiagnostic: (Object error, StackTrace _) => diagnostics.add(error),
+      ).load();
 
-    expect(diagnostics, isEmpty);
-    expect(manifest.schemaVersion, 1);
-    expect(
-      manifest.defaultTreatment,
-      CaseVisualManifest.builtInDefaultTreatment,
-    );
-    expect(
-      manifest.caseTreatments,
-      const <String, CaseVisualTreatment>{
+      expect(diagnostics, isEmpty);
+      expect(manifest.schemaVersion, 1);
+      expect(
+        manifest.defaultTreatment,
+        CaseVisualManifest.builtInDefaultTreatment,
+      );
+      expect(manifest.caseTreatments, const <String, CaseVisualTreatment>{
         'be_commercial_failed_erp_001': CaseVisualTreatment(
           motif: CaseVisualMotif.systemsGrid,
           palette: CaseVisualPalette(
@@ -86,39 +85,44 @@ void main() {
           ),
           artSeed: 7176,
         ),
-      },
-    );
-  });
+      });
+    },
+  );
 
-  test('manifest keys equal current case IDs and expose no retained content',
-      () async {
-    final Map<String, dynamic> manifestJson = _decode(encodedManifest);
-    final Map<String, dynamic> bundleJson = _decode(
-      await rootBundle.loadString(_caseBundleAsset),
-    );
-    final CaseVisualManifest manifest =
-        CaseVisualManifest.fromJson(manifestJson);
-    final List<String> currentCaseIds =
-        (bundleJson['cases'] as List<dynamic>).map((dynamic rawCase) {
-      return (rawCase as Map<String, dynamic>)['case_id'] as String;
-    }).toList(growable: false);
+  test(
+    'manifest keys equal current case IDs and expose no retained content',
+    () async {
+      final Map<String, dynamic> manifestJson = _decode(encodedManifest);
+      final Map<String, dynamic> bundleJson = _decode(
+        await rootBundle.loadString(_caseBundleAsset),
+      );
+      final CaseVisualManifest manifest = CaseVisualManifest.fromJson(
+        manifestJson,
+      );
+      final List<String> currentCaseIds =
+          (bundleJson['cases'] as List<dynamic>).map((dynamic rawCase) {
+        return (rawCase as Map<String, dynamic>)['case_id'] as String;
+      }).toList(growable: false);
 
-    expect(manifest.caseTreatments.keys, orderedEquals(currentCaseIds));
-    expect(manifest.caseTreatments, hasLength(5));
-    expect(bundleJson['load_only_scenarios'], hasLength(1));
-    expect(
-      manifestJson.keys.toSet(),
-      <String>{'schema_version', 'default_treatment', 'case_treatments'},
-    );
-    expect(encodedManifest, isNot(contains('scenario_id')));
-    expect(encodedManifest, isNot(contains('content_version')));
-    expect(encodedManifest, isNot(contains('fingerprint')));
-    expect(encodedManifest, isNot(contains('load_only')));
-  });
+      expect(manifest.caseTreatments.keys, orderedEquals(currentCaseIds));
+      expect(manifest.caseTreatments, hasLength(5));
+      expect(bundleJson['load_only_scenarios'], hasLength(1));
+      expect(manifestJson.keys.toSet(), <String>{
+        'schema_version',
+        'default_treatment',
+        'case_treatments',
+      });
+      expect(encodedManifest, isNot(contains('scenario_id')));
+      expect(encodedManifest, isNot(contains('content_version')));
+      expect(encodedManifest, isNot(contains('fingerprint')));
+      expect(encodedManifest, isNot(contains('load_only')));
+    },
+  );
 
   test('missing and future case IDs resolve to the immutable safe default', () {
-    final CaseVisualManifest manifest =
-        CaseVisualManifest.fromJson(_decode(encodedManifest));
+    final CaseVisualManifest manifest = CaseVisualManifest.fromJson(
+      _decode(encodedManifest),
+    );
 
     expect(
       manifest.resolve('unknown_future_case'),
@@ -191,35 +195,37 @@ void main() {
       });
     });
 
-    test('rejects unknown or missing treatment keys including gameplay data',
-        () {
-      _expectRejected(encodedManifest, (Map<String, dynamic> json) {
-        _defaultTreatment(json)['composition'] = <String, dynamic>{};
-      });
-      for (final String forbiddenField in <String>[
-        'gameplay',
-        'localization',
-        'scenario_id',
-        'scenario_fingerprint',
-        'pressure_windows',
-        'readiness',
-        'outcome',
-        'action_id',
-        'deadline_id',
-        'evidence',
-        'fact',
-        'resource',
-        'cost',
-        'score',
-      ]) {
+    test(
+      'rejects unknown or missing treatment keys including gameplay data',
+      () {
         _expectRejected(encodedManifest, (Map<String, dynamic> json) {
-          _caseTreatment(json)[forbiddenField] = null;
+          _defaultTreatment(json)['composition'] = <String, dynamic>{};
         });
-      }
-      _expectRejected(encodedManifest, (Map<String, dynamic> json) {
-        _caseTreatment(json).remove('palette');
-      });
-    });
+        for (final String forbiddenField in <String>[
+          'gameplay',
+          'localization',
+          'scenario_id',
+          'scenario_fingerprint',
+          'pressure_windows',
+          'readiness',
+          'outcome',
+          'action_id',
+          'deadline_id',
+          'evidence',
+          'fact',
+          'resource',
+          'cost',
+          'score',
+        ]) {
+          _expectRejected(encodedManifest, (Map<String, dynamic> json) {
+            _caseTreatment(json)[forbiddenField] = null;
+          });
+        }
+        _expectRejected(encodedManifest, (Map<String, dynamic> json) {
+          _caseTreatment(json).remove('palette');
+        });
+      },
+    );
 
     test('rejects duplicate, empty, whitespace, and untrimmed case IDs', () {
       _expectRejected(encodedManifest, (Map<String, dynamic> json) {
@@ -242,26 +248,28 @@ void main() {
       });
     });
 
-    test('rejects unknown, missing, malformed, and non-opaque palette values',
-        () {
-      _expectRejected(encodedManifest, (Map<String, dynamic> json) {
-        _palette(_caseTreatment(json))['glow'] = '#FFFFFF';
-      });
-      _expectRejected(encodedManifest, (Map<String, dynamic> json) {
-        _palette(_caseTreatment(json)).remove('signal');
-      });
-      for (final Object colour in <Object>[
-        '#12345',
-        '#FF123456',
-        '123456',
-        '#GGGGGG',
-        0xFF123456,
-      ]) {
+    test(
+      'rejects unknown, missing, malformed, and non-opaque palette values',
+      () {
         _expectRejected(encodedManifest, (Map<String, dynamic> json) {
-          _palette(_caseTreatment(json))['accent'] = colour;
+          _palette(_caseTreatment(json))['glow'] = '#FFFFFF';
         });
-      }
-    });
+        _expectRejected(encodedManifest, (Map<String, dynamic> json) {
+          _palette(_caseTreatment(json)).remove('signal');
+        });
+        for (final Object colour in <Object>[
+          '#12345',
+          '#FF123456',
+          '123456',
+          '#GGGGGG',
+          0xFF123456,
+        ]) {
+          _expectRejected(encodedManifest, (Map<String, dynamic> json) {
+            _palette(_caseTreatment(json))['accent'] = colour;
+          });
+        }
+      },
+    );
 
     test('rejects non-integral and out-of-range seeds', () {
       for (final Object seed in <Object>[-1, 65536, 1.5, '7']) {
@@ -287,30 +295,32 @@ void main() {
     });
   });
 
-  test('repository loads once and returns one cached successful future',
-      () async {
-    int loadCount = 0;
-    String? requestedPath;
-    final CaseVisualManifestRepository repository =
-        CaseVisualManifestRepository(
-      assetPath: 'injected-manifest.json',
-      assetLoader: (String path) async {
-        loadCount += 1;
-        requestedPath = path;
-        return encodedManifest;
-      },
-    );
+  test(
+    'repository loads once and returns one cached successful future',
+    () async {
+      int loadCount = 0;
+      String? requestedPath;
+      final CaseVisualManifestRepository repository =
+          CaseVisualManifestRepository(
+        assetPath: 'injected-manifest.json',
+        assetLoader: (String path) async {
+          loadCount += 1;
+          requestedPath = path;
+          return encodedManifest;
+        },
+      );
 
-    final Future<CaseVisualManifest> first = repository.load();
-    final Future<CaseVisualManifest> second = repository.load();
+      final Future<CaseVisualManifest> first = repository.load();
+      final Future<CaseVisualManifest> second = repository.load();
 
-    expect(identical(first, second), isTrue);
-    final CaseVisualManifest loaded = await first;
-    expect(await second, same(loaded));
-    expect(await repository.load(), same(loaded));
-    expect(requestedPath, 'injected-manifest.json');
-    expect(loadCount, 1);
-  });
+      expect(identical(first, second), isTrue);
+      final CaseVisualManifest loaded = await first;
+      expect(await second, same(loaded));
+      expect(await repository.load(), same(loaded));
+      expect(requestedPath, 'injected-manifest.json');
+      expect(loadCount, 1);
+    },
+  );
 
   test('concurrent corrupt load caches fallback and one diagnostic', () async {
     final Completer<String> source = Completer<String>();
@@ -331,8 +341,9 @@ void main() {
     expect(loadCount, 1);
 
     source.complete('{corrupt json');
-    final List<CaseVisualManifest> results =
-        await Future.wait(<Future<CaseVisualManifest>>[first, second]);
+    final List<CaseVisualManifest> results = await Future.wait(
+      <Future<CaseVisualManifest>>[first, second],
+    );
 
     expect(results, everyElement(same(CaseVisualManifest.safeFallback)));
     expect(await repository.load(), same(CaseVisualManifest.safeFallback));
@@ -341,19 +352,18 @@ void main() {
     expect(diagnostics.single, isA<FormatException>());
   });
 
-  test('missing asset and a failing diagnostic still return safe fallback',
-      () async {
-    final CaseVisualManifestRepository repository =
-        CaseVisualManifestRepository(
-      assetLoader: (_) async => throw StateError('missing asset'),
-      onDiagnostic: (_, __) => throw StateError('broken diagnostic'),
-    );
+  test(
+    'missing asset and a failing diagnostic still return safe fallback',
+    () async {
+      final CaseVisualManifestRepository repository =
+          CaseVisualManifestRepository(
+        assetLoader: (_) async => throw StateError('missing asset'),
+        onDiagnostic: (_, __) => throw StateError('broken diagnostic'),
+      );
 
-    expect(
-      await repository.load(),
-      same(CaseVisualManifest.safeFallback),
-    );
-  });
+      expect(await repository.load(), same(CaseVisualManifest.safeFallback));
+    },
+  );
 
   test('authoritative case bundle baseline remains byte exact', () async {
     final ByteData data = await rootBundle.load(_caseBundleAsset);
@@ -362,10 +372,10 @@ void main() {
       data.lengthInBytes,
     );
 
-    expect(bytes, hasLength(684266));
+    expect(bytes, hasLength(684360));
     expect(
       sha256.convert(bytes).toString(),
-      'e90f856cbb0f4625f7612a99db2f527ac3b090619019b7a83c21140f78f1984a',
+      '18144245b2eb11345a96d86a18ead0804ceef7d26aa3492ad67c6924ebbbe012',
     );
   });
 }

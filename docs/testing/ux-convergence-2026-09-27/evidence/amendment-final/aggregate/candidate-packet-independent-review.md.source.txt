@@ -1,0 +1,44 @@
+# Candidate packet preparation — independent static review
+
+Reviewed only `.artifacts/amendment-release-gate/prepare-candidate-packet.mjs`, SHA-256 `5eefc93129d92977d776989e694cf0da26f936333bbcaf0bbded3ffb781b67ef`. **Not executed.** The final candidate receipt and final source-binding file do not yet exist; the exact a1 gate is still running. No tracked files, archive destinations, source, gate or emulator were changed by this review.
+
+## Result
+
+No substantive conflation of baseline, failed attempt and future candidate result was found. The builder refuses a non-PASS or nonzero-exit receipt, requires exact candidate `a1fae95bc2624e28e6232b8867ad2a94c8d9f0ab`, and requires the source receipt to name the same commit, match its built source and retain the corrected application digest `5597958a0a870757e75cfbdfba930007d475f782035db4ee8503a97aa1723afc`. It cannot consume the 6ab or e6 dry-parse receipts as a1 completion because their heads differ and e6 is not PASS.
+
+The future narrative explicitly preserves 6ab PASS and e6 FAIL, identifies downstream e6 stages as unrun, distinguishes dry parses from gate execution, and keeps later documentation commits separate from the exact tested source. The final technical gate is not represented as hosted/browser/accessibility/human acceptance. Debug emulator versus hosted-lock/iOS scope remains explicit.
+
+Counts for web/dossier/PDF/Flutter/Rust/native and hosted lock come from the parsed candidate receipt. The constant statement that all 10/9/3 stages completed is supported only after the reviewed `seal-candidate.mjs` PASS assertions; it is not a present claim. The stated start time matches the known `...20260927T235525Z.log` run. Completion observation and log mtime are distinguished. A single bounded read of the current lint section confirms the three named warnings already occurred; this is not a poll or inference that the running aggregate finished.
+
+## Archive paths and pending dependencies
+
+The plan contains ten unique destinations under `evidence/amendment-final/aggregate/`, all relative to `docs/testing/ux-convergence-2026-09-27` as expected by `archive-selected.mjs`. Script source artifacts use `.source.txt`; the final copy receipt is outside that subtree at `evidence/amendment-final-aggregate-copy-receipt.json`. The existing archive helper enforces repository/docs containment, exclusive creation, credential-value scanning, and post-copy SHA-256 equality. No existing historical archive is targeted for replacement.
+
+Seven support inputs already exist: current/original parser, parser self-review, two historical dry parses, gate launcher and environment. The final log is selected through the future receipt; final receipt and source are intentionally absent. The plan and final Markdown output are also absent. The three retrospective Markdown links exist. **`AMENDMENT_LOCAL_READ_SMOKE.md` does not yet exist at its final docs path**: the coordinator must archive that separate smoke report under the named destination, or remove/adjust the link before delivery. This is a pending assembly dependency, not evidence that the smoke ran in this parser.
+
+The final Markdown is written only to ignored `AMENDMENT_AGGREGATE_CANDIDATE.final.md`; the plan itself does not copy that document. The coordinator must later publish it locally in the docs root for its relative evidence and sibling-document links to resolve.
+
+## Small recommendations before eventual execution
+
+1. Strengthen packet provenance by checking the current raw log bytes/length against `receipt.log.sha256` and `receipt.log.bytes` before constructing the archive plan, then attach expected SHA-256 values to plan entries. The present archive helper computes exact copy hashes, but the builder itself does not currently verify that the selected log still matches the parsed receipt. This is a bounded robustness recommendation, not an observed mismatch; no final log/receipt pair yet exists to compare.
+2. Prefer “No skip was added, no authorization/output assertion was weakened, and no PDF baseline was changed” over “No skip, assertion or PDF baseline was changed.” The actual test diff replaces setup polling and moves the same paused-render count assertion to its callers, retaining its meaning; the recommended wording avoids a literal claim that no assertion location changed.
+3. When assembling the final packet, resolve the pending local-read-smoke link and independently confirm the actual terminal result before running this builder. Do not substitute the initial e6 source receipt, old baseline PASS or parser dry-run success for either missing candidate input.
+
+This static review clears the source/result separation and planned archive locations within the stated pipeline. It does not approve execution before the final observed gate result, attest the not-yet-created packet, or authorize release.
+
+## Narrow independent closure addendum
+
+Re-read the revised builder, exact SHA-256 `d4021587380147477b4306f461b8c26432cafd8dac03299f48dbc94d69763e4a`, without executing it. Both source-level recommendations are closed:
+
+- The builder reads the selected raw log and asserts both byte length and SHA-256 against the observed receipt before preparing the plan. Every planned artifact now includes its current expected SHA-256; `archive-selected.mjs` checks that binding before copying. This closes the identified gap between parsed-log identity and copied-log identity within the existing verified archive workflow.
+- The narrative now says no assertion was weakened, no skip was added and no PDF baseline was changed. It no longer implies assertion locations were untouched by the reviewed test setup correction.
+
+The linked smoke document is prepared at `.artifacts/ux-reconciliation-auth/AMENDMENT_LOCAL_READ_SMOKE.final.md`. Read-only inspection of `final-evidence-plan.mjs` confirms that its five evidence links map to the same intended `evidence/amendment-final/local-read-smoke/` hierarchy, including the original execution directory, run receipt, independent review, source binding and detailed report. The execution/run source files exist. The coordinator will copy the final smoke Markdown to the docs root after the guard; this is **prepared assembly**, not a claim that the final linked files are already archived.
+
+The original review remains intact above. No new material finding arose in this narrow follow-up. Final candidate receipt/source inputs and the observed gate result are still prerequisites; neither packet builder nor evidence-plan generator was executed by this reviewer. No tracked edit, gate operation or emulator cleanup occurred.
+
+## Final array-only identity check — 2026-09-28T00:13:45Z
+
+Final reviewed builder SHA-256: `8c8c6aaab6352408708af194dfbb00ec826d50496e17c0f2eb2a27bfd8fe614c`. The only further changes are two archive-array entries: this independent review and the packet builder's own source, both with distinct `.source.txt` destinations under `evidence/amendment-final/aggregate/`. Their existing source files receive the same per-entry SHA binding as the other entries.
+
+Removing exactly those two lines in memory reproduces the previous reviewed builder SHA-256 `d4021587380147477b4306f461b8c26432cafd8dac03299f48dbc94d69763e4a`; therefore no other bytes or behavior changed. Exact check receipt: ignored `candidate-packet-final-array-review.json` beside this report. This concludes the source review; the builder and plan were not executed, and this review now remains stable until the coordinator's eventual packet execution after observed final-gate completion.

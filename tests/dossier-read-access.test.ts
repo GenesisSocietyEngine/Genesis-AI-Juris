@@ -1,0 +1,254 @@
+import assert from 'node:assert/strict';
+import { test, after } from 'node:test';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { resolve, dirname, extname, relative } from 'node:path';
+import { createRequire } from 'node:module';
+import { createHash } from 'node:crypto';
+import ts from 'typescript';
+import type { SQL, Table } from 'drizzle-orm';
+
+// Strictly in-process synthetic unit fixture. No HTTP server, credentials,
+// sessions, real accounts/database, uploads, browser, network or subprocesses.
+// Production handler, context/organization/access/policy implementations run.
+// Only identity, DB records and unrelated readiness aggregation are test doubles.
+const root=process.cwd(), out=resolve(root,'.artifacts/ux-reconciliation-auth');
+const overlayRoot=process.env.MATTER_READ_SOURCE_OVERLAY?resolve(process.env.MATTER_READ_SOURCE_OVERLAY):null;
+if(overlayRoot&&!overlayRoot.startsWith(resolve(root,'.artifacts')+'/')&&!overlayRoot.startsWith(resolve(root,'.artifacts')+'\\'))throw new Error('Overlay must stay under this workspace ignored artifacts');
+const sourceMode=overlayRoot?'PROPOSAL_OVERLAY':'CURRENT_SOURCE';
+const loadedSources:Array<{source:string;loadedFrom:string;sha256:string}>=[];
+const requireExternal=createRequire(import.meta.url);
+const {getTableName}=requireExternal('drizzle-orm') as typeof import('drizzle-orm');
+const {SQLiteSyncDialect}=requireExternal('drizzle-orm/sqlite-core') as typeof import('drizzle-orm/sqlite-core');
+const dialect=new SQLiteSyncDialect();
+const originalFetch=globalThis.fetch;
+globalThis.fetch=async()=>{throw new Error('Network is forbidden in this unit fixture');};
+const identity={email:'synthetic-unit@example.test',displayName:'Synthetic unit actor',fullName:null,authSource:'local'};
+const otherIdentity={...identity,email:'synthetic-other-unit@example.test',displayName:'Other synthetic unit actor'};
+let currentIdentity: typeof identity | null=identity;
+const actorId='actor_synthetic_unit_reader', dossierId='dossier_synthetic_unit', organizationId='org_synthetic_unit_fixture';
+const statement='SYNTHETIC UNIT PRIVATE ASSERTION';
+const excerpt='SYNTHETIC UNIT PRIVATE SOURCE EXCERPT';
+const participant={id:'participant_synthetic_unit',dossierId,userId:1,actorId,role:'contributor',status:'active',displayName:identity.displayName};
+const otherParticipant={...participant,id:'participant_synthetic_other',userId:2,actorId:'actor_synthetic_unit_other'};
+const syntheticUsers=[{id:1,actorId,email:identity.email,displayName:identity.displayName},{id:2,actorId:otherParticipant.actorId,email:otherIdentity.email,displayName:otherIdentity.displayName}];
+const dossier={id:dossierId,reference:'SYNTHETIC-UNIT',title:'Synthetic in-memory Matter',ownerUserId:9,ownerActorId:'actor_synthetic_unit_owner',revision:1,status:'draft',classification:'internal',priority:'normal',jurisdictions:[],terminology:{},dossierTypeRegistry:'synthetic',dossierTypeId:'synthetic',dossierTypeVersion:'1',keyDeadlineAt:null,keyDeadlineTimezone:'UTC',updatedAt:'2026-09-27T12:00:00.000Z'};
+const organization={id:organizationId,name:'Synthetic organization',kind:'team',status:'active',revision:1};
+let membership={userId:1,actorId,organizationId,role:'member',status:'active',revision:1};
+const otherMembership={...membership,userId:2,actorId:otherParticipant.actorId};
+let barrier: {started:()=>void;resume:Promise<void>} | null=null, authorityReads=0, accessReads=0;
+type BarrierPoint='anchors'|'owners'|'collection'|'note';
+let barrierPoint:BarrierPoint='anchors';
+let collectionRows=[{dossier,participant}];
+let collectionGrantQueries=0;
+const noteRow={id:'note_event_synthetic_unit',noteId:'note_synthetic_unit',dossierId,revision:1,title:'SYNTHETIC UNIT PRIVATE NOTE',body:'SYNTHETIC UNIT PRIVATE NOTE BODY',noteType:'working_note',occurredAt:'2026-09-27T12:00:00.000Z',actorRef:actorId,actorRole:'contributor',action:'create',idempotencyKey:'operation_synthetic_unit',sourceLinkId:null,requestDigest:'synthetic-unit-digest'};
+async function pause(point:BarrierPoint){if(barrierPoint===point&&barrier){const active=barrier;barrier=null;active.started();await active.resume;}}
+const observations:Array<Record<string,unknown>>=[];
+type FixtureQuery={from(value:unknown):FixtureQuery;innerJoin(table:unknown,condition?:SQL):FixtureQuery;leftJoin(table:unknown,condition?:SQL):FixtureQuery;where(condition?:SQL):FixtureQuery;orderBy(...values:unknown[]):FixtureQuery;limit(...values:unknown[]):FixtureQuery;then:Promise<unknown[]>['then']};
+
+function queryDouble(selection:Record<string,unknown>|undefined){
+  let table:string,requestedLimit:number|undefined;const params:unknown[]=[];
+  function capture(condition?:SQL):FixtureQuery{if(condition)params.push(...dialect.sqlToQuery(condition).params);return q;}
+  const q:FixtureQuery={from(value){table=getTableName(value as Table);return q;},innerJoin(_table,condition){return capture(condition);},leftJoin(_table,condition){return capture(condition);},where:capture,orderBy(){return q;},limit(value){requestedLimit=Number(value);return q;},then(ok,fail){return execute().then(ok,fail);}};
+  async function execute(){
+    if(table==='users'){
+      if(selection?.id&&!selection?.actorId){await pause('owners');return params.includes(9)?[{id:9,displayName:'Synthetic owner display'}]:[];}
+      return syntheticUsers.filter(user=>params.includes(user.email)).map(user=>structuredClone(user));
+    }
+    if(table==='organizations'){
+      authorityReads++;
+      // Match the production query's WHERE membership.status='active'.
+      const matched=[membership,otherMembership].find(row=>params.includes(row.actorId)&&params.includes(row.userId)&&params.includes(organizationId)&&row.status==='active');
+      return matched?[{organization:structuredClone(organization),membership:structuredClone(matched)}]:[];
+    }
+    if(table==='dossiers' && selection?.dossier && selection?.participant){
+      accessReads++;
+      const matched=[participant,otherParticipant].find(row=>params.includes(row.actorId)&&params.includes(row.userId)&&params.includes(dossierId)&&params.includes(organizationId)&&row.status==='active');
+      return matched?[{dossier:structuredClone(dossier),participant:structuredClone(matched)}]:[];
+    }
+    if(table==='dossiers'&&selection?.dossier&&selection?.role){
+      assert.ok(params.includes(organizationId)&&params.includes(actorId)&&params.includes(1)&&params.includes('active'),'Collection query must bind its original organization and principal');
+      const selected=collectionRows.filter(row=>row.participant.status==='active').slice(0,requestedLimit).map(row=>({dossier:structuredClone(row.dossier),participantId:row.participant.id,role:row.participant.role,documentCount:0,openRequestCount:0,overdueRequestCount:0,pendingProposalCount:0,validPackageCount:0,simulatedPackageCount:0,currentOutputCount:0,approvedCurrentOutputCount:0}));
+      await pause('collection');return selected;
+    }
+    if(table==='dossier_participants'&&selection?.participantId&&selection?.dossierId){
+      collectionGrantQueries++;
+      assert.ok(params.includes(organizationId)&&params.includes(actorId)&&params.includes(1)&&params.includes('active'),'Final grant query must bind the same organization and principal');
+      assert.equal(requestedLimit,51,'Final grant query is bounded to 50 rows plus lookahead');
+      return collectionRows.filter(row=>params.includes(row.dossier.id)&&row.participant.status==='active').slice(0,requestedLimit).map(row=>({dossierId:row.dossier.id,participantId:row.participant.id,role:row.participant.role}));
+    }
+    if(table==='dossier_participants')return [{participant_id:participant.id,actor_id:actorId,display_name:identity.displayName,role:participant.role,status:participant.status}];
+    if(table==='dossier_source_anchors'){
+      await pause('anchors');
+      return [{source_anchor_id:'anchor_synthetic_unit',document_id:'document_synthetic_unit',document_version_id:'version_synthetic_unit',document_title:'Synthetic unit document',excerpt,review_state:'accepted'}];
+    }
+    if(table==='dossier_professional_assertions')return [{assertion_id:'assertion_synthetic_unit',assertion_type:'fact',statement,status:'accepted'}];
+    if(table==='dossier_assertion_sources')return [];
+    if(table==='dossier_working_note_versions'){
+      assert.ok(params.includes(dossierId)&&params.includes(actorId)&&params.includes(noteRow.idempotencyKey),'Recovered note operation must bind the original actor, Matter and key');
+      await pause('note');return [structuredClone(noteRow)];
+    }
+    throw new Error('Unexpected fixture read: '+table);
+  }
+  return q;
+}
+const db={select:queryDouble,insert(){return {values(){return {onConflictDoNothing(){return {syntheticInsert:true};}};}};},async batch(){return [];}};
+const cache=new Map<string,{exports:unknown}>();
+const overridden=new Map<string,Record<string,unknown>>([
+  [resolve(root,'db/index.ts'),{getDb:()=>db}],
+  [resolve(root,'app/chatgpt-auth.ts'),{getChatGPTUser:async()=>structuredClone(currentIdentity)}],
+  [resolve(root,'app/dossier-readiness-server.ts'),{computeStoredDossierReadiness:async()=>({status:'synthetic-unit-unassessed',issues:[]})}],
+]);
+function load(file:string):unknown{
+  if(overridden.has(file))return overridden.get(file);
+  if(cache.has(file))return cache.get(file)!.exports;
+  if(extname(file)==='.json')return JSON.parse(readFileSync(file,'utf8'));
+  const compiledModule={exports:{}};cache.set(file,compiledModule);
+  const proposed=overlayRoot?resolve(overlayRoot,relative(root,file)):null;
+  const actualFile=proposed&&existsSync(proposed)?proposed:file;
+  const source=readFileSync(actualFile,'utf8');
+  loadedSources.push({source:relative(root,file),loadedFrom:relative(root,actualFile),sha256:createHash('sha256').update(source).digest('hex')});
+  const compiled=ts.transpileModule(source,{fileName:file,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,esModuleInterop:true}}).outputText;
+  function localRequire(name:string):unknown{
+    if(name==='cloudflare:workers')return {env:{}};
+    if(name==='next/headers')return {headers:async()=>new Headers()};
+    if(!name.startsWith('.'))return requireExternal(name);
+    const base=resolve(dirname(file),name);
+    const found=[base,base+'.ts',base+'.tsx',base+'.json',resolve(base,'index.ts')].find(p=>existsSync(p)&&extname(p));
+    if(!found)throw new Error('Unresolved local module: '+name);
+    return load(found);
+  }
+  new Function('require','module','exports','__filename','__dirname',compiled)(localRequire,compiledModule,compiledModule.exports,file,dirname(file));
+  return compiledModule.exports;
+}
+const routeFile=resolve(root,'app/api/dossiers/[dossierId]/route.ts');
+const route=load(routeFile) as {GET(request:Request,context:{params:Promise<{dossierId:string}>}):Promise<Response>};
+const collectionRoute=load(resolve(root,'app/api/dossiers/route.ts')) as {GET(request:Request):Promise<Response>};
+const notesRoute=load(resolve(root,'app/api/dossiers/[dossierId]/notes/route.ts')) as typeof route;
+type UnitBody={dossier:{assertions:Array<{statement:string}>;source_anchors:Array<{excerpt:string}>;permissions:{can_write:boolean};current_role:string};dossiers?:Array<Record<string,unknown>>;note?:{title:string;body:string};operation?:{key:string};replayed?:boolean;[key:string]:unknown};
+async function read(){
+  const response=await route.GET(new Request('https://synthetic-unit.invalid/api/dossiers/'+dossierId,{headers:{'x-genesis-organization':organizationId}}),{params:Promise.resolve({dossierId})});
+  return {response,body:await response.json() as UnitBody};
+}
+function reset(){membership={...membership,status:'active',revision:1};participant.role='contributor';participant.status='active';currentIdentity=identity;authorityReads=0;accessReads=0;collectionRows=[{dossier,participant}];collectionGrantQueries=0;barrierPoint='anchors';}
+async function duringRead(name:string,change:()=>void){
+  reset();let started!:()=>void,release!:()=>void,timer:ReturnType<typeof setTimeout>|undefined;
+  const reached=new Promise<void>(resolve=>{started=resolve;});
+  const resume=new Promise<void>(resolve=>{release=resolve;});
+  barrier={started,resume};
+  const pending=read();
+  try{
+    await Promise.race([reached,pending.then(()=>{throw new Error('Route completed before the data barrier');}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Data barrier was not reached within 2 seconds')),2000);})]);
+    assert.ok(authorityReads>=2,'Production authority resolved before barrier');
+    assert.equal(accessReads,1,'Production joined access resolved before barrier');
+    change();release();
+    const result=await pending;const {response,body}=result;
+    observations.push({name,status:response.status,membershipStatus:membership.status,membershipRevision:membership.revision,currentIdentity:currentIdentity===null?'none':currentIdentity===identity?'initial':'other',participantRole:participant.role,privateAssertionPresent:JSON.stringify(body).includes(statement),privateExcerptPresent:JSON.stringify(body).includes(excerpt),oldWritePermission:body.dossier?.permissions?.can_write??null,authorityReads,accessReads});
+    return result;
+  }finally{clearTimeout(timer);release();}
+}
+function assertDenied(result:Awaited<ReturnType<typeof read>>,status:number){
+  assert.equal(result.response.status,status);
+  assert.equal(result.body.dossier,undefined,'A denial must not contain captured permissions or private data');
+  assert.equal(result.body.dossiers,undefined);assert.equal(result.body.note,undefined);assert.equal(result.body.operation,undefined);
+  assert.ok(!JSON.stringify(result.body).includes(statement));assert.ok(!JSON.stringify(result.body).includes(excerpt));
+}
+
+test('synthetic in-process baseline: actual detail handler returns authorized fixture',async()=>{
+  reset();const {response,body}=await read();
+  assert.equal(response.status,200);
+  assert.equal(body.dossier.assertions[0].statement,statement);
+  assert.equal(body.dossier.source_anchors[0].excerpt,excerpt);
+  assert.equal(body.dossier.permissions.can_write,true);
+  assert.ok(authorityReads>=2);assert.ok(accessReads>=1);
+  observations.push({name:'baseline',status:response.status,authorizedDataPresent:true,authorityReads,accessReads});
+});
+
+test('regression: detail response must use current membership after awaited private read',async()=>{
+  assertDenied(await duringRead('suspended_during_read',()=>{membership={...membership,status:'suspended',revision:2};}),404);
+});
+
+test('synthetic in-process control: a fresh read denies the same suspended membership',async()=>{
+  assert.equal(membership.status,'suspended');
+  const {response,body}=await read();
+  observations.push({name:'fresh_read_after_suspension',status:response.status,privateDataPresent:JSON.stringify(body).includes(statement)||JSON.stringify(body).includes(excerpt)});
+  assert.equal(response.status,404);assert.ok(!JSON.stringify(body).includes(statement));
+});
+
+test('untouched authority remains successful across the same awaited data barrier',async()=>{
+  const {response,body}=await duringRead('unchanged_during_read',()=>{});
+  assert.equal(response.status,200);assert.equal(body.dossier.current_role,'contributor');assert.equal(body.dossier.permissions.can_write,true);
+});
+
+test('identity disappearance during read must hide prepared private response',async()=>{
+  assertDenied(await duringRead('identity_missing_during_read',()=>{currentIdentity=null;}),401);
+});
+
+test('identity switch during read must not deliver a prior principal response',async()=>{
+  assertDenied(await duringRead('identity_changed_during_read',()=>{currentIdentity=otherIdentity;}),401);
+});
+
+test('same participant role downgrade during read must invalidate captured permissions',async()=>{
+  assertDenied(await duringRead('role_changed_during_read',()=>{participant.role='viewer';}),409);
+});
+
+test('fresh viewer read returns current viewer permissions',async()=>{
+  assert.equal(participant.role,'viewer');const {response,body}=await read();
+  assert.equal(response.status,200);assert.equal(body.dossier.current_role,'viewer');assert.equal(body.dossier.permissions.can_write,false);
+  observations.push({name:'fresh_viewer_read',status:response.status,currentRole:body.dossier.current_role,canWrite:body.dossier.permissions.can_write});
+});
+
+test('suspend and resume during read cannot revive the captured organization grant',async()=>{
+  assertDenied(await duringRead('membership_suspended_and_resumed',()=>{membership={...membership,status:'active',revision:3};}),404);
+});
+test('fresh request after resumption can establish the new organization authority',async()=>{
+  assert.equal(membership.status,'active');assert.equal(membership.revision,3);
+  const {response,body}=await read();assert.equal(response.status,200);assert.equal(body.dossier.current_role,'contributor');
+  observations.push({name:'fresh_after_membership_resumption',status:response.status,membershipRevision:membership.revision});
+});
+
+async function readCollection(){const response=await collectionRoute.GET(new Request('https://synthetic-unit.invalid/api/dossiers?limit=1',{headers:{'x-genesis-organization':organizationId}}));return {response,body:await response.json() as UnitBody};}
+async function readNote(){const response=await notesRoute.GET(new Request('https://synthetic-unit.invalid/api/dossiers/'+dossierId+'/notes?operation_key='+noteRow.idempotencyKey,{headers:{'x-genesis-organization':organizationId}}),{params:Promise.resolve({dossierId})});return {response,body:await response.json() as UnitBody};}
+async function duringOtherRead(name:string,point:BarrierPoint,readAction:typeof read,change:()=>void,setup?:()=>void){
+  reset();setup?.();barrierPoint=point;let started!:()=>void,release!:()=>void,timer:ReturnType<typeof setTimeout>|undefined;
+  const reached=new Promise<void>(resolve=>{started=resolve;});const resume=new Promise<void>(resolve=>{release=resolve;});barrier={started,resume};
+  const pending=readAction();
+  try{
+    await Promise.race([reached,pending.then(()=>{throw new Error('Route completed before the selected barrier');}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Read barrier was not reached within 2 seconds')),2000);})]);
+    assert.ok(authorityReads>=1);change();release();const result=await pending;
+    observations.push({name,status:result.response.status,point,collectionCount:result.body.count??null,collectionGrantQueries,privateNotePresent:JSON.stringify(result.body).includes(noteRow.body)});return result;
+  }finally{clearTimeout(timer);release();}
+}
+
+test('collection unchanged at awaited owner read preserves response and hides internal grant ID',async()=>{
+  const {response,body}=await duringOtherRead('collection_unchanged','owners',readCollection,()=>{});
+  assert.equal(response.status,200);assert.equal(body.count,1);assert.ok(body.dossiers);assert.equal(body.dossiers[0].owner_display_name,'Synthetic owner display');assert.ok(!JSON.stringify(body).includes(participant.id));
+});
+test('collection removal during owner-name read withholds prepared private summary',async()=>{
+  assertDenied(await duringOtherRead('collection_removed','owners',readCollection,()=>{participant.status='removed';}),409);
+});
+test('collection role change during owner-name read withholds old permissions',async()=>{
+  assertDenied(await duringOtherRead('collection_role_changed','owners',readCollection,()=>{participant.role='viewer';}),409);
+});
+test('collection lookahead grant is checked before returning its pagination cursor',async()=>{
+  assertDenied(await duringOtherRead('collection_lookahead_removed','owners',readCollection,()=>{collectionRows[1].participant.status='removed';},()=>{
+    const lookahead={...dossier,id:'dossier_synthetic_unit_lookahead'};collectionRows.push({dossier:lookahead,participant:{...participant,id:'participant_synthetic_lookahead',dossierId:lookahead.id}});
+  }),409);
+});
+test('empty collection still rechecks disappearing identity',async()=>{
+  assertDenied(await duringOtherRead('empty_collection_identity_missing','collection',readCollection,()=>{currentIdentity=null;},()=>{collectionRows=[];}),401);
+});
+test('unchanged note operation recovery preserves successful 201, content and cache headers',async()=>{
+  const {response,body}=await duringOtherRead('note_recovery_unchanged','note',readNote,()=>{});
+  assert.equal(response.status,201);assert.equal(body.replayed,true);assert.equal(body.note?.body,noteRow.body);assert.equal(body.operation?.key,noteRow.idempotencyKey);assert.match(response.headers.get('cache-control')??'',/private, no-store/);
+});
+test('note operation recovery after suspended membership withholds prior 201 payload',async()=>{
+  assertDenied(await duringOtherRead('note_recovery_membership_suspended','note',readNote,()=>{membership={...membership,status:'suspended',revision:2};}),404);
+});
+
+after(()=>{
+  const receipt={observedAt:new Date().toISOString(),sourceMode,scope:'Strictly in-process unit test, synthetic records and identity. No HTTP server, credentials, real accounts/DB, uploads, browser or network. Authorization functions are actual selected source code; DB and identity are explicit test doubles. Identity disappearance is not a token/session-store integration test.',route:relative(root,routeFile),routeSha256:loadedSources.find(item=>item.source===relative(root,routeFile))?.sha256,productionAuthorizationModules:['app/dossier-server.ts','app/organization-store.ts','app/dossier-security.ts'],loadedSources,observations};
+  try{
+    mkdirSync(out,{recursive:true});
+    writeFileSync(resolve(out,'matter-read-race.'+(overlayRoot?'proposal':'current')+'.receipt.json'),JSON.stringify(receipt,null,2)+'\n');
+  }finally{globalThis.fetch=originalFetch;}
+});

@@ -1,0 +1,42 @@
+{
+  "archivedAt": "2026-09-28T01:08:51.231Z",
+  "scope": "Separate successful read-only cleanup finalization after the preserved stop actions and failed immediate checks; final source review and assembly utility.",
+  "files": [
+    {
+      "source": ".artifacts/amendment-android-native/cleanup-readonly-finalization-20260928T010829378Z.json",
+      "destination": "evidence/amendment-final/native-cleanup/execution.json",
+      "bytes": 3591,
+      "sha256": "8d2378aaddc64a6af683c724f2e577741579e86aad94e6889d95d20a1bae3f50"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/finalize-owned-cleanup-readonly.ps1",
+      "destination": "evidence/amendment-final/native-cleanup/finalize-readonly.ps1.source.txt",
+      "sha256": "65642c87de97b8ff1e1bd15fc35070db7ad4c60c8e18d1f59adbc616923837ff",
+      "bytes": 6956
+    },
+    {
+      "source": ".artifacts/amendment-android-native/CLEANUP_READONLY_FINALIZATION_REVIEW.md",
+      "destination": "evidence/amendment-final/native-cleanup/readonly-finalization-review.md",
+      "bytes": 3697,
+      "sha256": "0b686d54c564c52853e092d0ed875c15dc0d7ce7a5e7c7877533797e52db639b"
+    },
+    {
+      "source": ".artifacts/amendment-android-native/CLEANUP_NATIVE_IDENTITY_CORRECTION.md",
+      "destination": "evidence/amendment-final/native-cleanup/native-identity-proposal.md.source.txt",
+      "bytes": 5351,
+      "sha256": "3e6cf6d4fa9d056b7af1b4a14324f303cf48c7575bb7ecead01353ef63b3042e"
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/assemble-final-status-cleanup-finalized.mjs",
+      "destination": "evidence/amendment-final/report-review/cleanup-finalized-assembler.mjs.source.txt",
+      "sha256": "02a9159dd2c7693d25f12575bbcd742cd4dd9471bd844ba48197fb1c91ca6779",
+      "bytes": 37647
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/FINAL_SUPPORTING_DOCUMENTS_INDEPENDENT_REVIEW.md",
+      "destination": "evidence/amendment-final/report-review/supporting-documents-independent-review.md",
+      "sha256": "9c14fa010ec61ae4ac71025e4cb671278a6ae0949a80b0438b2c197e2eb84258",
+      "bytes": 6675
+    }
+  ]
+}

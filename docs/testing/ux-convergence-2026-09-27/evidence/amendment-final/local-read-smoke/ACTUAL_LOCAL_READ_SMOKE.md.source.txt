@@ -1,0 +1,35 @@
+# Actual ordinary local API read smoke
+
+**PASS, exit 0.** The exact independently reviewed harness ran against root's confirmed `http://localhost:5281` worker and isolated `.artifacts/ux-reconciliation-auth/state`. Execution started **2026-09-27T22:02:10.153Z** and ended **22:02:18.733Z** (8.580 seconds). The harness's own request/cleanup interval was 22:02:10.764Z–22:02:18.632Z.
+
+The build is bound to source commit `e6c6adc6fe01129b2e3d442072c532e08591fae9`, 385 application inputs, and application-input digest `5597958a0a870757e75cfbdfba930007d475f782035db4ee8503a97aa1723afc`. Root supplied `.artifacts/amendment-release-gate/candidate-initial-source.json` and confirmed the worker's packaged source/digest logs before execution. The harness required that matching source-bound receipt and explicit expected identity. This is an operator-confirmed worker/port and receipt binding, not an HTTP build-attestation endpoint.
+
+The nine checks passed:
+
+- Ordinary password sign-in for the existing synthetic owner, viewer and foreign aliases, using separate new cookie jars and actual server-issued local sessions.
+- Fresh actor-specific organization selections for owner and viewer. The viewer used a new selection from ordinary organizations GET, not its stale stored selection.
+- Owner and viewer collection, detail, document/version and exact source-v1 reads, with the expected role/permission projections and private no-store responses.
+- Exact v1 length **422 bytes**, SHA-256 `f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e`.
+- Foreign target-organization and wrong personal-context reads concealed the private records.
+- Owner readback confirmed unchanged Matter content excluding volatile readiness, document/version metadata and organization memberships.
+
+There were **39 responses: 20×200, 7×404 and 12×401**. The seven 404s were expected foreign/context denials. All three script-owned sessions were logged out through the ordinary endpoint on the first attempt; each saved old cookie then received 401 for collection, detail, documents and source reads. These twelve post-logout denials contained no private payload. The script reported successful cleanup for foreign, viewer and owner. It did not read or revoke existing browser/other sessions.
+
+The only mutation requests were the reviewed ordinary login/logout operations. There was no upload, source-v2 route, business/content change, organization membership change, review, invitation, direct DB operation, trusted-identity header, invented token, hosted access or browser action. Root stopped worker session 67557 after cleanup completed. The intentional server-stop exit 1 is separate from this harness's successful exit 0. No further HTTP calls were made.
+
+Evidence remains ignored during the full-gate tracked freeze:
+
+| Artifact, relative to this directory | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `local-read-smoke.mjs` | 17457 | `4374127f667065141e1b77c902ab47f4910bff11ee2361ad740391e73a2a4ec5` |
+| `run-approved-local-read-smoke.mjs` | 2424 | `196b475abe5d486c401570c9368fbb06b92849d1d20a733598c2beecf80d86dc` |
+| `local-read-smoke-runs/2026-09-27T220210764Z-e6c6adc6/receipt.json` | 15971 | `55dc56f124dc52ad567f0921c1d39a554dcf4c53b89665bc36683f2b6032aa44` |
+| `local-read-smoke-execution-2026-09-27T220210153Z/execution.json` | 1333 | `7da0a7286cb0b72fcf9d54ec4a23468a5b15bb338a69d1211b9c24924f4e342e` |
+| `local-read-smoke-execution-2026-09-27T220210153Z/stdout.log` | 229 | `3d045c1e0123b09ced56c9b2531aae1a12469fe041fd5268a3f08fcbfd80c8ee` |
+| `local-read-smoke-execution-2026-09-27T220210153Z/stderr.log` | 0 | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+
+The execution JSON records the exact pinned Node executable, command arguments, timestamps and exit. The launcher preserved the harness stdout/stderr bytes without normalization. The request receipt contains aliases, safe status/count metadata and digests; it contains no raw credentials, cookies, emails or private response bodies. `local-read-smoke-publication-review.json` verifies the result/counts, source/log hashes and a bounded in-memory known-credential/email/cookie-pattern scan across these six files; all match counts were zero. This is a scoped check, not a universal secret guarantee. Tracked `git status --short` remained empty after execution and sealing.
+
+Independent receipt review (`local-read-smoke-independent-review.md`) confirmed the 39 events, nine check groups, three cleanup passes, exact source/build/command binding and byte hashes with no substantive finding. It made no HTTP, credential, DB, worker or tracked changes. The preservation checks cover the specified read models, not equality of the database/auth audit stores; cleanup failure branches were statically reviewed, not induced in this successful run.
+
+This is **sequential real local token-store/API coverage**, not a mid-request revocation test. It confirms normal authorized reads, current organization selection, scoped permissions, foreign/context concealment and revoked-cookie rejection. The separately maintained 17-case test models an in-flight identity/organization/participant change in a synthetic in-process fixture; that evidence must remain distinct. Neither result establishes natural expiry timing, provider-side logout introspection, hosted/browser acceptance, blocked source-v2 upload, human comprehension or accessibility. The post-change full release aggregate was still running independently; this smoke is not its result.

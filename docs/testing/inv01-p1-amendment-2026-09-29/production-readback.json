@@ -1,0 +1,19 @@
+{
+  "observedAt": "2026-09-29 03:53:09 UTC",
+  "scope": "Read-only hosting metadata, no deployed binary attestation or production acceptance tests",
+  "site": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version": 102,
+    "access": "public",
+    "preview": null
+  },
+  "source": "bf5799383a52b6617cd9d4a0acf47af780086218",
+  "deployment": {
+    "id": "appgdep_6ab6ed70ee488191ba95f30293b6e6a1",
+    "status": "succeeded",
+    "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_37dbecce77848191a3dc4397ee48dc73",
+    "environmentRevision": 39
+  },
+  "candidateDeployed": false,
+  "mutatingOperations": []
+}

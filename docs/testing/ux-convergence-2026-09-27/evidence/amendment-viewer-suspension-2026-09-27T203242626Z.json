@@ -1,0 +1,423 @@
+{
+  "startedAt": "2026-09-27T20:32:42.626Z",
+  "status": "PASS",
+  "origin": "http://localhost:5281",
+  "localOnly": true,
+  "applicationCommit": "8ee07c0fcf5a6ea78f5fd9c435bfe4b013e052b6",
+  "builtInputDigest": "25d6309ef9adf2ff039c02fe0bffef4a8a754dde11334a3d8f7f621e7dcc34ec",
+  "scope": "Ordinary API suspension/restoration of one existing synthetic viewer organization membership. No browser, upload, direct DB mutation, invitation, credential change, or new role.",
+  "organizationId": "org_15eba3abeeb241c6899481f557186dd4",
+  "dossierId": "dossier_4c45577c6bc54528b9330d018a893312",
+  "documentId": "document_544afe4d7e6345d7a8bb82d3640f3db4",
+  "sourceVersionId": "document_version_74cafe3815474c808a7adfea87340a1d",
+  "viewerActorId": "actor_be30f5cfe01560dd0ad87fa0986d2246",
+  "events": [
+    {
+      "at": "2026-09-27T20:32:43.112Z",
+      "alias": "owner",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200,
+      "responseBytes": 134,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:43.594Z",
+      "alias": "viewer",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200,
+      "responseBytes": 136,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:43.677Z",
+      "alias": "owner",
+      "method": "GET",
+      "path": "/api/organizations",
+      "status": 200,
+      "responseBytes": 5824,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:43.741Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/organizations",
+      "status": 200,
+      "responseBytes": 1259,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:43.885Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+      "status": 200,
+      "responseBytes": 7490,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.072Z",
+      "alias": "owner",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+      "status": 200,
+      "responseBytes": 7483,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.151Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/documents",
+      "status": 200,
+      "responseBytes": 1282,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.207Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/documents/document_544afe4d7e6345d7a8bb82d3640f3db4/versions/document_version_74cafe3815474c808a7adfea87340a1d/download",
+      "status": 200,
+      "responseBytes": 422,
+      "contentType": "text/plain",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.260Z",
+      "alias": "owner",
+      "method": "POST",
+      "path": "/api/organizations",
+      "status": 200,
+      "responseBytes": 11,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.315Z",
+      "alias": "owner",
+      "method": "GET",
+      "path": "/api/organizations",
+      "status": 200,
+      "responseBytes": 6329,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.360Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+      "status": 404,
+      "code": "organization_unavailable",
+      "responseBytes": 91,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.395Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/documents",
+      "status": 404,
+      "code": "organization_unavailable",
+      "responseBytes": 91,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.428Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/documents/document_544afe4d7e6345d7a8bb82d3640f3db4/versions/document_version_74cafe3815474c808a7adfea87340a1d/download",
+      "status": 404,
+      "code": "organization_unavailable",
+      "responseBytes": 91,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.494Z",
+      "alias": "owner",
+      "method": "GET",
+      "path": "/api/organizations",
+      "status": 200,
+      "responseBytes": 6329,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.566Z",
+      "alias": "owner",
+      "method": "POST",
+      "path": "/api/organizations",
+      "status": 200,
+      "responseBytes": 11,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.628Z",
+      "alias": "owner",
+      "method": "GET",
+      "path": "/api/organizations",
+      "status": 200,
+      "responseBytes": 6828,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.682Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+      "status": 409,
+      "code": "organization_context_changed",
+      "responseBytes": 95,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.719Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/documents",
+      "status": 409,
+      "code": "organization_context_changed",
+      "responseBytes": 95,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.765Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/documents/document_544afe4d7e6345d7a8bb82d3640f3db4/versions/document_version_74cafe3815474c808a7adfea87340a1d/download",
+      "status": 409,
+      "code": "organization_context_changed",
+      "responseBytes": 95,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.813Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/organizations",
+      "status": 200,
+      "responseBytes": 1259,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.904Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+      "status": 200,
+      "responseBytes": 7490,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:44.954Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/documents",
+      "status": 200,
+      "responseBytes": 1282,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:45.010Z",
+      "alias": "viewer",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312/documents/document_544afe4d7e6345d7a8bb82d3640f3db4/versions/document_version_74cafe3815474c808a7adfea87340a1d/download",
+      "status": 200,
+      "responseBytes": 422,
+      "contentType": "text/plain",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:45.101Z",
+      "alias": "owner",
+      "method": "GET",
+      "path": "/api/dossiers/dossier_4c45577c6bc54528b9330d018a893312",
+      "status": 200,
+      "responseBytes": 7483,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:45.150Z",
+      "alias": "viewer",
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "status": 200,
+      "responseBytes": 23,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    },
+    {
+      "at": "2026-09-27T20:32:45.196Z",
+      "alias": "owner",
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "status": 200,
+      "responseBytes": 23,
+      "contentType": "application/json",
+      "cacheControl": "private, no-store",
+      "expected": true
+    }
+  ],
+  "checks": [
+    {
+      "name": "Ordinary owner/viewer login and existing exact viewer dossier/source access",
+      "status": "PASS",
+      "at": "2026-09-27T20:32:44.209Z"
+    },
+    {
+      "name": "Same viewer session and old selection denied dossier/documents/exact-version bytes after suspension",
+      "status": "PASS",
+      "at": "2026-09-27T20:32:44.429Z",
+      "statusCode": 404,
+      "code": "organization_unavailable",
+      "privatePayloadOnly": true
+    },
+    {
+      "name": "Restoration does not resurrect the old actor selection",
+      "status": "PASS",
+      "at": "2026-09-27T20:32:44.766Z",
+      "statusCode": 409,
+      "code": "organization_context_changed"
+    },
+    {
+      "name": "Fresh ordinary viewer selection restores dossier, documents and exact422-byte v1",
+      "status": "PASS",
+      "at": "2026-09-27T20:32:45.104Z"
+    },
+    {
+      "name": "Dossier revision21, all assertions/participants/source metadata and other organization members preserved",
+      "status": "PASS",
+      "at": "2026-09-27T20:32:45.113Z"
+    }
+  ],
+  "restoration": {
+    "required": true,
+    "confirmed": true,
+    "at": "2026-09-27T20:32:44.629Z",
+    "attempt": 1,
+    "membership": {
+      "actorId": "actor_be30f5cfe01560dd0ad87fa0986d2246",
+      "role": "member",
+      "status": "active",
+      "revision": 3
+    },
+    "otherMembersUnchanged": true
+  },
+  "sessionCleanup": [
+    {
+      "alias": "viewer",
+      "ordinaryLogoutConfirmed": true
+    },
+    {
+      "alias": "owner",
+      "ordinaryLogoutConfirmed": true
+    }
+  ],
+  "originalMembership": {
+    "actorId": "actor_be30f5cfe01560dd0ad87fa0986d2246",
+    "role": "member",
+    "status": "active",
+    "revision": 1
+  },
+  "originalOtherMembers": [
+    {
+      "actorId": "actor_d3211013b2843dc47ca5d20e77d1b907",
+      "role": "member",
+      "status": "active",
+      "revision": 1
+    },
+    {
+      "actorId": "actor_f2cda772e48213c433230b4319b195d5",
+      "role": "org_owner",
+      "status": "active",
+      "revision": 1
+    },
+    {
+      "actorId": "actor_f78c538ebcf56693e1a6ef6dd3f244ca",
+      "role": "member",
+      "status": "active",
+      "revision": 1
+    }
+  ],
+  "baseline": {
+    "dossierRevision": 21,
+    "dossierWithoutReadinessSha256": "e6ad78ce04e4dcb2dfef3faf9a24b39959027cbd4e92458c33eec89a272a19ce",
+    "assertionsSha256": "947b27d29eaa82926c3ae58fb99735885941eed0dbf36a3afe19cf24eea97b4f",
+    "participantsSha256": "5c3a27759f051292c0d799ebe3bf46adce56ed1be0c1faa5a800a93945b9a483",
+    "documentsSha256": "cf72de5dc181abb66e72aeeeea2b249a5220b31234de4c2a61bfaedb0f6409d7",
+    "viewerParticipant": {
+      "participant_id": "participant_cc283b37cda5491aa08a5834934e6d48",
+      "actor_id": "actor_be30f5cfe01560dd0ad87fa0986d2246",
+      "display_name": "Synthetic UX viewer",
+      "role": "viewer",
+      "status": "active"
+    },
+    "sourceBytes": 422,
+    "sourceSha256": "f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e",
+    "viewerMembershipRevision": 1
+  },
+  "suspendedMembership": {
+    "actorId": "actor_be30f5cfe01560dd0ad87fa0986d2246",
+    "role": "member",
+    "status": "suspended",
+    "revision": 2
+  },
+  "finalState": {
+    "dossierRevision": 21,
+    "dossierWithoutReadinessSha256": "e6ad78ce04e4dcb2dfef3faf9a24b39959027cbd4e92458c33eec89a272a19ce",
+    "assertionsSha256": "947b27d29eaa82926c3ae58fb99735885941eed0dbf36a3afe19cf24eea97b4f",
+    "participantsSha256": "5c3a27759f051292c0d799ebe3bf46adce56ed1be0c1faa5a800a93945b9a483",
+    "documentsSha256": "cf72de5dc181abb66e72aeeeea2b249a5220b31234de4c2a61bfaedb0f6409d7",
+    "sourceBytes": 422,
+    "sourceSha256": "f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e",
+    "viewerMembershipRevision": 3
+  },
+  "completedAt": "2026-09-27T20:32:45.197Z"
+}

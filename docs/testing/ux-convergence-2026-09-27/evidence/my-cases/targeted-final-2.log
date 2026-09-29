@@ -1,0 +1,143 @@
+﻿TAP version 13
+# Subtest: My cases preserves exact Matter deep links and collection links clear obsolete case targeting
+ok 1 - My cases preserves exact Matter deep links and collection links clear obsolete case targeting
+  ---
+  duration_ms: 3.2599
+  type: 'test'
+  ...
+# Subtest: authorized catalogue paginates by server ID, never by title, and sends only no-store authenticated reads
+ok 2 - authorized catalogue paginates by server ID, never by title, and sends only no-store authenticated reads
+  ---
+  duration_ms: 90.7039
+  type: 'test'
+  ...
+# Subtest: expiry clears existing private metadata and a late response cannot restore it across renewed authority
+ok 3 - expiry clears existing private metadata and a late response cannot restore it across renewed authority
+  ---
+  duration_ms: 13.6632
+  type: 'test'
+  ...
+# Subtest: denied/failed and malformed reads remove private results and retry returns only a current valid page
+ok 4 - denied/failed and malformed reads remove private results and retry returns only a current valid page
+  ---
+  duration_ms: 8.0947
+  type: 'test'
+  ...
+# Subtest: existing same-origin logout signal immediately purges private metadata without waiting for focus
+ok 5 - existing same-origin logout signal immediately purges private metadata without waiting for focus
+  ---
+  duration_ms: 11.8888
+  type: 'test'
+  ...
+# Subtest: successful focus verification refreshes the server-authorized list even when identity and organization are unchanged
+ok 6 - successful focus verification refreshes the server-authorized list even when identity and organization are unchanged
+  ---
+  duration_ms: 5.3753
+  type: 'test'
+  ...
+# Subtest: rendered cards retain separate source IDs, role/version/privacy and exact Studio continuation
+ok 7 - rendered cards retain separate source IDs, role/version/privacy and exact Studio continuation
+  ---
+  duration_ms: 22.3443
+  type: 'test'
+  ...
+# Subtest: wrapper retains the existing Matter owner for deep links, exposes normal guarded links, and hides Personal private metadata before verification
+ok 8 - wrapper retains the existing Matter owner for deep links, exposes normal guarded links, and hides Personal private metadata before verification
+  ---
+  duration_ms: 14.161
+  type: 'test'
+  ...
+# Subtest: Studio recent work uses unified My cases and preserves current-draft continuation
+ok 9 - Studio recent work uses unified My cases and preserves current-draft continuation
+  ---
+  duration_ms: 12.035
+  type: 'test'
+  ...
+# Subtest: sidebar switch blocks dirty and uncertain work, validates receipt and clears case context
+ok 10 - sidebar switch blocks dirty and uncertain work, validates receipt and clears case context
+  ---
+  duration_ms: 69.0753
+  type: 'test'
+  ...
+# Subtest: sidebar expired switch releases the actual B1 departure lock before recovery
+ok 11 - sidebar expired switch releases the actual B1 departure lock before recovery
+  ---
+  duration_ms: 4.9636
+  type: 'test'
+  ...
+# Subtest: sidebar 401 then 500 hides identity and late success cannot resurrect it
+ok 12 - sidebar 401 then 500 hides identity and late success cannot resurrect it
+  ---
+  duration_ms: 4.6003
+  type: 'test'
+  ...
+# Subtest: sidebar authority generation is stable for focus refresh but rejects account and membership loss
+ok 13 - sidebar authority generation is stable for focus refresh but rejects account and membership loss
+  ---
+  duration_ms: 6.1642
+  type: 'test'
+  ...
+# Subtest: sidebar failed or wrong-actor switch preserves the old workspace without navigation
+ok 14 - sidebar failed or wrong-actor switch preserves the old workspace without navigation
+  ---
+  duration_ms: 2.9843
+  type: 'test'
+  ...
+# Subtest: sidebar sign-out tolerates unavailable device storage and hides private data on failure
+ok 15 - sidebar sign-out tolerates unavailable device storage and hides private data on failure
+  ---
+  duration_ms: 2.4249
+  type: 'test'
+  ...
+# Subtest: sidebar operation ownership survives cancel, close, and revisit with its original recovery key
+ok 16 - sidebar operation ownership survives cancel, close, and revisit with its original recovery key
+  ---
+  duration_ms: 71.6324
+  type: 'test'
+  ...
+# Subtest: sidebar dirty comparison clears when the actual B1 input returns to its baseline
+ok 17 - sidebar dirty comparison clears when the actual B1 input returns to its baseline
+  ---
+  duration_ms: 0.5571
+  type: 'test'
+  ...
+# Subtest: sidebar selected authorization loss also hides non-B1 scoped consumers
+ok 18 - sidebar selected authorization loss also hides non-B1 scoped consumers
+  ---
+  duration_ms: 1.9579
+  type: 'test'
+  ...
+# Subtest: logout bypasses pending work, hides immediately, rejects late switch and permits retry
+ok 19 - logout bypasses pending work, hides immediately, rejects late switch and permits retry
+  ---
+  duration_ms: 30.5433
+  type: 'test'
+  ...
+# Subtest: local form failure cannot trap session termination
+ok 20 - local form failure cannot trap session termination
+  ---
+  duration_ms: 1.3784
+  type: 'test'
+  ...
+# Subtest: failed authority check invalidates old private response tickets before recovery
+ok 21 - failed authority check invalidates old private response tickets before recovery
+  ---
+  duration_ms: 1.6818
+  type: 'test'
+  ...
+# Subtest: reload warning protects drafts while explicit departure and sign-out remain available
+ok 22 - reload warning protects drafts while explicit departure and sign-out remain available
+  ---
+  duration_ms: 1.1658
+  type: 'test'
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1089.8587
+exit_code=0

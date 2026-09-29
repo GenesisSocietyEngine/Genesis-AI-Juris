@@ -1,0 +1,8 @@
+﻿{
+    "ChangedAt":  "2026-09-27T21:03:42.6405043Z",
+    "Scope":  "Ignored Flutter launcher process resource limits before its first aggregate invocation; tracked release script and source unchanged",
+    "BeforeSha256":  "abd9efee056d08e99dbbf27396300ea6493cdc5c0995b9f746c736943469c60d",
+    "AfterSha256":  "102aefbee8d9d4c0056f112af6faa11a4a6468a5076090cb47ac088ad2a6f57a",
+    "GradleOpts":  "-Dorg.gradle.jvmargs=\"-Xmx3G -XX:MaxMetaspaceSize=1G -XX:ReservedCodeCacheSize=256m -XX:+HeapDumpOnOutOfMemoryError\" -Dorg.gradle.workers.max=2",
+    "NativePreflightEvidence":  "../amendment-android-native/gradle-effective-resource-limits.json"
+}

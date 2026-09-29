@@ -1,0 +1,17 @@
+{
+  "receiptSchemaVersion": 2,
+  "caseId": "project_canopy_managed_site_expansion",
+  "caseVersion": "2.0.0",
+  "profileId": "decision_memorandum",
+  "rendererVersion": "1.0.0",
+  "caseFingerprint": "sha256-e8df94bed5cc24a4b56093b21b24101839cd7501080d01b4bfb0f1bb7e4b3702",
+  "reportFingerprint": "sha256-630ef04fe5621e29b614ed47a4c646f146f662f119220d8048fe9555a7db9e02",
+  "generatedAt": "2026-09-27T09:04:28.742Z",
+  "status": "draft",
+  "audience": "internal",
+  "layoutSchemaVersion": 1,
+  "layoutAlgorithmVersion": "1.1.0",
+  "layoutRendererVersion": "2.1.0",
+  "layoutFingerprint": "sha256-c96202313c674bfcd199422e9ddc7f327dffcb50d9f897965b636e24db513791",
+  "presentationFingerprint": "sha256-7372eec3a2ec97f039763f3ae1a76eb0948ca0c78d27a1f17817b56749f4941f"
+}

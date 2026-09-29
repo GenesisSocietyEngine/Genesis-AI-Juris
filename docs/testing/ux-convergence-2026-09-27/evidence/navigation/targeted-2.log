@@ -1,0 +1,184 @@
+TAP version 13
+# Subtest: a template creates an empty case package and intake questions without copying example evidence
+ok 1 - a template creates an empty case package and intake questions without copying example evidence
+  ---
+  duration_ms: 4.7966
+  type: 'test'
+  ...
+# Subtest: Templates has its own destination and no playable-case launch controls
+ok 2 - Templates has its own destination and no playable-case launch controls
+  ---
+  duration_ms: 26.9876
+  type: 'test'
+  ...
+# Subtest: Studio navigation marks saved drafts and retains training with the shared signed-out state
+ok 3 - Studio navigation marks saved drafts and retains training with the shared signed-out state
+  ---
+  duration_ms: 24.9148
+  type: 'test'
+  ...
+# Subtest: workspace navigation without a verified session offers sign-in and hides organization controls
+ok 4 - workspace navigation without a verified session offers sign-in and hides organization controls
+  ---
+  duration_ms: 27.9882
+  type: 'test'
+  ...
+# Subtest: verified owner workspace navigation keeps scoped organization and account destinations
+ok 5 - verified owner workspace navigation keeps scoped organization and account destinations
+  ---
+  duration_ms: 129.6276
+  type: 'test'
+  ...
+# Subtest: Studio and workspace pages share expandable routes, labels and exact active contexts
+not ok 6 - Studio and workspace pages share expandable routes, labels and exact active contexts
+  ---
+  duration_ms: 51.1605
+  type: 'test'
+  location: 'C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\tests\\navigation-shell.test.ts:1:653'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /href="\/help\/studio-demo\?organization=org_synthetic&amp;lang=/. Input:
+    
+    '<link rel="preload" as="image" href="/brand/genesis-juris-codex-mark.svg"/><header class="genesis-navigation"><a class="genesis-brand" href="/studio?organization=org_synthetic&amp;lang=en" aria-label="GENESIS: JURIS — Case Studio"><img src="/brand/genesis-juris-codex-mark.svg" alt="" width="34" height="34"/><span><b>GENESIS: JURIS</b><small>Decision workspace</small></span></a><div class="genesis-nav-body"><span class="genesis-nav-label">Workspace</span><nav class="genesis-nav-pages" aria-label="Workspace navigation"><details class="genesis-nav-group" open=""><summary><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path></svg><span>Case Studio</span><span class="nav-chevron" aria-hidden="true">⌄</span></summary><div class="genesis-nav-children"><a href="/studio?organization=org_synthetic&amp;lang=en" aria-current="page">Open Case Studio</a></div></details><details class="genesis-nav-group"><summary><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3Z"></path></svg><span>My cases</span><span class="nav-chevron" aria-hidden="true">⌄</span></summary><div class="genesis-nav-children"><a href="/matters?organization=org_synthetic&amp;lang=en">Open My cases</a><a href="/studio?view=community&amp;organization=org_synthetic&amp;lang=en">Saved Studio drafts</a></div></details><details class="genesis-nav-group"><summary><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"></rect><path d="m10 8 6 4-6 4Z"></path></svg><span>Demo</span><span class="nav-chevron" aria-hidden="true">⌄</span></summary><div class="genesis-nav-children"><a href="/studio?view=demos&amp;organization=org_synthetic&amp;lang=en">Browse demo cases</a></div></details><details class="genesis-nav-group"><summary><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg><span>Templates</span><span class="nav-chevron" aria-hidden="true">⌄</span></summary><div class="genesis-nav-children"><a href="/templates?organization=org_synthetic&amp;lang=en">Choose a template</a></div></details><details class="genesis-nav-group"><summary><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 6 2 2 4-4m3 2h9M3 13l2 2 4-4m3 2h9M5 20h16"></path></svg><span>Operations</span><span class="nav-chevron" aria-hidden="true">⌄</span></summary><div class="genesis-nav-children"><a href="/studio?view=play&amp;organization=org_synthetic&amp;lang=en">Open Operations</a></div></details></nav><div class="genesis-nav-lower"><div class="genesis-nav-footer"><details class="genesis-nav-group"><summary><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 3v.1"></path></svg><span>Help &amp; training</span><span class="nav-chevron" aria-hidden="true">⌄</span></summary><div class="genesis-nav-children"><a href="/studio?view=help&amp;organization=org_synthetic&amp;lang=en">Help &amp; guides</a><a href="/help/studio-demo" target="_blank" rel="noreferrer">10-minute training ↗</a></div></details><a href="/signin-with-chatgpt?return_to=%2Fstudio%3Forganization%3Dorg_synthetic%26lang%3Den" target="_top"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-2a8 8 0 0 1 16 0v2"></path></svg>Sign in</a><div class="genesis-nav-utilities"><button type="button" aria-label="Switch language">EN</button><details class="genesis-nav-more"><summary>More<span aria-hidden="true">⌄</span></summary><div class="genesis-nav-menu"><a href="/?view=community&amp;organization=org_synthetic&amp;lang=en">Community &amp; reviews</a></div></details></div></div></div></div></header><dialog class="genesis-navigation-confirm" aria-labelledby="navigation-confirm-title"><h2 id="navigation-confirm-title">Leave unsaved changes?</h2><p>Your unsaved input will be discarded. Saved work stays available in its organization.</p><div><button type="button" autofocus="">Stay here</button><button type="button">Discard and continue</button></div></dialog>'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: '<link rel="preload" as="image" href="/brand/genesis-juris-codex-mark.svg"/><header class="genesis-navigation"><a class="genesis-brand" href="/studio?organization=org_synthetic&amp;lang=en" aria-label="GENESIS: JURIS — Case Studio"><img src="/brand/genesis-juris-codex-mark.svg" alt="" width="34" height="34"/><span><b>GENESIS: JURIS</b><small>Decision workspace</small></span></a><div class="genesis-nav-body"><span class="genesis-nav-label">Workspace</span><nav class="genesis-nav-pages" aria-label="Workspace navigation"><details class="genesis-nav-group" open=""><summary><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path></svg><span>Case Studio</span><span class="nav-chevron" aria-hidden="true">⌄</span></summary><div class="genesis-nav-children"><a href="/studio?organization=org_synthetic&amp;lang=en" aria-current="page">Open Case Studio</a></div></details><details class="genesis-nav-group"><summary><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3Z"></path></svg><span>My cases</span><span class="nav-chevron" aria-hidden="true">⌄</span></summary><div class="genesis-nav-children"><a href="/matters?organization=org_synthetic&amp;lang=en">Open My cases</a><a href="/studio?view=community&amp;organization=org_synthetic&amp;lang=en">Saved Studio drafts</a></div></details><details class="genesis-nav-group"><summary><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"></rect><path d="m10 8 6 4-6 4Z"></path></svg><span>Demo</span><span class="nav-chevron" aria-hidden="true">⌄</span></summary><div class="genesis-nav-children"><a href="/studio?view=demos&amp;organization=org_synthetic&amp;lang=en">Browse demo cases</a></div></details><details class="genesis-nav-group"><summary><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg><span>Templates</span><span class="nav-chevron" aria-hidden="true">⌄</span></summary><div class="genesis-nav-children"><a href="/templates?organization=org_synthetic&amp;lang=en">Choose a template</a></div></details><details class="genesis-nav-group"><summary><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 6 2 2 4-4m3 2h9M3 13l2 2 4-4m3 2h9M5 20h16"></path></svg><span>Operations</span><span class="nav-chevron" aria-hidden="true">⌄</span></summary><div class="genesis-nav-children"><a href="/studio?view=play&amp;organization=org_synthetic&amp;lang=en">Open Operations</a></div></details></nav><div class="genesis-nav-lower"><div class="genesis-nav-footer"><details class="genesis-nav-group"><summary><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 3v.1"></path></svg><span>Help &amp; training</span><span class="nav-chevron" aria-hidden="true">⌄</span></summary><div class="genesis-nav-children"><a href="/studio?view=help&amp;organization=org_synthetic&amp;lang=en">Help &amp; guides</a><a href="/help/studio-demo" target="_blank" rel="noreferrer">10-minute training ↗</a></div></details><a href="/signin-with-chatgpt?return_to=%2Fstudio%3Forganization%3Dorg_synthetic%26lang%3Den" target="_top"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-2a8 8 0 0 1 16 0v2"></path></svg>Sign in</a><div class="genesis-nav-utilities"><button type="button" aria-label="Switch language">EN</button><details class="genesis-nav-more"><summary>More<span aria-hidden="true">⌄</span></summary><div class="genesis-nav-menu"><a href="/?view=community&amp;organization=org_synthetic&amp;lang=en">Community &amp; reviews</a></div></details></div></div></div></div></header><dialog class="genesis-navigation-confirm" aria-labelledby="navigation-confirm-title"><h2 id="navigation-confirm-title">Leave unsaved changes?</h2><p>Your unsaved input will be discarded. Saved work stays available in its organization.</p><div><button type="button" autofocus="">Stay here</button><button type="button">Discard and continue</button></div></dialog>'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\tests\navigation-shell.test.ts:24:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: verified member sees the shared account and organization but no owner-only access action
+ok 7 - verified member sees the shared account and organization but no owner-only access action
+  ---
+  duration_ms: 66.1043
+  type: 'test'
+  ...
+# Subtest: optional Studio and simulation actions survive canonical navigation
+ok 8 - optional Studio and simulation actions survive canonical navigation
+  ---
+  duration_ms: 10.4526
+  type: 'test'
+  ...
+# Subtest: actual handlers retain Studio pending guard without intercepting modified/new-window navigation
+ok 9 - actual handlers retain Studio pending guard without intercepting modified/new-window navigation
+  ---
+  duration_ms: 3.3946
+  type: 'test'
+  ...
+# Subtest: actual shared departure preserves Stay, explicit Discard and uncertain-write protection
+ok 10 - actual shared departure preserves Stay, explicit Discard and uncertain-write protection
+  ---
+  duration_ms: 1.1572
+  type: 'test'
+  ...
+# Subtest: old departure loses authority and sign-out remains available despite the Studio operation guard
+ok 11 - old departure loses authority and sign-out remains available despite the Studio operation guard
+  ---
+  duration_ms: 1.2556
+  type: 'test'
+  ...
+# Subtest: both Studio shells retain public routes and operation actions without inventing a verified session
+ok 12 - both Studio shells retain public routes and operation actions without inventing a verified session
+  ---
+  duration_ms: 111.5799
+  type: 'test'
+  ...
+# Subtest: long GreenFire document references stay out of document buttons and remain available in details
+ok 13 - long GreenFire document references stay out of document buttons and remain available in details
+  ---
+  duration_ms: 8.2053
+  type: 'test'
+  ...
+# Subtest: sidebar switch blocks dirty and uncertain work, validates receipt and clears case context
+ok 14 - sidebar switch blocks dirty and uncertain work, validates receipt and clears case context
+  ---
+  duration_ms: 91.9076
+  type: 'test'
+  ...
+# Subtest: sidebar expired switch releases the actual B1 departure lock before recovery
+ok 15 - sidebar expired switch releases the actual B1 departure lock before recovery
+  ---
+  duration_ms: 5.8733
+  type: 'test'
+  ...
+# Subtest: sidebar 401 then 500 hides identity and late success cannot resurrect it
+ok 16 - sidebar 401 then 500 hides identity and late success cannot resurrect it
+  ---
+  duration_ms: 2.7112
+  type: 'test'
+  ...
+# Subtest: sidebar authority generation is stable for focus refresh but rejects account and membership loss
+ok 17 - sidebar authority generation is stable for focus refresh but rejects account and membership loss
+  ---
+  duration_ms: 14.9345
+  type: 'test'
+  ...
+# Subtest: sidebar failed or wrong-actor switch preserves the old workspace without navigation
+ok 18 - sidebar failed or wrong-actor switch preserves the old workspace without navigation
+  ---
+  duration_ms: 2.3065
+  type: 'test'
+  ...
+# Subtest: sidebar sign-out tolerates unavailable device storage and hides private data on failure
+ok 19 - sidebar sign-out tolerates unavailable device storage and hides private data on failure
+  ---
+  duration_ms: 2.2789
+  type: 'test'
+  ...
+# Subtest: sidebar operation ownership survives cancel, close, and revisit with its original recovery key
+ok 20 - sidebar operation ownership survives cancel, close, and revisit with its original recovery key
+  ---
+  duration_ms: 59.4829
+  type: 'test'
+  ...
+# Subtest: sidebar dirty comparison clears when the actual B1 input returns to its baseline
+ok 21 - sidebar dirty comparison clears when the actual B1 input returns to its baseline
+  ---
+  duration_ms: 0.609
+  type: 'test'
+  ...
+# Subtest: sidebar selected authorization loss also hides non-B1 scoped consumers
+ok 22 - sidebar selected authorization loss also hides non-B1 scoped consumers
+  ---
+  duration_ms: 1.7402
+  type: 'test'
+  ...
+# Subtest: logout bypasses pending work, hides immediately, rejects late switch and permits retry
+ok 23 - logout bypasses pending work, hides immediately, rejects late switch and permits retry
+  ---
+  duration_ms: 2.1747
+  type: 'test'
+  ...
+# Subtest: local form failure cannot trap session termination
+ok 24 - local form failure cannot trap session termination
+  ---
+  duration_ms: 1.4324
+  type: 'test'
+  ...
+# Subtest: failed authority check invalidates old private response tickets before recovery
+ok 25 - failed authority check invalidates old private response tickets before recovery
+  ---
+  duration_ms: 2.0994
+  type: 'test'
+  ...
+# Subtest: reload warning protects drafts while explicit departure and sign-out remain available
+ok 26 - reload warning protects drafts while explicit departure and sign-out remain available
+  ---
+  duration_ms: 0.7907
+  type: 'test'
+  ...
+1..26
+# tests 26
+# suites 0
+# pass 25
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3464.4851

@@ -1,0 +1,26 @@
+{
+    "observedAt":  "2026-09-27T21:02:43.4692648Z",
+    "processes":  [
+                      {
+                          "pid":  15864,
+                          "parentPid":  27260,
+                          "role":  "Gradle client",
+                          "resourceArgs":  [
+                                               "-Xmx3G",
+                                               "-XX:MaxMetaspaceSize=1G",
+                                               "-XX:ReservedCodeCacheSize=256m",
+                                               "-Dorg.gradle.workers.max=2"
+                                           ]
+                      },
+                      {
+                          "pid":  18324,
+                          "parentPid":  15864,
+                          "role":  "Gradle daemon",
+                          "resourceArgs":  [
+                                               "-XX:MaxMetaspaceSize=1G",
+                                               "-XX:ReservedCodeCacheSize=256m",
+                                               "-Xmx3G"
+                                           ]
+                      }
+                  ]
+}

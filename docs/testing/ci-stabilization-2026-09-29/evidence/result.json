@@ -1,0 +1,72 @@
+{
+  "source": "b355caf36fbb27c31a338520fdfeef9649afadc3",
+  "branch": "codex/ci-stabilization-2026-09-29",
+  "startedAt": "2026-09-29T09:32:12.799Z",
+  "nodeVersion": "v22.23.2",
+  "npmVersion": "10.9.8",
+  "lockSha256": "cde027aba739555279fe0a32f16748e5ee9b7ffa98209002ad832b0fe05d5a2c",
+  "manifestSha256": "4043337fd6243ee966d8178f2ef3421ee80c1e7a8cc50d1e9ee751f6b2568ec8",
+  "baselineSha256": "2df39a97f06359c4cc228bf12a9120e8c2a7491a60884a152e0a909a1383ff60",
+  "workingTree": "Pending two-package dependency correction; exact input hashes recorded, not an immutable release candidate.",
+  "results": [
+    {
+      "label": "fresh lock-enforcing install",
+      "exit": 0,
+      "startedAt": "2026-09-29T09:32:12.807Z",
+      "finishedAt": "2026-09-29T09:34:44.993Z",
+      "log": "install.log"
+    },
+    {
+      "label": "full dependency audit",
+      "exit": 0,
+      "startedAt": "2026-09-29T09:34:44.998Z",
+      "finishedAt": "2026-09-29T09:34:47.723Z",
+      "log": "audit-full.json"
+    },
+    {
+      "label": "production dependency audit",
+      "exit": 0,
+      "startedAt": "2026-09-29T09:34:47.726Z",
+      "finishedAt": "2026-09-29T09:34:50.182Z",
+      "log": "audit-production.json"
+    },
+    {
+      "label": "selected dependency graph",
+      "exit": 0,
+      "startedAt": "2026-09-29T09:34:50.186Z",
+      "finishedAt": "2026-09-29T09:34:52.812Z",
+      "log": "dependency-graph.log"
+    },
+    {
+      "label": "migration history preflight",
+      "exit": 0,
+      "startedAt": "2026-09-29T09:34:52.817Z",
+      "finishedAt": "2026-09-29T09:34:53.217Z",
+      "log": "migration-history.log"
+    },
+    {
+      "label": "strict types",
+      "exit": 0,
+      "startedAt": "2026-09-29T09:34:53.224Z",
+      "finishedAt": "2026-09-29T09:36:14.577Z",
+      "log": "typecheck.log"
+    },
+    {
+      "label": "lint",
+      "exit": 0,
+      "startedAt": "2026-09-29T09:36:14.578Z",
+      "finishedAt": "2026-09-29T09:39:17.349Z",
+      "log": "lint.log"
+    },
+    {
+      "label": "full web tests and verified build",
+      "exit": 0,
+      "startedAt": "2026-09-29T09:39:17.350Z",
+      "finishedAt": "2026-09-29T09:55:34.184Z",
+      "log": "web-tests.log"
+    }
+  ],
+  "changedTrackedPaths": [],
+  "finishedAt": "2026-09-29T09:55:35.347Z",
+  "trackedInputsUnchanged": true
+}

@@ -1,0 +1,172 @@
+{
+  "reviewedAt": "2026-09-27T09:34:41.381Z",
+  "comparison": "HEAD named declaration text, normalizing CRLF only",
+  "modules": [
+    {
+      "path": "app/CommunityWorkspace.tsx",
+      "declarations": [
+        {
+          "name": "OperationsDashboard",
+          "identicalToHead": true,
+          "sha256": "de7cde64edeaeec364655b45ce1d7ebefe2b3bae9f9146856d3a00b079f2cca6"
+        },
+        {
+          "name": "taxPublicationChecklist",
+          "identicalToHead": true,
+          "sha256": "f16726cb2fae34f2f4bff8287bdce05631555e0295748fe65adeeecb2bd1f3a9"
+        },
+        {
+          "name": "TaxPublicationChecklistKey",
+          "identicalToHead": true,
+          "sha256": "766ff4ae80be1bb0b8b449ed2e837d4d05dd64449df1ba1ced4fc32335cd43d6"
+        },
+        {
+          "name": "PromotionCandidate",
+          "identicalToHead": true,
+          "sha256": "0c640041b2a1d6e009dbfe7a08ed95402d0c936910a72e960e59ca1eb1d62f9e"
+        },
+        {
+          "name": "CommunityProfile",
+          "identicalToHead": true,
+          "sha256": "23e75552b2b74b1dd5a438d0bb67899a55ad19639418e049d4c9654da6c72de7"
+        },
+        {
+          "name": "CommunityUpdate",
+          "identicalToHead": true,
+          "sha256": "f2d6de51cea1ef6b27cd3591349eae9bb768f73a2291450c2fad432b247b0b76"
+        },
+        {
+          "name": "CommunitySubmission",
+          "identicalToHead": true,
+          "sha256": "e32579452063f1425f92d3d8bdccc545fa78b2ba1834016e9f406946cd924509"
+        },
+        {
+          "name": "CommunityCustomCase",
+          "identicalToHead": true,
+          "sha256": "228f749b2103ad5f485160e82955ce36c41e17765ad290203aeb9f0314a58442"
+        },
+        {
+          "name": "CommunityCustomCaseShare",
+          "identicalToHead": true,
+          "sha256": "744de121434026c8928f272e175a744a00ed51e21877bcddffb81aaf33eefb95"
+        },
+        {
+          "name": "CommunityCustomCaseFeedback",
+          "identicalToHead": true,
+          "sha256": "5067f7f79ecd5922ef73cef583f2566ece270a388cc8effff0c5e662082fe0f9"
+        },
+        {
+          "name": "AdminCommunityUser",
+          "identicalToHead": true,
+          "sha256": "755d25e01f1b0080d3fbbb9de1c104cab365b5f0223e22be21463ffdf279261a"
+        },
+        {
+          "name": "CommunityView",
+          "identicalToHead": true,
+          "sha256": "19c5cf9f310f45bdc2f5c5c39ddf839bf7b59ff5aee5a0217fa595b9c3a7a3fb"
+        },
+        {
+          "name": "AdminDesk",
+          "identicalToHead": true,
+          "sha256": "f90155d4330043b3f4c8455bc7bea7e3417468e3dc9e2fd9844472f59b17aa98"
+        },
+        {
+          "name": "commaList",
+          "identicalToHead": true,
+          "sha256": "a19aa84801c2b1b7af3fe26e3cbe33d851a9aa1975663d5453ff9d948732a0de"
+        }
+      ],
+      "hasRuntimeJurisAppImport": false
+    },
+    {
+      "path": "app/PlayWorkspace.tsx",
+      "declarations": [
+        {
+          "name": "OperationsDossier",
+          "identicalToHead": true,
+          "sha256": "94380028ae1ea3c48885d2e1878061d44542d3c28a262de14094f77099a74f0b"
+        },
+        {
+          "name": "formatCaseClock",
+          "identicalToHead": true,
+          "sha256": "39feb6f157609f812ed49d3e10bd7dffda395dd0b202e90beac74d0b186a76d3"
+        },
+        {
+          "name": "PlayView",
+          "identicalToHead": true,
+          "sha256": "73139d4d497e5f210a4b0c37fb097b4a98886046874979fb8ca1a59f0fd19d90"
+        },
+        {
+          "name": "DebriefView",
+          "identicalToHead": true,
+          "sha256": "b7f64c7476e162724fbddc928b9529648780356fc0d6d9a31fe40e5c16c7bd31"
+        },
+        {
+          "name": "InboxPanel",
+          "identicalToHead": true,
+          "sha256": "7bd4e0b1e9468f5d22d9eada158a4ad4a3ccb9945b9d11a93789e8ffa5cb8926"
+        },
+        {
+          "name": "MetricPanel",
+          "identicalToHead": true,
+          "sha256": "cab12c60f6e30f1818ec5bb514bc24d724a6d4f04a3136f58a82793e2729448d"
+        },
+        {
+          "name": "RunLedgerPanel",
+          "identicalToHead": true,
+          "sha256": "ed62592e9b118814ebf9520f4b41f557a5aa07549c7b0bd87d76b7cb8a2ada81"
+        },
+        {
+          "name": "DecisionModal",
+          "identicalToHead": true,
+          "sha256": "5baec3fc73ad653b67f62c0639c42c3f31bfa25ca8da56fd20d01fa8db817cc8"
+        }
+      ],
+      "hasRuntimeJurisAppImport": false
+    },
+    {
+      "path": "app/JurisViewShared.tsx",
+      "declarations": [
+        {
+          "name": "metricLabels",
+          "identicalToHead": true,
+          "sha256": "6d3a6de188dad75d2a60d89e3c6a980b438b0fd6add5792bab2ead94dad31ed1"
+        },
+        {
+          "name": "iconPaths",
+          "identicalToHead": true,
+          "sha256": "8533d03ca5258902f12de0825cb84740dff19edfa1dd1a316551dba7006f4e62"
+        },
+        {
+          "name": "Icon",
+          "identicalToHead": true,
+          "sha256": "793c08c20642f314f2af1c8cd463655fc763da2af2cf394d5f22276858521171"
+        },
+        {
+          "name": "readJsonResponse",
+          "identicalToHead": true,
+          "sha256": "06ecced86eee901520a88062afda482e1f766e614d2b54c28db1954f874eceac"
+        }
+      ],
+      "hasRuntimeJurisAppImport": false
+    }
+  ],
+  "invocations": [
+    {
+      "name": "PlayView",
+      "attributesIdenticalToHead": true
+    },
+    {
+      "name": "CommunityView",
+      "attributesIdenticalToHead": true
+    },
+    {
+      "name": "HelpCenter",
+      "attributesIdenticalToHead": true
+    },
+    {
+      "name": "DecisionModal",
+      "attributesIdenticalToHead": true
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+    "observedAt":  "2026-09-27T20:40:06.5413587Z",
+    "serial":  "emulator-5580",
+    "avd":  "UXGatePixel",
+    "launcherPid":  4116,
+    "qemuPid":  25048,
+    "bootProperty":  "1",
+    "bootElapsedMillisecondsFromEmulatorLog":  173459,
+    "plannedBootWindowSeconds":  120,
+    "bootWindowStatus":  "EXCEEDED",
+    "explanation":  "The final bounded poll was delayed across context compaction; readiness is actual, but the 120-second criterion is not recorded as passed.",
+    "sourceConfigSha256":  "94827b8b8bfc85bb19c02859ca3548ce462e8dffef44e1877b84d65ec0627e8d",
+    "sourceConfigUnchanged":  true,
+    "sourceMetadataUnchanged":  true,
+    "sourceMetadataCount":  18661,
+    "standaloneSmoke":  "NOT_RUN: stopped before Flutter because console avd-name query returned empty; shell property and exact process command line independently confirmed owned AVD; root will run the exact smoke in aggregate.",
+    "cleanupOwner":  "root after aggregate",
+    "state":  "READY_FOR_AGGREGATE"
+}

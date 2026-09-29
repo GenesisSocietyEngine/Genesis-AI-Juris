@@ -1,0 +1,30 @@
+{
+    "startedAt":  "2026-09-27T21:28:25.7346715Z",
+    "completedAt":  "2026-09-27T21:28:30.0873686Z",
+    "nodeVersion":  "v22.23.2",
+    "command":  "node --test .artifacts/ux-reconciliation-auth/matter-read-race.unit.test.mjs",
+    "exitCode":  1,
+    "expectedOutcome":  "Existing source must fail race regression while baseline and suspended-before-request controls pass",
+    "files":  [
+                  {
+                      "file":  "matter-read-race.unit.test.mjs",
+                      "bytes":  8693,
+                      "sha256":  "ca9c1a5cd82fbe783afd37a5d8b0a5e88b6d737bc36ccfa9378d4d39d24249d4"
+                  },
+                  {
+                      "file":  "matter-read-race.unit.tap.log",
+                      "bytes":  1545,
+                      "sha256":  "b27f81ffec5127acd7b9331efd6891e3a21ea063aa48565c535e83eae271eddd"
+                  },
+                  {
+                      "file":  "matter-read-race.unit.stderr.log",
+                      "bytes":  0,
+                      "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                  },
+                  {
+                      "file":  "matter-read-race.unit.receipt.json",
+                      "bytes":  1151,
+                      "sha256":  "5658ca6eedb0ef30ba604d5d50988bc8cd1b99fac7973493cfe26afceab3dbac"
+                  }
+              ]
+}

@@ -1,0 +1,35 @@
+{
+    "observedAt":  "2026-09-29T06:41:34.5110093Z",
+    "otherProcessesTargeted":  false,
+    "avdDataDeleted":  false,
+    "method":  "Exact saved CIM identities, UTC start-time checks, pinned Process handles; only owned private emulator and ADB server",
+    "remainingPrivatePorts":  [
+
+                              ],
+    "outcomes":  [
+                     {
+                         "pid":  9224,
+                         "name":  "qemu-system-x86_64-headless.exe",
+                         "result":  "stopped via revalidated pinned handle"
+                     },
+                     {
+                         "result":  "exited during owned cleanup",
+                         "pid":  5260
+                     },
+                     {
+                         "pid":  31972,
+                         "name":  "conhost.exe",
+                         "result":  "stopped via revalidated pinned handle"
+                     },
+                     {
+                         "result":  "exited during owned cleanup",
+                         "pid":  14568
+                     },
+                     {
+                         "pid":  27360,
+                         "name":  "adb.exe",
+                         "result":  "stopped via revalidated pinned handle"
+                     }
+                 ],
+    "status":  "PASS"
+}

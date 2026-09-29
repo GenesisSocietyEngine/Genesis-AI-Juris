@@ -1,0 +1,270 @@
+TAP version 13
+# Subtest: late verify success for A cannot change B or erase B's continuation
+ok 1 - late verify success for A cannot change B or erase B's continuation
+  ---
+  duration_ms: 4.1912
+  type: 'test'
+  ...
+# Subtest: late verify failure for A cannot change B or erase B's continuation
+ok 2 - late verify failure for A cannot change B or erase B's continuation
+  ---
+  duration_ms: 0.9135
+  type: 'test'
+  ...
+# Subtest: late accept success for A cannot change B or erase B's continuation
+ok 3 - late accept success for A cannot change B or erase B's continuation
+  ---
+  duration_ms: 0.5282
+  type: 'test'
+  ...
+# Subtest: late accept failure for A cannot change B or erase B's continuation
+ok 4 - late accept failure for A cannot change B or erase B's continuation
+  ---
+  duration_ms: 0.4485
+  type: 'test'
+  ...
+# Subtest: cross-tab logout suspends refresh, fences late identity and clears even an unmounted invitation
+ok 5 - cross-tab logout suspends refresh, fences late identity and clears even an unmounted invitation
+  ---
+  duration_ms: 54.4249
+  type: 'test'
+  ...
+# Subtest: Studio and workspace pages share expandable routes, labels and exact active contexts
+ok 6 - Studio and workspace pages share expandable routes, labels and exact active contexts
+  ---
+  duration_ms: 1137.6218
+  type: 'test'
+  ...
+# Subtest: verified member sees the shared account and organization but no owner-only access action
+ok 7 - verified member sees the shared account and organization but no owner-only access action
+  ---
+  duration_ms: 70.7817
+  type: 'test'
+  ...
+# Subtest: optional Studio and simulation actions survive canonical navigation
+ok 8 - optional Studio and simulation actions survive canonical navigation
+  ---
+  duration_ms: 25.8786
+  type: 'test'
+  ...
+# Subtest: actual handlers retain Studio pending guard without intercepting modified/new-window navigation
+ok 9 - actual handlers retain Studio pending guard without intercepting modified/new-window navigation
+  ---
+  duration_ms: 3.8733
+  type: 'test'
+  ...
+# Subtest: actual shared departure preserves Stay, explicit Discard and uncertain-write protection
+ok 10 - actual shared departure preserves Stay, explicit Discard and uncertain-write protection
+  ---
+  duration_ms: 4.4618
+  type: 'test'
+  ...
+# Subtest: old departure loses authority and sign-out remains available despite the Studio operation guard
+ok 11 - old departure loses authority and sign-out remains available despite the Studio operation guard
+  ---
+  duration_ms: 2.0861
+  type: 'test'
+  ...
+# Subtest: invitation validation directs self and existing members to their supported action
+ok 12 - invitation validation directs self and existing members to their supported action
+  ---
+  duration_ms: 3.2729
+  type: 'test'
+  ...
+# Subtest: organization feedback separates sign-in, profile, validation, concurrency and confirmed persistence
+ok 13 - organization feedback separates sign-in, profile, validation, concurrency and confirmed persistence
+  ---
+  duration_ms: 0.8228
+  type: 'test'
+  ...
+# Subtest: organization success receipts must match the actor, selection, active state and revisions
+ok 14 - organization success receipts must match the actor, selection, active state and revisions
+  ---
+  duration_ms: 0.6449
+  type: 'test'
+  ...
+# Subtest: create refreshes the choices while retaining managed organization and unrelated input
+ok 15 - create refreshes the choices while retaining managed organization and unrelated input
+  ---
+  duration_ms: 145.0853
+  type: 'test'
+  ...
+# Subtest: accept refreshes the choices while retaining managed organization and unrelated input
+ok 16 - accept refreshes the choices while retaining managed organization and unrelated input
+  ---
+  duration_ms: 3.1708
+  type: 'test'
+  ...
+# Subtest: confirmed create followed by read failure offers refresh without replay or context switch
+ok 17 - confirmed create followed by read failure offers refresh without replay or context switch
+  ---
+  duration_ms: 2.9242
+  type: 'test'
+  ...
+# Subtest: revocation during create fences its successful late receipt
+ok 18 - revocation during create fences its successful late receipt
+  ---
+  duration_ms: 11.0698
+  type: 'test'
+  ...
+# Subtest: refresh withdraws stale navigation authority for a successful missing-membership response
+ok 19 - refresh withdraws stale navigation authority for a successful missing-membership response
+  ---
+  duration_ms: 1.9309
+  type: 'test'
+  ...
+# Subtest: refresh withdraws stale navigation authority for a changed role revision
+ok 20 - refresh withdraws stale navigation authority for a changed role revision
+  ---
+  duration_ms: 1.4014
+  type: 'test'
+  ...
+# Subtest: refresh with unchanged membership retains ready navigation and unrelated input
+ok 21 - refresh with unchanged membership retains ready navigation and unrelated input
+  ---
+  duration_ms: 2.2231
+  type: 'test'
+  ...
+# Subtest: revocation during a refresh read fences its late workspace result
+ok 22 - revocation during a refresh read fences its late workspace result
+  ---
+  duration_ms: 5.0056
+  type: 'test'
+  ...
+# (node:30268) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: first sign-in renders an actionable profile prerequisite, never an organization spinner
+ok 23 - first sign-in renders an actionable profile prerequisite, never an organization spinner
+  ---
+  duration_ms: 213.3473
+  type: 'test'
+  ...
+# Subtest: expired authority hides the onboarding identity and offers access recovery instead of endless loading
+ok 24 - expired authority hides the onboarding identity and offers access recovery instead of endless loading
+  ---
+  duration_ms: 84.466
+  type: 'test'
+  ...
+# Subtest: profile completion refresh obtains server-authorized personal workspace
+ok 25 - profile completion refresh obtains server-authorized personal workspace
+  ---
+  duration_ms: 2.7917
+  type: 'test'
+  ...
+# Subtest: read deadline settles stalled response bodies, aborts transport, and accepts an explicit fresh retry
+ok 26 - read deadline settles stalled response bodies, aborts transport, and accepts an explicit fresh retry
+  ---
+  duration_ms: 4.4945
+  type: 'test'
+  ...
+# Subtest: cancelled read rejects promptly and cannot surface its late successful result
+ok 27 - cancelled read rejects promptly and cannot surface its late successful result
+  ---
+  duration_ms: 1.7176
+  type: 'test'
+  ...
+# Subtest: session read timeout exits checking and late response cannot reauthorize the workspace
+ok 28 - session read timeout exits checking and late response cannot reauthorize the workspace
+  ---
+  duration_ms: 1.8114
+  type: 'test'
+  ...
+# Subtest: sidebar switch blocks dirty and uncertain work, validates receipt and clears case context
+ok 29 - sidebar switch blocks dirty and uncertain work, validates receipt and clears case context
+  ---
+  duration_ms: 94.45
+  type: 'test'
+  ...
+# Subtest: sidebar expired switch releases the actual B1 departure lock before recovery
+ok 30 - sidebar expired switch releases the actual B1 departure lock before recovery
+  ---
+  duration_ms: 6.1988
+  type: 'test'
+  ...
+# Subtest: sidebar 401 then 500 hides identity and late success cannot resurrect it
+ok 31 - sidebar 401 then 500 hides identity and late success cannot resurrect it
+  ---
+  duration_ms: 3.1273
+  type: 'test'
+  ...
+# Subtest: sidebar authority generation is stable for focus refresh but rejects account and membership loss
+ok 32 - sidebar authority generation is stable for focus refresh but rejects account and membership loss
+  ---
+  duration_ms: 10.0864
+  type: 'test'
+  ...
+# Subtest: sidebar failed or wrong-actor switch preserves the old workspace without navigation
+ok 33 - sidebar failed or wrong-actor switch preserves the old workspace without navigation
+  ---
+  duration_ms: 2.4206
+  type: 'test'
+  ...
+# Subtest: sidebar sign-out tolerates unavailable device storage and hides private data on failure
+ok 34 - sidebar sign-out tolerates unavailable device storage and hides private data on failure
+  ---
+  duration_ms: 2.6245
+  type: 'test'
+  ...
+# Subtest: sidebar operation ownership survives cancel, close, and revisit with its original recovery key
+ok 35 - sidebar operation ownership survives cancel, close, and revisit with its original recovery key
+  ---
+  duration_ms: 41.6908
+  type: 'test'
+  ...
+# Subtest: sidebar dirty comparison clears when the actual B1 input returns to its baseline
+ok 36 - sidebar dirty comparison clears when the actual B1 input returns to its baseline
+  ---
+  duration_ms: 0.5204
+  type: 'test'
+  ...
+# Subtest: sidebar selected authorization loss also hides non-B1 scoped consumers
+ok 37 - sidebar selected authorization loss also hides non-B1 scoped consumers
+  ---
+  duration_ms: 1.8941
+  type: 'test'
+  ...
+# Subtest: logout bypasses pending work, hides immediately, rejects late switch and permits retry
+ok 38 - logout bypasses pending work, hides immediately, rejects late switch and permits retry
+  ---
+  duration_ms: 2.6077
+  type: 'test'
+  ...
+# Subtest: local form failure cannot trap session termination
+ok 39 - local form failure cannot trap session termination
+  ---
+  duration_ms: 1.5944
+  type: 'test'
+  ...
+# Subtest: failed authority check invalidates old private response tickets before recovery
+ok 40 - failed authority check invalidates old private response tickets before recovery
+  ---
+  duration_ms: 3.4455
+  type: 'test'
+  ...
+# Subtest: reload warning protects drafts while explicit departure and sign-out remain available
+ok 41 - reload warning protects drafts while explicit departure and sign-out remain available
+  ---
+  duration_ms: 0.8423
+  type: 'test'
+  ...
+# Subtest: receiving tab publishes pending sign-out even after ordinary expiry and never refreshes through it
+ok 42 - receiving tab publishes pending sign-out even after ordinary expiry and never refreshes through it
+  ---
+  duration_ms: 2.0517
+  type: 'test'
+  ...
+# Subtest: revoke clears pending wording even if another access denial arrived first
+ok 43 - revoke clears pending wording even if another access denial arrived first
+  ---
+  duration_ms: 6.6877
+  type: 'test'
+  ...
+1..43
+# tests 43
+# suites 0
+# pass 43
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4924.7606

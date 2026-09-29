@@ -1,0 +1,16 @@
+
+> genesis-juris-web@0.1.0 lint
+> bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next
+
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\ci-stabilization-2026-09-29\docs\testing\ux-convergence-2026-09-27\evidence\amendment-verify-viewer-suspension.mjs
+  65:43  warning  'readiness' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\ci-stabilization-2026-09-29\tests\dossier-persistence.test.ts
+  90:7  warning  'allMigrations' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\PROJECTS\Genesis-AI-Juris\.worktrees\ci-stabilization-2026-09-29\vite.config.ts
+  39:18  warning  '_files' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 3 problems (0 errors, 3 warnings)
+
