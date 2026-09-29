@@ -127,7 +127,7 @@ pub extern "C" fn juris_calculate_recognized_benefits(
 /// * `model_json` - JSON string of TaxEconomicsV2
 /// # Returns
 /// JSON string of TaxEconomicsCalculationResult, or
-/// `{"error": ..., "detail": TaxEconomicsError}` when inputs are incomplete
+/// `{"error": ..., "detail": TaxEconomicsError}` when inputs are invalid or incomplete
 #[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn juris_calculate_tax_economics(model_json: *const c_char) -> *mut c_char {
@@ -149,7 +149,7 @@ pub extern "C" fn juris_calculate_tax_economics(model_json: *const c_char) -> *m
         Ok(r) => r,
         Err(e) => {
             let error_json = serde_json::json!({
-                "error": "Tax economics inputs are incomplete",
+                "error": "Tax economics inputs are invalid or incomplete",
                 "detail": e
             })
             .to_string();
@@ -322,6 +322,56 @@ fn allocate_error_string(message: &str) -> *mut c_char {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn calculate_json(model: &TaxEconomicsV2) -> serde_json::Value {
+        let input = CString::new(serde_json::to_string(model).unwrap()).unwrap();
+        let output = juris_calculate_tax_economics(input.as_ptr());
+        assert!(!output.is_null());
+        let parsed = serde_json::from_slice(unsafe { CStr::from_ptr(output).to_bytes() });
+        juris_free_string(output);
+        parsed.unwrap()
+    }
+
+    #[test]
+    fn test_ffi_calculation_returns_lifecycle_cost() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.analysis_horizon_months = 12;
+        model.implementation_cost = 100;
+        model.annual_maintenance_cost = 10;
+        model.terminal_tax_or_unwind_cost = 5;
+
+        let result = calculate_json(&model);
+        assert!(result.is_object());
+        assert_eq!(result["lifecycle_cost"], serde_json::json!(115));
+        assert!(result.get("error").is_none());
+    }
+
+    #[test]
+    fn test_ffi_calculation_returns_invalid_benefit_window_detail() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.benefit_items = vec![TaxBenefitItem {
+            id: "invalid-window".to_string(),
+            label: "Invalid dates".to_string(),
+            benefit_type: BenefitType::Other,
+            timing: BenefitTiming::RecurringAnnual,
+            amount: 1_000,
+            start_month: 5,
+            end_month: Some(4),
+            realization_bps: None,
+            probability_bps: None,
+            source_node_ids: vec![],
+            note: None,
+            include_in_base_case: true,
+        }];
+
+        let result = calculate_json(&model);
+        assert_eq!(
+            result["error"],
+            "Tax economics inputs are invalid or incomplete"
+        );
+        assert_eq!(result["detail"]["code"], "invalid_benefit_window");
+        assert_eq!(result["detail"]["id"], "invalid-window");
+    }
 
     #[test]
     fn test_ffi_calculate_tax_base() {

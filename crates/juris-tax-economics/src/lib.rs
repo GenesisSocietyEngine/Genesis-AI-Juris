@@ -420,6 +420,8 @@ pub enum TaxEconomicsError {
     MissingTaxBase { missing_inputs: Vec<String> },
     /// `tax_input_basis` is neither "rates" nor "amounts"
     UnknownTaxInputBasis { value: String },
+    /// A benefit ends before its first possible active month.
+    InvalidBenefitWindow { id: String },
 }
 
 /// Tax economics calculation result with all intermediate values
@@ -429,16 +431,23 @@ pub struct TaxEconomicsCalculationResult {
     pub baseline_annual_tax_cost: i64,
     pub optimized_annual_tax_cost: i64,
     pub recognized_annual_tax_saving: i64,
+    /// Full-year steady-state recurring benefits, without applying benefit windows.
     pub recognized_recurring_benefits: i64,
     /// Unfiltered total of included one-off benefits, including dates beyond the horizon.
     pub recognized_one_off_benefits: i64,
+    /// Full-year steady-state tax and recurring benefit, without applying windows.
     pub gross_recognized_annual_benefit: i64,
+    /// Full-year steady-state benefit net of maintenance, without applying windows.
     pub operating_annual_benefit: i64,
+    /// Steady-state annual benefit less annualized implementation, without windows.
     pub annualized_net_benefit: i64,
+    /// Horizon total applying recurring windows and in-horizon one-off benefits.
     pub lifecycle_net_benefit: i64,
     pub lifecycle_cost: i64,
     pub lifecycle_roi_bps: Option<i32>,
+    /// Discounted cash flows applying recurring windows and in-horizon one-offs.
     pub npv: i64,
+    /// Whole-month payback using full-year steady-state benefit, without windows.
     pub payback_months: Option<u32>,
 }
 
@@ -483,6 +492,18 @@ fn resolve_annual_tax_costs(
 pub fn calculate_tax_economics_v2(
     model: &TaxEconomicsV2,
 ) -> Result<TaxEconomicsCalculationResult, TaxEconomicsError> {
+    // Validate every item, including excluded items, before any calculation.
+    for item in &model.benefit_items {
+        if item
+            .end_month
+            .is_some_and(|end| end < item.start_month.max(1))
+        {
+            return Err(TaxEconomicsError::InvalidBenefitWindow {
+                id: item.id.clone(),
+            });
+        }
+    }
+
     let effective_base = effective_annual_tax_base(model);
     let (baseline_annual_tax_cost, optimized_annual_tax_cost) =
         resolve_annual_tax_costs(model, effective_base)?;
@@ -515,6 +536,20 @@ pub fn calculate_tax_economics_v2(
         })
         .collect();
     let in_horizon_one_off_benefits: i64 = one_offs.iter().map(|(_, amount)| amount).sum();
+    let recurring: Vec<_> = model
+        .benefit_items
+        .iter()
+        .filter(|item| item.include_in_base_case && item.timing == BenefitTiming::RecurringAnnual)
+        .map(|item| {
+            (
+                item.start_month.max(1),
+                item.end_month
+                    .unwrap_or(model.analysis_horizon_months)
+                    .min(model.analysis_horizon_months),
+                recognized_benefit_amount(item, model.benefit_realization_bps),
+            )
+        })
+        .collect();
 
     // Gross recognized annual benefit = tax saving + recurring benefits
     let gross_recognized_annual_benefit = recognized_annual_tax_saving + benefits.recurring_annual;
@@ -527,12 +562,17 @@ pub fn calculate_tax_economics_v2(
         (model.implementation_cost * 12) / model.analysis_horizon_months.max(1) as i64;
     let annualized_net_benefit = operating_annual_benefit - annualized_implementation;
 
-    // Lifecycle: operating benefit (already net of maintenance) over the horizon,
-    // plus one-off benefits, less one-off costs
-    let horizon_operating = (operating_annual_benefit * model.analysis_horizon_months as i64) / 12;
-    let lifecycle_net_benefit = horizon_operating + in_horizon_one_off_benefits
-        - model.implementation_cost
-        - model.terminal_tax_or_unwind_cost;
+    // Combine every annual stream before the single month-to-year division.
+    let base_annual_benefit =
+        recognized_annual_tax_saving as i128 - model.annual_maintenance_cost as i128;
+    let mut horizon_numerator = base_annual_benefit * model.analysis_horizon_months as i128;
+    for &(start, end, amount) in &recurring {
+        let active_months = if start <= end { end - start + 1 } else { 0 };
+        horizon_numerator += amount as i128 * active_months as i128;
+    }
+    let lifecycle_net_benefit = (horizon_numerator / 12 + in_horizon_one_off_benefits as i128
+        - model.implementation_cost as i128
+        - model.terminal_tax_or_unwind_cost as i128) as i64;
 
     // Simple payback in months
     let payback_months = if operating_annual_benefit > 0 {
@@ -544,11 +584,16 @@ pub fn calculate_tax_economics_v2(
     // NPV simplified (discounted monthly)
     let discount_rate = model.annual_discount_rate_bps as f64 / 10000.0;
     let monthly_discount = (1.0 + discount_rate).powf(1.0 / 12.0) - 1.0;
-    let monthly_benefit = operating_annual_benefit as f64 / 12.0;
+    let monthly_benefit = base_annual_benefit as f64 / 12.0;
     let mut npv = -(model.implementation_cost as f64);
     for month in 1..=model.analysis_horizon_months {
         let discount_factor = 1.0 / (1.0 + monthly_discount).powi(month as i32);
         npv += monthly_benefit * discount_factor;
+        for &(start, end, amount) in &recurring {
+            if start <= month && month <= end {
+                npv += amount as f64 / 12.0 * discount_factor;
+            }
+        }
     }
     for (month, amount) in one_offs {
         npv += amount as f64 / (1.0 + monthly_discount).powf(month as f64);
@@ -1545,6 +1590,156 @@ mod tests {
         assert_eq!(result.recognized_one_off_benefits, 4_000);
         assert_eq!(result.lifecycle_net_benefit, 29_500);
         assert_eq!(result.npv, 29_500);
+    }
+
+    #[test]
+    fn test_full_recurring_window_preserves_3db5edc_lifecycle() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.annual_discount_rate_bps = 0;
+        model.implementation_cost = 100;
+        model.annual_maintenance_cost = 333;
+        model.terminal_tax_or_unwind_cost = 7;
+
+        for horizon in [0, 1, 2, 11, 12, 18, 19, 36, 120] {
+            model.analysis_horizon_months = horizon;
+            for tax_saving in [-1_000i64, 1_000] {
+                model.baseline_annual_tax_cost = tax_saving.max(0);
+                model.optimized_annual_tax_cost = (-tax_saving).max(0);
+                for start in [0, 1] {
+                    for end in [None, Some(horizon.max(1)), Some(horizon + 3)] {
+                        model.benefit_items =
+                            vec![benefit_item(BenefitTiming::RecurringAnnual, 5, start, end)];
+                        let result = calculate_tax_economics_v2(&model).unwrap();
+                        // 3db5edc's full-window formula, with all constants inlined.
+                        let prior = ((tax_saving + 5 - 333) * horizon as i64) / 12 - 100 - 7;
+                        assert_eq!(
+                            result.lifecycle_net_benefit, prior,
+                            "H={horizon}, tax={tax_saving}, start={start}, end={end:?}"
+                        );
+                        if horizon == 18 && tax_saving == 1_000 {
+                            // (1,000 + 5 - 333) * 18 / 12 - 100 - 7 = 901.
+                            // Truncating the base and recurring streams separately gives 900.
+                            assert_eq!(result.lifecycle_net_benefit, 901);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_recurring_window_inside_horizon_and_steady_state_fields() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.analysis_horizon_months = 18;
+        model.annual_discount_rate_bps = 0;
+        model.implementation_cost = 100;
+        model.benefit_items = vec![benefit_item(
+            BenefitTiming::RecurringAnnual,
+            1_201,
+            4,
+            Some(9),
+        )];
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        // Six active months: 1,201 * 6 / 12 - 100 = 500 after truncation.
+        assert_eq!(result.lifecycle_net_benefit, 500);
+        // The unrounded total is 600.5 - 100. Binary f64 accumulation can
+        // approach that half-cent from either side before the existing round().
+        assert!((result.npv as f64 - 500.5).abs() <= 1.0);
+        assert_eq!(result.recognized_recurring_benefits, 1_201);
+        assert_eq!(result.gross_recognized_annual_benefit, 1_201);
+        assert_eq!(result.operating_annual_benefit, 1_201);
+        assert_eq!(result.annualized_net_benefit, 1_135);
+        assert_eq!(result.payback_months, Some(0));
+    }
+
+    #[test]
+    fn test_recurring_window_crossing_horizon() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.analysis_horizon_months = 18;
+        model.annual_discount_rate_bps = 0;
+        model.benefit_items = vec![benefit_item(
+            BenefitTiming::RecurringAnnual,
+            1_201,
+            16,
+            Some(30),
+        )];
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        assert_eq!(result.lifecycle_net_benefit, 300); // 1,201 * 3 / 12.
+        assert_eq!(result.npv, 300);
+    }
+
+    #[test]
+    fn test_recurring_open_ended_window_uses_month_end_discounting() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.analysis_horizon_months = 12;
+        model.annual_discount_rate_bps = 1_000;
+        model.benefit_items = vec![benefit_item(
+            BenefitTiming::RecurringAnnual,
+            145_200,
+            12,
+            None,
+        )];
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        assert_eq!(result.lifecycle_net_benefit, 12_100); // Only month 12 is active.
+        assert!((result.npv as f64 - 11_000.0).abs() <= 1.0); // 145,200 / 12 / 1.1.
+    }
+
+    #[test]
+    fn test_recurring_window_beyond_horizon_has_no_cash_flow() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.analysis_horizon_months = 18;
+        model.benefit_items = vec![benefit_item(
+            BenefitTiming::RecurringAnnual,
+            1_201,
+            19,
+            None,
+        )];
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        assert_eq!(result.recognized_recurring_benefits, 1_201);
+        assert_eq!(result.lifecycle_net_benefit, 0);
+        assert_eq!(result.npv, 0);
+    }
+
+    #[test]
+    fn test_invalid_benefit_window_precedes_arithmetic_even_when_excluded() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        // This subtraction would overflow if validation did not precede arithmetic.
+        model.baseline_annual_tax_cost = i64::MAX;
+        model.optimized_annual_tax_cost = -1;
+        for timing in [BenefitTiming::RecurringAnnual, BenefitTiming::OneOff] {
+            for included in [false, true] {
+                let mut item = benefit_item(timing, 1_000, 5, Some(4));
+                item.include_in_base_case = included;
+                model.benefit_items = vec![item];
+                assert_eq!(
+                    calculate_tax_economics_v2(&model).unwrap_err(),
+                    TaxEconomicsError::InvalidBenefitWindow {
+                        id: "benefit".to_string()
+                    }
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_zero_end_month_is_invalid_for_every_benefit() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        for timing in [BenefitTiming::RecurringAnnual, BenefitTiming::OneOff] {
+            for included in [false, true] {
+                let mut item = benefit_item(timing, 1_000, 0, Some(0));
+                item.include_in_base_case = included;
+                model.benefit_items = vec![item];
+                let error = calculate_tax_economics_v2(&model).unwrap_err();
+                assert_eq!(
+                    serde_json::to_value(error).unwrap(),
+                    serde_json::json!({"code": "invalid_benefit_window", "id": "benefit"})
+                );
+            }
+        }
     }
 
     #[test]
