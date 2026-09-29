@@ -1,0 +1,11 @@
+{
+  "path": ".artifacts\\p1-release-gate-retest\\p1-amendment-efadf24.bundle",
+  "sourceCommit": "efadf24fc186288ce4ee25da5f5a7d9d1eb6baff",
+  "bytes": 92711244,
+  "sha256": "d7189eaae6e457e52ea4bc56127bcf77173968898d8146f215d9fc9dc9e88893",
+  "requiredRevisionsAreAncestors": [
+    "bf5799383a52b6617cd9d4a0acf47af780086218",
+    "e256660f5e7d5c88ffe4dc0076ead74a70d18b1b"
+  ],
+  "published": false
+}

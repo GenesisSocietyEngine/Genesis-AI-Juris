@@ -19,15 +19,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-      - name: Verify migration compatibility history
-        run: |
-          for revision in bf5799383a52b6617cd9d4a0acf47af780086218 e256660f5e7d5c88ffe4dc0076ead74a70d18b1b; do
-            if ! git cat-file -e "${revision}^{commit}" 2>/dev/null; then
-              echo "::error::Missing migration compatibility commit ${revision}. Fetch full repository history and ensure the candidate history is published."
-              exit 1
-            fi
-          done
-
       - name: Record checked-out source
         run: |
           mkdir -p .artifacts/ci-logs
@@ -48,6 +39,8 @@ jobs:
           npm run install:ci 2>&1 | tee .artifacts/ci-logs/install.log
           test "$(sha256sum package-lock.json)" = "$lock_sha"
           git diff --exit-code -- package-lock.json
+      - name: Verify historical migration inputs
+        run: node scripts/verify-migration-history.mjs
       - name: Strict typecheck
         run: npm run typecheck
       - name: Verify root-web/mobile contract lock

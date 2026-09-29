@@ -1,0 +1,7 @@
+{
+  "file": "canonical-reviewed.patch.gz",
+  "compression": "gzip; exact patch including meaningful context-line spaces",
+  "rawSha256": "3715ea5e665db009625ec435b12f20fd64494d7867f39c830bba6f43693a67d9",
+  "rawBytes": 6803,
+  "originalLocalPath": ".artifacts/p1-release-gate-retest/canonical-reviewed.patch"
+}

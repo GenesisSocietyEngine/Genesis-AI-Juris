@@ -268,7 +268,7 @@
       "layoutFingerprint": "sha256-4ba7d011b0c1e772316fd5ebf35c184942fb3102e1d973c0b216c07adfb75802",
       "pageRole": "middle",
       "pngPath": ".artifacts/v62-report-qa/png/stress-fan-in-ru/page-06.png",
-      "pngSha256": "17c8c9c206d2591a7fbdbae42def136bf86821915e5db2c1a4b72a4d40f98c25",
+      "pngSha256": "a37057708ea84ae86ec3066c9e689f75a9109ea9258054eff3b884cf80728759",
       "reportPage": 6,
       "width": 794
     },
@@ -358,7 +358,7 @@
       "layoutFingerprint": "sha256-329fac7ab07957138667aa68e7ae4b833d114e00c66e9b9b4aa51a88498fcf78",
       "pageRole": "middle",
       "pngPath": ".artifacts/v62-report-qa/png/golden-investigation-en-client/page-5.png",
-      "pngSha256": "89da57e82b423b4a2a76ac3b693544b2c0b6d7899e52bc3b785f90ff3ed00784",
+      "pngSha256": "3b41be712a59b4071f7646f5e50491100f923de391ac079ce3580175a32d3653",
       "reportPage": 5,
       "width": 794
     },
@@ -403,7 +403,7 @@
       "layoutFingerprint": "sha256-24941db2e1c440e1f7e63fbf6e3453120ccad76e01ba15267c78abe0123ceb02",
       "pageRole": "middle",
       "pngPath": ".artifacts/v62-report-qa/png/golden-investigation-en-internal/page-5.png",
-      "pngSha256": "d9f2033a094f89d464e3e567e9ccf64ded5a8eef17b3b525b6c0e1a1d4251d47",
+      "pngSha256": "28a43bb6d729703c0f6b7e9d4b99ca13b50b6f0e86e309d4e442fee3a37fa089",
       "reportPage": 5,
       "width": 794
     },
@@ -763,7 +763,7 @@
       "layoutFingerprint": "sha256-61eae28c9b33a83cc93f66fdf0d538c334ba2edf1d92a6b0fd4e4acf6592169c",
       "pageRole": "middle",
       "pngPath": ".artifacts/v62-report-qa/png/stress-unicode-en/page-4.png",
-      "pngSha256": "bca6f8e70f64c0f38e814247bf24f46f971a3571ec2c3c09fc0ccca7b89dcba0",
+      "pngSha256": "d16717affbb729e015f780dd0c91eac8355878ef65ad970dc4b73382c12bdb5b",
       "reportPage": 4,
       "width": 794
     },
@@ -808,7 +808,7 @@
       "layoutFingerprint": "sha256-bfb45032d9355583c931f7e73de144d50c5c973e34e02c276d4449e106bbc89e",
       "pageRole": "middle",
       "pngPath": ".artifacts/v62-report-qa/png/stress-unicode-ru/page-4.png",
-      "pngSha256": "400c1f18d7f70ad151cb06271c1ce086696c011d1b9847c37e780987740d07b3",
+      "pngSha256": "1ae88f43d6f62ec8dff38f73862762ed474e1481a6825898a8668ceb4683c423",
       "reportPage": 4,
       "width": 794
     },

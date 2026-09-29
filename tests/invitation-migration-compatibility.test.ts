@@ -9,10 +9,12 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { build } from "esbuild";
 import { Miniflare } from "miniflare";
 import { createPasswordCredential, SESSION_COOKIE_NAME } from "../app/auth-crypto";
+import { MIGRATION_HISTORY_REVISIONS, verifyMigrationHistory } from "../scripts/verify-migration-history.mjs";
 
 // Exact attributed rollback source, not a claim about the deployed binary.
-const rollbackRevision = "bf5799383a52b6617cd9d4a0acf47af780086218";
-const defectiveRevision = "e256660f5e7d5c88ffe4dc0076ead74a70d18b1b";
+const rollbackRevision = MIGRATION_HISTORY_REVISIONS.rollback;
+const defectiveRevision = MIGRATION_HISTORY_REVISIONS.defectiveMigration;
+verifyMigrationHistory();
 const requests = new AsyncLocalStorage<Request>();
 const runtime = globalThis as unknown as { __migrationEnv: Record<string, unknown>; __migrationHeaders: () => Headers };
 type Route = { POST(request: Request): Promise<Response>; GET(request: Request): Promise<Response>; DELETE(request: Request): Promise<Response> };
@@ -89,6 +91,7 @@ test("populated0022 upgrade preserves legacy data and rollback routes; unaccepte
     }
     const owner = await person("migration-owner"), member = await person("migration-member"), pending = await person("migration-pending");
     const recipient = await person("migration-recipient"), accepted = await person("migration-accepted");
+    const rollbackPending = await person("migration-rollback-pending"), expiredProofRecipient = await person("migration-expired-proof");
     const org = (await call(old, "organizations", "POST", owner, { action: "create", name: "Synthetic migration compatibility" }, 201)).data.organization.id;
     const legacy = async (p: Person) => (await call(old, "organizations", "POST", owner, { action: "invite", organizationId: org, recipientActorId: p.actorId, role: "member" }, 201)).data;
     await call(old, "organizations", "POST", member, { action: "accept", token: (await legacy(member)).token });
@@ -110,6 +113,32 @@ test("populated0022 upgrade preserves legacy data and rollback routes; unaccepte
       const fragment = new URLSearchParams(new URL(message.text.match(/https:\/\/migration.test\/invitations#\S+/)![0]).hash.slice(1));
       return { invitation, proof: fragment.get("proof")! };
     }
+    const pendingAcrossRollback = await emailInvitation(rollbackPending);
+    const pendingRows = async () => ({
+      invitation: (await d1.prepare("SELECT * FROM email_invitations WHERE id=?").bind(pendingAcrossRollback.invitation.id).all()).results,
+      proofs: (await d1.prepare("SELECT * FROM invitation_mailbox_proofs WHERE invitation_id=? ORDER BY id").bind(pendingAcrossRollback.invitation.id).all()).results,
+    });
+    const beforeRollbackActivity = await pendingRows();
+    await call(old, "organizations", "GET", owner);
+    await call(old, "organizations", "POST", owner, { action: "member", organizationId: org, actorId: member.actorId, status: "active", role: "auditor", expectedRevision: 1 });
+    assert.deepEqual(await pendingRows(), beforeRollbackActivity, "old-code activity retains pending email invitation and proof rows");
+    await call(candidate, "invitations", "POST", rollbackPending, { action: "accept", organizationId: org, token: pendingAcrossRollback.invitation.token, proof: pendingAcrossRollback.proof });
+    const restoredRows = await pendingRows();
+    assert.equal(restoredRows.invitation.length, 1, "forward restoration retains invitation history");
+    assert.equal(restoredRows.invitation[0].status, "accepted");
+    assert.equal((await d1.prepare("SELECT * FROM organization_memberships WHERE organization_id=? AND user_id=?").bind(org, rollbackPending.userId).all()).results.length, 1);
+    assert.equal((await d1.prepare("SELECT * FROM organization_security_events WHERE target_id=? AND action='email_invitation_accepted'").bind(pendingAcrossRollback.invitation.id).all()).results.length, 1);
+
+    const expired = await emailInvitation(expiredProofRecipient);
+    // Deliberate expiry in isolated test data models time spent running old code.
+    await d1.prepare("UPDATE invitation_mailbox_proofs SET expires_at='2000-01-01T00:00:00.000Z' WHERE invitation_id=?").bind(expired.invitation.id).run();
+    await call(candidate, "invitations", "POST", expiredProofRecipient, { action: "accept", organizationId: org, token: expired.invitation.token, proof: expired.proof }, 403);
+    await call(candidate, "invitations", "POST", expiredProofRecipient, { action: "verify", token: expired.invitation.token });
+    const replacementMessage = mailbox.at(-1)!;
+    assert.deepEqual(replacementMessage.to, [expiredProofRecipient.email]);
+    const refreshedProof = new URLSearchParams(new URL(replacementMessage.text.match(/https:\/\/migration.test\/invitations#\S+/)![0]).hash.slice(1)).get("proof");
+    assert.ok(refreshedProof && refreshedProof !== expired.proof);
+    await call(candidate, "invitations", "POST", expiredProofRecipient, { action: "accept", organizationId: org, token: expired.invitation.token, proof: refreshedProof });
     const first = await emailInvitation(recipient);
     await call(old, "me", "DELETE", recipient);
     assert.equal(await d1.prepare("SELECT id FROM users WHERE id=?").bind(recipient.userId).first(), null);
@@ -136,6 +165,7 @@ test("populated0022 upgrade preserves legacy data and rollback routes; unaccepte
     assert.deepEqual((await d1.prepare("PRAGMA foreign_key_check").all()).results, []);
     writeFileSync(resolve(output, "compatibility.json"), JSON.stringify({ rollbackRevision, sourceHashes, migration: "populated0022-to0023", legacyTablesPreserved: tables,
       ordinaryLocalLogin: true, fabricatedTrustedHeaders: false, syntheticMailOnly: true, concurrentMemberships: 1, concurrentAcceptanceEvents: 1,
+      pendingRowsPreservedAcrossOldCode: true, forwardRestoredAcceptance: true, expiredProofDeniedThenReverified: true,
       unacceptedRecipientDeletion: "PASS", acceptedRecipientDeletion: "existing FK refusal, atomic preservation", deployedBinaryTested: false }, null, 2) + "\n");
   } finally { globalThis.fetch = previousFetch; await mf.dispose(); }
 });

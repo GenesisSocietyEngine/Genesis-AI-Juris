@@ -1,0 +1,150 @@
+{
+  "reviewedSource": "a9d8c767b67d1485b2f9e6bf0e07dcd324b18f38",
+  "baselineLastChangedAt": "8ee07c0",
+  "inheritedRendererChange": "2116fb3",
+  "baselineGitBlob": "6bcb9db7c3f9efdd40df71f35df0889ab1bc5c47",
+  "review": "Independent visual/source review approved intentional reconciliation; no material renderer defect found",
+  "metadataUnchanged": true,
+  "selectedEntries": 55,
+  "changes": [
+    {
+      "fixture": "stress-fan-in-ru",
+      "page": 6,
+      "before": {
+        "sha256": "a37057708ea84ae86ec3066c9e689f75a9109ea9258054eff3b884cf80728759",
+        "file": "before-stress-fan-in-ru-page-6.png"
+      },
+      "after": {
+        "sha256": "17c8c9c206d2591a7fbdbae42def136bf86821915e5db2c1a4b72a4d40f98c25",
+        "file": "after-stress-fan-in-ru-page-6.png"
+      }
+    },
+    {
+      "fixture": "golden-investigation-en-client",
+      "page": 5,
+      "before": {
+        "sha256": "3b41be712a59b4071f7646f5e50491100f923de391ac079ce3580175a32d3653",
+        "file": "before-golden-investigation-en-client-page-5.png"
+      },
+      "after": {
+        "sha256": "89da57e82b423b4a2a76ac3b693544b2c0b6d7899e52bc3b785f90ff3ed00784",
+        "file": "after-golden-investigation-en-client-page-5.png"
+      }
+    },
+    {
+      "fixture": "golden-investigation-en-internal",
+      "page": 5,
+      "before": {
+        "sha256": "28a43bb6d729703c0f6b7e9d4b99ca13b50b6f0e86e309d4e442fee3a37fa089",
+        "file": "before-golden-investigation-en-internal-page-5.png"
+      },
+      "after": {
+        "sha256": "d9f2033a094f89d464e3e567e9ccf64ded5a8eef17b3b525b6c0e1a1d4251d47",
+        "file": "after-golden-investigation-en-internal-page-5.png"
+      }
+    },
+    {
+      "fixture": "stress-unicode-en",
+      "page": 4,
+      "before": {
+        "sha256": "d16717affbb729e015f780dd0c91eac8355878ef65ad970dc4b73382c12bdb5b",
+        "file": "before-stress-unicode-en-page-4.png"
+      },
+      "after": {
+        "sha256": "bca6f8e70f64c0f38e814247bf24f46f971a3571ec2c3c09fc0ccca7b89dcba0",
+        "file": "after-stress-unicode-en-page-4.png"
+      }
+    },
+    {
+      "fixture": "stress-unicode-ru",
+      "page": 4,
+      "before": {
+        "sha256": "1ae88f43d6f62ec8dff38f73862762ed474e1481a6825898a8668ceb4683c423",
+        "file": "before-stress-unicode-ru-page-4.png"
+      },
+      "after": {
+        "sha256": "400c1f18d7f70ad151cb06271c1ce086696c011d1b9847c37e780987740d07b3",
+        "file": "after-stress-unicode-ru-page-4.png"
+      }
+    }
+  ],
+  "addedContextPages": [
+    {
+      "fixture": "stress-fan-in-ru",
+      "page": 7,
+      "file": "context-stress-fan-in-ru-page-7.png",
+      "sha256": "60c1edae648390ef89a19567663e3dbe723ea15c397405d7fd2a15c566df5b83"
+    },
+    {
+      "fixture": "golden-general_advisory-ru-client",
+      "page": 6,
+      "file": "context-golden-general_advisory-ru-client-page-6.png",
+      "sha256": "be2f1208a090a9d66cec3b6e7c2c1e52f3ad3d698c08a8da9aa3d9422e781a85"
+    },
+    {
+      "fixture": "golden-general_advisory-ru-client",
+      "page": 7,
+      "file": "context-golden-general_advisory-ru-client-page-7.png",
+      "sha256": "1dc452114eef58100947565474920282b9783e3768f6e2b713f262c37f8c6a82"
+    },
+    {
+      "fixture": "golden-general_advisory-ru-client",
+      "page": 8,
+      "file": "context-golden-general_advisory-ru-client-page-8.png",
+      "sha256": "e5cd38b488dabe42a4304f985ee8aed8372961ed4ffa0a141134da29411efc04"
+    },
+    {
+      "fixture": "golden-compliance-ru-client",
+      "page": 6,
+      "file": "context-golden-compliance-ru-client-page-6.png",
+      "sha256": "2ce3dd84233e1b2eae64f920150d640bc94e9f0353279cbd69a3216697d2fd16"
+    },
+    {
+      "fixture": "golden-compliance-ru-client",
+      "page": 7,
+      "file": "context-golden-compliance-ru-client-page-7.png",
+      "sha256": "149e5d3ba7e4970e7ef16d53e14eae1f9021ed72c649348828292e5cf67296b4"
+    },
+    {
+      "fixture": "golden-compliance-ru-client",
+      "page": 8,
+      "file": "context-golden-compliance-ru-client-page-8.png",
+      "sha256": "761e18e6145821032489fe4d504d4b38bb5f4432f8b87de2d990590c12b739c1"
+    },
+    {
+      "fixture": "golden-investigation-en-internal",
+      "page": 6,
+      "file": "context-golden-investigation-en-internal-page-6.png",
+      "sha256": "94bf7ac28cf9ad7092077df13c770ed06f94e0751b5792cd89c176fcb84b22bb"
+    }
+  ],
+  "corpusBefore": {
+    "fixtures": 47,
+    "golden": 32,
+    "longContent": 2,
+    "stress": 12,
+    "reportPages": 758,
+    "renderedPngs": 758
+  },
+  "corpusAfter": {
+    "fixtures": 47,
+    "golden": 32,
+    "longContent": 2,
+    "stress": 12,
+    "reportPages": 760,
+    "renderedPngs": 760
+  },
+  "pageCountChanges": [
+    {
+      "fixture": "golden-general_advisory-ru-client",
+      "before": 7,
+      "after": 8
+    },
+    {
+      "fixture": "golden-compliance-ru-client",
+      "before": 7,
+      "after": 8
+    }
+  ],
+  "limitation": "P3: investigation EN internal final footnote word circulation. is alone at top of page 6; complete and readable. Two RU client reports have coherent sign-off pages with substantial lower whitespace before a fresh graph page."
+}
