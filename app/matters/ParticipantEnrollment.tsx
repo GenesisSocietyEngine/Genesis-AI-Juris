@@ -18,6 +18,7 @@ export default function ParticipantEnrollment({ roster, participants, mutationKe
   const { choices, ambiguous } = enrollmentChoices(roster, participants);
   const selected = choices.find(member => member.actorId === selectedId);
   const busy = mutationKey !== null;
+  const enrolling = mutationKey === "participant-enroll";
   const manualIssue = manualId ? memberIdIssue(manualId) : null;
   useEffect(() => {
     if (selectedId && (roster.status === "restricted" || roster.status === "ready" && !selected)) setSelectedId("");
@@ -28,7 +29,7 @@ export default function ParticipantEnrollment({ roster, participants, mutationKe
       <option value="contributor">{t("Contributor", "Участник")}</option>
       <option value="viewer">{t("Viewer", "Наблюдатель")}</option>
     </select></label>;
-  const consequences = <div className={styles.consequenceBox}>
+  const consequences = <div className={styles.enrollmentConsequences}>
     <strong>{t("Access changes when you confirm", "Доступ изменится после подтверждения")}</strong>
     <p>{role === "reviewer" ? t("A reviewer can review evidence and approve case outputs.", "Рецензент может проверять доказательства и утверждать результаты дела.")
       : role === "contributor" ? t("A contributor can edit the case and upload sources.", "Участник может редактировать дело и загружать источники.")
@@ -54,7 +55,7 @@ export default function ParticipantEnrollment({ roster, participants, mutationKe
         {selected && <details><summary>{t("Check selected member identity", "Проверить выбранного участника")}</summary>
           <p>{selected.name}</p><code style={{ overflowWrap: "anywhere" }}>{selected.actorId}</code></details>}
         {roles}{consequences}
-        <button className={styles.primaryButton} disabled={busy || !selected}>{busy ? t("Adding participant…", "Добавление участника…") : t("Add to this case", "Добавить в дело")}</button>
+        <button className={styles.primaryButton} disabled={busy || !selected}>{enrolling ? t("Adding participant…", "Добавление участника…") : t("Add to this case", "Добавить в дело")}</button>
       </form> : <p role="status">{t("No eligible person is available in the returned member list. Existing case participants, inactive memberships and ambiguous names are excluded.",
         "В полученном списке нет подходящих участников. Уже добавленные в дело люди, неактивные участники и неоднозначные имена исключены.")}</p>}
     </> : <p role="status">{roster.status === "loading" ? t("Checking current organization members…", "Проверяем текущих участников организации…")
@@ -75,7 +76,7 @@ export default function ParticipantEnrollment({ roster, participants, mutationKe
         {manualIssue && <p id="enrollment-id-error" role="alert">{manualIssue === "email" ? t("Enter the Member ID, not an email address.", "Введите идентификатор участника, а не email.")
           : t("Enter the complete Member ID using letters, numbers, underscores or hyphens.", "Введите полный идентификатор: буквы, цифры, подчёркивания или дефисы.")}</p>}
         {roles}{consequences}
-        <button className={styles.primaryButton} disabled={busy || !manualId.trim() || Boolean(manualIssue)}>{busy ? t("Adding participant…", "Добавление участника…") : t("Add to this case", "Добавить в дело")}</button>
+        <button className={styles.primaryButton} disabled={busy || !manualId.trim() || Boolean(manualIssue)}>{enrolling ? t("Adding participant…", "Добавление участника…") : t("Add to this case", "Добавить в дело")}</button>
       </form>
     </details>
   </div>;

@@ -1,0 +1,68 @@
+{
+  "scenario": "unrelated-mutation-disabled-without-enrollment-progress",
+  "width": 390,
+  "pageWidth": 375,
+  "panelWidth": 343,
+  "controlWidths": [
+    {
+      "tag": "SELECT",
+      "width": 301,
+      "height": 46,
+      "disabled": true,
+      "color": "rgb(32, 43, 60)",
+      "background": "rgb(255, 255, 255)"
+    },
+    {
+      "tag": "SELECT",
+      "width": 301,
+      "height": 46,
+      "disabled": true,
+      "color": "rgb(32, 43, 60)",
+      "background": "rgb(255, 255, 255)"
+    },
+    {
+      "tag": "BUTTON",
+      "width": 301,
+      "height": 47.25,
+      "disabled": true,
+      "color": "rgb(255, 255, 255)",
+      "background": "rgb(41, 88, 184)"
+    },
+    {
+      "tag": "BUTTON",
+      "width": 301,
+      "height": 47.25,
+      "disabled": true,
+      "color": "rgb(32, 43, 60)",
+      "background": "rgb(255, 255, 255)"
+    },
+    {
+      "tag": "INPUT",
+      "width": 301,
+      "height": 47.25,
+      "disabled": true,
+      "color": "rgb(32, 43, 60)",
+      "background": "rgb(255, 255, 255)"
+    },
+    {
+      "tag": "SELECT",
+      "width": 301,
+      "height": 46,
+      "disabled": true,
+      "color": "rgb(32, 43, 60)",
+      "background": "rgb(255, 255, 255)"
+    },
+    {
+      "tag": "BUTTON",
+      "width": 301,
+      "height": 47.25,
+      "disabled": true,
+      "color": "rgb(255, 255, 255)",
+      "background": "rgb(41, 88, 184)"
+    }
+  ],
+  "selection": "actor_synthetic_first",
+  "focusVisible": true,
+  "focusOutline": "rgb(239, 183, 79) solid 3px",
+  "text": "Add a participant\n\nChoose from the organization members your current access allows you to see. This list shows up to 100 returned memberships; it is not a complete directory.\n\nPeople with missing or matching names require their exact Member ID below.\n\nOrganization member\nChoose a person…\nAlexandria Synthetic Person With A Very Long Professional Display Name\nМария Тестовая\nCheck selected member identity\nCase role\nReviewer\nContributor\nViewer\nAccess changes when you confirm\n\nA reviewer can review evidence and approve case outputs.\n\nAdding a person grants this case role immediately and marks current governed outputs as stale. It does not send an invitation or change their organization role.\n\nAdd to this case\nRefresh member list\nUse Member ID (advanced)"
+}
