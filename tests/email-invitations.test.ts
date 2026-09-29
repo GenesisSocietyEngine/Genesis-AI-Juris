@@ -223,3 +223,102 @@ test("rotating invitation IDs cannot bypass canonical recipient rate limit", asy
   const result = await call(owner, { action: "resend", organizationId: org, invitationId: invitation.id }, 429);
   assert.equal(result.code, "invitation_rate_limited");
 });
+
+// These are synthetic handler/D1 schedules, not provider authentication or
+// mailbox-browser evidence. Every authority change uses the supported route;
+// the owner-invariant negative check leaves all database guards installed.
+async function freshOrganization(label: string) {
+  owner = await actor(`${label}-owner`);
+  org = (await call(owner, { action: "create", name: `Synthetic ${label}` }, 201, "organizations")).organization.id;
+}
+async function assertUnaccepted(invitation: Result, person: Actor, status = "pending") {
+  assert.equal((await d1.prepare("SELECT status FROM email_invitations WHERE id=?").bind(invitation.id).first<{ status: string }>())?.status, status);
+  assert.equal((await d1.prepare("SELECT count(*) AS n FROM organization_memberships WHERE organization_id=? AND user_id=?").bind(org, person.userId).first<{ n: number }>())?.n, 0);
+  assert.equal((await d1.prepare("SELECT used_at FROM invitation_mailbox_proofs WHERE invitation_id=?").bind(invitation.id).first<{ used_at: string | null }>())?.used_at, null);
+  assert.equal((await d1.prepare("SELECT count(*) AS n FROM organization_security_events WHERE target_id=? AND action='email_invitation_accepted'").bind(invitation.id).first<{ n: number }>())?.n, 0);
+}
+
+test("each permissible recipient role is exact and cannot invite, resend, revoke or read owner history", async () => {
+  await freshOrganization("role-boundary");
+  const pending = await invite("role-boundary-pending@example.test");
+  for (const role of ["member", "org_admin", "auditor"]) {
+    const person = await actor(`role-boundary-${role}`), invitation = await invite(person.email, role);
+    const proof = await proofFor(person, invitation.token);
+    assert.equal((await accept(person, invitation.token, proof)).organization.role, role);
+    const sent = mailbox.length;
+    await call(person, { action: "invite", organizationId: org, recipientEmail: `unauthorized-${role}@example.test`, role: "member" }, 404);
+    for (const action of ["resend", "revoke"]) await call(person, { action, organizationId: org, invitationId: pending.id }, 404);
+    const request = new Request(`https://invite.test/api/invitations?organization=${org}`, { headers: { "oai-authenticated-user-email": person.email } });
+    const history = await requestStorage.run(request, () => routes.invitations.GET(request));
+    assert.equal(history.status, 404); assert.match(history.headers.get("cache-control") ?? "", /no-store/);
+    assert.equal(mailbox.length, sent, "denied owner actions cannot send mail");
+  }
+  assert.equal((await d1.prepare("SELECT status FROM email_invitations WHERE id=?").bind(pending.id).first<{ status: string }>())?.status, "pending");
+});
+
+test("existing owner policy forbids manufactured inviter demotion or suspension", async () => {
+  await freshOrganization("owner-invariant");
+  const row = await d1.prepare("SELECT * FROM organization_memberships WHERE organization_id=? AND user_id=?").bind(org, owner.userId).first();
+  assert.ok(row);
+  for (const change of [{ role: "member", status: "active" }, { role: "org_owner", status: "suspended" }]) {
+    await call(owner, { action: "member", organizationId: org, actorId: owner.actorId, expectedRevision: row.revision, ...change }, 404, "organizations");
+    await assert.rejects(d1.prepare("UPDATE organization_memberships SET role=?,status=?,revision=revision+1 WHERE organization_id=? AND user_id=?")
+      .bind(change.role, change.status, org, owner.userId).run(), /membership identity, owner and revision are protected/);
+  }
+  assert.deepEqual(await d1.prepare("SELECT * FROM organization_memberships WHERE organization_id=? AND user_id=?").bind(org, owner.userId).first(), row);
+});
+
+for (const command of ["suspend", "close"]) test(`independent lifecycle ${command} at acceptance commit withdraws authority atomically`, async () => {
+  await freshOrganization(`lifecycle-${command}`);
+  const admin = await actor(`lifecycle-${command}-admin`), adminInvite = await invite(admin.email, "org_admin");
+  await accept(admin, adminInvite.token, await proofFor(admin, adminInvite.token));
+  const person = await actor(`lifecycle-${command}-recipient`), invitation = await invite(person.email);
+  const proof = await proofFor(person, invitation.token);
+  const request = await call(owner, { action: "lifecycle_request", organizationId: org, command }, 201, "organizations");
+  beforeBatch = async () => { await call(admin, { action: "lifecycle_approve", organizationId: org, requestId: request.id }, 200, "organizations"); };
+  batchRaceReached = false; await accept(person, invitation.token, proof, org, 404); assert.equal(batchRaceReached, true);
+  const changed = await d1.prepare("SELECT status,revision FROM organizations WHERE id=?").bind(org).first<{ status: string; revision: number }>();
+  assert.equal(changed?.status, command === "suspend" ? "suspended" : "closed"); assert.equal(changed?.revision, 2);
+  await assertUnaccepted(invitation, person);
+});
+
+for (const action of ["revoke", "resend"]) test(`owner ${action} at acceptance commit defeats the old credential without partial membership`, async () => {
+  await freshOrganization(`commit-${action}`);
+  const person = await actor(`commit-${action}-recipient`), invitation = await invite(person.email);
+  const proof = await proofFor(person, invitation.token); let replacement: Result | undefined;
+  beforeBatch = async () => { replacement = await call(owner, { action, organizationId: org, invitationId: invitation.id }, action === "resend" ? 201 : 200); };
+  batchRaceReached = false; await accept(person, invitation.token, proof, org, 404); assert.equal(batchRaceReached, true);
+  await assertUnaccepted(invitation, person, action === "resend" ? "superseded" : "revoked");
+  if (action === "resend") {
+    assert.ok(replacement); assert.notEqual(replacement.token, invitation.token);
+    await accept(person, replacement.token, proof, org, 403);
+    assert.equal((await accept(person, replacement.token, await proofFor(person, replacement.token))).organization.id, org);
+  }
+});
+
+test("a separately accepted legacy membership wins an email-acceptance race without role replacement", async () => {
+  await freshOrganization("legacy-race");
+  const person = await actor("legacy-race-recipient"), invitation = await invite(person.email, "org_admin");
+  const proof = await proofFor(person, invitation.token);
+  const legacy = await call(owner, { action: "invite", organizationId: org, recipientActorId: person.actorId, role: "auditor" }, 201, "organizations");
+  beforeBatch = async () => { await call(person, { action: "accept", token: legacy.token }, 200, "organizations"); };
+  batchRaceReached = false; await accept(person, invitation.token, proof, org, 404); assert.equal(batchRaceReached, true);
+  const memberships = await d1.prepare("SELECT role,revision FROM organization_memberships WHERE organization_id=? AND user_id=?").bind(org, person.userId).all<{ role: string; revision: number }>();
+  assert.deepEqual(memberships.results, [{ role: "auditor", revision: 1 }]);
+  assert.equal((await d1.prepare("SELECT status FROM email_invitations WHERE id=?").bind(invitation.id).first<{ status: string }>())?.status, "pending");
+  assert.equal((await d1.prepare("SELECT used_at FROM invitation_mailbox_proofs WHERE invitation_id=?").bind(invitation.id).first<{ used_at: string | null }>())?.used_at, null);
+  assert.equal((await d1.prepare("SELECT count(*) AS n FROM organization_security_events WHERE target_id=? AND action='email_invitation_accepted'").bind(invitation.id).first<{ n: number }>())?.n, 0);
+});
+
+test("concurrent duplicate creation produces one pending invitation and one synthetic message", async () => {
+  await freshOrganization("duplicate-create"); const sent = mailbox.length, email = "duplicate-create-recipient@example.test";
+  const create = () => {
+    const request = new Request("https://invite.test/api/invitations", { method: "POST", headers: { origin: "https://invite.test", "sec-fetch-site": "same-origin", "content-type": "application/json", "oai-authenticated-user-email": owner.email },
+      body: JSON.stringify({ action: "invite", organizationId: org, recipientEmail: email, role: "member" }) });
+    return requestStorage.run(request, () => routes.invitations.POST(request));
+  };
+  const responses = await Promise.all([create(), create()]);
+  assert.deepEqual(responses.map(response => response.status).sort(), [201, 409]);
+  assert.equal((await d1.prepare("SELECT count(*) AS n FROM email_invitations WHERE organization_id=? AND recipient_email=? AND status='pending'").bind(org, email).first<{ n: number }>())?.n, 1);
+  assert.equal(mailbox.length - sent, 1);
+});
