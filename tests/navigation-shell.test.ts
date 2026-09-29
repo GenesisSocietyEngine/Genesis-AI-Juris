@@ -131,3 +131,69 @@ test("old departure loses authority and sign-out remains available despite the S
   assert.deepEqual(h.requests, ["/api/auth/logout"]); assert.equal(h.leaves.length, 1);
   assert.match(h.leaves[0], /^\/signout-with-chatgpt\?/); assert.equal(h.navigation.getSnapshot().identity, null);
 });
+
+// Reproduced in the actual Organizations page: a staged dirty organization
+// switch must keep its intent current until Stay or explicit Discard.
+async function organizationDepartureHarness() {
+  const actorId = "actor_synthetic_departure_owner";
+  const organization = (id: string) => ({ id, name: id, kind: "team", status: "active", role: "org_owner", revision: 1, membershipRevision: 1, actorId, selection: `${id}.1.1.${actorId}` });
+  const a = organization("org_synthetic_departure_a"), b = organization("org_synthetic_departure_b");
+  const requests: Array<{ action: string; organizationId: string }> = [], leaves: string[] = [];
+  let risk: "clear" | "dirty" | "pending" = "dirty", denied = 0, clears = 0;
+  const navigation = new NavigationController({ transport: async (path, init) => {
+    if (path === "/api/workspace-session") return Response.json({ authenticated: true, identity: { displayName: "Synthetic owner", email: "departure@example.test", authSource: "local" }, actorId, organizations: [a, b], selected: a, profileRequired: false });
+    const body = JSON.parse(String(init?.body)); requests.push(body);
+    return Response.json({ organization: body.organizationId === b.id ? b : a });
+  }, leave: path => leaves.push(path), clear: () => { clears++; } });
+  await navigation.refresh();
+  assert.equal(navigation.getSnapshot().phase, "ready", "synthetic receipt must establish the ready baseline");
+  navigation.register({}, { risk: () => risk, suspend: noop, deny: () => { denied++; } });
+  const h = handlers({ navigation, closeDrawer: noop, window: { location: { assign: (path: string) => leaves.push(path) } }, document: { querySelector: () => null }, requestAnimationFrame: noop });
+  navigation.registerDeparture((kind, id, plan) => { void h.depart(kind, id, false, "", plan); });
+  const request = async () => { navigation.requestDeparture("organization", b.id); await new Promise<void>(resolve => setImmediate(resolve)); return h.pending; };
+  const confirm = (pending: typeof h.pending) => h.depart(pending.kind, pending.id, true, pending.target, pending.plan);
+  return { navigation, h, a, b, requests, leaves, request, confirm, setRisk: (value: typeof risk) => { risk = value; }, denied: () => denied, clears: () => clears };
+}
+
+test("actual organization departure preserves Stay then commits dirty Discard exactly once", async () => {
+  const h = await organizationDepartureHarness();
+  const first = await h.request(); assert.equal(first.risk, "dirty");
+  h.h.cancelPending(); assert.deepEqual(h.requests, []); assert.deepEqual(h.leaves, []);
+  const pending = await h.request(); await h.confirm(pending);
+  assert.deepEqual(h.requests, [{ action: "select", organizationId: h.b.id }]);
+  assert.deepEqual(h.leaves, ["/matters?organization=" + encodeURIComponent(h.b.selection) + "&lang=en"]);
+  assert.equal(h.denied(), 1); assert.equal(h.clears(), 1); assert.equal(h.h.pending, null);
+});
+
+test("actual staged organization departure never discards an uncertain operation", async () => {
+  const h = await organizationDepartureHarness(); h.setRisk("pending");
+  const pending = await h.request(); await h.confirm(pending);
+  assert.equal(h.h.pending.risk, "pending"); assert.deepEqual(h.requests, []); assert.deepEqual(h.leaves, []);
+});
+
+test("a newer departure or direct selection invalidates the old organization confirmation", async () => {
+  for (const supersede of ["link", "selection"] as const) {
+    const h = await organizationDepartureHarness(); const pending = await h.request();
+    if (supersede === "link") h.navigation.requestDeparture("link", "/templates");
+    else await h.navigation.select(h.a.id, "en");
+    assert.equal(pending.plan.current(), false); await h.confirm(pending);
+    assert.deepEqual(h.requests, []); assert.deepEqual(h.leaves, []);
+  }
+});
+
+test("authority expiry or revocation cancels the staged organization confirmation", async () => {
+  for (const phase of ["expired", "denied"] as const) {
+    const h = await organizationDepartureHarness(); const pending = await h.request();
+    h.navigation.invalidate(phase); await h.confirm(pending);
+    assert.deepEqual(h.requests, []); assert.deepEqual(h.leaves, []); assert.equal(h.h.pending, null);
+  }
+});
+
+test("stale staged selection is rejected before a request or a new intent", async () => {
+  const h = await organizationDepartureHarness(); const pending = await h.request();
+  const newest = h.navigation.beginIntent();
+  await h.navigation.select(h.b.id, "en", true, pending.plan);
+  assert.equal(h.navigation.intentCurrent(newest), true);
+  assert.deepEqual(h.requests, []); assert.deepEqual(h.leaves, []);
+  assert.equal(h.navigation.getSnapshot().selected?.id, h.a.id);
+});

@@ -1,0 +1,127 @@
+{
+  "sourceBase": "43deadd14209faa2a824c99f6d97c676f1465304",
+  "localOnly": true,
+  "origin": "http://127.0.0.1:4298",
+  "runtimePort": 4297,
+  "driver": "agent-browser 0.27.0 / isolated Chrome profile",
+  "original": {
+    "createdAlpha": "- link \"GENESIS: JURIS — Case Studio\" [ref=e1]\r\n- navigation \"Workspace navigation\" [ref=e4]\r\n- navigation \"Organization controls\" [ref=e5]\r\n  - link \"Manage organizations\" [ref=e15]\r\n  - link \"Users & access\" [ref=e16]\r\n- link \"Account Synthetic Org Owner\" [ref=e6]\r\n- button \"Sign out\" [ref=e7]\r\n- button \"Switch language\" [ref=e8]\r\n- heading \"Organization administration\" [level=1, ref=e2]\r\n- link \"Your account\" [ref=e3]\r\n- heading \"Your organizations\" [level=2, ref=e9]\r\n- button \"Refresh organization details\" [ref=e10]\r\n- link \"Personal workspace · Your workspace · Owner\" [ref=e20]\r\n- link \"Selected\" [ref=e21]\r\n- button \"Open cases\" [ref=e22]\r\n- link \"Synthetic Org Alpha 43deadd · Owner\" [ref=e23]\r\n- link \"Manage\" [ref=e24]\r\n- button \"Open cases\" [ref=e25]\r\n- heading \"New organization\" [level=3, ref=e30]\r\n- textbox \"Organization name\" [required, ref=e37]\r\n- button \"Create organization\" [ref=e31]\r\n- heading \"Join an organization\" [level=2, ref=e11]\r\n- link \"Continue an invitation\" [ref=e12]\r\n- heading \"Personal workspace · Your workspace · Owner\" [level=2, ref=e13]\r\n- columnheader \"Name\" [ref=e32]\r\n- columnheader \"Role\" [ref=e33]\r\n- columnheader \"Status\" [ref=e34]\r\n- columnheader \"Access\" [ref=e35]\r\n- cell \"Synthetic Org Owner You\" [ref=e26]\r\n- cell \"Organization owner\" [ref=e27]\r\n- cell \"active\" [ref=e28]\r\n- cell \"Owner access is protected\" [ref=e29]\r\n- region \"Invite a member\" [ref=e14]\r\n  - heading \"Invite a member\" [level=3, ref=e17]\r\n  - textbox \"Recipient email\" [required, ref=e38]: retained-org-draft@example.test\r\n  - combobox \"Organization role\" [expanded=false, ref=e39]: Member\r\n    - option \"Member\" [selected, ref=e40]\r\n    - option \"Administrator\" [ref=e41]\r\n    - option \"Auditor\" [ref=e42]\r\n  - button \"Invite member\" [ref=e36]\r\n  - heading \"Invitation history\" [level=3, ref=e18]\r\n  - button \"Refresh invitations\" [ref=e19]",
+    "dirtyStay": "- link \"GENESIS: JURIS — Case Studio\" [ref=e1]\r\n- navigation \"Workspace navigation\" [ref=e4]\r\n- navigation \"Organization controls\" [ref=e5]\r\n  - link \"Manage organizations\" [ref=e15]\r\n  - link \"Users & access\" [ref=e16]\r\n- link \"Account Synthetic Org Owner\" [ref=e6]\r\n- button \"Sign out\" [ref=e7]\r\n- button \"Switch language\" [ref=e8]\r\n- heading \"Organization administration\" [level=1, ref=e2]\r\n- link \"Your account\" [ref=e3]\r\n- heading \"Your organizations\" [level=2, ref=e9]\r\n- button \"Refresh organization details\" [ref=e10]\r\n- link \"Personal workspace · Your workspace · Owner\" [ref=e20]\r\n- link \"Selected\" [ref=e21]\r\n- button \"Open cases\" [ref=e22]\r\n- link \"Synthetic Org Alpha 43deadd · Owner\" [ref=e23]\r\n- link \"Manage\" [ref=e24]\r\n- button \"Open cases\" [ref=e25]\r\n- heading \"New organization\" [level=3, ref=e30]\r\n- textbox \"Organization name\" [required, ref=e37]\r\n- button \"Create organization\" [ref=e31]\r\n- heading \"Join an organization\" [level=2, ref=e11]\r\n- link \"Continue an invitation\" [ref=e12]\r\n- heading \"Personal workspace · Your workspace · Owner\" [level=2, ref=e13]\r\n- columnheader \"Name\" [ref=e32]\r\n- columnheader \"Role\" [ref=e33]\r\n- columnheader \"Status\" [ref=e34]\r\n- columnheader \"Access\" [ref=e35]\r\n- cell \"Synthetic Org Owner You\" [ref=e26]\r\n- cell \"Organization owner\" [ref=e27]\r\n- cell \"active\" [ref=e28]\r\n- cell \"Owner access is protected\" [ref=e29]\r\n- region \"Invite a member\" [ref=e14]\r\n  - heading \"Invite a member\" [level=3, ref=e17]\r\n  - textbox \"Recipient email\" [required, ref=e38]: retained-org-draft@example.test\r\n  - combobox \"Organization role\" [expanded=false, ref=e39]: Member\r\n    - option \"Member\" [selected, ref=e40]\r\n    - option \"Administrator\" [ref=e41]\r\n    - option \"Auditor\" [ref=e42]\r\n  - button \"Invite member\" [ref=e36]\r\n  - heading \"Invitation history\" [level=3, ref=e18]\r\n  - button \"Refresh invitations\" [ref=e19]",
+    "confirmedCreateReadFailure": {
+      "url": "http://127.0.0.1:4298/organizations",
+      "alerts": [
+        "The change was saved, but the updated organization could not be loaded. Refresh the details; do not submit the change again.Refresh organization details",
+        "Organization created. You are its owner.",
+        ""
+      ],
+      "draft": "retained-org-draft@example.test",
+      "managing": [
+        "Managing: Personal workspace · Your workspace · Owner"
+      ]
+    },
+    "recoveredBeta": "- link \"GENESIS: JURIS — Case Studio\" [ref=e1]\r\n- navigation \"Workspace navigation\" [ref=e4]\r\n- navigation \"Organization controls\" [ref=e5]\r\n  - link \"Manage organizations\" [ref=e15]\r\n  - link \"Users & access\" [ref=e16]\r\n- link \"Account Synthetic Org Owner\" [ref=e6]\r\n- button \"Sign out\" [ref=e7]\r\n- button \"Switch language\" [ref=e8]\r\n- heading \"Organization administration\" [level=1, ref=e2]\r\n- link \"Your account\" [ref=e3]\r\n- heading \"Your organizations\" [level=2, ref=e9]\r\n- button \"Refresh organization details\" [ref=e10]\r\n- link \"Personal workspace · Your workspace · Owner\" [ref=e20]\r\n- link \"Selected\" [ref=e21]\r\n- button \"Open cases\" [ref=e22]\r\n- link \"Synthetic Org Alpha 43deadd · Owner\" [ref=e23]\r\n- link \"Manage\" [ref=e24]\r\n- button \"Open cases\" [ref=e25]\r\n- link \"Synthetic Org Beta 43deadd · Owner\" [ref=e26]\r\n- link \"Manage\" [ref=e27]\r\n- button \"Open cases\" [ref=e28]\r\n- heading \"New organization\" [level=3, ref=e33]\r\n- textbox \"Organization name\" [required, ref=e40]\r\n- button \"Create organization\" [ref=e34]\r\n- heading \"Join an organization\" [level=2, ref=e11]\r\n- link \"Continue an invitation\" [ref=e12]\r\n- heading \"Personal workspace · Your workspace · Owner\" [level=2, ref=e13]\r\n- columnheader \"Name\" [ref=e35]\r\n- columnheader \"Role\" [ref=e36]\r\n- columnheader \"Status\" [ref=e37]\r\n- columnheader \"Access\" [ref=e38]\r\n- cell \"Synthetic Org Owner You\" [ref=e29]\r\n- cell \"Organization owner\" [ref=e30]\r\n- cell \"active\" [ref=e31]\r\n- cell \"Owner access is protected\" [ref=e32]\r\n- region \"Invite a member\" [ref=e14]\r\n  - heading \"Invite a member\" [level=3, ref=e17]\r\n  - textbox \"Recipient email\" [required, ref=e41]: retained-org-draft@example.test\r\n  - combobox \"Organization role\" [expanded=false, ref=e42]: Member\r\n    - option \"Member\" [selected, ref=e43]\r\n    - option \"Administrator\" [ref=e44]\r\n    - option \"Auditor\" [ref=e45]\r\n  - button \"Invite member\" [ref=e39]\r\n  - heading \"Invitation history\" [level=3, ref=e18]\r\n  - button \"Refresh invitations\" [ref=e19]",
+    "failedDirtyDiscard": {
+      "events": [
+        {
+          "type": "pointerdown",
+          "tag": "BUTTON",
+          "text": "Refresh organization details",
+          "trusted": true
+        },
+        {
+          "type": "click",
+          "tag": "BUTTON",
+          "text": "Refresh organization details",
+          "trusted": true
+        },
+        {
+          "type": "pointerdown",
+          "tag": "BUTTON",
+          "text": "Open cases",
+          "trusted": true
+        },
+        {
+          "type": "click",
+          "tag": "BUTTON",
+          "text": "Open cases",
+          "trusted": true
+        },
+        {
+          "type": "pointerdown",
+          "tag": "BUTTON",
+          "text": "Discard and continue",
+          "trusted": true
+        },
+        {
+          "type": "click",
+          "tag": "BUTTON",
+          "text": "Discard and continue",
+          "trusted": true
+        }
+      ],
+      "focus": {
+        "tag": "BUTTON",
+        "text": "Open cases"
+      },
+      "url": "http://127.0.0.1:4298/organizations?organization=org_personal_actor_2298641cdc5a872ceb7d4433af9f4936"
+    },
+    "clearDraftCases": "- link \"GENESIS: JURIS — Case Studio\" [ref=e2]\r\n- navigation \"Workspace navigation\" [ref=e8]\r\n  - link \"Open My cases\" [ref=e28]\r\n  - link \"Saved Studio drafts\" [ref=e29]\r\n- navigation \"Organization controls\" [ref=e9]\r\n  - link \"Manage organizations\" [ref=e17]\r\n  - link \"Users & access\" [ref=e18]\r\n- link \"Account Synthetic Org Owner\" [ref=e10]\r\n- button \"Sign out\" [ref=e11]\r\n- button \"Switch language\" [ref=e12]\r\n- region \"My cases storage\" [ref=e1]\r\n  - heading \"My cases\" [level=1, ref=e3]\r\n  - navigation \"Personal or Team cases\" [ref=e4]\r\n    - link \"Personal Saved Studio drafts\" [ref=e13]\r\n    - link \"Team Organization cases\" [ref=e14]\r\n- link \"Skip to matter workspace\" [ref=e5]\r\n- region \"Pilot privacy limitation\" [ref=e6]\r\n- heading \"My cases\" [level=1, ref=e15]\r\n- button \"Create a matter\" [expanded=false, ref=e16]\r\n- button \"New case\" [ref=e19]\r\n- button \"Import case prompt (.md)\" [ref=e20]\r\n- link \"Browse templates\" [ref=e21]\r\n- link \"Browse demo cases\" [ref=e22]\r\n- button \"Choose file\" [ref=e23]: No file chosen\r\n- searchbox \"Search cases\" [ref=e24]\r\n- combobox \"Status\" [expanded=false, ref=e25]: All statuses\r\n  - option \"All statuses\" [selected, ref=e30]\r\n  - option \"Draft\" [ref=e31]\r\n  - option \"Intake review\" [ref=e32]\r\n  - option \"Active\" [ref=e33]\r\n  - option \"Awaiting input\" [ref=e34]\r\n  - option \"Internal review\" [ref=e35]\r\n  - option \"Output approved\" [ref=e36]\r\n  - option \"Closed\" [ref=e37]\r\n  - option \"Archived\" [ref=e38]\r\n  - option \"Declined\" [ref=e39]\r\n  - option \"Cancelled\" [ref=e40]\r\n- region \"Selected matter workspace\" [ref=e7]\r\n  - heading \"Bring a case into focus.\" [level=1, ref=e26]\r\n  - button \"Create a case\" [ref=e27]"
+  },
+  "amended": {
+    "dirtyConfirmation": "- heading \"Leave unsaved changes?\" [level=2, ref=e1]\r\n- button \"Stay here\" [ref=e2]\r\n- button \"Discard and continue\" [ref=e3]",
+    "successfulDirtyDiscardCases": "- link \"GENESIS: JURIS — Case Studio\" [ref=e2]\r\n- navigation \"Workspace navigation\" [ref=e8]\r\n  - link \"Open My cases\" [ref=e28]\r\n  - link \"Saved Studio drafts\" [ref=e29]\r\n- navigation \"Organization controls\" [ref=e9]\r\n  - link \"Manage organizations\" [ref=e17]\r\n  - link \"Users & access\" [ref=e18]\r\n- link \"Account Synthetic Org Owner\" [ref=e10]\r\n- button \"Sign out\" [ref=e11]\r\n- button \"Switch language\" [ref=e12]\r\n- region \"My cases storage\" [ref=e1]\r\n  - heading \"My cases\" [level=1, ref=e3]\r\n  - navigation \"Personal or Team cases\" [ref=e4]\r\n    - link \"Personal Saved Studio drafts\" [ref=e13]\r\n    - link \"Team Organization cases\" [ref=e14]\r\n- link \"Skip to matter workspace\" [ref=e5]\r\n- region \"Pilot privacy limitation\" [ref=e6]\r\n- heading \"My cases\" [level=1, ref=e15]\r\n- button \"Create a matter\" [expanded=false, ref=e16]\r\n- button \"New case\" [ref=e19]\r\n- button \"Import case prompt (.md)\" [ref=e20]\r\n- link \"Browse templates\" [ref=e21]\r\n- link \"Browse demo cases\" [ref=e22]\r\n- button \"Choose file\" [ref=e23]: No file chosen\r\n- searchbox \"Search cases\" [ref=e24]\r\n- combobox \"Status\" [expanded=false, ref=e25]: All statuses\r\n  - option \"All statuses\" [selected, ref=e30]\r\n  - option \"Draft\" [ref=e31]\r\n  - option \"Intake review\" [ref=e32]\r\n  - option \"Active\" [ref=e33]\r\n  - option \"Awaiting input\" [ref=e34]\r\n  - option \"Internal review\" [ref=e35]\r\n  - option \"Output approved\" [ref=e36]\r\n  - option \"Closed\" [ref=e37]\r\n  - option \"Archived\" [ref=e38]\r\n  - option \"Declined\" [ref=e39]\r\n  - option \"Cancelled\" [ref=e40]\r\n- region \"Selected matter workspace\" [ref=e7]\r\n  - heading \"Bring a case into focus.\" [level=1, ref=e26]\r\n  - button \"Create a case\" [ref=e27]",
+    "expired": {
+      "url": "http://127.0.0.1:4298/organizations",
+      "alerts": [
+        "Your session needs verification. Sign in, then refresh access here.Refresh access",
+        "Your session has expired. Sign in again, then refresh this page. Your entered information remains here.Sign in in a new tabI've signed in — refresh",
+        "Private organization details are hidden while access is checked. Use Refresh access in the sidebar.",
+        "Verify your account access to load organizations. Your private organization details remain hidden."
+      ],
+      "privateInputs": 0,
+      "recovery": [
+        {
+          "text": "Your account",
+          "href": "/account?return_to=%2Forganizations",
+          "target": null
+        },
+        {
+          "text": "Sign in in a new tab",
+          "href": "/signin-with-chatgpt?return_to=%2Forganizations",
+          "target": "_blank"
+        },
+        {
+          "text": "I've signed in — refresh",
+          "href": null,
+          "target": null
+        },
+        {
+          "text": "Refresh access",
+          "href": null,
+          "target": null
+        }
+      ]
+    },
+    "naturalPasswordButton": {
+      "ready": "complete",
+      "type": "submit",
+      "disabled": false,
+      "valid": true,
+      "hit": "Sign in locally",
+      "rect": {
+        "x": 297,
+        "y": 286.546875,
+        "width": 262.328125,
+        "height": 50.5
+      },
+      "reactAttached": true
+    },
+    "recoveredOriginalTab": "- link \"GENESIS: JURIS — Case Studio\" [ref=e1]\r\n- navigation \"Workspace navigation\" [ref=e4]\r\n- navigation \"Organization controls\" [ref=e5]\r\n  - link \"Manage organizations\" [ref=e15]\r\n  - link \"Users & access\" [ref=e16]\r\n- link \"Account Synthetic Org Owner\" [ref=e6]\r\n- button \"Sign out\" [ref=e7]\r\n- button \"Switch language\" [ref=e8]\r\n- heading \"Organization administration\" [level=1, ref=e2]\r\n- link \"Your account\" [ref=e3]\r\n- heading \"Your organizations\" [level=2, ref=e9]\r\n- button \"Refresh organization details\" [ref=e10]\r\n- link \"Personal workspace · Your workspace · Owner\" [ref=e20]\r\n- link \"Manage\" [ref=e21]\r\n- button \"Open cases\" [ref=e22]\r\n- link \"Synthetic Org Alpha 43deadd · Owner\" [ref=e23]\r\n- link \"Selected\" [ref=e24]\r\n- button \"Open cases\" [ref=e25]\r\n- link \"Synthetic Org Beta 43deadd · Owner\" [ref=e26]\r\n- link \"Manage\" [ref=e27]\r\n- button \"Open cases\" [ref=e28]\r\n- heading \"Join an organization\" [level=2, ref=e11]\r\n- link \"Continue an invitation\" [ref=e12]\r\n- heading \"Synthetic Org Alpha 43deadd · Owner\" [level=2, ref=e13]\r\n- columnheader \"Name\" [ref=e33]\r\n- columnheader \"Role\" [ref=e34]\r\n- columnheader \"Status\" [ref=e35]\r\n- columnheader \"Access\" [ref=e36]\r\n- cell \"Synthetic Org Owner You\" [ref=e29]\r\n- cell \"Organization owner\" [ref=e30]\r\n- cell \"active\" [ref=e31]\r\n- cell \"Owner access is protected\" [ref=e32]\r\n- region \"Invite a member\" [ref=e14]\r\n  - heading \"Invite a member\" [level=3, ref=e17]\r\n  - textbox \"Recipient email\" [required, ref=e38]: expiry-retained@example.test\r\n  - combobox \"Organization role\" [expanded=false, ref=e39]: Member\r\n    - option \"Member\" [selected, ref=e40]\r\n    - option \"Administrator\" [ref=e41]\r\n    - option \"Auditor\" [ref=e42]\r\n  - button \"Invite member\" [ref=e37]\r\n  - heading \"Invitation history\" [level=3, ref=e18]\r\n  - button \"Refresh invitations\" [ref=e19]"
+  },
+  "limits": [
+    "Provider /signin-with-chatgpt route is 404 on local Vite; hosted auth not tested.",
+    "Initial password form was submitted programmatically; later settled native pointer login separately returned HTTP 200.",
+    "Auth tab automatic return after second login NOT_VERIFIED: driver OS10060. Switching back to original tab t1 and native Refresh succeeded.",
+    "No live mail, membership acceptance, hosted deployment, assistive technology or narrow-layout acceptance."
+  ]
+}

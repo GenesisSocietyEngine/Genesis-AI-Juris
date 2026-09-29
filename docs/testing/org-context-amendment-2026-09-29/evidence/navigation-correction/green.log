@@ -1,0 +1,286 @@
+TAP version 13
+# Subtest: cross-tab logout suspends refresh, fences late identity and clears even an unmounted invitation
+ok 1 - cross-tab logout suspends refresh, fences late identity and clears even an unmounted invitation
+  ---
+  duration_ms: 54.1562
+  type: 'test'
+  ...
+# Subtest: Studio and workspace pages share expandable routes, labels and exact active contexts
+ok 2 - Studio and workspace pages share expandable routes, labels and exact active contexts
+  ---
+  duration_ms: 526.81
+  type: 'test'
+  ...
+# Subtest: verified member sees the shared account and organization but no owner-only access action
+ok 3 - verified member sees the shared account and organization but no owner-only access action
+  ---
+  duration_ms: 62.2945
+  type: 'test'
+  ...
+# Subtest: optional Studio and simulation actions survive canonical navigation
+ok 4 - optional Studio and simulation actions survive canonical navigation
+  ---
+  duration_ms: 27.9357
+  type: 'test'
+  ...
+# Subtest: actual handlers retain Studio pending guard without intercepting modified/new-window navigation
+ok 5 - actual handlers retain Studio pending guard without intercepting modified/new-window navigation
+  ---
+  duration_ms: 4.1462
+  type: 'test'
+  ...
+# Subtest: actual shared departure preserves Stay, explicit Discard and uncertain-write protection
+ok 6 - actual shared departure preserves Stay, explicit Discard and uncertain-write protection
+  ---
+  duration_ms: 1.1871
+  type: 'test'
+  ...
+# Subtest: old departure loses authority and sign-out remains available despite the Studio operation guard
+ok 7 - old departure loses authority and sign-out remains available despite the Studio operation guard
+  ---
+  duration_ms: 1.2742
+  type: 'test'
+  ...
+# Subtest: actual organization departure preserves Stay then commits dirty Discard exactly once
+ok 8 - actual organization departure preserves Stay then commits dirty Discard exactly once
+  ---
+  duration_ms: 6.1159
+  type: 'test'
+  ...
+# Subtest: actual staged organization departure never discards an uncertain operation
+ok 9 - actual staged organization departure never discards an uncertain operation
+  ---
+  duration_ms: 3.1793
+  type: 'test'
+  ...
+# Subtest: a newer departure or direct selection invalidates the old organization confirmation
+ok 10 - a newer departure or direct selection invalidates the old organization confirmation
+  ---
+  duration_ms: 4.1983
+  type: 'test'
+  ...
+# Subtest: authority expiry or revocation cancels the staged organization confirmation
+ok 11 - authority expiry or revocation cancels the staged organization confirmation
+  ---
+  duration_ms: 4.5508
+  type: 'test'
+  ...
+# Subtest: stale staged selection is rejected before a request or a new intent
+ok 12 - stale staged selection is rejected before a request or a new intent
+  ---
+  duration_ms: 2.5275
+  type: 'test'
+  ...
+# Subtest: create refreshes the choices while retaining managed organization and unrelated input
+ok 13 - create refreshes the choices while retaining managed organization and unrelated input
+  ---
+  duration_ms: 51.7732
+  type: 'test'
+  ...
+# Subtest: accept refreshes the choices while retaining managed organization and unrelated input
+ok 14 - accept refreshes the choices while retaining managed organization and unrelated input
+  ---
+  duration_ms: 2.1088
+  type: 'test'
+  ...
+# Subtest: confirmed create followed by read failure offers refresh without replay or context switch
+ok 15 - confirmed create followed by read failure offers refresh without replay or context switch
+  ---
+  duration_ms: 2.183
+  type: 'test'
+  ...
+# Subtest: revocation during create fences its successful late receipt
+ok 16 - revocation during create fences its successful late receipt
+  ---
+  duration_ms: 1.2193
+  type: 'test'
+  ...
+# Subtest: refresh withdraws stale navigation authority for a successful missing-membership response
+ok 17 - refresh withdraws stale navigation authority for a successful missing-membership response
+  ---
+  duration_ms: 1.2066
+  type: 'test'
+  ...
+# Subtest: refresh withdraws stale navigation authority for a changed role revision
+ok 18 - refresh withdraws stale navigation authority for a changed role revision
+  ---
+  duration_ms: 0.8301
+  type: 'test'
+  ...
+# Subtest: refresh with unchanged membership retains ready navigation and unrelated input
+ok 19 - refresh with unchanged membership retains ready navigation and unrelated input
+  ---
+  duration_ms: 1.3203
+  type: 'test'
+  ...
+# Subtest: revocation during a refresh read fences its late workspace result
+ok 20 - revocation during a refresh read fences its late workspace result
+  ---
+  duration_ms: 0.8431
+  type: 'test'
+  ...
+# Subtest: refresh cannot restore obsolete error feedback after authority withdrawal
+ok 21 - refresh cannot restore obsolete error feedback after authority withdrawal
+  ---
+  duration_ms: 1.8633
+  type: 'test'
+  ...
+# Subtest: action cannot restore obsolete error feedback after authority withdrawal
+ok 22 - action cannot restore obsolete error feedback after authority withdrawal
+  ---
+  duration_ms: 1.3013
+  type: 'test'
+  ...
+# Subtest: a current refresh failure still offers ordinary retry
+ok 23 - a current refresh failure still offers ordinary retry
+  ---
+  duration_ms: 0.9381
+  type: 'test'
+  ...
+# Subtest: refresh keeps the page sign-in recovery when the session expires
+ok 24 - refresh keeps the page sign-in recovery when the session expires
+  ---
+  duration_ms: 0.7937
+  type: 'test'
+  ...
+# Subtest: confirmed action keeps the page sign-in recovery when the session expires
+ok 25 - confirmed action keeps the page sign-in recovery when the session expires
+  ---
+  duration_ms: 0.7889
+  type: 'test'
+  ...
+# Subtest: rejected action keeps the page sign-in recovery when the session expires
+ok 26 - rejected action keeps the page sign-in recovery when the session expires
+  ---
+  duration_ms: 1.2305
+  type: 'test'
+  ...
+# Subtest: create lets the rail open the added organization without switching context
+ok 27 - create lets the rail open the added organization without switching context
+  ---
+  duration_ms: 24.0673
+  type: 'test'
+  ...
+# Subtest: accept lets the rail open the added organization without switching context
+ok 28 - accept lets the rail open the added organization without switching context
+  ---
+  duration_ms: 4.8041
+  type: 'test'
+  ...
+# Subtest: create followed by read failure does not point to an absent Manage entry
+ok 29 - create followed by read failure does not point to an absent Manage entry
+  ---
+  duration_ms: 1.1938
+  type: 'test'
+  ...
+# Subtest: create withdraws rather than adopts a changed managed selection
+ok 30 - create withdraws rather than adopts a changed managed selection
+  ---
+  duration_ms: 0.9997
+  type: 'test'
+  ...
+# Subtest: refresh after a failed post-create read lets the rail open the added organization
+ok 31 - refresh after a failed post-create read lets the rail open the added organization
+  ---
+  duration_ms: 4.2096
+  type: 'test'
+  ...
+# Subtest: sidebar switch blocks dirty and uncertain work, validates receipt and clears case context
+ok 32 - sidebar switch blocks dirty and uncertain work, validates receipt and clears case context
+  ---
+  duration_ms: 78.2081
+  type: 'test'
+  ...
+# Subtest: sidebar expired switch releases the actual B1 departure lock before recovery
+ok 33 - sidebar expired switch releases the actual B1 departure lock before recovery
+  ---
+  duration_ms: 4.8712
+  type: 'test'
+  ...
+# Subtest: sidebar 401 then 500 hides identity and late success cannot resurrect it
+ok 34 - sidebar 401 then 500 hides identity and late success cannot resurrect it
+  ---
+  duration_ms: 4.969
+  type: 'test'
+  ...
+# Subtest: sidebar authority generation is stable for focus refresh but rejects account and membership loss
+ok 35 - sidebar authority generation is stable for focus refresh but rejects account and membership loss
+  ---
+  duration_ms: 7.1091
+  type: 'test'
+  ...
+# Subtest: sidebar failed or wrong-actor switch preserves the old workspace without navigation
+ok 36 - sidebar failed or wrong-actor switch preserves the old workspace without navigation
+  ---
+  duration_ms: 2.1779
+  type: 'test'
+  ...
+# Subtest: sidebar sign-out tolerates unavailable device storage and hides private data on failure
+ok 37 - sidebar sign-out tolerates unavailable device storage and hides private data on failure
+  ---
+  duration_ms: 4.491
+  type: 'test'
+  ...
+# Subtest: sidebar operation ownership survives cancel, close, and revisit with its original recovery key
+ok 38 - sidebar operation ownership survives cancel, close, and revisit with its original recovery key
+  ---
+  duration_ms: 41.1483
+  type: 'test'
+  ...
+# Subtest: sidebar dirty comparison clears when the actual B1 input returns to its baseline
+ok 39 - sidebar dirty comparison clears when the actual B1 input returns to its baseline
+  ---
+  duration_ms: 0.5365
+  type: 'test'
+  ...
+# Subtest: sidebar selected authorization loss also hides non-B1 scoped consumers
+ok 40 - sidebar selected authorization loss also hides non-B1 scoped consumers
+  ---
+  duration_ms: 1.9168
+  type: 'test'
+  ...
+# Subtest: logout bypasses pending work, hides immediately, rejects late switch and permits retry
+ok 41 - logout bypasses pending work, hides immediately, rejects late switch and permits retry
+  ---
+  duration_ms: 5.4969
+  type: 'test'
+  ...
+# Subtest: local form failure cannot trap session termination
+ok 42 - local form failure cannot trap session termination
+  ---
+  duration_ms: 3.6652
+  type: 'test'
+  ...
+# Subtest: failed authority check invalidates old private response tickets before recovery
+ok 43 - failed authority check invalidates old private response tickets before recovery
+  ---
+  duration_ms: 1.589
+  type: 'test'
+  ...
+# Subtest: reload warning protects drafts while explicit departure and sign-out remain available
+ok 44 - reload warning protects drafts while explicit departure and sign-out remain available
+  ---
+  duration_ms: 0.7077
+  type: 'test'
+  ...
+# Subtest: receiving tab publishes pending sign-out even after ordinary expiry and never refreshes through it
+ok 45 - receiving tab publishes pending sign-out even after ordinary expiry and never refreshes through it
+  ---
+  duration_ms: 0.8276
+  type: 'test'
+  ...
+# Subtest: revoke clears pending wording even if another access denial arrived first
+ok 46 - revoke clears pending wording even if another access denial arrived first
+  ---
+  duration_ms: 0.7293
+  type: 'test'
+  ...
+1..46
+# tests 46
+# suites 0
+# pass 46
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3398.4423
