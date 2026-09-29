@@ -1,0 +1,111 @@
+TAP version 13
+# Subtest: cross-tab logout suspends refresh, fences late identity and clears even an unmounted invitation
+ok 1 - cross-tab logout suspends refresh, fences late identity and clears even an unmounted invitation
+  ---
+  duration_ms: 36.8612
+  type: 'test'
+  ...
+# Subtest: Studio and workspace pages share expandable routes, labels and exact active contexts
+ok 2 - Studio and workspace pages share expandable routes, labels and exact active contexts
+  ---
+  duration_ms: 335.8248
+  type: 'test'
+  ...
+# Subtest: verified member sees the shared account and organization but no owner-only access action
+ok 3 - verified member sees the shared account and organization but no owner-only access action
+  ---
+  duration_ms: 34.9358
+  type: 'test'
+  ...
+# Subtest: optional Studio and simulation actions survive canonical navigation
+ok 4 - optional Studio and simulation actions survive canonical navigation
+  ---
+  duration_ms: 12.9709
+  type: 'test'
+  ...
+# Subtest: actual handlers retain Studio pending guard without intercepting modified/new-window navigation
+ok 5 - actual handlers retain Studio pending guard without intercepting modified/new-window navigation
+  ---
+  duration_ms: 2.7582
+  type: 'test'
+  ...
+# Subtest: actual shared departure preserves Stay, explicit Discard and uncertain-write protection
+ok 6 - actual shared departure preserves Stay, explicit Discard and uncertain-write protection
+  ---
+  duration_ms: 0.9464
+  type: 'test'
+  ...
+# Subtest: old departure loses authority and sign-out remains available despite the Studio operation guard
+ok 7 - old departure loses authority and sign-out remains available despite the Studio operation guard
+  ---
+  duration_ms: 0.944
+  type: 'test'
+  ...
+# Subtest: actual organization departure preserves Stay then commits dirty Discard exactly once
+not ok 8 - actual organization departure preserves Stay then commits dirty Discard exactly once
+  ---
+  duration_ms: 9.1516
+  type: 'test'
+  location: 'C:\\PROJECTS\\Genesis-Juris-Org-Amendment-2026-09-29\\tests\\navigation-shell.test.ts:1:12808'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+
+    + []
+    - [
+    -   {
+    -     action: 'select',
+    -     organizationId: 'org_synthetic_departure_b'
+    -   }
+    - ]
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      action: 'select'
+      organizationId: 'org_synthetic_departure_b'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (<worktree>\tests\navigation-shell.test.ts:163:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: actual staged organization departure never discards an uncertain operation
+not ok 9 - actual staged organization departure never discards an uncertain operation
+  ---
+  duration_ms: 2.6599
+  type: 'test'
+  location: 'C:\\PROJECTS\\Genesis-Juris-Org-Amendment-2026-09-29\\tests\\navigation-shell.test.ts:1:13414'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of null (reading 'risk')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (<worktree>\tests\navigation-shell.test.ts:171:28)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a newer departure or direct selection invalidates the old organization confirmation
+ok 10 - a newer departure or direct selection invalidates the old organization confirmation
+  ---
+  duration_ms: 2.9513
+  type: 'test'
+  ...
+# Subtest: authority expiry or revocation cancels the staged organization confirmation
+ok 11 - authority expiry or revocation cancels the staged organization confirmation
+  ---
+  duration_ms: 3.727
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 9
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2666.5571

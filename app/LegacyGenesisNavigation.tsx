@@ -73,7 +73,7 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
     if(plan&&!plan.current()){plan.cancel?.();setPending(null);return;}
     if(kind==="signout"){setPending(null);closeDrawer();await navigation.signOut(locale);return;}
     if(allowDeparture&&!allowDeparture()){plan?.cancel?.();setPending(null);return;}
-    const risk=kind==="organization"?await navigation.select(id,locale,discard):navigation.risk();
+    const risk=kind==="organization"?await navigation.select(id,locale,discard,plan):navigation.risk();
     if(risk!=="clear"&&!(risk==="dirty"&&discard)){setPending({kind,id,risk,authority:navigation.authorityVersion,target,plan});return;}
     setPending(null);
     if(kind==="link"){if(plan&&(!plan.current()||!plan.commit())){plan.cancel?.();return;}navigation.approvePageDeparture();closeDrawer();if(plan?.navigate)plan.navigate();else if(target==="_top"||target==="_parent")window.open(id,target);else window.location.assign(id);}

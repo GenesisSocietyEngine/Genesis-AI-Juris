@@ -1,0 +1,137 @@
+{
+  "at": "2026-09-29T11:27:50.070Z",
+  "base": "43deadd14209faa2a824c99f6d97c676f1465304",
+  "node": "v22.23.2",
+  "source": [
+    {
+      "path": "app/LegacyGenesisNavigation.tsx",
+      "sha256": "2861566550ab9a804fc635e3f293d2dff78b39bcefcbd457c447f396e6ee9338"
+    },
+    {
+      "path": "app/navigation-controller.ts",
+      "sha256": "9a7c2d7b1c96fae05dc4daea80d585c0ec62e233cc09cafe4bc8b50241437c81"
+    },
+    {
+      "path": "tests/navigation-shell.test.ts",
+      "sha256": "03047c94cc10b0b36c3d1e424ccf85aedd808827ea186ec41f621416d28f606f"
+    }
+  ],
+  "commands": [
+    {
+      "name": "navigation-red-ready",
+      "startedAt": "2026-09-29T11:14:07.874Z",
+      "finishedAt": "2026-09-29T11:14:10.647Z",
+      "node": "v22.23.2",
+      "args": [
+        "--experimental-sqlite",
+        "--import",
+        "tsx",
+        "--test",
+        "tests/navigation-shell.test.ts"
+      ],
+      "exit": 1
+    },
+    {
+      "name": "navigation-green",
+      "startedAt": "2026-09-29T11:15:29.997Z",
+      "finishedAt": "2026-09-29T11:15:33.536Z",
+      "node": "v22.23.2",
+      "args": [
+        "--experimental-sqlite",
+        "--import",
+        "tsx",
+        "--test",
+        "tests/navigation-shell.test.ts",
+        "tests/sidebar-navigation.test.ts",
+        "tests/organization-context-continuity.test.ts"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "fix-typecheck",
+      "startedAt": "2026-09-29T11:16:47.667Z",
+      "finishedAt": "2026-09-29T11:18:00.459Z",
+      "node": "v22.23.2",
+      "args": [
+        "node_modules/typescript/bin/tsc",
+        "--noEmit",
+        "--incremental",
+        "false"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "fix-lint",
+      "startedAt": "2026-09-29T11:17:09.615Z",
+      "finishedAt": "2026-09-29T11:17:42.452Z",
+      "node": "v22.23.2",
+      "args": [
+        "node_modules/eslint/bin/eslint.js",
+        "app/navigation-controller.ts",
+        "app/LegacyGenesisNavigation.tsx",
+        "tests/navigation-shell.test.ts"
+      ],
+      "exit": 0
+    }
+  ],
+  "evidence": [
+    {
+      "source": "navigation-red-ready.log",
+      "published": "red.log",
+      "rawSha256": "a8770fb327e4b0a479a6e687d38a2c1892845f1cde55d5891b7d704df630492b",
+      "publishedSha256": "05fc31624d43e2087a8216ae3a085b11790a8881cb6bcf1488dfe45f1ec28d12"
+    },
+    {
+      "source": "navigation-green.log",
+      "published": "green.log",
+      "rawSha256": "54e0196e1cba7fa66fa85a31baacc0be9c58c5a17f65ce5617caf697c3e86693",
+      "publishedSha256": "54e0196e1cba7fa66fa85a31baacc0be9c58c5a17f65ce5617caf697c3e86693"
+    },
+    {
+      "source": "fix-typecheck.log",
+      "published": "typecheck.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "publishedSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "source": "fix-lint.log",
+      "published": "lint.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "publishedSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "source": "transport.jsonl",
+      "published": "transport.jsonl",
+      "rawSha256": "6163e0db3fcf845524d4b62f637cd7ed2be20f958df0984fce5341d0a7758ad7",
+      "publishedSha256": "6163e0db3fcf845524d4b62f637cd7ed2be20f958df0984fce5341d0a7758ad7"
+    }
+  ],
+  "createPosts": [
+    {
+      "at": "2026-09-29T11:02:00.041Z",
+      "method": "POST",
+      "path": "/api/organizations",
+      "status": 201,
+      "action": "create"
+    },
+    {
+      "at": "2026-09-29T11:03:46.663Z",
+      "method": "POST",
+      "path": "/api/organizations",
+      "status": 201,
+      "action": "create"
+    }
+  ],
+  "originalFailure": "Trusted Open cases and Discard clicks; no select request until draft cleared manually.",
+  "amendedSuccess": "11:18:44.555Z select POST200, rendered My cases and subsequent dossier GET200.",
+  "sourceReviews": [
+    "Root independent diff review",
+    "claude_product_acceptance: APPROVED, exact source/test hashes and genuine red/green checked",
+    "tax_independent_review: adversarial stale/new intent, authority and duplicate invocation review PASS"
+  ],
+  "trackedChanges": [
+    "app/LegacyGenesisNavigation.tsx",
+    "app/navigation-controller.ts",
+    "tests/navigation-shell.test.ts"
+  ]
+}

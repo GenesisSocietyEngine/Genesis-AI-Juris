@@ -69,6 +69,9 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
       .catch((error: AdminIssue) => { if (!controller.signal.aborted && navigation.authorityVersion===ticket) setIssue({code:error.code??"network",status:error.status??0,scope:"page"}); });
     return () => { mounted.current=false;controller.abort(); };
   }, [load, signedIn, session, navigation]);
+  // Expiry keeps entered data and needs the page's sign-in recovery. Only a
+  // denial or account change makes feedback from an earlier epoch obsolete.
+  function expiredRead(error:AdminIssue){return error?.status===401&&navigation.getSnapshot().phase==="expired";}
   useEffect(()=>navigation.subscribe(()=>{if(navigation.getSnapshot().phase==="denied"){setWorkspace(null);setInvitation(null);setRecipient("");setIssue(null);setNotice("");}}),[navigation]);
   useEffect(()=>{if(workspace&&verifiedEpoch===navigation.authorityVersion&&window.location.hash==="#organization-users"){const target=document.getElementById("organization-users");target?.scrollIntoView({block:"start"});target?.focus();}},[workspace,verifiedEpoch,navigation]);
   async function refresh() {
@@ -85,9 +88,11 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
       // shared rail must not continue asserting the previous role or context.
       if(workspace?.selected&&next.selected?.selection!==workspace.selected.selection){navigation.invalidate("denied");return;}
       setWorkspace(next);setVerifiedEpoch(navigation.authorityVersion);setIssue(null);
+      // Recovering a confirmed create/accept can reveal an organization the rail cannot open yet.
+      if(next.organizations.some(o=>o.status==="active"&&!navigation.getSnapshot().organizations.some(known=>known.id===o.id)))void navigation.refresh(new URL(window.location.href).searchParams.get("organization")??undefined);
       // A refreshed organization hint never grants authority; every write is checked on the server.
       if(next.selected){const url=new URL(window.location.href);url.searchParams.set("organization",next.selected.id);window.history.replaceState(window.history.state,"",url);window.dispatchEvent(new Event("genesis-interface-change"));}
-    } catch(error){if(mounted.current&&navigation.authorityVersion===ticket){const e=error as AdminIssue;setIssue({code:e.code??"network",status:e.status??0,scope:"page",refreshOnly:issue?.refreshOnly});}}
+    } catch(error){const e=error as AdminIssue;if(mounted.current&&(navigation.authorityVersion===ticket||expiredRead(e))){setIssue({code:e.code??"network",status:e.status??0,scope:"page",refreshOnly:issue?.refreshOnly});}}
     finally{busyRef.current=false;if(mounted.current)setBusy(false);}
   }
   async function action(payload: Record<string, unknown>, form?: HTMLFormElement) {
@@ -123,7 +128,8 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
       }
       if (scope==="invite"&&result.token) {setInvitation({token:result.token,organizationId:String(payload.organizationId),expiresAt:result.expiresAt!});setRecipient("");}
       form?.reset();formCommitted(form);
-      setNotice(scope==="invite"?t("Invitation created. Copy the code below for its recipient.","Приглашение создано. Скопируйте код для получателя."):scope==="create"?t("Organization created. You are its owner. Use Manage in the list to open it.","Организация создана. Вы — её владелец. Откройте её через «Управлять» в списке."):scope==="accept"?t("Invitation accepted. Use Manage in the list to open your organization.","Приглашение принято. Откройте организацию через «Управлять» в списке."):t("Change saved.","Изменение сохранено."));
+      const added=scope==="create"||scope==="accept";
+      setNotice(scope==="invite"?t("Invitation created. Copy the code below for its recipient.","Приглашение создано. Скопируйте код для получателя."):scope==="create"?t("Organization created. You are its owner.","Организация создана. Вы — её владелец."):scope==="accept"?t("Invitation accepted.","Приглашение принято."):t("Change saved.","Изменение сохранено."));
       // Creating or joining adds a choice; it must not silently switch the
       // managed organization or discard another form's unsaved invitation.
       // The refreshed list's Manage links use the existing departure guard.
@@ -132,11 +138,20 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
       const next=await load(undefined,nextId);
       if(!mounted.current||navigation.authorityVersion!==ticket)return;
       if(next.actorId!==actorId){window.location.reload();return;}
+      // As in refresh(): adding an organization cannot change the managed
+      // selection, so a changed token means authority changed elsewhere.
+      if(added&&workspace.selected&&next.selected?.selection!==workspace.selected.selection){navigation.invalidate("denied");return;}
       setWorkspace(next);setVerifiedEpoch(navigation.authorityVersion);
+      if(added){
+        // Only a loaded list contains the new Manage entry.
+        setNotice(scope==="create"?t("Organization created. You are its owner. Use Manage in the list to open it.","Организация создана. Вы — её владелец. Откройте её через «Управлять» в списке."):t("Invitation accepted. Use Manage in the list to open your organization.","Приглашение принято. Откройте организацию через «Управлять» в списке."));
+        // The rail must know the new organization for Open cases, as after a window focus.
+        void navigation.refresh(new URL(window.location.href).searchParams.get("organization")??undefined);
+      }
     } catch (error) {
-      if(!mounted.current||navigation.authorityVersion!==ticket)return;
       const e=error as AdminIssue;
-      setIssue({code:e.code??"network",status:e.status??0,scope:confirmed?"page":scope,refreshOnly:confirmed});
+      if(!mounted.current||navigation.authorityVersion!==ticket&&!expiredRead(e))return;
+      setIssue({code:e.code??"network",status:e.status??0,scope:confirmed||expiredRead(e)?"page":scope,refreshOnly:confirmed});
     } finally {busyRef.current=false;if(mounted.current)setBusy(false);}
   }
   function submit(event: FormEvent<HTMLFormElement>, base: Record<string, unknown>) {
