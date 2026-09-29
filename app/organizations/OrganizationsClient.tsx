@@ -119,14 +119,16 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
       }
       if (scope==="invite"&&result.token) {setInvitation({token:result.token,organizationId:String(payload.organizationId),expiresAt:result.expiresAt!});setRecipient("");}
       form?.reset();formCommitted(form);
-      setNotice(scope==="invite"?t("Invitation created. Copy the code below for its recipient.","Приглашение создано. Скопируйте код для получателя."):scope==="create"?t("Organization created. You are its owner.","Организация создана. Вы — её владелец."):scope==="accept"?t("Invitation accepted. Your organization is ready to open.","Приглашение принято. Организация доступна."):t("Change saved.","Изменение сохранено."));
-      const nextId=result.organization?.id??selected?.id;
+      setNotice(scope==="invite"?t("Invitation created. Copy the code below for its recipient.","Приглашение создано. Скопируйте код для получателя."):scope==="create"?t("Organization created. You are its owner. Use Manage in the list to open it.","Организация создана. Вы — её владелец. Откройте её через «Управлять» в списке."):scope==="accept"?t("Invitation accepted. Use Manage in the list to open your organization.","Приглашение принято. Откройте организацию через «Управлять» в списке."):t("Change saved.","Изменение сохранено."));
+      // Creating or joining adds a choice; it must not silently switch the
+      // managed organization or discard another form's unsaved invitation.
+      // The refreshed list's Manage links use the existing departure guard.
+      const nextId=selected?.id;
       refreshSelection.current=nextId;
       const next=await load(undefined,nextId);
       if(!mounted.current||navigation.authorityVersion!==ticket)return;
       if(next.actorId!==actorId){window.location.reload();return;}
       setWorkspace(next);setVerifiedEpoch(navigation.authorityVersion);
-      if(result.organization){setRecipient("");const url=new URL(window.location.href);url.searchParams.set("organization",result.organization.id);window.history.replaceState(window.history.state,"",url);window.dispatchEvent(new Event("genesis-interface-change"));}
     } catch (error) {
       if(!mounted.current)return;
       const e=error as AdminIssue;
