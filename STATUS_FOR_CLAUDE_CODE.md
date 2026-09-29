@@ -1,3 +1,5 @@
+> Coordination update, 29 September 2026: this is retained historical evidence for efadf24. Current execution instructions are [CODEX_NEXT_STEPS.md](docs/testing/runbook-convergence-2026-09-29/CODEX_NEXT_STEPS.md), with the complete runbook crosswalk and combined-source verification receipt. PR #53 preserves both source lines; the old remote-history 422 and separate-candidate exclusions below describe earlier observations, not the current integrated state.
+
 # Genesis Juris P1 amendment — Claude Code handoff
 
 Prepared 29 September 2026. **Local technical verification PASS. Full release BLOCKED. Nothing published; no external pilot started.**

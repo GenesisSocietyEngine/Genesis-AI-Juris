@@ -1,0 +1,391 @@
+TAP version 13
+# Subtest: Full reports disclose authored legal dates and all supplied tax scenario controls without changing the case
+ok 1 - Full reports disclose authored legal dates and all supplied tax scenario controls without changing the case
+  ---
+  duration_ms: 2602.8873
+  type: 'test'
+  ...
+# Subtest: Full assumptions retain complete short statements on one page and let long statements flow
+ok 2 - Full assumptions retain complete short statements on one page and let long statements flow
+  ---
+  duration_ms: 15379.1169
+  type: 'test'
+  ...
+# Subtest: compact over-page assumptions preserve every supported mandatory line separator
+    # Subtest: LF
+    ok 1 - LF
+      ---
+      duration_ms: 1383.7319
+      type: 'test'
+      ...
+    # Subtest: CRLF
+    ok 2 - CRLF
+      ---
+      duration_ms: 1339.6387
+      type: 'test'
+      ...
+    # Subtest: CR
+    ok 3 - CR
+      ---
+      duration_ms: 1324.8629
+      type: 'test'
+      ...
+    1..3
+ok 3 - compact over-page assumptions preserve every supported mandatory line separator
+  ---
+  duration_ms: 4050.1362
+  type: 'test'
+  ...
+# Subtest: unsupported assumption separators remain rejected without changing the input
+ok 4 - unsupported assumption separators remain rejected without changing the input
+  ---
+  duration_ms: 147.6224
+  type: 'test'
+  ...
+# Subtest: PDF generation with financial assumptions preserves live case state and permits reopening and a second report
+ok 5 - PDF generation with financial assumptions preserves live case state and permits reopening and a second report
+  ---
+  duration_ms: 1490.0404
+  type: 'test'
+  ...
+# Subtest: deterministic graph reconstruction does not claim AI authorship or expose raw input
+ok 6 - deterministic graph reconstruction does not claim AI authorship or expose raw input
+  ---
+  duration_ms: 38.1685
+  type: 'test'
+  ...
+# Subtest: the corrected reconstruction label invalidates its historical PDF receipt only when shown
+ok 7 - the corrected reconstruction label invalidates its historical PDF receipt only when shown
+  ---
+  duration_ms: 405.1346
+  type: 'test'
+  ...
+# Subtest: professional report contains economics, registers, sign-off and a safe audit trail
+ok 8 - professional report contains economics, registers, sign-off and a safe audit trail
+  ---
+  duration_ms: 52.0704
+  type: 'test'
+  ...
+# Subtest: Canopy opens with a bounded EN/RU decision brief and keeps draft, outcomes and approval distinct
+ok 9 - Canopy opens with a bounded EN/RU decision brief and keeps draft, outcomes and approval distinct
+  ---
+  duration_ms: 3682.4786
+  type: 'test'
+  ...
+# Subtest: executive brief does not disclose redacted input or opening records
+ok 10 - executive brief does not disclose redacted input or opening records
+  ---
+  duration_ms: 50.2979
+  type: 'test'
+  ...
+# Subtest: audit headings share a rendered page with a record in Bhopal and long Russian titles
+ok 11 - audit headings share a rendered page with a record in Bhopal and long Russian titles
+  ---
+  duration_ms: 2083.1604
+  type: 'test'
+  ...
+# Subtest: client-facing report can omit audit trail and technical identifiers
+ok 12 - client-facing report can omit audit trail and technical identifiers
+  ---
+  duration_ms: 54.1861
+  type: 'test'
+  ...
+# Subtest: durable premise provenance excludes long and compacted raw prompts from internal and client rendered text
+ok 13 - durable premise provenance excludes long and compacted raw prompts from internal and client rendered text
+  ---
+  duration_ms: 3469.5497
+  type: 'test'
+  ...
+# Subtest: premise publication provenance changes presentation only, not canonical fingerprints
+ok 14 - premise publication provenance changes presentation only, not canonical fingerprints
+  ---
+  duration_ms: 280.9505
+  type: 'test'
+  ...
+# Subtest: report links are canonical HTTPS only and rejected values gate external output
+ok 15 - report links are canonical HTTPS only and rejected values gate external output
+  ---
+  duration_ms: 88.7908
+  type: 'test'
+  ...
+# Subtest: active node redactions also suppress unscoped audit messages
+ok 16 - active node redactions also suppress unscoped audit messages
+  ---
+  duration_ms: 36.5628
+  type: 'test'
+  ...
+# Subtest: SVG text faces align exactly with pdfmake and svg-to-pdfkit Roboto weight resolution
+ok 17 - SVG text faces align exactly with pdfmake and svg-to-pdfkit Roboto weight resolution
+  ---
+  duration_ms: 181.7957
+  type: 'test'
+  ...
+# Subtest: graph appendix uses deterministic full-width portrait pages and paired connectors
+ok 18 - graph appendix uses deterministic full-width portrait pages and paired connectors
+  ---
+  duration_ms: 212.2048
+  type: 'test'
+  ...
+# Subtest: bounded graph register rows remain atomic at a real page boundary while oversized rows may flow
+ok 19 - bounded graph register rows remain atomic at a real page boundary while oversized rows may flow
+  ---
+  duration_ms: 1686.9383
+  type: 'test'
+  ...
+# Subtest: layout language changes do not mutate the canonical ReportModel fingerprint
+ok 20 - layout language changes do not mutate the canonical ReportModel fingerprint
+  ---
+  duration_ms: 113.4818
+  type: 'test'
+  ...
+# Subtest: the complete PDF definition fails closed for unsupported font scalars and XML characters
+ok 21 - the complete PDF definition fails closed for unsupported font scalars and XML characters
+  ---
+  duration_ms: 71.131
+  type: 'test'
+  ...
+# Subtest: receipt storage routing stays outside fingerprints and generation blocks sensitive cases
+ok 22 - receipt storage routing stays outside fingerprints and generation blocks sensitive cases
+  ---
+  duration_ms: 43.003
+  type: 'test'
+  ...
+# Subtest: rendered protection identifiers participate in the presentation receipt only when visible
+ok 23 - rendered protection identifiers participate in the presentation receipt only when visible
+  ---
+  duration_ms: 159.4076
+  type: 'test'
+  ...
+# Subtest: receipt freshness derives the exact production layout and the legacy landscape path is absent
+ok 24 - receipt freshness derives the exact production layout and the legacy landscape path is absent
+  ---
+  duration_ms: 369.0529
+  type: 'test'
+  ...
+# Subtest: email invitation precedes account creation; separate mailbox proof and explicit acceptance grant once
+ok 25 - email invitation precedes account creation; separate mailbox proof and explicit acceptance grant once
+  ---
+  duration_ms: 36353.7774
+  type: 'test'
+  ...
+# Subtest: wrong account, wrong organization, wrong origin and unverified copied link cannot accept
+ok 26 - wrong account, wrong organization, wrong origin and unverified copied link cannot accept
+  ---
+  duration_ms: 10297.5264
+  type: 'test'
+  ...
+# Subtest: owner role limits, duplicate membership and pending invitation preserve existing authority
+ok 27 - owner role limits, duplicate membership and pending invitation preserve existing authority
+  ---
+  duration_ms: 7710.0154
+  type: 'test'
+  ...
+# Subtest: resend rotates link and proof; revocation is durable and idempotent
+ok 28 - resend rotates link and proof; revocation is durable and idempotent
+  ---
+  duration_ms: 13298.7821
+  type: 'test'
+  ...
+# Subtest: missing mail, rejection and lost provider response report separate delivery states
+ok 29 - missing mail, rejection and lost provider response report separate delivery states
+  ---
+  duration_ms: 13238.5397
+  type: 'test'
+  ...
+# Subtest: concurrent acceptance creates exactly one membership and audit event
+ok 30 - concurrent acceptance creates exactly one membership and audit event
+  ---
+  duration_ms: 9019.4136
+  type: 'test'
+  ...
+# Subtest: rate limit bounds an inviter changing recipient addresses
+ok 31 - rate limit bounds an inviter changing recipient addresses
+  ---
+  duration_ms: 22318.029
+  type: 'test'
+  ...
+# Subtest: expired mailbox proof and changed organization fail at the commit boundary without membership
+ok 32 - expired mailbox proof and changed organization fail at the commit boundary without membership
+  ---
+  duration_ms: 10262.4008
+  type: 'test'
+  ...
+# Subtest: expired invitation, suspended member and accepted retry after organization revision remain distinct
+ok 33 - expired invitation, suspended member and accepted retry after organization revision remain distinct
+  ---
+  duration_ms: 15123.9049
+  type: 'test'
+  ...
+# Subtest: rotating invitation IDs cannot bypass canonical recipient rate limit
+ok 34 - rotating invitation IDs cannot bypass canonical recipient rate limit
+  ---
+  duration_ms: 15556.6001
+  type: 'test'
+  ...
+# Subtest: each permissible recipient role is exact and cannot invite, resend, revoke or read owner history
+ok 35 - each permissible recipient role is exact and cannot invite, resend, revoke or read owner history
+  ---
+  duration_ms: 28921.6203
+  type: 'test'
+  ...
+# Subtest: existing owner policy forbids manufactured inviter demotion or suspension
+ok 36 - existing owner policy forbids manufactured inviter demotion or suspension
+  ---
+  duration_ms: 1527.7804
+  type: 'test'
+  ...
+# Subtest: independent lifecycle suspend at acceptance commit withdraws authority atomically
+ok 37 - independent lifecycle suspend at acceptance commit withdraws authority atomically
+  ---
+  duration_ms: 14927.9645
+  type: 'test'
+  ...
+# Subtest: independent lifecycle close at acceptance commit withdraws authority atomically
+ok 38 - independent lifecycle close at acceptance commit withdraws authority atomically
+  ---
+  duration_ms: 14820.4559
+  type: 'test'
+  ...
+# Subtest: owner revoke at acceptance commit defeats the old credential without partial membership
+ok 39 - owner revoke at acceptance commit defeats the old credential without partial membership
+  ---
+  duration_ms: 8286.8617
+  type: 'test'
+  ...
+# Subtest: owner resend at acceptance commit defeats the old credential without partial membership
+ok 40 - owner resend at acceptance commit defeats the old credential without partial membership
+  ---
+  duration_ms: 14353.8618
+  type: 'test'
+  ...
+# Subtest: a separately accepted legacy membership wins an email-acceptance race without role replacement
+ok 41 - a separately accepted legacy membership wins an email-acceptance race without role replacement
+  ---
+  duration_ms: 8540.4466
+  type: 'test'
+  ...
+# Subtest: concurrent duplicate creation produces one pending invitation and one synthetic message
+ok 42 - concurrent duplicate creation produces one pending invitation and one synthetic message
+  ---
+  duration_ms: 5387.4962
+  type: 'test'
+  ...
+# Subtest: actual older receipts retain Base/Medium freshness and retire Full renderer2 and3
+ok 43 - actual older receipts retain Base/Medium freshness and retire Full renderer2 and3
+  ---
+  duration_ms: 3726.326
+  type: 'test'
+  ...
+# Subtest: retained renderer4 output bindings become stale for Full EN/RU ON/OFF
+ok 44 - retained renderer4 output bindings become stale for Full EN/RU ON/OFF
+  ---
+  duration_ms: 1644.3841
+  type: 'test'
+  ...
+# Subtest: populated0022 upgrade preserves legacy data and rollback routes; unaccepted proof deletion cascades, accepted history survives
+ok 45 - populated0022 upgrade preserves legacy data and rollback routes; unaccepted proof deletion cascades, accepted history survives
+  ---
+  duration_ms: 75447.0424
+  type: 'test'
+  ...
+# (node:28160) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: retained pre-fix0023 reproduces new unaccepted-proof deletion failure
+ok 46 - retained pre-fix0023 reproduces new unaccepted-proof deletion failure
+  ---
+  duration_ms: 448.9585
+  type: 'test'
+  ...
+# Subtest: migration preflight verifies the real required historical objects
+ok 47 - migration preflight verifies the real required historical objects
+  ---
+  duration_ms: 2983.2124
+  type: 'test'
+  ...
+# Subtest: Git repository inspection failures are distinct from missing historical commits
+ok 48 - Git repository inspection failures are distinct from missing historical commits
+  ---
+  duration_ms: 1596.3918
+  type: 'test'
+  ...
+# Subtest: missing-history preflight fails before migration setup with both exact revisions and a remedy
+ok 49 - missing-history preflight fails before migration setup with both exact revisions and a remedy
+  ---
+  duration_ms: 4367.4184
+  type: 'test'
+  ...
+# Subtest: create refreshes the choices while retaining managed organization and unrelated input
+ok 50 - create refreshes the choices while retaining managed organization and unrelated input
+  ---
+  duration_ms: 117.9336
+  type: 'test'
+  ...
+# Subtest: accept refreshes the choices while retaining managed organization and unrelated input
+ok 51 - accept refreshes the choices while retaining managed organization and unrelated input
+  ---
+  duration_ms: 3.2005
+  type: 'test'
+  ...
+# Subtest: confirmed create followed by read failure offers refresh without replay or context switch
+ok 52 - confirmed create followed by read failure offers refresh without replay or context switch
+  ---
+  duration_ms: 2.7326
+  type: 'test'
+  ...
+# Subtest: revocation during create fences its successful late receipt
+ok 53 - revocation during create fences its successful late receipt
+  ---
+  duration_ms: 6.2042
+  type: 'test'
+  ...
+# Subtest: refresh withdraws stale navigation authority for a successful missing-membership response
+ok 54 - refresh withdraws stale navigation authority for a successful missing-membership response
+  ---
+  duration_ms: 2.0644
+  type: 'test'
+  ...
+# Subtest: refresh withdraws stale navigation authority for a changed role revision
+ok 55 - refresh withdraws stale navigation authority for a changed role revision
+  ---
+  duration_ms: 2.0121
+  type: 'test'
+  ...
+# Subtest: refresh with unchanged membership retains ready navigation and unrelated input
+ok 56 - refresh with unchanged membership retains ready navigation and unrelated input
+  ---
+  duration_ms: 9.1147
+  type: 'test'
+  ...
+# Subtest: revocation during a refresh read fences its late workspace result
+ok 57 - revocation during a refresh read fences its late workspace result
+  ---
+  duration_ms: 2.1671
+  type: 'test'
+  ...
+# Subtest: refresh cannot restore obsolete error feedback after authority withdrawal
+ok 58 - refresh cannot restore obsolete error feedback after authority withdrawal
+  ---
+  duration_ms: 2.5958
+  type: 'test'
+  ...
+# Subtest: action cannot restore obsolete error feedback after authority withdrawal
+ok 59 - action cannot restore obsolete error feedback after authority withdrawal
+  ---
+  duration_ms: 3.1501
+  type: 'test'
+  ...
+# Subtest: a current refresh failure still offers ordinary retry
+ok 60 - a current refresh failure still offers ordinary retry
+  ---
+  duration_ms: 1.2174
+  type: 'test'
+  ...
+1..60
+# tests 63
+# suites 0
+# pass 63
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 264789.9213
