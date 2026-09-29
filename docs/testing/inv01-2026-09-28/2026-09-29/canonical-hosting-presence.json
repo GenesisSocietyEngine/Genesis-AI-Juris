@@ -1,0 +1,50 @@
+{
+  "observedAt": "2026-09-29T02:43:30.724Z",
+  "scope": "Read-only canonical production metadata. No secrets/values retained; no access/deployment/environment writes.",
+  "site": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "status": "active",
+    "accessMode": "public",
+    "latestVersion": 102,
+    "liveUrl": "https://studio.falcon-merlin.com",
+    "previewUrl": null,
+    "authClientPresent": true,
+    "role": "owner",
+    "accessRevision": 2,
+    "availableAccessModes": [
+      "custom",
+      "public"
+    ]
+  },
+  "environment": {
+    "projectId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "revision": 39,
+    "updatedAt": "2026-09-11T16:00:25.969297+00:00",
+    "requiredKeys": [
+      {
+        "key": "GENESIS_INVITATION_MAIL_ENABLED",
+        "present": false
+      },
+      {
+        "key": "RESEND_API_KEY",
+        "present": true,
+        "isSecret": true
+      },
+      {
+        "key": "GENESIS_INVITATION_FROM_EMAIL",
+        "present": false
+      },
+      {
+        "key": "GENESIS_PUBLIC_ORIGIN",
+        "present": true,
+        "nonempty": true,
+        "isSecret": false
+      },
+      {
+        "key": "GENESIS_ADMIN_EMAILS",
+        "present": true,
+        "isSecret": true
+      }
+    ]
+  }
+}

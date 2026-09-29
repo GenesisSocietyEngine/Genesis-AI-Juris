@@ -151,7 +151,10 @@ function buildEconomics(draft: StudioDraft, options: CaseReportOptions): Content
     ));
     content.push({ text: tr(language, "These are deterministic calculations from supplied assumptions, not probabilities or a forecast. Currency effects, exit costs, tax and unpriced costs are excluded. Use the Decision report for explicit income sensitivities.", "Это детерминированные расчёты по указанным допущениям, не вероятности и не прогноз. Валютные эффекты, расходы выхода, налоги и неоценённые затраты исключены. Явные сценарии дохода доступны в отчёте для принятия решения."), style: "note" });
     if (result.missingInputs.length) content.push({ text: `${tr(language, "Open financial inputs", "Незаполненные финансовые параметры")}: ${result.missingInputs.join(", ")}.`, style: "warning" });
-    if (model.assumptions.length) content.push({ ul: model.assumptions.filter(item => !/scenario probabilit|вероятност[а-я]* сценар/iu.test(item)), style: "bodySmall", margin: [8, 4, 0, 8] });
+    if (model.assumptions.length) content.push({ ul: model.assumptions
+      .filter(item => !/scenario probabilit|вероятност[а-я]* сценар/iu.test(item))
+      .map(item => ({ text: item, unbreakable: item.length <= 240 && item.split(/\r?\n/).length <= 4 })),
+      style: "bodySmall", margin: [8, 4, 0, 8] });
   }
   if (draft.taxEconomics) {
     const model = draft.taxEconomics;
@@ -455,9 +458,9 @@ function caseReportPresentationFingerprint(
     version: 5,
     presentationMode: effectiveOptions.presentationMode ?? "full",
     decisionRendererVersion: effectiveOptions.presentationMode === "medium" ? "1.2.0" : "1.1.0",
-    // Full now qualifies authored dates and discloses the modeled economic controls.
+    // Full keeps short economic assumptions together, avoiding orphaned final words.
     // Keep existing Base/Medium receipts stable; earlier Full output is stale.
-    ...((effectiveOptions.presentationMode ?? "full") === "full" ? { fullBriefRendererVersion: 3 } : {}),
+    ...((effectiveOptions.presentationMode ?? "full") === "full" ? { fullBriefRendererVersion: 4 } : {}),
     includeDecisionTree: effectiveOptions.includeDecisionTree,
     auditSymbolFont: REPORT_AUDIT_SYMBOL_FONT_SHA256,
     reportFingerprint: reportModel.contentFingerprint,

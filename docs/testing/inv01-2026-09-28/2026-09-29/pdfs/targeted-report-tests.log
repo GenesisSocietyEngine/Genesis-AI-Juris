@@ -1,0 +1,148 @@
+﻿TAP version 13
+# Subtest: Full reports disclose authored legal dates and all supplied tax scenario controls without changing the case
+ok 1 - Full reports disclose authored legal dates and all supplied tax scenario controls without changing the case
+  ---
+  duration_ms: 1103.6912
+  type: 'test'
+  ...
+# Subtest: Full assumptions retain complete short statements on one page and let long statements flow
+ok 2 - Full assumptions retain complete short statements on one page and let long statements flow
+  ---
+  duration_ms: 9423.5428
+  type: 'test'
+  ...
+# Subtest: PDF generation with financial assumptions preserves live case state and permits reopening and a second report
+ok 3 - PDF generation with financial assumptions preserves live case state and permits reopening and a second report
+  ---
+  duration_ms: 1531.0788
+  type: 'test'
+  ...
+# Subtest: deterministic graph reconstruction does not claim AI authorship or expose raw input
+ok 4 - deterministic graph reconstruction does not claim AI authorship or expose raw input
+  ---
+  duration_ms: 37.3676
+  type: 'test'
+  ...
+# Subtest: the corrected reconstruction label invalidates its historical PDF receipt only when shown
+ok 5 - the corrected reconstruction label invalidates its historical PDF receipt only when shown
+  ---
+  duration_ms: 339.1038
+  type: 'test'
+  ...
+# Subtest: professional report contains economics, registers, sign-off and a safe audit trail
+ok 6 - professional report contains economics, registers, sign-off and a safe audit trail
+  ---
+  duration_ms: 36.5638
+  type: 'test'
+  ...
+# Subtest: Canopy opens with a bounded EN/RU decision brief and keeps draft, outcomes and approval distinct
+ok 7 - Canopy opens with a bounded EN/RU decision brief and keeps draft, outcomes and approval distinct
+  ---
+  duration_ms: 2155.9239
+  type: 'test'
+  ...
+# Subtest: executive brief does not disclose redacted input or opening records
+ok 8 - executive brief does not disclose redacted input or opening records
+  ---
+  duration_ms: 19.8735
+  type: 'test'
+  ...
+# Subtest: audit headings share a rendered page with a record in Bhopal and long Russian titles
+ok 9 - audit headings share a rendered page with a record in Bhopal and long Russian titles
+  ---
+  duration_ms: 923.869
+  type: 'test'
+  ...
+# Subtest: client-facing report can omit audit trail and technical identifiers
+ok 10 - client-facing report can omit audit trail and technical identifiers
+  ---
+  duration_ms: 30.5412
+  type: 'test'
+  ...
+# Subtest: durable premise provenance excludes long and compacted raw prompts from internal and client rendered text
+ok 11 - durable premise provenance excludes long and compacted raw prompts from internal and client rendered text
+  ---
+  duration_ms: 3003.5923
+  type: 'test'
+  ...
+# Subtest: premise publication provenance changes presentation only, not canonical fingerprints
+ok 12 - premise publication provenance changes presentation only, not canonical fingerprints
+  ---
+  duration_ms: 195.6329
+  type: 'test'
+  ...
+# Subtest: report links are canonical HTTPS only and rejected values gate external output
+ok 13 - report links are canonical HTTPS only and rejected values gate external output
+  ---
+  duration_ms: 54.0727
+  type: 'test'
+  ...
+# Subtest: active node redactions also suppress unscoped audit messages
+ok 14 - active node redactions also suppress unscoped audit messages
+  ---
+  duration_ms: 37.1762
+  type: 'test'
+  ...
+# Subtest: SVG text faces align exactly with pdfmake and svg-to-pdfkit Roboto weight resolution
+ok 15 - SVG text faces align exactly with pdfmake and svg-to-pdfkit Roboto weight resolution
+  ---
+  duration_ms: 167.0038
+  type: 'test'
+  ...
+# Subtest: graph appendix uses deterministic full-width portrait pages and paired connectors
+ok 16 - graph appendix uses deterministic full-width portrait pages and paired connectors
+  ---
+  duration_ms: 215.6649
+  type: 'test'
+  ...
+# Subtest: bounded graph register rows remain atomic at a real page boundary while oversized rows may flow
+ok 17 - bounded graph register rows remain atomic at a real page boundary while oversized rows may flow
+  ---
+  duration_ms: 1305.9704
+  type: 'test'
+  ...
+# Subtest: layout language changes do not mutate the canonical ReportModel fingerprint
+ok 18 - layout language changes do not mutate the canonical ReportModel fingerprint
+  ---
+  duration_ms: 63.1162
+  type: 'test'
+  ...
+# Subtest: the complete PDF definition fails closed for unsupported font scalars and XML characters
+ok 19 - the complete PDF definition fails closed for unsupported font scalars and XML characters
+  ---
+  duration_ms: 31.8754
+  type: 'test'
+  ...
+# Subtest: receipt storage routing stays outside fingerprints and generation blocks sensitive cases
+ok 20 - receipt storage routing stays outside fingerprints and generation blocks sensitive cases
+  ---
+  duration_ms: 24.3526
+  type: 'test'
+  ...
+# Subtest: rendered protection identifiers participate in the presentation receipt only when visible
+ok 21 - rendered protection identifiers participate in the presentation receipt only when visible
+  ---
+  duration_ms: 101.9117
+  type: 'test'
+  ...
+# Subtest: receipt freshness derives the exact production layout and the legacy landscape path is absent
+ok 22 - receipt freshness derives the exact production layout and the legacy landscape path is absent
+  ---
+  duration_ms: 268.6611
+  type: 'test'
+  ...
+# Subtest: actual older receipts retain Base/Medium freshness and retire Full renderer2 and3
+ok 23 - actual older receipts retain Base/Medium freshness and retire Full renderer2 and3
+  ---
+  duration_ms: 1449.8711
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 22591.8873

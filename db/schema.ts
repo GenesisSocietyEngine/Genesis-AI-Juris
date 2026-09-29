@@ -100,7 +100,7 @@ export const emailInvitations = sqliteTable("email_invitations", {
 export const invitationMailboxProofs = sqliteTable("invitation_mailbox_proofs", {
   id: text("id").primaryKey(),
   invitationId: text("invitation_id").notNull().references(() => emailInvitations.id),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   actorId: text("actor_id").notNull(),
   email: text("email").notNull(),
   tokenDigest: text("token_digest").notNull(),

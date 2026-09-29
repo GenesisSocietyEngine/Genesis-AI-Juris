@@ -15,7 +15,7 @@ CREATE UNIQUE INDEX email_invitations_digest_uidx ON email_invitations(token_dig
 CREATE UNIQUE INDEX email_invitations_pending_uidx ON email_invitations(organization_id,recipient_email) WHERE status='pending';--> statement-breakpoint
 CREATE TABLE invitation_mailbox_proofs (
  id text PRIMARY KEY NOT NULL, invitation_id text NOT NULL REFERENCES email_invitations(id),
- user_id integer NOT NULL REFERENCES users(id), actor_id text NOT NULL, email text NOT NULL,
+ user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE, actor_id text NOT NULL, email text NOT NULL,
  token_digest text NOT NULL, expires_at text NOT NULL, used_at text
 );--> statement-breakpoint
 CREATE UNIQUE INDEX invitation_mailbox_digest_uidx ON invitation_mailbox_proofs(token_digest);--> statement-breakpoint

@@ -109,6 +109,38 @@ function pdfPageText(page: PdfMakePage) {
     .join("\n");
 }
 
+test("Full assumptions retain complete short statements on one page and let long statements flow", async () => {
+  const working = normalizeStudioDraft(JSON.parse(readFileSync("docs/testing/inv01-2026-09-28/fiveflats-pdfs/saved-draft-before-recovery.json", "utf8")));
+  const before = JSON.stringify(working);
+  const compact = (text: string) => text.replace(/\s+/g, "");
+  for (const language of ["en", "ru"] as const) for (const includeDecisionTree of [false, true]) {
+    const artifacts = buildCaseReportArtifacts(working, { ...options, presentationMode: "full", language, includeDecisionTree });
+    const pages = (await paginateDefinition(artifacts.definition)).map(page => compact(pdfPageText(page)));
+    const assumptions = working.dealEconomics!.assumptions.filter(item => !/scenario probabilit|вероятност[а-я]* сценар/iu.test(item));
+    assert.ok(assumptions.length);
+    for (const assumption of assumptions.filter(item => item.length <= 240 && item.split(/\r?\n/).length <= 4)) {
+      assert.ok(pages.some(page => page.includes(compact(assumption))), `Complete assumption (${language}, tree=${includeDecisionTree}): ${assumption}`);
+    }
+  }
+  assert.equal(JSON.stringify(working), before, "pagination must preserve authored numeric inputs, text and history");
+  const long = structuredClone(working);
+  const longAssumption = Array.from({ length: 65 }, (_, i) => `Extended assumption line ${i + 1}: capacity evidence still requires review.`).join("\n");
+  assert.ok(long.dealEconomics);
+  long.dealEconomics.assumptions.push(longAssumption);
+  const pages = await paginateDefinition(buildCaseReportDefinition(long, { ...options, presentationMode: "full", includeDecisionTree: false }));
+  const text = pages.map(pdfPageText).join("\n");
+  for (let i = 1; i <= 65; i++) assert.ok(text.includes(`Extended assumption line ${i}:`), `long assumption line ${i} retained`);
+  assert.ok(!pages.some(page => pdfPageText(page).includes("Extended assumption line 1:") && pdfPageText(page).includes("Extended assumption line 65:")), "over-page assumption must flow");
+
+  // A compact string can still exceed a page when pasted with legacy CR breaks.
+  const shortMultiline = structuredClone(working);
+  shortMultiline.dealEconomics!.assumptions.push(["Start of CR note", ...Array.from({ length: 65 }, (_, i) => String(i + 1)), "End of CR note"].join("\r"));
+  const crPages = (await paginateDefinition(buildCaseReportDefinition(shortMultiline, { ...options, presentationMode: "full", includeDecisionTree: false }))).map(pdfPageText);
+  assert.ok(crPages.some(page => page.includes("Start of CR note")), "CR note start retained");
+  assert.ok(crPages.some(page => page.includes("End of CR note")), "CR note end retained");
+  assert.ok(!crPages.some(page => page.includes("Start of CR note") && page.includes("End of CR note")), "many CR lines must flow even under the character bound");
+});
+
 function registerStackStartingWith(definition: TDocumentDefinitions, prefix: string) {
   const entry = (definition.content as Content[]).find((candidate) => {
     if (!candidate || typeof candidate !== "object" || !("stack" in candidate) || !Array.isArray(candidate.stack)) return false;

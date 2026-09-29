@@ -1,0 +1,324 @@
+{
+  "caseId": "synthetic_commitment_capacity_review",
+  "version": "1.0.0",
+  "caseType": {
+    "registry": "genesis-juris-case-types",
+    "id": "general_advisory",
+    "version": "1.0.0"
+  },
+  "parent": null,
+  "title": "Synthetic commitment reconciliation and delivery-capacity review",
+  "jurisdiction": "Fictional test administration; no legal jurisdiction asserted",
+  "role": "Synthetic operations reviewer",
+  "premise": "UNPUBLISHED, UNREVIEWED SOFTWARE-TEST DRAFT.\n# SYNTHETIC C-valid: reconciliation and delivery-capacity schedule\nPrepared 2026-09-28 solely as a fictional software-test scenario.\nNo real orders, facilities, persons, professional review or operating approval are asserted.\n\nLineage: derived from Synthetic local UX fixture C source v1,\nSHA-256 f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e.\nThe original source and negative fixture remain unchanged.\n\nFor this derived scenario, one commitment requires one delivery slot\nduring the test delivery window 2026-09-29 through 2026-10-05.\n\nRECONCILIATION: The signed register remains 300 commitments.\nFor this fictional derived scenario, the draft summary's figure of\n600 was a duplicate-counting error. The corrected signed total is 300.\nThis correction does not alter what the original source recorded.\n\nCAPACITY: This synthetic schedule allocates 300 delivery slots to\nthose 300 signed commitments for the stated test window. It allocates\nno spare slots. Capacity beyond 300 is not evidenced by this schedule.\n\nThe historical forecast of 150 additional commitments and the later\nanalyst sensitivity of 120 are unverified assumptions. Neither is\nincluded in signed demand or supported capacity.\n\nLIMITATION: This document defines test facts. It is not an inspection,\na real capacity certificate, a completed professional review or\npermission for real operations. A later signed total above 300\nrequires reassessment against new capacity evidence.\n\nADMINISTRATIVE DEADLINE: The synthetic review cutoff is\n2026-10-05 18:00 Europe/Paris (2026-10-05T16:00:00.000Z).\nThis is a test-administration choice, not a legal deadline.\n\nTransitions use fictional one-minute durations, zero monetary costs and zero score effects solely for this test. No automatic capacity arithmetic or actual governed simulation is claimed.",
+  "premisePublication": "prompt-derived",
+  "classification": {
+    "domain": "general",
+    "practiceArea": "Synthetic operational evidence review",
+    "difficulty": "Intermediate",
+    "tags": [
+      "synthetic",
+      "capacity",
+      "reconciliation"
+    ],
+    "taxTopics": [],
+    "purpose": "compliance_review",
+    "complianceOnly": true,
+    "legalAsOf": "",
+    "sourceUrls": []
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "type": "trigger",
+      "title": "Open the synthetic baseline review",
+      "detail": "Unpublished software-test draft. No source acceptance, professional approval or completed simulation is asserted.",
+      "x": 100,
+      "y": 240,
+      "runtime": {
+        "day": 1,
+        "time": "09:00"
+      }
+    },
+    {
+      "id": "reviewer",
+      "type": "actor",
+      "title": "Synthetic operations reviewer",
+      "detail": "Fictional exercise role. This node identifies no real account and grants no permissions.",
+      "x": 350,
+      "y": 240,
+      "runtime": {
+        "day": 1,
+        "time": "09:01"
+      }
+    },
+    {
+      "id": "original",
+      "type": "evidence",
+      "title": "Retain original source and contradiction",
+      "detail": "Original source v1 SHA-256 f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e. Preserve 300 signed versus 600 summary as historical content. No source anchor or review event is supplied.",
+      "x": 600,
+      "y": 240,
+      "runtime": {
+        "day": 1,
+        "time": "09:02"
+      }
+    },
+    {
+      "id": "schedule",
+      "type": "evidence",
+      "title": "Prepared fictional reconciliation and capacity schedule",
+      "detail": "# SYNTHETIC C-valid: reconciliation and delivery-capacity schedule\nPrepared 2026-09-28 solely as a fictional software-test scenario.\nNo real orders, facilities, persons, professional review or operating approval are asserted.\n\nLineage: derived from Synthetic local UX fixture C source v1,\nSHA-256 f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e.\nThe original source and negative fixture remain unchanged.\n\nFor this derived scenario, one commitment requires one delivery slot\nduring the test delivery window 2026-09-29 through 2026-10-05.\n\nRECONCILIATION: The signed register remains 300 commitments.\nFor this fictional derived scenario, the draft summary's figure of\n600 was a duplicate-counting error. The corrected signed total is 300.\nThis correction does not alter what the original source recorded.\n\nCAPACITY: This synthetic schedule allocates 300 delivery slots to\nthose 300 signed commitments for the stated test window. It allocates\nno spare slots. Capacity beyond 300 is not evidenced by this schedule.\n\nThe historical forecast of 150 additional commitments and the later\nanalyst sensitivity of 120 are unverified assumptions. Neither is\nincluded in signed demand or supported capacity.\n\nLIMITATION: This document defines test facts. It is not an inspection,\na real capacity certificate, a completed professional review or\npermission for real operations. A later signed total above 300\nrequires reassessment against new capacity evidence.\n\nADMINISTRATIVE DEADLINE: The synthetic review cutoff is\n2026-10-05 18:00 Europe/Paris (2026-10-05T16:00:00.000Z).\nThis is a test-administration choice, not a legal deadline.",
+      "x": 850,
+      "y": 240,
+      "runtime": {
+        "day": 1,
+        "time": "09:03"
+      }
+    },
+    {
+      "id": "forecast",
+      "type": "fact",
+      "title": "Exclude forecast and sensitivity",
+      "detail": "The historical 150 additional commitments and 120 sensitivity are unverified assumptions, excluded from supported demand/capacity. The graph cannot automatically parse replacement source quantities or calculate arbitrary capacity.",
+      "x": 1100,
+      "y": 240,
+      "runtime": {
+        "day": 1,
+        "time": "09:04"
+      }
+    },
+    {
+      "id": "choose",
+      "type": "decision",
+      "title": "Choose a supported test conclusion",
+      "detail": "Use the stated 300/300 baseline only with its limitations. Pause when sources or currentness are unresolved. Treating extra forecast demand as supported is an intentionally unsupported exercise choice.",
+      "x": 1350,
+      "y": 240,
+      "runtime": {
+        "day": 1,
+        "time": "09:05"
+      }
+    },
+    {
+      "id": "cutoff",
+      "type": "deadline",
+      "title": "Synthetic administrative review cutoff",
+      "detail": "2026-10-05 18:00 Europe/Paris / 16:00 UTC; no legal deadline. Relative runtime day1 is September29 and day7 October5. No calendar/timezone calculation is claimed.",
+      "x": 1600,
+      "y": 240,
+      "runtime": {
+        "day": 1,
+        "time": "09:06",
+        "deadlineDay": 7,
+        "deadlineTime": "18:00",
+        "missedOutcomeNodeId": "pause"
+      }
+    },
+    {
+      "id": "supported",
+      "type": "outcome",
+      "title": "Stated baseline matches stated capacity",
+      "detail": "The fictional schedule allocates300 slots to300 signed commitments, with no spare capacity. Authored comparison only, not an inspection, professional approval or operating permission.",
+      "x": 1850,
+      "y": 100,
+      "runtime": {
+        "day": 1,
+        "time": "09:07",
+        "terminalOutcome": "strong"
+      }
+    },
+    {
+      "id": "pause",
+      "type": "outcome",
+      "title": "Pause for source verification or reassessment",
+      "detail": "Source identity/currentness, cutoff or capacity evidence is unresolved. Obtain actual evidence through authorized workflows; no request or review is fabricated.",
+      "x": 1850,
+      "y": 340,
+      "runtime": {
+        "day": 1,
+        "time": "09:07",
+        "terminalOutcome": "mixed"
+      }
+    },
+    {
+      "id": "unsupported",
+      "type": "outcome",
+      "title": "Additional demand lacks supporting capacity evidence",
+      "detail": "Only300 slots are evidenced. Extra forecast/sensitivity demand is unsupported. Require new capacity evidence and explicit reassessment.",
+      "x": 1850,
+      "y": 580,
+      "runtime": {
+        "day": 1,
+        "time": "09:07",
+        "terminalOutcome": "weak"
+      }
+    }
+  ],
+  "links": [
+    {
+      "id": "transition_1",
+      "from": "start",
+      "to": "reviewer",
+      "rule": {
+        "label": "Read the fictional reviewer role",
+        "result": "Fictional exercise transition only; no source review or permission is recorded.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "transition_2",
+      "from": "reviewer",
+      "to": "original",
+      "rule": {
+        "label": "Inspect original source lineage",
+        "result": "Fictional exercise transition only; no source review or permission is recorded.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "transition_3",
+      "from": "original",
+      "to": "schedule",
+      "rule": {
+        "label": "Read the prepared fictional correction",
+        "result": "Fictional exercise transition only; no source review or permission is recorded.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "transition_4",
+      "from": "schedule",
+      "to": "forecast",
+      "rule": {
+        "label": "Inspect excluded forecasts",
+        "result": "Fictional exercise transition only; no source review or permission is recorded.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "transition_5",
+      "from": "forecast",
+      "to": "choose",
+      "rule": {
+        "label": "Compare the baseline and limitations",
+        "result": "Fictional exercise transition only; no source review or permission is recorded.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "transition_6",
+      "from": "choose",
+      "to": "cutoff",
+      "rule": {
+        "label": "Use only reconciled signed demand",
+        "result": "Fictional exercise transition only; no source review or permission is recorded.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "transition_7",
+      "from": "choose",
+      "to": "pause",
+      "rule": {
+        "label": "Pause for unresolved evidence",
+        "result": "Fictional exercise transition only; no source review or permission is recorded.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "transition_8",
+      "from": "choose",
+      "to": "unsupported",
+      "rule": {
+        "label": "Treat unverified additional demand as supported",
+        "result": "Fictional exercise transition only; no source review or permission is recorded.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "transition_9",
+      "from": "cutoff",
+      "to": "supported",
+      "rule": {
+        "label": "Finish before the synthetic cutoff",
+        "result": "Fictional exercise transition only; no source review or permission is recorded.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    }
+  ],
+  "editHistory": [],
+  "updatedAt": "2026-09-29T02:30:58.000Z"
+}
