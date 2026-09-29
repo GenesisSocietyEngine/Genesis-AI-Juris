@@ -1,0 +1,51 @@
+# Cleanup refusal: exact native-process identity correction
+
+28 September 2026 UTC. This is an authored source diagnosis/proposal, not a completed cleanup or an application/test change. The first actual cleanup receipt remains unchanged: `cleanup-execute-20260928T010043566Z.json`, SHA-256 `087923b2ab0f86bb33d42da1fdf0cf47116f4f89f075a77eb7d71ab18a6cc97f`, status `STOPPED_FOR_REVIEW`.
+
+The graceful ADB client completed with exit0, but its console output explicitly rejected the operation for a missing authentication token. This was not successful emulator shutdown. The guarded fallback then refused its exact timestamp comparison before any fallback stop action was recorded. This is a cleanup-harness failure, not a failed application release test.
+
+## Observed cause
+
+The bounded diagnostic queried only recorded task-owned PIDs4116 and25048. The sandbox CIM query was denied; an approved read-only host query succeeded (tool chunk `dbb544`). It acquired and disposed native handles without terminating or modifying either process. No token file, environment secret or unrelated process was read.
+
+| Process | Original exact CIM UTC identity | Observed exact native handle UTC identity | Difference |
+| --- | --- | --- | --- |
+| Launcher4116, parent26372 | `2026-09-27T20:35:08.4851430Z` | `2026-09-27T20:35:08.4851438Z` | 8 ticks / 0.8 microseconds |
+| QEMU25048, parent4116 | `2026-09-27T20:35:09.6325920Z` | `2026-09-27T20:35:09.6325926Z` | 6 ticks / 0.6 microseconds |
+
+Native and CIM executable paths agree with the recorded SDK executables. The original source compared the native seven-digit timestamp directly with the CIM representation, so it rejected these same original processes. The diagnostic receipt `cleanup-native-identity-diagnosis.json` records the exact tool provenance and distinguishes its later preparation timestamp from the observation.
+
+## Minimal separate proposal
+
+`cleanup-owned-emulator-native-identity.ps1` preserves the original script and adds two exact `nativeCreationUtc` constants from the observation above. It keeps the exact original CIM timestamp, parent, path, AVD/port/command-line, preservation and completion-evidence checks. For fallback only, it pins the native handle, rechecks the original CIM identity again, then compares that handle's exact native timestamp and executable path before using the same Process object. The fallback receipt records both exact times. No timestamp tolerance, rounded comparison, removed ownership check, token read, authentication change or broader process target is introduced.
+
+The separate `assemble-final-status-native-identity.mjs` adds the exact native timestamp requirement to each fallback receipt action. All prior cleanup, production, source, aggregate, link, 42-row and decision guards remain. The original `assemble-final-status.mjs` is restored byte-exact at SHA `b5b4c2182a33edb7a978c051e0e27703ad833329c57619d21e9048eaefe47c62`; prior archived scripts/reviews are untouched. New correction evidence must be archived as new entries.
+
+Proposal hashes:
+
+- Cleanup script: `a1dcc3fb93efa2bc2042a88fe487386ffbfe434d1ea563e6dda7883e76342dad`.
+- Separate assembler: `b3e1909306d7338a8923fa85ea12fee92a68bf516882cad087f31c65e2a91d16`.
+- Diagnostic receipt: `1e6f90e993e2f4182704ffbaa2c6531f5ec17a781cdecb63d4b16cbab1989474`.
+
+PowerShell parser-only validation returned zero syntax errors (tool chunk `395826`); neither corrected script has been executed. Independent source review was requested from `review_flows` using a follow-up task. The coordinator must wait for that review, execute the corrected cleanup against the actual completed gate, inspect its full result and preservation readback, and only then invoke the separate assembler. A failed second cleanup must remain a failure; it cannot be converted into a successful report by the assembler.
+
+## Coordinator commands after independent source clearance
+
+The following are prepared commands, not executed here. Use the canonical workspace as the working directory and the appropriate host permission already established for the owned process cleanup.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File '.artifacts/amendment-android-native/cleanup-owned-emulator-native-identity.ps1' -Execute -FinalGateComplete -FinalGateCompletionEvidence 'C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27\.artifacts\amendment-release-gate\aggregate-candidate-receipt.json'
+```
+
+After actual success, use the pinned Node executable with `assemble-final-status-native-identity.mjs`, passing the actual second cleanup receipt, not the failed first receipt:
+
+```text
+node .artifacts/ux-reconciliation-auth/assemble-final-status-native-identity.mjs
+  --gate docs/testing/ux-convergence-2026-09-27/evidence/amendment-final/aggregate/receipt.json
+  --source docs/testing/ux-convergence-2026-09-27/evidence/amendment-final/aggregate/source.json
+  --production docs/testing/ux-convergence-2026-09-27/evidence/amendment-final/production-readback.json
+  --cleanup <actual successful second cleanup receipt path>
+  --out .artifacts/ux-reconciliation-auth/final-status-native-identity
+```
+
+Final generated documents and copied evidence still require actual-output review. This correction does not alter the gate result, application source, product acceptance gaps or publication authority.

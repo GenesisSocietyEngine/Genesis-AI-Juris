@@ -1,3 +1,4 @@
+import { hasRetiredCitation } from "../../../../dossier-evidence-server";
 import { and, asc, desc, eq, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
 import {
   caseVersions,
@@ -26,6 +27,7 @@ import {
 import { computeStoredDossierReadiness } from "../../../../dossier-readiness-server";
 import { parseDossierOpaqueId } from "../../../../dossier-security";
 import {
+  finalizeDossierRead,
   boundedDossierText,
   canonicalDossierTimestamp,
   dossierJson,
@@ -121,7 +123,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
 
   const hasMore = rows.length > limit;
   const visible = rows.slice(0, limit);
-  return dossierJson({
+  return finalizeDossierRead(context, access, dossierJson({
     decision_packages: visible.map(projectPackageReference),
     page: {
       limit,
@@ -129,7 +131,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
       next_cursor: hasMore ? visible.at(-1)?.id ?? null : null,
     },
     contract_version: "1.0.0",
-  });
+  }));
 }
 
 export async function POST(request: Request, routeContext: RouteContext) {
@@ -736,6 +738,7 @@ async function resolveGraphProposal(input: {
       code: "graph_proposal_source_review_required",
     }, 409);
   }
+  if(await hasRetiredCitation(input.context,input.dossierId,sources.map(s=>s.anchorId)))return dossierJson({error:"A citation was retired. Review current replacement evidence and create or revise the affected work before accepting it.",code:"retired_citation"},409);
   const expectedDiff = buildDecisionPackageGraphProposalDiff({
     base: input.base,
     target: input.target,

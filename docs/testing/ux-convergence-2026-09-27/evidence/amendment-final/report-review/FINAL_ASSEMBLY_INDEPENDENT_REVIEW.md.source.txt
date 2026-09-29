@@ -1,0 +1,40 @@
+# Final status assembler: independent source review
+
+Reviewed 28 September 2026. This is a static review of the ignored preparation script and its pinned templates/receipt contracts. The reviewer did not execute the assembler, a syntax check, test, transform, cleanup, browser action, HTTP request or release command. No tracked file was changed. The exact a1fae95 aggregate remained in progress when this review was requested; no completed aggregate, fresh production recheck, executed cleanup or final assembled Markdown is certified here.
+
+**Result: no remaining substantive source finding in the corrected script.** This clears the reviewed preparation source for the coordinator's later receipt-bound use, subject to actual prerequisites and independent review of the resulting packet. It does not itself authorize execution or promote engineering, production, pilot or UX acceptance.
+
+## Reviewed identity
+
+- Source: `assemble-final-status.mjs`, SHA-256 `b5b4c2182a33edb7a978c051e0e27703ad833329c57619d21e9048eaefe47c62`.
+- Initial submitted source: `651d0fbdaa4c85d117826a9dc1a005f18a75748cd98a3d43ebb2c23cd91f1d36`.
+- Intermediate source after the first correction: `1ac5cf3b6fc0a5a80590eaed4dd11f2b9e68d52d88d9d700882c9d7b86a3910b`.
+- Release template: `active-doc-drafts/RELEASE_DECISION.md`, `f2a396e17e9836ebdd76f77c53c8c9ac440c14d0a5ad9a583478ca3edc0cba55`.
+- Ledger template: `active-doc-drafts/POST_RECONCILIATION_CLOSURE.md`, `f927f9daf37643964fb24def090e5bbb5bb98e728541962fdd0455d3e9a8ea13`.
+- PO/UX template: `po-ux-status-draft.md`, `714a82e38af5a56169981f55c5f09c074eb82c387e2609df63052dfec1bf7c9c`.
+- Cleanup writer inspected for receipt compatibility: `../amendment-android-native/cleanup-owned-emulator.ps1`, previously reviewed source `6ec23539a69f8074a2841fc3a7ec32d68e6407bb908ab187d8006fff6350f631`.
+- Pinned cleanup preparation receipt: `cleanup-preparation_only-20260927T235106735Z.json`, SHA-256 `85e21f8ef743bb37cb413950e22d9a3bc53168619954198e67021fff7bb30060`.
+
+## Findings resolved before execution
+
+1. **Ledger bullet selection would always refuse assembly.** The original paragraph replacement looked for the production bullet at the start of a blank-line-delimited paragraph. The pinned ledger places that bullet inside one contiguous list block, so legitimate inputs would still fail before output. The author replaced this operation with `uniqueLine`, requiring exactly one matching line and forbidding newlines in the replacement. Other list entries and the release document's paragraph replacement remain intact. This was a fail-closed preparation defect, not a false PASS.
+
+2. **Cleanup action proof was too weak for the claimed ownership scope.** The earlier checks accepted allowed action names and an outer serial without binding every fallback action to the reviewed process instance, or pinning the original preservation basis. The corrected version pins the preparation receipt, compares both complete original process records, checks the original AVD path/configuration hash/18,661-file counts and exact mobile state, and requires no metadata differences. It restricts actions to one graceful operation targeting the reviewed serial and at most two unique owned fallback PIDs with their exact creation identities; action timestamps must fit inside the execution interval. It checks the four actual ADB argument sequences, successful identity/final device reads and absence of the owned serial. These checks agree with the cleanup writer's fields and control paths. This finding did not establish any actual misdirected cleanup; cleanup had not been executed.
+
+## Source observations
+
+The assembler requires a complete PASS/exit-zero aggregate for exact R `a1fae95bc2624e28e6232b8867ad2a94c8d9f0ab`, exact preflight/mobile identities, all 10 web/9 mobile/3 native stages and terminal guards. It reads the complete raw log, verifies its byte count and hash, and compares parsed stage and test/PDF/audit/native data with the supplied observation receipt. The source receipt must bind R to application digest `5597958a0a870757e75cfbdfba930007d475f782035db4ee8503a97aa1723afc`, 385 inputs and a matching built digest. Historical 6ab success and e6 failure are retained separately.
+
+Fresh production readback must follow the completed-gate observation and agree with the hash-pinned prior production receipt, including the deployment/version/source/environment/audience fields, no candidate publication and no mutating operation. Drift refuses assembly. Executed cleanup must follow the same completed gate and link by hash to that exact gate receipt or complete raw log. Preparation-only, failed or incomplete cleanup is rejected. These are consistency checks on supplied observations; the assembler does not independently observe execution, production or process state.
+
+The current transformations preserve the distinction between two Studio/history races, the Matter read-authority correction, 17 modeled detail/collection/note/helper regressions, source-reviewed output wiring and the sequential 9-group/39-response real local token-store smoke. The script does not turn these into output-route execution, in-flight real session-race proof or current hosted/browser acceptance. Stored hosted workflow-lock validation is described separately from a new hosted or iOS run; local Android debug-emulator scope is explicit. Automated PDF totals are not presented as a fresh visual review of every page.
+
+Template byte hashes are pinned. Both ordered 42-ID tables, NOT_RUN totals and BLOCKED totals are checked, including the PO introduction's one additional explanatory BLOCKED. Remaining NO-GO and historical failure references are required. The targeted prose changes close only actual technical-gate/source/production/cleanup placeholders; stale in-progress/draft placeholders are rejected. These guards supplement the prior independent review of the full templates; token counts alone would not prove every sentence correct. Final generated wording still requires review.
+
+The script uses filesystem, path, hashing and assertions; it contains no subprocess, network, Git, browser or cleanup execution. Input real paths must remain inside the canonical checkout. All evidence checks, document transformations and link checks precede output creation. The output is a new directory inside the ignored task directory, with real-path containment and no overwrite or delete path. Three Markdown files and four exact supplied receipt copies are staged there with hashes and an explicit independent-output-review result. No tracked publication is implemented.
+
+Destination-relative support links must already exist before assembly, except the three documents and four receipt copies it produces. The known five future support documents and other archive dependencies therefore remain coordinator prerequisites; missing links fail closed. A future legitimate receipt/schema difference must be inspected and the source re-reviewed rather than bypassing a guard.
+
+## Limits and required next review
+
+This source review is not runtime success, an executed mutation check, completed resource cleanup, evidence sanitization certification or approval to publish. The final packet must be read against the actual completed raw log and receipts, checking hashes, timestamps, counts, source binding, retained acceptance gaps and all final links before any tracked copy. Engineering and production remain BLOCKED and the external pilot remains NO-GO until their separate acceptance requirements are met. A later documentation commit must remain distinct from the tested R checkpoint.

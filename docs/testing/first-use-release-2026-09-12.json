@@ -1,0 +1,95 @@
+{
+  "schema": "genesis-first-use-release-v1",
+  "date": "2026-09-12",
+  "projectId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+  "scope": "Investor-oriented first use, guided Studio, browser compatibility and analytical reports",
+  "sourceBase": "664e341e8c894090632286b2d7f637bbee6a9356",
+  "validation": {
+    "productionBuild": "passed",
+    "typecheck": "passed",
+    "lint": "passed",
+    "fullSuite": {
+      "tests": 595,
+      "passed": 593,
+      "failed": 2,
+      "skipped": 0,
+      "durationMs": 493645.675653,
+      "failures": [
+        "Expected old product-label text that was moved to the footer",
+        "Expected removed redundant Wizard instruction text"
+      ]
+    },
+    "correctedUiAndBundleRerun": {
+      "tests": 19,
+      "passed": 19,
+      "failed": 0
+    },
+    "reportRegression": "Real EN/RU PDFs generated after delete and undo; Unicode audit arrow retained",
+    "note": "Full suite was not repeated after correcting two obsolete UI text assertions. Unchanged long Canopy scenarios passed in the full run; affected UI and production asset checks passed on rerun.",
+    "projectedNodeFocusRegression": {
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "includes": "Three new overlapping-ID/own-node/aggregate target regressions"
+    },
+    "finalBuildAndProjectionRerun": {
+      "tests": 8,
+      "passed": 8,
+      "failed": 0
+    },
+    "initialClientBytes": 322292
+  },
+  "browser": {
+    "environment": "supervised local preview",
+    "verified": [
+      "Page render",
+      "Studio navigation after development HTTPS-upgrade compatibility repair",
+      "Prepared Missing Boundary example loads",
+      "Decision map inspected",
+      "Delete removes selected relation",
+      "Undo restores relation",
+      "Report dialog exposes Preview and Download before settings"
+    ],
+    "discoveredDefects": [
+      "Local HTTP preview hydration prevented by HTTPS upgrade",
+      "Example stayed on Brief",
+      "Report generation fails on Studio-generated audit arrow"
+    ],
+    "interruptedAction": "Canopy JSON import through file chooser",
+    "failure": "Browser service entered recovery; subsequent refresh-tabs and new-tab operations timed out",
+    "finalVisualRecheck": false,
+    "productionAcceptance": false,
+    "coldRegistration": false,
+    "threeStartRoutes": false,
+    "twoMinuteTargetMeasured": false,
+    "pdfBrowserDownload": false
+  },
+  "demo": {
+    "targetSeconds": 540,
+    "shortCutSeconds": 90,
+    "languages": [
+      "en",
+      "ru"
+    ],
+    "narrationAndStoryboard": "prepared",
+    "recordedVideo": false,
+    "voiceover": false,
+    "synchronizedCaptions": false,
+    "existingHelpVideo": "retained"
+  },
+  "release": {
+    "status": "succeeded",
+    "previousSavedVersion": 78,
+    "migrationRequired": false,
+    "audienceChange": false,
+    "authRoleOrPublicationGateChange": false,
+    "version": 79,
+    "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_135ac233dcd881919811f23341ad5006",
+    "deploymentId": "appgdep_6aa5386c104c81918f4650b210ab406c",
+    "sourceCommit": "318e7d8764972a24a5cdb48f9ebdc8dd8572a611",
+    "archiveHash": "sha256:327cbb4b7111294280f773bc5bd7cbe3cfc99eb824f0b670655bd02186b37f73",
+    "environmentRevision": 39,
+    "verifiedAt": "2026-09-12T11:33:15.633496+00:00",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site"
+  }
+}

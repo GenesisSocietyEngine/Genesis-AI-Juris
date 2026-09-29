@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Native exec lets Git Bash convert absolute /c/... arguments to Windows paths.
+exec /c/Users/User/source/flutter/bin/cache/dart-sdk/bin/dart.exe "$@"

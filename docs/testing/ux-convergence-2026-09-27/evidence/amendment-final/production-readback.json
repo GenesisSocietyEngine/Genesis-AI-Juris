@@ -1,0 +1,63 @@
+{
+  "schema": "genesis.juris.production-readback.v1",
+  "startedAt": "2026-09-28T00:57:58.250Z",
+  "completedAt": "2026-09-28T00:58:13.488Z",
+  "scope": "Read-only fresh recheck after the exact candidate gate; no publishing or access changes.",
+  "site": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "status": "active",
+    "latestVersionNumber": 102,
+    "liveUrl": "https://studio.falcon-merlin.com",
+    "previewUrl": null,
+    "accessMode": "public",
+    "currentUserRole": "owner",
+    "accessPolicy": {
+      "revision": 2,
+      "allowedUserCount": 1,
+      "allowedGroupCount": 0
+    }
+  },
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_37dbecce77848191a3dc4397ee48dc73",
+    "number": 102,
+    "sourceCommit": "bf5799383a52b6617cd9d4a0acf47af780086218",
+    "deploymentId": "appgdep_6ab6ed70ee488191ba95f30293b6e6a1"
+  },
+  "deployment": {
+    "id": "appgdep_6ab6ed70ee488191ba95f30293b6e6a1",
+    "status": "succeeded",
+    "type": "publish",
+    "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_37dbecce77848191a3dc4397ee48dc73",
+    "environmentRevision": 39,
+    "updatedAt": "2026-09-25T21:55:07.113680+00:00",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "failureMessage": null
+  },
+  "environment": {
+    "projectId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "revision": 39,
+    "updatedAt": "2026-09-11T16:00:25.969297+00:00",
+    "entryCount": 11
+  },
+  "checks": {
+    "projectMatches": true,
+    "latestVersionMatches": true,
+    "sourceUnchanged": true,
+    "deploymentBindingMatches": true,
+    "deploymentSucceeded": true,
+    "environmentUnchanged": true,
+    "audienceUnchanged": true,
+    "liveUrlUnchanged": true,
+    "previewStillNull": true
+  },
+  "noObservedDrift": true,
+  "candidatePublishedToThisProject": false,
+  "readOperations": [
+    "sites_get_site",
+    "sites_get_site_version",
+    "sites_get_deployment_status",
+    "sites_get_environment_variables"
+  ],
+  "mutatingOperations": [],
+  "limits": "Metadata/source attribution, not deployed-binary attestation, browser smoke, an exploit test or hosted acceptance of the candidate. Environment values, credentials, tokens, email addresses and access identities are omitted. Generated deployment URL and custom live URL are distinct fields."
+}

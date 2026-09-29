@@ -1,0 +1,52 @@
+.workspace { width: min(1180px, calc(100% - 48px)); margin: 24px auto; color: var(--copy); }
+.workspace * { box-sizing: border-box; }
+.header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.header h2 { margin: 5px 0 14px; font-size: clamp(1.4rem, 2.3vw, 2rem); line-height: 1.2; }
+.eyebrow { margin: 0; font-size: .72rem; letter-spacing: .12em; font-weight: 700; }
+.status { border: 1px solid var(--rule); border-radius: 24px; padding: 7px 11px; font-size: .78rem; line-height: 1.4; flex-shrink: 0; }
+.question { max-width: 85ch; font-size: 1.05rem; line-height: 1.6; margin: 0 0 20px; }
+.recommendation { padding: 20px 24px; background: color-mix(in srgb, var(--green) 9%, var(--panel)); border-left: 4px solid var(--green); border-radius: 4px; }
+.workspace h3 { margin: 0 0 12px; font-size: 1.12rem; line-height: 1.4; }
+.workspace h4 { margin: 8px 0; font-size: 1rem; }
+.workspace p { line-height: 1.6; overflow-wrap: anywhere; }
+.workspace button { border: 1px solid var(--rule); border-radius: 6px; padding: 9px 13px; background: var(--panel); color: var(--copy); cursor: pointer; text-align: left; min-height: 42px; font: inherit; font-size: .9rem; overflow-wrap: anywhere; }
+.workspace button:hover { background: var(--strong); }
+.actionLink { display: inline-block; border: 1px solid var(--rule); border-radius: 6px; padding: 9px 13px; background: var(--panel); color: var(--copy); min-height: 42px; line-height: 1.5; overflow-wrap: anywhere; }
+.actionLink:hover { background: var(--strong); }
+.actionLink:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
+.workspace button:focus-visible, .workspace summary:focus-visible, .fragment:focus { outline: 3px solid var(--cyan); outline-offset: 3px; }
+.workspace button:disabled { opacity: .55; cursor: not-allowed; }
+.columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.block { margin-top: 24px; min-width: 0; }
+.muted, .footer { color: var(--muted); font-size: .87rem; }
+.actions, .outcomes, .records, .references { list-style: none; padding: 0; margin: 0; }
+.actions li, .outcomes li, .records li, .references li { padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.actions li:first-child, .outcomes li:first-child { padding-top: 0; }
+.actions p { margin-top: 0; }
+.outcomes p { font-size: .87rem; margin-bottom: 0; }
+.references li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.references li > p { flex-basis: 100%; margin: 0; font-size: .85rem; color: var(--brass-soft); }
+.counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 12px 0; }
+.counts div { min-width: 0; background: var(--panel); padding: 14px; border: 1px solid var(--rule); border-radius: 6px; }
+.counts dt { font-size: .83rem; line-height: 1.5; }
+.counts dd { margin: 8px 0 0; font-size: 1.1rem; font-weight: 700; overflow-wrap: anywhere; }
+.source { border: 1px solid var(--rule); border-radius: 6px; margin: 9px 0; }
+.source summary { padding: 13px 16px; cursor: pointer; line-height: 1.5; overflow-wrap: anywhere; }
+.fragment { margin: 12px 16px; padding: 10px 0; scroll-margin: 80px; }
+.fragment p { white-space: pre-wrap; }
+.notice { padding: 12px 16px; background: color-mix(in srgb, var(--brass) 9%, var(--panel)); border-left: 3px solid var(--brass); }
+.footer { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin: 28px 0; border-top: 1px solid var(--rule); padding-top: 16px; }
+.footer p { max-width: 78ch; }
+.footer button { flex-shrink: 0; }
+.preserve { white-space: pre-wrap; }
+.workspace code { overflow-wrap: anywhere; }
+@media (max-width: 680px) {
+  .workspace { width: calc(100% - 32px); margin: 18px auto; }
+  .header { flex-direction: column; gap: 0; margin-bottom: 14px; }
+  .status { flex-shrink: 1; }
+  .columns, .counts { grid-template-columns: 1fr; gap: 8px; }
+  .recommendation { padding: 16px; }
+  .footer { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .references li { align-items: flex-start; flex-direction: column; }
+  .references li > p { flex-basis: auto; }
+}

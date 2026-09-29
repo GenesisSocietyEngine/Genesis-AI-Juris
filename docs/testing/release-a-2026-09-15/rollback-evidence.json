@@ -1,0 +1,36 @@
+{
+  "oldSourceCommit": "dca6af234ce27c76a6b1cb22359be9540d8e5049",
+  "environment": "Exact v86 route dependency graph; isolated Miniflare D1/R2 after 0022; synthetic provider headers, not browser authentication",
+  "reads": true,
+  "legacyRequestCreateAndUpdate": true,
+  "keyedClientRejectedWithoutMutation": true,
+  "foreignOrganizationAndViewerDenied": true,
+  "freshSnapshotAndPdfReopened": true,
+  "sealedPdfBytesPreserved": true,
+  "newTableCounts": [
+    {
+      "table": "dossier_working_notes",
+      "count": 2
+    },
+    {
+      "table": "dossier_working_note_versions",
+      "count": 9
+    },
+    {
+      "table": "dossier_working_note_sources",
+      "count": 2
+    },
+    {
+      "table": "dossier_working_note_applications",
+      "count": 3
+    },
+    {
+      "table": "dossier_request_operations",
+      "count": 4
+    }
+  ],
+  "newRecordsPreserved": true,
+  "foreignKeyViolations": 0,
+  "oldPdfSha256": "aa23918148f18e5e08dae9ecbba6cb38c4244cbcc9de9a9b36b676f8bde0778e",
+  "newPdfSha256": "cfb77306f84c938c43c97e29d923d8b8c3a53651e2e7401a1a749b4a35772371"
+}

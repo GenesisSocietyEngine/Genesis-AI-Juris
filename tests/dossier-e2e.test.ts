@@ -82,6 +82,10 @@ const MIGRATIONS = [
   "0016_polite_sentinels.sql",
   "0017_perfect_marvex.sql",
   "0018_low_calypso.sql",
+  "0019_p1_organization_scope.sql",
+  "0020_dependable_actions.sql",
+  "0021_disposition_audit_binding.sql",
+  "0022_loving_juggernaut.sql",
 ] as const;
 
 const AT = "2026-09-01T08:00:00.000Z";
@@ -385,7 +389,20 @@ async function seedMatter(): Promise<MatterHarness> {
   const reviewerParticipantId = opaque("participant");
   const reviewerAuditId = opaque("audit");
   const seededAt = new Date().toISOString();
+  const organizationId = opaque("organization");
   await d1.batch([
+    d1.prepare(
+      "INSERT INTO organizations (id, name, kind, status, revision, created_by_actor_id, created_at) VALUES (?, 'Scenario A workspace', 'team', 'active', 1, ?, ?)",
+    ).bind(organizationId, owner.actor_id, seededAt),
+    d1.prepare(
+      "INSERT INTO organization_memberships (organization_id, user_id, actor_id, role, status, revision, created_at) VALUES (?, ?, ?, 'org_owner', 'active', 1, ?)",
+    ).bind(organizationId, owner.id, owner.actor_id, seededAt),
+    d1.prepare(
+      "INSERT INTO organization_memberships (organization_id, user_id, actor_id, role, status, revision, created_at) VALUES (?, ?, ?, 'member', 'active', 1, ?)",
+    ).bind(organizationId, reviewer.id, reviewer.actor_id, seededAt),
+    d1.prepare(
+      "INSERT INTO dossier_organization_bindings (dossier_id, organization_id, created_by_actor_id, created_at) VALUES (?, ?, ?, ?)",
+    ).bind(dossierId, organizationId, owner.actor_id, seededAt),
     d1.prepare(
       "INSERT INTO dossiers (id, reference, title, dossier_type_registry, dossier_type_id, dossier_type_version, terminology, owner_user_id, owner_actor_id, jurisdictions, classification, priority, status, key_deadline_at, key_deadline_timezone, created_by_actor_ref, updated_by_actor_ref, created_at, updated_at) VALUES (?, ?, ?, 'genesis-juris-dossier-types', 'general-matter', '1.0.0', 'matter', ?, ?, ?, 'strictly_confidential', 'high', 'draft', '2026-12-01T10:00:00.000Z', 'Europe/Paris', ?, ?, ?, ?)",
     ).bind(
@@ -1526,9 +1543,10 @@ test("Scenario D - v61 validation, simulation, anonymous PDF and Studio save-ret
     "genesis-juris:studio-workflow:v1:" + existing.caseId,
   );
   const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
-  assert.match(appSource, /return_to=.*view=studio&auth_retry=1/u);
-  assert.match(appSource, /setDraft\(pending\.draft\)/u);
-  assert.match(appSource, /shareDraftRef\.current\(pending\.action, pending\)/u);
+  assert.match(appSource, /createStudioAuthContinuation/u);
+  assert.match(appSource, /verifiedStudioSaveReceipt/u);
+  assert.match(appSource, /savedStudioPath/u);
+  assert.doesNotMatch(appSource, /shareDraftRef|parsePendingWorkspaceSave/u);
 
   const dossierCountAfter = await row<{ count: number }>(
     "SELECT count(*) AS count FROM dossiers",

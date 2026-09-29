@@ -1,0 +1,328 @@
+{
+  "caseId": "synthetic_c_commitment_capacity_20260929",
+  "version": "1.0.0",
+  "parent": null,
+  "title": "SYNTHETIC C-valid — commitment reconciliation and capacity",
+  "jurisdiction": "Fictional software-test scenario; no real legal jurisdiction",
+  "role": "Synthetic test-case coordinator",
+  "premise": "Fictional derived test scenario: original fixture C retains its signed register of 300, unverified forecast of 150 and inconsistent draft claim of 600. A separate synthetic reconciliation schedule resolves the duplicate-counting error and allocates 300 delivery slots for 2026-09-29 through 2026-10-05. The later 120 sensitivity remains unverified. Compare exact current signed demand with this capacity; any increase above 300 requires new evidence and reassessment. Administrative cutoff: 2026-10-05 18:00 Europe/Paris. This package is modeled preparation only: no publication, completed simulation, source acceptance or output approval is claimed.",
+  "premisePublication": "prompt-derived",
+  "classification": {
+    "domain": "general",
+    "practiceArea": "Synthetic commitment and delivery-capacity review",
+    "difficulty": "Intermediate",
+    "tags": [
+      "synthetic",
+      "software-test",
+      "fixture-c-derived",
+      "capacity"
+    ],
+    "taxTopics": [],
+    "complianceOnly": true,
+    "purpose": "compliance_review",
+    "sourceUrls": []
+  },
+  "nodes": [
+    {
+      "id": "trigger",
+      "type": "trigger",
+      "title": "Reconcile the synthetic commitment plan",
+      "detail": "SOFTWARE TEST ONLY. Preserve original fixture C source v1 and its 300/600 discrepancy. The derived scenario adds a separate reconciliation/capacity schedule; no original bytes or professional reviews are rewritten.",
+      "x": 100,
+      "y": 100,
+      "runtime": {
+        "day": 1,
+        "time": "09:00"
+      }
+    },
+    {
+      "id": "actor",
+      "type": "actor",
+      "title": "Synthetic test-case coordinator",
+      "detail": "A fictional case coordinator compares exact evidence. Organization membership, case review authority, platform publication authority and output approval remain separate. This modeled role does not grant application permissions.",
+      "x": 290,
+      "y": 100,
+      "runtime": {
+        "day": 1,
+        "time": "09:00"
+      }
+    },
+    {
+      "id": "register",
+      "type": "evidence",
+      "title": "Original register: 300 signed; 150 forecast; draft claims 600",
+      "detail": "Historical v1 SHA-256 f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e records 300 signed commitments, 150 unverified forecast and the inconsistent 600 draft summary. Preserve the original contradiction and exact citations.",
+      "x": 480,
+      "y": 100,
+      "runtime": {
+        "day": 1,
+        "time": "09:00"
+      }
+    },
+    {
+      "id": "reconciliation",
+      "type": "evidence",
+      "title": "Derived correction: 600 was duplicate counting",
+      "detail": "The separate SYNTHETIC C-valid schedule states that 600 was a duplicate-counting error and the signed total remains 300. This authored test fact does not change the historical source. The actual Matter must record exact anchors and explicit permitted correction/review events.",
+      "x": 670,
+      "y": 100,
+      "runtime": {
+        "day": 1,
+        "time": "09:00"
+      }
+    },
+    {
+      "id": "capacity",
+      "type": "evidence",
+      "title": "Derived capacity: 300 delivery slots, no spare capacity",
+      "detail": "For 2026-09-29 through 2026-10-05, one commitment uses one slot and the derived schedule allocates 300 slots to 300 signed commitments. No spare capacity is evidenced. The additional 150 forecast and later 120 analyst sensitivity remain unverified and excluded from signed demand.",
+      "x": 860,
+      "y": 100,
+      "runtime": {
+        "day": 1,
+        "time": "09:00"
+      }
+    },
+    {
+      "id": "cutoff",
+      "type": "deadline",
+      "title": "Synthetic review cutoff: 2026-10-05 18:00 Europe/Paris",
+      "detail": "This is a test-administration cutoff, equivalent to 2026-10-05T16:00:00.000Z, not a legal deadline. Simulation day 1 represents 2026-09-29 and day 7 represents 2026-10-05; simulation timing does not establish real elapsed time or review.",
+      "x": 1050,
+      "y": 100,
+      "runtime": {
+        "day": 1,
+        "time": "09:00",
+        "deadlineDay": 7,
+        "deadlineTime": "18:00",
+        "missedOutcomeNodeId": "unknown"
+      }
+    },
+    {
+      "id": "decision",
+      "type": "decision",
+      "title": "Compare current signed demand with the 300-slot basis",
+      "detail": "Choose only the branch supported by the current exact source versions. The graph presents authored choices and does not automatically parse, approve or validate document facts. If a later source records 320 signed commitments, the documented capacity is short by 20 and requires reassessment/new evidence.",
+      "x": 1240,
+      "y": 100,
+      "runtime": {
+        "day": 1,
+        "time": "09:00"
+      }
+    },
+    {
+      "id": "within",
+      "type": "outcome",
+      "title": "Internal draft plan limited to 300 signed commitments",
+      "detail": "Within this fictional derived scenario only, prepare an unapproved internal plan for the documented 300 commitments and 300 slots. No spare capacity or forecast demand is included. The output remains a draft until the separate exact-version review process says otherwise. This is not professional or operational approval.",
+      "x": 1430,
+      "y": 100,
+      "runtime": {
+        "day": 1,
+        "time": "09:00",
+        "terminalOutcome": "strong"
+      }
+    },
+    {
+      "id": "exceeds",
+      "type": "outcome",
+      "title": "Hold increased demand pending new capacity evidence",
+      "detail": "A later signed total above 300, including synthetic v2's 320, exceeds the documented 300 slots. Keep the historical output, mark its source dependency stale through the product workflow and request new capacity evidence. Do not silently change old sources, inherit approval or claim automatic recomputation.",
+      "x": 1620,
+      "y": 280,
+      "runtime": {
+        "day": 1,
+        "time": "09:00",
+        "terminalOutcome": "mixed"
+      }
+    },
+    {
+      "id": "unknown",
+      "type": "outcome",
+      "title": "Hold when source basis or review is unresolved",
+      "detail": "If the exact source, reconciliation, capacity or current review is unavailable or unresolved, retain the limitation and obtain the missing evidence through authorized workflows. An authored choice or completed simulation does not itself accept any source or output.",
+      "x": 1810,
+      "y": 460,
+      "runtime": {
+        "day": 1,
+        "time": "09:00",
+        "terminalOutcome": "weak"
+      }
+    }
+  ],
+  "links": [
+    {
+      "id": "c_valid_1",
+      "from": "trigger",
+      "to": "actor",
+      "rule": {
+        "label": "Start synthetic evidence review",
+        "detail": "A fictional case coordinator compares exact evidence. Organization membership, case review authority, platform publication authority and output approval remain separate. This modeled role does not grant application permissions.",
+        "result": "Continue the modeled synthetic review at Synthetic test-case coordinator. No application evidence/review state is changed by this modeled choice.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "c_valid_2",
+      "from": "actor",
+      "to": "register",
+      "rule": {
+        "label": "Inspect immutable historical register",
+        "detail": "Historical v1 SHA-256 f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e records 300 signed commitments, 150 unverified forecast and the inconsistent 600 draft summary. Preserve the original contradiction and exact citations.",
+        "result": "Continue the modeled synthetic review at Original register: 300 signed; 150 forecast; draft claims 600. No application evidence/review state is changed by this modeled choice.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "c_valid_3",
+      "from": "register",
+      "to": "reconciliation",
+      "rule": {
+        "label": "Inspect separate correction basis",
+        "detail": "The separate SYNTHETIC C-valid schedule states that 600 was a duplicate-counting error and the signed total remains 300. This authored test fact does not change the historical source. The actual Matter must record exact anchors and explicit permitted correction/review events.",
+        "result": "Continue the modeled synthetic review at Derived correction: 600 was duplicate counting. No application evidence/review state is changed by this modeled choice.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "c_valid_4",
+      "from": "reconciliation",
+      "to": "capacity",
+      "rule": {
+        "label": "Inspect capacity schedule",
+        "detail": "For 2026-09-29 through 2026-10-05, one commitment uses one slot and the derived schedule allocates 300 slots to 300 signed commitments. No spare capacity is evidenced. The additional 150 forecast and later 120 analyst sensitivity remain unverified and excluded from signed demand.",
+        "result": "Continue the modeled synthetic review at Derived capacity: 300 delivery slots, no spare capacity. No application evidence/review state is changed by this modeled choice.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "c_valid_5",
+      "from": "capacity",
+      "to": "cutoff",
+      "rule": {
+        "label": "Record the synthetic cutoff",
+        "detail": "This is a test-administration cutoff, equivalent to 2026-10-05T16:00:00.000Z, not a legal deadline. Simulation day 1 represents 2026-09-29 and day 7 represents 2026-10-05; simulation timing does not establish real elapsed time or review.",
+        "result": "Continue the modeled synthetic review at Synthetic review cutoff: 2026-10-05 18:00 Europe/Paris. No application evidence/review state is changed by this modeled choice.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "c_valid_6",
+      "from": "cutoff",
+      "to": "decision",
+      "rule": {
+        "label": "Assess current exact source basis",
+        "detail": "Choose only the branch supported by the current exact source versions. The graph presents authored choices and does not automatically parse, approve or validate document facts. If a later source records 320 signed commitments, the documented capacity is short by 20 and requires reassessment/new evidence.",
+        "result": "Continue the modeled synthetic review at Compare current signed demand with the 300-slot basis. No application evidence/review state is changed by this modeled choice.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "c_valid_7",
+      "from": "decision",
+      "to": "within",
+      "rule": {
+        "label": "Current signed demand is 300 and the exact 300-slot basis is available",
+        "detail": "Within this fictional derived scenario only, prepare an unapproved internal plan for the documented 300 commitments and 300 slots. No spare capacity or forecast demand is included. The output remains a draft until the separate exact-version review process says otherwise. This is not professional or operational approval.",
+        "result": "Continue the modeled synthetic review at Internal draft plan limited to 300 signed commitments. No application evidence/review state is changed by this modeled choice.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "c_valid_8",
+      "from": "decision",
+      "to": "exceeds",
+      "rule": {
+        "label": "Current signed demand exceeds 300",
+        "detail": "A later signed total above 300, including synthetic v2's 320, exceeds the documented 300 slots. Keep the historical output, mark its source dependency stale through the product workflow and request new capacity evidence. Do not silently change old sources, inherit approval or claim automatic recomputation.",
+        "result": "Continue the modeled synthetic review at Hold increased demand pending new capacity evidence. No application evidence/review state is changed by this modeled choice.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    },
+    {
+      "id": "c_valid_9",
+      "from": "decision",
+      "to": "unknown",
+      "rule": {
+        "label": "Basis or required review is unresolved",
+        "detail": "If the exact source, reconciliation, capacity or current review is unavailable or unresolved, retain the limitation and obtain the missing evidence through authorized workflows. An authored choice or completed simulation does not itself accept any source or output.",
+        "result": "Continue the modeled synthetic review at Hold when source basis or review is unresolved. No application evidence/review state is changed by this modeled choice.",
+        "cost": 0,
+        "minutes": 1,
+        "effects": {
+          "position": 0,
+          "evidence": 0,
+          "trust": 0,
+          "exposure": 0
+        },
+        "repeatability": "once"
+      }
+    }
+  ],
+  "editHistory": [],
+  "updatedAt": "2026-09-29T02:45:00.000Z"
+}

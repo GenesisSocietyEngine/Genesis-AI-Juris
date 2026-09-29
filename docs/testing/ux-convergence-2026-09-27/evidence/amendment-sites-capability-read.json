@@ -1,0 +1,88 @@
+{
+  "checkedAt": "2026-09-27 20:23:51 UTC",
+  "scope": "Read-only Sites capability and current-project inventory; no provisioning/publication/access change/token minting",
+  "project": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "title": "GENESIS: JURIS Web",
+    "status": "active",
+    "accessMode": "public",
+    "availableAccessModes": [
+      "custom",
+      "public"
+    ],
+    "currentUserRole": "owner",
+    "externalVisitorInvitesEnabled": true,
+    "latestVersionNumber": 102,
+    "currentLiveUrl": "https://studio.falcon-merlin.com",
+    "currentPreviewUrl": null,
+    "authClientPresent": true,
+    "accessPolicy": {
+      "revision": 2,
+      "allowedUserCount": 1,
+      "allowedGroupCount": 0
+    }
+  },
+  "environment": {
+    "revision": 39,
+    "updatedAt": "2026-09-11T16:00:25.969297+00:00",
+    "entryNames": [
+      "GENESIS-JURIS-Production",
+      "GENESIS_ADMIN_EMAILS",
+      "GENESIS_AI_DAILY_REQUEST_LIMIT",
+      "GENESIS_DEPLOYMENT_VERSION",
+      "GENESIS_OPENAI_MODEL",
+      "GENESIS_PUBLIC_ORIGIN",
+      "GENESIS_RESET_FROM_EMAIL",
+      "GENESIS_WEB_COMMIT",
+      "OPENAI_API_KEY",
+      "OPEN_API_KEY",
+      "RESEND_API_KEY"
+    ],
+    "instructionsPresent": false
+  },
+  "toolsInspected": [
+    "mcp__codex_apps__sites_add_custom_domain",
+    "mcp__codex_apps__sites_change_site_slug",
+    "mcp__codex_apps__sites_create_site",
+    "mcp__codex_apps__sites_create_source_repository_write_credential",
+    "mcp__codex_apps__sites_deploy_private_site_version",
+    "mcp__codex_apps__sites_deploy_site_version",
+    "mcp__codex_apps__sites_generate_siwc_bypass_token",
+    "mcp__codex_apps__sites_get_deployment_status",
+    "mcp__codex_apps__sites_get_environment_variables",
+    "mcp__codex_apps__sites_get_site",
+    "mcp__codex_apps__sites_get_site_version",
+    "mcp__codex_apps__sites_get_site_worker_logs",
+    "mcp__codex_apps__sites_list_custom_domains",
+    "mcp__codex_apps__sites_list_site_versions",
+    "mcp__codex_apps__sites_list_sites",
+    "mcp__codex_apps__sites_read_database_overview",
+    "mcp__codex_apps__sites_read_database_table_rows",
+    "mcp__codex_apps__sites_refresh_custom_domain_status",
+    "mcp__codex_apps__sites_remove_custom_domain",
+    "mcp__codex_apps__sites_save_site_version",
+    "mcp__codex_apps__sites_save_version_and_deploy_private",
+    "mcp__codex_apps__sites_update_environment_variables",
+    "mcp__codex_apps__sites_update_site_access",
+    "mcp__codex_apps__sites_update_site_metadata"
+  ],
+  "readOperationsExecuted": [
+    "sites_get_site",
+    "sites_get_environment_variables"
+  ],
+  "notExecuted": [
+    "create_site",
+    "create_source_repository_write_credential",
+    "save_site_version",
+    "deploy_site_version",
+    "deploy_private_site_version",
+    "save_version_and_deploy_private",
+    "generate_siwc_bypass_token",
+    "update_site_access",
+    "update_environment_variables",
+    "database row reads",
+    "D1/R2 provisioning",
+    "production data copy"
+  ],
+  "limits": "Metadata confirms project-level production/private deployment capabilities, not an isolated provisioned review project or independent D1/R2 resource IDs. Current preview null is only current state, not proof that a separate review project is impossible."
+}

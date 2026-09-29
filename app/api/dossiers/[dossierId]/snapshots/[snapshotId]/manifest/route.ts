@@ -4,6 +4,7 @@ import {
   downloadDossierSnapshotManifest,
 } from "../../../../../../dossier-governed-output-server";
 import {
+  revalidateDossierReadAccess,
   dossierNotFound,
   dossierJson,
   isResponse,
@@ -39,7 +40,7 @@ export async function GET(_request: Request, routeContext: RouteContext) {
       dossierId: access.dossier.id,
       snapshotId,
     });
-    const current = await requireDossierAccess(context, dossierId, "download");
+    const current = await revalidateDossierReadAccess(context, access, "download");
     if (isResponse(current)) { await response.body?.cancel(); return current; }
     return response;
   } catch (error) {

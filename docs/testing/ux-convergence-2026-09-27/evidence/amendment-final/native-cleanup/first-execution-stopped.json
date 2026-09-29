@@ -1,0 +1,98 @@
+{
+    "schema":  "genesis.juris.owned-emulator-cleanup.v1",
+    "startedAt":  "2026-09-28T01:00:43.5943310Z",
+    "mode":  "EXECUTE",
+    "executed":  true,
+    "serial":  "emulator-5580",
+    "avd":  "UXGatePixel",
+    "status":  "STOPPED_FOR_REVIEW",
+    "actions":  [
+                    {
+                        "at":  "2026-09-28T01:00:45.7318101Z",
+                        "action":  "GRACEFUL_ADB_EMU_KILL",
+                        "serial":  "emulator-5580",
+                        "commandCompleted":  true,
+                        "exitCode":  0
+                    }
+                ],
+    "adbCommands":  [
+                        {
+                            "arguments":  [
+                                              "-s",
+                                              "emulator-5580",
+                                              "shell",
+                                              "getprop",
+                                              "ro.boot.qemu.avd_name"
+                                          ],
+                            "completed":  true,
+                            "exitCode":  0,
+                            "stdout":  "UXGatePixel",
+                            "stderr":  ""
+                        },
+                        {
+                            "arguments":  [
+                                              "-s",
+                                              "emulator-5580",
+                                              "get-state"
+                                          ],
+                            "completed":  true,
+                            "exitCode":  0,
+                            "stdout":  "device",
+                            "stderr":  ""
+                        },
+                        {
+                            "arguments":  [
+                                              "-s",
+                                              "emulator-5580",
+                                              "emu",
+                                              "kill"
+                                          ],
+                            "completed":  true,
+                            "exitCode":  0,
+                            "stdout":  "KO: missing authentication token\r\r\nKO: unknown command, try \u0027help\u0027",
+                            "stderr":  ""
+                        }
+                    ],
+    "finalGateCompletionEvidence":  {
+                                        "path":  "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\.artifacts\\amendment-release-gate\\aggregate-candidate-receipt.json",
+                                        "sha256":  "c78db67704b8e2f82508711e5e7eb5256a287d915e17b6442d0df2ee6dc76e80",
+                                        "meaning":  "Root-confirmed completion; this cleanup script does not independently certify gate results."
+                                    },
+    "ownershipBefore":  [
+                            {
+                                "processId":  4116,
+                                "parentProcessId":  26372,
+                                "executablePath":  "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\emulator.exe",
+                                "creationUtc":  "2026-09-27T20:35:08.4851430Z",
+                                "commandLine":  "\"C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\emulator.exe\" -avd UXGatePixel -port 5580 -read-only -no-snapshot-load -no-snapshot-save -no-window -no-audio -gpu swiftshader -memory 2048 -cores 2 "
+                            },
+                            {
+                                "processId":  25048,
+                                "parentProcessId":  4116,
+                                "executablePath":  "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\qemu\\windows-x86_64\\qemu-system-x86_64-headless.exe",
+                                "creationUtc":  "2026-09-27T20:35:09.6325920Z",
+                                "commandLine":  "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\qemu\\windows-x86_64\\qemu-system-x86_64-headless.exe -avd UXGatePixel -port 5580 -read-only -no-snapshot-load -no-snapshot-save -no-window -no-audio -gpu swiftshader -memory 2048 -cores 2"
+                            }
+                        ],
+    "preservationBefore":  {
+                               "originalAvd":  "C:\\Users\\User\\.android\\avd\\Pixel.avd",
+                               "configSha256":  "94827b8b8bfc85bb19c02859ca3548ce462e8dffef44e1877b84d65ec0627e8d",
+                               "expectedConfigSha256":  "94827b8b8bfc85bb19c02859ca3548ce462e8dffef44e1877b84d65ec0627e8d",
+                               "configUnchanged":  true,
+                               "expectedFileCount":  18661,
+                               "actualFileCount":  18661,
+                               "metadataUnchanged":  true,
+                               "metadataDifferenceCount":  0,
+                               "firstDifferences":  [
+
+                                                    ],
+                               "mobileHead":  "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+                               "mobileExpectedHead":  "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+                               "mobileStatus":  "",
+                               "mobileExactAndClean":  true,
+                               "limitation":  "Config is byte-hashed; other original AVD files are compared by full relative path, size and UTC mtime, not by content hash."
+                           },
+    "error":  "Fallback process handle no longer matches owned instance.",
+    "finishedAt":  "2026-09-28T01:01:01.3024679Z",
+    "noOtherProcessOrFileMutation":  "No other emulator, ADB server, Gradle service or file deletion is targeted. Task AVD data/logs are retained."
+}

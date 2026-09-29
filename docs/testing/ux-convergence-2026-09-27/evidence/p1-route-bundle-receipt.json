@@ -1,0 +1,571 @@
+{
+  "checkedAt": "2026-09-27T09:51:21.537Z",
+  "launchedAt": "2026-09-27T09:11:29.000Z",
+  "initialArtifactComparison": {
+    "storedSha256": "477c7bda3bc15f322816514bb4fc890867863de9f635fb71d2f74e03e4712ccd",
+    "currentP1Sha256": "5f69b1aeb6f48027978a00467c4243490022a0842cad55e6cba70ac13f3f431a",
+    "exactMatch": false,
+    "usableAsP1Identity": false,
+    "reason": "c1-notes-route.test.ts writes its distinct route bundle to the same artifact path; the later 11:35 write is not the earlier loaded P1 module"
+  },
+  "method": "Current route and direct-test esbuild input closure, file timestamps versus runner launch, and current hashes; not a captured pre-run manifest",
+  "inputCount": 111,
+  "modifiedAfterLaunch": [],
+  "moduleReceipts": [
+    {
+      "path": "app/api/auth/login/route.ts",
+      "sha256": "891010df3579950d40d3728986ae7ab1bcda65e8abae50b9354082b6c5e5e52a",
+      "modifiedAt": "2026-09-27T08:08:25.763Z"
+    },
+    {
+      "path": "app/api/auth/logout/route.ts",
+      "sha256": "4683c1f6f8c2d6f3d91da4334a7575256d65ccfddb588022649f350b2be4b613",
+      "modifiedAt": "2026-09-27T08:08:25.765Z"
+    },
+    {
+      "path": "app/api/auth/register/route.ts",
+      "sha256": "ee693f2d83e7672f336d6b020448e62f8b21665c9f5ee9e6d81bf24509724354",
+      "modifiedAt": "2026-09-27T08:08:25.768Z"
+    },
+    {
+      "path": "app/api/catalog/[caseId]/route.ts",
+      "sha256": "8f8fdfcbbaee637df6205f4038a777fb40ae78fd3c90ae83c2d2221564c9a575",
+      "modifiedAt": "2026-09-27T08:08:25.774Z"
+    },
+    {
+      "path": "app/api/catalog/bundled-manifest.ts",
+      "sha256": "86a59ed5ef6e1717b7f4aab54a5b0fe1b5b8dde89ff91125b8dadf2baf9859a3",
+      "modifiedAt": "2026-09-27T08:08:25.775Z"
+    },
+    {
+      "path": "app/api/catalog/catalog-query.ts",
+      "sha256": "07828bcc50a6cb4b89afb032c4ec3a65805935ca6d9b9b2380387879a132d5e3",
+      "modifiedAt": "2026-09-27T08:08:25.776Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/activity/route.ts",
+      "sha256": "314f68767bdf863aabfc3c86c589ac9fd3e402c2f79e9f87b09fdc2c885d04d2",
+      "modifiedAt": "2026-09-27T08:08:25.782Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/decision-packages/route.ts",
+      "sha256": "24d5c5e169f2ac88a9abc8006f1ac5df6cb692b37196c18b057d5719eaa80bb6",
+      "modifiedAt": "2026-09-27T08:08:25.785Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/dispositions/route.ts",
+      "sha256": "c99e1563c16fcb476577221d85109a464d31e5b6ed2148cb0c229d86b7f1f416",
+      "modifiedAt": "2026-09-27T08:08:25.787Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/documents/[documentId]/review/route.ts",
+      "sha256": "e47482b9480aeb7af51e23d9e0df491c7419e1c875fef82acf4f7161ebaa6671",
+      "modifiedAt": "2026-09-27T08:08:25.792Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/documents/[documentId]/versions/[versionId]/download/route.ts",
+      "sha256": "301ba3e74024a70f50bc639746734de49cb44efc05ef358b55a55e436a0f6166",
+      "modifiedAt": "2026-09-27T08:08:25.795Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/documents/route.ts",
+      "sha256": "477b0a37cd87ecb0caadab42660c17015697b94b64c640d24413e9cfb474c42f",
+      "modifiedAt": "2026-09-27T08:08:25.796Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/evidence/anchors/route.ts",
+      "sha256": "8c949a1210cc6e23eafdc0a804f0d7757785ff6104e0c4e2110238cd5dd9a832",
+      "modifiedAt": "2026-09-27T08:08:25.801Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/evidence/assertions/route.ts",
+      "sha256": "55461d973a054dd8b372847ed3ab275c3b7b7b3be17680abee1019b68fc6e505",
+      "modifiedAt": "2026-09-27T08:08:25.803Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/evidence/links/route.ts",
+      "sha256": "47c4cc6b6b055f5a18c2be814b4e20a93c9b96853ec2cd1eea81250b27156875",
+      "modifiedAt": "2026-09-27T08:08:25.805Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/outputs/[outputId]/download/route.ts",
+      "sha256": "543af5f3887d67a270d6c3dc6566a58ba206cd73b72f258c22a419b34e5e1873",
+      "modifiedAt": "2026-09-27T08:08:25.814Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/outputs/[outputId]/presentation/route.ts",
+      "sha256": "d50828c7b83da8b5bd4cc0059e5bf57e1d7a4af9086a5311aaea5ac676d17026",
+      "modifiedAt": "2026-09-27T08:08:25.815Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/outputs/route.ts",
+      "sha256": "7a24ac0b5146eeafc134acadfd3f722bf3780565cf621854fc6acf0b2c897fbd",
+      "modifiedAt": "2026-09-27T08:08:25.816Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/participants/route.ts",
+      "sha256": "59bd6015a466e4e359cfbdac9b7621623ccd85a0d5abcf1cd14453ce6a230bdb",
+      "modifiedAt": "2026-09-27T08:08:25.818Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/proposals/generate/route.ts",
+      "sha256": "fd437ac5cf081bd51c3f806bdf6874f79293200a2b50c39726ca4d2f5ce75873",
+      "modifiedAt": "2026-09-27T08:08:25.821Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/proposals/route.ts",
+      "sha256": "62dc5fb0c2983a0dbb581875826172ed7a8d7691b5bcb0cbdd602c86a0ad0e9c",
+      "modifiedAt": "2026-09-27T08:08:25.822Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/requests/route.ts",
+      "sha256": "68ab10142e5cea688f60b2b56e763f8ab209ef75cf10bb7fc5990708d5fe11ae",
+      "modifiedAt": "2026-09-27T08:08:25.824Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/route.ts",
+      "sha256": "4a8ed84bf8abe347ebe44c6d661d35715109c725ea9642df94596ebab2162ea4",
+      "modifiedAt": "2026-09-27T08:08:25.825Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/snapshots/[snapshotId]/manifest/route.ts",
+      "sha256": "a51523ced1982b4b5bcedac54b6fe56af1dd5f359255564cb45d4d95e4b1b09e",
+      "modifiedAt": "2026-09-27T08:08:25.828Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/snapshots/route.ts",
+      "sha256": "8e783a414109e293efc98818cc53e65c747854d3dac16d7810a6de275cecb3f1",
+      "modifiedAt": "2026-09-27T08:08:25.829Z"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/transitions/route.ts",
+      "sha256": "f07e61362ec4e58d9f26ed1434a9e990ec085c550055b8fed9e690ef74a0a23a",
+      "modifiedAt": "2026-09-27T08:08:25.831Z"
+    },
+    {
+      "path": "app/api/dossiers/route.ts",
+      "sha256": "55b81c1ae3c5b409cf26ecc9959fcaea688eb924cd27db53f0c8e17d7afb0d21",
+      "modifiedAt": "2026-09-27T08:08:25.832Z"
+    },
+    {
+      "path": "app/api/organizations/route.ts",
+      "sha256": "26836400a2418809c43e3d102e50ba7a54e1867da1f4e1a2707680bb091382ee",
+      "modifiedAt": "2026-09-27T08:08:25.843Z"
+    },
+    {
+      "path": "app/api/play-sessions/route.ts",
+      "sha256": "263d16f26b35052d0ae12350279f69fedd6eae3ed2c8a9ccce553c9ac02573d8",
+      "modifiedAt": "2026-09-27T08:08:25.845Z"
+    },
+    {
+      "path": "app/auth-crypto.ts",
+      "sha256": "82d940df94c18aede4ee67ade667e37eb0e60c41998d922eea33dbf9038f86e3",
+      "modifiedAt": "2026-09-27T08:08:25.852Z"
+    },
+    {
+      "path": "app/auth-http.ts",
+      "sha256": "438f5259b64e4038d41becc425bcaeec4963ff5c52fc4d46b8cf95c6a4325589",
+      "modifiedAt": "2026-09-27T08:08:25.853Z"
+    },
+    {
+      "path": "app/canonical-case-bundle.json",
+      "sha256": "18144245b2eb11345a96d86a18ead0804ceef7d26aa3492ad67c6924ebbbe012",
+      "modifiedAt": "2026-09-27T08:08:25.859Z"
+    },
+    {
+      "path": "app/canonical-runtime.ts",
+      "sha256": "fc9585f3f331cc045bf98486a322b5499eeba27132ad37d028f9beca2f6f2685",
+      "modifiedAt": "2026-09-27T08:08:25.860Z"
+    },
+    {
+      "path": "app/canopy-disclosure.ts",
+      "sha256": "968d5d5ce4f7c63afa88a2bd53d5eef775667a1932c7d61b614bfbaf89f6729a",
+      "modifiedAt": "2026-09-27T08:08:25.861Z"
+    },
+    {
+      "path": "app/canopy-fixture.ts",
+      "sha256": "ec8127679a8f1eef4c49274fc6791be90aa843d35cad5981aee93bf24d6aa1cd",
+      "modifiedAt": "2026-09-27T08:08:25.863Z"
+    },
+    {
+      "path": "app/canopy-inputs.ts",
+      "sha256": "d4ca5c3309cda214536c0d1c726af931fc7dfda7434ca1c170c72968c70f15c3",
+      "modifiedAt": "2026-09-27T08:08:25.864Z"
+    },
+    {
+      "path": "app/canopy-source-history.ts",
+      "sha256": "1c54b89bc1107b3cd01b80f2d8d7f8a7f1695675d729ff1e9e7ed545a2c133c0",
+      "modifiedAt": "2026-09-27T08:08:25.866Z"
+    },
+    {
+      "path": "app/canopy-workflow.ts",
+      "sha256": "0986d5ec98e0a635b429b280778fc82f33d9ecf3fca7b2acc1694c4dd6a9b171",
+      "modifiedAt": "2026-09-27T08:08:25.866Z"
+    },
+    {
+      "path": "app/case-integrity.ts",
+      "sha256": "727e0741dbf763379cf2b8f3d7c2e2c09839458bc92e63cd8ab954c050cafd97",
+      "modifiedAt": "2026-09-27T08:08:25.876Z"
+    },
+    {
+      "path": "app/case-protection.ts",
+      "sha256": "c341440684c610a7a4060027cfb89dc9800802b50b357b102fd280e6780bfd8a",
+      "modifiedAt": "2026-09-27T08:08:25.879Z"
+    },
+    {
+      "path": "app/case-report-brief.ts",
+      "sha256": "ef299a65a5de14d59238d87f42f62708177272999601b4ae075dc9b047ef4ee0",
+      "modifiedAt": "2026-09-27T09:08:55.452Z"
+    },
+    {
+      "path": "app/case-report.ts",
+      "sha256": "5d0f8c08930c53f7fd4236a7bf7783defac45f6a09c908420248c0a7b2625a20",
+      "modifiedAt": "2026-09-27T09:08:58.493Z"
+    },
+    {
+      "path": "app/case-type-playbooks.ts",
+      "sha256": "0043ea7ff4bf31a3da8b1bdfeab9b8d5f07af1c1c34ff5e9554bf5ac807326b8",
+      "modifiedAt": "2026-09-27T08:08:25.883Z"
+    },
+    {
+      "path": "app/case-type-playbooks.v1.json",
+      "sha256": "9e20cd9e26c8b541df717f3d48b232f18f3a765106f567e3d80076cf52c88af9",
+      "modifiedAt": "2026-09-27T08:08:25.884Z"
+    },
+    {
+      "path": "app/case-type-reference.ts",
+      "sha256": "8e9d905fe6b8a0cbd3cbed98f925c82d3b9f08e5ed0f71a72a237e6da91e0c80",
+      "modifiedAt": "2026-09-27T08:08:25.885Z"
+    },
+    {
+      "path": "app/case-type-registry.ts",
+      "sha256": "fb634a978195656e701ba301a6a09bc4a9acc98e139eb211dda1d17bff25a58e",
+      "modifiedAt": "2026-09-27T08:08:25.886Z"
+    },
+    {
+      "path": "app/case-type-registry.v1.json",
+      "sha256": "1c3a21adeb41c55d2a2ebf240f2189706c557e2e997e2451fcd796e0abc3fe2f",
+      "modifiedAt": "2026-09-27T08:08:25.887Z"
+    },
+    {
+      "path": "app/catalogue-fallback.ts",
+      "sha256": "735d074b36c756b1d768f979f312b0672620c5b11be7b40eaf3cec40c20a0121",
+      "modifiedAt": "2026-09-27T08:08:25.889Z"
+    },
+    {
+      "path": "app/chatgpt-auth.ts",
+      "sha256": "51bceab0aa9fd9eee5b15784dbcb721c0cabcaeee3de83afc73acadecbe0981c",
+      "modifiedAt": "2026-09-27T08:08:25.891Z"
+    },
+    {
+      "path": "app/deal-economics.ts",
+      "sha256": "6e716a49123ae9fd8bb3969724038a5a40b821419301f8316530091f290ee53b",
+      "modifiedAt": "2026-09-27T08:08:25.895Z"
+    },
+    {
+      "path": "app/dossier-contract.ts",
+      "sha256": "d516971131015068558eff2c91a232bfbba513ad046a538ea27cf096d1d04b9c",
+      "modifiedAt": "2026-09-27T08:08:25.900Z"
+    },
+    {
+      "path": "app/dossier-contract.v1.json",
+      "sha256": "923f8340bb9102265cc3b9908d28e32bb4435953cfaf5f7a23ecca3cc23a7d7d",
+      "modifiedAt": "2026-09-27T08:08:25.901Z"
+    },
+    {
+      "path": "app/dossier-decision-package-integration.ts",
+      "sha256": "7486586fbaf793266a9a7a12931f0a6129d7dc198c2ccaa519bdf14e19f74167",
+      "modifiedAt": "2026-09-27T08:08:25.902Z"
+    },
+    {
+      "path": "app/dossier-document-upload-coordinator.ts",
+      "sha256": "0bfc6fc21b36bd932dc30a6e00a9904a7c18622206feb2b9890145cc4d8961da",
+      "modifiedAt": "2026-09-27T08:08:25.903Z"
+    },
+    {
+      "path": "app/dossier-download-security.ts",
+      "sha256": "fbdd0fa0056bd20b0405d07ef67500f9097cff881725f6254a14e4cf63381260",
+      "modifiedAt": "2026-09-27T08:08:25.904Z"
+    },
+    {
+      "path": "app/dossier-evidence-graph.ts",
+      "sha256": "e1af858162cd9f09eff961b1716fedbd83d9e2630975a7e71b9ff01a5845364c",
+      "modifiedAt": "2026-09-27T08:08:25.905Z"
+    },
+    {
+      "path": "app/dossier-evidence-server.ts",
+      "sha256": "4dc1f4f672959c56ef08b3000adb647e637a549d7ed34546c13afffd6210f597",
+      "modifiedAt": "2026-09-27T08:08:25.906Z"
+    },
+    {
+      "path": "app/dossier-governed-output-server.ts",
+      "sha256": "d1332cb06015759c5bb55e5871b3cea7b855664ac60e067d79e9d5ed4dda92da",
+      "modifiedAt": "2026-09-27T08:08:25.910Z"
+    },
+    {
+      "path": "app/dossier-participant-enrollment.ts",
+      "sha256": "2a03f2a68b3e826dba026c9afefdeb8ca660493881eec73c9b7cdf17cff3b0e6",
+      "modifiedAt": "2026-09-27T08:08:25.911Z"
+    },
+    {
+      "path": "app/dossier-private-upload.ts",
+      "sha256": "66790cb683328710e04e07f6352b549da7e2ddfbaa56d77c66996ccf7bc7151d",
+      "modifiedAt": "2026-09-27T08:08:25.912Z"
+    },
+    {
+      "path": "app/dossier-proposal-ai-server.ts",
+      "sha256": "1c0f8cfc90bc34b69a4926b8dc97dc667fe846700966f004dc05dab77110c841",
+      "modifiedAt": "2026-09-27T08:08:25.913Z"
+    },
+    {
+      "path": "app/dossier-proposal-generation.ts",
+      "sha256": "0aa4a6c581249eb18b8cb372a8001926e7486c56d559b7c8441111de384cf55c",
+      "modifiedAt": "2026-09-27T08:08:25.915Z"
+    },
+    {
+      "path": "app/dossier-proposal-review.ts",
+      "sha256": "e8a121dab18006b5b21dbe111d95d07e4a4977b3e98042b62ad0402bad30a882",
+      "modifiedAt": "2026-09-27T08:08:25.916Z"
+    },
+    {
+      "path": "app/dossier-readiness-server.ts",
+      "sha256": "c26495c149a06f1db6003e3610c278ae352cf09f753c1a803fc18a6ce5782635",
+      "modifiedAt": "2026-09-27T08:08:25.917Z"
+    },
+    {
+      "path": "app/dossier-readiness.ts",
+      "sha256": "f159cf1b9372d472d1aeb5dbc32097b55e720da13048bbb16765ea57b608eb83",
+      "modifiedAt": "2026-09-27T08:08:25.918Z"
+    },
+    {
+      "path": "app/dossier-security.ts",
+      "sha256": "5fc467f621446421a61f7ea4e22b04d424559f58e1317bc7e70ee17ef3d0a0dc",
+      "modifiedAt": "2026-09-27T08:08:25.919Z"
+    },
+    {
+      "path": "app/dossier-server.ts",
+      "sha256": "d4de2572701321eb44cca53ff9fa6cf4d9b4f779ad8c1b704050e3d8724b21c4",
+      "modifiedAt": "2026-09-27T08:08:25.920Z"
+    },
+    {
+      "path": "app/dossier-upload-intents.ts",
+      "sha256": "12a9602bef78343d148962ae93cce5b7cf478d65492173c4aa70a27493d1f5aa",
+      "modifiedAt": "2026-09-27T08:08:25.921Z"
+    },
+    {
+      "path": "app/game-engine.ts",
+      "sha256": "d8ca8fe502d299defd3f5878f53466cb5ecc9557797a01d66158d2a03936335b",
+      "modifiedAt": "2026-09-27T08:08:25.924Z"
+    },
+    {
+      "path": "app/legacy-scenarios.ts",
+      "sha256": "a8e01f37680d57a53f4f0d7016341d8c2050d51fd56d5d0ecf92151dbc9196c3",
+      "modifiedAt": "2026-09-27T08:08:25.933Z"
+    },
+    {
+      "path": "app/local-auth.ts",
+      "sha256": "008723052fef984d3469dce6218dc83b3d4c03e53f20cd02c21d67d0a13bf06f",
+      "modifiedAt": "2026-09-27T08:08:25.934Z"
+    },
+    {
+      "path": "app/observability-persistence.ts",
+      "sha256": "0b5a7caaf752a2a2dba24367be1c8643a8609b139724ae7b17b9a7f11eedd815",
+      "modifiedAt": "2026-09-27T08:08:25.964Z"
+    },
+    {
+      "path": "app/observability.ts",
+      "sha256": "a09d3cc9c3e80b1010a71776cf1b743fbc68c28980a017f1fbcc3207c47f9a2a",
+      "modifiedAt": "2026-09-27T08:08:25.965Z"
+    },
+    {
+      "path": "app/observed-d1-operation.ts",
+      "sha256": "6dfcc54b71140710af06538cf2285a714da0def742a7bd3de6333cf2917396c9",
+      "modifiedAt": "2026-09-27T08:08:25.966Z"
+    },
+    {
+      "path": "app/operational-events.ts",
+      "sha256": "d37880b04409a7037c9f80ef7b23ddff017f2c573638b874be91073fb9e8a911",
+      "modifiedAt": "2026-09-27T08:08:25.966Z"
+    },
+    {
+      "path": "app/organization-store.ts",
+      "sha256": "43f2ed437b7c39df264b7f6b2a2cec458b2280604b6ad36e8cbf6d083961623c",
+      "modifiedAt": "2026-09-27T08:08:25.971Z"
+    },
+    {
+      "path": "app/pdf-blob.ts",
+      "sha256": "fa65824ad357cf098f0ab2df31652fdc0283cd3f1c944551943f8353dc203894",
+      "modifiedAt": "2026-09-27T08:08:25.981Z"
+    },
+    {
+      "path": "app/playable-integrity.ts",
+      "sha256": "cf39cae218a0b89f01bedaae1f4e9facec9a8fc54eb5bce89fbfccc8683d3601",
+      "modifiedAt": "2026-09-27T08:08:25.982Z"
+    },
+    {
+      "path": "app/played-case-contract.ts",
+      "sha256": "fd0fd5841f8d5ca13e0394d2c28ac856bb8bfea8bc579028a3bb89cc38e44776",
+      "modifiedAt": "2026-09-27T08:08:25.983Z"
+    },
+    {
+      "path": "app/played-case-loader.ts",
+      "sha256": "1e057eda21cc3b844d2b4f9f2800953016486907db9bb1d29d0b0d656cb4895c",
+      "modifiedAt": "2026-09-27T08:08:25.984Z"
+    },
+    {
+      "path": "app/release-provenance.ts",
+      "sha256": "f2b2c88b68394572bed2f87df3cdab9414942261bdeb9c7b45e2a12df1803e5d",
+      "modifiedAt": "2026-09-27T08:08:25.987Z"
+    },
+    {
+      "path": "app/report-audit-symbol-font.v1.json",
+      "sha256": "2ee5f17d9bedfd256652b6a6202d0e752888ab09345864ddbf97b493cf7f3d6b",
+      "modifiedAt": "2026-09-27T08:08:25.989Z"
+    },
+    {
+      "path": "app/report-audit-symbols.ts",
+      "sha256": "3287521fe01105397d2f639eabfaaef63b3c80c2ad8af55b94531f4e8872b074",
+      "modifiedAt": "2026-09-27T08:08:25.990Z"
+    },
+    {
+      "path": "app/report-decision-analysis.ts",
+      "sha256": "ba0eff9c4241bb82a84e07b22aaf3856e02d578438160adf8c3ae200467a679f",
+      "modifiedAt": "2026-09-27T08:08:25.991Z"
+    },
+    {
+      "path": "app/report-decision-pdf.ts",
+      "sha256": "9e0bc041c7d76323882f0198127ffd933602f68ab932e93aac26213a36344775",
+      "modifiedAt": "2026-09-27T08:08:25.993Z"
+    },
+    {
+      "path": "app/report-download.ts",
+      "sha256": "3d8a191bcf4c106ad880091d5478ada813451f2dc800b0fc7d1f1253a0d3f3c0",
+      "modifiedAt": "2026-09-27T08:08:25.994Z"
+    },
+    {
+      "path": "app/report-graph-contract.ts",
+      "sha256": "48b98f5f46245294801af70b108a2317205cffa97b329d592a0cd83e7baf36ff",
+      "modifiedAt": "2026-09-27T08:08:25.996Z"
+    },
+    {
+      "path": "app/report-graph-font-metrics.v1.json",
+      "sha256": "dce864593f4230771a0466e73eec1f7f2cf3a1024bcc83580975d4e1fefe7dda",
+      "modifiedAt": "2026-09-27T08:08:25.997Z"
+    },
+    {
+      "path": "app/report-graph-layout.ts",
+      "sha256": "7b480300b62715c445ead83156eb6947f6b72860815b5f5514052763a6be18e3",
+      "modifiedAt": "2026-09-27T08:08:25.998Z"
+    },
+    {
+      "path": "app/report-graph-pdf.ts",
+      "sha256": "c3ffbc7a484eae0367e4b915cf13ad6b54e37208b0ace1051b33c52b562a5858",
+      "modifiedAt": "2026-09-27T08:08:26.000Z"
+    },
+    {
+      "path": "app/report-model.ts",
+      "sha256": "55952a9d58c2425ae90798fdddd3057744edc7171bfe608e3e489d14cb6be4c9",
+      "modifiedAt": "2026-09-27T08:08:26.002Z"
+    },
+    {
+      "path": "app/report-profiles.v1.json",
+      "sha256": "c022dc2cc6710ba41441d00d816eb9a48f90b3e4b7c4cca281a5c7bd4c131d22",
+      "modifiedAt": "2026-09-27T08:08:26.004Z"
+    },
+    {
+      "path": "app/report-source-url.ts",
+      "sha256": "c2bb6999209c803aa2a69b5c5c625df2fa25383bb7bb7abb5c40de21e4bbfa46",
+      "modifiedAt": "2026-09-27T08:08:26.005Z"
+    },
+    {
+      "path": "app/request-security.ts",
+      "sha256": "2ae159d9c2221af16a03077e22948af4483e115d8bf8ba2ad186d628ac1daffc",
+      "modifiedAt": "2026-09-27T08:08:26.006Z"
+    },
+    {
+      "path": "app/runtime-constants.ts",
+      "sha256": "d63b1fb3115ea816089f564fd9a41f0db11f608f23ef65fe6f26155d99004155",
+      "modifiedAt": "2026-09-27T08:08:26.010Z"
+    },
+    {
+      "path": "app/scenarios.ts",
+      "sha256": "c99214a8e359c624b7f2380efad4333be64911ab0bef42a604dd838eba160e5f",
+      "modifiedAt": "2026-09-27T08:08:26.012Z"
+    },
+    {
+      "path": "app/server-authorization.ts",
+      "sha256": "11b55645706a9d1b56b7cf1b64877df2bdd0052d3176ffaf04d6694e55447081",
+      "modifiedAt": "2026-09-27T08:08:26.013Z"
+    },
+    {
+      "path": "app/server-observability-core.ts",
+      "sha256": "fc4b020c4c35361a6bcc2d19047983ad76d455e4fd445813eb8f0d4ed6d2ab04",
+      "modifiedAt": "2026-09-27T08:08:26.016Z"
+    },
+    {
+      "path": "app/server-observability.ts",
+      "sha256": "b1ffcd76bf787ca04c92dc8ea6be35222afba50e085b3332d89036b3854bc32a",
+      "modifiedAt": "2026-09-27T08:08:26.017Z"
+    },
+    {
+      "path": "app/stale-chunk-recovery.ts",
+      "sha256": "c3414d196e0c858c4befeaa9c61a1f0b99bd0556d50c0fa7b44d1f2286bb7d26",
+      "modifiedAt": "2026-09-27T08:08:26.019Z"
+    },
+    {
+      "path": "app/studio-ai-capacity.ts",
+      "sha256": "8c4e2b0d243fe7e922c4724a9b9196e787c0610cb7fb672c66a27ea29b5ccae7",
+      "modifiedAt": "2026-09-27T08:08:26.021Z"
+    },
+    {
+      "path": "app/studio-compiler.ts",
+      "sha256": "e0c3ddeb76f466963049d13814ce42f579d14ea3d8bf1b2f5dc3c12bfef41f50",
+      "modifiedAt": "2026-09-27T08:08:26.031Z"
+    },
+    {
+      "path": "app/studio-device-storage.ts",
+      "sha256": "c8d8044c2c91c62144622d88c4a87351a403b7c399d33f6fb8309c613a41f096",
+      "modifiedAt": "2026-09-27T08:08:26.032Z"
+    },
+    {
+      "path": "app/studio-editing.ts",
+      "sha256": "71209f2ee9c8301d2ae13aac03b235d0351fdc8a4d9f7502f542e60299b5ae7a",
+      "modifiedAt": "2026-09-27T08:08:26.036Z"
+    },
+    {
+      "path": "app/studio-envelope.ts",
+      "sha256": "2b7a13c75d33a8cd1cf354bf63813b26d8f12dc4ec9de50886d89283b623548c",
+      "modifiedAt": "2026-09-27T08:08:26.038Z"
+    },
+    {
+      "path": "app/tax-economics.ts",
+      "sha256": "13eb36cca0b22c8b14ff78b3871340368159df20d5931bae4eb451476b1e8763",
+      "modifiedAt": "2026-09-27T08:08:26.054Z"
+    },
+    {
+      "path": "app/tenant-foundation.ts",
+      "sha256": "e7c8d982cbbc11e291ff7954aa3b77e438691a963ff62552ffbb2e52b96e540a",
+      "modifiedAt": "2026-09-27T08:08:26.061Z"
+    },
+    {
+      "path": "db/index.ts",
+      "sha256": "baf0b3630439f9ed82d732c2eec0d23797136448de19a554dfcfa9369a07fad2",
+      "modifiedAt": "2026-09-27T08:08:27.110Z"
+    },
+    {
+      "path": "db/schema.ts",
+      "sha256": "0dac7e54757b34fac8b8bb8a2784ffcb9fd2dc1841ea2122a55ec2ad0316928b",
+      "modifiedAt": "2026-09-27T08:08:27.112Z"
+    },
+    {
+      "path": "tests/helpers/canopy-replay.ts",
+      "sha256": "5dbbe41eec919ceff2d6460729825f783db36358893150c4d13c137db7af09a0",
+      "modifiedAt": "2026-09-27T08:08:28.460Z"
+    },
+    {
+      "path": "tests/p1-organization-erp.test.ts",
+      "sha256": "9c2b2b99a9ce550fcca40d4d1eaf6a18204386d2afd69eff1b519110d264333b",
+      "modifiedAt": "2026-09-27T08:08:28.478Z"
+    }
+  ]
+}

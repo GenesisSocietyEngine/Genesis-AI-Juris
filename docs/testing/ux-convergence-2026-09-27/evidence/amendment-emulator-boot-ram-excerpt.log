@@ -1,0 +1,6 @@
+INFO         | Increasing RAM size to 4096MB
+INFO         |   Checking: hasCompatibleHypervisor
+INFO         |      Ok: Hypervisor compatibility to run avd: `UXGatePixel` are met
+WHPX on Windows 10.0.22631 detected.
+Windows Hypervisor Platform accelerator is operational
+INFO         | Boot completed in 173459 ms

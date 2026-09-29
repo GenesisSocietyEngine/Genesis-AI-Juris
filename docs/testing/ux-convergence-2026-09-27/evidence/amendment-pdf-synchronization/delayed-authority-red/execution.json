@@ -1,0 +1,24 @@
+{
+  "startedAt": "2026-09-27T23:48:39.405Z",
+  "completedAt": "2026-09-27T23:48:41.168Z",
+  "command": {
+    "node": "C:/PROJECTS/Genesis-AI-Juris/.worktrees/demo-readiness-canopy-2026-09-06/.artifacts/toolchains/node-v22.23.2-win-x64/node.exe",
+    "args": [
+      "--experimental-sqlite",
+      "--import",
+      "tsx",
+      "--test",
+      "--test-name-pattern=^actual PDF parent and helper reject a stale active tab, recheck after rendering and never revive old output after sign-in$",
+      ".artifacts/pdf-render-scheduling/delayed-authority-old.test.ts"
+    ]
+  },
+  "exitCode": 1,
+  "signal": null,
+  "spawnError": null,
+  "source": {
+    "path": ".artifacts/pdf-render-scheduling/delayed-authority-old.test.ts",
+    "sha256": "277b333a771b98b8fc40e0600c0dde73235282b97d3c63c3120eaca29e723590"
+  },
+  "stdoutSha256": "6f24bf1b3ce433b6f8580522157d7770c09aba51802ac9f0d4150c42d2f352c6",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

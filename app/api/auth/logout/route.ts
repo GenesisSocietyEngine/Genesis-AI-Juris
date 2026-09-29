@@ -23,7 +23,9 @@ export async function POST(request: Request) {
       }
     }
   } catch {
-    return authJson({ authenticated: false, error: "The server session could not be revoked. The browser credential was cleared; try again when service is restored." }, 503, clearSessionCookie());
+    // Retain the HttpOnly credential so a retry can revoke the same session.
+    // The client must keep private screens concealed until termination succeeds.
+    return authJson({ code: "logout_unconfirmed", error: "Sign-out could not be confirmed. Retry." }, 503);
   }
   return authJson({ authenticated: false }, 200, clearSessionCookie());
 }

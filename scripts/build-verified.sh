@@ -21,6 +21,9 @@ fi
 echo "Running strict TypeScript validation..."
 npm run typecheck
 
+echo "Checking every pending/fresh-provisioning migration statement..."
+npm run migrations:verify
+
 echo "Verifying the locked canonical mobile contract..."
 npm run parity:lock
 

@@ -1,0 +1,82 @@
+{
+  "schema": "genesis.juris.aggregate-parser-dry-review.v1",
+  "reviewedAt": "2026-09-28T00:00:01.433Z",
+  "scope": "Co-developed ignored parser correction and self-review; initial independent review found absent-stage reporting issue. No new release-gate/test suite execution; root must independently inspect the narrow diff.",
+  "status": "PASS_TWO_ARCHIVED_DRY_PARSES",
+  "parser": {
+    "path": ".artifacts/amendment-release-gate/seal-candidate.mjs",
+    "sha256": "607a30f9ae20580fbea0e6311820de23eb964d96a7491fa1ea959bdb0e333868",
+    "original": ".artifacts/amendment-release-gate/seal-candidate.before-null-unrun.mjs.source.txt",
+    "originalSha256": "397ad7c22702b2a558310ef731132de213fa3e40b455a6abbd1636b2e7ce9b82"
+  },
+  "change": "Use null for absent dossier E2E, production audit, hosted lock and final web guard. Existing null PDF/mobile/native results retained; observed stages/results continue to parse their real values. PDF counts are parsed from log, not hard-coded in production parser.",
+  "limits": [
+    "Dry parser exit0 means the parser/assertion check succeeded, not that the historical gate passed. The e6gate remainsFAIL exit1.",
+    "Baseline completion timestamp is a documented observation bound; e6timestamp is the original completion-observation time. Neither is invented process-exit precision.",
+    "terminalPass is literal terminal-marker presence; false for e6 does not report execution of an unrun final guard, whose result is null.",
+    "Current a1fae95 full aggregate remains running/unassessed here.",
+    "This self-review must not be relabeled independent verification of the author’s own parser fix."
+  ],
+  "results": [
+    {
+      "case": "baseline-6ab-PASS",
+      "executionKind": "DRY_PARSE_OF_EXISTING_ARCHIVED_LOG_NOT_GATE_EXECUTION",
+      "arguments": [
+        ".artifacts/amendment-release-gate/seal-candidate.mjs",
+        "docs/testing/ux-convergence-2026-09-27/evidence/amendment-aggregate-baseline.log",
+        ".artifacts/amendment-release-gate/DRY_PARSE-baseline-6ab-PASS.json",
+        "6ab091d830ccfd9d6b76c0adc177341bca96e081",
+        "0",
+        "2026-09-27T21:37:11Z"
+      ],
+      "parserProcessExitCode": 0,
+      "originalGateExitCode": 0,
+      "observationSource": "AMENDMENT_AGGREGATE_BASELINE.md records exit/final guards observed by21:37:11UTC; this is an observation bound, not exact process exit time.",
+      "receipt": ".artifacts/amendment-release-gate/DRY_PARSE-baseline-6ab-PASS.json",
+      "receiptSha256": "036a6786991c6da2364be11a2fd6ec4ac3af143a6f85d70980030a6ff4c88c58",
+      "logSha256": "aa108160d57728302601dc1ec305cc2df9154fb5ebf50baf0413f2707dab1b18",
+      "result": "PASS",
+      "stageCounts": {
+        "web": 10,
+        "mobile": 9,
+        "native": 3
+      },
+      "explicitSkippedNames": [
+        "Migration rehearsal: exact v91 operates on C1 schema without discarding new note records",
+        "Migration rehearsal: request operation SQL guards bind one immutable receipt to the actual legacy audit",
+        "Migration rehearsal: current B1 writes and historical receipt recovery work after C1 and v91 writes"
+      ],
+      "assertions": "PASS"
+    },
+    {
+      "case": "candidate-e6-FAIL",
+      "executionKind": "DRY_PARSE_OF_EXISTING_ARCHIVED_LOG_NOT_GATE_EXECUTION",
+      "arguments": [
+        ".artifacts/amendment-release-gate/seal-candidate.mjs",
+        "docs/testing/ux-convergence-2026-09-27/evidence/amendment-pdf-synchronization/failed-aggregate.log",
+        ".artifacts/amendment-release-gate/DRY_PARSE-candidate-e6-FAIL.json",
+        "e6c6adc6fe01129b2e3d442072c532e08591fae9",
+        "1",
+        "2026-09-27T23:45:49Z"
+      ],
+      "parserProcessExitCode": 0,
+      "originalGateExitCode": 1,
+      "observationSource": "Archived failed-aggregate-receipt.json completionObservedAt and observedExitCode; observation time is not process completion or log mtime.",
+      "receipt": ".artifacts/amendment-release-gate/DRY_PARSE-candidate-e6-FAIL.json",
+      "receiptSha256": "2b969857179954b64c0df6e16781ebf09e4b64c05c011ce7dbc8565c87c2203d",
+      "logSha256": "2a3b4302ab0aa117361d83e5d56f5220e5efcbae2dff1b399fdd67bccb50edaa",
+      "result": "FAIL_OR_INCOMPLETE",
+      "stageCounts": {
+        "web": 4,
+        "mobile": 0,
+        "native": 0
+      },
+      "explicitSkippedNames": [
+        "Migration rehearsal: exact v91 operates on C1 schema without discarding new note records",
+        "Migration rehearsal: request operation SQL guards bind one immutable receipt to the actual legacy audit",
+        "Migration rehearsal: current B1 writes and historical receipt recovery work after C1 and v91 writes"
+      ],
+      "assertions": "PASS"
+    }
+  ]
+}

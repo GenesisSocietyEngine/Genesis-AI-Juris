@@ -1,0 +1,33 @@
+{
+  "purpose": "Read-only HEAD renderer/brief substitution; all other dependencies and fixtures identical to the candidate",
+  "source": "bf5799383a52b6617cd9d4a0acf47af780086218",
+  "results": [
+    {
+      "id": "stress-deep",
+      "page": 10,
+      "beforePngSha256": "0536cb2823ac3991b42ae479ec0cee050ecb9829047b467675d66ed51f53ad76",
+      "currentPngSha256": "0536cb2823ac3991b42ae479ec0cee050ecb9829047b467675d66ed51f53ad76",
+      "baselinePngSha256": "5b91c20c3aa772ee994be95bcb0295c8f8447fd89de32e1f1807fd1ff7f1bcf1"
+    },
+    {
+      "id": "stress-disconnected",
+      "page": 8,
+      "beforePngSha256": "0e5ce8440f6a3b8966af19e4bb1a2749d153650b33ab7037bb6c933a464dee15",
+      "currentPngSha256": "0e5ce8440f6a3b8966af19e4bb1a2749d153650b33ab7037bb6c933a464dee15",
+      "baselinePngSha256": "1bea4899da651dc39f1881c1e870a0484cbc70bbd1619ab1db5f0534db83632e"
+    },
+    {
+      "id": "stress-long-detail-ru",
+      "page": 21,
+      "beforePngSha256": "5fef494757edcc47b8b7882713f6cb127bf638ea59004fda707d9ef446f7407a",
+      "currentPngSha256": "5fef494757edcc47b8b7882713f6cb127bf638ea59004fda707d9ef446f7407a",
+      "baselinePngSha256": "dd944ec6218e7e56adb5f2dafcc89fe57bc08943a35e2096abfc6dfe44d36a51"
+    },
+    {
+      "id": "stress-fan-out",
+      "beforeLayoutFingerprint": "sha256-7261a09c61fa9ac9f10c367962d04b6d088c052701b916600c8b790ed1ddb52f",
+      "currentLayoutFingerprint": "sha256-7261a09c61fa9ac9f10c367962d04b6d088c052701b916600c8b790ed1ddb52f",
+      "baselineLayoutFingerprint": "sha256-7766bc9ee3f4977befa9e1e58fa22a20b15182163c552b34b6e362cc3becaf15"
+    }
+  ]
+}

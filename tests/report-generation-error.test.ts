@@ -44,3 +44,10 @@ test("report generation retains a generic fallback for unrecognized failures", (
   assert.equal(message, "The report could not be created. Review the case data and try again.");
   assert.doesNotMatch(message, /SECRET/);
 });
+
+test("report stylesheet failures offer safe loading recovery without disclosing the asset URL", () => {
+  const message = reportGenerationErrorMessage(new Error("Unable to preload CSS for /private-asset.css"), "en");
+  assert.match(message, /report files could not load/);
+  assert.match(message, /Save or export/);
+  assert.doesNotMatch(message, /private-asset|Review the case data/);
+});

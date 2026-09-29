@@ -1,0 +1,7 @@
+# Independent review of PDF test synchronization
+
+The independent `report_verification` agent inspected the maintained test correction and independently read and hashed the red/green execution receipts. It found no substantive issue: the synchronous renderer contract, all authority assertions and the overlapping-operation counts remain intact. The six-test corrected run passes without skips. Focused lint and strict nonincremental TypeScript completion were reported by the coordinator; the reviewer did not claim a second execution.
+
+The review preserves the original failed aggregate and labels the rejected asynchronous-renderer experiment NOT_RUN. It requires a new clean committed checkpoint and full gate, and does not infer browser, hosted, human or production readiness from these focused tests.
+
+The [complete original review](evidence/amendment-pdf-synchronization/independent-review.source.txt) is retained byte for byte, including its historical relative links and later strict-check addendum. Active evidence links: [red execution](evidence/amendment-pdf-synchronization/delayed-authority-red/execution.json), [green execution](evidence/amendment-pdf-synchronization/corrected-file/execution.json), [focused checks](evidence/amendment-pdf-synchronization/focused-checks.json), [failed aggregate](evidence/amendment-pdf-synchronization/failed-aggregate-receipt.json), and [slice scope](SLICE_PDF_TEST_SYNCHRONIZATION.md).

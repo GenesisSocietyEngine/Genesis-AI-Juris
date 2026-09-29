@@ -1,0 +1,28 @@
+﻿TAP version 13
+# Subtest: Full assumptions retain complete short statements on one page and let long statements flow
+not ok 1 - Full assumptions retain complete short statements on one page and let long statements flow
+  ---
+  duration_ms: 20258.2963
+  type: 'test'
+  location: 'C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\tests\\case-report.test.ts:1:6108'
+  failureType: 'testCodeFailure'
+  error: 'CR note start retained'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (C:\PROJECTS\Genesis-AI-Juris\.worktrees\inv01-2026-09-28\tests\case-report.test.ts:139:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 23336.0533

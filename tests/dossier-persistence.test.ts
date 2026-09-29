@@ -5,6 +5,64 @@ import { performance } from "node:perf_hooks";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
+
+test("P1 upgrade backfills active explicit participants and excludes removed participants", () => {
+ const db=database();
+ try {
+  const owner=user(db,"canopy-migration-owner@example.test"), active=user(db,"canopy-active@example.test"),
+   removed=user(db,"canopy-removed@example.test"), outsider=user(db,"canopy-outsider@example.test");
+  const ownerActor=actor(db,owner), dossierId="p1-upgrade-memberships";dossier(db,dossierId,owner);
+  let revision=1, previousEventId=dossierId+"-audit-created";
+  const change=(userId:number,id:string,remove=false)=>{
+   const next=revision+1,at="2026-09-01T01:0"+next+":00.000Z",eventId=dossierId+"-audit-"+next;
+   db.exec("BEGIN IMMEDIATE");
+   try{
+    advanceDossierRevision(db,dossierId,revision,ownerActor,at);
+    if(remove)db.prepare("UPDATE dossier_participants SET status='removed',updated_by_actor_ref=?,updated_at=? WHERE id=? AND status='active'").run(ownerActor,at,id);
+    else db.prepare("INSERT INTO dossier_participants(id,dossier_id,user_id,actor_id,display_name,role,status,created_by_actor_ref,updated_by_actor_ref,created_at,updated_at) VALUES(?,?,?,?,'Synthetic participant','viewer','active',?,?,?,?)").run(id,dossierId,userId,actor(db,userId),ownerActor,ownerActor,at,at);
+    appendAudit(db,{id:eventId,dossierId,dossierRevision:next,sequence:next,eventType:"participant_changed",objectRefType:"participant",objectRefId:id,
+     actorUserId:owner,actorRef:ownerActor,actorRole:"owner",occurredAt:at,previousEventId,digestSeed:29000+next});
+    appendRevisionReceipt(db,dossierId,next,ownerActor,at);db.exec("COMMIT");revision=next;previousEventId=eventId;
+   }catch(error){db.exec("ROLLBACK");throw error;}
+  };
+  change(active,"p1-active");change(removed,"p1-removed");change(removed,"p1-removed",true);
+  const tables=["dossiers","dossier_participants","dossier_audit_events","dossier_revision_receipts"];
+  const before=tables.map(table=>db.prepare("SELECT * FROM "+table+" ORDER BY rowid").all());
+  db.exec(migration(organizationScopeMigration));
+  assert.deepEqual(tables.map(table=>db.prepare("SELECT * FROM "+table+" ORDER BY rowid").all()),before);
+  const org="org_personal_"+ownerActor;
+  assert.deepEqual(db.prepare("SELECT user_id,role,status FROM organization_memberships WHERE organization_id=? ORDER BY user_id").all(org).map(row=>({...row})),
+   [{user_id:owner,role:"org_owner",status:"active"},{user_id:active,role:"member",status:"active"}]);
+  for(const excluded of [removed,outsider])assert.equal(db.prepare("SELECT count(*) AS n FROM organization_memberships WHERE organization_id=? AND user_id=?").get(org,excluded)?.n,0);
+  assert.equal(db.prepare("SELECT count(*) AS n FROM dossier_organization_commitments WHERE dossier_id=?").get(dossierId)?.n,1);
+  assert.throws(()=>db.prepare("DELETE FROM organization_memberships WHERE organization_id=? AND user_id=?").run(org,active),/revoke membership/u);
+  assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(),[]);
+ }finally{db.close();}
+});
+
+test("P1 fresh schema includes all organization guards and rejects incomplete atomic bindings",()=>{
+ const db=database();
+ try{
+  const owner=user(db,"canopy-fresh-owner@example.test");
+  db.exec(migration(organizationScopeMigration));
+  const tables=["dossier_organization_bindings","dossier_organization_commitments","organization_authority_checks","organization_cas_guards",
+   "organization_invitations","organization_lifecycle_requests","organization_memberships","organization_security_events","organizations"];
+  for(const name of tables)assert.equal(db.prepare("SELECT type FROM sqlite_schema WHERE name=?").get(name)?.type,"table",name);
+  const indexes=["dossier_organization_bindings_scope_uidx","organization_invitations_digest_uidx","organization_memberships_user_uidx","organization_memberships_actor_uidx","organization_security_events_sequence_uidx"];
+  for(const name of indexes)assert.match(db.prepare("SELECT sql FROM sqlite_schema WHERE name=?").get(name)?.sql as string,/CREATE UNIQUE INDEX/u);
+  const triggers=["p1_dossier_binding_required","p1_dossier_binding_commitment","p1_binding_update_guard","p1_binding_delete_guard","p1_participant_membership_guard","p1_audit_membership_guard","p1_membership_identity_guard","p1_membership_delete_guard","p1_organization_identity_guard","p1_organization_delete_guard","p1_invitation_guard","p1_invitation_accept_authority","p1_lifecycle_request_guard","p1_lifecycle_approval_guard","p1_lifecycle_delete_guard","p1_organization_transition_guard","p1_security_event_guard","p1_security_event_update_guard","p1_security_event_delete_guard"];
+  assert.deepEqual(db.prepare("SELECT name FROM sqlite_schema WHERE type='trigger' AND name GLOB 'p1_*' ORDER BY name").all().map(row=>row.name),triggers.sort());
+  assert.throws(()=>db.prepare("INSERT INTO organization_authority_checks(valid) VALUES(0)").run(),/CHECK/u);
+  assert.throws(()=>db.prepare("INSERT INTO organization_cas_guards(changed) VALUES(0)").run(),/CHECK/u);
+  db.exec("BEGIN");
+  db.prepare("INSERT INTO dossier_organization_bindings(dossier_id,organization_id,created_by_actor_id,created_at) VALUES(?,?,?,?)")
+   .run("orphan-binding","org_personal_"+actor(db,owner),actor(db,owner),"2026-09-06T09:00:00.000Z");
+  assert.throws(()=>db.exec("COMMIT"),/FOREIGN KEY/u);db.exec("ROLLBACK");
+  assert.equal(db.prepare("SELECT count(*) AS n FROM dossier_organization_bindings").get()?.n,0);
+  assert.equal(db.prepare("PRAGMA integrity_check").get()?.integrity_check,"ok");
+ }finally{db.close();}
+});
+
 const legacyMigrations = [
   "0000_worthless_supreme_intelligence.sql",
   "0001_right_talon.sql",
@@ -76,7 +134,8 @@ function legacyDossierDatabase() {
 }
 
 test("every D1 migration breakpoint resolves to a non-empty platform statement", () => {
-  for (const name of [...allMigrations, organizationScopeMigration]) {
+  const journalMigrations = (JSON.parse(readFileSync("drizzle/meta/_journal.json", "utf8")).entries as Array<{ idx: number; tag: string }>);
+  for (const name of journalMigrations.map((entry) => `${entry.tag}.sql`)) {
     const statements = migration(name).split("--> statement-breakpoint");
     assert.ok(
       statements.every((statement) => statement.trim().length > 0),
@@ -106,6 +165,7 @@ test("every D1 migration breakpoint resolves to a non-empty platform statement",
     uploadCommitmentMigration,
     statusHistoryMigration,
     organizationScopeMigration,
+    ...journalMigrations.filter((entry) => entry.idx > 19).map((entry) => `${entry.tag}.sql`),
   ]) {
     const sql = migration(name);
     assert.doesNotMatch(
@@ -125,6 +185,28 @@ test("every D1 migration breakpoint resolves to a non-empty platform statement",
       `${name} must parenthesize SELECT CASE so remote D1 does not terminate the trigger early`,
     );
   }
+});
+
+test("every D1 migration breakpoint in 0022 preserves legacy anchor SQL preparation", () => {
+  const entries = JSON.parse(readFileSync("drizzle/meta/_journal.json", "utf8")).entries as Array<{ idx: number; tag: string }>;
+  const pending = entries.find((entry) => entry.idx === 22);
+  assert.ok(pending, "the migration-only release must package 0022");
+  const db = new DatabaseSync(":memory:");
+  try {
+    db.exec("PRAGMA foreign_keys=ON");
+    for (const entry of entries.filter((entry) => entry.idx < 22)) db.exec(migration(`${entry.tag}.sql`));
+    const statements = migration(`${pending.tag}.sql`).split("--> statement-breakpoint");
+    for (let prefix = 0; prefix <= statements.length; prefix++) {
+      // EXPLAIN compiles the real table's FK/trigger program without weakening
+      // its authority guards or inserting invalid fixture rows. The old order
+      // failed here after statements 5–14 and also failed the actual handler.
+      assert.doesNotThrow(() => db.prepare("EXPLAIN INSERT INTO dossier_source_anchors DEFAULT VALUES"),
+        `legacy anchor INSERT must remain preparable after ${prefix} complete statements`);
+      assert.doesNotThrow(() => db.prepare("EXPLAIN UPDATE dossier_source_anchors SET review_state=review_state WHERE id=?"),
+        `legacy anchor review must remain preparable after ${prefix} complete statements`);
+      if (prefix < statements.length) db.exec(statements[prefix]);
+    }
+  } finally { db.close(); }
 });
 
 test("P1 forward migration preserves existing dossiers and receipts and binds only explicit participants", () => {
@@ -7833,6 +7915,31 @@ test("extraction, snapshots, outputs, approvals and dossier audit remain governe
     ) VALUES ('audit-gap', 'governed-dossier', 2, 5, 'dossier_updated', 'dossier', 'governed-dossier',
       ?, ?, 'owner', '2026-09-01T01:30:00.000Z', 'DOSSIER_UPDATED', 'audit-two-stale-output', ?)
   `).run(ownerId, ownerActor, digest(213)), /UNIQUE|exact predecessor/iu);
+
+  // Preserve a populated historical fixture across the exact 0019 boundary.
+  const upgradeOutsider=user(db,"p1-history-outsider@example.test");
+  const upgradeOutsiderActor=actor(db,upgradeOutsider);
+  for(const name of [auditClaimsMigration,uploadCommitmentMigration,statusHistoryMigration])db.exec(migration(name));
+  assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(),[]);
+  const existingTables=db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT GLOB 'sqlite_*' ORDER BY name").all().map(row=>String(row.name));
+  const quoteTable=(name:string)=>`"${name.replaceAll('"','""')}"`;
+  const captureExisting=()=>existingTables.map(name=>[name,db.prepare(`SELECT * FROM ${quoteTable(name)} ORDER BY rowid`).all()]);
+  for(const name of ["dossier_documents","dossier_document_versions","dossier_document_current_versions","dossier_source_anchors","dossier_extraction_results","dossier_snapshots","dossier_snapshot_document_versions","dossier_snapshot_anchors","dossier_governed_outputs","dossier_output_approvals","dossier_output_state_events","dossier_audit_events","dossier_audit_certifications","dossier_revision_receipts"]){
+    assert.ok(Number(db.prepare(`SELECT count(*) AS n FROM ${quoteTable(name)}`).get()?.n)>0,`${name} must contain preserved history`);
+  }
+  const before0019=captureExisting();db.exec(migration(organizationScopeMigration));assert.deepEqual(captureExisting(),before0019);
+  assert.equal(db.prepare(`SELECT count(*) AS n FROM dossiers d LEFT JOIN dossier_organization_bindings b ON b.dossier_id=d.id WHERE b.dossier_id IS NULL OR b.organization_id <> 'org_personal_' || d.owner_actor_id OR b.created_by_actor_id <> d.owner_actor_id OR b.created_at <> d.created_at`).get()?.n,0,"every existing dossier receives its exact owner binding");
+  const dossierCount=db.prepare("SELECT count(*) AS n FROM dossiers").get()?.n;
+  assert.equal(db.prepare("SELECT count(*) AS n FROM dossier_organization_bindings").get()?.n,dossierCount);
+  assert.equal(db.prepare("SELECT count(*) AS n FROM dossier_organization_commitments").get()?.n,dossierCount);
+  const ownerOrganization=`org_personal_${ownerActor}`;
+  for(const reviewerActor of [reviewerOneActor,reviewerTwoActor])assert.equal(db.prepare("SELECT count(*) AS n FROM organization_memberships WHERE organization_id=? AND actor_id=? AND role='member' AND status='active'").get(ownerOrganization,reviewerActor)?.n,1);
+  assert.equal(db.prepare("SELECT count(*) AS n FROM dossier_participants WHERE dossier_id='governed-other' AND actor_id IN (?,?)").get(reviewerOneActor,reviewerTwoActor)?.n,0,"backfill must not invent access to another dossier");
+  assert.throws(()=>db.prepare("UPDATE dossier_organization_bindings SET organization_id=? WHERE dossier_id='governed-dossier'").run(`org_personal_${reviewerOneActor}`),/immutable/u);
+  assert.throws(()=>db.prepare("DELETE FROM dossier_organization_bindings WHERE dossier_id='governed-dossier'").run(),/immutable/u);
+  assert.throws(()=>db.prepare(`INSERT INTO dossier_participants (id,dossier_id,user_id,actor_id,display_name,role,status,created_by_actor_ref,updated_by_actor_ref,created_at,updated_at) VALUES ('p1-foreign-participant','governed-dossier',?,?,'Foreign','viewer','active',?,?,?,?)`).run(upgradeOutsider,upgradeOutsiderActor,ownerActor,ownerActor,"2026-09-06T09:00:00.000Z","2026-09-06T09:00:00.000Z"),/active organization membership required/u);
+  assert.deepEqual(captureExisting(),before0019,"rejected post-upgrade mutations preserve original history");
+  assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(),[]);assert.equal(db.prepare("PRAGMA integrity_check").get()?.integrity_check,"ok");
 });
 
 test("pilot-scale dossier queries use bounded indexes for 10 documents, versions, 100 anchors and 100 audits", (t) => {

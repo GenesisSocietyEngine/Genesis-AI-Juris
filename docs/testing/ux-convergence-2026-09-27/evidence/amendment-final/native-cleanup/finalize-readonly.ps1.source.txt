@@ -1,0 +1,76 @@
+# Read-only finalization of the already recorded stop actions. No stop or emulator launch.
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+$taskWorkspace = 'C:\PROJECTS\Genesis-AI-Juris\.worktrees\ux-convergence-2026-09-27'
+$taskRoot = Join-Path $taskWorkspace '.artifacts\amendment-android-native'
+$taskMobile = 'C:\PROJECTS\Genesis-AI-Juris\.worktrees\pr45-mobile-5200'
+$taskOriginalAvd = 'C:\Users\User\.android\avd\Pixel.avd'
+$taskAdb = 'C:\Users\User\AppData\Local\Android\Sdk\platform-tools\adb.exe'
+$taskAcceptance = Get-Content -LiteralPath (Join-Path $taskRoot 'acceptance-before-launch.json') -Raw | ConvertFrom-Json
+$taskPriorPath = Join-Path $taskRoot 'cleanup-execute-20260928T010425773Z.json'
+$taskPriorSha = (Get-FileHash -LiteralPath $taskPriorPath -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($taskPriorSha -ne 'b1a780e7f56f81579f386f6bcfe1f42efddb969d23236d7e75179abefbe66c25') { throw 'Prior action receipt changed.' }
+$taskPrior = Get-Content -LiteralPath $taskPriorPath -Raw | ConvertFrom-Json
+if ($taskPrior.status -ne 'STOPPED_FOR_REVIEW' -or $taskPrior.error -ne 'Executable identity mismatch: 25048' -or @($taskPrior.actions).Count -ne 3 -or $taskPrior.actions[1].processId -ne 25048 -or $taskPrior.actions[2].processId -ne 4116) { throw 'Unexpected prior execution history.' }
+if ($taskAcceptance.mobileCommit -ne '5200b30cc50c77393c6f48b52ce91c0f30e70c64' -or @($taskAcceptance.sourceAvdFileMetadata).Count -ne 18661 -or $taskAcceptance.originalProfileConfigSha256 -ne '94827b8b8bfc85bb19c02859ca3548ce462e8dffef44e1877b84d65ec0627e8d') { throw 'Unexpected preservation baseline.' }
+
+# Copied unchanged from the reviewed cleanup helper; all operations are reads.
+function Get-TaskPreservation {
+    $taskConfigSha = (Get-FileHash -LiteralPath (Join-Path $taskOriginalAvd 'config.ini') -Algorithm SHA256).Hash.ToLowerInvariant()
+    $taskExpectedFiles = @{}
+    foreach ($taskFile in $taskAcceptance.sourceAvdFileMetadata) { $taskExpectedFiles[[string]$taskFile.relative] = $taskFile }
+    $taskActualFiles = @(Get-ChildItem -LiteralPath $taskOriginalAvd -Recurse -File)
+    $taskDifferences = [Collections.Generic.List[object]]::new()
+    foreach ($taskFile in $taskActualFiles) {
+        $taskRelative = $taskFile.FullName.Substring($taskOriginalAvd.Length)
+        if (-not $taskExpectedFiles.ContainsKey($taskRelative)) { $taskDifferences.Add([pscustomobject]@{relative=$taskRelative;issue='ADDED'}); continue }
+        $taskBefore = $taskExpectedFiles[$taskRelative]
+        if ($taskFile.Length -ne $taskBefore.length -or $taskFile.LastWriteTimeUtc.ToString('o') -ne $taskBefore.lastWriteUtc) { $taskDifferences.Add([pscustomobject]@{relative=$taskRelative;issue='SIZE_OR_MTIME_CHANGED'}) }
+        $taskExpectedFiles.Remove($taskRelative)
+    }
+    foreach ($taskMissing in $taskExpectedFiles.Keys) { $taskDifferences.Add([pscustomobject]@{relative=$taskMissing;issue='MISSING'}) }
+    $taskMobileHead = (& git -c ('safe.directory=' + $taskMobile) -C $taskMobile rev-parse HEAD | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw 'Mobile HEAD read failed.' }
+    $taskMobileStatus = (& git -c ('safe.directory=' + $taskMobile) -C $taskMobile status --porcelain=v1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw 'Mobile status read failed.' }
+    return [pscustomobject]@{
+        originalAvd=$taskOriginalAvd; configSha256=$taskConfigSha; expectedConfigSha256=$taskAcceptance.originalProfileConfigSha256;
+        configUnchanged=($taskConfigSha -eq $taskAcceptance.originalProfileConfigSha256); expectedFileCount=18661; actualFileCount=$taskActualFiles.Count;
+        metadataUnchanged=($taskDifferences.Count -eq 0 -and $taskActualFiles.Count -eq 18661); metadataDifferenceCount=$taskDifferences.Count; firstDifferences=@($taskDifferences | Select-Object -First 20);
+        mobileHead=$taskMobileHead; mobileExpectedHead=$taskAcceptance.mobileCommit; mobileStatus=$taskMobileStatus; mobileExactAndClean=($taskMobileHead -eq $taskAcceptance.mobileCommit -and $taskMobileStatus -eq '');
+        limitation='Config is byte-hashed; other original AVD files are compared by full relative path, size and UTC mtime, not by content hash.'
+    }
+}
+
+$taskStamp = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ')
+$taskReceiptPath = Join-Path $taskRoot ('cleanup-readonly-finalization-' + $taskStamp + '.json')
+$taskResult = [ordered]@{
+    schema='genesis.juris.owned-emulator-finalization.v1'; startedAt=[DateTime]::UtcNow.ToString('o'); mode='READ_ONLY_FINALIZATION'; executedStop=$false; status='STARTED'; serial='emulator-5580'; avd='UXGatePixel';
+    priorExecutionReceipt=[pscustomobject]@{path=$taskPriorPath;sha256=$taskPriorSha;status=$taskPrior.status;error=$taskPrior.error;finishedAt=$taskPrior.finishedAt};
+    method='Prior guarded stop actions remain in their unchanged failed immediate-postcheck receipt; process absence, ADB absence and preservation are independently read again now. No new stop or emulator launch.'
+}
+try {
+    $taskAbsence = foreach ($taskPid in @(4116,25048)) {
+        $taskFound = @(Get-CimInstance Win32_Process -Filter ('ProcessId = ' + $taskPid) -ErrorAction Stop)
+        if ($taskFound.Count -ne 0) { throw ('Recorded process ID still present; no further stop is attempted: ' + $taskPid) }
+        [pscustomobject]@{processId=$taskPid;absent=$true;checkedAt=[DateTime]::UtcNow.ToString('o')}
+    }
+    $taskResult.processAbsence = @($taskAbsence)
+    $taskDevicesOutput = (& $taskAdb devices 2>&1 | Out-String).Trim()
+    $taskDevicesExit = $LASTEXITCODE
+    $taskResult.adbCommand = [pscustomobject]@{arguments=@('devices');completed=$true;exitCode=$taskDevicesExit;stdout=$taskDevicesOutput;stderr='';checkedAt=[DateTime]::UtcNow.ToString('o');capture='Combined stdout/stderr from read-only adb devices'}
+    $taskResult.serialAbsent = ($taskDevicesExit -eq 0 -and $taskDevicesOutput -notmatch '(?m)^emulator-5580\s')
+    if (-not $taskResult.serialAbsent) { throw 'Owned ADB serial absence not established.' }
+    $taskResult.preservationAfter = Get-TaskPreservation
+    if (-not $taskResult.preservationAfter.configUnchanged -or -not $taskResult.preservationAfter.metadataUnchanged -or -not $taskResult.preservationAfter.mobileExactAndClean) { throw 'Final read-only preservation mismatch.' }
+    $taskResult.ownedProcessesGone=$true
+    $taskResult.status='PRIOR_OWNED_STOPS_AND_CURRENT_PRESERVATION_CONFIRMED'
+} catch {
+    $taskResult.status='STOPPED_FOR_REVIEW'
+    $taskResult.error=$_.Exception.Message
+} finally {
+    $taskResult.finishedAt=[DateTime]::UtcNow.ToString('o')
+    [IO.File]::WriteAllText($taskReceiptPath, ($taskResult | ConvertTo-Json -Depth 9) + "`n", [Text.UTF8Encoding]::new($false))
+    [pscustomobject]@{status=$taskResult.status;mode=$taskResult.mode;executedStop=$false;receipt=$taskReceiptPath} | ConvertTo-Json -Compress
+}
+if ($taskResult.status -ne 'PRIOR_OWNED_STOPS_AND_CURRENT_PRESERVATION_CONFIRMED') { exit 1 }

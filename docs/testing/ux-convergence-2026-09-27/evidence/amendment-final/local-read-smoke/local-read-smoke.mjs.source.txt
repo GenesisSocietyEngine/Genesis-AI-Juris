@@ -1,0 +1,182 @@
+import {readFileSync,writeFileSync,mkdirSync,existsSync} from 'node:fs';
+import {resolve,relative,isAbsolute} from 'node:path';
+import {createHash} from 'node:crypto';
+
+// Preparation only unless root explicitly supplies the new build receipt/port
+// and --run-approved. No server launch, cookie invention, trusted-identity
+// header, direct DB access, upload or business mutation exists in this harness.
+const artifactRoot=resolve(import.meta.dirname);
+const workspace=resolve(artifactRoot,'../..');
+const hash=value=>createHash('sha256').update(value).digest('hex');
+const canonical=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)
+  ?Object.fromEntries(Object.entries(v).sort(([a],[b])=>a.localeCompare(b))):v);
+const digest=value=>hash(canonical(value));
+class SmokeError extends Error {constructor(code){super(code);this.safeCode=code;}}
+const check=(condition,code)=>{if(!condition)throw new SmokeError(code);};
+const readJson=path=>{try{return JSON.parse(readFileSync(path,'utf8').replace(/^\uFEFF/,''));}catch{throw new SmokeError('PREREQUISITE_JSON_UNAVAILABLE');}};
+const safeCode=error=>error instanceof SmokeError?error.safeCode:'UNCLASSIFIED_FAILURE';
+const opaque=value=>typeof value==='string'&&/^[a-z][a-z0-9_]{2,150}$/.test(value);
+const sessionCookieName='__Host-genesis_session';
+const expectedV1Sha256='f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e';
+
+async function main(){
+ const args=new Map();
+ for(const arg of process.argv.slice(2)){
+  const equal=arg.indexOf('=');const name=equal<0?arg:arg.slice(0,equal);const value=equal<0?true:arg.slice(equal+1);
+  check(!args.has(name)&&['--run-approved','--origin','--build-receipt','--expected-commit','--expected-input-digest'].includes(name),'INVALID_ARGUMENT');args.set(name,value);
+ }
+ if(args.get('--run-approved')!==true){console.log(JSON.stringify({status:'NOT_RUN_PENDING_ROOT_BUILD_AND_PORT_CONFIRMATION'}));return;}
+ check(typeof args.get('--origin')==='string','EXPLICIT_LOOPBACK_ORIGIN_REQUIRED');
+ let url;try{url=new URL(args.get('--origin'));}catch{throw new SmokeError('INVALID_LOOPBACK_ORIGIN');}
+ check(url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname)&&url.port&&Number(url.port)>1024
+  &&!url.username&&!url.password&&url.pathname==='/'&&!url.search&&!url.hash,'ONLY_EXPLICIT_LOCAL_ORIGIN_ALLOWED');
+ const base=url.origin;
+ check(typeof args.get('--build-receipt')==='string','BUILD_RECEIPT_REQUIRED');
+ const buildPath=resolve(workspace,args.get('--build-receipt'));const buildRelative=relative(resolve(workspace,'.artifacts'),buildPath);
+ check(buildRelative&&!buildRelative.startsWith('..')&&!isAbsolute(buildRelative),'BUILD_RECEIPT_MUST_BE_LOCAL_IGNORED_ARTIFACT');
+ const build=readJson(buildPath),expectedCommit=args.get('--expected-commit'),expectedInputDigest=args.get('--expected-input-digest');
+ check(typeof expectedCommit==='string'&&/^[a-f0-9]{40}$/.test(expectedCommit)
+  &&typeof expectedInputDigest==='string'&&/^[a-f0-9]{64}$/.test(expectedInputDigest),'EXPLICIT_NEW_BUILD_IDENTITY_REQUIRED');
+ check(build.schema==='genesis.juris.build-identity.v1'&&build.buildMatchesCurrentSource===true
+  &&build.sourceCommit===expectedCommit&&build.applicationInputsSha256===expectedInputDigest
+  &&Array.isArray(build.builtInputDigests)&&build.builtInputDigests.includes(expectedInputDigest),'BUILD_RECEIPT_IDENTITY_MISMATCH');
+ check(expectedCommit!=='6ab091d830ccfd9d6b76c0adc177341bca96e081'
+  &&expectedInputDigest!=='25d6309ef9adf2ff039c02fe0bffef4a8a754dde11334a3d8f7f621e7dcc34ec','OLD_PRE_FIX_BUILD_IS_NOT_THIS_SMOKE_TARGET');
+ const fixture=readJson(resolve(artifactRoot,'governed-fixture-state.json'));
+ check(fixture.localOnly===true&&fixture.status==='PASS preparation and recorded API checks; browser journey pending','LOCAL_FIXTURE_NOT_READY');
+ const orgId=fixture.organization?.id,dossierId=fixture.dossierId,documentId=fixture.documentId,versionId=fixture.version1Id;
+ check([orgId,dossierId,documentId,versionId].every(opaque),'INVALID_LOCAL_FIXTURE_IDENTIFIERS');
+ const credentials=readJson(resolve(artifactRoot,'credentials.local.json')).credentials;
+ check(Array.isArray(credentials),'LOCAL_CREDENTIALS_UNAVAILABLE');
+ const aliases=['owner','viewer','foreign'];
+ for(const alias of aliases){const matches=credentials.filter(c=>c.alias===alias);check(matches.length===1&&typeof matches[0].email==='string'&&typeof matches[0].password==='string','REQUIRED_LOCAL_CREDENTIAL_UNAVAILABLE');check(opaque(fixture.actors?.[alias]?.actorId),'LOCAL_ACTOR_REFERENCE_UNAVAILABLE');}
+ const v1=readFileSync(resolve(artifactRoot,'fixture-c-source-v1.txt'));
+ check(v1.length===422&&hash(v1)===expectedV1Sha256,'EXPECTED_SYNTHETIC_V1_UNAVAILABLE');
+ const startedAt=new Date().toISOString();
+ const outDir=resolve(artifactRoot,'local-read-smoke-runs',startedAt.replaceAll(':','').replaceAll('.','')+'-'+expectedCommit.slice(0,8));
+ check(!existsSync(outDir),'RUN_ARTIFACT_ALREADY_EXISTS');mkdirSync(outDir,{recursive:true});
+ const receiptPath=resolve(outDir,'receipt.json');
+ const record={schema:'genesis.juris.local-read-smoke.v1',startedAt,status:'RUNNING',localOnly:true,origin:base,
+  build:{sourceCommit:expectedCommit,applicationInputsSha256:expectedInputDigest,buildReceiptSha256:hash(readFileSync(buildPath)),binding:'Operator-confirmed built worker/port plus exact local source-bound receipt; not an HTTP build attestation.'},
+  fixture:{organizationSha256:hash(orgId),dossierSha256:hash(dossierId),documentSha256:hash(documentId),versionSha256:hash(versionId),sourceSha256:expectedV1Sha256},
+  events:[],checks:[],sessionCleanup:[],limitations:['Sequential ordinary local API requests, not concurrent revocation or expiry-race proof.','No provider-header, token, DB or mocked-auth transport.','Only script-owned login/logout session and ordinary auth-audit effects; no application-content or membership mutation requests.','No hosted, upload/source-v2, browser, human or accessibility acceptance.']};
+ let evidenceWriteFailed=false;
+ const persist=(required=false)=>{try{writeFileSync(receiptPath,JSON.stringify(record,null,2)+'\n');return true;}
+  catch{evidenceWriteFailed=true;record.evidenceWriteFailure=true;record.status='FAIL';if(required)throw new SmokeError('EVIDENCE_WRITE_UNAVAILABLE');return false;}};
+ const pass=(name,detail={})=>{record.checks.push({name,status:'PASS',at:new Date().toISOString(),...detail});persist();};
+ const sessions=new Map(aliases.map(alias=>[alias,{cookie:null,ownedCookie:null,loginAttempted:false,loginResponseReceived:false,loginResponseStatus:null,logoutConfirmed:false}]));
+ let stopping=false,activeController=null,cleaning=false;
+ const interrupt=()=>{stopping=true;if(!cleaning)activeController?.abort();};
+ process.on('SIGINT',interrupt);process.on('SIGTERM',interrupt);
+ persist(true);
+ const paths={organizations:'/api/organizations',collection:'/api/dossiers?limit=50',detail:`/api/dossiers/${dossierId}`,
+  documents:`/api/dossiers/${dossierId}/documents`,source:`/api/dossiers/${dossierId}/documents/${documentId}/versions/${versionId}/download`,login:'/api/auth/login',logout:'/api/auth/logout'};
+ async function api(alias,operation,{organization=null,expected=200,body,cookieOverride,bytes=false,label=operation}={}){
+  check(!stopping||cleaning,'INTERRUPTED');check(aliases.includes(alias)&&Object.hasOwn(paths,operation),'UNSUPPORTED_OPERATION');
+  check((body===undefined)||operation==='login','BUSINESS_MUTATION_FORBIDDEN');
+  const method=operation==='login'||operation==='logout'?'POST':'GET';const session=sessions.get(alias);
+  const headers={Origin:base,'Sec-Fetch-Site':'same-origin'};
+  const cookie=cookieOverride??session.cookie;if(cookie)headers.Cookie=cookie;
+  if(organization)headers['x-genesis-organization']=organization;
+  if(body!==undefined)headers['Content-Type']='application/json';
+  if(operation==='login'){check(!session.loginAttempted&&!cookie,'LOGIN_RETRY_OR_EXISTING_SESSION_FORBIDDEN');session.loginAttempted=true;}
+  let response,raw;
+  activeController=new AbortController();const timer=setTimeout(()=>activeController?.abort(),10000);
+  try{
+   response=await fetch(base+paths[operation],{method,headers,body:body===undefined?undefined:JSON.stringify(body),redirect:'error',signal:activeController.signal});
+   if(operation==='login'){session.loginResponseReceived=true;session.loginResponseStatus=response.status;}
+   for(const cookieLine of response.headers.getSetCookie()){
+    const first=cookieLine.split(';',1)[0],separator=first.indexOf('=');
+    if(first.slice(0,separator)!==sessionCookieName)continue;
+    const value=first.slice(separator+1);
+    if(value){check(operation==='login','UNEXPECTED_SESSION_ROTATION');session.cookie=first;session.ownedCookie=first;}else session.cookie=null;
+   }
+   raw=new Uint8Array(await response.arrayBuffer());
+  }catch(error){record.events.push({at:new Date().toISOString(),alias,operation:label,status:'TRANSPORT_OR_READ_FAILURE',code:safeCode(error)});persist();throw error instanceof SmokeError?error:new SmokeError(stopping?'INTERRUPTED':'TRANSPORT_OR_READ_FAILURE');}
+  finally{clearTimeout(timer);activeController=null;}
+  let data;if(bytes&&response.status===200)data=raw;else try{data=JSON.parse(new TextDecoder().decode(raw));}catch{throw new SmokeError('RESPONSE_NOT_JSON');}
+  record.events.push({at:new Date().toISOString(),alias,operation:label,status:response.status,expectedStatus:expected,
+   ...(operation==='login'||operation==='logout'?{}:{responseSha256:hash(raw),responseBytes:raw.length}),
+   noStore:(response.headers.get('cache-control')??'').includes('no-store')});persist();
+  check(response.status===expected,'UNEXPECTED_HTTP_STATUS');
+  check((response.headers.get('cache-control')??'').includes('no-store'),'PRIVATE_RESPONSE_MISSING_NO_STORE');
+  return {data,raw,status:response.status};
+ }
+ const deny=result=>{check(result.data&&typeof result.data==='object'&&!Array.isArray(result.data)
+  &&Object.keys(result.data).every(key=>['error','code'].includes(key))&&typeof result.data.error==='string','DENIAL_EXPOSED_CONTENT');
+  check(!new TextDecoder().decode(result.raw).includes('SYNTHETIC'),'DENIAL_CONTAINS_FIXTURE_CONTENT');};
+ const selections=new Map();let beforeOwner,beforeDocuments,beforeRoster;
+ const withoutReadiness=value=>{const copy=structuredClone(value.dossier);delete copy.readiness;return copy;};
+ try{
+  for(const alias of aliases){
+   const credential=credentials.find(c=>c.alias===alias);
+   const result=await api(alias,'login',{body:{email:credential.email,password:credential.password}});
+   check(result.data.authenticated===true&&result.data.authSource==='local'&&sessions.get(alias).ownedCookie,'ORDINARY_LOCAL_SIGN_IN_UNCONFIRMED');
+   pass('Ordinary password login',{alias});
+  }
+  for(const alias of ['owner','viewer']){
+   const org=(await api(alias,'organizations',{organization:orgId,label:'fresh_organization_selection'})).data;
+   check(org.actorId===fixture.actors[alias].actorId&&org.selected?.id===orgId&&org.selected.status==='active'
+    &&org.selected.actorId===org.actorId&&typeof org.selected.selection==='string'
+    &&org.selected.selection.endsWith('.'+org.actorId),'FRESH_ORGANIZATION_AUTHORITY_MISMATCH');
+   check(org.selected.role===(alias==='owner'?'org_owner':'member'),'ORGANIZATION_ROLE_MISMATCH');
+   if(alias==='viewer')check(org.selected.selection!==fixture.actors.viewer.teamSelection,'STALE_STORED_VIEWER_SELECTION_WAS_NOT_REFRESHED');
+   selections.set(alias,org.selected.selection);if(alias==='owner')beforeRoster=digest(org.members);
+   pass('Fresh actor-specific organization selection',{alias,selectionSha256:hash(org.selected.selection),status:'PASS'});
+   const list=(await api(alias,'collection',{organization:org.selected.selection})).data;
+   const summary=list.dossiers?.find(row=>row.dossier_id===dossierId);check(summary?.current_role===alias,'COLLECTION_ROLE_OR_CASE_MISMATCH');
+   const detail=(await api(alias,'detail',{organization:org.selected.selection})).data;
+   check(detail.dossier?.dossier_id===dossierId&&detail.dossier.current_role===alias,'DETAIL_ROLE_MISMATCH');
+   const expectedPermissions={role:alias,can_manage_participants:alias==='owner',can_write:alias==='owner',can_review:alias==='owner',can_transition:alias==='owner',can_generate_output:alias==='owner',can_approve:false};
+   check(canonical(detail.dossier.permissions)===canonical(expectedPermissions),'ROLE_PERMISSION_PROJECTION_MISMATCH');
+   const documents=(await api(alias,'documents',{organization:org.selected.selection})).data;
+   const version=documents.documents?.find(row=>row.document_id===documentId)?.versions?.find(row=>row.document_version_id===versionId);
+   check(version?.byte_length===422&&version.content_sha256==='sha256-'+expectedV1Sha256,'EXACT_VERSION_METADATA_MISMATCH');
+   const source=await api(alias,'source',{organization:org.selected.selection,bytes:true});
+   check(source.raw.length===422&&hash(source.raw)===expectedV1Sha256,'EXACT_SOURCE_BYTES_MISMATCH');
+   if(alias==='owner'){beforeOwner=digest(withoutReadiness(detail));beforeDocuments=digest(documents);}
+   else check(digest(documents)===beforeDocuments,'VIEWER_DOCUMENT_CONTENT_DIFFERS');
+   pass('Authenticated list/detail/documents/exact-v1 and role permissions',{alias,permissionsSha256:digest(detail.dossier.permissions),sourceSha256:hash(source.raw),sourceBytes:source.raw.length});
+  }
+  const foreignOrg=(await api('foreign','organizations',{organization:orgId,label:'foreign_unavailable_target_organization'})).data;
+  check(foreignOrg.actorId===fixture.actors.foreign.actorId&&foreignOrg.selected===null
+   &&foreignOrg.selectionIssue==='organization_unavailable'&&!foreignOrg.organizations.some(org=>org.id===orgId),'FOREIGN_ORGANIZATION_EXPOSED');
+  const personal=foreignOrg.organizations.find(org=>org.kind==='personal'&&org.actorId===foreignOrg.actorId&&org.status==='active');
+  check(typeof personal?.selection==='string','FOREIGN_FRESH_PERSONAL_CONTEXT_UNAVAILABLE');
+  for(const operation of ['collection','detail','documents','source'])deny(await api('foreign',operation,{organization:orgId,expected:404,label:'foreign_target_'+operation+'_denied'}));
+  for(const operation of ['detail','documents','source'])deny(await api('foreign',operation,{organization:personal.selection,expected:404,label:'foreign_wrong_context_'+operation+'_denied'}));
+  pass('Foreign target and wrong personal organization conceal private records',{alias:'foreign'});
+  const after=(await api('owner','detail',{organization:selections.get('owner'),label:'owner_preservation_readback'})).data;
+  const documentsAfter=(await api('owner','documents',{organization:selections.get('owner'),label:'documents_preservation_readback'})).data;
+  const rosterAfter=(await api('owner','organizations',{organization:orgId,label:'membership_preservation_readback'})).data;
+  check(digest(withoutReadiness(after))===beforeOwner&&digest(documentsAfter)===beforeDocuments&&digest(rosterAfter.members)===beforeRoster,'BUSINESS_STATE_PRESERVATION_MISMATCH');
+  pass('Dossier/source metadata and organization memberships unchanged',{alias:'owner',dossierSha256:beforeOwner,documentsSha256:beforeDocuments,membersSha256:beforeRoster});
+  record.status='PASS';
+ }catch(error){record.status='FAIL';record.failureCode=safeCode(error);persist();}
+ finally{
+  cleaning=true;
+  for(const alias of [...aliases].reverse()){
+   const session=sessions.get(alias);const cleanup={alias,status:'NOT_CREATED',logoutConfirmed:false,oldCookieDenied:false};
+   if(session.ownedCookie){
+    cleanup.status='CLEANUP_PENDING';
+    for(let attempt=1;attempt<=2&&!session.logoutConfirmed;attempt++)try{
+     const result=await api(alias,'logout',{cookieOverride:session.ownedCookie,label:'script_owned_logout'});
+     check(result.data.authenticated===false,'LOGOUT_RECEIPT_UNCONFIRMED');session.logoutConfirmed=true;cleanup.logoutConfirmed=true;cleanup.attempts=attempt;
+    }catch(error){cleanup.failureCode=safeCode(error);}
+    if(session.logoutConfirmed)try{
+     for(const operation of ['collection','detail','documents','source'])deny(await api(alias,operation,{cookieOverride:session.ownedCookie,organization:selections.get(alias)??orgId,expected:401,label:'revoked_cookie_'+operation+'_denied'}));
+     cleanup.oldCookieDenied=true;cleanup.status='PASS';delete cleanup.failureCode;
+    }catch(error){cleanup.failureCode=safeCode(error);cleanup.status='POST_LOGOUT_READ_UNCONFIRMED';}
+    else cleanup.status='LOGOUT_UNCONFIRMED';
+    if(cleanup.status!=='PASS')record.status='FAIL';
+   }else if(session.loginAttempted&&(!session.loginResponseReceived||![400,401,403,409,429].includes(session.loginResponseStatus))){cleanup.status='LOGIN_OUTCOME_UNCONFIRMED_NO_RECEIVED_COOKIE';record.status='FAIL';}
+   record.sessionCleanup.push(cleanup);persist();
+  }
+  record.completedAt=new Date().toISOString();record.interrupted=stopping;
+  if(stopping||evidenceWriteFailed)record.status='FAIL';
+  persist();process.removeListener('SIGINT',interrupt);process.removeListener('SIGTERM',interrupt);
+  console.log(JSON.stringify({status:record.status,checks:record.checks.length,cleanup:record.sessionCleanup.map(({alias,status})=>({alias,status})),receiptSha256:existsSync(receiptPath)?hash(readFileSync(receiptPath)):null}));
+  if(record.status!=='PASS')process.exitCode=1;
+ }
+}
+main().catch(error=>{console.log(JSON.stringify({status:'NOT_RUN_OR_HARNESS_FAILURE',code:safeCode(error)}));process.exitCode=1;});

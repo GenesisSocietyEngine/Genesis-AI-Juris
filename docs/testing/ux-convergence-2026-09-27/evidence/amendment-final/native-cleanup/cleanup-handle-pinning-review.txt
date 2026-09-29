@@ -1,0 +1,11 @@
+Independent reviewer: /root/report_verification
+Review input: cleanup-owned-emulator.ps1 SHA256 2efb2390e401af6ebf7fddc6b5e274311e5a85a2bed793388d2a70ea4c68d415.
+Source: collaboration review message; no separate preexisting review file was supplied.
+
+Finding: lines 147-149 acquire a System.Diagnostics.Process object and check StartTime/Path, but never explicitly retain its native Handle before Stop-Process. The variable name taskHandle does not itself pin the process instance; a process exit/PID reuse between checks and termination is the boundary these guards intend to close.
+
+Recommendation: access $taskHandle.Handle immediately after Get-Process, then validate and terminate the same object, and dispose afterward. The ADB child helper already uses this handle retention.
+
+Reviewer scope: read-only source review only; no script execution or process inspection. Default gate, serial, AVD, parent, timestamps and preservation scope otherwise appeared bounded.
+
+Coordinating agent authorized this narrow ignored-script fix, prior-byte archival, parser verification and READONLY dry run only. Shutdown remains forbidden until an explicit later final-gate completion instruction.

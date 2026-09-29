@@ -1,3 +1,4 @@
+import { hasRetiredCitation } from "../../../../dossier-evidence-server";
 import { and, asc, desc, eq, inArray, lt, or } from "drizzle-orm";
 import {
   dossierAIProposalAnchors,
@@ -26,6 +27,7 @@ import { exactCurrentGraphEntityExists, graphEntityId } from "../../../../dossie
 import { computeStoredDossierReadiness } from "../../../../dossier-readiness-server";
 import { parseDossierOpaqueId } from "../../../../dossier-security";
 import {
+  finalizeDossierRead,
   boundedDossierText,
   canonicalDossierTimestamp,
   dossierEnum,
@@ -154,7 +156,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
     access.dossier.id,
     visibleRows.map((proposal) => proposal.id),
   );
-  return dossierJson({
+  return finalizeDossierRead(context, access, dossierJson({
     proposals: visibleRows.map((proposal) => projectProposal(
       proposal,
       associations.versionIdsByProposal.get(proposal.id) ?? [],
@@ -166,7 +168,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
       next_cursor: hasMore ? visibleRows.at(-1)?.id ?? null : null,
     },
     contract_version: "1.0.0",
-  });
+  }));
 }
 
 export async function POST(request: Request, routeContext: RouteContext) {
@@ -487,6 +489,8 @@ async function reviewProposal(
   }
 
   const sources = await loadReviewSources(context, access.dossier.id, proposalId);
+  if(await hasRetiredCitation(context,access.dossier.id,sources.anchors.map(s=>s.anchorId)))return dossierJson({error:"A citation was retired. Review current replacement evidence and create or revise the affected work before accepting it.",code:"retired_citation"},409);
+
   if (
     sources.versionIds.length === 0
     || sources.anchors.length === 0

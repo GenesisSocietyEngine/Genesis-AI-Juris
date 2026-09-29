@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-09-27 18:37:23 UTC",
+  "site": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "latestVersion": 102,
+    "liveUrl": "https://studio.falcon-merlin.com",
+    "previewUrl": null,
+    "accessMode": "public"
+  },
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_37dbecce77848191a3dc4397ee48dc73",
+    "number": 102,
+    "commit": "bf5799383a52b6617cd9d4a0acf47af780086218"
+  },
+  "deployment": {
+    "id": "appgdep_6ab6ed70ee488191ba95f30293b6e6a1",
+    "status": "succeeded",
+    "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_37dbecce77848191a3dc4397ee48dc73",
+    "environmentRevision": 39,
+    "updatedAt": "2026-09-25T21:55:07.113680+00:00"
+  },
+  "candidateDeployed": false
+}

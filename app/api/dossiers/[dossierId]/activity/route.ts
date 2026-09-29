@@ -2,7 +2,9 @@ import { and, desc, eq, lt } from "drizzle-orm";
 import { dossierAuditEvents } from "../../../../../db/schema";
 import { parseDossierOpaqueId } from "../../../../dossier-security";
 import {
+  finalizeDossierRead,
   dossierJson,
+  dossierNotFound,
   isResponse,
   requireDossierAccess,
   resolveDossierServerContext,
@@ -27,6 +29,13 @@ export async function GET(request: Request, routeContext: RouteContext) {
   if (limit === null) return dossierJson({ error: "The activity page limit is invalid." }, 400);
 
   const cursorValue = url.searchParams.get("cursor");
+  const eventValue = url.searchParams.get("event_id");
+  let eventId: string | null = null;
+  if (eventValue !== null) {
+    if (url.searchParams.getAll("event_id").length !== 1 || url.searchParams.has("cursor")) return dossierJson({ error: "Choose one exact event without a history cursor." }, 400);
+    try { eventId = parseDossierOpaqueId(eventValue, "audit event"); }
+    catch { return dossierNotFound(); }
+  }
   let cursorSequence: number | null = null;
   if (cursorValue) {
     let cursorId: string;
@@ -60,12 +69,14 @@ export async function GET(request: Request, routeContext: RouteContext) {
     eventDigest: dossierAuditEvents.eventDigest,
   }).from(dossierAuditEvents).where(and(
     eq(dossierAuditEvents.dossierId, access.dossier.id),
+    eventId === null ? undefined : eq(dossierAuditEvents.id, eventId),
     cursorSequence === null ? undefined : lt(dossierAuditEvents.sequence, cursorSequence),
   )).orderBy(desc(dossierAuditEvents.sequence)).limit(limit + 1);
 
-  const hasMore = rows.length > limit;
+  if (eventId !== null && rows.length === 0) return dossierNotFound();
+  const hasMore = eventId === null && rows.length > limit;
   const visible = rows.slice(0, limit);
-  return dossierJson({
+  return finalizeDossierRead(context, access, dossierJson({
     activity: visible.map((event) => ({
       object_type: "audit_event",
       schema_version: 1,
@@ -84,7 +95,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
       event_digest: event.eventDigest,
     })),
     next_cursor: hasMore ? visible[visible.length - 1]?.auditEventId ?? null : null,
-  });
+  }), "audit");
 }
 
 function pageLimit(value: string | null): number | null {

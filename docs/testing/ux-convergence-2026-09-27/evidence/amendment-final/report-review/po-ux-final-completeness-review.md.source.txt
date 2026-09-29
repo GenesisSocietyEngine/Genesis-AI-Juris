@@ -1,0 +1,41 @@
+# PO/UX draft completeness review during the final gate
+
+Reviewed at the `a1fae95bc2624e28e6232b8867ad2a94c8d9f0ab` checkpoint, after the unchanged aggregate started at `2026-09-27T23:55:25Z`. This file is ignored. No tracked file, runtime, account, database, browser, deployment or gate process was changed by this review.
+
+## Review independence and inputs
+
+The report author reread the **complete original runbook, sections 0–17**, and the complete `RELEASE_DECISION-amended.md`, including the amendment's distinction between its offline reviewing session and this accessible execution checkout. This is the report author's **self-review for completeness**, not a falsely labeled independent review of their own writing. Requirements in those attachments are acceptance references within the user's authorized work; they do not create new publication, invitation, access-change or upload-workaround authority.
+
+The separate `review_flows` agent independently checked the draft's governed-output prerequisites, role separation, chooser restrictions and preservation claims and reported no substantive misleading claim. Its broader gap review is `FINAL_ACCEPTANCE_GAPS_REVIEW.md`. That independent check is narrower than a second line-by-line audit of every final report sentence; it did not edit this draft or run new scenarios.
+
+Evidence inputs include the current 42-row closure ledger and original detailed stage/UX/A matrices, current release decision, settings and source/save slices, actual browser closure, reports/golden review, real C/D fixture and amendment assumption/access receipts, retained browser capability/hosting reviews, new ordinary local read smoke and independent read-authority review, full aggregate baseline review, failed `e6c6adc` aggregate, red/green PDF test receipts and the human protocol.
+
+## Findings and changes made to the ignored draft
+
+| Finding | Corrected report treatment |
+| --- | --- |
+| The initial compact reading map named UX01–16 without separate scoped status/evidence. | Added 16 UX rows. Together with nine explicit `Stage 0`–`Stage 8` rows and 17 A rows, the draft now contains **42 unique requirement rows**, each with a scope/status, evidence reference and remaining action. No whole-stage PASS was assigned. |
+| The draft's latest run state became stale after the test correction was committed. | Current clean checkpoint is exact `a1fae95…`, full unchanged gate **in progress**, no invented result. Pre-fix `6ab091d` PASS and first corrected `e6c6adc` FAIL are preserved. The passing six-test synchronization correction is separate. |
+| Rollback wording could imply the known historical target is free of the newly found defect. | Kept v102/bf579938/environment39 as the historical reference, and explicitly states its attributed source retains the pre-patch read-authority pattern. A named operator/trigger/mitigation must account for that risk; no live exploit or deployed binary attestation is claimed. |
+| Runbook preservation and human retest obligations were implicit in the short product summary. | Added explicit preservation of reference/working-copy distinction, IDs/training/source lineage/audit/model boundaries/data restrictions and unrelated work; added new participants for first-use retests and no product-market-fit claim from five sessions. |
+| Workstream actions lacked responsibility without a legitimate named assignee. | Added proposed engineering/domain/browser/accessibility/release/product-UX responsibilities, clearly not invented named assignments. The operational rollback owner remains to be recorded. No message or invitation is authorized by the report. |
+
+## Requirement and evidence audit
+
+- **Scope and implementation:** existing product, no parallel evidence model, no title-based Studio/Matter merge, no destructive migration, no arbitrary provider/billing expansion. Reference fixtures and tax IDs remain distinct from presentation changes. New work is not recreated merely because production remains v102.
+- **First value and states:** actual first-screen/one-action observations remain scoped. Mandatory ≤2 meaningful entry actions and ≤2 source actions are distinct from proposed ≥4/5 human 90-second performance. Empty/error/type-choice gaps remain named.
+- **Evidence and change:** material presence, assertion linkage and human review remain distinct. Source-v2 is still blocked by the original chooser security/permission prerequisite, with no alternative transport workaround. The later CUA connection timeout is separate. No source-v2, current-output invalidation or professional review is inferred from the actual zero-output assumption fixture.
+- **Governed output:** the five exact snapshot prerequisites, 300/600 contradiction, missing capacity source/request, configurable truthful synthetic deadline, semantically suitable publication and genuine exact-package simulation are explicit. A baseline unapproved output is sufficient for staleness; reviewer-only output approval is a separate A11 scenario. Platform-admin publication is not inferred from Matter roles.
+- **Saving and access:** local browser Save/reopen, sign-in/cancel, network, controlled expiry and two-tab conflict scopes are retained. Current owner/viewer/foreign sequential token-store smoke is separate from modeled mid-request scheduling and prior browser role checks. Hosted actors are not a same-group owner/member pair. Naturally elapsed expiry is not made an unsupported mandatory gate.
+- **Reports and history:** Base/Medium/Full and supported tree coupling are preserved, with the compatible Full OFF explanatory-text omission. Four earlier PDFs/33 visual pages, later exact Base download/three visual pages, and automated 47-PDF/758-page baseline are not conflated. Account receipt metadata is not PDF storage, user-save confirmation or permanent governed retention. Old history N/A is superseded only for the implemented Studio account path.
+- **Accessibility and compatibility:** 1366×768, 1024×768, 390×844 and actual 200% are stated separately; keyboard/AX/viewport evidence does not become screen-reader use. Long titles/themes/Cyrillic and data/input preservation remain scoped. Full FiveFlats is NOT_RUN because canonical material exists; ERP evidence is not generalized to all old routes.
+- **Humans:** zero participants/sessions; ≥4/5 task1 within90s, ≥4/5 unassisted create/save/reopen/export and5/5 draft/approved distinction are proposed targets, not measured outcomes. Assistance/failure/incomplete participants stay in the denominator. No invitations have been sent by this report work.
+- **Three decisions:** engineering BLOCKED, production BLOCKED/not published, pilot NO-GO. A green aggregate removes one technical prerequisite, not integrated/hosted/accessibility/human gates. Existing publication authorization is not revoked, but evidence is not sufficient to exercise it; the attachments themselves add no new authority.
+
+## Checks and unresolved finalization
+
+At `2026-09-27T23:59:32.5058420Z`, a static document inventory found nine stage rows, 16 UX rows and 17 A rows: **42 total/42 unique**. Every Markdown file target present at that check resolves from the ignored draft. The draft's evidence index makes links usable with the accompanying repository/evidence packet; links must be rebased if the final report is copied elsewhere. The tracked worktree was clean at the check.
+
+The final report still requires the actual `a1fae95` gate end/result/receipt and final source/build readback, a fresh production metadata attribution if the coordinator performs it, and any later legitimately executed observations. No pending result may be filled from the earlier passing baseline or six-test retest. Missing browser/hosted/zoom/screen-reader/human criteria remain missing even if the gate passes. A completion percentage would be misleading and is not supplied.
+
+No new application P0/P1 is established by this document audit. The known private-read defect is corrected locally within its reviewed scope and not deployed; the first candidate's test-harness failure is fixed with red/green evidence but its new aggregate is still running. Remaining items are classified by their actual evidence gap, not invented as fresh defects. The original delivered ledger and historical failures are retained.

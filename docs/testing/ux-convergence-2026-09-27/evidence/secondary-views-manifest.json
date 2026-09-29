@@ -1,0 +1,98 @@
+{
+  "app/JurisApp.tsx": {
+    "file": "_next/static/chunks/JurisApp-Cp6YuRrf.js",
+    "bytes": 313257,
+    "imports": [
+      "_rolldown-runtime-hePW80VL.js",
+      "_framework-DTZGTDtF.js",
+      "_vinext-DTWJWY5y.js",
+      "_studio-compiler-0DI5qS4j.js",
+      "_stale-chunk-recovery-1QqnK_yZ.js",
+      "_workspace-navigation-CfzkDn3R.js",
+      "_use-interface-locale-CGHSiBw8.js",
+      "app/NavigationSession.tsx",
+      "_GenesisNavigation-UDMHKdq9.js",
+      "_ActionTile-C6n4e6BQ.js",
+      "_studio-prompt-limit-9RWgTUtN.js"
+    ],
+    "dynamicImports": [
+      "app/DemoCases.tsx",
+      "app/HelpCenter.tsx",
+      "app/CommunityWorkspace.tsx",
+      "app/PlayWorkspace.tsx",
+      "app/StudioActionPanel.tsx",
+      "app/StudioEntryScreen.tsx",
+      "app/StudioOverview.tsx",
+      "app/StudioSourcesPanel.tsx",
+      "app/StudioExpandedGraph.tsx",
+      "app/StudioNodeSummary.tsx",
+      "app/FeedbackDialog.tsx",
+      "app/StudioAIReview.tsx",
+      "app/StudioAIProgress.tsx",
+      "app/DealOutcomePanel.tsx",
+      "app/CashFlowScenarioEditor.tsx",
+      "app/GraphMilestones.tsx",
+      "app/CaseReportDialog.tsx",
+      "app/CaseMarkdownDialog.tsx",
+      "app/CanonicalMarkdownReview.tsx",
+      "app/StudioGuidedWizard.tsx",
+      "app/StudioCaseTypeSelector.tsx",
+      "app/StudioCaseViews.tsx",
+      "app/StudioCasePlaybook.tsx",
+      "app/StudioPackageValidationCard.tsx",
+      "app/StudioOutcomeParameters.tsx",
+      "app/StudioUserMoreActions.tsx",
+      "app/StudioPromptAuxiliary.tsx",
+      "_canopy-fixture-BlHvVrDy.js",
+      "_studio-validation-JhxUStIT.js",
+      "app/canonical-runtime.ts",
+      "app/scenarios.ts",
+      "app/played-case-loader.ts",
+      "app/case-core.ts",
+      "app/studio-economic-prompt.ts",
+      "app/studio-layout.ts",
+      "app/case-markdown.ts",
+      "app/studio-ai-client-error.ts",
+      "_studio-prompt-file-9Oz9G2Hi.js",
+      "app/studio-tax-currency.ts",
+      "app/case-type-registry.ts"
+    ]
+  },
+  "app/CommunityWorkspace.tsx": {
+    "file": "_next/static/chunks/CommunityWorkspace-D46EqziR.js",
+    "bytes": 53965,
+    "imports": [
+      "_rolldown-runtime-hePW80VL.js",
+      "_framework-DTZGTDtF.js",
+      "_vinext-DTWJWY5y.js",
+      "_studio-compiler-0DI5qS4j.js",
+      "_workspace-navigation-CfzkDn3R.js",
+      "app/JurisApp.tsx"
+    ],
+    "dynamicImports": [
+      "app/OperationsDashboard.tsx"
+    ]
+  },
+  "app/PlayWorkspace.tsx": {
+    "file": "_next/static/chunks/PlayWorkspace-DZooXkD4.js",
+    "bytes": 29407,
+    "imports": [
+      "_rolldown-runtime-hePW80VL.js",
+      "_framework-DTZGTDtF.js",
+      "_vinext-DTWJWY5y.js",
+      "_studio-compiler-0DI5qS4j.js",
+      "app/JurisApp.tsx"
+    ],
+    "dynamicImports": [
+      "app/OperationsDossier.tsx"
+    ]
+  },
+  "app/HelpCenter.tsx": {
+    "file": "_next/static/chunks/HelpCenter-BTlIx1ua.js",
+    "bytes": 10928,
+    "imports": [
+      "_framework-DTZGTDtF.js",
+      "app/TrainingVideo.tsx"
+    ]
+  }
+}

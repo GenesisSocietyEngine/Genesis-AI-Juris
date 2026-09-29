@@ -57,3 +57,6 @@ next-env.d.ts
 /apps/juris-mobile/ios/Flutter/ephemeral/
 /apps/juris-mobile/*.zip
 /juris-mobile-current.zip
+
+# Local linked checkouts
+/.worktrees/

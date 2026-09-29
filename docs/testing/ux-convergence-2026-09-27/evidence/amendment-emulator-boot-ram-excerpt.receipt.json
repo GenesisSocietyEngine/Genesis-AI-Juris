@@ -1,0 +1,48 @@
+{
+  "schema": "genesis.juris.explicit-log-excerpt.v1",
+  "generatedAt": "2026-09-27T21:26:56.114Z",
+  "source": {
+    "path": ".artifacts/amendment-android-native/emulator.stdout.log",
+    "bytes": 15325,
+    "sha256": "07a44269f3bb61d3de100369cff8181806e9300257270012933c5bd2dbd83754",
+    "retention": "Original raw log unchanged and ignored; not proposed for tracked publication."
+  },
+  "excerpt": {
+    "path": ".artifacts/ux-reconciliation-auth/amendment-emulator-boot-ram-excerpt.log",
+    "bytes": 320,
+    "sha256": "50ef9d97c3b87d4ea291b80c90a2a4d4b79484c8f337aae6c5dfe49ae1c969c7",
+    "scope": "Selected boot, hypervisor and effective RAM messages only; not the original complete log.",
+    "method": "Decode UTF-8, split preserving LF/CRLF delimiters, concatenate inclusive 1-based line ranges in source order. Omit every other line. No selected-line substitutions or normalizations.",
+    "selectedLineRanges": [
+      [
+        6,
+        6
+      ],
+      [
+        47,
+        48
+      ],
+      [
+        122,
+        123
+      ],
+      [
+        136,
+        136
+      ]
+    ]
+  },
+  "omitted": "Unrelated log lines, host LAN addresses, hardware discovery, ADB public key and Android boot-property inventory. Their omission is explicit, not represented as a complete raw log.",
+  "observations": {
+    "effectiveRamMiB": 4096,
+    "emulatorReportedBootMs": 173459,
+    "plannedBootWindowMs": 120000,
+    "bootWindowResult": "EXCEEDED",
+    "hypervisor": "Windows Hypervisor Platform accelerator reported operational"
+  },
+  "limitations": [
+    "Reported boot duration is the emulator log value, not an independently sampled stopwatch.",
+    "Effective 4096MiB comes from the emulator message; requested 2048MiB was not the effective cap.",
+    "No private user AVD data is included. The full raw log remains locally retained with its original hash."
+  ]
+}

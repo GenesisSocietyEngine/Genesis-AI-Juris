@@ -1,0 +1,46 @@
+"use client";
+
+import { useEffect, useRef, useState, type ComponentType } from "react";
+import { useRouter } from "next/navigation";
+
+export type FeedbackTarget = { caseId: string; version: string; title: string; source: "playable" | "studio"; fingerprint?: string; customCaseId?: number | null; contextType?: "case" | "stage" | "decision" | "node"; contextId?: string; privateCase?: boolean };
+
+export default function FeedbackDialog({ locale, target, close, submitted, Icon }: { locale: "en" | "ru"; Icon: ComponentType<{ name: string; size?: number }>; target: FeedbackTarget; close: () => void; submitted: (audience?: string) => void }) {
+  const router = useRouter();
+  const [rating, setRating] = useState(5);
+  const [category, setCategory] = useState("legal_accuracy");
+  const [severity, setSeverity] = useState("suggestion");
+  const [comment, setComment] = useState("");
+  const [suggestedCorrection, setSuggestedCorrection] = useState("");
+  const [citationUrl, setCitationUrl] = useState("");
+  const [privacyMode, setPrivacyMode] = useState<"private_note" | "product_only">("private_note");
+  const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
+  const dialogRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    const prior = document.activeElement as HTMLElement | null;
+    const dialog = dialogRef.current;
+    dialog?.querySelector<HTMLButtonElement>(".modal-close")?.focus();
+    function keydown(event: KeyboardEvent) {
+      if (event.key === "Escape") { event.preventDefault(); close(); return; }
+      if (event.key !== "Tab" || !dialog) return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>("button:not([disabled]),select,textarea,input,a[href]"));
+      if (!focusable.length) return;
+      const first = focusable[0]; const last = focusable.at(-1)!;
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
+    document.addEventListener("keydown", keydown);
+    return () => { document.removeEventListener("keydown", keydown); prior?.focus(); };
+  }, [close]);
+  async function submit(event: React.FormEvent) {
+    event.preventDefault(); setSending(true); setError("");
+    const response = await fetch("/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ caseId: target.caseId, caseVersion: target.version, source: target.source, studioFingerprint: target.fingerprint, customCaseId: target.source === "studio" && privacyMode !== "product_only" ? target.customCaseId : undefined, contextType: target.contextType ?? "case", contextId: target.contextId, rating, category, severity, comment, suggestedCorrection, citationUrl, privacyMode: target.privateCase ? privacyMode : undefined }) });
+    if (response.status === 401) { router.push("/signin-with-chatgpt?return_to=%2F"); return; }
+    const result = await response.json().catch(() => null) as { audience?: string; error?: string } | null;
+    if (!response.ok) { setError(result?.error ?? (locale === "en" ? "Please complete the rating and comment." : "Заполните оценку и комментарий.")); setSending(false); return; }
+    submitted(result?.audience);
+  }
+  const productOnly = target.privateCase && privacyMode === "product_only";
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}><form ref={dialogRef} className="feedback-dialog" onSubmit={submit} role="dialog" aria-modal="true" aria-labelledby="feedback-title"><button type="button" className="modal-close" onClick={close} aria-label={locale === "en" ? "Close feedback dialog" : "Закрыть форму отзыва"}><Icon name="close"/></button><span>{target.privateCase ? "PRIVATE CASE FEEDBACK" : `CASE-SPECIFIC FEEDBACK · ${target.source.toUpperCase()}`}</span><h2 id="feedback-title">{target.privateCase ? (locale === "en" ? "Choose who can receive this note" : "Выберите, кому доступна заметка") : (locale === "en" ? "Help improve this case" : "Помогите улучшить кейс")}</h2><p><b>{target.title}</b><br/><code>{target.caseId} · v{target.version}{target.contextId ? ` · ${target.contextType}:${target.contextId}` : ""}</code></p><aside className="feedback-privacy"><Icon name="alert"/>{locale === "en" ? "Do not include client-identifiable, privileged, personal or confidential information." : "Не включайте идентифицирующие клиента, привилегированные, персональные или конфиденциальные сведения."}</aside>{target.privateCase && <fieldset className="private-feedback-options"><legend>{locale === "en" ? "Resolve the private-feedback conflict" : "Разрешение коллизии приватного фидбэка"}</legend><label className={privacyMode === "private_note" ? "selected" : ""}><input type="radio" name="privacyMode" value="private_note" checked={privacyMode === "private_note"} onChange={() => setPrivacyMode("private_note")}/><span><b>{locale === "en" ? "Private note · owner only" : "Приватная заметка · только владелец"}</b><small>{locale === "en" ? "Stored with this case for you. Maxim and the review queue cannot see it." : "Сохраняется вместе с кейсом для вас. Максим и очередь рецензий её не видят."}</small></span></label><label className={privacyMode === "product_only" ? "selected" : ""}><input type="radio" name="privacyMode" value="product_only" checked={privacyMode === "product_only"} onChange={() => setPrivacyMode("product_only")}/><span><b>{locale === "en" ? "Anonymised case context · product feedback" : "Обезличенный контекст · отзыв о продукте"}</b><small>{locale === "en" ? "Your attributed comment, rating and category go to Maxim, but case ID, version, fingerprint, node context, citation and correction fields are stripped. Do not repeat case facts in the comment." : "Максим получит ваш авторизованный комментарий, оценку и категорию, но ID, версия, fingerprint, контекст узла, источник и поле исправления будут удалены. Не повторяйте факты кейса в комментарии."}</small></span></label><p>{locale === "en" ? "For substantive review of case content, turn off Private and share or submit an exact restricted version." : "Для содержательной рецензии отключите «Приватно» и предоставьте доступ либо отправьте точную ограниченную версию."}</p></fieldset>}<div className="feedback-fields"><label><span>{locale === "en" ? "Feedback category" : "Категория отзыва"}</span><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="legal_accuracy">Legal / tax accuracy</option><option value="realism">Professional realism</option><option value="learning_value">Learning value</option><option value="usability">Usability</option><option value="technical">Technical issue</option><option value="other">Other</option></select></label><label><span>{locale === "en" ? "Severity" : "Существенность"}</span><select value={severity} onChange={(event) => setSeverity(event.target.value)}><option value="suggestion">Suggestion</option><option value="material">Material correction</option><option value="critical">Critical legal/safety issue</option></select></label></div><fieldset><legend>{locale === "en" ? "Overall rating" : "Общая оценка"}</legend><div className="rating-row">{[1,2,3,4,5].map((value) => <button type="button" key={value} className={value <= rating ? "active" : ""} onClick={() => setRating(value)} aria-label={`${value} / 5`}>★</button>)}</div></fieldset><label><span>{productOnly ? (locale === "en" ? "Product-level issue · do not include case facts" : "Проблема продукта · без фактов кейса") : (locale === "en" ? "What should be corrected or improved?" : "Что следует исправить или улучшить?")}</span><textarea required minLength={10} value={comment} onChange={(event) => setComment(event.target.value)} placeholder={productOnly ? (locale === "en" ? "Describe the interface or workflow issue without referring to this case…" : "Опишите проблему интерфейса или процесса без ссылки на этот кейс…") : (locale === "en" ? "Identify the fact, rule, stage, node or decision branch…" : "Укажите факт, правило, стадию, узел или ветвь решения…")}/></label>{!productOnly && <><label><span>{locale === "en" ? "Suggested correction" : "Предлагаемое исправление"}</span><textarea value={suggestedCorrection} onChange={(event) => setSuggestedCorrection(event.target.value)} placeholder={locale === "en" ? "Optional replacement wording or branch logic" : "Необязательная новая формулировка или логика ветви"}/></label><label><span>{locale === "en" ? "Supporting HTTPS source" : "Подтверждающий HTTPS-источник"}</span><input type="url" value={citationUrl} onChange={(event) => setCitationUrl(event.target.value)} placeholder="https://…"/></label></>}{error && <p className="form-error" role="alert">{error}</p>}<div className="modal-actions"><button type="button" className="secondary-cta" onClick={close}>{locale === "en" ? "Cancel" : "Отмена"}</button><button className="primary-cta" disabled={sending || comment.trim().length < 10}>{sending ? "Sending…" : target.privateCase && privacyMode === "private_note" ? (locale === "en" ? "Save private note" : "Сохранить приватную заметку") : locale === "en" ? "Submit feedback" : "Отправить отзыв"}<Icon name="arrow"/></button></div></form></div>;
+}

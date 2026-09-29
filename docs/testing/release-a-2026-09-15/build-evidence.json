@@ -1,0 +1,29 @@
+{
+  "recordedAt": "2026-09-15T13:47:49.217548+00:00",
+  "scope": "Release A server APIs plus v86 UI and neutral citation receipt copy",
+  "checks": {
+    "serverAndMigration": {
+      "passed": 15,
+      "failed": 0,
+      "exactOldSource": "dca6af234ce27c76a6b1cb22359be9540d8e5049"
+    },
+    "modelsSourceAndSSR": {
+      "passed": 39,
+      "failed": 0
+    },
+    "build": "passed",
+    "typecheck": "passed",
+    "canonicalMobileContract": "18 deterministic routes passed; not device or responsive testing",
+    "browser": "CDP operation refresh tabs timed out after 20000ms; not run"
+  },
+  "artifacts": {
+    "dist/server/index.js": {
+      "sha256": "19c673da89e68f84bf8aa66ebcaf7935c8a72dee9bd8f2e0c0e0e7fcc146dda9",
+      "bytes": 281267
+    },
+    "drizzle/0022_loving_juggernaut.sql": {
+      "sha256": "2ebc937ea8ab24670754d13247aaf4251ae941949bf99301c9f605a89808b111",
+      "bytes": 15104
+    }
+  }
+}

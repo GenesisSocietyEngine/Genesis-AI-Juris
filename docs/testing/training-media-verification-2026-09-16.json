@@ -1,0 +1,57 @@
+{
+  "file": "/workspace/scratch/460b746c0470/training-assets/output/genesis-juris-training-10min.mp4",
+  "bytes": 8387184,
+  "sha256": "77bbb6ff3734342299d2bac39c5a5bc289458f7faa82d05f321d7b524b33c428",
+  "durationSeconds": 600.0,
+  "sceneCount": 20,
+  "sceneDurationSeconds": 30,
+  "screenScenes": 1,
+  "illustrationScenes": 16,
+  "instructionScenes": 3,
+  "captionCues": 96,
+  "maxNarrationTempo": 1.0,
+  "lastSpeechEnds": [
+    25.175,
+    23.24,
+    25.135,
+    24.855,
+    24.265,
+    26.21,
+    23.6,
+    25.665,
+    26.0,
+    22.09,
+    24.17,
+    25.45,
+    27.64,
+    24.61,
+    24.255,
+    23.135,
+    26.835,
+    23.21,
+    28.05,
+    25.415
+  ],
+  "streams": [
+    {
+      "type": "video",
+      "codec": "h264",
+      "width": 1920,
+      "height": 1080,
+      "duration": "600.000000"
+    },
+    {
+      "type": "audio",
+      "codec": "aac",
+      "width": null,
+      "height": null,
+      "duration": "600.000000"
+    }
+  ],
+  "faststartVerified": true,
+  "completeAudioVideoDecodePassed": true,
+  "captionTiming": "96 cues derived from measured per-sentence WAV durations; each cue stays within its scene",
+  "visualReview": "Amended scene 02 reviewed at full resolution and from encoded MP4 at 37 seconds",
+  "amendment": "Scene 02 now describes one Demo cases catalogue containing the Canopy guided walkthrough and five decision simulations. Templates remain starters. Other scenes unchanged.",
+  "format": "Narrated illustrated walkthrough; one actual application screenshot, 16 workflow illustrations, 3 account instruction scenes. Not an authenticated acceptance recording."
+}

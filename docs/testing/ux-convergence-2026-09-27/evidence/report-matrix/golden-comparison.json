@@ -1,0 +1,63 @@
+{
+  "baselineEntries": 55,
+  "candidateEntries": 55,
+  "metadataEqual": true,
+  "differencesIgnoringArtifactRoot": [
+    {
+      "key": "review:deep:en:internal|stress-deep|middle|10",
+      "fields": [
+        "pngSha256"
+      ],
+      "oldHash": "5b91c20c3aa772ee994be95bcb0295c8f8447fd89de32e1f1807fd1ff7f1bcf1",
+      "newHash": "0536cb2823ac3991b42ae479ec0cee050ecb9829047b467675d66ed51f53ad76"
+    },
+    {
+      "key": "review:disconnected:en:internal|stress-disconnected|middle|8",
+      "fields": [
+        "pngSha256"
+      ],
+      "oldHash": "1bea4899da651dc39f1881c1e870a0484cbc70bbd1619ab1db5f0534db83632e",
+      "newHash": "0e5ce8440f6a3b8966af19e4bb1a2749d153650b33ab7037bb6c933a464dee15"
+    },
+    {
+      "key": "review:fan-out:en:internal|stress-fan-out|first|1",
+      "fields": [
+        "layoutFingerprint"
+      ],
+      "oldHash": "13a25138d4475222a090797374d5ca2c8433c1919c52319230185eedc47d70d9",
+      "newHash": "13a25138d4475222a090797374d5ca2c8433c1919c52319230185eedc47d70d9"
+    },
+    {
+      "key": "review:fan-out:en:internal|stress-fan-out|middle|6",
+      "fields": [
+        "layoutFingerprint"
+      ],
+      "oldHash": "cfea79b41f28030a71cfa1b272ab8d7b6e7cbd909ea67dcfa19e76cffe4abfa2",
+      "newHash": "cfea79b41f28030a71cfa1b272ab8d7b6e7cbd909ea67dcfa19e76cffe4abfa2"
+    },
+    {
+      "key": "review:fan-out:en:internal|stress-fan-out|last|11",
+      "fields": [
+        "layoutFingerprint"
+      ],
+      "oldHash": "d660397af940b13388096674f895e888890d204754c51a747d37650c3e9b173e",
+      "newHash": "d660397af940b13388096674f895e888890d204754c51a747d37650c3e9b173e"
+    },
+    {
+      "key": "review:long-detail:ru:internal|stress-long-detail-ru|middle|21",
+      "fields": [
+        "pngSha256"
+      ],
+      "oldHash": "dd944ec6218e7e56adb5f2dafcc89fe57bc08943a35e2096abfc6dfe44d36a51",
+      "newHash": "5fef494757edcc47b8b7882713f6cb127bf638ea59004fda707d9ef446f7407a"
+    }
+  ],
+  "counts": {
+    "fixtures": 47,
+    "golden": 32,
+    "longContent": 2,
+    "stress": 12,
+    "reportPages": 758,
+    "renderedPngs": 758
+  }
+}

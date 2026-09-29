@@ -1,0 +1,27 @@
+{
+  "observedAt": "2026-09-28T04:20:50.626Z",
+  "scope": "Read-only hosting metadata; no environment values, no deployed binary attestation or exploit test",
+  "site": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "version": 102,
+    "access": "public",
+    "preview": null
+  },
+  "source": "bf5799383a52b6617cd9d4a0acf47af780086218",
+  "deployment": {
+    "id": "appgdep_6ab6ed70ee488191ba95f30293b6e6a1",
+    "status": "succeeded",
+    "versionId": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_37dbecce77848191a3dc4397ee48dc73",
+    "environmentRevision": 39
+  },
+  "environment": {
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "revision": 39,
+    "updated_at": "2026-09-11T16:00:25.969297+00:00",
+    "entryCount": 11,
+    "invitationMailEnabled": false,
+    "hasInvitationSender": false
+  },
+  "candidateDeployed": false,
+  "mutatingOperations": []
+}

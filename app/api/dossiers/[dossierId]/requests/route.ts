@@ -14,6 +14,7 @@ import {
 import { computeStoredDossierReadiness } from "../../../../dossier-readiness-server";
 import { parseDossierOpaqueId } from "../../../../dossier-security";
 import {
+  finalizeDossierRead,
   boundedDossierText,
   canonicalDossierTimestamp,
   dossierEnum,
@@ -85,6 +86,14 @@ export async function GET(request: Request, routeContext: RouteContext) {
   if (isResponse(access)) return access;
 
   const url = new URL(request.url);
+  let exactRequestId: string | null = null;
+  if (url.searchParams.has("request_id")) {
+    if (url.searchParams.getAll("request_id").length !== 1 || url.searchParams.has("cursor") || url.searchParams.has("limit")) {
+      return dossierJson({ error: "Choose one exact request without pagination." }, 400);
+    }
+    try { exactRequestId = parseDossierOpaqueId(url.searchParams.get("request_id"), "information request ID"); }
+    catch { return dossierNotFound(); }
+  }
   const limit = pageLimit(url.searchParams.get("limit"));
   if (limit === null) return dossierJson({ error: "The request page limit is invalid." }, 400);
 
@@ -132,6 +141,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
     eq(dossierParticipants.id, dossierInformationRequests.requestedFromParticipantId),
   )).where(and(
     eq(dossierInformationRequests.dossierId, access.dossier.id),
+    exactRequestId ? eq(dossierInformationRequests.id, exactRequestId) : undefined,
     cursor ? or(
       lt(dossierInformationRequests.createdAt, cursor.createdAt),
       and(
@@ -142,7 +152,8 @@ export async function GET(request: Request, routeContext: RouteContext) {
   )).orderBy(desc(dossierInformationRequests.createdAt), desc(dossierInformationRequests.id))
     .limit(limit + 1);
 
-  const hasMore = requestRows.length > limit;
+  if (exactRequestId && requestRows.length === 0) return dossierNotFound();
+  const hasMore = !exactRequestId && requestRows.length > limit;
   const visibleRequests = requestRows.slice(0, limit);
   const deadlineRows = await context.db.select({
     deadlineReferenceId: dossierDeadlineReferences.id,
@@ -178,7 +189,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
     sourcesByDeadline.set(source.deadlineReferenceId, sources);
   }
 
-  return dossierJson({
+  return finalizeDossierRead(context, access, dossierJson({
     requests: visibleRequests.map(projectInformationRequest),
     deadlines: deadlineRows.map((deadline) => ({
       object_type: "deadline_reference",
@@ -200,7 +211,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
       updated_by: deadline.updatedBy,
     })),
     next_cursor: hasMore ? visibleRequests[visibleRequests.length - 1]?.informationRequestId ?? null : null,
-  });
+  }));
 }
 
 export async function POST(request: Request, routeContext: RouteContext) {

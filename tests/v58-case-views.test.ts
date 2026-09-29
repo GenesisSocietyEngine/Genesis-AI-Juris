@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { projectCaseView } from "../app/case-view-projections";
+import { normalizeStudioDraft } from "../app/case-integrity";
+import { defaultTaxEconomics } from "../app/tax-economics";
 import { applyCaseType, caseTypeDefinition } from "../app/case-type-registry";
 import type { StudioDraft } from "../app/types";
 
@@ -67,4 +69,38 @@ test("Developer view keeps a bounded content column and a wrapping action grid",
   assert.match(css, /\.studio-developer-view \.studio-actions\{width:100%;display:grid;grid-template-columns:repeat\(4/);
   assert.match(app, /StudioCaseViews/);
   assert.match(app, /focusGraphNode\(nodeId\)/);
+});
+
+
+test("decision-table graph targets remain correct when a link ID matches an unrelated node", () => {
+  const draft = matter();
+  draft.nodes.push({ id: "decision-outcome", type: "evidence", title: "Separate exhibit", detail: "Unrelated to this option.", x: 500, y: 100 });
+  const imported = normalizeStudioDraft(draft);
+  const option = projectCaseView(imported, "decision_table").items[0];
+  assert.equal(option?.id, "decision-outcome");
+  assert.equal(option?.focusNodeId, "decision");
+  assert.notEqual(option?.focusNodeId, option?.id);
+});
+
+test("node-backed projections open the named node rather than a connected neighbour", () => {
+  const draft = matter();
+  for (const view of ["issue_map", "evidence_map", "task_plan", "timeline", "simulation"] as const) {
+    const items = projectCaseView(draft, view).items;
+    assert.ok(items.length > 0);
+    for (const item of items) assert.equal(item.focusNodeId, item.id);
+  }
+  draft.links = draft.links.filter((link) => link.from !== "decision");
+  assert.equal(projectCaseView(draft, "decision_table").items[0]?.focusNodeId, "decision");
+});
+
+test("economic aggregate targets a relevant node and never an unrelated matching projection ID", () => {
+  const draft = matter();
+  draft.taxEconomics = defaultTaxEconomics();
+  draft.nodes.push({ id: "tax-economics", type: "fact", title: "Separate record", detail: "This record is not an economic model.", x: 500, y: 100 });
+  assert.equal(projectCaseView(draft, "economics").items[0]?.focusNodeId, undefined);
+  draft.nodes.push({ id: "cash-flow", type: "cash_flow", title: "Implementation cost", detail: "Expected initial cost.", x: 500, y: 250 });
+  const items = projectCaseView(draft, "economics").items;
+  assert.equal(items[0]?.focusNodeId, "cash-flow");
+  assert.equal(items[1]?.id, "cash-flow");
+  assert.equal(items[1]?.focusNodeId, "cash-flow");
 });

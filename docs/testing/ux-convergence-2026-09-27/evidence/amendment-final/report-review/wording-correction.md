@@ -1,0 +1,7 @@
+# Assembly wording guard: exact preservation phrase
+
+28 September 2026 UTC. Coordinator execution of assembler `02a9159dd2c7693d25f12575bbcd742cd4dd9471bd844ba48197fb1c91ca6779` exited1 before output creation (reported tool chunk `ffe9bc`), after actual receipt/source checks passed. Its final-text guard matched the benign lower-case words `in progress` in the PO preservation sentence: “while preserving source/version history, work in progress, role boundaries and report truthfulness.” The pending aggregate phrases have separate exact replacements; this sentence was untouched. Root independently confirmed the same context.
+
+The separate `assemble-final-status-complete.mjs`, SHA `f27d31db3da7ff6e0cb20d53d1396a5ae5ac0837f8789da77851dc0239f2bd4d`, changes only the generated sentence to “while preserving source/version history, unfinished work, role boundaries and report truthfulness.” It adds one exact-template replacement requiring the original full phrase. The forbidden-state regex, receipt checks, 42-ID/acceptance guards and link/output guards are unchanged. No permission or verification scope is relaxed.
+
+The original assembler remains unchanged as failure evidence. No assembly, cleanup, gate or browser operation was executed by this author for the correction. Independent delta review was requested before coordinator rerun. The completed read-only cleanup finalization does not need repeating. Actual generated documents still require final content review.

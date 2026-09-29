@@ -1,0 +1,33 @@
+{
+  "saved_version": {
+    "archive_storage": {
+      "archive_format": "tar",
+      "content_hash": "sha256:ecd3d1a2f2eca4a2906511a8f539154153a7d18f52c934599761c5f3bb1346b6",
+      "file_count": 370,
+      "sediment_file_id": "file_00000000fdfc8210a8a950948e2b50f0",
+      "size_bytes": 36280320
+    },
+    "deployment_id": null,
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_7302520c4ce88191924408edcac83c17",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "screenshot_url": null,
+    "source": {
+      "commit_sha": "1e150dbec617e65a4e07d437cbc02b277c2efac1"
+    },
+    "version_number": 90
+  },
+  "deployment": {
+    "env_set_revision": 39,
+    "failure_message": null,
+    "id": "appgdep_6aaa556d08e481918c79f18a0a174017",
+    "project_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "provider_deployment_id": "site---6a88a26d2f808191aa076b9fcd8dbce6",
+    "screenshot_asset_pointer": null,
+    "status": "succeeded",
+    "title": "GENESIS: JURIS Web",
+    "type": "publish",
+    "updated_at": "2026-09-16T08:38:23.051501+00:00",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_7302520c4ce88191924408edcac83c17"
+  }
+}

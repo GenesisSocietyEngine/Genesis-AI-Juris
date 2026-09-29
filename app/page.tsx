@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import JurisApp from "./JurisApp";
 import { isFalconStudioHost } from "./host-mode";
+import { studioEntry } from "./studio-entry";
 
 async function requestIsFalconStudio(): Promise<boolean> {
   const requestHeaders = await headers();
@@ -11,23 +12,28 @@ async function requestIsFalconStudio(): Promise<boolean> {
 export async function generateMetadata(): Promise<Metadata> {
   if (!await requestIsFalconStudio()) return {};
   return {
-    title: "Falcon-Merlin Case Studio",
+    title: "GENESIS: JURIS Studio",
     description: "A professional workbench for tax and legal advisers to structure cases, compare scenarios and preserve a canonical methodology.",
     openGraph: {
-      title: "Falcon-Merlin Case Studio",
+      title: "GENESIS: JURIS Studio",
       description: "Build, review and document professional tax and legal cases in one auditable workspace.",
       type: "website",
       images: [],
     },
     twitter: {
       card: "summary",
-      title: "Falcon-Merlin Case Studio",
+      title: "GENESIS: JURIS Studio",
       description: "A professional workbench for auditable tax and legal case engineering.",
       images: [],
     },
   };
 }
 
-export default async function Home() {
-  return <JurisApp studioOnly={await requestIsFalconStudio()} />;
+export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const params = await searchParams;
+  const { view } = params;
+  // The custom domain selects the initial workspace; explicit navigation must
+  // still reach the catalogue, saved drafts and help, including old bookmarks.
+  const explicitWorkspace = ["library", "community", "help", "play"].includes(view ?? "");
+  return <JurisApp {...studioEntry(params)} studioOnly={await requestIsFalconStudio() && !explicitWorkspace} />;
 }

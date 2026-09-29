@@ -1,0 +1,24 @@
+{
+  "recordedAt": "2026-09-27T23:54:38.139Z",
+  "source": {
+    "path": "tests/report-receipt-dialog.test.ts",
+    "sha256": "02cef47fa0bf4d1c926b1460a6a78a74bd49959ac0e9503de3275b0dc8497340"
+  },
+  "targetedTestReceipt": "corrected-file/execution.json",
+  "focusedLint": {
+    "exitCode": 0,
+    "toolChunk": "6dd6a6",
+    "diagnostics": 0
+  },
+  "strictNonincrementalTypeScript": {
+    "exitCode": 0,
+    "session": 32216,
+    "completionToolChunk": "066848",
+    "diagnostics": 0
+  },
+  "diffCheck": "PASS",
+  "limitations": [
+    "Lint and TypeScript outcomes are coordinator observations of completed tool invocations.",
+    "Full aggregate must be rerun on the next clean commit."
+  ]
+}

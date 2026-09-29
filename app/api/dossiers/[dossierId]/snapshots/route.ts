@@ -7,6 +7,7 @@ import {
   listDossierSnapshots,
 } from "../../../../dossier-governed-output-server";
 import {
+  finalizeDossierRead,
   dossierJson,
   expectedDossierRevision,
   isResponse,
@@ -36,10 +37,10 @@ export async function GET(_request: Request, routeContext: RouteContext) {
   const access = await requireDossierAccess(context, dossierId, "read");
   if (isResponse(access)) return access;
   try {
-    return dossierJson({
+    return finalizeDossierRead(context, access, dossierJson({
       snapshots: await listDossierSnapshots(context, access.dossier.id),
       contract_version: "1.0.0",
-    });
+    }));
   } catch (error) {
     return dossierGovernedErrorResponse(error);
   }

@@ -1,0 +1,264 @@
+G E NESIS: J URIS
+
+DECISION REPORT
+
+
+
+Five Flats, Three Borders - rent 146,000 GBP -
+LOCAL WORKING COPY
+REVIEW DRAFT · CONFIDENTIAL · 2026-09-25
+
+
+
+
+   Reassess financing before commitment
+   The recorded assumptions imply an annual cash shortfall of £14,454 before tax and unpriced costs.
+   Rework financing or the acquisition economics, then compare the available ownership routes.
+
+
+
+Annual cash flow                              Debt coverage                                 Return on known cash
+
+
+-£14,454                                      0.87x                                         -5.1%
+Calculated from supplied inputs; before tax and unpriced costs. Missing costs make available income and cash
+flow upper bounds. Debt coverage divides income after recorded operating and structure costs by scheduled
+debt service.
+
+
+The findings that matter
+1. Income does not cover the selected loan payments. Available income is £99,500, against £113,954 annual
+debt service. The shortfall needs funding; it is not a forecast probability.
+
+2. The model interprets the return target as cash-on-cash (10.0%). Confirm the investor's definition, tax basis and
+time horizon. Gross yield and principal repayment are different measures.
+
+3. A tax advantage is not established. Recorded tax estimates do not evidence verified rates, deductibility or
+eligibility. Do not offset the financing shortfall with an assumed tax saving.
+
+
+Analytical recommendation only. No selected case outcome or independent professional approval is implied.
+
+
+
+
+CONFIDENTIAL · REVIEW DRAFT                                                                                        1/5
+GENESIS: JURIS / Decision report
+
+
+FINANCIAL FINDINGS
+
+
+
+From income to spendable cash
+  Annual cash bridge                                                                 Amount
+
+
+  Gross income                                                                       £146,000
+
+
+  Less: operating expenses                                                           £36,500
+
+
+  Surplus before financing and other costs                                           £109,500
+
+
+  Less: annual structure costs                                                       £10,000
+
+
+  Available before debt and tax                                                      £99,500
+
+
+  Less: selected annual debt service                                                 £113,954
+
+
+  Cash after debt, before tax and unpriced costs                                     -£14,453.70
+
+
+
+
+Financing and initial cash
+Loan £800,000; annual rate 7.5%; term 120 months; monthly amortization. Annual debt service is the unrounded
+monthly payment multiplied by 12.
+
+Known initial cash: £285,000 = purchase price less borrowing, plus recorded acquisition and setup costs. This is
+a model input total, not a confirmed all-in budget or a purchaser-specific tax calculation.
+
+
+
+   Principal repayment is not spendable income
+   In year one, the loan schedule allocates £58,106.15 to interest and £55,847.54 to principal. Principal
+   reduction builds equity but does not remove the cash shortfall. Interest is not automatically tax-deductible.
+
+
+
+
+CONFIDENTIAL · REVIEW DRAFT                                                                                    2/5
+GENESIS: JURIS / Decision report
+
+
+SENSITIVITY
+
+
+
+What would change the conclusion?
+Illustrative income changes of −10%, base and +10%. Operating expenses stay at 25.0% of income; structure
+costs and loan terms stay unchanged. This is a stated scenario assumption, not a forecast or a verified cost-
+behaviour model.
+
+
+  Scenario / income                            Cash after debt                      Debt coverage
+
+
+  −10% · £131,400                              -£25,403.70                          0.78x
+
+
+  Base · £146,000                              -£14,453.70                          0.87x
+
+
+  +10% · £160,600                              -£3,503.70                           0.97x
+
+
+
+
+   A modest income increase is insufficient
+   All three scenarios remain cash-negative before tax and unpriced costs. Test financing, price, costs and
+   additional equity together; do not treat higher rent as an evidenced solution.
+
+
+
+
+Calculated decision thresholds
+Cash break-even requires annual gross income of £165,271.60 under this same cost-ratio assumption. It only
+covers modelled cash costs; it provides no contingency or tax allowance.
+
+The model's 10.0% pre-tax cash-on-cash target requires £203,271.60 annual gross income with initial cash
+unchanged. This is an algebraic threshold, not achievable market rent or an after-tax return.
+
+Confirm the lender's own income definition and covenant before assessing compliance. No default debt-
+coverage requirement is assumed here.
+
+
+
+
+CONFIDENTIAL · REVIEW DRAFT                                                                                     3/5
+GENESIS: JURIS / Decision report
+
+
+R E C O M M E N D AT I O N A N D A C T I O N S
+
+
+
+A practical route to a decision
+  Option                                         Implication / next test
+
+
+  Retain current terms                           Requires recurring cash support. Do not describe the base case as self-funding.
+
+
+  Restructure financing or price                 Obtain priced alternatives for loan size, term, rate and additional equity.
+                                                 Recalculate cash flow and returns together.
+
+
+  Choose an ownership structure                  Compare verified legal availability, full setup/running costs and tax treatment. A
+                                                 preferred structure is not evidence of a tax benefit.
+
+
+  Pause or renegotiate                           Preserve the option to stop while material financing, source or legal conditions
+                                                 remain unresolved.
+
+
+
+
+Priority actions before commitment
+
+  Proposed owner                            Deliverable / completion condition
+
+
+  Case lead / client                        Confirm the objective, decision criteria, scope and acceptable downside; reconcile
+                                            material facts to original evidence.
+
+
+  Finance adviser                           Validate income and expenses, obtain the lender schedule and conditions, and
+                                            complete base/downside/full-cost calculations.
+
+
+  Relevant specialists                      Provide current, source-supported legal/tax conclusions for the available routes;
+                                            identify prerequisites and unresolved risks.
+
+
+  Independent reviewer                      Challenge the recommendation and record the actual decision, conditions and
+                                            approval in the case workflow.
+
+
+Roles are proposed responsibilities, not assigned tasks or completed approvals.
+
+
+
+
+CONFIDENTIAL · REVIEW DRAFT                                                                                                           4/5
+GENESIS: JURIS / Decision report
+
+
+EVIDENCE AND METHOD
+
+
+
+What this assessment rests on
+The calculations use the recorded case assumptions; their inclusion does not verify them. Findings are rule-based
+interpretations of those calculations and visible case records. No independent expert approval, completed scenario run or
+AI prediction is inferred.
+
+No probabilities are estimated. Currency effects, exit costs, tax and unpriced costs are outside these calculations.
+
+
+
+Material assumptions from the case
+     Initial deposit is £200,000.
+     The acquisition-cost input is 7% of the £1,000,000 price and is provisional rather than a calculated SDLT amount.
+     Owner-revised annual gross rent: £146,000. Expenses: 25% × £146,000 = £36,500/year. Rent after these expenses: £109,500/
+     year before financing and other costs. After £10,000 structure cost and £113,953.70 amortizing debt service, cash flow is −
+     £14,453.70/year before tax and unknown costs. Independent evidence and outcome approval are pending.
+     Known initial cash is at least £285,000 before currently unpriced professional, lender, valuation, registration, and reserve costs.
+     Scheduled amortizing debt service uses the supplied control of £9,496.14 monthly and £113,953.70 annually, subject to
+     confirmation.
+     The lender's minimum DSCR is 1.25x, calculated as NOI divided by scheduled debt service.
+     Interest-only debt service of £60,000 annually plus an £800,000 balloon remains a comparison control, not the selected
+     repayment basis.
+
+Tax estimates are excluded from the recommendation. Reconcile the taxable base, finance-cost treatment, rates and their
+sources before comparing after-tax returns. An amortizing principal repayment is not an interest expense.
+
+
+
+Evidence to reconcile
+     Five-flat acquisition and amortizing debt profile
+     Three-country legal and tax gates require verification
+     Client KYC profile
+
+These titles index the recorded material; they do not certify it. Full text, conditions and provenance remain in the case and
+the full analysis export.
+
+
+
+Recorded source references
+  1. https://horizonukts.com/guides/non-residents-holding-uk-property
+
+Case-entered legal reference date: 2026-10-31. This is not a verified legal currency check; future-dated entries require
+correction.
+
+
+
+Reading the measures
+Cash flow = gross income − operating costs − structure costs − debt service. Debt coverage = available income ÷ debt
+service. Cash-on-cash = cash after debt ÷ known initial cash. All figures here exclude tax and unpriced costs. Sensitivities
+are hypothetical, not likelihood estimates.
+
+For the full graph, complete records and audit details, choose Full analysis in report settings. The separate download
+receipt binds the exact case content and report presentation.
+
+
+
+
+CONFIDENTIAL · REVIEW DRAFT                                                                                                          5/5
+

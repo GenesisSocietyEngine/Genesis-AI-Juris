@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync, statSync } from "node:fs";
 import test from "node:test";
 import { caseFingerprint } from "../app/case-integrity";
+import { graphOverviewScale } from "../app/graph-viewport";
+import { reportGenerationErrorMessage } from "../app/report-generation-error";
 import { normalizePlayableScenario, playableFingerprint } from "../app/playable-integrity";
 import { compileStudioDraft } from "../app/studio-compiler";
 import { applyStudioPromptIteration, nextStudioNodePosition, planStudioPromptIteration } from "../app/studio-editing";
@@ -255,16 +257,19 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /CashFlowScenarioEditor/, "a selected cash-flow node exposes editable model controls");
   assert.match(cashFlowEditorSource, /CASH-FLOW SCENARIO/);
   assert.match(cashFlowEditorSource, /setProbability/, "cash-flow scenario weights are directly editable");
-  assert.match(appSource, /PDF report/);
-  assert.match(appSource, /await import\("\.\/CaseReportDialog"\)/, "report UI is preloaded on demand before the editor is covered");
-  assert.match(appSource, /setCaseReportOpen\(true\)/);
-  assert.match(appSource, /PDF unavailable/, "a stale report chunk leaves Studio visible with a recoverable error");
+  assert.match(appSource, /Create analytical report/);
+  const reportOpenSource = appSource.slice(appSource.indexOf("async function openCaseReport()"), appSource.indexOf("function centerGraph()"));
+  assert.match(reportOpenSource, /await withLocalChunkRecovery\(\(\) => import\("\.\/CaseReportDialog"\)\);[\s\S]*setCaseReportOpen\(true\)/, "report UI is preloaded with local recovery before the editor is covered");
+  assert.match(reportOpenSource, /catch \(error\) \{\s*setCaseReportStatus\(reportGenerationErrorMessage\(error, locale\)\)/, "the report owner exposes a recoverable failure without closing the editor");
+  assert.doesNotMatch(reportOpenSource, /location\.(?:reload|assign|replace)|setCaseReportOpen\(false\)/);
+  assert.match(reportGenerationErrorMessage(new Error("Failed to fetch dynamically imported module"), "en"), /Your case is still open[\s\S]*try again[\s\S]*before refreshing/);
   const reportButtonStart = appSource.indexOf('className="secondary-cta report-cta"');
   const reportButtonSource = appSource.slice(reportButtonStart, appSource.indexOf("</button>", reportButtonStart) + "</button>".length);
-  assert.match(reportButtonSource, /disabled=\{!canDuplicate\}/, "inspection-only cases cannot open report export");
+  assert.match(reportButtonSource, /disabled=\{!canDuplicate \|\| !draft\.title\.trim\(\) \|\| !draft\.nodes\.length\}/, "inspection-only and empty cases cannot open report export");
   assert.doesNotMatch(reportButtonSource, /disabled=\{[^}]*derivationsSettled/, "authorized PDF options remain clickable while background derivations settle");
   assert.match(appSource, /Report export is unavailable in inspection-only mode/);
-  assert.match(reportDialogSource, /disabled=\{!canGenerateReport \|\| busy/);
+  assert.match(reportDialogSource, /const outputBlocked = !canGenerateReport \|\| busy/);
+  assert.match(reportDialogSource, /disabled=\{outputBlocked\}/);
   assert.match(markdownActionsSource, /Export Final case prompt \(\.md\)/);
   assert.match(markdownActionsSource, /Import case prompt \(\.md\)/);
   assert.match(markdownActionsSource, /closest\("details"\)\?\.removeAttribute\("open"\)/, "opening Markdown export closes the More actions menu");
@@ -286,8 +291,13 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
     "scaled graph dragging must translate pointer coordinates back into graph space");
   assert.match(appSource, /moveNode\(event,node,graphZoom\)/,
     "graph interactions must provide their current scale");
-  assert.match(appSource, /Math\.max\(0\.55/,
-    "Fit must retain a legible minimum scale while supporting larger auto-laid-out graphs");
+  const fitSource = appSource.slice(appSource.indexOf("const fitGraph = useCallback("), appSource.indexOf("const relationPageSize"));
+  assert.match(fitSource, /graphOverviewScale\(\{ width, height: viewport\?\.clientHeight \?\? 500 \}, bounds\)/, "Fit uses both viewport dimensions so large maps are fully contained");
+  assert.match(fitSource, /setGraphPresentation\("overview"\);\s*setGraphZoom\(scale\)/);
+  assert.match(appSource, /setGraphPresentation\("detail"\); setGraphZoom\(1\);/, "a separate detail control restores readable 100% scale");
+  const largeBounds = { width: 5_000, height: 6_000 }, smallViewport = { width: 390, height: 420 };
+  const overviewScale = graphOverviewScale(smallViewport, largeBounds);
+  assert.ok(overviewScale > 0 && largeBounds.width * overviewScale <= smallViewport.width - 28 + .001 && largeBounds.height * overviewScale <= smallViewport.height - 28 + .001, "Fit must include wide and tall content, without the old clipping minimum");
   const autoLayoutSource = appSource.slice(appSource.indexOf("async function autoLayoutGraph"), appSource.indexOf("function clearTransientEditorSelection"));
   assert.match(autoLayoutSource, /applied \$\{orientation\} auto-layout/);
   assert.doesNotMatch(autoLayoutSource, /studioCanDuplicate|commitStudioDraft|showSessionNotice/,
@@ -309,15 +319,16 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(appSource, /menu\.querySelector<HTMLElement>\("summary"\)\?\.focus\(\)/, "Escape restores focus to the More actions trigger");
   assert.match(css, /\.studio-hero:has\(\.studio-more-actions\[open\]\)\{z-index:140\}/, "an open actions menu raises its parent stacking context above later Studio panels");
   assert.match(css, /\.studio-more-actions>\.studio-more-menu\{[^}]*z-index:151[^}]*background:var\(--strong\)/, "the actions menu is an opaque top-layer surface");
-  assert.match(moreActionsSource, /Portable final prompt/);
-  assert.match(moreActionsSource, /CaseMarkdownActions/);
+  assert.match(moreActionsSource, /"Case prompt" : "Промпт кейса"/, "the portable case prompt remains a named More actions group");
+  assert.match(moreActionsSource, /<CaseMarkdownActions locale=\{locale\} loadDisabled=\{!canDuplicate\} exportDisabled=\{!canDuplicate \|\| !exportReady\}/, "portable prompt actions preserve inspection and export-readiness restrictions");
   assert.match(outcomeParametersSource, /Outcome recalculation parameters/);
   assert.match(outcomeParametersSource, /Financial & financing/);
   assert.match(outcomeParametersSource, /Tax economics/);
   assert.match(cashFlowEditorSource, /Purchase price/);
   assert.match(cashFlowEditorSource, /Loan-to-value/);
   assert.match(appSource, /const \[guidedStep, setGuidedStep\] = useState<GuidedStudioStep>\(1\)/, "Guided Studio must start at the plain-language brief");
-  assert.match(appSource, /guidedStep === 3\) && <><div id="studio-case-settings"/, "case settings must be progressively disclosed at the Facts & Assumptions stage");
+  assert.match(appSource, /const visibleStep = showOverview \? null : guidedStep/, "Overview must not expose the editor's underlying guided step");
+  assert.match(appSource, /\(displayMode === "developer" \|\| visibleStep === 3\) && <><details id="studio-case-settings"[^>]*open=\{displayMode === "developer" \|\| trainingWorkflow \? true : undefined\}/, "Sources-stage settings stay in a disclosure while Developer and Training retain their open controls");
   assert.match(appSource, /aria-describedby=\{submitBlocker \? "studio-submit-blocker"/, "a disabled submission must expose its concrete blocker");
   assert.match(appSource, /inert=\{!canDuplicate\}/, "inspection-only authoring regions must be removed from keyboard interaction");
   assert.doesNotMatch(appSource, /aria-disabled=\{!canDuplicate\}/, "generic regions must not misuse aria-disabled");
@@ -335,29 +346,44 @@ test("Studio UI exposes intuitive blank reset, selectable relation deletion and 
   assert.match(css, /\.studio-submit-blocker\{/);
 });
 
-test("Help ships an English no-subtitle expert demo and two local accessible walkthroughs with bilingual captions", () => {
-  const appSource = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
+test("Help and the legacy demo route share the captioned 10-minute training with a full transcript, while legacy media remain available", () => {
+  const helpSource = readFileSync(new URL("../app/HelpCenter.tsx", import.meta.url), "utf8");
   const guidedSource = readFileSync(new URL("../app/StudioGuidedDemo.tsx", import.meta.url), "utf8");
-  const helpSource = `${appSource}\n${guidedSource}`;
+  const trainingSource = readFileSync(new URL("../app/TrainingVideo.tsx", import.meta.url), "utf8");
   const directPage = readFileSync(new URL("../app/help/studio-demo/page.tsx", import.meta.url), "utf8");
-  assert.equal((helpSource.match(/<video controls preload="metadata" playsInline/g) ?? []).length, 3);
-  assert.equal((helpSource.match(/kind="captions"/g) ?? []).length, 4);
-  assert.doesNotMatch(helpSource, /<video[^>]+autoPlay/);
-  assert.match(helpSource, /aria-describedby="guided-video-description guided-video-transcript"/);
-  assert.match(helpSource, /aria-describedby="editor-video-description editor-video-transcript"/);
-  assert.match(helpSource, /aria-describedby="play-video-description play-video-transcript"/);
-  assert.match(helpSource, /href="\/help\/studio-demo"/);
-  assert.match(directPage, /studio-ai-guided-demo\.en\.mp4/);
-  assert.match(directPage, /English narration · No subtitles · Studio only/);
-  assert.doesNotMatch(guidedSource, /<track|studio-ai-guided-demo\.(?:en|ru)\.vtt/);
-  assert.match(directPage, /Five Flats, Three Countries/);
-  assert.match(directPage, /03:00/);
-  assert.match(guidedSource, /27-node, 31-connection graph/);
-  assert.match(guidedSource, /£24,328 annual cash flow/);
-  assert.match(helpSource, /Your browser does not support HTML video/);
-  assert.match(helpSource, /Ваш браузер не поддерживает HTML-видео/);
+  for (const source of [helpSource, guidedSource]) assert.match(source, /<TrainingVideo locale=\{locale\}\/>/);
+  assert.match(directPage, /<TrainingVideo\/>/);
+  assert.match(directPage, /href="\/studio\?view=help"/);
+  assert.match(directPage, /10-minute Studio training/);
+  assert.equal((trainingSource.match(/<video\b/g) ?? []).length, 1);
+  assert.match(trainingSource, /controls preload="metadata" playsInline/);
+  assert.doesNotMatch(trainingSource, /<video[^>]+autoPlay/);
+  assert.match(trainingSource, /aria-describedby="training-format"/);
+  assert.match(trainingSource, /<track kind="captions" src="\/help\/juris-training-10min\.en\.vtt" srcLang="en" label="English" default/);
+  assert.match(trainingSource, /Video could not load\. Use the transcript or download link below/);
+  assert.match(trainingSource, /Откройте расшифровку или скачайте MP4 ниже/);
+  assert.match(trainingSource, /href="\/help\/juris-training-10min-transcript\.md" download/);
+  assert.match(trainingSource, /video\.current\.currentTime = seconds;\s*video\.current\.focus\(\)/, "chapter controls seek the video and return keyboard focus to it");
+  assert.match(trainingSource, /role="status">\{notice\}/);
+  assert.match(trainingSource, /training\.scenes\.map\(scene => <section/, "the on-page transcript includes every training scene");
+  assert.match(trainingSource, /scene\.kind === "instruction" \? " · Instructions"/, "account instructions must not be presented as recorded completion");
+
+  const training = JSON.parse(readFileSync(new URL("../app/training-content.json", import.meta.url), "utf8")) as { durationSeconds: number; sceneDurationSeconds: number; canonicalTitle: string; scenes: { id: string; title: string; narration: string }[] };
+  const transcript = readFileSync(new URL("../public/help/juris-training-10min-transcript.md", import.meta.url), "utf8");
+  assert.equal(training.durationSeconds, 600);
+  assert.equal(training.scenes.length * training.sceneDurationSeconds, training.durationSeconds);
+  assert.equal(training.canonicalTitle, "Five Flats, Three Borders");
+  assert.deepEqual(training.scenes.map(scene => Number(scene.id)), Array.from({ length: training.scenes.length }, (_, index) => index + 1), "chapter timestamps have consecutive scene identities");
+  assert.match(transcript, /Runtime: 10:00/);
+  assert.match(transcript, /instructions, not recorded completion/);
+  for (const scene of training.scenes) {
+    assert.ok(transcript.includes(scene.title), `downloaded transcript must contain scene ${scene.id}'s title`);
+    assert.ok(transcript.includes(scene.narration), `downloaded transcript must contain scene ${scene.id}'s full narration`);
+  }
 
   const assets = [
+    "juris-training-10min.en.mp4",
+    "juris-training-10min-poster.jpg",
     "studio-ai-guided-demo.en.mp4",
     "studio-ai-guided-demo-poster.jpg",
     "case-studio-iterative-editing.mp4",
@@ -368,6 +394,7 @@ test("Help ships an English no-subtitle expert demo and two local accessible wal
   for (const name of assets) assert.ok(statSync(new URL(`../public/help/${name}`, import.meta.url)).size > 10_000, `${name} should be a non-empty local asset`);
 
   const captionFiles = [
+    "juris-training-10min.en.vtt",
     "case-studio-iterative-editing.en.vtt",
     "case-studio-iterative-editing.ru.vtt",
     "play-your-studio-case.en.vtt",

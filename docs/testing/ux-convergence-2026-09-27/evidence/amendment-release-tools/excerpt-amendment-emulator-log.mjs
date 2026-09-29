@@ -1,0 +1,17 @@
+import {readFileSync,writeFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {createHash} from 'node:crypto';
+const root=resolve(import.meta.dirname,'../..');
+const source='.artifacts/amendment-android-native/emulator.stdout.log';
+const destination='.artifacts/ux-reconciliation-auth/amendment-emulator-boot-ram-excerpt.log';
+const raw=readFileSync(resolve(root,source));
+const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
+const lines=raw.toString('utf8').match(/[^\n]*\n|[^\n]+$/g);
+const ranges=[[6,6],[47,48],[122,123],[136,136]];
+const excerpt=Buffer.from(ranges.flatMap(([first,last])=>lines.slice(first-1,last)).join(''),'utf8');
+if (!excerpt.toString('utf8').includes('Increasing RAM size to 4096MB') || !excerpt.toString('utf8').includes('Boot completed in 173459 ms')) throw new Error('Expected bounded evidence lines changed; inspect before selecting.');
+if (/(?:pubkey|private key|password|token|(?:10(?:\.\d{1,3}){3})|(?:192\.168(?:\.\d{1,3}){2}))/i.test(excerpt.toString('utf8'))) throw new Error('Unexpected sensitive/network marker in selection.');
+writeFileSync(resolve(root,destination),excerpt);
+const receipt={schema:'genesis.juris.explicit-log-excerpt.v1',generatedAt:new Date().toISOString(),source:{path:source,bytes:raw.length,sha256:sha(raw),retention:'Original raw log unchanged and ignored; not proposed for tracked publication.'},excerpt:{path:destination,bytes:excerpt.length,sha256:sha(excerpt),scope:'Selected boot, hypervisor and effective RAM messages only; not the original complete log.',method:'Decode UTF-8, split preserving LF/CRLF delimiters, concatenate inclusive 1-based line ranges in source order. Omit every other line. No selected-line substitutions or normalizations.',selectedLineRanges:ranges},omitted:'Unrelated log lines, host LAN addresses, hardware discovery, ADB public key and Android boot-property inventory. Their omission is explicit, not represented as a complete raw log.',observations:{effectiveRamMiB:4096,emulatorReportedBootMs:173459,plannedBootWindowMs:120000,bootWindowResult:'EXCEEDED',hypervisor:'Windows Hypervisor Platform accelerator reported operational'},limitations:['Reported boot duration is the emulator log value, not an independently sampled stopwatch.','Effective 4096MiB comes from the emulator message; requested 2048MiB was not the effective cap.','No private user AVD data is included. The full raw log remains locally retained with its original hash.']};
+writeFileSync(resolve(root,'.artifacts/ux-reconciliation-auth/amendment-emulator-boot-ram-excerpt.receipt.json'),JSON.stringify(receipt,null,2)+'\n');
+console.log(JSON.stringify({sourceBytes:raw.length,sourceSha256:sha(raw),excerptBytes:excerpt.length,excerptSha256:sha(excerpt),selectedLineRanges:ranges}));

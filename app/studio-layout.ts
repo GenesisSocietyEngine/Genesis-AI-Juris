@@ -16,6 +16,17 @@ const PADDING_Y = 86;
 
 export type StudioGraphBounds = { width: number; height: number };
 
+/** Display a vertical opening without altering signed source coordinates.
+ * Later deliberate moves retain their offsets from the opening source. */
+export function projectStudioNodes(nodes: StudioNode[], links: StudioLink[], orientation: StudioLayoutOrientation, referenceNodes: StudioNode[]) {
+  const reference = new Map(referenceNodes.map((node) => [node.id, node]));
+  return layoutStudioNodes(nodes, links, orientation).map((position, index) => {
+    const source = nodes[index];
+    const original = reference.get(source.id) ?? source;
+    return { ...source, x: position.x + source.x - original.x, y: position.y + source.y - original.y };
+  });
+}
+
 /**
  * Deterministic layered layout for Studio graphs. It uses the graph topology
  * when possible and still gives cyclic or disconnected nodes unique slots.

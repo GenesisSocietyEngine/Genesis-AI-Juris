@@ -1,0 +1,12 @@
+{
+  "archivedAt": "2026-09-27T21:53:41.606Z",
+  "scope": "Exact-byte finalized actual private-read implementation verification review; supplements existing archival receipts.",
+  "files": [
+    {
+      "source": ".artifacts/ux-reconciliation-auth/matter-read-fence/ACTUAL_REVIEW.md",
+      "destination": "evidence/amendment-private-read/verification/ACTUAL_REVIEW.md",
+      "sha256": "2b63d0f255a87e4dd1e40320cb4d15d9308dc06045822ddce1f34a4b98cca98a",
+      "bytes": 4048
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+# Independent review: PDF authority test renderer-start synchronization
+
+28 September 2026 local date; read-only source/log review. No tracked edits, test reruns, HTTP, worker or renderer execution by this reviewer. The coordinator is running an unchanged target and a separate controlled delay experiment; their results are not presumed here.
+
+## Observed failure and scope
+
+The corrected-source aggregate on `e6c6adc6fe01129b2e3d442072c532e08591fae9` failed its web-test stage: **932 tests, 928 PASS, one FAIL, three SKIP**. The six Canopy nested cases pass. The sole failure is `actual PDF parent and helper reject a stale active tab, recheck after rendering and never revive old output after sign-in`, at `tests/report-receipt-dialog.test.ts:511`, called from line 534. `pdf.finish.length` is zero after 20 `setImmediate` turns; the assertion expects one. Test duration is 491.3733ms for the entire test, not the individual polling period.
+
+This is a failure to establish the held-renderer precondition **before** the synchronous `sessionBoundary("revoke")` call at line 535. It is not an observed failure of the subsequent no-download/no-receipt/no-success authority assertions. Conversely, this failure alone cannot prove why the renderer has not started: a real pre-render error could also leave the queue empty. Preserve the failed gate; do not relabel it PASS based on a targeted rerun.
+
+Reviewed test SHA-256: `281521c32e25c1613f11f811bcb65c6b495a857048f373363457116468c3920b`. Completed aggregate log SHA-256: `2a3b4302ab0aa117361d83e5d56f5220e5efcbae2dff1b399fdd67bccb50edaa`.
+
+## Source causality
+
+- `CaseReportDialog.tsx:253` first awaits the real `verifyOutput` callback. `StudioSessionAuthority.verifyReport` awaits identity, JSON response parsing, **real asynchronous WebCrypto scope hashing** (`studio-device-storage.ts:16`) and current case access. Successful `authority.refresh` immediately before this operation does not remove that fresh verification.
+- The real report helper then awaits dynamic renderer/font imports before building the definition and calling `pdfBlobFromDocument` (`case-report.ts:612–627`). These are legitimate asynchronous boundaries.
+- The modeled renderer only pushes its finish callback when `stream.end()` runs (`report-receipt-dialog.test.ts:83`). The failed helper counts event-loop iterations, not elapsed time or renderer entry. Twenty turns provide no synchronization contract with the awaited native hash or other asynchronous work.
+- `pdf-blob.ts` expects `getStream()` to return an event stream **synchronously**. An experiment making `getStream` return a Promise would violate the supported renderer API and would not isolate this polling defect. A valid 50ms experiment keeps the synchronous stream return and delays the modeled `stream.end` registration/start signal, or delays the test-owned authority transport. The signal must occur only when the finish callback is actually queued.
+
+The source therefore supports an insufficient test synchronization mechanism as a credible cause. The unchanged rerun and valid controlled-delay experiment must supply the executable causality evidence; this source review does not invent it.
+
+### Addendum: controlled scheduling failure independently inspected
+
+The coordinator's valid ignored experiment is now recorded at `../pdf-render-scheduling/delayed-authority-red/execution.json`: `2026-09-27T23:48:39.405Z`–`23:48:41.168Z`, exit 1, one selected test/zero pass/one fail. It fails the same queue-start assertion with `0 !== 1`. I compared the entire ignored test against the maintained original: changes are only relative import paths for its ignored location and a 50ms awaited timeout immediately after `calls.push(path)` in this test's existing modeled authority transport. The synchronous stream API and all authority assertions are unchanged. The experiment source SHA is `277b333a771b98b8fc40e0600c0dde73235282b97d3c63c3120eaca29e723590`; stdout SHA `6f24bf1b3ce433b6f8580522157d7770c09aba51802ac9f0d4150c42d2f352c6`; stderr is empty. This directly demonstrates that valid asynchronous transport latency can defeat the old setup barrier. It does not claim a separately reproduced production renderer failure or prove the exact native scheduling event in the aggregate. The incompatible async-getStream proposal was not used by this experiment.
+
+## Recommended test-only correction
+
+Replace the finite `setImmediate` loops around held PDF renders with a **test-owned held-renderer signal plus a bounded real-time timeout**. Keep the production authority implementation unchanged.
+
+1. The renderer double captures the current test's PDF state and notifies a start waiter immediately after appending its held finish callback. Register the waiter before clicking; alternatively, a helper must check the queue before subscribing so it cannot miss a synchronous start.
+2. Bind each wait to the expected operation/count. Retain `assert.equal(pdf.finish.length, expectedCount)` after the signal. The overlapping old-preview/new-account case must still require exactly two held callbacks. Do not use an earlier render's notification for a later operation.
+3. Race renderer entry against both a real wall-time deadline (for example five seconds) and **premature completion/rejection of that click promise**. Early completion without renderer entry must fail with a useful setup diagnostic, rather than wait until timeout or be treated as success. Clear the timer/listener in `finally`.
+4. Only after the held callback is confirmed may the test change `signedIn`, account scope, options or authority epoch; then release that same callback and await the actual parent operation. This preserves the test's intended ordering and all negative side-effect assertions.
+5. On failure, invalidate/unmount first, release/drain test-owned held operations and settle their promises before clearing global hook/PDF fixtures. A timed-out asynchronous operation must not resume into the next test's globals. Keep this cleanup bounded; the renderer double can support disposing its own pending work without changing production behavior.
+
+The same file contains six analogous ten-turn queue waits in the preceding receipt test. Applying the same small helper to those held-renderer barriers is a coherent test-only correction; unrelated history polling should not be broadened into this patch.
+
+## Required review and validation
+
+Retain unchanged: stale active-tab denial; completed-preview revocation; no revival after same-account sign-in; final server check after rendering; synchronous epoch denial with no React rerender; exact successful control download/receipt/completion counts; receipt-export authority; account-scope late-result suppression; zero prohibited local-storage writes; and the minimum actual case-access recheck count. No assertion should be deleted, skipped or changed into an optional success.
+
+Compare the small test diff, run the affected file with the pinned toolchain, and run the controlled 50ms delay with unchanged authority assertions. Preserve the original failed gate and both experiments. Once the maintained test is corrected, source identity/commit and the complete required aggregate must be recorded separately. A test-only change should not change the application input digest, but that must be read back rather than assumed. No production authorization defect or release readiness is established merely by fixing this test barrier.
+
+## Actual maintained diff review
+
+The coordinator's maintained test-only correction is now independently reviewed, SHA-256 `02cef47fa0bf4d1c926b1460a6a78a74bd49959ac0e9503de3275b0dc8497340`. Git diff contains only `tests/report-receipt-dialog.test.ts`, 39 additions/14 deletions. **No substantive finding in this diff.** Targeted execution and strict checks are in progress at this review checkpoint; their results are not yet asserted here.
+
+- `awaitPdfPaused` listens for the actual held queue entry, checks immediately after installing the listener and times out after five real seconds. It also fails when the parent operation settles before reaching that boundary, retaining useful failure discrimination. Timer and pause listener are removed in `finally`.
+- The synchronous renderer API is preserved. Its `createPdf` captures the current test's PDF state, and its stream callback appends the held completion before notifying the waiter. Notification does not complete rendering or grant authority.
+- All six prior ten-turn waits and both uses of the twenty-turn helper are replaced. Each caller retains its exact queue-length assertion; the overlapping old-account preview/new-account PDF requires two. The old helper's one-queue assertion is explicitly present at both replacement call sites.
+- Failure cleanup invokes the real layout-effect cleanup through unmount, which nulls the captured receipt-context fence before releasing anything. It changes only the test-owned renderer's hold flag, drains its held queue and awaits the operation for at most one further second. Captured renderer state prevents a delayed stream callback from borrowing the next test's PDF state. This is bounded test cleanup, not a production cancellation mechanism; injected cleanup-timeout execution has not been claimed.
+- The 50ms modeled authority transport delay is retained permanently in the exact failing test. Its response semantics, identity/case authority and revocation order are unchanged; the delay exercises the real wait rather than removing the asynchronous work.
+- Stale-active-tab denial, preview revocation/non-revival, final server recheck, epoch revocation without rerender, old-scope late-result suppression, receipt authority, protected local-storage behavior and the later successful download/receipt/completion controls remain unchanged. There is no skip, assertion weakening, production guard change or renderer change.
+
+The helper's operation branch remains attached through `Promise.race` after the start branch wins, so its later deliberate rejection is observed by that race and does not become an unhandled promise rejection. Subsequent completion is still explicitly awaited at each scenario's original release point. No additional implementation beyond the scoped test synchronization is indicated by this review.
+
+## Completed targeted receipt review
+
+The corrected maintained file's [execution receipt](../pdf-render-scheduling/corrected-file/execution.json), complete stdout and empty stderr are now independently read and hashed. **PASS: six tests, zero failures, zero skips**, pinned Node `v22.23.2`, `--experimental-sqlite --import tsx --test tests/report-receipt-dialog.test.ts`, exit 0, `2026-09-27T23:50:45.957Z`–`23:50:52.661Z`. The formerly failing test passes with the permanent 50ms modeled authority latency; the full file retains its history, receipt, private-output and Markdown controls.
+
+The current maintained test SHA still exactly matches `02cef47fa0bf4d1c926b1460a6a78a74bd49959ac0e9503de3275b0dc8497340`. Independently computed artifact hashes match the execution receipt: stdout `8cbb6f81a45ba680ed735301f15fa0b8628e38992d468e2addcfd9d02f5dbf0e` (1,717 bytes), stderr `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` (zero bytes); execution receipt itself `363df6e47dc3fcff0d9589754c73ce9f32cb9e20ded4d0f2f99b95bffb9631d1` (774 bytes). This reviewer did not rerun the file.
+
+The earlier ignored async-`getStream` preparation, source SHA `388694638c5904fd0a691ba926cf5b0d306c88df6ab5b45cf46bdbb856ee935d`, was rejected before execution because it changes the synchronous stream contract. It remains **NOT_RUN**; its original preparation wording is historical and is explicitly corrected by `authority-delay-preparation.json`. The executed red experiment and maintained green test both delay the existing asynchronous **authority transport**, not `getStream`.
+
+The coordinator reports focused ESLint exit 0 with no output (tool receipt `6dd6a6`); I did not independently execute that command. Strict nonincremental TypeScript remains pending at this review checkpoint and must receive its own result. The reviewed correction is acceptable within the test-only scope. Preserve the original aggregate's failure and all experiment receipts; a new committed checkpoint and complete required aggregate remain necessary. The six-test result does not become a whole-runbook, production, browser, PDF-byte or full-release PASS.
+
+### Final strict-check addendum
+
+The coordinator subsequently reports strict **nonincremental TypeScript PASS**, exit 0 with empty output, session `32216`, tool chunk `066848`. This is coordinator-reported command evidence, not a second reviewer execution. The maintained test remains SHA `02cef47fa0bf4d1c926b1460a6a78a74bd49959ac0e9503de3275b0dc8497340`, and the current source diff remains confined to that test. Together with the independently read six-test receipt and the reported focused lint pass, this closes the bounded test-correction review. The original `e6c6adc` aggregate remains FAIL (928 PASS / one FAIL / three SKIP); the new committed test checkpoint and complete rerun are still pending. Earlier dated pending statements remain historical checkpoints, not the current strict-check status.

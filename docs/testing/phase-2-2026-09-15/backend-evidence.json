@@ -1,0 +1,122 @@
+{
+  "environment": "Actual route handlers with isolated Miniflare D1/R2 and synthetic provider headers; not authenticated browser proof",
+  "freshAndV86Upgrade": true,
+  "notes": {
+    "success": true,
+    "meta": {
+      "served_by": "miniflare.db",
+      "duration": 0,
+      "changes": 0,
+      "last_row_id": 1,
+      "changed_db": false,
+      "size_after": 1966080,
+      "rows_read": 18,
+      "rows_written": 0
+    },
+    "results": [
+      {
+        "note_id": "note_3dafc121799f48f7b5a01d6f6420d220",
+        "revision": 1,
+        "action": "create",
+        "actor_role": "owner",
+        "occurred_at": "2026-09-15T13:19:17.082Z"
+      },
+      {
+        "note_id": "note_3dafc121799f48f7b5a01d6f6420d220",
+        "revision": 2,
+        "action": "save",
+        "actor_role": "owner",
+        "occurred_at": "2026-09-15T13:19:17.216Z"
+      },
+      {
+        "note_id": "note_3dafc121799f48f7b5a01d6f6420d220",
+        "revision": 3,
+        "action": "save",
+        "actor_role": "owner",
+        "occurred_at": "2026-09-15T13:19:17.470Z"
+      },
+      {
+        "note_id": "note_3dafc121799f48f7b5a01d6f6420d220",
+        "revision": 4,
+        "action": "save",
+        "actor_role": "owner",
+        "occurred_at": "2026-09-15T13:19:18.039Z"
+      },
+      {
+        "note_id": "note_3dafc121799f48f7b5a01d6f6420d220",
+        "revision": 5,
+        "action": "link",
+        "actor_role": "owner",
+        "occurred_at": "2026-09-15T13:19:18.373Z"
+      },
+      {
+        "note_id": "note_3dafc121799f48f7b5a01d6f6420d220",
+        "revision": 6,
+        "action": "unlink",
+        "actor_role": "owner",
+        "occurred_at": "2026-09-15T13:19:19.440Z"
+      },
+      {
+        "note_id": "note_3dafc121799f48f7b5a01d6f6420d220",
+        "revision": 7,
+        "action": "save",
+        "actor_role": "contributor",
+        "occurred_at": "2026-09-15T13:19:21.558Z"
+      },
+      {
+        "note_id": "note_8a740384581a4711a1f48ff3c4c05585",
+        "revision": 1,
+        "action": "create",
+        "actor_role": "owner",
+        "occurred_at": "2026-09-15T13:19:19.111Z"
+      },
+      {
+        "note_id": "note_8a740384581a4711a1f48ff3c4c05585",
+        "revision": 2,
+        "action": "link",
+        "actor_role": "owner",
+        "occurred_at": "2026-09-15T13:19:19.270Z"
+      }
+    ]
+  },
+  "requestReceipts": {
+    "success": true,
+    "meta": {
+      "served_by": "miniflare.db",
+      "duration": 0,
+      "changes": 0,
+      "last_row_id": 1,
+      "changed_db": false,
+      "size_after": 1966080,
+      "rows_read": 8,
+      "rows_written": 0
+    },
+    "results": [
+      {
+        "id": "request_operation_1705fe8c017247938770065e9b6b0959",
+        "request_id": "request_84f111b7a61046e7a53371048f47e0f9",
+        "revision": 25,
+        "audit_event_id": "audit_d674ca9062b144faa6aa29d390dc63c6"
+      },
+      {
+        "id": "request_operation_04675f0b72664b4789e95d9c32f6365a",
+        "request_id": "request_84f111b7a61046e7a53371048f47e0f9",
+        "revision": 26,
+        "audit_event_id": "audit_450875480ab746f98e79dba14183bb3a"
+      },
+      {
+        "id": "request_operation_efa01b7190aa48b9a97fa9eaedc80214",
+        "request_id": "request_3cd0d5208ec4457ab0b15c03d6aa541d",
+        "revision": 27,
+        "audit_event_id": "audit_34302e5a26624259b00ae77ec495e5b8"
+      },
+      {
+        "id": "request_operation_f33815a6f237435d8800d895fbad5639",
+        "request_id": "request_84f111b7a61046e7a53371048f47e0f9",
+        "revision": 28,
+        "audit_event_id": "audit_acb3e7b21d664cb0b6d7e95fda98018a"
+      }
+    ]
+  },
+  "sealedPdfBytesPreserved": true
+}

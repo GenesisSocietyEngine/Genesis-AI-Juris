@@ -1,7 +1,12 @@
 import { isRecord } from "./case-integrity";
 import { playedCaseFallbackMode } from "./catalogue-fallback";
 import { normalizePlayableScenario, playableFingerprint } from "./playable-integrity";
-import type { Scenario } from "./types";
+import type { DecisionOption, Scenario, ScenarioStage } from "./types";
+
+/** Apply normal runtime outcome precedence to the validated replay, not file labels. */
+export function restoredPlayedCaseOutcome(completed:boolean,stage:ScenarioStage,lastOption:DecisionOption|undefined,fallback:NonNullable<ScenarioStage["terminalOutcome"]>){
+  return completed ? lastOption?.resolvedOutcome?.classification ?? stage.terminalOutcome ?? fallback : null;
+}
 
 export type PlayedScenarioIdentity = {
   id: unknown;

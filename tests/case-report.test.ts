@@ -4,12 +4,16 @@ import test from "node:test";
 import pdfMake from "pdfmake/build/pdfmake.js";
 import pdfFonts from "pdfmake/build/vfs_fonts.js";
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
-import { assertCaseReportGenerationAuthorized, buildCaseReportArtifacts, buildCaseReportDefinition, caseReportReceiptBinding, mayPersistGeneratedReportReceipt, type CaseReportOptions } from "../app/case-report";
+import { assertCaseReportGenerationAuthorized, buildCaseReportArtifacts, buildCaseReportDefinition, caseReportReceiptBinding, createCaseReportPreview, mayPersistGeneratedReportReceipt, type CaseReportOptions } from "../app/case-report";
 import { REPORT_GRAPH_CONNECTOR_MIN_SIZE_MILLI_POINTS, ReportGraphLayoutError } from "../app/report-graph-layout";
 import { caseReportGraphLayoutSvg } from "../app/report-graph-pdf";
 import { caseFingerprint, casePublicationFingerprint, normalizeStudioDraft } from "../app/case-integrity";
 import { caseTypeReference } from "../app/case-type-reference";
 import { isReportReceiptStale, reportReceipt, validateReportReadiness } from "../app/report-model";
+import { buildCanopyPackage } from "../app/canopy-fixture";
+import { primaryCaseOutput } from "../app/case-type-playbooks";
+import { diffDraftToRevision, snapshotStudioDraft, type StudioRevision } from "../app/studio-revisions";
+import { reportPdfFixtures } from "../scripts/tests/report-pdf-fixtures";
 import type { StudioDraft } from "../app/types";
 
 const draft: StudioDraft = {
@@ -64,6 +68,28 @@ type PdfMakePage = {
   }>;
 };
 
+test("Full reports disclose authored legal dates and all supplied tax scenario controls without changing the case", () => {
+  const working = normalizeStudioDraft(JSON.parse(readFileSync("tests/fixtures/fiveflats-rent-146000.studio-draft.json", "utf8")));
+  const before = JSON.stringify(working);
+  for (const language of ["en", "ru"] as const) for (const includeDecisionTree of [false, true]) {
+    const content = JSON.stringify(buildCaseReportDefinition(working, { ...options, presentationMode: "full", language, includeDecisionTree, generatedAt: "2026-09-28T05:00:00.000Z" }).content);
+    assert.match(content, /2026-10-31/);
+    if (language === "en") {
+      assert.match(content, /case-entered reference date is not a verified legal currency check/);
+      assert.match(content, /Future-dated entries require correction/);
+      for (const label of ["Supplied benefit adjustment", "Analysis horizon", "Annual discount rate", "One-off implementation", "Annual maintenance", "Terminal tax / unwind cost"]) assert.ok(content.includes(label), label);
+      for (const value of ["85.0%", "36 months", "8.0%", "£25,000"]) assert.ok(content.includes(value), value);
+      assert.match(content, /not an evidenced probability/);
+      assert.match(content, /68\.6 months exceeds the 36-month analysis horizon/);
+    } else {
+      assert.match(content, /Будущие даты требуют исправления/);
+      assert.match(content, /не подтверждённая вероятность/);
+      assert.match(content, /68\.6 мес\. превышает горизонт анализа 36 мес/);
+    }
+  }
+  assert.equal(JSON.stringify(working), before);
+});
+
 const pdfMakeRuntime = pdfMake as unknown as {
   addVirtualFileSystem: (fonts: unknown) => void;
   createPdf: (definition: TDocumentDefinitions) => {
@@ -82,6 +108,43 @@ function pdfPageText(page: PdfMakePage) {
     .map((entry) => (entry.item.inlines ?? []).map((inline) => inline.text ?? "").join(""))
     .join("\n");
 }
+
+test("Full assumptions retain complete short statements on one page and let long statements flow", async () => {
+  const working = normalizeStudioDraft(JSON.parse(readFileSync("docs/testing/inv01-2026-09-28/fiveflats-pdfs/saved-draft-before-recovery.json", "utf8")));
+  const before = JSON.stringify(working);
+  const compact = (text: string) => text.replace(/\s+/g, "");
+  for (const language of ["en", "ru"] as const) for (const includeDecisionTree of [false, true]) {
+    const artifacts = buildCaseReportArtifacts(working, { ...options, presentationMode: "full", language, includeDecisionTree });
+    const pages = (await paginateDefinition(artifacts.definition)).map(page => compact(pdfPageText(page)));
+    const assumptions = working.dealEconomics!.assumptions.filter(item => !/scenario probabilit|вероятност[а-я]* сценар/iu.test(item));
+    assert.ok(assumptions.length);
+    for (const assumption of assumptions.filter(item => item.length <= 240 && item.split(/\r?\n/).length <= 4)) {
+      assert.ok(pages.some(page => page.includes(compact(assumption))), `Complete assumption (${language}, tree=${includeDecisionTree}): ${assumption}`);
+    }
+  }
+  assert.equal(JSON.stringify(working), before, "pagination must preserve authored numeric inputs, text and history");
+  const long = structuredClone(working);
+  const longAssumption = Array.from({ length: 65 }, (_, i) => `Extended assumption line ${i + 1}: capacity evidence still requires review.`).join("\n");
+  assert.ok(long.dealEconomics);
+  long.dealEconomics.assumptions.push(longAssumption);
+  const pages = await paginateDefinition(buildCaseReportDefinition(long, { ...options, presentationMode: "full", includeDecisionTree: false }));
+  const text = pages.map(pdfPageText).join("\n");
+  for (let i = 1; i <= 65; i++) assert.ok(text.includes(`Extended assumption line ${i}:`), `long assumption line ${i} retained`);
+  assert.ok(!pages.some(page => pdfPageText(page).includes("Extended assumption line 1:") && pdfPageText(page).includes("Extended assumption line 65:")), "over-page assumption must flow");
+
+  // A compact string can still exceed a page when pasted with legacy CR breaks.
+  const shortMultiline = structuredClone(working);
+  const crNote = ["Start of CR note", ...Array.from({ length: 65 }, (_, i) => String(i + 1)), "End of CR note"].join("\r");
+  assert.ok(crNote.length <= 240, "regression fixture must remain under the character bound");
+  shortMultiline.dealEconomics!.assumptions.push(crNote);
+  const crBefore = JSON.stringify(shortMultiline);
+  const crPages = (await paginateDefinition(buildCaseReportDefinition(shortMultiline, { ...options, presentationMode: "full", includeDecisionTree: false }))).map(pdfPageText);
+  assert.ok(crPages.some(page => page.includes("Start of CR note")), "CR note start retained");
+  assert.ok(crPages.some(page => page.includes("End of CR note")), "CR note end retained");
+  for (let i = 1; i <= 65; i++) assert.ok(crPages.some(page => page.split("\n").includes(String(i))), `CR note line ${i} retained`);
+  assert.ok(!crPages.some(page => page.includes("Start of CR note") && page.includes("End of CR note")), "many CR lines must flow even under the character bound");
+  assert.equal(JSON.stringify(shortMultiline), crBefore, "hard line break rendering preserves the input");
+});
 
 function registerStackStartingWith(definition: TDocumentDefinitions, prefix: string) {
   const entry = (definition.content as Content[]).find((candidate) => {
@@ -111,12 +174,80 @@ function collectPdfLinks(value: unknown): string[] {
   ];
 }
 
+test("PDF generation with financial assumptions preserves live case state and permits reopening and a second report", async () => {
+  const source = structuredClone(draft);
+  source.dealEconomics!.assumptions = ["Confirm the financing terms.", "Verify annual operating costs."];
+  const expected = structuredClone(source);
+  const fingerprint = caseFingerprint(source);
+  const publicationFingerprint = casePublicationFingerprint(source);
+  const receiptBefore = caseReportReceiptBinding(source, options);
+  const snapshot = snapshotStudioDraft(source);
+  const revision: StudioRevision = { id: "before-pdf", label: "Edited case", source: "visual", createdAt: source.updatedAt, before: snapshot, after: snapshot };
+  const diffBefore = diffDraftToRevision(source, revision);
+  // Freezing the actual authoring input catches any nested object lent to the
+  // mutating PDF renderer, including arrays beyond the originally broken ul.
+  const freeze = (value: unknown): void => {
+    if (!value || typeof value !== "object") return;
+    Object.values(value).forEach(freeze);
+    Object.freeze(value);
+  };
+  freeze(source);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const blob = await createCaseReportPreview(source, options, { canGenerate: true });
+    assert.equal(blob.type, "application/pdf");
+    assert.equal(Buffer.from(await blob.arrayBuffer()).subarray(0, 5).toString(), "%PDF-");
+    assert.deepEqual(source, expected);
+    assert.equal(caseFingerprint(source), fingerprint);
+    assert.equal(casePublicationFingerprint(source), publicationFingerprint);
+    // The report dialog calculates this again after generation sets its state.
+    assert.deepEqual(caseReportReceiptBinding(source, options), receiptBefore);
+    // StudioView eagerly evaluates this after the download completion callback.
+    // pdfmake layout functions in the live draft used to cause DataCloneError.
+    assert.deepEqual(diffDraftToRevision(source, revision), diffBefore);
+  }
+});
+
+test("deterministic graph reconstruction does not claim AI authorship or expose raw input", () => {
+  const canonical = { ...draft, editHistory: [{ ...draft.editHistory[0], action: "graph_rebuilt" as const, message: "SECRET CANONICAL INPUT" }] };
+  const source = JSON.stringify(buildCaseReportDefinition(canonical, options).content);
+  assert.match(source, /Draft reconstruction recorded - raw input excluded/);
+  assert.doesNotMatch(source, /AI-assisted revision recorded|SECRET CANONICAL INPUT/);
+});
+
+test("the corrected reconstruction label invalidates its historical PDF receipt only when shown", () => {
+  const source = buildCanopyPackage("base").draft;
+  source.editHistory = [{ id: "rebuild-1", role: "studio", source: "prompt", action: "graph_rebuilt", message: "PRIVATE SYNTHETIC RAW INPUT", createdAt: "2026-09-23T00:00:00.000Z" }];
+  const opts: CaseReportOptions = {
+    language: "en", profileId: "decision_memorandum", profileLabel: "Decision memorandum", audience: "internal", confidentiality: "draft",
+    preparedBy: "", preparedFor: "", matterReference: "", includeEconomics: true, includeRegisters: true, includeSources: true,
+    includeAuditTrail: true, includeTechnicalIds: false, generatedAt: "2026-09-23T00:00:00.000Z", currentFingerprint: caseFingerprint(source),
+    workspaceFingerprint: null, currentPublicationFingerprint: casePublicationFingerprint(source), workspacePublicationFingerprint: null,
+    privateCase: false, reportReceiptStorageScope: null, persistReportReceiptOnDevice: false, status: "draft", reviewerName: "", reviewerApproved: false, redactedNodeIds: [],
+  };
+  const binding = caseReportReceiptBinding(source, opts);
+  const artifacts = buildCaseReportArtifacts(source, opts);
+  const receipt = reportReceipt(artifacts.reportModel, opts.generatedAt, {
+    layoutSchemaVersion: artifacts.layoutModel.layoutSchemaVersion,
+    layoutAlgorithmVersion: artifacts.layoutModel.layoutAlgorithmVersion,
+    layoutRendererVersion: artifacts.layoutModel.layoutRendererVersion,
+    layoutFingerprint: artifacts.layoutModel.layoutFingerprint,
+    presentationFingerprint: artifacts.presentationFingerprint,
+  });
+  // Captured from the actual be995b5 implementation using this exact fixture.
+  const old = { ...receipt, presentationFingerprint: "sha256-0886d6f0bbe017658cddf2e43d1f9bf5046544e776d1c8c5d9b5cd076be939a8" };
+  assert.equal(isReportReceiptStale(old, source, opts.profileId, binding), true);
+  assert.equal(isReportReceiptStale(receipt, source, opts.profileId, binding), false);
+  // The presentation revision deliberately supersedes all old report layouts.
+  assert.notEqual(caseReportReceiptBinding(source, { ...opts, includeAuditTrail: false }).presentationFingerprint,
+    "sha256-62b63de20585d981ac34fa8d4470d924214b00f5a6b2cf5712f7a1288f7aa8dc");
+});
+
 test("professional report contains economics, registers, sign-off and a safe audit trail", () => {
   const report = buildCaseReportDefinition(draft, options);
   const source = JSON.stringify(report.content);
   assert.match(source, /TAX POSITION MEMORANDUM/);
   assert.match(source, /Investment and cash-flow analysis/);
-  assert.match(source, /Illustrative annual cash-flow probability ranges/);
+  assert.match(source, /deterministic calculations from supplied assumptions/);
   assert.match(source, /Facts, evidence and rules register/);
   assert.match(source, /Verification and sign-off/);
   assert.match(source, /Complete graph text alternative/);
@@ -131,6 +262,70 @@ test("professional report contains economics, registers, sign-off and a safe aud
   assert.equal(report.pageOrientation, "portrait");
   assert.equal(report.language, "en-GB");
   assert.equal(report.displayTitle, true);
+});
+
+test("Canopy opens with a bounded EN/RU decision brief and keeps draft, outcomes and approval distinct", async () => {
+  const { draft: canopy } = buildCanopyPackage("base");
+  const original = JSON.stringify(canopy);
+  for (const language of ["en", "ru"] as const) {
+    const definition = buildCaseReportDefinition(canopy, {
+      ...options, language, profileId: "decision_memorandum", profileLabel: "Decision memorandum",
+      audience: "internal", status: "draft", reviewerName: "", reviewerApproved: false,
+      workspaceFingerprint: null, workspacePublicationFingerprint: null,
+      privateCase: false, includeAuditTrail: false, includeTechnicalIds: false,
+    });
+    const pages = (await paginateDefinition(definition)).map(pdfPageText);
+    assert.match(pages[0], language === "en" ? /DRAFT - preliminary analysis/ : /ЧЕРНОВИК - предварительный анализ/);
+    assert.doesNotMatch(pages.join("\n"), /generated from the reviewed Studio graph|из проверенной схемы Studio/);
+    assert.match(pages[1], language === "en" ? /Decision brief/ : /Резюме для принятия решения/);
+    const appendixIndex = pages.findIndex((page) => /Case overview|Обзор кейса/.test(page));
+    assert.ok(appendixIndex >= 2 && appendixIndex <= 3, "the brief must occupy at most two pages before the appendix");
+    const brief = pages.slice(1, appendixIndex).join("\n").replace(/\s+/g, " ");
+    for (const title of ["Conditional 90-day transition pilot", "Renegotiate and defer", "Decline / no-go", "Does downside payback meet the mandate?"]) assert.ok(brief.includes(title), title);
+    assert.match(brief, language === "en" ? /does not establish a selected outcome/ : /не устанавливает выбранное решение/);
+    assert.match(brief, language === "en" ? /Individual fact-verification status is not recorded/ : /Статус проверки отдельных фактов/);
+    assert.match(brief, language === "en" ? /independent approval through the case workflow/ : /независимое утверждение/);
+    assert.ok(!brief.includes(canopy.premise), "raw unreviewed premise must remain excluded");
+    // The analysis heading must accompany actual content, rather than end a page.
+    for (const page of pages) {
+      const body = page.replace(/\s+/g, " ");
+      const heading = language === "en" ? "Profile-specific analysis" : "Профильный анализ";
+      if (body.includes(heading)) assert.ok(body.includes("Is this within the committee mandate?"), "the analysis heading must share a page with its first actual record");
+      const evidenceHeading = language === "en" ? "Facts and evidence" : "Факты и доказательства";
+      if (page.split("\n").includes(evidenceHeading)) assert.ok(body.includes("Is independent commissioning evidence accepted?"), "a table header alone must not keep its section on the prior page");
+      const signoffHeading = language === "en" ? "Verification and sign-off" : "Проверка и утверждение";
+      if (body.includes(signoffHeading)) assert.match(body, language === "en" ? /Sign-off \/ qualification/ : /Утверждение \/ оговорка/);
+    }
+  }
+  assert.equal(JSON.stringify(canopy), original, "report rendering must not mutate the immutable Base");
+});
+
+test("executive brief does not disclose redacted input or opening records", () => {
+  const confidential = { ...draft, nodes: draft.nodes.map((node) => node.id === "trigger-1" || node.id === "evidence-1" ? { ...node, title: "WITHHELD TITLE", detail: "WITHHELD DETAIL" } : node) };
+  const definition = buildCaseReportDefinition(confidential, { ...options, redactedNodeIds: ["trigger-1", "evidence-1"] });
+  assert.doesNotMatch(collectTextValues(definition.content).join("\n"), /WITHHELD TITLE|WITHHELD DETAIL/);
+});
+
+test("audit headings share a rendered page with a record in Bhopal and long Russian titles", async () => {
+  for (const id of ["golden-bhopal-decision-memorandum", "stress-long-title-ru"]) {
+    const fixture = reportPdfFixtures().find((entry) => entry.id === id)!;
+    const profile = primaryCaseOutput(fixture.draft.caseType);
+    const fingerprint = caseFingerprint(fixture.draft);
+    const publicationFingerprint = casePublicationFingerprint(fixture.draft);
+    const definition = buildCaseReportDefinition(fixture.draft, {
+      ...options, language: fixture.language, profileId: profile.id, profileLabel: profile.label[fixture.language],
+      audience: fixture.audience, preparedBy: "V62 PDF QA Author", preparedFor: "V62 PDF QA Reviewer",
+      matterReference: `V62-${fixture.id}`, generatedAt: "2026-09-01T12:00:00.000Z",
+      currentFingerprint: fingerprint, workspaceFingerprint: fingerprint,
+      currentPublicationFingerprint: publicationFingerprint, workspacePublicationFingerprint: publicationFingerprint,
+      reviewerName: "V62 PDF QA Reviewer", reviewerApproved: true, status: "draft",
+    });
+    const pages = (await paginateDefinition(definition)).map(pdfPageText);
+    const heading = fixture.language === "en" ? "Authoring and review trail" : "История подготовки и проверки";
+    const page = pages.find((entry) => entry.includes(heading));
+    assert.ok(page, `${id}: audit heading is present`);
+    assert.ok(page.includes(fixture.draft.editHistory[0].action), `${id}: audit heading must accompany an actual record`);
+  }
 });
 
 test("client-facing report can omit audit trail and technical identifiers", () => {
@@ -613,8 +808,8 @@ test("receipt freshness derives the exact production layout and the legacy lands
   assert.match(dialogSource, /caseReportReceiptBinding\(draft, activeReportOptions\)/);
   assert.match(dialogSource, /isReportReceiptStale\(previousReceipt, draft, profileId, currentReceiptBinding\)/);
   assert.match(dialogSource, /Current content and layout receipt found/);
-  assert.match(dialogSource, /full portrait graph/);
-  assert.match(dialogSource, /complete text alternative/);
+  assert.match(dialogSource, /Include decision tree/);
+  assert.match(dialogSource, /The decision tree and its text alternative are omitted/);
   assert.match(dialogSource, /readStoredReportReceipt\(window\.localStorage/);
   assert.match(reportSource, /try \{\s+writeStoredReportReceipt\(window\.localStorage/, "blocked browser storage cannot fail a completed PDF download");
   assert.doesNotMatch(dialogSource, /localStorage\.getItem/);

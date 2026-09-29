@@ -20,6 +20,10 @@ import {
 } from "../app/auth-crypto";
 import { authJson, INVALID_LOGIN_MESSAGE, INVALID_RECOVERY_MESSAGE } from "../app/auth-http";
 import { isSameOriginCredentialMutation } from "../app/request-security";
+import { clearNavigationStorage } from "../app/NavigationSession";
+import { NavigationController } from "../app/navigation-controller";
+import { clearOrganizationSelection, scopedOrganizationHeaders, setOrganizationSelection } from "../app/organization-client";
+import { LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, studioDeviceDraftKey, studioDeviceScope } from "../app/studio-device-storage";
 
 const migrations = [
   "0000_worthless_supreme_intelligence.sql",
@@ -319,10 +323,74 @@ test("profile deletion clears local auth data and all identity responses are no-
   assert.match(ui, /ADMIN VERIFIED · CHATGPT ALLOWLIST/);
   assert.match(ui, /LOCAL SESSION · ADMIN RIGHTS DISABLED/);
   assert.match(ui, /15-minute, single-use link/);
-  assert.match(ui, /offline recovery code/);
+  assert.match(ui, /Offline recovery code/i);
   assert.match(ui, /trusted ChatGPT identity/);
   assert.match(ui, /never grants platform-administrator rights/);
-  assert.match(ui, /localStorage\.removeItem/);
-  assert.doesNotMatch(ui, /localStorage\.(?:getItem|setItem)|sessionStorage/);
+  // Account sign-out is supplied by the shared navigation, whose controller
+  // owns cleanup. Do not require a duplicate inline storage implementation.
+  assert.match(ui, /<WorkspaceNavigation active="\/account"/);
+  assert.match(source("app/LegacyGenesisNavigation.tsx"), /await navigation\.signOut\(locale\)/);
+  assert.match(source("app/NavigationSession.tsx"), /clear:\s*clearNavigationStorage/);
+  // Sign-out removes account-scoped drafts and continuations; credentials must never be read or stored here.
+  assert.doesNotMatch(ui, /(?:localStorage|sessionStorage)\.(?:getItem|setItem)/);
   assert.doesNotMatch(`${ui}\n${source("app/api/auth/register/route.ts")}`, /email verified|verified email/i);
+});
+
+test("shared Account sign-out clears the verified account's device state only after server confirmation", async () => {
+  const email = "synthetic-logout@example.test";
+  const ownDraft = studioDeviceDraftKey((await studioDeviceScope(email))!);
+  const otherDraft = studioDeviceDraftKey((await studioDeviceScope("other-synthetic@example.test"))!);
+  const ownKeys = [LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, ownDraft];
+  const continuationKeys = ["genesis-invitation-continuation-v1", "genesis-studio-auth-continuation-v1", "genesis.juris.pending-workspace-save.v2", "genesis-juris-pending-case-prompt-v1"];
+  const local = new Map([...ownKeys, otherDraft, "unrelated-preference"].map(key => [key, "synthetic"]));
+  const session = new Map([...continuationKeys, "unrelated-tab-state"].map(key => [key, "synthetic"]));
+  const storage = (values: Map<string, string>) => ({
+    removeItem(key: string) { values.delete(key); },
+    setItem(key: string, value: string) { values.set(key, value); },
+  });
+  const oldWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  Object.defineProperty(globalThis, "window", { configurable: true, value: Object.assign(new EventTarget(), { localStorage: storage(local), sessionStorage: storage(session) }) });
+  let logoutStatus = 503;
+  const leaves: string[] = [];
+  const controller = new NavigationController({
+    transport: async (path, init) => {
+      if (path === "/api/workspace-session") return Response.json({ authenticated: true,
+        identity: { email, displayName: "Synthetic account", authSource: "local" }, actorId: "actor_synthetic_logout_001",
+        organizations: [], selected: null, profileRequired: false });
+      assert.equal(path, "/api/auth/logout");
+      assert.equal(init?.method, "POST");
+      assert.equal(init?.credentials, "same-origin");
+      return new Response(null, { status: logoutStatus });
+    },
+    clear: clearNavigationStorage,
+    leave: path => {
+      for (const key of ownKeys) assert.equal(local.has(key), false, `${key} must be cleared before leaving`);
+      for (const key of continuationKeys) assert.equal(session.has(key), false, `${key} must be cleared before leaving`);
+      assert.deepEqual(scopedOrganizationHeaders(), {});
+      leaves.push(path);
+    },
+  });
+  try {
+    setOrganizationSelection("synthetic-organization-selection");
+    // Organization selection itself clears continuations; restore the synthetic
+    // pending work so this assertion specifically exercises the sign-out path.
+    for (const key of continuationKeys) session.set(key, "synthetic");
+    await controller.refresh();
+    assert.equal(controller.getSnapshot().phase, "ready");
+    await controller.signOut("en");
+    assert.equal(controller.canRetrySignOut, true);
+    assert.deepEqual(leaves, []);
+    for (const key of ownKeys) assert.equal(local.has(key), true, "unconfirmed logout must not claim cleanup completed");
+    for (const key of continuationKeys) assert.equal(session.has(key), true);
+    logoutStatus = 204;
+    await controller.signOut("en");
+    assert.deepEqual(leaves, ["/studio?lang=en"]);
+    assert.equal(controller.getSnapshot().identity, null);
+    assert.equal(local.get(otherDraft), "synthetic", "cleanup must remain bound to the terminating account");
+    assert.equal(local.get("unrelated-preference"), "synthetic");
+    assert.equal(session.get("unrelated-tab-state"), "synthetic");
+  } finally {
+    clearOrganizationSelection();
+    if (oldWindow) Object.defineProperty(globalThis, "window", oldWindow); else Reflect.deleteProperty(globalThis, "window");
+  }
 });

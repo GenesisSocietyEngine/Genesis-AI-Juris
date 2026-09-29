@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+const [label,file,mode='single']=process.argv.slice(2);assert.match(label,/^[a-z0-9-]+$/);
+assert.ok(file==='tests/report-receipt-dialog.test.ts'||/^\.artifacts\/pdf-render-scheduling\/[a-z-]+\.test\.ts$/.test(file));
+assert.ok(['single','file'].includes(mode));
+const node='C:/PROJECTS/Genesis-AI-Juris/.worktrees/demo-readiness-canopy-2026-09-06/.artifacts/toolchains/node-v22.23.2-win-x64/node.exe';
+const args=['--experimental-sqlite','--import','tsx','--test',...(mode==='single'?['--test-name-pattern=^actual PDF parent and helper reject a stale active tab, recheck after rendering and never revive old output after sign-in$']:[]),file];
+const directory=`.artifacts/pdf-render-scheduling/${label}`;mkdirSync(directory,{recursive:false});
+const startedAt=new Date().toISOString(),result=spawnSync(node,args,{encoding:'utf8',timeout:60000,maxBuffer:8*1024*1024}),completedAt=new Date().toISOString();
+const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
+writeFileSync(`${directory}/stdout.log`,result.stdout??'');writeFileSync(`${directory}/stderr.log`,result.stderr??'');
+const receipt={startedAt,completedAt,command:{node,args},exitCode:result.status,signal:result.signal,spawnError:result.error?.code??null,source:{path:file,sha256:sha(readFileSync(file))},stdoutSha256:sha(result.stdout??''),stderrSha256:sha(result.stderr??'')};
+writeFileSync(`${directory}/execution.json`,JSON.stringify(receipt,null,2)+'\n');
+console.log(JSON.stringify(receipt));console.log(result.stdout??'');if(result.stderr)console.error(result.stderr);process.exitCode=result.status??1;

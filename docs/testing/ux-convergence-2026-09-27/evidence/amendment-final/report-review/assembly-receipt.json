@@ -1,0 +1,94 @@
+{
+  "schema": "genesis.juris.final-status-assembly.v1",
+  "assembledAt": "2026-09-28T01:10:07.468Z",
+  "testedWebHead": "a1fae95bc2624e28e6232b8867ad2a94c8d9f0ab",
+  "applicationInputsSha256": "5597958a0a870757e75cfbdfba930007d475f782035db4ee8503a97aa1723afc",
+  "result": "COMPLETED_RECEIPTS_ASSEMBLED_FOR_INDEPENDENT_OUTPUT_REVIEW",
+  "technicalGate": "PASS",
+  "engineering": "BLOCKED",
+  "production": "BLOCKED",
+  "externalPilot": "NO-GO",
+  "trackedFilesWritten": false,
+  "scriptSha256": "f27d31db3da7ff6e0cb20d53d1396a5ae5ac0837f8789da77851dc0239f2bd4d",
+  "inputs": {
+    "gate": {
+      "path": ".artifacts/amendment-release-gate/aggregate-candidate-receipt.json",
+      "sha256": "c78db67704b8e2f82508711e5e7eb5256a287d915e17b6442d0df2ee6dc76e80",
+      "bytes": 5883
+    },
+    "source": {
+      "path": ".artifacts/amendment-release-gate/aggregate-candidate-source.json",
+      "sha256": "76286e5baa151ea25be0092c7350437fe2fd128fe8863d91ccd31728ddb0581f",
+      "bytes": 570
+    },
+    "production": {
+      "path": ".artifacts/ux-reconciliation-auth/final-production-readback.json",
+      "sha256": "e72dc5c1a67d58e33961a92d38234f2d7add41735a3315b1674a5ba572a83f3d",
+      "bytes": 2321
+    },
+    "cleanup": {
+      "path": ".artifacts/amendment-android-native/cleanup-readonly-finalization-20260928T010829378Z.json",
+      "sha256": "8d2378aaddc64a6af683c724f2e577741579e86aad94e6889d95d20a1bae3f50",
+      "bytes": 3591
+    }
+  },
+  "gateLog": {
+    "sha256": "610b1889977dced153f096f2cadbeb16295ea441806ab230f3afe6a2cb8c73b6",
+    "bytes": 347190
+  },
+  "templates": {
+    "RELEASE_DECISION.md": {
+      "sha256": "f2a396e17e9836ebdd76f77c53c8c9ac440c14d0a5ad9a583478ca3edc0cba55"
+    },
+    "POST_RECONCILIATION_CLOSURE.md": {
+      "sha256": "f927f9daf37643964fb24def090e5bbb5bb98e728541962fdd0455d3e9a8ea13"
+    },
+    "PO_UX_STATUS.md": {
+      "sha256": "714a82e38af5a56169981f55c5f09c074eb82c387e2609df63052dfec1bf7c9c"
+    }
+  },
+  "outputs": {
+    "RELEASE_DECISION.md": {
+      "sha256": "985fd8e85b6acbdb5dbe950cb621614778025cec7be1f3abb2c736b7e2870b2c",
+      "bytes": 24434
+    },
+    "POST_RECONCILIATION_CLOSURE.md": {
+      "sha256": "513fc196443e7dc628b36af77aaf5895beef5deb41b1ace56fc5f69179b9057b",
+      "bytes": 47797
+    },
+    "PO_UX_STATUS.md": {
+      "sha256": "b4d0290a06da4b3400888c2467751f333ef65146655c3bea5a0600b2730a4278",
+      "bytes": 44980
+    }
+  },
+  "linkAudit": [
+    {
+      "name": "RELEASE_DECISION.md",
+      "uniqueLinks": 51
+    },
+    {
+      "name": "POST_RECONCILIATION_CLOSURE.md",
+      "uniqueLinks": 53
+    },
+    {
+      "name": "PO_UX_STATUS.md",
+      "uniqueLinks": 32
+    }
+  ],
+  "limits": [
+    "Assembler validates supplied evidence and raw-log consistency; it does not execute tests or independently observe production/cleanup.",
+    "No commit, deployment, invitation, permission change or browser action occurs.",
+    "Final Markdown still requires coordinator and independent output review; completed technical automation does not close remaining acceptance.",
+    "Document links assume the stated final repository location; copying or publishing these files is a separate authorized action."
+  ],
+  "cleanupFinalization": {
+    "startedAt": "2026-09-28T01:08:29.3832254Z",
+    "finishedAt": "2026-09-28T01:08:30.7397244Z",
+    "priorReceiptSha256": "b1a780e7f56f81579f386f6bcfe1f42efddb969d23236d7e75179abefbe66c25",
+    "priorReceiptStatus": "STOPPED_FOR_REVIEW",
+    "priorStopTimes": [
+      "2026-09-28T01:04:43.7786303Z",
+      "2026-09-28T01:04:44.0767662Z"
+    ]
+  }
+}

@@ -121,7 +121,7 @@ export async function organizationMemberActive(db: DossierDb, organizationId: st
   return row ?? null;
 }
 
-async function securityEvent(db: DossierDb, actor: OrganizationActor, authority: OrganizationAuthority,
+export async function securityEvent(db: DossierDb, actor: OrganizationActor, authority: OrganizationAuthority,
   action: string, targetId: string) {
   const [last] = await db.select().from(organizationSecurityEvents)
     .where(eq(organizationSecurityEvents.organizationId, authority.id)).orderBy(desc(organizationSecurityEvents.sequence)).limit(1);
@@ -164,7 +164,12 @@ export async function inviteOrganizationMember(db: DossierDb, actor: Organizatio
   if (!isOpaqueId(target) || !["member", "org_admin", "auditor"].includes(String(role)) || target === actor.actorId) {
     throw new OrganizationError("invitation_fields_invalid", 400);
   }
-  if (await organizationMemberActive(db, authority.id, target)) throw new OrganizationError("invitation_unavailable", 409);
+  // A new invitation cannot replace a durable membership. Suspended access is
+  // restored through the revision-checked member action; removal stays final.
+  const [existing] = await db.select({ status: organizationMemberships.status }).from(organizationMemberships).where(and(
+    eq(organizationMemberships.organizationId, authority.id), eq(organizationMemberships.actorId, target))).limit(1);
+  if (existing) throw new OrganizationError(existing.status === "suspended" ? "invitation_member_suspended"
+    : existing.status === "removed" ? "invitation_member_removed" : "invitation_unavailable", 409);
   const token = `${id("invite")}${id("secret")}`;
   const invitation = { id: id("org_invite"), organizationId: authority.id, tokenDigest: await sha256Hex(token),
     recipientActorId: target, role: String(role), invitedByActorId: actor.actorId,

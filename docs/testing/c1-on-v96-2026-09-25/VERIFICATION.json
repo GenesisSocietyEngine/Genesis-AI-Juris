@@ -1,0 +1,32 @@
+{
+  "result": "PASS",
+  "requestId": "b76b70ab-b122-4fce-85a7-8674953b9cf7",
+  "capturedAt": "2026-09-25T10:02:41.593Z",
+  "productionVersion": 96,
+  "source": "e44ed40e8aac8fa4812f8e8e5edf8af2a66ee475",
+  "objectCount": 630,
+  "preservedObjects": 594,
+  "newObjects": 36,
+  "schemaDigest": "aade122df108a84aab7db4a758a2d4dc805193e04c5394127d33af75530d1528",
+  "ledgerRows": 23,
+  "preservedLedgerRows": 22,
+  "addedLedgerRows": [
+    {
+      "id": 23,
+      "name": "0022_loving_juggernaut.sql",
+      "applied_at": "2026-09-25 09:51:14"
+    }
+  ],
+  "nativeLogChunks": 47,
+  "nativeLogReportDigest": "40365fb3fcdba1ca5e2de9139fcb32deec0a50bb4ee4d39e7c45eaa9c1e64da2",
+  "nativeWorkerScriptVersions": [
+    "d081758a-9751-4e2b-aa7b-a279ae70a27c"
+  ],
+  "closure": "production 0022 execution/schema/ledger/partial-state uncertainty resolved",
+  "limitations": [
+    "not a database row or R2-byte inventory",
+    "not a hosted backup or restore rehearsal",
+    "not C1 browser acceptance",
+    "ledger has no historical SQL hash column"
+  ]
+}

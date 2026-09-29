@@ -1,0 +1,45 @@
+{
+  "schema": "genesis.juris.cleanup-native-identity-diagnosis.v1",
+  "recordedAt": "2026-09-28T01:03:03.4290302Z",
+  "recordedAtMeaning": "Preparation timestamp observed via UTC clock in tool chunk 99fd43; not the process-query time. The actual host query result is identified separately.",
+  "scope": "Read-only host metadata of PIDs 4116 and 25048 only; no shutdown, token read, authentication change or process mutation.",
+  "observationSource": {
+    "hostToolChunk": "dbb544",
+    "exitCode": 0,
+    "precedingSandboxChunk": "ddb536",
+    "precedingSandboxResult": "CIM access denied before successful host read"
+  },
+  "failedCleanupReceipt": {
+    "path": ".artifacts/amendment-android-native/cleanup-execute-20260928T010043566Z.json",
+    "sha256": "087923b2ab0f86bb33d42da1fdf0cf47116f4f89f075a77eb7d71ab18a6cc97f",
+    "status": "STOPPED_FOR_REVIEW",
+    "gracefulExitCode": 0,
+    "gracefulConsoleResult": "KO: missing authentication token; KO: unknown command",
+    "fallbackResult": "Exact native/CIM timestamp string comparison refused termination"
+  },
+  "processes": [
+    {
+      "processId": 4116,
+      "parentProcessId": 26372,
+      "executablePath": "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\emulator.exe",
+      "cimCreationUtc": "2026-09-27T20:35:08.4851430Z",
+      "nativeStartUtc": "2026-09-27T20:35:08.4851438Z",
+      "nativeMinusCimTicks": 8,
+      "nativeHandleAcquired": true,
+      "cimAndNativePathMatch": true
+    },
+    {
+      "processId": 25048,
+      "parentProcessId": 4116,
+      "executablePath": "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\qemu\\windows-x86_64\\qemu-system-x86_64-headless.exe",
+      "cimCreationUtc": "2026-09-27T20:35:09.6325920Z",
+      "nativeStartUtc": "2026-09-27T20:35:09.6325926Z",
+      "nativeMinusCimTicks": 6,
+      "nativeHandleAcquired": true,
+      "cimAndNativePathMatch": true
+    }
+  ],
+  "finding": "The same owned processes expose microsecond CIM times and finer 100ns native times. Comparing their formatted timestamps for equality is a precision mismatch. It does not establish PID reuse or a foreign process.",
+  "proposal": "Retain exact original CIM creation/parent/path/command checks; add exact separately observed nativeCreationUtc constants, pin the handle, recheck CIM identity, compare exact native creation/path, then use the same pinned handle. No tolerance window or removed identity guard.",
+  "execution": "NOT_RUN: corrected cleanup is a separate ignored proposal requiring independent source review and coordinator execution."
+}

@@ -1,0 +1,5 @@
+﻿{
+    "command":  "tsc --noEmit --incremental false",
+    "exitCode":  2,
+    "completedAt":  "2026-09-28T04:19:24.1756570Z"
+}

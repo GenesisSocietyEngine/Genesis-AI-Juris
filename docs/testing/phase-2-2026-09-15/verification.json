@@ -1,0 +1,42 @@
+{
+  "source_candidate_commit": "9236c02a294c4c9a43cd49cb3113fba06a889c6b",
+  "live_version": 86,
+  "live_source_commit": "dca6af234ce27c76a6b1cb22359be9540d8e5049",
+  "recorded_at": "2026-09-15T13:21:06.137029+00:00",
+  "checks": {
+    "server_and_migration": {
+      "passed": 14,
+      "failed": 0,
+      "environment": "Miniflare D1/R2 real route handlers; synthetic trusted provider headers; fresh SQLite and populated v86 upgrade"
+    },
+    "model_source_ssr": {
+      "passed": 39,
+      "failed": 0
+    },
+    "build": "passed",
+    "typecheck": "passed",
+    "lint": "passed; one pre-existing warning",
+    "browser": "blocked; CDP tab refresh timed out",
+    "native_mobile": "not verified",
+    "registration_inclusive_timing": "not measured",
+    "publication": "not performed"
+  },
+  "artifacts": {
+    "dist/server/index.js": {
+      "bytes": 281267,
+      "sha256": "3db9de525ba2ad16663262f95e876c52f3194b49880abb6a7b9b867d882a65be"
+    },
+    "drizzle/0022_loving_juggernaut.sql": {
+      "bytes": 15104,
+      "sha256": "2ebc937ea8ab24670754d13247aaf4251ae941949bf99301c9f605a89808b111"
+    },
+    "docs/testing/phase-2-2026-09-15/backend-evidence.json": {
+      "bytes": 3625,
+      "sha256": "d25dcbadb7f9ca97575d8400f5868929be33b8fc50696dc34d37b588213f3d0e"
+    },
+    "docs/testing/phase-2-2026-09-15/contract-checks.txt": {
+      "bytes": 4055,
+      "sha256": "0a467f5c16e0d54b7344f0dadf27963d7b710f9caf0631e36a91df95b187d374"
+    }
+  }
+}

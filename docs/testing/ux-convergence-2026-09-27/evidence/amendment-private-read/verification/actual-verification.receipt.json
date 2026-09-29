@@ -1,0 +1,164 @@
+{
+  "schema": "genesis.juris.read-fence-focused-verification.v1",
+  "recordedAt": "2026-09-27T21:51:10.765Z",
+  "application": {
+    "patchSha256": "4c044bc5548945a9ee639d750c1452e0a41475cc79f02434afd14ec80191d5bf",
+    "appliedAt": "2026-09-27T21:39:29.590Z",
+    "files": 19,
+    "readbacksStillMatch": true,
+    "committedByThisAgent": false
+  },
+  "maintainedTest": {
+    "path": "tests/dossier-read-access.test.ts",
+    "bytes": 21821,
+    "sha256": "066b96e4cd96786c1cc97a7666453bd9f74a5f6a7817cecf7fa50f3309946c8a",
+    "logOrFileCreatedAt": "2026-09-27T21:40:07.677Z",
+    "logOrFileLastWriteAt": "2026-09-27T21:44:08.520Z"
+  },
+  "toolchain": {
+    "node": "22.23.2",
+    "executable": "C:/PROJECTS/Genesis-AI-Juris/.worktrees/demo-readiness-canopy-2026-09-06/.artifacts/toolchains/node-v22.23.2-win-x64/node.exe",
+    "workingDirectory": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27"
+  },
+  "commands": {
+    "routeContracts": {
+      "exitCode": 0,
+      "pass": 49,
+      "fail": 0,
+      "command": "node.exe --experimental-sqlite --import tsx --test tests/dossier-server-contract.test.ts tests/dossier-routes-contract.test.ts tests/dossier-document-routes.test.ts tests/dossier-evidence-routes.test.ts tests/dossier-decision-package-route.test.ts tests/dossier-proposal-route.test.ts tests/dossier-requests-activity-route.test.ts tests/dossier-governed-output-routes.test.ts",
+      "scope": "Eight existing source/route contract test files; host execution"
+    },
+    "maintainedRegression": {
+      "exitCode": 0,
+      "pass": 17,
+      "fail": 0,
+      "evidence": "../matter-read-race.actual.execution.json and actual TAP/current source receipt; independently run by baseline agent"
+    },
+    "typecheck": {
+      "exitCode": 0,
+      "diagnostics": 0,
+      "command": "node.exe node_modules/typescript/bin/tsc --noEmit --incremental false",
+      "host": false
+    },
+    "focusedLint": {
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0,
+      "command": "node.exe node_modules/eslint/bin/eslint.js app/dossier-server.ts app/api/dossiers/[dossierId]/route.ts app/api/dossiers/[dossierId]/documents/route.ts app/api/dossiers/[dossierId]/activity/route.ts app/api/dossiers/[dossierId]/requests/route.ts app/api/dossiers/[dossierId]/decision-packages/route.ts app/api/dossiers/[dossierId]/evidence/anchors/route.ts app/api/dossiers/[dossierId]/evidence/assertions/route.ts app/api/dossiers/[dossierId]/evidence/links/route.ts app/api/dossiers/[dossierId]/proposals/route.ts app/api/dossiers/[dossierId]/dispositions/route.ts app/api/dossiers/[dossierId]/notes/route.ts app/api/dossiers/[dossierId]/snapshots/route.ts app/api/dossiers/[dossierId]/outputs/route.ts app/api/dossiers/[dossierId]/documents/[documentId]/versions/[versionId]/download/route.ts app/api/dossiers/[dossierId]/outputs/[outputId]/download/route.ts app/api/dossiers/[dossierId]/snapshots/[snapshotId]/manifest/route.ts app/api/dossiers/[dossierId]/outputs/[outputId]/presentation/route.ts app/api/dossiers/route.ts tests/dossier-read-access.test.ts",
+      "host": false
+    },
+    "handlerAuthP1": {
+      "exitCode": 0,
+      "counts": {
+        "tests": 26,
+        "suites": 0,
+        "pass": 26,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "runnerDurationMs": 261999.684,
+      "host": true,
+      "command": "node.exe --experimental-sqlite --import tsx --test --test-concurrency=1 --test-skip-pattern=\"^Canopy V2: independent reviewed copies, causal walkthrough and exact output governance$\" tests/working-notes-handler-contract.test.ts tests/auth-security.test.ts tests/p1-organization-erp.test.ts",
+      "filter": {
+        "excludedParent": "Canopy V2: independent reviewed copies, causal walkthrough and exact output governance",
+        "excludedNestedTests": 6,
+        "excludedTotalTestNodes": 7,
+        "status": "NOT_RUN_IN_THIS_FOCUSED_COMMAND",
+        "tapOmission": "Node22 omits filtered test nodes; zero TAP skipped does not imply whole-file execution."
+      }
+    }
+  },
+  "retainedAttempts": {
+    "routeContractsSandbox": "tsx Windows account metadata bootstrap ENOMEM before tests; exact same focused selection passed on approved host retry.",
+    "initialLint": "One test-loader local variable named module violated Next lint rule; narrow binding rename only; original failure log retained.",
+    "initialHandlerRun": {
+      "status": "INTERRUPTED",
+      "exitCode": 1,
+      "completedPassingSubtests": 25,
+      "reason": "Negative name-pattern also matched test ancestors and failed to exclude the long Canopy parent; stopped exact owned session68468 and preserved partial log. It is not an aggregate PASS."
+    }
+  },
+  "logs": [
+    {
+      "path": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-route-contracts.log",
+      "bytes": 20734,
+      "sha256": "aa70a4d6a7e59e011fb1efba2d49e9850559d459080313aec6b6e9e7fa96584c",
+      "logOrFileCreatedAt": "2026-09-27T21:39:50.957Z",
+      "logOrFileLastWriteAt": "2026-09-27T21:39:51.480Z"
+    },
+    {
+      "path": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-route-contracts-host.log",
+      "bytes": 23622,
+      "sha256": "9eb870876be7a2fab08ab4cb2b4e6bba30593f03079b2e48ae3dd51e2d54771e",
+      "logOrFileCreatedAt": "2026-09-27T21:40:11.332Z",
+      "logOrFileLastWriteAt": "2026-09-27T21:40:12.981Z"
+    },
+    {
+      "path": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-typecheck.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "logOrFileCreatedAt": "2026-09-27T21:40:39.491Z",
+      "logOrFileLastWriteAt": "2026-09-27T21:40:39.491Z"
+    },
+    {
+      "path": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-typecheck-final.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "logOrFileCreatedAt": "2026-09-27T21:44:31.919Z",
+      "logOrFileLastWriteAt": "2026-09-27T21:44:31.919Z"
+    },
+    {
+      "path": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-lint.log",
+      "bytes": 604,
+      "sha256": "d1d2a25d18f1beb65679f88f8a4da046cac74697209316112917f05cf92cc6d1",
+      "logOrFileCreatedAt": "2026-09-27T21:40:40.031Z",
+      "logOrFileLastWriteAt": "2026-09-27T21:41:55.871Z"
+    },
+    {
+      "path": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-lint-final.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "logOrFileCreatedAt": "2026-09-27T21:44:32.353Z",
+      "logOrFileLastWriteAt": "2026-09-27T21:44:32.353Z"
+    },
+    {
+      "path": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-handler-auth-p1.log",
+      "bytes": 12606,
+      "sha256": "b506e583bbdec76ea79f49f5dba1f299de3b985b3852d8a88d75950e9adba92f",
+      "logOrFileCreatedAt": "2026-09-27T21:41:57.908Z",
+      "logOrFileLastWriteAt": "2026-09-27T21:45:35.676Z"
+    },
+    {
+      "path": ".artifacts/ux-reconciliation-auth/matter-read-fence/actual-handler-auth-p1-filtered.log",
+      "bytes": 13402,
+      "sha256": "0114597b3114495414524e478e4b63546f083d5eaf3929bb0f23b6a91b3bf52d",
+      "logOrFileCreatedAt": "2026-09-27T21:46:19.932Z",
+      "logOrFileLastWriteAt": "2026-09-27T21:50:41.996Z"
+    },
+    {
+      "path": ".artifacts/ux-reconciliation-auth/matter-read-fence/node-negative-name-probe.log",
+      "bytes": 1172,
+      "sha256": "8bbdee5233e8512be05ff0b93059d1f49170e2d4e399ba95da27441e6ec0a38e",
+      "logOrFileCreatedAt": "2026-09-27T21:47:17.938Z",
+      "logOrFileLastWriteAt": "2026-09-27T21:47:18.103Z"
+    },
+    {
+      "path": ".artifacts/ux-reconciliation-auth/matter-read-fence/node-exact-skip-probe.log",
+      "bytes": 438,
+      "sha256": "cffb990d6004b62a7a573cee11b76d5f86478adb937101830d0573a0695f1f6e",
+      "logOrFileCreatedAt": "2026-09-27T21:47:18.118Z",
+      "logOrFileLastWriteAt": "2026-09-27T21:47:18.307Z"
+    }
+  ],
+  "capture": "Logs are unmodified PowerShell combined stdout/stderr captures, not a claim of byte-exact native stdout separated from stderr.",
+  "exitCodeEvidence": "Terminal exec/write_stdin results, observed before sealing; Node TAP counts additionally checked for the corrected completed selection.",
+  "timing": "File creation/last-write timestamps are exact filesystem metadata. Commands did not instrument per-process wall-clock start/end; those times are not invented. Node runner duration is its own emitted duration_ms. recordedAt is the exact final receipt creation time.",
+  "limitations": [
+    "Synthetic in-process fixture coverage is distinct from an ordinary browser/session-store flow.",
+    "Existing Miniflare handler tests use explicit synthetic trusted identity transport in isolated state.",
+    "No provider logout, hosted deployment, blocked browser source upload, human, screen-reader or actual zoom acceptance is claimed.",
+    "The complete post-change release gate/build remains root-owned; the earlier 6ab aggregate predates this fix."
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "archivedAt": "2026-09-28T01:13:07.891Z",
+  "scope": "Independent final-output review and file audit of the actual three reports and unchanged completed receipts.",
+  "files": [
+    {
+      "source": ".artifacts/ux-reconciliation-auth/AMENDMENT_FINAL_STATUS_REVIEW.md",
+      "destination": "AMENDMENT_FINAL_STATUS_REVIEW.md",
+      "sha256": "9588f8c661e84035adb4a1d917338f0cc4296e6295687249063331f8450c47be",
+      "bytes": 5356
+    },
+    {
+      "source": ".artifacts/ux-reconciliation-auth/final-status-independent-file-audit.json",
+      "destination": "evidence/amendment-final/report-review/independent-final-file-audit.json",
+      "sha256": "dcbceb8c7f5cc56967a9962d8f410ea91fda963ef0a5b93b84113aa07b47b48d",
+      "bytes": 8729
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+    "recordedAt":  "2026-09-27T21:07:38.8734969Z",
+    "status":  "PASS",
+    "testsPassed":  12,
+    "testsFailed":  0,
+    "exitCode":  0,
+    "sourceUnchanged":  true,
+    "serial":  "emulator-5580",
+    "emulatorRetainedForAggregate":  true,
+    "aggregateSubstitution":  false,
+    "artifacts":  [
+                      {
+                          "file":  "native-smoke-result.json",
+                          "bytes":  772,
+                          "sha256":  "d1412848bb1c46bfccd4249b832b44a791fe4650dd8c26888b4cd8c26924893b"
+                      },
+                      {
+                          "file":  "native-smoke-retry.stdout.log",
+                          "bytes":  5965,
+                          "sha256":  "db63934df1672ba7c22cb42d1d1869c21a23ca0fe7669f16128b5cade22107f3"
+                      },
+                      {
+                          "file":  "native-smoke-retry.stderr.log",
+                          "bytes":  0,
+                          "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                      },
+                      {
+                          "file":  "native-smoke-first-wrapper-failure.json",
+                          "bytes":  633,
+                          "sha256":  "92d3605ee5c885136781312bfe0ef4caf3d5bf972d6125a69df86dd3710ab777"
+                      },
+                      {
+                          "file":  "gradle-effective-resource-limits.json",
+                          "bytes":  1175,
+                          "sha256":  "937a58ae7bb0649b672ad8367158884d362066b3ca8c9f15a79ed3e74781ecd0"
+                      }
+                  ]
+}

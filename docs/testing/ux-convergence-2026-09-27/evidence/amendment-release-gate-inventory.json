@@ -1,0 +1,24 @@
+{
+    "At":  "2026-09-27T20:29:41.1939300Z",
+    "ReleaseScriptSha256":  "03de33bb2d14b689447cb26d32544492b314ab2145d8584b7cd284f75c2a42a4",
+    "ApplicationInputChangesFrom8eeTo80b":  [
+
+                                            ],
+    "LockedMobileHead":  "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+    "LockedMobilePath":  "C:/PROJECTS/Genesis-AI-Juris/.worktrees/pr45-mobile-5200",
+    "GuardResult":  "PASS before and after completedchecks; exact5200b30HEAD/trackedbytes, finalgitstatus empty",
+    "AdbQuery":  "PASS query, zero attached devices",
+    "FlutterAnalyze":  "PASS no issues115.1s",
+    "DartFormat":  "PASS117files0changed exit0",
+    "RustFmt":  "PASS exit0",
+    "RustClippy":  "PASS exit0",
+    "RuntimeParity":  "PASS18routes everycheckpoint",
+    "ReportLayoutParity":  "PASS7fixtures",
+    "RustWorkspaceTests":  "PASS359passed0failed0ignored across73resultgroups exit0",
+    "FlutterTests":  "PASS275tests exit0",
+    "ExistingAvdDefinitions":  [
+                                   "Pixel",
+                                   "Pixel_10_Pro_XL"
+                               ],
+    "NativeSmokeStatus":  "BLOCKED at ready-device prerequisite; ADBzeroattached, existingAVDsnotlaunched, userdataunchanged"
+}

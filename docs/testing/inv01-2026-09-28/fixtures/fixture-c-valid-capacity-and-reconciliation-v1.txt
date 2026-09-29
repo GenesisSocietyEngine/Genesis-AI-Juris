@@ -1,0 +1,32 @@
+# SYNTHETIC C-valid: reconciliation and delivery-capacity schedule
+Prepared 2026-09-28 solely as a fictional software-test scenario.
+No real orders, facilities, persons, professional review or operating approval are asserted.
+
+Lineage: derived from Synthetic local UX fixture C source v1,
+SHA-256 f2d072fa17fd69a13399e0f4a3019a0eca55cfdbad53783cf48f862334f5a84e.
+The original source and negative fixture remain unchanged.
+
+For this derived scenario, one commitment requires one delivery slot
+during the test delivery window 2026-09-29 through 2026-10-05.
+
+RECONCILIATION: The signed register remains 300 commitments.
+For this fictional derived scenario, the draft summary's figure of
+600 was a duplicate-counting error. The corrected signed total is 300.
+This correction does not alter what the original source recorded.
+
+CAPACITY: This synthetic schedule allocates 300 delivery slots to
+those 300 signed commitments for the stated test window. It allocates
+no spare slots. Capacity beyond 300 is not evidenced by this schedule.
+
+The historical forecast of 150 additional commitments and the later
+analyst sensitivity of 120 are unverified assumptions. Neither is
+included in signed demand or supported capacity.
+
+LIMITATION: This document defines test facts. It is not an inspection,
+a real capacity certificate, a completed professional review or
+permission for real operations. A later signed total above 300
+requires reassessment against new capacity evidence.
+
+ADMINISTRATIVE DEADLINE: The synthetic review cutoff is
+2026-10-05 18:00 Europe/Paris (2026-10-05T16:00:00.000Z).
+This is a test-administration choice, not a legal deadline.

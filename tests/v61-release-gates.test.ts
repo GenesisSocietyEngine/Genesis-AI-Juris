@@ -3,17 +3,15 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { recoverFromStaleChunk } from "../app/stale-chunk-recovery";
 
-test("Studio retries the exact save after authorization returns to the original tab", () => {
+test("Studio keeps authentication recovery guarded and confirms exact save receipts", () => {
   const source = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
-  assert.match(source, /PENDING_WORKSPACE_SAVE_KEY/);
-  assert.match(source, /parsePendingWorkspaceSave/);
-  assert.match(source, /window\.sessionStorage\.setItem\(PENDING_WORKSPACE_SAVE_KEY/);
-  assert.match(source, /window\.location\.assign\(`\/signin-with-chatgpt/);
-  assert.match(source, /auth_retry=1/);
-  assert.match(source, /shareDraftRef\.current\(pending\.action, pending\)/);
-  assert.doesNotMatch(source, /window\.open\("\/signin-with-chatgpt/);
-  assert.match(source, /Continue sign-in/);
-  assert.match(source, /Workspace draft and visibility saved\./);
+  assert.doesNotMatch(source, /parsePendingWorkspaceSave|shareDraftRef/);
+  assert.match(source, /createStudioAuthContinuation/);
+  assert.match(source, /verifiedStudioSaveReceipt/);
+  assert.match(source, /savedStudioPath/);
+  assert.match(source, /Continue to Account/);
+  assert.match(source, /Retry save/);
+  assert.doesNotMatch(source, /saved changes? in this session/);
 });
 
 test("a stale dynamic chunk reloads once and then fails visibly without a loop", () => {
@@ -31,6 +29,8 @@ test("anonymous PDF authoring remains local and does not call an authenticated A
   const dialog = readFileSync(new URL("../app/CaseReportDialog.tsx", import.meta.url), "utf8");
   const report = readFileSync(new URL("../app/case-report.ts", import.meta.url), "utf8");
   assert.doesNotMatch(dialog, /fetch\(/);
-  assert.match(report, /URL\.createObjectURL\(blob\)/);
+  const download = readFileSync(new URL("../app/report-download.ts", import.meta.url), "utf8");
+  assert.match(report, /startReportDownload\(blob/);
+  assert.match(download, /URL\.createObjectURL\(blob\)/);
   assert.doesNotMatch(report, /\/api\//);
 });

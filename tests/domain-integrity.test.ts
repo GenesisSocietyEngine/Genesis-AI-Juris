@@ -233,6 +233,7 @@ test("Worker hardening sets browser security policy without breaking public cata
   assert.match(CONTENT_SECURITY_POLICY, /script-src 'self' 'unsafe-inline'/);
   assert.doesNotMatch(CONTENT_SECURITY_POLICY, /unsafe-eval/);
   assert.match(CONTENT_SECURITY_POLICY, /frame-ancestors 'none'/);
+  assert.match(CONTENT_SECURITY_POLICY, /(?:^|; )frame-src blob:(?:;|$)/);
   assert.equal(page.headers.get("strict-transport-security"), "max-age=31536000; includeSubDomains");
   assert.equal(page.headers.get("x-content-type-options"), "nosniff");
   assert.equal(page.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
@@ -252,6 +253,12 @@ test("Worker hardening sets browser security policy without breaking public cata
   assert.equal(catalogueLookalike.headers.get("cache-control"), "private, no-store");
   const localHttp = withSecurityHeaders(new Response("ok"), new URL("http://terminal.local:4173/"));
   assert.equal(localHttp.headers.get("strict-transport-security"), null);
+  assert.match(localHttp.headers.get("content-security-policy") ?? "", /upgrade-insecure-requests/);
+  const preview = withSecurityHeaders(new Response("ok"), new URL("http://terminal.local:4173/"), true);
+  assert.doesNotMatch(preview.headers.get("content-security-policy") ?? "", /upgrade-insecure-requests/);
+  assert.match(preview.headers.get("content-security-policy") ?? "", /script-src 'self' 'unsafe-inline'/);
+  const secureDevelopment = withSecurityHeaders(new Response("ok"), new URL("https://juris.example/"), true);
+  assert.equal(secureDevelopment.headers.get("content-security-policy"), CONTENT_SECURITY_POLICY);
 });
 
 test("fresh D1 schema has valid seeds, immutable history and lineage collision protection", () => {

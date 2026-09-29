@@ -5,10 +5,13 @@ export type ClientOrganization = {
   revision: number; membershipRevision: number; actorId: string; selection: string;
 };
 let selection: string | null = null;
+export function clearOrganizationSelection() { selection = null; }
 export function setOrganizationSelection(value: string) {
   if (selection !== value && typeof window !== "undefined") {
     // A deferred user-imported Studio prompt must not follow an organization switch.
-    window.sessionStorage.removeItem("genesis-juris-pending-case-prompt-v1");
+    try { window.sessionStorage.removeItem("genesis-juris-pending-case-prompt-v1");
+    window.sessionStorage.removeItem("genesis-studio-auth-continuation-v1");
+    window.sessionStorage.removeItem("genesis.juris.pending-workspace-save.v2"); } catch { /* Storage cannot prevent a verified context change. */ }
   }
   selection = value;
 }
@@ -20,4 +23,13 @@ export function organizationScopedUrl(path: string) {
   const url = new URL(path, "https://workspace.invalid");
   url.searchParams.set("organization", selection);
   return url.pathname + url.search;
+}
+
+/** Keep the selected organization when navigating between private workspaces. */
+export function organizationWorkspaceUrl(path: string) {
+  if (!selection) return path;
+  const url = new URL(path, "https://workspace.invalid");
+  if (url.origin !== "https://workspace.invalid" || !["/matters", "/canopy"].includes(url.pathname)) return path;
+  url.searchParams.set("organization", selection);
+  return url.pathname + url.search + url.hash;
 }

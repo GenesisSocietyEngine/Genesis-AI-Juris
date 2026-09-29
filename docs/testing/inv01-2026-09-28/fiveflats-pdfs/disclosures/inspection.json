@@ -1,0 +1,824 @@
+{
+  "purpose": "Actual local browser downloads, not hosted acceptance or independent approval",
+  "applicationBase": "23575c62863f299fec0faef9a6f5adb254094f91",
+  "sourceDelta": "Full renderer3: explicit authored date and economic control disclosures",
+  "tools": {
+    "pdfinfo": "pdfinfo version 25.07.0",
+    "pdftotext": "pdftotext version 25.07.0",
+    "pdftoppm": "pdftoppm version 25.07.0"
+  },
+  "results": [
+    {
+      "format": "full-on",
+      "sha256": "ef61714af2873852270f8bc00f6f720d0b5b6478c6411acd427e0ec948dce177",
+      "pages": 22,
+      "title": "Five Flats, Three Borders - rent 146,000 GBP - LOCAL WORKING COPY - Tax position memorandum",
+      "pageBoxes": [
+        {
+          "page": 1,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 2,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 3,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 4,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 5,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 6,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 7,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 8,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 9,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 10,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 11,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 12,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 13,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 14,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 15,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 16,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 17,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 18,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 19,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 20,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 21,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 22,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        }
+      ],
+      "renderSanity": [
+        {
+          "page": 1,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-01.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "0128ff87e8cf3429fb0f26a2e54e613df1dc841dd51f90c3353c84ec8574fcd7",
+          "meanLuminance": 249.202,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.0630988,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 2,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-02.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "e470c4a0434585d98cbb7a6492dddf4cff80c06acdc76f1b9cac8e798cbf55c3",
+          "meanLuminance": 240.061,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.3551149,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 3,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-03.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "7598000a1e678484a5a017fb7a766d9bfc6f2fbd514427ff773d10bbd89df46a",
+          "meanLuminance": 236.447,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.3764108,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 4,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-04.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "74cc0b37109d78e26359abfbe4633122cdb4d8b7ced3d1fd6e688dd0de8435f2",
+          "meanLuminance": 228.509,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.2498127,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 5,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-05.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "5ab4d1f8edf0df978ff002b5adaf010ad2c91a8ad943d06d0c237470250057c9",
+          "meanLuminance": 237.005,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.3874285,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 6,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-06.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "0a587896a164c683e36eb16ab3d29a2bf440a4bd57ad4d5fbc4c97154bc0956b",
+          "meanLuminance": 235.692,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.4210612,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 7,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-07.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "c56cd076de750b29b30ed8fb87bd7ad4e28fc2f90f6b498f8091add422178d3a",
+          "meanLuminance": 231.662,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.3081988,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 8,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-08.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "0460a7d2967b1791f01e139c9ff601dd2f087e86ac9242df74a28561c31edfdb",
+          "meanLuminance": 238.427,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.2985342,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 9,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-09.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "bc4c05f948e1e30343ca04ecdbfa92e4e4f702ee445571ff5ba33fc35afd851f",
+          "meanLuminance": 238.802,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.4168527,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 10,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-10.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "88d05ab4b82b0857291d8379dbc044a238c9094ab2cb6a52a1a8e2020d06b130",
+          "meanLuminance": 235.058,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.3469787,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 11,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-11.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "f43d8e995ded2a0499b7b98f9a1192184ae1d3ff6443d805e7c237810cb52c4c",
+          "meanLuminance": 236.029,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.1436517,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 12,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-12.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "f58f0836124c1e757c169906eb9b322dc8da65c1dc409abad4e80ff04d9dda12",
+          "meanLuminance": 244.897,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.634284,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 13,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-13.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "ae97b71affcdf4cbf6ceabf460758403c5f6583e7612912011f3368c1a6c2560",
+          "meanLuminance": 245.349,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.6793688,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 14,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-14.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "7e4faeb76ca4fc59b1d5fac4606618c78ebca45c5e557b898bfe53ebb2fae1d8",
+          "meanLuminance": 245.145,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.6825113,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 15,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-15.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "9ceca698c49df1bf025abb12c966f3aa0a4271663b655907f336c9cf735054a4",
+          "meanLuminance": 244.883,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.6962489,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 16,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-16.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "b6aa406abda3a70c03d77bbb9380cbf779de304a8c7760bc16b7db3d57749427",
+          "meanLuminance": 241.695,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.5942168,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 17,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-17.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "09ba814233a455c99167fb73d4d1360acbd897dc2c81c923e8154848b2656464",
+          "meanLuminance": 245.733,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.1153653,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 18,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-18.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "1e568d999a275e284eee80455c4043df6472df75986510d6e8d6e0c74c70a6d9",
+          "meanLuminance": 244.626,
+          "minimumLuminance": 31,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.1155068,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 19,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-19.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "17b018d851ca0a851a1a738c9f2bead565f6202b6cdfa65703db81bf5fb372b1",
+          "meanLuminance": 241.98,
+          "minimumLuminance": 48,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.1463936,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 20,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-20.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "bc40b2dcc702e7f119ec956a270c95220ec078bcda5c1660059ebe87f58b294f",
+          "meanLuminance": 244.997,
+          "minimumLuminance": 45,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.1124779,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 21,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-21.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "3e168a4aa4f05f2f0047ead8069b856756aef13b2da8ca5457e0fa3025f2d6a4",
+          "meanLuminance": 239.053,
+          "minimumLuminance": 47,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.1786534,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 22,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-on\\page-22.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "659aff279431de03c5c04a400bca45fc2628ce91f344b7759fda868069d11090",
+          "meanLuminance": 243.676,
+          "minimumLuminance": 36,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.1276662,
+          "nearBlackFraction": 0
+        }
+      ]
+    },
+    {
+      "format": "full-off",
+      "sha256": "b6603ac968d5940e920a9dded223bbc6fb3b235c20ca5eb2be8f2ec081e44a09",
+      "pages": 11,
+      "title": "Five Flats, Three Borders - rent 146,000 GBP - LOCAL WORKING COPY - Tax position memorandum",
+      "pageBoxes": [
+        {
+          "page": 1,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 2,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 3,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 4,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 5,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 6,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 7,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 8,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 9,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 10,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        },
+        {
+          "page": 11,
+          "widthPoints": 595.28,
+          "heightPoints": 841.89,
+          "mediaBox": [
+            0,
+            0,
+            595.28,
+            841.89
+          ],
+          "rotationDegrees": 0
+        }
+      ],
+      "renderSanity": [
+        {
+          "page": 1,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-off\\page-01.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "e709885aea0d49de8e85e3fa030ea9c2871bef8bef8f7c073de8f2682e0796c5",
+          "meanLuminance": 249.203,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.0630689,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 2,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-off\\page-02.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "4568d6068fa2c01e0a88666f4aa0a53649cf34f90642b32e4a11171e2f9efb83",
+          "meanLuminance": 240.012,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.355902,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 3,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-off\\page-03.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "4f55bc53b4278b689bb2f9f443819994d16e10b733ee6925c8b93082c6005634",
+          "meanLuminance": 236.448,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.3763809,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 4,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-off\\page-04.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "2f13158f58b1d34c0d2e3f45f03ace875da0f391f8cdd5bf8d72a8acb56d3f8c",
+          "meanLuminance": 228.51,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.2497828,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 5,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-off\\page-05.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "ad942bd9321fff2b68898063494c8e6710f3ddce855c78c43601177f877ae74f",
+          "meanLuminance": 237.006,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.3873986,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 6,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-off\\page-06.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "252fa33772b5872dd4d470a471144abc52a572d78d997f313928b56166f39aa4",
+          "meanLuminance": 235.694,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.4210313,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 7,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-off\\page-07.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "6fc4556a096a748bb6a1690feefa4a81b4703ac9460320a99a5806f4d0b6371c",
+          "meanLuminance": 231.663,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.3081689,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 8,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-off\\page-08.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "f5f8ba75240f82c1c598b27ea62f0f418517b09627ac702a2a7f8a33210c8e9d",
+          "meanLuminance": 238.429,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.2985043,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 9,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-off\\page-09.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "b05265e0d524e1a2b352be916b8c12d33396b8442bbfe02b2dda0ac5d5034c8b",
+          "meanLuminance": 238.804,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.4168228,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 10,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-off\\page-10.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "d4e933d9f7fbc0a63be1375ea2e44a8168e7d20dea5ec6b52769d6041b16cde6",
+          "meanLuminance": 235.059,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.3469488,
+          "nearBlackFraction": 0
+        },
+        {
+          "page": 11,
+          "path": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\inv01-2026-09-28\\.artifacts\\fiveflats-render\\disclosures\\full-off\\page-11.png",
+          "width": 596,
+          "height": 842,
+          "sha256": "25d9fadd5f660f4ab871c38f2ae1b18d09eb63a18c621c3fa96495cfa9f12574",
+          "meanLuminance": 236.031,
+          "minimumLuminance": 29,
+          "maximumLuminance": 255,
+          "nonWhiteFraction": 0.1436218,
+          "nearBlackFraction": 0
+        }
+      ]
+    }
+  ]
+}

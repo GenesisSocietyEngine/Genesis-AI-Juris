@@ -1,0 +1,446 @@
+GENESIS: JURIS CODEX
+
+
+
+DECISION MEMORANDUM
+
+
+
+
+Project Canopy — Managed-site
+expansion gate
+Publishable case context has not been author-reviewed; raw intake text is excluded.
+
+
+
+P R E PA R E D F O R                                                     P R E PA R E D B Y
+
+Not specified                                                            Not specified
+
+M AT T E R R E F E R E N C E                                             R E P O R T S TAT U S
+
+-                                                                        DRAFT - preliminary analysis
+                                                                         Working draft - not workspace-saved
+
+
+
+
+Classification: DRAFT
+
+
+
+Professional-use notice
+This report is generated from the Studio graph. It is a structured working product, not a substitute for jurisdiction-specific legal,
+tax, financial or regulatory advice. Validate facts, authorities, assumptions and calculations before reliance or circulation.
+
+Studio review information does not establish independent workflow approval. Recorded runs and independently approved outputs are available
+through the case workflow.
+
+
+
+
+Generated: 27 September 2026 at 09:04 UTC
+
+
+
+
+    DRAFT                                                                                                                               1/8
+ GENESIS: JURIS CODEX                                                                            project_canopy_managed_site_expansion · v2.0.0
+
+
+
+
+1. Decision brief
+DRAFT - preliminary analysis
+
+
+ Review question                     Case model summary
+
+ Objective                           Should Verdant Atelier accept a managed-site expansion opportunity now, approve a
+                                     conditional 90-day transition pilot, renegotiate/defer, or decline? This demonstration uses
+                                     entirely fictional organisations, documents, people and figures. It is inspired only by publicly
+                                     described industry patterns [extract]
+
+ Recorded inputs                     Is independent commissioning evidence accepted?: D06 v1 § Commissioning: Independent
+                                     closure evidence for batch-to-delivery traceability reconciliation is pending. This material
+                                     readiness gap blocks [extract]
+
+ Decision criteria                   Is this within the committee mandate?
+                                     Do mandatory safety and traceability clearances permit proceeding?
+                                     Is sufficient demand signed, not merely indicated?
+                                     Is the site suitable for high-value crops?
+                                     Does cold-chain capacity satisfy the service model?
+                                     Does downside payback meet the mandate?
+                                     Can remaining risks be bounded by pilot and exit conditions?
+
+ Possible outcomes                   Approve managed-site operation
+                                     Conditional 90-day transition pilot
+                                     Renegotiate and defer
+                                     Decline / no-go
+
+ Conclusion and basis                This PDF describes the case model. It does not establish a selected outcome or prove that
+                                     a run was completed. Check each branch's full conditions in the case before recommending
+                                     an outcome.
+
+ Assumptions                         Assumptions are not recorded separately. Review conditions and uncertainties in the
+                                     detailed records.
+
+ Sources and limits                  0 public HTTPS source(s); 1 evidence record(s). Individual fact-verification status is not
+                                     recorded in this Studio model. Source references within records also require checking.
+
+ Next actions                        Verify inputs and assumptions against sources; run the relevant scenarios; document the
+                                     chosen outcome and its conditions; obtain independent approval through the case
+                                     workflow.
+
+
+Selected records and labelled extracts are shown above. The complete graph text appendix is omitted. Review the case for full node and
+connection conditions. Text supplied in the case keeps its original language.
+
+
+
+
+ DRAFT                                                                                                                                    2/8
+ GENESIS: JURIS CODEX                                                                                      project_canopy_managed_site_expansion · v2.0.0
+
+
+
+
+2. Case overview
+
+  Field                                                      Value
+
+  Case ID / version                                          project_canopy_managed_site_expansion / v2.0.0
+
+  Jurisdiction                                               Fictional Gulf market
+
+  Professional role                                          Investment and Operating Committee
+
+  Practice area                                              Managed-site operating decision
+
+  Difficulty                                                 Advanced
+
+  Legal / guidance as of                                     2026-09-06
+
+  Tags                                                       synthetic, canopy
+
+  Tax topics                                                 -
+
+  Case package                                               general_advisory@1.0.0
+
+  Report profile / renderer                                  decision_memorandum@1.0.0
+
+  Graph layout contract                                      1 · 1.1.0 · 2.1.0
+
+  Report state                                               DRAFT · INTERNAL
+
+
+Executive case context
+Publishable case context has not been author-reviewed; raw intake text is excluded.
+
+Model inventory
+
+  Measure                                                                                                             Count
+
+  Nodes                                                                                                               14
+
+  Connections                                                                                                         13
+
+  Evidence items                                                                                                      1
+
+  Decisions                                                                                                           7
+
+  Outcomes                                                                                                            4
+
+  Public HTTPS sources                                                                                                0
+
+
+
+
+Type-aware report scope
+executive summary · issues · facts evidence · authorities · options · recommendation · sources · approval
+Canonical report-model fingerprint: sha256-630ef04fe5621e29b614ed47a4c646f146f662f119220d8048fe9555a7db9e02
+
+Presentation layout fingerprint: sha256-c96202313c674bfcd199422e9ddc7f327dffcb50d9f897965b636e24db513791
+
+
+
+
+ DRAFT                                                                                                                                              3/8
+GENESIS: JURIS CODEX                                                                    project_canopy_managed_site_expansion · v2.0.0
+
+
+
+
+3. Profile-specific analysis
+
+ Issues
+
+ Item                                         Professional record
+
+ Is this within the committee mandate?        D01 v1 § Mandate: The fictional Investment and Operating Committee has ten
+                                              days from dossier opening to choose a controlled managed-site opportunity.
+                                              This mandate covers premium crops and a 90-day transition pilot, not
+                                              commodity-volume expansion.
+
+ Do mandatory safety and traceability         D01 v1 § Safety: A failed or unavailable mandatory independent food-safety or
+ clearances permit proceeding?                traceability clearance at the production release gate means no-go regardless
+                                              of financial attractiveness. No production release is permitted under the
+                                              conditional pilot until all release conditions are independently accepted.
+                                              Clearance state: no_critical_failure_identified. D06 v1 § Clearance: Base
+                                              declaration: no critical safety failure is identified. Hard-stop stress declaration:
+                                              mandatory independent food-safety or traceability clearance fails or is
+                                              unavailable at the production release gate. That declaration requires no-go
+                                              even with upside economics.
+
+ Is sufficient demand signed, not merely      D03 v1 § Demand: Total indicated demand is 600 packs per week: 300 signed,
+ indicated?                                   180 non-binding LOI and 120 expressions of interest. Only 300 count as signed
+                                              commitments against the 450 minimum.
+
+ Is the site suitable for high-value crops?   D04 v1 § Capacity: Evidenced premium-crop transition capacity is 480 packs
+                                              per week. The candidate is suitable for the specified high-value crop mix.
+                                              Commodity-volume expansion is excluded.
+
+ Does cold-chain capacity satisfy the         D09 v1 § Service: The fictional service model supports same-day hospitality
+ service model?                               deliveries for up to 480 packs per week. Cold-chain capacity matches the
+                                              scoped upside volume. Delivery owner Sol Hart retains a contingency carrier
+                                              and may pause deliveries.
+
+ Does downside payback meet the               D07 v2 § Underwriting: Conservative Base: 690000 - 90000 - 520000 = 80000
+ mandate?                                     annual contribution. Conservative Upside: 780000 - 100000 - 600000 = 80000.
+                                              Both: 240000 / 80000 = 3.00 years. Downside stress: 240000 / 70000 = 3.43
+                                              years (rounded), above the inclusive 3-year maximum. This is transparent
+                                              fixture arithmetic, not a new financial engine. D07 v2 § Base: Source baseline:
+                                              300 signed packs/week (D03 v1). Scenario assumptions: demand 300, yield
+                                              92%; annual revenue 720000, energy 80000, other costs 520000; contribution
+                                              120000; setup 240000; simple payback 2.00 years. Conservative payback 3.00
+                                              years. Unresolved source conditions prohibit production.
+
+ Can remaining risks be bounded by pilot      D02 v1 § Exit: The pilot lasts 90 days with reviews on days 30, 60 and 90. Exit
+ and exit conditions?                         without expansion is required if signed demand, yield, independent release
+                                              clearance or staffing conditions fail. Commercial owner: Mara Vale; decision
+                                              deadline: day 10.
+
+
+
+
+DRAFT                                                                                                                            4/8
+ GENESIS: JURIS CODEX                                                                      project_canopy_managed_site_expansion · v2.0.0
+
+
+
+ Facts and evidence
+
+ Item                                            Professional record
+
+ Is independent commissioning evidence           D06 v1 § Commissioning: Independent closure evidence for batch-to-delivery
+ accepted?                                       traceability reconciliation is pending. This material readiness gap blocks full
+                                                 operation but is not a failed critical safety control. Controlled non-production
+                                                 pilot work may resolve it.
+
+
+
+Authorities
+
+No structured items are recorded for this section; reviewer completion is required where material.
+
+
+
+ Options
+
+ Item                                            Professional record
+
+ Is this within the committee mandate?           D01 v1 § Mandate: The fictional Investment and Operating Committee has ten
+                                                 days from dossier opening to choose a controlled managed-site opportunity.
+                                                 This mandate covers premium crops and a 90-day transition pilot, not
+                                                 commodity-volume expansion.
+
+ Do mandatory safety and traceability            D01 v1 § Safety: A failed or unavailable mandatory independent food-safety or
+ clearances permit proceeding?                   traceability clearance at the production release gate means no-go regardless
+                                                 of financial attractiveness. No production release is permitted under the
+                                                 conditional pilot until all release conditions are independently accepted.
+                                                 Clearance state: no_critical_failure_identified. D06 v1 § Clearance: Base
+                                                 declaration: no critical safety failure is identified. Hard-stop stress declaration:
+                                                 mandatory independent food-safety or traceability clearance fails or is
+                                                 unavailable at the production release gate. That declaration requires no-go
+                                                 even with upside economics.
+
+ Is sufficient demand signed, not merely         D03 v1 § Demand: Total indicated demand is 600 packs per week: 300 signed,
+ indicated?                                      180 non-binding LOI and 120 expressions of interest. Only 300 count as signed
+                                                 commitments against the 450 minimum.
+
+ Is the site suitable for high-value crops?      D04 v1 § Capacity: Evidenced premium-crop transition capacity is 480 packs
+                                                 per week. The candidate is suitable for the specified high-value crop mix.
+                                                 Commodity-volume expansion is excluded.
+
+ Does cold-chain capacity satisfy the            D09 v1 § Service: The fictional service model supports same-day hospitality
+ service model?                                  deliveries for up to 480 packs per week. Cold-chain capacity matches the
+                                                 scoped upside volume. Delivery owner Sol Hart retains a contingency carrier
+                                                 and may pause deliveries.
+
+ Does downside payback meet the                  D07 v2 § Underwriting: Conservative Base: 690000 - 90000 - 520000 = 80000
+ mandate?                                        annual contribution. Conservative Upside: 780000 - 100000 - 600000 = 80000.
+                                                 Both: 240000 / 80000 = 3.00 years. Downside stress: 240000 / 70000 = 3.43
+                                                 years (rounded), above the inclusive 3-year maximum. This is transparent
+                                                 fixture arithmetic, not a new financial engine. D07 v2 § Base: Source baseline:
+                                                 300 signed packs/week (D03 v1). Scenario assumptions: demand 300, yield
+                                                 92%; annual revenue 720000, energy 80000, other costs 520000; contribution
+                                                 120000; setup 240000; simple payback 2.00 years. Conservative payback 3.00
+                                                 years. Unresolved source conditions prohibit production.
+
+ DRAFT                                                                                                                              5/8
+GENESIS: JURIS CODEX                                                                project_canopy_managed_site_expansion · v2.0.0
+
+
+
+Options
+
+Item                                        Professional record
+
+Can remaining risks be bounded by pilot     D02 v1 § Exit: The pilot lasts 90 days with reviews on days 30, 60 and 90. Exit
+and exit conditions?                        without expansion is required if signed demand, yield, independent release
+                                            clearance or staffing conditions fail. Commercial owner: Mara Vale; decision
+                                            deadline: day 10.
+
+Approve managed-site operation              Recommend managed-site operation within 480 packs/week, subject to
+                                            accepted release conditions and 90-day review/exit controls.
+
+Conditional 90-day transition pilot         Approve only a conditional 90-day transition pilot. Production release is
+                                            prohibited until all recorded conditions are accepted.
+
+Renegotiate and defer                       Renegotiate and defer under the reviewed stress assumptions. Production is
+                                            not authorized.
+
+Decline / no-go                             Mandatory failed or unavailable clearance prohibits production. See the exact
+                                            current clearance record.
+
+
+
+
+Recommendation
+
+Item                                        Professional record
+
+Approve managed-site operation              Recommend managed-site operation within 480 packs/week, subject to
+                                            accepted release conditions and 90-day review/exit controls.
+
+Conditional 90-day transition pilot         Approve only a conditional 90-day transition pilot. Production release is
+                                            prohibited until all recorded conditions are accepted.
+
+Renegotiate and defer                       Renegotiate and defer under the reviewed stress assumptions. Production is
+                                            not authorized.
+
+Decline / no-go                             Mandatory failed or unavailable clearance prohibits production. See the exact
+                                            current clearance record.
+
+
+
+
+4. Scenario and decision map
+
+Type                    Issue / step                                         Leads to
+
+Trigger                 Review the declared scenario                         Is this within the committee mandate?
+
+Decision                Is this within the committee mandate?                Do mandatory safety and traceability
+                                                                             clearances permit proceeding?
+
+Decision                Do mandatory safety and traceability clearances      Decline / no-go; Is sufficient demand signed,
+                        permit proceeding?                                   not merely indicated?
+
+Decision                Is sufficient demand signed, not merely              Is the site suitable for high-value crops?
+                        indicated?
+
+
+DRAFT                                                                                                                        6/8
+ GENESIS: JURIS CODEX                                                                              project_canopy_managed_site_expansion · v2.0.0
+
+
+
+
+ 4. Scenario and decision map
+
+ Type                        Issue / step                                                  Leads to
+
+ Decision                    Is the site suitable for high-value crops?                    Is independent commissioning evidence
+                                                                                           accepted?
+
+ Evidence                    Is independent commissioning evidence                         Can the accountable leader and minimum
+                             accepted?                                                     team be in place?
+
+ Actor                       Can the accountable leader and minimum team                   Does cold-chain capacity satisfy the service
+                             be in place?                                                  model?
+
+ Decision                    Does cold-chain capacity satisfy the service                  Does downside payback meet the mandate?
+                             model?
+
+ Decision                    Does downside payback meet the mandate?                       Renegotiate and defer; Can remaining risks be
+                                                                                           bounded by pilot and exit conditions?
+
+ Decision                    Can remaining risks be bounded by pilot and exit              Conditional 90-day transition pilot; Approve
+                             conditions?                                                   managed-site operation
+
+ Outcome                     Approve managed-site operation                                Terminal / no outgoing path
+
+ Outcome                     Conditional 90-day transition pilot                           Terminal / no outgoing path
+
+ Outcome                     Renegotiate and defer                                         Terminal / no outgoing path
+
+ Outcome                     Decline / no-go                                               Terminal / no outgoing path
+
+
+
+
+ 5. Facts, evidence and rules register
+
+ Category                     Item                                          Detail / verification note
+
+ Evidence                     Is independent commissioning                  D06 v1 § Commissioning: Independent closure evidence
+                              evidence accepted?                            for batch-to-delivery traceability reconciliation is pending.
+                                                                            This material readiness gap blocks full operation but is not
+                                                                            a failed critical safety control. Controlled non-production
+                                                                            pilot work may resolve it.
+
+
+Each material item should be marked by the reviewer as verified, source-backed, judgment, confirmation required or uncertain before external
+circulation.
+
+
+
+
+6. Authorities and source register
+No public legal sources are recorded. Add verified HTTPS authorities and a legal as-of date before professional reliance.
+
+
+
+
+ DRAFT                                                                                                                                      7/8
+ GENESIS: JURIS CODEX                                                                                  project_canopy_managed_site_expansion · v2.0.0
+
+
+
+
+7. Authoring and review trail
+No authoring history is recorded.
+
+
+8. Verification and sign-off
+    [ ] Facts and evidence reconciled to the underlying file.
+    [ ] Legal authorities remain current as of the stated date.
+    [ ] Assumptions, exclusions and uncertainties are explicitly disclosed.
+    [ ] Economics and scenario assumptions are independently checked.
+    [ ] Confidentiality, privilege, conflicts and circulation scope are confirmed.
+
+
+
+  Reviewer                            Role                           Date                        Sign-off / qualification
+
+
+
+
+Current content fingerprint: sha256-e8df94bed5cc24a4b56093b21b24101839cd7501080d01b4bfb0f1bb7e4b3702
+
+
+
+
+ DRAFT                                                                                                                                          8/8
+

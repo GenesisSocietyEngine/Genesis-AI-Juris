@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import { readFileSync,readdirSync,existsSync } from 'node:fs';
+import { resolve,dirname,join } from 'node:path';
+const folder='docs/testing/ux-convergence-2026-09-27';
+const names=readdirSync(folder).filter(x=>x.startsWith('AMENDMENT_')&&x.endsWith('.md')).concat(['RELEASE_DECISION.md','POST_RECONCILIATION_CLOSURE.md','SLICE_PRIVATE_READ_AUTHORITY.md','SLICE_PDF_TEST_SYNCHRONIZATION.md','PO_UX_STATUS.md','DEPENDENCY_AUDITS.md']);
+const missing=[];
+for(const name of names){const file=join(folder,name);for(const m of readFileSync(file,'utf8').matchAll(/\]\(([^)]+)\)/g)){const path=m[1].split('#')[0];if(!path||/^[a-z]+:/i.test(path))continue;if(!existsSync(resolve(dirname(file),path)))missing.push(`${name}: ${path}`);}}
+assert.deepEqual(missing,[]);
+const ids=[...readFileSync(join(folder,'POST_RECONCILIATION_CLOSURE.md'),'utf8').matchAll(/^\| \[(Stage \d+|UX\d+|A\d+)\]/gm)].map(m=>m[1]);
+assert.equal(ids.length,42);assert.equal(new Set(ids).size,42);
+const expected=[...Array.from({length:9},(_,i)=>`Stage ${i}`),...Array.from({length:16},(_,i)=>`UX${String(i+1).padStart(2,'0')}`),...Array.from({length:17},(_,i)=>`A${String(i+1).padStart(2,'0')}`)];
+assert.deepEqual(ids,expected);
+const secrets=JSON.parse(readFileSync('.artifacts/ux-reconciliation-auth/credentials.local.json','utf8')).credentials;
+function filesBelow(directory,prefix=''){return readdirSync(directory,{withFileTypes:true}).flatMap(entry=>entry.isDirectory()?filesBelow(join(directory,entry.name),join(prefix,entry.name)):[join(prefix,entry.name)]);}
+const evidence=filesBelow(join(folder,'evidence')).filter(x=>x.startsWith('amendment-'));
+for(const name of evidence){const body=readFileSync(join(folder,'evidence',name),'utf8');if(name.endsWith('.json'))JSON.parse(body.replace(/^\uFEFF/,''));for(const c of secrets){assert.equal(body.includes(c.password),false,'credential in artifact');assert.equal(body.includes(c.email),false,'fixture login in artifact');}}
+console.log(JSON.stringify({status:'PASS',documents:names.length,missingLinks:missing.length,uniqueRequirementRows:ids.length,artifactsValidated:evidence.length}));

@@ -1,0 +1,74 @@
+{
+    "schema":  "genesis.juris.owned-emulator-cleanup.v1",
+    "startedAt":  "2026-09-27T23:51:06.7762418Z",
+    "mode":  "PREPARATION_ONLY",
+    "executed":  false,
+    "serial":  "emulator-5580",
+    "avd":  "UXGatePixel",
+    "status":  "READY_NOT_EXECUTED",
+    "actions":  [
+
+                ],
+    "adbCommands":  [
+                        {
+                            "arguments":  [
+                                              "-s",
+                                              "emulator-5580",
+                                              "shell",
+                                              "getprop",
+                                              "ro.boot.qemu.avd_name"
+                                          ],
+                            "completed":  true,
+                            "exitCode":  0,
+                            "stdout":  "UXGatePixel",
+                            "stderr":  ""
+                        },
+                        {
+                            "arguments":  [
+                                              "-s",
+                                              "emulator-5580",
+                                              "get-state"
+                                          ],
+                            "completed":  true,
+                            "exitCode":  0,
+                            "stdout":  "device",
+                            "stderr":  ""
+                        }
+                    ],
+    "ownershipBefore":  [
+                            {
+                                "processId":  4116,
+                                "parentProcessId":  26372,
+                                "executablePath":  "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\emulator.exe",
+                                "creationUtc":  "2026-09-27T20:35:08.4851430Z",
+                                "commandLine":  "\"C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\emulator.exe\" -avd UXGatePixel -port 5580 -read-only -no-snapshot-load -no-snapshot-save -no-window -no-audio -gpu swiftshader -memory 2048 -cores 2 "
+                            },
+                            {
+                                "processId":  25048,
+                                "parentProcessId":  4116,
+                                "executablePath":  "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\qemu\\windows-x86_64\\qemu-system-x86_64-headless.exe",
+                                "creationUtc":  "2026-09-27T20:35:09.6325920Z",
+                                "commandLine":  "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\qemu\\windows-x86_64\\qemu-system-x86_64-headless.exe -avd UXGatePixel -port 5580 -read-only -no-snapshot-load -no-snapshot-save -no-window -no-audio -gpu swiftshader -memory 2048 -cores 2"
+                            }
+                        ],
+    "preservationBefore":  {
+                               "originalAvd":  "C:\\Users\\User\\.android\\avd\\Pixel.avd",
+                               "configSha256":  "94827b8b8bfc85bb19c02859ca3548ce462e8dffef44e1877b84d65ec0627e8d",
+                               "expectedConfigSha256":  "94827b8b8bfc85bb19c02859ca3548ce462e8dffef44e1877b84d65ec0627e8d",
+                               "configUnchanged":  true,
+                               "expectedFileCount":  18661,
+                               "actualFileCount":  18661,
+                               "metadataUnchanged":  true,
+                               "metadataDifferenceCount":  0,
+                               "firstDifferences":  [
+
+                                                    ],
+                               "mobileHead":  "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+                               "mobileExpectedHead":  "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+                               "mobileStatus":  "",
+                               "mobileExactAndClean":  true,
+                               "limitation":  "Config is byte-hashed; other original AVD files are compared by full relative path, size and UTC mtime, not by content hash."
+                           },
+    "finishedAt":  "2026-09-27T23:51:09.0232185Z",
+    "noOtherProcessOrFileMutation":  "No other emulator, ADB server, Gradle service or file deletion is targeted. Task AVD data/logs are retained."
+}

@@ -1,0 +1,61 @@
+{
+    "schema":  "genesis.juris.owned-emulator-finalization.v1",
+    "startedAt":  "2026-09-28T01:08:29.3832254Z",
+    "mode":  "READ_ONLY_FINALIZATION",
+    "executedStop":  false,
+    "status":  "PRIOR_OWNED_STOPS_AND_CURRENT_PRESERVATION_CONFIRMED",
+    "serial":  "emulator-5580",
+    "avd":  "UXGatePixel",
+    "priorExecutionReceipt":  {
+                                  "path":  "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27\\.artifacts\\amendment-android-native\\cleanup-execute-20260928T010425773Z.json",
+                                  "sha256":  "b1a780e7f56f81579f386f6bcfe1f42efddb969d23236d7e75179abefbe66c25",
+                                  "status":  "STOPPED_FOR_REVIEW",
+                                  "error":  "Executable identity mismatch: 25048",
+                                  "finishedAt":  "2026-09-28T01:04:44.2713491Z"
+                              },
+    "method":  "Prior guarded stop actions remain in their unchanged failed immediate-postcheck receipt; process absence, ADB absence and preservation are independently read again now. No new stop or emulator launch.",
+    "processAbsence":  [
+                           {
+                               "processId":  4116,
+                               "absent":  true,
+                               "checkedAt":  "2026-09-28T01:08:29.5230620Z"
+                           },
+                           {
+                               "processId":  25048,
+                               "absent":  true,
+                               "checkedAt":  "2026-09-28T01:08:29.5886678Z"
+                           }
+                       ],
+    "adbCommand":  {
+                       "arguments":  [
+                                         "devices"
+                                     ],
+                       "completed":  true,
+                       "exitCode":  0,
+                       "stdout":  "List of devices attached",
+                       "stderr":  "",
+                       "checkedAt":  "2026-09-28T01:08:29.6193353Z",
+                       "capture":  "Combined stdout/stderr from read-only adb devices"
+                   },
+    "serialAbsent":  true,
+    "preservationAfter":  {
+                              "originalAvd":  "C:\\Users\\User\\.android\\avd\\Pixel.avd",
+                              "configSha256":  "94827b8b8bfc85bb19c02859ca3548ce462e8dffef44e1877b84d65ec0627e8d",
+                              "expectedConfigSha256":  "94827b8b8bfc85bb19c02859ca3548ce462e8dffef44e1877b84d65ec0627e8d",
+                              "configUnchanged":  true,
+                              "expectedFileCount":  18661,
+                              "actualFileCount":  18661,
+                              "metadataUnchanged":  true,
+                              "metadataDifferenceCount":  0,
+                              "firstDifferences":  [
+
+                                                   ],
+                              "mobileHead":  "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+                              "mobileExpectedHead":  "5200b30cc50c77393c6f48b52ce91c0f30e70c64",
+                              "mobileStatus":  "",
+                              "mobileExactAndClean":  true,
+                              "limitation":  "Config is byte-hashed; other original AVD files are compared by full relative path, size and UTC mtime, not by content hash."
+                          },
+    "ownedProcessesGone":  true,
+    "finishedAt":  "2026-09-28T01:08:30.7397244Z"
+}

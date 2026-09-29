@@ -1,0 +1,124 @@
+{
+  "schema": "genesis.juris.applied-patch.v1",
+  "appliedAt": "2026-09-27T21:39:29.590Z",
+  "originalCheckpoint": "6ab091d830ccfd9d6b76c0adc177341bca96e081",
+  "patchSha256": "4c044bc5548945a9ee639d750c1452e0a41475cc79f02434afd14ec80191d5bf",
+  "files": [
+    {
+      "path": "app/dossier-server.ts",
+      "beforeSha256": "d4de2572701321eb44cca53ff9fa6cf4d9b4f779ad8c1b704050e3d8724b21c4",
+      "expectedAfterSha256": "590ac011975b5d904f4d972172cfb9216b92597509627ef25a08d743808a1048",
+      "actualAfterSha256": "590ac011975b5d904f4d972172cfb9216b92597509627ef25a08d743808a1048"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/route.ts",
+      "beforeSha256": "4a8ed84bf8abe347ebe44c6d661d35715109c725ea9642df94596ebab2162ea4",
+      "expectedAfterSha256": "6d25bbad92d63b10278c2c53ae070a6e9cc901f6f7e2952c41079c56b9f79dac",
+      "actualAfterSha256": "6d25bbad92d63b10278c2c53ae070a6e9cc901f6f7e2952c41079c56b9f79dac"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/documents/route.ts",
+      "beforeSha256": "477b0a37cd87ecb0caadab42660c17015697b94b64c640d24413e9cfb474c42f",
+      "expectedAfterSha256": "95939e7cad6e5c006aa4c4cd411c47fea7072975b0ce3e0b66463896ce5acd77",
+      "actualAfterSha256": "95939e7cad6e5c006aa4c4cd411c47fea7072975b0ce3e0b66463896ce5acd77"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/activity/route.ts",
+      "beforeSha256": "314f68767bdf863aabfc3c86c589ac9fd3e402c2f79e9f87b09fdc2c885d04d2",
+      "expectedAfterSha256": "aff5f98d4b4599e3e334a9824b25f8c6384c63abc018f58c7294adf98a9c047f",
+      "actualAfterSha256": "aff5f98d4b4599e3e334a9824b25f8c6384c63abc018f58c7294adf98a9c047f"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/requests/route.ts",
+      "beforeSha256": "68ab10142e5cea688f60b2b56e763f8ab209ef75cf10bb7fc5990708d5fe11ae",
+      "expectedAfterSha256": "a041155112df118ffe280e4b88207d45d6234d7a4f19fc0d39c501a03a502c72",
+      "actualAfterSha256": "a041155112df118ffe280e4b88207d45d6234d7a4f19fc0d39c501a03a502c72"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/decision-packages/route.ts",
+      "beforeSha256": "24d5c5e169f2ac88a9abc8006f1ac5df6cb692b37196c18b057d5719eaa80bb6",
+      "expectedAfterSha256": "515e5cd28d344fbbc7054e23630d0110ff65d99895982e91284b3bdf7fb007a5",
+      "actualAfterSha256": "515e5cd28d344fbbc7054e23630d0110ff65d99895982e91284b3bdf7fb007a5"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/evidence/anchors/route.ts",
+      "beforeSha256": "8c949a1210cc6e23eafdc0a804f0d7757785ff6104e0c4e2110238cd5dd9a832",
+      "expectedAfterSha256": "1ffa811253f9f7e6bec487366845d01257f82774af14c6a93f95da23a56bc816",
+      "actualAfterSha256": "1ffa811253f9f7e6bec487366845d01257f82774af14c6a93f95da23a56bc816"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/evidence/assertions/route.ts",
+      "beforeSha256": "55461d973a054dd8b372847ed3ab275c3b7b7b3be17680abee1019b68fc6e505",
+      "expectedAfterSha256": "e51c388f4a1defd3bf33d15377bff1a5bb6558e0617ef3aaa83b0b995eaec696",
+      "actualAfterSha256": "e51c388f4a1defd3bf33d15377bff1a5bb6558e0617ef3aaa83b0b995eaec696"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/evidence/links/route.ts",
+      "beforeSha256": "47c4cc6b6b055f5a18c2be814b4e20a93c9b96853ec2cd1eea81250b27156875",
+      "expectedAfterSha256": "109e42761f6939de8ac34c411f03a1aab9b482680ef6d356031266e430417262",
+      "actualAfterSha256": "109e42761f6939de8ac34c411f03a1aab9b482680ef6d356031266e430417262"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/proposals/route.ts",
+      "beforeSha256": "62dc5fb0c2983a0dbb581875826172ed7a8d7691b5bcb0cbdd602c86a0ad0e9c",
+      "expectedAfterSha256": "fee38d8d1d0e0104f0a8dd4b8ad95a341d5f2e80f1d5b21d2d6af14ff5e5dc1d",
+      "actualAfterSha256": "fee38d8d1d0e0104f0a8dd4b8ad95a341d5f2e80f1d5b21d2d6af14ff5e5dc1d"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/dispositions/route.ts",
+      "beforeSha256": "c99e1563c16fcb476577221d85109a464d31e5b6ed2148cb0c229d86b7f1f416",
+      "expectedAfterSha256": "c793baf19bbacfa1a3a61100ec79b3dbfddd2f6f4252a059cddd6c91a8df7238",
+      "actualAfterSha256": "c793baf19bbacfa1a3a61100ec79b3dbfddd2f6f4252a059cddd6c91a8df7238"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/notes/route.ts",
+      "beforeSha256": "7fec2dc2352084b21cef258b7f9b0ab0e34df027e4c57ce8f96210a4b1ecd000",
+      "expectedAfterSha256": "45de9c1c4af871d2e33104007268cc57e61c4f096e564d282a0cdf4f6f605af0",
+      "actualAfterSha256": "45de9c1c4af871d2e33104007268cc57e61c4f096e564d282a0cdf4f6f605af0"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/snapshots/route.ts",
+      "beforeSha256": "8e783a414109e293efc98818cc53e65c747854d3dac16d7810a6de275cecb3f1",
+      "expectedAfterSha256": "087422a29dabe6c0e9d75f4b33c1b9f817d13115ddd2be68a907f6642ce42fa0",
+      "actualAfterSha256": "087422a29dabe6c0e9d75f4b33c1b9f817d13115ddd2be68a907f6642ce42fa0"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/outputs/route.ts",
+      "beforeSha256": "7a24ac0b5146eeafc134acadfd3f722bf3780565cf621854fc6acf0b2c897fbd",
+      "expectedAfterSha256": "5f4021401a082c8ceef74fa3290de200f1d77d0d18639bb3a96b76282046f574",
+      "actualAfterSha256": "5f4021401a082c8ceef74fa3290de200f1d77d0d18639bb3a96b76282046f574"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/documents/[documentId]/versions/[versionId]/download/route.ts",
+      "beforeSha256": "301ba3e74024a70f50bc639746734de49cb44efc05ef358b55a55e436a0f6166",
+      "expectedAfterSha256": "538fa6467c4dc11fe1eb49aad47837f887cb429175fc70fbfd78a6bf9e65ca95",
+      "actualAfterSha256": "538fa6467c4dc11fe1eb49aad47837f887cb429175fc70fbfd78a6bf9e65ca95"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/outputs/[outputId]/download/route.ts",
+      "beforeSha256": "543af5f3887d67a270d6c3dc6566a58ba206cd73b72f258c22a419b34e5e1873",
+      "expectedAfterSha256": "9d12e04555488ee224bf5b669fac6b9a87ee05b1ed26f173866c44faa082aaed",
+      "actualAfterSha256": "9d12e04555488ee224bf5b669fac6b9a87ee05b1ed26f173866c44faa082aaed"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/snapshots/[snapshotId]/manifest/route.ts",
+      "beforeSha256": "a51523ced1982b4b5bcedac54b6fe56af1dd5f359255564cb45d4d95e4b1b09e",
+      "expectedAfterSha256": "69cf2b2b8874edfc9151b6f8fbd7a94d342f0a647782a1444041a7dbdae4a814",
+      "actualAfterSha256": "69cf2b2b8874edfc9151b6f8fbd7a94d342f0a647782a1444041a7dbdae4a814"
+    },
+    {
+      "path": "app/api/dossiers/[dossierId]/outputs/[outputId]/presentation/route.ts",
+      "beforeSha256": "d50828c7b83da8b5bd4cc0059e5bf57e1d7a4af9086a5311aaea5ac676d17026",
+      "expectedAfterSha256": "6b1f8aa41ca856221c4f5a9619ab4981b4e10f84187e5edbe835a7968dd24f51",
+      "actualAfterSha256": "6b1f8aa41ca856221c4f5a9619ab4981b4e10f84187e5edbe835a7968dd24f51"
+    },
+    {
+      "path": "app/api/dossiers/route.ts",
+      "beforeSha256": "55b81c1ae3c5b409cf26ecc9959fcaea688eb924cd27db53f0c8e17d7afb0d21",
+      "expectedAfterSha256": "7b16ddaeb5c8151cb4bcddde18019de6eeee1b25ce6a669ffb364ba4bcd9ad5c",
+      "actualAfterSha256": "7b16ddaeb5c8151cb4bcddde18019de6eeee1b25ce6a669ffb364ba4bcd9ad5c"
+    }
+  ],
+  "status": "APPLIED_AND_READBACK_MATCHED",
+  "committed": false
+}

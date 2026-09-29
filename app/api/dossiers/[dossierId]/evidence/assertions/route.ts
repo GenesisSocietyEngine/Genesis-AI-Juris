@@ -1,3 +1,4 @@
+import { hasRetiredCitation } from "../../../../../dossier-evidence-server";
 import { and, asc, desc, eq, inArray, lt, or } from "drizzle-orm";
 import {
   dossierAssertionSources,
@@ -17,6 +18,7 @@ import {
 import { computeStoredDossierReadiness } from "../../../../../dossier-readiness-server";
 import { parseDossierOpaqueId } from "../../../../../dossier-security";
 import {
+  finalizeDossierRead,
   boundedDossierText,
   canonicalDossierTimestamp,
   dossierEnum,
@@ -73,6 +75,11 @@ export async function GET(request: Request, routeContext: RouteContext) {
   if (url.searchParams.getAll("limit").length > 1 || url.searchParams.getAll("cursor").length > 1) {
     return dossierJson({ error: "Assertion pagination parameters must be unique." }, 400);
   }
+  let exactId:string|null=null;
+  if(url.searchParams.has("assertion_id")) {
+    if(url.searchParams.getAll("assertion_id").length!==1||url.searchParams.has("cursor"))return dossierJson({error:"Choose an exact assertion without pagination."},400);
+    try{exactId=parseDossierOpaqueId(url.searchParams.get("assertion_id"),"assertion ID");}catch{return dossierNotFound();}
+  }
   const limit = evidencePageLimit(url.searchParams.get("limit"), MAX_PAGE_SIZE);
   if (limit === null) return dossierJson({ error: "The assertion page limit is invalid." }, 400);
 
@@ -98,6 +105,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
 
   const rows = await context.db.select().from(dossierProfessionalAssertions).where(and(
     eq(dossierProfessionalAssertions.dossierId, access.dossier.id),
+    exactId ? eq(dossierProfessionalAssertions.id,exactId) : undefined,
     cursor ? or(
       lt(dossierProfessionalAssertions.updatedAt, cursor.updatedAt),
       and(
@@ -109,6 +117,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
     desc(dossierProfessionalAssertions.updatedAt),
     desc(dossierProfessionalAssertions.id),
   ).limit(limit + 1);
+  if(exactId&&!rows.length)return dossierNotFound();
   const hasMore = rows.length > limit;
   const visible = rows.slice(0, limit);
   const sourceRows = visible.length === 0 ? [] : await context.db.select({
@@ -131,7 +140,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
     sources.push(source.sourceAnchorId);
     sourcesByAssertion.set(source.assertionId, sources);
   }
-  return dossierJson({
+  return finalizeDossierRead(context, access, dossierJson({
     assertions: visible.map((assertion) => projectAssertion(
       assertion,
       sourcesByAssertion.get(assertion.id) ?? [],
@@ -142,7 +151,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
       next_cursor: hasMore ? visible.at(-1)?.id ?? null : null,
     },
     contract_version: "1.0.0",
-  });
+  }));
 }
 
 export async function POST(request: Request, routeContext: RouteContext) {
@@ -233,6 +242,8 @@ async function createAssertion(
       eq(dossierDocuments.isProvisional, false),
     )).limit(MAX_SOURCE_IDS);
   if (acceptedAnchors.length !== sourceAnchorIds.length) return dossierNotFound();
+  if(await hasRetiredCitation(context,access.dossier.id,sourceAnchorIds))return dossierJson({error:"A citation was retired. Review current replacement evidence and create or revise the affected work before accepting it.",code:"retired_citation"},409);
+
 
   const outputStates = await loadCurrentEvidenceOutputs(context, access.dossier.id);
   if (!outputStates.ok) return outputStateLimit();
@@ -348,6 +359,7 @@ async function reviewAssertion(
   }
   const sources = await assertionSources(context, access.dossier.id, assertionId);
   if (sources.length > MAX_SOURCE_IDS) return assertionSourceLimit();
+  if(decision === "accepted" && await hasRetiredCitation(context,access.dossier.id,sources.map(s=>s.sourceAnchorId)))return dossierJson({error:"Retired citations cannot support this assertion. Review a replacement assertion with current evidence.",code:"retired_citation"},409);
   if (decision === "accepted" && (
     sources.length === 0 || sources.some(({ reviewState, isProvisional }) => (
       reviewState !== "accepted" || isProvisional

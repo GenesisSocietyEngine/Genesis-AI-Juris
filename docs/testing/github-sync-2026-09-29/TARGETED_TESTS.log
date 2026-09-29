@@ -1,0 +1,156 @@
+TAP version 13
+# Subtest: Full reports disclose authored legal dates and all supplied tax scenario controls without changing the case
+ok 1 - Full reports disclose authored legal dates and all supplied tax scenario controls without changing the case
+  ---
+  duration_ms: 988.6965
+  type: 'test'
+  ...
+# Subtest: Full assumptions retain complete short statements on one page and let long statements flow
+ok 2 - Full assumptions retain complete short statements on one page and let long statements flow
+  ---
+  duration_ms: 5541.8344
+  type: 'test'
+  ...
+# Subtest: PDF generation with financial assumptions preserves live case state and permits reopening and a second report
+ok 3 - PDF generation with financial assumptions preserves live case state and permits reopening and a second report
+  ---
+  duration_ms: 547.3427
+  type: 'test'
+  ...
+# Subtest: deterministic graph reconstruction does not claim AI authorship or expose raw input
+ok 4 - deterministic graph reconstruction does not claim AI authorship or expose raw input
+  ---
+  duration_ms: 17.1014
+  type: 'test'
+  ...
+# Subtest: the corrected reconstruction label invalidates its historical PDF receipt only when shown
+ok 5 - the corrected reconstruction label invalidates its historical PDF receipt only when shown
+  ---
+  duration_ms: 175.1042
+  type: 'test'
+  ...
+# Subtest: professional report contains economics, registers, sign-off and a safe audit trail
+ok 6 - professional report contains economics, registers, sign-off and a safe audit trail
+  ---
+  duration_ms: 17.7869
+  type: 'test'
+  ...
+# Subtest: Canopy opens with a bounded EN/RU decision brief and keeps draft, outcomes and approval distinct
+ok 7 - Canopy opens with a bounded EN/RU decision brief and keeps draft, outcomes and approval distinct
+  ---
+  duration_ms: 1194.6625
+  type: 'test'
+  ...
+# Subtest: executive brief does not disclose redacted input or opening records
+ok 8 - executive brief does not disclose redacted input or opening records
+  ---
+  duration_ms: 14.0831
+  type: 'test'
+  ...
+# Subtest: audit headings share a rendered page with a record in Bhopal and long Russian titles
+ok 9 - audit headings share a rendered page with a record in Bhopal and long Russian titles
+  ---
+  duration_ms: 655.0373
+  type: 'test'
+  ...
+# Subtest: client-facing report can omit audit trail and technical identifiers
+ok 10 - client-facing report can omit audit trail and technical identifiers
+  ---
+  duration_ms: 29.383
+  type: 'test'
+  ...
+# Subtest: durable premise provenance excludes long and compacted raw prompts from internal and client rendered text
+ok 11 - durable premise provenance excludes long and compacted raw prompts from internal and client rendered text
+  ---
+  duration_ms: 1155.4047
+  type: 'test'
+  ...
+# Subtest: premise publication provenance changes presentation only, not canonical fingerprints
+ok 12 - premise publication provenance changes presentation only, not canonical fingerprints
+  ---
+  duration_ms: 70.2889
+  type: 'test'
+  ...
+# Subtest: report links are canonical HTTPS only and rejected values gate external output
+ok 13 - report links are canonical HTTPS only and rejected values gate external output
+  ---
+  duration_ms: 18.4573
+  type: 'test'
+  ...
+# Subtest: active node redactions also suppress unscoped audit messages
+ok 14 - active node redactions also suppress unscoped audit messages
+  ---
+  duration_ms: 17.0948
+  type: 'test'
+  ...
+# Subtest: SVG text faces align exactly with pdfmake and svg-to-pdfkit Roboto weight resolution
+ok 15 - SVG text faces align exactly with pdfmake and svg-to-pdfkit Roboto weight resolution
+  ---
+  duration_ms: 65.9619
+  type: 'test'
+  ...
+# Subtest: graph appendix uses deterministic full-width portrait pages and paired connectors
+ok 16 - graph appendix uses deterministic full-width portrait pages and paired connectors
+  ---
+  duration_ms: 76.2403
+  type: 'test'
+  ...
+# Subtest: bounded graph register rows remain atomic at a real page boundary while oversized rows may flow
+ok 17 - bounded graph register rows remain atomic at a real page boundary while oversized rows may flow
+  ---
+  duration_ms: 514.4706
+  type: 'test'
+  ...
+# Subtest: layout language changes do not mutate the canonical ReportModel fingerprint
+ok 18 - layout language changes do not mutate the canonical ReportModel fingerprint
+  ---
+  duration_ms: 29.4516
+  type: 'test'
+  ...
+# Subtest: the complete PDF definition fails closed for unsupported font scalars and XML characters
+ok 19 - the complete PDF definition fails closed for unsupported font scalars and XML characters
+  ---
+  duration_ms: 14.5446
+  type: 'test'
+  ...
+# Subtest: receipt storage routing stays outside fingerprints and generation blocks sensitive cases
+ok 20 - receipt storage routing stays outside fingerprints and generation blocks sensitive cases
+  ---
+  duration_ms: 19.6908
+  type: 'test'
+  ...
+# Subtest: rendered protection identifiers participate in the presentation receipt only when visible
+ok 21 - rendered protection identifiers participate in the presentation receipt only when visible
+  ---
+  duration_ms: 52.7034
+  type: 'test'
+  ...
+# Subtest: receipt freshness derives the exact production layout and the legacy landscape path is absent
+ok 22 - receipt freshness derives the exact production layout and the legacy landscape path is absent
+  ---
+  duration_ms: 159.4998
+  type: 'test'
+  ...
+# Subtest: populated0022 upgrade preserves legacy data and rollback routes; unaccepted proof deletion cascades, accepted history survives
+ok 23 - populated0022 upgrade preserves legacy data and rollback routes; unaccepted proof deletion cascades, accepted history survives
+  ---
+  duration_ms: 44489.6559
+  type: 'test'
+  ...
+# (node:30752) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: retained pre-fix0023 reproduces new unaccepted-proof deletion failure
+ok 24 - retained pre-fix0023 reproduces new unaccepted-proof deletion failure
+  ---
+  duration_ms: 178.5143
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 50765.2808

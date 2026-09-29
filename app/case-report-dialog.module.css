@@ -1,0 +1,23 @@
+.reportStatus {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--cyan);
+  background: var(--panel);
+  font: 14px/1.5 var(--sans);
+  overflow-wrap: anywhere;
+}
+.reportStatus strong { color: var(--copy); }
+.reportStatus span, .reportStatus p { color: var(--subtle); }
+.reportStatus p { margin: 0; }
+.receipt { font: 14px/1.5 var(--sans); min-width: 0; }
+.receipt h3 { margin: 0 0 6px; font: 600 16px/1.4 var(--sans); }
+.receipt p { margin: 6px 0; }
+.historyList { padding-left: 22px; }
+.historyList > li { margin: 14px 0; border-bottom: 1px solid var(--rule); padding-bottom: 12px; overflow-wrap: anywhere; }
+.historyList pre { max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.receipt button { max-width: 100%; white-space: normal; min-height: 44px; margin-top: 6px; }
+.receipt summary, .checks summary { min-height: 44px; padding: 12px 0; cursor: pointer; font: 600 14px/1.5 var(--sans); }
+.checks { min-width: 0; font: 14px/1.5 var(--sans); overflow-wrap: anywhere; }
+.checks p { margin: 0; }
+.checks ul { padding-inline-start: 22px; }

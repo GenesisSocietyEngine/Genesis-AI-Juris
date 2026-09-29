@@ -14,21 +14,29 @@ const BASE_CONTENT_SECURITY_POLICY = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "frame-src 'none'",
+  // Analytical previews are locally generated PDF blobs. Remote frames remain
+  // disallowed; this does not expand who may embed the Studio itself.
+  "frame-src blob:",
   "manifest-src 'self'",
   "upgrade-insecure-requests",
 ];
 
-function contentSecurityPolicy(requestUrl: URL) {
+function contentSecurityPolicy(requestUrl: URL, development: boolean) {
   const frameAncestors = requestUrl.pathname === "/studio" || requestUrl.pathname.startsWith("/studio/")
     ? "frame-ancestors https://falcon-merlin.com https://www.falcon-merlin.com"
     : "frame-ancestors 'none'";
-  return [...BASE_CONTENT_SECURITY_POLICY, frameAncestors].join("; ");
+  // Vite serves local QA over HTTP. Upgrading its module URLs to HTTPS leaves
+  // the server-rendered page visible but prevents React from becoming usable.
+  // This opt-in comes from Vite's compile-time DEV flag, never the request host.
+  const directives = development && requestUrl.protocol === "http:"
+    ? BASE_CONTENT_SECURITY_POLICY.filter((directive) => directive !== "upgrade-insecure-requests")
+    : BASE_CONTENT_SECURITY_POLICY;
+  return [...directives, frameAncestors].join("; ");
 }
 
-export function withSecurityHeaders(response: Response, requestUrl: URL) {
+export function withSecurityHeaders(response: Response, requestUrl: URL, development = false) {
   const headers = new Headers(response.headers);
-  headers.set("Content-Security-Policy", contentSecurityPolicy(requestUrl));
+  headers.set("Content-Security-Policy", contentSecurityPolicy(requestUrl, development));
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   headers.set("Cross-Origin-Opener-Policy", "same-origin");

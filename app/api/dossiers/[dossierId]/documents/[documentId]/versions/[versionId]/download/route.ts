@@ -10,6 +10,7 @@ import {
   parseDossierOpaqueId,
 } from "../../../../../../../../dossier-security";
 import {
+  revalidateDossierReadAccess,
   dossierJson,
   dossierNotFound,
   isResponse,
@@ -94,7 +95,7 @@ export async function GET(_request: Request, routeContext: RouteContext) {
     ) {
       return privateIntegrityError();
     }
-    const current = await requireDossierAccess(context, routeIds.dossierId, "download");
+    const current = await revalidateDossierReadAccess(context, access, "download");
     if (isResponse(current)) { await object.body.cancel(); return current; }
     return new Response(object.body, {
       status: decision.status,

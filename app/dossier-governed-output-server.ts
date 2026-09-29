@@ -1,3 +1,4 @@
+import { pdfBlobFromDocument } from "./pdf-blob";
 import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import {
   caseVersions,
@@ -18,6 +19,7 @@ import {
   dossierSnapshotDocumentVersions,
   dossierSnapshots,
   dossierSourceAnchors,
+  dossierSourceAnchorRetirements,
   dossiers,
   playEvents,
   playSessions,
@@ -65,8 +67,8 @@ export const DOSSIER_OUTPUT_MANIFEST_FORMAT =
   "genesis-juris-dossier-governed-output-manifest" as const;
 export const DOSSIER_REPORT_PROFILE_ID = "dossier-governed-report" as const;
 export const DOSSIER_REPORT_MODEL_SCHEMA_VERSION = 1 as const;
-export const DOSSIER_REPORT_RENDERER_VERSION = "1.0.0" as const;
-export const DOSSIER_REPORT_BUILD_VERSION = "v62-dossier-workspace" as const;
+export const DOSSIER_REPORT_RENDERER_VERSION = "1.3.0" as const;
+export const DOSSIER_REPORT_BUILD_VERSION = "dependable-actions-2026-09-15" as const;
 export const DOSSIER_PILOT_SNAPSHOT_AUDIENCE = "internal" as const;
 export const DOSSIER_PILOT_REDACTION_PROFILE_ID = "pilot-default" as const;
 
@@ -153,7 +155,7 @@ type SnapshotStorageManifest = {
   snapshot: Omit<DossierSnapshotV1, "manifest_digest">;
 };
 
-type DossierReportModelV1 = {
+export type DossierReportModelV1 = {
   format: typeof DOSSIER_OUTPUT_MANIFEST_FORMAT;
   schema_version: 1;
   profile_id: typeof DOSSIER_REPORT_PROFILE_ID;
@@ -183,6 +185,7 @@ type DossierReportModelV1 = {
     statement: string;
     source_anchor_ids: string[];
   }>;
+  citation_retirements?: CitationRetirement[];
   anchor_register: Array<{
     source_anchor_id: string;
     document_id: string;
@@ -466,6 +469,27 @@ function validateSealedAuditReceipts(
     });
   }
   return events;
+}
+
+type CitationRetirement = { source_anchor_id:string; replacement_source_anchor_id:string|null; reason:string; actor_id:string; occurred_at:string; dossier_revision:number; audit_event_id:string; audit_event_digest:string };
+/** Historical manifests without this extension remain unchanged. Never read live retirements to render an old seal. */
+function sealedCitationRetirements(snapshot: DossierSnapshotV1): CitationRetirement[] {
+ const envelope=jsonObject(snapshot.deterministic_receipts)?.source_anchor_retirements;
+ if(envelope===undefined)return [];
+ const value=jsonObject(envelope), entries=value?.entries;
+ const audits=sealedAuditReceiptsFromSnapshot(snapshot);
+ if(!value||value.schema_version!==1||!Array.isArray(entries)||entries.length>1000)throw new DossierGovernedError("invalid_retirement_receipt",409,"The sealed citation review register is invalid.");
+ const ids=new Set<string>();
+ return entries.map(entry=>{
+  const r=jsonObject(entry);
+  if(!r||typeof r.source_anchor_id!=="string"||ids.has(r.source_anchor_id)||!snapshot.source_anchor_ids.includes(r.source_anchor_id)
+   ||typeof r.reason!=="string"||r.reason.length<5||r.reason.length>2000||typeof r.actor_id!=="string"||typeof r.occurred_at!=="string"
+   ||!Number.isSafeInteger(r.dossier_revision)||Number(r.dossier_revision)>snapshot.dossier_revision
+   ||(r.replacement_source_anchor_id!==null&&(typeof r.replacement_source_anchor_id!=="string"||!snapshot.source_anchor_ids.includes(r.replacement_source_anchor_id)))
+   ||!audits.some(a=>a.audit_event_id===r.audit_event_id&&a.event_digest===r.audit_event_digest&&a.event_type==="source_anchor_reviewed"&&a.dossier_revision===r.dossier_revision&&a.occurred_at===r.occurred_at))
+    throw new DossierGovernedError("invalid_retirement_receipt",409,"The sealed citation review register is invalid.");
+  ids.add(r.source_anchor_id); return r as CitationRetirement;
+ });
 }
 
 function sealedAuditReceiptsFromSnapshot(
@@ -937,6 +961,16 @@ export async function createDossierSnapshot(input: CreateDossierSnapshotInput) {
   })), dossier.revision);
   const auditHead = sealedAuditReceipts.at(-1)!;
 
+  const retirements = await input.context.db.select({
+    source_anchor_id: dossierSourceAnchorRetirements.sourceAnchorId,
+    replacement_source_anchor_id: dossierSourceAnchorRetirements.replacementSourceAnchorId,
+    reason: dossierSourceAnchorRetirements.reason, actor_id: dossierSourceAnchorRetirements.actorRef,
+    occurred_at: dossierSourceAnchorRetirements.occurredAt, dossier_revision: dossierSourceAnchorRetirements.revisionAfter,
+    audit_event_id: dossierSourceAnchorRetirements.auditEventId, audit_event_digest: dossierAuditEvents.eventDigest,
+  }).from(dossierSourceAnchorRetirements).innerJoin(dossierAuditEvents, and(
+    eq(dossierAuditEvents.dossierId, dossierSourceAnchorRetirements.dossierId), eq(dossierAuditEvents.id, dossierSourceAnchorRetirements.auditEventId)
+  )).where(eq(dossierSourceAnchorRetirements.dossierId,dossierId)).orderBy(asc(dossierSourceAnchorRetirements.sourceAnchorId)).limit(1001);
+  if(retirements.length>1000)throw new DossierGovernedError("retirement_register_limit",409,"The citation review register exceeds the supported snapshot limit.");
   const snapshotId = newOpaqueId("snapshot");
   const manifestObjectReference = dossierObjectKey(dossierId, snapshotId, randomHex(32));
   const commonSnapshot = {
@@ -959,6 +993,7 @@ export async function createDossierSnapshot(input: CreateDossierSnapshotInput) {
     } satisfies JsonValue,
     deterministic_receipts: {
       schema_version: 1,
+      source_anchor_retirements: { schema_version: 1, entries: retirements },
       decision_packages: simulationProofs.map((item) => ({
         decision_package_reference_id: item.decision_package_reference_id,
         package_id: item.package_id,
@@ -1009,6 +1044,7 @@ export async function createDossierSnapshot(input: CreateDossierSnapshotInput) {
   const manifestBytes = new TextEncoder().encode(canonicalDossierJson(storageManifest));
   const manifestDigest = (await sha256Bytes(manifestBytes)).contentSha256;
   const snapshot: DossierSnapshotV1 = { ...commonSnapshot, manifest_digest: manifestDigest };
+  sealedCitationRetirements(snapshot);
   const auditEvents = await input.dependencies.prepareAuditEvents(dossierId, dossier.revision, [{
     actorRole: await currentActorRole(input.context, dossierId),
     eventType: "snapshot_created",
@@ -1150,6 +1186,7 @@ export async function listDossierSnapshots(context: DossierGovernedContext, doss
     const snapshot = await loadSnapshotProjection(context, row);
     snapshots.push({
       ...snapshot,
+      sealed: row.sealed,
       manifest_download_url: manifestDownloadUrl(dossierId, row.id),
     });
   }
@@ -1869,6 +1906,7 @@ async function buildDossierReportModel(
       graph_validation_reference: item.graphValidationReference,
       draft: item.draft,
     })),
+    citation_retirements: sealedCitationRetirements(snapshot),
     audit_receipts: sealedAuditReceipts,
     generator: {
       report_model_schema_version: DOSSIER_REPORT_MODEL_SCHEMA_VERSION,
@@ -1927,6 +1965,7 @@ function renderDossierMarkdown(model: DossierReportModelV1) {
       `- Classification: ${document.classification}`,
       "",
     ]),
+    ...((model.citation_retirements?.length ?? 0) ? ["## Retired historical citations", "", "These citations remain in the historical register. Replacement evidence requires separate assertion review.", ...model.citation_retirements!.map(r => `- ${r.source_anchor_id}: ${r.reason}. Reviewed by ${r.actor_id} at ${r.occurred_at}. Replacement: ${r.replacement_source_anchor_id ?? "none"}.`), ""] : []),
     "## Accepted assertions",
     "",
     ...model.assertion_register.flatMap((assertion) => [
@@ -1997,12 +2036,48 @@ function dossierPdfTable(
   };
 }
 
+function canopyExecutiveMemorandum(model: DossierReportModelV1, presentation = false): Content[] {
+  if (!model.decision_package_graphs.some(graph => graph.package_id === "project_canopy_managed_site_expansion" || graph.package_id.startsWith("project_canopy_managed_site_expansion_"))) return [];
+  const prefix = "Canopy memo / ";
+  const sections = model.assertion_register.filter(assertion => assertion.statement.startsWith(prefix));
+  if (!sections.length) return [];
+  const order = ["Decision requested", "Executive recommendation", "Scope and evidence limitation", "Evidence limitation", "Conditions and no-go rule", "Accountable owners and review dates", "Alternatives and exit", "Assumptions and economics"];
+  const heading = (statement: string) => statement.slice(prefix.length).split(": ")[0];
+  sections.sort((a, b) => order.indexOf(heading(a.statement)) - order.indexOf(heading(b.statement)));
+  return [
+    { text: "GENESIS: JURIS CODEX", style: "brand" },
+    { text: presentation ? "PRESENTATION EXTRACT · NOT APPROVED" : "EXECUTIVE MEMORANDUM", style: "kicker" },
+    { text: model.dossier.title, style: "coverTitle" },
+    { text: `Sealed ${model.snapshot.created_at} · ${model.dossier.status} · readiness ${model.snapshot.readiness.ready ? "ready" : "not ready"}`, style: "notice" },
+    { text: "This demonstration uses entirely fictional organisations, documents, people and figures. It is inspired only by publicly described industry patterns and does not represent Greeneration data, performance, controls or decisions.", style: "notice", margin: [0, 6, 0, 12] },
+    ...sections.flatMap((assertion): Content[] => {
+      const title = heading(assertion.statement);
+      const sources = assertion.source_anchor_ids.map(id => {
+        const anchor = model.anchor_register.find(item => item.source_anchor_id === id);
+        const document = model.source_register.find(item => item.document_version_id === anchor?.document_version_id);
+        return anchor && document ? `${document.original_filename} § ${anchor.section ?? anchor.heading ?? anchor.page_number ?? "source"}` : "See exact anchor register";
+      });
+      return [{ unbreakable: true, stack: [
+        { text: title, style: "sectionTitle" },
+        { text: assertion.statement.slice(prefix.length + title.length + 2), margin: [0, 0, 0, 5] },
+        { text: [...new Set(sources)].join("; "), style: "notice", margin: [0, 0, 0, 6] },
+      ] }];
+    }),
+    { text: "Approval and currency", style: "sectionTitle" },
+    { text: presentation ? "Presentation extract from accepted snapshot assertions. This separate PDF has its own hash and NO approval. Any full-dossier approval belongs only to that exact full PDF. As of the snapshot below; consult the later output register for current/stale state. A recommendation or report approval is not permission to begin production." : "This memorandum contains only assertions accepted into the sealed snapshot. A subsequent approval applies to an exact output and is recorded separately; it does not rewrite this snapshot. Recheck the output register after any authoritative evidence change. An older approved output can be stale.", margin: [0, 0, 0, 8] },
+    { text: `Snapshot ${model.snapshot.snapshot_id}\nSHA-256 ${model.source_manifest_sha256}`, style: "notice" },
+    ...(presentation ? [{text:"Full governed dossier and exact JSON: use the accompanying packet index. For later approvals and current/stale status, reopen this Matter in the application output register.",style:"notice",margin:[0,8,0,0] as [number,number,number,number]}] : []),
+    ...(presentation ? [] : [{ text: "Exact source, graph, simulation and audit bindings", style: "sectionTitle", pageBreak: "before" as const }]),
+  ];
+}
+
 export function buildDossierGovernancePdfContent(model: DossierReportModelV1): Content[] {
   const deterministic = jsonObject(model.snapshot.deterministic_receipts);
   const receiptPackages = Array.isArray(deterministic?.decision_packages)
     ? deterministic.decision_packages
     : [];
   return [
+    ...canopyExecutiveMemorandum(model),
     { text: "GENESIS: JURIS CODEX", style: "brand" },
     { text: "GOVERNED DECISION DOSSIER", style: "kicker" },
     { text: model.dossier.title, style: "coverTitle" },
@@ -2054,6 +2129,11 @@ export function buildDossierGovernancePdfContent(model: DossierReportModelV1): C
       ].join("\n"),
       anchor.anchor_checksum,
     ]), ["26%", "42%", "32%"]),
+    ...((model.citation_retirements?.length ?? 0) ? [
+      { text: "Retired historical citations", style: "sectionTitle" },
+      { text: "Historical acceptance is preserved. Replacement evidence requires separate assertion review." },
+      dossierPdfTable(["Historical citation", "Reason and reviewer", "Replacement"], model.citation_retirements!.map(r=>[r.source_anchor_id,`${r.reason}\n${r.actor_id} · ${r.occurred_at}`,r.replacement_source_anchor_id ?? "None"]),["28%","44%","28%"]),
+    ] : []),
     { text: "4. Validated decision-package graphs", style: "sectionTitle" },
     dossierPdfTable(["Package", "Exact graph binding", "Simulation receipts"], model.decision_package_graphs.map((graph) => {
       const decisionPackage = model.snapshot.decision_packages.find((item) =>
@@ -2304,22 +2384,30 @@ async function renderDossierPdf(model: DossierReportModelV1): Promise<Uint8Array
       creationDate: new Date(model.snapshot.created_at),
     },
   };
+  return renderPdfDefinition(definition);
+}
+
+/** A distinct unapproved presentation artifact; never registered as the governed PDF. */
+export async function renderCanopyPresentationExtract(model: DossierReportModelV1): Promise<Uint8Array> {
+  const content=canopyExecutiveMemorandum(model,true);
+  if(!content.length)throw new DossierGovernedError("canopy_memo_unavailable",409,"No accepted Canopy memorandum is present in this exact output.");
+  assertDossierPdfTextSupported(model);
+  return renderPdfDefinition({
+    pageSize:"A4",pageOrientation:"portrait",pageMargins:[42,38,42,38],
+    defaultStyle:{font:"Roboto",fontSize:11,lineHeight:1.15},
+    styles:{brand:{fontSize:10,bold:true},kicker:{fontSize:11,bold:true,color:"#5b3820",margin:[0,8,0,8]},coverTitle:{fontSize:20,bold:true,margin:[0,0,0,10]},notice:{fontSize:9,color:"#374151"},sectionTitle:{fontSize:12,bold:true,margin:[0,11,0,4]}},
+    content,footer:(page,total)=>({text:`Presentation extract · not approved · ${page}/${total}`,alignment:"center",fontSize:9,margin:[0,12,0,0]}),
+    language:"en-GB",displayTitle:true,
+    info:{title:model.dossier.title+" — unapproved presentation extract",subject:`Snapshot ${model.snapshot.snapshot_id} ${model.source_manifest_sha256}`,creator:"GENESIS: JURIS CODEX",creationDate:new Date(model.snapshot.created_at)},
+  });
+}
+
+async function renderPdfDefinition(definition:TDocumentDefinitions):Promise<Uint8Array> {
   const [{ default: pdfMake }, { default: pdfFonts }] = await Promise.all([
     import("pdfmake/build/pdfmake.js"),
     import("pdfmake/build/vfs_fonts.js"),
   ]);
-  const runtime = pdfMake as unknown as {
-    addVirtualFileSystem: (fonts: unknown) => void;
-    createPdf: (document: TDocumentDefinitions) => {
-      getBuffer: (callback: (value: Uint8Array) => void) => void;
-    };
-  };
-  runtime.addVirtualFileSystem(pdfFonts);
-  return await new Promise<Uint8Array>((resolve, reject) => {
-    try {
-      runtime.createPdf(definition).getBuffer((value) => resolve(new Uint8Array(value)));
-    } catch (error) {
-      reject(error);
-    }
-  });
+  (pdfMake as unknown as {addVirtualFileSystem:(fonts:unknown)=>void}).addVirtualFileSystem(pdfFonts);
+  const blob = await pdfBlobFromDocument(pdfMake.createPdf(definition));
+  return new Uint8Array(await blob.arrayBuffer());
 }

@@ -20,6 +20,7 @@ import {
 import { computeStoredDossierReadiness } from "../../../../../dossier-readiness-server";
 import { parseDossierOpaqueId } from "../../../../../dossier-security";
 import {
+  finalizeDossierRead,
   boundedDossierText,
   canonicalDossierTimestamp,
   dossierEnum,
@@ -109,7 +110,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
   )).orderBy(desc(dossierEvidenceLinks.createdAt), desc(dossierEvidenceLinks.id)).limit(limit + 1);
   const hasMore = rows.length > limit;
   const visible = rows.slice(0, limit);
-  return dossierJson({
+  return finalizeDossierRead(context, access, dossierJson({
     evidence_links: visible.map(projectEvidenceLink),
     page: {
       limit,
@@ -117,7 +118,7 @@ export async function GET(request: Request, routeContext: RouteContext) {
       next_cursor: hasMore ? visible.at(-1)?.id ?? null : null,
     },
     contract_version: "1.0.0",
-  });
+  }));
 }
 
 export async function POST(request: Request, routeContext: RouteContext) {

@@ -1,0 +1,29 @@
+{
+  "schema": "genesis.juris.local-read-smoke-execution.v1",
+  "startedAt": "2026-09-27T22:02:10.153Z",
+  "completedAt": "2026-09-27T22:02:18.733Z",
+  "executable": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\demo-readiness-canopy-2026-09-06\\.artifacts\\toolchains\\node-v22.23.2-win-x64\\node.exe",
+  "node": "v22.23.2",
+  "args": [
+    ".artifacts/ux-reconciliation-auth/local-read-smoke.mjs",
+    "--run-approved",
+    "--origin=http://localhost:5281",
+    "--build-receipt=.artifacts/amendment-release-gate/candidate-initial-source.json",
+    "--expected-commit=e6c6adc6fe01129b2e3d442072c532e08591fae9",
+    "--expected-input-digest=5597958a0a870757e75cfbdfba930007d475f782035db4ee8503a97aa1723afc"
+  ],
+  "workingDirectory": "C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\ux-convergence-2026-09-27",
+  "harnessSha256": "4374127f667065141e1b77c902ab47f4910bff11ee2361ad740391e73a2a4ec5",
+  "exitCode": 0,
+  "signal": null,
+  "spawnFailed": false,
+  "stdout": {
+    "bytes": 229,
+    "sha256": "3d045c1e0123b09ced56c9b2531aae1a12469fe041fd5268a3f08fcbfd80c8ee"
+  },
+  "stderr": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "scope": "Approved sequential ordinary local API smoke; script-owned login/logout sessions only. Does not prove an in-flight revocation race."
+}
