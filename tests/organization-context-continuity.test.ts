@@ -10,13 +10,14 @@ import { NavigationController } from "../app/navigation-controller";
 // Exercise the actual administration mutation handler, not a copied state
 // machine. DOM input/focus and ordinary authentication are separate browser checks.
 const source = ts.createSourceFile("OrganizationsClient.tsx", readFileSync("app/organizations/OrganizationsClient.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-let action = "", refresh = "";
+let action = "", refresh = "", expiredRead = "";
 function visit(node: ts.Node) {
   if (ts.isFunctionDeclaration(node) && node.name?.text === "action") action = node.getText(source);
   if (ts.isFunctionDeclaration(node) && node.name?.text === "refresh") refresh = node.getText(source);
+  if (ts.isFunctionDeclaration(node) && node.name?.text === "expiredRead") expiredRead = node.getText(source);
   ts.forEachChild(node, visit);
 }
-visit(source); assert.ok(action); assert.ok(refresh);
+visit(source); assert.ok(action); assert.ok(refresh); assert.ok(expiredRead);
 const bundle = await build({ stdin: { loader: "ts", resolveDir: resolve("app/organizations"), contents: `
 import {validOrganizationReceipt,invitationRecipientIssue} from './organization-admin-model';
 export default function(env) {
@@ -26,6 +27,7 @@ export default function(env) {
  const t=(en,ru)=>en,setBusy=value=>record.busy=value,setIssue=value=>{issue=value;record.issue=value;},setNotice=value=>record.notice=value;
  const setRecipient=value=>record.recipient=value,setInvitation=value=>record.invitation=value,setWorkspace=value=>record.workspace=value;
  const setVerifiedEpoch=value=>record.verifiedEpoch=value,formCommitted=form=>record.committed=form;
+ ${expiredRead}
  ${action}
  ${refresh}
  return {action,refresh,refreshSelection};
@@ -45,18 +47,18 @@ async function harness() {
   const workspace = { actorId, selected: original, organizations: available, members: [], requests: [], events: [] };
   const record: Record<string, unknown> = { recipient: "unsaved@example.test", workspace };
   const loads: unknown[] = [], navigations: unknown[] = [];
-  let failLoad = false, deferred: (() => Promise<Response>) | null = null;
+  let failLoad = false, expireLoad = false, deferred: (() => Promise<Response>) | null = null;
   let changedSelection: typeof original | null | undefined;
   let deferredLoad: (() => Promise<unknown>) | null = null;
   const h = handler({ navigation, workspace, record,
     fetch: async () => deferred ? deferred() : Response.json({ organization: added }, { status: 201 }),
-    load: async (_signal: unknown, selection: string) => { loads.push(selection); if (failLoad) throw { code: "read_timeout", status: 0 }; if (deferredLoad) return deferredLoad(); available = [original, added]; return { ...workspace, organizations: available, selected: changedSelection === undefined ? (selection === added.id ? added : original) : changedSelection }; },
+    load: async (_signal: unknown, selection: string) => { loads.push(selection); if (expireLoad) { navigation.invalidate("expired"); throw { code: "unauthorized", status: 401, scope: "page" }; } if (failLoad) throw { code: "read_timeout", status: 0 }; if (deferredLoad) return deferredLoad(); available = [original, added]; return { ...workspace, organizations: available, selected: changedSelection === undefined ? (selection === added.id ? added : original) : changedSelection }; },
     window: { history: { state: null, replaceState: (...args: unknown[]) => navigations.push(args) }, dispatchEvent: () => navigations.push("event"), location: { href: `https://synthetic.invalid/organizations?organization=${original.id}`, assign: (url: string) => navigations.push(url), reload: () => navigations.push("reload") } },
   });
   let resets = 0;
   const form = { reset: () => { resets++; } };
   return { ...h, navigation, record, workspace, loads, navigations, form, resets: () => resets,
-    failLoad: () => { failLoad = true; }, defer: (value: () => Promise<Response>) => { deferred = value; },
+    failLoad: (value = true) => { failLoad = value; }, expireLoad: () => { expireLoad = true; }, defer: (value: () => Promise<Response>) => { deferred = value; },
     changeSelection: (value: typeof original | null) => { changedSelection = value; },
     deferLoad: (value: () => Promise<unknown>) => { deferredLoad = value; } };
 }
@@ -129,4 +131,51 @@ test("a current refresh failure still offers ordinary retry", async () => {
   assert.equal(h.navigation.getSnapshot().phase, "ready");
   assert.equal((h.record.issue as { code: string }).code, "read_timeout");
   assert.equal(h.record.recipient, "unsaved@example.test");
+});
+
+async function settle(done: () => boolean) {
+  for (let i = 0; i < 50 && !done(); i++) await new Promise(resolve => setTimeout(resolve, 0));
+}
+
+for (const operation of ["refresh", "confirmed action", "rejected action"] as const) test(`${operation} keeps the page sign-in recovery when the session expires`, async () => {
+  const h = await harness();
+  if (operation === "rejected action") h.defer(async () => Response.json({ code: "unauthorized" }, { status: 401 }));
+  else h.expireLoad();
+  if (operation === "refresh") await h.refresh(); else await h.action({ action: "create", name: added.name }, h.form);
+  assert.equal(h.navigation.getSnapshot().phase, "expired");
+  assert.deepEqual(h.record.issue, operation === "refresh" ? { code: "unauthorized", status: 401, scope: "page", refreshOnly: undefined }
+    : { code: "unauthorized", status: 401, scope: "page", refreshOnly: operation === "confirmed action" },
+    "expiry is not a denial: the visible page issue offers sign-in in a new tab and retry");
+  assert.equal(h.record.recipient, "unsaved@example.test"); assert.deepEqual(h.navigations, []);
+});
+
+for (const scope of ["create", "accept"]) test(`${scope} lets the rail open the added organization without switching context`, async () => {
+  const h = await harness(); await h.action({ action: scope, name: added.name, token: "synthetic" }, h.form);
+  await settle(() => h.navigation.getSnapshot().organizations.some((o: { id: string }) => o.id === added.id));
+  const rail = h.navigation.getSnapshot();
+  assert.equal(rail.phase, "ready");
+  assert.ok(rail.organizations.some((o: { id: string }) => o.id === added.id), "Open cases can resolve the new organization");
+  assert.equal(rail.selected?.selection, original.selection); assert.deepEqual(h.navigations, []);
+});
+
+test("create followed by read failure does not point to an absent Manage entry", async () => {
+  const h = await harness(); h.failLoad(); await h.action({ action: "create", name: added.name }, h.form);
+  assert.equal(h.record.notice, "Organization created. You are its owner.");
+});
+
+test("create withdraws rather than adopts a changed managed selection", async () => {
+  const h = await harness();
+  h.changeSelection({ ...original, role: "member", membershipRevision: 2, selection: `${original.id}.1.2.${actorId}` });
+  await h.action({ action: "create", name: added.name }, h.form);
+  assert.equal(h.navigation.getSnapshot().phase, "denied");
+  assert.equal(h.record.workspace, h.workspace); assert.deepEqual(h.navigations, []);
+});
+
+test("refresh after a failed post-create read lets the rail open the added organization", async () => {
+  const h = await harness(); h.failLoad(); await h.action({ action: "create", name: added.name }, h.form);
+  h.failLoad(false); await h.refresh();
+  await settle(() => h.navigation.getSnapshot().organizations.some((o: { id: string }) => o.id === added.id));
+  const rail = h.navigation.getSnapshot();
+  assert.equal(rail.phase, "ready"); assert.equal(rail.selected?.selection, original.selection);
+  assert.ok(rail.organizations.some((o: { id: string }) => o.id === added.id), "recovered list and rail agree");
 });

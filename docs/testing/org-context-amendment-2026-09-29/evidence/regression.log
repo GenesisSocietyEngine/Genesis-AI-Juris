@@ -1,0 +1,451 @@
+TAP version 13
+# Subtest: email invitation precedes account creation; separate mailbox proof and explicit acceptance grant once
+ok 1 - email invitation precedes account creation; separate mailbox proof and explicit acceptance grant once
+  ---
+  duration_ms: 7274.2025
+  type: 'test'
+  ...
+# Subtest: wrong account, wrong organization, wrong origin and unverified copied link cannot accept
+ok 2 - wrong account, wrong organization, wrong origin and unverified copied link cannot accept
+  ---
+  duration_ms: 1891.7119
+  type: 'test'
+  ...
+# Subtest: owner role limits, duplicate membership and pending invitation preserve existing authority
+ok 3 - owner role limits, duplicate membership and pending invitation preserve existing authority
+  ---
+  duration_ms: 1470.9659
+  type: 'test'
+  ...
+# Subtest: resend rotates link and proof; revocation is durable and idempotent
+ok 4 - resend rotates link and proof; revocation is durable and idempotent
+  ---
+  duration_ms: 2335.5693
+  type: 'test'
+  ...
+# Subtest: missing mail, rejection and lost provider response report separate delivery states
+ok 5 - missing mail, rejection and lost provider response report separate delivery states
+  ---
+  duration_ms: 2200.2321
+  type: 'test'
+  ...
+# Subtest: concurrent acceptance creates exactly one membership and audit event
+ok 6 - concurrent acceptance creates exactly one membership and audit event
+  ---
+  duration_ms: 1600.0428
+  type: 'test'
+  ...
+# Subtest: rate limit bounds an inviter changing recipient addresses
+ok 7 - rate limit bounds an inviter changing recipient addresses
+  ---
+  duration_ms: 3614.9522
+  type: 'test'
+  ...
+# Subtest: expired mailbox proof and changed organization fail at the commit boundary without membership
+ok 8 - expired mailbox proof and changed organization fail at the commit boundary without membership
+  ---
+  duration_ms: 1725.3264
+  type: 'test'
+  ...
+# Subtest: expired invitation, suspended member and accepted retry after organization revision remain distinct
+ok 9 - expired invitation, suspended member and accepted retry after organization revision remain distinct
+  ---
+  duration_ms: 3316.6363
+  type: 'test'
+  ...
+# Subtest: rotating invitation IDs cannot bypass canonical recipient rate limit
+ok 10 - rotating invitation IDs cannot bypass canonical recipient rate limit
+  ---
+  duration_ms: 2859.599
+  type: 'test'
+  ...
+# Subtest: each permissible recipient role is exact and cannot invite, resend, revoke or read owner history
+ok 11 - each permissible recipient role is exact and cannot invite, resend, revoke or read owner history
+  ---
+  duration_ms: 4576.2571
+  type: 'test'
+  ...
+# Subtest: existing owner policy forbids manufactured inviter demotion or suspension
+ok 12 - existing owner policy forbids manufactured inviter demotion or suspension
+  ---
+  duration_ms: 269.5845
+  type: 'test'
+  ...
+# Subtest: independent lifecycle suspend at acceptance commit withdraws authority atomically
+ok 13 - independent lifecycle suspend at acceptance commit withdraws authority atomically
+  ---
+  duration_ms: 2292.1438
+  type: 'test'
+  ...
+# Subtest: independent lifecycle close at acceptance commit withdraws authority atomically
+ok 14 - independent lifecycle close at acceptance commit withdraws authority atomically
+  ---
+  duration_ms: 2532.3374
+  type: 'test'
+  ...
+# Subtest: owner revoke at acceptance commit defeats the old credential without partial membership
+ok 15 - owner revoke at acceptance commit defeats the old credential without partial membership
+  ---
+  duration_ms: 1389.1282
+  type: 'test'
+  ...
+# Subtest: owner resend at acceptance commit defeats the old credential without partial membership
+ok 16 - owner resend at acceptance commit defeats the old credential without partial membership
+  ---
+  duration_ms: 2436.3179
+  type: 'test'
+  ...
+# Subtest: a separately accepted legacy membership wins an email-acceptance race without role replacement
+ok 17 - a separately accepted legacy membership wins an email-acceptance race without role replacement
+  ---
+  duration_ms: 1469.9653
+  type: 'test'
+  ...
+# Subtest: concurrent duplicate creation produces one pending invitation and one synthetic message
+ok 18 - concurrent duplicate creation produces one pending invitation and one synthetic message
+  ---
+  duration_ms: 832.0812
+  type: 'test'
+  ...
+# Subtest: cross-tab logout suspends refresh, fences late identity and clears even an unmounted invitation
+ok 19 - cross-tab logout suspends refresh, fences late identity and clears even an unmounted invitation
+  ---
+  duration_ms: 61.8553
+  type: 'test'
+  ...
+# Subtest: Studio and workspace pages share expandable routes, labels and exact active contexts
+ok 20 - Studio and workspace pages share expandable routes, labels and exact active contexts
+  ---
+  duration_ms: 471.2318
+  type: 'test'
+  ...
+# Subtest: verified member sees the shared account and organization but no owner-only access action
+ok 21 - verified member sees the shared account and organization but no owner-only access action
+  ---
+  duration_ms: 46.599
+  type: 'test'
+  ...
+# Subtest: optional Studio and simulation actions survive canonical navigation
+ok 22 - optional Studio and simulation actions survive canonical navigation
+  ---
+  duration_ms: 16.527
+  type: 'test'
+  ...
+# Subtest: actual handlers retain Studio pending guard without intercepting modified/new-window navigation
+ok 23 - actual handlers retain Studio pending guard without intercepting modified/new-window navigation
+  ---
+  duration_ms: 3.9288
+  type: 'test'
+  ...
+# Subtest: actual shared departure preserves Stay, explicit Discard and uncertain-write protection
+ok 24 - actual shared departure preserves Stay, explicit Discard and uncertain-write protection
+  ---
+  duration_ms: 1.8119
+  type: 'test'
+  ...
+# Subtest: old departure loses authority and sign-out remains available despite the Studio operation guard
+ok 25 - old departure loses authority and sign-out remains available despite the Studio operation guard
+  ---
+  duration_ms: 2.1341
+  type: 'test'
+  ...
+# Subtest: invitation validation directs self and existing members to their supported action
+ok 26 - invitation validation directs self and existing members to their supported action
+  ---
+  duration_ms: 3.6092
+  type: 'test'
+  ...
+# Subtest: organization feedback separates sign-in, profile, validation, concurrency and confirmed persistence
+ok 27 - organization feedback separates sign-in, profile, validation, concurrency and confirmed persistence
+  ---
+  duration_ms: 0.8688
+  type: 'test'
+  ...
+# Subtest: organization success receipts must match the actor, selection, active state and revisions
+ok 28 - organization success receipts must match the actor, selection, active state and revisions
+  ---
+  duration_ms: 0.5606
+  type: 'test'
+  ...
+# Subtest: same-name personal workspaces show relationship and actual role, with stable duplicate references
+ok 29 - same-name personal workspaces show relationship and actual role, with stable duplicate references
+  ---
+  duration_ms: 2.9109
+  type: 'test'
+  ...
+# Subtest: private workspace navigation retains the selected organization without scoping external links
+ok 30 - private workspace navigation retains the selected organization without scoping external links
+  ---
+  duration_ms: 0.9983
+  type: 'test'
+  ...
+# (node:26512) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: first sign-in renders an actionable profile prerequisite, never an organization spinner
+ok 31 - first sign-in renders an actionable profile prerequisite, never an organization spinner
+  ---
+  duration_ms: 127.8789
+  type: 'test'
+  ...
+# Subtest: expired authority hides the onboarding identity and offers access recovery instead of endless loading
+ok 32 - expired authority hides the onboarding identity and offers access recovery instead of endless loading
+  ---
+  duration_ms: 43.2372
+  type: 'test'
+  ...
+# Subtest: profile completion refresh obtains server-authorized personal workspace
+ok 33 - profile completion refresh obtains server-authorized personal workspace
+  ---
+  duration_ms: 5.1806
+  type: 'test'
+  ...
+# Subtest: read deadline settles stalled response bodies, aborts transport, and accepts an explicit fresh retry
+ok 34 - read deadline settles stalled response bodies, aborts transport, and accepts an explicit fresh retry
+  ---
+  duration_ms: 6.3453
+  type: 'test'
+  ...
+# Subtest: cancelled read rejects promptly and cannot surface its late successful result
+ok 35 - cancelled read rejects promptly and cannot surface its late successful result
+  ---
+  duration_ms: 3.0522
+  type: 'test'
+  ...
+# Subtest: session read timeout exits checking and late response cannot reauthorize the workspace
+ok 36 - session read timeout exits checking and late response cannot reauthorize the workspace
+  ---
+  duration_ms: 1.439
+  type: 'test'
+  ...
+# Subtest: Administration: authenticated password login cannot silently switch the effective identity
+ok 37 - Administration: authenticated password login cannot silently switch the effective identity
+  ---
+  duration_ms: 5951.9068
+  type: 'test'
+  ...
+# Subtest: Administration: password sign-in still works after explicit local sign-out
+ok 38 - Administration: password sign-in still works after explicit local sign-out
+  ---
+  duration_ms: 1234.8127
+  type: 'test'
+  ...
+# Subtest: Administration: invitations respect existing membership and restoration with durable audit
+ok 39 - Administration: invitations respect existing membership and restoration with durable audit
+  ---
+  duration_ms: 1959.3023
+  type: 'test'
+  ...
+# Subtest: Upload acknowledgement and immutable versions: rejection preserves state; checked PDF upload persists and downloads
+ok 40 - Upload acknowledgement and immutable versions: rejection preserves state; checked PDF upload persists and downloads
+  ---
+  duration_ms: 4144.9939
+  type: 'test'
+  ...
+# Subtest: P1 ERP 1: create, reopen, filter and page a dossier in exactly one organization
+ok 41 - P1 ERP 1: create, reopen, filter and page a dossier in exactly one organization
+  ---
+  duration_ms: 1021.7846
+  type: 'test'
+  ...
+# Subtest: P1 ERP 2: immutable source versions retain their hashes and private downloads
+ok 42 - P1 ERP 2: immutable source versions retain their hashes and private downloads
+  ---
+  duration_ms: 3138.2052
+  type: 'test'
+  ...
+# Subtest: P1 ERP 4: invitations are identity-bound, single-use, and confer no dossier role
+ok 43 - P1 ERP 4: invitations are identity-bound, single-use, and confer no dossier role
+  ---
+  duration_ms: 1863.3791
+  type: 'test'
+  ...
+# Subtest: P1 ERP 3: source anchors and assertions require explicit review before linking the ERP decision package
+ok 44 - P1 ERP 3: source anchors and assertions require explicit review before linking the ERP decision package
+  ---
+  duration_ms: 5177.6023
+  type: 'test'
+  ...
+# Subtest: P1 ERP 5: snapshot-bound PDF and JSON export, independent approval, reopen, and staleness
+ok 45 - P1 ERP 5: snapshot-bound PDF and JSON export, independent approval, reopen, and staleness
+  ---
+  duration_ms: 5674.2742
+  type: 'test'
+  ...
+# Subtest: Dependable actions: historical disposition and citation retirement persist with exact audit, denial, replay and conflicts
+ok 46 - Dependable actions: historical disposition and citation retirement persist with exact audit, denial, replay and conflicts
+  ---
+  duration_ms: 8398.0116
+  type: 'test'
+  ...
+# Subtest: P1: every dossier route denies a foreign organization before reads or side effects
+ok 47 - P1: every dossier route denies a foreign organization before reads or side effects
+  ---
+  duration_ms: 2981.6332
+  type: 'test'
+  ...
+# Subtest: P1: revocation during an R2 read prevents delivery of private bytes
+ok 48 - P1: revocation during an R2 read prevents delivery of private bytes
+  ---
+  duration_ms: 577.2156
+  type: 'test'
+  ...
+# Subtest: P1: revocation during upload aborts metadata, revision and success receipts
+ok 49 - P1: revocation during upload aborts metadata, revision and success receipts
+  ---
+  duration_ms: 2073.8426
+  type: 'test'
+  ...
+# Subtest: P1: independent lifecycle approval invalidates contexts and outstanding invitations
+ok 50 - P1: independent lifecycle approval invalidates contexts and outstanding invitations
+  ---
+  duration_ms: 1201.5841
+  type: 'test'
+  ...
+# Subtest: P1: selection, cursor, CSRF and unavailable compliance features fail closed
+ok 51 - P1: selection, cursor, CSRF and unavailable compliance features fail closed
+  ---
+  duration_ms: 414.0455
+  type: 'test'
+  ...
+# Subtest: Canopy V2: independent reviewed copies, causal walkthrough and exact output governance
+    # Subtest: Canopy V2 scenario: base
+    ok 1 - Canopy V2 scenario: base
+      ---
+      duration_ms: 75234.2529
+      type: 'test'
+      ...
+    # Subtest: Canopy V2 scenario: upside
+    ok 2 - Canopy V2 scenario: upside
+      ---
+      duration_ms: 83640.0506
+      type: 'test'
+      ...
+    # Subtest: Canopy V2 scenario: hard_stop
+    ok 3 - Canopy V2 scenario: hard_stop
+      ---
+      duration_ms: 87149.4476
+      type: 'test'
+      ...
+    # Subtest: Canopy V2 scenario: downside
+    ok 4 - Canopy V2 scenario: downside
+      ---
+      duration_ms: 92947.8998
+      type: 'test'
+      ...
+    # Subtest: Canopy V2 causal walkthrough: Base to Upside to clearance-only Hard stop preserves other copies
+    ok 5 - Canopy V2 causal walkthrough: Base to Upside to clearance-only Hard stop preserves other copies
+      ---
+      duration_ms: 103216.5954
+      type: 'test'
+      ...
+    # Subtest: Canopy V2 runtime: failed and unavailable cannot bypass controls; label alone cannot change outcome
+    ok 6 - Canopy V2 runtime: failed and unavailable cannot bypass controls; label alone cannot change outcome
+      ---
+      duration_ms: 2310.1904
+      type: 'test'
+      ...
+    1..6
+ok 52 - Canopy V2: independent reviewed copies, causal walkthrough and exact output governance
+  ---
+  duration_ms: 446038.7013
+  type: 'test'
+  ...
+# Subtest: sidebar switch blocks dirty and uncertain work, validates receipt and clears case context
+ok 53 - sidebar switch blocks dirty and uncertain work, validates receipt and clears case context
+  ---
+  duration_ms: 83.8082
+  type: 'test'
+  ...
+# Subtest: sidebar expired switch releases the actual B1 departure lock before recovery
+ok 54 - sidebar expired switch releases the actual B1 departure lock before recovery
+  ---
+  duration_ms: 8.221
+  type: 'test'
+  ...
+# Subtest: sidebar 401 then 500 hides identity and late success cannot resurrect it
+ok 55 - sidebar 401 then 500 hides identity and late success cannot resurrect it
+  ---
+  duration_ms: 2.8954
+  type: 'test'
+  ...
+# Subtest: sidebar authority generation is stable for focus refresh but rejects account and membership loss
+ok 56 - sidebar authority generation is stable for focus refresh but rejects account and membership loss
+  ---
+  duration_ms: 6.6399
+  type: 'test'
+  ...
+# Subtest: sidebar failed or wrong-actor switch preserves the old workspace without navigation
+ok 57 - sidebar failed or wrong-actor switch preserves the old workspace without navigation
+  ---
+  duration_ms: 7.2855
+  type: 'test'
+  ...
+# Subtest: sidebar sign-out tolerates unavailable device storage and hides private data on failure
+ok 58 - sidebar sign-out tolerates unavailable device storage and hides private data on failure
+  ---
+  duration_ms: 2.931
+  type: 'test'
+  ...
+# Subtest: sidebar operation ownership survives cancel, close, and revisit with its original recovery key
+ok 59 - sidebar operation ownership survives cancel, close, and revisit with its original recovery key
+  ---
+  duration_ms: 68.5862
+  type: 'test'
+  ...
+# Subtest: sidebar dirty comparison clears when the actual B1 input returns to its baseline
+ok 60 - sidebar dirty comparison clears when the actual B1 input returns to its baseline
+  ---
+  duration_ms: 0.5658
+  type: 'test'
+  ...
+# Subtest: sidebar selected authorization loss also hides non-B1 scoped consumers
+ok 61 - sidebar selected authorization loss also hides non-B1 scoped consumers
+  ---
+  duration_ms: 3.588
+  type: 'test'
+  ...
+# Subtest: logout bypasses pending work, hides immediately, rejects late switch and permits retry
+ok 62 - logout bypasses pending work, hides immediately, rejects late switch and permits retry
+  ---
+  duration_ms: 3.8575
+  type: 'test'
+  ...
+# Subtest: local form failure cannot trap session termination
+ok 63 - local form failure cannot trap session termination
+  ---
+  duration_ms: 2.1458
+  type: 'test'
+  ...
+# Subtest: failed authority check invalidates old private response tickets before recovery
+ok 64 - failed authority check invalidates old private response tickets before recovery
+  ---
+  duration_ms: 1.9731
+  type: 'test'
+  ...
+# Subtest: reload warning protects drafts while explicit departure and sign-out remain available
+ok 65 - reload warning protects drafts while explicit departure and sign-out remain available
+  ---
+  duration_ms: 0.8449
+  type: 'test'
+  ...
+# Subtest: receiving tab publishes pending sign-out even after ordinary expiry and never refreshes through it
+ok 66 - receiving tab publishes pending sign-out even after ordinary expiry and never refreshes through it
+  ---
+  duration_ms: 1.1394
+  type: 'test'
+  ...
+# Subtest: revoke clears pending wording even if another access denial arrived first
+ok 67 - revoke clears pending wording even if another access denial arrived first
+  ---
+  duration_ms: 0.9743
+  type: 'test'
+  ...
+1..67
+# tests 73
+# suites 0
+# pass 73
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 499049.7609

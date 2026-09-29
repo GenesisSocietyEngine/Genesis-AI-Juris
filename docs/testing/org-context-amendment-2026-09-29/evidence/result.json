@@ -1,0 +1,113 @@
+{
+  "baseCommit": "bd8b0e07fe4b9c0eded527e1825f0fa3eb66956c",
+  "importedCommit": "781a62b69aa6784760d346754a84ef3218d66095",
+  "branch": "codex/org-context-amendment-2026-09-29",
+  "startedAt": "2026-09-29T10:23:32.577Z",
+  "nodeVersion": "v22.23.2",
+  "npmVersion": "10.9.8",
+  "ownedFiles": [
+    "app/organizations/OrganizationsClient.tsx",
+    "tests/organization-context-continuity.test.ts"
+  ],
+  "sourceHashes": {
+    "app/organizations/OrganizationsClient.tsx": "dbe27922ee7eb940afcc7e7f838127887c976471d1b81f4966f81184ba086d29",
+    "tests/organization-context-continuity.test.ts": "08d225ebcc1fb888b49772233f829f23997bea3d4754b633c358bdf236bc5cdc"
+  },
+  "manifestSha256": "4043337fd6243ee966d8178f2ef3421ee80c1e7a8cc50d1e9ee751f6b2568ec8",
+  "lockSha256": "cde027aba739555279fe0a32f16748e5ee9b7ffa98209002ad832b0fe05d5a2c",
+  "pdfBaselineSha256": "2df39a97f06359c4cc228bf12a9120e8c2a7491a60884a152e0a909a1383ff60",
+  "workingInputs": "Base commit plus the two exact reviewed organization blobs; evidence is qualified by these hashes.",
+  "results": [
+    {
+      "label": "Fresh lock-enforcing installation",
+      "command": [
+        "node",
+        "npm-cli.js",
+        "ci",
+        "--no-fund"
+      ],
+      "exit": 0,
+      "startedAt": "2026-09-29T10:23:32.584Z",
+      "finishedAt": "2026-09-29T10:24:40.144Z",
+      "log": "install.log",
+      "rawSha256": "dad9d7531b60d6a1bde3479d8358a473766bdfe121aaac8692ff399438ed232b",
+      "readableSha256": "dad9d7531b60d6a1bde3479d8358a473766bdfe121aaac8692ff399438ed232b"
+    },
+    {
+      "label": "Organization continuity regression",
+      "command": [
+        "node",
+        "--experimental-sqlite",
+        "--import",
+        "tsx",
+        "--test",
+        "tests/organization-context-continuity.test.ts"
+      ],
+      "exit": 0,
+      "startedAt": "2026-09-29T10:24:40.148Z",
+      "finishedAt": "2026-09-29T10:24:42.490Z",
+      "log": "continuity.log",
+      "rawSha256": "98c39aa6ced8acd2a9eb3ae3dc1a1865fd0baf312661c0b671a238e9dd2b44e4",
+      "readableSha256": "98c39aa6ced8acd2a9eb3ae3dc1a1865fd0baf312661c0b671a238e9dd2b44e4"
+    },
+    {
+      "label": "Existing organization, invitation and navigation regression",
+      "command": [
+        "node",
+        "--experimental-sqlite",
+        "--import",
+        "tsx",
+        "--test",
+        "tests/organization-admin-model.test.ts",
+        "tests/organization-client.test.ts",
+        "tests/organization-onboarding.test.ts",
+        "tests/p1-organization-erp.test.ts",
+        "tests/navigation-shell.test.ts",
+        "tests/sidebar-navigation.test.ts",
+        "tests/email-invitations.test.ts"
+      ],
+      "exit": 0,
+      "startedAt": "2026-09-29T10:24:42.494Z",
+      "finishedAt": "2026-09-29T10:33:01.643Z",
+      "log": "regression.log",
+      "rawSha256": "e757958de044111f98288195c1f55140172fc3b8024208b108c5a8caa0178cd9",
+      "readableSha256": "e757958de044111f98288195c1f55140172fc3b8024208b108c5a8caa0178cd9"
+    },
+    {
+      "label": "Strict nonincremental TypeScript",
+      "command": [
+        "node",
+        "npm-cli.js",
+        "run",
+        "typecheck"
+      ],
+      "exit": 0,
+      "startedAt": "2026-09-29T10:33:01.660Z",
+      "finishedAt": "2026-09-29T10:34:05.419Z",
+      "log": "typecheck.log",
+      "rawSha256": "89a1274022b7b3f27ddd516c8c375dbb42a82e7ba6b889cb9888e3a5388c808c",
+      "readableSha256": "684b0ef0fe52bf1032b7eeb03f87e87eb03db32d767b8fe0d939060ac717788a"
+    },
+    {
+      "label": "Focused source and regression lint",
+      "command": [
+        "node",
+        "node_modules/eslint/bin/eslint.js",
+        "app/organizations/OrganizationsClient.tsx",
+        "tests/organization-context-continuity.test.ts"
+      ],
+      "exit": 0,
+      "startedAt": "2026-09-29T10:34:05.436Z",
+      "finishedAt": "2026-09-29T10:34:18.168Z",
+      "log": "lint.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readableSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    }
+  ],
+  "browserJourneys": "NOT_RUN",
+  "releaseAcceptance": "NOT_RUN",
+  "changedTrackedPaths": [],
+  "trackedInputsUnchanged": true,
+  "status": "PASS",
+  "finishedAt": "2026-09-29T10:34:18.871Z"
+}
