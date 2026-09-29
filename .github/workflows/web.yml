@@ -18,6 +18,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1; Node 24
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
       - name: Record checked-out source
         run: |
           mkdir -p .artifacts/ci-logs
@@ -38,6 +39,8 @@ jobs:
           npm run install:ci 2>&1 | tee .artifacts/ci-logs/install.log
           test "$(sha256sum package-lock.json)" = "$lock_sha"
           git diff --exit-code -- package-lock.json
+      - name: Verify historical migration inputs
+        run: node scripts/verify-migration-history.mjs
       - name: Strict typecheck
         run: npm run typecheck
       - name: Verify root-web/mobile contract lock
