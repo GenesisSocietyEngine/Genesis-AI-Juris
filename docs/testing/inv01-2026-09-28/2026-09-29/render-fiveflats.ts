@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { createCaseReportPreview, caseReportReceiptBinding, type CaseReportOptions } from '../../../../app/case-report';
 import { normalizeStudioDraft, caseFingerprint, casePublicationFingerprint } from '../../../../app/case-integrity';
 import { discoverPoppler, inspectPdf, assertA4Portrait, renderAndInspectPdf, sha256File } from '../../../../scripts/tests/report-pdf-qa';
-const root=resolve('docs/testing/inv01-2026-09-28/2026-09-29/pdfs'); mkdirSync(root,{recursive:true});
+const root=resolve(process.argv[2] ?? 'docs/testing/inv01-2026-09-28/2026-09-29/pdfs-v5'); mkdirSync(root,{recursive:true});
 const draft=normalizeStudioDraft(JSON.parse(readFileSync('docs/testing/inv01-2026-09-28/fiveflats-pdfs/saved-draft-before-recovery.json','utf8')));
 const before=JSON.stringify(draft), tools=discoverPoppler(process.cwd()), results=[];
 for(const language of ['en','ru'] as const) for(const includeDecisionTree of [true,false]) {
@@ -24,5 +24,5 @@ for(const language of ['en','ru'] as const) for(const includeDecisionTree of [tr
  results.push({name,sha256:sha256File(file),pages:info.pages,binding:caseReportReceiptBinding(draft,options),render});
  assert.equal(JSON.stringify(draft),before);
 }
-writeFileSync(resolve(root,'inspection.json'),JSON.stringify({purpose:'Programmatic renderer regression using actual previously saved synthetic draft; not a browser download, professional approval or hosted acceptance',renderer:4,source:'saved-draft-before-recovery.json',sourceSha256:sha256File('docs/testing/inv01-2026-09-28/fiveflats-pdfs/saved-draft-before-recovery.json'),tools:tools.versions,results},null,2)+'\n');
+writeFileSync(resolve(root,'inspection.json'),JSON.stringify({purpose:'Programmatic renderer regression using actual previously saved synthetic draft; not a browser download, professional approval or hosted acceptance',renderer:5,source:'saved-draft-before-recovery.json',sourceSha256:sha256File('docs/testing/inv01-2026-09-28/fiveflats-pdfs/saved-draft-before-recovery.json'),tools:tools.versions,results},null,2)+'\n');
 console.log(JSON.stringify(results.map(({name,pages,sha256})=>({name,pages,sha256}))));

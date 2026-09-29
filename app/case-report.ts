@@ -153,7 +153,7 @@ function buildEconomics(draft: StudioDraft, options: CaseReportOptions): Content
     if (result.missingInputs.length) content.push({ text: `${tr(language, "Open financial inputs", "Незаполненные финансовые параметры")}: ${result.missingInputs.join(", ")}.`, style: "warning" });
     if (model.assumptions.length) content.push({ ul: model.assumptions
       .filter(item => !/scenario probabilit|вероятност[а-я]* сценар/iu.test(item))
-      .map(item => ({ text: item, unbreakable: item.length <= 240 && item.split(/\r?\n/).length <= 4 })),
+      .map(item => ({ text: item, unbreakable: item.length <= 240 && item.split(/\r\n|[\r\n\v\f\u0085\u2028\u2029]/).length <= 4 })),
       style: "bodySmall", margin: [8, 4, 0, 8] });
   }
   if (draft.taxEconomics) {
@@ -460,7 +460,7 @@ function caseReportPresentationFingerprint(
     decisionRendererVersion: effectiveOptions.presentationMode === "medium" ? "1.2.0" : "1.1.0",
     // Full keeps short economic assumptions together, avoiding orphaned final words.
     // Keep existing Base/Medium receipts stable; earlier Full output is stale.
-    ...((effectiveOptions.presentationMode ?? "full") === "full" ? { fullBriefRendererVersion: 4 } : {}),
+    ...((effectiveOptions.presentationMode ?? "full") === "full" ? { fullBriefRendererVersion: 5 } : {}),
     includeDecisionTree: effectiveOptions.includeDecisionTree,
     auditSymbolFont: REPORT_AUDIT_SYMBOL_FONT_SHA256,
     reportFingerprint: reportModel.contentFingerprint,
