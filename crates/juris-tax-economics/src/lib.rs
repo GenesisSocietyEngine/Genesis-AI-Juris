@@ -433,6 +433,7 @@ pub struct TaxEconomicsCalculationResult {
     pub operating_annual_benefit: i64,
     pub annualized_net_benefit: i64,
     pub lifecycle_net_benefit: i64,
+    pub lifecycle_cost: i64,
     pub lifecycle_roi_bps: Option<i32>,
     pub npv: i64,
     pub payback_months: Option<u32>,
@@ -528,10 +529,13 @@ pub fn calculate_tax_economics_v2(
     }
     npv -= model.terminal_tax_or_unwind_cost as f64;
 
-    // Lifecycle ROI in basis points (negative when the lifecycle loses money)
-    let lifecycle_roi_bps = if model.implementation_cost > 0 {
-        i32::try_from((lifecycle_net_benefit as i128 * 10_000) / model.implementation_cost as i128)
-            .ok()
+    let lifecycle_cost = (model.implementation_cost as i128
+        + model.annual_maintenance_cost as i128 * model.analysis_horizon_months as i128 / 12
+        + model.terminal_tax_or_unwind_cost as i128) as i64;
+
+    // Lifecycle ROI uses all lifecycle costs, including maintenance and terminal cost.
+    let lifecycle_roi_bps = if lifecycle_cost > 0 {
+        i32::try_from((lifecycle_net_benefit as i128 * 10_000) / lifecycle_cost as i128).ok()
     } else {
         None
     };
@@ -547,6 +551,7 @@ pub fn calculate_tax_economics_v2(
         operating_annual_benefit,
         annualized_net_benefit,
         lifecycle_net_benefit,
+        lifecycle_cost,
         lifecycle_roi_bps,
         npv: npv.round() as i64,
         payback_months,
@@ -1366,7 +1371,8 @@ mod tests {
         assert_eq!(result.annualized_net_benefit, 20_000); // 25k - 50k / 10 years
                                                            // 25k × 10 years + 7k - 50k - 10k; maintenance is not subtracted again
         assert_eq!(result.lifecycle_net_benefit, 197_000);
-        assert_eq!(result.lifecycle_roi_bps, Some(39_400));
+        assert_eq!(result.lifecycle_cost, 110_000);
+        assert_eq!(result.lifecycle_roi_bps, Some(17_909));
         assert_eq!(result.payback_months, Some(24));
     }
 
@@ -1380,7 +1386,44 @@ mod tests {
 
         let result = calculate_tax_economics_v2(&model).unwrap();
         assert_eq!(result.lifecycle_net_benefit, -49_000);
+        assert_eq!(result.lifecycle_cost, 50_000);
         assert_eq!(result.lifecycle_roi_bps, Some(-9_800));
+    }
+
+    #[test]
+    fn test_zero_lifecycle_cost_has_no_roi() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.baseline_annual_tax_cost = 10_000;
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        assert_eq!(result.lifecycle_cost, 0);
+        assert_eq!(result.lifecycle_roi_bps, None);
+    }
+
+    #[test]
+    fn test_negative_lifecycle_cost_has_no_roi() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.implementation_cost = 100;
+        model.annual_maintenance_cost = 10;
+        model.analysis_horizon_months = 12;
+        model.terminal_tax_or_unwind_cost = -111;
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        assert_eq!(result.lifecycle_cost, -1);
+        assert_eq!(result.lifecycle_roi_bps, None);
+    }
+
+    #[test]
+    fn test_lifecycle_roi_outside_i32_is_none() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.implementation_cost = 1;
+        model.baseline_annual_tax_cost = 300_001;
+        model.analysis_horizon_months = 12;
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        assert_eq!(result.lifecycle_cost, 1);
+        assert_eq!(result.lifecycle_net_benefit, 300_000);
+        assert_eq!(result.lifecycle_roi_bps, None);
     }
 
     #[test]
