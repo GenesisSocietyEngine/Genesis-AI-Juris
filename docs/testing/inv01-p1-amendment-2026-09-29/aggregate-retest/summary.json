@@ -1,0 +1,42 @@
+{
+  "sourceCommit": "efadf24fc186288ce4ee25da5f5a7d9d1eb6baff",
+  "web": {
+    "tests": 971,
+    "pass": 968,
+    "fail": 0,
+    "skip": 3,
+    "skipScope": "Existing exact-v91/C1 opt-in rehearsals, C1_MIGRATION_BASELINE_ROOT unset; invitation migration/history assertions ran"
+  },
+  "dossier": {
+    "pass": 5,
+    "fail": 0,
+    "skip": 0
+  },
+  "pdf": {
+    "documents": 47,
+    "pages": 760,
+    "rasterPages": 760,
+    "baselineImages": 55,
+    "baselineSha256": "2df39a97f06359c4cc228bf12a9120e8c2a7491a60884a152e0a909a1383ff60"
+  },
+  "flutter": {
+    "pass": 275,
+    "analysisIssues": 0
+  },
+  "rust": {
+    "pass": 359,
+    "fail": 0,
+    "ignored": 0,
+    "testBinaryAndDocTestSummaries": 73
+  },
+  "android": {
+    "pass": 12
+  },
+  "productionAuditVulnerabilities": 0,
+  "lint": {
+    "errors": 0,
+    "existingWarnings": 3
+  },
+  "nativeEvidenceLock": "Validated existing successful hosted workflow records for locked mobile SHA; no new hosted CI run was executed",
+  "countPolicy": "Separate suite results only; no cross-suite or overlapping-targeted grand total"
+}

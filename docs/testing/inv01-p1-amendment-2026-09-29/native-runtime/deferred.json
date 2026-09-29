@@ -1,0 +1,13 @@
+{
+    "at":  "2026-09-29T05:35:45.8383564Z",
+    "privateAdbServerLeftRunning":  5039,
+    "restartBeforeNative":  true,
+    "priorGracefulAttempt":  "adb console returned missing authentication token, emulator remained alive",
+    "reason":  "Defer own emulator during web suite: only 472 MiB physical RAM free",
+    "stoppedExactIdentities":  [
+                                   27700,
+                                   27672,
+                                   25060,
+                                   10928
+                               ]
+}

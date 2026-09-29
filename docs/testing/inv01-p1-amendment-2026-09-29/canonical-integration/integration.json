@@ -1,0 +1,94 @@
+{
+  "integratedAt": "2026-09-29T06:41:15.472Z",
+  "canonical": "C:/PROJECTS/Genesis-AI-Juris/.worktrees/inv01-2026-09-28",
+  "branch": "codex/inv01-2026-09-28",
+  "previousHead": "f880bcaf961066db2e776e32e3bfbb89e19e001d",
+  "integratedHead": "efadf24fc186288ce4ee25da5f5a7d9d1eb6baff",
+  "aggregateExit": 0,
+  "sourceUnchanged": true,
+  "method": "Incremental reviewed patch of two preserved dirty files; exact incoming blob checks; stage only those paths; fast-forward merge",
+  "preservedUntrackedCount": 19,
+  "preservedUntracked": [
+    {
+      "path": "docs/testing/inv01-2026-09-28/2026-09-29/INDEPENDENT_CONTINUATION_REVIEW.md",
+      "sha256": "73f2f3c8b03199e085806b4e1607af64a729541be6f6774a5572de9734176d35"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/2026-09-29/PAGINATION_REVIEW.md",
+      "sha256": "f2834717f1da919ae8d30dae62aa926b4a1b13fff6e0f8519ab2089fdffc3cc7"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/2026-09-29/REMAINING_ACCEPTANCE_REVIEW.md",
+      "sha256": "f77db5e3856225dee215546f3fad825384258fe371030b08473436fe3fad5bf2"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/2026-09-29/pdfs/render-reviewed.ts",
+      "sha256": "87597022a203e8d8bb78f99c881f94404bf3ece87fa8bec627829ed1db508bfd"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/2026-09-29/pdfs/review-render.log",
+      "sha256": "c2dd5345abd2fb469578bd49574f7dda77da354ed606dc25bfd61e3c76fce305"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/2026-09-29/pdfs/review/full-en-off.pdf",
+      "sha256": "ad9534c73bb273d1c1295d2892f9ce1097e3c48e81420f6acf619bdd972507d7"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/2026-09-29/pdfs/review/full-en-off.txt",
+      "sha256": "fef576d0d576e7d96c856e7adeedc1dfaaff24007240bcacab136c1cc9821291"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/2026-09-29/pdfs/review/full-en-on.pdf",
+      "sha256": "9d0ca79c5e373f63fd47bc08a519e6e55232427a66bf6cef4e44f4af0097845d"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/2026-09-29/pdfs/review/full-en-on.txt",
+      "sha256": "60df8ffacafc7bca65bc4f874ded2d67ae63b4c4692ff570214b65f2141752dd"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/2026-09-29/pdfs/review/full-ru-off.pdf",
+      "sha256": "4a23df413c170567eded41197f52e31e028996c949eb57594529a9733c2392b3"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/2026-09-29/pdfs/review/full-ru-off.txt",
+      "sha256": "5d52bfa06f84a434ebda6dff5e60788795c48378c106c346cb75796e823bbd8f"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/2026-09-29/pdfs/review/full-ru-on.pdf",
+      "sha256": "813a163c9e483241d02317bdf1aa02c4d13ac7a15b0a9a3cf20e847217ee8c13"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/2026-09-29/pdfs/review/full-ru-on.txt",
+      "sha256": "11ac216d2f306d0bfb974c71bca6756c45dc6e07e460c67fdcef3b7273b6a195"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/2026-09-29/pdfs/review/inspection.json",
+      "sha256": "e5bcefff358504f7a536bdcbaa9b4244599c3dd539fc845155613d6c6098554a"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/2026-09-29/pdfs/targeted-report-tests-after-review.log",
+      "sha256": "66086d31da15400c9e266964e4e6ed0f0a40a08f93a0bedbaf08fac56447eae6"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/INV29_BROWSER_SUPPORT_REVIEW.md",
+      "sha256": "c07f751addbd099b51f432e6f87f2246bf1d1d99b30a1137cd32fb8e103620e6"
+    },
+    {
+      "path": "docs/testing/inv01-2026-09-28/invitation-mailbox-interface-tests.log",
+      "sha256": "ab376ae64098e67a3f3c03c04628e2c4873689eeafb868572f00fd0659697f52"
+    },
+    {
+      "path": "scripts/tests/invitation-mailbox.ts",
+      "sha256": "658d230d6edd8809016ad09b87c39cb4c56f2801bf8842f4c8a07087fb968f41"
+    },
+    {
+      "path": "tests/invitation-mailbox-interface.test.ts",
+      "sha256": "3f6dc0d85c05882fecdaabb6a5c4c16ed55480f565301b025ae883d173ea0f95"
+    }
+  ],
+  "originalBackup": ".artifacts/p1-canonical-integration",
+  "trackedAndIndexClean": true,
+  "dependencyOperationsPerformed": [],
+  "competingWriterCheck": "Required separate fresh process/session inspection immediately before this script",
+  "publication": false
+}
