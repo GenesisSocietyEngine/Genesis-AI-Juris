@@ -130,7 +130,7 @@ validator_followup: d7a52d836f4f51b9c510af38513bcb2722cbd6a2
 android_followup: de7ac065d095a0e268e14961b4b74edd754cf52e
 latest_published_release_tag: v60-v61-rc.1
 app_version: 60.0.0+61
-decision_dossier_v62_status: exact_heads_verified_and_pushed_sites_save_blocked_pending_main_authorization
+decision_dossier_v62_status: site_version_64_saved_environment_revision_27_prepared_fresh_production_approval_pending
 decision_dossier_v62_web_starting_head: 8bd10594bc01e5a45183a743396ac24b7aeaf321
 decision_dossier_v62_mobile_starting_head: 29f862649dea378cfe3d4e145f5e396bf6d4c6ff
 decision_dossier_v62_web_release_head: d0de58c3b522189841a269bc91bc15aa45ba8370
@@ -140,11 +140,248 @@ decision_dossier_v62_mobile_gate: exact_head_flutter_258_of_258_rust_android_12_
 decision_dossier_v62_slice5_gate: frozen_migrations_0012_0015_adversarial_audit_green_runtime_acceptance_29_of_29
 decision_dossier_v62_web_gate: exact_head_release_verifier_strict_type_lint_build_audit_pdf_and_494_of_494_green
 decision_dossier_v62_browser_gate: local_http_green_visual_controller_service_unavailable
-decision_dossier_v62_remote_state: feature_branches_pushed_no_saved_site_version_production_unchanged_main_authorization_required
-last_updated: 2026-09-01
+decision_dossier_v62_remote_state: sites_main_and_saved_version_64_at_exact_web_head_production_version_63_unchanged
+decision_dossier_v62_sites_saved_version: 64
+decision_dossier_v62_sites_environment_revision: 27
+decision_dossier_v62_sites_saved_archive_hash: sha256:41de8fa3a96c343b90058755304ac8cb02d24470c76c2ae5294d69ff66c87d51
+tax_economics_v2_audit_status: copilot_claim_rejected_local_rust_only_not_integrated_not_releasable
+tax_economics_v2_local_head: 6ca50f24ab3a763ac80e5cd221c15db4a7592fd8
+tax_economics_v2_release_inclusion: excluded_from_site_version_64_and_mobile_release_head
+site69_v64_recovery_pr: 45
+site69_v64_pr_state: merged
+site69_v64_recovery_status: merged_exact_approved_head_no_deploy_external_release_blockers_open
+site69_v64_recovery_original_head: 940a465fe2849552962408e5a0510f93bb80f583
+site69_v64_recovery_candidate_head: fd7a227385b9674466c08fe98a685a36911696c0
+site69_v64_recovery_manifest_sha256: 489f3f7a8b97a42a0e1d441f6f754a496e5252ee55aa793ed133991e2745f1e3
+site69_v64_merge_commit: 280394640f0fc4d2a87e098edd6d34001393c557
+site69_v64_merge_tree: d3e14e34db68830f4eb73fc84bc27bce5713577c
+site69_v64_merge_parents: c088200138332cd212b87e266746ea85b53a2f77_then_fd7a227385b9674466c08fe98a685a36911696c0
+site69_v64_merged_at_utc: 2026-09-04T13:48:45Z
+site69_v64_provenance_merge: 48227d0af54d7f5c117f3d29311f399602fe1933
+site69_v64_provenance_tree: e415361e9a39fc823d625f80c883398b18914e6e
+site69_v64_dependency_audit: full_and_production_zero_vulnerabilities
+site69_v64_actions_status: zero_pr_head_and_merge_commit_runs_contexts_workflows_absent
+site69_v64_merge_commit_deployments: zero
+site69_v64_provider_receipt: externally_blocked_missing_deployment_identity_and_terminal_receipt
+site69_v64_hosted_review_status: all_five_scopes_complete_no_open_p0_p1_p2_threads
+site69_v64_hosted_review_receipt: exact_request_anchors_plus_short_commit_results_full_sha_and_digest_not_echoed
+site69_v64_review_threads: four_resolved_zero_open
+site69_v64_pdf_qa: blocked_no_approved_poppler_workflow
+site69_v64_flutter_exact_lock: blocked_no_pin_and_five_resolution_changes
+site69_v64_rust_hosted_exact_lock: blocked_quality_jobs_not_fully_locked
+site69_v64_merge_authority: granted_for_exact_head_and_manifest_then_consumed
+last_updated: 2026-09-04
 ---
 
 # Current Progress
+
+## PR #45 Site 69/v64 baseline-recovery checkpoint - 2026-09-04
+
+Work remained confined to PR #45. After literal approval naming the exact head
+and manifest digest, PR #45 was marked ready and merged with the merge-commit
+strategy. PR #43 was not touched. Nothing was deployed; no Site version,
+production resource, confidential-upload capability, secret, mobile
+distribution, Phase B, or Phase C work was created.
+
+The immutable provenance merge is still
+`48227d0af54d7f5c117f3d29311f399602fe1933`, with ordered parents
+`c088200138332cd212b87e266746ea85b53a2f77` then
+`6019e47346a2bf719a09dc1d874a2fc807f99598`, and tree
+`e415361e9a39fc823d625f80c883398b18914e6e`. Its diff from the second
+parent is empty. The Site source contains 373 tracked paths. Migrations
+`0011` through `0018`, their snapshots, and the journal remain byte-identical;
+the journal ends at 18 and the next tenant migration number remains `0019`.
+
+The exact pushed PR head is
+`fd7a227385b9674466c08fe98a685a36911696c0`. Descendants added after the
+original `940a465fe2849552962408e5a0510f93bb80f583` head are:
+
+- `51ea26a6e0e399bbd898cbddb57b581ed92c3a95` - deliberate browserslist,
+  fast-uri, and nested-esbuild audit remediation;
+- `ea00ad7fdf6c5ff788a2e9d762f19aebdb01dd50` - in-range
+  `fflate@0.7.5` completion;
+- `fd7a227385b9674466c08fe98a685a36911696c0` - fail-closed verifier and
+  evidence-receipt hardening.
+
+No `npm audit fix`, force flag, ignored advisory, or severity downgrade was
+used. The original lock currently resolves to eight advisory records represented
+by seven package findings, one additional moderate `fflate` finding beyond the
+six-finding handoff. The candidate full and production audits both report zero
+vulnerabilities. At the literal pushed head, clean installation resolves 530
+packages; strict TypeScript, ESLint, the Vinext production build, all 496 web
+tests, the 18-route parity lock, and the Drizzle configuration check pass. The
+checkout is clean and LF-exact.
+
+The hardened verifier passed on an LF-exact clean checkout with the original
+51,822,446-byte bundle, bundle SHA-256
+`fddb2f07cf2c8220169d758f7490e57695623bf1ca1d16574b2abefa509a657e`,
+and closed-manifest SHA-256
+`489f3f7a8b97a42a0e1d441f6f754a496e5252ee55aa793ed133991e2745f1e3`.
+It permits exactly the receipt, verifier, `package.json`, and
+`package-lock.json`, binding status, mode, Git blob, and raw SHA-256. It also
+checks raw commit headers with replacement processing disabled, rejects
+shallow/replaced/grafted history, validates every descendant commit path, and
+compares every tracked working byte to its Git blob. Negative regression tests
+prove failure on the wrong head, wrong manifest, an untracked file, an ordinary
+tracked-byte mutation, a tracked mutation hidden with `assume-unchanged`, a
+replace ref, a legacy graft, and a committed fifth path.
+
+During the merge preflight, the linked branch worktree was Git-clean but had
+checkout-only CRLF materialization in 360 of 375 tracked files, so the raw-byte
+gate correctly failed there first at `.env.example`. No commit or remote object
+had changed. Re-running the same external head and manifest anchors in the
+LF-exact detached checkout passed end-to-end immediately before merge.
+
+The four canonical manifest file records are:
+
+- `A 100644 docs/SITE69-BASELINE-RECOVERY-RECEIPT.md`, Git blob
+  `8cf2f61f8552ea16e46d0b0edb804f969488695f`, raw SHA-256
+  `f4f443775c69d2d39b144c6fabf6cf736c1b06e4a673bc26dd85a17096a102c0`.
+- `M 100644 package-lock.json`, Git blob
+  `d5f1c661dd74c9bcda3d04697098ae62a0110016`, raw SHA-256
+  `f2a5b6aa624c79b208d46202a928149f03dd5968192c0ce874c34b6f65143975`.
+- `M 100644 package.json`, Git blob
+  `5f787e0355376ef851a2cbb07138df49344874d5`, raw SHA-256
+  `6e7af469aeef1fb39f5280ddfb2dede6598e6bf97f825f2e394cb8273da83798`.
+- `A 100644 scripts/verify-site69-baseline-recovery.ps1`, Git blob
+  `9824c2d0f6bb9772cd4f275c4b1fc13e2949212d`, raw SHA-256
+  `d7854a6afe131de98150ab88d525346e0cf9e43905fb7009b172573dc4c0da8f`.
+
+GitHub Actions itself is enabled and unrestricted. PR #45 has no workflow runs
+or status contexts because both the recovery head and synthetic merge tree
+delete `.github/workflows`; none of the four default-branch workflows supports
+manual dispatch, and the recovery tree lacks their Rust/mobile inputs. No
+no-op commit, fabricated status, `pull_request_target` workaround, or branch
+protection change was used.
+
+Fresh hosted push-event reruns are tied to raw mobile/Rust commit
+`5200b30cc50c77393c6f48b52ce91c0f30e70c64`, not the differently keyed PR
+merge tree. Rust `33535764471`, Flutter `33535764450`, Android
+`33535764448`, and iOS `33535764481`, all attempt 2, concluded `success`.
+Local locked Rust format, Clippy, MSRV, 359 tests, and doc-tests pass.
+
+Flutter is not genuinely exact-lock in CI. YAML floats on `channel: stable`;
+the hosted attempts resolved Flutter 3.47.2 / Dart 3.13.2 while project metadata
+and Windows goldens identify Flutter 3.44.8. `pub get --enforce-lockfile`
+correctly fails because five resolutions would change. With 3.47.2, analysis
+passes, but the no-write formatter would change 97 of 117 files and local
+Windows tests are 265/275 with ten version-keyed golden diffs. No source,
+lockfile, formatting, or golden baseline was rewritten. Hosted Flutter reports
+263 passed and skips all 12 Windows goldens; Android/iOS also use ordinary
+`pub get`, so their green native results are not immutable-lock evidence.
+
+Hosted review progress at exact current head `fd7a227` is:
+
+- General Codex Code Review: clean, request comment `5536262035`, result comment
+  `5536287891`.
+- Provenance identity/zero-diff review: clean, request `5536293852`, result
+  `5536309570`.
+- Original recovery-only diff `48227d0..940a465`: completed in review submitted
+  at `2026-09-04T05:55:02Z`. It identified three P1 and one P2 weaknesses in
+  the historical verifier and explicitly confirmed all four are fixed at
+  `fd7a227`. Regression evidence was posted and all four review threads
+  (`PRRT_kwDOTiwDjc6fLiQe`, `PRRT_kwDOTiwDjc6fLiQh`,
+  `PRRT_kwDOTiwDjc6fLiQk`, `PRRT_kwDOTiwDjc6fLiQl`) are resolved.
+- Complete-head Codex Security Review: clean with no P0/P1/P2 findings, request
+  `5536360560`, result `5536419042`. The generic terminal response names
+  reviewed commit prefix `fd7a227385`, but does not repeat the requested full
+  SHA, manifest digest, or detailed audit scope; retain that evidence limitation.
+- Immutable migration review: clean with no P0/P1/P2 findings, separate request
+  `5536426706`, result `5536445472`. The generic terminal response names
+  reviewed commit prefix `fd7a227385`, but does not repeat the requested Site
+  source, full SHA, or manifest digest; retain that evidence limitation.
+
+All five hosted review scopes therefore completed serially at the unchanged
+head. The connector's generic clean result comments identify only the reviewed
+10-character commit prefix and do not echo the complete externally anchored
+head, manifest digest, or every requested scope. The exact request comments and
+unchanged GitHub head provide the available correlation; no stronger receipt is
+inferred.
+
+Open post-merge release/deployment evidence gaps are:
+
+1. The immutable provider receipt remains missing: deployment ID, terminal
+   `succeeded` status, production target, start/finish timestamps, saved version
+   ID, and deployed source SHA. The runtime marker is not a substitute.
+2. No approved workflow performs hosted PDF QA with Poppler text extraction and
+   page rendering.
+3. Flutter/Dart must be pinned and `pubspec.lock` enforced without mass-formatting
+   legacy files or silently refreshing goldens.
+4. Hosted Rust quality jobs need lockfile enforcement throughout, not only in
+   the MSRV job, before they constitute immutable hosted exact-lock evidence.
+5. PR-head and merge-commit workflow/status evidence remains absent; recovery-CI
+   or integration scope would need separate approval and cannot be manufactured
+   from the workflow-less tree.
+
+The branch was pushed only by fast-forward (`940a465..fd7a227`) without force.
+The final PR body publishes the exact head, canonical manifest rows/digest,
+complete evidence matrix, and blockers.
+
+The user then supplied the following literal, scope-limited merge authority:
+
+> Approve merge of PR #45 at exact head fd7a227385b9674466c08fe98a685a36911696c0 with closed-manifest SHA-256 489f3f7a8b97a42a0e1d441f6f754a496e5252ee55aa793ed133991e2745f1e3. This approval does not authorize deployment, Site-version creation, production changes, confidential uploads, mobile distribution, or Phase B/C.
+
+PR #45 was marked ready and merged at `2026-09-04T13:48:45Z` using an ordinary
+merge commit, without admin bypass, squash, rebase, force push, or branch
+deletion. Merge commit `280394640f0fc4d2a87e098edd6d34001393c557` has
+ordered parents `c088200138332cd212b87e266746ea85b53a2f77` then
+`fd7a227385b9674466c08fe98a685a36911696c0`; its tree
+`d3e14e34db68830f4eb73fc84bc27bce5713577c` exactly equals the approved PR
+head tree. The nested provenance merge remains unchanged. GitHub reports zero
+Actions runs, zero check suites, zero status contexts, and zero deployments for
+the merge commit.
+
+Next-agent boundary: PR #45 is already merged; do not re-merge or alter its
+history. Do not repeat completed remediation or reviews. The five evidence gaps
+above remain open for any later release decision. No deployment or Site-version
+authority was granted, so do not infer provider success, deploy, modify
+production, touch PR #43, create mobile distribution, or start Phase B/C.
+
+## CODEX Tax Economics v2 Copilot claim audit checkpoint - 2026-09-01
+
+A read-only object/ref audit rejects the supplied “complete and
+production-ready” status. Local branch
+`feat/professional-product-ui-redesign-pilot-v2` is at
+`6ca50f24ab3a763ac80e5cd221c15db4a7592fd8`, has no upstream, is absent from
+GitHub, and has no exact-SHA Actions receipt. The pre-existing formatting-only
+`Cargo.toml` worktree change was preserved.
+
+Only the isolated Rust crate files
+`crates/juris-tax-economics/Cargo.toml`,
+`crates/juris-tax-economics/src/lib.rs`, and
+`crates/juris-tax-economics/src/ffi.rs` exist and are tracked. All claimed
+Flutter client/model/screen/test files and the three claimed integration/handoff
+documents are absent. The crate emits only an `rlib`; the real mobile FFI crate
+does not depend on it, and Android/iOS do not build or link it. There is no
+navigation, persistence-envelope, PDF/web, Dart/native ABI, end-to-end, Android
+workflow, or hosted CI coverage for this tax surface.
+
+The branch is not based on mobile release
+`268401ab7dbc12cdc80c20a281268189aad01e60`: its merge base is
+`39b856320ed5dc397562068706c4cea7d703899c`, with 24 branch-only and 30
+release-only commits; the branch snapshot is missing 194 release paths.
+Independent source review also found release-blocking calculation defects:
+derived tax base and rate are ignored, implementation cost is incorrectly
+annualized, maintenance is subtracted twice, and a negative tax effect is
+clamped while described as preserved.
+
+This work is not approved for merge or deployment and is excluded from both
+saved Site version 64 and the verified mobile release head. It requires a
+separate integration branch, corrected authoritative calculations, real native
+and Flutter wiring, persistence/PDF coverage, exact-head tests, and hosted CI
+before it can be reconsidered.
+
+Follow-up 2026-09-29 (local commit on this branch, not pushed): the four calculation defects are
+corrected in `crates/juris-tax-economics`. The `rates` basis now applies both
+rates to the effective base (override, or a base recomputed from components;
+the stored `derived_annual_tax_base` is treated as a cache only). An incomplete
+base or unknown basis returns a typed `TaxEconomicsError`, not a zero.
+Implementation cost is annualised over horizon years. Maintenance is subtracted
+once. A negative tax effect is carried in full, without a realisation haircut,
+and ROI may be negative. Basis-point arithmetic is widened to `i128`. Locked
+Clippy `-D warnings` and 21 of 21 crate tests pass. Still open: NPV omits one-off
+benefits and does not discount terminal cost, benefit `start_month`/`end_month`
+are ignored, and every integration item above.
 
 ## Decision-Centric Dossier Workspace v62 release-candidate checkpoint - 2026-09-01
 
@@ -173,15 +410,18 @@ trusted browser-control service is unavailable in this chat; no unsupported
 automation substitute was used.
 
 Exact web head `d0de58c3b522189841a269bc91bc15aa45ba8370` is also pushed on
-`codex/v62-report-graph-pagination`, and the repository release verifier passed
-on both immutable heads. Sites refused to save the candidate because its
-configured source branch is `main`, which still does not point to the release
-commit. Updating or merging `main` is a separate external write and remains
-unapproved. After that authorization, the remaining boundary is one saved Site
-version, the two exact release-identity environment values, fresh explicit
-approval immediately before production deployment, and post-deployment
-verification. Production remains Site version 63 / marker `v61`; no app-store
-release is authorized.
+`codex/v62-report-graph-pagination` and Sites `main`, and the repository
+release verifier passed on both immutable heads. Exactly one Site version was
+saved: version 64, bound to that exact commit and a stored 315-file archive with
+content hash
+`sha256:41de8fa3a96c343b90058755304ac8cb02d24470c76c2ae5294d69ff66c87d51`.
+Only `GENESIS_DEPLOYMENT_VERSION=64` and
+`GENESIS_WEB_COMMIT=d0de58c3b522189841a269bc91bc15aa45ba8370` were prepared in
+environment revision 27. The currently serving deployment remains successful
+Site version 63 at environment revision 26, with active custom domain and SSL.
+Fresh explicit approval is still required immediately before production
+deployment and post-deployment verification. No app-store release is
+authorized.
 
 ## Earlier Decision-Centric Dossier Workspace v62 active checkpoint - 2026-09-01
 

@@ -126,7 +126,8 @@ pub extern "C" fn juris_calculate_recognized_benefits(
 /// # Arguments
 /// * `model_json` - JSON string of TaxEconomicsV2
 /// # Returns
-/// JSON string of TaxEconomicsCalculationResult
+/// JSON string of TaxEconomicsCalculationResult, or
+/// `{"error": ..., "detail": TaxEconomicsError}` when inputs are incomplete
 #[no_mangle]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn juris_calculate_tax_economics(model_json: *const c_char) -> *mut c_char {
@@ -144,7 +145,17 @@ pub extern "C" fn juris_calculate_tax_economics(model_json: *const c_char) -> *m
         Err(e) => return allocate_error_string(&format!("Failed to parse model: {}", e)),
     };
 
-    let result = calculate_tax_economics_v2(&model);
+    let result = match calculate_tax_economics_v2(&model) {
+        Ok(r) => r,
+        Err(e) => {
+            let error_json = serde_json::json!({
+                "error": "Tax economics inputs are incomplete",
+                "detail": e
+            })
+            .to_string();
+            return allocate_string(&error_json);
+        }
+    };
     match serde_json::to_string(&result) {
         Ok(json) => allocate_string(&json),
         Err(e) => allocate_error_string(&format!("Failed to serialize result: {}", e)),

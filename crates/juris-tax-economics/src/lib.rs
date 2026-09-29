@@ -338,11 +338,30 @@ pub fn calculate_tax_base_from_components(
 }
 
 /// Get effective annual tax base (override priority)
+///
+/// In derived mode the base is recomputed from the included components rather than
+/// read from `derived_annual_tax_base`, which is only a persisted cache and may be
+/// stale. Declared missing inputs or an empty component set yield `None`, never a
+/// false zero.
 pub fn effective_annual_tax_base(model: &TaxEconomicsV2) -> Option<i64> {
     match model.tax_base_mode {
         TaxBaseMode::ManualOverride => model.annual_tax_base_override,
-        TaxBaseMode::Derived => model.derived_annual_tax_base,
+        TaxBaseMode::Derived => {
+            let has_included_component = model
+                .tax_base_components
+                .iter()
+                .any(|c| c.include_in_calculation);
+            if !model.missing_tax_base_inputs.is_empty() || !has_included_component {
+                return None;
+            }
+            Some(calculate_tax_base_from_components(&model.tax_base_components).calculated_tax_base)
+        }
     }
+}
+
+/// Apply a basis-point fraction without intermediate overflow (truncates toward zero)
+fn apply_bps(amount: i64, bps: i64) -> i64 {
+    ((amount as i128 * bps as i128) / 10_000) as i64
 }
 
 // ============================================================================
@@ -365,7 +384,8 @@ pub fn calculate_recognized_benefits(
         let realization = item.realization_bps.unwrap_or(global_realization_bps) as i64;
         let probability = item.probability_bps.unwrap_or(10000) as i64;
 
-        let net_amount = (item.amount * realization * probability) / (10000i64 * 10000i64);
+        let net_amount = ((item.amount as i128 * realization as i128 * probability as i128)
+            / (10_000i128 * 10_000i128)) as i64;
 
         match item.timing {
             BenefitTiming::RecurringAnnual => {
@@ -390,9 +410,22 @@ pub fn calculate_recognized_benefits(
 // PART C: TAX ECONOMICS CALCULATIONS
 // ============================================================================
 
+/// Reason a tax economics calculation cannot be completed
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "code", rename_all = "snake_case")]
+pub enum TaxEconomicsError {
+    /// Rate basis requires an effective annual tax base, which is incomplete
+    MissingTaxBase { missing_inputs: Vec<String> },
+    /// `tax_input_basis` is neither "rates" nor "amounts"
+    UnknownTaxInputBasis { value: String },
+}
+
 /// Tax economics calculation result with all intermediate values
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaxEconomicsCalculationResult {
+    pub effective_annual_tax_base: Option<i64>,
+    pub baseline_annual_tax_cost: i64,
+    pub optimized_annual_tax_cost: i64,
     pub recognized_annual_tax_saving: i64,
     pub recognized_recurring_benefits: i64,
     pub recognized_one_off_benefits: i64,
@@ -405,12 +438,55 @@ pub struct TaxEconomicsCalculationResult {
     pub payback_months: Option<u32>,
 }
 
+/// Resolve baseline and optimized annual tax cost for the model's input basis
+///
+/// "rates" applies both rates to the effective annual tax base (a negative base
+/// yields zero tax); "amounts" uses the entered annual costs directly.
+fn resolve_annual_tax_costs(
+    model: &TaxEconomicsV2,
+    base: Option<i64>,
+) -> Result<(i64, i64), TaxEconomicsError> {
+    match model.tax_input_basis.as_str() {
+        "amounts" => Ok((
+            model.baseline_annual_tax_cost,
+            model.optimized_annual_tax_cost,
+        )),
+        "rates" => {
+            let base = base.ok_or_else(|| TaxEconomicsError::MissingTaxBase {
+                missing_inputs: if model.missing_tax_base_inputs.is_empty() {
+                    vec!["annual_tax_base".to_string()]
+                } else {
+                    model.missing_tax_base_inputs.clone()
+                },
+            })?;
+            let taxable = base.max(0);
+            Ok((
+                apply_bps(taxable, model.baseline_tax_rate_bps as i64),
+                apply_bps(taxable, model.optimized_tax_rate_bps as i64),
+            ))
+        }
+        other => Err(TaxEconomicsError::UnknownTaxInputBasis {
+            value: other.to_string(),
+        }),
+    }
+}
+
 /// Calculate complete tax economics with benefits integration
-pub fn calculate_tax_economics_v2(model: &TaxEconomicsV2) -> TaxEconomicsCalculationResult {
-    // Recognized annual tax saving = max(0, baseline - optimized) × realization
-    let tax_saving_base = (model.baseline_annual_tax_cost - model.optimized_annual_tax_cost).max(0);
-    let realization = model.benefit_realization_bps as i64;
-    let recognized_annual_tax_saving = (tax_saving_base * realization) / 10000;
+pub fn calculate_tax_economics_v2(
+    model: &TaxEconomicsV2,
+) -> Result<TaxEconomicsCalculationResult, TaxEconomicsError> {
+    let effective_base = effective_annual_tax_base(model);
+    let (baseline_annual_tax_cost, optimized_annual_tax_cost) =
+        resolve_annual_tax_costs(model, effective_base)?;
+
+    // Positive savings are haircut by realization; a negative tax effect is carried
+    // in full so a worse outcome is never softened.
+    let raw_tax_saving = baseline_annual_tax_cost - optimized_annual_tax_cost;
+    let recognized_annual_tax_saving = if raw_tax_saving > 0 {
+        apply_bps(raw_tax_saving, model.benefit_realization_bps as i64)
+    } else {
+        raw_tax_saving
+    };
 
     // Recognized benefits from items
     let benefits =
@@ -422,21 +498,21 @@ pub fn calculate_tax_economics_v2(model: &TaxEconomicsV2) -> TaxEconomicsCalcula
     // Operating annual benefit = gross - annual maintenance cost
     let operating_annual_benefit = gross_recognized_annual_benefit - model.annual_maintenance_cost;
 
-    // Annualized net benefit = operating - annualized implementation cost
+    // Annualized net benefit = operating - implementation cost spread over horizon years
     let annualized_implementation =
-        model.implementation_cost / model.analysis_horizon_months.max(1) as i64;
+        (model.implementation_cost * 12) / model.analysis_horizon_months.max(1) as i64;
     let annualized_net_benefit = operating_annual_benefit - annualized_implementation;
 
-    // Lifecycle: all benefits/costs over horizon
-    let horizon_annual = (operating_annual_benefit * model.analysis_horizon_months as i64) / 12;
-    let lifecycle_net_benefit = horizon_annual + benefits.one_off
+    // Lifecycle: operating benefit (already net of maintenance) over the horizon,
+    // plus one-off benefits, less one-off costs
+    let horizon_operating = (operating_annual_benefit * model.analysis_horizon_months as i64) / 12;
+    let lifecycle_net_benefit = horizon_operating + benefits.one_off
         - model.implementation_cost
-        - model.terminal_tax_or_unwind_cost
-        - (model.annual_maintenance_cost * model.analysis_horizon_months as i64) / 12;
+        - model.terminal_tax_or_unwind_cost;
 
     // Simple payback in months
     let payback_months = if operating_annual_benefit > 0 {
-        Some(((model.implementation_cost * 12) / operating_annual_benefit) as u32)
+        u32::try_from((model.implementation_cost * 12) / operating_annual_benefit).ok()
     } else {
         None
     };
@@ -452,14 +528,18 @@ pub fn calculate_tax_economics_v2(model: &TaxEconomicsV2) -> TaxEconomicsCalcula
     }
     npv -= model.terminal_tax_or_unwind_cost as f64;
 
-    // Lifecycle ROI in basis points
-    let lifecycle_roi_bps = if lifecycle_net_benefit > 0 && model.implementation_cost > 0 {
-        Some(((lifecycle_net_benefit * 10000) / model.implementation_cost) as i32)
+    // Lifecycle ROI in basis points (negative when the lifecycle loses money)
+    let lifecycle_roi_bps = if model.implementation_cost > 0 {
+        i32::try_from((lifecycle_net_benefit as i128 * 10_000) / model.implementation_cost as i128)
+            .ok()
     } else {
         None
     };
 
-    TaxEconomicsCalculationResult {
+    Ok(TaxEconomicsCalculationResult {
+        effective_annual_tax_base: effective_base,
+        baseline_annual_tax_cost,
+        optimized_annual_tax_cost,
         recognized_annual_tax_saving,
         recognized_recurring_benefits: benefits.recurring_annual,
         recognized_one_off_benefits: benefits.one_off,
@@ -470,7 +550,7 @@ pub fn calculate_tax_economics_v2(model: &TaxEconomicsV2) -> TaxEconomicsCalcula
         lifecycle_roi_bps,
         npv: npv.round() as i64,
         payback_months,
-    }
+    })
 }
 
 // ============================================================================
@@ -1093,7 +1173,7 @@ mod tests {
         model.override_as_of = Some("2026-09-01".to_string());
 
         // Recalculate (should not erase override)
-        let _result = calculate_tax_economics_v2(&model);
+        let _result = calculate_tax_economics_v2(&model).unwrap();
 
         // Override still exists
         assert_eq!(effective_annual_tax_base(&model), Some(1_000_000));
@@ -1132,7 +1212,7 @@ mod tests {
             include_in_base_case: true,
         }];
 
-        let result = calculate_tax_economics_v2(&model);
+        let result = calculate_tax_economics_v2(&model).unwrap();
         let tax_saving = 30_000; // (100k - 70k) × 100%
         let recurring_benefits = 13_500; // 15k × 90%
         assert_eq!(result.recognized_annual_tax_saving, tax_saving);
@@ -1152,10 +1232,175 @@ mod tests {
         model.optimized_annual_tax_cost = 80_000; // Optimized > baseline (negative effect)
         model.benefit_items = vec![];
 
-        let result = calculate_tax_economics_v2(&model);
-        // max(0, 50k - 80k) = max(0, -30k) = 0
-        assert_eq!(result.recognized_annual_tax_saving, 0);
-        // Negative effect is preserved by returning 0 (no artificial positive haircut)
+        model.benefit_realization_bps = 5000;
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        // 50k - 80k = -30k, carried in full: realization does not soften a loss
+        assert_eq!(result.recognized_annual_tax_saving, -30_000);
+        assert_eq!(result.operating_annual_benefit, -30_000);
+        assert_eq!(result.payback_months, None);
+    }
+
+    fn component(
+        id: &str,
+        category: TaxBaseComponentCategory,
+        signed_amount: i64,
+    ) -> TaxBaseComponent {
+        TaxBaseComponent {
+            id: id.to_string(),
+            label: id.to_string(),
+            category,
+            signed_amount,
+            source_type: "case_fact".to_string(),
+            source_node_id: None,
+            source_field: id.to_string(),
+            period: "2026".to_string(),
+            jurisdiction: "BE".to_string(),
+            evidence_status: "estimated".to_string(),
+            include_in_calculation: true,
+            note: String::new(),
+        }
+    }
+
+    fn rates_model() -> TaxEconomicsV2 {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.tax_input_basis = "rates".to_string();
+        model.missing_tax_base_inputs = Vec::new();
+        model.tax_base_components = vec![
+            component("income", TaxBaseComponentCategory::TaxableIncome, 1_000_000),
+            component(
+                "expense",
+                TaxBaseComponentCategory::DeductibleExpense,
+                200_000,
+            ),
+        ];
+        model.baseline_tax_rate_bps = 2500;
+        model.optimized_tax_rate_bps = 2000;
+        model
+    }
+
+    #[test]
+    fn test_rates_basis_uses_derived_base() {
+        let mut model = rates_model();
+        // Entered amounts and a stale cache must not override the derivation
+        model.baseline_annual_tax_cost = 999;
+        model.optimized_annual_tax_cost = 1;
+        model.derived_annual_tax_base = Some(42);
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        assert_eq!(result.effective_annual_tax_base, Some(800_000));
+        assert_eq!(result.baseline_annual_tax_cost, 200_000); // 800k × 25%
+        assert_eq!(result.optimized_annual_tax_cost, 160_000); // 800k × 20%
+        assert_eq!(result.recognized_annual_tax_saving, 40_000);
+    }
+
+    #[test]
+    fn test_rates_basis_uses_manual_override() {
+        let mut model = rates_model();
+        model.tax_base_mode = TaxBaseMode::ManualOverride;
+        model.annual_tax_base_override = Some(400_000);
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        assert_eq!(result.baseline_annual_tax_cost, 100_000);
+        assert_eq!(result.optimized_annual_tax_cost, 80_000);
+    }
+
+    #[test]
+    fn test_rates_basis_incomplete_base_is_error_not_zero() {
+        let mut model = rates_model();
+        model.missing_tax_base_inputs = vec!["operating_profit".to_string()];
+
+        assert_eq!(
+            calculate_tax_economics_v2(&model).unwrap_err(),
+            TaxEconomicsError::MissingTaxBase {
+                missing_inputs: vec!["operating_profit".to_string()]
+            }
+        );
+
+        model.missing_tax_base_inputs = Vec::new();
+        model.tax_base_components.clear();
+        assert!(matches!(
+            calculate_tax_economics_v2(&model),
+            Err(TaxEconomicsError::MissingTaxBase { .. })
+        ));
+    }
+
+    #[test]
+    fn test_unknown_input_basis_rejected() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.tax_input_basis = "guess".to_string();
+        assert_eq!(
+            calculate_tax_economics_v2(&model).unwrap_err(),
+            TaxEconomicsError::UnknownTaxInputBasis {
+                value: "guess".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn test_implementation_annualized_over_years_and_maintenance_once() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.baseline_annual_tax_cost = 100_000;
+        model.optimized_annual_tax_cost = 70_000;
+        model.implementation_cost = 50_000;
+        model.annual_maintenance_cost = 5_000;
+        model.terminal_tax_or_unwind_cost = 10_000;
+        model.analysis_horizon_months = 120;
+        model.benefit_items = vec![TaxBenefitItem {
+            id: "one_off".to_string(),
+            label: "Refund".to_string(),
+            benefit_type: BenefitType::OneOffBenefit,
+            timing: BenefitTiming::OneOff,
+            amount: 7_000,
+            start_month: 1,
+            end_month: None,
+            realization_bps: None,
+            probability_bps: None,
+            source_node_ids: vec![],
+            note: None,
+            include_in_base_case: true,
+        }];
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        assert_eq!(result.operating_annual_benefit, 25_000); // 30k - 5k
+        assert_eq!(result.annualized_net_benefit, 20_000); // 25k - 50k / 10 years
+                                                           // 25k × 10 years + 7k - 50k - 10k; maintenance is not subtracted again
+        assert_eq!(result.lifecycle_net_benefit, 197_000);
+        assert_eq!(result.lifecycle_roi_bps, Some(39_400));
+        assert_eq!(result.payback_months, Some(24));
+    }
+
+    #[test]
+    fn test_negative_lifecycle_reports_negative_roi() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.baseline_annual_tax_cost = 10_000;
+        model.optimized_annual_tax_cost = 9_000;
+        model.implementation_cost = 50_000;
+        model.analysis_horizon_months = 12;
+
+        let result = calculate_tax_economics_v2(&model).unwrap();
+        assert_eq!(result.lifecycle_net_benefit, -49_000);
+        assert_eq!(result.lifecycle_roi_bps, Some(-9_800));
+    }
+
+    #[test]
+    fn test_large_benefit_amount_does_not_overflow() {
+        let items = vec![TaxBenefitItem {
+            id: "big".to_string(),
+            label: "Big".to_string(),
+            benefit_type: BenefitType::RevenueUplift,
+            timing: BenefitTiming::RecurringAnnual,
+            amount: 1_000_000_000_000, // 10 bn in cents
+            start_month: 1,
+            end_month: None,
+            realization_bps: Some(5000),
+            probability_bps: Some(5000),
+            source_node_ids: vec![],
+            note: None,
+            include_in_base_case: true,
+        }];
+        let result = calculate_recognized_benefits(&items, 10000);
+        assert_eq!(result.recurring_annual, 250_000_000_000);
     }
 
     #[test]
