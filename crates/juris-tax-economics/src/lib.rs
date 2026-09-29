@@ -34,7 +34,10 @@
 //! ## FFI Module
 //! The `ffi` module exposes all core functionality as C-callable interfaces for Flutter/Dart integration.
 
+#[cfg(feature = "standalone-ffi")]
 pub mod ffi;
+pub mod money;
+pub mod transport;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

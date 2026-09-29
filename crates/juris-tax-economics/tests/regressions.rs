@@ -1,4 +1,5 @@
 use juris_tax_economics::*;
+#[cfg(feature = "standalone-ffi")]
 use std::ffi::{CStr, CString};
 
 fn model() -> TaxEconomicsV2 {
@@ -293,6 +294,7 @@ fn old_result_json_is_rejected_and_input_model_recomputes() {
         serde_json::from_str::<TaxEconomicsV2>(&serde_json::to_string(&m).unwrap()).unwrap();
     assert_eq!(calculate_tax_economics_v2(&restored).unwrap().npv, 0);
 }
+#[cfg(feature = "standalone-ffi")]
 fn ffi_json(
     call: impl FnOnce(*const std::os::raw::c_char) -> *mut std::os::raw::c_char,
     value: serde_json::Value,
@@ -305,6 +307,7 @@ fn ffi_json(
     parsed
 }
 #[test]
+#[cfg(feature = "standalone-ffi")]
 fn ffi_calculation_errors_keep_the_typed_envelope() {
     let mut m = model();
     m.tax_input_basis = "rates".into();
@@ -336,6 +339,7 @@ fn ffi_calculation_errors_keep_the_typed_envelope() {
     assert_eq!(r["detail"]["code"], "invalid_input");
 }
 #[test]
+#[cfg(feature = "standalone-ffi")]
 fn ffi_helpers_report_overflow_without_crossing_abi_with_a_panic() {
     let components = vec![
         component(i64::MAX, TaxBaseComponentCategory::TaxableIncome),
@@ -377,11 +381,14 @@ fn discounted_extreme_precision_is_explicit_not_silent() {
         calculate_tax_economics_v2(&m),
         Err(TaxEconomicsError::NumericPrecision { .. })
     ));
-    let r = ffi_json(
-        |p| ffi::juris_calculate_tax_economics(p),
-        serde_json::to_value(m).unwrap(),
-    );
-    assert_eq!(r["detail"]["code"], "numeric_precision");
+    #[cfg(feature = "standalone-ffi")]
+    {
+        let r = ffi_json(
+            |p| ffi::juris_calculate_tax_economics(p),
+            serde_json::to_value(m).unwrap(),
+        );
+        assert_eq!(r["detail"]["code"], "numeric_precision");
+    }
 }
 #[test]
 fn same_date_huge_offsets_are_aggregated_before_discount_and_order_invariant() {
@@ -407,6 +414,7 @@ fn same_date_huge_offsets_are_aggregated_before_discount_and_order_invariant() {
     }
 }
 #[test]
+#[cfg(feature = "standalone-ffi")]
 fn ffi_effective_base_and_migration_also_report_overflow() {
     let mut m = model();
     m.missing_tax_base_inputs.clear();
