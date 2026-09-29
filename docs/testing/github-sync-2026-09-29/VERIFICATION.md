@@ -39,3 +39,10 @@ The original orientation attachments were identical and remain historical review
 ## Remaining release acceptance
 24 scoped passes, source merge and hosted CI are distinct evidence. This task did not run the full release script, all PDF visual comparisons, live invitation delivery, complete recipient browser flow, production migration, remaining accessibility/human acceptance or an external pilot.
 No production deployment or database migration occurred. CI runs triggered by publication must be attributed to their exact commit; pending checks are not PASS. Preserve the existing release NO-GO until its applicable gates close.
+
+## Hosted CI observed before main integration
+At implementation commit 20538d486656518ab2310a0bea5d92bc0635a2b3, Root Web and PDF run https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36521366359:
+- web-and-pdf: history preflight, dependency install, strict types, parity lock and lint PASS; complete web tests/build still RUNNING at this observation.
+- pdf-visual: FAIL in the unchanged visual-baseline gate for review:fan-in:ru:internal|stress-fan-in-ru|middle (PNG hash or governed page metadata changed).
+- No baseline update or test exclusion was made.
+The independent integration reviewer supports source synchronization under the existing branch rules while keeping this actual PDF failure as a release blocker. The merge is not a full-green CI or release claim.
