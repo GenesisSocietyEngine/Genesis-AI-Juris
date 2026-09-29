@@ -50,3 +50,13 @@ git diff --check
 On the new source, record the run/attempt, source SHA, both export checks, successful fresh preparation, explicit selected XCTest pass, phase timings, and available artifact receipt. Distinguish push and pull-request runs. If preparation times out again, inspect retained compilation evidence within the existing limits; do not increase deadlines or weaken the universal gate.
 
 This amendment changes CI orchestration only. It does not change the app, native ABI, persistence assertions, release version, web deployment, tax integration, migration/recovery acceptance or pilot evidence.
+
+## Initial hosted definition rejection and correction
+
+The first amendment source `3283778ff059dffedb2bd43a7b23a7902fae9571` was rejected before runner execution in [push run 36614503800](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36614503800), attempt 1. The jobs endpoint returned zero jobs, and no corresponding pull-request iOS job was created. No preparation or native test ran.
+
+YAML parsing had missed a GitHub Actions expression-context error: `runner.temp` is unavailable in job-level `env`. This is an amendment defect, separate from the earlier compilation timeout. [GitHub's context reference](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability) permits it in step-level `env`.
+
+Actionlint v1.7.12 reproduced the original definition error at line 16 and exited 1. The official Windows archive SHA-256 was checked against its release metadata (`6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9`). The correction moves the identical evidence path into the prepare, test and upload steps' supported `env` scopes. It changes no helper behavior, timeout or check. Initial failure history is preserved.
+
+The corrected workflow passes actionlint's GitHub Actions schema/expression validation (exit 0; optional ShellCheck/Pyflakes integrations disabled because this check targets the workflow context). GitHub acceptance of the new workflow and actual native execution remain pending; local validation is not substituted for either.

@@ -12,8 +12,6 @@ jobs:
   simulator-smoke:
     runs-on: macos-15-intel
     timeout-minutes: 45
-    env:
-      IOS_NATIVE_EVIDENCE_DIR: ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}
     defaults:
       run:
         working-directory: apps/juris-mobile
@@ -152,6 +150,8 @@ jobs:
           echo "id=$simulator_id" >> "$GITHUB_OUTPUT"
 
       - name: Prepare the exact native lifecycle test bundle
+        env:
+          IOS_NATIVE_EVIDENCE_DIR: ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}
         timeout-minutes: 15
         shell: bash
         run: |
@@ -171,6 +171,8 @@ jobs:
             "$(xcrun --find lipo)"
 
       - name: Run native Logistics lifecycle on iOS Simulator
+        env:
+          IOS_NATIVE_EVIDENCE_DIR: ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}
         timeout-minutes: 15
         shell: bash
         run: |
@@ -178,6 +180,8 @@ jobs:
             test "${{ steps.simulator.outputs.id }}" "$IOS_NATIVE_EVIDENCE_DIR"
 
       - name: Retain lifecycle preparation and execution diagnostics
+        env:
+          IOS_NATIVE_EVIDENCE_DIR: ${{ runner.temp }}/ios-native-${{ github.run_id }}-${{ github.run_attempt }}
         if: ${{ always() }}
         timeout-minutes: 5
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
