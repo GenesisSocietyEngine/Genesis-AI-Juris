@@ -145,7 +145,7 @@ decision_dossier_v62_sites_saved_version: 64
 decision_dossier_v62_sites_environment_revision: 27
 decision_dossier_v62_sites_saved_archive_hash: sha256:41de8fa3a96c343b90058755304ac8cb02d24470c76c2ae5294d69ff66c87d51
 tax_economics_v2_audit_status: copilot_claim_rejected_local_rust_only_not_integrated_not_releasable
-tax_economics_v2_local_head: 6ca50f24ab3a763ac80e5cd221c15db4a7592fd8
+tax_economics_v2_local_head: 24f8f15a1d5e004bfb8eca8650030b6d0d92d091
 tax_economics_v2_release_inclusion: excluded_from_site_version_64_and_mobile_release_head
 site69_v64_recovery_pr: 45
 site69_v64_pr_state: merged
@@ -382,6 +382,38 @@ and ROI may be negative. Basis-point arithmetic is widened to `i128`. Locked
 Clippy `-D warnings` and 21 of 21 crate tests pass. Still open: NPV omits one-off
 benefits and does not discount terminal cost, benefit `start_month`/`end_month`
 are ignored, and every integration item above.
+
+Follow-up 29/09/2026 (local commits, not pushed): the four ordered source commits are
+`3f0a3ce999b7045af8614d6cd29a1feec9e76335` (lifecycle-cost ROI),
+`3dc3df530dffe2ad59defa85325a293cad7c5302` (one-off NPV and terminal discounting),
+`eadc11f8b22698a6fc476707856d5dd999ce1840` (recurring windows and typed FFI errors),
+and `24f8f15a1d5e004bfb8eca8650030b6d0d92d091` (wide rounding and web parity).
+Before each source commit, `cargo fmt -p juris-tax-economics -- --check` and
+`cargo clippy -p juris-tax-economics --all-targets --locked -- -D warnings`
+exited 0; `cargo test -p juris-tax-economics --locked` passed respectively
+24/24, 28/28, 37/37 and 39/39 unit tests, with zero failures or ignored tests
+and zero doc-tests. The documentation-only follow-up also passes all three
+gates with the final 39/39 unit tests (35 library and four FFI tests).
+Closed in this local crate: "NPV omits one-off benefits", "does not discount
+terminal cost", "benefit start_month/end_month are ignored", and the ROI
+parity item. Full-window lifecycle regression remains exactly equal to
+`3db5edc`, including the 18-month non-divisible recurring case. All five inline
+web parity cases pass the fixed +/-1 money/basis-point tolerances and floored
+payback comparison; no explicit stop condition fired. An initial new Task 3
+test expected a mathematically exact half-cent tie, while existing f64
+accumulation approached it from below; only that new assertion was corrected
+to compare the analytical 500.5 within +/-1. No pre-existing assertion or
+rounding behavior was changed to mask it. The documented `ceil(H/12)`
+difference is qualified per annual truncation: successive truncations can
+compound beyond that bound. Wide annualization/payback intermediates also
+remove the previously reproduced multiply-before-divide overflow. Every
+integration item remains open: the separate mobile-release-based integration
+branch, actual mobile FFI/native linking, Flutter client/navigation, saved-data
+compatibility, PDF/web output, end-to-end coverage and hosted CI. No dependency,
+lockfile, extern C signature, artifact input, release inclusion, Site version,
+production resource or distribution was changed. Nothing was pushed, opened as
+a PR, merged or deployed; the pre-existing Cargo.toml formatting change remains
+uncommitted and excluded from these commits.
 
 ## Decision-Centric Dossier Workspace v62 release-candidate checkpoint - 2026-09-01
 
