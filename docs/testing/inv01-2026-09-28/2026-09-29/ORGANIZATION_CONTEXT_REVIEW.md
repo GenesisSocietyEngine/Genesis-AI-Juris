@@ -7,3 +7,9 @@ Reproduced on ordinary synthetic owner session, loopback127.0.0.1:5296, built4f2
 The revision-bearing Users & access link reached the correct organization and focused organization-users after hydration. Its URL format is supported, not a reproduced navigation defect; retain its behavior.
 
 Implementation and targeted/browser retests will be recorded below. No provider delivery, hosted acceptance, screen-reader speech or zoom PASS is inferred.
+
+## Follow-up: withdrawal must also clear the navigation role
+
+Before implementation: a synthetic owner suspended the existing synthetic administrator through ordinary UI in a separate loopback cookie scope. Recipient Refresh organization details removed the member table and actions, but left the navigation asserting Administrator. Outcome/acceptance: that fresh missing or changed membership selection must withdraw shared navigation authority as well; unchanged context keeps dirty input, and revocation during the read fences late results. No permission policy or automatic real-time notification is added. Independent security review classifies this as P2 misleading authority presentation, not a demonstrated bypass. Exact source d935110/browser digest69729d0c0a4ab078ab10464798b070230cca63800c69a95bd4f2f6a3e5fc9fc3.
+
+The d935 aggregate was interrupted during web4 for this correction. Native children survived MSYS parent termination. Read-only actual-process-working-directory evidence established ownership before approved cleanup;17 owned processes stopped,2 outside-directory console helpers excluded. The earlier4f2 run's later output continued across edits and is invalid exact-source acceptance evidence. Preserve both attempts and do not reuse their incomplete aggregate outcome.

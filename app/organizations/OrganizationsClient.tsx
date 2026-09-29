@@ -77,9 +77,13 @@ export default function OrganizationsClient({ signedIn, signInUrl }: { signedIn:
     try {
       const access=navigation.getSnapshot();
       if(access.phase!=="ready" || access.profileRequired){await navigation.refresh(new URL(window.location.href).searchParams.get("organization")??undefined);return;}
+      const ticket=navigation.authorityVersion;
       const next=await load(undefined,refreshSelection.current??selected?.id);
-      if(!mounted.current)return;
+      if(!mounted.current||navigation.authorityVersion!==ticket)return;
       if(workspace&&next.actorId!==workspace.actorId){window.location.reload();return;}
+      // A successful read can report withdrawn membership with HTTP 200. The
+      // shared rail must not continue asserting the previous role or context.
+      if(workspace?.selected&&next.selected?.selection!==workspace.selected.selection){navigation.invalidate("denied");return;}
       setWorkspace(next);setVerifiedEpoch(navigation.authorityVersion);setIssue(null);
       // A refreshed organization hint never grants authority; every write is checked on the server.
       if(next.selected){const url=new URL(window.location.href);url.searchParams.set("organization",next.selected.id);window.history.replaceState(window.history.state,"",url);window.dispatchEvent(new Event("genesis-interface-change"));}

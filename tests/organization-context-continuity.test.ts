@@ -10,22 +10,25 @@ import { NavigationController } from "../app/navigation-controller";
 // Exercise the actual administration mutation handler, not a copied state
 // machine. DOM input/focus and ordinary authentication are separate browser checks.
 const source = ts.createSourceFile("OrganizationsClient.tsx", readFileSync("app/organizations/OrganizationsClient.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-let action = "";
+let action = "", refresh = "";
 function visit(node: ts.Node) {
   if (ts.isFunctionDeclaration(node) && node.name?.text === "action") action = node.getText(source);
+  if (ts.isFunctionDeclaration(node) && node.name?.text === "refresh") refresh = node.getText(source);
   ts.forEachChild(node, visit);
 }
-visit(source); assert.ok(action);
+visit(source); assert.ok(action); assert.ok(refresh);
 const bundle = await build({ stdin: { loader: "ts", resolveDir: resolve("app/organizations"), contents: `
 import {validOrganizationReceipt,invitationRecipientIssue} from './organization-admin-model';
 export default function(env) {
  const {navigation,workspace,fetch,load,window,record}=env;
  const selected=workspace.selected,busyRef={current:false},mounted={current:true},refreshSelection={current:undefined},locale='en';
- const t=(en,ru)=>en,setBusy=value=>record.busy=value,setIssue=value=>record.issue=value,setNotice=value=>record.notice=value;
+ let issue=null;
+ const t=(en,ru)=>en,setBusy=value=>record.busy=value,setIssue=value=>{issue=value;record.issue=value;},setNotice=value=>record.notice=value;
  const setRecipient=value=>record.recipient=value,setInvitation=value=>record.invitation=value,setWorkspace=value=>record.workspace=value;
  const setVerifiedEpoch=value=>record.verifiedEpoch=value,formCommitted=form=>record.committed=form;
  ${action}
- return {action,refreshSelection};
+ ${refresh}
+ return {action,refresh,refreshSelection};
 }` }, bundle: true, write: false, platform: "node", format: "esm" });
 const file = resolve(".artifacts/organization-context/handler.mjs");
 mkdirSync(resolve(".artifacts/organization-context"), { recursive: true }); writeFileSync(file, bundle.outputFiles[0].text);
@@ -43,15 +46,19 @@ async function harness() {
   const record: Record<string, unknown> = { recipient: "unsaved@example.test", workspace };
   const loads: unknown[] = [], navigations: unknown[] = [];
   let failLoad = false, deferred: (() => Promise<Response>) | null = null;
+  let changedSelection: typeof original | null | undefined;
+  let deferredLoad: (() => Promise<unknown>) | null = null;
   const h = handler({ navigation, workspace, record,
     fetch: async () => deferred ? deferred() : Response.json({ organization: added }, { status: 201 }),
-    load: async (_signal: unknown, selection: string) => { loads.push(selection); if (failLoad) throw { code: "read_timeout", status: 0 }; available = [original, added]; return { ...workspace, organizations: available, selected: selection === added.id ? added : original }; },
+    load: async (_signal: unknown, selection: string) => { loads.push(selection); if (failLoad) throw { code: "read_timeout", status: 0 }; if (deferredLoad) return deferredLoad(); available = [original, added]; return { ...workspace, organizations: available, selected: changedSelection === undefined ? (selection === added.id ? added : original) : changedSelection }; },
     window: { history: { state: null, replaceState: (...args: unknown[]) => navigations.push(args) }, dispatchEvent: () => navigations.push("event"), location: { href: `https://synthetic.invalid/organizations?organization=${original.id}`, assign: (url: string) => navigations.push(url), reload: () => navigations.push("reload") } },
   });
   let resets = 0;
   const form = { reset: () => { resets++; } };
   return { ...h, navigation, record, workspace, loads, navigations, form, resets: () => resets,
-    failLoad: () => { failLoad = true; }, defer: (value: () => Promise<Response>) => { deferred = value; } };
+    failLoad: () => { failLoad = true; }, defer: (value: () => Promise<Response>) => { deferred = value; },
+    changeSelection: (value: typeof original | null) => { changedSelection = value; },
+    deferLoad: (value: () => Promise<unknown>) => { deferredLoad = value; } };
 }
 
 for (const scope of ["create", "accept"]) test(`${scope} refreshes the choices while retaining managed organization and unrelated input`, async () => {
@@ -78,4 +85,29 @@ test("revocation during create fences its successful late receipt", async () => 
   h.navigation.sessionBoundary("revoke"); finish(Response.json({ organization: added }, { status: 201 })); await pending;
   assert.equal(h.navigation.getSnapshot().phase, "denied"); assert.deepEqual(h.loads, []);
   assert.deepEqual(h.navigations, []); assert.equal(h.resets(), 0); assert.equal(h.record.workspace, h.workspace);
+});
+
+for (const selected of [null, { ...original, role: "member", membershipRevision: 2, selection: `${original.id}.1.2.${actorId}` }]) test(`refresh withdraws stale navigation authority for ${selected ? "a changed role revision" : "a successful missing-membership response"}`, async () => {
+  const h = await harness(); h.changeSelection(selected); await h.refresh();
+  assert.equal(h.navigation.getSnapshot().phase, "denied");
+  assert.equal(h.navigation.getSnapshot().selected, null); assert.equal(h.navigation.getSnapshot().identity, null);
+  assert.equal(h.record.workspace, h.workspace, "withdraw rather than adopt a new authority projection");
+  assert.deepEqual(h.navigations, []);
+});
+
+test("refresh with unchanged membership retains ready navigation and unrelated input", async () => {
+  const h = await harness(); await h.refresh();
+  assert.equal(h.navigation.getSnapshot().phase, "ready");
+  assert.equal(h.navigation.getSnapshot().selected?.selection, original.selection);
+  assert.equal(h.record.recipient, "unsaved@example.test");
+});
+
+test("revocation during a refresh read fences its late workspace result", async () => {
+  const h = await harness(); let finish!: (value: unknown) => void;
+  h.deferLoad(() => new Promise(resolve => { finish = resolve; }));
+  const pending = h.refresh(); h.navigation.sessionBoundary("revoke");
+  finish({ ...h.workspace, organizations: [original, added] }); await pending;
+  assert.equal(h.navigation.getSnapshot().phase, "denied");
+  assert.equal(h.record.workspace, h.workspace); assert.equal(h.record.verifiedEpoch, undefined);
+  assert.deepEqual(h.navigations, []);
 });
