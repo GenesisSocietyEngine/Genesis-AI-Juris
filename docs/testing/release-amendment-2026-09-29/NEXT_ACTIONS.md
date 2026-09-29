@@ -2,6 +2,8 @@
 
 **Web rollout completed:** production v103 was published at 15:16 UTC under the user's explicit instruction; see [WEB_PRODUCTION_ROLLOUT.md](WEB_PRODUCTION_ROLLOUT.md). The sequence below now governs remaining acceptance, recovery and mobile follow-up; it does not mean the web application is still on v102. Do not redeploy merely to close a documentation item. Mobile emulator/CI limits are not reproduced web-runtime defects, and no full-product or pilot GO is implied.
 
+**Post-publication update:** [HOSTED_ACCEPTANCE_FOLLOWUP.md](HOSTED_ACCEPTANCE_FOLLOWUP.md) records ordinary sign-in, desktop account controls, synthetic Canopy save/reopen, four inspected PDFs, organization navigation and logout/private-draft hiding on v103. This is bounded partial acceptance, not retrospective completion of the pre-rollout sequence. Live schema readback remains client-blocked; recovery, invitations/second-account isolation and the other explicitly listed journeys remain open.
+
 This supplements, and does not replace, the original 42-row ledger and INV01. Read `../runbook-convergence-2026-09-29/CODEX_NEXT_STEPS.md`, `../runbook-convergence-2026-09-29/RUNBOOK_STATUS_CROSSWALK.md`, root AGENTS.md and the source-bound receipts before continuing. User authorization to publish reviewed work remains valid; do not ask for routine reapproval. Product, operational and acceptance requirements remain applicable.
 
 ## Preserve scope and source

@@ -24,6 +24,8 @@ historical_recovery_receipt: https://github.com/GenesisSocietyEngine/Genesis-AI-
 historical_recovery_deployment_id: appgdep_6a9bf44b2da08191aea2b4fa86b3f2bd
 historical_recovery_deployment_status: succeeded
 current_release_erp_browser_journeys: not_run
+current_release_hosted_smoke: partial_pass_canopy_account_save_reports_logout_only
+current_release_hosted_smoke_receipt: docs/testing/release-amendment-2026-09-29/HOSTED_ACCEPTANCE_FOLLOWUP.md
 next_milestone: hosted_invitation_acceptance_recovery_and_remaining_product_validation
 current_release_instruction: docs/testing/release-amendment-2026-09-29/NEXT_ACTIONS.md
 candidate_branch: codex/account-readability-remote-2026-09-29
