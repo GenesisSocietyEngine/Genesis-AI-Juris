@@ -1,0 +1,20 @@
+{
+  "sourceCommit": "a9d8c767b67d1485b2f9e6bf0e07dcd324b18f38",
+  "applicationInputsSha256": "5cde43f86ee22fce243cf1976fa1d9bda7fc1235c4561deed6980e1dc2b4fb66",
+  "artifactSha256": "5796f06875b3f575f4552ba2809342849accedf8c650b218af15826c0fc51ae4",
+  "artifactFiles": 410,
+  "artifactCopyVerified": true,
+  "applicationOrigin": "https://127.0.0.1:5396",
+  "mailboxOrigin": "http://localhost:5397",
+  "storage": "independent ephemeral synthetic D1/R2; no production data",
+  "transport": "synthetic capture; external mail-provider egress denied",
+  "helperTests": { "pass": 3, "fail": 0, "evidence": "mailbox-helper-tests.log" },
+  "browserAcceptance": "BLOCKED: ERR_CERT_AUTHORITY_INVALID; the user's manual Proceed attempt did not make the application attachable",
+  "certificateWarningAutomatedBypass": false,
+  "providerDelivery": "NOT_RUN",
+  "newUserEnrollment": "NOT_RUN",
+  "ordinaryBrowserLoginAndExplicitAcceptance": "NOT_RUN",
+  "sourceV2RestrictionBypassed": false,
+  "releaseSupportIntegrated": false,
+  "serverCleanup": "Owned tool session 31808 interrupted; listeners 5396/5397 absent on subsequent check. Other coordinator's port 5296 was not targeted."
+}

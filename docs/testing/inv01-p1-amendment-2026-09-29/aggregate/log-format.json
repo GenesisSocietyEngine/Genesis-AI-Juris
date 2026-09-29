@@ -1,0 +1,10 @@
+{
+  "rawLog": "aggregate.log.gz",
+  "compression": "gzip; lossless raw command output",
+  "rawBytes": 248794,
+  "rawSha256": "e07558bbdc54e90fd35348282602014a92dda0d5cbc4af0455cdf5121e99300d",
+  "gzipSha256": "cdaf5a7730b31f6512f4a6e9c01ff49875e3faf6befb4cf2203e33762308e9e0",
+  "readableLog": "aggregate.log",
+  "readableNormalization": "CRLF to LF and trailing horizontal whitespace removed only; original bytes retained in gzip and ignored runtime log",
+  "readableSha256": "a23aa738de7a2f3ec827a31c30e88d137eb446757c541adc56ff8f9f33511639"
+}

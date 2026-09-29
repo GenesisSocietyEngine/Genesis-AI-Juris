@@ -10,6 +10,8 @@ After 0023, old organization listing and member-role activity leave pending emai
 
 ## Execution order before a permitted publication
 
+This is a reviewed logical sequence, **not yet an executable hosted runbook**. Before use, the named operator must establish the provider-supported backup/restore mechanism, required permissions, physical storage identities, and exact ordering of migration versus code activation. Available read-only Sites database tools do not establish these capabilities. The absence of a tool here does not prove the provider lacks them. Hosted restore rehearsal and confirmation of that ordering are mandatory unresolved prerequisites; do not infer that saving or deploying a Sites version automatically provides them.
+
 1. The named operator must record the exact verified source/artifact, target audience, physical D1/R2 resource identities and schema/journal. Confirm independent candidate storage before hosted rehearsal. Preserve database and document-store recovery snapshots using the supported hosting workflow; do not export sensitive data into Git.
 2. Verify the target is at the reviewed 0022 migration set. Compare the 0023 SQL/hash and expected additive schema with this candidate. An already-applied or divergent 0023 must stop this procedure for a separately reviewed additive repair; do not replay edited migration history or drop tables.
 3. Apply ordered migrations through 0023 using the supported Sites migration/deployment sequence, then read back journal, both new tables, indexes, triggers, FK definitions and foreign-key check. Verify representative existing records using non-sensitive counts/identities. No production execution is recorded here.
