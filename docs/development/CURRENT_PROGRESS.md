@@ -1,15 +1,18 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-current_release_track: demo_readiness_isolated_local
-current_release_pr: null
-current_release_checkpoint: null
-current_release_tree: null
-current_release_status: production_mapping_not_verified
+current_release_track: reviewed_amendment_candidate
+current_release_pr: 58
+current_release_source_branch: codex/account-readability-remote-2026-09-29
+current_release_code_merge: bc4cd1d8fe3f8835c056401bfd873e72b7bc91ae
+current_release_checkpoint: c86c83bd6dc62c5eee2ae825272e65e3821e7aa5
+current_release_tree: 484669cc62614527b7a1848b24b68d255f724fb1
+current_release_status: account_reviewed_pushed_ci_running_native_gate_blocked
+current_release_main_contains_candidate: false
 current_release_site_version: null
-current_release_receipt: null
+current_release_receipt: docs/testing/release-amendment-2026-09-29/RELEASE_STATUS.md
 current_release_deployment_id: null
-current_release_deployment_status: not_verified
+current_release_deployment_status: not_deployed
 historical_recovery_pr: 47
 historical_recovery_checkpoint: 83c97a78547c131570df1b752814353ba0cb1fdb
 historical_recovery_tree: 777d1111fa3f7d3442b5eecfcade2205487cf6bc
@@ -18,10 +21,10 @@ historical_recovery_receipt: https://github.com/GenesisSocietyEngine/Genesis-AI-
 historical_recovery_deployment_id: appgdep_6a9bf44b2da08191aea2b4fa86b3f2bd
 historical_recovery_deployment_status: succeeded
 current_release_erp_browser_journeys: not_run
-next_milestone: production_receipt_and_authenticated_manual_acceptance
-current_release_instruction: CodexToInstructions.md
-branch: codex/demo-readiness-canopy-2026-09-06
-base_commit: 47d99d08dc730e15ab881ba09de09692a4c7ba7c
+next_milestone: exact_source_terminal_checks_and_existing_hosted_recovery_acceptance
+current_release_instruction: docs/testing/release-amendment-2026-09-29/NEXT_ACTIONS.md
+candidate_branch: codex/account-readability-remote-2026-09-29
+candidate_base_commit: bc4cd1d8fe3f8835c056401bfd873e72b7bc91ae
 ios_per_slice_export_audit_status: merged_and_corrected_main_accepted
 ios_per_slice_export_audit_pr: 30
 ios_per_slice_export_audit_initial_commit: 23c12822a2e6f7e8940663bf2b3a877032ffcc3c
@@ -136,10 +139,28 @@ decision_dossier_v62_slice5_gate: frozen_migrations_0012_0015_adversarial_audit_
 decision_dossier_v62_web_gate: strict_type_lint_build_audit_pdf_and_493_of_493_green
 decision_dossier_v62_browser_gate: local_http_green_visual_controller_service_unavailable
 decision_dossier_v62_remote_state: no_production_site_version_or_deployment
-last_updated: 2026-09-06
+last_updated: 2026-09-29
 ---
 
 # Current Progress
+
+## 29 September 2026 — Reviewed amendment candidate and source convergence
+
+The current source-bound checkpoint is [RELEASE_STATUS.md](../testing/release-amendment-2026-09-29/RELEASE_STATUS.md); its [next actions](../testing/release-amendment-2026-09-29/NEXT_ACTIONS.md) preserve all 42 original runbook rows plus INV01. Earlier dated sections and historical release metadata below remain evidence for their own sources.
+
+Code integration through PRs #54–#57 is complete; the subsequent Account correction is reviewed and pushed in draft PR #58 at `c86c83bd6dc62c5eee2ae825272e65e3821e7aa5`, tree `484669cc62614527b7a1848b24b68d255f724fb1`, but remains outside canonical main at this checkpoint. PR #56, including the browser-reproduced dirty Discard navigation fix, merged at `4ce2accbe216b822fd1ee83390a70ce63604c53d`; PR #57 merged at `bc4cd1d8fe3f8835c056401bfd873e72b7bc91ae`, each after all five applicable PR workflows passed. Root verified API readbacks, ancestry and tree/diff guards. Canonical main has tree `f8fa0d837567c32c4f8ab3469c9b2906e7ada86b`, exactly equal to frozen candidate `54987950f86f75fb20a1fdbbf2e806719e56680e`. These are code-integration identities, not deployment identities; later documentation edits do not change which application inputs were tested.
+
+Independent review covers checked tax arithmetic, benefit timing, one-off and terminal NPV, lifecycle-cost ROI, organization recovery and bounded rendered contrast. The first unchanged 22-stage release-gate attempt, launched at 11:37:27 UTC, failed with exit 1 at mobile stage 6/9: Flutter's Visual Studio discovery lacked `PROGRAMFILES(X86)`. Full web checks and Flutter analysis had passed; final web/mobile/receipt guards were unchanged. The outer monitor incorrectly reported blank/zero exit while the authoritative aggregate and shell receipts both recorded 1; retain both the failed run and monitor defect.
+
+The owned Flutter wrapper now forwards only that missing variable to its child. The exact failed Flutter command then passed all 275 tests with exit 0 at 12:02:05 UTC and unchanged mobile guards. A separate exit-7 probe verified corrected process-handle/exit propagation. The unchanged full rerun launcher started at `2026-09-29T12:02:31.0678412Z`; all 22 stages passed by `2026-09-29T12:28:33Z`, with aggregate, shell launcher and corrected monitor exit 0 and unchanged source guards. This terminal PASS belongs to frozen 549. The subsequently reported Account readability correction needs its own reviewed source and final-source gate, and is not covered by this older-source result.
+
+The uploaded parallel local tax report through `24f8f15` is reconciled in [PARALLEL_TAX_RECONCILIATION.md](../testing/release-amendment-2026-09-29/PARALLEL_TAX_RECONCILIATION.md). Its legacy rounding policy and remaining overflow/precision defects do not supersede the accepted canonical contract. Preserve the parallel history and original Cargo.toml formatting edit; do not duplicate-import the branch.
+
+The Account amendment restores the Continue link fill and corrects a subsequently reproduced 390px overflow. Independent CSS review, 18 local preference/width/state combinations, three root-inspected renders and 28 affected existing tests pass. The native Continue action reaches `/studio` and CaseStudio/session HTTP 200 without observed errors; Sign out is discoverable on desktop and in the mobile Menu dialog with a 44px target. This does not certify the logout lifecycle or final hosted acceptance. Earlier c3d passed all five hosted workflows, recorded in [PR58_HOSTED_RECEIPT.json](../testing/release-amendment-2026-09-29/PR58_HOSTED_RECEIPT.json); current c86 hosted workflows are running. Final local native/aggregate acceptance is BLOCKED after two owned emulator-readiness attempts each reached the 420-second limit. No product assertion failed, no third retry is planned, and available web/PDF/audit results must remain separate from a full-aggregate PASS.
+
+The frozen-549 [captured terminal receipt](../testing/release-amendment-2026-09-29/GENESIS_549_TERMINAL_RECEIPT.json) remains immutable. The fresh [raw-log readback](../testing/release-amendment-2026-09-29/FROZEN_549_READBACK.json) confirms that earlier source's 22-stage result after reconnection. The [13:51-13:52 UTC provider observation](../testing/release-amendment-2026-09-29/RECONNECTED_PRODUCTION_OBSERVATION.json) still reports existing v102/environment39; required invitation tables, transport activation and sender configuration are absent, while provider-key validity and canonical-origin match remain unverified. No amended deployment occurred.
+
+The tax contribution remains a standalone calculation library. The separately scoped [reconciled tax integration plan](../testing/release-amendment-2026-09-29/TAX_INTEGRATION_PLAN_RECONCILED.md) defines future edit/calculate/save/reopen work; native/Flutter linkage, navigation, saved data and application output integration have not begun in this release amendment. Hosted storage/recovery, invitation-provider and applicable product/accessibility acceptance remain open; A17 remains separate full-human-acceptance and pilot validation. The original local plan, parallel handoff edits and Cargo.toml formatting change remain preserved.
 
 ## 6 September 2026 — Isolated Canopy development authorized independently
 

@@ -1,0 +1,56 @@
+{
+  "scope": "Read-only provider metadata; no source, version, deployment, resource, audience, membership or mail changes.",
+  "site": {
+    "observed_at_utc": "2026-09-29T12:07:01.307Z",
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6",
+    "status": "active",
+    "access_mode": "public",
+    "latest_version_number": 102,
+    "current_live_url": "https://studio.falcon-merlin.com",
+    "current_preview_url": null,
+    "updated_at": "2026-09-25T21:55:07.167363+00:00"
+  },
+  "version": {
+    "id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_37dbecce77848191a3dc4397ee48dc73",
+    "version_number": 102,
+    "source_commit": "bf5799383a52b6617cd9d4a0acf47af780086218",
+    "deployment_id": "appgdep_6ab6ed70ee488191ba95f30293b6e6a1"
+  },
+  "deployment": {
+    "observed_at_utc": "2026-09-29T12:07:23.481Z",
+    "id": "appgdep_6ab6ed70ee488191ba95f30293b6e6a1",
+    "version_id": "appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_37dbecce77848191a3dc4397ee48dc73",
+    "status": "succeeded",
+    "type": "publish",
+    "url": "https://genesis-juris-web.maxim-hayan.chatgpt.site",
+    "env_set_revision": 39,
+    "updated_at": "2026-09-25T21:55:07.113680+00:00"
+  },
+  "database": {
+    "observed_at_utc": "2026-09-29T12:08:23.814Z",
+    "bindings": [
+      "DB"
+    ],
+    "selected_binding": "DB",
+    "projection": {
+      "truncated": false,
+      "omitted_project_id": false,
+      "omitted_selected_binding": false,
+      "omitted_bindings": 0,
+      "omitted_tables": 0
+    },
+    "migration_tables": [],
+    "invitation_tables": [],
+    "table_count": 50,
+    "expected_invitation_tables_missing": [
+      "email_invitations",
+      "invitation_mailbox_proofs"
+    ]
+  },
+  "limitations": [
+    "Metadata is not a live-binary attestation.",
+    "Database overview returns binding aliases and table names; it does not expose physical D1/R2 identities, schema details, the migration journal or backup/restore authority.",
+    "No database row data was read.",
+    "No final-candidate Site version or deployment was created."
+  ]
+}
