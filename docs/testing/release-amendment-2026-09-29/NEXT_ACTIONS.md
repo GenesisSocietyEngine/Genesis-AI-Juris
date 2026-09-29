@@ -14,7 +14,7 @@ This supplements, and does not replace, the original 42-row ledger and INV01. Re
 
 6. Use one exact clean integrated source after code fixes stabilize. Bind web SHA, application/config input digests, PDF baseline, mobile SHA and tool versions. Documentation-only later commits must name the tested application source.
 7. Run the unchanged full release script and both dependency audits. Retain all terminal results and before/after source guards. The aggregate uses locked mobile `5200b30cc50c77393c6f48b52ce91c0f30e70c64`; it does not test tax application integration. Use the repository's pinned toolchains and an owned native test environment, without Git trust overrides or shared dependency mutation.
-8. Verify current applicable hosted workflows on exact source. A historical iOS timeout is not an assertion diagnosis; a later exact-source success is a separate result. Do not disable checks, broaden PDF baselines or relabel earlier failures.
+8. Verify current applicable hosted workflows on exact source. A historical iOS timeout is not an assertion diagnosis; a later exact-source success is a separate result. Do not disable checks, broaden PDF baselines or relabel earlier failures. Investigate the separately retained native-step timing failure before claiming reliable native CI; capture phase timings on an isolated runner without increasing deadlines or removing tests.
 9. Preserve the existing three opt-in web skips and their applicability. Keep overlapping suite counts separate. Aggregate PASS does not automatically close browser, accessibility or hosted scenarios.
 
 ## Resolve hosted prerequisites with the existing responsible roles
