@@ -134,11 +134,16 @@ test("Full assumptions retain complete short statements on one page and let long
 
   // A compact string can still exceed a page when pasted with legacy CR breaks.
   const shortMultiline = structuredClone(working);
-  shortMultiline.dealEconomics!.assumptions.push(["Start of CR note", ...Array.from({ length: 65 }, (_, i) => String(i + 1)), "End of CR note"].join("\r"));
+  const crNote = ["Start of CR note", ...Array.from({ length: 65 }, (_, i) => String(i + 1)), "End of CR note"].join("\r");
+  assert.ok(crNote.length <= 240, "regression fixture must remain under the character bound");
+  shortMultiline.dealEconomics!.assumptions.push(crNote);
+  const crBefore = JSON.stringify(shortMultiline);
   const crPages = (await paginateDefinition(buildCaseReportDefinition(shortMultiline, { ...options, presentationMode: "full", includeDecisionTree: false }))).map(pdfPageText);
   assert.ok(crPages.some(page => page.includes("Start of CR note")), "CR note start retained");
   assert.ok(crPages.some(page => page.includes("End of CR note")), "CR note end retained");
+  for (let i = 1; i <= 65; i++) assert.ok(crPages.some(page => page.split("\n").includes(String(i))), `CR note line ${i} retained`);
   assert.ok(!crPages.some(page => page.includes("Start of CR note") && page.includes("End of CR note")), "many CR lines must flow even under the character bound");
+  assert.equal(JSON.stringify(shortMultiline), crBefore, "hard line break rendering preserves the input");
 });
 
 function registerStackStartingWith(definition: TDocumentDefinitions, prefix: string) {
