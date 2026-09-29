@@ -1,18 +1,21 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-current_release_track: reviewed_amendment_candidate
+current_release_track: reviewed_web_production_amendment
 current_release_pr: 58
 current_release_source_branch: main
 current_release_code_merge: 354689f17b908628ccdf659d3a8dc3eb5162d00e
 current_release_checkpoint: c86c83bd6dc62c5eee2ae825272e65e3821e7aa5
 current_release_tree: 484669cc62614527b7a1848b24b68d255f724fb1
-current_release_status: main_synced_pr_checks_pass_native_gate_blocked_ci_timing_open
+current_release_status: web_production_published_mobile_and_full_acceptance_open
 current_release_main_contains_candidate: true
-current_release_site_version: null
-current_release_receipt: docs/testing/release-amendment-2026-09-29/RELEASE_STATUS.md
-current_release_deployment_id: null
-current_release_deployment_status: not_deployed
+current_release_site_version: 103
+current_release_deployed_source: ddb61267c9d4368b3d1cb654a8d3a5c989bddf69
+current_release_deployed_tree: 20d10d88352a369498d10271609bdf9406dfc64e
+current_release_environment_revision: 40
+current_release_receipt: docs/testing/release-amendment-2026-09-29/WEB_PRODUCTION_ROLLOUT.md
+current_release_deployment_id: appgdep_6abbd4eccd6c8191b44e4e0cb7ab4169
+current_release_deployment_status: succeeded
 historical_recovery_pr: 47
 historical_recovery_checkpoint: 83c97a78547c131570df1b752814353ba0cb1fdb
 historical_recovery_tree: 777d1111fa3f7d3442b5eecfcade2205487cf6bc
@@ -21,7 +24,7 @@ historical_recovery_receipt: https://github.com/GenesisSocietyEngine/Genesis-AI-
 historical_recovery_deployment_id: appgdep_6a9bf44b2da08191aea2b4fa86b3f2bd
 historical_recovery_deployment_status: succeeded
 current_release_erp_browser_journeys: not_run
-next_milestone: native_runtime_and_ci_reliability_then_hosted_release_acceptance
+next_milestone: hosted_invitation_acceptance_recovery_and_remaining_product_validation
 current_release_instruction: docs/testing/release-amendment-2026-09-29/NEXT_ACTIONS.md
 candidate_branch: codex/account-readability-remote-2026-09-29
 candidate_base_commit: bc4cd1d8fe3f8835c056401bfd873e72b7bc91ae
@@ -143,6 +146,14 @@ last_updated: 2026-09-29
 ---
 
 # Current Progress
+
+## 29 September 2026 — Web production v103 published at 15:16 UTC
+
+The user's explicit production rollout instruction was executed. Sites reports successful deployment of source `ddb61267c9d4368b3d1cb654a8d3a5c989bddf69` as v103 on environment revision 40; https://studio.falcon-merlin.com remains active/public with active SSL. [The rollout receipt](../testing/release-amendment-2026-09-29/WEB_PRODUCTION_ROLLOUT.md) records exact source, provider archive, deployment and configuration. The application inputs match tested c86; later documentation commits are distinct from deployed source.
+
+The existing reset-mail sender and provider configuration were reused to enable invitation transport, without sending test messages. The supported workflow applies migrations before Worker activation; publication succeeded. Independent live journal/schema inspection, restore rehearsal and recipient acceptance remain unverified. The older 50-name database overview did not independently prove a complete schema inventory or invitation-table absence.
+
+The Account, report, organization and contrast amendments are now published. Mobile verification, complete hosted UX/accessibility acceptance and human/pilot validation remain open; no full aggregate or external-pilot GO is claimed. Tax application integration has not started. The following section is the preserved pre-rollout checkpoint.
 
 ## 29 September 2026 — Reviewed amendment candidate and source convergence
 
