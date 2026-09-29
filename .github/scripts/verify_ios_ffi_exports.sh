@@ -270,7 +270,7 @@ for architecture in "${architectures[@]}"; do
     {
       symbol = $0
       sub(/^_/, "", symbol)
-      if (symbol ~ /^juris_mobile_bridge_/) {
+      if (symbol ~ /^juris_/) {
         if (symbol ~ /^juris_mobile_bridge_[A-Za-z0-9_]+$/) {
           print symbol
         } else {

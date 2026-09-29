@@ -38,6 +38,33 @@ class RunnerTests: XCTestCase {
     )
   }
 
+  private func verifyNativeTax(_ scenario: [String: Any]) throws {
+    let capability = try executeBridge(["command": "tax_capabilities"])
+    XCTAssertEqual(capability["transport_protocol"] as? String, "tax-economics-json-v1")
+    let prepared = try executeBridge(["command": "tax_prepare", "scenario": scenario,
+      "artifact_id": "native_tax_test", "revision": "0", "currency": "EUR"])
+    var request = try XCTUnwrap(prepared["request"] as? [String: Any])
+    var input = try XCTUnwrap(request["input"] as? [String: Any])
+    input["baseline_annual_tax_cost"] = "25000000"
+    input["optimized_annual_tax_cost"] = "20000000"
+    input["implementation_cost"] = "100000"
+    request["input"] = input
+    for _ in 0..<25 {
+      let response = try executeBridge(["command": "tax_calculate", "scenario": scenario,
+        "request": request, "bindings": [], "required_component_ids": []])
+      XCTAssertEqual(response["type"] as? String, "tax_calculated")
+      let calculation = try XCTUnwrap(response["calculation"] as? [String: Any])
+      let result = try XCTUnwrap(calculation["result"] as? [String: Any])
+      XCTAssertEqual(result["recognized_annual_tax_saving"] as? String, "5000000")
+    }
+    input["tax_input_basis"] = "rates"
+    request["input"] = input
+    let incomplete = try executeBridge(["command": "tax_calculate", "scenario": scenario,
+      "request": request, "bindings": [], "required_component_ids": []])
+    XCTAssertEqual(incomplete["type"] as? String, "tax_error")
+    XCTAssertNil(incomplete["calculation"])
+  }
+
   func testNativeLogisticsLifecycle() throws {
     XCTAssertEqual(jurisMobileBridgeAbiVersion(), 1)
 
@@ -61,6 +88,7 @@ class RunnerTests: XCTestCase {
     let scenario = try XCTUnwrap(
       logistics["scenario"] as? [String: Any]
     )
+    try verifyNativeTax(scenario)
     let seed = try XCTUnwrap(logistics["seed"] as? NSNumber)
 
     let created = try executeBridge([

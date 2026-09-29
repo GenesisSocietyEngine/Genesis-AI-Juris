@@ -7,6 +7,8 @@
 
 #![forbid(unsafe_code)]
 
+mod tax;
+
 use juris_engine::{
     MobileScenarioSnapshot, ScenarioRuntimeError, ScenarioSaveEnvelope, ScenarioSaveError,
     ScenarioSessionId, ScenarioSessionRegistry,
@@ -214,6 +216,9 @@ impl MobileBridge {
     /// Parses one command and always returns a serializable response.
     #[must_use]
     pub fn execute_json(&mut self, encoded_request: &str) -> String {
+        if let Some(response) = tax::execute_json(encoded_request) {
+            return response;
+        }
         let response = match serde_json::from_str(encoded_request) {
             Ok(request) => self.execute(request),
             Err(error) => BridgeResponse::Error {

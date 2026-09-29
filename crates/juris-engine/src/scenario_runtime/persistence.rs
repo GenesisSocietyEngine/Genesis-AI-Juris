@@ -400,9 +400,8 @@ fn illegal_sequence(index: usize, error: ScenarioRuntimeError) -> ScenarioSaveEr
     }
 }
 
-pub(super) fn scenario_fingerprint(
-    definition: &ScenarioDefinition,
-) -> Result<String, ScenarioSaveError> {
+/// Canonical identity for authoring and save compatibility; does not create a session.
+pub fn scenario_fingerprint(definition: &ScenarioDefinition) -> Result<String, ScenarioSaveError> {
     digest_serializable(definition)
 }
 

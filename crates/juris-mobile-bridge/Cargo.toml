@@ -6,6 +6,7 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+juris-tax-economics = { path = "../juris-tax-economics", default-features = false }
 juris-engine = { path = "../juris-engine" }
 juris-scenario-schema = { path = "../juris-scenario-schema" }
 juris-scenario-validator = { path = "../juris-scenario-validator" }
