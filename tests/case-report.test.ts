@@ -118,7 +118,7 @@ test("Full assumptions retain complete short statements on one page and let long
     const pages = (await paginateDefinition(artifacts.definition)).map(page => compact(pdfPageText(page)));
     const assumptions = working.dealEconomics!.assumptions.filter(item => !/scenario probabilit|вероятност[а-я]* сценар/iu.test(item));
     assert.ok(assumptions.length);
-    for (const assumption of assumptions.filter(item => item.length <= 240 && item.split(/\r?\n/).length <= 4)) {
+    for (const assumption of assumptions) {
       assert.ok(pages.some(page => page.includes(compact(assumption))), `Complete assumption (${language}, tree=${includeDecisionTree}): ${assumption}`);
     }
   }
@@ -134,11 +134,55 @@ test("Full assumptions retain complete short statements on one page and let long
 
   // A compact string can still exceed a page when pasted with legacy CR breaks.
   const shortMultiline = structuredClone(working);
-  shortMultiline.dealEconomics!.assumptions.push(["Start of CR note", ...Array.from({ length: 65 }, (_, i) => String(i + 1)), "End of CR note"].join("\r"));
+  const crNote = ["Start of CR note", ...Array.from({ length: 65 }, (_, i) => String(i + 1)), "End of CR note"].join("\r");
+  assert.ok(crNote.length <= 240, "regression fixture must remain under the character bound");
+  shortMultiline.dealEconomics!.assumptions.push(crNote);
+  const crBefore = JSON.stringify(shortMultiline);
   const crPages = (await paginateDefinition(buildCaseReportDefinition(shortMultiline, { ...options, presentationMode: "full", includeDecisionTree: false }))).map(pdfPageText);
   assert.ok(crPages.some(page => page.includes("Start of CR note")), "CR note start retained");
   assert.ok(crPages.some(page => page.includes("End of CR note")), "CR note end retained");
+  for (let i = 1; i <= 65; i++) assert.ok(crPages.some(page => page.split("\n").includes(String(i))), `CR note line ${i} retained`);
+  const crText = crPages.join("\n");
+  const crStart = crText.indexOf("Start of CR note"), crEnd = crText.indexOf("End of CR note");
+  assert.ok(crEnd > crStart, "CR boundary markers remain ordered");
+  assert.deepEqual(crText.slice(crStart, crEnd).split("\n").filter(line => /^\d+$/.test(line)),
+    Array.from({ length: 65 }, (_, i) => String(i + 1)), "all CR note lines survive once, in order, between their markers");
   assert.ok(!crPages.some(page => page.includes("Start of CR note") && page.includes("End of CR note")), "many CR lines must flow even under the character bound");
+  assert.equal(JSON.stringify(shortMultiline), crBefore, "hard line break rendering preserves the input");
+});
+
+test("compact over-page assumptions preserve every supported mandatory line separator", async (t) => {
+  const separators = { LF: "\n", CRLF: "\r\n", CR: "\r" };
+  const numberedLines = Array.from({ length: 65 }, (_, i) => String(i % 10));
+  for (const [name, separator] of Object.entries(separators)) await t.test(name, async () => {
+    const working = normalizeStudioDraft(JSON.parse(readFileSync("docs/testing/inv01-2026-09-28/fiveflats-pdfs/saved-draft-before-recovery.json", "utf8")));
+    const note = ["Break start", ...numberedLines, "Break end"].join(separator);
+    assert.ok(note.length <= 240, `${name} exercises the compact-string boundary`);
+    working.dealEconomics!.assumptions.push(note);
+    const before = JSON.stringify(working);
+    const pages = (await paginateDefinition(buildCaseReportDefinition(working, {
+      ...options, presentationMode: "full", includeDecisionTree: false,
+    }))).map(pdfPageText);
+    const text = pages.join("\n"), start = text.indexOf("Break start"), end = text.indexOf("Break end");
+    assert.ok(start >= 0 && end > start, `${name}: both ordered boundary markers retained`);
+    assert.deepEqual(text.slice(start, end).split("\n").filter(line => /^\d$/.test(line)), numberedLines,
+      `${name}: every intervening line survives once in order`);
+    assert.ok(!pages.some(page => page.includes("Break start") && page.includes("Break end")), `${name}: content can flow across pages`);
+    assert.equal(JSON.stringify(working), before, `${name}: original input preserved`);
+  });
+});
+
+test("unsupported assumption separators remain rejected without changing the input", () => {
+  const separators = { VT: "\v", FF: "\f", NEL: "\u0085", LS: "\u2028", PS: "\u2029" };
+  for (const [name, separator] of Object.entries(separators)) {
+    const working = structuredClone(draft);
+    working.dealEconomics!.assumptions.push(`Before${separator}After`);
+    const before = JSON.stringify(working);
+    assert.throws(() => buildCaseReportDefinition(working, {
+      ...options, presentationMode: "full", includeDecisionTree: false,
+    }), { code: "INPUT_INVALID" }, `${name}: existing governed validation stays strict`);
+    assert.equal(JSON.stringify(working), before, `${name}: rejected input preserved`);
+  }
 });
 
 function registerStackStartingWith(definition: TDocumentDefinitions, prefix: string) {
