@@ -33,6 +33,21 @@
 //!
 //! ## FFI Module
 //! The `ffi` module exposes all core functionality as C-callable interfaces for Flutter/Dart integration.
+//!
+//! ## Rounding and web parity
+//!
+//! All money is integer cents (`i64`). Integer division in the calculation uses
+//! `i128` intermediates and truncates toward zero: basis-point application,
+//! `/12` month conversion, annualized implementation, lifecycle cost, ROI basis
+//! points, and whole payback months. NPV is computed in `f64`, then rounded half
+//! away from zero with `f64::round` before the `as i64` cast.
+//!
+//! A fractional annual intermediate retained by the web but truncated once here
+//! can produce an expected difference of up to `ceil(H / 12)` cents in horizon
+//! totals and NPV. This is a per-annual-truncation bound, not a universal bound:
+//! successive rate/realization truncations and final NPV rounding can add further
+//! differences. Floating-point accumulation can also approach a half-cent tie
+//! from either side before `round` is applied.
 
 pub mod ffi;
 
@@ -558,8 +573,8 @@ pub fn calculate_tax_economics_v2(
     let operating_annual_benefit = gross_recognized_annual_benefit - model.annual_maintenance_cost;
 
     // Annualized net benefit = operating - implementation cost spread over horizon years
-    let annualized_implementation =
-        (model.implementation_cost * 12) / model.analysis_horizon_months.max(1) as i64;
+    let annualized_implementation = ((model.implementation_cost as i128 * 12)
+        / model.analysis_horizon_months.max(1) as i128) as i64;
     let annualized_net_benefit = operating_annual_benefit - annualized_implementation;
 
     // Combine every annual stream before the single month-to-year division.
@@ -576,7 +591,8 @@ pub fn calculate_tax_economics_v2(
 
     // Simple payback in months
     let payback_months = if operating_annual_benefit > 0 {
-        u32::try_from((model.implementation_cost * 12) / operating_annual_benefit).ok()
+        u32::try_from((model.implementation_cost as i128 * 12) / operating_annual_benefit as i128)
+            .ok()
     } else {
         None
     };
@@ -1739,6 +1755,212 @@ mod tests {
                     serde_json::json!({"code": "invalid_benefit_window", "id": "benefit"})
                 );
             }
+        }
+    }
+
+    #[test]
+    fn test_large_implementation_uses_wide_annualization_and_payback() {
+        let mut model = TaxEconomicsV2::new_default("EUR".to_string());
+        model.analysis_horizon_months = 12;
+        model.implementation_cost = i64::MAX / 12 + 1;
+
+        let loss = calculate_tax_economics_v2(&model).unwrap();
+        assert_eq!(loss.annualized_net_benefit, -model.implementation_cost);
+        assert_eq!(loss.lifecycle_net_benefit, -model.implementation_cost);
+        assert_eq!(loss.lifecycle_cost, model.implementation_cost);
+        assert_eq!(loss.lifecycle_roi_bps, Some(-10_000));
+        assert_eq!(loss.payback_months, None);
+
+        model.baseline_annual_tax_cost = model.implementation_cost;
+        let recovered = calculate_tax_economics_v2(&model).unwrap();
+        assert_eq!(recovered.annualized_net_benefit, 0);
+        assert_eq!(recovered.lifecycle_net_benefit, 0);
+        assert_eq!(recovered.payback_months, Some(12));
+    }
+
+    #[test]
+    fn test_web_v1_parity() {
+        struct WebCase {
+            name: &'static str,
+            model: TaxEconomicsV2,
+            money: [f64; 8],
+            roi_bps: Option<f64>,
+            payback_months: Option<f64>,
+        }
+
+        // Web v1 numeric inputs are copied unchanged, never multiplied by 100.
+        // All web inputs are explicit rather than inheriting Rust's H=120/800bp defaults.
+        let mut base = TaxEconomicsV2::new_default("EUR".to_string());
+        base.tax_input_basis = "amounts".to_string();
+        base.tax_base_mode = TaxBaseMode::ManualOverride;
+        base.annual_tax_base_override = Some(0);
+        base.baseline_tax_rate_bps = 0;
+        base.optimized_tax_rate_bps = 0;
+        base.baseline_annual_tax_cost = 250_000;
+        base.optimized_annual_tax_cost = 180_000;
+        base.implementation_cost = 85_000;
+        base.annual_maintenance_cost = 15_000;
+        base.terminal_tax_or_unwind_cost = 0;
+        base.analysis_horizon_months = 36;
+        base.annual_discount_rate_bps = 0;
+        base.benefit_realization_bps = 10_000;
+        base.benefit_items = vec![];
+        base.assumptions = "Illustrative documented assumptions.".to_string();
+
+        let mut downside = base.clone();
+        downside.baseline_annual_tax_cost = 100_000;
+        downside.optimized_annual_tax_cost = 120_000;
+        downside.benefit_realization_bps = 1_000;
+        downside.terminal_tax_or_unwind_cost = 40_000;
+
+        let mut rates = base.clone();
+        rates.tax_input_basis = "rates".to_string();
+        rates.tax_base_mode = TaxBaseMode::ManualOverride;
+        rates.annual_tax_base_override = Some(1_000_000);
+        rates.baseline_tax_rate_bps = 3_500;
+        rates.optimized_tax_rate_bps = 200;
+
+        let mut zero_implementation = base.clone();
+        zero_implementation.implementation_cost = 0;
+
+        let mut discounted = base.clone();
+        discounted.annual_discount_rate_bps = 800;
+        discounted.terminal_tax_or_unwind_cost = 40_000;
+
+        // Expected values are inline; this test never reads the archived web source.
+        let cases = [
+            WebCase {
+                name: "W1 (web test line 24)",
+                model: base,
+                // Saving=250k-180k=70k; operating=70k-15k=55k;
+                // annual=55k-85k/3; cost=85k+15k*3=130k;
+                // horizon=70k*3-130k=80k; zero-discount NPV=80k.
+                money: [
+                    250_000.0,
+                    180_000.0,
+                    70_000.0,
+                    55_000.0,
+                    55_000.0 - 85_000.0 / 3.0,
+                    130_000.0,
+                    80_000.0,
+                    80_000.0,
+                ],
+                roi_bps: Some(80_000.0 / 130_000.0 * 10_000.0),
+                payback_months: Some(85_000.0 / 55_000.0 * 12.0),
+            },
+            WebCase {
+                name: "W2 (web test line 37)",
+                model: downside,
+                // Saving=100k-120k=-20k, no 10% haircut; operating=-35k;
+                // annual=-35k-85k/3; cost=85k+15k*3+40k=170k;
+                // horizon=-20k*3-170k=-230k; NPV=-230k; no positive payback.
+                money: [
+                    100_000.0,
+                    120_000.0,
+                    -20_000.0,
+                    -35_000.0,
+                    -35_000.0 - 85_000.0 / 3.0,
+                    170_000.0,
+                    -230_000.0,
+                    -230_000.0,
+                ],
+                roi_bps: Some(-230_000.0 / 170_000.0 * 10_000.0),
+                payback_months: None,
+            },
+            WebCase {
+                name: "W3 (web test line 46)",
+                model: rates,
+                // Tax costs=1m*35%=350k and 1m*2%=20k; saving=330k;
+                // operating=315k; annual=315k-85k/3; cost=130k;
+                // horizon=330k*3-130k=860k; NPV=860k.
+                money: [
+                    350_000.0,
+                    20_000.0,
+                    330_000.0,
+                    315_000.0,
+                    315_000.0 - 85_000.0 / 3.0,
+                    130_000.0,
+                    860_000.0,
+                    860_000.0,
+                ],
+                roi_bps: Some(860_000.0 / 130_000.0 * 10_000.0),
+                payback_months: Some(85_000.0 / 315_000.0 * 12.0),
+            },
+            WebCase {
+                name: "W4 (web test line 75)",
+                model: zero_implementation,
+                // Saving=70k; operating=annual=55k; cost=15k*3=45k;
+                // horizon=70k*3-45k=165k; NPV=165k; payback=0.
+                money: [
+                    250_000.0, 180_000.0, 70_000.0, 55_000.0, 55_000.0, 45_000.0, 165_000.0,
+                    165_000.0,
+                ],
+                roi_bps: Some(165_000.0 / 45_000.0 * 10_000.0),
+                payback_months: Some(0.0),
+            },
+            WebCase {
+                name: "W5 (added terminal-discount case)",
+                model: discounted,
+                // Saving=70k; operating=55k; annual=55k-85k/3;
+                // cost=85k+15k*3+40k=170k; horizon=70k*3-170k=40k.
+                // Web calculateTaxEconomics (lines 74-102): q=1.08^(1/12),
+                // NPV=-85k + sum(m=1..36, (55k/12)/q^m) - 40k/q^36
+                // = 30,111.979224150633; payback=85k/55k*12.
+                money: [
+                    250_000.0,
+                    180_000.0,
+                    70_000.0,
+                    55_000.0,
+                    55_000.0 - 85_000.0 / 3.0,
+                    170_000.0,
+                    40_000.0,
+                    30_111.979224150633,
+                ],
+                roi_bps: Some(40_000.0 / 170_000.0 * 10_000.0),
+                payback_months: Some(85_000.0 / 55_000.0 * 12.0),
+            },
+        ];
+
+        for case in cases {
+            let result = calculate_tax_economics_v2(&case.model).unwrap();
+            let actual_money = [
+                ("baselineAnnualTaxCost", result.baseline_annual_tax_cost),
+                ("optimizedAnnualTaxCost", result.optimized_annual_tax_cost),
+                (
+                    "recognizedAnnualTaxSaving",
+                    result.recognized_annual_tax_saving,
+                ),
+                ("operatingAnnualBenefit", result.operating_annual_benefit),
+                ("netAnnualBenefit", result.annualized_net_benefit),
+                ("lifecycleCost", result.lifecycle_cost),
+                ("horizonNetBenefit", result.lifecycle_net_benefit),
+                ("npv", result.npv),
+            ];
+            for ((field, actual), expected) in actual_money.into_iter().zip(case.money) {
+                assert!(
+                    (actual as f64 - expected).abs() <= 1.0,
+                    "{}: {field} actual={actual}, web={expected}",
+                    case.name
+                );
+            }
+            match (result.lifecycle_roi_bps, case.roi_bps) {
+                (Some(actual), Some(expected)) => assert!(
+                    (actual as f64 - expected).abs() <= 1.0,
+                    "{}: lifecycleRoiPercent * 100 actual={actual}, web={expected}",
+                    case.name
+                ),
+                (None, None) => {}
+                (actual, expected) => panic!(
+                    "{}: ROI null mismatch actual={actual:?}, web={expected:?}",
+                    case.name
+                ),
+            }
+            assert_eq!(
+                result.payback_months,
+                case.payback_months.map(|months| months.floor() as u32),
+                "{}: paybackMonths must truncate to whole months",
+                case.name
+            );
         }
     }
 
