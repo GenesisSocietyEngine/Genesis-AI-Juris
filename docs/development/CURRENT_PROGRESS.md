@@ -28,6 +28,7 @@ current_release_hosted_smoke: partial_pass_canopy_account_save_reports_logout_on
 current_release_hosted_smoke_receipt: docs/testing/release-amendment-2026-09-29/HOSTED_ACCEPTANCE_FOLLOWUP.md
 next_milestone: hosted_invitation_acceptance_recovery_and_remaining_product_validation
 current_release_instruction: docs/testing/release-amendment-2026-09-29/NEXT_ACTIONS.md
+development_continuation_receipt: docs/testing/release-amendment-2026-09-29/IMPLEMENTATION_CONTINUATION.md
 candidate_branch: codex/account-readability-remote-2026-09-29
 candidate_base_commit: bc4cd1d8fe3f8835c056401bfd873e72b7bc91ae
 ios_per_slice_export_audit_status: merged_and_corrected_main_accepted

@@ -4,6 +4,8 @@
 
 **Post-publication update:** [HOSTED_ACCEPTANCE_FOLLOWUP.md](HOSTED_ACCEPTANCE_FOLLOWUP.md) records ordinary sign-in, desktop account controls, synthetic Canopy save/reopen, four inspected PDFs, organization navigation and logout/private-draft hiding on v103. This is bounded partial acceptance, not retrospective completion of the pre-rollout sequence. Live schema readback remains client-blocked; recovery, invitations/second-account isolation and the other explicitly listed journeys remain open.
 
+**Engineering continuation:** [IMPLEMENTATION_CONTINUATION.md](IMPLEMENTATION_CONTINUATION.md) records the bounded iOS workflow, authorized case-member picker and Tax P1b changes, their exact evidence and remaining sequence. Repository integration and web publication are separate decisions.
+
 This supplements, and does not replace, the original 42-row ledger and INV01. Read `../runbook-convergence-2026-09-29/CODEX_NEXT_STEPS.md`, `../runbook-convergence-2026-09-29/RUNBOOK_STATUS_CROSSWALK.md`, root AGENTS.md and the source-bound receipts before continuing. User authorization to publish reviewed work remains valid; do not ask for routine reapproval. Product, operational and acceptance requirements remain applicable.
 
 ## Preserve scope and source

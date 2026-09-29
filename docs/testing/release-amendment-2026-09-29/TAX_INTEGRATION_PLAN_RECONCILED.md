@@ -1,6 +1,12 @@
 # Tax Economics v2: reconciled integration instructions
 
-Date: 2026-09-29. Status: reviewed planning input; application integration has not started. First milestone: **edit -> calculate in Rust -> save -> restart -> reopen with the same inputs and result**.
+Date: 2026-09-29. This is the preserved integration plan with current implementation annotations. First milestone: **edit -> calculate in Rust -> save -> restart -> reopen with the same inputs and result**.
+
+**Implementation checkpoint:** P0 is frozen in [CONTRACT.md](../tax-integration-p0-2026-09-29/CONTRACT.md). P1a merged through PR #63 as `77e37a0dffce619ccbc121dde051bb4eda6b19a8`: exact money parsing, versioned DTOs, bounded application policy and default-enabled `standalone-ffi` compatibility are implemented. Its reviewed source is `8c5422abb807fa1bd88583757ab71a584e8de2c4`; [P1A_REVIEW.md](../tax-integration-p0-2026-09-29/P1A_REVIEW.md) records local checks. Hosted Rust quality/MSRV passed at that source (push run 36603514205 and PR run 36603644104, attempt 1). These are pure-library results. Native commands, Flutter editing/persistence and web/PDF v2 integration remain unimplemented; the first user milestone is not complete.
+
+**P1b merged checkpoint:** PR #66 merged normally as `8ca2747f3f694d4e55472f2a10f3c9babc644062` and contains functional source `64a99d505e407d80f03063d667027e5d11514c9a` and documentation-only successor `0f838d06cd8d4d1d9792aac15ad514ada6451c26`. Both explicit legacy adapters, lossless original/FX/inactive-base metadata, confirmed structured bindings checked against caller-supplied current source identity, and separate calculation/provenance hashes are implemented. [CONTRACT.md](../tax-integration-p1b-2026-09-29/CONTRACT.md) and [REVIEW.md](../tax-integration-p1b-2026-09-29/REVIEW.md) govern further integration. Final local checks passed 82 default / 77 no-default tests, both Clippy modes and Rust 1.78 checks; exact functional-source hosted Rust quality/MSRV passed on push and PR. The unused-base correction allows amounts calculations while keeping saved bases inactive and requiring explicit validated activation for rates. Main integration is recorded separately in [IMPLEMENTATION_CONTINUATION.md](IMPLEMENTATION_CONTINUATION.md).
+
+Sections describing the original inspected source below are historical evidence. In particular, the previously proposed FFI feature gate and transport identifiers are now implemented/frozen by P0/P1a. Do not repeat those changes or infer that later application slices have shipped.
 
 This document reconciles the uploaded integration plan with the accepted calculation contribution and canonical repository. It replaces the attachment's stale implementation-source instructions, not its useful mobile-first sequence. It does not add tax integration to the current Account/invitation release, authorize a mobile distribution, or claim native, browser or PDF acceptance. Preserve the original checkout and its existing Cargo.toml change.
 
@@ -55,13 +61,13 @@ Native and WASM executions of the same version must match the pinned integer con
 
 ### Transport, money and policy
 
-Create separate identifiers for input schema, result schema, transport protocol and calculation semantics. Names such as tax-economics-input-v2 and calculation_version are proposals until implemented and fixture-tested. Include stable case/artifact ID, revision and source provenance.
+P0/P1a froze `tax-economics-input-v2`, `tax-economics-result-v2`, `tax-economics-json-v1`, calculation version `tax-economics-2026-09-29` and application policy `tax-editor-v1`. Use the implemented [P0 contract](../tax-integration-p0-2026-09-29/CONTRACT.md), including stable case/artifact ID, revision and source identity; these identifiers are no longer proposals.
 
 At JavaScript-facing persistence/transport boundaries, encode monetary integers as canonical decimal strings and range-check conversion to i64; do not route them through unsafe JavaScript Number values. Basis points and bounded identifiers retain explicitly defined integer representations. An integer/string-only bridge DTO must preserve the existing BridgeResponse equality guarantee.
 
-Choose and record an initial allowlist of supported two-decimal currencies. EUR 250000 major units must become 25000000 cents and display EUR 250000 after a round trip. Parse user decimals exactly; define rejection of excess precision, locale separators and unsafe legacy numeric values. Zero/three-decimal currencies require a separate scale-aware contract. Preserve unsupported legacy data intact and show v2 calculation unavailable. Preserve existing FX metadata without performing a new conversion during migration.
+P0/P1a froze the initial two-decimal currency allowlist as EUR, GBP and USD. EUR 250000 major units must become 25000000 cents and display EUR 250000 after a round trip. Parse user decimals exactly; define rejection of excess precision, locale separators and unsafe legacy numeric values. Zero/three-decimal currencies require a separate scale-aware contract. Preserve unsupported legacy data intact and show v2 calculation unavailable. Preserve existing FX metadata without performing a new conversion during migration.
 
-Retaining current editor limits of 1-240 months and 0-5000 discount bps is an application-policy proposal, not a change to the core. Before exposure, document supported signed values, amount/text/item/payload limits, unique IDs and reference validity. Enforce those limits at the adapter entry as well as UI; distinguish policy rejection from core invalid_input. Existing data outside policy must remain recoverable, with an explicit unsupported/edit-limited state, not silently clamped or discarded.
+The implemented `tax-editor-v1` policy retains 1-240 months and 0-5000 discount bps without changing the core domain. P0/P1a define and enforce signed amount, text, item and payload limits and unique IDs. P1b defines current source-reference validation; callers must provide an authoritative current index. Enforce those limits at the adapter entry as well as UI; distinguish policy rejection from core invalid_input. Existing data outside policy must remain recoverable, with an explicit unsupported/edit-limited state, not silently clamped or discarded.
 
 The bridge must preserve existing commands and error payloads. Add an explicit capability/protocol query with a graceful unsupported-feature path for older native libraries; the current library returns invalid_request for unknown commands. Do not interpret every invalid_request as a tax validation failure. Preserve C ABI version 1 unless a reviewed C ABI change actually requires another version. Any optional structured tax-error detail must leave older command/error serialization compatible.
 
@@ -75,15 +81,15 @@ Do not inherit the migration helper's hard-coded US, 2026 or 2026-09-01 as factu
 
 Persist a separately versioned authoring analysis artifact alongside the Studio workspace, keyed by stable case ID and scenario fingerprint/revision. Do not append an undocumented ScenarioDefinition field or alter the runtime session-save envelope. Specify aggregate workspace import/export with a legacy reader while retaining scenario-only import/export.
 
-Inputs and provenance are authoritative. A result cache carries input hash, calculation version and scenario reference; invalidate it on edits, migration, engine changes and reference changes. Save incomplete work as a draft with errors, not a successful zero calculation. Prevent an older asynchronous response from replacing a result for newer inputs.
+Inputs and provenance are authoritative. P2 must re-run binding validation against the application's authoritative current case/source index before calculation; caller-supplied IDs or hashes are not attestations. P3 must persist the complete `LegacyImport` (original JSON, FX and all inactive/unavailable metadata) and complete `BindingDraft` (including unfinished bindings and required component IDs), not only a generated calculation request. Bind cached results to `input_hash`, separately versioned `binding_hash_schema`/`binding_hash`, calculation version, case/artifact/revision and current source identity as specified by the [P1b contract](../tax-integration-p1b-2026-09-29/CONTRACT.md). Invalidate on input/provenance edits, migration, engine or reference changes. Save incomplete work as a draft with errors, not a successful zero calculation. Prevent an older asynchronous response from replacing a result for newer inputs.
 
 Require atomic writes and recovery from interruption, missing sidecars, replaced cases and future schema versions. A downgrade may open the original scenario but must preserve the v2 artifact; it must not rewrite an aggregate and erase unsupported content. Reports bind the same artifact revision and calculation identity.
 
 ## 4. Native compatibility decision
 
-At inspected main, crates/juris-tax-economics/src/lib.rs exposes pub mod ffi unconditionally; Cargo.toml defines no feature gate. Existing standalone symbol names/signatures and string ownership were deliberately preserved in the accepted amendment. The crate is currently an rlib and is not a dependency of another Rust package; neither fact licenses silent removal of its public interface.
+At the historical planning source `bc4cd1d`, crates/juris-tax-economics/src/lib.rs exposed pub mod ffi unconditionally and Cargo.toml defined no feature gate. P1a has since implemented the default-enabled compatibility gate; mobile linkage and actual native feature/export validation remain P2 work. Existing standalone symbol names/signatures and string ownership were deliberately preserved in the accepted amendment. The crate is currently an rlib and is not a dependency of another Rust package; neither fact licenses silent removal of its public interface.
 
-Proposed compatible split:
+Preserved compatibility sequence. P1a completed item 1 and the feature-specific test gating in item 3; continue with the native integration and packaged-artifact checks rather than repeating those edits:
 
 1. Add a default-enabled standalone-ffi feature around the existing public ffi module. Ordinary/default builds retain today's Rust module and C-callable entry points, signatures, response envelopes and juris_free_string ownership.
 2. Let juris-mobile-bridge depend on the pure crate with default-features = false. Mobile uses only the existing juris_mobile_bridge_execute, juris_mobile_bridge_string_free and juris_mobile_bridge_abi_version C surface.
@@ -92,7 +98,7 @@ Proposed compatible split:
 5. Audit produced Android libraries and every iOS archive slice for the complete allowed juris_* exports, not just the juris_mobile_bridge_* prefix. Preserve the existing export audit's coverage and test its rejection cases.
 6. If actual packaged artifacts still leak auxiliary exports, stop and review a wrapper/build isolation alternative. Do not delete old exports, rename a free function, loosen the allowlist or change a caller's ownership protocol to make a check pass.
 
-These are proposed changes to implement and review in P1/P2; they have not been made by this planning pass.
+P1a completed the compatibility feature and test separation; the remaining native dependency, feature-unification and actual packaged-export checks are P2 work. The historical planning pass itself made no code changes.
 
 ## 5. Ordered instructions and acceptance
 
@@ -138,10 +144,10 @@ Before feature publication, review the complete user journey and the applicable 
 
 ## 7. Decisions and review record
 
-P0 must record the selected initial currencies, application input policy, artifact identity/version/hash rules and old-importer behavior. P4 must settle actual WASM packaging/initialization on the current web target. P5 must settle report identity and historical-versus-recomputed presentation. These are bounded decisions with the defaults above, not a request to redesign unrelated product areas.
+P0/P1a have frozen the selected currencies, input policy and artifact identity/version/input-hash rules. P1b specifies both legacy import variants and the additional versioned binding identity; use those contracts rather than reopening settled choices. P4 must settle actual WASM packaging/initialization on the current web target. P5 must settle report identity and historical-versus-recomputed presentation. These are bounded decisions with the defaults above, not a request to redesign unrelated product areas.
 
-This review read the supplied plan, repository AGENTS.md, the parallel reconciliation, accepted tax review/integration/diagnostics, current calculator and migration code, native JSON bridge/FFI, Dart free ownership and iOS export audit. Current tax workspace membership has no other Rust package dependency. Source review confirms the bridge currently has no tax command/capability and no standalone-ffi feature exists yet.
+This review read the supplied plan, repository AGENTS.md, the parallel reconciliation, accepted tax review/integration/diagnostics, current calculator and migration code, native JSON bridge/FFI, Dart free ownership and iOS export audit. Current tax workspace membership has no other Rust package dependency. That historical source review found no bridge tax command/capability and no standalone-ffi feature. The bridge remains pending; the feature gate is now implemented by P1a.
 
 Independently retrieved Git blobs at bc4cd1d: tax lib 6a350a0af2d23a1b555ddf980a06a0f3bff13d64; tax ffi 53f094a93c1c891d7fa13a3027ba5f0c1eefe23f; regressions cfdef1296626425a544db2bed97e46175bfe922b; mobile bridge db8ce3afa0009d0ef6acd5aa98a145ee6bd60316; mobile FFI 6e75374e4b7fffb8516a148a920b269372c6603f; Dart native client a5a35e9607afe9cb362e3adc0564ba9a0c5ed5ba; iOS export audit b33a16a577fa87ec5f28c755e1a7eb2fcaca0bd0.
 
-Only this planning document was authored by this reconciliation task. No tax code, original checkout, runtime data, Git ref, package dependency, deployment or distribution was changed. Implementation and new end-to-end evidence remain pending.
+The original reconciliation pass authored only this planning document and changed no tax code, original checkout, runtime data, Git ref, package dependency, deployment or distribution. Later implementation is identified in the checkpoint above. New end-to-end application evidence remains pending.
