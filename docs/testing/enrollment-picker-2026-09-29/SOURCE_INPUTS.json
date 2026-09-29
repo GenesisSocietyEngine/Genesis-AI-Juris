@@ -1,0 +1,38 @@
+{
+  "baseline": "7d8fe2741a7c1fda45fc23e5be88f6592c7c94c9",
+  "prior_checkpoint": "2dec210cd21632c0d594f52e9c0369b74c2ca15e",
+  "scope": "Final working-tree application inputs; doc-only Git identity can differ",
+  "sha256": {
+    "app/matters/MattersClient.tsx": "69bebb25c37f203e66cf53bd331fbbae2946d7fc6f3fb3b3bfc7b294ab368ad0",
+    "app/matters/ParticipantEnrollment.tsx": "c97786afbbfcd04d724b918b8b58752096b6ca808ecb7276e590ce990d43b69a",
+    "app/matters/participant-enrollment-model.ts": "3623ab12a685f808c4a1a0ada9eb93c7cda3a55fba4e4ceb1814c83b2799a0fe",
+    "app/matters/workspace-controller.ts": "7e0ce4628a262c80048d1e3b425960be7da2d6f603b5d0b52604504e9c297a72",
+    "app/matters/matters.module.css": "e22252af6f9a6da773a99913199fcf247da1296567cd6faf1c8d23828c137b25",
+    "tests/participant-enrollment-picker.test.ts": "733367d133f344f42f993c6254130834de5fcbae26efde910268701623450be6",
+    "tests/dossier-participant-route.test.ts": "efe9ca1508456f6405c787274d72ae4421a304badeed489f96744a87e36a1658"
+  },
+  "checks": {
+    "affected_tests": 51,
+    "failed": 0,
+    "skipped": 0,
+    "typecheck_exit": 0,
+    "eslint_exit": 0,
+    "affected_tests_scope": "51 tests at functionally identical 2dec210; final copy-only delta verified by types/lint and three rendered EN/RU states"
+  },
+  "screenshots": {
+    "after-hours-ancestor-narrow.png": "58f13e1f10020f988121e86145cd606666df7221e41cb4a8232f91714d22439b",
+    "final-copy-en-desktop.png": "066211b41ca9a825fa47025f8fab16031b015c122110818e91b080a11fcf4bcf",
+    "final-copy-en-narrow.png": "f9b88460ebb55db81f29e3c7ed15b22a7f4c38698f5b2bea9cb55a21b11dc1c3",
+    "final-copy-ru-narrow.png": "da847cb9fb693ba608f8ba1a019f7b3a0fb2cac0245835a15447f450bc9fb4b5",
+    "initial-en-1024.png": "53c0ed879df702188aa752c6898b9d0eabfa458b5045fadebf0662b735093cde",
+    "initial-en-1366.png": "b353693e33990105412a5c4519258301b9936ac4d361bb8d193e681b05709805",
+    "initial-en-390.png": "acdcf55048ed966d745bb663ae57532471e06cc49aa35e75fba74fe39c6fda22",
+    "keyboard-selected-en.png": "d073c45e784c852b3c5815f70a864190840c2350a931085e8cceecd41b8539b8",
+    "os-dark-narrow.png": "68fa1a2bcee504393097a7a6dfc02fc63c76bb132f76adca266a3943c3cbfd7f",
+    "ru-narrow.png": "ccf7d05918b8cdc5746c29e03e533e0f839dc657076d77115d23c598702adf9a",
+    "selected-desktop-full.png": "b5e2b4d3464de92a12ca46ed42364fefe7703ab8c5ebc1f0314972cefee18524",
+    "selected-long-name.png": "90c598b6b5f2c6453e175ca93515c23248c6f64660f4774f87ad39dbc53b5d09",
+    "selected-narrow-full.png": "392c483279e720e626157133f96ae74784a56d769f183f15d56916a468cdc4d8"
+  },
+  "screenshots_scope": "final-copy-* images show final wording; earlier screenshots/measurements retain preceding copy scope"
+}

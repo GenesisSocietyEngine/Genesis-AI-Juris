@@ -1,3 +1,4 @@
+import { enrollmentRoster, unavailableEnrollmentRoster, type EnrollmentRoster } from "./participant-enrollment-model";
 import { WorkingNotesController } from "./working-notes-controller";
 import { buildMatterActionCollection, enterActionQueue, resolveExactAction, type ActionCollection, type ExactActionFailure, type QueueState } from "./action-collection";
 import { DispositionRecoveryController } from "./disposition-recovery-controller";
@@ -7,7 +8,7 @@ import { normalizeActivity, normalizeAnchors, normalizeAssertions, normalizeRequ
 
 export type WorkspaceIdentity = { actorId: string; organizationId: string };
 export type Visit = WorkspaceIdentity & { caseId: string; generation: number };
-type State = { visit: Visit | null; authority: "checking" | "granted" | "session_expired" | "case_denied" | "account_changed"; bundle: WorkspaceBundle | null; loading: boolean; updating: boolean; issue: ApiIssue | null; notice: string; destination: MatterDestination; target: MatterActionTarget | null; targetActive: boolean; targetNotice: string; targetIssue: ExactActionFailure | null; targetLoading: boolean; queue: QueueState | null; collection: ActionCollection; panel: DispositionRecoveryController | null; panelOpen: boolean; mutationKey: string | null; returnFocus: number; notebookOpen: boolean };
+type State = { enrollmentCompletion: number; roster: EnrollmentRoster; visit: Visit | null; authority: "checking" | "granted" | "session_expired" | "case_denied" | "account_changed"; bundle: WorkspaceBundle | null; loading: boolean; updating: boolean; issue: ApiIssue | null; notice: string; destination: MatterDestination; target: MatterActionTarget | null; targetActive: boolean; targetNotice: string; targetIssue: ExactActionFailure | null; targetLoading: boolean; queue: QueueState | null; collection: ActionCollection; panel: DispositionRecoveryController | null; panelOpen: boolean; mutationKey: string | null; returnFocus: number; notebookOpen: boolean };
 type Options = { identity: WorkspaceIdentity; transport: (path: string, init?: RequestInit) => Promise<Response>; newKey?: () => string };
 const unavailable = (): ActionCollection => ({ availability: "unavailable", actions: [], total: 0 });
 const aborted = () => new DOMException("Obsolete workspace response", "AbortError");
@@ -15,7 +16,7 @@ const aborted = () => new DOMException("Obsolete workspace response", "AbortErro
 /** The actual workspace owner. UI panels borrow state from this object; they
  * cannot own or replace an unresolved server operation when they unmount. */
 export class WorkspaceController {
-  private state: State = { visit: null, authority: "checking", bundle: null, loading: false, updating: false, issue: null, notice: "", destination: "overview", target: null, targetActive: false, targetNotice: "", targetIssue: null, targetLoading: false, queue: null, collection: unavailable(), panel: null, panelOpen: false, mutationKey: null, returnFocus: 0, notebookOpen: false };
+  private state: State = { enrollmentCompletion: 0, roster: unavailableEnrollmentRoster(), visit: null, authority: "checking", bundle: null, loading: false, updating: false, issue: null, notice: "", destination: "overview", target: null, targetActive: false, targetNotice: "", targetIssue: null, targetLoading: false, queue: null, collection: unavailable(), panel: null, panelOpen: false, mutationKey: null, returnFocus: 0, notebookOpen: false };
   private listeners = new Set<() => void>();
   private generation = 0;
   private authorityEpoch = 0;
@@ -78,7 +79,7 @@ export class WorkspaceController {
     return this.notebook;
   }
   private clearReviews() { this.reviews.forEach(review => review.dispose()); this.reviews.clear(); this.reviewOrigins.clear(); }
-  dispose() { this.clearNotebook(); this.clearReviews(); this.active = false; this.generation++; this.authorityEpoch++; this.listeners.clear(); }
+  dispose() { this.clearNotebook(); this.clearReviews(); this.state = { ...this.state, roster: unavailableEnrollmentRoster() }; this.active = false; this.generation++; this.authorityEpoch++; this.listeners.clear(); }
   enterFromCatalogue(caseId: string) {
     // Check at the actual transition, after asynchronous creation/list delivery.
     if (this.state.visit && this.state.visit.caseId !== caseId && (this.notebook?.dirty || this.notebook?.pending)) {
@@ -91,16 +92,16 @@ export class WorkspaceController {
     if (this.state.visit?.caseId === caseId && this.state.authority !== "case_denied") return;
     this.clearNotebook(); this.clearReviews(); this.denied.clear(); this.clearDrafts(); this.authorityEpoch++; this.readEpoch++; this.targetEpoch++; this.mutationEpoch++;
     const visit = { ...this.options.identity, caseId, generation: ++this.generation };
-    this.publish({ visit, notebookOpen: false, authority: "checking", bundle: null, queue: { ...enterActionQueue(null, visit.organizationId, caseId), generation: visit.generation }, collection: unavailable(), destination: "overview", target: null, targetActive: false, targetNotice: "", targetIssue: null, targetLoading: false, panel: null, panelOpen: false, mutationKey: null, notice: "", issue: null, loading: true, updating: false });
+    this.publish({ roster: unavailableEnrollmentRoster(), visit, notebookOpen: false, authority: "checking", bundle: null, queue: { ...enterActionQueue(null, visit.organizationId, caseId), generation: visit.generation }, collection: unavailable(), destination: "overview", target: null, targetActive: false, targetNotice: "", targetIssue: null, targetLoading: false, panel: null, panelOpen: false, mutationKey: null, notice: "", issue: null, loading: true, updating: false });
   }
   private denyCase(account = false) {
     this.authorityEpoch++; this.readEpoch++; this.targetEpoch++; this.mutationEpoch++; this.clearNotebook(); this.clearReviews(); this.clearDrafts(); this.denied.clear();
-    this.publish({ authority: account ? "account_changed" : "case_denied", bundle: null, collection: unavailable(), queue: null, target: null, targetActive: false, targetNotice: "", panel: null, panelOpen: false, targetIssue: null, targetLoading: false, mutationKey: null, loading: false, updating: false, notice: "", issue: null });
+    this.publish({ roster: unavailableEnrollmentRoster(), authority: account ? "account_changed" : "case_denied", bundle: null, collection: unavailable(), queue: null, target: null, targetActive: false, targetNotice: "", panel: null, panelOpen: false, targetIssue: null, targetLoading: false, mutationKey: null, loading: false, updating: false, notice: "", issue: null });
   }
   suspendAuthority() {
     if (!this.active || this.state.authority === "session_expired") return;
     this.authorityEpoch++; this.readEpoch++; this.targetEpoch++; this.mutationEpoch++;
-    this.publish({ authority: "session_expired", loading: false, updating: false, targetLoading: false, targetNotice: "", mutationKey: null, notice: "", issue: null });
+    this.publish({ roster: unavailableEnrollmentRoster(), authority: "session_expired", loading: false, updating: false, targetLoading: false, targetNotice: "", mutationKey: null, notice: "", issue: null });
     this.notebook?.suspend();
     this.reviews.forEach(review => review.suspendAuthority());
   }
@@ -128,8 +129,9 @@ export class WorkspaceController {
     const payload = object(await this.request("/api/organizations", {}, ticket));
     const selected = object(payload.selected);
     if (selected.actorId !== this.options.identity.actorId || selected.selection !== this.options.identity.organizationId || selected.status !== "active") { if (this.current(ticket)) this.denyCase(true); throw aborted(); }
+    return enrollmentRoster(payload);
   }
-  private install(bundle: WorkspaceBundle) {
+  private install(bundle: WorkspaceBundle, roster: EnrollmentRoster) {
     // A broad list response cannot restore an exact record that was denied.
     if (this.denied.size) bundle = { ...bundle, complete: false,
       requests: bundle.requests.filter(r => !this.denied.has("request-" + r.id)),
@@ -139,21 +141,21 @@ export class WorkspaceController {
     let collection = buildMatterActionCollection(bundle.matter, bundle.snapshots, bundle.outputs, bundle.requests, bundle.documents);
     if (this.denied.size) collection = { ...collection, actions: collection.actions.filter(a => !this.denied.has(a.target.requestId ? "request-" + a.target.requestId : a.target.id)) };
     if (!bundle.complete) collection = { ...collection, availability: "unavailable" };
-    this.publish({ bundle, collection, authority: "granted", issue: null });
+    this.publish({ bundle, roster: bundle.matter.permissions.canManageParticipants ? roster : unavailableEnrollmentRoster(), collection, authority: "granted", issue: null });
     this.notebook?.resume();
   }
   async load(initial?: unknown, propagate = false) {
     if (!this.state.visit || !this.active || ["case_denied", "account_changed"].includes(this.state.authority)) return;
     const ticket = this.capture(), loadId = ++this.readEpoch;
-    this.publish({ loading: !this.state.bundle, updating: Boolean(this.state.bundle), issue: null, collection: { ...this.state.collection, availability: "outdated" } });
+    this.publish({ roster: { status: "loading", members: [], limited: false }, loading: !this.state.bundle, updating: Boolean(this.state.bundle), issue: null, collection: { ...this.state.collection, availability: "outdated" } });
     try {
-      await this.verifyIdentity(ticket);
+      const roster = await this.verifyIdentity(ticket);
       const bundle = await loadWorkspaceData(ticket.visit!.caseId, (path, init) => this.request(path, init, ticket), initial);
       if (!this.current(ticket) || loadId !== this.readEpoch) { if (propagate) throw aborted(); return; }
-      this.install(bundle);
+      this.install(bundle, roster);
       if (propagate && this.state.collection.availability !== "current") throw new Error("The saved review is recorded, but complete current actions could not be loaded");
     } catch (error) {
-      if (this.current(ticket) && loadId === this.readEpoch) this.publish({ issue: workspaceIssue(error), collection: { ...this.state.collection, availability: "unavailable" } });
+      if (this.current(ticket) && loadId === this.readEpoch) this.publish({ roster: unavailableEnrollmentRoster(), issue: workspaceIssue(error), collection: { ...this.state.collection, availability: "unavailable" } });
       if (propagate) throw error;
     } finally { if (this.current(ticket) && loadId === this.readEpoch) this.publish({ loading: false, updating: false }); }
   }
@@ -175,7 +177,7 @@ export class WorkspaceController {
     // Other review operations stay memory-only; the denied form clears itself.
     if (target) this.denied.add(target.requestId ? "request-" + target.requestId : target.id);
     this.notebook?.suspend(); this.clearDrafts(); this.authorityEpoch++; this.readEpoch++; this.mutationEpoch++;
-    this.publish({ authority: "checking", bundle: null, collection: unavailable(), target: this.state.target, targetNotice: "", targetLoading: false, mutationKey: null, loading: false, updating: false });
+    this.publish({ roster: unavailableEnrollmentRoster(), authority: "checking", bundle: null, collection: unavailable(), target: this.state.target, targetNotice: "", targetLoading: false, mutationKey: null, loading: false, updating: false });
   }
   async openReview(kind: "deadline" | "citation", recordId: string) {
     const visit = this.state.visit;
@@ -267,7 +269,7 @@ export class WorkspaceController {
       const payload = await this.request(path, init, ticket);
       if (!this.current(ticket) || mutation !== this.mutationEpoch) return false;
       const confirmedMessage = typeof message === "function" ? message(payload) : message;
-      this.clearDrafts(); this.publish({ notice: typeof message === "function" ? confirmedMessage : "Change saved. Updating case actions…" });
+      this.clearDrafts(); this.publish({ enrollmentCompletion: key === "participant-enroll" ? this.state.enrollmentCompletion + 1 : this.state.enrollmentCompletion, notice: typeof message === "function" ? confirmedMessage : "Change saved. Updating case actions…" });
       await this.load();
       if (this.current(ticket) && mutation === this.mutationEpoch) this.publish({ notice: this.state.collection.availability === "current" ? confirmedMessage : "Change saved. Update case actions to confirm current readiness." });
       return this.current(ticket) && mutation === this.mutationEpoch;

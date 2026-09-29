@@ -1,0 +1,389 @@
+{
+  "scope": "Actual component/CSS standalone synthetic fixture, callbacks only; no server grant",
+  "checks": [
+    "native select typeahead",
+    "explicit exact picker callback",
+    "all pending controls disabled",
+    "loading conceals names and retains same-case selection",
+    "verified ineligibility clears selection",
+    "restricted exact-ID fallback",
+    "email rejection",
+    "exact manual callback",
+    "confirmed completion remount resets fields",
+    "OS dark",
+    "After hours ancestor isolation",
+    "Russian copy"
+  ],
+  "native200percent": "NOT_RUN",
+  "rows": [
+    {
+      "scenario": "keyboard-selected",
+      "width": 390,
+      "pageWidth": 375,
+      "panelWidth": 343,
+      "controlWidths": [
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(41, 88, 184)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "INPUT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": true,
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(41, 88, 184)"
+        }
+      ],
+      "selection": "actor_synthetic_first",
+      "focusVisible": true,
+      "focusOutline": "rgb(239, 183, 79) solid 3px",
+      "text": "Add a participant\n\nChoose from the organization members your current access allows you to see. This list shows up to 100 returned memberships; it is not a complete directory.\n\nPeople with missing or matching names require their exact Member ID below.\n\nOrganization member\nChoose a person…\nAlexandria Synthetic Person With A Very Long Professional Display Name\nМария Тестовая\nCheck selected member identity\nCase role\nReviewer\nContributor\nViewer\nAccess changes when you confirm\n\nA reviewer can review evidence and approve case outputs.\n\nAdding a person grants this case role immediately and marks current governed outputs as stale. It does not send an invitation or change their organization role.\n\nAdd to this case\nRefresh member list\nUse Member ID (advanced)"
+    },
+    {
+      "scenario": "pending-controls",
+      "width": 390,
+      "pageWidth": 375,
+      "panelWidth": 343,
+      "controlWidths": [
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": true,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": true,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": true,
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(41, 88, 184)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": true,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "INPUT",
+          "width": 301,
+          "disabled": true,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": true,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": true,
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(41, 88, 184)"
+        }
+      ],
+      "selection": "actor_synthetic_first",
+      "focusVisible": true,
+      "focusOutline": "rgb(239, 183, 79) solid 3px",
+      "text": "Add a participant\n\nChoose from the organization members your current access allows you to see. This list shows up to 100 returned memberships; it is not a complete directory.\n\nPeople with missing or matching names require their exact Member ID below.\n\nOrganization member\nChoose a person…\nAlexandria Synthetic Person With A Very Long Professional Display Name\nМария Тестовая\nCheck selected member identity\nCase role\nReviewer\nContributor\nViewer\nAccess changes when you confirm\n\nA reviewer can review evidence and approve case outputs.\n\nAdding a person grants this case role immediately and marks current governed outputs as stale. It does not send an invitation or change their organization role.\n\nAdding participant…\nRefresh member list\nUse Member ID (advanced)"
+    },
+    {
+      "scenario": "email-rejected",
+      "width": 390,
+      "pageWidth": 375,
+      "panelWidth": 343,
+      "controlWidths": [
+        {
+          "tag": "INPUT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": true,
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(41, 88, 184)"
+        }
+      ],
+      "focusVisible": true,
+      "focusOutline": "rgb(239, 183, 79) solid 3px",
+      "text": "Add a participant\n\nYour organization role does not include access to its member list. You can still add an existing member using their exact Member ID.\n\nUse Member ID (advanced)\n\nUse the complete ID of an existing active organization member, provided by an authorized source. An email address or display name is not a Member ID. This does not look up people by email or invite new members.\n\nExact Member ID\n\nEnter the Member ID, not an email address.\n\nCase role\nReviewer\nContributor\nViewer\nAccess changes when you confirm\n\nA reviewer can review evidence and approve case outputs.\n\nAdding a person grants this case role immediately and marks current governed outputs as stale. It does not send an invitation or change their organization role.\n\nAdd to this case"
+    },
+    {
+      "scenario": "consumed-fields-reset",
+      "width": 390,
+      "pageWidth": 375,
+      "panelWidth": 343,
+      "controlWidths": [
+        {
+          "tag": "INPUT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": true,
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(41, 88, 184)"
+        }
+      ],
+      "focusVisible": true,
+      "focusOutline": "rgb(239, 183, 79) solid 3px",
+      "text": "Add a participant\n\nYour organization role does not include access to its member list. You can still add an existing member using their exact Member ID.\n\nUse Member ID (advanced)\n\nUse the complete ID of an existing active organization member, provided by an authorized source. An email address or display name is not a Member ID. This does not look up people by email or invite new members.\n\nExact Member ID\nCase role\nReviewer\nContributor\nViewer\nAccess changes when you confirm\n\nA reviewer can review evidence and approve case outputs.\n\nAdding a person grants this case role immediately and marks current governed outputs as stale. It does not send an invitation or change their organization role.\n\nAdd to this case"
+    },
+    {
+      "scenario": "os-dark-narrow",
+      "width": 390,
+      "pageWidth": 375,
+      "panelWidth": 343,
+      "controlWidths": [
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(41, 88, 184)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "INPUT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": true,
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(41, 88, 184)"
+        }
+      ],
+      "selection": "actor_synthetic_first",
+      "focusVisible": true,
+      "focusOutline": "rgb(239, 183, 79) solid 3px",
+      "text": "Add a participant\n\nChoose from the organization members your current access allows you to see. This list shows up to 100 returned memberships; it is not a complete directory.\n\nPeople with missing or matching names require their exact Member ID below.\n\nOrganization member\nChoose a person…\nAlexandria Synthetic Person With A Very Long Professional Display Name\nМария Тестовая\nCheck selected member identity\nCase role\nReviewer\nContributor\nViewer\nAccess changes when you confirm\n\nA reviewer can review evidence and approve case outputs.\n\nAdding a person grants this case role immediately and marks current governed outputs as stale. It does not send an invitation or change their organization role.\n\nAdd to this case\nRefresh member list\nUse Member ID (advanced)"
+    },
+    {
+      "scenario": "after-hours-ancestor-narrow",
+      "width": 390,
+      "pageWidth": 375,
+      "panelWidth": 343,
+      "controlWidths": [
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(41, 88, 184)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "INPUT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": true,
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(41, 88, 184)"
+        }
+      ],
+      "selection": "actor_synthetic_first",
+      "focusVisible": true,
+      "focusOutline": "rgb(239, 183, 79) solid 3px",
+      "text": "Add a participant\n\nChoose from the organization members your current access allows you to see. This list shows up to 100 returned memberships; it is not a complete directory.\n\nPeople with missing or matching names require their exact Member ID below.\n\nOrganization member\nChoose a person…\nAlexandria Synthetic Person With A Very Long Professional Display Name\nМария Тестовая\nCheck selected member identity\nCase role\nReviewer\nContributor\nViewer\nAccess changes when you confirm\n\nA reviewer can review evidence and approve case outputs.\n\nAdding a person grants this case role immediately and marks current governed outputs as stale. It does not send an invitation or change their organization role.\n\nAdd to this case\nRefresh member list\nUse Member ID (advanced)"
+    },
+    {
+      "scenario": "ru-narrow",
+      "width": 390,
+      "pageWidth": 375,
+      "panelWidth": 343,
+      "controlWidths": [
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(41, 88, 184)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "INPUT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "SELECT",
+          "width": 301,
+          "disabled": false,
+          "color": "rgb(32, 43, 60)",
+          "background": "rgb(255, 255, 255)"
+        },
+        {
+          "tag": "BUTTON",
+          "width": 301,
+          "disabled": true,
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(41, 88, 184)"
+        }
+      ],
+      "selection": "actor_synthetic_second",
+      "focusVisible": false,
+      "focusOutline": "rgb(32, 43, 60) none 0px",
+      "text": "Add a participant\n\nВыберите участника организации из доступного вам списка. Здесь показаны до 100 полученных записей, а не полный каталог.\n\nДля людей без имени или с совпадающими именами укажите точный идентификатор участника ниже.\n\nУчастник организации\nВыберите человека…\nAlexandria Synthetic Person With A Very Long Professional Display Name\nМария Тестовая\nПроверить выбранного участника\nРоль в деле\nРецензент\nУчастник\nНаблюдатель\nДоступ изменится после подтверждения\n\nРецензент может проверять доказательства и утверждать результаты дела.\n\nДобавление сразу предоставляет эту роль в деле и помечает текущие контролируемые результаты как устаревшие. Приглашение не отправляется, роль в организации не изменяется.\n\nДобавить в дело\nОбновить список участников\nИспользовать идентификатор участника"
+    }
+  ]
+}

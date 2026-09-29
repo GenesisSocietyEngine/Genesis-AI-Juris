@@ -1,0 +1,57 @@
+{
+  "scope": "synthetic actual component callback; no server grant",
+  "simpleControlBefore": {
+    "x": 276.96875,
+    "y": 74.125,
+    "disabled": false,
+    "box": {
+      "top": 62.5,
+      "left": 221.65625,
+      "width": 110.625,
+      "height": 23.25
+    },
+    "hit": "<button>Fixture restricted</button>",
+    "target": "<button>Fixture restricted</button>",
+    "scrollY": 0,
+    "devicePixelRatio": 1
+  },
+  "simpleControlClickChangedState": true,
+  "submitBeforeFocus": {
+    "x": 187.5,
+    "y": 904.859375,
+    "disabled": false,
+    "box": {
+      "top": 881.234375,
+      "left": 37,
+      "width": 301,
+      "height": 47.25
+    },
+    "target": "<button class=\"matters_primaryButton\">Add to this case</button>",
+    "scrollY": 0,
+    "devicePixelRatio": 1
+  },
+  "submitVisibleHit": {
+    "x": 187.5,
+    "y": 716.859375,
+    "disabled": false,
+    "box": {
+      "top": 693.234375,
+      "left": 37,
+      "width": 301,
+      "height": 47.25
+    },
+    "hit": "<button class=\"matters_primaryButton\">Add to this case</button>",
+    "target": "<button class=\"matters_primaryButton\">Add to this case</button>",
+    "scrollY": 188,
+    "devicePixelRatio": 1
+  },
+  "selectorClickReceipt": {
+    "actorId": "actor_synthetic_first",
+    "role": "reviewer"
+  },
+  "finalReceipt": {
+    "actorId": "actor_synthetic_first",
+    "role": "reviewer"
+  },
+  "coordinatePointerAttempted": false
+}

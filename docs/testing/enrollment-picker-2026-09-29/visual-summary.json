@@ -1,0 +1,32 @@
+{
+  "noOverflowRows": 11,
+  "enabledControlColorPairs": [
+    [
+      "BUTTON",
+      "rgb(255, 255, 255)",
+      "rgb(41, 88, 184)",
+      6.6
+    ],
+    [
+      "BUTTON",
+      "rgb(32, 43, 60)",
+      "rgb(255, 255, 255)",
+      14.26
+    ],
+    [
+      "INPUT",
+      "rgb(32, 43, 60)",
+      "rgb(255, 255, 255)",
+      14.26
+    ],
+    [
+      "SELECT",
+      "rgb(32, 43, 60)",
+      "rgb(255, 255, 255)",
+      14.26
+    ]
+  ],
+  "native200percent": "NOT_RUN",
+  "screenReader": "NOT_RUN",
+  "scope": "Standalone synthetic component, actual source CSS and locale hook"
+}

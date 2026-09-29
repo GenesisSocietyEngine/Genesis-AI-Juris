@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useWorkspaceLocation } from "../use-interface-locale";
 import { stageCasePrompt } from "./case-prompt-departure";
 import WorkingNotes from "./WorkingNotes";
+import ParticipantEnrollment from "./ParticipantEnrollment";
+import { unavailableEnrollmentRoster, type EnrollmentRoster } from "./participant-enrollment-model";
 import DocumentUploadForm from "./DocumentUploadForm";
 import WorkspaceDrafts, { useWorkspaceDraft } from "./WorkspaceDrafts";
 import DispositionRecovery from "./DispositionRecovery";
@@ -414,7 +416,7 @@ export function AuthorizedMattersClient({ actorId, organizationId, controller: s
           {state.panelOpen && state.panel && <div id="disposition-review-panel" tabIndex={-1} className={styles.panel}><DispositionRecovery controller={state.panel} signInHref={workspaceSignInPath(`/matters?organization=${encodeURIComponent(organizationId)}&dossier=${encodeURIComponent(selectedId!)}`)} citations={workspace.matter.anchors.filter(anchor => anchor.reviewState === "accepted" && !anchor.retiredAt && workspace.documents.some(document => document.id === anchor.documentId && document.currentVersionId === anchor.documentVersionId)).map(anchor => ({ id: anchor.id, label: anchor.documentTitle + " · " + (anchor.excerpt ?? "Citation") }))} onReturn={() => owner.returnToActions()}/>{state.panel.getSnapshot().authorityVisible && state.panel.getSnapshot().receipt && <button type="button" onClick={() => void owner.open({ destination: "activity", id: "audit-" + state.panel!.getSnapshot().receipt!.auditEventId })}>Open original audit receipt →</button>}</div>}
           {!state.panelOpen && !state.targetIssue && !state.targetLoading && <>
           <div key={state.visit?.generation} className={styles.sectionPanel} role="tabpanel" id={"panel-" + destination} aria-labelledby={"tab-" + destination}>
-            {destination === "overview" && <OverviewSection actionCenter={<MatterActionCenter collection={state.collection} queue={state.queue!} onQueueChange={patch => owner.setQueue(patch)} onOpen={openAction} onRefresh={() => void owner.load()}/>} requests={workspace.requests} documents={workspace.documents} matter={workspace.matter} snapshots={workspace.snapshots} outputs={workspace.outputs} view={view} mutationKey={mutationKey} onNavigate={openAction} onTransition={(option, reason) => void mutate(dossierPath + "/transitions", "transition", { newStatus: option.to, reason: reason || null }, "Lifecycle transition recorded at a new revision.")} onUpdate={(fields) => void mutate(dossierPath, "matter-update", fields, "Matter metadata updated at a new revision.", "PUT")} onEnroll={(fields) => void mutate(dossierPath + "/participants", "participant-enroll", fields, "Participant enrolled at a new governed revision.")}/>}
+            {destination === "overview" && <OverviewSection enrollmentCompletion={state.enrollmentCompletion} roster={state.roster} onRefreshMembers={() => void owner.load()} actionCenter={<MatterActionCenter collection={state.collection} queue={state.queue!} onQueueChange={patch => owner.setQueue(patch)} onOpen={openAction} onRefresh={() => void owner.load()}/>} requests={workspace.requests} documents={workspace.documents} matter={workspace.matter} snapshots={workspace.snapshots} outputs={workspace.outputs} view={view} mutationKey={mutationKey} onNavigate={openAction} onTransition={(option, reason) => void mutate(dossierPath + "/transitions", "transition", { newStatus: option.to, reason: reason || null }, "Lifecycle transition recorded at a new revision.")} onUpdate={(fields) => void mutate(dossierPath, "matter-update", fields, "Matter metadata updated at a new revision.", "PUT")} onEnroll={(fields) => void mutate(dossierPath + "/participants", "participant-enroll", fields, "Participant enrolled at a new governed revision.")}/>}
             {destination === "documents" && <CaseDocuments key={state.visit?.generation} owner={owner} canWrite={workspace.matter.permissions.canWrite} sources={<DocumentsSection matter={workspace.matter} documents={workspace.documents} activity={workspace.activity} onNavigate={openAction} issue={workspace.issues.documents} view={view} mutationKey={mutationKey} onUpload={uploadDocument} onReview={(document, decision) => void mutate(dossierPath + "/documents/" + encodeURIComponent(document.id) + "/review", "document-review-" + document.id, { decision }, decision === "accepted_source" ? "Document accepted as a governed source." : "Document rejection recorded.")}/>}/>}
             {destination === "evidence" && <EvidenceSection focusedCitationId={actionTarget?.id.startsWith("source-") ? actionTarget.id.slice(7) : undefined} onOpenDisposition={(kind, id) => openAction({ destination: kind === "deadline" ? "requests" : "evidence", id: (kind === "deadline" ? "deadline-" : "source-") + id })} matter={workspace.matter} documents={workspace.documents} packages={workspace.packages} proposals={workspace.proposals} cursor={workspace.proposalCursor} issue={workspace.issues.proposals} view={view} mutationKey={mutationKey} onGenerate={(documentVersionIds, retryFailed) => void generateAiProposals(documentVersionIds, retryFailed)} onReview={(proposal, action, editedValue, note) => void mutate(dossierPath + "/proposals", "proposal-" + proposal.id, { proposalId: proposal.id, action, editedValue, reviewNote: note || null }, "AI proposal review recorded. The historical proposal remains attributable.")} onCreateAnchor={(fields) => void mutate(dossierPath + "/evidence/anchors", "anchor-create", { action: "create", ...fields }, "Exact manual source anchor recorded for review.")} onReviewAnchor={(anchor, decision) => void mutate(dossierPath + "/evidence/anchors", "anchor-review-" + anchor.id, { action: "review", sourceAnchorId: anchor.id, decision }, "Source-anchor review decision recorded.")} onCreateAssertion={(fields) => void mutate(dossierPath + "/evidence/assertions", "assertion-create", { action: "create", ...fields }, "Professional assertion recorded for review.")} onSupersedeAssertion={(assertion) => void mutate(dossierPath + "/evidence/assertions", "assertion-review-" + assertion.id, { action: "supersede", assertionId: assertion.id }, "Assertion superseded with history preserved. Review or create its replacement before relying on the decision.")} onReviewAssertion={(assertion, decision) => void mutate(dossierPath + "/evidence/assertions", "assertion-review-" + assertion.id, { action: "review", assertionId: assertion.id, decision }, "Professional assertion review decision recorded.")} onLinkEvidence={(fields) => void mutate(dossierPath + "/evidence/links", "evidence-link", { action: "create", ...fields }, "Reviewed evidence linked to the exact graph entity.")} onLoadMore={() => void loadMoreProposals()}/>}
             {destination === "decision-packages" && <DecisionPackagesSection onNavigate={openAction} focusedPackageId={actionTarget?.caseId === selectedId ? actionTarget.packageRefId : undefined} matter={workspace.matter} packages={workspace.packages} snapshots={workspace.snapshots} issue={workspace.issues.packages ?? workspace.issues.snapshots} view={view} mutationKey={mutationKey} onLink={(fields) => void mutate(dossierPath + "/decision-packages", "package-link", fields, "Decision package linked to the visible dossier revision.")} onSnapshot={(fields) => void mutate(dossierPath + "/snapshots", "snapshot-create", fields, "Immutable dossier snapshot created.")}/>}
@@ -503,6 +505,9 @@ export function OverviewSection({
   onTransition,
   onUpdate,
   onEnroll,
+  enrollmentCompletion = 0,
+  roster = unavailableEnrollmentRoster(),
+  onRefreshMembers = () => undefined,
 }: {
   matter: MatterDetail;
   actionCenter?: ReactNode;
@@ -516,6 +521,9 @@ export function OverviewSection({
   onTransition: (option: TransitionOption, reason: string) => void;
   onUpdate: (fields: Record<string, unknown>) => void;
   onEnroll: (fields: Record<string, unknown>) => void;
+  enrollmentCompletion?: number;
+  roster?: EnrollmentRoster;
+  onRefreshMembers?: () => void;
 }) {
   const [selectedTransition, setSelectedTransition] = useWorkspaceDraft("overview-transition", "");
   const [reason, setReason] = useWorkspaceDraft("overview-transition-reason", "");
@@ -584,42 +592,7 @@ export function OverviewSection({
         </div>
         {!matter.permissions.canManageParticipants
           ? <NoPermission detail="The participant register is visible, but only the Matter owner can enroll an account."/>
-          : <form className={styles.actionForm} onSubmit={(event) => {
-              event.preventDefault();
-              const form = new FormData(event.currentTarget);
-              onEnroll({
-                actorId: String(form.get("actorId") ?? "").trim(),
-                role: String(form.get("role") ?? "reviewer"),
-              });
-            }}>
-              <label className={styles.field}>
-                <span>Existing account Actor ID</span>
-                <input
-                  name="actorId"
-                  required
-                  minLength={8}
-                  maxLength={128}
-                  autoComplete="off"
-                  spellCheck={false}
-                  placeholder="actor_…"
-                />
-              </label>
-              <label className={styles.field}>
-                <span>Participant role</span>
-                <select name="role" defaultValue="reviewer">
-                  <option value="reviewer">Reviewer</option>
-                  <option value="contributor">Contributor</option>
-                  <option value="viewer">Viewer</option>
-                </select>
-              </label>
-              <div className={styles.consequenceBox}>
-                <strong>Exact profile enrollment</strong>
-                <p>The server resolves this non-guessable Actor ID to an existing professional profile. Email, display name, owner authority, and dossier scope cannot be supplied here.</p>
-              </div>
-              <button className={styles.primaryButton} disabled={mutationKey !== null}>
-                {mutationKey === "participant-enroll" ? "Enrolling participant…" : "Enroll participant at revision " + matter.revision}
-              </button>
-            </form>}
+          : <ParticipantEnrollment key={matter.id + ":" + matter.revision + ":" + enrollmentCompletion} roster={roster} participants={matter.participants} mutationKey={mutationKey} onEnroll={onEnroll} onRefresh={onRefreshMembers}/>}
       </aside>
     </div>
   </div>;

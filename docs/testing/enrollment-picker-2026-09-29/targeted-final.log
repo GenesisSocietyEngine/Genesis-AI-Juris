@@ -1,0 +1,316 @@
+TAP version 13
+# Subtest: source review parent distinguishes exact audit version and focuses citation containers
+ok 1 - source review parent distinguishes exact audit version and focuses citation containers
+  ---
+  duration_ms: 170.0493
+  type: 'test'
+  ...
+# Subtest: B1 audit target and focus notice end on manual documents navigation without losing the queue or drafts
+ok 2 - B1 audit target and focus notice end on manual documents navigation without losing the queue or drafts
+  ---
+  duration_ms: 93.3102
+  type: 'test'
+  ...
+# Subtest: B1 audit target and focus notice end on manual overview navigation without losing the queue or drafts
+ok 3 - B1 audit target and focus notice end on manual overview navigation without losing the queue or drafts
+  ---
+  duration_ms: 135.4885
+  type: 'test'
+  ...
+# Subtest: B1 actual uncontrolled evidence draft restores after manual tab return while exact target is inactive
+ok 4 - B1 actual uncontrolled evidence draft restores after manual tab return while exact target is inactive
+  ---
+  duration_ms: 98.0206
+  type: 'test'
+  ...
+# Subtest: B1 manual navigation preserves an unrelated save notice and request error
+ok 5 - B1 manual navigation preserves an unrelated save notice and request error
+  ---
+  duration_ms: 102.4939
+  type: 'test'
+  ...
+# Subtest: B1 actual parent hides header, record, draft and retained review through 401ÔåÆ500
+ok 6 - B1 actual parent hides header, record, draft and retained review through 401ÔåÆ500
+  ---
+  duration_ms: 120.1877
+  type: 'test'
+  ...
+# Subtest: B1 partial source retrieval cannot advertise an authoritative total or successful queue refresh
+ok 7 - B1 partial source retrieval cannot advertise an authoritative total or successful queue refresh
+  ---
+  duration_ms: 111.4849
+  type: 'test'
+  ...
+# Subtest: document upload controls emit the server acknowledgement and enforce its title bounds
+ok 8 - document upload controls emit the server acknowledgement and enforce its title bounds
+  ---
+  duration_ms: 26.1105
+  type: 'test'
+  ...
+# Subtest: version upload restores an exact eligible target with locked public metadata and excludes other origins
+ok 9 - version upload restores an exact eligible target with locked public metadata and excludes other origins
+  ---
+  duration_ms: 63.3336
+  type: 'test'
+  ...
+# Subtest: B1 owner attach replay is safe and final detachment rejects late callbacks
+ok 10 - B1 owner attach replay is safe and final detachment rejects late callbacks
+  ---
+  duration_ms: 22.8519
+  type: 'test'
+  ...
+# Subtest: B1 malformed200 cannot silently delete citation reviews from a complete queue
+ok 11 - B1 malformed200 cannot silently delete citation reviews from a complete queue
+  ---
+  duration_ms: 8.2759
+  type: 'test'
+  ...
+# Subtest: B1 reopening an earlier uncertain review restores its own filter and exact origin
+ok 12 - B1 reopening an earlier uncertain review restores its own filter and exact origin
+  ---
+  duration_ms: 9.0433
+  type: 'test'
+  ...
+# Subtest: B1 case denial clears pending parent content and drafts until a new verified visit
+ok 13 - B1 case denial clears pending parent content and drafts until a new verified visit
+  ---
+  duration_ms: 65.3635
+  type: 'test'
+  ...
+# Subtest: B1 delayed write and finally from old A cannot alter or unlock the new A operation
+ok 14 - B1 delayed write and finally from old A cannot alter or unlock the new A operation
+  ---
+  duration_ms: 19.1419
+  type: 'test'
+  ...
+# Subtest: B1 parent create lock prevents concurrent independently keyed case creation
+ok 15 - B1 parent create lock prevents concurrent independently keyed case creation
+  ---
+  duration_ms: 1.0588
+  type: 'test'
+  ...
+# Subtest: C1 actual parent retains note drafts across section changes and generic draft clearing
+ok 16 - C1 actual parent retains note drafts across section changes and generic draft clearing
+  ---
+  duration_ms: 313.1077
+  type: 'test'
+  ...
+# Subtest: C1 pending note does not hijack exact document actions; recovery stays available
+ok 17 - C1 pending note does not hijack exact document actions; recovery stays available
+  ---
+  duration_ms: 107.84
+  type: 'test'
+  ...
+# Subtest: C1 catalogue delivery cannot switch after a draft appears during an asynchronous operation
+ok 18 - C1 catalogue delivery cannot switch after a draft appears during an asynchronous operation
+  ---
+  duration_ms: 5.098
+  type: 'test'
+  ...
+# Subtest: owner enrolls an exact profiled reviewer in one canonical revision and failures do not enumerate accounts
+ok 19 - owner enrolls an exact profiled reviewer in one canonical revision and failures do not enumerate accounts
+  ---
+  duration_ms: 27652.5372
+  type: 'test'
+  ...
+# Subtest: participant capacity counts removed history and fails closed at exactly 100 rows
+ok 20 - participant capacity counts removed history and fails closed at exactly 100 rows
+  ---
+  duration_ms: 4841.5807
+  type: 'test'
+  ...
+# Subtest: participant POST is same-origin, owner-only, revision-CAS, and has an exact field boundary
+ok 21 - participant POST is same-origin, owner-only, revision-CAS, and has an exact field boundary
+  ---
+  duration_ms: 3.7541
+  type: 'test'
+  ...
+# Subtest: only non-owner roles are enrollable and account identity is resolved by exact Actor ID
+ok 22 - only non-owner roles are enrollable and account identity is resolved by exact Actor ID
+  ---
+  duration_ms: 0.5074
+  type: 'test'
+  ...
+# Subtest: enrollment atomically advances revision, inserts canonical provenance, stales outputs, audits, then receipts
+ok 23 - enrollment atomically advances revision, inserts canonical provenance, stales outputs, audits, then receipts
+  ---
+  duration_ms: 0.6098
+  type: 'test'
+  ...
+# Subtest: missing, duplicate, and removed target accounts use one non-enumerating failure
+ok 24 - missing, duplicate, and removed target accounts use one non-enumerating failure
+  ---
+  duration_ms: 0.6601
+  type: 'test'
+  ...
+# Subtest: the participant register stays visible while enrollment is an explicit owner permission
+ok 25 - the participant register stays visible while enrollment is an explicit owner permission
+  ---
+  duration_ms: 0.9517
+  type: 'test'
+  ...
+# Subtest: create refreshes the choices while retaining managed organization and unrelated input
+ok 26 - create refreshes the choices while retaining managed organization and unrelated input
+  ---
+  duration_ms: 127.9833
+  type: 'test'
+  ...
+# Subtest: accept refreshes the choices while retaining managed organization and unrelated input
+ok 27 - accept refreshes the choices while retaining managed organization and unrelated input
+  ---
+  duration_ms: 3.1154
+  type: 'test'
+  ...
+# Subtest: confirmed create followed by read failure offers refresh without replay or context switch
+ok 28 - confirmed create followed by read failure offers refresh without replay or context switch
+  ---
+  duration_ms: 34.0135
+  type: 'test'
+  ...
+# Subtest: revocation during create fences its successful late receipt
+ok 29 - revocation during create fences its successful late receipt
+  ---
+  duration_ms: 5.1127
+  type: 'test'
+  ...
+# Subtest: refresh withdraws stale navigation authority for a successful missing-membership response
+ok 30 - refresh withdraws stale navigation authority for a successful missing-membership response
+  ---
+  duration_ms: 2.1529
+  type: 'test'
+  ...
+# Subtest: refresh withdraws stale navigation authority for a changed role revision
+ok 31 - refresh withdraws stale navigation authority for a changed role revision
+  ---
+  duration_ms: 1.5087
+  type: 'test'
+  ...
+# Subtest: refresh with unchanged membership retains ready navigation and unrelated input
+ok 32 - refresh with unchanged membership retains ready navigation and unrelated input
+  ---
+  duration_ms: 2.2324
+  type: 'test'
+  ...
+# Subtest: revocation during a refresh read fences its late workspace result
+ok 33 - revocation during a refresh read fences its late workspace result
+  ---
+  duration_ms: 1.3958
+  type: 'test'
+  ...
+# Subtest: refresh cannot restore obsolete error feedback after authority withdrawal
+ok 34 - refresh cannot restore obsolete error feedback after authority withdrawal
+  ---
+  duration_ms: 2.082
+  type: 'test'
+  ...
+# Subtest: action cannot restore obsolete error feedback after authority withdrawal
+ok 35 - action cannot restore obsolete error feedback after authority withdrawal
+  ---
+  duration_ms: 1.7843
+  type: 'test'
+  ...
+# Subtest: a current refresh failure still offers ordinary retry
+ok 36 - a current refresh failure still offers ordinary retry
+  ---
+  duration_ms: 1.2642
+  type: 'test'
+  ...
+# Subtest: refresh keeps the page sign-in recovery when the session expires
+ok 37 - refresh keeps the page sign-in recovery when the session expires
+  ---
+  duration_ms: 1.4261
+  type: 'test'
+  ...
+# Subtest: confirmed action keeps the page sign-in recovery when the session expires
+ok 38 - confirmed action keeps the page sign-in recovery when the session expires
+  ---
+  duration_ms: 27.2662
+  type: 'test'
+  ...
+# Subtest: rejected action keeps the page sign-in recovery when the session expires
+ok 39 - rejected action keeps the page sign-in recovery when the session expires
+  ---
+  duration_ms: 3.2797
+  type: 'test'
+  ...
+# Subtest: create lets the rail open the added organization without switching context
+ok 40 - create lets the rail open the added organization without switching context
+  ---
+  duration_ms: 53.7864
+  type: 'test'
+  ...
+# Subtest: accept lets the rail open the added organization without switching context
+ok 41 - accept lets the rail open the added organization without switching context
+  ---
+  duration_ms: 8.4613
+  type: 'test'
+  ...
+# Subtest: create followed by read failure does not point to an absent Manage entry
+ok 42 - create followed by read failure does not point to an absent Manage entry
+  ---
+  duration_ms: 2.3199
+  type: 'test'
+  ...
+# Subtest: create withdraws rather than adopts a changed managed selection
+ok 43 - create withdraws rather than adopts a changed managed selection
+  ---
+  duration_ms: 1.5951
+  type: 'test'
+  ...
+# Subtest: refresh after a failed post-create read lets the rail open the added organization
+ok 44 - refresh after a failed post-create read lets the rail open the added organization
+  ---
+  duration_ms: 9.2161
+  type: 'test'
+  ...
+# Subtest: roster projection preserves the existing directory permission boundary and discards unrelated fields
+ok 45 - roster projection preserves the existing directory permission boundary and discards unrelated fields
+  ---
+  duration_ms: 2.3727
+  type: 'test'
+  ...
+# Subtest: choices exclude inactive and all prior case participants; duplicate names are compared before exclusion
+ok 46 - choices exclude inactive and all prior case participants; duplicate names are compared before exclusion
+  ---
+  duration_ms: 0.984
+  type: 'test'
+  ...
+# Subtest: advanced member ID validation rejects email without adding identity resolution
+ok 47 - advanced member ID validation rejects email without adding identity resolution
+  ---
+  duration_ms: 0.1734
+  type: 'test'
+  ...
+# Subtest: roster is case-owner-only, reverified on refresh, and clears immediately on authority loss
+ok 48 - roster is case-owner-only, reverified on refresh, and clears immediately on authority loss
+  ---
+  duration_ms: 79.6287
+  type: 'test'
+  ...
+# Subtest: a delayed earlier roster cannot revive names after changing case or account authority
+ok 49 - a delayed earlier roster cannot revive names after changing case or account authority
+  ---
+  duration_ms: 11.3096
+  type: 'test'
+  ...
+# Subtest: latest same-case refresh wins; failed refresh and disposal retain no roster
+ok 50 - latest same-case refresh wins; failed refresh and disposal retain no roster
+  ---
+  duration_ms: 19.2099
+  type: 'test'
+  ...
+# Subtest: confirmed enrollment resets its form even when follow-up reload fails; rejected POST preserves drafts
+ok 51 - confirmed enrollment resets its form even when follow-up reload fails; rejected POST preserves drafts
+  ---
+  duration_ms: 10.4486
+  type: 'test'
+  ...
+1..51
+# tests 51
+# suites 0
+# pass 51
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 36909.4517

@@ -88,3 +88,8 @@
 .sourceRegister li[id^="source-"]{scroll-margin-block:90px;overflow-wrap:anywhere}
 .sourceRegister li[id^="source-"]:focus{outline:3px solid var(--workspace-accent,#315caf);outline-offset:5px}
 @media(forced-colors:active){.sourceRegister li[id^="source-"]:focus{outline-color:Highlight}}
+
+/* Enrollment consequences are routine information, not an error state. */
+.enrollmentConsequences{border-left:3px solid var(--workspace-accent);border-radius:7px;padding:14px;background:var(--workspace-subtle);color:var(--workspace-ink);font-size:14px;line-height:1.6}
+.enrollmentConsequences strong{font-weight:650}
+.enrollmentConsequences p{margin:8px 0 0;color:var(--workspace-muted);font-weight:400}
