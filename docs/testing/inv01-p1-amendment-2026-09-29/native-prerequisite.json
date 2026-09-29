@@ -1,0 +1,10 @@
+{
+  "status": "BLOCKED",
+  "attempt": "Execute .artifacts/p1-release-gate/prepare-native.ps1 for a new isolated synthetic emulator",
+  "exitCode": 1,
+  "error": "PSSecurityException / UnauthorizedAccess: running scripts is disabled on this system",
+  "emulatorStarted": false,
+  "machineExecutionPolicyChanged": false,
+  "policyBypassed": false,
+  "historicalNativePassReused": false
+}
