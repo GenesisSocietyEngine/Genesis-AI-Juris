@@ -1,0 +1,10 @@
+{
+    "sourceHead":  "bd8b0e07fe4b9c0eded527e1825f0fa3eb66956c",
+    "cssBeforeSha256":  "1bbb8063b8716d5533ba0e88eb32950a553720fec6fcda9e16d8086984116b7d",
+    "beforeHashSource":  "Coordinator-recorded before measurement",
+    "cssAfterSha256":  "74849b5b9221665fad2d97310a2ae0cfd79f33185d0ef227a69dc1ebce14af25",
+    "cssPath":  "C:/PROJECTS/Genesis-Juris-DS1-2026-09-29/app/globals.css",
+    "browser":  "Chrome for Testing 154.0.8037.57",
+    "session":  "ds1-zoom-probe",
+    "scope":  "DS1 target-control contrast at actual browser 200 percent; not overall A15 acceptance"
+}

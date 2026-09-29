@@ -1,0 +1,9 @@
+{
+  "sourceBase": "bd8b0e07fe4b9c0eded527e1825f0fa3eb66956c",
+  "beforeCssSha256": "1bbb8063b8716d5533ba0e88eb32950a553720fec6fcda9e16d8086984116b7d",
+  "afterCssSha256": "74849b5b9221665fad2d97310a2ae0cfd79f33185d0ef227a69dc1ebce14af25",
+  "scope": [
+    "app/globals.css"
+  ],
+  "independentReview": "Root Codex accepted three-rule source/cascade proposal; not Claude review."
+}

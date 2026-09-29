@@ -1,0 +1,22 @@
+import fs from 'node:fs';
+import path from 'node:path';
+const root='C:/PROJECTS/Genesis-Juris-DS1-Tools-2026-09-29/zoom-extension';
+const phase=process.argv[2]||'before';
+const folder=path.join(root,phase);
+const report=JSON.parse(fs.readFileSync(path.join(folder,'report.json'),'utf8'));
+const expected=['generic-office','generic-after-hours','falcon-office','falcon-after-hours'];
+if(report.cases.length!==4||expected.some(k=>!report.cases.some(c=>c.key===k)))throw new Error('Incomplete matrix');
+const summary=report.cases.map(c=>{
+  const dark=c.key.endsWith('after-hours'),falcon=c.key.startsWith('falcon');
+  const shell=c.states.idleFirstNine.shell;
+  if(!shell.includes(dark?'theme-after-hours':'theme-office')||shell.includes('studio-host-falcon')!==falcon)throw new Error('Wrong theme/host '+c.key);
+  if(c.zoom.receipt.factor!==2||c.baseline.receipt.factor!==1||c.zoom.outerWidth!==c.baseline.outerWidth||c.zoom.outerHeight!==c.baseline.outerHeight||c.zoom.dpr!==c.baseline.dpr*2)throw new Error('Invalid native zoom proof');
+  const idle=[...c.states.idleFirstNine.nodes.filter(n=>!n.selected),c.states.idleTenth.nodes.find(n=>n.text==='N10')];
+  if(idle.length!==10||new Set(idle.map(n=>n.text)).size!==10||idle.some(n=>n.selected||n.focus||n.hover))throw new Error('Idle coverage invalid '+c.key);
+  if(!c.states.sourceActive.source.active||!c.states.destinationActive.destination.active||!c.states.sourceFocus.source.focusVisible||!c.states.destinationFocus.destination.focusVisible)throw new Error('State coverage invalid '+c.key);
+  if(c.selectedPalette.length!==10||c.selectedPalette.some(n=>!n.selected||n.color!=='rgb(6, 16, 25)'||n.ratio<4.5))throw new Error('Selected palette not preserved '+c.key);
+  if(c.screenshots.some(p=>!fs.statSync(path.join(folder,p)).size))throw new Error('Missing screenshot');
+  return {key:c.key,shell,baseline:{width:c.baseline.width,height:c.baseline.height,dpr:c.baseline.dpr,outerWidth:c.baseline.outerWidth,outerHeight:c.baseline.outerHeight},zoom:{factor:c.zoom.receipt.factor,width:c.zoom.width,height:c.zoom.height,dpr:c.zoom.dpr,outerWidth:c.zoom.outerWidth,outerHeight:c.zoom.outerHeight,cssZoom:c.zoom.cssZoom,bodyZoom:c.zoom.bodyZoom},guideRatio:c.states.idleFirstNine.guide[0].ratio,sourceActiveRatio:c.states.sourceActive.source.ratio,destinationActiveRatio:c.states.destinationActive.destination.ratio,sourceFocusRatio:c.states.sourceFocus.source.ratio,destinationFocusRatio:c.states.destinationFocus.destination.ratio,idleMin:Math.min(...idle.map(n=>n.ratio)),idleMax:Math.max(...idle.map(n=>n.ratio)),idleNodes:idle.map(n=>({number:n.text,foreground:n.color,background:n.background,ratio:n.ratio})),selectedMin:Math.min(...c.selectedPalette.map(n=>n.ratio)),selectedMax:Math.max(...c.selectedPalette.map(n=>n.ratio)),focusVisibleConfirmed:true,screenshots:c.screenshots};
+});
+fs.writeFileSync(path.join(folder,'summary.json'),JSON.stringify({phase,validated:true,cases:summary},null,2));
+console.log(JSON.stringify(summary.map(({idleNodes,...s})=>s),null,2));
