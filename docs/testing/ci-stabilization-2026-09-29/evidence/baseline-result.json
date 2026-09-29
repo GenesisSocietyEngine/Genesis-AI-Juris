@@ -1,0 +1,12 @@
+{
+  "observedAt": "2026-09-29T08:24:13.070Z",
+  "source": "b355caf36fbb27c31a338520fdfeef9649afadc3",
+  "nodeVersion": "v22.23.2",
+  "npmVersion": "10.9.8",
+  "installExit": 0,
+  "lockSha256": "43155d8e1650cf89ded732133384173b260becea9b8b1edcdcfbc02ed628f729",
+  "lockUnchanged": true,
+  "fullAuditExit": 1,
+  "productionAuditExit": 0,
+  "initialShellAttempt": "PowerShell ErrorActionPreference=Stop treated an npm deprecation warning on stderr as NativeCommandError before any terminal npm result. No matching installer remained. This retry captures child streams directly and preserves the unchanged lock."
+}

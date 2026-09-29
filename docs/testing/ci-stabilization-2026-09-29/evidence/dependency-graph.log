@@ -1,0 +1,13 @@
+genesis-juris-web@0.1.0 C:\PROJECTS\Genesis-AI-Juris\.worktrees\ci-stabilization-2026-09-29
+├─┬ @cloudflare/vite-plugin@1.54.8
+│ └─┬ miniflare@5.20260911.0-alpha overridden
+│   └── undici@7.29.1 overridden
+└─┬ react-server-dom-webpack@19.2.8
+  └─┬ webpack@5.106.2
+    └─┬ schema-utils@4.3.3
+      ├─┬ ajv-formats@2.1.1
+      │ └─┬ ajv@8.20.0
+      │   └── fast-uri@3.1.8 deduped
+      └─┬ ajv@8.20.0
+        └── fast-uri@3.1.8 overridden
+

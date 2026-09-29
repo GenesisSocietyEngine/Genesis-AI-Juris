@@ -54,8 +54,11 @@
       "esbuild": "0.25.12"
     },
     "browserslist": "4.28.8",
-    "fast-uri": "3.1.6",
-    "fflate": "0.7.5"
+    "fast-uri": "3.1.8",
+    "fflate": "0.7.5",
+    "miniflare": {
+      "undici": "7.29.1"
+    }
   },
   "type": "module",
   "displayName": "GENESIS: JURIS Web"
