@@ -1,0 +1,110 @@
+{
+  "observedAt": "2026-09-29T03:34:38.542Z",
+  "schema": "genesis.juris.build-identity.v1",
+  "inputPolicy": "web-source-v1",
+  "applicationInputsSha256": "5cde43f86ee22fce243cf1976fa1d9bda7fc1235c4561deed6980e1dc2b4fb66",
+  "hostingConfigSha256": "20c4899db37316b7bf0bddf07ec2e526afe531e09808c9a2e22d0298a7d63ebe",
+  "sourceCommit": "55990ba92e6e78406a6af9fd67add5db8b9b1af9",
+  "nodeVersion": "v22.23.2",
+  "applicationInputCount": 395,
+  "branch": "codex/inv01-p1-amendment-2026-09-29",
+  "migrations": [
+    {
+      "file": "0000_worthless_supreme_intelligence.sql",
+      "sha256": "5ec11a8e3b6ab0f81d97edceb1f307dc44b1ddf2b950212e9ef1b32d50dba6bc"
+    },
+    {
+      "file": "0001_right_talon.sql",
+      "sha256": "d504e8e363cc60afd3366465909f210cc7cffc74b3d9760ad7849da7169f8b3b"
+    },
+    {
+      "file": "0002_greedy_darkstar.sql",
+      "sha256": "80b1f3cdae7b46f37cd28219661150f64f972b356b57577841cdf4471370e4f9"
+    },
+    {
+      "file": "0003_unusual_zarda.sql",
+      "sha256": "a01c0c3ee8471f8f1a62755e3a3eb3abad379878c48132cf46e3722f2bc657e9"
+    },
+    {
+      "file": "0004_petite_komodo.sql",
+      "sha256": "3644a749b01776c10d8713d944906c8e6713a3be1b6b3ded71c048bcc644f4c0"
+    },
+    {
+      "file": "0005_dapper_nightcrawler.sql",
+      "sha256": "cd2288671ca10c53405cb40bd3760a4db98b90a27b51f58502a6437b596a78c1"
+    },
+    {
+      "file": "0006_concerned_korath.sql",
+      "sha256": "a8d4f88df11145286a12bb0731ef7dafdc7aca8af113fbc605d506005838dfca"
+    },
+    {
+      "file": "0007_ambitious_phoenix.sql",
+      "sha256": "7f0747877ab435e8daf5c27abdc33c86533ed3192d939b47c02928cf0044a181"
+    },
+    {
+      "file": "0008_first_hitman.sql",
+      "sha256": "58952abe328d069c136b09a49e51fabfb10a299014be767ae540a2e658e994ec"
+    },
+    {
+      "file": "0009_medical_princess_powerful.sql",
+      "sha256": "a151ae42b2badddc9c40df4eb0c8ce1d99338397fd7515634f357af15bd3ca4c"
+    },
+    {
+      "file": "0010_square_scalphunter.sql",
+      "sha256": "807c48fa33a5014e3e094a25ff4e48a475e004712f754f7a080dd901e2f06a39"
+    },
+    {
+      "file": "0011_operational_events.sql",
+      "sha256": "0b556f390a83eec0dccd6dc76d12340a3083620b79e34ea1fa0cd4e83711e6c7"
+    },
+    {
+      "file": "0012_sleepy_magma_core.sql",
+      "sha256": "f7287a42b2afb176de4f892fe476d6242dffb62e6d336484fbae55c077a0fe8c"
+    },
+    {
+      "file": "0013_sleepy_magma_guards_a.sql",
+      "sha256": "18332d50e4b12c729187280a3dc397c35ef95e3daacc7a33419bfe327338022e"
+    },
+    {
+      "file": "0014_sleepy_magma_guards_b.sql",
+      "sha256": "0eb85af54bea36fc6bd57319e4d0ae9761154fb497ab741dcb5830086da0c37b"
+    },
+    {
+      "file": "0015_sleepy_magma_guards_c.sql",
+      "sha256": "82f696cc99ed5fd5b921d064cf7a4fc14b3ce77f06375c1c8b8aa631417429e5"
+    },
+    {
+      "file": "0016_polite_sentinels.sql",
+      "sha256": "50a12891dbc6376d0dadf0b8008ad39815f7c5255204f745c3a2687f1e549c83"
+    },
+    {
+      "file": "0017_perfect_marvex.sql",
+      "sha256": "0c98f442f7652b859d90b0ad7e070a762b18686357e013e807933d08ab2f4036"
+    },
+    {
+      "file": "0018_low_calypso.sql",
+      "sha256": "5e4c6cfed12d3e4e59be200829473630d665e71ad2289fb8a46f572a30653f84"
+    },
+    {
+      "file": "0019_p1_organization_scope.sql",
+      "sha256": "4a4f4fa9990103f668dde2a4a70962408a702bc69480641fa4b6280ea4b2dd3b"
+    },
+    {
+      "file": "0020_dependable_actions.sql",
+      "sha256": "54afcf58b6261e4cf299e682bd456d8b0f250a87fd1886403ae76a35420d1f04"
+    },
+    {
+      "file": "0021_disposition_audit_binding.sql",
+      "sha256": "c1290b9597b54b9d9ce207a30f0769ba01a817cb653e177a657a00e73db8904a"
+    },
+    {
+      "file": "0022_loving_juggernaut.sql",
+      "sha256": "dbc92b2762b5186b8a359869067cc11dd6a990dda2162ecab5f5728eb53f9628"
+    },
+    {
+      "file": "0023_email_invitations.sql",
+      "sha256": "2035c192ee194718c420be7592b554151ae0e25f69b61bccb4d5e3d324bca630"
+    }
+  ],
+  "journalSha256": "6f5eedd99c9e45332cf509581ca9c01fdb37cb2bac6a23cb2ca1e7261b770fe1"
+}

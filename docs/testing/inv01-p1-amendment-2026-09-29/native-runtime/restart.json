@@ -1,0 +1,87 @@
+{
+    "processes":  [
+                      {
+                          "ProcessId":  27360,
+                          "ParentProcessId":  32464,
+                          "Name":  "adb.exe",
+                          "ExecutablePath":  "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe",
+                          "CreationTimeUtc":  "2026-09-29T05:24:29.7004410Z",
+                          "CommandLine":  "adb -L tcp:5039 fork-server server --reply-fd 768"
+                      },
+                      {
+                          "ProcessId":  5260,
+                          "ParentProcessId":  26084,
+                          "Name":  "emulator.exe",
+                          "ExecutablePath":  "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\emulator.exe",
+                          "CreationTimeUtc":  "2026-09-29T06:23:05.4485250Z",
+                          "CommandLine":  "\"C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\emulator.exe\" -avd P1GatePixel -port 5580 -read-only -no-snapshot-load -no-snapshot-save -no-window -no-audio -no-metrics -gpu swiftshader -memory 2048 -cores 2 "
+                      },
+                      {
+                          "ProcessId":  31972,
+                          "ParentProcessId":  5260,
+                          "Name":  "conhost.exe",
+                          "ExecutablePath":  "C:\\Windows\\system32\\conhost.exe",
+                          "CreationTimeUtc":  "2026-09-29T06:23:05.4722970Z",
+                          "CommandLine":  "\\??\\C:\\Windows\\system32\\conhost.exe 0x4"
+                      },
+                      {
+                          "ProcessId":  9224,
+                          "ParentProcessId":  5260,
+                          "Name":  "qemu-system-x86_64-headless.exe",
+                          "ExecutablePath":  "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\qemu\\windows-x86_64\\qemu-system-x86_64-headless.exe",
+                          "CreationTimeUtc":  "2026-09-29T06:23:05.5643390Z",
+                          "CommandLine":  "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\qemu\\windows-x86_64\\qemu-system-x86_64-headless.exe -avd P1GatePixel -port 5580 -read-only -no-snapshot-load -no-snapshot-save -no-window -no-audio -no-metrics -gpu swiftshader -memory 2048 -cores 2"
+                      },
+                      {
+                          "ProcessId":  14568,
+                          "ParentProcessId":  9224,
+                          "Name":  "crashpad_handler.exe",
+                          "ExecutablePath":  "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\crashpad_handler.exe",
+                          "CreationTimeUtc":  "2026-09-29T06:23:05.7019580Z",
+                          "CommandLine":  "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\crashpad_handler.exe --no-rate-limit --database=C:\\PROJECTS\\Genesis-AI-Juris\\.worktrees\\p1-amendment-2026-09-29\\.artifacts\\p1-android-native\\tmp\\\\AndroidEmulator\\emu-crash-36.6.11.db --url=https://clients2.google.com/cr/report --annotation=prod=AndroidEmulator --annotation=ver=36.6.11-15507667 --initial-client-data=0x378,0x37c,0x380,0x350,0x384,0x7ff6e73d11c8,0x7ff6e73d11d8,0x7ff6e73d1198"
+                      }
+                  ],
+    "pid":  5260,
+    "createdRoot":  "C:/PROJECTS/Genesis-AI-Juris/.worktrees/p1-amendment-2026-09-29/.artifacts/p1-android-native",
+    "adbPort":  5039,
+    "userdataDeleted":  false,
+    "receiptRecovery":  [
+                            "Launch succeeded; initial receipt expression failed because true lacked PowerShell dollar prefix.",
+                            "First recovery refused due to a DateTime timezone comparison.",
+                            "Read-only inspection established exact UTC creation string; this receipt verifies that identity. No duplicate launch occurred."
+                        ],
+    "retainedAdbPid":  27360,
+    "observedAt":  "2026-09-29T06:24:07.9063084Z",
+    "avd":  "P1GatePixel",
+    "ports":  [
+                  {
+                      "LocalAddress":  "::1",
+                      "LocalPort":  5581,
+                      "OwningProcess":  9224
+                  },
+                  {
+                      "LocalAddress":  "::1",
+                      "LocalPort":  5580,
+                      "OwningProcess":  9224
+                  },
+                  {
+                      "LocalAddress":  "127.0.0.1",
+                      "LocalPort":  5581,
+                      "OwningProcess":  9224
+                  },
+                  {
+                      "LocalAddress":  "127.0.0.1",
+                      "LocalPort":  5580,
+                      "OwningProcess":  9224
+                  },
+                  {
+                      "LocalAddress":  "127.0.0.1",
+                      "LocalPort":  5039,
+                      "OwningProcess":  27360
+                  }
+              ],
+    "port":  5580,
+    "path":  "C:\\Users\\User\\AppData\\Local\\Android\\Sdk\\emulator\\emulator.exe",
+    "existingSyntheticAvd":  true,
+    "startTime":  "2026-09-29T06:23:05.4485250Z"
+}

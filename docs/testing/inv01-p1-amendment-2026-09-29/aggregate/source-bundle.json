@@ -1,0 +1,11 @@
+{
+  "path": ".artifacts\\p1-release-gate\\p1-amendment.bundle",
+  "sourceCommit": "a9d8c767b67d1485b2f9e6bf0e07dcd324b18f38",
+  "bytes": 90856489,
+  "sha256": "b01c349927ccb3129fe5c6ad4a38732efcc20ba54c48508eb1d62f4fe677b6f1",
+  "requiredRevisionsAreAncestors": [
+    "bf5799383a52b6617cd9d4a0acf47af780086218",
+    "e256660f5e7d5c88ffe4dc0076ead74a70d18b1b"
+  ],
+  "published": false
+}

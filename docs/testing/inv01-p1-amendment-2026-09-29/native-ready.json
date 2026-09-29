@@ -1,0 +1,14 @@
+{
+    "policyScope":  "RemoteSigned for launcher process only",
+    "previousBlockedAttempt":  "native-prerequisite.json",
+    "avd":  "P1GatePixel",
+    "nativeTestResult":  "NOT_RUN",
+    "machinePolicyChanged":  false,
+    "state":  "device",
+    "launchPid":  27672,
+    "device":  "emulator-5580",
+    "bootCompleted":  "1",
+    "status":  "READY",
+    "observedAt":  "2026-09-29T05:29:07.7247830Z",
+    "privateAdbPort":  5039
+}

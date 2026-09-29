@@ -1,0 +1,10 @@
+{
+    "scope":  "Known competing execution check; canonical byte/index/untracked guards are additionally mandatory at integration",
+    "observedAt":  "2026-09-29T06:40:37.1072408Z",
+    "knownExternalTerminal":  "2026-09-29T04:51:35.251Z usage_limit_exceeded; no successful final handoff",
+    "externalSessionLastWriteUtc":  "2026-09-29T04:51:35.8115723Z",
+    "externalPriorPid17492Present":  false,
+    "matchingExternalCodexProcesses":  [
+
+                                       ]
+}

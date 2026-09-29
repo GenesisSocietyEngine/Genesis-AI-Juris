@@ -1,0 +1,10 @@
+{
+    "serial":  "emulator-5580",
+    "testExecution":  "NOT_RUN at this readiness checkpoint",
+    "avdName":  "P1GatePixel",
+    "bootCompleted":  "1",
+    "adbPort":  5039,
+    "deviceState":  "device",
+    "status":  "READY",
+    "observedAt":  "2026-09-29T06:26:47.7885945Z"
+}
