@@ -112,10 +112,54 @@ revoked confirmation, and a case-source edit blocked calculation. Explicit rebin
 retained prior input and reset confirmation. A rebind started during a concurrent
 source update was discarded; retry after the source settled succeeded.
 
-Remaining rendered legacy, keyboard, narrow/enlarged-text and fail-closed runtime
-checks, production build and unified final candidate checks remain pending. Physical
-devices, spoken screen readers and P5 PDF/report activation are separate gates.
+The actual legacy amounts fixture converted through Rust with unknown rate fields
+left blank and calculated successfully. A subsequent unavailable import preserved
+the original `900719925474099312345` token and blocked calculation. Device save and
+browser close/reopen retained that block; the explicit decision then allowed a new
+Rust calculation. No stored response was presented as a current result.
+
+At a 390px viewport, root text sizing to 32px and a separate explicit editor/input
+30px text stress check produced document width 390px and editor width 358px without
+horizontal overflow. The screenshots were visually inspected. Actual Tab moved
+from baseline to the labelled optimized input, with a visible solid focus outline;
+Shift+Tab returned. Numeric text inputs expose decimal input mode. These are desktop
+Chrome layout/keyboard/accessibility-tree checks, not spoken screen-reader or mobile
+soft-keyboard acceptance.
+
+An independent cold load of the saved reviewed draft intercepted only the actual
+WASM asset with HTTP 503. Calculation displayed `Calculation unavailable`, retained
+all input and produced no fresh result or legacy financial fallback. The recorded
+asset path is `/app/tax-runtime/generated/juris_tax_wasm_bg.wasm`.
 
 An initial production build correctly refused because the reviewed legacy
 follow-up changed source during compilation. This is a source-stability guard,
 not a successful build; the final frozen source must be rebuilt.
+The frozen `67a1ce199a35e7f64e5d99a06f50acd1eda6774d` production build subsequently
+passed (`.artifacts/editor-frozen-build.log`). A concurrent default-concurrency
+full P4C suite and full P5 suite coincided with a separate tiny Node process
+reporting `uv_os_get_passwd` ENOMEM. The coordinator stopped both as a resource
+precaution, then an elevated rerun worked; system memory exhaustion was not
+established. P4C's full suite was
+explicitly stopped after 575 completed checks, with no `not ok` line, and its log
+is retained as interrupted (`.artifacts/editor-full-suite.log`), not passed.
+Browser/CLI timeouts during the later session remain unexplained;
+successful cold reopening and captures remain separate evidence. Unified full-suite
+and exact candidate CI remain pending. Physical devices, spoken screen readers and
+P5 PDF/report activation are separate gates.
+
+Ignored browser evidence lives in `.artifacts/editor-browser/`: `reopen-receipt.json`,
+the complete `cold-*` capture JSON files, `wasm-refusals.json`, `keyboard-focus.json`,
+`enlarged-measurement.json`, `narrow-32px-editor.png` and `narrow-30px-editor-text.png`.
+Early edit/reopen captures were made during reviewed development before the final
+history-validation commits; they are not evidence attributed to the base main SHA.
+The final cold WASM refusal and successful production build use committed `67a1ce1`.
+The final successful cold load also uses that frozen source (only final review and
+Android evidence docs differed). `final67-before-calculate.json` has no current
+result; `final67-calculated.json` contains the fresh full response. The verifier
+compared all authored inputs, request, response, source and attachment, and proved
+saved device bytes unchanged across success and WASM refusal. The exact durable
+decision receipt hash and original large integer remained intact. Its snapshot
+SHA-256 is `f650b9f1b1bdf87740008ed79ed238cb3ec3d1321b865c9e754f58df743de912`;
+the source-bound receipt is `final67-receipt.json`. The browser closed successfully
+after capture. Root will integrate these reviewed commits into the joint P4C/P5
+candidate; no separate P4C publication or merge is claimed.
