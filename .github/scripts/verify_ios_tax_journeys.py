@@ -38,6 +38,23 @@ def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
         assert f"tax_application selected_test={selected_test} phase={phase} source={source}" in phase_log
         assert f"tax_application phase={phase} source={source}" in phase_log
         assert (root / f"{phase}-bundle.json").read_bytes() == bundle
+        assert (root / f"{phase}-input-bundle.json").read_bytes() == bundle
+        assert (root / f"{phase}-installed-bundle.json").read_bytes() == bundle
+        launch = json.loads((root / f"{phase}-launch.json").read_text())
+        assert launch["schema"] == "tax-ios-console-launch-v1" and launch["complete"] is True
+        assert launch["phase"] == phase and launch["source_sha"] == source and launch["run_nonce"] == nonce
+        assert launch["pid"] == launch["vm_pid"] == receipt["pid"]
+        assert launch["app_id"] == "com.genesissocietyengine.jurisMobile"
+        assert launch["bundle_manifest_sha256"] == hashlib.sha256(bundle).hexdigest()
+        assert f"simulator={launch['simulator']}\n" in identity
+        assert f"/Devices/{launch['simulator']}/" in launch["executable"]
+        assert launch["executable"].endswith("/Runner.app/Runner")
+        assert type(launch["console_pid"]) is int and launch["console_pid"] > 0
+        console = (root / f"{phase}-console.log").read_text()
+        assert f"{launch['app_id']}: {receipt['pid']}" in console
+        assert f"The Dart VM service is listening on {launch['vm_uri']}" in console
+        vm = json.loads((root / f"{phase}-vm.json").read_text())
+        assert vm["result"]["type"] == "VM" and vm["result"]["pid"] == receipt["pid"]
         shot = receipt["screenshot"]
         assert shot["filename"] == f"{phase}-editor.png"
         png = (root / shot["filename"]).read_bytes()
