@@ -23,14 +23,53 @@ def utc():
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 
-def choose_pair(execute, retain):
+def choose_pair(execute, retain, guard, *, clock=time.monotonic):
     inventories = []
-    for label, argv in (("runtime-selection", lifecycle.RUNTIME_LIST), ("type-selection", lifecycle.TYPE_LIST)):
-        result = execute(argv, 30)
-        retain(label + ".json", {"argv": list(argv), "exit": result.exit, "stdout": lifecycle.raw(result.stdout),
-            "stderr": lifecycle.raw(result.stderr), "timed_out": result.timed_out, "error": result.error})
-        t.require(type(result.exit) is int and result.exit == 0 and not result.timed_out and result.error is None,
-                  "Simulator inventory selection failed")
+    # The first read initializes access to Simulator services on a fresh host.
+    # One longer read allowance is still inside the unchanged overall budget;
+    # an unsuccessful/partial query is never retried or used for device creation.
+    for label, argv, maximum in (("runtime-selection", lifecycle.RUNTIME_LIST, 120),
+                                ("type-selection", lifecycle.TYPE_LIST, 30)):
+        t.require(guard(), "Inventory deadline/cancellation refused")
+        began = clock()
+        seconds = min(maximum, guard.remaining())
+        start = {"argv": list(argv), "timeout_seconds": seconds, "started_at": utc(),
+                 "maximum_seconds": maximum, "runtime_acceptance": False}
+        retain(label + "-start.json", start)
+        try:
+            remaining = min(seconds - (clock() - began), guard.remaining())
+            t.require(guard() and remaining > 0, "Inventory budget expired while retaining intent")
+            result = execute(argv, remaining)
+            t.require(isinstance(result, lifecycle.CommandResult), "Invalid inventory executor result")
+        except BaseException as primary:
+            try:
+                retain(label + ".json", {**start, "completed_at": utc(), "elapsed_seconds": clock() - began,
+                    "exit": None, "error": str(primary), "capture_complete": False})
+            except BaseException as retention_error:
+                primary.add_note("Inventory failure receipt unavailable: " + str(retention_error))
+                raise primary from retention_error
+            raise
+        elapsed = clock() - began
+        primary = None
+        try:
+            t.require(guard() and elapsed < seconds, "Inventory completed after allocated deadline")
+            t.require(type(result.exit) is int and result.exit == 0 and not result.timed_out and result.error is None,
+                      f"Simulator inventory selection failed: {label}; exit={result.exit!r}, "
+                      f"timed_out={result.timed_out!r}, error={result.error!r}")
+        except BaseException as error:
+            primary = error
+        try:
+            retain(label + ".json", {**start, "completed_at": utc(), "elapsed_seconds": elapsed,
+                "exit": result.exit, "stdout": lifecycle.raw(result.stdout), "stderr": lifecycle.raw(result.stderr),
+                "timed_out": result.timed_out, "error": result.error})
+        except BaseException as retention_error:
+            if primary is not None:
+                primary.add_note("Inventory failure receipt unavailable: " + str(retention_error))
+                raise primary from retention_error
+            raise
+        if primary is not None:
+            raise primary
+        t.require(guard(), "Inventory deadline/cancellation refused after retention")
         inventories.append(result.stdout)
     runtimes = lifecycle.unique_json(inventories[0]).get("runtimes", [])
     types = lifecycle.unique_json(inventories[1]).get("devicetypes", [])
@@ -132,7 +171,11 @@ def main():
     owner = lifecycle.OwnedSimulator(source, nonce, execute=lifecycle.execute_simctl,
         retain=lifecycle.JsonEvidence(evidence / "simulator-lifecycle"),
         guard=lifecycle.Deadline(deadline, permitted=lambda: not cancelled))
-    runtime, device_type = choose_pair(lifecycle.execute_simctl, retain)
+    retain("exercise-start.json", {"schema": "tax-ios-future-start-v1", "source_sha": source,
+        "source_tree": tree, "run_id": int(run_id), "run_attempt": int(attempt), "run_nonce": nonce,
+        "github_job": os.environ.get("GITHUB_JOB"), "exercise_started_at": exercise_started_at,
+        "normal_budget_seconds": 1800, "runtime_acceptance": False})
+    runtime, device_type = choose_pair(lifecycle.execute_simctl, retain, owner.guard)
     source_recorded = False
     def phase(name, device):
         nonlocal source_recorded

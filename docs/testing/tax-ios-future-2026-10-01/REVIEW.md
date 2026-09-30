@@ -98,6 +98,31 @@ rechecked. Actual macOS POSIX controls and ten-phase runtime evidence are still
 pending at initial publication. Review retained PNGs separately after a complete
 run; structure/hash validation alone is not visual inspection.
 
+The formatting-corrected `d2ddf175741893536f42a150ab93eae7c5123068` push run
+`36791207042` / job `110144278843` executed all macOS controls: 217 passed with
+three expected negative-platform skips (220 total, 59.651 seconds), including
+the real POSIX cases unavailable on Windows. All 16 Dart controls also passed.
+The exercise then failed before device creation or build: its initial read-only
+`xcrun simctl list runtimes --json` reached the new harness's 30-second limit,
+was killed with exit -9 and returned zero stdout/stderr bytes. Artifact
+`11131383586` is 370 bytes, SHA-256
+`39f332ace46ce74fee51ae16ad56a27020df55cad16edc9430b9757d272ad083`.
+That evidence does not identify why the inventory query stalled.
+
+The bounded startup correction allocates one 120-second allowance to that first
+read only, inside the unchanged 1,800-second overall exercise. Subsequent
+inventory queries retain 30-second limits; preparation, app phases and job
+limits are unchanged. No query is retried and timeout/nonzero/partial output
+cannot authorize creation. Each read is capped by the remaining absolute budget;
+source/run identity, intent, timestamps, elapsed time and raw terminal result
+are retained before any device mutation. Nine portable controls cover the
+startup allowance, shorter remaining budget, slow success, late zero, expired
+intent retention, cancellation, unsupported inventories and non-retry failure.
+Raised executor errors and failed command results both remain the primary
+failure if terminal diagnostic retention also fails.
+Actual successful inventory selection and ten-phase application execution still
+require fresh exact-source macOS evidence; this is not a diagnosed service fix.
+
 These constructed future temporary/backup fixtures do not establish genuine
 interrupted-write recovery. Actual iOS process-interruption journeys remain a
 separate P3 item. Physical devices, spoken screen-reader behavior, mobile
