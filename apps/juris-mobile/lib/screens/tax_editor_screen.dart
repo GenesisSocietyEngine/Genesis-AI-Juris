@@ -169,18 +169,50 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
         'assumptions' => _t('Assumptions', 'Допущения'),
         _ => key,
       };
-  Widget _field(String id, String label, String value,
-          ValueChanged<String> onChanged) =>
+  Widget _field(
+          String id, String label, String value, ValueChanged<String> onChanged,
+          {TextInputType? keyboardType}) =>
       Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: TextFormField(
             key: ValueKey<String>('tax-$_generation-$id'),
             initialValue: value,
             enabled: !_busy,
+            keyboardType: keyboardType ??
+                (_money.contains(id)
+                    ? const TextInputType.numberWithOptions(
+                        decimal: true, signed: true)
+                    : _numbers.contains(id)
+                        ? const TextInputType.numberWithOptions(signed: true)
+                        : TextInputType.text),
+            autocorrect: keyboardType == null &&
+                !_money.contains(id) &&
+                !_numbers.contains(id),
+            enableSuggestions: keyboardType == null &&
+                !_money.contains(id) &&
+                !_numbers.contains(id),
             decoration: InputDecoration(
                 labelText: label, border: const OutlineInputBorder()),
             onChanged: (String value) => _changed(() => onChanged(value)),
           ));
+  String _amount(String value, String label) {
+    try {
+      return taxCents(value);
+    } on FormatException catch (error) {
+      throw FormatException(
+          '$label: ${_t(error.message, error.message == 'Amount exceeds the supported range.' ? 'Сумма превышает допустимый диапазон.' : 'Введите сумму с точкой и не более чем двумя знаками после неё.')}');
+    }
+  }
+
+  int _wholeNumber(String value, String label) {
+    final int? parsed = int.tryParse(value);
+    if (parsed == null) {
+      throw FormatException(
+          '$label: ${_t('Enter a whole number.', 'Введите целое число.')}');
+    }
+    return parsed;
+  }
+
   String _optionLabel(String value) => switch (value) {
         'amounts' =>
           _t('Enter annual tax amounts', 'Ввести годовые суммы налога'),
@@ -286,10 +318,10 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
         input[field] = field == 'annual_tax_base_override' &&
                 (_edit[field] as String).isEmpty
             ? null
-            : taxCents(_edit[field] as String);
+            : _amount(_edit[field] as String, _label(field));
       }
       for (final String field in _numbers) {
-        input[field] = int.parse(_edit[field] as String);
+        input[field] = _wholeNumber(_edit[field] as String, _label(field));
       }
       final List<dynamic> bindings =
           jsonDecode(jsonEncode(_bindings)) as List<dynamic>;
@@ -300,18 +332,22 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
               .contains(b['component_id']));
       for (final dynamic item in bindings) {
         final Map<String, dynamic> b = item as Map<String, dynamic>;
-        b['amount'] = taxCents(b.remove('amount_text') as String);
+        b['amount'] = _amount(b.remove('amount_text') as String,
+            _t('Component annual amount', 'Годовая сумма компонента'));
       }
       final List<dynamic> benefits =
           jsonDecode(jsonEncode(_benefits)) as List<dynamic>;
       benefits.removeWhere((dynamic b) => b['include_in_base_case'] == false);
       for (final dynamic item in benefits) {
         final Map<String, dynamic> b = item as Map<String, dynamic>;
-        b['amount'] = taxCents(b.remove('amount_text') as String);
-        b['start_month'] = int.parse(b['start_month'] as String);
+        b['amount'] = _amount(b.remove('amount_text') as String,
+            _t('Benefit amount', 'Сумма выгоды'));
+        b['start_month'] = _wholeNumber(b['start_month'] as String,
+            _t('Benefit start month', 'Первый месяц выгоды'));
         b['end_month'] = (b['end_month'] as String).isEmpty
             ? null
-            : int.parse(b['end_month'] as String);
+            : _wholeNumber(b['end_month'] as String,
+                _t('Benefit end month', 'Последний месяц выгоды'));
       }
       input['benefit_items'] = benefits;
       final Map<String, dynamic> context =
@@ -344,7 +380,7 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
       setState(() {
         _validated = false;
         _artifact!['calculation'] = null;
-        _notice = error.toString();
+        _notice = error is FormatException ? error.message : error.toString();
       });
     }
     if (!reopening) _showFeedback();
@@ -397,7 +433,7 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
           if (status['status'] == 'converted') {
             final Map<String, dynamic> request = (status['draft']
                 as Map<String, dynamic>)['request'] as Map<String, dynamic>;
-            _artifact!['request'] = request;
+            _artifact!['request'] = _copy(request);
             _artifact!['edit'] =
                 _edits(request['input'] as Map<String, dynamic>);
             _artifact!['bindings'] = <dynamic>[];
@@ -533,7 +569,9 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
                 b['amount_text'] as String, (String v) {
               b['amount_text'] = v;
               b['confirmed'] = false;
-            }),
+            },
+                keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true, signed: true)),
             _choice(_t('Category', 'Категория'), b['category'] as String, [
               'taxable_income',
               'deductible_expense',
@@ -625,20 +663,26 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
             _field('${b['id']}-label', _t('Benefit label', 'Название выгоды'),
                 b['label'] as String, (String v) => b['label'] = v),
             _field('${b['id']}-amount', _t('Amount', 'Сумма'),
-                b['amount_text'] as String, (String v) => b['amount_text'] = v),
+                b['amount_text'] as String, (String v) => b['amount_text'] = v,
+                keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true, signed: true)),
             _choice(_t('Timing', 'Периодичность'), b['timing'] as String,
                 ['recurring_annual', 'one_off'], (String v) => b['timing'] = v),
             _field(
                 '${b['id']}-start',
                 _t('Start month (1-based)', 'Первый месяц (от 1)'),
                 b['start_month'] as String,
-                (String v) => b['start_month'] = v),
+                (String v) => b['start_month'] = v,
+                keyboardType:
+                    const TextInputType.numberWithOptions(signed: true)),
             _field(
                 '${b['id']}-end',
                 _t('End month (blank = horizon)',
                     'Последний месяц (пусто = конец периода)'),
                 b['end_month'] as String,
-                (String v) => b['end_month'] = v),
+                (String v) => b['end_month'] = v,
+                keyboardType:
+                    const TextInputType.numberWithOptions(signed: true)),
             CheckboxListTile(
                 title: Text(_t('Include benefit', 'Включить выгоду')),
                 value: b['include_in_base_case'] as bool,
@@ -956,6 +1000,11 @@ final class _TaxImportDialogState extends State<_TaxImportDialog> {
   final TextEditingController _controller = TextEditingController();
   String _kind = 'tax-authoring-artifact-v1';
   String _t(String en, String ru) => widget.locale == 'ru' ? ru : en;
+  String _formatLabel(String kind) => switch (kind) {
+        'tax-authoring-artifact-v1' => _t('Saved analysis (v1)', 'Анализ (v1)'),
+        'web_amounts_v1' => _t('Legacy amounts (v1)', 'Прежние суммы (v1)'),
+        _ => _t('Legacy rates / FX (v1)', 'Прежние ставки / FX (v1)'),
+      };
 
   @override
   void dispose() {
@@ -977,22 +1026,30 @@ final class _TaxImportDialogState extends State<_TaxImportDialog> {
                 DropdownButtonFormField<String>(
                   initialValue: _kind,
                   isExpanded: true,
+                  isDense: false,
+                  itemHeight: null,
+                  decoration: InputDecoration(
+                      labelText: _t('Import format', 'Формат импорта')),
                   items: [
                     'tax-authoring-artifact-v1',
                     'web_amounts_v1',
                     'web_rates_fx_v1'
                   ]
-                      .map((String value) =>
-                          DropdownMenuItem(value: value, child: Text(value)))
+                      .map((String value) => DropdownMenuItem(
+                          value: value, child: Text(_formatLabel(value))))
                       .toList(),
                   onChanged: (String? value) => setState(() => _kind = value!),
                 ),
                 TextField(
                   controller: _controller,
                   maxLines: 8,
+                  autocorrect: false,
+                  enableSuggestions: false,
                   decoration: InputDecoration(
-                    labelText: _t('Saved JSON (original retained)',
-                        'JSON (оригинал сохраняется)'),
+                    labelText: _t('Saved JSON', 'Сохранённый JSON'),
+                    helperText: _t('Original text retained.',
+                        'Исходный текст сохраняется.'),
+                    helperMaxLines: 3,
                   ),
                 ),
               ],

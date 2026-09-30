@@ -13,6 +13,66 @@ const String _rateConfirmation =
 const String _componentConfirmation = 'I confirm this amount and its source';
 
 void main() {
+  for (final ({String field, String raw, String message, String corrected}) row
+      in <({String field, String raw, String message, String corrected})>[
+    (
+      field: 'baseline_annual_tax_cost',
+      raw: '250000.00x',
+      message:
+          'Current annual tax: Enter an amount with at most two decimal places, using a dot.',
+      corrected: '250000.00'
+    ),
+    (
+      field: 'baseline_annual_tax_cost',
+      raw: '1000000000001.00',
+      message: 'Current annual tax: Amount exceeds the supported range.',
+      corrected: '-0.01'
+    ),
+    (
+      field: 'baseline_tax_rate_bps',
+      raw: '',
+      message: 'Current rate (basis points): Enter a whole number.',
+      corrected: '1800'
+    ),
+  ]) {
+    testWidgets(
+        'invalid ${row.field} ${row.raw} retains draft and gives guidance',
+        (WidgetTester tester) async {
+      await tester.runAsync(() async {
+        final bool money = row.field == 'baseline_annual_tax_cost';
+        final _EditorFixture fixture =
+            await _mount(tester, basis: money ? 'amounts' : 'rates');
+        final Finder field = find.byKey(ValueKey('tax-0-${row.field}'));
+        final TextField text = tester.widget<TextField>(
+            find.descendant(of: field, matching: find.byType(TextField)));
+        expect(text.keyboardType,
+            TextInputType.numberWithOptions(decimal: money, signed: true));
+        expect(text.autocorrect, isFalse);
+        await tester.enterText(field, row.raw);
+        await tester.pump();
+        if (!money) await _tap(tester, find.text(_rateConfirmation));
+        await _tap(tester, find.byKey(const ValueKey('tax-calculate')));
+        expect(find.text(row.message), findsOneWidget);
+        expect(find.textContaining('FormatException'), findsNothing);
+        expect(fixture.bridge.calculations, isEmpty);
+        await _tap(tester, find.byKey(const ValueKey('tax-save')));
+        final Map<String, dynamic> saved = (await fixture.store.read('case1'))!;
+        expect((saved['edit'] as Map<String, dynamic>)[row.field], row.raw);
+        expect(saved['calculation'], isNull);
+
+        await tester.enterText(field, row.corrected);
+        await tester.pump();
+        if (!money) await _tap(tester, find.text(_rateConfirmation));
+        await _tap(tester, find.byKey(const ValueKey('tax-calculate')));
+        final Map<String, dynamic> request = fixture
+            .bridge.calculations.single['request'] as Map<String, dynamic>;
+        expect((request['input'] as Map<String, dynamic>)[row.field],
+            money ? taxCents(row.corrected) : int.parse(row.corrected));
+        expect(tester.takeException(), isNull);
+      });
+    });
+  }
+
   for (final String field in <String>[
     'baseline_tax_rate_bps',
     'optimized_tax_rate_bps',
@@ -114,7 +174,7 @@ Future<void> _settleIo(WidgetTester tester) async {
 }
 
 Future<_EditorFixture> _mount(WidgetTester tester,
-    {bool component = false}) async {
+    {bool component = false, String basis = 'rates'}) async {
   final Directory directory =
       await Directory.systemTemp.createTemp('tax-confirmation-');
   addTearDown(() => directory.delete(recursive: true));
@@ -128,7 +188,7 @@ Future<_EditorFixture> _mount(WidgetTester tester,
   };
   final Map<String, dynamic> input = <String, dynamic>{
     'currency': 'EUR',
-    'tax_input_basis': 'rates',
+    'tax_input_basis': basis,
     'tax_base_mode': 'derived',
     'assumptions': '',
     'baseline_annual_tax_cost': '0',
