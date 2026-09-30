@@ -11,6 +11,7 @@ import '../data/native_scenario_bridge_client.dart';
 import '../data/professional_workspace_launcher.dart';
 import '../data/scenario_bridge_client.dart';
 import '../data/studio_authoring_repository.dart';
+import '../data/studio_authoring_services.dart';
 import '../data/studio_draft_store.dart';
 import '../models/case_catalog.dart';
 import '../screens/case_catalog_screen.dart';
@@ -36,7 +37,8 @@ class JurisApp extends StatefulWidget {
         visualManifestRepository = null,
         scenarioBridgeClient = null,
         gameSaveStore = null,
-        studioDraftStore = null;
+        studioDraftStore = null,
+        studioAuthoringServices = null;
 
   const JurisApp.catalog({
     this.catalogRepository = const CaseCatalogRepository(),
@@ -44,10 +46,12 @@ class JurisApp extends StatefulWidget {
     this.scenarioBridgeClient,
     this.gameSaveStore,
     this.studioDraftStore,
+    this.studioAuthoringServices,
     this.professionalWorkspaceLauncher =
         const AllowlistedProfessionalWorkspaceLauncher(),
     super.key,
-  }) : repository = null;
+  })  : assert(studioDraftStore == null || studioAuthoringServices == null),
+        repository = null;
 
   final GameRuntimeRepository? repository;
   final CaseCatalogRepository? catalogRepository;
@@ -55,6 +59,7 @@ class JurisApp extends StatefulWidget {
   final ScenarioBridgeClient? scenarioBridgeClient;
   final GameSaveStore? gameSaveStore;
   final StudioDraftStore? studioDraftStore;
+  final StudioAuthoringServices? studioAuthoringServices;
   final ProfessionalWorkspaceLauncher professionalWorkspaceLauncher;
 
   @override
@@ -71,12 +76,23 @@ class _JurisAppState extends State<JurisApp> {
   String _activeLocale = 'en';
   StudioAuthoringRepository? _studioRepository;
   bool _studioOpen = false;
+  StudioAuthoringServices? _studioServices;
+  late StudioDraftStore _studioStore;
+
+  void _configureStudioStorage() {
+    _studioServices = widget.studioAuthoringServices ??
+        (widget.studioDraftStore == null
+            ? StudioAuthoringServices.applicationSupport()
+            : null);
+    _studioStore = _studioServices?.workspace ?? widget.studioDraftStore!;
+  }
 
   bool get _usesCatalog => widget.repository == null;
 
   @override
   void initState() {
     super.initState();
+    _configureStudioStorage();
     _activeRepository = widget.repository;
     if (_usesCatalog) {
       _visualManifestRepository =
@@ -87,6 +103,10 @@ class _JurisAppState extends State<JurisApp> {
   @override
   void didUpdateWidget(JurisApp oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.studioDraftStore != widget.studioDraftStore ||
+        oldWidget.studioAuthoringServices != widget.studioAuthoringServices) {
+      _configureStudioStorage();
+    }
     final bool previouslyUsedCatalog = oldWidget.repository == null;
     if (!_usesCatalog) {
       _visualManifestRepository = null;
@@ -136,7 +156,8 @@ class _JurisAppState extends State<JurisApp> {
     if (_studioOpen) {
       return StudioWizardScreen(
         repository: _studioRepository!,
-        store: widget.studioDraftStore ?? ApplicationSupportStudioDraftStore(),
+        store: _studioStore,
+        authoringServices: _studioServices,
         locale: _activeLocale,
         onExit: _closeStudio,
       );
