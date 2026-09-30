@@ -3,10 +3,48 @@
 import hashlib
 import datetime
 import json
+import math
 import pathlib
 import re
 import runpy
 import sys
+
+
+def verify_install(root, phase, source, nonce, simulator, bundle):
+    start = json.loads((root / f"{phase}-install-start.json").read_text())
+    terminal = json.loads((root / f"{phase}-install.json").read_text())
+    assert start["schema"] == terminal["schema"] == "tax-ios-install-command-v1"
+    assert start["status"] == "started" and start["installation_completed"] is False
+    assert "exit_code" not in start
+    for key in ("schema", "source_sha", "run_nonce", "phase", "simulator", "argv",
+                "bundle_manifest_sha256", "host_pid", "started_at", "timeout_seconds",
+                "runtime_acceptance"):
+        assert terminal[key] == start[key]
+    assert start["source_sha"] == source and start["run_nonce"] == nonce
+    assert start["phase"] == phase and start["simulator"] == simulator
+    assert start["runtime_acceptance"] is False and start["timeout_seconds"] == 120
+    assert type(start["host_pid"]) is int and start["host_pid"] > 0
+    assert start["bundle_manifest_sha256"] == hashlib.sha256(bundle).hexdigest()
+    argv = start["argv"]
+    assert type(argv) is list and len(argv) == 5
+    assert argv[:4] == ["xcrun", "simctl", "install", simulator]
+    path = pathlib.PurePosixPath(argv[4])
+    assert path.is_absolute() and ".." not in path.parts
+    assert path.as_posix() == argv[4]
+    assert argv[4].endswith("/apps/juris-mobile/build/ios/iphonesimulator/Runner.app")
+    assert terminal["status"] == "completed"
+    assert type(terminal["exit_code"]) is int and terminal["exit_code"] == 0
+    assert terminal["installation_completed"] is True and terminal["output_truncated"] is False
+    began = datetime.datetime.fromisoformat(start["started_at"])
+    ended = datetime.datetime.fromisoformat(terminal["completed_at"])
+    assert began.tzinfo is not None and ended.tzinfo is not None and began <= ended
+    elapsed = terminal["elapsed_seconds"]
+    assert type(elapsed) in (int, float) and math.isfinite(elapsed) and elapsed >= 0
+    stdout = (root / f"{phase}-install.stdout.log").read_bytes()
+    stderr = (root / f"{phase}-install.stderr.log").read_bytes()
+    assert len(stdout) + len(stderr) <= 1024 * 1024
+    assert hashlib.sha256(stdout).hexdigest() == terminal["stdout_sha256"]
+    assert hashlib.sha256(stderr).hexdigest() == terminal["stderr_sha256"]
 
 
 def verify_discovery(root, phase, launch, pid, discovery_tools):
@@ -99,6 +137,7 @@ def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
         assert f"simulator={launch['simulator']}\n" in identity
         assert f"/Devices/{launch['simulator']}/" in launch["executable"]
         assert launch["executable"].endswith("/Runner.app/Runner")
+        verify_install(root, phase, source, nonce, launch["simulator"], bundle)
         verify_discovery(root, phase, launch, receipt["pid"], discovery_tools)
         vm = json.loads((root / f"{phase}-vm.json").read_text())
         assert vm["result"]["type"] == "VM" and vm["result"]["pid"] == receipt["pid"]

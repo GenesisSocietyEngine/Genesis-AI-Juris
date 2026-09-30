@@ -141,6 +141,7 @@ class LogIdentity:
         self.uri = None
         self.event = None
         self.key = None
+        self.boot_uuid = None
         self.origins = []
         self.observations = []
 
@@ -159,10 +160,32 @@ class LogIdentity:
         match = re.fullmatch(r"(?:flutter: )?The Dart VM service is listening on (\S+)", message.strip())
         require(match is not None, "Malformed VM announcement")
         uri = authenticated_uri(match[1])
-        # Stream and retrospective views can differ in ancillary metadata.
-        # Only the fully verified identity fields determine deduplication.
-        key = (event["eventType"], event["processID"], event["processImagePath"], timestamp, message.strip())
+        # Actual stream/show views of one event differed in wall time by
+        # 0.478788s. Both timestamps must be fresh, but the exact OS event IDs,
+        # sender/thread and announcement bind the duplicate, not wall time.
+        for field in ("machTimestamp", "traceID", "threadID", "senderProgramCounter"):
+            value = event.get(field)
+            require(type(value) is int and 0 < value <= 2**64 - 1,
+                    f"Invalid VM log integer identity: {field}")
+        uuid_pattern = r"[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}"
+        for field in ("processImageUUID", "senderImageUUID"):
+            require(isinstance(event.get(field), str) and
+                    re.fullmatch(uuid_pattern, event[field]) is not None,
+                    f"Invalid VM log image identity: {field}")
+        sender = str(pathlib.PurePosixPath(self.executable).parent / "Frameworks/Flutter.framework/Flutter")
+        require(event.get("senderImagePath") == sender, "VM log sender is not installed Flutter")
+        boot = event.get("bootUUID")
+        require(isinstance(boot, str) and (boot == "" or re.fullmatch(uuid_pattern, boot) is not None),
+                "Invalid VM log boot identity")
+        key = (event["eventType"], event["processID"], event["processImagePath"],
+               event["machTimestamp"], event["traceID"], event["threadID"],
+               event["senderProgramCounter"], event["processImageUUID"],
+               event["senderImageUUID"], event["senderImagePath"], message.strip())
         require(self.key is None or self.key == key, "Ambiguous VM system-log identity")
+        require(not boot or self.boot_uuid is None or self.boot_uuid == boot,
+                "Ambiguous VM log boot identity")
+        if boot:
+            self.boot_uuid = boot
         self.uri, self.key = uri, key
         if self.event is None:
             self.event = event
@@ -341,6 +364,60 @@ def command(args, timeout=30, check=True):
     return result
 
 
+def install_bundle(args, bundle, built, timeout_seconds=120):
+    """Bound only installation; the caller's existing phase deadline still wins."""
+    require(0 < timeout_seconds <= 120, "Invalid install command deadline")
+    evidence = args.evidence.resolve()
+    paths = {name: evidence / f"{args.phase}-install{suffix}" for name, suffix in (
+        ("start", "-start.json"), ("terminal", ".json"),
+        ("stdout", ".stdout.log"), ("stderr", ".stderr.log"))}
+    require(not any(path.exists() for path in paths.values()), "Install evidence already exists")
+    argv = ["xcrun", "simctl", "install", args.device, str(bundle)]
+    started = time.monotonic()
+    identity = {
+        "schema": "tax-ios-install-command-v1", "source_sha": args.source,
+        "run_nonce": args.nonce, "phase": args.phase, "simulator": args.device,
+        "argv": argv, "bundle_manifest_sha256": hashlib.sha256(built).hexdigest(),
+        "host_pid": os.getpid(), "started_at": utc_now().isoformat(),
+        "timeout_seconds": timeout_seconds, "installation_completed": False,
+        "runtime_acceptance": False,
+    }
+    # An outer deadline may kill us during installation. Never infer a terminal
+    # command exit from a later container query or from this durable start record.
+    write_json(paths["start"], {**identity, "status": "started"})
+    stdout, stderr, failure = b"", b"", None
+    terminal = {**identity}
+    try:
+        result = subprocess.run(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                timeout=timeout_seconds, check=False)
+        stdout, stderr = result.stdout, result.stderr
+        terminal.update(status="completed", exit_code=result.returncode)
+    except subprocess.TimeoutExpired as error:
+        stdout, stderr, failure = error.output or b"", error.stderr or b"", error
+        terminal.update(status="timeout", exit_code=None, error=str(error))
+    except OSError as error:
+        failure = error
+        terminal.update(status="start_failed", exit_code=None, error=str(error))
+    limited = len(stdout) + len(stderr) > 1024 * 1024
+    if limited:
+        stdout, stderr = stdout[:512 * 1024], stderr[:512 * 1024]
+    paths["stdout"].write_bytes(stdout)
+    paths["stderr"].write_bytes(stderr)
+    terminal.update(
+        completed_at=utc_now().isoformat(), elapsed_seconds=time.monotonic() - started,
+        output_truncated=limited,
+        stdout_sha256=hashlib.sha256(stdout).hexdigest(),
+        stderr_sha256=hashlib.sha256(stderr).hexdigest(),
+        installation_completed=(terminal["status"] == "completed" and
+                                terminal["exit_code"] == 0 and not limited),
+    )
+    write_json(paths["terminal"], terminal)
+    if failure is not None:
+        raise failure
+    require(not limited, "Install output exceeds 1 MiB")
+    require(terminal["installation_completed"], "Simulator installation command failed")
+
+
 def process_matches(pid, executable, timeout=30):
     result = command(["ps", "-p", str(pid), "-o", "pid=,comm="], timeout=timeout, check=False)
     text = result.stdout.decode("utf-8", errors="strict").strip()
@@ -396,7 +473,7 @@ def run(args):
     inventory = command(["ps", "-axo", "pid=,comm="]).stdout.decode("utf-8", errors="strict")
     require(not any(f"/Devices/{args.device}/" in line and line.rstrip().endswith("/Runner.app/Runner")
                     for line in inventory.splitlines()), "Unexpected pre-existing isolated Runner")
-    command(["xcrun", "simctl", "install", args.device, str(bundle)])
+    install_bundle(args, bundle, built)
     container = command(["xcrun", "simctl", "get_app_container", args.device, APP, "app"]).stdout.decode().strip()
     expected_parent = pathlib.Path.home() / "Library/Developer/CoreSimulator/Devices" / args.device / "data/Containers/Bundle/Application"
     installed = pathlib.Path(container)

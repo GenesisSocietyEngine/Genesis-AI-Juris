@@ -2,8 +2,9 @@
 
 Development correction, 2026-09-30. Intended outcome: execute all six existing
 application phases through a source-bound, authenticated VM connection, keeping
-every native, persistence, PID, bundle, screenshot and export assertion. Actual
-macOS execution of this correction is pending. No application acceptance or
+every native, persistence, PID, bundle, screenshot and export assertion. The
+first hosted system-log discovery attempt exposed the duplicate-event issue
+recorded below. Execution of its bounded correction is pending. No application acceptance or
 physical-device/VoiceOver claim follows from the local controls.
 
 ## Original failure, retained before correction
@@ -101,3 +102,54 @@ The earlier `3ea9e65` four-phase prefix remains source-specific; its missing
 legacy phases are still open. Future-envelope and actual interrupted-write iOS
 journeys remain a separately planned slice. Physical devices, audible screen
 reader output and full gesture acceptance remain open.
+
+## First system-log run: two views of one event
+
+At source `7d6cd91fddec6d7cb706758b0afd8034546bd94b`, push application run
+36766528697 / job 110062747425 built, installed and launched Runner PID 40270.
+It failed during discovery with `Ambiguous VM system-log identity`, before
+`getVM`, driver attachment or any selected test or completed phase. The PR
+application failed independently during installation, as recorded in
+[INSTALLATION.md](INSTALLATION.md). Neither failure establishes a product
+calculation or persistence failure.
+
+Artifact 11123750341 is 317,908 bytes, ZIP SHA-256
+`201633c1c8aa5e82d03d6e7e373c9add02856a6f6f62fe481ec75cfc555faaa6`.
+The complete connector-decoded UTF-8 job log has SHA-256
+`1a5edab1dc394409204351149027ce618d0348fb8406fe75299499b5427c92b0`;
+this labels the connector's decoded content, not raw HTTP bytes. The original
+ZIP, complete metadata and logs, verified extracted hashes and both whole log
+records are retained under
+`.artifacts/pr68-ios-2026-09-30/ios-application-v2-system-log-7d6-push-36766528697-attempt-1-connector/`.
+
+The live and retrospective records differ only in `timestamp` and `bootUUID`.
+Their timestamps are `20:05:36.505261+0000` and `20:05:36.026473+0000`, a
+0.478788-second difference. Their exact integer `machTimestamp` is
+1619938003043 and `traceID` is 9249785742145093636. PID, executable, sender,
+thread, program counter, image UUIDs, event type and complete authenticated
+announcement agree. The live record has an empty boot UUID; the retrospective
+record has a populated UUID. Both timestamps are within the launch window.
+The original verifier incorrectly included wall time in duplicate identity.
+
+The correction binds duplicate views to exact positive integer OS event IDs,
+sender/thread identity, image UUIDs, PID, installed executable, event type and
+the complete announcement. It never coerces strings, floats or booleans into
+integer identity. Each view must independently pass the original fresh wall
+time and authenticated-URI checks. An empty boot UUID may be supplemented by
+the populated view; conflicting populated UUIDs fail. Both complete records
+and their origins remain retained. A distinct stable event, changed URI or
+other conflicting identity remains fatal. The existing `getVM` and receipt PID
+checks, bundle/source/nonce checks, deadlines and six-phase assertions remain
+unchanged. The offline verifier replays this exact source-owned parser.
+
+The regression fixture adapts the retained records using synthetic PID, paths,
+image/boot UUIDs and authenticated loopback URI. It preserves the observed
+numeric identity, record grammar and exact timestamp difference; it is not a
+new macOS execution. Both arrival orders and a normal repeated record pass.
+Seventeen negative mutations cover changed stable identities, unsafe numeric
+types, sender/PID/path/URI, stale time and conflicting populated boot UUIDs.
+The integrated suite passes 40 controls, including installation and offline
+receipt guards. Peer review found no material issue and independently passed
+all 40. It also confirmed the immutable original records fail with committed
+`7d6` and pass with the correction in either order. Fresh hosted execution of
+all six phases is still required.

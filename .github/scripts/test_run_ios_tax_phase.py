@@ -26,6 +26,12 @@ EXE = "/isolated/Runner.app/Runner"
 
 def log_event(**changes):
     return {"eventType": "logEvent", "processID": 123, "processImagePath": EXE,
+            "machTimestamp": 1619938003043, "traceID": 9249785742145093636,
+            "threadID": 107329, "senderProgramCounter": 6149920,
+            "processImageUUID": "11111111-1111-4111-8111-111111111111",
+            "senderImageUUID": "22222222-2222-4222-8222-222222222222",
+            "senderImagePath": "/isolated/Runner.app/Frameworks/Flutter.framework/Flutter",
+            "bootUUID": "",
             "timestamp": (phase.utc_now() - datetime.timedelta(seconds=1)).isoformat(),
             "eventMessage": "The Dart VM service is listening on " + URI, **changes}
 
@@ -35,6 +41,58 @@ def log_identity():
 
 
 class IdentityTests(unittest.TestCase):
+    def observed_views(self):
+        fixture = pathlib.Path(__file__).parent / "fixtures/ios_vm_announcement_views.json"
+        return json.loads(fixture.read_text())["views"]
+
+    def test_observed_two_views_deduplicate_by_exact_os_identity_in_both_orders(self):
+        views = self.observed_views()
+        dates = [datetime.datetime.fromisoformat(item["event"]["timestamp"]) for item in views]
+        self.assertEqual(abs(dates[0] - dates[1]), datetime.timedelta(microseconds=478788))
+        start = datetime.datetime.fromisoformat("2026-09-30T20:05:34+00:00")
+        now = datetime.datetime.fromisoformat("2026-09-30T20:05:40+00:00")
+        for ordered in (views, list(reversed(views))):
+            with self.subTest(order=[item["origin"] for item in ordered]), \
+                    patch.object(phase, "utc_now", return_value=now):
+                identity = phase.LogIdentity(123, EXE, start)
+                for item in ordered:
+                    identity.observe(item["event"], item["origin"])
+                identity.observe(ordered[0]["event"], ordered[0]["origin"])
+                self.assertEqual(identity.uri, URI)
+                self.assertEqual(identity.observations, ordered)
+                self.assertEqual(identity.boot_uuid, "33333333-3333-4333-8333-333333333333")
+
+    def test_observed_duplicate_rejects_conflicting_or_untyped_identity(self):
+        views = self.observed_views()
+        first, second = views[0]["event"], views[1]["event"]
+        changes = [
+            {"machTimestamp": first["machTimestamp"] + 1},
+            {"traceID": first["traceID"] + 1},
+            {"threadID": first["threadID"] + 1},
+            {"senderProgramCounter": first["senderProgramCounter"] + 1},
+            {"machTimestamp": float(first["machTimestamp"])},
+            {"traceID": str(first["traceID"])},
+            {"traceID": True},
+            {"machTimestamp": 0},
+            {"traceID": 2**64},
+            {"senderImageUUID": "44444444-4444-4444-8444-444444444444"},
+            {"processImageUUID": "44444444-4444-4444-8444-444444444444"},
+            {"senderImagePath": "/another/Flutter"},
+            {"processID": 124},
+            {"processImagePath": "/another/Runner.app/Runner"},
+            {"eventMessage": second["eventMessage"].replace("43210", "43211")},
+            {"timestamp": "2020-01-01T00:00:00+00:00"},
+            {"bootUUID": "44444444-4444-4444-8444-444444444444"},
+        ]
+        start = datetime.datetime.fromisoformat("2026-09-30T20:05:34+00:00")
+        now = datetime.datetime.fromisoformat("2026-09-30T20:05:40+00:00")
+        for change in changes:
+            with self.subTest(change=change), patch.object(phase, "utc_now", return_value=now):
+                identity = phase.LogIdentity(123, EXE, start)
+                identity.observe({**first, "bootUUID": second["bootUUID"]}, "stream")
+                with self.assertRaises(RuntimeError):
+                    identity.observe({**second, **change}, "backfill")
+
     def test_full_authenticated_uri_from_exact_fresh_system_event(self):
         identity = log_identity()
         event = log_event()
@@ -271,6 +329,11 @@ class PhaseLifecycleTests(unittest.TestCase):
                 return subprocess.CompletedProcess(command, 0, output, b"")
 
             def driver(command, **options):
+                if command[:3] == ["xcrun", "simctl", "install"]:
+                    self.assertEqual(options["timeout"], 120)
+                    if driver_mode == "failed-install":
+                        return subprocess.CompletedProcess(command, 7, b"", b"install failed")
+                    return native_command(command, **options)
                 driver_commands.append(command)
                 if command[:2] == ["flutter", "drive"]:
                     if driver_mode in ("failed", "failed-probe"):
@@ -308,7 +371,7 @@ class PhaseLifecycleTests(unittest.TestCase):
                         launch_file = evidence / "write-launch.json"
                         if launch_file.exists():
                             self.assertFalse(json.loads(launch_file.read_text())["complete"])
-                        if not preexisting and driver_mode != "failed-launch":
+                        if not preexisting and driver_mode not in ("failed-launch", "failed-install"):
                             live_probe.assert_called_once_with(args, evidence, 123, installed / "Runner")
                             reader.close.assert_called()
                             self.assertLess(lifecycle.index("live_probe"), lifecycle.index("reader_closed"))
@@ -319,6 +382,12 @@ class PhaseLifecycleTests(unittest.TestCase):
                             self.assertEqual((evidence / "write-launch.stderr.log").read_bytes(), b"launch failed explicitly")
                             self.assertEqual((evidence / "write-launch.stdout.log").read_bytes(), (phase.APP + ": 123\n").encode())
                             self.assertFalse(any(cmd[:2] == ["flutter", "drive"] for cmd in driver_commands))
+                        if driver_mode == "failed-install":
+                            live_probe.assert_not_called()
+                            reader.close.assert_not_called()
+                            self.assertFalse(any(cmd[:3] == ["xcrun", "simctl", "launch"] for cmd in commands))
+                            self.assertFalse(any(cmd[:2] == ["flutter", "drive"] for cmd in driver_commands))
+                            self.assertFalse(json.loads((evidence / "write-install.json").read_text())["installation_completed"])
                     else:
                         phase.run(args)
                         absent.assert_called_once_with(123)
@@ -348,6 +417,9 @@ class PhaseLifecycleTests(unittest.TestCase):
 
     def test_failed_launch_retains_both_streams_and_never_drives(self):
         self.exercise("failed-launch")
+
+    def test_failed_install_cannot_launch_or_drive(self):
+        self.exercise("failed-install")
 
     def test_existing_isolated_runner_is_rejected(self):
         self.exercise(preexisting=True)
@@ -459,6 +531,179 @@ class RetainedVerifierTests(unittest.TestCase):
         absent = subprocess.CompletedProcess([], 1, b"", b"")
         with patch.object(phase, "command", return_value=absent):
             phase.stopped(123, seconds=.1)
+
+
+class InstallationTests(unittest.TestCase):
+    def args(self, directory):
+        return SimpleNamespace(
+            evidence=directory, phase="write", source="a" * 40,
+            nonce="123-1", device="563A3ED8-9FAD-4092-8E63-69E424FDB86C",
+        )
+
+    def test_install_has_explicit_budget_and_retains_start_before_spawn(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            args = self.args(root)
+            bundle = root / "Runner.app"
+            built = b'[{"path":"Runner","sha256":"source-bound"}]\n'
+            def install(argv, **options):
+                self.assertEqual(options["timeout"], 120)
+                self.assertFalse(options["check"])
+                start = json.loads((root / "write-install-start.json").read_text())
+                self.assertEqual(start["argv"], argv)
+                self.assertEqual(start["source_sha"], args.source)
+                self.assertEqual(start["run_nonce"], args.nonce)
+                self.assertFalse(start["installation_completed"])
+                self.assertNotIn("exit_code", start)
+                self.assertFalse((root / "write-install.json").exists())
+                return subprocess.CompletedProcess(argv, 0, b"installed\n", b"warning\n")
+            with patch.object(phase.subprocess, "run", side_effect=install), \
+                    patch.object(phase.time, "monotonic", side_effect=[100.0, 131.0]):
+                phase.install_bundle(args, bundle, built)
+            final = json.loads((root / "write-install.json").read_text())
+            self.assertEqual(final["elapsed_seconds"], 31)
+            self.assertEqual(final["exit_code"], 0)
+            self.assertTrue(final["installation_completed"])
+            self.assertFalse(final["runtime_acceptance"])
+            self.assertEqual((root / "write-install.stdout.log").read_bytes(), b"installed\n")
+            self.assertEqual((root / "write-install.stderr.log").read_bytes(), b"warning\n")
+
+    def test_nonzero_install_retains_streams_and_cannot_advance(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            with patch.object(phase.subprocess, "run", return_value=
+                              subprocess.CompletedProcess([], 7, b"partial", b"install denied")):
+                with self.assertRaisesRegex(RuntimeError, "installation command failed"):
+                    phase.install_bundle(self.args(root), root / "Runner.app", b"[]")
+            final = json.loads((root / "write-install.json").read_text())
+            self.assertEqual(final["exit_code"], 7)
+            self.assertFalse(final["installation_completed"])
+            self.assertEqual((root / "write-install.stderr.log").read_bytes(), b"install denied")
+            self.assertFalse((root / "write.json").exists())
+
+    def test_real_hung_install_is_bounded_preserves_proof_and_records_timeout(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            prior = root / "read.json"
+            prior.write_bytes(b'{"retained":"prior source proof"}')
+            original_run = subprocess.run
+            def hung_install(argv, **options):
+                self.assertTrue((root / "write-install-start.json").exists())
+                return original_run(
+                    [sys.executable, "-I", "-c",
+                     "import time; print('install began',flush=True); time.sleep(30)"],
+                    **options,
+                )
+            began = time.monotonic()
+            with patch.object(phase.subprocess, "run", side_effect=hung_install):
+                with self.assertRaises(subprocess.TimeoutExpired):
+                    phase.install_bundle(self.args(root), root / "Runner.app", b"[]",
+                                         timeout_seconds=.3)
+            self.assertLess(time.monotonic() - began, 5)
+            final = json.loads((root / "write-install.json").read_text())
+            self.assertEqual(final["status"], "timeout")
+            self.assertIsNone(final["exit_code"])
+            self.assertFalse(final["installation_completed"])
+            self.assertFalse(final["runtime_acceptance"])
+            self.assertIn(b"install began", (root / "write-install.stdout.log").read_bytes())
+            self.assertEqual(prior.read_bytes(), b'{"retained":"prior source proof"}')
+            self.assertFalse((root / "write.json").exists())
+
+    def test_start_error_is_retained_without_inferred_exit(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            with patch.object(phase.subprocess, "run", side_effect=FileNotFoundError("missing simctl")):
+                with self.assertRaises(FileNotFoundError):
+                    phase.install_bundle(self.args(root), root / "Runner.app", b"[]")
+            final = json.loads((root / "write-install.json").read_text())
+            self.assertEqual(final["status"], "start_failed")
+            self.assertIsNone(final["exit_code"])
+            self.assertFalse(final["installation_completed"])
+
+    def test_output_limit_retains_bounded_evidence_but_rejects_zero_exit(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            with patch.object(phase.subprocess, "run", return_value=
+                              subprocess.CompletedProcess([], 0, b"x" * (1024 * 1024 + 1), b"")):
+                with self.assertRaisesRegex(RuntimeError, "output exceeds"):
+                    phase.install_bundle(self.args(root), root / "Runner.app", b"[]")
+            final = json.loads((root / "write-install.json").read_text())
+            self.assertTrue(final["output_truncated"])
+            self.assertFalse(final["installation_completed"])
+            self.assertEqual((root / "write-install.stdout.log").stat().st_size, 512 * 1024)
+
+    def test_outer_abort_leaves_only_incomplete_start_evidence(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            with patch.object(phase.subprocess, "run", side_effect=SystemExit(124)):
+                with self.assertRaises(SystemExit):
+                    phase.install_bundle(self.args(root), root / "Runner.app", b"[]")
+            start = json.loads((root / "write-install-start.json").read_text())
+            self.assertEqual(start["status"], "started")
+            self.assertFalse(start["installation_completed"])
+            self.assertNotIn("exit_code", start)
+            self.assertFalse((root / "write-install.json").exists())
+            self.assertFalse((root / "write.json").exists())
+
+    def test_existing_install_evidence_is_not_overwritten(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            old = root / "write-install-start.json"
+            old.write_bytes(b"previous attempt")
+            with patch.object(phase.subprocess, "run") as runner:
+                with self.assertRaisesRegex(RuntimeError, "evidence already exists"):
+                    phase.install_bundle(self.args(root), root / "Runner.app", b"[]")
+                runner.assert_not_called()
+            self.assertEqual(old.read_bytes(), b"previous attempt")
+
+
+class InstallEvidenceTests(unittest.TestCase):
+    def fixture(self, root):
+        args = SimpleNamespace(evidence=root, phase="write", source="a" * 40,
+                               nonce="12-1", device="AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")
+        bundle = pathlib.PurePosixPath("/work/repo/apps/juris-mobile/build/ios/iphonesimulator/Runner.app")
+        built = b'[{"path":"Runner","sha256":"one-source"}]\n'
+        with patch.object(phase.subprocess, "run", return_value=
+                          subprocess.CompletedProcess([], 0, b"installed\n", b"")):
+            phase.install_bundle(args, bundle, built)
+        return args, built
+
+    def test_source_owned_verifier_accepts_complete_install_command_proof(self):
+        verifier = runpy.run_path(str(pathlib.Path(__file__).with_name("verify_ios_tax_journeys.py")))
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            args, built = self.fixture(root)
+            verifier["verify_install"](root, args.phase, args.source, args.nonce, args.device, built)
+
+    def test_source_owned_verifier_rejects_incomplete_or_tampered_install_proof(self):
+        verifier = runpy.run_path(str(pathlib.Path(__file__).with_name("verify_ios_tax_journeys.py")))
+        for mode in ("start-only", "timeout", "nonzero", "source", "manifest", "command", "log", "infinite-elapsed"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temp:
+                root = pathlib.Path(temp)
+                args, built = self.fixture(root)
+                start_path, final_path = root / "write-install-start.json", root / "write-install.json"
+                start, terminal = json.loads(start_path.read_text()), json.loads(final_path.read_text())
+                if mode == "start-only":
+                    final_path.unlink()
+                elif mode == "timeout":
+                    terminal.update(status="timeout", exit_code=None, installation_completed=False)
+                elif mode == "nonzero":
+                    terminal.update(exit_code=7, installation_completed=False)
+                elif mode == "source":
+                    start["source_sha"] = terminal["source_sha"] = "b" * 40
+                elif mode == "manifest":
+                    start["bundle_manifest_sha256"] = terminal["bundle_manifest_sha256"] = "0" * 64
+                elif mode == "command":
+                    start["argv"][3] = terminal["argv"][3] = "unowned-simulator"
+                elif mode == "infinite-elapsed":
+                    terminal["elapsed_seconds"] = float("inf")
+                else:
+                    (root / "write-install.stdout.log").write_bytes(b"changed")
+                phase.write_json(start_path, start)
+                if mode != "start-only":
+                    phase.write_json(final_path, terminal)
+                with self.assertRaises((AssertionError, FileNotFoundError)):
+                    verifier["verify_install"](root, args.phase, args.source, args.nonce, args.device, built)
 
 
 if __name__ == "__main__":
