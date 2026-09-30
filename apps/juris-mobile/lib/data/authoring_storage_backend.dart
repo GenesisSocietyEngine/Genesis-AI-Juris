@@ -21,10 +21,12 @@ final class AuthoringImportCommit {
 }
 
 final class AuthoringRecoveryException implements Exception {
-  const AuthoringRecoveryException(this.message);
+  const AuthoringRecoveryException(this.message,
+      {this.code = 'authoring_recovery_required'});
   final String message;
+  final String code;
   @override
-  String toString() => 'authoring_recovery_required: $message';
+  String toString() => '$code: $message';
 }
 
 /// Shared authoritative gate. Exports of held snapshots intentionally use the
@@ -103,8 +105,11 @@ final class _ImportJournal {
   static String digest(List<int> bytes) => sha256.convert(bytes).toString();
   static String identity(String path) =>
       Platform.isWindows ? path.toLowerCase() : path;
-  static Never refuse(String reason) => throw AuthoringRecoveryException(
-      '$reason Existing workspace, analysis and transaction files are retained.');
+  static Never refuse(String reason,
+          {String code = 'authoring_recovery_required'}) =>
+      throw AuthoringRecoveryException(
+          '$reason Existing workspace, analysis and transaction files are retained.',
+          code: code);
 
   static void caseIdentity(String caseId) {
     if (caseId.isEmpty ||
@@ -167,7 +172,12 @@ final class _ImportJournal {
       throw const FormatException(
           'Aggregate revision must contain at most 128 decimal digits.');
     }
-    return BigInt.parse(value);
+    final BigInt revision = BigInt.parse(value);
+    if (revision > BigInt.parse('18446744073709551615')) {
+      throw const FormatException(
+          'Aggregate revision exceeds the native u64 range.');
+    }
+    return revision;
   }
 
   static bool _equal(dynamic left, dynamic right) {
@@ -335,12 +345,14 @@ final class _ImportJournal {
     final Map<String, File> targets = await files(lease, input.caseId);
     if (identity(targets['workspace']!.path) != identity(expectedW) ||
         identity(targets['tax']!.path) != identity(expectedT))
-      refuse('Import snapshots belong to another storage root.');
+      refuse('Import snapshots belong to another storage root.',
+          code: 'workspace_conflict');
     final List<int>? beforeW = await read(targets['workspace']!),
         beforeT = await read(targets['tax']!);
     if ((beforeW == null ? null : digest(beforeW)) != hashW ||
         (beforeT == null ? null : digest(beforeT)) != hashT)
-      refuse('Another saved generation changed before import.');
+      refuse('Another saved generation changed before import.',
+          code: 'workspace_conflict');
     if (beforeW != null) workspace(beforeW);
     final Map<String, dynamic>? priorTax =
         beforeT == null ? null : tax(beforeT, input.caseId);

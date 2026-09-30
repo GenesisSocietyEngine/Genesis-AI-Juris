@@ -9,12 +9,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:juris_mobile/app/app_theme.dart';
 import 'package:juris_mobile/data/scenario_bridge_client.dart';
 import 'package:juris_mobile/data/studio_authoring_repository.dart';
+import 'package:juris_mobile/data/studio_authoring_services.dart';
 import 'package:juris_mobile/data/studio_draft_store.dart';
 import 'package:juris_mobile/data/tax_artifact_store.dart';
 import 'package:juris_mobile/models/case_type_playbook.dart';
 import 'package:juris_mobile/models/case_type_registry.dart';
 import 'package:juris_mobile/models/studio_scenario_draft.dart';
 import 'package:juris_mobile/screens/studio_wizard_screen.dart';
+import 'package:juris_mobile/screens/tax_editor_screen.dart';
+import 'package:juris_mobile/widgets/studio_case_views.dart';
 import 'support/tax_artifact_fixture.dart';
 
 final CaseTypePlaybookRegistry _testPlaybooks =
@@ -25,6 +28,156 @@ final CaseTypePlaybookRegistry _testPlaybooks =
 );
 
 void main() {
+  testWidgets('replacing the matched root cancels pending tax navigation',
+      (WidgetTester tester) async {
+    await tester.runAsync(() async {
+      final Directory firstRoot =
+              await Directory.systemTemp.createTemp('wizard-old-root-'),
+          nextRoot = await Directory.systemTemp.createTemp('wizard-new-root-');
+      addTearDown(() async {
+        await firstRoot.delete(recursive: true);
+        await nextRoot.delete(recursive: true);
+      });
+      late _PausedWorkspaceStore observed;
+      final StudioAuthoringServices first =
+          StudioAuthoringServices.applicationSupport(
+              directoryProvider: () async => firstRoot,
+              observeWorkspace: (store) =>
+                  observed = _PausedWorkspaceStore(store));
+      final StudioAuthoringServices next =
+          StudioAuthoringServices.applicationSupport(
+              directoryProvider: () async => nextRoot);
+      await first.workspace.write(_readyWorkspace(StudioWorkflowStage.caseMap));
+      final StudioScenarioDraft nextDraft = StudioScenarioDraft.guidedExample()
+          .updateIdentity(
+              title: 'Different root source',
+              jurisdiction: 'BE',
+              role: 'Reviewer',
+              premise: 'New root');
+      await next.workspace.write(StudioWorkspace(
+          draft: nextDraft,
+          activeStage: StudioWorkflowStage.describe,
+          completedStages: {}));
+      await _mountStore(tester, first.workspace,
+          authoringServices: first, waitForDisk: true);
+      observed.release = Completer<void>();
+      tester
+          .widget<StudioCaseViews>(find.byType(StudioCaseViews))
+          .onTaxEconomics!();
+      await observed.entered.future;
+      await tester.pump();
+      expect(find.byType(TextField), findsWidgets);
+      expect(
+          tester
+              .widgetList<TextField>(find.byType(TextField))
+              .every((field) => field.readOnly),
+          isTrue);
+      await _mountStore(tester, next.workspace,
+          authoringServices: next, waitForDisk: true);
+      observed.release!.complete();
+      await observed.finished.future;
+      await tester.pumpAndSettle();
+      expect(find.byType(TaxEditorScreen), findsNothing);
+      expect(
+          tester
+              .widget<TextField>(
+                  find.byKey(const ValueKey('studio-title-field')))
+              .controller!
+              .text,
+          'Different root source');
+      expect(
+          (await next.workspace.read())!.draft.title, 'Different root source');
+      expect(await Directory('${nextRoot.path}/tax_authoring_v1').exists(),
+          isFalse);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  testWidgets('unmatched custom workspace never opens implicit tax storage',
+      (WidgetTester tester) async {
+    final _MemoryStudioStore store = _MemoryStudioStore()
+      ..workspace = _readyWorkspace(StudioWorkflowStage.describe);
+    final Map<String, dynamic> imported = taxArtifactFixture();
+    imported['scenario'] = store.workspace!.draft.toJson();
+    int pathCalls = 0, clipboardWrites = 0;
+    const MethodChannel paths =
+        MethodChannel('plugins.flutter.io/path_provider');
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(paths,
+        (call) async {
+      pathCalls++;
+      throw StateError('Unexpected implicit storage');
+    });
+    tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.getData')
+        return {'text': jsonEncode(imported)};
+      if (call.method == 'Clipboard.setData') clipboardWrites++;
+      return null;
+    });
+    addTearDown(() {
+      tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(paths, null);
+      tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
+    });
+    await _mountStore(tester, store);
+    await tester.tap(find.text('Import scenario or analysis workspace'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('unavailable for this custom workspace'),
+        findsOneWidget);
+    expect(store.writes, 0);
+    expect(pathCalls, 0);
+    expect(clipboardWrites, 0);
+    expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('studio-title-field')))
+            .controller!
+            .text,
+        store.workspace!.draft.title);
+  });
+
+  testWidgets(
+      'clipboard wait freezes controls and unmount cancels before persistence',
+      (WidgetTester tester) async {
+    final _MemoryStudioStore store = _MemoryStudioStore()
+      ..workspace = _readyWorkspace(StudioWorkflowStage.describe);
+    final Completer<Map<String, String>> clipboard =
+        Completer<Map<String, String>>();
+    tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.getData') return clipboard.future;
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null));
+    await _mountStore(tester, store);
+    await tester.tap(find.text('Import scenario or analysis workspace'));
+    await tester.pump();
+    expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('studio-title-field')))
+            .readOnly,
+        isTrue);
+    expect(
+        tester
+            .widget<AbsorbPointer>(
+                find.byKey(const ValueKey('studio-busy-controls')))
+            .absorbing,
+        isTrue);
+    expect(
+        tester
+            .widget<IconButton>(
+                find.byKey(const ValueKey('studio-exit-action')))
+            .onPressed,
+        isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    clipboard.complete(
+        {'text': jsonEncode(StudioScenarioDraft.guidedExample().toJson())});
+    await tester.pumpAndSettle();
+    expect(store.writes, 0);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('stale workspace edits remain exportable until explicit reopen', (
     WidgetTester tester,
   ) async {
@@ -196,11 +349,15 @@ void main() {
           tester.binding.defaultBinaryMessenger
               .setMockMethodCallHandler(SystemChannels.platform, null);
         });
-        final _MemoryStudioStore workspace = _MemoryStudioStore();
-        await _mountStore(tester, workspace);
+        final StudioAuthoringServices services =
+            StudioAuthoringServices.applicationSupport();
+        final ConditionalStudioDraftStore workspace = services.workspace;
+        await _mountStore(tester, workspace,
+            waitForDisk: true, authoringServices: services);
+        resolutions = 0;
         await tester.tap(find.text('Import scenario or analysis workspace'));
         final Finder completed = state == 'supported'
-            ? find.textContaining('Source imported.')
+            ? find.textContaining('Source imported and saved.')
             : find.textContaining('Import failed:');
         for (int i = 0; i < 250 && completed.evaluate().isEmpty; i++) {
           await Future<void>.delayed(const Duration(milliseconds: 20));
@@ -209,8 +366,10 @@ void main() {
         await tester.pumpAndSettle();
         expect(completed, findsOneWidget);
         if (state == 'supported') {
-          expect(workspace.writes, 1);
-          expect(workspace.workspace!.draft.toJson(), scenario.toJson());
+          final StudioWorkspace savedWorkspace = (await workspace.read())!;
+          expect(savedWorkspace.draft.toJson(), scenario.toJson());
+          expect(savedWorkspace.activeStage, StudioWorkflowStage.describe);
+          expect(savedWorkspace.completedStages, isEmpty);
           final Map<String, dynamic> saved =
               (await sidecar.read(scenario.caseId))!;
           expect(saved['edit']['baseline_annual_tax_cost'], 'imported');
@@ -218,9 +377,9 @@ void main() {
           expect(saved['calculation'], isNull);
           expect(saved['request']['context']['scenario_fingerprint'],
               replacement['request']['context']['scenario_fingerprint']);
+          expect(saved['legacy'], replacement['legacy']);
         } else {
-          expect(workspace.writes, 0);
-          expect(workspace.workspace, isNull);
+          expect(await workspace.read(), isNull);
           expect(await target.readAsString(),
               state == 'future' ? before : jsonEncode(artifact('competing')));
         }
@@ -538,13 +697,15 @@ final class _MemoryStudioStore implements StudioDraftStore {
 }
 
 Future<void> _mountStore(WidgetTester tester, StudioDraftStore store,
-    {bool waitForDisk = false}) async {
+    {bool waitForDisk = false,
+    StudioAuthoringServices? authoringServices}) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: JurisTheme.dark(),
       home: StudioWizardScreen(
         repository: StudioAuthoringRepository(_WizardBridge()),
         store: store,
+        authoringServices: authoringServices,
         locale: 'en',
         onExit: () {},
         playbookRegistry: _testPlaybooks,
@@ -629,4 +790,32 @@ final class _WizardBridge implements ScenarioBridgeClient {
           <String, dynamic>{'id': id},
         ],
       };
+}
+
+final class _PausedWorkspaceStore implements ConditionalStudioDraftStore {
+  _PausedWorkspaceStore(this.inner);
+  final ConditionalStudioDraftStore inner;
+  final Completer<void> entered = Completer<void>(),
+      finished = Completer<void>();
+  Completer<void>? release;
+  @override
+  Future<StudioWorkspaceSnapshot> readSnapshot() => inner.readSnapshot();
+  @override
+  Future<StudioWorkspaceSnapshot> writeIfUnchanged(
+      StudioWorkspaceSnapshot expected, StudioWorkspace workspace) async {
+    entered.complete();
+    await release!.future;
+    final StudioWorkspaceSnapshot result =
+        await inner.writeIfUnchanged(expected, workspace);
+    finished.complete();
+    return result;
+  }
+
+  @override
+  Future<StudioWorkspace?> read() => inner.read();
+  @override
+  Future<void> write(StudioWorkspace workspace) => inner.write(workspace);
+  @override
+  Future<String> exportScenario(StudioScenarioDraft draft) =>
+      inner.exportScenario(draft);
 }

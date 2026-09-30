@@ -35,18 +35,37 @@ final class StudioWorkspaceSession {
 
   Future<void> save(StudioWorkspace next) {
     final StudioWorkspace frozen = _freeze(next);
+    return _enqueue(() async {
+      final StudioDraftStore store = _store;
+      if (store is ConditionalStudioDraftStore) {
+        _snapshot = await store.writeIfUnchanged(_snapshot!, frozen);
+      } else {
+        await store.write(frozen);
+      }
+    });
+  }
+
+  /// Import follows the editor's own acknowledged saves; its sealed result is
+  /// the only token advancement. The callback must not reload workspace state.
+  Future<void> importSnapshot(
+      Future<StudioWorkspaceSnapshot> Function(StudioWorkspaceSnapshot)
+          operation) {
+    if (_store is! ConditionalStudioDraftStore) {
+      throw const StudioStorageException(
+          code: 'aggregate_unavailable',
+          message: 'This workspace does not provide matched analysis storage.');
+    }
+    return _enqueue(() async => _snapshot = await operation(_snapshot!));
+  }
+
+  Future<void> _enqueue(Future<void> Function() action) {
     final int epoch = _failureEpoch;
     final Future<void> operation = _tail.then((_) async {
       if (_blocked || epoch != _failureEpoch) {
         throw _lastError!;
       }
       try {
-        final StudioDraftStore store = _store;
-        if (store is ConditionalStudioDraftStore) {
-          _snapshot = await store.writeIfUnchanged(_snapshot!, frozen);
-        } else {
-          await store.write(frozen);
-        }
+        await action();
         _lastError = null;
       } on Object catch (error) {
         _lastError = error;
