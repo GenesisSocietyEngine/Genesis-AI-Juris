@@ -5,6 +5,7 @@
   "generatorHost": "x86_64-pc-windows-msvc",
   "target": "wasm32-unknown-unknown",
   "profile": "tax-wasm",
+  "producersSection": false,
   "inputs": [
     {
       "path": "Cargo.lock",
@@ -828,8 +829,8 @@
     },
     {
       "path": "scripts/tax-wasm-assets.mjs",
-      "bytes": 7308,
-      "sha256": "94817a6de7bc5091031432fe511f1deb10deeea221b8a56a1dad1f5cd7f06b77"
+      "bytes": 7778,
+      "sha256": "c0e7c1c3390d200734b2bad42af504e48eb5245f936dcea63fb98c14edf58dfa"
     }
   ],
   "artifacts": [
@@ -845,8 +846,8 @@
     },
     {
       "path": "app/tax-runtime/generated/juris_tax_wasm_bg.wasm",
-      "bytes": 885871,
-      "sha256": "b6bdb9777fd60905f58fa7ee0fd8c72199ce7984de70ecb8cbfa548ff48be514"
+      "bytes": 885797,
+      "sha256": "0da70796c94695e8538c89d6d6dc875ea5b762b659cb9c476f02d4503357350a"
     },
     {
       "path": "app/tax-runtime/generated/juris_tax_wasm_bg.wasm.d.ts",

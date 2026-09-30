@@ -43,7 +43,7 @@ function sourceInputs() {
 
 export function verifyTaxWasmAssets() {
   const receipt = JSON.parse(readFileSync(join(root, output, "receipt.json"), "utf8"));
-  if (receipt.schema !== "juris.tax-wasm-assets.v1" || receipt.rust !== "1.95.0" || receipt.wasmBindgen !== "0.2.128" || receipt.generatorHost !== "x86_64-pc-windows-msvc" || receipt.target !== "wasm32-unknown-unknown" || receipt.profile !== "tax-wasm") throw new Error("Unsupported tax WASM build receipt.");
+  if (receipt.schema !== "juris.tax-wasm-assets.v1" || receipt.rust !== "1.95.0" || receipt.wasmBindgen !== "0.2.128" || receipt.generatorHost !== "x86_64-pc-windows-msvc" || receipt.target !== "wasm32-unknown-unknown" || receipt.profile !== "tax-wasm" || receipt.producersSection !== false) throw new Error("Unsupported tax WASM build receipt.");
   if (json(receipt.inputs) !== json(sourceInputs())) throw new Error("Rust tax sources changed: regenerate and review the tax WASM assets.");
   const artifacts = [...artifactNames.map(name => record(`${output}/${name}`)), record(corpus)];
   if (json(receipt.artifacts) !== json(artifacts)) throw new Error("Generated tax WASM asset or native corpus does not match its receipt.");
@@ -72,7 +72,9 @@ function generate(check) {
   const staging = mkdtempSync(join(root, ".artifacts/tax-runtime/generated-"));
   run("cargo", ["+1.95.0", "build", "--locked", "-p", "juris-tax-wasm", "--target", "wasm32-unknown-unknown", "--profile", "tax-wasm"], { stdio: "inherit" });
   const target = resolve(root, process.env.CARGO_TARGET_DIR || "target");
-  run(bindgen, [join(target, "wasm32-unknown-unknown/tax-wasm/juris_tax_wasm.wasm"), "--target", "web", "--omit-default-module-path", "--out-dir", staging, "--out-name", "juris_tax_wasm"]);
+  // The CLI may embed the Git HEAD enclosing its own Cargo registry in telemetry.
+  // Keep tool versions in our receipt and remove only that non-executable section.
+  run(bindgen, [join(target, "wasm32-unknown-unknown/tax-wasm/juris_tax_wasm.wasm"), "--target", "web", "--omit-default-module-path", "--remove-producers-section", "--out-dir", staging, "--out-name", "juris_tax_wasm"]);
   const native = run("cargo", ["+1.95.0", "run", "--locked", "--quiet", "-p", "juris-tax-wasm", "--example", "native_corpus"]);
   const nativeBytes = Buffer.from(native.replace(/\r\n/g, "\n"));
   const artifacts = artifactNames.map(name => {
@@ -80,7 +82,10 @@ function generate(check) {
     return { path: `${output}/${name}`, bytes: bytes.length, sha256: sha256(bytes) };
   });
   artifacts.push({ path: corpus, bytes: nativeBytes.length, sha256: sha256(nativeBytes) });
-  const receipt = { schema: "juris.tax-wasm-assets.v1", rust: "1.95.0", wasmBindgen: "0.2.128", generatorHost: "x86_64-pc-windows-msvc", target: "wasm32-unknown-unknown", profile: "tax-wasm", inputs: sourceInputs(), artifacts };
+  const receipt = { schema: "juris.tax-wasm-assets.v1", rust: "1.95.0", wasmBindgen: "0.2.128", generatorHost: "x86_64-pc-windows-msvc", target: "wasm32-unknown-unknown", profile: "tax-wasm", producersSection: false, inputs: sourceInputs(), artifacts };
+  // Retain the actual comparison inputs even when the regeneration gate fails.
+  writeFileSync(join(staging, "native-corpus.json"), nativeBytes);
+  writeFileSync(join(staging, "receipt.json"), json(receipt));
   if (check) {
     verifyTaxWasmAssets();
     if (json(receipt) !== readFileSync(join(root, output, "receipt.json"), "utf8")) throw new Error("Regeneration differs from committed tax runtime assets.");
