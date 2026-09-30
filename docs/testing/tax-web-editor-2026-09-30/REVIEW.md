@@ -51,6 +51,8 @@ literal status values replace coercion. Sixteen malformed/future history control
 and a deserialized direct-execution regression refuse before runtime load. Both
 root and peer reviews accepted the correction. It validates retained structure,
 not financial correctness or cryptographic authenticity of a historical receipt.
+Pinned unavailable/provenance field sets also reject unknown or duplicate names;
+four extra mutation controls passed and independent review accepted the guard.
 
 In amounts mode only, inactive baseline/optimized rates remain exact raw text
 while mandatory Rust wire slots use neutral zero. These slots are not factual
@@ -113,3 +115,7 @@ source update was discarded; retry after the source settled succeeded.
 Remaining rendered legacy, keyboard, narrow/enlarged-text and fail-closed runtime
 checks, production build and unified final candidate checks remain pending. Physical
 devices, spoken screen readers and P5 PDF/report activation are separate gates.
+
+An initial production build correctly refused because the reviewed legacy
+follow-up changed source during compilation. This is a source-stability guard,
+not a successful build; the final frozen source must be rebuilt.

@@ -43,6 +43,10 @@ test("truncated, coerced, future or inconsistent converted records cannot clear 
     ["malformed FX", value => { value.legacy.status.draft.fx_json = "{"; }],
     ["invalid wire cents", value => { value.legacy.status.draft.request.input.implementation_cost = "9223372036854775808"; }],
     ["invalid wire rate", value => { value.legacy.status.draft.request.input.baseline_tax_rate_bps = 65536; }],
+    ["future unavailable field", value => { value.legacy.status.draft.unavailable_legacy_fields.push("futureRequired"); }],
+    ["duplicate unavailable field", value => { value.legacy.status.draft.unavailable_legacy_fields.push("annualTaxBase", "annualTaxBase"); }],
+    ["future provenance field", value => { value.legacy.status.draft.missing_override_provenance.push("futureRequired"); }],
+    ["duplicate provenance field", value => { value.legacy.status.draft.missing_override_provenance.push("override_owner", "override_owner"); }],
   ];
   for (const [name, change] of mutations) {
     const value = JSON.parse(converted); change(value);

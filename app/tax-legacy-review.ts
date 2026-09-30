@@ -10,6 +10,7 @@ const object = (value: unknown): value is Record<string, unknown> => !!value && 
 const hash = (value: unknown): value is string => typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
 const exact = (value: unknown, keys: string[]): value is Record<string, unknown> => object(value) && Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 const strings = (value: unknown): value is string[] => Array.isArray(value) && value.every(item => typeof item === "string");
+const knownFields = (value: unknown, allowed: readonly string[]): boolean => strings(value) && new Set(value).size === value.length && value.every(field => allowed.includes(field));
 const id = (value: unknown): value is string => {
   if (typeof value !== "string" || !value.trim() || value.includes("\0")) return false;
   const bytes = new TextEncoder().encode(value);
@@ -51,6 +52,7 @@ function validImport(value: Record<string, unknown>): boolean {
   if (status.status !== "converted" || !exact(status, ["status", "draft"])) return false;
   const draft = status.draft;
   if (!exact(draft, ["request", "input_hash", "fx_json", "inactive_tax_base", "missing_override_provenance", "unavailable_legacy_fields"]) || !hash(draft.input_hash) || !strings(draft.missing_override_provenance) || !strings(draft.unavailable_legacy_fields) || !(draft.fx_json === null || typeof draft.fx_json === "string")) return false;
+  if (!knownFields(draft.missing_override_provenance, ["override_reason", "override_owner", "override_as_of"]) || !knownFields(draft.unavailable_legacy_fields, ["annualTaxBase", "baselineTaxRateBps", "optimizedTaxRateBps", "assumptions"])) return false;
   if (draft.fx_json !== null) { try { parsePreservedJson(draft.fx_json); } catch { return false; } }
   if (draft.inactive_tax_base !== null) {
     const inactive = draft.inactive_tax_base;
