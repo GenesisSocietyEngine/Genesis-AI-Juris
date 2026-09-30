@@ -20,9 +20,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1; Node 24
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - name: Verify bounded diagnostic capture
+      - name: Verify bounded diagnostic capture and phase deadlines
         timeout-minutes: 1
-        run: python3 -I "$GITHUB_WORKSPACE/.github/scripts/test_collect_ios_tax_diagnostics.py"
+        run: |
+          python3 -I "$GITHUB_WORKSPACE/.github/scripts/test_collect_ios_tax_diagnostics.py"
+          python3 -I "$GITHUB_WORKSPACE/.github/scripts/test_run_with_deadline.py"
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.95.0

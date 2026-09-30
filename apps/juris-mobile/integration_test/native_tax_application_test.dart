@@ -29,6 +29,7 @@ const String _testName =
     'production application tax journey across process restart';
 const String _blankRateError =
     'Current rate (basis points): Enter a whole number.';
+late _Checkpoints _checkpoints;
 // Exact original also exercised with Android IME input. Preserve whitespace,
 // exponent notation and inactive amount inputs through native conversion.
 const String _legacyRates =
@@ -46,10 +47,16 @@ void main() {
     if (!RegExp(r'^[a-f0-9]{40}$').hasMatch(source) || runNonce.isEmpty) {
       throw StateError('An exact source and per-run nonce are required.');
     }
-    final Directory support = await getApplicationSupportDirectory();
+    _checkpoints = _Checkpoints(source, 'bootstrap');
+    final Directory support = await _checkpoints.wait(
+        'application-support', getApplicationSupportDirectory);
     final File proof = File('${support.path}/tax-application-acceptance.json');
-    final Map<String, dynamic>? previous =
-        await proof.exists() ? await _readProof(proof, source, runNonce) : null;
+    final Map<String, dynamic>? previous = await _checkpoints.wait(
+      'previous-proof',
+      () async => await proof.exists()
+          ? await _readProof(proof, source, runNonce)
+          : null,
+    );
     final int index =
         previous == null ? 0 : (previous['phase_index'] as int) + 1;
     if (index >= _phases.length) {
@@ -59,16 +66,20 @@ void main() {
     // No phase is compiled into the app. The same binary advances only from its
     // source/nonce-bound proof; the independent driver checks the expected phase.
     final String phase = _phases[index];
+    _checkpoints = _Checkpoints(source, phase);
     debugPrint('tax_application phase=$phase source=$source state=started');
-    final _ObservedWorkspaceStore workspaceStore = _ObservedWorkspaceStore();
-    final TaxArtifactStore taxStore = TaxArtifactStore();
-    final _ObservedNativeBridge bridge = _ObservedNativeBridge();
+    final _ObservedWorkspaceStore workspaceStore = _checkpoints.sync(
+        'workspace-construction', _ObservedWorkspaceStore.new);
+    final TaxArtifactStore taxStore =
+        _checkpoints.sync('tax-store-construction', TaxArtifactStore.new);
+    final _ObservedNativeBridge bridge = _checkpoints.sync(
+        'native-bridge-construction', _ObservedNativeBridge.new);
     File pairFile(String writePhase) =>
         File('${support.path}/tax-application-acceptance-$writePhase.json');
     if (previous == null) {
       // Never erase another simulator user's saved work to make a test pass.
       expect(
-        await workspaceStore.read(),
+        await _checkpoints.wait('fresh-workspace-read', workspaceStore.read),
         isNull,
         reason: 'Use a fresh isolated simulator for the write phase.',
       );
@@ -95,22 +106,29 @@ void main() {
         isNot(pid),
         reason: 'Each journey must execute in a new OS process.',
       );
-      final StudioWorkspace before = (await workspaceStore.read())!;
+      final StudioWorkspace before = (await _checkpoints.wait(
+          'cold-workspace-read', workspaceStore.read))!;
       expect(before.draft.toJson(), previous['scenario']);
       expect(_progress(before), previous['workspace_progress']);
       expect(
-        await taxStore.read(before.draft.caseId),
+        await _checkpoints.wait(
+            'cold-tax-read', () => taxStore.read(before.draft.caseId)),
         previous['artifact'],
         reason: 'Verify persisted inputs before opening the production UI.',
       );
     }
 
-    await tester.pumpWidget(
-      JurisApp.catalog(
-        scenarioBridgeClient: bridge,
-        studioDraftStore: workspaceStore,
+    await _checkpoints.wait(
+      'pump-production-widget',
+      () => tester.pumpWidget(
+        JurisApp.catalog(
+          scenarioBridgeClient: bridge,
+          studioDraftStore: workspaceStore,
+        ),
       ),
     );
+    await _checkpoints.wait(
+        'first-frame-rasterized', () => binding.waitUntilFirstFrameRasterized);
     await _tap(tester, find.byKey(const ValueKey('product-navigation-menu')));
     await _tap(
       tester,
@@ -124,7 +142,8 @@ void main() {
         await _tap(tester, find.byKey(const ValueKey('studio-continue')));
       }
     }
-    await workspaceStore.settleWrites();
+    await _checkpoints.wait(
+        'settle-workspace-writes', workspaceStore.settleWrites);
     await _tap(
       tester,
       find.byKey(const ValueKey('studio-case-view-economics')),
@@ -386,7 +405,40 @@ void main() {
       ...?binding.reportData,
       ...completed,
     };
-  });
+  }, timeout: const Timeout(Duration(minutes: 3)));
+}
+
+final class _Checkpoints {
+  _Checkpoints(this.source, this.phase);
+  final String source;
+  final String phase;
+  int _sequence = 0;
+  void _mark(String name, int sequence, String state) {
+    debugPrint('tax_application checkpoint=$name sequence=$sequence '
+        'state=$state phase=$phase source=$source');
+  }
+
+  T sync<T>(String name, T Function() operation) {
+    final int sequence = ++_sequence;
+    _mark(name, sequence, 'start');
+    final T value = operation();
+    _mark(name, sequence, 'end');
+    return value;
+  }
+
+  Future<T> wait<T>(String name, Future<T> Function() operation) async {
+    final int sequence = ++_sequence;
+    _mark(name, sequence, 'start');
+    try {
+      final T value =
+          await Future<T>.sync(operation).timeout(const Duration(seconds: 45));
+      _mark(name, sequence, 'end');
+      return value;
+    } on Object {
+      _mark(name, sequence, 'failed');
+      rethrow;
+    }
+  }
 }
 
 Future<Map<String, dynamic>> _readProof(
@@ -447,7 +499,7 @@ Future<void> _enter(
   await _waitFor(tester, field);
   await tester.ensureVisible(field);
   await tester.enterText(field, value);
-  await tester.pumpAndSettle();
+  await _checkpoints.wait('entry-settle', () => tester.pumpAndSettle());
   _expectField(tester, id, value, generation: generation);
 }
 
@@ -467,17 +519,18 @@ void _expectField(
 Future<void> _waitFor(WidgetTester tester, Finder finder) async {
   final DateTime deadline = DateTime.now().add(const Duration(seconds: 45));
   while (finder.evaluate().isEmpty && DateTime.now().isBefore(deadline)) {
-    await tester.pump(const Duration(milliseconds: 100));
+    await _checkpoints.wait(
+        'find-frame', () => tester.pump(const Duration(milliseconds: 100)));
   }
   expect(finder, findsWidgets);
-  await tester.pumpAndSettle();
+  await _checkpoints.wait('find-settle', () => tester.pumpAndSettle());
 }
 
 Future<void> _tap(WidgetTester tester, Finder finder) async {
   await _waitFor(tester, finder);
   await tester.ensureVisible(finder);
   await tester.tap(finder);
-  await tester.pumpAndSettle();
+  await _checkpoints.wait('tap-settle', () => tester.pumpAndSettle());
   expect(tester.takeException(), isNull);
 }
 
@@ -488,7 +541,7 @@ Future<void> _save(WidgetTester tester) async {
   expect(save.hitTestable(), findsOneWidget);
   expect(tester.widget<FilledButton>(save).onPressed, isNotNull);
   await tester.tap(save);
-  await tester.pump();
+  await _checkpoints.wait('save-frame', tester.pump);
   final DateTime deadline = DateTime.now().add(const Duration(seconds: 45));
   bool completed() =>
       tester.widget<FilledButton>(save).onPressed != null &&
@@ -497,7 +550,8 @@ Future<void> _save(WidgetTester tester) async {
           .evaluate()
           .isNotEmpty;
   while (!completed() && DateTime.now().isBefore(deadline)) {
-    await tester.pump(const Duration(milliseconds: 100));
+    await _checkpoints.wait('save-wait-frame',
+        () => tester.pump(const Duration(milliseconds: 100)));
   }
   expect(
     completed(),

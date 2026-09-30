@@ -34,11 +34,15 @@ for phase in "${phases[@]}"; do
   printf 'phase=%s event=launch source=%s simulator=%s\n' \
     "$phase" "$source_sha" "$device" | tee -a "$evidence/process.log"
   application_args=(--target=integration_test/native_tax_application_test.dart)
+  phase_timeout=900
   if [[ "$phase" != write ]]; then
     test -d "$bundle"
     application_args+=(--use-application-binary "$bundle")
+    phase_timeout=300
   fi
-  flutter drive --verbose --no-pub --keep-app-running "${application_args[@]}" \
+  python3 -I "$repo_root/.github/scripts/run_with_deadline.py" \
+    --timeout-seconds "$phase_timeout" --label "tax-$phase" -- \
+    flutter drive --verbose --no-pub --keep-app-running "${application_args[@]}" \
     --driver=test_driver/tax_application_driver.dart \
     --dart-define="JURIS_ACCEPTANCE_SOURCE_SHA=$source_sha" \
     --dart-define="JURIS_ACCEPTANCE_RUN_NONCE=$JURIS_ACCEPTANCE_RUN_NONCE" \
