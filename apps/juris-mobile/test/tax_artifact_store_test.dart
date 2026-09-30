@@ -388,6 +388,45 @@ void main() {
     expect(jsonDecode(await File(second).readAsString()), value);
   });
 
+  for (final bool withBom in [false, true]) {
+    test('original snapshot export retains exact frozen JSON (BOM $withBom)',
+        () async {
+      const String body = '{ "case_id": "case1", "schema": "future",\r\n'
+          ' "amount": 18446744073709551617, "rate": 1.2300e+0, '
+          '"escaped": "\\u00e9" }\r\n';
+      final String original = '${withBom ? '\ufeff' : ''}$body';
+      final List<int> bytes = utf8.encode(original);
+      await target.writeAsBytes(bytes);
+      final TaxArtifactSnapshot snapshot = await store.readSnapshot('case1');
+      expect(snapshot.readOnlyError, _code('tax_unsupported'));
+      expect(snapshot.originalJson, original);
+      expect(snapshot.contentSha256, sha256.convert(bytes).toString());
+      snapshot.artifact!['amount'] = 'mutated detached view';
+      final Completer<Directory> release = Completer<Directory>();
+      final TaxArtifactStore delayed =
+          TaxArtifactStore(directoryProvider: () => release.future);
+      final Future<String> exporting = delayed.exportOriginal(snapshot);
+      await target.writeAsString('{"case_id":"case1","schema":"changed"}');
+      release.complete(root);
+      final String first = await exporting;
+      final String second = await store.exportOriginal(snapshot);
+      expect(second, isNot(first));
+      expect(await File(first).readAsBytes(), bytes);
+      expect(await File(second).readAsBytes(), bytes);
+      expect(snapshot.originalJson, original);
+      expect(await target.readAsString(),
+          '{"case_id":"case1","schema":"changed"}');
+    });
+  }
+
+  test('an absent snapshot has no original export', () async {
+    final TaxArtifactSnapshot snapshot = await store.readSnapshot('case1');
+    expect(snapshot.originalJson, isNull);
+    await expectLater(
+        store.exportOriginal(snapshot), throwsA(_code('tax_export_failed')));
+    expect((await root.list().toList()).whereType<File>(), isEmpty);
+  });
+
   test('workspace and sidecar share root lease while unrelated roots proceed',
       () async {
     final Completer<void> entered = Completer<void>();

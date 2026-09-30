@@ -1058,14 +1058,30 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
                                         key: const ValueKey('tax-export'),
                                         onPressed: () async {
                                           try {
-                                            final Map<String, dynamic>
-                                                exporting = _copy(_artifact!);
-                                            final String path =
-                                                await _store.export(exporting);
+                                            final TaxArtifactSnapshot?
+                                                original = !_known &&
+                                                        !_dirty &&
+                                                        _snapshot
+                                                                ?.readOnlyError !=
+                                                            null
+                                                    ? _snapshot
+                                                    : null;
+                                            final String path;
+                                            final String clipboard;
+                                            if (original != null) {
+                                              clipboard =
+                                                  original.originalJson!;
+                                              path = await _store
+                                                  .exportOriginal(original);
+                                            } else {
+                                              final Map<String, dynamic>
+                                                  exporting = _copy(_artifact!);
+                                              clipboard = jsonEncode(exporting);
+                                              path = await _store
+                                                  .export(exporting);
+                                            }
                                             await Clipboard.setData(
-                                                ClipboardData(
-                                                    text:
-                                                        jsonEncode(exporting)));
+                                                ClipboardData(text: clipboard));
                                             if (mounted)
                                               setState(() => _notice = _t(
                                                       'Exported and copied: ',

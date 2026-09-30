@@ -178,6 +178,49 @@ void main() {
     });
   }
 
+  for (final bool withBom in [false, true]) {
+    testWidgets('opaque primary export preserves original JSON (BOM $withBom)',
+        (tester) async {
+      await tester.runAsync(() async {
+        final Directory root = await _root();
+        final TaxArtifactStore store =
+            TaxArtifactStore(directoryProvider: () async => root);
+        await store.write('case1', taxArtifactFixture('current'));
+        const String body = '{ "schema": "tax-authoring-artifact-v99",\r\n'
+            ' "case_id": "case1", "amount": 18446744073709551617, '
+            '"rate": 1.2300e+0, "unknown": { "escaped": "\\u00e9" } }\r\n';
+        final String original = '${withBom ? '\ufeff' : ''}$body';
+        final File target = _target(root);
+        await target.writeAsBytes(utf8.encode(original));
+        final _StorageBridge bridge = await _mount(tester, store);
+        _expectReadOnly();
+        String? clipboard;
+        tester.binding.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData') {
+            clipboard = (call.arguments as Map)['text'] as String;
+          }
+          return null;
+        });
+        await _tap(tester, find.byKey(const ValueKey('tax-export')));
+        await _waitFor(
+            tester,
+            () => find
+                .textContaining('Exported and copied:')
+                .evaluate()
+                .isNotEmpty);
+        final File exported =
+            (await root.list().toList()).whereType<File>().single;
+        expect(await exported.readAsBytes(), utf8.encode(original));
+        expect(utf8.encode(clipboard!), utf8.encode(original));
+        expect(await target.readAsBytes(), utf8.encode(original));
+        expect(bridge.commands, isEmpty);
+        _expectReadOnly();
+        expect(tester.takeException(), isNull);
+      });
+    });
+  }
+
   testWidgets(
       'future auxiliary appearing during edits blocks save without losing them',
       (tester) async {

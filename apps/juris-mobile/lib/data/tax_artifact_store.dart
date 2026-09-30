@@ -9,10 +9,14 @@ import 'tax_authoring_repository.dart';
 /// An exact saved generation, separate from the caller's editable copy.
 final class TaxArtifactSnapshot {
   const TaxArtifactSnapshot._(this.caseId, this._target, this._encoded,
-      this.contentSha256, this.readOnlyError);
+      this.originalJson, this.contentSha256, this.readOnlyError);
   final String caseId;
   final String _target;
   final String? _encoded;
+
+  /// Original valid UTF-8 JSON, including whitespace, numeric tokens and BOM.
+  /// Use this for opaque recovery, rather than re-encoding [artifact].
+  final String? originalJson;
   final String? contentSha256;
   final TaxStorageException? readOnlyError;
   String? get readOnlyReason => readOnlyError?.message;
@@ -177,6 +181,7 @@ final class TaxArtifactStore {
           caseId,
           _identity(file),
           value?.encoded,
+          value?.originalJson,
           value == null ? null : sha256.convert(value.bytes).toString(),
           restriction);
 
@@ -269,8 +274,23 @@ final class TaxArtifactStore {
   }
 
   Future<String> export(Map<String, dynamic> artifact) async {
-    // Export also accepts opaque parsed envelopes without normalizing them.
+    // Semantic map export: freezes edits, but re-encodes JSON representation.
     final String encoded = const JsonEncoder.withIndent('  ').convert(artifact);
+    return _exportEncoded(encoded);
+  }
+
+  /// Export the loaded generation exactly, without re-reading or re-encoding.
+  Future<String> exportOriginal(TaxArtifactSnapshot snapshot) async {
+    final String? encoded = snapshot.originalJson;
+    if (encoded == null) {
+      throw const TaxStorageException(
+          code: 'tax_export_failed',
+          message: 'There is no saved analysis to export.');
+    }
+    return _exportEncoded(encoded);
+  }
+
+  Future<String> _exportEncoded(String encoded) async {
     try {
       return await AuthoringStorageCoordinator.run(_directoryProvider,
           (lease) async {
@@ -297,6 +317,15 @@ final class _TaxFile {
       {this.encoded, this.supported = false, this.wrongIdentity = false});
   final List<int> bytes;
   final String? encoded;
+  // utf8.decode consumes a BOM; retain it separately from JSON parsing.
+  String? get originalJson => encoded == null
+      ? null
+      : bytes.length >= 3 &&
+              bytes[0] == 0xef &&
+              bytes[1] == 0xbb &&
+              bytes[2] == 0xbf
+          ? '\ufeff$encoded'
+          : encoded;
   final bool supported;
   final bool wrongIdentity;
 }
