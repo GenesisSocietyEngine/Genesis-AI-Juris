@@ -6,7 +6,10 @@ import { caseFingerprint, casePremiseReviewState, casePublicationFingerprint, no
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { canViewCustomCase, normalizeEmail } from "../../custom-case-access";
 import { isSameOriginMutation, readJsonObject } from "../../request-security";
-import { CaseProtectionIntegrityError, getOrCreateCaseProtectionKey, resolveExactCaseArtifact, type StoredCaseArtifact } from "../../server-case-protection";
+import { CaseProtectionIntegrityError, getOrCreateCaseProtectionKey, readStoredCasePayload, resolveExactCaseArtifact, type StoredCaseArtifact } from "../../server-case-protection";
+import { assertTaxAttachmentMutation } from "../../tax-authoring";
+import { parsePreservedJson } from "../../preserved-json";
+import { freezeStudioDraftSnapshot, readStudioAggregate } from "../../studio-aggregate";
 import { isPlatformAdmin } from "../../server-authorization";
 import { STUDIO_CASE_BODY_LIMIT } from "../../studio-envelope";
 
@@ -37,7 +40,7 @@ export async function POST(request: Request) {
   if (!isSameOriginMutation(request)) return privateJson({ error: "Cross-site mutation rejected." }, 403);
   const identity = await getChatGPTUser();
   if (!identity) return privateJson({ error: "Sign in is required." }, 401);
-  const payload = await readJsonObject(request, STUDIO_CASE_BODY_LIMIT);
+  const payload = await readJsonObject(request, STUDIO_CASE_BODY_LIMIT, parsePreservedJson);
   if (!payload || (payload.action !== "save" && payload.action !== "submit")) return privateJson({ error: "A valid save or submit request is required." }, 400);
   const email = identity.email.toLowerCase();
   const admin = isPlatformAdmin(identity);
@@ -45,7 +48,13 @@ export async function POST(request: Request) {
   const [profile] = await db.select({ email: users.email }).from(users).where(eq(users.email, email)).limit(1);
   if (!profile) return privateJson({ code: "profile_required", error: "Complete your professional profile before saving a shared workspace draft." }, 409);
   let draft;
-  try { draft = normalizeStudioDraft(payload.draft); } catch { return privateJson({ error: "The Studio draft failed integrity validation." }, 400); }
+  try {
+    // Classification precedes every whitelist normalizer. The bounded strict
+    // request parser has already rejected duplicate keys and malformed UTF-8.
+    const incoming = readStudioAggregate(JSON.stringify(payload.draft), { kind: "draft" });
+    if (incoming.status !== "editable") return privateJson({ code: "tax_attachment_preservation", error: incoming.reason }, 409);
+    draft = freezeStudioDraftSnapshot(incoming.draft);
+  } catch { return privateJson({ error: "The Studio draft failed integrity validation." }, 400); }
   const structuralIssues = studioStructuralIssues(draft);
   if (payload.action === "submit" && (draft.premisePublication !== "author-reviewed" || !draft.premise.trim())) {
     return privateJson({ error: "Review and edit the publishable case context before submission.", issues: ["premise_author_review_required"] }, 422);
@@ -64,7 +73,7 @@ export async function POST(request: Request) {
     customCaseId: caseDrafts.customCaseId,
     status: caseDrafts.status,
     fingerprint: caseDrafts.fingerprint,
-    payload: caseDrafts.payload,
+    payload: sql<string>`cast(${caseDrafts.payload} as text)`,
     updatedAt: caseDrafts.updatedAt,
   }).from(caseDrafts).where(and(
     eq(caseDrafts.userEmail, email), eq(caseDrafts.caseId, draft.caseId), eq(caseDrafts.version, draft.version),
@@ -86,7 +95,7 @@ export async function POST(request: Request) {
   const [currentEnvelopeDraft] = existingCustom ? await db.select({
     id: caseDrafts.id,
     fingerprint: caseDrafts.fingerprint,
-    payload: caseDrafts.payload,
+    payload: sql<string>`cast(${caseDrafts.payload} as text)`,
   }).from(caseDrafts).where(and(
     eq(caseDrafts.customCaseId, existingCustom.id),
     eq(caseDrafts.caseId, existingCustom.caseId),
@@ -203,6 +212,18 @@ export async function POST(request: Request) {
     || requestedCopyProtection(draft.protection)
     || currentArtifact?.copyProtected === true
     || parentArtifact?.copyProtected === true;
+  try {
+    const before = currentArtifact ?? parentArtifact;
+    if (before && !before.editable) throw new Error("The saved aggregate requires read-only recovery before saving.");
+    await assertTaxAttachmentMutation({ before: before?.taxAnalysis, after: draft.taxAnalysis, precondition: payload.taxAttachmentMutation });
+    // A newly created child/fork is bound to its resolved stored parent too.
+    if (!existing && parentArtifact && parentArtifact !== before) {
+      if (!parentArtifact.editable) throw new Error("The parent aggregate requires read-only recovery before copying.");
+      await assertTaxAttachmentMutation({ before: parentArtifact.taxAnalysis, after: draft.taxAnalysis, precondition: payload.taxAttachmentMutation });
+    }
+  } catch (error) {
+    return privateJson({ code: "tax_attachment_preservation", error: error instanceof Error ? error.message : "Tax attachment preservation could not be verified." }, 409);
+  }
   const protection = await buildCaseProtection({
     caseId: draft.caseId,
     version: draft.version,
@@ -298,6 +319,7 @@ export async function POST(request: Request) {
         ? sql`json_extract(${caseDrafts.payload}, '$.protection.currentCode') = ${currentArtifact.currentCode}`
         : sql`json_extract(${caseDrafts.payload}, '$.protection.currentCode') IS NULL`;
       const publicationCompareAndSwap = sql`${storedPremiseReview} = ${currentPublicationBinding!.premiseReview}`;
+      const originalPayloadStillCurrent = sql`cast(${caseDrafts.payload} as text) = ${existing.payload}`;
       const currentEnvelopeExists = sql`EXISTS (
         SELECT 1 FROM ${customCases}
         WHERE ${customCases.id} = ${existingCustom.id}
@@ -324,7 +346,7 @@ export async function POST(request: Request) {
           status,
           ...(payload.action === "submit" ? { submittedAt: now } : {}),
           updatedAt: now,
-        }).where(and(eq(caseDrafts.id, existing.id), eq(caseDrafts.fingerprint, expected), eq(caseDrafts.status, existing.status), protectionCompareAndSwap, publicationCompareAndSwap, currentEnvelopeExists)),
+        }).where(and(eq(caseDrafts.id, existing.id), eq(caseDrafts.fingerprint, expected), eq(caseDrafts.status, existing.status), protectionCompareAndSwap, publicationCompareAndSwap, originalPayloadStillCurrent, currentEnvelopeExists)),
         db.update(customCases).set({ title: draft.title, fingerprint, updatedAt: now }).where(and(
           eq(customCases.id, existingCustom.id),
           eq(customCases.ownerEmail, email),
@@ -343,6 +365,7 @@ export async function POST(request: Request) {
           AND ${caseDrafts.version} = ${existingCustom.currentVersion}
           AND ${caseDrafts.fingerprint} = ${base}
           AND ${storedPremiseReview} = ${currentPublicationBinding!.premiseReview}
+          AND cast(${caseDrafts.payload} as text) = ${currentEnvelopeDraft!.payload}
       )`;
       const finalDraftExists = sql`EXISTS (
         SELECT 1 FROM ${caseDrafts}
@@ -400,7 +423,7 @@ export async function POST(request: Request) {
     fingerprint: caseDrafts.fingerprint,
     status: caseDrafts.status,
     updatedAt: caseDrafts.updatedAt,
-    payload: caseDrafts.payload,
+    payload: sql<string>`cast(${caseDrafts.payload} as text)`,
     protectionCode: sql<string | null>`json_extract(${caseDrafts.payload}, '$.protection.currentCode')`,
   }).from(caseDrafts).where(and(
     eq(caseDrafts.userEmail, email), eq(caseDrafts.caseId, draft.caseId), eq(caseDrafts.version, draft.version), eq(caseDrafts.fingerprint, fingerprint), eq(caseDrafts.status, status),
@@ -431,7 +454,7 @@ function requestFingerprint(value: unknown) {
 
 function storedPublicationBinding(value: unknown) {
   try {
-    const storedDraft = normalizeStudioDraft(value);
+    const storedDraft = normalizeStudioDraft(typeof value === "string" ? readStoredCasePayload(value) : value);
     return {
       caseFingerprint: caseFingerprint(storedDraft),
       publicationFingerprint: casePublicationFingerprint(storedDraft),
@@ -491,6 +514,7 @@ function artifactWriteGuard(artifact: StoredCaseArtifact | null, viewerEmail: st
         AND ${caseVersions.version} = ${artifact.version}
         AND coalesce(${caseVersions.studioFingerprint}, ${caseVersions.fingerprint}) = ${artifact.studioFingerprint}
         AND ${caseVersions.publishedAt} IS NOT NULL
+        AND cast(${caseVersions.payload} as text) = ${artifact.payloadText}
         AND ${codeStillMatches}
     )`;
   }
@@ -506,6 +530,7 @@ function artifactWriteGuard(artifact: StoredCaseArtifact | null, viewerEmail: st
       AND ${caseDrafts.caseId} = ${artifact.caseId}
       AND ${caseDrafts.version} = ${artifact.version}
       AND ${caseDrafts.fingerprint} = ${artifact.studioFingerprint}
+      AND cast(${caseDrafts.payload} as text) = ${artifact.payloadText}
       AND ${codeStillMatches}
       AND (
         lower(trim(${customCases.ownerEmail})) = ${normalizeEmail(viewerEmail)}

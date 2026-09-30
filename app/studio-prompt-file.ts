@@ -10,9 +10,12 @@ export function studioImportFileKind(file: Pick<File, "name" | "type">): "case" 
 }
 
 /** Read fully before replacing the editor's current prompt. */
-export async function readStudioPromptFile(file: Pick<File, "size" | "text">): Promise<string> {
+export async function readStudioPromptFile(file: Pick<File, "size" | "arrayBuffer">): Promise<string> {
   if (file.size > STUDIO_PROMPT_CHARACTER_LIMIT * 2) throw new Error("prompt_file_too_large");
-  const value = await file.text();
+  const bytes = await file.arrayBuffer();
+  let value: string;
+  try { value = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes); }
+  catch { throw new Error("prompt_file_encoding"); }
   if (value.length > STUDIO_PROMPT_CHARACTER_LIMIT) throw new Error("prompt_text_too_long");
   if (!value.trim()) throw new Error("prompt_file_empty");
   return value;
@@ -26,6 +29,9 @@ export function studioPromptFileError(error: unknown, locale: "en" | "ru"): stri
   if (code === "prompt_file_empty") return locale === "en"
     ? "The prompt file is empty. Choose a Markdown or text file containing your case description."
     : "Файл промпта пуст. Выберите Markdown или текстовый файл с описанием кейса.";
+  if (code === "prompt_file_encoding") return locale === "en"
+    ? "The file is not valid UTF-8. Keep the original and export a valid UTF-8 copy before retrying. Your current work is unchanged."
+    : "Файл содержит некорректный UTF-8. Сохраните оригинал и экспортируйте корректную копию UTF-8 перед повтором. Текущая работа не изменена.";
   return locale === "en"
     ? "The prompt file could not be read. Download it again and retry. Your current work is unchanged."
     : "Не удалось прочитать файл промпта. Скачайте его заново и повторите. Текущая работа не изменена.";

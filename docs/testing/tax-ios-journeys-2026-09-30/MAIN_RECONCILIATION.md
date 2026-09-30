@@ -6,6 +6,12 @@ The isolated ordinary merge combines reviewed PR #72 source
 reported one conflict, in `integration_test/native_tax_application_test.dart`.
 The active PR #72 push run remains unchanged while this resolution is reviewed.
 
+After PR #76 merged, the held reconciliation also incorporated accepted main
+`3749593df4e249cd9e4ea0e69caf22d47cef43cb` by an ordinary conflict-free merge.
+That advance has no mobile source, iOS application host-script or workflow delta
+from `0590eaf`; the reviewed six-phase resolution remains identical. Its web
+preservation foundation keeps its separate accepted PR #76 evidence.
+
 The six-phase harness now obtains workspace and tax stores from main's
 `StudioAuthoringServices.applicationSupport` bundle. Its observation wrapper
 implements and forwards the conditional snapshot/write contract, returning

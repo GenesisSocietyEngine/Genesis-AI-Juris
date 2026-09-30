@@ -53,8 +53,26 @@ tax_mobile_main_ios_job: 109887558003
 tax_mobile_main_ios_status: executed_xctest_pass_attempt_1
 tax_mobile_main_ios_artifact: 11096633885
 tax_mobile_main_checks: pass_7_of_7
-tax_mobile_product_acceptance: android_restart_legacy_incomplete_future_sidecar_proven_workspace_recovery_ios_and_accessibility_open
-tax_web_pdf_v2_integration: shared_rust_runtime_foundation_accepted_source_editor_and_version_bound_reports_open
+tax_mobile_recovery_pr: 69
+tax_mobile_recovery_head: 2eac66e109d95b14ca303eb6c21de63f3e7538a8
+tax_mobile_recovery_merge: 33c5c7867acf70add458ebee926db17d89b69711
+tax_mobile_recovery_checks: pass_16_of_16
+tax_mobile_recovery_main_checks: pass_6_of_6_workflows
+tax_mobile_recovery_main_ios_run: 36738411118
+tax_mobile_recovery_main_ios_job: 109967630402
+tax_mobile_recovery_main_ios_artifact: 11109234262
+tax_mobile_recovery_main_application_run: 36738411212
+tax_mobile_recovery_main_application_job: 109966089741
+tax_mobile_recovery_main_application_artifact: 11110678855
+tax_mobile_recovery_receipt: docs/testing/tax-mobile-recovery-2026-09-30/CHECKPOINT.md
+tax_mobile_product_acceptance: android_restart_legacy_incomplete_future_sidecar_and_aggregate_recovery_proven_remaining_ios_and_accessibility_open
+tax_web_pdf_v2_integration: shared_rust_runtime_and_web_source_contract_accepted_preservation_editor_and_version_bound_reports_open
+tax_web_source_pr: 74
+tax_web_source_head: fe8839520aff06772d30b6eef81d859fb4e71174
+tax_web_source_merge: d4d2902916951f51da0123c243c9945fd5bc807c
+tax_web_source_pr_checks: pass_16_of_16
+tax_web_source_main_workflows: four_pass_native_cancelled_by_subsequent_main_no_runtime_claim
+tax_web_source_receipt: docs/testing/tax-web-source-2026-09-30/SOURCE_CHECKPOINT.md
 tax_web_runtime_pr: 71
 tax_web_runtime_head: 2882ffa0ee81e7f885a35f25639970b537290b9b
 tax_web_runtime_merge: bb49049a318059993b47e557770a517b2d0838d9
@@ -185,6 +203,16 @@ last_updated: 2026-09-30
 
 # Current Progress
 
+## 30 September 2026 — Web source and mobile workspace recovery accepted
+
+[PR #74](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/74) passed all 16 exact-head checks at `fe8839520aff06772d30b6eef81d859fb4e71174` and merged as `d4d2902916951f51da0123c243c9945fd5bc807c`. The [source checkpoint](../testing/tax-web-source-2026-09-30/SOURCE_CHECKPOINT.md) records full source/fingerprint and 49-execution parity across browser, Worker and Node, reproducible WASM, both executed native XCTests and retained diagnostics. The subsequent main's Flutter, Android, Rust and web workflows passed; native iOS was cancelled after newer main superseded it. That cancelled run supplies no main XCTest success.
+
+[PR #69](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/69) passed all 16 exact-head checks at `2eac66e109d95b14ca303eb6c21de63f3e7538a8` and merged as `33c5c7867acf70add458ebee926db17d89b69711`. The [recovery checkpoint](../testing/tax-mobile-recovery-2026-09-30/CHECKPOINT.md) retains the original legacy alias defect, corrected Android replay, both native XCTests and both unchanged-source iOS application retries that actually passed write/terminate/read with equal full inputs and fresh Rust results. The original startup timeouts remain recorded. Separate main Flutter, Android, Rust, web and native iOS passed. Native run `36738411118` / job `109967630402` executed the XCTest at 15:59:12 UTC (0.267 s), with both audits and artifact `11109234262`; main application run `36738411212` / job `109966089741` also passed, with distinct terminated PIDs, full native parity and artifact `11110678855`. All six main workflows passed separately from PR-head evidence.
+
+Sidecar PR #73's two iOS application jobs failed after successful Xcode builds without test execution; Android real sidecar kills and exact opaque export passed. Aggregate PR #75 includes that preservation work and adds matched workspace/sidecar journal recovery. Its exact `59234db` push application journey passed (run `36737109664`, job `109961593822`, artifact `11110596298`). The PR application attempt timed out after Xcode without test execution (run `36737120044`, job `109961630751`, artifact `11111635442`); an unchanged-source retry is pending, not a passed gate. Actual Android evidence at that same source now covers five verified boundary kills, including two interruptions during genuine cold recovery, complete recovered workspace/sidecar pairs and fresh native calculations matching original inputs/results. Original application files and emulator settings were restored; these are PR-head results, not subsequent main evidence. PR #72's unchanged-bundle six-phase harness passed only two phases in one attempt and three in the other before later launch stalls. A reviewed diagnostic correction is published at `0a6590a`; all six phases, process/bundle proofs and export audits remain mandatory. Physical-device checks, spoken screen-reader output and full gesture traversal stay open under the user's CI/emulator instruction.
+
+P4B preservation and P4C actual web editor journeys remain separate from the accepted runtime/source foundations. P5 requires fresh version-bound output and extracted/rendered PDF parity; existing PDF greens do not establish tax-v2 report integration. No deployment or distribution is implied.
+
 ## 30 September 2026 — Shared Rust web runtime foundation accepted
 
 Subsequent main `bb49049` separately passed all five workflows. Native iOS run `36724945847`, job `109920982401`, explicitly passed the selected XCTest at 14:13:37 UTC (0.217 seconds, attempt 1), with both archive audits and downloaded artifact `11102897766`, SHA-256 `cfbc34ab808e1b42b2add3cbf815cf9284fce0fabd5339f362ad3caf4e8b133f`. The linked checkpoint keeps these main receipts separate from the PR head.
@@ -193,7 +221,7 @@ Subsequent main `bb49049` separately passed all five workflows. Native iOS run `
 
 This accepts the shared Rust runtime foundation only. The next P4 source contract must bind actual edited web drafts without pretending they are native scenarios; lossless persistence/editor wiring and P5 version-bound reports/PDF parity remain open. Existing green web/PDF checks do not establish that product integration. The 30-command corpus includes 25 repeats of one calculation, not 30 distinct financial cases.
 
-Mobile PR #69 remains a separate candidate. Its original `829ccc5` application/Android receipts exposed a converted-legacy alias defect; corrected `2eac66e` passed a focused actual Android import/edit/save/terminate/reopen replay preserving the entire converted legacy record. Fresh iOS checks on that corrected source are pending. Sidecar preservation/concurrency, aggregate recovery, remaining iOS import/interruption journeys and full accessibility remain separate gates. Physical-device checks stay open under the user's CI/emulator instruction. No deployment or distribution is claimed.
+At the runtime checkpoint, mobile PR #69 was a separate candidate. Its original `829ccc5` application/Android receipts exposed a converted-legacy alias defect; corrected `2eac66e` passed actual Android and later iOS application checks and is now accepted as recorded above. Sidecar preservation/concurrency, aggregate recovery, remaining iOS import/interruption journeys and full accessibility remain separate gates. Physical-device checks stay open under the user's CI/emulator instruction. No deployment or distribution is claimed.
 
 ## 30 September 2026 — Native bridge/editor development checkpoint accepted
 

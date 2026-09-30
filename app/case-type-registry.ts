@@ -1,6 +1,7 @@
 import type { CaseTypeId, CaseTypeReference, CaseWorkflowMode, StudioDraft } from "./types";
 import rawRegistry from "./case-type-registry.v1.json";
 import { defaultTaxEconomics } from "./tax-economics";
+import { hasTaxAttachment } from "./tax-authoring";
 import { caseTypeReference, CASE_TYPE_VERSION, DEFAULT_CASE_TYPE } from "./case-type-reference";
 export { caseTypeReference, CASE_TYPE_REGISTRY_ID, CASE_TYPE_REGISTRY_SCHEMA_VERSION, CASE_TYPE_VERSION, DEFAULT_CASE_TYPE, normalizeCaseTypeReference } from "./case-type-reference";
 
@@ -72,7 +73,7 @@ export function applyCaseType(draft: StudioDraft, id: CaseTypeId): StudioDraft {
     ...draft,
     caseType: caseTypeReference(id),
     classification: nextClassification,
-    ...(definition.domain === "tax"
+    ...(hasTaxAttachment(draft) ? {} : definition.domain === "tax"
       ? { taxEconomics: draft.taxEconomics ?? defaultTaxEconomics(draft.dealEconomics?.currency ?? "EUR") }
       : { taxEconomics: undefined }),
   };

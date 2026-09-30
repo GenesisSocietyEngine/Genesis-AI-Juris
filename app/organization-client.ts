@@ -11,6 +11,7 @@ export function setOrganizationSelection(value: string) {
     // A deferred user-imported Studio prompt must not follow an organization switch.
     try { window.sessionStorage.removeItem("genesis-juris-pending-case-prompt-v1");
     window.sessionStorage.removeItem("genesis-studio-auth-continuation-v1");
+    window.sessionStorage.removeItem("genesis-studio-auth-continuation-v2");
     window.sessionStorage.removeItem("genesis.juris.pending-workspace-save.v2"); } catch { /* Storage cannot prevent a verified context change. */ }
   }
   selection = value;

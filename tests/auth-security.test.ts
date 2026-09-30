@@ -23,7 +23,7 @@ import { isSameOriginCredentialMutation } from "../app/request-security";
 import { clearNavigationStorage } from "../app/NavigationSession";
 import { NavigationController } from "../app/navigation-controller";
 import { clearOrganizationSelection, scopedOrganizationHeaders, setOrganizationSelection } from "../app/organization-client";
-import { LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, studioDeviceDraftKey, studioDeviceScope } from "../app/studio-device-storage";
+import { LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, studioDeviceDraftKey, studioDeviceDraftV2Key, studioDeviceScope } from "../app/studio-device-storage";
 
 const migrations = [
   "0000_worthless_supreme_intelligence.sql",
@@ -339,10 +339,13 @@ test("profile deletion clears local auth data and all identity responses are no-
 test("shared Account sign-out clears the verified account's device state only after server confirmation", async () => {
   const email = "synthetic-logout@example.test";
   const ownDraft = studioDeviceDraftKey((await studioDeviceScope(email))!);
+  const ownV2 = studioDeviceDraftV2Key((await studioDeviceScope(email))!);
   const otherDraft = studioDeviceDraftKey((await studioDeviceScope("other-synthetic@example.test"))!);
-  const ownKeys = [LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, ownDraft];
-  const continuationKeys = ["genesis-invitation-continuation-v1", "genesis-studio-auth-continuation-v1", "genesis.juris.pending-workspace-save.v2", "genesis-juris-pending-case-prompt-v1"];
-  const local = new Map([...ownKeys, otherDraft, "unrelated-preference"].map(key => [key, "synthetic"]));
+  const otherV2 = studioDeviceDraftV2Key((await studioDeviceScope("other-synthetic@example.test"))!);
+  const ownKeys = [LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, ownDraft, ownV2];
+  const continuationKeys = ["genesis-invitation-continuation-v1", "genesis-studio-auth-continuation-v1", "genesis-studio-auth-continuation-v2", "genesis.juris.pending-workspace-save.v2", "genesis-juris-pending-case-prompt-v1"];
+  const futureRaw = '{"schemaVersion":999,"amount":900719925474099312345}';
+  const local = new Map([...ownKeys, otherDraft, otherV2, "unrelated-preference"].map(key => [key, key === ownV2 || key === otherV2 ? futureRaw : "synthetic"]));
   const session = new Map([...continuationKeys, "unrelated-tab-state"].map(key => [key, "synthetic"]));
   const storage = (values: Map<string, string>) => ({
     removeItem(key: string) { values.delete(key); },
@@ -375,6 +378,7 @@ test("shared Account sign-out clears the verified account's device state only af
     // Organization selection itself clears continuations; restore the synthetic
     // pending work so this assertion specifically exercises the sign-out path.
     for (const key of continuationKeys) session.set(key, "synthetic");
+    session.set("genesis-studio-auth-continuation-v2", futureRaw);
     await controller.refresh();
     assert.equal(controller.getSnapshot().phase, "ready");
     await controller.signOut("en");
@@ -382,11 +386,14 @@ test("shared Account sign-out clears the verified account's device state only af
     assert.deepEqual(leaves, []);
     for (const key of ownKeys) assert.equal(local.has(key), true, "unconfirmed logout must not claim cleanup completed");
     for (const key of continuationKeys) assert.equal(session.has(key), true);
+    assert.equal(local.get(ownV2), futureRaw, "failed sign-out retains even a future record exactly");
+    assert.equal(session.get("genesis-studio-auth-continuation-v2"), futureRaw);
     logoutStatus = 204;
     await controller.signOut("en");
     assert.deepEqual(leaves, ["/studio?lang=en"]);
     assert.equal(controller.getSnapshot().identity, null);
     assert.equal(local.get(otherDraft), "synthetic", "cleanup must remain bound to the terminating account");
+    assert.equal(local.get(otherV2), futureRaw, "explicit cleanup must not erase another account's future record");
     assert.equal(local.get("unrelated-preference"), "synthetic");
     assert.equal(session.get("unrelated-tab-state"), "synthetic");
   } finally {
