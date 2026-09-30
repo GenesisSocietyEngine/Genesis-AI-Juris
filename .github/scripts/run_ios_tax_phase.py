@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Launch one isolated application phase through its owned authenticated console.
+"""Launch one isolated application phase using its authenticated system log.
 
 The caller retains the outer 900/300-second process-group deadline. This helper
 never guesses a VM URI from a port and never changes VM authentication.
 """
 import argparse
+import codecs
+import datetime
 import hashlib
 import json
 import os
@@ -60,73 +62,160 @@ def authenticated_uri(value):
     return value
 
 
-class ConsoleIdentity:
+def utc_now():
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
+class JsonLogObjects:
+    """Accept Apple's multiline object stream or array, never raw-text URIs."""
     def __init__(self):
-        self.pid = None
+        self.pending = ""
+        self.started = False
+        self.array = False
+        self.closed = False
+        self.after_value = False
+        self.after_comma = False
+        self.decoder = json.JSONDecoder(object_pairs_hook=self.unique_object)
+
+    @staticmethod
+    def unique_object(pairs):
+        result = {}
+        for key, value in pairs:
+            require(key not in result, "Duplicate system-log JSON key")
+            result[key] = value
+        return result
+
+    def feed(self, text, *, final=False):
+        self.pending += text
+        values = []
+        while True:
+            self.pending = self.pending.lstrip()
+            if not self.pending:
+                break
+            if not self.started:
+                if "Filtering the log data using ".startswith(self.pending) and not final:
+                    break
+                if self.pending.startswith("Filtering the log data using "):
+                    if "\n" not in self.pending:
+                        break
+                    _, self.pending = self.pending.split("\n", 1)
+                    continue
+                # A header or '[' is not a subscription-readiness guarantee.
+                if self.pending[0] == "[":
+                    self.array = True
+                    self.pending = self.pending[1:]
+                self.started = True
+                continue
+            require(not self.closed, "Unexpected data after system-log array")
+            if self.pending[0] == ",":
+                require(self.after_value and not self.after_comma, "Unexpected system-log separator")
+                self.pending = self.pending[1:]
+                self.after_value, self.after_comma = False, True
+                continue
+            if self.pending[0] == "]":
+                require(self.array and not self.after_comma, "Unexpected system-log array end")
+                self.closed = True
+                self.pending = self.pending[1:]
+                continue
+            require(self.pending[0] == "{", "Unexpected system-log data")
+            require(not self.array or not self.after_value, "Missing system-log array separator")
+            try:
+                value, end = self.decoder.raw_decode(self.pending)
+            except json.JSONDecodeError:
+                break  # A split object is retried after the next bounded chunk.
+            require(type(value) is dict, "System-log record is not an object")
+            values.append(value)
+            self.after_value, self.after_comma = True, False
+            self.pending = self.pending[end:]
+        if final:
+            require(not self.pending.strip(), "Malformed or truncated system-log JSON")
+            require(not self.after_comma, "Truncated system-log separator")
+        return values
+
+
+class LogIdentity:
+    def __init__(self, pid, executable, started):
+        self.pid = pid
+        self.executable = str(executable)
+        self.started = started
         self.uri = None
+        self.event = None
+        self.key = None
+        self.origins = []
+        self.observations = []
 
-    def line(self, value):
-        pid = re.fullmatch(re.escape(APP) + r": ([1-9][0-9]*)", value.strip())
-        if pid:
-            require(self.pid is None, "Duplicate console PID")
-            self.pid = int(pid.group(1))
+    def observe(self, event, origin):
         marker = "The Dart VM service is listening on "
-        if marker in value:
-            require(self.uri is None, "Duplicate console VM URI")
-            self.uri = authenticated_uri(value.split(marker, 1)[1].strip())
+        message = event.get("eventMessage")
+        if not isinstance(message, str) or marker not in message:
+            return
+        require(event.get("eventType") == "logEvent", "Wrong VM log event type")
+        require(type(event.get("processID")) is int and event["processID"] == self.pid,
+                "VM log PID differs from fresh launch")
+        require(event.get("processImagePath") == self.executable, "VM log executable mismatch")
+        timestamp = datetime.datetime.fromisoformat(event["timestamp"])
+        require(timestamp.tzinfo is not None and self.started <= timestamp <= utc_now(),
+                "VM log timestamp is outside fresh launch")
+        match = re.fullmatch(r"(?:flutter: )?The Dart VM service is listening on (\S+)", message.strip())
+        require(match is not None, "Malformed VM announcement")
+        uri = authenticated_uri(match[1])
+        # Stream and retrospective views can differ in ancillary metadata.
+        # Only the fully verified identity fields determine deduplication.
+        key = (event["eventType"], event["processID"], event["processImagePath"], timestamp, message.strip())
+        require(self.key is None or self.key == key, "Ambiguous VM system-log identity")
+        self.uri, self.key = uri, key
+        if self.event is None:
+            self.event = event
+        if origin not in self.origins:
+            self.origins.append(origin)
+        observation = {"origin": origin, "event": event}
+        if observation not in self.observations:
+            self.observations.append(observation)
 
 
-class Console:
+class LogReader:
     def __init__(self, command, output):
-        require(not output.exists(), "Console evidence already exists")
-        self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        require(not output.exists() and not output.with_suffix(".stderr.log").exists(),
+                "System-log evidence already exists")
+        self.started_at = utc_now().isoformat()
+        self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.total_bytes = 0
+        self.counter_lock = threading.Lock()
         self.events = queue.Queue()
-        self.parser = ConsoleIdentity()
         self.output = output
-        self.thread = threading.Thread(target=self._read, daemon=True)
-        self.thread.start()
+        self.threads = [threading.Thread(target=self._read, args=(channel,), daemon=True)
+                        for channel in ("stdout", "stderr")]
+        for thread in self.threads:
+            thread.start()
 
-    def _read(self):
-        pending = b""
-        count = 0
+    def _read(self, channel):
+        decoder = codecs.getincrementaldecoder("utf-8")("strict")
+        parser = JsonLogObjects()
+        pipe = getattr(self.process, channel)
+        destination = self.output if channel == "stdout" else self.output.with_suffix(".stderr.log")
         try:
-            with self.output.open("xb") as stream:
-                while data := os.read(self.process.stdout.fileno(), 4096):
-                    count += len(data)
-                    require(count <= 4 * 1024 * 1024, "Owned console exceeds 4 MiB")
+            with destination.open("xb") as stream:
+                while data := os.read(pipe.fileno(), 4096):
+                    with self.counter_lock:
+                        self.total_bytes += len(data)
+                        require(self.total_bytes <= 4 * 1024 * 1024, "Owned system log exceeds 4 MiB")
                     stream.write(data)
                     stream.flush()
-                    sys.stdout.buffer.write(data)
-                    sys.stdout.buffer.flush()
-                    pending += data
-                    while b"\n" in pending:
-                        line, pending = pending.split(b"\n", 1)
-                        self.events.put(line.rstrip(b"\r").decode("utf-8", errors="strict"))
-                if pending:
-                    self.events.put(pending.decode("utf-8", errors="strict"))
-            self.events.put(None)
+                    text = decoder.decode(data)
+                    if channel == "stdout":
+                        for event in parser.feed(text):
+                            self.events.put((utc_now().isoformat(), event))
+                tail = decoder.decode(b"", final=True)
+                if channel == "stdout":
+                    for event in parser.feed(tail, final=True):
+                        self.events.put((utc_now().isoformat(), event))
+            self.events.put((channel, None))
         except BaseException as error:
             self.events.put(error)
 
-    def identity(self, seconds=60):
-        result = self.parser
-        limit = time.monotonic() + seconds
-        while result.pid is None or result.uri is None:
-            remaining = limit - time.monotonic()
-            require(remaining > 0, "Fresh console VM discovery timed out")
-            try:
-                event = self.events.get(timeout=remaining)
-            except queue.Empty:
-                raise RuntimeError("Fresh console VM discovery timed out") from None
-            if isinstance(event, BaseException):
-                raise event
-            require(event is not None, "Owned console closed before complete identity")
-            result.line(event)
-        require(self.process.poll() is None, "Owned console exited before attachment")
-        return result
-
-    def ensure_live(self):
-        require(self.process.poll() is None, "Owned console exited before application termination")
+    def drain(self, identity, evidence, *, closing=False):
+        if not closing:
+            require(self.process.poll() is None, "Owned system-log reader exited early")
         while True:
             try:
                 event = self.events.get_nowait()
@@ -134,8 +223,13 @@ class Console:
                 return
             if isinstance(event, BaseException):
                 raise event
-            require(event is not None, "Owned console stream ended early")
-            self.parser.line(event)
+            arrival, value = event
+            if value is None:
+                require(closing, "Owned system-log stream ended early")
+                continue
+            with evidence.open("a", encoding="utf-8") as output:
+                output.write(json.dumps({"arrival_utc": arrival, "event": value}) + "\n")
+            identity.observe(value, "stream")
 
     def close(self):
         # Direct child only; it remains within the caller's task-owned group.
@@ -146,18 +240,77 @@ class Console:
         except subprocess.TimeoutExpired:
             self.process.kill()
             self.process.wait(timeout=3)
-        self.thread.join(timeout=3)
-        require(not self.thread.is_alive(), "Owned console reader did not close")
+        for thread in self.threads:
+            thread.join(timeout=3)
+        require(not any(thread.is_alive() for thread in self.threads), "Owned log reader did not close")
         self.process.stdout.close()
-        while True:
-            try:
-                event = self.events.get_nowait()
-            except queue.Empty:
-                break
-            if isinstance(event, BaseException):
-                raise event
-            if event is not None:
-                self.parser.line(event)
+        self.process.stderr.close()
+
+
+def launch_pid(result):
+    text = result.stdout.decode("utf-8", errors="strict").strip()
+    match = re.fullmatch(re.escape(APP) + r": ([1-9][0-9]*)", text)
+    require(result.returncode == 0 and match is not None, "Ordinary launch did not return exactly one PID")
+    return int(match[1])
+
+
+def discover(reader, identity, args, evidence, seconds=60):
+    deadline = time.monotonic() + seconds
+    events = evidence / f"{args.phase}-system-events.jsonl"
+    reader.drain(identity, events)
+    # Do not infer readiness from the stream header. The exact new PID/path and
+    # timestamp gate makes a short retrospective query cover any subscription race.
+    predicate = f"processID == {identity.pid} AND processImagePath == {json.dumps(identity.executable)}"
+    query = ["xcrun", "simctl", "spawn", args.device, "log", "show", "--last", "2m",
+             "--style", "json", "--predicate", predicate]
+    backfill = {"command": query, "started_at": utc_now().isoformat()}
+    try:
+        result = command(query, timeout=min(20, seconds), check=False)
+        backfill.update(status="completed", exit_code=result.returncode)
+        stdout, stderr = result.stdout, result.stderr
+    except subprocess.TimeoutExpired as error:
+        backfill.update(status="timeout", error=str(error))
+        stdout, stderr = error.output or b"", error.stderr or b""
+    if len(stdout) + len(stderr) > 1024 * 1024:
+        stdout, stderr = stdout[:512 * 1024], stderr[:512 * 1024]
+        backfill.update(status="output_limit", exit_code=None)
+    (evidence / f"{args.phase}-backfill.json").write_bytes(stdout)
+    (evidence / f"{args.phase}-backfill.stderr.log").write_bytes(stderr)
+    backfill["completed_at"] = utc_now().isoformat()
+    write_json(evidence / f"{args.phase}-backfill-status.json", backfill)
+    if backfill.get("exit_code") == 0:
+        parser = JsonLogObjects()
+        for event in parser.feed(stdout.decode("utf-8", errors="strict"), final=True):
+            identity.observe(event, "backfill")
+        require(not parser.array or parser.closed, "Truncated backfill array")
+    while True:
+        reader.drain(identity, events)
+        require(time.monotonic() < deadline, "Fresh system-log VM discovery timed out")
+        if identity.uri is not None:
+            write_json(evidence / f"{args.phase}-discovery.json", {
+                "launch_started_at": identity.started.isoformat(), "pid": identity.pid,
+                "event": identity.event, "origins": identity.origins,
+                "observations": identity.observations,
+                "backfill_status": backfill, "verified_at": utc_now().isoformat(),
+            })
+            return identity
+        time.sleep(0.1)
+
+
+def live_failure_probe(args, evidence, pid, executable):
+    """Read-only evidence before reader cleanup; never terminate failed Runner."""
+    record = {"pid": pid, "acceptance": False, "captured_at": utc_now().isoformat()}
+    try:
+        observed = process_matches(pid, executable, timeout=5)
+        (evidence / f"{args.phase}-failure-process.txt").write_bytes(observed)
+        record["process_matched"] = True
+        result = command(["xcrun", "simctl", "io", args.device, "screenshot",
+                          str(evidence / f"{args.phase}-failure-live.png")], timeout=10, check=False)
+        record["screenshot_exit"] = result.returncode
+        record["screenshot_stderr"] = result.stderr.decode("utf-8", errors="replace")
+    except BaseException as error:
+        record["error"] = str(error)
+    write_json(evidence / f"{args.phase}-failure-live.json", record)
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -188,8 +341,8 @@ def command(args, timeout=30, check=True):
     return result
 
 
-def process_matches(pid, executable):
-    result = command(["ps", "-p", str(pid), "-o", "pid=,comm="], check=False)
+def process_matches(pid, executable, timeout=30):
+    result = command(["ps", "-p", str(pid), "-o", "pid=,comm="], timeout=timeout, check=False)
     text = result.stdout.decode("utf-8", errors="strict").strip()
     require(result.returncode == 0 and text.split(maxsplit=1) == [str(pid), str(executable)],
             "Launched Runner PID/executable mismatch")
@@ -254,19 +407,29 @@ def run(args):
     (evidence / f"{args.phase}-installed-bundle.json").write_bytes(copied)
     executable = installed / "Runner"
     existing_runner(executable)
-    console = Console(["xcrun", "simctl", "launch", "--console-pty", args.device, APP, *FLAGS],
-                      evidence / f"{args.phase}-console.log")
+    predicate = f'eventType == logEvent AND processImagePath == {json.dumps(str(executable))}'
+    reader = LogReader(["xcrun", "simctl", "spawn", args.device, "log", "stream", "--style", "json",
+                        "--predicate", predicate], evidence / f"{args.phase}-system.log")
     primary_error = None
+    identity = None
+    pid = None
     try:
-        identity = console.identity()
+        started = utc_now()
+        launched = command(["xcrun", "simctl", "launch", args.device, APP, *FLAGS], check=False)
+        (evidence / f"{args.phase}-launch.stdout.log").write_bytes(launched.stdout)
+        (evidence / f"{args.phase}-launch.stderr.log").write_bytes(launched.stderr)
+        pid = launch_pid(launched)
+        process_matches(pid, executable)
+        identity = discover(reader, LogIdentity(pid, executable, started), args, evidence)
         process_matches(identity.pid, executable)
         vm = vm_identity(identity.uri, identity.pid)
         write_json(evidence / f"{args.phase}-vm.json", vm)
-        console.ensure_live()
+        reader.drain(identity, evidence / f"{args.phase}-system-events.jsonl")
         process_matches(identity.pid, executable)
-        launch = {"schema": "tax-ios-console-launch-v1", "phase": args.phase, "source_sha": args.source,
+        launch = {"schema": "tax-ios-system-log-launch-v1", "phase": args.phase, "source_sha": args.source,
                   "run_nonce": args.nonce, "simulator": args.device, "app_id": APP,
-                  "console_pid": console.process.pid, "pid": identity.pid, "executable": str(executable),
+                  "log_reader_pid": reader.process.pid, "pid": identity.pid, "executable": str(executable),
+                  "log_reader_started_at": reader.started_at,
                   "vm_uri": identity.uri, "vm_pid": vm["result"]["pid"],
                   "bundle_manifest_sha256": hashlib.sha256(built).hexdigest(), "complete": False}
         write_json(evidence / f"{args.phase}-launch.json", launch)
@@ -275,7 +438,7 @@ def run(args):
                         "--driver=test_driver/tax_application_driver.dart", *defines, "-d", args.device], check=True)
         receipt = json.loads((evidence / f"{args.phase}.json").read_text(encoding="utf-8"))
         validate_receipt(receipt, args.phase, args.source, args.nonce, identity.pid)
-        console.ensure_live()
+        reader.drain(identity, evidence / f"{args.phase}-system-events.jsonl")
         observed = process_matches(identity.pid, executable)
         (evidence / f"{args.phase}-process.txt").write_bytes(observed)
         with (evidence / "process.log").open("a", encoding="utf-8") as log:
@@ -285,17 +448,25 @@ def run(args):
             command(["xcrun", "simctl", "terminate", args.device, APP])
             stopped(identity.pid)
             log.write(f"phase={args.phase} event=process_absent pid={identity.pid}\n")
-        console.close()
+        reader.close()
+        reader.drain(identity, evidence / f"{args.phase}-system-events.jsonl", closing=True)
         launch["complete"] = True
         write_json(evidence / f"{args.phase}-launch.json", launch)
     except BaseException as error:
         primary_error = error
+        if pid is not None:
+            try:
+                live_failure_probe(args, evidence, pid, executable)
+            except BaseException as probe_error:
+                print(f"live failure probe unavailable: {probe_error}", file=sys.stderr, flush=True)
         raise
     finally:
         try:
-            console.close()
+            reader.close()
+            if identity is not None:
+                reader.drain(identity, evidence / f"{args.phase}-system-events.jsonl", closing=True)
         except BaseException as cleanup_error:
-            print(f"console cleanup_incomplete: {cleanup_error}", file=sys.stderr, flush=True)
+            print(f"system-log cleanup_incomplete: {cleanup_error}", file=sys.stderr, flush=True)
             if primary_error is None:
                 raise
 

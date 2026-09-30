@@ -1,15 +1,65 @@
 #!/usr/bin/env python3
 """Verify retained application journeys; an uploaded artifact is not a pass."""
 import hashlib
+import datetime
 import json
 import pathlib
 import re
+import runpy
 import sys
+
+
+def verify_discovery(root, phase, launch, pid, discovery_tools):
+    assert type(launch["log_reader_pid"]) is int and launch["log_reader_pid"] > 0
+    assert (root / f"{phase}-launch.stdout.log").read_text().strip() == f"{launch['app_id']}: {pid}"
+    discovery = json.loads((root / f"{phase}-discovery.json").read_text())
+    assert discovery["pid"] == pid
+    started = datetime.datetime.fromisoformat(discovery["launch_started_at"])
+    verified = datetime.datetime.fromisoformat(discovery["verified_at"])
+    assert started.tzinfo is not None and verified.tzinfo is not None and started <= verified
+    reader_started = datetime.datetime.fromisoformat(launch["log_reader_started_at"])
+    assert reader_started.tzinfo is not None and reader_started <= started
+    event = discovery["event"]
+    assert started <= datetime.datetime.fromisoformat(event["timestamp"]) <= verified
+    fresh_identity = discovery_tools["LogIdentity"](pid, launch["executable"], started)
+    fresh_identity.observe(event, "receipt")
+    assert fresh_identity.uri == launch["vm_uri"]
+    assert discovery["origins"] and set(discovery["origins"]) <= {"stream", "backfill"}
+    stream_parser = discovery_tools["JsonLogObjects"]()
+    stream_records = stream_parser.feed((root / f"{phase}-system.log").read_text(), final=True)
+    event_file = root / f"{phase}-system-events.jsonl"
+    arrivals = [json.loads(line) for line in event_file.read_text().splitlines()] if event_file.exists() else []
+    assert [entry["event"] for entry in arrivals] == stream_records
+    for entry in arrivals:
+        assert datetime.datetime.fromisoformat(entry["arrival_utc"]).tzinfo is not None
+        fresh_identity.observe(entry["event"], "stream")
+    records_by_origin = {"stream": stream_records, "backfill": []}
+    backfill = json.loads((root / f"{phase}-backfill-status.json").read_text())
+    assert discovery["backfill_status"] == backfill
+    if backfill.get("exit_code") == 0:
+        backfill_parser = discovery_tools["JsonLogObjects"]()
+        records = backfill_parser.feed((root / f"{phase}-backfill.json").read_text(), final=True)
+        assert not backfill_parser.array or backfill_parser.closed
+        for record in records:
+            fresh_identity.observe(record, "backfill")
+        records_by_origin["backfill"] = records
+    else:
+        assert discovery["origins"] == ["stream"]
+    assert discovery["observations"]
+    assert event in [entry["event"] for entry in discovery["observations"]]
+    assert set(discovery["origins"]) == {entry["origin"] for entry in discovery["observations"]}
+    for observation in discovery["observations"]:
+        assert observation["event"] in records_by_origin[observation["origin"]]
+        fresh_identity.observe(observation["event"], observation["origin"])
 
 
 def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
     assert re.fullmatch(r"[0-9a-f]{40}", source)
     assert nonce
+    # The capture helper retains this exact committed dependency alongside this
+    # verifier; no code from the downloaded artifact is executed.
+    discovery_tools = runpy.run_path(str(pathlib.Path(__file__).with_name("run_ios_tax_phase.py")),
+                                    run_name="source_discovery_validator")
     phases = ("write", "read", "incomplete-write", "incomplete-read", "legacy-write", "legacy-read")
     identity = (root / "source.identity").read_text()
     assert f"sha={source}\n" in identity and f"nonce={nonce}\n" in identity
@@ -41,7 +91,7 @@ def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
         assert (root / f"{phase}-input-bundle.json").read_bytes() == bundle
         assert (root / f"{phase}-installed-bundle.json").read_bytes() == bundle
         launch = json.loads((root / f"{phase}-launch.json").read_text())
-        assert launch["schema"] == "tax-ios-console-launch-v1" and launch["complete"] is True
+        assert launch["schema"] == "tax-ios-system-log-launch-v1" and launch["complete"] is True
         assert launch["phase"] == phase and launch["source_sha"] == source and launch["run_nonce"] == nonce
         assert launch["pid"] == launch["vm_pid"] == receipt["pid"]
         assert launch["app_id"] == "com.genesissocietyengine.jurisMobile"
@@ -49,10 +99,7 @@ def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
         assert f"simulator={launch['simulator']}\n" in identity
         assert f"/Devices/{launch['simulator']}/" in launch["executable"]
         assert launch["executable"].endswith("/Runner.app/Runner")
-        assert type(launch["console_pid"]) is int and launch["console_pid"] > 0
-        console = (root / f"{phase}-console.log").read_text()
-        assert f"{launch['app_id']}: {receipt['pid']}" in console
-        assert f"The Dart VM service is listening on {launch['vm_uri']}" in console
+        verify_discovery(root, phase, launch, receipt["pid"], discovery_tools)
         vm = json.loads((root / f"{phase}-vm.json").read_text())
         assert vm["result"]["type"] == "VM" and vm["result"]["pid"] == receipt["pid"]
         shot = receipt["screenshot"]
