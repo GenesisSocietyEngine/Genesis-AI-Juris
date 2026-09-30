@@ -11,12 +11,13 @@ The PR merged normally at 19:30:19Z on 2026-09-30 as
 `54d6d29868db0fe0fa4c570d89571cbfcd55ed18`.
 No deployment or full product-release acceptance is claimed.
 
-A subsequent [authenticated browser exercise](AUTHENTICATED_BROWSER.md) on
-separate local source `8bfa5e7` verified actual PDF/JSON downloads, the full
-account-history record, fresh Rust parity and sign-out. Successful-login return
-raised an unexpected unload prompt and blocked the final restarted-login/history
-journey. That gate remains open; the source-specific results are kept separate
-from this accepted checkpoint.
+A subsequent [authenticated browser exercise](AUTHENTICATED_BROWSER.md) found an
+unexpected successful-login unload prompt on local source `8bfa5e7`. Corrected
+local source `53ae4ec` completed actual login, PDF/JSON delivery, authoritative
+history, sign-out, browser restart, new login and history reopen, with full
+observed-model/fresh-Rust parity and unchanged saved inputs. This closes that
+bounded local journey; hosted source gates and production-provider acceptance
+remain separate from this accepted checkpoint and the retained earlier failure.
 
 ## Source and reviewed behavior
 
@@ -232,8 +233,11 @@ its 2,036-byte receipt, with terminal GUID events, saved files and closed-profil
 History. The entire observed model/receipt matched fresh independent Node Rust.
 Only the two synthetic identity endpoints were mocked; earlier failed delivery
 and setup attempts remain recorded separately.
-Remaining acceptance includes live authenticated browser/account-history journeys,
-PDF tagging/accessibility, spoken mobile accessibility and physical-device
-checks. P3's broader iOS application matrix and interrupted aggregate-write
+The later [authenticated local journey](AUTHENTICATED_BROWSER.md) separately
+exercises real login/history routes in the emitted production Worker with a
+synthetic credential, including sign-out and a fresh login after browser restart.
+Remaining acceptance includes canonical/hosted validation of that correction,
+provider-backed identity, PDF tagging/accessibility, spoken mobile accessibility
+and physical-device checks. P3's broader iOS application matrix and interrupted aggregate-write
 journeys remain source-specific mobile work. User instruction is to use CI and
 emulators and leave physical-device checks open. No current deployment is changed.

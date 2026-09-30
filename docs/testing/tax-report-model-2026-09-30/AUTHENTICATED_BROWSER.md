@@ -1,12 +1,92 @@
-# Authenticated browser report evidence and incomplete login return
+# Authenticated browser report evidence and corrected login return
 
-The 2026-09-30 local application exercise verified actual PDF/JSON downloads,
-fresh Rust parity and an authoritative account-history event. It also found an
-unexpected unload prompt on successful-login return. The complete
-logout/restart/new-login/history journey remains open; no release acceptance is
-inferred from the completed report segment.
+The first 2026-09-30 local exercise on `8bfa5e7` verified report output and
+history but found an unexpected unload prompt on successful-login return.
+The corrected local source `53ae4ec` subsequently completed the full
+login/report/sign-out/browser-restart/new-login/history journey. Both outcomes
+remain source-specific local evidence; neither establishes production-provider,
+hosted CI or release acceptance. The original failure is retained below.
 
-## Source and runtime
+## Corrected local application journey on `53ae4ec`
+
+Source `53ae4ec500bb48619e16bad31d657ec0dbb4a70a`, tree
+`dabecc6f76564069aa3865e943830cdb1018db9d`, application-input digest
+`35f178afbdb51f4509f5e3c19525f2b32ff1aec62714794cd3f6494cd8920c98`
+approves departure only after a successful, current-authority login or profile
+save. Failed or stale responses leave unsaved-form protection intact; a thrown
+navigation restores protection. The regression suite exercises actual handlers
+and the real navigation controller. Before the fix, four of its fourteen cases
+failed; the corrected combined focused suite passed 46 cases.
+
+The full verified production build supplied the actual Worker and matched
+client assets, migrated ephemeral D1 and R2 to Miniflare 5.20260916.0-alpha /
+workerd 1.20260916.1. Edge 154.0.4258.37 used a fresh owned profile. Only a
+synthetic credential and the complete original 86,532-byte saved case were
+seeded; no sessions, report events or new calculations/receipts were seeded.
+Historical cached fields in that case were retained.
+
+The actual wrong-password form submission returned 401 and kept the form.
+The return link opened the normal unsaved-changes prompt and Stay here preserved
+the inputs. Successful login completed at 21:55:20.753Z and automatically
+returned to the exact saved-case Studio URL without a JavaScript dialog.
+Preview and PDF download each performed a fresh Rust calculation. JSON download
+delivered the matching existing receipt, generated at 21:56:27.155Z.
+
+| Actual download | Bytes | SHA-256 | Completed browser download GUID |
+| --- | --- | --- | --- |
+| PDF | 37,601 | `53ea2aaf7f05ec90a085a1cd50bd2db08ac04f0d4fee7031aeefffb3035ae03d` | `ca12cbd0-c791-4094-8548-6d6d73add892` |
+| Receipt JSON | 2,036 | `7ff8058ff6a67caadf086aaf644c488b47c6a51ecbc4b45304d247cae0746391` | `b2405eee-deb4-4a03-8550-fffc56f313d3` |
+
+The real history POST returned 201 at 21:56:28.374Z. Its whole receipt matched
+the subsequent history GET, expanded rendered details and sole D1 report event.
+Actual sign-out revoked session 1 at 21:58:09.847Z and left zero cookies.
+Browser PID 17708 and port 59616 were proved absent before the same profile
+restarted as PID 28356 on port 51573, initially with zero cookies. A new actual
+login completed at 22:00:10.606Z and automatically returned to the same case.
+A fresh preview reproduced the complete prior model; history displayed the
+same receipt as matching current content/settings, with no second report event
+or new download. The complete stored case remained unchanged throughout.
+
+Final UI sign-out revoked session 2 at 22:02:16.391Z and again left zero cookies.
+The Worker disposed normally at 22:02:45.930Z. Independent cleanup at
+22:03:04.0267082Z found both browser PIDs, Worker PID 30112, child PID 28620,
+their three ports and processes using the owned profile absent. Both observers
+recorded zero JavaScript-dialog events and zero runtime exceptions.
+
+Independent review binds 437 retained file hashes, complete observed browser
+preparations/tax models and a fresh Node Rust reconstruction, whole receipts,
+history/D1, the preserved saved case, session transitions and cleanup. Its
+receipt SHA-256 is
+`6315adba3f34a4b62859376541493af7e21838f05f828310877857e14f2eeee7`.
+There is no directly captured browser Rust wire trace; complete observed output
+and independent reconstruction are the parity evidence. All four pages of the
+actual downloaded PDF were rendered and viewed; all 27 model rows/notes and ten
+source fields matched, without clipping, overlap or glyph defects. PDF review
+receipt SHA-256 is
+`025d8912efa4a15021bc502e15cb722ddd3a7105554cb94c054b3d6e95c1c352`.
+The closed Edge History database independently records both exact GUIDs as
+completed with matching byte counts and no interruption.
+
+The first successful login body was captured. The second login finished with
+status 200 but body retrieval lost its resource after navigation; neither logout
+had a captured body or loadingFinished event. Page transitions, cookies and D1 creation/revocation
+provide the separately retained evidence. Initial rapid fill/click commands that
+produced no HTTP request remain recorded and are not counted as logins.
+The profile-save handoff has actual-handler coverage, not a browser profile-edit
+journey. The PDF remains untagged; semantic reading order, spoken accessibility,
+physical devices and provider-backed identity remain open.
+
+Evidence is local to the `account-confirmed-return` worktree under
+`.artifacts/authenticated-browser-worker/`, including the full runtime,
+`browser-2026-09-30/`, `independent-pdf-review/` and final independent audit.
+Credentials, profiles and database snapshots are excluded from publication.
+The clean-source full web suite passed at 22:14:52.342Z: 1,154 passes, zero
+failures/cancellations and three existing opt-in migration-mode skips (1,157
+tests total). Its full log SHA-256 is
+`f3a212efcc900489098e85ab3d8fd979825899c63c947751ec5d353f241d4934`.
+This is local execution; PR/main execution remains separate.
+
+## Original `8bfa5e7` source and runtime
 
 The clean compiled source was `8bfa5e75007216b7dcf5b5a5e8f48c657192e387`,
 tree `a612a8ba7b5e202c1f7542a8ba2948da22149184`, application-input digest

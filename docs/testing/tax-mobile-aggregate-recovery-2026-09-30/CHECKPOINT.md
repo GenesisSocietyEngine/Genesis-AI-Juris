@@ -168,6 +168,74 @@ P4C/P5 web-editor/version-bound report integration subsequently passed its
 in PR #77; that record lists its remaining application and accessibility gates.
 Selected emulator evidence does not establish power-loss or cross-process atomicity.
 
+## Selected-destination successor `040c580`
+
+PR #72 advanced to `040c5805e09531eed45baee4198669b0e2d5c9d4`, tree
+`364fbf4365879881ef39ff4eed16d73c77da9011`. Its bounded correction passes
+the existing isolated Simulator UUID to Flutter's supported `-d` argument.
+All 18 checks are terminal: 15 passed and three failed. This source has no
+completed six-phase application acceptance and is not merged.
+
+Both native runs explicitly passed `RunnerTests.testNativeLogisticsLifecycle()`.
+Each retained initial arm64/x86_64 and prepared x86_64 export audits, 27 fake
+verifier cases and eight real macOS fixtures:
+
+| Event | Run / job | Executed XCTest UTC / duration | Artifact / ZIP SHA-256 |
+| --- | --- | --- | --- |
+| PR | 36781641511 / 110113073774 | 22:07:03.639335Z / 0.186 s | 11129350015 / `d5eed0b0fc70c64a4c65cde4fcc875134b9162110687fa89253087cd7958ad24` |
+| Push | 36781636553 / 110113060104 | 22:08:11.332784Z / 0.947 s | 11128498414 / `d2b2443f149c96ffbdfdf46518dae3b89bbdda678ec9627ea9fc411e51e66177` |
+
+Application PR run `36781641581` / job `110113073766` failed at 22:10:59Z.
+The build completed: Xcode reported 526.3 seconds and the full Flutter command
+789.380 seconds. Effective build settings were `ARCHS=x86_64` and
+`ONLY_ACTIVE_ARCH=YES`. Installation exited zero in 27.615 seconds; the entire
+installed bundle matched, and authenticated getVM identified Runner PID 49560.
+Flutter started DDS and invoked the Dart driver. The shared 900-second
+first-phase deadline then expired with exit 124, before a selected-test
+completion or phase receipt. Hosted log-delivery timestamps place driver
+invocation about 34 seconds before nominal expiry, but buffering prevents
+treating that interval as an exact application event clock. Logs do not
+distinguish compilation, connection or requestData wait within the driver.
+This is a later failure than the preceding build/installation/discovery failures.
+No phase export audit ran, so effective build settings are not an archive audit.
+Denied process-group probes and `cleanup_incomplete` remain explicit; scoped
+Simulator shutdown is separate from proven deadline process cleanup.
+
+Artifact `11128866088` is 253,535 bytes, SHA-256
+`802cf6a7d2963ae54a6f667c95584faf22e861311ffbdc1a54c91b5f99a84a75`;
+complete log SHA-256
+`9657851091f6df6d940e39bb88b470b496406c6c9dfa33f80e2d2c85636f6aa2`.
+The companion push `36781636633` / job `110113058076` failed earlier, during
+the POSIX descendant fixture's 0.5-second startup window. Its changing heartbeat
+was never established. That failed readiness assertion does not prove a child
+survived cleanup. It reached no Simulator/build/application phase or artifact;
+full log SHA-256 is
+`eb656d69d29821d1be5747ef30520980e31f3f37b9c629381d9b4f4d878fd20a`.
+
+The third failure was web push `36781636551` / job `110113057328`: build,
+1,140 tests, both D1 guards and complete RSC/SSR parity passed, but browser
+packaging did not observe DevTools readiness within 20 seconds, then failed
+reading `DevToolsActivePort`. Its Chrome output does not establish a startup
+cause or final process state. Worker/audit gates were unreached. Artifact
+`11128811314` has SHA-256
+`2464b1f971e71035c17081d1eae8212c72abb40734c44aad7d0612cac8731b2b`.
+The companion PR web job passed the full browser/RSC/SSR, Worker and audit gates;
+both PDF cohorts, both Android/Flutter jobs and all Rust jobs passed. No old
+failed job was blindly retried or relabelled by its companion pass.
+
+Independent iOS audit binds 138 retained files and both native ZIPs plus the
+application failure: `ios-destination040-independent/receipt.json`, SHA-256
+`a43c42fed907c000879e8e03a2ddedd3e61a4c1599d2930a7c697828617fbef4`.
+The 14-job non-iOS receipt is `pr72-040c580-nonios/FINAL_VERIFICATION.json`,
+SHA-256 `b62a2941ef06c5dd2c76497466e0a7d3f9fe516af2cf9484677b256dbb866efe`.
+Both are under `.artifacts/pr68-ios-2026-09-30/`; raw logs and checked archives
+remain retained there. A reviewed test-only fixture-readiness correction is
+local. Build/runtime budget separation is being prepared with the existing
+30-minute exercise and 45-minute job bounds; it is not current-source execution.
+The current helper reinstalls the identical bundle before each phase and
+separately checks saved-state preservation; first-install-only behavior is not
+claimed for these six-phase runs.
+
 ## Subsequent main evidence
 
 Main source `0590eaf364c9cdb28abc73c2b8d2de208936ff49` has separate execution
