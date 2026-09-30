@@ -231,7 +231,8 @@ test("Worker hardening sets browser security policy without breaking public cata
   assert.equal(page.headers.get("x-existing"), "preserved");
   assert.equal(page.headers.get("content-security-policy"), CONTENT_SECURITY_POLICY);
   assert.match(CONTENT_SECURITY_POLICY, /script-src 'self' 'unsafe-inline'/);
-  assert.doesNotMatch(CONTENT_SECURITY_POLICY, /unsafe-eval/);
+  assert.match(CONTENT_SECURITY_POLICY, /'wasm-unsafe-eval'/);
+  assert.doesNotMatch(CONTENT_SECURITY_POLICY, /(?:^|\s)'unsafe-eval'(?:\s|;|$)/);
   assert.match(CONTENT_SECURITY_POLICY, /frame-ancestors 'none'/);
   assert.match(CONTENT_SECURITY_POLICY, /(?:^|; )frame-src blob:(?:;|$)/);
   assert.equal(page.headers.get("strict-transport-security"), "max-age=31536000; includeSubDomains");

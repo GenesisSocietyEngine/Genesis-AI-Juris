@@ -6,6 +6,10 @@
     "node": ">=22.13.0"
   },
   "scripts": {
+    "tax:verify": "node scripts/tax-wasm-assets.mjs --verify",
+    "tax:generate": "node scripts/tax-wasm-assets.mjs --generate",
+    "tax:rebuild-check": "node scripts/tax-wasm-assets.mjs --rebuild-check",
+    "tax:packaging": "node --import tsx scripts/verify-tax-runtime-packaging.mjs",
     "install:ci": "bash scripts/install-ci.sh",
     "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vite",
     "typecheck": "tsc --noEmit --incremental false",

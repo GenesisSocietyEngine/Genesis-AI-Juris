@@ -1,8 +1,9 @@
 const BASE_CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   // Vinext streams React hydration instructions as inline scripts. Keep those
-  // enabled while disallowing third-party scripts, eval and inline handlers.
-  "script-src 'self' 'unsafe-inline'",
+  // enabled. Rust tax WASM needs wasm-unsafe-eval; JavaScript eval, third-party
+  // scripts and inline handlers remain disallowed.
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
   "script-src-attr 'none'",
   // The graph editor uses React style attributes for node coordinates.
   "style-src 'self' 'unsafe-inline'",
