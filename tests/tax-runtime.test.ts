@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { checkedTaxRuntime, createTaxRuntimeLoader, TAX_RUNTIME_CONTRACT, TaxRuntimeError } from "../app/tax-runtime/runtime";
-import { loadNodeTaxRuntime } from "../app/tax-runtime/node";
+import { loadNodeTaxRuntime, webTaxRepository } from "../app/tax-runtime/node";
 import { verifyTaxWasmAssets } from "../scripts/tax-wasm-assets.mjs";
 
 const capabilities = JSON.stringify({ ...TAX_RUNTIME_CONTRACT, currencies: ["EUR", "GBP", "USD"] });
 const corpus = JSON.parse(await readFile(new URL("./fixtures/tax-runtime/native-corpus.json", import.meta.url), "utf8")) as { cases: { request: string; response: string }[] };
+const webCorpus = JSON.parse(await readFile(new URL("./fixtures/tax-runtime/web-corpus.json", import.meta.url), "utf8")) as { cases: { name: string; request: string; response: string }[] };
+const webSource = JSON.parse(await readFile(new URL("./fixtures/tax-runtime/web-source.json", import.meta.url), "utf8"));
 
 test("generated Rust source, tool receipt, assets and native corpus agree", () => {
   verifyTaxWasmAssets();
@@ -21,6 +23,16 @@ test("Node shared Rust runtime matches every complete native response", async ()
   assert.equal(JSON.parse(runtime.execute(JSON.stringify({ command: "tax_capabilities", padding: "x".repeat(262144) }))).detail.detail.code, "policy_rejected");
   const prepare = JSON.parse(corpus.cases[1].request);
   assert.equal(JSON.parse(runtime.execute(JSON.stringify({ ...prepare, unexpected: true }))).detail.detail.code, "invalid_payload");
+});
+
+test("Node web repository derives edited source and matches every complete web-command native response", async () => {
+  const runtime = await webTaxRepository.ready();
+  assert.equal(await webTaxRepository.ready(), runtime);
+  assert.equal(webCorpus.cases.length, 19);
+  for (const entry of webCorpus.cases) assert.equal(runtime.execute(entry.request), entry.response, entry.name);
+  const prepared = await webTaxRepository.prepare(webSource.draft, { artifact_id: "web_probe", revision: "9007199254740993", currency: "EUR" });
+  assert.deepEqual(prepared.source.descriptor, webSource.descriptor);
+  assert.equal(prepared.response, webCorpus.cases.find(entry => entry.name === "prepare")!.response);
 });
 
 test("concurrent readiness loads once and never exposes the executor before readiness", async () => {
