@@ -11,6 +11,13 @@ The PR merged normally at 19:30:19Z on 2026-09-30 as
 `54d6d29868db0fe0fa4c570d89571cbfcd55ed18`.
 No deployment or full product-release acceptance is claimed.
 
+A subsequent [authenticated browser exercise](AUTHENTICATED_BROWSER.md) on
+separate local source `8bfa5e7` verified actual PDF/JSON downloads, the full
+account-history record, fresh Rust parity and sign-out. Successful-login return
+raised an unexpected unload prompt and blocked the final restarted-login/history
+journey. That gate remains open; the source-specific results are kept separate
+from this accepted checkpoint.
+
 ## Source and reviewed behavior
 
 The accepted preservation foundation is PR #76, head

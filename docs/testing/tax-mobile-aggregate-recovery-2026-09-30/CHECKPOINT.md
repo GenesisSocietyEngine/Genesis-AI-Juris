@@ -83,7 +83,7 @@ Exact PR source `60c62862f72449e3d87d23ff85935a1b621f77b7`, tree
 `5a93eb9261ec2286ec19cd26683af0ab97517a72`, has an executed, passing
 six-phase push result. This is branch evidence, separate from the accepted
 `5436609` head and its subsequent main runs. PR #72 remains
-unmerged while its companion PR application retry is pending.
+unmerged because its companion PR application gate remains failed.
 
 Both native workflows at this exact source separately executed and passed
 `RunnerTests.testNativeLogisticsLifecycle()`. Each retained the initial
@@ -140,10 +140,26 @@ SHA-256 `2d0356ff3db8ab939de20c8bb5ecb364ebc5baf38256bf9a2bc31b6be2acbeec`;
 the failure, full log and diagnosis remain in the companion
 `ios-application-v2-stable-vm60-pr-36772419405-attempt-1/` directory.
 One retry of only the failed job was authorized without changing source,
-timeouts or assertions: attempt 2 / job `110096152290` is pending at this
-checkpoint. The successful push does not replace either PR attempt.
+timeouts or assertions. [Attempt 2 / job 110096152290](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36772419405/job/110096152290)
+also failed at 21:33:13Z during the first build. Its 900-second deadline began
+at 21:17:22.079825Z, Xcode started at 21:22:04.760544Z, and the deadline
+returned failure exit 124 at 21:32:22Z. There was no completed build,
+installation, Runner launch, VM attachment or selected-test phase. Diagnostics,
+artifact upload and scoped Simulator shutdown completed; the application-log
+query timed out and no build-stall root cause was established.
 
-Full P3 remains open. The companion PR six-phase gate is pending;
+[Artifact 11127388295](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36772419405/artifacts/11127388295)
+is 2,955,409 bytes, SHA-256
+`4d3afe0af858de301bc590d2061f0a7a41a5c3aab68a22c693203590e0f7cecb`;
+the complete job-log SHA-256 is
+`a81d4223a3a44546ee411269bf29a684d07e9e6348745fa2b7962f8c5bbc5d7d`.
+The raw capture and diagnosis remain in
+`ios-application-v2-stable-vm60-pr-retry-36772419405-attempt-2/`.
+The candidate has seventeen successful checks and one failed gate. No third
+retry, deadline increase or assertion relaxation was made. The successful
+push does not replace either PR attempt.
+
+Full P3 remains open. The companion PR six-phase gate is failed;
 iOS aggregate interruption recovery, broader stale/future/conflict journeys,
 physical-device checks, audible screen-reader and full-gesture acceptance
 also remain open.
