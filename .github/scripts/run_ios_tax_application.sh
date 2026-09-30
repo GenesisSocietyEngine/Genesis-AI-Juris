@@ -38,7 +38,7 @@ for phase in "${phases[@]}"; do
     test -d "$bundle"
     application_args+=(--use-application-binary "$bundle")
   fi
-  flutter drive --no-pub --keep-app-running "${application_args[@]}" \
+  flutter drive --verbose --no-pub --keep-app-running "${application_args[@]}" \
     --driver=test_driver/tax_application_driver.dart \
     --dart-define="JURIS_ACCEPTANCE_SOURCE_SHA=$source_sha" \
     --dart-define="JURIS_ACCEPTANCE_RUN_NONCE=$JURIS_ACCEPTANCE_RUN_NONCE" \
