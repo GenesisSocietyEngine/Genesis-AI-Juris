@@ -106,6 +106,12 @@ def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
     previous_pid = None
     bundle = (root / "write-bundle.json").read_bytes()
     assert json.loads(bundle)
+    simulator = re.findall(r"^simulator=([^\n]+)$", identity, re.MULTILINE)
+    assert len(simulator) == 1
+    preparation_sha = discovery_tools["validate_preparation"](root, source, nonce, simulator[0], bundle)
+    prepare_log = (root / "prepare.log").read_text()
+    assert re.search(r"deadline label=tax-prepare event=started pid=[0-9]+ seconds=900(?:\n|$)", prepare_log)
+    assert "deadline label=tax-prepare event=exited code=0" in prepare_log
     for index, phase in enumerate(phases):
         receipt = json.loads((root / f"{phase}.json").read_text())
         assert receipt["schema"] == "tax-mobile-application-acceptance-v2"
@@ -119,6 +125,8 @@ def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
         assert f"phase={phase} driver_exit=0" in process_log
         assert f"phase={phase} event=process_absent pid={receipt['pid']}" in process_log
         phase_log = (root / f"{phase}.log").read_text()
+        assert f"deadline label=tax-{phase} event=exited code=0" in phase_log
+        assert re.search(rf"deadline label=tax-{phase} event=started pid=[0-9]+ seconds=300(?:\n|$)", phase_log)
         selected_test = "production application tax journey across process restart"
         assert receipt["selected_test"] == selected_test
         assert selected_test in phase_log
@@ -134,6 +142,7 @@ def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
         assert launch["pid"] == launch["vm_pid"] == receipt["pid"]
         assert launch["app_id"] == "com.genesissocietyengine.jurisMobile"
         assert launch["bundle_manifest_sha256"] == hashlib.sha256(bundle).hexdigest()
+        assert launch["preparation_sha256"] == preparation_sha
         assert f"simulator={launch['simulator']}\n" in identity
         assert f"/Devices/{launch['simulator']}/" in launch["executable"]
         assert launch["executable"].endswith("/Runner.app/Runner")
