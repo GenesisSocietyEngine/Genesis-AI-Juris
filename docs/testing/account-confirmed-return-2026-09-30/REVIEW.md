@@ -31,8 +31,14 @@ The regression harness extracts and executes the actual AccountClient handlers, 
 
 Logs are retained in this worktree's ignored `.artifacts/account-confirmed-return/`. These local results initially describe the uncommitted two-file correction, not an unchanged-base application build.
 
-## Remaining gates
+## Review and application result
 
-Root independently reviewed the complete production diff and all14 actual-handler tests and found no remaining material issue. The pending guard remains protected before server confirmation, and a thrown return restores warning behavior. A named local commit precedes the new verified production build.
+Root independently reviewed the complete production diff and all 14 actual-handler tests and found no remaining material issue. The pending guard remains protected before server confirmation, and a thrown return restores warning behavior. A named local commit precedes the new verified production build.
 
-A fresh real Worker/browser run must exercise successful login return without the unexpected dialog, fresh report/history, UI sign-out, browser termination/relaunch, new UI login, fresh preview and the persisted full receipt. No corrected browser, unified CI, publication or merge success is claimed here yet. Existing physical mobile, spoken accessibility and broader production acceptance remain outside this bounded correction.
+The reviewed correction was committed as `53ae4ec500bb48619e16bad31d657ec0dbb4a70a`. A fresh isolated `npm ci` completed without changing lock bytes. Exact raw-input verification matched all 429 committed application input files; the fresh verified production build passed, and client/RSC/SSR manifests bind that exact source and application digest `35f178afbdb51f4509f5e3c19525f2b32ff1aec62714794cd3f6494cd8920c98`.
+
+The [actual Worker/browser application review](BROWSER_APPLICATION.md) closes the bounded corrected login-return journey. Real failed-password input and departure protection remain intact. Two successful UI logins returned automatically without an unload dialog, separated by explicit sign-out and browser termination/restart. Fresh report output, completed PDF and receipt JSON downloads, complete account-history/D1 parity, a fresh preview after the new login, unchanged saved-case bytes and final cleanup were independently reviewed. The second login and logout response-body capture limits remain explicit in that review; the profile-save path remains covered by handler tests rather than a separate browser edit journey.
+
+After cleanup, the full existing web suite ran on the same clean source with Node 22.23.2 and concurrency 2: 1,157 tests total, 1,154 passed, zero failed/cancelled, and three existing opt-in historical migration checks skipped. It exited 0 at `2026-09-30T22:14:52.3420791Z`. The full log SHA256 is `f3a212efcc900489098e85ab3d8fd979825899c63c947751ec5d353f241d4934`; source-bound logs and the exit receipt remain under `.artifacts/account-confirmed-return/`. The skipped historical migration mode is not claimed as executed.
+
+This follow-up changes only the review documents. Hosted exact-source CI, canonical reconciliation, publication and merge remain separate gates. Existing physical mobile, spoken accessibility, untagged-PDF accessibility and broader provider/production acceptance remain outside this bounded correction.
