@@ -264,8 +264,13 @@
     },
     {
       "path": "crates/juris-mobile-bridge/src/tax.rs",
-      "bytes": 6640,
-      "sha256": "448fb14f718b2ac2444c11dff939bc7515fef249b30bbdb04698f3fb9e04662a"
+      "bytes": 7113,
+      "sha256": "f482e9ab0a47e44ff5f6fa40da5d732d0e2c31084cae434f2950593134f7e067"
+    },
+    {
+      "path": "crates/juris-mobile-bridge/src/tax/web.rs",
+      "bytes": 4990,
+      "sha256": "bb7b01e11d7475abd74c5a7e8bf4dc0252b0ffdf2d64f4faa8da6810348507be"
     },
     {
       "path": "crates/juris-mobile-bridge/tests/bridge_protocol.rs",
@@ -296,6 +301,16 @@
       "path": "crates/juris-mobile-bridge/tests/tax_commands.rs",
       "bytes": 6352,
       "sha256": "d7ed643b9d7b3569f5e3a63b607fb04f098dd368e29377ea8ac7498e661d8dfa"
+    },
+    {
+      "path": "crates/juris-mobile-bridge/tests/tax_native_compatibility.rs",
+      "bytes": 3624,
+      "sha256": "9a15e5c921f0a9672545d9d483a3eed3875fb58a0ef5a38bfe29877d566816c8"
+    },
+    {
+      "path": "crates/juris-mobile-bridge/tests/tax_web_commands.rs",
+      "bytes": 5913,
+      "sha256": "10a1ebecc1486799bdd2ebaa7bab13a89674de4263b943f836bbf81fcb75e4b7"
     },
     {
       "path": "crates/juris-mobile-ffi/Cargo.toml",
@@ -734,8 +749,8 @@
     },
     {
       "path": "crates/juris-tax-economics/src/adapters/bindings.rs",
-      "bytes": 10860,
-      "sha256": "36b9146b66edf8bd06b79a72c24a768535428649d265789f1fa31b74d949afae"
+      "bytes": 11605,
+      "sha256": "59606700998b41678deec125d19ab93f6d3d2c1f7d331a2b940ffd122052ea2a"
     },
     {
       "path": "crates/juris-tax-economics/src/adapters/legacy.rs",
@@ -818,6 +833,11 @@
       "sha256": "728f227d952218c66af48c6de7883bd69491641a68f709b020d35f51c0488f09"
     },
     {
+      "path": "crates/juris-tax-wasm/examples/web_corpus.rs",
+      "bytes": 7229,
+      "sha256": "0de96cb27093abff1da6db6057d03b593e2ab5d44b068af9a4adac5e906cd680"
+    },
+    {
       "path": "crates/juris-tax-wasm/src/lib.rs",
       "bytes": 273,
       "sha256": "4f44b4b0c293b8b79c40adba60fdadd8258895ebe7ed4bd8e44c5452e2ef748a"
@@ -829,8 +849,13 @@
     },
     {
       "path": "scripts/tax-wasm-assets.mjs",
-      "bytes": 7778,
-      "sha256": "c0e7c1c3390d200734b2bad42af504e48eb5245f936dcea63fb98c14edf58dfa"
+      "bytes": 8085,
+      "sha256": "dd949b3b42b681870dbbcbb2058eb4d80a3d7d1594f84f8c1669be0edc7bf458"
+    },
+    {
+      "path": "tests/fixtures/tax-runtime/web-source.json",
+      "bytes": 10744,
+      "sha256": "d298e5f39ad1c97de5b1cebb1edefafa4df69cfb18229bfe78dfb3c9032e51ff"
     }
   ],
   "artifacts": [
@@ -846,8 +871,8 @@
     },
     {
       "path": "app/tax-runtime/generated/juris_tax_wasm_bg.wasm",
-      "bytes": 885797,
-      "sha256": "0da70796c94695e8538c89d6d6dc875ea5b762b659cb9c476f02d4503357350a"
+      "bytes": 926022,
+      "sha256": "2dfdd6b2961b8965c3ab92d9976f32b4a4b1ccbc3c9a0aac0594b7c05d68510d"
     },
     {
       "path": "app/tax-runtime/generated/juris_tax_wasm_bg.wasm.d.ts",
@@ -858,6 +883,11 @@
       "path": "tests/fixtures/tax-runtime/native-corpus.json",
       "bytes": 375673,
       "sha256": "ab5de4a5b07aed8c6e7f95c4130e32a26b6c1d6cdf6744f1c0e553d75a230a57"
+    },
+    {
+      "path": "tests/fixtures/tax-runtime/web-corpus.json",
+      "bytes": 47729,
+      "sha256": "9233de2f2c64e6c4194c34981ea81d0d3b8e4eaa0e5afed42a9f85de8a33b239"
     }
   ]
 }
