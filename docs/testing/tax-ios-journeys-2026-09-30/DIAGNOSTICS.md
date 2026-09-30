@@ -16,6 +16,24 @@ its log was empty. Six-phase acceptance remains false. Retained artifact
 Earlier two-phase application failures sometimes stopped after a successful
 Xcode build without VM-service/test evidence; a successful build is insufficient.
 
+The unchanged-source push run `36729748124` / job `109935886713` also failed,
+at `2026-09-30T15:45:08Z`. Its selected tests passed for write, read and
+incomplete-write, with PIDs 37135, 40662 and 43609 each proved absent afterward.
+All three phases used bundle manifest SHA-256
+`c4868e0418f2370a153f14118f600de4a389c21ce1a327d6a2d29ac5a0e22c63`.
+The incomplete draft exercised Rust `missing_tax_base`, retained the exact blank
+rate and saved no calculation. Incomplete-read launched at `15:33:10.464500Z`
+but its phase log remained empty through the `15:44:50.584400Z` timeout.
+Retained artifact `11109161778` (536,446 bytes), SHA-256
+`8f8f87a9d68a28fd0ef6e62fc85a076afbade80c8cdba3abbaa48fb4549b97f0`,
+and independent prefix verification establish three phases only. The reason
+the fourth launch stalled is unknown. No six-phase acceptance is claimed.
+
+The diagnostic candidate reconciles canonical main
+`33c5c7867acf70add458ebee926db17d89b69711`, which includes accepted PR #69.
+These receipts describe the older PR head, not that main commit or the new
+diagnostic candidate. Both older application runs finished before publication.
+
 The correction adds Flutter verbose logging and a failure-only collector before
 the existing always-upload step. The collector accepts only a specific Simulator
 UUID, records tool failures/timeouts without inventing success, and limits each
