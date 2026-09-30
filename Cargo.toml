@@ -17,6 +17,7 @@ members = [
     "crates/juris-mobile-bridge",
     "crates/juris-mobile-ffi",
     "crates/juris-tax-economics",
+    "crates/juris-tax-wasm",
 ]
 resolver = "2"
 
@@ -32,3 +33,11 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10.9"
 thiserror = "2.0"
+
+[profile.tax-wasm]
+inherits = "release"
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"

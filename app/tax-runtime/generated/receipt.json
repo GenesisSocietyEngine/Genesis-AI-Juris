@@ -1,0 +1,862 @@
+{
+  "schema": "juris.tax-wasm-assets.v1",
+  "rust": "1.95.0",
+  "wasmBindgen": "0.2.128",
+  "generatorHost": "x86_64-pc-windows-msvc",
+  "target": "wasm32-unknown-unknown",
+  "profile": "tax-wasm",
+  "inputs": [
+    {
+      "path": "Cargo.lock",
+      "bytes": 10442,
+      "sha256": "fe9aa9cc596d84e1222fbd84d5d7f407e4124a284c22c934df3af82ee2d63dbe"
+    },
+    {
+      "path": "Cargo.toml",
+      "bytes": 926,
+      "sha256": "401100fb4fe346f2d1a25345723ac479e306f034924adcaa767c0c7db0c258d8"
+    },
+    {
+      "path": "content/cases/failed_erp.json",
+      "bytes": 1610,
+      "sha256": "a1ae7f1883a81a56e02a355c941631031a1f60721c8f6ec1b6044e6b92c98533"
+    },
+    {
+      "path": "content/cases/goldenshell_recall_at_dawn.scenario.json",
+      "bytes": 60050,
+      "sha256": "8179170c58eec5a51c9d53a8698bd868244ecd29f8eed4c0dbc0ee10657b469f"
+    },
+    {
+      "path": "content/cases/greenfire_first_72_hours.scenario.json",
+      "bytes": 29969,
+      "sha256": "d6bd5e4d8605fe97673e1f6626d8b7b2bb78d82c396336146a997a891f518876"
+    },
+    {
+      "path": "content/cases/unpaid_logistics_invoices.scenario.json",
+      "bytes": 11675,
+      "sha256": "fc0831378016e4f98e1d5cd2864ee586670510bd6e0b8e3cf2b8616c200df408"
+    },
+    {
+      "path": "content/fixtures/authoring/adverse_judgment_with_remedies.json",
+      "bytes": 8366,
+      "sha256": "107b3f0e4523bee5492e1ff3ff1785866cc61700d5b48990f772741d97248e09"
+    },
+    {
+      "path": "content/fixtures/authoring/dossier_projection_v1.json",
+      "bytes": 12038,
+      "sha256": "b373fcfd7d9f4868acb2a2c92153115709c60b4169049004da9a973832b00e72"
+    },
+    {
+      "path": "content/fixtures/valid/minimal-scenario.yaml",
+      "bytes": 1486,
+      "sha256": "451d4edcab5125879d82dd1264a4c11baae0cd43b215656691234bda25dbc7af"
+    },
+    {
+      "path": "crates/juris-ai/Cargo.toml",
+      "bytes": 253,
+      "sha256": "8b36beda59a6a46631d090651ab339e4dae230c6c1957c3f4932cc9d1145313b"
+    },
+    {
+      "path": "crates/juris-ai/src/lib.rs",
+      "bytes": 9476,
+      "sha256": "a53d4722255cb90b1cdd8c08deb5a039f41822e0facbf957b4e8ebe0455a4166"
+    },
+    {
+      "path": "crates/juris-case-catalog/Cargo.toml",
+      "bytes": 237,
+      "sha256": "75be45b29c29ef49450c36370e09635c700f7cba1d7d7ff93e293571ec5a90c4"
+    },
+    {
+      "path": "crates/juris-case-catalog/src/diagnostic.rs",
+      "bytes": 2743,
+      "sha256": "53d08a80d3b58eccd8bd0c449e542567a450b0863af0d8b9ac76ebc22d08304b"
+    },
+    {
+      "path": "crates/juris-case-catalog/src/id.rs",
+      "bytes": 4240,
+      "sha256": "0310f59c5218ca78f284d3c0a264303dac4c2f4a761bc8e40a0ad186a1bd009b"
+    },
+    {
+      "path": "crates/juris-case-catalog/src/lib.rs",
+      "bytes": 1533,
+      "sha256": "4c3f4ee7d38ab38da4d9f5b00a16f2175898284199f1ff943b3fa94819b0b0cd"
+    },
+    {
+      "path": "crates/juris-case-catalog/src/loader.rs",
+      "bytes": 3361,
+      "sha256": "43922c150b600fa395bcdd6b5dfead59d4bcd39dc5fdb739a6f22f1c6e24ae80"
+    },
+    {
+      "path": "crates/juris-case-catalog/src/model.rs",
+      "bytes": 4673,
+      "sha256": "5654c08e98ebed9736a7cd5c623afa73bdb39b2ef8a136fa34420a6af26ae7e7"
+    },
+    {
+      "path": "crates/juris-case-catalog/src/validation.rs",
+      "bytes": 16052,
+      "sha256": "6f230a967fc9ea63ab8f9d89aa5762898464a35e8d0ac34d242789952b5972d6"
+    },
+    {
+      "path": "crates/juris-case-catalog/tests/case_catalog_v1.rs",
+      "bytes": 10725,
+      "sha256": "2d67fbb8068bf31f0cdffb606ca13caff0b4ef40e5d015030b0775e9f0770286"
+    },
+    {
+      "path": "crates/juris-cli/Cargo.toml",
+      "bytes": 274,
+      "sha256": "247795983c1452a89cfaec838f3b2c8c2b7318229951bafff1ecf3dd6da11e65"
+    },
+    {
+      "path": "crates/juris-cli/src/main.rs",
+      "bytes": 10448,
+      "sha256": "63b50e0880170b63f06f3c6f5932c6caad14eeae9a7627005e36de0e892121fb"
+    },
+    {
+      "path": "crates/juris-content/Cargo.toml",
+      "bytes": 232,
+      "sha256": "b9bfbbe5059481eea0a2959f65d65d2ca9475003294c5e9d456d872c627158ba"
+    },
+    {
+      "path": "crates/juris-content/src/lib.rs",
+      "bytes": 2981,
+      "sha256": "9584f9eb8a8dfa8fff29219ab6c01c55978768783fed45c1b7a511bcf16032e9"
+    },
+    {
+      "path": "crates/juris-core/Cargo.toml",
+      "bytes": 174,
+      "sha256": "ddfb4be85a7b713b1cf59de3196f7959053a6bd991e99f0a9f23d282c2aa5cf0"
+    },
+    {
+      "path": "crates/juris-core/src/lib.rs",
+      "bytes": 7574,
+      "sha256": "11603eaaa216f0f58208b3d98d85dcfb744f2c304a36f4de151c03039cdb4d73"
+    },
+    {
+      "path": "crates/juris-domain/Cargo.toml",
+      "bytes": 216,
+      "sha256": "dd4e6cba442614d15db0e277acc8c36ac31dc527cfb5df88ca15b14329910214"
+    },
+    {
+      "path": "crates/juris-domain/src/lib.rs",
+      "bytes": 14957,
+      "sha256": "1152fa4d928e1d9082d8c08d9adc915f9877595109f8561ea33fca36184c948d"
+    },
+    {
+      "path": "crates/juris-engine/Cargo.toml",
+      "bytes": 549,
+      "sha256": "b5365e0d4119d818eb01c5cdcfc7e9e32d5532866e4945bdec75f2748c16771e"
+    },
+    {
+      "path": "crates/juris-engine/src/bin/juris-scenario-fingerprint.rs",
+      "bytes": 5677,
+      "sha256": "1ec9ee5cef3fbc450073f4d0f52e2614826b0fbf5ddcac85d9a1d47518f08576"
+    },
+    {
+      "path": "crates/juris-engine/src/lib.rs",
+      "bytes": 80692,
+      "sha256": "4588aef2cca736a9a66a2a2d2a968547ad106c2a02eef3fee05c6b574e9bb61f"
+    },
+    {
+      "path": "crates/juris-engine/src/scenario_runtime.rs",
+      "bytes": 80067,
+      "sha256": "7f7fed9221740e28575b27820a309066c28f0db1096d3cd8149f437061c8d38b"
+    },
+    {
+      "path": "crates/juris-engine/src/scenario_runtime/content_inventory.rs",
+      "bytes": 9499,
+      "sha256": "99025e2b26519d55e434fdfb74e68e773acac8d5d60f1da94a9450f2f3c8e141"
+    },
+    {
+      "path": "crates/juris-engine/src/scenario_runtime/dossier.rs",
+      "bytes": 9687,
+      "sha256": "e954a1fd8c1a1a8855c4f26ec761ab49e932a52ca77365d0c2dc05a2436f184d"
+    },
+    {
+      "path": "crates/juris-engine/src/scenario_runtime/persistence.rs",
+      "bytes": 24374,
+      "sha256": "3784ae72d70734c280b76a909b76d34af260c8b882ae8ebf5b73c17d1fb44ec9"
+    },
+    {
+      "path": "crates/juris-engine/src/scenario_runtime/pressure_countermove.rs",
+      "bytes": 3279,
+      "sha256": "152a9eb6fa7ad5c778f98ec03ff23ff51ac0367d5670c5a18532b125f28a4c09"
+    },
+    {
+      "path": "crates/juris-engine/src/scenario_runtime/training_debrief.rs",
+      "bytes": 5460,
+      "sha256": "7a297afd8e69468971ba5e117359c75f7f9ebad4ca3dd02f75e8b7e620ae9069"
+    },
+    {
+      "path": "crates/juris-engine/tests/content_inventory.rs",
+      "bytes": 9867,
+      "sha256": "17f7fd8096713c3e2bdf7347de2bba6efeeeee5d6366827dd4178bd926253e45"
+    },
+    {
+      "path": "crates/juris-engine/tests/desert_water.rs",
+      "bytes": 27410,
+      "sha256": "80f2e81b4313f975d27fc18f02adbe888455095bf930d797a502f7e0a28e1ff5"
+    },
+    {
+      "path": "crates/juris-engine/tests/dossier_projection.rs",
+      "bytes": 29473,
+      "sha256": "cb7ba9c1bd190532a1d6caa5e80dd08538ea20aa0830850406af73f52d082469"
+    },
+    {
+      "path": "crates/juris-engine/tests/failed_erp_persistence.rs",
+      "bytes": 13229,
+      "sha256": "af77a97acdaa5e33ea87e4f98c57428cd35d5dbe90d04e7bac38eb510a7c4930"
+    },
+    {
+      "path": "crates/juris-engine/tests/fixtures/persistence/provenance/generate_06e566a.rs",
+      "bytes": 6409,
+      "sha256": "c6370575dc5e3ffb878a0e907acb3c5d2575af77b0c0767f9caeb9a164a01f91"
+    },
+    {
+      "path": "crates/juris-engine/tests/fixtures/persistence/provenance/generate_0c8c2cc.rs",
+      "bytes": 1789,
+      "sha256": "d53fd351963920aad3b3801194495aa186fca0b24fa50ba1626869e2816e3519"
+    },
+    {
+      "path": "crates/juris-engine/tests/greenfire_pressure_pilot.rs",
+      "bytes": 12303,
+      "sha256": "41d630efd10f7a6dfce59c2f8e5cc6c5a6a10573326a6fa77b39d36446dbbfa2"
+    },
+    {
+      "path": "crates/juris-engine/tests/pressure_countermove.rs",
+      "bytes": 6604,
+      "sha256": "a1434cec89295f7a9da962bed02f4969afdaed72d7d650bafa937aea4109ffe5"
+    },
+    {
+      "path": "crates/juris-engine/tests/runtime_primitives.rs",
+      "bytes": 26032,
+      "sha256": "8b294136e5661588aec0b584653a1c452751dae34b62917a69cd10bc2698a49e"
+    },
+    {
+      "path": "crates/juris-engine/tests/scenario_persistence.rs",
+      "bytes": 35337,
+      "sha256": "001843f2d68f848c3c0f9fbd3a0627e1fc4e042a2d83b1639d2ffea82f37228e"
+    },
+    {
+      "path": "crates/juris-engine/tests/scenario_runtime.rs",
+      "bytes": 23629,
+      "sha256": "2b341f1007eabc6cd6ee9b2ec84e028ddcdc6063bb7c5693bd10903aa3483632"
+    },
+    {
+      "path": "crates/juris-engine/tests/snapshot_visibility.rs",
+      "bytes": 32880,
+      "sha256": "e300851b20b5e7d5b9088eafb96e9249bf41869261d9c4be434a10df20de29a9"
+    },
+    {
+      "path": "crates/juris-engine/tests/timing_primitives.rs",
+      "bytes": 20427,
+      "sha256": "b4155ad7c0ede864d2650bd2df2e41b64f9099ab142165bc63e815fdd86b5724"
+    },
+    {
+      "path": "crates/juris-mobile-bridge/Cargo.toml",
+      "bytes": 469,
+      "sha256": "233a455cac8eb470a6b236423959c9133599c89f74e1ba1eb09020b90d789df7"
+    },
+    {
+      "path": "crates/juris-mobile-bridge/src/lib.rs",
+      "bytes": 12212,
+      "sha256": "4d619f5c3ddd24f338012150e3def2fb98a1f37742f250b81395294eb6cba738"
+    },
+    {
+      "path": "crates/juris-mobile-bridge/src/tax.rs",
+      "bytes": 6640,
+      "sha256": "448fb14f718b2ac2444c11dff939bc7515fef249b30bbdb04698f3fb9e04662a"
+    },
+    {
+      "path": "crates/juris-mobile-bridge/tests/bridge_protocol.rs",
+      "bytes": 52685,
+      "sha256": "2d9ba1ffea635cd36a0379560ba3c17203c600e8bb7c87586bb53726a6e17ce7"
+    },
+    {
+      "path": "crates/juris-mobile-bridge/tests/content_retention.rs",
+      "bytes": 6153,
+      "sha256": "07d3ed2889c0a0e54fe871b0c9aa397d4824a08dc024f1b8e9f50bb0e765881a"
+    },
+    {
+      "path": "crates/juris-mobile-bridge/tests/desert_water.rs",
+      "bytes": 4638,
+      "sha256": "54b5d9a4932e81bfe2e5be5ff2a92d7319df26222eada3727b3d74fb94049767"
+    },
+    {
+      "path": "crates/juris-mobile-bridge/tests/desert_water_budget.rs",
+      "bytes": 5823,
+      "sha256": "fb39dc63c84ad3c2fbb17a9711176714c3e5752874f44cef617da1bf6ea02ea1"
+    },
+    {
+      "path": "crates/juris-mobile-bridge/tests/failed_erp_persistence.rs",
+      "bytes": 5217,
+      "sha256": "057d2b7b0e92df215aa03c9428146eaebc5322ac5dcb68c92d1a853cff05d1fc"
+    },
+    {
+      "path": "crates/juris-mobile-bridge/tests/tax_commands.rs",
+      "bytes": 6352,
+      "sha256": "d7ed643b9d7b3569f5e3a63b607fb04f098dd368e29377ea8ac7498e661d8dfa"
+    },
+    {
+      "path": "crates/juris-mobile-ffi/Cargo.toml",
+      "bytes": 295,
+      "sha256": "380411567d6962f07737ced418721180975c3463a9bd1c7613c3d2962f55e2e1"
+    },
+    {
+      "path": "crates/juris-mobile-ffi/src/lib.rs",
+      "bytes": 34056,
+      "sha256": "0722916369f3cdcc9676b30a5429b2ebf27144a34f678371ee1ad265630c9895"
+    },
+    {
+      "path": "crates/juris-mobile-ffi/tests/content_retention.rs",
+      "bytes": 4233,
+      "sha256": "7197d023158fda95775502a00919bfffbe43774dfc277cbe850859c31241ab9e"
+    },
+    {
+      "path": "crates/juris-mobile-ffi/tests/desert_water.rs",
+      "bytes": 2511,
+      "sha256": "3b290d7f699f4ba54137f201e7b76d74eecd48fee70fca9976e03ffaf3044779"
+    },
+    {
+      "path": "crates/juris-mobile-ffi/tests/failed_erp_persistence.rs",
+      "bytes": 3879,
+      "sha256": "a8d6c5ae45c2fc2cece22548792006b99bba027c17d181a26f30e748009a3c44"
+    },
+    {
+      "path": "crates/juris-mobile-ffi/tests/pressure_countermove.rs",
+      "bytes": 7352,
+      "sha256": "13352ffdbd88c9d8a0fb2f4af760fbcdc6dc527de7d23ae8dcad6fd112db61be"
+    },
+    {
+      "path": "crates/juris-mobile-ffi/tests/tax_ffi.rs",
+      "bytes": 1529,
+      "sha256": "70e99627d7962992f6719b38b6b8131063c57f09208755180e4e19738fa80d42"
+    },
+    {
+      "path": "crates/juris-scenario-builder/Cargo.toml",
+      "bytes": 297,
+      "sha256": "583e8c06cd7817bc41f196f3f7be1a99b8a0dfb17016fa01257fa0e771a9b646"
+    },
+    {
+      "path": "crates/juris-scenario-builder/src/cli.rs",
+      "bytes": 9564,
+      "sha256": "a621ca7fdacb2ee27f9b1b46e1233825ba1150e6c4dbd24cd5c0bbd58e29335d"
+    },
+    {
+      "path": "crates/juris-scenario-builder/src/error.rs",
+      "bytes": 2042,
+      "sha256": "e4e4e81479f8a53985605fdc0b87e15fa01e258a96c5ec2ee75a02b2cbf7c98c"
+    },
+    {
+      "path": "crates/juris-scenario-builder/src/generator.rs",
+      "bytes": 5699,
+      "sha256": "4f8bf686301262b2b48347f5ff2e3043e643af6640d52cef5039c433e4deacde"
+    },
+    {
+      "path": "crates/juris-scenario-builder/src/lib.rs",
+      "bytes": 1279,
+      "sha256": "f6d6b6ecfcbbccaba083564f5a12fade54e9d9df80e6a1779d839ef9937df4ad"
+    },
+    {
+      "path": "crates/juris-scenario-builder/src/main.rs",
+      "bytes": 321,
+      "sha256": "03767acf44d73502637b3ade7cf25608ab6b508c1560fbb86dc4d343bcabbdd1"
+    },
+    {
+      "path": "crates/juris-scenario-builder/src/template.rs",
+      "bytes": 1450,
+      "sha256": "57caadf17b3fb3a6a66f5214f78d05d6551ec668be0e8ab9f3981e1433cd0b11"
+    },
+    {
+      "path": "crates/juris-scenario-builder/src/writer.rs",
+      "bytes": 5004,
+      "sha256": "8d02f7b41d6ecb6507b53a146eb491835b85e5874af0a1565e54833aa3af9b3a"
+    },
+    {
+      "path": "crates/juris-scenario-builder/tests/scenario_builder_v1.rs",
+      "bytes": 12224,
+      "sha256": "5865ede7b17f90cfbb8c0138aefc89a560368fd34cf8aa06e30911bada587068"
+    },
+    {
+      "path": "crates/juris-scenario-diagnostics/Cargo.toml",
+      "bytes": 307,
+      "sha256": "05c21bfbc09e00fc8cf48f6396ce7e87df389515aef7c67ee09933538f46bfd1"
+    },
+    {
+      "path": "crates/juris-scenario-diagnostics/src/condition_analysis.rs",
+      "bytes": 6621,
+      "sha256": "e504adee58ebccd41876bbe06850be693d570c32a8b774210313b65f9466e4c3"
+    },
+    {
+      "path": "crates/juris-scenario-diagnostics/src/diagnostic.rs",
+      "bytes": 5314,
+      "sha256": "2b86f6ad0355f3d0be112a2dfd9a3e7cc8afaa9ede2650da9292d2d0bb52f8df"
+    },
+    {
+      "path": "crates/juris-scenario-diagnostics/src/lib.rs",
+      "bytes": 1713,
+      "sha256": "de05932a9eb71a8b4b733f665b7ccc14488a07734deb68be8357e7c729391291"
+    },
+    {
+      "path": "crates/juris-scenario-diagnostics/src/main.rs",
+      "bytes": 2531,
+      "sha256": "fcdd9497a6580aeb08ad064ff13a870110048f6ff605660cde02050466259b37"
+    },
+    {
+      "path": "crates/juris-scenario-diagnostics/src/outcome.rs",
+      "bytes": 14389,
+      "sha256": "2a5f6ed7f0e4831e3f28d9b8c67d77688411bcff7d89146108f63d0c7a20778d"
+    },
+    {
+      "path": "crates/juris-scenario-diagnostics/src/temporal.rs",
+      "bytes": 11863,
+      "sha256": "8ba6309577b7e9c39c7b361a34fc48da56a4c36bf44d50c8686bc63194578cd4"
+    },
+    {
+      "path": "crates/juris-scenario-diagnostics/tests/catalog_scenarios.rs",
+      "bytes": 1391,
+      "sha256": "910fa4b1a123e52731d71d49f4a1798f120748ed64ab1217a67db41feb16fe42"
+    },
+    {
+      "path": "crates/juris-scenario-diagnostics/tests/desert_water.rs",
+      "bytes": 627,
+      "sha256": "6ffabe12b8d45fcf56d422dd754900acda035a34cfefcb07b061b84ca564239d"
+    },
+    {
+      "path": "crates/juris-scenario-diagnostics/tests/lost_is_not_closed.rs",
+      "bytes": 1405,
+      "sha256": "b79b5f325d6bf14473a05bfe72b1871f4c6bafafb5a2c656568356eab417b48b"
+    },
+    {
+      "path": "crates/juris-scenario-diagnostics/tests/temporal_outcome_diagnostics.rs",
+      "bytes": 16870,
+      "sha256": "1748352626d4dcfd2e353765a6584ee1f6fc570e7c72bb67b743863fd6f5a6b8"
+    },
+    {
+      "path": "crates/juris-scenario-schema/Cargo.toml",
+      "bytes": 309,
+      "sha256": "be9c17f94e933564f87952d74ba6e995168cc2012994d106e5e91ad89497d484"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/action.rs",
+      "bytes": 3277,
+      "sha256": "6575c8780e1c1e2f3f289220acbcc4210aa12d528710517c0b0d77b16e583ba7"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/actor.rs",
+      "bytes": 892,
+      "sha256": "d21f303cc986dd772848983039413c6882046d4684b76b99c1c74c35251d6b5e"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/async_task.rs",
+      "bytes": 1356,
+      "sha256": "7111875b0be496a2984d4b26048755067e06c8b5dd41aadd95803c6d74de96af"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/condition.rs",
+      "bytes": 1936,
+      "sha256": "c39d772bbd1d722d0639c53306f299eec48ccf779dbba23be4506583d4083529"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/deadline.rs",
+      "bytes": 1585,
+      "sha256": "0e54b973eb25e3c3d605a730cf10a90fd944e6b923a4248a4a40bec592884dbb"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/decision.rs",
+      "bytes": 3471,
+      "sha256": "c8849e554957aa11db04f71c0aa326e44880a074290028c82d7e0e1a80f4fc4a"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/effect.rs",
+      "bytes": 2308,
+      "sha256": "033c928666f8ae96b0b4b5883c6875ae57804788d34de10e294042d1bcbe41e7"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/event.rs",
+      "bytes": 1969,
+      "sha256": "e42ceafb400b898e2941e2172fcafbf7f4979841f3dbf1eb82809bfbd42f1b9f"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/evidence.rs",
+      "bytes": 1163,
+      "sha256": "79eac368a004a6931ec26c3df925ef8579a23d32ec0f29686f598f0b6102fbc3"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/fact.rs",
+      "bytes": 1011,
+      "sha256": "7a23fa85da41ee7e42e3fcabe71c4dececc69dfd30e14199339d39d9169a3fdf"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/ids.rs",
+      "bytes": 2640,
+      "sha256": "cdfc26cd7543581259f5676ab386d06a8f3489e9efdb6d2a7d52761ada86ccc4"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/inbox.rs",
+      "bytes": 1199,
+      "sha256": "69f276b51343edfdad71294fe05bf30bb6bf29c75797c18895f1a3cb5252aee5"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/integer.rs",
+      "bytes": 1204,
+      "sha256": "084fead159fa922b9fdcff6e524fc8a4eda02ead9b6ea53c6f5e700c68bfe979"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/lib.rs",
+      "bytes": 2210,
+      "sha256": "cf5b2a29f78eec3f1ca09fd3ef6b5a9c97f5dadeef9331a6d2209f711d6b2bab"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/lifecycle.rs",
+      "bytes": 3200,
+      "sha256": "1ba6f7fabc08cd209385383bdd276e0cf1065a4e9368a84c5bf24c73b22f23a4"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/outcome.rs",
+      "bytes": 580,
+      "sha256": "4bd2a0bc441b028e15cd8fbd7b34e26dc80b748c65ae7dc38ef6907b8c78c60d"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/pressure.rs",
+      "bytes": 740,
+      "sha256": "7c2f016e25c99a287f277697ce9ca2f78ce203cb587159bdef537812714493b7"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/scenario.rs",
+      "bytes": 6192,
+      "sha256": "9bafe8be5292a8168255d186221041964e1a8401211ff29e9a047fbc1ce922d9"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/stage.rs",
+      "bytes": 1345,
+      "sha256": "a3f9b87befbda7a09a6ee69899c4271a7925f9b69f86ce4f9fb6f5637556a6a8"
+    },
+    {
+      "path": "crates/juris-scenario-schema/src/timing.rs",
+      "bytes": 1371,
+      "sha256": "00a595a0dbd1a6ee506a64b7e62566e6026ae1a840bda05a9744617ee933f1b6"
+    },
+    {
+      "path": "crates/juris-scenario-schema/tests/schema_roundtrip.rs",
+      "bytes": 13480,
+      "sha256": "d13c8fc9681bafe4778f66ecc54ff692767bb6f5aba132eeac6cf6d4b6c4cfa2"
+    },
+    {
+      "path": "crates/juris-scenario-simulator/Cargo.toml",
+      "bytes": 391,
+      "sha256": "be75ff06ebc77b0b63a5d022a1334e08a72665377740060879d9dda037b36480"
+    },
+    {
+      "path": "crates/juris-scenario-simulator/src/cli.rs",
+      "bytes": 7371,
+      "sha256": "6509efe4ec4ff952b0aa8e6871f182b55d2cf1b106e165167b73e50aafe83b6e"
+    },
+    {
+      "path": "crates/juris-scenario-simulator/src/document.rs",
+      "bytes": 4320,
+      "sha256": "794ab5f6f937a664f9a8f0c288328e0fcf14b385df422a7f20291bfd57690669"
+    },
+    {
+      "path": "crates/juris-scenario-simulator/src/engine.rs",
+      "bytes": 71541,
+      "sha256": "8827604b544feb8481cd4327b483ee48654e37a606d7fbaa91715b811961cdb9"
+    },
+    {
+      "path": "crates/juris-scenario-simulator/src/error.rs",
+      "bytes": 5973,
+      "sha256": "27faea2a0c69598d24d8c52cf35ca10b759a75709060107e654ffded8381856e"
+    },
+    {
+      "path": "crates/juris-scenario-simulator/src/lib.rs",
+      "bytes": 833,
+      "sha256": "8518a1c37bb5bfbf840dd8dcae772daa6eccf95ad99c1b21f546cd2128722e30"
+    },
+    {
+      "path": "crates/juris-scenario-simulator/src/main.rs",
+      "bytes": 327,
+      "sha256": "aa9a69624ab727cad8350607324498ca4a8e4c01783e593cb1a4dba059041f29"
+    },
+    {
+      "path": "crates/juris-scenario-simulator/src/model.rs",
+      "bytes": 2567,
+      "sha256": "0c9c0a31bf4c1e844d87ba06bea0cde345569d799984254c772eba06b790c483"
+    },
+    {
+      "path": "crates/juris-scenario-simulator/tests/catalog_scenarios.rs",
+      "bytes": 15008,
+      "sha256": "9de34ab82e42777787ec9cddc8e707140352ede6f552a5f8c61690112b69a465"
+    },
+    {
+      "path": "crates/juris-scenario-simulator/tests/desert_water.rs",
+      "bytes": 10189,
+      "sha256": "3a778a3e6e454235f2021988b223960e81f3929a877915308cb0d02e6bbc9a53"
+    },
+    {
+      "path": "crates/juris-scenario-simulator/tests/failed_erp_formula_equivalence.rs",
+      "bytes": 22272,
+      "sha256": "d4602bb2f81ea4402c92bc664f3439a1133f03fe6fbcce5fe4aa0a48d167ccf6"
+    },
+    {
+      "path": "crates/juris-scenario-simulator/tests/failed_erp_lifecycle_matrix.rs",
+      "bytes": 10672,
+      "sha256": "5e7272c475e270360b7c19a345e8ba6ac80aad4333476f02a9f7ccd68bd56722"
+    },
+    {
+      "path": "crates/juris-scenario-simulator/tests/lost_is_not_closed.rs",
+      "bytes": 3444,
+      "sha256": "9acd6b937b4c00295aabbff66a1f2aab1bae3929123cf61f99127ab5820d0b42"
+    },
+    {
+      "path": "crates/juris-scenario-simulator/tests/runtime_parity.rs",
+      "bytes": 29834,
+      "sha256": "a84440eba8bf7127d4e813ddd31e1f822f3d7930c7c12fecb421e62ed1fdf06b"
+    },
+    {
+      "path": "crates/juris-scenario-simulator/tests/scenario_path_simulator.rs",
+      "bytes": 10943,
+      "sha256": "60c778410b11c635c53d34eca394b3dc6af470e9306c6997059f08c9a6a46efc"
+    },
+    {
+      "path": "crates/juris-scenario-validator/Cargo.toml",
+      "bytes": 319,
+      "sha256": "74872ec482c332d804e7aa9cec5adf8b1ef5b0ea8523ad80707d11ea2ecefc58"
+    },
+    {
+      "path": "crates/juris-scenario-validator/src/diagnostic.rs",
+      "bytes": 7753,
+      "sha256": "5c3ba5bd39f7eecf04c892a64ba7316dcea70c60beaaab6f84967508098d1786"
+    },
+    {
+      "path": "crates/juris-scenario-validator/src/effect_closure.rs",
+      "bytes": 10593,
+      "sha256": "a70e7526f44ab245f94f6faa595317c1fd5b0419105df935a21135b17036f529"
+    },
+    {
+      "path": "crates/juris-scenario-validator/src/index.rs",
+      "bytes": 4755,
+      "sha256": "41a40a0f51f108824463f3e63290629210846abf979cbd2ca23cf8444a5a0dc1"
+    },
+    {
+      "path": "crates/juris-scenario-validator/src/lib.rs",
+      "bytes": 1675,
+      "sha256": "83b7afe72d0b31feb9b7a4180bf38eeaf2d5e4098a5c86eb64d5a55f29eada91"
+    },
+    {
+      "path": "crates/juris-scenario-validator/src/lifecycle.rs",
+      "bytes": 13225,
+      "sha256": "941def5ef9b766a76f11091ac1ff0b0948faa02c57aed57542e108f2faa0e258"
+    },
+    {
+      "path": "crates/juris-scenario-validator/src/pressure.rs",
+      "bytes": 5910,
+      "sha256": "136c18d3901820ab9cc4a502b0591dcbdd9bb1383bb3e2e27b4e1192e1bf42c6"
+    },
+    {
+      "path": "crates/juris-scenario-validator/src/reachability.rs",
+      "bytes": 16262,
+      "sha256": "a9ac02703d82247714090f633cc616728c949babc301190f1162a766424f9b4b"
+    },
+    {
+      "path": "crates/juris-scenario-validator/src/references.rs",
+      "bytes": 24518,
+      "sha256": "02dc1094268a98bc14ddd87ca910eb88345192350bc0d3b92a53857e52bf2805"
+    },
+    {
+      "path": "crates/juris-scenario-validator/src/structural.rs",
+      "bytes": 19443,
+      "sha256": "d59b0f97d393d5e5ec73abb0d90e4d95a5041ab6229be6d1737f0d97740e613c"
+    },
+    {
+      "path": "crates/juris-scenario-validator/src/terminal.rs",
+      "bytes": 24047,
+      "sha256": "768bdadf99d2342d9b090f6f9fd323cd0434dc6ebcf7472c13daccc00157d19a"
+    },
+    {
+      "path": "crates/juris-scenario-validator/src/validation.rs",
+      "bytes": 2391,
+      "sha256": "189e87249b58747a58e64344232f6dc6b039bfeb05091d936b41c0e5752007c2"
+    },
+    {
+      "path": "crates/juris-scenario-validator/tests/catalog_scenarios.rs",
+      "bytes": 5061,
+      "sha256": "e84bb34338d4afad2c65cca518cf2cca234102a14c097e337ef84d6c058c8e78"
+    },
+    {
+      "path": "crates/juris-scenario-validator/tests/desert_water.rs",
+      "bytes": 1531,
+      "sha256": "3894b41deee5e0eb88da11b12e9566ce743d49c268a59f376c7d03322ef30b5a"
+    },
+    {
+      "path": "crates/juris-scenario-validator/tests/effect_closure_validation.rs",
+      "bytes": 10161,
+      "sha256": "9a8116acb921f5e9f84bcd21253b66c0b2b06b8189f18b4b74b882ff2520b3a6"
+    },
+    {
+      "path": "crates/juris-scenario-validator/tests/lifecycle_validation.rs",
+      "bytes": 13585,
+      "sha256": "b04407437ff1206f33d5297a9f4af447b7ad08a39a1b4e917387087e86600fc7"
+    },
+    {
+      "path": "crates/juris-scenario-validator/tests/lost_is_not_closed.rs",
+      "bytes": 3675,
+      "sha256": "9624a0f240fcd0c2c34c2c41cdd58827d1cacbcf7a5d37f0ffc645f3fd464a1b"
+    },
+    {
+      "path": "crates/juris-scenario-validator/tests/reachability_validation.rs",
+      "bytes": 4231,
+      "sha256": "fcf3dc81af9a5929959e0feed61dd827855f6782e8772553d670a27a9fa981f3"
+    },
+    {
+      "path": "crates/juris-scenario-validator/tests/terminal_validation.rs",
+      "bytes": 8415,
+      "sha256": "b9219e79167238d64c4301e3a33707a9202231efbbf66072ffaee26a3dd9a0e1"
+    },
+    {
+      "path": "crates/juris-scenario-validator/tests/validation.rs",
+      "bytes": 13361,
+      "sha256": "b960df50f10a74ba5e75d680b5dfd68c2d1946f377d6019fd21616a60fe7da0a"
+    },
+    {
+      "path": "crates/juris-simulation/Cargo.toml",
+      "bytes": 228,
+      "sha256": "ef5368f3d2b31aa1bbe7805d110cca00ee5641a9bb9f7a5fb0102ee598396153"
+    },
+    {
+      "path": "crates/juris-simulation/src/lib.rs",
+      "bytes": 23626,
+      "sha256": "a12d050f1fa5c60ef6e39ef88b5f4fb8ebac018dab99c77ab666abb3ec5ce7e5"
+    },
+    {
+      "path": "crates/juris-tax-economics/Cargo.toml",
+      "bytes": 566,
+      "sha256": "c936e26f6b3704539251d921df930bafd274982558d91c7ce41d5eb9580e7cfa"
+    },
+    {
+      "path": "crates/juris-tax-economics/src/adapters/bindings.rs",
+      "bytes": 10860,
+      "sha256": "36b9146b66edf8bd06b79a72c24a768535428649d265789f1fa31b74d949afae"
+    },
+    {
+      "path": "crates/juris-tax-economics/src/adapters/legacy.rs",
+      "bytes": 15965,
+      "sha256": "ec583e1b9c8b70f7235c781a53053203542f12820731f7fd689735d1f0f368a7"
+    },
+    {
+      "path": "crates/juris-tax-economics/src/adapters/mod.rs",
+      "bytes": 3669,
+      "sha256": "1067540429145c8a7d865c087e5ed226fa7c75ac7e468e6c71407ecc331eb022"
+    },
+    {
+      "path": "crates/juris-tax-economics/src/ffi.rs",
+      "bytes": 13822,
+      "sha256": "c86c93734f41d21afa5687023b925cf7e11442061f377c7bcfcafb761019cefd"
+    },
+    {
+      "path": "crates/juris-tax-economics/src/hashing.rs",
+      "bytes": 1757,
+      "sha256": "0ac541d5361276f6683ae839f25c79d4d7a7e12ec858b8aec05f790a9a23128d"
+    },
+    {
+      "path": "crates/juris-tax-economics/src/lib.rs",
+      "bytes": 60581,
+      "sha256": "503efe45d14548f23f3cea4d615812fb767e8383bdb13649bb1c3fa230676bc3"
+    },
+    {
+      "path": "crates/juris-tax-economics/src/money.rs",
+      "bytes": 4170,
+      "sha256": "34e4de8448497206ddd4ac5673df2492f67c8e2ec757ca84ea71f95ee1490f7c"
+    },
+    {
+      "path": "crates/juris-tax-economics/src/transport.rs",
+      "bytes": 23533,
+      "sha256": "7c90ec2a0aed600ef80a333310d84bc46768227800c3686507078ffbf24192b4"
+    },
+    {
+      "path": "crates/juris-tax-economics/tests/bindings_hash_contract.rs",
+      "bytes": 10498,
+      "sha256": "610ba3b9b9e1977208e1c461abc2714c1c2d856b94c19e2ac64dedf1c29f3a44"
+    },
+    {
+      "path": "crates/juris-tax-economics/tests/fixtures/adapters/web_amounts_v1.json",
+      "bytes": 342,
+      "sha256": "6ba4183eebbb725701a165729f1395ebea9f61dd624d2507792391a3e35f7c2e"
+    },
+    {
+      "path": "crates/juris-tax-economics/tests/fixtures/adapters/web_rates_fx_v1.json",
+      "bytes": 553,
+      "sha256": "e88acc0640abf1152d5e98717fb72507ae90fb3f10316461c5ca796dfd2e6851"
+    },
+    {
+      "path": "crates/juris-tax-economics/tests/fixtures/transport/eur_dated_input.json",
+      "bytes": 2316,
+      "sha256": "ad161bb48c7c1802294c004feb8f7c94cbbce4e314bb9813b3a104f332feb4f1"
+    },
+    {
+      "path": "crates/juris-tax-economics/tests/legacy_adapter_contract.rs",
+      "bytes": 15556,
+      "sha256": "788678d9f1172ec8276be729a54f8b51f4042327e30cfe4783e0259893c026ce"
+    },
+    {
+      "path": "crates/juris-tax-economics/tests/regressions.rs",
+      "bytes": 17878,
+      "sha256": "a6df7e631603c7fb27c3f8070acd4c04202baf7994168419d1b83ba6cfb72af1"
+    },
+    {
+      "path": "crates/juris-tax-economics/tests/transport_contract.rs",
+      "bytes": 12472,
+      "sha256": "01e99843108562200539fb8b804a245e76353394bcb44fb48370d0fecd26fa1d"
+    },
+    {
+      "path": "crates/juris-tax-wasm/Cargo.toml",
+      "bytes": 342,
+      "sha256": "0c69d5c002072eda14ab56ebf2a2ed02a7541cb4a585394d0bc0b7839c126afd"
+    },
+    {
+      "path": "crates/juris-tax-wasm/examples/native_corpus.rs",
+      "bytes": 3687,
+      "sha256": "728f227d952218c66af48c6de7883bd69491641a68f709b020d35f51c0488f09"
+    },
+    {
+      "path": "crates/juris-tax-wasm/src/lib.rs",
+      "bytes": 273,
+      "sha256": "4f44b4b0c293b8b79c40adba60fdadd8258895ebe7ed4bd8e44c5452e2ef748a"
+    },
+    {
+      "path": "rust-toolchain.toml",
+      "bytes": 86,
+      "sha256": "97aab3493c1fb14fe9a21c760433577f434714f5725bbb176e67048dde581afe"
+    },
+    {
+      "path": "scripts/tax-wasm-assets.mjs",
+      "bytes": 7308,
+      "sha256": "94817a6de7bc5091031432fe511f1deb10deeea221b8a56a1dad1f5cd7f06b77"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "app/tax-runtime/generated/juris_tax_wasm.js",
+      "bytes": 6845,
+      "sha256": "5937d7f7faef5a11642639fd9b9235ab2fbe6949b8e4dad2915c47048a005594"
+    },
+    {
+      "path": "app/tax-runtime/generated/juris_tax_wasm.d.ts",
+      "bytes": 1513,
+      "sha256": "fe078c14553e550960bdde4c0e88a12f8da147588761610868d9092bc7aad698"
+    },
+    {
+      "path": "app/tax-runtime/generated/juris_tax_wasm_bg.wasm",
+      "bytes": 885871,
+      "sha256": "b6bdb9777fd60905f58fa7ee0fd8c72199ce7984de70ecb8cbfa548ff48be514"
+    },
+    {
+      "path": "app/tax-runtime/generated/juris_tax_wasm_bg.wasm.d.ts",
+      "bytes": 457,
+      "sha256": "9bcdd439312d78bd68ea229d3df977cdf3b37541c9434b3b419f83aee71173d1"
+    },
+    {
+      "path": "tests/fixtures/tax-runtime/native-corpus.json",
+      "bytes": 375673,
+      "sha256": "ab5de4a5b07aed8c6e7f95c4130e32a26b6c1d6cdf6744f1c0e553d75a230a57"
+    }
+  ]
+}
