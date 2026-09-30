@@ -13,6 +13,7 @@ import os
 import pathlib
 import queue
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -24,6 +25,8 @@ APP = "com.genesissocietyengine.jurisMobile"
 TEST = "production application tax journey across process restart"
 PHASES = ("write", "read", "incomplete-write", "incomplete-read", "legacy-write", "legacy-read")
 TARGET = "integration_test/native_tax_application_test.dart"
+DRIVER = "test_driver/tax_application_driver.dart"
+FLUTTER_REVISION = "058e0af2c2b57e369d905a03ac9748b0ebf543c6"
 FLAGS = ("--enable-dart-profiling", "--disable-vm-service-publication", "--start-paused",
          "--enable-checked-mode", "--verify-entry-points")
 
@@ -35,6 +38,67 @@ def require(condition, message):
 
 def write_json(path, value):
     path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
+
+
+def validate_driver_sdk(sdk):
+    require(type(sdk) is dict and set(sdk) == {
+        "flutter_root", "dart", "dart_sha256", "flutter_version", "framework_revision", "dart_version"},
+        "Invalid driver SDK identity")
+    root = pathlib.PurePosixPath(sdk["flutter_root"])
+    dart = pathlib.PurePosixPath(sdk["dart"])
+    require((root.is_absolute() or pathlib.Path(str(root)).is_absolute()) and ".." not in root.parts,
+            "Driver SDK root must be absolute")
+    require(dart.parent == root / "bin/cache/dart-sdk/bin" and dart.name in ("dart", "dart.exe"),
+            "Driver must use Flutter's cached Dart SDK")
+    require(sdk["flutter_version"] == "3.44.8" and sdk["framework_revision"] == FLUTTER_REVISION and
+            sdk["dart_version"] == "3.12.2", "Unexpected pinned Flutter/Dart version")
+    require(re.fullmatch(r"[0-9a-f]{64}", sdk["dart_sha256"]), "Invalid Dart binary digest")
+
+
+def driver_sdk_identity():
+    flutter = shutil.which("flutter")
+    require(flutter is not None, "Flutter build executable unavailable")
+    executable = pathlib.Path(flutter).resolve()
+    require(executable.is_file() and executable.parent.name == "bin" and
+            executable.name in ("flutter", "flutter.bat"), "Unexpected Flutter executable layout")
+    root = executable.parent.parent
+    metadata = root / "bin/cache/flutter.version.json"
+    require(metadata.is_file() and metadata.stat().st_size < 64 * 1024, "Flutter SDK metadata missing or oversized")
+    version = json.loads(metadata.read_text(encoding="utf-8"), object_pairs_hook=JsonLogObjects.unique_object)
+    dart = root / "bin/cache/dart-sdk/bin" / ("dart.exe" if os.name == "nt" else "dart")
+    require(dart.is_file() and not dart.is_symlink() and os.access(dart, os.X_OK), "Cached Dart executable unavailable")
+    sdk = {"flutter_root": root.as_posix(), "dart": dart.as_posix(),
+           "dart_sha256": hashlib.sha256(dart.read_bytes()).hexdigest(),
+           "flutter_version": version.get("frameworkVersion"),
+           "framework_revision": version.get("frameworkRevision"), "dart_version": version.get("dartSdkVersion")}
+    validate_driver_sdk(sdk)
+    return sdk
+
+
+def run_direct_driver(args, evidence, identity, sdk, preparation_sha):
+    # This is FlutterDriverService.startTest's actual Dart delegation. The host
+    # already owns launch, authenticated discovery and the exact VM PID check.
+    authenticated_uri(identity.uri)
+    selected = {"VM_SERVICE_URL": identity.uri, "JURIS_TAX_APP_PHASE": args.phase,
+                "JURIS_ACCEPTANCE_SOURCE_SHA": args.source, "JURIS_ACCEPTANCE_RUN_NONCE": args.nonce,
+                "JURIS_TAX_ACCEPTANCE_OUTPUT": str(evidence)}
+    start = {"schema": "tax-ios-direct-driver-v1", "source_sha": args.source, "run_nonce": args.nonce,
+             "phase": args.phase, "runner_pid": identity.pid, "driver_sdk": sdk,
+             "preparation_sha256": preparation_sha, "argv": [sdk["dart"], DRIVER],
+             "environment": selected, "started_at": utc_now().isoformat(),
+             "status": "started", "runtime_acceptance": False}
+    paths = [evidence / f"{args.phase}-driver-start.json", evidence / f"{args.phase}-driver.json"]
+    require(not any(path.exists() for path in paths), "Driver evidence already exists")
+    write_json(paths[0], start)
+    try:
+        result = subprocess.run(start["argv"], env={**os.environ, **selected}, check=False)
+    except BaseException as error:
+        write_json(paths[1], {**start, "status": "failed", "exit_code": None,
+                             "completed_at": utc_now().isoformat(), "error": str(error)})
+        raise
+    write_json(paths[1], {**start, "status": "completed", "exit_code": result.returncode,
+                         "completed_at": utc_now().isoformat()})
+    require(type(result.returncode) is int and result.returncode == 0, "Dart driver did not exit successfully")
 
 
 def manifest(bundle):
@@ -466,6 +530,7 @@ def prepare(args):
     require(not any(path.exists() for path in paths), "Build preparation evidence already exists")
     start = {"schema": "tax-ios-build-preparation-v1", "source_sha": args.source,
              "run_nonce": args.nonce, "simulator": args.device, "target": TARGET,
+             "driver_sdk": driver_sdk_identity(),
              "argv": build_command(args.source, args.nonce, args.device), "host_pid": os.getpid(),
              "started_at": utc_now().isoformat(), "timeout_seconds": 900,
              "status": "started", "build_completed": False, "runtime_acceptance": False}
@@ -491,13 +556,14 @@ def validate_preparation(evidence, source, nonce, device, built):
     require(start["schema"] == terminal["schema"] == "tax-ios-build-preparation-v1", "Wrong preparation schema")
     require(start["status"] == "started" and start["build_completed"] is False and "exit_code" not in start,
             "Invalid preparation start")
-    for key in ("schema", "source_sha", "run_nonce", "simulator", "target", "argv", "host_pid",
+    for key in ("schema", "source_sha", "run_nonce", "simulator", "target", "argv", "driver_sdk", "host_pid",
                 "started_at", "timeout_seconds", "runtime_acceptance"):
         require(start[key] == terminal[key], "Preparation start/terminal identity differs")
     require(start["source_sha"] == source and start["run_nonce"] == nonce and start["simulator"] == device,
             "Stale preparation source/nonce/Simulator")
     require(start["target"] == TARGET and start["argv"] == build_command(source, nonce, device),
             "Unexpected preparation build command")
+    validate_driver_sdk(start["driver_sdk"])
     require(start["runtime_acceptance"] is False and start["timeout_seconds"] == 900,
             "Invalid preparation scope/deadline")
     require(type(start["host_pid"]) is int and start["host_pid"] > 0, "Invalid preparation host PID")
@@ -518,11 +584,12 @@ def run(args):
     require(evidence.is_dir(), "Evidence directory missing")
     require(not (evidence / f"{args.phase}.json").exists(), "Phase receipt already exists")
     bundle = pathlib.Path("build/ios/iphonesimulator/Runner.app").resolve()
-    defines = [f"--dart-define=JURIS_ACCEPTANCE_SOURCE_SHA={args.source}",
-               f"--dart-define=JURIS_ACCEPTANCE_RUN_NONCE={args.nonce}"]
     require(bundle.is_dir(), "Prebuilt application missing")
     built = manifest(bundle)
     preparation_sha = validate_preparation(evidence, args.source, args.nonce, args.device, built)
+    sdk = driver_sdk_identity()
+    require(sdk == json.loads((evidence / "prepare.json").read_text(encoding="utf-8"))["driver_sdk"],
+            "Driver SDK changed after application preparation")
     (evidence / f"{args.phase}-input-bundle.json").write_bytes(built)
     baseline = evidence / "write-input-bundle.json"
     require(baseline.read_bytes() == built, "Application bundle changed between phases")
@@ -569,9 +636,7 @@ def run(args):
                   "bundle_manifest_sha256": hashlib.sha256(built).hexdigest(),
                   "preparation_sha256": preparation_sha, "complete": False}
         write_json(evidence / f"{args.phase}-launch.json", launch)
-        subprocess.run(["flutter", "drive", "--verbose", "--no-pub", "--keep-app-running",
-                        f"--use-existing-app={identity.uri}", f"--target={TARGET}",
-                        "--driver=test_driver/tax_application_driver.dart", *defines, "-d", args.device], check=True)
+        run_direct_driver(args, evidence, identity, sdk, preparation_sha)
         receipt = json.loads((evidence / f"{args.phase}.json").read_text(encoding="utf-8"))
         validate_receipt(receipt, args.phase, args.source, args.nonce, identity.pid)
         reader.drain(identity, evidence / f"{args.phase}-system-events.jsonl")
