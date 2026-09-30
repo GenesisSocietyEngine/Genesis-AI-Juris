@@ -87,3 +87,41 @@ The explicit FlutterDriver SDK dev dependency was already transitive; the lock
 change only marks it direct-dev, with no version changes. No iOS runtime
 success is claimed for this correction. New exact-source CI must
 still execute and pass all six phases.
+
+The corrected source `962e71053bd026014f87f1ecd49ef6f7eef9a67c` then produced
+a terminal push application failure in run `36747853715`, job `109998512423`.
+Both macOS Python suites passed all six cases, including POSIX process-group
+controls. Xcode completed its 184.5-second build at 17:05:57Z; `simctl launch`
+returned Runner PID 18448 at 17:06:29Z. Flutter waited for a VM-service URI,
+without a connected VM/driver, selected test, app checkpoint or phase receipt.
+The host `tax-write` deadline fired at 17:16:19Z, 900 seconds after its start,
+and the step returned 124 even though Flutter's shutdown printed exit zero.
+Collector/upload completed. Artifact `11114496143` contains 206,234 bytes,
+SHA-256 `316825bbe4715add4a38981aa29d8356da4b50c688c3e874007106ba057fba9e`;
+the complete log SHA-256 is
+`965e08512b0f755cb987ec0f54a65dab43eee0581e1bc8c51ba1a259eb1516a9`.
+
+The screenshot shows a white application area with status/home bars; the
+verified app process remained live. Its bounded system-log capture only reached
+17:01:33–17:03:20 SpringBoard history before the 20-second cutoff, with no Runner,
+app identifier or VM-service entry. That capture precedes the actual launch and
+cannot establish engine failure or a lost service announcement. Flutter's
+installed simulator launcher waits on a log-derived VM URI; neither possibility
+is resolved by the retained evidence.
+
+The follow-on collector prioritizes Runner/app-specific history, separates a
+two-minute SpringBoard window and adds native stack/listening-socket evidence
+only after matching one PID to the full app executable returned by this isolated
+Simulator's container query. It rechecks the PID and executable before each
+native command; ambiguous, truncated, failed or changed identity prevents the
+command. The sampling command uses a three-second period with ten-millisecond
+intervals, following the [documented sampling interface](https://developer.apple.com/library/archive/documentation/Performance/Conceptual/LaunchTime/Articles/MeasuringLaunch.html),
+with output directed into the existing capped capture. No process arguments,
+environment, application storage, calculation behavior or six-phase assertion
+changes. Existing 120-second collector, 20-second command and 4 MiB output bounds
+remain; nonzero/unavailable results are retained as diagnostics.
+
+All 13 local collector regressions pass, including exact/foreign/ambiguous PID
+selection, changed-PID refusal, priority of app logs, shared deadline and native
+tool-error retention. Actual `sample`/socket collection on macOS remains pending;
+these tests establish selection and failure handling, not iOS application success.
