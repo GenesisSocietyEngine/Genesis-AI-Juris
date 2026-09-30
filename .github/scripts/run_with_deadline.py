@@ -21,14 +21,20 @@ def positive(value):
     return result
 
 
-def group_alive(process):
+def group_state(process):
     if os.name != "posix":
-        return process.poll() is None
+        return "present" if process.poll() is None else "absent"
     try:
         os.killpg(process.pid, 0)
-        return True
+        return "present"
     except ProcessLookupError:
-        return False
+        return "absent"
+    except PermissionError as error:
+        # A denied null signal cannot establish absence. Retain the uncertainty
+        # and keep cleanup bounded; never widen the original owned group.
+        print(f"deadline event=group_probe_denied pid={process.pid} errno={error.errno}",
+              file=sys.stderr, flush=True)
+        return "unknown"
 
 
 def signal_owned(process, force=False):
@@ -39,6 +45,9 @@ def signal_owned(process, force=False):
             process.kill() if force else process.terminate()
     except ProcessLookupError:
         pass
+    except PermissionError as error:
+        print(f"deadline event=group_signal_denied pid={process.pid} force={int(force)} errno={error.errno}",
+              file=sys.stderr, flush=True)
 
 
 def stop_owned(process, grace):
@@ -46,17 +55,21 @@ def stop_owned(process, grace):
     limit = time.monotonic() + grace
     while time.monotonic() < limit:
         process.poll()
-        if not group_alive(process):
+        if group_state(process) == "absent":
             break
         time.sleep(min(0.05, max(0, limit - time.monotonic())))
     # A parent can exit before an uncooperative descendant. Still kill the
     # original task-owned group; polling only the parent would leak the child.
-    if group_alive(process):
+    if group_state(process) != "absent":
         signal_owned(process, force=True)
     try:
         process.wait(timeout=grace)
     except subprocess.TimeoutExpired:
         print("deadline event=unreaped_owned_process", file=sys.stderr, flush=True)
+    state = group_state(process)
+    if state != "absent":
+        print(f"deadline event=cleanup_incomplete pid={process.pid} group_state={state}",
+              file=sys.stderr, flush=True)
 
 
 def main(argv=None):

@@ -140,3 +140,39 @@ The narrow follow-up adds captured stdout and stderr to every host-test status
 assertion. Expected statuses, time bounds, subprocess commands and production
 deadline behavior remain unchanged. It neither diagnoses nor fixes the unknown
 PR smoke-test exit, and a new hosted run must execute the same six controls.
+
+At source `f245149d04f1b03c3f129849b3a8c6bd113c6bd8`, push application run
+`36752988890`, job `110016052915`, failed the same smoke control before setup.
+This time the retained child diagnostics establish that the 0.2-second timeout
+fired, then `os.killpg(2038, 0)` raised `PermissionError: [Errno 1]` while checking
+the owned group during cleanup. No app phase or artifact exists. The complete
+log SHA-256 is
+`b182da29c85d32a008ea1b34480614432801c244f24078c7bf6249894353b307`.
+The same source's PR application run `36752995910`, job `110016077684`,
+also failed before setup: collector 13/13 passed, then the same deadline
+control hit `PermissionError` probing owned PID 1647 after timeout. Its full
+log SHA-256 is
+`b76e1e165d57beb481447beeaef6fc6c97c7e99085d06c85ea0117ad0c91c3d4`.
+Both terminal failures are retained independently, without an artifact or phase.
+
+Apple's [killpg contract](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/killpg.2.html)
+does not treat permission denial as proof of absence. The inspected
+[XNU implementation](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_sig.c#L1612-L1621)
+can also return EPERM when its group iteration finds no eligible member after
+filtering zombies. A post-TERM zombie window is therefore consistent with the
+trace, but is not established as this runner's cause.
+
+The bounded correction distinguishes present, absent and unknown group states.
+Only `ProcessLookupError` establishes absence; permission denial retains an
+explicit diagnostic and keeps the original group eligible for bounded cleanup.
+Denied TERM/KILL is recorded without expanding the signal target or seeking
+additional privilege. A still-present or unknown group after cleanup emits
+`cleanup_incomplete` with its state; timeout still exits 124 and cannot pass.
+Unexpected OS errors remain errors. Existing wait bounds and all application
+acceptance assertions remain unchanged.
+
+Local host controls pass nine cases, with the two actual POSIX controls skipped
+on Windows. Added deterministic cases cover denied-probe then absence,
+persistent signal/probe denial, an exited parent with a surviving descendant
+group, a still-present group after force, and an unexpected OS error. These
+controls test failure semantics, not macOS cleanup or application success.
