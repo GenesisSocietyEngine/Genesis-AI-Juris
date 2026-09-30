@@ -4,6 +4,15 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:integration_test/integration_test_driver.dart';
 
+const List<String> _phases = <String>[
+  'write',
+  'read',
+  'incomplete-write',
+  'incomplete-read',
+  'legacy-write',
+  'legacy-read',
+];
+
 Future<void> main() async {
   final String phase = Platform.environment['JURIS_TAX_APP_PHASE'] ?? '';
   final String expectedSource =
@@ -11,12 +20,14 @@ Future<void> main() async {
   final String output =
       Platform.environment['JURIS_TAX_ACCEPTANCE_OUTPUT'] ?? '';
   final String nonce = Platform.environment['JURIS_ACCEPTANCE_RUN_NONCE'] ?? '';
-  if (!<String>['write', 'read'].contains(phase) ||
-      expectedSource.length != 40 ||
+  final int index = _phases.indexOf(phase);
+  if (index < 0 ||
+      !RegExp(r'^[a-f0-9]{40}$').hasMatch(expectedSource) ||
       output.isEmpty ||
       nonce.isEmpty) {
     throw StateError(
-        'Explicit phase, source SHA and evidence directory required.');
+      'Explicit phase, source SHA and evidence directory required.',
+    );
   }
   await integrationDriver(
     writeResponseOnFailure: true,
@@ -39,8 +50,9 @@ Future<void> main() async {
           const List<int> signature = <int>[137, 80, 78, 71, 13, 10, 26, 10];
           if (bytes.length < 33 ||
               !List<bool>.generate(
-                      8, (int index) => bytes[index] == signature[index])
-                  .every((bool value) => value)) {
+                8,
+                (int index) => bytes[index] == signature[index],
+              ).every((bool value) => value)) {
             throw StateError('Screenshot is missing a nonempty PNG image.');
           }
           await File('${directory.path}/$name.png').writeAsBytes(bytes);
@@ -52,26 +64,56 @@ Future<void> main() async {
         }
       }
       await File('${directory.path}/$phase.json').writeAsString(
-          const JsonEncoder.withIndent('  ').convert(retained),
-          flush: true);
-      if (retained['schema'] != 'tax-mobile-application-acceptance-v1' ||
+        const JsonEncoder.withIndent('  ').convert(retained),
+        flush: true,
+      );
+      if (retained['schema'] != 'tax-mobile-application-acceptance-v2' ||
           retained['phase'] != phase ||
+          retained['completed_phase'] != phase ||
+          retained['phase_index'] != index ||
           retained['source_sha'] != expectedSource ||
           retained['run_nonce'] != nonce ||
           retained['pid'] is! int ||
+          (retained['pid'] as int) <= 0 ||
+          retained['entry_method'] != 'programmatic_flutter_test' ||
           retained['artifact'] is! Map<String, dynamic> ||
+          retained['scenario'] is! Map<String, dynamic> ||
+          retained['workspace_progress'] is! Map<String, dynamic> ||
           retained['native_calls'] is! List<dynamic>) {
         throw StateError('Missing source-bound application evidence.');
       }
-      if (phase == 'read' &&
-          (retained['previous_pid'] is! int ||
-              retained['previous_pid'] == retained['pid'])) {
-        throw StateError(
-            'Read journey did not prove a new application process.');
+      if (index == 0) {
+        if (retained['previous_pid'] != null) {
+          throw StateError('The first phase unexpectedly has a previous PID.');
+        }
+      } else {
+        // Independent host receipts must establish the complete process chain;
+        // the application cannot choose an arbitrary next phase or reuse a PID.
+        for (int earlier = 0; earlier < index; earlier++) {
+          final Map<String, dynamic> previous = jsonDecode(
+            await File(
+              '${directory.path}/${_phases[earlier]}.json',
+            ).readAsString(),
+          ) as Map<String, dynamic>;
+          if (previous['schema'] != 'tax-mobile-application-acceptance-v2' ||
+              previous['phase'] != _phases[earlier] ||
+              previous['completed_phase'] != _phases[earlier] ||
+              previous['phase_index'] != earlier ||
+              previous['source_sha'] != expectedSource ||
+              previous['run_nonce'] != nonce ||
+              previous['pid'] is! int ||
+              previous['pid'] == retained['pid'] ||
+              (earlier == index - 1 &&
+                  previous['pid'] != retained['previous_pid'])) {
+            throw StateError('Missing prior phase or new-process evidence.');
+          }
+        }
       }
       // A selected test that produced no report cannot count as acceptance.
-      stdout.writeln('tax_application phase=$phase source=$expectedSource '
-          'pid=${retained['pid']} evidence=complete');
+      stdout.writeln(
+        'tax_application phase=$phase source=$expectedSource '
+        'pid=${retained['pid']} evidence=complete',
+      );
     },
   );
 }

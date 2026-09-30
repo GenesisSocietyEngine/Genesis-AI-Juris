@@ -27,22 +27,45 @@ repo_root="$(git rev-parse --show-toplevel)"
 host="$(rustc -vV | sed -n 's/^host: //p')"
 llvm_nm="$(rustc --print sysroot)/lib/rustlib/$host/bin/llvm-nm"
 
-for phase in write read; do
+phases=(write read incomplete-write incomplete-read legacy-write legacy-read)
+bundle=build/ios/iphonesimulator/Runner.app
+for phase in "${phases[@]}"; do
   export JURIS_TAX_APP_PHASE="$phase"
   printf 'phase=%s event=launch source=%s simulator=%s\n' \
     "$phase" "$source_sha" "$device" | tee -a "$evidence/process.log"
-  flutter drive --no-pub --keep-app-running \
+  application_args=(--target=integration_test/native_tax_application_test.dart)
+  if [[ "$phase" != write ]]; then
+    test -d "$bundle"
+    application_args+=(--use-application-binary "$bundle")
+  fi
+  flutter drive --no-pub --keep-app-running "${application_args[@]}" \
     --driver=test_driver/tax_application_driver.dart \
-    --target=integration_test/native_tax_application_test.dart \
-    --dart-define="JURIS_TAX_APP_PHASE=$phase" \
     --dart-define="JURIS_ACCEPTANCE_SOURCE_SHA=$source_sha" \
     --dart-define="JURIS_ACCEPTANCE_RUN_NONCE=$JURIS_ACCEPTANCE_RUN_NONCE" \
     -d "$device" 2>&1 | tee "$evidence/$phase.log"
   printf 'phase=%s driver_exit=0\n' "$phase" >>"$evidence/process.log"
   grep -Fq "production application tax $phase across process restart" "$evidence/$phase.log"
+  grep -Fq 'All tests passed.' "$evidence/$phase.log"
   grep -Fq "tax_application phase=$phase source=$source_sha" "$evidence/$phase.log"
   test -s "$evidence/$phase.json"
   test -s "$evidence/$phase-editor.png"
+  # Hash the entire installed input bundle, including Dart code/assets/frameworks.
+  # Runner alone does not establish that the application payload is unchanged.
+  python3 -I - "$bundle" "$evidence/$phase-bundle.json" <<'PY'
+import hashlib, json, pathlib, sys
+bundle, output = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+entries = []
+for path in sorted(bundle.rglob('*'), key=lambda value: value.relative_to(bundle).as_posix()):
+    name = path.relative_to(bundle).as_posix()
+    if path.is_symlink():
+        entries.append({'path': name, 'symlink': str(path.readlink())})
+    elif path.is_file():
+        data = path.read_bytes()
+        entries.append({'path': name, 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
+assert entries and any(item['path'] == 'Runner' for item in entries)
+output.write_text(json.dumps(entries, sort_keys=True, separators=(',', ':')) + '\n')
+PY
+  cmp "$evidence/write-bundle.json" "$evidence/$phase-bundle.json"
   shasum -a 256 ios/Generated/libjuris_mobile_ffi.a \
     build/ios/iphonesimulator/Runner.app/Runner >"$evidence/$phase-binary-sha256.txt"
   bash "$repo_root/.github/scripts/verify_ios_ffi_exports.sh" \
@@ -67,21 +90,5 @@ for phase in write read; do
   printf 'phase=%s event=process_absent pid=%s\n' "$phase" "$app_pid" \
     | tee -a "$evidence/process.log"
 done
-python3 - "$evidence" "$source_sha" "$JURIS_ACCEPTANCE_RUN_NONCE" <<'PY'
-import json, pathlib, sys
-root, source, nonce = pathlib.Path(sys.argv[1]), sys.argv[2], sys.argv[3]
-write = json.loads((root / 'write.json').read_text())
-read = json.loads((root / 'read.json').read_text())
-assert write['source_sha'] == read['source_sha'] == source
-assert write['run_nonce'] == read['run_nonce'] == nonce
-assert read['previous_pid'] == write['pid'] != read['pid']
-assert write['artifact'] == read['artifact']
-assert write['scenario'] == read['scenario']
-assert write['workspace_progress'] == read['workspace_progress']
-for receipt in (write, read):
-    calculations = [call for call in receipt['native_calls'] if call['request']['command'] == 'tax_calculate']
-    assert len(calculations) == 1
-    assert calculations[0]['response']['type'] == 'tax_calculated'
-assert [call for call in write['native_calls'] if call['request']['command'] == 'tax_calculate'] == [call for call in read['native_calls'] if call['request']['command'] == 'tax_calculate']
-print('tax application two-process acceptance: PASS')
-PY
+python3 -I "$repo_root/.github/scripts/verify_ios_tax_journeys.py" \
+  "$evidence" "$source_sha" "$JURIS_ACCEPTANCE_RUN_NONCE"
