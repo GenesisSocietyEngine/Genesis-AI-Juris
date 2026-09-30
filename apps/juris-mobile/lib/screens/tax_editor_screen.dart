@@ -835,15 +835,14 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
                                             'optimized_tax_rate_bps'
                                           ].contains(field) ||
                                           _input['tax_input_basis'] == 'rates')
-                                        _field(
-                                            field,
-                                            _label(field),
-                                            _edit[field] as String,
-                                            (String v) {
+                                        _field(field, _label(field),
+                                            _edit[field] as String, (String v) {
                                           _edit[field] = v;
-                                          if (field == 'baseline_tax_rate_bps' ||
+                                          if (field ==
+                                                  'baseline_tax_rate_bps' ||
                                               field == 'optimized_tax_rate_bps')
-                                            _artifact!['rates_confirmed'] = false;
+                                            _artifact!['rates_confirmed'] =
+                                                false;
                                         }),
                                     if (_input['tax_base_mode'] ==
                                         'manual_override')
