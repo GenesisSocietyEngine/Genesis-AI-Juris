@@ -79,13 +79,34 @@ receipt is `android-aggregate-59234/journey-result.json`, SHA-256
 
 Still open: six-phase iOS complete/incomplete/legacy application acceptance,
 iOS aggregate interruption recovery, broader stale/future/conflict journeys,
-physical-device checks, audible screen-reader and full-gesture acceptance,
-and P4C/P5 web-editor/version-bound report integration. Selected emulator
-evidence does not establish power-loss or cross-process atomicity.
+physical-device checks, audible screen-reader and full-gesture acceptance.
+P4C/P5 web-editor/version-bound report integration subsequently passed its
+[separate development checkpoint](../tax-report-model-2026-09-30/CHECKPOINT.md)
+in PR #77; that record lists its remaining application and accessibility gates.
+Selected emulator evidence does not establish power-loss or cross-process atomicity.
 
 ## Subsequent main evidence
 
-Main source `0590eaf364c9cdb28abc73c2b8d2de208936ff49` has its own newly
-triggered checks. At this checkpoint they are pending, and no main runtime
-pass is inferred from the accepted PR head. Subsequent receipts must retain
-that exact source, run/job identity, executed test and artifact independently.
+Main source `0590eaf364c9cdb28abc73c2b8d2de208936ff49` has separate execution
+evidence. Application run `36753964104` / job `110019353567` passed its two
+selected phases with terminated PIDs 22707 → 29966, two fresh native
+calculations and complete saved/native equality, screenshots and x86_64 audits.
+Artifact `11116288758` (388,838 bytes), SHA-256
+`85e722fba9444d4c89904c0e74b2ace2be9a048083fc37eea5149fb0ec54622c`, and full
+log SHA-256 `51a4084cf1dc9c277bfcd3be03a185695244878d55861e7251b20756633b0c5b`
+were independently retained and verified. Receipt:
+`ios-application-aggregate-main-0590-receipt.json`.
+
+The same main source's web/PDF run `36753963985` independently matched all 49
+responses per host and the initialization/audit controls; artifact `11116182506`
+(828,256 bytes), SHA-256
+`5f8ea38a91bcda115b7b290bbdea09c9e1ca1d12e96b7cef8ff0b489ee5b3bb2`.
+Its native workflow `36753964033` / job `110019353010` was cancelled after
+main advanced. This is not a native-test pass. The retained diagnostic artifact
+`11116209233` (39,803 bytes), SHA-256
+`40f0e1676dd95b031428ea57334dc33c45afad471da5e664019844b612932763`, and raw
+log SHA-256 `a75108ad1d9534b21497b1f2d148f3c005bb7e6d0e8833e16cc1cc67b2db1961`
+preserve that terminal outcome. Its nine-check snapshot ended with eight
+successes and one cancellation. Newer main
+`3749593df4e249cd9e4ea0e69caf22d47cef43cb` has its own checks; neither accepted
+PR evidence nor these `0590eaf` results establish that newer source's outcome.
