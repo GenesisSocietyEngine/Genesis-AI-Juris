@@ -30,19 +30,30 @@ next_milestone: hosted_invitation_acceptance_recovery_and_remaining_product_vali
 current_release_instruction: docs/testing/release-amendment-2026-09-29/NEXT_ACTIONS.md
 development_continuation_receipt: docs/testing/release-amendment-2026-09-29/IMPLEMENTATION_CONTINUATION.md
 tax_mobile_implementation_receipt: docs/testing/tax-mobile-p2p3-2026-09-29/REVIEW.md
-tax_mobile_status: native_runtime_proven_dialog_fixed_successor_checks_pending_product_acceptance_open
+tax_mobile_status: native_bridge_editor_development_checkpoint_accepted_product_acceptance_open
 tax_mobile_pr: 68
 tax_mobile_original_head: 8e49362608a2697bba00e44ab3580898751def04
 tax_mobile_original_ios_pr_run: 36633264111
 tax_mobile_original_ios_pr_job: 109627481599
 tax_mobile_original_ios_result: prepared_thin_archive_heading_rejected_xctest_skipped
 tax_mobile_corrected_ios_runtime: executed_xctest_pass_attempt_1
-tax_mobile_runtime_evidence_source: 262cf2f779f1f1a78215fb33e880f38ee6e9aa37
-tax_mobile_runtime_evidence_run: 36711044686
-tax_mobile_runtime_evidence_job: 109872641005
-tax_mobile_runtime_evidence_artifact: 11095191881
-tax_mobile_main_contains_candidate: false
-tax_mobile_product_acceptance: android_restart_repeated_save_incomplete_draft_proven_dialog_and_workspace_failures_ios_and_broader_acceptance_open
+tax_mobile_runtime_evidence_source: 6f9583947d870e7ecef0e54880d996367c37dbb4
+tax_mobile_runtime_evidence_run: 36713873507
+tax_mobile_runtime_evidence_job: 109881752293
+tax_mobile_runtime_evidence_artifact: 11095074043
+tax_mobile_runtime_push_run: 36713863455
+tax_mobile_runtime_push_job: 109882452750
+tax_mobile_runtime_push_artifact: 11096135423
+tax_mobile_pr_checks: pass_14_of_14
+tax_mobile_merge: bc093010bef5ffa9476aac2d68e7b2b19ebf39d5
+tax_mobile_merged_at_utc: 2026-09-30T12:34:02Z
+tax_mobile_main_contains_candidate: true
+tax_mobile_main_ios_run: 36715579865
+tax_mobile_main_ios_job: 109887558003
+tax_mobile_main_ios_status: executed_xctest_pass_attempt_1
+tax_mobile_main_ios_artifact: 11096633885
+tax_mobile_main_checks: pass_7_of_7
+tax_mobile_product_acceptance: android_restart_legacy_incomplete_future_sidecar_proven_workspace_recovery_ios_and_accessibility_open
 tax_web_pdf_v2_integration: three_runtime_feasibility_proven_production_integration_open
 candidate_branch: codex/account-readability-remote-2026-09-29
 candidate_base_commit: bc4cd1d8fe3f8835c056401bfd873e72b7bc91ae
@@ -160,10 +171,20 @@ decision_dossier_v62_slice5_gate: frozen_migrations_0012_0015_adversarial_audit_
 decision_dossier_v62_web_gate: strict_type_lint_build_audit_pdf_and_493_of_493_green
 decision_dossier_v62_browser_gate: local_http_green_visual_controller_service_unavailable
 decision_dossier_v62_remote_state: no_production_site_version_or_deployment
-last_updated: 2026-09-29
+last_updated: 2026-09-30
 ---
 
 # Current Progress
+
+## 30 September 2026 — Native bridge/editor development checkpoint accepted
+
+[PR #68](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/68) merged through ordinary repository controls as `bc093010bef5ffa9476aac2d68e7b2b19ebf39d5` at 12:34:02 UTC. Fresh remote readback confirms main contains tested head `6f9583947d870e7ecef0e54880d996367c37dbb4`; the merge tree is identical. All 14 applicable push/PR checks passed. Both iOS runs explicitly executed and passed `RunnerTests.testNativeLogisticsLifecycle()`, with initial arm64/x86_64 and prepared x86_64 export audits, 27 fake fixtures, 8 real macOS fixtures and retained, downloaded diagnostics. [The review receipt](../testing/tax-mobile-p2p3-2026-09-29/REVIEW.md) records exact run/job/artifact identities and the original heading failure. Separate main iOS run `36715579865` / job `109887558003` passed on merge source `bc093010bef5ffa9476aac2d68e7b2b19ebf39d5`: the selected XCTest executed at 12:58:13 UTC (0.421 seconds, attempt 1); artifact `11096633885` was downloaded. All seven main jobs passed. These main results are distinct from the exact PR-head receipts.
+
+The correction uses supported LLVM export-list output without weakening symbol or diagnostic checks. Review/application findings also corrected rate/provenance confirmation, unchanged Save and focused import-dialog teardown; bounded dependency patches restored the full audit gate. Hosted Codex re-review exhausted its service quota; independent read-only review completed without material findings, and all earlier review threads were resolved. No hosted final-head review is claimed.
+
+Actual Android emulator journeys prove amounts edit/calculate/save/cold-reopen with fresh native recomputation, unchanged repeated Saves, incomplete drafts, future-sidecar read-only export and legacy amounts import/save/cold-reopen with exact original/hash/whitespace preservation. Final-source dialog Cancel/back/Import passed. Legacy JSON setup used the debugger after emulator keyboard autocorrection; it is not ordinary clipboard/keyboard paste acceptance. Enlarged text was inspected at 1.5 scale and restored. [Detailed source-specific receipts](../testing/tax-mobile-p2p3-2026-09-29/REVIEW.md) preserve these distinctions.
+
+This accepts a development checkpoint. P3 still requires workspace autosave/recovery and interrupted aggregate-write correction, remaining legacy rates/FX and iOS application journeys, friendly incomplete-input errors and full accessibility checks. Physical-device checks remain open per user instruction. The separate P4 runtime packaging and P5 version-bound reports are not established by existing green web/PDF checks. Work continues from reconciled main in isolated branches; deployed web v104/environment 40 and the original hosted/pilot ledger are unchanged.
 
 ## 29 September 2026 — Web production v103 published at 15:16 UTC
 
