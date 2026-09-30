@@ -16,8 +16,6 @@ jobs:
     defaults:
       run:
         working-directory: apps/juris-mobile
-    env:
-      IOS_TAX_EVIDENCE_DIR: ${{ runner.temp }}/ios-tax-application-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1; Node 24
         with:
@@ -38,6 +36,8 @@ jobs:
           git diff --exit-code -- pubspec.lock
       - name: Create a fresh isolated iPhone Simulator
         id: simulator
+        env:
+          IOS_TAX_EVIDENCE_DIR: ${{ runner.temp }}/ios-tax-application-${{ github.run_id }}-${{ github.run_attempt }}
         shell: bash
         run: |
           set -euo pipefail
@@ -62,12 +62,16 @@ jobs:
           xcrun simctl boot "$simulator_id"
           xcrun simctl bootstatus "$simulator_id" -b
       - name: Exercise the actual editor across application termination and relaunch
+        env:
+          IOS_TAX_EVIDENCE_DIR: ${{ runner.temp }}/ios-tax-application-${{ github.run_id }}-${{ github.run_attempt }}
         timeout-minutes: 30
         shell: bash
         run: |
           bash "$GITHUB_WORKSPACE/.github/scripts/run_ios_tax_application.sh" \
             "${{ steps.simulator.outputs.id }}" "$IOS_TAX_EVIDENCE_DIR"
       - name: Retain application inputs, native exchanges, screenshots and process evidence
+        env:
+          IOS_TAX_EVIDENCE_DIR: ${{ runner.temp }}/ios-tax-application-${{ github.run_id }}-${{ github.run_attempt }}
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
