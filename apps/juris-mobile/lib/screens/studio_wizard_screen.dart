@@ -53,6 +53,11 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   CaseTypePlaybookRegistry? _playbookRegistry;
   bool _loading = true;
   bool _busy = false;
+  bool _hasSaved = false;
+  bool _saveFailed = false;
+  int _pendingSaves = 0;
+  int _saveAttempt = 0;
+  String? _recoveryError;
   String? _notice;
   String? _exportPath;
 
@@ -87,11 +92,14 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   }
 
   Future<void> _load() async {
+    if (mounted) setState(() => _loading = true);
     try {
       _playbookRegistry ??= await loadCaseTypePlaybookRegistry(
         bundle: widget.playbookAssetBundle,
       );
       final StudioWorkspace? workspace = await widget.store.read();
+      _recoveryError = null;
+      _hasSaved = workspace != null;
       if (workspace != null && mounted) {
         _draft = workspace.draft;
         _activeStage = workspace.activeStage;
@@ -101,7 +109,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
         _syncControllers();
       }
     } on Object catch (error) {
-      _notice = _t(
+      _recoveryError = _t(
         'The previous Studio draft could not be reopened: $error',
         'Не удалось открыть предыдущий черновик Studio: $error',
       );
@@ -134,9 +142,17 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
 
   AppBar _appBar(BuildContext context, {bool showStatus = false}) {
     final bool compact = MediaQuery.sizeOf(context).width < 600;
-    final String status = _busy
-        ? _t('Working…', 'Выполняется…')
-        : _t('Auto-saved', 'Автосохранение');
+    final String status = _recoveryError != null
+        ? _t('Read-only', 'Только чтение')
+        : _busy
+            ? _t('Working…', 'Выполняется…')
+            : _pendingSaves > 0
+                ? _t('Saving…', 'Сохранение…')
+                : _saveFailed
+                    ? _t('Not saved', 'Не сохранено')
+                    : _hasSaved
+                        ? _t('Auto-saved', 'Автосохранение')
+                        : _t('Not saved yet', 'Ещё не сохранено');
     return AppBar(
       leading: IconButton(
         key: const ValueKey<String>('studio-exit-action'),
@@ -180,7 +196,13 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                           message: status,
                           excludeFromSemantics: true,
                           child: Icon(
-                            _busy ? Icons.sync : Icons.cloud_done_outlined,
+                            _recoveryError != null
+                                ? Icons.lock_outline
+                                : _busy || _pendingSaves > 0
+                                    ? Icons.sync
+                                    : _saveFailed || !_hasSaved
+                                        ? Icons.warning_amber_outlined
+                                        : Icons.cloud_done_outlined,
                             size: 20,
                           ),
                         )
@@ -202,6 +224,37 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       return Scaffold(
         appBar: _appBar(context),
         body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_recoveryError != null) {
+      return Scaffold(
+        appBar: _appBar(context, showStatus: true),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                    _t('Workspace recovery required',
+                        'Требуется восстановление'),
+                    style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 16),
+                Text(_t(
+                    'Studio has not replaced the saved workspace. Editing and saving are unavailable until it can be reopened.',
+                    'Studio не заменил сохранённый рабочий проект. Редактирование и сохранение недоступны, пока проект не удастся открыть.')),
+                const SizedBox(height: 16),
+                SelectableText(_recoveryError!,
+                    key: const ValueKey('studio-recovery-message')),
+                const SizedBox(height: 16),
+                OutlinedButton(
+                    key: const ValueKey('studio-retry-open'),
+                    onPressed: _load,
+                    child: Text(_t('Retry opening', 'Повторить открытие'))),
+              ],
+            ),
+          ),
+        ),
       );
     }
     if (_playbookRegistry == null) {
@@ -617,7 +670,12 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
           draft: _draft,
           locale: widget.locale,
           onTaxEconomics: () async {
-            await _persist();
+            try {
+              await _persist();
+            } on Object {
+              // _persist reports the failure; do not open an unsaved source.
+              return;
+            }
             if (!mounted) return;
             await Navigator.of(context).push(MaterialPageRoute<void>(
                 builder: (_) => TaxEditorScreen(
@@ -899,7 +957,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       _invalidateFrom(changedAt);
       _notice = null;
     });
-    _persist();
+    _autoSave();
   }
 
   void _invalidateFrom(StudioWorkflowStage stage) {
@@ -926,7 +984,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       );
       _syncControllers();
     });
-    _persist();
+    _autoSave();
   }
 
   void _startBlank() {
@@ -939,7 +997,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       _notice = null;
       _syncControllers();
     });
-    _persist();
+    _autoSave();
   }
 
   Future<void> _importFromClipboard() async {
@@ -1021,7 +1079,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       return;
     }
     setState(() => _activeStage = stage);
-    _persist();
+    _autoSave();
   }
 
   void _previous() {
@@ -1035,7 +1093,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       _activeStage = StudioWorkflowStage.values[_activeStage.index + 1];
       _notice = null;
     });
-    _persist();
+    _autoSave();
   }
 
   Future<void> _validateAndRun() async {
@@ -1083,8 +1141,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       if (mounted) {
         setState(
           () => _notice = _t(
-            'Rust gate failed: $error',
-            'Проверка Rust не пройдена: $error',
+            'Validation or save failed: $error',
+            'Ошибка проверки или сохранения: $error',
           ),
         );
       }
@@ -1128,6 +1186,13 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   }
 
   Future<void> _persist() async {
+    if (_recoveryError != null) {
+      throw const StudioStorageException(
+          code: 'workspace_recovery_required',
+          message: 'Reopen the retained workspace before saving.');
+    }
+    final int attempt = ++_saveAttempt;
+    setState(() => _pendingSaves++);
     try {
       await widget.store.write(
         StudioWorkspace(
@@ -1136,15 +1201,33 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
           completedStages: Set<StudioWorkflowStage>.of(_completed),
         ),
       );
+      if (mounted && attempt == _saveAttempt) {
+        setState(() {
+          _hasSaved = true;
+          _saveFailed = false;
+        });
+      }
     } on Object catch (error) {
-      if (mounted) {
+      if (mounted && attempt == _saveAttempt) {
         setState(
-          () => _notice = _t(
-            'Auto-save failed: $error',
-            'Ошибка автосохранения: $error',
-          ),
+          () {
+            _saveFailed = true;
+            _notice = _t('Save failed: $error', 'Ошибка сохранения: $error');
+          },
         );
       }
+      rethrow;
+    } finally {
+      if (mounted) setState(() => _pendingSaves--);
+    }
+  }
+
+  Future<void> _autoSave() async {
+    try {
+      await _persist();
+    } on Object {
+      // Fire-and-forget UI edits retain their draft and show the save error.
+      // Awaited operations use _persist directly and must stop on failure.
     }
   }
 

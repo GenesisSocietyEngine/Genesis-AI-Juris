@@ -1,0 +1,59 @@
+# Mobile application acceptance continuation
+
+## Outcome and boundaries
+
+Base: canonical main `bc093010bef5ffa9476aac2d68e7b2b19ebf39d5`, after ordinary merge of PR #68. The root checkout's unrelated changes remain untouched. This slice adds application-level evidence alongside the existing native XCTest gate. It must not replace that gate or treat a build/upload as an executed test.
+
+The intended user outcome is edit → calculate through Rust → save → terminate the application process → relaunch → reopen, with identical saved inputs and freshly recomputed results. The new `iOS Tax Application` workflow uses a freshly created simulator, the production `JurisApp.catalog`, real `NativeScenarioBridgeClient` and actual application-support stores. Pass-through observers retain native exchanges and await real workspace writes; no financial calculation or storage is mocked.
+
+The selected integration test enters EUR 250,000.00 and 200,000.00 in the real editor. Each phase must execute exactly one successful native calculation, yielding annual saving EUR 50,000.00 and lifecycle benefit EUR 500,000.00. It saves twice and compares the complete revision-bound sidecar, scenario, workspace progress and native request/response across the two processes. The write phase refuses an existing workspace instead of clearing it. The read phase requires the same source SHA and run nonce, retained proof and a different OS PID.
+
+The driver requires the selected test to pass and validates one nonempty PNG plus source-bound JSON for each phase. The orchestration records tool versions, simulator/runtime, archive and Runner hashes, verifies the exact native exports after each build, checks the live PID belongs to Runner, explicitly terminates it with `simctl`, and proves process absence before the next phase. `--keep-app-running` prevents Flutter Driver cleanup from uninstalling the app. A second installation updates the same simulator application without explicitly clearing its data; the required persisted proof and equality checks fail if persistence is lost.
+
+The existing `iOS Native FFI` workflow remains enabled with both archive audits and `RunnerTests.testNativeLogisticsLifecycle()`. CI artifacts are retained for 14 days and must be downloaded with source/run/job/digest receipts after execution.
+
+## Review and current evidence
+
+- Before promotion, independent static review checked the observer boundary, awaited Save completion, actual storage/native calls, cross-process assertions and driver evidence requirements.
+- Tracked test and driver: Dart formatting passed with zero changes; focused analysis passed.
+- Workflow YAML and every embedded Bash step parsed successfully; runner `bash -n` passed. These are static checks, not iOS execution evidence.
+- The actual macOS application runs on source `829ccc5b8e39812a83bffdc3cf8d0dd9a8b60140` completed successfully, with executed-test and retained-artifact verification below. Any later source requires fresh checks; these receipts are not main-branch evidence.
+- Initial push run `36717807568` at `b11c204d8ffb1c44329db2184e5fea8af15f728f` failed before creating a job: the workflow placed `runner.temp` in job-level `env`, where the runner context is unavailable. The correction places the evidence path in each relevant step's `env`, following [GitHub's context availability rules](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability). YAML/Bash parsing alone did not detect this platform expression error. No application execution is claimed for that failed run.
+
+Programmatic field entry exercises application behavior but does not establish mobile keyboard typing, clipboard or accessibility acceptance. Incomplete drafts, legacy/future imports, interrupted workspace and sidecar writes, enlarged text and screen-reader journeys require their own explicit receipts. Physical-device checks remain open per the user's instruction to use CI and emulators. No mobile distribution or product-release acceptance is claimed.
+
+## Executed iOS application evidence at 829ccc5
+
+Exact source: `829ccc5b8e39812a83bffdc3cf8d0dd9a8b60140`; tree `ea997db5c7379bae14eef33fdc74c9f4e72440bb`. Both selected write/read application tests executed and passed. Each phase called the real native tax calculation exactly once, with complete native request/response equality. The saved artifact (revision `1`), scenario and workspace progress matched after reopen. Annual saving was EUR 50,000.00; lifecycle benefit EUR 500,000.00. Both phase archive audits passed for `x86_64`.
+
+| Event | Run / job | Verified old / new PID | Retained artifact | SHA-256 |
+| --- | --- | --- | --- | --- |
+| PR head | [36718452268](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36718452268) / `109897157038` | `33547` / `42521` | `11097289592`, `ios-tax-application-36718452268-1`, 386,471 bytes; expires `2026-10-14T13:18:17Z` | `69f5f49e5a1885d5d4becc9449179a99e96e42659298ca5375078ec1ad16dc20` |
+| Push | [36718444807](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36718444807) / `109897135340` | `49144` / `64397` | `11100276185`, `ios-tax-application-36718444807-1`, 386,669 bytes; expires `2026-10-14T13:28:24Z` | `c83d4190f0bb73f241fe90923d7ff130424326b2b81b369a0199b669de1ffaf1` |
+
+The host proved each old process absent before the next launch. Downloaded JSON, PNG signatures/hashes, source/nonce identity, complete native exchanges and process logs were independently checked; the PR screenshots visibly show Saved and matching calculated results. These are production application widgets/stores inside an integration target. The read phase rebuilds/reinstalls a phase-specific Runner on the same source while retaining application data. This proves cold process reopen across two harness builds; it does not establish an unchanged shipping-binary relaunch, raw disk-byte equality, iOS keyboard/VoiceOver or all interruption/import states.
+
+The separate native gate also executed `RunnerTests.testNativeLogisticsLifecycle()` on this exact source:
+
+| Event | Run / job | Executed result | Retained artifact / SHA-256 |
+| --- | --- | --- | --- |
+| PR head | [36718452276](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36718452276) / `109897598054` | Passed `2026-09-30T13:26:32.012992Z`, 0.288 seconds, attempt 1 | `11098792164`, `ios-native-36718452276-1`, 180,408 bytes; `a8350a72a488393b90db87324b557dd6800ffa0c9e954cc1a4a1e1b382f6c4f9`; expires `2026-10-14T13:26:33Z` |
+| Push | [36718444745](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36718444745) / `109897617444` | Passed `2026-09-30T13:12:44.975083Z`, 0.200 seconds, attempt 1 | `11098011677`, `ios-native-36718444745-1`, 179,364 bytes; `6a8351c72947cae637e05b81f1b458ac7b273d73ef977d58bafb15bcbc42b07f`; expires `2026-10-14T13:12:45Z` |
+
+Both native jobs passed 27 fake verifier cases and eight real macOS thin/universal fixtures. Initial product archive architectures were `arm64 x86_64`; prepared archive was `x86_64`. Source-bound downloaded diagnostics and receipts are retained locally under `.artifacts/pr68-ios-2026-09-30/ios-829-{pr,push}*` and `ios-application-829-{pr,push}*` in the root workspace. GitHub occasionally returned stale/empty nested job-step metadata; acceptance was checked against terminal job status, original executed-test logs and retained phase artifacts, not a nested status alone.
+
+All 16 applicable checks eventually passed at this head. PR web run `36718452289` initially failed during Miniflare's internal proxy then cascaded; the exact-source push web job passed. One failed-job rerun passed at attempt 2, job `109902227782`. Initial diagnostics `11098055121` (SHA-256 `08500a5fc1f57060cb2bb043c905c4da2c886e53f31b3a31a8b6fac141734d4f`) and retry diagnostics `11098985589` (SHA-256 `188ef15b65a8b14633016b05e37baf9aeb6e80dc93ffc4cbdeb64804f31f76bd`) remain retained. The initial root cause is not established.
+
+The merge was held after Android's final legacy replay found that current provenance editing mutated the retained converted legacy draft by reference while its old input hash stayed unchanged. Exact original JSON/hash and FX JSON remained intact, and current calculation/save/reopen succeeded; preservation of the entire converted legacy record was not accepted. The bounded copy correction and regression are recorded in `TAX_EDITOR_UX_REVIEW.md`; a corrected head must refresh all applicable checks.
+
+## Android application observations at 829ccc5
+
+Source `829ccc5b8e39812a83bffdc3cf8d0dd9a8b60140`; Android 37 x86_64 `emulator-5556`; APK 96,870,778 bytes, SHA-256 `af3b1bd0141b26c3d99a50b7614a1613c3d0bbd26c19f1cd7fe9e76831fe3259`. Receipt: root `.artifacts/pr68-ios-2026-09-30/android-editor-ux/journey/journey-result.json`, SHA-256 `2058b1468899756d75b58e7262f8bab403a43b3043ea662c4290d0632299ce0e`; its `verify-journey.mjs` independently rechecked the observations with the converted-draft aliasing limitation explicit.
+
+- The actual numeric keyboard was observed. Invalid input `250000.001` displayed field-specific guidance without `FormatException`, remained unchanged after Save and had no calculation. At font scale 1.5 the format version, longest legacy label, JSON helper and Cancel/Import actions were readable.
+- Stopped-app constructed workspace states exercised missing and corrupt primaries. Both restored the exact supported backup, SHA-256 `8743892a3faedd9965bf3dbfcce2b68a95a6e7bdc10af0e81c88c79d8ac0a0b5`, and freshly calculated through Rust in new PIDs `15329` and `15586`. The 31-byte corrupt original remained at a unique recovery path, SHA-256 `75dffa5cfb607b875134742417ffeed58aa05d94f60ce27cf5324ab41b336452`. These are constructed-state replays, not controlled termination during a write.
+- The 552-character legacy rates/FX input was entered through paced Android input events with visible Gboard; no VM/controller input mutation was used for this completed journey. The exact original hash was `ff4f04fbbd843c689b338a81fab9a781ee7a4054a9dd8fe8b121577ae8d2e315`. Native import returned converted, provenance/rates were explicitly reviewed, and native calculation succeeded in PID `16541`. Save completion notice and revision `3` were verified before termination. After process absence, PID `17539` reopened and freshly calculated the same full request/result. Saved/cold-reopened artifact bytes matched SHA-256 `72359506a554e6ce3124daf0e1d96a13a626776a19912889eb304ed76b430608`. Annualized net benefit EUR 19,133.34, lifecycle and NPV EUR 28,200.00, ROI 156,666 bps, payback 0 months. Original JSON/hash and FX JSON matched; the converted-draft mutation described above prevents claiming the entire retained legacy record was unchanged.
+- A future workspace envelope (`schema_version: 99`, unknown extension) stayed read-only on open and Retry, with no editable/save/import controls. Primary, backup and retained corrupt bytes were unchanged. Future primary SHA-256 `7decd1a98b7c2d3eaddfafb4befd07baccb3b22c55e91a60536a1d3c4bd6b841`.
+- The original synthetic completed analysis (`7bfc45d1750dcfe1b45e5cc2e3a4329c7c9b464a6cad25ce56070653a813caf1`), workspace/backup/recovery files and all secure/system settings were restored. Font scale returned to 1.0, TalkBack remained off, and task debugger forwarding was removed.
+
+Nonpassing harness attempts remain in the receipt: one stop occurred before Save completed and left the old primary/backup with a new temporary payload; it is not a completed-save failure or a controlled interruption boundary. A large input batch retained only a prefix, so the exact-input check blocked Import; paced entry later passed. Stale startup snapshots were excluded. Spoken screen-reader output, complete touch-gesture traversal, physical devices, controlled filesystem-boundary interruption and aggregate recovery remain open.
