@@ -1,3 +1,5 @@
+import type { TaxAttachmentV1 } from "./tax-authoring";
+
 export type MetricKey = "position" | "evidence" | "trust" | "exposure";
 
 export type CaseWorkflowMode = "adaptive" | "process" | "decision" | "simulation" | "hybrid";
@@ -358,6 +360,8 @@ export type StudioDraft = {
     sourceUrls?: string[];
   };
   taxEconomics?: TaxEconomicsV1;
+  /** Complete opaque authoring document. Stored responses are historical only. */
+  taxAnalysis?: TaxAttachmentV1;
   dealEconomics?: DealEconomicsV1;
   nodes: StudioNode[];
   links: StudioLink[];

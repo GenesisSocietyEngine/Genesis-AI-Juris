@@ -18,13 +18,20 @@ test("prompt files retain their complete original text for explicit canonical re
   assert.equal(await readStudioPromptFile(new File([boundary], "brief.txt")), boundary);
 });
 
+test("canonical original text never silently replaces malformed UTF-8 or drops its leading BOM", async () => {
+  const raw = "\ufeff# Exact canonical text\r\n<!-- GENESIS-JURIS-CANONICAL-V99 -->\r\n";
+  assert.equal(await readStudioPromptFile(new File([raw], "future.md")), raw);
+  const prefix = new TextEncoder().encode("# Canonical text\n");
+  await assert.rejects(readStudioPromptFile(new File([prefix, new Uint8Array([0xff])], "invalid.md")), /prompt_file_encoding/);
+});
+
 test("empty, over-limit and unreadable prompt files reject before replacement", async () => {
   let read = false;
-  await assert.rejects(readStudioPromptFile({ size: STUDIO_PROMPT_CHARACTER_LIMIT * 2 + 1, text: async () => { read = true; return "x"; } }), /prompt_file_too_large/);
+  await assert.rejects(readStudioPromptFile({ size: STUDIO_PROMPT_CHARACTER_LIMIT * 2 + 1, arrayBuffer: async () => { read = true; return new ArrayBuffer(1); } }), /prompt_file_too_large/);
   assert.equal(read, false);
   await assert.rejects(readStudioPromptFile(new File(["x".repeat(STUDIO_PROMPT_CHARACTER_LIMIT + 1)], "brief.txt")), /prompt_text_too_long/);
   await assert.rejects(readStudioPromptFile(new File([" \r\n\t"], "empty.md")), /prompt_file_empty/);
-  await assert.rejects(readStudioPromptFile({ size: 10, text: async () => { throw new Error("read failed"); } }), /read failed/);
+  await assert.rejects(readStudioPromptFile({ size: 10, arrayBuffer: async () => { throw new Error("read failed"); } }), /read failed/);
 });
 
 test("file errors explain recovery in both languages without exposing exception details", () => {

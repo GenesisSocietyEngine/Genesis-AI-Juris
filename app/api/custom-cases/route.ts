@@ -2,11 +2,13 @@ import { and, desc, eq, exists, getTableColumns, inArray, lt, or, sql } from "dr
 import { getDb } from "../../../db";
 import { auditEvents, caseDrafts, caseFeedback, customCaseGrants, customCases, users } from "../../../db/schema";
 import { normalizeStoredCaseProtection, verifyCaseProtection } from "../../case-protection";
-import { caseFingerprint, casePublicationFingerprint, legacyCaseFingerprintV15, normalizeStudioDraft } from "../../case-integrity";
+import { caseFingerprint, casePublicationFingerprint, legacyCaseFingerprintV15 } from "../../case-integrity";
 import { canShareCustomCase, canViewCustomCase, normalizeEmail, normalizeLicenseTier } from "../../custom-case-access";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { isSameOriginMutation, readJsonObject } from "../../request-security";
 import { getOrCreateCaseProtectionKey } from "../../server-case-protection";
+import { readStudioAggregate } from "../../studio-aggregate";
+import { parsePreservedJson } from "../../preserved-json";
 import { isPlatformAdmin } from "../../server-authorization";
 import type { CaseProtectionV1 } from "../../types";
 
@@ -30,11 +32,23 @@ export async function GET(request: Request) {
     if (!record || !canViewCustomCase({ viewerEmail: email, ownerEmail: record.ownerEmail, isPrivate: record.isPrivate, isAdmin: admin, hasGrant: Boolean(viewerGrant) })) {
       return privateJson({ error: "Custom case not found." }, 404);
     }
-    const [draft] = await db.select().from(caseDrafts).where(and(eq(caseDrafts.customCaseId, record.id), eq(caseDrafts.version, record.currentVersion), eq(caseDrafts.fingerprint, record.fingerprint))).orderBy(desc(caseDrafts.updatedAt)).limit(1);
+    const [draft] = await db.select({ ...getTableColumns(caseDrafts), payload: sql<string>`cast(${caseDrafts.payload} as text)` }).from(caseDrafts).where(and(eq(caseDrafts.customCaseId, record.id), eq(caseDrafts.version, record.currentVersion), eq(caseDrafts.fingerprint, record.fingerprint))).orderBy(desc(caseDrafts.updatedAt)).limit(1);
     if (!draft) return privateJson({ error: "Custom case version not found." }, 404);
+    const aggregate = readStudioAggregate(draft.payload, { kind: "draft" });
+    if (aggregate.status !== "editable") {
+      // The exact database envelope already established ownership/access. An
+      // unsupported payload cannot establish new shared-copy/seal authority.
+      const owner = normalizeEmail(record.ownerEmail) === email;
+      return privateJson({
+        customCase: summarize(record, email, admin, viewerGrant, licenseTier, 0, true),
+        recovery: { status: aggregate.status, reason: aggregate.reason, canExport: owner, ...(owner ? { rawText: draft.payload } : {}) },
+        shares: [], feedback: [],
+      });
+    }
+    const storedPayload = aggregate.envelope;
     let publicationFingerprint: string;
     try {
-      const storedDraft = normalizeStudioDraft(draft.payload);
+      const storedDraft = aggregate.draft;
       const currentFingerprint = caseFingerprint(storedDraft);
       const legacyFingerprint = legacyCaseFingerprintV15(storedDraft);
       if (draft.fingerprint !== record.fingerprint || (record.fingerprint !== currentFingerprint && record.fingerprint !== legacyFingerprint)) {
@@ -46,9 +60,9 @@ export async function GET(request: Request) {
     }
     let protection: CaseProtectionV1 | null;
     try {
-      protection = normalizeStoredCaseProtection(draft.payload.protection);
+      protection = normalizeStoredCaseProtection(storedPayload.protection);
       if (protection) {
-        const parent = storedParentIdentity(draft.payload);
+        const parent = storedParentIdentity(storedPayload);
         const key = await getOrCreateCaseProtectionKey(db);
         const valid = await verifyCaseProtection(protection, {
           caseId: record.caseId,
@@ -74,7 +88,7 @@ export async function GET(request: Request) {
       : [];
     return privateJson({
       customCase: { ...summarize(record, email, admin, viewerGrant, licenseTier, shares.length, protection?.copyProtected === true), publicationFingerprint, protection },
-      draft: protection ? { ...draft.payload, protection } : draft.payload,
+      draft: protection ? { ...storedPayload, protection } : storedPayload,
       shares,
       feedback,
     });
@@ -94,24 +108,35 @@ export async function GET(request: Request) {
   const visibleWhere = admin
     ? or(ownerWhere, eq(customCases.isPrivate, false))!
     : or(ownerWhere, and(eq(customCases.isPrivate, false), viewerGrantExists))!;
-  const copyProtected = sql<boolean>`coalesce((
-    select case
-      when json_extract(${caseDrafts.payload}, '$.protection.copyProtected') = 1
-        or json_extract(${caseDrafts.payload}, '$.protection.copyPolicy') = 'lineage_locked'
-      then 1 else 0 end
-    from ${caseDrafts}
-    where ${caseDrafts.customCaseId} = ${customCases.id}
-      and ${caseDrafts.version} = ${customCases.currentVersion}
-      and ${caseDrafts.fingerprint} = ${customCases.fingerprint}
-    order by ${caseDrafts.updatedAt} desc
+  // Keep malformed retained rows listable for recovery. Explicit SQL qualifiers
+  // are required here: Drizzle strips selected-column qualifiers, which would
+  // otherwise bind id/fingerprint to the inner draft instead of its envelope.
+  const storedProtection = sql<string>`coalesce((
+    select case when json_valid(current_draft.payload) = 1
+      then case when json_type(current_draft.payload) = 'object'
+        then json_quote(json_extract(current_draft.payload, '$.protection'))
+        else '"unavailable"' end
+      else '"unavailable"' end
+    from ${caseDrafts} as current_draft
+    where current_draft.custom_case_id = custom_cases.id
+      and current_draft.version = custom_cases.current_version
+      and current_draft.fingerprint = custom_cases.fingerprint
+    order by current_draft.updated_at desc
     limit 1
-  ), 0)`;
+  ), '"unavailable"')`;
   const pageWhere = cursor ? and(visibleWhere, or(
     lt(customCases.updatedAt, cursor.updatedAt),
     and(eq(customCases.updatedAt, cursor.updatedAt), lt(customCases.id, cursor.id)),
   )!) : visibleWhere;
-  const page = await db.select({ ...getTableColumns(customCases), copyProtected }).from(customCases).where(pageWhere).orderBy(desc(customCases.updatedAt), desc(customCases.id)).limit(limit + 1);
-  const records = page.slice(0, limit);
+  const page = await db.select({ ...getTableColumns(customCases), storedProtection }).from(customCases).where(pageWhere).orderBy(desc(customCases.updatedAt), desc(customCases.id)).limit(limit + 1);
+  const records = page.slice(0, limit).map(record => {
+    // A list hint never verifies a seal or authorizes copying. Unknown/malformed
+    // metadata is conservatively protected until the exact detail is inspected.
+    let copyProtected = true;
+    try { copyProtected = normalizeStoredCaseProtection(parsePreservedJson(record.storedProtection))?.copyProtected ?? false; }
+    catch { /* Recovery/detail inspection is required. */ }
+    return { ...record, copyProtected };
+  });
   const nextCursor = page.length > limit && records.length ? encodeCursor(records.at(-1)!) : null;
   if (!records.length) return privateJson({ customCases: [], nextCursor: null, licenseTier, isAdmin: admin });
   const pageIds = records.map((record) => record.id);

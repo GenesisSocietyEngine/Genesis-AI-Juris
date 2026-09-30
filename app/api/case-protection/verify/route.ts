@@ -1,12 +1,14 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { caseDrafts, caseVersions, customCaseGrants, customCases } from "../../../../db/schema";
 import { normalizeStoredCaseProtection, verifyCaseProtection } from "../../../case-protection";
-import { caseFingerprint, casePublicationFingerprint, isRecord, legacyCaseFingerprintV15, normalizeStudioDraft } from "../../../case-integrity";
+import { caseFingerprint, casePublicationFingerprint, isRecord, legacyCaseFingerprintV15 } from "../../../case-integrity";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 import { canViewCustomCase, normalizeEmail } from "../../../custom-case-access";
 import { isSameOriginMutation, readJsonObject } from "../../../request-security";
-import { getOrCreateCaseProtectionKey, resolveExactCaseArtifact, type StoredCaseArtifact } from "../../../server-case-protection";
+import { getOrCreateCaseProtectionKey, readStoredCasePayload, resolveExactCaseArtifact, type StoredCaseArtifact } from "../../../server-case-protection";
+import { readStudioAggregate } from "../../../studio-aggregate";
+import { parsePreservedJson } from "../../../preserved-json";
 import { isPlatformAdmin } from "../../../server-authorization";
 import { STUDIO_CASE_BODY_LIMIT } from "../../../studio-envelope";
 import type { CaseProtectionV1, StudioDraft } from "../../../types";
@@ -17,13 +19,15 @@ export async function POST(request: Request) {
   if (!isSameOriginMutation(request)) return privateJson({ error: "Cross-site mutation rejected." }, 403);
   const identity = await getChatGPTUser();
   if (!identity) return privateJson({ error: "Sign in is required." }, 401);
-  const payload = await readJsonObject(request, STUDIO_CASE_BODY_LIMIT);
+  const payload = await readJsonObject(request, STUDIO_CASE_BODY_LIMIT, parsePreservedJson);
   if (!payload || !isRecord(payload.draft)) return privateJson({ error: "An exact Studio draft is required." }, 400);
 
   let draft: StudioDraft;
   let protection: CaseProtectionV1 | null;
   try {
-    draft = normalizeStudioDraft({ ...payload.draft, protection: payload.protection ?? payload.draft.protection });
+    const aggregate = readStudioAggregate(JSON.stringify({ ...payload.draft, protection: payload.protection ?? payload.draft.protection }), { kind: "draft" });
+    if (aggregate.status !== "editable") return privateJson({ valid: false, copyProtected: true, canDuplicate: false, access: "none", customCaseId: null, fingerprint: null, publicationFingerprint: null, recovery: { status: aggregate.status, reason: aggregate.reason, canExport: false } });
+    draft = aggregate.draft;
     protection = normalizeStoredCaseProtection(draft.protection);
   } catch {
     return verification(false, false, false, "none", null, null, null);
@@ -52,7 +56,7 @@ export async function POST(request: Request) {
       }, key);
       if (!sealValid) continue;
       const resolved = await resolveExactCaseArtifact(db, { caseId: draft.caseId, version: draft.version, fingerprint: candidate }, key);
-      if (!resolved || resolved.currentCode !== protection.currentCode || resolved.protection?.seal !== protection.seal) continue;
+      if (!resolved || !resolved.editable || resolved.currentCode !== protection.currentCode || resolved.protection?.seal !== protection.seal) continue;
       // Protection v1 did not bind premise-review provenance (and v15 did not
       // bind relationship IDs). The authoritative stored draft must therefore
       // match both current semantic and publication-safety fingerprints before
@@ -103,26 +107,28 @@ async function authoritativeCurrentFingerprints(db: ReturnType<typeof getDb>, ar
   let payload: unknown;
   if (artifact.source === "custom") {
     if (!artifact.customCaseId) return null;
-    const records = await db.select({ payload: caseDrafts.payload }).from(caseDrafts).where(and(
+    const records = await db.select({ payload: sql<string>`cast(${caseDrafts.payload} as text)` }).from(caseDrafts).where(and(
       eq(caseDrafts.customCaseId, artifact.customCaseId),
       eq(caseDrafts.caseId, artifact.caseId),
       eq(caseDrafts.version, artifact.version),
       eq(caseDrafts.fingerprint, artifact.studioFingerprint),
     )).limit(2);
     if (records.length !== 1) return null;
-    payload = records[0].payload;
+    payload = readStoredCasePayload(records[0].payload);
   } else {
-    const records = await db.select({ payload: caseVersions.payload }).from(caseVersions).where(and(
+    const records = await db.select({ payload: sql<string>`cast(${caseVersions.payload} as text)` }).from(caseVersions).where(and(
       eq(caseVersions.caseId, artifact.caseId),
       eq(caseVersions.version, artifact.version),
       eq(caseVersions.studioFingerprint, artifact.studioFingerprint),
     )).limit(2);
     if (records.length !== 1) return null;
-    payload = records[0].payload;
+    payload = readStoredCasePayload(records[0].payload);
   }
   try {
     const storedDraft = isRecord(payload) && isRecord(payload.studioDraft) ? payload.studioDraft : payload;
-    const draft = normalizeStudioDraft(storedDraft);
+    const aggregate = readStudioAggregate(JSON.stringify(storedDraft), { kind: "draft" });
+    if (aggregate.status !== "editable") return null;
+    const draft = aggregate.draft;
     return { caseFingerprint: caseFingerprint(draft), publicationFingerprint: casePublicationFingerprint(draft) };
   } catch {
     return null;

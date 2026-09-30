@@ -1,5 +1,5 @@
 import vinext from "vinext";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import hostingConfig from "./.openai/hosting.json" with { type: "json" };
 import { sites } from "./build/sites-vite-plugin.ts";
 import { buildReleaseIdentity } from "./build/release-identity.ts";
@@ -37,7 +37,7 @@ const localBindingConfig = {
 
 export default defineConfig(async () => {
   const identity = buildReleaseIdentity(process.cwd());
-  const { files: _files, ...packagedIdentity } = identity;
+  const packagedIdentity = Object.fromEntries(Object.entries(identity).filter(([key]) => key !== "files"));
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
   // settings; application environment belongs in ignored `.env*` files.
   process.env.WRANGLER_WRITE_LOGS ??= "false";
@@ -58,6 +58,21 @@ export default defineConfig(async () => {
     },
     plugins: [
       vinext(),
+      {
+        name: "exclude-declarations-from-development-scan",
+        apply: "serve",
+        configEnvironment(_name, environment) {
+          // Vinext's app/**/*.ts entry glob also matches wasm-bindgen's .d.ts
+          // declarations. They describe modules but are never executable entries.
+          if (environment.optimizeDeps?.entries) {
+            const entries = environment.optimizeDeps.entries;
+            environment.optimizeDeps.entries = [
+              ...(typeof entries === "string" ? [entries] : entries),
+              "!**/*.d.ts",
+            ];
+          }
+        },
+      } satisfies Plugin,
       taxRuntime({ sourceCommit: identity.sourceCommit, applicationInputsSha256: identity.applicationInputsSha256 }),
       sites(identity),
       cloudflare({

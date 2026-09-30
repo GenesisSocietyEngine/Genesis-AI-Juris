@@ -26,11 +26,13 @@ import {emptyStudioTimeline} from './studio-revisions';
 import {hasStudioEvidenceInput,updateStudioEvidenceInput,clearStudioEvidenceInput} from './studio-evidence-buffer';
 import {appendConnectedStudioItem} from './studio-action-editing';
 import {shouldDiscardStudioDraft} from './studio-session-authority';
+import {StudioTaxWriteBaseline} from './studio-tax-write-baseline';
 export {StudioEvidenceComposer};
 export function owner(original,confirm,context={customCaseId:null,isPrivate:false}) {
   const state={draft:original,buffers:{},revision:0,timeline:null,selected:null,notice:'',purges:0,prompt:'Retained input'};
   const studioEvidenceBuffersRef={current:state.buffers},studioChangedBeforeRestoreRef={current:false};
   const locale='en',window={confirm};
+  const studioTaxWriteBaseline={current:new StudioTaxWriteBaseline()};
   const setStudioEvidenceBuffers=value=>state.buffers=value;
   const setStudioOpenRevision=fn=>state.revision=fn(state.revision);
   const syncStudioDraft=value=>state.draft=value;

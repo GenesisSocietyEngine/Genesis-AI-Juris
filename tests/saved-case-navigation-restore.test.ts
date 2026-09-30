@@ -5,6 +5,7 @@ import vm from "node:vm";
 import ts from "typescript";
 import { buildCanopyPackage } from "../app/canopy-fixture";
 import { caseFingerprint, casePublicationFingerprint, legacyCaseFingerprintV15, normalizeStudioDraft } from "../app/case-integrity";
+import { StudioTaxWriteBaseline } from "../app/studio-tax-write-baseline";
 import { savedStudioPath } from "../app/studio-save-receipt";
 import { parseStudioWorkflowStep, restoredStudioWorkflowStep, serializedStudioWorkflowStep } from "../app/studio-workflow";
 import type { StudioDraft } from "../app/types";
@@ -42,6 +43,7 @@ function harness(query = "custom_case=1&studio_step=case_map") {
     URL, URLSearchParams, Event, AbortSignal, locale: "en", normalizeStudioDraft, caseFingerprint, legacyCaseFingerprintV15, casePublicationFingerprint, savedStudioPath,
     parseStudioWorkflowStep, serializedStudioWorkflowStep, restoredStudioWorkflowStep,
     savedCaseRequestRef: { current: 0 }, draftRef: { current: blank as StudioDraft }, currentStudioScopeRef: { current: "account-A" as string | null },
+    studioTaxWriteBaseline: { current: new StudioTaxWriteBaseline() },
     restoredSavedCaseRef: { current: null as string | null }, studioSavedBaseline: { current: null },
     savedCaseRestorePending: null as number | null, studioAIEntitlement: "not_configured", studioRestoreReady: true, studioCustomCaseId: null,
     fetch: (_path: string, init: RequestInit) => { assert.ok(init.signal, "Saved-case read has bounded cancellation"); return new Promise<Response>((resolve, reject) => requests.push({ resolve, reject })); },

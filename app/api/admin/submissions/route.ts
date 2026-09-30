@@ -1,9 +1,10 @@
-import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, isNull, or, sql } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { auditEvents, caseDrafts, customCases } from "../../../../db/schema";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 import { isSameOriginMutation, readJsonObject } from "../../../request-security";
 import { isPlatformAdmin } from "../../../server-authorization";
+import { readStudioAggregate } from "../../../studio-aggregate";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +15,12 @@ export async function GET(request: Request) {
   if (idParam) {
     const id = Number(idParam);
     if (!Number.isInteger(id) || id <= 0) return Response.json({ error: "Submission not found." }, { status: 404 });
-    const [row] = await getDb().select({ submission: caseDrafts, isPrivate: customCases.isPrivate }).from(caseDrafts).leftJoin(customCases, eq(customCases.id, caseDrafts.customCaseId)).where(eq(caseDrafts.id, id)).limit(1);
+    const [row] = await getDb().select({ submission: { ...getTableColumns(caseDrafts), payload: sql<string>`cast(${caseDrafts.payload} as text)` }, isPrivate: customCases.isPrivate }).from(caseDrafts).leftJoin(customCases, eq(customCases.id, caseDrafts.customCaseId)).where(eq(caseDrafts.id, id)).limit(1);
     if (!row || row.isPrivate === true) return Response.json({ error: "Submission not found." }, { status: 404 });
-    return Response.json({ submission: row.submission }, { headers: { "Cache-Control": "private, no-store" } });
+    const aggregate = readStudioAggregate(row.submission.payload, { kind: "draft" });
+    return Response.json({ submission: { ...row.submission, payload: aggregate.status === "editable" ? aggregate.envelope : undefined,
+      ...(aggregate.status === "editable" ? {} : { recovery: { status: aggregate.status, reason: aggregate.reason, canExport: false } }),
+    } }, { headers: { "Cache-Control": "private, no-store" } });
   }
   const rows = await getDb().select({
     id: caseDrafts.id,
@@ -47,8 +51,9 @@ export async function POST(request: Request) {
   const reviewerNote = typeof payload?.reviewerNote === "string" ? payload.reviewerNote.trim().slice(0, 4_000) : "";
   if (reviewerNote.length < 10) return Response.json({ error: "A substantive reviewer note is required." }, { status: 400 });
   const db = getDb();
-  const [visible] = await db.select({ id: caseDrafts.id }).from(caseDrafts).leftJoin(customCases, eq(customCases.id, caseDrafts.customCaseId)).where(and(eq(caseDrafts.id, id), or(isNull(customCases.id), eq(customCases.isPrivate, false)))).limit(1);
+  const [visible] = await db.select({ id: caseDrafts.id, payload: sql<string>`cast(${caseDrafts.payload} as text)` }).from(caseDrafts).leftJoin(customCases, eq(customCases.id, caseDrafts.customCaseId)).where(and(eq(caseDrafts.id, id), or(isNull(customCases.id), eq(customCases.isPrivate, false)))).limit(1);
   if (!visible) return Response.json({ error: "Submission not found." }, { status: 404 });
+  if (status === "accepted" && readStudioAggregate(visible.payload, { kind: "draft" }).status !== "editable") return Response.json({ error: "This retained submission requires recovery before acceptance.", code: "tax_attachment_preservation" }, { status: 409 });
   const now = new Date().toISOString();
   const reviewerEmail = identity.email.toLowerCase();
   const remainsCentrallyVisible = sql<boolean>`(
@@ -73,7 +78,7 @@ export async function POST(request: Request) {
   let updated: { id: number; status: string } | undefined;
   try {
     const [updatedRows] = await db.batch([
-      db.update(caseDrafts).set({ status, reviewerEmail, reviewerNote, reviewedAt: now, updatedAt: now }).where(and(eq(caseDrafts.id, id), eq(caseDrafts.status, "submitted"), remainsCentrallyVisible)).returning({ id: caseDrafts.id, status: caseDrafts.status }),
+      db.update(caseDrafts).set({ status, reviewerEmail, reviewerNote, reviewedAt: now, updatedAt: now }).where(and(eq(caseDrafts.id, id), eq(caseDrafts.status, "submitted"), sql`cast(${caseDrafts.payload} as text) = ${visible.payload}`, remainsCentrallyVisible)).returning({ id: caseDrafts.id, status: caseDrafts.status }),
       // audit_events.object_id is NOT NULL. changes() refers to the immediately
       // preceding UPDATE, so a missed CAS or failed review write aborts the
       // complete D1 batch instead of leaving either side half-committed.

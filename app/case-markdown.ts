@@ -1,10 +1,20 @@
 import { caseFingerprint, isRecord, normalizeStudioDraft } from "./case-integrity";
+import { STUDIO_CASE_BODY_LIMIT } from "./studio-envelope";
+import { buildTaxCanonicalMarkdownPayload, readStudioCanonicalMarkdown } from "./studio-tax-export";
+import { hasTaxAttachment } from "./tax-authoring";
 import type { StudioDraft, StudioLink, StudioNode, StudioNodeType } from "./types";
 
 export const CANONICAL_CASE_MARKER = "GENESIS-JURIS-CANONICAL-V1";
 export type CaseMarkdownStatus = "amended" | "final";
 export type CaseMarkdownLanguage = "en" | "ru";
 export type ParsedCaseMarkdown = { draft: StudioDraft; fingerprint: string; status: CaseMarkdownStatus; language: CaseMarkdownLanguage };
+
+export class CaseMarkdownRecoveryError extends Error {
+  constructor(message: string, readonly rawText: string, readonly status: "unsupported" | "corrupt") {
+    super(message);
+    this.name = "CaseMarkdownRecoveryError";
+  }
+}
 
 const labels: Record<CaseMarkdownLanguage, Record<StudioNodeType, string>> = {
   en: { trigger:"Trigger", actor:"Actors and stakeholders", fact:"Material facts", evidence:"Evidence and sources", deadline:"Deadlines", decision:"Decisions", outcome:"Outcomes", entity:"Entities and jurisdictions", tax_rule:"Tax and legal rules", cash_flow:"Cash flows" },
@@ -109,13 +119,14 @@ function economics(draft: StudioDraft, language: CaseMarkdownLanguage) {
 }
 
 export async function buildCaseMarkdown(source:StudioDraft,options:{status:CaseMarkdownStatus;language:CaseMarkdownLanguage}){
-  const draft=portableDraft(source);
-  const fingerprint=caseFingerprint(draft);
+  const taxPayload=hasTaxAttachment(source)?await buildTaxCanonicalMarkdownPayload(source,options):null;
+  const draft=taxPayload?.draft??portableDraft(source);
+  const fingerprint=taxPayload?.fingerprint??caseFingerprint(draft);
   const language=options.language;
   const en=language==="en";
   const nodeById=new Map(draft.nodes.map((node)=>[node.id,node]));
   const groups=(Object.keys(labels[language]) as StudioNodeType[]).map((type)=>({type,nodes:draft.nodes.filter((node)=>node.type===type)})).filter((group)=>group.nodes.length);
-  const payload=await gzip(JSON.stringify({format:"genesis-juris-canonical-markdown",schemaVersion:1,fingerprint,status:options.status,language,draft}));
+  const marker=taxPayload?.marker??`<!-- ${CANONICAL_CASE_MARKER}\nfingerprint:${fingerprint}\nencoding:gzip-base64url\npayload:${await gzip(JSON.stringify({format:"genesis-juris-canonical-markdown",schemaVersion:1,fingerprint,status:options.status,language,draft}))}\n-->`;
   const lines=[
     `# ${draft.title}`,"",
     `> **${en?"Document status":"Статус документа"}:** ${options.status==="final"?(en?"Final reviewed case description":"Финальное проверенное описание кейса"):(en?"Amended case description":"Уточнённое описание кейса")}`,
@@ -134,8 +145,8 @@ export async function buildCaseMarkdown(source:StudioDraft,options:{status:CaseM
     `## ${en?"3. Decision paths and consequences":"3. Варианты решений и последствия"}`,"",
     ...draft.links.map((link)=>relation(link,nodeById,language)),"",
     `## ${en?"4. Economics and quantified assumptions":"4. Экономика и количественные допущения"}`,"",
-    ...economics(draft,language),
-    ...(!draft.dealEconomics&&!draft.taxEconomics?[en?"_No structured economic model is attached._":"_Структурированная экономическая модель не приложена._",""]:[]),
+    ...(taxPayload?[taxPayload.notice,""]:economics(draft,language)),
+    ...(!taxPayload&&!draft.dealEconomics&&!draft.taxEconomics?[en?"_No structured economic model is attached._":"_Структурированная экономическая модель не приложена._",""]:[]),
     `## ${en?"5. Classification, sources and review controls":"5. Классификация, источники и контроль проверки"}`,"",
     `- **${en?"Tags":"Теги"}:** ${(draft.classification?.tags??[]).join(", ")||"—"}`,
     `- **${en?"Tax topics":"Налоговые темы"}:** ${(draft.classification?.taxTopics??[]).join(", ")||"—"}`,
@@ -143,15 +154,22 @@ export async function buildCaseMarkdown(source:StudioDraft,options:{status:CaseM
     `- **${en?"Compliance-only guard":"Ограничение на законные цели"}:** ${draft.classification?.complianceOnly===false?"No":"Yes"}`,"",
     `## ${en?"6. Deterministic Studio hand-off":"6. Детерминированная передача в Studio"}`,"",
     en?"Enter this complete Markdown file as a Studio prompt and choose **Verify canonical case**. Studio validates the embedded fingerprint and reconstructs the exact reviewed graph without AI reinterpretation. To amend canonical content, edit the case in Studio and generate a new file.":"Введите весь Markdown-файл как промпт Studio и выберите **Проверить канонический кейс**. Studio проверит встроенный отпечаток и восстановит точную проверенную схему без повторной AI-интерпретации. Для канонических изменений отредактируйте кейс в Studio и создайте новый файл.","",
-    `<!-- ${CANONICAL_CASE_MARKER}`,`fingerprint:${fingerprint}`,"encoding:gzip-base64url",`payload:${payload}`,"-->","",
+    ...marker.split("\n"),"",
   ];
-  return {markdown:lines.filter((line,index)=>line!==""||lines[index-1]!=="").join("\n"),fingerprint,draft};
+  const markdown=lines.filter((line,index)=>line!==""||lines[index-1]!=="").join("\n");
+  if(new TextEncoder().encode(markdown).byteLength>STUDIO_CASE_BODY_LIMIT)throw new Error("The complete Markdown document exceeds the size limit.");
+  return {markdown,fingerprint,draft};
 }
 
 export async function parseCaseMarkdown(markdown:string):Promise<ParsedCaseMarkdown|null>{
+  const read=await readStudioCanonicalMarkdown(markdown);
+  if(read.status==="absent")return null;
+  if(read.status==="unsupported"||read.status==="corrupt")throw new CaseMarkdownRecoveryError(`Canonical case payload is invalid: ${read.reason}`,markdown,read.status);
+  if(read.status==="editable")return {draft:read.draft,fingerprint:read.fingerprint,status:read.documentStatus,language:read.language};
+  // A validated v1 envelope retains the existing portable fingerprint semantics.
   const marker=`<!-- ${CANONICAL_CASE_MARKER}`;
   const start=markdown.indexOf(marker);
-  if(start<0)return null;
+  if(start<0)throw new CaseMarkdownRecoveryError("Canonical case marker is invalid",markdown,"corrupt");
   const end=markdown.indexOf("-->",start+marker.length);
   if(end<0)throw new Error("Canonical case marker is incomplete");
   const fields=Object.fromEntries(markdown.slice(start+marker.length,end).trim().split(/\r?\n/).flatMap((line)=>{const separator=line.indexOf(":");return separator>0?[[line.slice(0,separator),line.slice(separator+1)]]:[];}));

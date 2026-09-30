@@ -1,4 +1,5 @@
 import { convertRentalTaxBase, rentalTaxBaseFromDeal } from "./tax-economics";
+import { hasTaxAttachment } from "./tax-authoring";
 import type { DealEconomicsV1, StudioDraft, TaxEconomicsV1 } from "./types";
 
 export const ECONOMIC_PROMPT_START = "[STUDIO REVIEWED ECONOMIC PARAMETERS — AUTO-SYNC]";
@@ -11,9 +12,9 @@ const amount = (value: number | null | undefined, currency: string) => value ===
   : `${currency} ${Math.round(value).toLocaleString("en-GB")}`;
 const percent = (value: number | null | undefined) => value === null || value === undefined ? "not stated" : `${(value / 100).toFixed(2)}%`;
 
-export function synchronizedEconomicPrompt(source: string, draft: Pick<StudioDraft, "dealEconomics" | "taxEconomics">) {
+export function synchronizedEconomicPrompt(source: string, draft: Pick<StudioDraft, "dealEconomics" | "taxEconomics" | "taxAnalysis">) {
   const withoutPrevious = source.replace(new RegExp(`\\n*${escapeRegExp(ECONOMIC_PROMPT_START)}[\\s\\S]*?${escapeRegExp(ECONOMIC_PROMPT_END)}\\n*`, "g"), "\n").trim();
-  const block = economicPromptBlock(draft.dealEconomics, draft.taxEconomics);
+  const block = economicPromptBlock(draft.dealEconomics, hasTaxAttachment(draft) ? undefined : draft.taxEconomics);
   if (!block) return withoutPrevious;
   return `${withoutPrevious}${withoutPrevious ? "\n\n" : ""}${block}`;
 }

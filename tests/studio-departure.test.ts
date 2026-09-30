@@ -24,14 +24,16 @@ function visit(node:ts.Node) {
 visit(source); assert.equal(functions.size,4); assert.ok(registration,"the real parent must install its guard");
 const compiled = await build({ stdin:{loader:"ts",resolveDir:resolve("app"),contents:`
 import {caseTypeReference} from './case-type-reference';
+import {StudioTaxWriteBaseline} from './studio-tax-write-baseline';
 import {registerStudioDeparture,studioDepartureFingerprint} from './studio-departure';
 import {hasStudioEvidenceInput} from './studio-evidence-buffer';
-import {createStudioAuthContinuation,STUDIO_AUTH_CONTINUATION_KEY} from './studio-auth-continuation';
+import {createStudioAuthContinuation,writeStudioAuthContinuation,STUDIO_AUTH_CONTINUATION_KEY} from './studio-auth-continuation';
 import {workspaceSignInPath} from './workspace-navigation';
 ${functions.get("blankStudioDraft")}
 export const blank=blankStudioDraft('2026-09-27T00:00:00.000Z');
 export function parent(navigation,input) {
  const studioDepartureInput={current:input},draftRef={current:input.draft},studioOperationPending={current:input.operationPending},studioSavedBaseline={current:input.saved},currentStudioScopeRef={current:input.scope},initialBlankDraft=input.blank;
+ const studioTaxWriteBaseline={current:new StudioTaxWriteBaseline()};
  const studioEvidenceBuffersRef={current:input.evidencePending?{evidence:{title:'Unadded item',detail:'',relatedId:''}}:{}};
  const locale='en',notices=[];const showSessionNotice=value=>notices.push(value);
  ${functions.get("rememberStudioWorkspaceSave")}
@@ -112,7 +114,7 @@ test("real history guard retains anonymous Studio on Stay and completes only exp
 test("actual sign-in continuation approves departure only after its write; storage or navigation failure retains warning", () => {
   for(const failure of ["none","storage","navigation","private"]){
     const state=input(),h=nav(),parent=actual.parent(h.navigation,state),storage=new Map<string,string>(),events:string[]=[];
-    const window={sessionStorage:{setItem(key:string,value:string){events.push("store");if(failure==="storage")throw Error("Unavailable");storage.set(key,value);}},history:{replaceState(){events.push("replace");},state:{}},location:{href:"https://test.invalid/studio?studio_step=case_map",assign(){events.push("leave");if(failure==="navigation")throw Error("Navigation unavailable");}}};
+    const window={sessionStorage:{getItem(key:string){return storage.get(key)??null;},setItem(key:string,value:string){events.push("store");if(failure==="storage")throw Error("Unavailable");storage.set(key,value);}},history:{replaceState(){events.push("replace");},state:{}},location:{href:"https://test.invalid/studio?studio_step=case_map",assign(){events.push("leave");if(failure==="navigation")throw Error("Navigation unavailable");}}};
     const handler=actual.auth({draft:state.draft,prompt:"Keep this prompt",window,isPrivate:failure==="private",onAuthDeparture:(approved:boolean)=>{events.push(approved?"approve":"cancel");if(approved) h.navigation.approvePageDeparture(); else h.navigation.cancelPageDeparture();}});
     handler.openStudioAccess(true,"save");
     if(failure==="none") {assert.deepEqual(events,["store","replace","approve","leave"]);assert.equal(h.navigation.warnBeforeUnload(),false);const raw=storage.get(STUDIO_AUTH_CONTINUATION_KEY)!;const envelope=JSON.parse(raw);assert.equal(readStudioAuthContinuation(raw,envelope.id,null)?.prompt,"Keep this prompt");}

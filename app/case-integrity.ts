@@ -5,6 +5,7 @@ import { STUDIO_DRAFT_SERIALIZED_LIMIT, studioJsonBytes } from "./studio-envelop
 import { normalizeTaxEconomics } from "./tax-economics";
 import { normalizeDealEconomics } from "./deal-economics";
 import { normalizeCaseTypeReference } from "./case-type-reference";
+import { hasTaxAttachment, preserveKnownTaxAttachment } from "./tax-authoring";
 
 const nodeTypes = new Set<StudioNodeType>([
   "trigger", "actor", "fact", "evidence", "deadline", "decision", "outcome", "entity", "tax_rule", "cash_flow",
@@ -95,7 +96,8 @@ function caseFingerprintContent(draft: StudioDraft, includeRelationshipIds: bool
     role: draft.role.trim().slice(0, 160),
     premise: draft.premise.trim().slice(0, 8_000),
     classification,
-    taxEconomics: isTax ? normalizeTaxEconomics(draft.taxEconomics) : undefined,
+    taxEconomics: isTax || hasTaxAttachment(draft) && draft.taxEconomics !== undefined ? normalizeTaxEconomics(draft.taxEconomics) : undefined,
+    ...(hasTaxAttachment(draft) ? { taxAnalysis: preserveKnownTaxAttachment(draft.taxAnalysis) } : {}),
     dealEconomics: normalizeDealEconomics(draft.dealEconomics),
     nodes: draft.nodes.map((node) => ({ ...node, title: node.title.trim(), detail: node.detail.trim().slice(0, 4_000) })),
     // Relationship IDs become playable option IDs in studio-compiler. v16
@@ -111,6 +113,9 @@ export function canonicalFingerprint(value: unknown) { return `sha256-${sha256(c
 
 export function normalizeStudioDraft(value: unknown): StudioDraft {
   if (!isRecord(value)) throw new Error("Invalid custom case draft");
+  // Classify before whitelisting: unsupported authoring data must be recovered
+  // from its raw aggregate, never silently discarded by legacy normalization.
+  const taxAnalysis = preserveKnownTaxAttachment(value.taxAnalysis);
   const title = boundedString(value.title, "title", 1, 200);
   const caseId = typeof value.caseId === "string" && value.caseId.trim() ? value.caseId.trim() : slugifyCaseId(title);
   if (!/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(caseId) || caseId.length > 140) throw new Error("Invalid case ID");
@@ -149,7 +154,7 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
       : null;
   const protection = normalizeUntrustedCaseProtection(value.protection);
   const caseType = normalizeCaseTypeReference(value.caseType);
-  const taxEconomics = isTax ? normalizeTaxEconomics(value.taxEconomics) : undefined;
+  const taxEconomics = isTax || taxAnalysis && value.taxEconomics !== undefined ? normalizeTaxEconomics(value.taxEconomics) : undefined;
   const dealEconomics = normalizeDealEconomics(value.dealEconomics);
   const premisePublication = value.premisePublication === "prompt-derived" || value.premisePublication === "author-reviewed"
     ? value.premisePublication
@@ -178,6 +183,7 @@ export function normalizeStudioDraft(value: unknown): StudioDraft {
       sourceUrls: urlList(rawClassification.sourceUrls, 30),
     },
     ...(taxEconomics ? { taxEconomics } : {}),
+    ...(taxAnalysis ? { taxAnalysis } : {}),
     ...(dealEconomics ? { dealEconomics } : {}),
     nodes,
     links,

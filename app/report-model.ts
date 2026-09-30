@@ -9,6 +9,7 @@ import {
 } from "./report-graph-contract";
 import { INVALID_REPORT_SOURCE_URL_MESSAGE, sanitizeReportSourceUrls } from "./report-source-url";
 import { isStudioDeviceScope } from "./studio-device-storage";
+import { hasTaxAttachment } from "./tax-authoring";
 import type { CaseTypeId, StudioDraft, StudioNodeType } from "./types";
 
 export const REPORT_MODEL_SCHEMA_VERSION = 1 as const;
@@ -98,6 +99,7 @@ export function validateReportReadiness(draft: StudioDraft, input: ReportReadine
   const finalExternal = input.status === "final" || input.audience === "client";
   const sourceUrls = sanitizeReportSourceUrls(draft.classification?.sourceUrls);
   const blockers: string[] = [];
+  if (hasTaxAttachment(draft)) blockers.push("Reports for the retained tax analysis require fresh shared Rust calculation and version-bound output. This report format is not yet available.");
   if (!draft.title.trim() || !draft.nodes.length) blockers.push("The case needs a title and structured content.");
   if (finalExternal && (
     input.currentFingerprint !== input.workspaceFingerprint

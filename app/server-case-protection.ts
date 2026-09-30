@@ -1,8 +1,10 @@
-import { and, desc, eq, isNotNull, or } from "drizzle-orm";
+import { and, desc, eq, isNotNull, or, sql } from "drizzle-orm";
 import type { getDb } from "../db";
 import { caseDrafts, caseVersions, customCases, platformSecrets } from "../db/schema";
 import { legacyCaseProtectionCode, normalizeStoredCaseProtection, verifyCaseProtection, type CaseProtectionBinding } from "./case-protection";
 import type { CaseProtectionV1 } from "./types";
+import { parsePreservedJson } from "./preserved-json";
+import { readStudioAggregate } from "./studio-aggregate";
 
 const CASE_PROTECTION_SECRET_ID = "case-lineage-hmac-v1";
 
@@ -21,6 +23,10 @@ export type StoredCaseArtifact = {
   protection: CaseProtectionV1 | null;
   currentCode: string;
   copyProtected: boolean;
+  /** Exact authoritative SQL TEXT, retained through asynchronous guards. */
+  payloadText: string;
+  taxAnalysis: unknown;
+  editable: boolean;
 };
 
 export class CaseProtectionIntegrityError extends Error {}
@@ -56,7 +62,7 @@ export async function resolveExactCaseArtifact(
     parentCaseId: caseVersions.parentCaseId,
     parentVersion: caseVersions.parentVersion,
     parentFingerprint: caseVersions.parentFingerprint,
-    payload: caseVersions.payload,
+    payload: sql<string>`cast(${caseVersions.payload} as text)`,
   }).from(caseVersions).where(and(
     eq(caseVersions.caseId, input.caseId),
     eq(caseVersions.version, input.version),
@@ -101,14 +107,14 @@ async function exactCustomArtifact(
     caseId: caseDrafts.caseId,
     version: caseDrafts.version,
     studioFingerprint: caseDrafts.fingerprint,
-    payload: caseDrafts.payload,
+    payload: sql<string>`cast(${caseDrafts.payload} as text)`,
   }).from(caseDrafts).leftJoin(customCases, eq(customCases.id, caseDrafts.customCaseId)).where(and(...conditions)).orderBy(desc(caseDrafts.updatedAt)).limit(2);
   if (!records.length) return null;
   if (customCaseId === null && records.length > 1) {
     throw new CaseProtectionIntegrityError("The custom case artifact identity is ambiguous; an exact workspace envelope is required.");
   }
   const record = records[0];
-  const parent = draftParent(record.payload);
+  const parent = draftParent(readStoredCasePayload(record.payload));
   return {
     source: "custom" as const,
     customCaseId: record.customCaseId,
@@ -134,10 +140,13 @@ async function verifyArtifact(
     parentCaseId: string | null;
     parentVersion: string | null;
     parentFingerprint: string | null;
-    payload: unknown;
+    payload: string;
   },
   key: Uint8Array,
 ): Promise<StoredCaseArtifact> {
+  const payload = readStoredCasePayload(artifact.payload);
+  const studioPayload = isRecord(payload.studioDraft) ? payload.studioDraft : payload;
+  const aggregate = readStudioAggregate(artifact.source === "custom" ? artifact.payload : JSON.stringify(studioPayload), { kind: "draft" });
   const verifiedIdentity = {
     source: artifact.source,
     customCaseId: artifact.customCaseId,
@@ -148,8 +157,13 @@ async function verifyArtifact(
     parentCaseId: artifact.parentCaseId,
     parentVersion: artifact.parentVersion,
     parentFingerprint: artifact.parentFingerprint,
+    payloadText: artifact.payload,
+    taxAnalysis: studioPayload.taxAnalysis,
+    // Legacy playable-only records retain their existing lineage behavior.
+    // A tax-bearing aggregate must be fully understood before any mutation.
+    editable: artifact.source === "published" && !Object.hasOwn(payload, "studioDraft") && !Object.hasOwn(payload, "taxAnalysis") || aggregate.status === "editable",
   };
-  const protection = artifactProtection(artifact.payload);
+  const protection = artifactProtection(payload);
   if (!protection) {
     return {
       ...verifiedIdentity,
@@ -170,6 +184,17 @@ async function verifyArtifact(
   };
   if (!await verifyCaseProtection(protection, binding, key)) throw new CaseProtectionIntegrityError("Stored case-protection seal is invalid.");
   return { ...verifiedIdentity, protection, currentCode: protection.currentCode, copyProtected: protection.copyProtected };
+}
+
+/** SQL TEXT must reach this boundary before Drizzle's JSON-mode decoder. The
+ * original text stays on StoredCaseArtifact; this parsed view is never recovery
+ * output. Published payloads include both Studio and compiled scenario data. */
+export function readStoredCasePayload(rawText: string): Record<string, unknown> {
+  if (typeof rawText !== "string" || new TextEncoder().encode(rawText).byteLength > 4_000_000) throw new CaseProtectionIntegrityError("Stored case payload is unavailable for safe interpretation.");
+  let value: unknown;
+  try { value = parsePreservedJson(rawText); } catch { throw new CaseProtectionIntegrityError("Stored case payload requires read-only recovery."); }
+  if (!isRecord(value)) throw new CaseProtectionIntegrityError("Stored case payload requires read-only recovery.");
+  return value;
 }
 
 function artifactProtection(payload: unknown) {

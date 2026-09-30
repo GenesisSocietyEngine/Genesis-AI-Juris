@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 import { test } from "node:test";
 import { build } from "esbuild";
 import ts from "typescript";
+import { StudioTaxWriteBaseline } from "../app/studio-tax-write-baseline";
 import { StudioSessionAuthority } from "../app/studio-session-authority";
 import { buildCanopyPackage } from "../app/canopy-fixture";
 import { caseFingerprint, casePublicationFingerprint } from "../app/case-integrity";
@@ -24,7 +25,7 @@ function visit(node: ts.Node) {
 }
 visit(source); assert.ok(handler); assert.ok(playHandler); assert.ok(boundaryEffect);
 const bundle = await build({
-  stdin: { contents: `import {normalizeStudioDraft,caseFingerprint,casePublicationFingerprint} from './case-integrity'; import {caseTypeReference} from './case-type-reference'; export default async function(context){const {studioCanDuplicate,draft,locale,showSessionNotice,studioServerFingerprint,studioServerPublicationFingerprint,studioReportAuthority,studioPrivate}=context; ${handler.getText(source)}; return await exportDraft();}`, loader: "ts", resolveDir: resolve("app") },
+  stdin: { contents: `import {normalizeStudioDraft,caseFingerprint,casePublicationFingerprint} from './case-integrity'; import {readStudioAggregate} from './studio-aggregate'; import {caseTypeReference} from './case-type-reference'; export default async function(context){const {studioCanDuplicate,draft,locale,showSessionNotice,studioServerFingerprint,studioServerPublicationFingerprint,studioReportAuthority,studioPrivate}=context; ${handler.getText(source)}; return await exportDraft();}`, loader: "ts", resolveDir: resolve("app") },
   bundle: true, write: false, platform: "node", format: "esm", packages: "external",
 });
 mkdirSync(".artifacts/studio-private-exports", { recursive: true });
@@ -37,7 +38,7 @@ const playBundle = await build({
 const playFile = resolve(".artifacts/studio-private-exports/play-handler.mjs"); writeFileSync(playFile, playBundle.outputFiles[0].text);
 const exportPlay = (await import(pathToFileURL(playFile).href)).default;
 const boundaryBundle = await build({
-  stdin: { contents: `import {shouldDiscardStudioDraft} from './studio-session-authority'; export default function(context){const {studioSession,studioDiscardVersion,privatePlayOrigin,playSessionBusy,playSessionSync,playSessionStartRef,setPrivatePlayOrigin,setActiveScenario,setSelectedOption,setResultOption,setDecisionLog,setOutcome,setDossierRef,setServerPlaySession,setLocalCanonicalState,localCanonicalRuntimeRef,setPlaySessionBusy,setPlaySessionSync,setFeedbackTarget,studioCustomCaseId,studioPrivate,savedCaseRequestRef,purgeLocalStudioState,setStudioOpenRevision,restoredSavedCaseRef,setPrompt,setSessionNotice,currentStudioScopeRef,setStudioStorageScope,setStudioAIEntitlement}=context; return (${boundaryEffect.getText(source)})(studioSession);}`, loader: "ts", resolveDir: resolve("app") },
+  stdin: { contents: `import {shouldDiscardStudioDraft} from './studio-session-authority'; export default function(context){const {studioSession,studioDiscardVersion,privatePlayOrigin,playSessionBusy,playSessionSync,playSessionStartRef,setPrivatePlayOrigin,setActiveScenario,setSelectedOption,setResultOption,setDecisionLog,setOutcome,setDossierRef,setServerPlaySession,setLocalCanonicalState,localCanonicalRuntimeRef,setPlaySessionBusy,setPlaySessionSync,setFeedbackTarget,studioCustomCaseId,studioPrivate,savedCaseRequestRef,purgeLocalStudioState,setStudioOpenRevision,restoredSavedCaseRef,setPrompt,setSessionNotice,currentStudioScopeRef,setStudioStorageScope,setStudioAIEntitlement,setStudioRecovery,studioTaxWriteBaseline}=context; return (${boundaryEffect.getText(source)})(studioSession);}`, loader: "ts", resolveDir: resolve("app") },
   bundle: true, write: false, platform: "node", format: "esm",
 });
 const boundaryFile = resolve(".artifacts/studio-private-exports/boundary-effect.mjs"); writeFileSync(boundaryFile, boundaryBundle.outputFiles[0].text);
@@ -45,10 +46,11 @@ const applyBoundary = (await import(pathToFileURL(boundaryFile).href)).default;
 
 test("actual parent boundary preserves local drafts, stops interrupted private runs and clears revoked protected work", () => {
   const writes = new Map<string, unknown>(); let purges = 0;
-  const setters = Object.fromEntries(["PrivatePlayOrigin", "ActiveScenario", "SelectedOption", "ResultOption", "DecisionLog", "Outcome", "DossierRef", "ServerPlaySession", "LocalCanonicalState", "PlaySessionBusy", "PlaySessionSync", "FeedbackTarget", "Prompt", "SessionNotice", "StudioStorageScope", "StudioAIEntitlement", "StudioOpenRevision"].map(name => ["set" + name, (value: unknown) => writes.set(name, value)]));
-  const base = { ...setters, studioSession: { phase: "revoked", scope: null, discardVersion: 1, discardLocal: false }, studioDiscardVersion: { current: 0 }, privatePlayOrigin: null, playSessionBusy: false, playSessionSync: "local", playSessionStartRef: { current: 4 }, localCanonicalRuntimeRef: { current: null }, studioCustomCaseId: null, studioPrivate: false, savedCaseRequestRef: { current: 2 }, restoredSavedCaseRef: { current: null }, currentStudioScopeRef: { current: "owner-scope" }, purgeLocalStudioState: () => purges++ };
+  const setters = Object.fromEntries(["PrivatePlayOrigin", "ActiveScenario", "SelectedOption", "ResultOption", "DecisionLog", "Outcome", "DossierRef", "ServerPlaySession", "LocalCanonicalState", "PlaySessionBusy", "PlaySessionSync", "FeedbackTarget", "Prompt", "SessionNotice", "StudioStorageScope", "StudioAIEntitlement", "StudioOpenRevision", "StudioRecovery"].map(name => ["set" + name, (value: unknown) => writes.set(name, value)]));
+  const base = { ...setters, studioTaxWriteBaseline: {current: new StudioTaxWriteBaseline()}, studioSession: { phase: "revoked", scope: null, discardVersion: 1, discardLocal: false }, studioDiscardVersion: { current: 0 }, privatePlayOrigin: null, playSessionBusy: false, playSessionSync: "local", playSessionStartRef: { current: 4 }, localCanonicalRuntimeRef: { current: null }, studioCustomCaseId: null, studioPrivate: false, savedCaseRequestRef: { current: 2 }, restoredSavedCaseRef: { current: null }, currentStudioScopeRef: { current: "owner-scope" }, purgeLocalStudioState: () => purges++ };
   applyBoundary(base);
   assert.equal(purges, 0, "another tab's logout must not erase an unrelated local draft");
+  assert.equal(writes.get("StudioRecovery"), null, "opaque recovery content is cleared when account scope changes");
   assert.equal(writes.has("ActiveScenario"), false, "a public/local playable case remains unchanged");
   writes.clear();
   const pending = { ...base, studioSession: { ...base.studioSession, phase: "suspended", discardVersion: 1 }, privatePlayOrigin: { scope: "owner-scope", customCaseId: 1 }, studioCustomCaseId: 1, playSessionBusy: true, playSessionSync: "opening" };
