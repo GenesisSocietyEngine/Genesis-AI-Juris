@@ -157,6 +157,7 @@ dependencies = [
  "juris-engine",
  "juris-scenario-schema",
  "juris-scenario-validator",
+ "juris-tax-economics",
  "serde",
  "serde_json",
 ]

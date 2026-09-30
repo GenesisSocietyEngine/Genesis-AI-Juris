@@ -35,7 +35,8 @@ pub use dossier::{
 };
 
 pub use persistence::{
-    ScenarioCommand, ScenarioSaveEnvelope, ScenarioSaveError, SAVE_SCHEMA_ID, SAVE_SCHEMA_VERSION,
+    scenario_fingerprint, ScenarioCommand, ScenarioSaveEnvelope, ScenarioSaveError, SAVE_SCHEMA_ID,
+    SAVE_SCHEMA_VERSION,
 };
 pub use pressure_countermove::{
     ActivePressureProjection, PressureAndCountermoveProjection,

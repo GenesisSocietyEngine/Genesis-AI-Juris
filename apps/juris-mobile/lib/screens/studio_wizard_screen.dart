@@ -6,12 +6,15 @@ import 'package:flutter/services.dart';
 import '../app/product_navigation.dart';
 import '../data/studio_authoring_repository.dart';
 import '../data/studio_draft_store.dart';
+import '../data/tax_artifact_store.dart';
+import '../data/tax_authoring_repository.dart';
 import '../models/case_type_playbook.dart';
 import '../models/case_type_playbook_assets.dart';
 import '../models/case_type_registry.dart';
 import '../models/studio_scenario_draft.dart';
 import '../widgets/section_card.dart';
 import '../widgets/studio_case_views.dart';
+import 'tax_editor_screen.dart';
 
 final class StudioWizardScreen extends StatefulWidget {
   const StudioWizardScreen({
@@ -327,7 +330,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
               key: const ValueKey<String>('studio-import-scenario'),
               icon: Icons.content_paste_go_outlined,
               title: _t(
-                'Import canonical JSON',
+                'Import scenario or analysis workspace',
                 'Импортировать canonical JSON',
               ),
               subtitle: _t(
@@ -613,6 +616,15 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
           ),
           draft: _draft,
           locale: widget.locale,
+          onTaxEconomics: () async {
+            await _persist();
+            if (!mounted) return;
+            await Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => TaxEditorScreen(
+                    scenario: _draft.toJson(),
+                    repository: widget.repository.tax,
+                    locale: widget.locale)));
+          },
         ),
         const SizedBox(height: 16),
         SectionCard(
@@ -937,9 +949,34 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       if (decoded is! Map<String, dynamic>) {
         throw const FormatException('Clipboard JSON must be an object.');
       }
+      final bool taxWorkspace =
+          decoded['schema'] == 'tax-authoring-artifact-v1';
+      if (taxWorkspace &&
+          (!validTaxArtifact(decoded) ||
+              decoded['scenario'] is! Map<String, dynamic>)) {
+        throw const FormatException(
+            'Unsupported tax workspace; original clipboard is unchanged.');
+      }
       final StudioScenarioDraft imported = StudioScenarioDraft.fromJson(
-        decoded,
+        taxWorkspace ? decoded['scenario'] as Map<String, dynamic> : decoded,
       );
+      if (taxWorkspace) {
+        if (decoded['case_id'] != imported.caseId)
+          throw const FormatException(
+              'Tax workspace source identity mismatch.');
+        final TaxArtifactStore taxStore = TaxArtifactStore();
+        final Map<String, dynamic>? previous =
+            await taxStore.read(imported.caseId);
+        final String revision =
+            (BigInt.parse(previous?['artifact_revision'] as String? ?? '0') +
+                    BigInt.one)
+                .toString();
+        decoded['artifact_revision'] = revision;
+        ((decoded['request'] as Map<String, dynamic>)['context']
+            as Map<String, dynamic>)['revision'] = revision;
+        decoded['calculation'] = null;
+        await taxStore.write(imported.caseId, decoded);
+      }
       if (!mounted) return;
       setState(() {
         _draft = imported;
@@ -947,7 +984,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
         _validation = null;
         _routeResult = null;
         _notice = _t(
-          'Canonical scenario imported. Rust validation is still required.',
+          'Source imported. Rust validation is still required; any included tax draft is preserved.',
           'Canonical scenario импортирован. Проверка Rust всё ещё обязательна.',
         );
         _syncControllers();

@@ -37,3 +37,12 @@ jobs:
         run: flutter analyze
       - name: Run widget tests
         run: flutter test
+      - name: Execute tax edit-save-reopen against the real native library
+        run: |
+          cargo build --manifest-path ../../Cargo.toml -p juris-mobile-ffi --locked
+          flutter test tool/tax_native_acceptance_test.dart --dart-define=JURIS_TAX_NATIVE_LIBRARY=${{ github.workspace }}/target/debug/libjuris_mobile_ffi.so
+      - name: Verify native tax restart across separate Flutter processes
+        run: |
+          restart_dir=$(mktemp -d)
+          flutter test tool/tax_process_acceptance_test.dart --dart-define=JURIS_TAX_NATIVE_LIBRARY=${{ github.workspace }}/target/debug/libjuris_mobile_ffi.so --dart-define=JURIS_TAX_RESTART_DIRECTORY=$restart_dir --dart-define=JURIS_TAX_RESTART_PHASE=write
+          flutter test tool/tax_process_acceptance_test.dart --dart-define=JURIS_TAX_NATIVE_LIBRARY=${{ github.workspace }}/target/debug/libjuris_mobile_ffi.so --dart-define=JURIS_TAX_RESTART_DIRECTORY=$restart_dir --dart-define=JURIS_TAX_RESTART_PHASE=read

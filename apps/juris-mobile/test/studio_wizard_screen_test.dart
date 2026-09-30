@@ -42,7 +42,7 @@ void main() {
     }
     expect(find.text('Use a guided example'), findsOneWidget);
     expect(find.text('Describe my own case'), findsOneWidget);
-    expect(find.text('Import canonical JSON'), findsOneWidget);
+    expect(find.text('Import scenario or analysis workspace'), findsOneWidget);
     expect(find.text('Advisory decision'), findsOneWidget);
     expect(find.textContaining('Decision memorandum'), findsOneWidget);
 

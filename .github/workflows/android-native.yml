@@ -49,3 +49,9 @@ jobs:
           apk="build/app/outputs/flutter-apk/app-debug.apk"
           test -f "$apk"
           unzip -l "$apk" | grep -F "lib/arm64-v8a/libjuris_mobile_ffi.so"
+          unzip -p "$apk" lib/arm64-v8a/libjuris_mobile_ffi.so > /tmp/juris-tax-packaged.so
+          nm_tool=$(find "$ANDROID_HOME/ndk" -name llvm-nm -type f | head -1)
+          test -x "$nm_tool"
+          "$nm_tool" --dynamic --defined-only --extern-only /tmp/juris-tax-packaged.so | awk '{print $NF}' | grep '^juris_' | sort -u > /tmp/juris-actual.txt
+          printf '%s\n' juris_mobile_bridge_abi_version juris_mobile_bridge_execute juris_mobile_bridge_string_free > /tmp/juris-expected.txt
+          diff -u /tmp/juris-expected.txt /tmp/juris-actual.txt
