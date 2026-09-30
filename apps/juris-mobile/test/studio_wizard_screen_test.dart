@@ -25,6 +25,120 @@ final CaseTypePlaybookRegistry _testPlaybooks =
 );
 
 void main() {
+  testWidgets('stale workspace edits remain exportable until explicit reopen', (
+    WidgetTester tester,
+  ) async {
+    await tester.runAsync(() async {
+      final Directory root = await Directory.systemTemp.createTemp(
+        'wizard-cas-',
+      );
+      addTearDown(() => root.delete(recursive: true));
+      final ApplicationSupportStudioDraftStore store =
+          ApplicationSupportStudioDraftStore(
+        directoryProvider: () async => root,
+      );
+      StudioWorkspace workspace(String title) => StudioWorkspace(
+            draft: StudioScenarioDraft.guidedExample().updateIdentity(
+              title: title,
+              jurisdiction: 'BE',
+              role: 'Counsel',
+              premise: 'Retained source',
+            ),
+            activeStage: StudioWorkflowStage.describe,
+            completedStages: {},
+          );
+      await store.write(workspace('Loaded generation'));
+      await _mountStore(tester, store, waitForDisk: true);
+      await _waitForStudio(
+        tester,
+        () => find
+            .byKey(const ValueKey('studio-title-field'))
+            .evaluate()
+            .isNotEmpty,
+      );
+      await store.write(workspace('Another editor saved'));
+      final Finder title = find.byKey(const ValueKey('studio-title-field'));
+      await tester.enterText(title, 'My unsaved title');
+      await _waitForStudio(
+        tester,
+        () =>
+            find
+                .byKey(const ValueKey('studio-reopen-saved'))
+                .evaluate()
+                .isNotEmpty &&
+            _saveStatus(tester) == 'Not saved',
+      );
+      expect(
+        find.byKey(const ValueKey('studio-reopen-saved')).hitTestable(),
+        findsOneWidget,
+      );
+      expect((await store.read())!.draft.title, 'Another editor saved');
+      expect(
+        tester.widget<TextField>(title).controller!.text,
+        'My unsaved title',
+      );
+
+      String? clipboard;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData')
+            clipboard = (call.arguments as Map)['text'] as String;
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('studio-export-unsaved')));
+      await _waitForStudio(tester, () => clipboard != null);
+      expect(jsonDecode(clipboard!)['metadata']['title'], 'My unsaved title');
+      expect((await store.read())!.draft.title, 'Another editor saved');
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('studio-reopen-saved')),
+      );
+      await tester.tap(find.byKey(const ValueKey('studio-reopen-saved')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Keep editing'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<TextField>(title).controller!.text,
+        'My unsaved title',
+      );
+      await tester.ensureVisible(title);
+      await tester.enterText(title, 'Still unsaved');
+      await _waitForStudio(tester, () => _saveStatus(tester) == 'Not saved');
+      expect((await store.read())!.draft.title, 'Another editor saved');
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('studio-reopen-saved')),
+      );
+      await tester.tap(find.byKey(const ValueKey('studio-reopen-saved')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Reopen and discard'));
+      await _waitForStudio(
+        tester,
+        () =>
+            find
+                .byKey(const ValueKey('studio-reopen-saved'))
+                .evaluate()
+                .isEmpty &&
+            find.byType(CircularProgressIndicator).evaluate().isEmpty,
+      );
+      expect(
+        tester.widget<TextField>(title).controller!.text,
+        'Another editor saved',
+      );
+      await tester.ensureVisible(title);
+      await tester.enterText(title, 'Authorized new edit');
+      await _waitForStudio(tester, () => _saveStatus(tester) == 'Auto-saved');
+      expect((await store.read())!.draft.title, 'Authorized new edit');
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   for (final String state in ['supported', 'conflict', 'future']) {
     testWidgets(
         'tax workspace import $state uses the observed sidecar generation',
@@ -423,17 +537,38 @@ final class _MemoryStudioStore implements StudioDraftStore {
   }
 }
 
-Future<void> _mountStore(WidgetTester tester, StudioDraftStore store) async {
-  await tester.pumpWidget(MaterialApp(
-    theme: JurisTheme.dark(),
-    home: StudioWizardScreen(
+Future<void> _mountStore(WidgetTester tester, StudioDraftStore store,
+    {bool waitForDisk = false}) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: JurisTheme.dark(),
+      home: StudioWizardScreen(
         repository: StudioAuthoringRepository(_WizardBridge()),
         store: store,
         locale: 'en',
         onExit: () {},
-        playbookRegistry: _testPlaybooks),
-  ));
-  await tester.pumpAndSettle();
+        playbookRegistry: _testPlaybooks,
+      ),
+    ),
+  );
+  if (waitForDisk) {
+    await _waitForStudio(tester,
+        () => find.byType(CircularProgressIndicator).evaluate().isEmpty);
+  } else {
+    await tester.pumpAndSettle();
+  }
+}
+
+Future<void> _waitForStudio(WidgetTester tester, bool Function() ready) async {
+  for (int i = 0; i < 250; i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await tester.pump();
+    if (ready()) {
+      await tester.pumpAndSettle();
+      return;
+    }
+  }
+  throw StateError('Studio persistence did not settle.');
 }
 
 String? _saveStatus(WidgetTester tester) => tester

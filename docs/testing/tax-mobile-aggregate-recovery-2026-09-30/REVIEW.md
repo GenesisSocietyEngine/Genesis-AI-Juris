@@ -1,0 +1,33 @@
+# Mobile aggregate import recovery: reviewed substeps
+
+Development starts in isolated `tax-aggregate` from PR #73 head `67de480a639d77e93d81a72fa56861ab16ea2974`, including PR #69 head `2eac66e109d95b14ca303eb6c21de63f3e7538a8` and accepted main `bb49049a318059993b47e557770a517b2d0838d9`. A fresh main fetch and merge check reported already up to date. PR #73's separate Android candidate worktree is unchanged. Results below describe this substep's local uncommitted source, not main or exact-head CI acceptance.
+
+## Substep 1: conditional workspace saves
+
+The intended outcome is that a stale Studio editor cannot replace another saved workspace, while its own consecutive autosaves can proceed in order. A conflict must retain editable inputs and export, require an explicit reopen/discard choice, and never fetch a fresh token to silently authorize stale edits.
+
+The additive `ConditionalStudioDraftStore` exposes `readSnapshot` and `writeIfUnchanged`; the original three-method `StudioDraftStore` contract remains callable and custom memory/wrapper implementations continue to work. Application-support snapshots retain an exact-byte digest/absence token bound to the resolved target, detached workspace access and original valid UTF-8 JSON, including BOM. Formatting changes count as generation changes. Frozen conditional writes use the existing root coordinator and preservation guards; snapshots advance only after a successful commit.
+
+`StudioWorkspaceSession` owns one editor's save chain. It freezes each draft/progress at submission, then uses the token from the loaded generation or its preceding successful own save. A permanent conflict/unsupported/recovery failure blocks queued and later writes. A transient error skips already submitted successors; a later retry keeps the same token. An unacknowledged committed write therefore produces a conflict rather than permission to replace newer data. Legacy custom stores retain their explicit unconditional semantics, with ordered frozen submissions; they do not acquire conditional guarantees merely by implementing the old interface.
+
+The wizard uses this session for load/autosave/awaited save and fences asynchronous UI completion by storage epoch. A persistent live-region conflict card exposes frozen unsaved scenario export/clipboard and an explicit reopen dialog. “Keep editing” retains input and the blocked generation; “Reopen and discard” reloads intentionally. The conflict action is scrolled into view. Import refuses to start from an already blocked workspace session. Existing recovery failures remain read-only and existing awaited-save failures still prevent subsequent export/navigation success claims.
+
+## Verification
+
+- Complete focused suites: **44/44 passed**, comprising 27 real-filesystem workspace cases, four save-session cases and 13 wizard cases (`.artifacts/workspace-conditional-tests-final.log`). Eight cases are new in this substep.
+- Coverage includes detached snapshot/progress, exact BOM/formatting preservation and identity, absence/other-root/stale-token refusal, frozen delayed-provider writes, consecutive own-token chaining, a middle conflict stopping queued successors without a fresh read, transient retry and unacknowledged commit behavior.
+- The real-file widget case proves current disk generation versus retained stale edits, visible conflict action, exported/clipboard input, cancelled discard, persistent blocked editing, explicit reopen and subsequent authorized save. Existing memory-store retry, error, navigation and Studio progression cases still pass.
+- The first new real-disk widget test incorrectly used `pumpAndSettle` while filesystem work was still pending and timed out. Its helper now yields actual asynchronous I/O before settling; the focused rerun and complete final suite pass. This was a test-wait correction, not process-death evidence.
+- Focused Dart analysis: no issues (`.artifacts/workspace-conditional-analysis-final.log`). Six-file formatting reports no changes; `git diff --check` passes; `pubspec.lock` is unchanged. Initial formatter churn from formatting before package resolution was removed from unchanged sections before review.
+- An independent reviewer inspected the store/session/wizard code and new tests and found no material issue in own-success token advancement, failure epochs, exact snapshot identity, frozen exports or explicit reopen. They did not rerun the 44-case suite or review an aggregate journal.
+- Root independently reviewed the production diff and all four session regressions and found no material issue. Both reviews precede the separately reviewable journal/backend substep; they do not establish application interruption evidence.
+
+## Remaining Slice B work and acceptance
+
+This substep has **no aggregate journal**. The inherited sidecar-first/workspace-second import remains non-atomic. Mandatory recovery before either store, a root-matched service bundle, busy/frozen import adoption, immutable before/after intent, transaction-owned promotion/retired files and fault-boundary tests are subsequent reviewed steps. The root-owned application wrapper can forward the new conditional interface after its API is accepted; current custom wrappers retain their prior behavior.
+
+The reviewed design selects coordination within the current main Dart isolate/process, retained staging/completed packages with no automatic cleanup, inert unpublished staging, and blocking both stores for invalid/future/conflicting published intent. Imported stale context/originals remain unchanged except the active saved revision; calculation is cleared, progress starts at Describe with no completed stages, and no automatic source rebinding/reconfirmation occurs.
+
+The upcoming aggregate boundary will reject numeric tokens whose Dart decode/re-encode changes their exact decimal value. Whitespace/exponent spelling may change in a supported after-envelope; silent numeric value rounding is not accepted merely because the original is retained. Proposed limits approved for that later boundary are 4 MiB per payload, 64 KiB manifest, depth 64, 100,000 JSON nodes and 64 MiB/32 regular files per transaction package. Ordinary existing reads are not newly restricted by those import limits in this substep.
+
+Actual Android/iOS process-death receipts, fresh native recomputation after aggregate recovery, cross-store conflict behavior, enlarged-text/spoken accessibility and physical devices remain open. No local widget or constructed disk-state test closes those application acceptance gates. No multi-process lock or power-loss durability is claimed.

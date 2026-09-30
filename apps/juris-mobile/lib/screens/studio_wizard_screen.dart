@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../app/product_navigation.dart';
 import '../data/studio_authoring_repository.dart';
 import '../data/studio_draft_store.dart';
+import '../data/studio_workspace_session.dart';
 import '../data/tax_artifact_store.dart';
 import '../data/tax_authoring_repository.dart';
 import '../models/case_type_playbook.dart';
@@ -60,6 +61,10 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   String? _recoveryError;
   String? _notice;
   String? _exportPath;
+  StudioWorkspaceSession? _storage;
+  int _storageEpoch = 0;
+  final GlobalKey _storageFeedbackKey = GlobalKey();
+  bool get _saveBlocked => _storage?.isBlocked == true;
 
   bool get _ru => widget.locale == 'ru';
   CaseTypePlaybook get _playbook =>
@@ -92,29 +97,39 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   }
 
   Future<void> _load() async {
+    final int epoch = ++_storageEpoch;
     if (mounted) setState(() => _loading = true);
     try {
       _playbookRegistry ??= await loadCaseTypePlaybookRegistry(
         bundle: widget.playbookAssetBundle,
       );
-      final StudioWorkspace? workspace = await widget.store.read();
+      final StudioWorkspaceSession storage = await StudioWorkspaceSession.open(
+        widget.store,
+      );
+      if (!mounted || epoch != _storageEpoch) return;
+      final StudioWorkspace? workspace = storage.loaded;
+      _storage = storage;
       _recoveryError = null;
+      _saveFailed = false;
+      _notice = null;
       _hasSaved = workspace != null;
-      if (workspace != null && mounted) {
-        _draft = workspace.draft;
-        _activeStage = workspace.activeStage;
-        _completed
-          ..clear()
-          ..addAll(workspace.completedStages);
-        _syncControllers();
-      }
+      _draft = workspace?.draft ?? StudioScenarioDraft.blank();
+      _activeStage = workspace?.activeStage ?? StudioWorkflowStage.describe;
+      _completed
+        ..clear()
+        ..addAll(workspace?.completedStages ?? {});
+      _validation = null;
+      _routeResult = null;
+      _exportPath = null;
+      _syncControllers();
     } on Object catch (error) {
+      if (!mounted || epoch != _storageEpoch) return;
       _recoveryError = _t(
         'The previous Studio draft could not be reopened: $error',
         'Не удалось открыть предыдущий черновик Studio: $error',
       );
     } finally {
-      if (mounted) {
+      if (mounted && epoch == _storageEpoch) {
         setState(() => _loading = false);
       }
     }
@@ -301,6 +316,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                         ),
                         const SizedBox(height: 16),
                         _buildStage(),
+                        if (_saveBlocked) _storageFeedback(),
                         if (_notice != null) ...<Widget>[
                           const SizedBox(height: 16),
                           Semantics(
@@ -1002,6 +1018,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
 
   Future<void> _importFromClipboard() async {
     try {
+      if (_saveBlocked) throw _storage!.lastError!;
       final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
       final dynamic decoded = jsonDecode(data?.text ?? '');
       if (decoded is! Map<String, dynamic>) {
@@ -1190,33 +1207,46 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   Future<void> _persist() async {
     if (_recoveryError != null) {
       throw const StudioStorageException(
-          code: 'workspace_recovery_required',
-          message: 'Reopen the retained workspace before saving.');
+        code: 'workspace_recovery_required',
+        message: 'Reopen the retained workspace before saving.',
+      );
     }
     final int attempt = ++_saveAttempt;
+    final int epoch = _storageEpoch;
+    final StudioWorkspaceSession storage = _storage!;
     setState(() => _pendingSaves++);
     try {
-      await widget.store.write(
+      await storage.save(
         StudioWorkspace(
           draft: _draft,
           activeStage: _activeStage,
           completedStages: Set<StudioWorkflowStage>.of(_completed),
         ),
       );
-      if (mounted && attempt == _saveAttempt) {
+      if (mounted && epoch == _storageEpoch && attempt == _saveAttempt) {
         setState(() {
           _hasSaved = true;
           _saveFailed = false;
         });
       }
     } on Object catch (error) {
-      if (mounted && attempt == _saveAttempt) {
-        setState(
-          () {
-            _saveFailed = true;
-            _notice = _t('Save failed: $error', 'Ошибка сохранения: $error');
-          },
-        );
+      if (mounted && epoch == _storageEpoch && attempt == _saveAttempt) {
+        setState(() {
+          _saveFailed = true;
+          _notice = _t('Save failed: $error', 'Ошибка сохранения: $error');
+        });
+        if (storage.isBlocked) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final BuildContext? target = _storageFeedbackKey.currentContext;
+            if (mounted && target != null) {
+              Scrollable.ensureVisible(
+                target,
+                alignment: 1,
+                duration: const Duration(milliseconds: 200),
+              );
+            }
+          });
+        }
       }
       rethrow;
     } finally {
@@ -1231,6 +1261,94 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       // Fire-and-forget UI edits retain their draft and show the save error.
       // Awaited operations use _persist directly and must stop on failure.
     }
+  }
+
+  Widget _storageFeedback() => Semantics(
+        key: _storageFeedbackKey,
+        liveRegion: true,
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(_storage!.lastError.toString()),
+                TextButton(
+                  key: const ValueKey('studio-export-unsaved'),
+                  onPressed: _busy ? null : _exportUnsaved,
+                  child: Text(
+                    _t(
+                      'Export unsaved scenario',
+                      'Экспортировать несохранённый сценарий',
+                    ),
+                  ),
+                ),
+                TextButton(
+                  key: const ValueKey('studio-reopen-saved'),
+                  onPressed: _busy || _pendingSaves > 0 ? null : _reopenSaved,
+                  child: Text(
+                    _t('Reopen saved workspace', 'Открыть сохранённый проект'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  Future<void> _exportUnsaved() async {
+    final StudioScenarioDraft frozen = StudioScenarioDraft.fromJson(
+      _draft.toJson(),
+    );
+    final String clipboard = jsonEncode(frozen.toJson());
+    try {
+      final String path = await widget.store.exportScenario(frozen);
+      await Clipboard.setData(ClipboardData(text: clipboard));
+      if (mounted)
+        setState(
+          () => _notice = _t(
+            'Exported and copied: $path',
+            'Экспортировано и скопировано: $path',
+          ),
+        );
+    } on Object catch (error) {
+      if (mounted)
+        setState(
+          () =>
+              _notice = _t('Export failed: $error', 'Ошибка экспорта: $error'),
+        );
+    }
+  }
+
+  Future<void> _reopenSaved() async {
+    final bool? discard = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          _t(
+            'Reopen and discard your edits?',
+            'Открыть проект и отменить ваши изменения?',
+          ),
+        ),
+        content: Text(
+          _t(
+            'Export your edits first if you want to keep them.',
+            'Сначала экспортируйте изменения, если хотите сохранить их.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(_t('Keep editing', 'Продолжить')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(_t('Reopen and discard', 'Открыть и отменить')),
+          ),
+        ],
+      ),
+    );
+    if (discard == true && mounted) await _load();
   }
 
   String _stageTitle(StudioWorkflowStage stage) {

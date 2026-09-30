@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/case_type_registry.dart';
@@ -27,23 +28,62 @@ abstract interface class StudioDraftStore {
   Future<String> exportScenario(StudioScenarioDraft draft);
 }
 
+abstract interface class ConditionalStudioDraftStore
+    implements StudioDraftStore {
+  Future<StudioWorkspaceSnapshot> readSnapshot();
+  Future<StudioWorkspaceSnapshot> writeIfUnchanged(
+    StudioWorkspaceSnapshot expected,
+    StudioWorkspace workspace,
+  );
+}
+
+/// A loaded generation bound to its resolved target, separate from editor state.
+final class StudioWorkspaceSnapshot {
+  StudioWorkspaceSnapshot._(this._target, List<int>? bytes)
+      : _bytes = bytes == null ? null : List<int>.unmodifiable(bytes);
+  final String _target;
+  final List<int>? _bytes;
+  String? get contentSha256 =>
+      _bytes == null ? null : sha256.convert(_bytes).toString();
+  StudioWorkspace? get workspace => _bytes == null
+      ? null
+      : ApplicationSupportStudioDraftStore._decodeWorkspace(
+          utf8.decode(_bytes),
+        );
+  String? get originalJson {
+    final List<int>? bytes = _bytes;
+    if (bytes == null) return null;
+    final String encoded = utf8.decode(bytes);
+    return bytes.length >= 3 &&
+            bytes[0] == 0xef &&
+            bytes[1] == 0xbb &&
+            bytes[2] == 0xbf
+        ? '\ufeff$encoded'
+        : encoded;
+  }
+}
+
 /// Device-local persistence for the canonical scenario plus UI progress only.
-final class ApplicationSupportStudioDraftStore implements StudioDraftStore {
-  ApplicationSupportStudioDraftStore(
-      {StudioDirectoryProvider? directoryProvider})
-      : _directoryProvider =
-            directoryProvider ?? getApplicationSupportDirectory;
+final class ApplicationSupportStudioDraftStore
+    implements ConditionalStudioDraftStore {
+  ApplicationSupportStudioDraftStore({
+    StudioDirectoryProvider? directoryProvider,
+  }) : _directoryProvider = directoryProvider ?? getApplicationSupportDirectory;
 
   final StudioDirectoryProvider _directoryProvider;
   static int _recoverySequence = 0;
 
   @override
-  Future<StudioWorkspace?> read() async {
+  Future<StudioWorkspace?> read() async => (await readSnapshot()).workspace;
+
+  @override
+  Future<StudioWorkspaceSnapshot> readSnapshot() async {
     try {
-      return await _atFile('guided_studio_v1', 'workspace.json',
-          (File file) async {
+      return await _atFile('guided_studio_v1', 'workspace.json', (
+        File file,
+      ) async {
         final _StoredFile? stored = await _recover(file, _decodeWorkspace);
-        return stored?.value as StudioWorkspace?;
+        return StudioWorkspaceSnapshot._(_identity(file), stored?.bytes);
       });
     } on StudioStorageException {
       rethrow;
@@ -58,18 +98,62 @@ final class ApplicationSupportStudioDraftStore implements StudioDraftStore {
   @override
   Future<void> write(StudioWorkspace workspace) {
     // Freeze caller-owned collections before path resolution or queue waits.
-    final String encoded = const JsonEncoder.withIndent('  ').convert({
-      'schema_version': 1,
-      'active_stage': workspace.activeStage.wireName,
-      'completed_stages': workspace.completedStages
-          .map((StudioWorkflowStage stage) => stage.wireName)
-          .toList(growable: false),
-      'scenario': workspace.draft.toJson(),
-    });
+    final String encoded = _encodeWorkspace(workspace);
     return _write(
-            'guided_studio_v1', 'workspace.json', encoded, _decodeWorkspace)
-        .then<void>((_) {});
+      'guided_studio_v1',
+      'workspace.json',
+      encoded,
+      _decodeWorkspace,
+    ).then<void>((_) {});
   }
+
+  static String _encodeWorkspace(StudioWorkspace workspace) =>
+      const JsonEncoder.withIndent('  ').convert({
+        'schema_version': 1,
+        'active_stage': workspace.activeStage.wireName,
+        'completed_stages': workspace.completedStages
+            .map((StudioWorkflowStage stage) => stage.wireName)
+            .toList(growable: false),
+        'scenario': workspace.draft.toJson(),
+      });
+
+  static String _identity(File file) =>
+      Platform.isWindows ? file.path.toLowerCase() : file.path;
+
+  @override
+  Future<StudioWorkspaceSnapshot> writeIfUnchanged(
+    StudioWorkspaceSnapshot expected,
+    StudioWorkspace workspace,
+  ) async {
+    // The encoded next generation is detached before the first await.
+    final String encoded = _encodeWorkspace(workspace);
+    try {
+      _decodeWorkspace(encoded);
+      return await _atFile('guided_studio_v1', 'workspace.json', (file) async {
+        if (_identity(file) != expected._target) throw _conflict();
+        final _StoredFile? current = await _recover(file, _decodeWorkspace);
+        final String? digest =
+            current == null ? null : sha256.convert(current.bytes).toString();
+        if (digest != expected.contentSha256) throw _conflict();
+        await _replaceVerified(file, encoded, _decodeWorkspace);
+        return StudioWorkspaceSnapshot._(_identity(file), utf8.encode(encoded));
+      });
+    } on StudioStorageException {
+      rethrow;
+    } on Object catch (error) {
+      throw StudioStorageException(
+        code: 'workspace_write_failed',
+        message: 'Could not persist the Studio workspace: $error',
+      );
+    }
+  }
+
+  static StudioStorageException _conflict() => const StudioStorageException(
+        code: 'workspace_conflict',
+        message:
+            'Another saved workspace generation changed. Your edits are retained. '
+            'Export them or explicitly reopen the saved workspace before saving.',
+      );
 
   @override
   Future<String> exportScenario(StudioScenarioDraft draft) {
@@ -111,21 +195,26 @@ final class ApplicationSupportStudioDraftStore implements StudioDraftStore {
   }
 
   static Future<_StoredFile?> _inspect(
-      File file, Object Function(String) decode) async {
-    final FileSystemEntityType type =
-        await FileSystemEntity.type(file.path, followLinks: false);
+    File file,
+    Object Function(String) decode,
+  ) async {
+    final FileSystemEntityType type = await FileSystemEntity.type(
+      file.path,
+      followLinks: false,
+    );
     if (type == FileSystemEntityType.notFound) return null;
     if (type != FileSystemEntityType.file) {
       throw FileSystemException('Expected a regular Studio file.', file.path);
     }
+    final List<int> bytes = await file.readAsBytes();
     String encoded = '';
     try {
-      encoded = utf8.decode(await file.readAsBytes());
-      return _StoredFile(encoded, value: decode(encoded));
+      encoded = utf8.decode(bytes);
+      return _StoredFile(encoded, bytes: bytes, value: decode(encoded));
     } on _UnsupportedStudioData catch (error) {
-      return _StoredFile(encoded, unsupported: error.message);
+      return _StoredFile(encoded, bytes: bytes, unsupported: error.message);
     } on FormatException {
-      return _StoredFile(encoded);
+      return _StoredFile(encoded, bytes: bytes);
     }
   }
 
@@ -310,8 +399,14 @@ final class ApplicationSupportStudioDraftStore implements StudioDraftStore {
 }
 
 final class _StoredFile {
-  const _StoredFile(this.encoded, {this.value, this.unsupported});
+  const _StoredFile(
+    this.encoded, {
+    required this.bytes,
+    this.value,
+    this.unsupported,
+  });
   final String encoded;
+  final List<int> bytes;
   final Object? value;
   final String? unsupported;
 }

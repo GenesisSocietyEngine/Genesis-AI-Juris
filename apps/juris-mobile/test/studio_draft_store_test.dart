@@ -21,6 +21,85 @@ void main() {
   });
   tearDown(() => root.delete(recursive: true));
 
+  test(
+    'conditional snapshots retain exact bytes and detached progress',
+    () async {
+      final StudioWorkspaceSnapshot empty = await store.readSnapshot();
+      expect(empty.workspace, isNull);
+      expect(empty.contentSha256, isNull);
+      final StudioWorkspaceSnapshot first = await store.writeIfUnchanged(
+        empty,
+        _workspace('first'),
+      );
+      first.workspace!.completedStages.clear();
+      expect(first.workspace!.completedStages, {StudioWorkflowStage.describe});
+      final String original = '\ufeff${_encoded('formatted')}\r\n';
+      await target.writeAsBytes(utf8.encode(original));
+      final StudioWorkspaceSnapshot formatted = await store.readSnapshot();
+      expect(formatted.originalJson, original);
+      expect(formatted.workspace!.draft.title, 'formatted');
+      final Map<String, List<int>> retained = await _files(target.parent);
+      await expectLater(
+        store.writeIfUnchanged(first, _workspace('stale')),
+        throwsA(_storageCode('workspace_conflict')),
+      );
+      await expectLater(
+        store.writeIfUnchanged(empty, _workspace('also stale')),
+        throwsA(_storageCode('workspace_conflict')),
+      );
+      expect(await _files(target.parent), retained);
+      await store.writeIfUnchanged(formatted, _workspace('next'));
+      expect(
+        await File('${target.path}.bak').readAsBytes(),
+        utf8.encode(original),
+      );
+    },
+  );
+
+  test(
+    'workspace generation tokens reject another root and formatting change',
+    () async {
+      await store.write(_workspace('same'));
+      final StudioWorkspaceSnapshot loaded = await store.readSnapshot();
+      final Directory other = await Directory('${root.path}/other').create();
+      final ApplicationSupportStudioDraftStore different =
+          ApplicationSupportStudioDraftStore(
+        directoryProvider: () async => other,
+      );
+      await expectLater(
+        different.writeIfUnchanged(loaded, _workspace('other')),
+        throwsA(_storageCode('workspace_conflict')),
+      );
+      expect(await different.read(), isNull);
+      await target.writeAsString('${await target.readAsString()}\n');
+      final List<int> before = await target.readAsBytes();
+      await expectLater(
+        store.writeIfUnchanged(loaded, _workspace('same')),
+        throwsA(_storageCode('workspace_conflict')),
+      );
+      expect(await target.readAsBytes(), before);
+    },
+  );
+
+  test('conditional write freezes payload before a delayed provider', () async {
+    final StudioWorkspaceSnapshot token = await store.readSnapshot();
+    final Completer<Directory> release = Completer<Directory>();
+    final ApplicationSupportStudioDraftStore delayed =
+        ApplicationSupportStudioDraftStore(
+      directoryProvider: () => release.future,
+    );
+    final Set<StudioWorkflowStage> stages = {StudioWorkflowStage.describe};
+    final Future<StudioWorkspaceSnapshot> writing = delayed.writeIfUnchanged(
+      token,
+      _workspace('frozen', completed: stages),
+    );
+    stages.clear();
+    release.complete(root);
+    expect((await writing).workspace!.completedStages, {
+      StudioWorkflowStage.describe,
+    });
+  });
+
   test('empty storage and committed generations round trip with a backup',
       () async {
     expect(await store.read(), isNull);
