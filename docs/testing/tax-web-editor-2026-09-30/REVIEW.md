@@ -73,6 +73,10 @@ before final lint. React and browser verification skills were applied.
 The strict-history correction also passed whole-project TypeScript, focused lint
 and 21 combined tests. The final combined editor/handler/legacy/materializer/
 execution suite passed 30 tests on the isolated dependency graph.
+Follow-up native-contract review identified the known optional `assumptions`
+unavailable field. Its explicit empty request text is now accepted while the full
+original and receipt remain retained; a real Rust missing-assumptions regression
+passes, bringing the focused suite to 31 tests. Peer review approved this change.
 
 An actual Chrome session created a new analysis through WASM, edited annual tax
 amounts 250000/200000 and implementation cost 1000, calculated the expected full

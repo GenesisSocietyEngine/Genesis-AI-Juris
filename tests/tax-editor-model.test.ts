@@ -125,6 +125,21 @@ test("unknown legacy data is retained but does not silently replace existing edi
   assert.equal(imported.document.previous_source_documents.at(-1), before.document);
 });
 
+test("supported legacy input without optional assumptions retains an explicitly blank field", async () => {
+  const { draft, document } = await prepared();
+  const value = JSON.parse(await readFile(new URL("../crates/juris-tax-economics/tests/fixtures/adapters/web_amounts_v1.json", import.meta.url), "utf8"));
+  delete value.assumptions;
+  const original = JSON.stringify(value);
+  const response = await repository.importLegacy(draft, { artifact_id: document.request.context.artifact_id, revision: "1", schema: "web_amounts_v1", original_json: original });
+  const imported = taxDocumentFromLegacy(taxEditorAttachment(document), response);
+  assert.equal(imported.converted, true);
+  assert.equal(imported.document.request.input.assumptions, "");
+  assert.equal(imported.document.legacy_documents.at(-2), original);
+  assert.equal(imported.document.legacy_documents.at(-1), response.response);
+  assert.ok(JSON.parse(response.response).legacy.status.draft.unavailable_legacy_fields.includes("assumptions"));
+  assert.equal((await calculator.calculate({ ...draft, taxAnalysis: taxEditorAttachment(imported.document) })).status, "ready");
+});
+
 test("revision overflow and malformed responses refuse adoption without changing prior work", async () => {
   const { draft, document } = await prepared("18446744073709551615");
   const before = JSON.stringify(document);

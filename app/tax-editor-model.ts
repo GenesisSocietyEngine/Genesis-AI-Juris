@@ -155,6 +155,7 @@ export function taxDocumentFromLegacy(original: TaxAttachmentV1, execution: WebT
   if (converted) {
     const unavailable = object(status.draft).unavailable_legacy_fields;
     if (Array.isArray(unavailable)) for (const field of unavailable) {
+      if (field === "assumptions") { document.request.input.assumptions = ""; continue; }
       if (typeof field !== "string" || !Object.hasOwn(legacyEditFields, field)) throw new Error("Rust returned an unsupported unavailable legacy field.");
       document.edit[legacyEditFields[field]] = "";
     }
