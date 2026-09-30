@@ -4,23 +4,15 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../models/case_type_registry.dart';
 import '../models/studio_scenario_draft.dart';
+import '../models/studio_workspace.dart';
+import 'authoring_storage_backend.dart';
 import 'authoring_storage_coordinator.dart';
+import 'studio_workspace_codec.dart';
+
+export '../models/studio_workspace.dart';
 
 typedef StudioDirectoryProvider = Future<Directory> Function();
-
-final class StudioWorkspace {
-  const StudioWorkspace({
-    required this.draft,
-    required this.activeStage,
-    required this.completedStages,
-  });
-
-  final StudioScenarioDraft draft;
-  final StudioWorkflowStage activeStage;
-  final Set<StudioWorkflowStage> completedStages;
-}
 
 abstract interface class StudioDraftStore {
   Future<StudioWorkspace?> read();
@@ -42,6 +34,9 @@ final class StudioWorkspaceSnapshot {
   StudioWorkspaceSnapshot._(this._target, List<int>? bytes)
       : _bytes = bytes == null ? null : List<int>.unmodifiable(bytes);
   final String _target;
+
+  /// Internal aggregate-service identity; callers cannot mutate this token.
+  String get storageTarget => _target;
   final List<int>? _bytes;
   String? get contentSha256 =>
       _bytes == null ? null : sha256.convert(_bytes).toString();
@@ -61,6 +56,13 @@ final class StudioWorkspaceSnapshot {
         ? '\ufeff$encoded'
         : encoded;
   }
+
+  factory StudioWorkspaceSnapshot.fromImportCommit(
+          AuthoringImportCommit commit) =>
+      StudioWorkspaceSnapshot._(
+          ApplicationSupportStudioDraftStore._identity(
+              File('${commit.rootPath}/guided_studio_v1/workspace.json')),
+          utf8.encode(commit.workspaceJson));
 }
 
 /// Device-local persistence for the canonical scenario plus UI progress only.
@@ -169,10 +171,19 @@ final class ApplicationSupportStudioDraftStore
   }
 
   Future<T> _atFile<T>(
-      String directory, String name, Future<T> Function(File) action) {
-    return AuthoringStorageCoordinator.run(_directoryProvider, (lease) async {
-      return action(await lease.file(directory, name));
-    });
+      String directory, String name, Future<T> Function(File) action) async {
+    Future<T> operate(AuthoringStorageLease lease) async =>
+        action(await lease.file(directory, name));
+    try {
+      if (directory == 'studio_exports_v1') {
+        return await AuthoringStorageCoordinator.run(
+            _directoryProvider, operate);
+      }
+      return await AuthoringStorageBackend.run(_directoryProvider, operate);
+    } on AuthoringRecoveryException catch (error) {
+      throw StudioStorageException(
+          code: 'authoring_recovery_required', message: error.message);
+    }
   }
 
   Future<String> _write(String directory, String name, String encoded,
@@ -211,7 +222,7 @@ final class ApplicationSupportStudioDraftStore
     try {
       encoded = utf8.decode(bytes);
       return _StoredFile(encoded, bytes: bytes, value: decode(encoded));
-    } on _UnsupportedStudioData catch (error) {
+    } on UnsupportedStudioData catch (error) {
       return _StoredFile(encoded, bytes: bytes, unsupported: error.message);
     } on FormatException {
       return _StoredFile(encoded, bytes: bytes);
@@ -303,99 +314,10 @@ final class ApplicationSupportStudioDraftStore
     // Keep the last committed generation for process-termination recovery.
   }
 
-  static StudioWorkspace _decodeWorkspace(String encoded) {
-    final dynamic source = jsonDecode(encoded);
-    if (source is! Map<String, dynamic> ||
-        !source.containsKey('schema_version')) {
-      throw const FormatException('Invalid Studio workspace envelope.');
-    }
-    if (source['schema_version'] != 1 ||
-        source.keys.any((String key) => !{
-              'schema_version',
-              'scenario',
-              'active_stage',
-              'completed_stages'
-            }.contains(key))) {
-      throw const _UnsupportedStudioData(
-          'Unsupported Studio workspace format.');
-    }
-    final StudioScenarioDraft draft = _decodeScenario(source['scenario']);
-    final Object? active = source['active_stage'];
-    final Object? completed = source['completed_stages'];
-    if ((active != null && active is! String) ||
-        (completed != null && completed is! List<dynamic>)) {
-      throw const FormatException('Invalid Studio progress.');
-    }
-    StudioWorkflowStage stage(Object? value) {
-      if (value is! String)
-        throw const FormatException('Invalid Studio stage.');
-      for (final StudioWorkflowStage stage in StudioWorkflowStage.values) {
-        if (value == stage.wireName) return stage;
-      }
-      throw const _UnsupportedStudioData('Unsupported Studio workflow stage.');
-    }
-
-    return StudioWorkspace(
-      draft: draft,
-      activeStage:
-          active == null ? StudioWorkflowStage.describe : stage(active),
-      completedStages: ((completed as List<dynamic>?) ?? const <dynamic>[])
-          .map(stage)
-          .toSet(),
-    );
-  }
-
-  static StudioScenarioDraft _decodeScenario(dynamic source) {
-    if (source is! Map<String, dynamic> ||
-        !source.containsKey('schema_version')) {
-      throw const FormatException('Invalid canonical scenario.');
-    }
-    if (source['schema_version'] != '1.0') {
-      throw const _UnsupportedStudioData(
-          'Unsupported canonical scenario version.');
-    }
-    final dynamic metadata = source['metadata'];
-    final dynamic jurisdiction = source['jurisdiction'];
-    if (metadata is! Map<String, dynamic> ||
-        jurisdiction is! Map<String, dynamic> ||
-        !['id', 'title', 'summary', 'content_version']
-            .every((String key) => metadata[key] is String) ||
-        (metadata['id'] as String).isEmpty ||
-        source['initial_stage'] is! String ||
-        !['code', 'pack_version']
-            .every((String key) => jurisdiction[key] is String)) {
-      throw const FormatException('Invalid canonical scenario identity.');
-    }
-    if (metadata['case_type'] != null) {
-      try {
-        CaseTypeReference.fromJson(metadata['case_type']);
-      } on FormatException {
-        throw const _UnsupportedStudioData('Unsupported case-type package.');
-      }
-    }
-    const Map<String, List<String>> fields = {
-      'stages': ['id', 'title', 'kind'],
-      'actions': ['id', 'title'],
-      'outcomes': ['id', 'title', 'summary', 'terminal_stage'],
-      'facts': ['id', 'statement', 'initial_status'],
-      'actors': ['id', 'name', 'role'],
-      'evidence': ['id', 'title', 'kind'],
-    };
-    for (final String field in fields.keys) {
-      final dynamic items = source[field];
-      if (items == null && ['facts', 'actors', 'evidence'].contains(field))
-        continue;
-      if (items is! List<dynamic> ||
-          items.any((dynamic item) =>
-              item is! Map<String, dynamic> ||
-              !fields[field]!.every((String key) => item[key] is String) ||
-              (item['description'] != null &&
-                  item['description'] is! String))) {
-        throw FormatException('Invalid canonical scenario $field.');
-      }
-    }
-    return StudioScenarioDraft.fromJson(source);
-  }
+  static StudioWorkspace _decodeWorkspace(String encoded) =>
+      StudioWorkspaceCodec.decode(encoded);
+  static StudioScenarioDraft _decodeScenario(dynamic source) =>
+      StudioWorkspaceCodec.decodeScenario(source);
 }
 
 final class _StoredFile {
@@ -409,11 +331,6 @@ final class _StoredFile {
   final List<int> bytes;
   final Object? value;
   final String? unsupported;
-}
-
-final class _UnsupportedStudioData implements Exception {
-  const _UnsupportedStudioData(this.message);
-  final String message;
 }
 
 final class StudioStorageException implements Exception {

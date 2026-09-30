@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'authoring_storage_backend.dart';
 import 'authoring_storage_coordinator.dart';
 import 'tax_authoring_repository.dart';
 
@@ -12,6 +13,9 @@ final class TaxArtifactSnapshot {
       this.originalJson, this.contentSha256, this.readOnlyError);
   final String caseId;
   final String _target;
+
+  /// Internal aggregate-service identity; callers cannot mutate this token.
+  String get storageTarget => _target;
   final String? _encoded;
 
   /// Original valid UTF-8 JSON, including whitespace, numeric tokens and BOM.
@@ -22,6 +26,18 @@ final class TaxArtifactSnapshot {
   String? get readOnlyReason => readOnlyError?.message;
   Map<String, dynamic>? get artifact =>
       _encoded == null ? null : jsonDecode(_encoded) as Map<String, dynamic>;
+
+  factory TaxArtifactSnapshot.fromImportCommit(AuthoringImportCommit commit) =>
+      TaxArtifactSnapshot._(
+          commit.caseId,
+          TaxArtifactStore._identity(File(
+              '${commit.rootPath}/tax_authoring_v1/${sha256.convert(utf8.encode(commit.caseId))}.json')),
+          commit.taxJson.startsWith('\ufeff')
+              ? commit.taxJson.substring(1)
+              : commit.taxJson,
+          commit.taxJson,
+          sha256.convert(utf8.encode(commit.taxJson)).toString(),
+          null);
 }
 
 final class TaxStorageException implements Exception {
@@ -41,12 +57,19 @@ final class TaxArtifactStore {
   final Future<Directory> Function() _directoryProvider;
   static int _sequence = 0;
 
-  Future<T> _atFile<T>(String caseId, Future<T> Function(File) action) =>
-      AuthoringStorageCoordinator.run(_directoryProvider, (lease) async {
+  Future<T> _atFile<T>(String caseId, Future<T> Function(File) action) async {
+    try {
+      return await AuthoringStorageBackend.run(_directoryProvider,
+          (lease) async {
         final File file = await lease.file(
             'tax_authoring_v1', '${sha256.convert(utf8.encode(caseId))}.json');
         return action(file);
       });
+    } on AuthoringRecoveryException catch (error) {
+      throw TaxStorageException(
+          code: 'tax_recovery_required', message: error.message);
+    }
+  }
 
   Future<Map<String, dynamic>?> read(String caseId) async =>
       (await readSnapshot(caseId)).artifact;
