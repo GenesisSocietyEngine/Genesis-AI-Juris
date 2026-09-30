@@ -1,17 +1,22 @@
-import { and, desc, eq, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, sql, type SQL } from "drizzle-orm";
 import type { getDb } from "../db";
 import { auditEvents, caseDrafts, customCaseGrants, customCases, users } from "../db/schema";
 import { hashOpaqueToken, readSessionCookie } from "./auth-crypto";
-import { caseFingerprint, casePublicationFingerprint, canonicalFingerprint, legacyCaseFingerprintV15, normalizeStudioDraft } from "./case-integrity";
+import { caseFingerprint, casePublicationFingerprint, canonicalFingerprint, legacyCaseFingerprintV15 } from "./case-integrity";
 import { normalizeStoredCaseProtection, verifyCaseProtection } from "./case-protection";
-import { caseReportReceiptBinding, type CaseReportOptions } from "./case-report";
+import { buildTaxCaseReportArtifacts, caseReportReceiptBinding, type CaseReportOptions } from "./case-report";
 import type { ChatGPTUser } from "./chatgpt-auth";
 import { normalizeEmail } from "./custom-case-access";
-import { isReportReceiptStale, type ReportReceiptV2 } from "./report-model";
+import { isReportReceiptStale } from "./report-model";
 import { isPlatformAdmin } from "./server-authorization";
 import { getOrCreateCaseProtectionKey } from "./server-case-protection";
 import { studioDeviceScope } from "./studio-device-storage";
-import { historyTimestamp, parseStudioReportHistoryRecord, strictHistoryObject, type StudioReportHistoryRecord } from "./studio-report-history";
+import { historyTimestamp, parseStudioReportHistoryRecord, strictHistoryObject, type StudioHistoryReceipt, type StudioReportHistoryRecord } from "./studio-report-history";
+import { freezeStudioDraftSnapshot, readStudioAggregate } from "./studio-aggregate";
+import { canonicalWebTaxJson } from "./studio-tax-source";
+import { hasTaxAttachment } from "./tax-authoring";
+import { isTaxReportReceiptStale } from "./tax-report-receipt";
+import type { TaxRuntime } from "./tax-runtime/runtime";
 
 type Database = ReturnType<typeof getDb>;
 const EVENT = "studio_report_download_started";
@@ -53,13 +58,15 @@ export async function historyAuthority(db: Database, identity: ChatGPTUser, requ
   const owner = normalizeEmail(record.ownerEmail) === email;
   const [grant] = owner ? [] : await db.select().from(customCaseGrants).where(and(eq(customCaseGrants.customCaseId, id), eq(customCaseGrants.recipientEmail, email))).limit(1);
   if (!owner && (record.isPrivate || isPlatformAdmin(identity) || !grant)) throw new HistoryError(404, "Saved case not found.");
-  const [stored] = await db.select().from(caseDrafts).where(and(eq(caseDrafts.customCaseId, id), eq(caseDrafts.version, record.currentVersion), eq(caseDrafts.fingerprint, record.fingerprint))).orderBy(desc(caseDrafts.updatedAt), desc(caseDrafts.id)).limit(1);
+  const [stored] = await db.select({ ...getTableColumns(caseDrafts), payload: sql<string>`cast(${caseDrafts.payload} as text)` }).from(caseDrafts).where(and(eq(caseDrafts.customCaseId, id), eq(caseDrafts.version, record.currentVersion), eq(caseDrafts.fingerprint, record.fingerprint))).orderBy(desc(caseDrafts.updatedAt), desc(caseDrafts.id)).limit(1);
   if (!stored) throw new HistoryError(409, "Save the exact case version before recording its report.");
   let draft;
   try {
-    draft = normalizeStudioDraft(stored.payload);
+    const aggregate = readStudioAggregate(stored.payload, { kind: "draft" });
+    if (aggregate.status !== "editable") throw new Error("retained source requires recovery");
+    draft = freezeStudioDraftSnapshot(aggregate.draft);
     if (draft.caseId !== record.caseId || draft.version !== record.currentVersion || ![caseFingerprint(draft), legacyCaseFingerprintV15(draft)].includes(record.fingerprint)) throw new Error("binding");
-    const protection = normalizeStoredCaseProtection(stored.payload.protection);
+    const protection = normalizeStoredCaseProtection(aggregate.envelope.protection);
     if (protection) {
       const parent = draft.parent;
       if (!await verifyCaseProtection(protection, { caseId: record.caseId, version: record.currentVersion, studioFingerprint: record.fingerprint,
@@ -85,7 +92,7 @@ export async function historyAuthority(db: Database, identity: ChatGPTUser, requ
       and exists(select 1 from custom_cases c join case_drafts d on d.custom_case_id=c.id
         where c.id=${id} and c.owner_email=${record.ownerEmail} and c.case_id=${record.caseId} and c.current_version=${record.currentVersion}
         and c.fingerprint=${record.fingerprint} and c.is_private=${Number(record.isPrivate)} and d.id=${stored.id}
-        and d.version=c.current_version and d.fingerprint=c.fingerprint and json(d.payload)=json(${JSON.stringify(stored.payload)})
+        and d.version=c.current_version and d.fingerprint=c.fingerprint and cast(d.payload as text)=${stored.payload}
         and d.id=(select newest.id from case_drafts newest where newest.custom_case_id=c.id and newest.version=c.current_version and newest.fingerprint=c.fingerprint order by newest.updated_at desc,newest.id desc limit 1))`;
   };
   return { email, actorId: actor.actorId, record, draft, guard };
@@ -110,7 +117,10 @@ export async function readHistory(db: Database, authority: Authority, limit: num
   const records = rows.slice(0, limit).map(historyRecord);
   return { receipts: records, nextCursor: rows.length > limit ? String(records.at(-1)!.id) : null };
 }
-export async function recordHistory(db: Database, authority: Authority, receipt: ReportReceiptV2, options: CaseReportOptions) {
+/** Internal loader seam for held-runtime tests. The route never receives or
+ * accepts a runtime, execution snapshot or calculated result from the client. */
+const loadHistoryTaxRuntime = async () => (await import("./tax-runtime/worker")).loadWorkerTaxRuntime();
+export async function recordHistory(db: Database, authority: Authority, receipt: StudioHistoryReceipt, options: CaseReportOptions, loadRuntime: () => Promise<TaxRuntime> = loadHistoryTaxRuntime) {
   const { draft, record } = authority;
   if (receipt.caseId !== record.caseId || receipt.caseVersion !== record.currentVersion || receipt.profileId !== options.profileId
     || receipt.generatedAt !== options.generatedAt || receipt.status !== (options.status ?? "draft") || receipt.audience !== options.audience
@@ -118,10 +128,18 @@ export async function recordHistory(db: Database, authority: Authority, receipt:
     || options.currentPublicationFingerprint !== casePublicationFingerprint(draft) || options.workspacePublicationFingerprint !== casePublicationFingerprint(draft)
     || options.privateCase !== record.isPrivate || options.redactedNodeIds?.some(id => !draft.nodes.some(node => node.id === id))) throw new HistoryError(409, "Save the exact case and refresh report settings before recording this report.");
   try {
-    if (isReportReceiptStale(receipt, draft, options.profileId, caseReportReceiptBinding(draft, options))) throw new Error("stale");
+    if (receipt.receiptSchemaVersion === 3) {
+      if (!hasTaxAttachment(draft)) throw new Error("missing tax attachment");
+      const current = await buildTaxCaseReportArtifacts(draft, options, loadRuntime);
+      if (isTaxReportReceiptStale(receipt, current)) throw new Error("stale tax receipt");
+    } else {
+      if (hasTaxAttachment(draft) || isReportReceiptStale(receipt, draft, options.profileId, caseReportReceiptBinding(draft, options))) throw new Error("stale");
+    }
   } catch { throw new HistoryError(409, "The report no longer matches the saved case or current renderer. Generate it again."); }
   const format: StudioReportHistoryRecord["format"] = { presentationMode: options.presentationMode ?? "full", includeDecisionTree: options.presentationMode === "medium" || (options.includeDecisionTree ?? options.presentationMode !== "decision") };
-  const digest = canonicalFingerprint({ receipt, format });
+  const digest = receipt.receiptSchemaVersion === 3
+    ? `sha256-${Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonicalWebTaxJson({ schema: "web-tax-report-history-v1", receipt, format })))), byte => byte.toString(16).padStart(2, "0")).join("")}`
+    : canonicalFingerprint({ receipt, format });
   const detail = JSON.stringify({ actorId: authority.actorId, receipt, format, receiptDigest: digest });
   const recordedAt = new Date().toISOString();
   const result = await db.run(sql`insert into audit_events(actor_email,event_type,object_type,object_id,detail,created_at)

@@ -5,13 +5,16 @@ import type { StudioDraft } from "./types";
 import { isReportReceiptStale, type CurrentReportReceiptBinding } from "./report-model";
 import { parseStudioReportHistoryPage, type StudioReportHistoryRecord } from "./studio-report-history";
 import { readWithTimeout } from "./read-with-timeout";
+import type { TaxCaseReportArtifacts } from "./case-report";
+import { isTaxReportReceiptStale } from "./tax-report-receipt";
 import styles from "./case-report-dialog.module.css";
 
 type HistoryState = { context: string; phase: "loading" | "ready" | "error"; records: StudioReportHistoryRecord[]; cursor: string | null };
 
-export default function StudioReportHistory({ customCaseId, scope, authorityEpoch, allowed, draft, profileId, binding, recorded, locale }: {
+export default function StudioReportHistory({ customCaseId, scope, authorityEpoch, allowed, draft, profileId, binding, taxArtifacts = null, recorded, locale }: {
   customCaseId: number; scope: string; authorityEpoch: number; allowed: boolean;
   draft: StudioDraft; profileId: string; binding: CurrentReportReceiptBinding | null;
+  taxArtifacts?: TaxCaseReportArtifacts | null;
   recorded: StudioReportHistoryRecord | null; locale: "en" | "ru";
 }) {
   const context = JSON.stringify([customCaseId, scope, authorityEpoch, allowed]);
@@ -57,7 +60,9 @@ export default function StudioReportHistory({ customCaseId, scope, authorityEpoc
     {visible.phase === "error" && <p role="alert">{en ? "History could not be verified. Refresh to retry, or check your account and case access." : "Не удалось проверить историю. Обновите её или проверьте аккаунт и доступ к кейсу."}</p>}
     {visible.phase === "ready" && visible.records.length === 0 && <p>{en ? "No exports have been recorded for this case under your account." : "В вашем аккаунте нет записанных экспортов этого кейса."}</p>}
     <ol className={styles.historyList}>{visible.records.map(record => {
-      const stale = !binding || isReportReceiptStale(record.receipt, draft, profileId, binding);
+      const stale = record.receipt.receiptSchemaVersion === 3
+        ? !taxArtifacts || isTaxReportReceiptStale(record.receipt, taxArtifacts)
+        : !binding || isReportReceiptStale(record.receipt, draft, profileId, binding);
       const format = record.format.presentationMode === "decision" ? "Base" : record.format.presentationMode === "medium" ? "Medium" : "Full";
       return <li key={record.id}>
         <strong>{format} · {en ? "Tree" : "Схема"} {record.format.includeDecisionTree ? "ON" : "OFF"}</strong>

@@ -1,5 +1,6 @@
 import { canonicalWebTaxJson, type WebTaxSourceDescriptor } from "./studio-tax-source";
 import { readTaxAttachment, type WebTaxAuthoringDocument } from "./tax-authoring";
+import { taxLegacyReview } from "./tax-legacy-review";
 
 type JsonObject = Record<string, unknown>;
 export type MaterializedWebTaxInput = {
@@ -52,6 +53,8 @@ export function materializeWebTaxAuthoring(document: WebTaxAuthoringDocument, cu
   const issue = (field: string, code: string, message: string) => { issues.push({ field, code, message }); };
   const known = readTaxAttachment({ format: "genesis-juris-tax-attachment", carrierVersion: 1, document: JSON.stringify(snapshot) });
   if (known.status !== "known") return freeze({ status: "incomplete", issues: [{ field: "document", code: "unsupported_document", message: "Reopen or recover the preserved authoring document before calculating." }] });
+  const legacyReview = taxLegacyReview(snapshot.legacy_documents);
+  if (legacyReview.status !== "clear") return freeze({ status: "incomplete", issues: [{ field: "legacy_documents", code: "legacy_review_required", message: legacyReview.status === "blocked" ? legacyReview.reason : "Review the unavailable legacy import and explicitly retain the existing input before calculating." }] });
   if (canonicalWebTaxJson(snapshot.source) !== canonicalWebTaxJson(source)) return freeze({ status: "stale", issues: [{ field: "source", code: "stale_source", message: "The source changed. Review and explicitly rebind the analysis before calculating." }] });
 
   const request = snapshot.request, input = request.input;
@@ -60,7 +63,12 @@ export function materializeWebTaxAuthoring(document: WebTaxAuthoringDocument, cu
     catch (error) { issue(field, value === "" ? "missing_value" : "invalid_value", error instanceof Error ? error.message : "Invalid input."); return undefined; }
   };
   for (const field of moneyFields) input[field] = field === "annual_tax_base_override" && snapshot.edit[field] === "" ? null : convert(`edit.${field}`, snapshot.edit[field], parseWebTaxAmount);
-  for (const field of integerFields) input[field] = convert(`edit.${field}`, snapshot.edit[field], raw => unsigned(raw, field === "analysis_horizon_months" ? 4_294_967_295 : 65_535));
+  for (const field of integerFields) {
+    const inactiveRate = input.tax_input_basis === "amounts" && (field === "baseline_tax_rate_bps" || field === "optimized_tax_rate_bps");
+    // Required wire slots in amounts mode are neutral, not known authoring
+    // rates. Raw text stays untouched; switching to rates validates it afresh.
+    input[field] = inactiveRate ? 0 : convert(`edit.${field}`, snapshot.edit[field], raw => unsigned(raw, field === "analysis_horizon_months" ? 4_294_967_295 : 65_535));
+  }
   if (input.tax_input_basis === "rates" && !snapshot.rates_confirmed) issue("rates_confirmed", "confirmation_required", "Review and explicitly confirm both current tax rates.");
 
   const required = new Set(snapshot.required_component_ids);

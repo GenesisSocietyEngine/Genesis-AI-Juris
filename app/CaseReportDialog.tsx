@@ -2,19 +2,27 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { StudioDraft } from "./types";
-import { caseReportReceiptBinding, type CaseReportOptions } from "./case-report";
+import { caseReportReceiptBinding, type CaseReportOptions, type TaxCaseReportArtifacts } from "./case-report";
 import { caseTypePlaybook, primaryCaseOutput } from "./case-type-playbooks";
-import { isReportReceiptStale, readStoredReportReceipt, validateReportReadiness, type ReportReceipt, type ReportReceiptV2 } from "./report-model";
+import { isReportReceiptStale, readStoredReportReceipt, validateReportReadiness, type ReportReceipt } from "./report-model";
+import { hasTaxAttachment } from "./tax-authoring";
+import { isTaxReportReceiptStale, readStoredTaxReportReceipt, type TaxReportReceiptV3 } from "./tax-report-receipt";
 import { reportGenerationErrorMessage } from "./report-generation-error";
 import { startReportDownload } from "./report-download";
 import StudioReportHistory from "./StudioReportHistory";
 import { recordStudioReportHistory } from "./studio-report-history-client";
-import type { StudioReportHistoryRecord } from "./studio-report-history";
+import type { StudioHistoryReceipt, StudioReportHistoryRecord } from "./studio-report-history";
 import styles from "./case-report-dialog.module.css";
 
-function storedReceipt(caseId: string, profileId: string, scope: string | null, eligible: boolean) {
+function storedReceipt(caseId: string, profileId: string, scope: string | null, eligible: boolean, tax: boolean): ReportReceipt | TaxReportReceiptV3 | null {
   if (typeof window === "undefined") return null;
-  try { return readStoredReportReceipt(window.localStorage, { scope, eligible, caseId, profileId }); }
+  try {
+    if (tax) {
+      const value = readStoredTaxReportReceipt(window.localStorage, { scope, eligible, caseId, profileId });
+      return value.status === "known" ? value.receipt : null;
+    }
+    return readStoredReportReceipt(window.localStorage, { scope, eligible, caseId, profileId });
+  }
   catch { return null; }
 }
 
@@ -36,10 +44,13 @@ export default function CaseReportDialog({ locale, draft, customCaseId = null, c
   close: () => void;
   completed: () => void;
 }) {
+  const taxAttached = useMemo(() => hasTaxAttachment(draft), [draft]);
   const [audience, setAudience] = useState<CaseReportOptions["audience"]>("internal");
   const playbook = caseTypePlaybook(draft.caseType);
   const primaryOutput = primaryCaseOutput(draft.caseType);
-  const [profileId, setProfileId] = useState(primaryOutput.id);
+  const [profileId, setProfileId] = useState(taxAttached
+    ? playbook.outputs.find(output => ["tax_position_memorandum", "economic_assessment"].includes(output.id))?.id ?? primaryOutput.id
+    : primaryOutput.id);
   const [confidentiality, setConfidentiality] = useState<CaseReportOptions["confidentiality"]>(privateCase ? "confidential" : "draft");
   const [preparedBy, setPreparedBy] = useState("");
   const [preparedFor, setPreparedFor] = useState("");
@@ -56,10 +67,10 @@ export default function CaseReportDialog({ locale, draft, customCaseId = null, c
   // Clear it on change, including an undo back to an earlier version later.
   if (reviewerDeclaration && !reviewerApproved) setReviewerDeclaration(null);
   const [redactedNodeIds, setRedactedNodeIds] = useState<string[]>([]);
-  const receiptStorageContext = JSON.stringify([draft.caseId, profileId, reportReceiptStorageScope, persistReportReceiptOnDevice]);
-  const [storedReceiptState, setStoredReceiptState] = useState<{ context: string; receipt: ReportReceipt | null }>(() => ({
+  const receiptStorageContext = JSON.stringify([draft.caseId, profileId, reportReceiptStorageScope, persistReportReceiptOnDevice, taxAttached]);
+  const [storedReceiptState, setStoredReceiptState] = useState<{ context: string; receipt: ReportReceipt | TaxReportReceiptV3 | null }>(() => ({
     context: receiptStorageContext,
-    receipt: storedReceipt(draft.caseId, profileId, reportReceiptStorageScope, persistReportReceiptOnDevice),
+    receipt: storedReceipt(draft.caseId, profileId, reportReceiptStorageScope, persistReportReceiptOnDevice, taxAttached),
   }));
   const previousReceipt = storedReceiptState.context === receiptStorageContext ? storedReceiptState.receipt : null;
   const [presentationMode, setPresentationMode] = useState<"decision" | "medium" | "full">("decision");
@@ -82,9 +93,9 @@ export default function CaseReportDialog({ locale, draft, customCaseId = null, c
   const receiptContext = useMemo(() => ({ caseId: draft.caseId, customCaseId, scope: reportReceiptStorageScope, canGenerateReport, reportAuthorityEpoch }), [draft.caseId, customCaseId, reportReceiptStorageScope, canGenerateReport, reportAuthorityEpoch]);
   const currentReceiptContext = useRef<typeof receiptContext | null>(receiptContext);
   const [renderedReceiptContext, setRenderedReceiptContext] = useState(receiptContext);
-  const [completedDownload, setCompletedDownload] = useState<{ context: typeof receiptContext; receipt: ReportReceiptV2 } | null>(null);
+  const [completedDownload, setCompletedDownload] = useState<{ context: typeof receiptContext; receipt: StudioHistoryReceipt } | null>(null);
   const [historyStatus, setHistoryStatus] = useState<{ context: typeof receiptContext; phase: "saving" | "saved" | "error" | "unsaved"; record?: StudioReportHistoryRecord } | null>(null);
-  const historyAttempt = useRef<{ context: typeof receiptContext; receipt: ReportReceiptV2; options: CaseReportOptions } | null>(null);
+  const historyAttempt = useRef<{ context: typeof receiptContext; receipt: StudioHistoryReceipt; options: CaseReportOptions } | null>(null);
   // Reset context-bound UI before committing the new account/case/authority.
   // An abandoned render must not change the committed async callback fence.
   if (renderedReceiptContext !== receiptContext) {
@@ -136,19 +147,40 @@ export default function CaseReportDialog({ locale, draft, customCaseId = null, c
     status, workspaceFingerprint, workspacePublicationFingerprint,
   ]);
   const currentReceiptBinding = useMemo(() => {
+    if (taxAttached) return null;
     try { return caseReportReceiptBinding(draft, activeReportOptions); }
     catch { return null; }
-  }, [activeReportOptions, draft]);
-  const previousReceiptIsStale = previousReceipt === null
-    || currentReceiptBinding === null
-    || isReportReceiptStale(previousReceipt, draft, profileId, currentReceiptBinding);
-  const downloadReceiptIsStale = downloadReceipt === null
-    || currentReceiptBinding === null
-    || isReportReceiptStale(downloadReceipt, draft, profileId, currentReceiptBinding);
-  const readiness = useMemo(() => validateReportReadiness(draft, {
+  }, [activeReportOptions, draft, taxAttached]);
+  const [taxPreparation, setTaxPreparation] = useState<{ artifacts: TaxCaseReportArtifacts; draft: StudioDraft; options: CaseReportOptions; context: typeof receiptContext } | null>(null);
+  const currentTaxArtifacts = taxPreparation?.draft === draft && taxPreparation.options === activeReportOptions && taxPreparation.context === receiptContext ? taxPreparation.artifacts : null;
+  const receiptIsStale = (receipt: ReportReceipt | TaxReportReceiptV3 | null) => receipt === null || (receipt.receiptSchemaVersion === 3
+    ? !currentTaxArtifacts || isTaxReportReceiptStale(receipt, currentTaxArtifacts)
+    : !currentReceiptBinding || isReportReceiptStale(receipt, draft, profileId, currentReceiptBinding));
+  const previousReceiptIsStale = receiptIsStale(previousReceipt);
+  const downloadReceiptIsStale = receiptIsStale(downloadReceipt);
+  const readiness = useMemo(() => {
+    // The async tax path enforces fresh calculation and supported output. Keep
+    // the established publication/reviewer gates without the legacy-only block.
+    const value = validateReportReadiness(taxAttached ? { ...draft, taxAnalysis: undefined, taxEconomics: undefined, dealEconomics: undefined } : draft, {
     profileId, status, audience, preparedBy, preparedFor, reviewerName, reviewerApproved,
     currentFingerprint, workspaceFingerprint, currentPublicationFingerprint, workspacePublicationFingerprint, redactedNodeIds,
-  }), [audience, currentFingerprint, currentPublicationFingerprint, draft, preparedBy, preparedFor, profileId, redactedNodeIds, reviewerApproved, reviewerName, status, workspaceFingerprint, workspacePublicationFingerprint]);
+    });
+    if (taxAttached && !["tax_position_memorandum", "economic_assessment"].includes(profileId)) value.blockers.push("Choose a tax memorandum or economic assessment for this analysis.");
+    if (taxAttached && redactedNodeIds.length) value.blockers.push("Tax reports with redacted records are not supported.");
+    return { ...value, ready: value.blockers.length === 0 };
+  }, [audience, currentFingerprint, currentPublicationFingerprint, draft, preparedBy, preparedFor, profileId, redactedNodeIds, reviewerApproved, reviewerName, status, workspaceFingerprint, workspacePublicationFingerprint, taxAttached]);
+  const outputInputs = useMemo(() => ({ draft, options: activeReportOptions, context: receiptContext }), [draft, activeReportOptions, receiptContext]);
+  const [renderedOutputInputs, setRenderedOutputInputs] = useState(outputInputs);
+  if (renderedOutputInputs !== outputInputs) {
+    setRenderedOutputInputs(outputInputs);
+    setBusy(false);
+    setError("");
+  }
+  const committedOutputInputs = useRef<typeof outputInputs | null>(null);
+  useLayoutEffect(() => {
+    committedOutputInputs.current = outputInputs;
+    return () => { committedOutputInputs.current = null; };
+  }, [outputInputs]);
 
   useLayoutEffect(() => {
     currentReceiptContext.current = receiptContext;
@@ -181,21 +213,21 @@ export default function CaseReportDialog({ locale, draft, customCaseId = null, c
     && previewDocument.options === activeReportOptions && previewDocument.draft === draft ? previewDocument.url : null;
 
   const verifyOutput = async () => {
-    if (currentReceiptContext.current !== receiptContext || !canGenerateReport) throw new Error("Report context is no longer active.");
+    if (currentReceiptContext.current !== receiptContext || committedOutputInputs.current !== outputInputs || !canGenerateReport) throw new Error("Report context is no longer active.");
     // Private/workspace callers must provide server-backed authority. Anonymous
     // local drafts retain their existing entirely local output behavior.
     if (!verifyReportAuthority && (privateCase || workspaceFingerprint !== null)) throw new Error("Report access could not be verified. Sign in and refresh access.");
     const authorized = verifyReportAuthority ? await verifyReportAuthority() : () => true;
-    const current = () => currentReceiptContext.current === receiptContext && authorized();
+    const current = () => currentReceiptContext.current === receiptContext && committedOutputInputs.current === outputInputs && authorized();
     if (!current()) throw new Error("Report context is no longer active.");
     return current;
   };
 
-  async function saveAccountReceipt(receipt: ReportReceiptV2, options: CaseReportOptions) {
+  async function saveAccountReceipt(receipt: StudioHistoryReceipt, options: CaseReportOptions) {
     if (!customCaseId || !reportReceiptStorageScope || currentReceiptContext.current !== receiptContext) return;
     const attempt = { context: receiptContext, receipt, options };
     historyAttempt.current = attempt;
-    const isCurrentAttempt = () => currentReceiptContext.current === receiptContext && historyAttempt.current === attempt;
+    const isCurrentAttempt = () => currentReceiptContext.current === receiptContext && committedOutputInputs.current === outputInputs && historyAttempt.current === attempt;
     if (options.workspaceFingerprint !== options.currentFingerprint || options.workspacePublicationFingerprint !== options.currentPublicationFingerprint) {
       setHistoryStatus({ context: receiptContext, phase: "unsaved" });
       return;
@@ -216,14 +248,23 @@ export default function CaseReportDialog({ locale, draft, customCaseId = null, c
     setBusy(true); setError("");
     try {
       const current = await verifyOutput();
-      const { createCaseReportPreview } = await import("./case-report");
-      const blob = await createCaseReportPreview(draft, { ...activeReportOptions, generatedAt: new Date().toISOString() }, {
-        canGenerate: canGenerateReport, isCurrent: current, revalidate: async () => { await verifyOutput(); },
-      });
+      const options = { ...activeReportOptions, generatedAt: new Date().toISOString() };
+      const authorization = { canGenerate: canGenerateReport, isCurrent: current, revalidate: async () => { await verifyOutput(); } };
+      let blob: Blob;
+      if (taxAttached) {
+        const { createTaxCaseReportPreview } = await import("./tax-report-output");
+        const result = await createTaxCaseReportPreview(draft, options, authorization);
+        if (!current()) return;
+        blob = result.blob;
+        setTaxPreparation({ artifacts: result.artifacts, draft, options: activeReportOptions, context: receiptContext });
+      } else {
+        const { createCaseReportPreview } = await import("./case-report");
+        blob = await createCaseReportPreview(draft, options, authorization);
+      }
       if (!current()) return;
       setPreviewDocument({ url: URL.createObjectURL(blob), options: activeReportOptions, draft, context: receiptContext });
-    } catch (caught) { if (currentReceiptContext.current === receiptContext) setError(reportGenerationErrorMessage(caught, locale)); }
-    finally { if (currentReceiptContext.current === receiptContext) setBusy(false); }
+    } catch (caught) { if (currentReceiptContext.current === receiptContext && committedOutputInputs.current === outputInputs) setError(reportGenerationErrorMessage(caught, locale)); }
+    finally { if (currentReceiptContext.current === receiptContext && committedOutputInputs.current === outputInputs) setBusy(false); }
   };
 
   useEffect(() => {
@@ -233,10 +274,11 @@ export default function CaseReportDialog({ locale, draft, customCaseId = null, c
         profileId,
         reportReceiptStorageScope,
         persistReportReceiptOnDevice,
+        taxAttached,
       ) });
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [draft.caseId, persistReportReceiptOnDevice, profileId, reportReceiptStorageScope, receiptStorageContext]);
+  }, [draft.caseId, persistReportReceiptOnDevice, profileId, reportReceiptStorageScope, receiptStorageContext, taxAttached]);
 
   const chooseAudience = (next: CaseReportOptions["audience"]) => {
     setAudience(next);
@@ -251,18 +293,26 @@ export default function CaseReportDialog({ locale, draft, customCaseId = null, c
     setBusy(true); setError("");
     try {
       const current = await verifyOutput();
-      const { downloadCaseReport } = await import("./case-report");
-      const receipt = await downloadCaseReport(draft, {
-        ...activeReportOptions,
-        generatedAt: new Date().toISOString(),
-      }, { canGenerate: canGenerateReport, isCurrent: current, revalidate: async () => { await verifyOutput(); } });
+      const options = { ...activeReportOptions, generatedAt: new Date().toISOString() };
+      const authorization = { canGenerate: canGenerateReport, isCurrent: current, revalidate: async () => { await verifyOutput(); } };
+      let receipt: StudioHistoryReceipt;
+      if (taxAttached) {
+        const { downloadTaxCaseReport } = await import("./tax-report-output");
+        const result = await downloadTaxCaseReport(draft, options, authorization);
+        if (!current()) return;
+        receipt = result.receipt;
+        setTaxPreparation({ artifacts: result.artifacts, draft, options: activeReportOptions, context: receiptContext });
+      } else {
+        const { downloadCaseReport } = await import("./case-report");
+        receipt = await downloadCaseReport(draft, options, authorization);
+      }
       if (!current()) return;
       setCompletedDownload({ context: receiptContext, receipt });
       completed();
       await saveAccountReceipt(receipt, activeReportOptions);
     } catch (caught) {
-      if (currentReceiptContext.current === receiptContext) setError(reportGenerationErrorMessage(caught, locale));
-    } finally { if (currentReceiptContext.current === receiptContext) setBusy(false); }
+      if (currentReceiptContext.current === receiptContext && committedOutputInputs.current === outputInputs) setError(reportGenerationErrorMessage(caught, locale));
+    } finally { if (currentReceiptContext.current === receiptContext && committedOutputInputs.current === outputInputs) setBusy(false); }
   };
   const exportDownloadReceipt = async () => {
     if (!canGenerateReport || !downloadReceipt || busy || currentReceiptContext.current !== receiptContext) return;
@@ -274,8 +324,8 @@ export default function CaseReportDialog({ locale, draft, customCaseId = null, c
       startReportDownload(new Blob([JSON.stringify(downloadReceipt, null, 2)], { type: "application/json" }), filename);
       setError("");
     } catch {
-      if (currentReceiptContext.current === receiptContext) setError(t("The receipt could not be downloaded. Verify access and try again.", "Не удалось скачать квитанцию. Подтвердите доступ и повторите."));
-    } finally { if (currentReceiptContext.current === receiptContext) setBusy(false); }
+      if (currentReceiptContext.current === receiptContext && committedOutputInputs.current === outputInputs) setError(t("The receipt could not be downloaded. Verify access and try again.", "Не удалось скачать квитанцию. Подтвердите доступ и повторите."));
+    } finally { if (currentReceiptContext.current === receiptContext && committedOutputInputs.current === outputInputs) setBusy(false); }
   };
   const outputBlocked = !canGenerateReport || busy || !draft.title.trim() || !draft.nodes.length
     || ((status === "final" || audience === "client") && !readiness.ready);
@@ -352,7 +402,7 @@ export default function CaseReportDialog({ locale, draft, customCaseId = null, c
         <p>{t("For account history, save the exact case version before downloading. Unsaved working-draft exports are not added to the server history.", "Для истории аккаунта сохраните точную версию кейса перед скачиванием. Экспорты несохранённого рабочего черновика не добавляются в серверную историю.")}</p>
         {historyStatus?.context === receiptContext && <p role={historyStatus.phase === "error" ? "alert" : "status"}>{historyStatus.phase === "saving" ? t("Recording the export receipt in your account…", "Квитанция экспорта записывается в аккаунт…") : historyStatus.phase === "saved" ? t("Export receipt recorded in your account. File delivery and approval are not confirmed by this receipt.", "Квитанция экспорта записана в аккаунт. Она не подтверждает получение файла или его утверждение.") : historyStatus.phase === "unsaved" ? t("Download started. This working version was not saved to account history. Save the exact case version before the next export.", "Скачивание началось. Эта рабочая версия не записана в историю аккаунта. Сохраните точную версию кейса перед следующим экспортом.") : t("Download started, but account history was not confirmed. Refresh history or retry recording this receipt; another PDF download is not needed.", "Скачивание началось, но запись в историю аккаунта не подтверждена. Обновите историю или повторите запись квитанции; скачивать PDF повторно не нужно.")}</p>}
         {historyStatus?.context === receiptContext && historyStatus.phase === "error" && <button type="button" disabled={busy} onClick={() => { const attempt = historyAttempt.current; if (attempt?.context === receiptContext) void saveAccountReceipt(attempt.receipt, attempt.options); }}>{t("Retry recording receipt", "Повторить запись квитанции")}</button>}
-        <StudioReportHistory customCaseId={customCaseId} scope={reportReceiptStorageScope} authorityEpoch={reportAuthorityEpoch} allowed={canGenerateReport} draft={draft} profileId={profileId} binding={currentReceiptBinding} recorded={historyStatus?.context === receiptContext ? historyStatus.record ?? null : null} locale={locale}/>
+        <StudioReportHistory customCaseId={customCaseId} scope={reportReceiptStorageScope} authorityEpoch={reportAuthorityEpoch} allowed={canGenerateReport} draft={draft} profileId={profileId} binding={currentReceiptBinding} taxArtifacts={currentTaxArtifacts} recorded={historyStatus?.context === receiptContext ? historyStatus.record ?? null : null} locale={locale}/>
       </>}
       {canGenerateReport && previousReceipt && <details className={`case-report-receipt ${styles.receipt}`}><summary>{t("Latest receipt stored on this device", "Последняя квитанция на этом устройстве")}</summary><p><b>{previousReceiptIsStale ? t("Previous report is stale", "Предыдущий отчёт устарел") : t("Current content and layout receipt found", "Найдена актуальная квитанция содержания и макета")}</b></p><p>{t("One permitted receipt for this account, case and profile. This is not a complete export history or confirmation that a file was saved.", "Одна разрешённая квитанция для этой учётной записи, кейса и профиля. Это не полная история экспортов и не подтверждение сохранения файла.")}</p><pre>{JSON.stringify(previousReceipt, null, 2)}</pre></details>}
       <footer><button className="secondary-cta" type="button" onClick={close} disabled={busy}>{t("Close", "Закрыть")}</button></footer>

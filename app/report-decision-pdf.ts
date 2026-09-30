@@ -3,12 +3,14 @@ import type { CaseReportOptions } from "./case-report";
 import type { CanonicalReportModel } from "./report-model";
 import type { StudioDraft } from "./types";
 import { decisionEconomics } from "./report-decision-analysis";
+import type { TaxReportModel } from "./tax-report-model";
+import { buildTaxReportPdfSection } from "./tax-report-pdf";
 
 const ink = "#173345", teal = "#197a80", muted = "#536774", line = "#dae3e8";
 const red = "#a63e35";
 
 /** Receives only visible records. Recommendations are proposals, never selected outcomes. */
-export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptions, report: CanonicalReportModel): TDocumentDefinitions {
+export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptions, report: CanonicalReportModel, taxReport?: TaxReportModel): TDocumentDefinitions {
   const t = (en: string, ru: string) => options.language === "en" ? en : ru;
   const money = (n: number | null, decimals = 0) => n === null || !Number.isFinite(n) ? t("Not established", "Не установлено")
     : new Intl.NumberFormat(options.language === "en" ? "en-GB" : "ru-RU", { style: "currency", currency: draft.dealEconomics?.currency ?? draft.taxEconomics?.currency ?? "GBP", maximumFractionDigits: decimals, minimumFractionDigits: decimals }).format(n);
@@ -27,20 +29,26 @@ export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptio
     layout: { hLineWidth: () => .5, vLineWidth: () => 0, hLineColor: () => line, paddingTop: () => 8, paddingBottom: () => 8, paddingLeft: () => 8, paddingRight: () => 8,
       fillColor: row => row > 0 && row % 2 === 0 ? "#f5f8fa" : null }, margin: [0, 6, 0, 13], fontSize: 9.3,
   });
-  const m = options.includeEconomics ? draft.dealEconomics : undefined;
+  const m = options.includeEconomics && !taxReport ? draft.dealEconomics : undefined;
   const a = m ? decisionEconomics(m) : null;
   const cash = a?.selected?.annualCashFlow ?? null;
   const debt = a?.selected?.annualDebtService ?? null;
   const adverse = cash !== null && cash < 0;
   const hasBasis = !!a?.selected && debt !== null && m?.grossAnnualIncome !== null;
   const operatingDeficit = adverse && debt === 0;
-  const recommendation = operatingDeficit
+  const recommendation = taxReport
+    ? t("Review the tax analysis and source evidence", "Проверить налоговый анализ и исходные материалы")
+    : operatingDeficit
     ? t("Reassess operating economics before commitment", "Пересмотреть операционную экономику до обязательств")
     : adverse
     ? t("Reassess financing before commitment", "Пересмотреть финансирование до принятия обязательств")
     : hasBasis ? t("Validate the economics before choosing a route", "Проверить экономику до выбора структуры")
       : t("Resolve the material evidence gaps before deciding", "Закрыть существенные пробелы до принятия решения");
-  const rationale = adverse
+  const rationale = taxReport
+    ? options.includeEconomics
+      ? t("The current calculation uses the recorded tax inputs. Confirm the source evidence, assumptions and legal applicability before relying on the result; calculation does not establish approval.", "Актуальный расчёт использует записанные налоговые данные. Перед использованием результата подтвердите источники, допущения и правовую применимость; расчёт не означает утверждение.")
+      : t("Economic values and provenance are excluded by the selected report settings. Review the visible case records and decision conditions.", "Экономические значения и их происхождение исключены настройками отчёта. Проверьте открытые записи дела и условия решения.")
+    : adverse
     ? t(`The recorded assumptions imply an annual cash shortfall of ${money(-cash!)} before tax and unpriced costs. Rework financing or the acquisition economics, then compare the available ownership routes.`,
       `Указанные допущения дают годовой дефицит ${money(-cash!)} до налогов и неоценённых затрат. Пересмотрите финансирование или экономику приобретения, затем сравните доступные структуры владения.`)
     : hasBasis ? t("The current model result is not an execution approval. Confirm income, complete costs, financing terms and legal feasibility before relying on it.", "Текущий результат модели не является разрешением на сделку. Подтвердите доход, полные затраты, условия финансирования и правовую допустимость.")
@@ -76,7 +84,7 @@ export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptio
     if (purpose && objective !== purpose.trim()) content.push(p(t("Detailed pinned scenario inputs remain in the case and Full analysis export.", "Подробные закреплённые параметры сценария доступны в деле и полном отчёте.")));
     if (m) content.push(p(t("The repayment basis or financial inputs are incomplete, or the loan runs for less than a year. A supported annual cash-flow conclusion is not available.", "Вид погашения или данные неполны либо срок кредита меньше года. Обоснованный годовой вывод о денежном потоке недоступен.")));
   }
-  if (options.includeEconomics && draft.taxEconomics) content.push(p(t("3. A tax advantage is not established. Recorded tax estimates do not evidence verified rates, deductibility or eligibility. Do not offset the financing shortfall with an assumed tax saving.", "3. Налоговое преимущество не установлено. Налоговые оценки не подтверждают ставки, вычеты и применимость режима. Не компенсируйте дефицит предполагаемой налоговой экономией.")));
+  if (options.includeEconomics && draft.taxEconomics && !taxReport) content.push(p(t("3. A tax advantage is not established. Recorded tax estimates do not evidence verified rates, deductibility or eligibility. Do not offset the financing shortfall with an assumed tax saving.", "3. Налоговое преимущество не установлено. Налоговые оценки не подтверждают ставки, вычеты и применимость режима. Не компенсируйте дефицит предполагаемой налоговой экономией.")));
   content.push({ text: t("Analytical recommendation only. No selected case outcome or independent professional approval is implied.", "Только аналитическая рекомендация. Выбранный исход дела и независимое профессиональное утверждение не подразумеваются."), style: "small", margin: [0, 12, 0, 0] });
 
   if (m && a && hasBasis) {
@@ -119,6 +127,7 @@ export function buildDecisionReport(draft: StudioDraft, options: CaseReportOptio
     } else content.push(p(t("A meaningful income sensitivity needs recorded operating and structure costs, positive income and a usable cost ratio. Complete these inputs rather than substituting probability weights.", "Для чувствительности нужны указанные операционные расходы, расходы структуры, положительный доход и применимая доля затрат. Заполните данные вместо подстановки вероятностей.")));
   }
 
+  if (taxReport) content.push(...buildTaxReportPdfSection(taxReport));
   content.push(...page(t("Recommendation and actions", "Рекомендация и действия"), t("A practical route to a decision", "Практический путь к решению")));
   if (hasBasis) {
     content.push(table([t("Option", "Вариант"), t("Implication / next test", "Значение / следующая проверка")], [

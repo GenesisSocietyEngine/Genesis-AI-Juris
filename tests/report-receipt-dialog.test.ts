@@ -11,6 +11,10 @@ import type { StudioDraft } from "../app/types";
 import { StudioSessionAuthority } from "../app/studio-session-authority";
 import { primaryCaseOutput } from "../app/case-type-playbooks";
 import { reportReceiptStorageKey } from "../app/report-model";
+import { loadNodeTaxRuntime } from "../app/tax-runtime/node";
+import type { TaxRuntime } from "../app/tax-runtime/runtime";
+import { parseTaxReportReceipt, taxReportReceiptStorageKey } from "../app/tax-report-receipt";
+import { attach, reportFixture } from "./helpers/tax-report-fixture";
 
 // Execute the actual parent callbacks, report models, receipt construction,
 // privacy policy and download helper. Only React's hook scheduling/DOM and the
@@ -21,6 +25,7 @@ type PdfState = { receipts: ReportReceiptV2[]; fail: boolean; hold: boolean; fin
 const fixtureGlobal = globalThis as typeof globalThis & {
   __reportHooks?: ReturnType<typeof hookRuntime>;
   __reportPdf?: PdfState;
+  __reportLoadTaxRuntime?: () => Promise<TaxRuntime>;
 };
 async function awaitPdfPaused(pdf: PdfState, operation: Promise<void>, expected = 1) {
   let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -98,6 +103,7 @@ const bundle = await build({
     builder.onResolve({ filter: /^\.\/case-report$/ }, args => args.importer.endsWith("CaseReportDialog.tsx") ? { path: "report", namespace: "contract" } : undefined);
     builder.onResolve({ filter: /^pdfmake\/build\/pdfmake\.js$/ }, () => ({ path: "pdf", namespace: "contract" }));
     builder.onResolve({ filter: /^pdfmake\/build\/vfs_fonts\.js$/ }, () => ({ path: "fonts", namespace: "contract" }));
+    builder.onResolve({ filter: /tax-runtime\/browser$/ }, () => ({ path: "tax-runtime", namespace: "contract" }));
     builder.onLoad({ filter: /.*/, namespace: "contract" }, args => ({
       resolveDir: process.cwd(), loader: "js",
       contents: args.path === "hooks"
@@ -105,6 +111,7 @@ const bundle = await build({
         : args.path === "report"
           ? `import * as actual from './app/case-report.ts'; export * from './app/case-report.ts'; export async function downloadCaseReport(...args) { const receipt = await actual.downloadCaseReport(...args); globalThis.__reportPdf.receipts.push(receipt); return receipt; }`
           : args.path === "fonts" ? "export default {};"
+            : args.path === "tax-runtime" ? "export const loadBrowserTaxRuntime=()=>globalThis.__reportLoadTaxRuntime();"
             : `import { EventEmitter } from 'node:events'; export default { addVirtualFileSystem() {}, createPdf() { const state = globalThis.__reportPdf; if(state.fail) throw new Error('Controlled PDF failure'); return { getStream() { const stream = new EventEmitter(); stream.end = () => { const finish = () => { stream.emit('data', Buffer.from('%PDF-modeled-renderer')); stream.emit('end'); }; if(state.hold) { state.finish.push(finish); state.paused?.(); } else queueMicrotask(finish); }; return stream; } }; } };`,
     }));
   } }],
@@ -393,6 +400,7 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
     assert.deepEqual(JSON.parse(await downloads.at(-1)!.blob.text()), pdf.receipts[0], "a failed generation must preserve the prior successful receipt");
 
     pdf.fail = false; pdf.hold = true;
+    const downloadsBeforeInputChange = downloads.length;
     const pending = click(tree, "Download PDF");
     await awaitPdfPaused(pdf, pending);
     assert.equal(pdf.finish.length, 1);
@@ -402,12 +410,18 @@ test("the dialog exposes the exact private PDF receipt, preserves it on failure 
     tree = render();
     pdf.finish.shift()!(); await pending;
     tree = render();
+    assert.equal(pdf.receipts.length, 1, "changed input cannot issue a late receipt");
+    assert.equal(downloads.length, downloadsBeforeInputChange, "changed input cannot start a late file download");
+    assert.match(text(tree), /earlier PDF download/);
+    pdf.hold = false;
+    await click(tree, "Download PDF"); tree = render();
     assert.equal(pdf.receipts.length, 2);
     assert.notEqual(pdf.receipts[1].presentationFingerprint, pdf.receipts[0].presentationFingerprint);
-    assert.match(text(tree), /earlier PDF download/, "late completion binds captured options, not the newer form state");
+    assert.match(text(tree), /matches the current case and report settings/, "explicit retry uses current settings");
     await click(tree, "Download receipt JSON");
     assert.deepEqual(JSON.parse(await downloads.at(-1)!.blob.text()), pdf.receipts[1]);
 
+    pdf.hold = true;
     const pendingAcrossScope = click(tree, "Download PDF");
     await awaitPdfPaused(pdf, pendingAcrossScope);
     assert.equal(pdf.finish.length, 1);
@@ -612,4 +626,136 @@ test("actual Markdown download and clipboard callbacks share protected-output au
     if (oldDocument) Object.defineProperty(globalThis, "document", oldDocument); else Reflect.deleteProperty(globalThis, "document");
     if (oldNavigator) Object.defineProperty(globalThis, "navigator", oldNavigator); else Reflect.deleteProperty(globalThis, "navigator");
   }
+});
+
+// The tax cases use the real report parent, async output helper, Rust execution
+// and v3 identity/storage policy. As above, DOM/hooks and PDF byte rendering are
+// controlled seams, not browser-layout or PDF-render acceptance.
+async function taxDialogFixture(retained?: string) {
+  const oldWindow = Object.getOwnPropertyDescriptor(globalThis, "window"), oldDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
+  const oldCreate = URL.createObjectURL, oldRevoke = URL.revokeObjectURL;
+  const values = new Map<string, string>(), writes: string[] = [], blobs = new Map<string, Blob>();
+  const downloads: Array<{ name: string; blob: Blob }> = [], commands: Array<{ command: string; response: string }> = [];
+  let sequence = 0, completed = 0, revalidated = 0;
+  const source = await reportFixture();
+  const scope = "a".repeat(64), key = taxReportReceiptStorageKey(scope, source.draft.caseId, "tax_position_memorandum");
+  if (retained !== undefined) values.set(key, retained);
+  fixtureGlobal.__reportHooks = hookRuntime();
+  const pdf: PdfState = fixtureGlobal.__reportPdf = { receipts: [], fail: false, hold: false, finish: [] };
+  let held: (() => void) | undefined, reached: (() => void) | undefined;
+  const nextRuntime = { hold: false };
+  fixtureGlobal.__reportLoadTaxRuntime = async () => {
+    if (nextRuntime.hold) { nextRuntime.hold = false; await new Promise<void>(resolve => { held = resolve; reached?.(); }); }
+    const runtime = await loadNodeTaxRuntime();
+    return { ...runtime, execute(command: string) { const response = runtime.execute(command); if (JSON.parse(command).command === "tax_web_calculate") commands.push({ command, response }); return response; } };
+  };
+  URL.createObjectURL = blob => { const url = `blob:tax-${++sequence}`; blobs.set(url, blob as Blob); return url; };
+  URL.revokeObjectURL = url => { blobs.delete(url); };
+  Object.defineProperty(globalThis, "window", { configurable: true, value: {
+    localStorage: { getItem(key: string) { return values.get(key) ?? null; }, setItem(key: string, value: string) { writes.push(key); values.set(key, value); }, removeItem() { throw new Error("No receipt may be deleted"); } },
+    setTimeout() { return 1; }, clearTimeout() {},
+  } });
+  Object.defineProperty(globalThis, "document", { configurable: true, value: {
+    activeElement: null, addEventListener() {}, removeEventListener() {}, body: { appendChild() {} },
+    createElement() { return { href: "", download: "", remove() {}, click(this: { href: string; download: string }) { downloads.push({ name: this.download, blob: blobs.get(this.href)! }); } }; },
+  } });
+  let props = { locale: "en", draft: source.draft, currentFingerprint: caseFingerprint(source.draft), workspaceFingerprint: caseFingerprint(source.draft),
+    currentPublicationFingerprint: casePublicationFingerprint(source.draft), workspacePublicationFingerprint: casePublicationFingerprint(source.draft),
+    privateCase: false, canGenerateReport: true, reportAuthorityEpoch: 1, reportReceiptStorageScope: scope, persistReportReceiptOnDevice: true,
+    verifyReportAuthority: async () => { revalidated++; return () => true; }, close() {}, completed() { completed++; } };
+  const render = () => {
+    const hooks = fixtureGlobal.__reportHooks!; let tree: unknown, attempts = 0;
+    do { hooks.begin(); tree = Parent(props); hooks.flush(); assert.ok(++attempts < 15, "tax dialog must settle"); } while (hooks.needsRender());
+    return tree;
+  };
+  return {
+    source, key, values, writes, downloads, commands, blobs, pdf, nextRuntime, render,
+    get props() { return props; }, set props(value) { props = value; },
+    get completed() { return completed; }, get revalidated() { return revalidated; },
+    async paused(operation: Promise<void>) {
+      let timeout: ReturnType<typeof setTimeout> | undefined;
+      try { await Promise.race([new Promise<void>((resolve, reject) => { timeout = setTimeout(() => reject(new Error("Rust load did not reach held boundary")), 5_000); reached = resolve; if (held) resolve(); }), operation.then(() => { throw new Error("Output completed before held Rust boundary"); })]); }
+      finally { clearTimeout(timeout); reached = undefined; }
+    },
+    release() { const resume = held; held = undefined; assert.ok(resume, "runtime is actually held"); resume(); },
+    cleanup() {
+      fixtureGlobal.__reportHooks?.unmount(); held?.(); for (const finish of pdf.finish.splice(0)) finish();
+      delete fixtureGlobal.__reportHooks; delete fixtureGlobal.__reportPdf; delete fixtureGlobal.__reportLoadTaxRuntime;
+      URL.createObjectURL = oldCreate; URL.revokeObjectURL = oldRevoke;
+      if (oldWindow) Object.defineProperty(globalThis, "window", oldWindow); else Reflect.deleteProperty(globalThis, "window");
+      if (oldDocument) Object.defineProperty(globalThis, "document", oldDocument); else Reflect.deleteProperty(globalThis, "document");
+    },
+  };
+}
+
+test("actual tax dialog freshly previews/downloads v3, compares current inputs and preserves future device bytes", async () => {
+  const future = '\uFEFF {"receiptSchemaVersion":99,"amount":18446744073709551617,"rate":1.2300e+0}\r\n';
+  const fixture = await taxDialogFixture(future);
+  try {
+    let tree = fixture.render();
+    await click(tree, "Preview PDF"); tree = fixture.render();
+    assert.equal(fixture.commands.length, 1); assert.equal(fixture.downloads.length, 0); assert.equal(fixture.completed, 0);
+    assert.ok(elements(tree).some(element => element.type === "iframe")); assert.deepEqual(fixture.writes, []);
+    await click(tree, "Download PDF"); tree = fixture.render();
+    assert.equal(fixture.commands.length, 2, "download recalculates independently of preview");
+    assert.equal(fixture.downloads.length, 1); assert.match(fixture.downloads[0].name, /\.pdf$/); assert.equal(fixture.completed, 1);
+    assert.equal(fixture.values.get(fixture.key), future); assert.deepEqual(fixture.writes, []);
+    assert.match(text(tree), /matches the current case and report settings/);
+    await click(tree, "Download receipt JSON"); tree = fixture.render();
+    const parsed = parseTaxReportReceipt(await fixture.downloads.at(-1)!.blob.text()); assert.equal(parsed.status, "known");
+    assert.equal(parsed.receipt.receiptSchemaVersion, 3);
+    const native = JSON.parse(fixture.commands[1].response);
+    assert.equal(parsed.receipt.tax.inputHash, native.draft.input_hash); assert.equal(parsed.receipt.tax.bindingHash, native.draft.binding_hash);
+    assert.equal(fixture.commands.length, 2, "receipt export must not pretend to calculate again");
+    const changed = structuredClone(fixture.source.draft), document = structuredClone(fixture.source.document);
+    document.edit.implementation_cost = "12345.67"; attach(changed, document);
+    fixture.props = { ...fixture.props, draft: changed, currentFingerprint: caseFingerprint(changed), workspaceFingerprint: caseFingerprint(changed), currentPublicationFingerprint: casePublicationFingerprint(changed), workspacePublicationFingerprint: casePublicationFingerprint(changed) };
+    tree = fixture.render();
+    assert.ok(!elements(tree).some(element => element.type === "iframe")); assert.match(text(tree), /earlier PDF download/);
+    await click(tree, "Download PDF"); tree = fixture.render(); await click(tree, "Download receipt JSON");
+    const second = parseTaxReportReceipt(await fixture.downloads.at(-1)!.blob.text()); assert.equal(second.status, "known");
+    assert.equal(fixture.commands.length, 3); assert.notEqual(second.receipt.tax.inputHash, parsed.receipt.tax.inputHash);
+    assert.notEqual(second.receipt.tax.evidenceFingerprint, parsed.receipt.tax.evidenceFingerprint);
+    assert.equal(fixture.values.get(fixture.key), future); assert.deepEqual(fixture.writes, []); assert.ok(fixture.revalidated >= 8);
+  } finally { fixture.cleanup(); }
+});
+
+test("actual tax dialog fences edits, account changes and unmount across held Rust/PDF work", async () => {
+  for (const boundary of ["rust", "pdf"] as const) for (const change of ["edit", "account", "unmount"] as const) {
+    const fixture = await taxDialogFixture();
+    try {
+      let tree = fixture.render();
+      fixture.nextRuntime.hold = boundary === "rust"; fixture.pdf.hold = boundary === "pdf";
+      const pending = click(tree, "Download PDF");
+      if (boundary === "rust") await fixture.paused(pending); else await awaitPdfPaused(fixture.pdf, pending);
+      const before = { downloads: fixture.downloads.length, writes: fixture.writes.length, completed: fixture.completed, urls: fixture.blobs.size };
+      if (change === "edit") {
+        (elements(tree).find(element => element.type === "input" && element.props.placeholder === "Name / firm")!.props.onChange as (event: unknown) => void)({ target: { value: "Changed during work" } });
+        tree = fixture.render();
+      } else if (change === "account") { fixture.props = { ...fixture.props, reportReceiptStorageScope: "b".repeat(64), reportAuthorityEpoch: 2 }; tree = fixture.render(); }
+      else fixtureGlobal.__reportHooks!.unmount();
+      if (boundary === "rust") fixture.release(); else fixture.pdf.finish.shift()!();
+      await pending;
+      assert.deepEqual({ downloads: fixture.downloads.length, writes: fixture.writes.length, completed: fixture.completed, urls: fixture.blobs.size }, before, `${boundary}/${change} must not issue old output`);
+      if (change !== "unmount") { tree = fixture.render(); assert.equal(button(tree, "Download PDF").props.disabled, false, "new input context is not left busy"); assert.doesNotMatch(text(tree), /Download receipt JSON/); }
+    } finally { fixture.cleanup(); }
+  }
+});
+
+test("actual tax download persists v3 only against its pre-render device generation", async () => {
+  const fixture = await taxDialogFixture();
+  try {
+    let tree = fixture.render(); await click(tree, "Download PDF"); tree = fixture.render();
+    assert.deepEqual(fixture.writes, [fixture.key]);
+    const saved = parseTaxReportReceipt(fixture.values.get(fixture.key)!); assert.equal(saved.status, "known");
+    fixture.pdf.hold = true;
+    const pending = click(tree, "Download PDF"); await awaitPdfPaused(fixture.pdf, pending);
+    const changed = '\uFEFF {"receiptSchemaVersion":99,"newer":18446744073709551617}\r\n';
+    fixture.values.set(fixture.key, changed);
+    fixture.pdf.finish.shift()!(); await pending; tree = fixture.render();
+    assert.equal(fixture.downloads.length, 2, "current authorized output still starts");
+    assert.equal(fixture.completed, 2); assert.equal(fixture.commands.length, 2);
+    assert.equal(fixture.values.get(fixture.key), changed, "pending output cannot replace the later device generation");
+    assert.deepEqual(fixture.writes, [fixture.key]); assert.match(text(tree), /matches the current case and report settings/);
+  } finally { fixture.cleanup(); }
 });
