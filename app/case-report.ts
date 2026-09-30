@@ -6,7 +6,13 @@ import { calculateTaxEconomics } from "./tax-economics";
 import { hasTaxAttachment } from "./tax-authoring";
 import { buildReportGraphLayout, deriveReportGraphLayoutInput, reportGraphGovernedTextIssue, ReportGraphLayoutError, type ReportGraphLayoutModel } from "./report-graph-layout";
 import { buildReportGraphAppendix } from "./report-graph-pdf";
-import { canonicalFingerprint } from "./case-integrity";
+import { canonicalFingerprint, caseFingerprint } from "./case-integrity";
+import { freezeStudioDraftSnapshot } from "./studio-aggregate";
+import { canonicalWebTaxJson } from "./studio-tax-source";
+import { createTaxReportExecution } from "./tax-report-execution";
+import { buildTaxReportModel, type TaxReportModel } from "./tax-report-model";
+import { buildTaxReportPdfSection } from "./tax-report-pdf";
+import type { TaxRuntime } from "./tax-runtime/runtime";
 import { buildDecisionReport } from "./report-decision-pdf";
 import { caseReportBriefRows } from "./case-report-brief";
 import { CASE_REPORT_PDF_FONTS, REPORT_AUDIT_SYMBOL_FONT, REPORT_AUDIT_SYMBOL_FONT_SHA256, reportAuditText } from "./report-audit-symbols";
@@ -202,6 +208,7 @@ function buildCaseReportDefinitionFromModels(
   options: CaseReportOptions,
   reportModel: CanonicalReportModel,
   layoutModel: ReportGraphLayoutModel,
+  taxReport?: TaxReportModel,
 ): TDocumentDefinitions {
   options = effectiveCaseReportOptions(options);
   const { language } = options;
@@ -212,7 +219,7 @@ function buildCaseReportDefinitionFromModels(
     draft = { ...draft, nodes: draft.nodes.filter((node) => visibleIds.has(node.id)), links: draft.links.filter((link) => visibleIds.has(link.from) && visibleIds.has(link.to)) };
   }
   if (options.presentationMode === "decision" || options.presentationMode === "medium") {
-    const definition = buildDecisionReport(draft, options, reportModel);
+    const definition = buildDecisionReport(draft, options, reportModel, taxReport);
     if (options.includeDecisionTree) {
       definition.content = [
         ...(Array.isArray(definition.content) ? definition.content : [definition.content]),
@@ -263,7 +270,7 @@ function buildCaseReportDefinitionFromModels(
     { text: "", pageBreak: "after" },
     numberedSection("Decision brief", "Резюме для принятия решения"),
     { text: reportStatus, style: "warning" },
-    table([tr(language, "Review question", "Вопрос проверки"), tr(language, "Case model summary", "Краткое содержание модели")], caseReportBriefRows(draft, reportModel, language, options.includeEconomics), ["25%", "75%"]),
+    table([tr(language, "Review question", "Вопрос проверки"), tr(language, "Case model summary", "Краткое содержание модели")], caseReportBriefRows(draft, reportModel, language, options.includeEconomics, Boolean(taxReport)), ["25%", "75%"]),
     { text: options.includeDecisionTree
       ? tr(language, "Selected records and labelled extracts are shown above. The complete graph appendix retains all visible node and connection text. Text supplied in the case keeps its original language.", "Выше приведены выбранные записи и обозначенные фрагменты. Полное приложение к графу сохраняет весь открытый текст узлов и связей. Текст самого кейса сохраняет исходный язык.")
       : tr(language, "Selected records and labelled extracts are shown above. The complete graph text appendix is omitted. Review the case for full node and connection conditions. Text supplied in the case keeps its original language.", "Выше приведены выбранные записи и обозначенные фрагменты. Полное текстовое приложение к графу исключено. Полные условия узлов и связей проверяйте в деле. Текст самого кейса сохраняет исходный язык."), style: "note" },
@@ -314,7 +321,9 @@ function buildCaseReportDefinitionFromModels(
     ], unbreakable: true });
   }
 
-  if (options.includeEconomics && (draft.dealEconomics || draft.taxEconomics)) {
+  if (taxReport) {
+    content.push(...buildTaxReportPdfSection(taxReport));
+  } else if (options.includeEconomics && (draft.dealEconomics || draft.taxEconomics)) {
     content.push(numberedSection("Economics and scenario analysis", "Экономика и сценарный анализ"));
     content.push(...buildEconomics(draft, options));
   }
@@ -605,6 +614,60 @@ export function buildCaseReportArtifacts(draft: StudioDraft, options: CaseReport
 
 export function buildCaseReportDefinition(draft: StudioDraft, options: CaseReportOptions): TDocumentDefinitions {
   return buildCaseReportArtifacts(draft, options).definition;
+}
+
+export const TAX_CASE_REPORT_RENDERER_VERSION = "web-tax-pdf-v1" as const;
+export type TaxCaseReportArtifacts = CaseReportArtifacts & {
+  taxRendererVersion: typeof TAX_CASE_REPORT_RENDERER_VERSION;
+  taxModel: TaxReportModel;
+};
+
+/** Internal preparation, not permission to preview, download or record history.
+ * Legacy synchronous builders still refuse every attachment. All tax output
+ * requires one fresh calculation of these frozen raw edits and current source.
+ */
+export async function buildTaxCaseReportArtifacts(
+  draft: StudioDraft, options: CaseReportOptions, loadRuntime: () => Promise<TaxRuntime>,
+): Promise<TaxCaseReportArtifacts> {
+  const frozenDraft = freezeStudioDraftSnapshot(draft);
+  const frozenOptions = structuredClone(options);
+  if (frozenOptions.profileId !== "tax_position_memorandum" && frozenOptions.profileId !== "economic_assessment") throw new Error("This report profile does not support tax analysis.");
+  if (frozenOptions.currentFingerprint !== caseFingerprint(frozenDraft)) throw new Error("The report options do not match the current case.");
+  if ((frozenOptions.redactedNodeIds?.length ?? 0) > 0) throw new Error("Tax reports with redacted records are not supported. The original remains unchanged.");
+  const execution = await createTaxReportExecution(loadRuntime).calculate(frozenDraft);
+  if (execution.status !== "ready") throw new Error(`Fresh tax calculation is unavailable (${execution.status}). Review the current analysis before generating a report.`);
+  const projected = await buildTaxReportModel(execution.snapshot, {
+    profileId: frozenOptions.profileId, language: frozenOptions.language,
+    includeEconomics: frozenOptions.includeEconomics, redactedNodeIds: frozenOptions.redactedNodeIds,
+  });
+  if (projected.status !== "ready") throw new Error(projected.reason);
+  // Only the render copy omits historical financial models. Source identity and
+  // tax execution retain the entire original; no legacy formula is evaluated.
+  const renderDraft = structuredClone(frozenDraft);
+  delete renderDraft.taxAnalysis;
+  delete renderDraft.taxEconomics;
+  delete renderDraft.dealEconomics;
+  const { reportModel } = buildCaseReportModels(renderDraft, frozenOptions);
+  reportModel.case.fingerprint = caseFingerprint(frozenDraft);
+  const canonicalModel: Record<string, unknown> = { ...reportModel };
+  delete canonicalModel.contentFingerprint;
+  const digest = async (value: unknown) => {
+    const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonicalWebTaxJson(value)));
+    return `sha256-${Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, "0")).join("")}`;
+  };
+  reportModel.contentFingerprint = await digest({ schema: "web-tax-case-report-content-v1", canonicalModel, evidence: projected.model.evidenceFingerprint });
+  const layoutModel = buildReportGraphLayout(deriveReportGraphLayoutInput(frozenDraft, reportModel, {
+    language: frozenOptions.language, redactedNodeIds: frozenOptions.redactedNodeIds,
+  }));
+  const presentationFingerprint = await digest({
+    schema: "web-tax-case-report-presentation-v1", renderer: TAX_CASE_REPORT_RENDERER_VERSION,
+    report: reportModel.contentFingerprint, tax: projected.model.presentationFingerprint,
+    base: caseReportPresentationFingerprint(renderDraft, frozenOptions, reportModel, layoutModel),
+  });
+  const definition = buildCaseReportDefinitionFromModels(renderDraft, frozenOptions, reportModel, layoutModel, projected.model);
+  definition.info = { ...definition.info, subject: `${frozenDraft.caseId} / v${frozenDraft.version} / ${TAX_CASE_REPORT_RENDERER_VERSION}` };
+  assertGovernedReportDefinitionText(definition);
+  return { definition, reportModel, layoutModel, presentationFingerprint, taxRendererVersion: TAX_CASE_REPORT_RENDERER_VERSION, taxModel: projected.model };
 }
 
 export function mayPersistGeneratedReportReceipt(draft: Pick<StudioDraft, "protection">, options: Pick<CaseReportOptions, "persistReportReceiptOnDevice" | "privateCase">) {

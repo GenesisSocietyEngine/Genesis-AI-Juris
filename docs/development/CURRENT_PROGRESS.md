@@ -66,7 +66,24 @@ tax_mobile_recovery_main_application_job: 109966089741
 tax_mobile_recovery_main_application_artifact: 11110678855
 tax_mobile_recovery_receipt: docs/testing/tax-mobile-recovery-2026-09-30/CHECKPOINT.md
 tax_mobile_product_acceptance: android_restart_legacy_incomplete_future_sidecar_and_aggregate_recovery_proven_remaining_ios_and_accessibility_open
-tax_web_pdf_v2_integration: shared_rust_runtime_and_web_source_contract_accepted_preservation_editor_and_version_bound_reports_open
+tax_web_pdf_v2_integration: shared_rust_runtime_and_source_contract_accepted_integrated_editor_and_reports_under_review
+tax_web_preservation_pr: 76
+tax_web_preservation_head: 409208e412cc677c7a23a4c32acc4453852c94d1
+tax_web_preservation_status: exact_head_web_checks_pass_remaining_ios_checks_pending
+tax_web_editor_status: local_save_reopen_fresh_rust_and_preservation_journeys_pass_final_integrated_ci_pending
+tax_web_editor_receipt: docs/testing/tax-web-editor-2026-09-30/REVIEW.md
+tax_report_v3_status: local_browser_pdf_receipt_native_parity_and_production_worker_checks_pass_exact_head_ci_pending
+tax_report_v3_receipt: docs/testing/tax-report-model-2026-09-30/PDF_INTEGRATION.md
+tax_report_browser_receipt: docs/testing/tax-report-model-2026-09-30/BROWSER_APPLICATION.md
+tax_report_native_parity_receipt: docs/testing/tax-report-model-2026-09-30/NATIVE_BROWSER_PARITY.md
+tax_android_aggregate_receipt: docs/testing/tax-mobile-aggregate-recovery-2026-09-30/ANDROID_APPLICATION.md
+tax_mobile_aggregate_pr: 75
+tax_mobile_aggregate_head: 54366097f9411161a4cf7701ffb7e3d412228328
+tax_mobile_aggregate_merge: 0590eaf364c9cdb28abc73c2b8d2de208936ff49
+tax_mobile_aggregate_pr_checks: pass_18_of_18
+tax_mobile_aggregate_main_checks: pending_separate_evidence
+tax_mobile_aggregate_checkpoint: docs/testing/tax-mobile-aggregate-recovery-2026-09-30/CHECKPOINT.md
+tax_acceptance_device_scope: ci_and_emulators_physical_device_checks_remain_open_by_user_instruction
 tax_web_source_pr: 74
 tax_web_source_head: fe8839520aff06772d30b6eef81d859fb4e71174
 tax_web_source_merge: d4d2902916951f51da0123c243c9945fd5bc807c
@@ -202,6 +219,18 @@ last_updated: 2026-09-30
 ---
 
 # Current Progress
+
+## 30 September 2026 — Integrated tax web editor and reports under review
+
+The combined P4C/P5 candidate now activates exact-string financial editing and fresh shared Rust execution in the web application, plus version-bound tax memorandum and economic-assessment output. The [editor review](../testing/tax-web-editor-2026-09-30/REVIEW.md) records actual edit/calculate/save/browser-close/reopen/recalculate, incomplete and legacy preservation, explicit source rebind, keyboard/enlarged-text checks and a cold unavailable-WASM refusal. Its final local source is `67a1ce199a35e7f64e5d99a06f50acd1eda6774d`; those receipts do not establish the later combined PR head.
+
+The [PDF integration review](../testing/tax-report-model-2026-09-30/PDF_INTEGRATION.md) records 22 new tax PDFs with 164 extracted/rendered pages, complete financial parity, both languages and profiles, long assumptions/provenance and unchanged legacy 47-PDF/760-page verification. Preview and download each require a new Rust calculation. V3 receipts bind source, input, execution versions and presentation; account history independently reproduces the saved source in the actual emitted production Worker before recording it. Local Worker positive and negative controls passed, including unavailable-runtime refusal with no event. The actual browser completed PDF preview/download and receipt persistence/current-stale checks; complete fresh reconstruction matched its entire receipt. JSON receipt file delivery, live authenticated browser account history and exact committed-head CI remain separate gates. The [native comparison](../testing/tax-report-model-2026-09-30/NATIVE_BROWSER_PARITY.md) uses the actual reopened browser command through the existing Windows C ABI and compares its complete result and binding, then generates four same-source PDF variants; it does not claim mobile-device evidence.
+
+P4B preservation PR #76 at `409208e412cc677c7a23a4c32acc4453852c94d1` passed both exact-head web/PDF workflows, complete/production audits and 49-command full-response parity in each packaged runtime. Applicable iOS gates remain pending. The [dependency receipt](../testing/tax-web-preservation-2026-09-30/DEPENDENCY_AUDIT.md) records the original audit failure and bounded Next.js 16.3.8 correction. A legacy green web/PDF check alone remains insufficient evidence for activated tax-v2 reports.
+
+The [Android aggregate application receipt](../testing/tax-mobile-aggregate-recovery-2026-09-30/ANDROID_APPLICATION.md) closes the bounded five-interruption emulator matrix at PR #75 source `59234db97fec569ee82219047e07944d0455eee2`. After normal main reconciliation and the dependency correction, exact head `54366097f9411161a4cf7701ffb7e3d412228328` passed all 18 checks, including both native XCTests and both application's executed save/terminate/reopen phases with complete fresh Rust parity. PR #75 merged through ordinary controls as `0590eaf364c9cdb28abc73c2b8d2de208936ff49` at 17:47:49 UTC. Subsequent main validation remains separate and pending.
+
+The longer PR #72 iOS application matrix remains incomplete. Source `962e71053bd026014f87f1ecd49ef6f7eef9a67c` timed out waiting for a VM service after launch in its push run and failed an earlier deadline smoke control in its PR run. Reviewed diagnostic head `f245149d04f1b03c3f129849b3a8c6bd113c6bd8` exposed `PermissionError` from the process-group liveness probe during timeout cleanup. That finding concerns the host deadline helper; it does not establish the cause of the application's earlier launch stalls. All six application phases and the existing assertions remain required. Physical devices, spoken screen-reader output, full gesture traversal and remaining iOS interruption/recovery checks stay open under the user's CI/emulator instruction. No production deployment, mobile distribution or product-release acceptance is claimed.
 
 ## 30 September 2026 — Web source and mobile workspace recovery accepted
 

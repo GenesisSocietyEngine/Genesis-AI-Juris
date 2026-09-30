@@ -1,10 +1,13 @@
 import { parseReportReceipt, type ReportReceiptV2 } from "./report-model";
+import { parseTaxReportReceipt, type TaxReportReceiptV3 } from "./tax-report-receipt";
+
+export type StudioHistoryReceipt = ReportReceiptV2 | TaxReportReceiptV3;
 
 export type StudioReportHistoryRecord = {
   id: number;
   recordedAt: string;
   event: "client_report_download_started";
-  receipt: ReportReceiptV2;
+  receipt: StudioHistoryReceipt;
   format: { presentationMode: "decision" | "medium" | "full"; includeDecisionTree: boolean };
 };
 export type StudioReportHistoryPage = { receipts: StudioReportHistoryRecord[]; nextCursor: string | null };
@@ -18,7 +21,13 @@ export function historyTimestamp(value: unknown): value is string {
     && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
 }
 const RECEIPT_KEYS = ["receiptSchemaVersion", "caseId", "caseVersion", "profileId", "rendererVersion", "caseFingerprint", "reportFingerprint", "generatedAt", "status", "audience", "layoutSchemaVersion", "layoutAlgorithmVersion", "layoutRendererVersion", "layoutFingerprint", "presentationFingerprint"];
-export function parseStudioHistoryReceipt(value: unknown): ReportReceiptV2 | null {
+export function parseStudioHistoryReceipt(value: unknown): StudioHistoryReceipt | null {
+  if (value && typeof value === "object" && !Array.isArray(value) && (value as Record<string, unknown>).receiptSchemaVersion === 3) {
+    try {
+      const parsed = parseTaxReportReceipt(JSON.stringify(value));
+      return parsed.status === "known" ? parsed.receipt : null;
+    } catch { return null; }
+  }
   if (!strictHistoryObject(value, RECEIPT_KEYS) || Object.keys(value).length !== RECEIPT_KEYS.length
     || value.receiptSchemaVersion !== 2 || !historyTimestamp(value.generatedAt)
     || typeof value.caseId !== "string" || !/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(value.caseId) || value.caseId.length > 128

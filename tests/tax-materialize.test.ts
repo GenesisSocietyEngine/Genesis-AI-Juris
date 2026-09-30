@@ -70,10 +70,10 @@ test("invalid or empty active money never falls back to a previous request or ca
 
 test("u16 and u32 conversion rejects rounding, negatives, fractions and out-of-range wire integers", () => {
   for (const field of integers) for (const raw of ["", "1.0", "-1", "01", "1e2", "9007199254740993", field === "analysis_horizon_months" ? "4294967296" : "65536"]) {
-    const document = fixture(); document.edit[field] = raw;
+    const document = fixture(); document.request.input.tax_input_basis = "rates"; document.edit[field] = raw;
     assert.equal(materializeWebTaxAuthoring(document, document.source).status, "incomplete", `${field}=${raw}`);
   }
-  const document = fixture(); document.edit.analysis_horizon_months = "4294967295";
+  const document = fixture(); document.request.input.tax_input_basis = "rates"; document.edit.analysis_horizon_months = "4294967295";
   document.edit.baseline_tax_rate_bps = "65535";
   const result = materializeWebTaxAuthoring(document, document.source);
   assert.equal(result.status, "ready", "wire conversion does not replace Rust domain policy");

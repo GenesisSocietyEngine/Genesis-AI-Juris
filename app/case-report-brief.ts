@@ -21,7 +21,7 @@ function records(nodes: StudioNode[], maximum: number, language: Language, detai
 
 /** Receives the already-redacted draft. It cannot select a winning branch or
  * infer verified facts, a simulation result, or a workflow approval. */
-export function caseReportBriefRows(draft: StudioDraft, model: CanonicalReportModel, language: Language, includeEconomics: boolean): Array<[string, string]> {
+export function caseReportBriefRows(draft: StudioDraft, model: CanonicalReportModel, language: Language, includeEconomics: boolean, taxAnalysisPresent = false): Array<[string, string]> {
   const purpose = draft.premisePublication === "author-reviewed"
     ? draft.premise
     : draft.nodes.find((node) => node.type === "trigger")?.detail;
@@ -48,6 +48,8 @@ export function caseReportBriefRows(draft: StudioDraft, model: CanonicalReportMo
       "PDF описывает модель кейса. Он не устанавливает выбранное решение и не подтверждает завершённый запуск. Перед рекомендацией проверьте полные условия соответствующей ветви в деле.")],
     [tr(language, "Assumptions", "Допущения"), !includeEconomics
       ? tr(language, "Economic assumptions are excluded by report settings. Review conditions and uncertainties in the detailed records.", "Экономические допущения исключены настройками отчёта. Проверьте условия и неопределённости в подробных записях.")
+      : taxAnalysisPresent
+      ? tr(language, "Current tax assumptions are included in the tax analysis section.", "Актуальные налоговые допущения приведены в разделе налогового анализа.")
       : assumptions.length
       ? assumptions.slice(0, 2).map((item) => excerpt(item, 160, language)).join("\n") + (assumptions.length > 2 ? tr(language, "\nFurther assumptions are in the economics appendix.", "\nОстальные допущения - в экономическом приложении.") : "")
       : tr(language, "Assumptions are not recorded separately. Review conditions and uncertainties in the detailed records.", "Допущения не выделены в отдельный реестр. Проверьте условия и неопределённости в подробных записях.")],

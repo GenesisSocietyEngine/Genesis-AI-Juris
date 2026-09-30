@@ -1,11 +1,11 @@
 import { canonicalFingerprint } from "./case-integrity";
 import type { CaseReportOptions } from "./case-report";
-import type { ReportReceiptV2 } from "./report-model";
-import { parseStudioReportHistoryRecord } from "./studio-report-history";
+import { parseStudioReportHistoryRecord, type StudioHistoryReceipt } from "./studio-report-history";
+import { canonicalWebTaxJson } from "./studio-tax-source";
 
 /** No automatic retry: a timeout may occur after the idempotent server write. */
 export async function recordStudioReportHistory(
-  customCaseId: number, expectedScope: string, receipt: ReportReceiptV2, options: CaseReportOptions,
+  customCaseId: number, expectedScope: string, receipt: StudioHistoryReceipt, options: CaseReportOptions,
   transport: typeof fetch = fetch,
 ) {
   const controller = new AbortController();
@@ -19,7 +19,9 @@ export async function recordStudioReportHistory(
     if (!response.ok) throw new Error("Account receipt was not confirmed.");
     const payload: unknown = await response.json();
     const record = payload && typeof payload === "object" && "record" in payload ? parseStudioReportHistoryRecord(payload.record) : null;
-    if (!record || canonicalFingerprint(record.receipt) !== canonicalFingerprint(receipt)) throw new Error("Account receipt did not match this export.");
+    if (!record || (receipt.receiptSchemaVersion === 3
+      ? canonicalWebTaxJson(record.receipt) !== canonicalWebTaxJson(receipt)
+      : canonicalFingerprint(record.receipt) !== canonicalFingerprint(receipt))) throw new Error("Account receipt did not match this export.");
     return record;
   } finally { clearTimeout(timer); }
 }

@@ -17,13 +17,14 @@ import { REPORT_RENDERER_VERSION, type ReportReceiptV2 } from "../app/report-mod
 import { REPORT_GRAPH_LAYOUT_SCHEMA_VERSION, REPORT_GRAPH_LAYOUT_ALGORITHM_VERSION, REPORT_GRAPH_LAYOUT_RENDERER_VERSION } from "../app/report-graph-contract";
 import { studioDeviceScope } from "../app/studio-device-storage";
 import { parseStudioReportHistoryPage, parseStudioReportHistoryRecord } from "../app/studio-report-history";
+import { loadNodeTaxRuntime } from "../app/tax-runtime/node";
 
 // Real password-login, auth resolver, route, report binding, and migrated D1.
 // Only runtime transport is adapted. Fixture users and saved artifacts are seeded;
 // sessions are created exclusively through the ordinary password login route.
 type Route = { GET(request: Request): Promise<Response>; POST(request: Request): Promise<Response>; DELETE(request: Request): Promise<Response> };
 const storage = new AsyncLocalStorage<Request>();
-const globals = globalThis as unknown as { __history_env: { DB: D1Database }; __history_headers(): Headers };
+const globals = globalThis as unknown as { __history_env: { DB: D1Database }; __history_headers(): Headers; __history_tax_runtime: typeof loadNodeTaxRuntime };
 let mf: Miniflare, d1: D1Database, routes: { history: Route; login: Route; me: Route };
 let beforeWrite: (() => Promise<void>) | undefined;
 let beforeHistoryRead: (() => Promise<void>) | undefined;
@@ -94,7 +95,10 @@ before(async () => {
     const value = Reflect.get(target, key, target); return typeof value === "function" ? value.bind(target) : value;
   } }) };
   globals.__history_headers = () => storage.getStore()!.headers;
+  globals.__history_tax_runtime = loadNodeTaxRuntime;
   const built = await build({ stdin: { contents: "export * as history from './app/api/custom-cases/report-receipts/route.ts'; export * as login from './app/api/auth/login/route.ts'; export * as me from './app/api/me/route.ts';", resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm", packages: "external", target: "es2022", plugins: [{ name: "history-runtime", setup(b) {
+    b.onResolve({ filter: /tax-runtime\/worker$/ }, () => ({ path: "tax-worker", namespace: "history-tax-runtime" }));
+    b.onLoad({ filter: /.*/, namespace: "history-tax-runtime" }, () => ({ contents: "export const loadWorkerTaxRuntime=()=>globalThis.__history_tax_runtime()" }));
     b.onResolve({ filter: /^(cloudflare:workers|next\/headers|next\/navigation)$/ }, args => ({ path: args.path, namespace: "history-runtime" }));
     b.onLoad({ filter: /.*/, namespace: "history-runtime" }, args => ({ contents: args.path === "cloudflare:workers" ? "export const env=globalThis.__history_env" : args.path === "next/headers" ? "export async function headers(){return globalThis.__history_headers()}" : "export function redirect(){throw new Error('unexpected redirect')}" }));
   } }] });

@@ -11,7 +11,17 @@ import { caseFingerprint, casePublicationFingerprint } from "../app/case-integri
 
 // Render the actual component; CSS geometry is verified separately in the browser.
 const bundle = await build({ entryPoints: ["app/CaseReportDialog.tsx"], bundle: true, write: false,
-  format: "esm", platform: "node", packages: "external", jsx: "automatic", loader: { ".css": "empty", ".module.css": "empty" } });
+  format: "esm", platform: "node", packages: "external", jsx: "automatic", loader: { ".css": "empty", ".module.css": "empty" },
+  // This Node rendering harness adapts the browser asset transport to the same
+  // real packaged Rust runtime; it does not substitute a calculation result.
+  plugins: [{ name: "first-use-node-tax-runtime", setup(builder) {
+    builder.onResolve({ filter: /tax-runtime\/browser$/ }, () => ({ path: "tax-runtime", namespace: "first-use" }));
+    builder.onResolve({ filter: /^file:/, namespace: "first-use" }, args => ({ path: args.path, external: true }));
+    builder.onLoad({ filter: /^tax-runtime$/, namespace: "first-use" }, () => ({ loader: "js",
+      contents: `export { loadNodeTaxRuntime as loadBrowserTaxRuntime } from ${JSON.stringify(pathToFileURL(resolve("app/tax-runtime/node.ts")).href)};`,
+    }));
+  } }],
+});
 mkdirSync(".artifacts/report-first-use", { recursive: true });
 const componentFile = resolve(".artifacts/report-first-use/component.mjs");
 writeFileSync(componentFile, bundle.outputFiles[0].text);

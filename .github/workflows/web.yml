@@ -53,6 +53,8 @@ jobs:
         run: |
           export CHROME_BIN="$(command -v google-chrome)"
           npm run tax:packaging 2>&1 | tee .artifacts/ci-logs/tax-packaging.log
+      - name: Execute tax report history in the packaged production Worker
+        run: npm run reports:verify-tax-worker 2>&1 | tee .artifacts/ci-logs/tax-report-worker.log
       - name: Audit complete dependency tree
         run: npm audit --audit-level=low 2>&1 | tee .artifacts/ci-logs/audit-full.log
       - name: Audit production dependency tree
@@ -75,6 +77,7 @@ jobs:
           path: |
             .artifacts/ci-logs
             .artifacts/tax-runtime/packaging
+            .artifacts/tax-report-worker
             .artifacts/p1-route-tests/erp-decision-report.pdf
             .artifacts/p1-route-tests/erp-snapshot.json
           include-hidden-files: true
@@ -132,6 +135,22 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git diff --exit-code -- parity/report-pdf-visual-baseline.v1.json parity/report-graph-layout-fixtures.v1.json package-lock.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify tax-v2 PDFs with fresh shared Rust calculations
+        run: |
+          npm.cmd run reports:verify-tax 2>&1 |
+            Tee-Object .artifacts/ci-logs/tax-pdf-verification.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git diff --exit-code -- parity/report-pdf-visual-baseline.v1.json parity/report-graph-layout-fixtures.v1.json package-lock.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload tax-v2 PDF evidence and failure diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1; Node 24
+        with:
+          name: tax-report-pdf-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/tax-report-pdfs
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload PDF evidence and failure diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1; Node 24
