@@ -49,9 +49,8 @@ void main() {
     final support = await getApplicationSupportDirectory();
     final controlFile = File('${support.path}/ios-future-control.json');
     // The first launch has no host control and may only establish the baseline.
-    final List<int>? controlBytes = await controlFile.exists()
-        ? await controlFile.readAsBytes()
-        : null;
+    final List<int>? controlBytes =
+        await controlFile.exists() ? await controlFile.readAsBytes() : null;
     final Map<String, dynamic>? control = controlBytes == null
         ? null
         : jsonDecode(utf8.decode(controlBytes)) as Map<String, dynamic>;
@@ -120,7 +119,8 @@ void main() {
     );
     final clipboardBefore = (await Clipboard.getData(
       Clipboard.kTextPlain,
-    ))?.text;
+    ))
+        ?.text;
     await _tap(tester, find.byKey(const ValueKey('product-navigation-menu')));
     await _tap(
       tester,
@@ -293,9 +293,8 @@ void main() {
       'phase': phase,
       'completed_phase': phase,
       'phase_index': phases.indexOf(phase),
-      'control_sha256': controlBytes == null
-          ? null
-          : sha256.convert(controlBytes).toString(),
+      'control_sha256':
+          controlBytes == null ? null : sha256.convert(controlBytes).toString(),
       'source_sha': source,
       'run_nonce': nonce,
       'pid': pid,
@@ -325,10 +324,10 @@ void main() {
 String _exactText(List<int> bytes) =>
     utf8.decode([0x20, ...bytes]).substring(1);
 Map<String, dynamic> _bytes(List<int> bytes) => {
-  'bytes': bytes.length,
-  'sha256': sha256.convert(bytes).toString(),
-  'base64': base64Encode(bytes),
-};
+      'bytes': bytes.length,
+      'sha256': sha256.convert(bytes).toString(),
+      'base64': base64Encode(bytes),
+    };
 Future<Map<String, dynamic>> inventory(Directory support) async {
   final result = <String, dynamic>{};
   for (final name in storageRoots) {
@@ -414,13 +413,12 @@ final class _Checkpoints {
 }
 
 Map<String, dynamic> _progress(StudioWorkspace workspace) => <String, dynamic>{
-  'active_stage': workspace.activeStage.wireName,
-  'completed_stages':
-      workspace.completedStages
+      'active_stage': workspace.activeStage.wireName,
+      'completed_stages': workspace.completedStages
           .map((StudioWorkflowStage stage) => stage.wireName)
           .toList()
         ..sort(),
-};
+    };
 
 Future<void> _enter(
   WidgetTester tester,

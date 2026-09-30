@@ -81,6 +81,17 @@ added isolated CLI and exact prepared-source pin cases passed in the final
 20-group verifier run.
 These are implementation controls, not application runtime evidence.
 
+The first published source, `99aeea622515b93eeb6ac8465ecd3a6a9fa6729a`, failed
+the repository-wide Dart formatting gate in both run `36790885414` / job
+`110143250956` and run `36790862158` / job `110143176948`. Three newly added Dart
+files needed the package-context formatter; no macOS future phase had executed.
+The correction applies the pinned formatter and updates only their three exact
+prepared-source hashes. Independent comparison found unchanged non-whitespace
+content. The exact full formatting command then passed on all 152 files with
+zero changes, and the corrected pin controls passed 55 transport and 20 final
+verifier tests. Original failed logs remain retained; fresh corrected-head CI
+is required. No gate or runtime assertion was removed.
+
 Root and independent reviewers inspected the orchestration, deadline, capture,
 direct-Dart and final-verifier boundaries. Findings above were corrected and
 rechecked. Actual macOS POSIX controls and ten-phase runtime evidence are still

@@ -336,10 +336,10 @@ Uint8List validateFuturePng(dynamic value) {
 }
 
 Map<String, dynamic> futureScreenshot(String phase, List<int> bytes) => {
-  'filename': '$phase-future.png',
-  'bytes': bytes.length,
-  'sha256': sha256.convert(bytes).toString(),
-};
+      'filename': '$phase-future.png',
+      'bytes': bytes.length,
+      'sha256': sha256.convert(bytes).toString(),
+    };
 
 void validateFutureRetainedScreenshot(
   Map<String, dynamic> receipt,

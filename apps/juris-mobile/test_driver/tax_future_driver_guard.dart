@@ -125,21 +125,18 @@ Future<Map<String, dynamic>> captureTaxDriverVm(
   }
 
   List<Map<String, dynamic>> frames(dynamic values) =>
-      (values as List<dynamic>? ?? <dynamic>[])
-          .take(32)
-          .map((dynamic value) {
-            final Map<String, dynamic> frame = value as Map<String, dynamic>;
-            return <String, dynamic>{
-              for (final String key in <String>[
-                'index',
-                'kind',
-                'function',
-                'location',
-              ])
-                if (frame.containsKey(key)) key: frame[key],
-            };
-          })
-          .toList(growable: false);
+      (values as List<dynamic>? ?? <dynamic>[]).take(32).map((dynamic value) {
+        final Map<String, dynamic> frame = value as Map<String, dynamic>;
+        return <String, dynamic>{
+          for (final String key in <String>[
+            'index',
+            'kind',
+            'function',
+            'location',
+          ])
+            if (frame.containsKey(key)) key: frame[key],
+        };
+      }).toList(growable: false);
   try {
     final Map<String, dynamic> vm = await rpc('getVM');
     result['vm'] = <String, dynamic>{
