@@ -31,8 +31,11 @@ def verify(root: pathlib.Path, source: str, nonce: str) -> dict:
         assert f"phase={phase} driver_exit=0" in process_log
         assert f"phase={phase} event=process_absent pid={receipt['pid']}" in process_log
         phase_log = (root / f"{phase}.log").read_text()
-        assert f"production application tax {phase} across process restart" in phase_log
+        selected_test = "production application tax journey across process restart"
+        assert receipt["selected_test"] == selected_test
+        assert selected_test in phase_log
         assert "All tests passed." in phase_log
+        assert f"tax_application selected_test={selected_test} phase={phase} source={source}" in phase_log
         assert f"tax_application phase={phase} source={source}" in phase_log
         assert (root / f"{phase}-bundle.json").read_bytes() == bundle
         shot = receipt["screenshot"]

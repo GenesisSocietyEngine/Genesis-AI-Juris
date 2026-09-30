@@ -25,6 +25,8 @@ const List<String> _phases = <String>[
   'legacy-read',
 ];
 const String _schema = 'tax-mobile-application-acceptance-v2';
+const String _testName =
+    'production application tax journey across process restart';
 const String _blankRateError =
     'Current rate (basis points): Enter a whole number.';
 // Exact original also exercised with Android IME input. Preserve whitespace,
@@ -32,28 +34,32 @@ const String _blankRateError =
 const String _legacyRates =
     '{"kind":"tax-economics-v1","currency":"EUR","baselineAnnualTaxCost":50000,"optimizedAnnualTaxCost":30000,"implementationCost":1000,"annualMaintenanceCost":200,"terminalTaxOrUnwindCost":500,"analysisHorizonMonths":18,"annualDiscountRateBps":0,"benefitRealizationBps":10000,"assumptions":"  Synthetic legacy assumptions preserved verbatim.  ","taxInputBasis":"rates","annualTaxBase":250000,"baselineTaxRateBps":2000,"optimizedTaxRateBps":1200,"fx":{"provider":"ECB", "sourceCurrency":"GBP", "targetCurrency":"EUR", "rate":1.2300e+0, "asOf":"2026-09-29"}}';
 
-Future<void> main() async {
+void main() {
   final IntegrationTestWidgetsFlutterBinding binding =
       IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  const String source = String.fromEnvironment('JURIS_ACCEPTANCE_SOURCE_SHA');
-  const String runNonce = String.fromEnvironment('JURIS_ACCEPTANCE_RUN_NONCE');
-  if (!RegExp(r'^[a-f0-9]{40}$').hasMatch(source) || runNonce.isEmpty) {
-    throw StateError('An exact source and per-run nonce are required.');
-  }
-  final Directory support = await getApplicationSupportDirectory();
-  final File proof = File('${support.path}/tax-application-acceptance.json');
-  final Map<String, dynamic>? previous =
-      await proof.exists() ? await _readProof(proof, source, runNonce) : null;
-  final int index = previous == null ? 0 : (previous['phase_index'] as int) + 1;
-  if (index >= _phases.length) {
-    throw StateError('This isolated journey has already completed all phases.');
-  }
-  // No phase is compiled into the app. The same binary advances only from its
-  // source/nonce-bound proof; the independent driver checks the expected phase.
-  final String phase = _phases[index];
-  testWidgets('production application tax $phase across process restart', (
-    WidgetTester tester,
-  ) async {
+  // flutter drive launches this as an application entrypoint, not through the
+  // flutter test loader that awaits main. Register before any asynchronous I/O.
+  testWidgets(_testName, (WidgetTester tester) async {
+    const String source = String.fromEnvironment('JURIS_ACCEPTANCE_SOURCE_SHA');
+    const String runNonce =
+        String.fromEnvironment('JURIS_ACCEPTANCE_RUN_NONCE');
+    if (!RegExp(r'^[a-f0-9]{40}$').hasMatch(source) || runNonce.isEmpty) {
+      throw StateError('An exact source and per-run nonce are required.');
+    }
+    final Directory support = await getApplicationSupportDirectory();
+    final File proof = File('${support.path}/tax-application-acceptance.json');
+    final Map<String, dynamic>? previous =
+        await proof.exists() ? await _readProof(proof, source, runNonce) : null;
+    final int index =
+        previous == null ? 0 : (previous['phase_index'] as int) + 1;
+    if (index >= _phases.length) {
+      throw StateError(
+          'This isolated journey has already completed all phases.');
+    }
+    // No phase is compiled into the app. The same binary advances only from its
+    // source/nonce-bound proof; the independent driver checks the expected phase.
+    final String phase = _phases[index];
+    debugPrint('tax_application phase=$phase source=$source state=started');
     final _ObservedWorkspaceStore workspaceStore = _ObservedWorkspaceStore();
     final TaxArtifactStore taxStore = TaxArtifactStore();
     final _ObservedNativeBridge bridge = _ObservedNativeBridge();
@@ -354,6 +360,7 @@ Future<void> main() async {
     await binding.takeScreenshot('$phase-editor');
     final Map<String, dynamic> completed = <String, dynamic>{
       'schema': _schema,
+      'selected_test': _testName,
       'phase': phase,
       'completed_phase': phase,
       'phase_index': index,
@@ -391,6 +398,7 @@ Future<Map<String, dynamic>> _readProof(
       jsonDecode(await file.readAsString()) as Map<String, dynamic>;
   final dynamic index = value['phase_index'];
   if (value['schema'] != _schema ||
+      value['selected_test'] != _testName ||
       value['source_sha'] != source ||
       value['run_nonce'] != nonce ||
       index is! int ||

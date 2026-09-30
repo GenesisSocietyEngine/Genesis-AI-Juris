@@ -16,11 +16,21 @@ The host hashes every bundle file plus symlink identities and requires the full 
 
 Programmatic field entry remains programmatic entry. This slice does not claim OS keyboard typing, VoiceOver speech, physical-device acceptance, future-envelope replay, controlled interrupted writes or aggregate transaction recovery. The native XCTest workflow and both of its export audits remain enabled.
 
+## Initial executed failure and correction
+
+Exact initial head `8791bc1c839f66f6a5fd80a1762884135bb5a960` failed [application push run 36726239719 / job 109923723528](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36726239719/job/109923723528). Xcode built successfully in 328.6 seconds and the VM connected, but only `(tearDownAll)` ran. The application then reported `Can't call test() once tests have begun running` at the delayed `testWidgets` registration. The driver rejected missing screenshots and produced no phase receipts. Artifact `11103193846`, ZIP SHA-256 `b57695e629a84c182c894a6f505c8eef83f5cabcaa4539976e09c5b6a5716826`, and the complete job log are retained under root `.artifacts/pr68-ios-2026-09-30/ios-application-v2-pr72-push-36726239719-attempt-1/`.
+
+The earlier static review inspected a Flutter test-loader path that awaits asynchronous main. `flutter drive` launches this harness as an application entrypoint; that review did not establish registration behavior on the actual launch path. This is a harness defect, and no application acceptance is claimed for that source.
+
+The correction registers one constant selected test synchronously: `production application tax journey across process restart`. Source/nonce checks, plugin lookup and phase discovery now run inside that already registered test body. Every proof and host report requires this exact selected-test identity, phase, source and nonce. The host requires the actual test name, `All tests passed.`, and the validated phase-specific completion marker; all previous process, bundle, artifact, native-call and export checks remain. Independent review of the corrected registration and driver found no material issue; actual six-phase execution remains required.
+
+The initial head's PR web run `36726298585` / job `109923925147` separately failed three dossier integration tests: the first expected a governed error code but received none, then two Miniflare synchronous-proxy assertions failed. Same-source push web run `36726239793` / job `109923723825` passed. Failure diagnostics `11103222415`, SHA-256 `51981a243ddca34b98d28a76488f4fda6f23ca3b0a4634e5a7a169782e06413e`, were downloaded and verified. Its root cause is not established; fresh corrected-head CI must pass all applicable checks without weakening them.
+
 ## Verification status
 
 - Host-script Bash syntax and Python compilation checks passed. They are static checks only. Python runs in isolated mode so environment optimization cannot disable the verifier's assertions; the host also requires the integration driver's positive test-completion marker.
 - Dart analysis and formatting passed; 14 focused import and confirmation regressions passed. Independent read-only reviews of both Dart files and the host script/verifier found no material issue. Local Flutter source confirms the prebuilt path skips Xcode rebuilding and that `--keep-app-running` avoids the normal driver-stop uninstall; the host then terminates the process explicitly.
-- Actual exact-source macOS execution remains pending.
+- Corrected Dart analysis/format, host Bash/Python syntax and independent registration review passed. Actual corrected-source macOS execution remains pending.
 - No six-process or unchanged-bundle iOS acceptance is claimed before those execution receipts are retained and verified.
 
 ## Separate corrected Android receipt

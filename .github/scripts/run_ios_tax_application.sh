@@ -44,8 +44,9 @@ for phase in "${phases[@]}"; do
     --dart-define="JURIS_ACCEPTANCE_RUN_NONCE=$JURIS_ACCEPTANCE_RUN_NONCE" \
     -d "$device" 2>&1 | tee "$evidence/$phase.log"
   printf 'phase=%s driver_exit=0\n' "$phase" >>"$evidence/process.log"
-  grep -Fq "production application tax $phase across process restart" "$evidence/$phase.log"
+  grep -Fq 'production application tax journey across process restart' "$evidence/$phase.log"
   grep -Fq 'All tests passed.' "$evidence/$phase.log"
+  grep -Fq "tax_application selected_test=production application tax journey across process restart phase=$phase source=$source_sha" "$evidence/$phase.log"
   grep -Fq "tax_application phase=$phase source=$source_sha" "$evidence/$phase.log"
   test -s "$evidence/$phase.json"
   test -s "$evidence/$phase-editor.png"

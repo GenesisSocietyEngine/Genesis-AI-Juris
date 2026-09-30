@@ -12,6 +12,8 @@ const List<String> _phases = <String>[
   'legacy-write',
   'legacy-read',
 ];
+const String _testName =
+    'production application tax journey across process restart';
 
 Future<void> main() async {
   final String phase = Platform.environment['JURIS_TAX_APP_PHASE'] ?? '';
@@ -68,6 +70,7 @@ Future<void> main() async {
         flush: true,
       );
       if (retained['schema'] != 'tax-mobile-application-acceptance-v2' ||
+          retained['selected_test'] != _testName ||
           retained['phase'] != phase ||
           retained['completed_phase'] != phase ||
           retained['phase_index'] != index ||
@@ -96,6 +99,7 @@ Future<void> main() async {
             ).readAsString(),
           ) as Map<String, dynamic>;
           if (previous['schema'] != 'tax-mobile-application-acceptance-v2' ||
+              previous['selected_test'] != _testName ||
               previous['phase'] != _phases[earlier] ||
               previous['completed_phase'] != _phases[earlier] ||
               previous['phase_index'] != earlier ||
@@ -110,6 +114,8 @@ Future<void> main() async {
         }
       }
       // A selected test that produced no report cannot count as acceptance.
+      stdout.writeln('tax_application selected_test=$_testName '
+          'phase=$phase source=$expectedSource');
       stdout.writeln(
         'tax_application phase=$phase source=$expectedSource '
         'pid=${retained['pid']} evidence=complete',
