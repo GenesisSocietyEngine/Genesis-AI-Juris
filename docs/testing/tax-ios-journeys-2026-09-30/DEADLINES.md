@@ -176,3 +176,32 @@ on Windows. Added deterministic cases cover denied-probe then absence,
 persistent signal/probe denial, an exited parent with a surviving descendant
 group, a still-present group after force, and an unexpected OS error. These
 controls test failure semantics, not macOS cleanup or application success.
+
+At source `040c5805e09531eed45baee4198669b0e2d5c9d4`, push application run
+`36781636633`, job `110113058076`, failed before toolchain setup at
+21:48:01Z. Collector controls passed 13/13. The host suite ran 11 cases,
+with `test_descendant_cannot_survive_parent_early_exit` failing because its
+heartbeat file did not exist. The wrapper returned the required 124 after
+its 0.5-second fixture timeout. The missing heartbeat does not establish
+that a descendant survived cleanup: the fixture had not established that
+the nested Python process was ready before its deadline. The complete log
+SHA-256 is `eb656d69d29821d1be5747ef30520980e31f3f37b9c629381d9b4f4d878fd20a`.
+No application evidence directory or artifact existed; zero application
+phases ran. The companion PR job passed that smoke step and was left running.
+
+The test-only correction separates bounded fixture startup from the behavior
+under test. It creates a new owned process group, waits at most five seconds
+for the parent and TERM-ignoring child to report readiness and for the child's
+heartbeat to change, then calls the actual `stop_owned`. At the forced signal
+it requires that TERM has already ended the parent while the child still
+belongs to the same group. It requires forced cleanup, the parent's TERM
+exit, and a stopped heartbeat. A `finally` block targets only that fixture's
+original group even if an assertion fails. The separate real `main` deadline
+control still requires exit 124; production deadlines and cleanup code are
+unchanged.
+
+Locally, nine host controls pass and the two real POSIX controls remain
+explicitly skipped on Windows. Root and independent peer source reviews passed;
+root reran the final suite. Actual macOS execution of the revised readiness
+control remains pending; no cleanup/runtime acceptance is inferred from the
+Windows run.

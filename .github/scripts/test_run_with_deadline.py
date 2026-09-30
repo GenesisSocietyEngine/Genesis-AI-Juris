@@ -5,6 +5,7 @@ import errno
 import io
 import itertools
 import pathlib
+import signal
 import subprocess
 import sys
 import tempfile
@@ -61,16 +62,65 @@ class DeadlineTests(unittest.TestCase):
     def test_descendant_cannot_survive_parent_early_exit(self):
         with tempfile.TemporaryDirectory() as folder:
             marker = pathlib.Path(folder) / "heartbeat"
+            ready = pathlib.Path(folder) / "parent-ready"
             child = ("import signal,time,pathlib; signal.signal(signal.SIGTERM,signal.SIG_IGN); "
                      f"p=pathlib.Path({str(marker)!r}); "
                      "exec('while True:\\n p.write_text(str(time.monotonic()))\\n time.sleep(0.02)')")
-            parent = f"import subprocess,sys,time; subprocess.Popen([sys.executable,'-u','-c',{child!r}]); time.sleep(60)"
-            result = self.run_command(parent, timeout="0.5")
-            self.assert_status(result, 124)
-            self.assertTrue(marker.is_file(), result.stderr)
-            before = marker.read_bytes()
-            time.sleep(0.15)
-            self.assertEqual(marker.read_bytes(), before, "descendant continued after group kill")
+            parent = (f"import subprocess,sys,time,pathlib; p=subprocess.Popen([sys.executable,'-u','-c',{child!r}]); "
+                      f"pathlib.Path({str(ready)!r}).write_text(str(p.pid)); time.sleep(60)")
+            module = load_runner()
+            with (pathlib.Path(folder) / "fixture-stderr").open("w+") as errors:
+                process = subprocess.Popen([sys.executable, "-u", "-c", parent], start_new_session=True,
+                                           stdout=subprocess.DEVNULL, stderr=errors)
+                try:
+                    startup_limit = time.monotonic() + 5
+                    first = None
+                    child_pid = None
+                    while time.monotonic() < startup_limit:
+                        self.assertIsNone(process.poll(), "fixture parent exited before readiness")
+                        if ready.is_file() and marker.is_file():
+                            ready_text = ready.read_text()
+                            current = marker.read_bytes()
+                            valid_pid = ready_text.isascii() and ready_text.isdecimal() and int(ready_text) > 0
+                            if valid_pid and current and first is not None and current != first:
+                                child_pid = int(ready_text)
+                                break
+                            if current:
+                                first = current
+                        time.sleep(0.02)
+                    else:
+                        errors.flush()
+                        errors.seek(0)
+                        self.fail("fixture readiness timed out before cleanup: " + errors.read())
+                    self.assertIsNotNone(child_pid)
+                    self.assertGreater(child_pid, 0)
+                    self.assertEqual(os.getpgid(child_pid), process.pid)
+                    original_signal = module.signal_owned
+                    forced = []
+
+                    def observed_signal(owned, force=False):
+                        self.assertIs(owned, process)
+                        if force:
+                            # TERM has already ended the parent, while its
+                            # TERM-ignoring child keeps the original group alive.
+                            self.assertEqual(process.poll(), -signal.SIGTERM)
+                            self.assertEqual(os.getpgid(child_pid), process.pid)
+                            forced.append(child_pid)
+                        original_signal(owned, force)
+
+                    started = time.monotonic()
+                    with mock.patch.object(module, "signal_owned", side_effect=observed_signal):
+                        module.stop_owned(process, 0.3)
+                    self.assertLess(time.monotonic() - started, 3)
+                    self.assertEqual(forced, [child_pid])
+                    self.assertEqual(process.returncode, -signal.SIGTERM)
+                    before = marker.read_bytes()
+                    time.sleep(0.15)
+                    self.assertEqual(marker.read_bytes(), before, "descendant continued after group kill")
+                finally:
+                    # Only this fixture's newly created process group is owned.
+                    module.signal_owned(process, force=True)
+                    process.wait(timeout=2)
 
     def test_invalid_duration_refuses_before_child_launch(self):
         for value in ["0", "-1", "nan", "inf"]:

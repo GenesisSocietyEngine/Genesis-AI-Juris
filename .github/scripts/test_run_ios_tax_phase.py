@@ -8,6 +8,8 @@ import os
 import pathlib
 import queue
 import runpy
+import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -292,7 +294,7 @@ class SystemLogTests(unittest.TestCase):
 
 
 class PhaseLifecycleTests(unittest.TestCase):
-    def exercise(self, driver_mode="success", preexisting=False):
+    def exercise(self, driver_mode="success", preexisting=False, phase_name="write"):
         with tempfile.TemporaryDirectory() as temp:
             home = pathlib.Path(temp).resolve()
             evidence = home / "evidence"
@@ -304,7 +306,9 @@ class PhaseLifecycleTests(unittest.TestCase):
             installed = home / "Library/Developer/CoreSimulator/Devices" / device / "data/Containers/Bundle/Application/owned/Runner.app"
             installed.mkdir(parents=True)
             (installed / "Runner").write_bytes(b"one-compiled-source")
-            args = SimpleNamespace(phase="write", device=device, evidence=evidence, source="a" * 40, nonce="12-1")
+            args = SimpleNamespace(phase=phase_name, device=device, evidence=evidence, source="a" * 40, nonce="12-1")
+            if phase_name != "write":
+                (evidence / "write-input-bundle.json").write_bytes(phase.manifest(bundle))
             reader = Mock()
             reader.process.pid = 456
             reader.started_at = phase.utc_now().isoformat()
@@ -335,15 +339,17 @@ class PhaseLifecycleTests(unittest.TestCase):
                         return subprocess.CompletedProcess(command, 7, b"", b"install failed")
                     return native_command(command, **options)
                 driver_commands.append(command)
+                if command[:3] == ["flutter", "build", "ios"] and driver_mode == "failed-build":
+                    raise subprocess.CalledProcessError(2, command)
                 if command[:2] == ["flutter", "drive"]:
                     if driver_mode in ("failed", "failed-probe"):
                         raise subprocess.CalledProcessError(2, command)
                     if driver_mode != "missing":
-                        receipt = {"schema": "tax-mobile-application-acceptance-v2", "phase": "write",
-                                   "completed_phase": "write", "source_sha": args.source,
+                        receipt = {"schema": "tax-mobile-application-acceptance-v2", "phase": phase_name,
+                                   "completed_phase": phase_name, "source_sha": args.source,
                                    "run_nonce": args.nonce, "pid": 124 if driver_mode == "wrong-pid" else 123,
                                    "selected_test": phase.TEST}
-                        phase.write_json(evidence / "write.json", receipt)
+                        phase.write_json(evidence / f"{phase_name}.json", receipt)
                 return subprocess.CompletedProcess(command, 0)
 
             def failed_probe(*_args):
@@ -363,15 +369,21 @@ class PhaseLifecycleTests(unittest.TestCase):
                      patch.object(phase, "process_matches", return_value=b"123 exact-owned-executable\n"), \
                      patch.object(phase, "vm_identity", return_value={"result": {"type": "VM", "pid": 123}}), \
                      patch.object(phase, "stopped") as absent:
+                    def prepare_and_run():
+                        phase.prepare(args)
+                        if phase_name != "write":
+                            driver_commands.clear()
+                        phase.run(args)
+
                     if driver_mode != "success" or preexisting:
                         with self.assertRaises((RuntimeError, FileNotFoundError, subprocess.CalledProcessError)) as caught:
-                            phase.run(args)
+                            prepare_and_run()
                         absent.assert_not_called()
                         self.assertFalse(any(cmd[:3] == ["xcrun", "simctl", "terminate"] for cmd in commands))
-                        launch_file = evidence / "write-launch.json"
+                        launch_file = evidence / f"{phase_name}-launch.json"
                         if launch_file.exists():
                             self.assertFalse(json.loads(launch_file.read_text())["complete"])
-                        if not preexisting and driver_mode not in ("failed-launch", "failed-install"):
+                        if not preexisting and driver_mode not in ("failed-launch", "failed-install", "failed-build"):
                             live_probe.assert_called_once_with(args, evidence, 123, installed / "Runner")
                             reader.close.assert_called()
                             self.assertLess(lifecycle.index("live_probe"), lifecycle.index("reader_closed"))
@@ -388,24 +400,54 @@ class PhaseLifecycleTests(unittest.TestCase):
                             self.assertFalse(any(cmd[:3] == ["xcrun", "simctl", "launch"] for cmd in commands))
                             self.assertFalse(any(cmd[:2] == ["flutter", "drive"] for cmd in driver_commands))
                             self.assertFalse(json.loads((evidence / "write-install.json").read_text())["installation_completed"])
+                        if driver_mode == "failed-build":
+                            live_probe.assert_not_called()
+                            reader.close.assert_not_called()
+                            self.assertEqual(commands, [])
+                            self.assertEqual(len(driver_commands), 1)
+                            self.assertFalse((evidence / "write-install-start.json").exists())
                     else:
-                        phase.run(args)
+                        prepare_and_run()
                         absent.assert_called_once_with(123)
-                        self.assertTrue(json.loads((evidence / "write-launch.json").read_text())["complete"])
+                        self.assertTrue(json.loads((evidence / f"{phase_name}-launch.json").read_text())["complete"])
                         log = (evidence / "process.log").read_text()
                         self.assertLess(log.index("driver_exit=0"), log.index("event=terminate"))
                         self.assertLess(log.index("event=terminate"), log.index("event=process_absent"))
-                        self.assertEqual(driver_commands[0][:7], ["flutter", "build", "ios", "--verbose", "--simulator", "--debug", "--no-pub"])
+                        builds = [command for command in driver_commands if command[:3] == ["flutter", "build", "ios"]]
+                        if phase_name == "write":
+                            self.assertEqual(builds, [["flutter", "build", "ios", "--verbose", "--simulator", "--debug", "--no-pub",
+                                                     "--target=" + phase.TARGET,
+                                                     "--dart-define=JURIS_ACCEPTANCE_SOURCE_SHA=" + args.source,
+                                                     "--dart-define=JURIS_ACCEPTANCE_RUN_NONCE=" + args.nonce,
+                                                     "-d", device]])
+                        else:
+                            self.assertEqual(builds, [])
+                        drives = [command for command in driver_commands if command[:2] == ["flutter", "drive"]]
+                        self.assertEqual(len(drives), 1)
                         for command in driver_commands:
                             self.assertIn("--target=" + phase.TARGET, command)
                             self.assertIn("--dart-define=JURIS_ACCEPTANCE_SOURCE_SHA=" + args.source, command)
                             self.assertIn("--dart-define=JURIS_ACCEPTANCE_RUN_NONCE=" + args.nonce, command)
-                        self.assertIn("--use-existing-app=" + URI, driver_commands[1])
+                            self.assertEqual(command.count("-d"), 1)
+                            self.assertEqual(command[command.index("-d") + 1], device)
+                        self.assertIn("--use-existing-app=" + URI, drives[0])
+                        self.assertEqual((evidence / f"{phase_name}-input-bundle.json").read_bytes(),
+                                         (evidence / "write-input-bundle.json").read_bytes())
+                        self.assertEqual((evidence / f"{phase_name}-input-bundle.json").read_bytes(),
+                                         (evidence / "prepared-bundle.json").read_bytes())
             finally:
                 os.chdir(previous)
 
     def test_success_binds_receipt_and_actual_termination_order(self):
         self.exercise()
+
+    def test_later_phases_keep_the_built_bundle_without_another_build(self):
+        for phase_name in phase.PHASES[1:]:
+            with self.subTest(phase=phase_name):
+                self.exercise(phase_name=phase_name)
+
+    def test_failed_first_build_cannot_install_launch_or_drive(self):
+        self.exercise("failed-build")
 
     def test_failed_missing_or_wrong_pid_driver_never_completes(self):
         for mode in ("failed", "missing", "wrong-pid"):
@@ -423,6 +465,160 @@ class PhaseLifecycleTests(unittest.TestCase):
 
     def test_existing_isolated_runner_is_rejected(self):
         self.exercise(preexisting=True)
+
+
+class PreparationTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.home = pathlib.Path(self.temp.name).resolve()
+        self.previous = pathlib.Path.cwd()
+        os.chdir(self.home)
+        self.bundle = self.home / "build/ios/iphonesimulator/Runner.app"
+        self.bundle.mkdir(parents=True)
+        (self.bundle / "Runner").write_bytes(b"same-source-application")
+        self.evidence = self.home / "evidence"
+        self.evidence.mkdir()
+        self.args = SimpleNamespace(phase="prepare", evidence=self.evidence, source="a" * 40,
+                                    nonce="12-1", device="AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")
+
+    def tearDown(self):
+        os.chdir(self.previous)
+        self.temp.cleanup()
+
+    def prepared(self):
+        with patch.object(phase.subprocess, "run", return_value=subprocess.CompletedProcess([], 0)) as build:
+            phase.prepare(self.args)
+        build.assert_called_once_with(phase.build_command(self.args.source, self.args.nonce, self.args.device), check=True)
+        return phase.manifest(self.bundle)
+
+    def validate(self, built):
+        return phase.validate_preparation(self.evidence, self.args.source, self.args.nonce, self.args.device, built)
+
+    def test_prepare_builds_once_without_installation_or_launch(self):
+        with patch.object(phase, "command") as native:
+            built = self.prepared()
+        native.assert_not_called()
+        self.assertEqual(len(self.validate(built)), 64)
+        self.assertFalse((self.evidence / "write.json").exists())
+        with patch.object(phase.subprocess, "run") as build, self.assertRaisesRegex(RuntimeError, "already exists"):
+            phase.prepare(self.args)
+        build.assert_not_called()
+
+    def test_failed_or_aborted_build_never_publishes_complete_preparation(self):
+        for error in (subprocess.CalledProcessError(2, ["flutter"]), SystemExit(124)):
+            with self.subTest(error=type(error).__name__):
+                for name in ("prepare-start.json", "prepare.json", "prepared-bundle.json"):
+                    (self.evidence / name).unlink(missing_ok=True)
+                with patch.object(phase.subprocess, "run", side_effect=error), self.assertRaises(type(error)):
+                    phase.prepare(self.args)
+                self.assertEqual(json.loads((self.evidence / "prepare-start.json").read_text())["status"], "started")
+                self.assertFalse((self.evidence / "prepare.json").exists())
+                self.assertFalse((self.evidence / "prepared-bundle.json").exists())
+
+    def test_zero_exit_without_application_does_not_publish_preparation(self):
+        (self.bundle / "Runner").unlink()
+        with patch.object(phase.subprocess, "run", return_value=subprocess.CompletedProcess([], 0)), \
+                self.assertRaisesRegex(RuntimeError, "lacks Runner"):
+            phase.prepare(self.args)
+        self.assertFalse((self.evidence / "prepare.json").exists())
+
+    def test_missing_failed_stale_or_altered_preparation_cannot_install_launch_or_rebuild(self):
+        for mode in ("missing", "start-only", "nonzero", "source", "nonce", "device", "target", "command",
+                     "manifest", "bundle", "nan-elapsed", "infinite-elapsed", "duplicate-json"):
+            with self.subTest(mode=mode):
+                for name in ("prepare-start.json", "prepare.json", "prepared-bundle.json"):
+                    (self.evidence / name).unlink(missing_ok=True)
+                (self.bundle / "Runner").write_bytes(b"same-source-application")
+                self.prepared()
+                start_path, final_path = self.evidence / "prepare-start.json", self.evidence / "prepare.json"
+                start, final = json.loads(start_path.read_text()), json.loads(final_path.read_text())
+                if mode == "missing":
+                    start_path.unlink()
+                elif mode == "start-only":
+                    final_path.unlink()
+                elif mode == "nonzero":
+                    final["exit_code"] = 1
+                elif mode in ("source", "nonce", "device", "target"):
+                    key = {"source": "source_sha", "nonce": "run_nonce", "device": "simulator", "target": "target"}[mode]
+                    start[key] = final[key] = "unexpected"
+                elif mode == "command":
+                    start["argv"][-1] = final["argv"][-1] = "unowned-simulator"
+                elif mode == "manifest":
+                    final["bundle_manifest_sha256"] = "0" * 64
+                elif mode == "bundle":
+                    (self.bundle / "Runner").write_bytes(b"different-application")
+                elif mode in ("nan-elapsed", "infinite-elapsed"):
+                    final["elapsed_seconds"] = float("nan" if mode == "nan-elapsed" else "inf")
+                if mode != "missing":
+                    phase.write_json(start_path, start)
+                if mode != "start-only":
+                    phase.write_json(final_path, final)
+                if mode == "duplicate-json":
+                    final_path.write_text('{"schema":"duplicate",' + final_path.read_text()[1:])
+                self.args.phase = "write"
+                with patch.object(phase.subprocess, "run") as run, patch.object(phase, "command") as native, \
+                        self.assertRaises((RuntimeError, FileNotFoundError)):
+                    phase.run(self.args)
+                run.assert_not_called()
+                native.assert_not_called()
+                self.assertFalse((self.evidence / "write-install-start.json").exists())
+                self.assertFalse((self.evidence / "write-launch.json").exists())
+
+
+class HostBudgetTests(unittest.TestCase):
+    def exercise(self, fail_prepare):
+        bash = ("C:/Program Files/Git/bin/bash.exe" if os.name == "nt" else shutil.which("bash"))
+        if not bash or not pathlib.Path(bash).is_file():
+            self.skipTest("Bash host orchestration unavailable")
+        repo = pathlib.Path(__file__).resolve().parents[2]
+        script = repo / ".github/scripts/run_ios_tax_application.sh"
+        harness = r'''
+git() {
+  case "$*" in
+    'rev-parse HEAD') printf '%040d\n' 1 ;;
+    'rev-parse HEAD^{tree}') printf '%040d\n' 2 ;;
+    'rev-parse --show-toplevel') printf '%s\n' __REPO__ ;;
+  esac
+}
+xcrun() { printf '{}\n'; }
+xcodebuild() { printf 'fixture xcode\n'; }
+flutter() { printf 'fixture flutter\n'; }
+rustc() { if [[ "$1" == -vV ]]; then printf 'host: fixture\n'; else printf '/fixture\n'; fi; }
+python3() {
+  printf 'fixture budget=%s label=%s\n' "$4" "$6" >> "$FIXTURE_CALLS"
+  if [[ "$6" == tax-prepare ]]; then
+    if [[ "$FAIL_PREPARE" == 1 ]]; then return 17; fi
+    mkdir -p build/ios/iphonesimulator/Runner.app
+    printf '{}\n' > "$JURIS_TAX_ACCEPTANCE_OUTPUT/prepare.json"
+    printf '[]\n' > "$JURIS_TAX_ACCEPTANCE_OUTPUT/prepared-bundle.json"
+    return 0
+  fi
+  # Stop at the first runtime call. Actual application assertions are not faked.
+  return 19
+}
+source __SCRIPT__ AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE evidence
+'''.replace("__REPO__", shlex.quote(repo.as_posix())).replace("__SCRIPT__", shlex.quote(script.as_posix()))
+        with tempfile.TemporaryDirectory() as temp:
+            home = pathlib.Path(temp)
+            fixture = home / "host-budget.sh"
+            fixture.write_text(harness, encoding="utf-8", newline="\n")
+            env = {**os.environ, "GITHUB_RUN_ID": "12", "GITHUB_RUN_ATTEMPT": "1",
+                   "FIXTURE_CALLS": (home / "calls").as_posix(), "FAIL_PREPARE": "1" if fail_prepare else "0"}
+            result = subprocess.run([bash, fixture.as_posix()], cwd=home, env=env,
+                                    capture_output=True, text=True, timeout=15)
+            self.assertEqual(result.returncode, 17 if fail_prepare else 19, result.stdout + result.stderr)
+            calls = (home / "calls").read_text().splitlines()
+            self.assertEqual(calls, ["fixture budget=900 label=tax-prepare"] +
+                             ([] if fail_prepare else ["fixture budget=300 label=tax-write"]))
+            self.assertFalse((home / "evidence/write.json").exists())
+            if fail_prepare:
+                self.assertFalse((home / "evidence/process.log").exists())
+
+    def test_failed_preparation_stops_host_before_any_runtime_phase(self):
+        self.exercise(True)
+
+    def test_first_runtime_has_its_own_300_second_budget(self):
+        self.exercise(False)
 
 
 class VmAndProcessTests(unittest.TestCase):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Launch one isolated application phase using its authenticated system log.
 
-The caller retains the outer 900/300-second process-group deadline. This helper
+The caller bounds preparation at 900 seconds and every runtime phase at 300. This helper
 never guesses a VM URI from a port and never changes VM authentication.
 """
 import argparse
@@ -453,6 +453,66 @@ def validate_receipt(receipt, phase, source, nonce, pid):
     require(receipt.get("selected_test") == TEST, "Selected test absent")
 
 
+def build_command(source, nonce, device):
+    return ["flutter", "build", "ios", "--verbose", "--simulator", "--debug", "--no-pub",
+            f"--target={TARGET}", f"--dart-define=JURIS_ACCEPTANCE_SOURCE_SHA={source}",
+            f"--dart-define=JURIS_ACCEPTANCE_RUN_NONCE={nonce}", "-d", device]
+
+
+def prepare(args):
+    evidence = args.evidence.resolve()
+    require(evidence.is_dir(), "Evidence directory missing")
+    paths = [evidence / name for name in ("prepare-start.json", "prepare.json", "prepared-bundle.json")]
+    require(not any(path.exists() for path in paths), "Build preparation evidence already exists")
+    start = {"schema": "tax-ios-build-preparation-v1", "source_sha": args.source,
+             "run_nonce": args.nonce, "simulator": args.device, "target": TARGET,
+             "argv": build_command(args.source, args.nonce, args.device), "host_pid": os.getpid(),
+             "started_at": utc_now().isoformat(), "timeout_seconds": 900,
+             "status": "started", "build_completed": False, "runtime_acceptance": False}
+    write_json(paths[0], start)
+    began = time.monotonic()
+    result = subprocess.run(start["argv"], check=True)
+    require(result.returncode == 0, "Flutter preparation build failed")
+    bundle = pathlib.Path("build/ios/iphonesimulator/Runner.app").resolve()
+    require(bundle.is_dir(), "Prepared application missing")
+    built = manifest(bundle)
+    paths[2].write_bytes(built)
+    terminal = {**start, "status": "completed", "build_completed": True, "exit_code": 0,
+                "completed_at": utc_now().isoformat(), "elapsed_seconds": time.monotonic() - began,
+                "bundle_manifest_sha256": hashlib.sha256(built).hexdigest()}
+    write_json(paths[1], terminal)
+
+
+def validate_preparation(evidence, source, nonce, device, built):
+    start = json.loads((evidence / "prepare-start.json").read_text(encoding="utf-8"),
+                       object_pairs_hook=JsonLogObjects.unique_object)
+    terminal = json.loads((evidence / "prepare.json").read_text(encoding="utf-8"),
+                          object_pairs_hook=JsonLogObjects.unique_object)
+    require(start["schema"] == terminal["schema"] == "tax-ios-build-preparation-v1", "Wrong preparation schema")
+    require(start["status"] == "started" and start["build_completed"] is False and "exit_code" not in start,
+            "Invalid preparation start")
+    for key in ("schema", "source_sha", "run_nonce", "simulator", "target", "argv", "host_pid",
+                "started_at", "timeout_seconds", "runtime_acceptance"):
+        require(start[key] == terminal[key], "Preparation start/terminal identity differs")
+    require(start["source_sha"] == source and start["run_nonce"] == nonce and start["simulator"] == device,
+            "Stale preparation source/nonce/Simulator")
+    require(start["target"] == TARGET and start["argv"] == build_command(source, nonce, device),
+            "Unexpected preparation build command")
+    require(start["runtime_acceptance"] is False and start["timeout_seconds"] == 900,
+            "Invalid preparation scope/deadline")
+    require(type(start["host_pid"]) is int and start["host_pid"] > 0, "Invalid preparation host PID")
+    require(terminal["status"] == "completed" and terminal["build_completed"] is True and
+            type(terminal["exit_code"]) is int and terminal["exit_code"] == 0, "Preparation build did not complete")
+    began, ended = (datetime.datetime.fromisoformat(value) for value in
+                    (start["started_at"], terminal["completed_at"]))
+    require(began.tzinfo is not None and ended.tzinfo is not None and began <= ended, "Invalid preparation timestamps")
+    elapsed = terminal["elapsed_seconds"]
+    require(type(elapsed) in (int, float) and 0 <= elapsed < float("inf"), "Invalid preparation elapsed time")
+    require((evidence / "prepared-bundle.json").read_bytes() == built and
+            terminal["bundle_manifest_sha256"] == hashlib.sha256(built).hexdigest(), "Prepared bundle changed")
+    return hashlib.sha256((evidence / "prepare.json").read_bytes()).hexdigest()
+
+
 def run(args):
     evidence = args.evidence.resolve()
     require(evidence.is_dir(), "Evidence directory missing")
@@ -460,11 +520,9 @@ def run(args):
     bundle = pathlib.Path("build/ios/iphonesimulator/Runner.app").resolve()
     defines = [f"--dart-define=JURIS_ACCEPTANCE_SOURCE_SHA={args.source}",
                f"--dart-define=JURIS_ACCEPTANCE_RUN_NONCE={args.nonce}"]
-    if args.phase == "write":
-        subprocess.run(["flutter", "build", "ios", "--verbose", "--simulator", "--debug", "--no-pub",
-                        f"--target={TARGET}", *defines], check=True)
     require(bundle.is_dir(), "Prebuilt application missing")
     built = manifest(bundle)
+    preparation_sha = validate_preparation(evidence, args.source, args.nonce, args.device, built)
     (evidence / f"{args.phase}-input-bundle.json").write_bytes(built)
     baseline = evidence / "write-input-bundle.json"
     require(baseline.read_bytes() == built, "Application bundle changed between phases")
@@ -508,7 +566,8 @@ def run(args):
                   "log_reader_pid": reader.process.pid, "pid": identity.pid, "executable": str(executable),
                   "log_reader_started_at": reader.started_at,
                   "vm_uri": identity.uri, "vm_pid": vm["result"]["pid"],
-                  "bundle_manifest_sha256": hashlib.sha256(built).hexdigest(), "complete": False}
+                  "bundle_manifest_sha256": hashlib.sha256(built).hexdigest(),
+                  "preparation_sha256": preparation_sha, "complete": False}
         write_json(evidence / f"{args.phase}-launch.json", launch)
         subprocess.run(["flutter", "drive", "--verbose", "--no-pub", "--keep-app-running",
                         f"--use-existing-app={identity.uri}", f"--target={TARGET}",
@@ -550,7 +609,7 @@ def run(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("phase", choices=PHASES)
+    parser.add_argument("phase", choices=("prepare", *PHASES))
     parser.add_argument("device")
     parser.add_argument("evidence", type=pathlib.Path)
     parser.add_argument("source")
@@ -559,7 +618,7 @@ def main():
     require(re.fullmatch(r"[0-9A-Fa-f-]{36}", args.device) is not None, "Invalid Simulator ID")
     require(re.fullmatch(r"[0-9a-f]{40}", args.source) is not None, "Invalid source SHA")
     require(re.fullmatch(r"[0-9]+-[0-9]+", args.nonce) is not None, "Invalid run nonce")
-    run(args)
+    prepare(args) if args.phase == "prepare" else run(args)
 
 
 if __name__ == "__main__":

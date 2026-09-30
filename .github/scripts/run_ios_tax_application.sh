@@ -29,17 +29,20 @@ llvm_nm="$(rustc --print sysroot)/lib/rustlib/$host/bin/llvm-nm"
 
 phases=(write read incomplete-write incomplete-read legacy-write legacy-read)
 bundle=build/ios/iphonesimulator/Runner.app
+python3 -I "$repo_root/.github/scripts/run_with_deadline.py" \
+  --timeout-seconds 900 --label tax-prepare -- \
+  python3 -I "$repo_root/.github/scripts/run_ios_tax_phase.py" \
+  prepare "$device" "$evidence" "$source_sha" "$JURIS_ACCEPTANCE_RUN_NONCE" \
+  2>&1 | tee "$evidence/prepare.log"
+test -s "$evidence/prepare.json"
+test -s "$evidence/prepared-bundle.json"
 for phase in "${phases[@]}"; do
   export JURIS_TAX_APP_PHASE="$phase"
   printf 'phase=%s event=launch source=%s simulator=%s\n' \
     "$phase" "$source_sha" "$device" | tee -a "$evidence/process.log"
-  phase_timeout=900
-  if [[ "$phase" != write ]]; then
-    test -d "$bundle"
-    phase_timeout=300
-  fi
+  test -d "$bundle"
   python3 -I "$repo_root/.github/scripts/run_with_deadline.py" \
-    --timeout-seconds "$phase_timeout" --label "tax-$phase" -- \
+    --timeout-seconds 300 --label "tax-$phase" -- \
     python3 -I "$repo_root/.github/scripts/run_ios_tax_phase.py" \
     "$phase" "$device" "$evidence" "$source_sha" "$JURIS_ACCEPTANCE_RUN_NONCE" \
     2>&1 | tee "$evidence/$phase.log"
