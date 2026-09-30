@@ -1,0 +1,17 @@
+[package]
+name = "juris-tax-wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+juris-mobile-bridge = { path = "../juris-mobile-bridge" }
+wasm-bindgen = "=0.2.128"
+
+[dev-dependencies]
+serde_json.workspace = true

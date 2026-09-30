@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import hostingConfig from "./.openai/hosting.json" with { type: "json" };
 import { sites } from "./build/sites-vite-plugin.ts";
 import { buildReleaseIdentity } from "./build/release-identity.ts";
+import { taxRuntime } from "./build/tax-runtime-plugin.ts";
 
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   "00000000-0000-4000-8000-000000000000";
@@ -57,6 +58,7 @@ export default defineConfig(async () => {
     },
     plugins: [
       vinext(),
+      taxRuntime({ sourceCommit: identity.sourceCommit, applicationInputsSha256: identity.applicationInputsSha256 }),
       sites(identity),
       cloudflare({
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
