@@ -845,7 +845,9 @@ test("receipt freshness derives the exact production layout and the legacy lands
   const dialogSource = readFileSync(new URL("../app/CaseReportDialog.tsx", import.meta.url), "utf8");
   const reportSource = readFileSync(new URL("../app/case-report.ts", import.meta.url), "utf8");
   assert.match(dialogSource, /caseReportReceiptBinding\(draft, activeReportOptions\)/);
-  assert.match(dialogSource, /isReportReceiptStale\(previousReceipt, draft, profileId, currentReceiptBinding\)/);
+  assert.match(dialogSource, /previousReceiptIsStale = receiptIsStale\(previousReceipt\)/);
+  assert.match(dialogSource, /downloadReceiptIsStale = receiptIsStale\(downloadReceipt\)/);
+  assert.match(dialogSource, /receipt\.receiptSchemaVersion === 3\s+\? !currentTaxArtifacts \|\| isTaxReportReceiptStale\(receipt, currentTaxArtifacts\)\s+: !currentReceiptBinding \|\| isReportReceiptStale\(receipt, draft, profileId, currentReceiptBinding\)/);
   assert.match(dialogSource, /Current content and layout receipt found/);
   assert.match(dialogSource, /Include decision tree/);
   assert.match(dialogSource, /The decision tree and its text alternative are omitted/);
