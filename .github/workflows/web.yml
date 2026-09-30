@@ -49,6 +49,10 @@ jobs:
         run: npm run lint
       - name: Complete web tests and build
         run: npm test 2>&1 | tee .artifacts/ci-logs/web-tests.log
+      - name: Execute shared Rust in packaged browser and Worker environments
+        run: |
+          export CHROME_BIN="$(command -v google-chrome)"
+          npm run tax:packaging 2>&1 | tee .artifacts/ci-logs/tax-packaging.log
       - name: Audit complete dependency tree
         run: npm audit --audit-level=low 2>&1 | tee .artifacts/ci-logs/audit-full.log
       - name: Audit production dependency tree
@@ -70,6 +74,7 @@ jobs:
           name: web-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             .artifacts/ci-logs
+            .artifacts/tax-runtime/packaging
             .artifacts/p1-route-tests/erp-decision-report.pdf
             .artifacts/p1-route-tests/erp-snapshot.json
           include-hidden-files: true

@@ -21,6 +21,9 @@ fi
 echo "Running strict TypeScript validation..."
 npm run typecheck
 
+echo "Verifying generated shared Rust tax runtime assets (no Rust toolchain needed)..."
+npm run tax:verify
+
 echo "Checking every pending/fresh-provisioning migration statement..."
 npm run migrations:verify
 

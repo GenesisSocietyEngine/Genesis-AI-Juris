@@ -9,6 +9,16 @@
 
 mod tax;
 
+/// Executes the stateless tax protocol shared by native and WebAssembly hosts.
+///
+/// `None` means this is not a recognized tax command. Recognized commands use
+/// the same validation, version policy, size limit and JSON errors on every host.
+/// This Rust API adds no C ABI export and creates no gameplay session.
+#[must_use]
+pub fn execute_tax_json(encoded_request: &str) -> Option<String> {
+    tax::execute_json(encoded_request)
+}
+
 use juris_engine::{
     MobileScenarioSnapshot, ScenarioRuntimeError, ScenarioSaveEnvelope, ScenarioSaveError,
     ScenarioSessionId, ScenarioSessionRegistry,
@@ -216,7 +226,7 @@ impl MobileBridge {
     /// Parses one command and always returns a serializable response.
     #[must_use]
     pub fn execute_json(&mut self, encoded_request: &str) -> String {
-        if let Some(response) = tax::execute_json(encoded_request) {
+        if let Some(response) = execute_tax_json(encoded_request) {
             return response;
         }
         let response = match serde_json::from_str(encoded_request) {

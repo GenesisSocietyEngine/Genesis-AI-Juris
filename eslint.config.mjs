@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     ".artifacts/**",
+    "app/tax-runtime/generated/**",
     "next-env.d.ts",
   ]),
 ]);
