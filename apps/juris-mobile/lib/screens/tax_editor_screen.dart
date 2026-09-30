@@ -433,7 +433,7 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
           if (status['status'] == 'converted') {
             final Map<String, dynamic> request = (status['draft']
                 as Map<String, dynamic>)['request'] as Map<String, dynamic>;
-            _artifact!['request'] = request;
+            _artifact!['request'] = _copy(request);
             _artifact!['edit'] =
                 _edits(request['input'] as Map<String, dynamic>);
             _artifact!['bindings'] = <dynamic>[];
