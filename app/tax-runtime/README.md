@@ -1,9 +1,9 @@
 # Shared Rust tax runtime
 
-This package executes the existing native tax JSON protocol. It is the P4 runtime
-foundation; the web Studio editor and version-bound reports do not use it yet.
-The current commands accept canonical native `ScenarioDefinition` data. The web
-Studio source projection must be reviewed separately before editor integration.
+This package executes shared Rust tax commands. The native command family accepts
+canonical `ScenarioDefinition` data; the separate `tax_web_*` family accepts a
+versioned descriptor of an edited web source. The web Studio editor, persistence
+and version-bound reports do not use the new repository yet.
 
 Import one explicit host entry:
 
@@ -19,6 +19,24 @@ owns request validation, calculations, incomplete-input errors and the 256 KiB
 limit. Non-tax commands raise `unsupported_command`; initialization and capability
 mismatches reject readiness. A failed loader stays failed until its module is
 reloaded. There is no JavaScript financial fallback.
+
+Each host also exports `webTaxRepository` with `ready`, `prepare`, `calculate` and
+`importLegacy`. It checks `tax_web_capabilities` separately and freezes command
+arguments and source before asynchronous loading/hashing. Operations return the
+source, encoded request and complete raw response. They do not update an editor
+or save work; future consumers must fence adoption against input/source/authority
+changes and reject obsolete responses.
+
+`studio-tax-source.ts` binds a full known source projection using locale-independent
+canonical UTF-8 JSON. Object keys use UTF-16 code-unit order, arrays preserve order,
+and JSON scalar conventions apply, including `-0` to `0` and surrogate escaping.
+The compact `web-studio-tax-source-v1` descriptor has exact case ID, lowercase
+SHA-256 and disjoint fact/evidence ID lists sorted by UTF-8 bytes. Identifiers must
+be well-formed Unicode and at most 128 UTF-8 bytes. Rust validates descriptor
+structure and request/binding identity; it does not attest the omitted graph.
+Worker callers must derive it from authoritative saved data, not client claims.
+The full projection is separate from the 256 KiB tax command cap. Unsupported
+tax IDs/versions reject without truncating source identity.
 
 The ordinary web build verifies committed assets using Node only. It requires no
 Rust or wasm-bindgen installation. `generated/` is owned by
@@ -60,6 +78,10 @@ and screenshots under `.artifacts/tax-runtime/packaging/`. The browser test also
 checks missing/corrupt WASM and a CSP that blocks WASM. Production adds only
 `'wasm-unsafe-eval'`; ordinary JavaScript eval remains disallowed.
 
-The corpus has 30 executions: capabilities, preparation, two legacy imports,
+The unchanged native corpus has 30 executions: capabilities, preparation, two legacy imports,
 25 repetitions of the same successful calculation, and an incomplete-rates
-error. This is transport parity, not broad financial or PDF report parity.
+error. The separate web corpus adds 19 descriptor/authoring executions.
+The packaging check also derives source identity and calls the production web
+repository in the emitted browser/RSC/SSR entries, including mutation during
+hashing and locale-independent canonical edge fixtures. This is protocol/source
+parity, not completed editor, persistence or PDF acceptance.

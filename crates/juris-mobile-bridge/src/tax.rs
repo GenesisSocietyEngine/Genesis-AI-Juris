@@ -15,6 +15,7 @@ use juris_tax_economics::{
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
+mod web;
 
 #[derive(Deserialize)]
 #[serde(tag = "command", rename_all = "snake_case", deny_unknown_fields)]
@@ -82,6 +83,61 @@ fn context(current: &CurrentSource, artifact_id: String, revision: String) -> Ca
     }
 }
 
+fn prepare(
+    current: CurrentSource,
+    artifact_id: String,
+    revision: String,
+    currency: String,
+) -> Result<Value, AdapterError> {
+    let request = TaxRequest {
+        transport_protocol: transport::TRANSPORT_PROTOCOL.into(),
+        input_schema: transport::INPUT_SCHEMA.into(),
+        application_policy: transport::APPLICATION_POLICY.into(),
+        context: context(&current, artifact_id, revision),
+        input: TaxEconomicsV2::new_default(currency).into(),
+    };
+    request.validate()?;
+    Ok(json!({"type":"tax_prepared", "request":request, "source":current}))
+}
+
+fn calculate(
+    current: CurrentSource,
+    request: Box<TaxRequest>,
+    bindings: Vec<ComponentBinding>,
+    required_component_ids: Vec<String>,
+) -> Result<Value, AdapterError> {
+    // Keep native validation order: request, source identity/context, then index/bindings.
+    let mut draft = bind_components(&request, &current, &required_component_ids, &bindings)?;
+    if request.input.tax_base_mode == TaxBaseMode::ManualOverride {
+        draft.request = *request;
+        draft.input_hash = input_hash(&draft.request)?;
+        draft.missing_inputs.clear();
+    }
+    match calculate_authoring(draft.request.clone()) {
+        Ok(result) => Ok(
+            json!({"type":"tax_calculated", "draft":draft, "source":current, "calculation":result}),
+        ),
+        Err(detail) => {
+            Ok(json!({"type":"tax_error", "detail":detail, "draft":draft, "source":current}))
+        }
+    }
+}
+
+fn import(
+    current: CurrentSource,
+    artifact_id: String,
+    revision: String,
+    schema: LegacySchema,
+    original_json: String,
+) -> Value {
+    let imported = import_legacy(
+        schema,
+        original_json,
+        context(&current, artifact_id, revision),
+    );
+    json!({"type":"tax_imported", "legacy":imported, "source":current})
+}
+
 fn execute(command: TaxCommand) -> Result<Value, AdapterError> {
     match command {
         TaxCommand::Capabilities => Ok(
@@ -95,58 +151,31 @@ fn execute(command: TaxCommand) -> Result<Value, AdapterError> {
             artifact_id,
             revision,
             currency,
-        } => {
-            let current = source(&scenario)?;
-            let request = TaxRequest {
-                transport_protocol: transport::TRANSPORT_PROTOCOL.into(),
-                input_schema: transport::INPUT_SCHEMA.into(),
-                application_policy: transport::APPLICATION_POLICY.into(),
-                context: context(&current, artifact_id, revision),
-                input: TaxEconomicsV2::new_default(currency).into(),
-            };
-            request.validate()?;
-            Ok(json!({"type":"tax_prepared", "request":request, "source":current}))
-        }
+        } => prepare(source(&scenario)?, artifact_id, revision, currency),
         TaxCommand::Calculate {
             scenario,
             request,
             bindings,
             required_component_ids,
-        } => {
-            let current = source(&scenario)?;
-            // Always revalidate references and provenance, including in manual mode.
-            let mut draft =
-                bind_components(&request, &current, &required_component_ids, &bindings)?;
-            if request.input.tax_base_mode == TaxBaseMode::ManualOverride {
-                draft.request = *request;
-                draft.input_hash = input_hash(&draft.request)?;
-                draft.missing_inputs.clear();
-            }
-            // Incomplete inputs are returned with their full draft, never a zero result.
-            match calculate_authoring(draft.request.clone()) {
-                Ok(result) => Ok(
-                    json!({"type":"tax_calculated", "draft":draft, "source":current, "calculation":result}),
-                ),
-                Err(detail) => Ok(
-                    json!({"type":"tax_error", "detail":detail, "draft":draft, "source":current}),
-                ),
-            }
-        }
+        } => calculate(
+            source(&scenario)?,
+            request,
+            bindings,
+            required_component_ids,
+        ),
         TaxCommand::Import {
             scenario,
             artifact_id,
             revision,
             schema,
             original_json,
-        } => {
-            let current = source(&scenario)?;
-            let imported = import_legacy(
-                schema,
-                original_json,
-                context(&current, artifact_id, revision),
-            );
-            Ok(json!({"type":"tax_imported", "legacy":imported, "source":current}))
-        }
+        } => Ok(import(
+            source(&scenario)?,
+            artifact_id,
+            revision,
+            schema,
+            original_json,
+        )),
     }
 }
 
@@ -158,14 +187,19 @@ pub(crate) fn execute_json(encoded: &str) -> Option<String> {
         command: &'a str,
     }
     let tag: Tag<'_> = serde_json::from_str(encoded).ok()?;
-    if !matches!(
-        tag.command,
-        "tax_capabilities" | "tax_prepare" | "tax_calculate" | "tax_import"
-    ) {
+    let is_web = web::is_command(tag.command);
+    if !is_web
+        && !matches!(
+            tag.command,
+            "tax_capabilities" | "tax_prepare" | "tax_calculate" | "tax_import"
+        )
+    {
         return None;
     }
     let response = if encoded.len() > transport::MAX_REQUEST_BYTES {
         json!({"type":"tax_error", "detail":{"code":"boundary", "detail":{"code":"policy_rejected", "field":"payload", "reason":"tax command exceeds 256 KiB"}}})
+    } else if is_web {
+        web::execute_json(encoded)
     } else {
         match serde_json::from_str::<TaxCommand>(encoded) {
             Ok(command) => execute(command)
