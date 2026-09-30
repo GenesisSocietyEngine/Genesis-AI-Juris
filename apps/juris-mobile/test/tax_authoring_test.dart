@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:juris_mobile/data/scenario_bridge_client.dart';
 import 'package:juris_mobile/data/tax_artifact_store.dart';
 import 'package:juris_mobile/data/tax_authoring_repository.dart';
+import 'support/tax_artifact_fixture.dart';
 
 class OldBridge implements ScenarioBridgeClient {
   @override
@@ -26,22 +27,10 @@ void main() {
     addTearDown(() => dir.delete(recursive: true));
     TaxArtifactStore store() =>
         TaxArtifactStore(directoryProvider: () async => dir);
-    final Map<String, dynamic> value = {
-      'schema': 'tax-authoring-artifact-v1',
-      'case_id': 'case1',
-      'edit': {'amount': 'unfinished'},
-      'legacy': {'original_json': ' { future } ', 'fx_json': 'original'},
-      'bindings': [
-        {'confirmed': false}
-      ],
-      'unknown_extension': [1, 2]
-    };
+    final Map<String, dynamic> value = taxArtifactFixture();
     await store().write('case1', value);
     expect(await store().read('case1'), value);
-    final Map<String, dynamic> newer = {
-      ...value,
-      'edit': {'amount': '2'}
-    };
+    final Map<String, dynamic> newer = taxArtifactFixture('2');
     await store().write('case1', newer);
     final File target =
         (await Directory('${dir.path}/tax_authoring_v1').list().toList())
@@ -52,7 +41,10 @@ void main() {
     expect(await store().read('case1'), value);
     await target.writeAsString(
         jsonEncode({...value, 'schema': 'tax-authoring-artifact-v99'}));
-    await expectLater(store().write('case1', value), throwsFormatException);
+    await expectLater(
+        store().write('case1', value),
+        throwsA(isA<TaxStorageException>()
+            .having((error) => error.code, 'code', 'tax_unsupported')));
     expect(jsonDecode(await target.readAsString())['schema'],
         'tax-authoring-artifact-v99');
   });

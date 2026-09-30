@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../models/case_type_registry.dart';
 import '../models/studio_scenario_draft.dart';
+import 'authoring_storage_coordinator.dart';
 
 typedef StudioDirectoryProvider = Future<Directory> Function();
 
@@ -35,10 +35,6 @@ final class ApplicationSupportStudioDraftStore implements StudioDraftStore {
             directoryProvider ?? getApplicationSupportDirectory;
 
   final StudioDirectoryProvider _directoryProvider;
-  // Screens can recreate their stores. Serialize the actual shared file, not
-  // just one store instance, including reads between writes in this isolate.
-  static final Map<String, Future<void>> _pendingByPath = {};
-  static Future<void> _resolvingPaths = Future<void>.value();
   static int _recoverySequence = 0;
 
   @override
@@ -88,45 +84,11 @@ final class ApplicationSupportStudioDraftStore implements StudioDraftStore {
         (String value) => _decodeScenario(jsonDecode(value)));
   }
 
-  Future<File> _file(String directory, String name) async {
-    final Directory root = await _directoryProvider();
-    final Directory folder =
-        Directory('${root.path}${Platform.pathSeparator}$directory');
-    await folder.create(recursive: true);
-    final String resolved = await folder.resolveSymbolicLinks();
-    return File('$resolved${Platform.pathSeparator}$name');
-  }
-
   Future<T> _atFile<T>(
       String directory, String name, Future<T> Function(File) action) {
-    final Completer<T> result = Completer<T>();
-    // Reserve in call order even when two providers resolve the same root at
-    // different speeds. Only resolution is global; file I/O is queued per path.
-    _resolvingPaths = _resolvingPaths.then((_) async {
-      try {
-        final File file = await _file(directory, name);
-        _serial(file, () => action(file)).then<void>(result.complete,
-            onError: (Object error, StackTrace stack) =>
-                result.completeError(error, stack));
-      } on Object catch (error, stack) {
-        result.completeError(error, stack);
-      }
+    return AuthoringStorageCoordinator.run(_directoryProvider, (lease) async {
+      return action(await lease.file(directory, name));
     });
-    return result.future;
-  }
-
-  static Future<T> _serial<T>(File file, Future<T> Function() action) {
-    final String path =
-        Platform.isWindows ? file.path.toLowerCase() : file.path;
-    final Future<T> operation =
-        (_pendingByPath[path] ?? Future<void>.value()).then((_) => action());
-    final Future<void> tail =
-        operation.then<void>((_) {}, onError: (Object _) {});
-    _pendingByPath[path] = tail;
-    tail.then((_) {
-      if (identical(_pendingByPath[path], tail)) _pendingByPath.remove(path);
-    });
-    return operation;
   }
 
   Future<String> _write(String directory, String name, String encoded,

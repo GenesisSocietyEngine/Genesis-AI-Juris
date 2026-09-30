@@ -2,16 +2,20 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juris_mobile/app/app_theme.dart';
 import 'package:juris_mobile/data/scenario_bridge_client.dart';
 import 'package:juris_mobile/data/studio_authoring_repository.dart';
 import 'package:juris_mobile/data/studio_draft_store.dart';
+import 'package:juris_mobile/data/tax_artifact_store.dart';
 import 'package:juris_mobile/models/case_type_playbook.dart';
 import 'package:juris_mobile/models/case_type_registry.dart';
 import 'package:juris_mobile/models/studio_scenario_draft.dart';
 import 'package:juris_mobile/screens/studio_wizard_screen.dart';
+import 'support/tax_artifact_fixture.dart';
 
 final CaseTypePlaybookRegistry _testPlaybooks =
     CaseTypePlaybookRegistry.fromJson(
@@ -21,6 +25,96 @@ final CaseTypePlaybookRegistry _testPlaybooks =
 );
 
 void main() {
+  for (final String state in ['supported', 'conflict', 'future']) {
+    testWidgets(
+        'tax workspace import $state uses the observed sidecar generation',
+        (WidgetTester tester) async {
+      await tester.runAsync(() async {
+        final Directory root =
+            await Directory.systemTemp.createTemp('wizard-tax-import-');
+        addTearDown(() => root.delete(recursive: true));
+        final StudioScenarioDraft scenario =
+            StudioScenarioDraft.guidedExample();
+        Map<String, dynamic> artifact(String text) {
+          final Map<String, dynamic> value = taxArtifactFixture(text);
+          value['case_id'] = scenario.caseId;
+          value['scenario'] = scenario.toJson();
+          value['request']['context']['case_id'] = scenario.caseId;
+          return value;
+        }
+
+        final TaxArtifactStore sidecar =
+            TaxArtifactStore(directoryProvider: () async => root);
+        await sidecar.write(scenario.caseId, artifact('existing'));
+        final File target = File('${root.path}/tax_authoring_v1/'
+            '${sha256.convert(utf8.encode(scenario.caseId))}.json');
+        final Map<String, dynamic> replacement = artifact('imported');
+        replacement['calculation'] = {'untrusted_cached': true};
+        if (state == 'future') {
+          await target.writeAsString(jsonEncode(
+              artifact('future')..['schema'] = 'tax-authoring-artifact-v99'));
+        }
+        final String before = await target.readAsString();
+        int resolutions = 0;
+        const MethodChannel paths =
+            MethodChannel('plugins.flutter.io/path_provider');
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(paths,
+            (call) async {
+          expect(call.method, 'getApplicationSupportDirectory');
+          resolutions++;
+          if (state == 'conflict' && resolutions == 2) {
+            // An independently committed generation appeared after snapshot
+            // read and before conditional write. Direct disk setup avoids
+            // reentering the shared coordinator from a provider callback.
+            await target.writeAsString(jsonEncode(artifact('competing')));
+          }
+          return root.path;
+        });
+        tester.binding.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.getData')
+            return {'text': jsonEncode(replacement)};
+          return null;
+        });
+        addTearDown(() {
+          tester.binding.defaultBinaryMessenger
+              .setMockMethodCallHandler(paths, null);
+          tester.binding.defaultBinaryMessenger
+              .setMockMethodCallHandler(SystemChannels.platform, null);
+        });
+        final _MemoryStudioStore workspace = _MemoryStudioStore();
+        await _mountStore(tester, workspace);
+        await tester.tap(find.text('Import scenario or analysis workspace'));
+        final Finder completed = state == 'supported'
+            ? find.textContaining('Source imported.')
+            : find.textContaining('Import failed:');
+        for (int i = 0; i < 250 && completed.evaluate().isEmpty; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          await tester.pump();
+        }
+        await tester.pumpAndSettle();
+        expect(completed, findsOneWidget);
+        if (state == 'supported') {
+          expect(workspace.writes, 1);
+          expect(workspace.workspace!.draft.toJson(), scenario.toJson());
+          final Map<String, dynamic> saved =
+              (await sidecar.read(scenario.caseId))!;
+          expect(saved['edit']['baseline_annual_tax_cost'], 'imported');
+          expect(saved['artifact_revision'], '2');
+          expect(saved['calculation'], isNull);
+          expect(saved['request']['context']['scenario_fingerprint'],
+              replacement['request']['context']['scenario_fingerprint']);
+        } else {
+          expect(workspace.writes, 0);
+          expect(workspace.workspace, isNull);
+          expect(await target.readAsString(),
+              state == 'future' ? before : jsonEncode(artifact('competing')));
+        }
+        expect(tester.takeException(), isNull);
+      });
+    });
+  }
+
   for (final String code in [
     'workspace_unsupported',
     'workspace_recovery_required',

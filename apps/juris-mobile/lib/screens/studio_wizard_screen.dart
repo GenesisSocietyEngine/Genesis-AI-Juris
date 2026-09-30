@@ -1023,8 +1023,10 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
           throw const FormatException(
               'Tax workspace source identity mismatch.');
         final TaxArtifactStore taxStore = TaxArtifactStore();
-        final Map<String, dynamic>? previous =
-            await taxStore.read(imported.caseId);
+        final TaxArtifactSnapshot snapshot =
+            await taxStore.readSnapshot(imported.caseId);
+        if (snapshot.readOnlyError != null) throw snapshot.readOnlyError!;
+        final Map<String, dynamic>? previous = snapshot.artifact;
         final String revision =
             (BigInt.parse(previous?['artifact_revision'] as String? ?? '0') +
                     BigInt.one)
@@ -1033,7 +1035,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
         ((decoded['request'] as Map<String, dynamic>)['context']
             as Map<String, dynamic>)['revision'] = revision;
         decoded['calculation'] = null;
-        await taxStore.write(imported.caseId, decoded);
+        await taxStore.writeIfUnchanged(snapshot, decoded);
       }
       if (!mounted) return;
       setState(() {
