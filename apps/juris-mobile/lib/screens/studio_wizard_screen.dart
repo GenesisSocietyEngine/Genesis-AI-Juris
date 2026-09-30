@@ -4,10 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app/product_navigation.dart';
+import '../data/aggregate_json_guard.dart';
 import '../data/studio_authoring_repository.dart';
+import '../data/studio_authoring_services.dart';
 import '../data/studio_draft_store.dart';
+import '../data/studio_workspace_codec.dart';
+import '../data/studio_workspace_session.dart';
 import '../data/tax_artifact_store.dart';
-import '../data/tax_authoring_repository.dart';
 import '../models/case_type_playbook.dart';
 import '../models/case_type_playbook_assets.dart';
 import '../models/case_type_registry.dart';
@@ -22,6 +25,7 @@ final class StudioWizardScreen extends StatefulWidget {
     required this.store,
     required this.locale,
     required this.onExit,
+    this.authoringServices,
     this.playbookAssetBundle,
     this.playbookRegistry,
     super.key,
@@ -29,6 +33,7 @@ final class StudioWizardScreen extends StatefulWidget {
 
   final StudioAuthoringRepository repository;
   final StudioDraftStore store;
+  final StudioAuthoringServices? authoringServices;
   final String locale;
   final VoidCallback onExit;
   final AssetBundle? playbookAssetBundle;
@@ -60,6 +65,10 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   String? _recoveryError;
   String? _notice;
   String? _exportPath;
+  StudioWorkspaceSession? _storage;
+  int _storageEpoch = 0;
+  final GlobalKey _storageFeedbackKey = GlobalKey();
+  bool get _saveBlocked => _storage?.isBlocked == true;
 
   bool get _ru => widget.locale == 'ru';
   CaseTypePlaybook get _playbook =>
@@ -91,30 +100,58 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(StudioWizardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.store != widget.store ||
+        oldWidget.authoringServices != widget.authoringServices) _load();
+  }
+
   Future<void> _load() async {
-    if (mounted) setState(() => _loading = true);
+    final int epoch = ++_storageEpoch;
+    if (mounted)
+      setState(() {
+        _loading = true;
+        _busy = false;
+      });
     try {
+      if (widget.authoringServices != null &&
+          !identical(widget.store, widget.authoringServices!.workspace)) {
+        throw const StudioStorageException(
+            code: 'authoring_recovery_required',
+            message:
+                'Workspace and analysis services must be supplied together.');
+      }
       _playbookRegistry ??= await loadCaseTypePlaybookRegistry(
         bundle: widget.playbookAssetBundle,
       );
-      final StudioWorkspace? workspace = await widget.store.read();
+      final StudioWorkspaceSession storage = await StudioWorkspaceSession.open(
+        widget.store,
+      );
+      if (!mounted || epoch != _storageEpoch) return;
+      final StudioWorkspace? workspace = storage.loaded;
+      _storage = storage;
       _recoveryError = null;
+      _saveFailed = false;
+      _notice = null;
       _hasSaved = workspace != null;
-      if (workspace != null && mounted) {
-        _draft = workspace.draft;
-        _activeStage = workspace.activeStage;
-        _completed
-          ..clear()
-          ..addAll(workspace.completedStages);
-        _syncControllers();
-      }
+      _draft = workspace?.draft ?? StudioScenarioDraft.blank();
+      _activeStage = workspace?.activeStage ?? StudioWorkflowStage.describe;
+      _completed
+        ..clear()
+        ..addAll(workspace?.completedStages ?? {});
+      _validation = null;
+      _routeResult = null;
+      _exportPath = null;
+      _syncControllers();
     } on Object catch (error) {
+      if (!mounted || epoch != _storageEpoch) return;
       _recoveryError = _t(
         'The previous Studio draft could not be reopened: $error',
         'Не удалось открыть предыдущий черновик Studio: $error',
       );
     } finally {
-      if (mounted) {
+      if (mounted && epoch == _storageEpoch) {
         setState(() => _loading = false);
       }
     }
@@ -178,9 +215,15 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
         ],
       ),
       actions: <Widget>[
-        ScopedJurisProductNavigation(
-          locale: widget.locale,
-          current: JurisProductDestination.studio,
+        IgnorePointer(
+          ignoring: _busy,
+          child: ExcludeFocus(
+            excluding: _busy,
+            child: ScopedJurisProductNavigation(
+              locale: widget.locale,
+              current: JurisProductDestination.studio,
+            ),
+          ),
         ),
         if (showStatus)
           Padding(
@@ -276,51 +319,56 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
     }
     return Scaffold(
       appBar: _appBar(context, showStatus: true),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1040),
-            child: Column(
-              children: <Widget>[
-                _ProgressHeader(
-                  activeStage: _activeStage,
-                  completed: _completed,
-                  locale: widget.locale,
-                  onSelected: _openStage,
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        _StageIntro(
-                          number: _activeStage.index + 1,
-                          title: _stageTitle(_activeStage),
-                          description: _stageDescription(_activeStage),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildStage(),
-                        if (_notice != null) ...<Widget>[
+      body: AbsorbPointer(
+        key: const ValueKey('studio-busy-controls'),
+        absorbing: _busy,
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1040),
+              child: Column(
+                children: <Widget>[
+                  _ProgressHeader(
+                    activeStage: _activeStage,
+                    completed: _completed,
+                    locale: widget.locale,
+                    onSelected: _openStage,
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          _StageIntro(
+                            number: _activeStage.index + 1,
+                            title: _stageTitle(_activeStage),
+                            description: _stageDescription(_activeStage),
+                          ),
                           const SizedBox(height: 16),
-                          Semantics(
-                            liveRegion: true,
-                            child: Card(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHigh,
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Text(_notice!),
+                          _buildStage(),
+                          if (_saveBlocked) _storageFeedback(),
+                          if (_notice != null) ...<Widget>[
+                            const SizedBox(height: 16),
+                            Semantics(
+                              liveRegion: true,
+                              child: Card(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHigh,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Text(_notice!),
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -491,6 +539,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
           child: Column(
             children: <Widget>[
               TextField(
+                readOnly: _busy,
                 key: const ValueKey<String>('studio-title-field'),
                 controller: _titleController,
                 textInputAction: TextInputAction.next,
@@ -504,6 +553,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                 children: <Widget>[
                   Expanded(
                     child: TextField(
+                      readOnly: _busy,
                       controller: _jurisdictionController,
                       textCapitalization: TextCapitalization.characters,
                       decoration: InputDecoration(
@@ -516,6 +566,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
+                      readOnly: _busy,
                       controller: _roleController,
                       decoration: InputDecoration(
                         labelText: _t('Your role', 'Ваша роль'),
@@ -527,6 +578,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
               ),
               const SizedBox(height: 12),
               TextField(
+                readOnly: _busy,
                 key: const ValueKey<String>('studio-premise-field'),
                 controller: _premiseController,
                 minLines: 3,
@@ -626,6 +678,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
               children: <Widget>[
                 Expanded(
                   child: TextField(
+                    readOnly: _busy,
                     key: ValueKey<String>('studio-fact-$index'),
                     controller: controller,
                     minLines: 1,
@@ -669,20 +722,8 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
           ),
           draft: _draft,
           locale: widget.locale,
-          onTaxEconomics: () async {
-            try {
-              await _persist();
-            } on Object {
-              // _persist reports the failure; do not open an unsaved source.
-              return;
-            }
-            if (!mounted) return;
-            await Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => TaxEditorScreen(
-                    scenario: _draft.toJson(),
-                    repository: widget.repository.tax,
-                    locale: widget.locale)));
-          },
+          onTaxEconomics:
+              widget.authoringServices == null ? null : _openTaxEconomics,
         ),
         const SizedBox(height: 16),
         SectionCard(
@@ -697,6 +738,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                   in _draft.stages.indexed) ...<Widget>[
                 TextFormField(
                   key: ValueKey<String>('studio-stage-${stage['id']}'),
+                  readOnly: _busy,
                   initialValue: stage['title'] as String? ?? '',
                   decoration: InputDecoration(
                     labelText: stage['id'] as String? ?? 'stage',
@@ -736,6 +778,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
                   in _draft.actions.indexed) ...<Widget>[
                 TextFormField(
                   key: ValueKey<String>('studio-action-${action['id']}'),
+                  readOnly: _busy,
                   initialValue: action['title'] as String? ?? '',
                   decoration: InputDecoration(
                     labelText: action['id'] as String? ?? 'action',
@@ -952,6 +995,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   }
 
   void _replaceDraft(StudioScenarioDraft next, StudioWorkflowStage changedAt) {
+    if (_busy) return;
     setState(() {
       _draft = next;
       _invalidateFrom(changedAt);
@@ -972,6 +1016,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   }
 
   void _applyExample() {
+    if (_busy) return;
     setState(() {
       _draft = StudioScenarioDraft.guidedExample();
       _completed.clear();
@@ -988,6 +1033,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   }
 
   void _startBlank() {
+    if (_busy) return;
     setState(() {
       _draft = StudioScenarioDraft.blank();
       _completed.clear();
@@ -1000,60 +1046,105 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
     _autoSave();
   }
 
-  Future<void> _importFromClipboard() async {
+  Future<void> _openTaxEconomics() async {
+    final StudioAuthoringServices? services = widget.authoringServices;
+    if (_busy || services == null) return;
+    final int epoch = _storageEpoch;
+    final Map<String, dynamic> scenario = _draft.toJson();
+    FocusScope.of(context).unfocus();
+    setState(() => _busy = true);
     try {
+      await _persist();
+      if (!mounted ||
+          epoch != _storageEpoch ||
+          !identical(services, widget.authoringServices)) return;
+      await Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => TaxEditorScreen(
+              scenario: scenario,
+              repository: widget.repository.tax,
+              store: services.taxArtifacts,
+              locale: widget.locale)));
+    } on Object {
+      // _persist reports failures; do not open an unsaved or replaced source.
+    } finally {
+      if (mounted && epoch == _storageEpoch) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _importFromClipboard() async {
+    if (_busy) return;
+    final int epoch = _storageEpoch;
+    final StudioWorkspaceSession storage = _storage!;
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _busy = true;
+      _notice = null;
+    });
+    try {
+      if (_saveBlocked) throw storage.lastError!;
       final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
-      final dynamic decoded = jsonDecode(data?.text ?? '');
-      if (decoded is! Map<String, dynamic>) {
-        throw const FormatException('Clipboard JSON must be an object.');
-      }
-      final bool taxWorkspace =
-          decoded['schema'] == 'tax-authoring-artifact-v1';
-      if (taxWorkspace &&
-          (!validTaxArtifact(decoded) ||
-              decoded['scenario'] is! Map<String, dynamic>)) {
-        throw const FormatException(
-            'Unsupported tax workspace; original clipboard is unchanged.');
-      }
-      final StudioScenarioDraft imported = StudioScenarioDraft.fromJson(
-        taxWorkspace ? decoded['scenario'] as Map<String, dynamic> : decoded,
-      );
+      if (!mounted || epoch != _storageEpoch) return;
+      final String original = data?.text ?? '';
+      final Map<String, dynamic> decoded = decodeAggregateJson(original);
+      final bool taxWorkspace = decoded.containsKey('schema');
+      final StudioScenarioDraft imported;
       if (taxWorkspace) {
-        if (decoded['case_id'] != imported.caseId)
+        final StudioAuthoringServices? services = widget.authoringServices;
+        if (services == null) {
           throw const FormatException(
-              'Tax workspace source identity mismatch.');
-        final TaxArtifactStore taxStore = TaxArtifactStore();
-        final Map<String, dynamic>? previous =
-            await taxStore.read(imported.caseId);
-        final String revision =
-            (BigInt.parse(previous?['artifact_revision'] as String? ?? '0') +
-                    BigInt.one)
-                .toString();
-        decoded['artifact_revision'] = revision;
-        ((decoded['request'] as Map<String, dynamic>)['context']
-            as Map<String, dynamic>)['revision'] = revision;
-        decoded['calculation'] = null;
-        await taxStore.write(imported.caseId, decoded);
+              'Analysis import is unavailable for this custom workspace. Original input is unchanged.');
+        }
+        if (decoded['schema'] != 'tax-authoring-artifact-v1') {
+          throw const FormatException(
+              'Unsupported analysis workspace. Original input is unchanged.');
+        }
+        imported = StudioWorkspaceCodec.decodeScenario(decoded['scenario']);
+        await storage.importSnapshot((expectedWorkspace) async {
+          final TaxArtifactSnapshot expectedTax =
+              await services.taxArtifacts.readSnapshot(imported.caseId);
+          if (!mounted || epoch != _storageEpoch) {
+            throw const FormatException('Import cancelled before publication.');
+          }
+          final StudioAggregateImportResult result =
+              await services.importTaxWorkspace(
+                  expectedWorkspace: expectedWorkspace,
+                  expectedTax: expectedTax,
+                  originalJson: original);
+          return result.workspace;
+        });
+      } else {
+        imported = StudioWorkspaceCodec.decodeScenario(decoded);
+        await storage.save(StudioWorkspace(
+            draft: imported,
+            activeStage: StudioWorkflowStage.describe,
+            completedStages: {}));
       }
-      if (!mounted) return;
+      if (!mounted || epoch != _storageEpoch) return;
       setState(() {
         _draft = imported;
+        _activeStage = StudioWorkflowStage.describe;
         _completed.clear();
         _validation = null;
         _routeResult = null;
+        _exportPath = null;
+        _hasSaved = true;
+        _saveFailed = false;
         _notice = _t(
-          'Source imported. Rust validation is still required; any included tax draft is preserved.',
-          'Canonical scenario импортирован. Проверка Rust всё ещё обязательна.',
+          'Source imported and saved. Rust validation is still required; included analysis keeps its source context for review.',
+          'Источник импортирован и сохранён. Проверка Rust всё ещё обязательна; контекст анализа сохранён для проверки.',
         );
         _syncControllers();
       });
-      await _persist();
     } on Object catch (error) {
-      if (mounted) {
-        setState(
-          () => _notice = _t('Import failed: $error', 'Ошибка импорта: $error'),
-        );
+      if (mounted && epoch == _storageEpoch) {
+        setState(() {
+          if (storage.isBlocked) _saveFailed = true;
+          _notice = _t('Import failed: $error', 'Ошибка импорта: $error');
+        });
+        if (storage.isBlocked) _showStorageFeedback();
       }
+    } finally {
+      if (mounted && epoch == _storageEpoch) setState(() => _busy = false);
     }
   }
 
@@ -1069,6 +1160,7 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   }
 
   void _openStage(StudioWorkflowStage stage) {
+    if (_busy) return;
     final int furthest = _completed.isEmpty
         ? 0
         : _completed.map((StudioWorkflowStage item) => item.index).reduce(
@@ -1188,33 +1280,37 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
   Future<void> _persist() async {
     if (_recoveryError != null) {
       throw const StudioStorageException(
-          code: 'workspace_recovery_required',
-          message: 'Reopen the retained workspace before saving.');
+        code: 'workspace_recovery_required',
+        message: 'Reopen the retained workspace before saving.',
+      );
     }
     final int attempt = ++_saveAttempt;
+    final int epoch = _storageEpoch;
+    final StudioWorkspaceSession storage = _storage!;
     setState(() => _pendingSaves++);
     try {
-      await widget.store.write(
+      await storage.save(
         StudioWorkspace(
           draft: _draft,
           activeStage: _activeStage,
           completedStages: Set<StudioWorkflowStage>.of(_completed),
         ),
       );
-      if (mounted && attempt == _saveAttempt) {
+      if (mounted && epoch == _storageEpoch && attempt == _saveAttempt) {
         setState(() {
           _hasSaved = true;
           _saveFailed = false;
         });
       }
     } on Object catch (error) {
-      if (mounted && attempt == _saveAttempt) {
-        setState(
-          () {
-            _saveFailed = true;
-            _notice = _t('Save failed: $error', 'Ошибка сохранения: $error');
-          },
-        );
+      if (mounted && epoch == _storageEpoch && attempt == _saveAttempt) {
+        setState(() {
+          _saveFailed = true;
+          _notice = _t('Save failed: $error', 'Ошибка сохранения: $error');
+        });
+        if (storage.isBlocked) {
+          _showStorageFeedback();
+        }
       }
       rethrow;
     } finally {
@@ -1229,6 +1325,104 @@ final class _StudioWizardScreenState extends State<StudioWizardScreen> {
       // Fire-and-forget UI edits retain their draft and show the save error.
       // Awaited operations use _persist directly and must stop on failure.
     }
+  }
+
+  void _showStorageFeedback() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final BuildContext? target = _storageFeedbackKey.currentContext;
+      if (mounted && target != null) {
+        Scrollable.ensureVisible(target,
+            alignment: 1, duration: const Duration(milliseconds: 200));
+      }
+    });
+  }
+
+  Widget _storageFeedback() => Semantics(
+        key: _storageFeedbackKey,
+        liveRegion: true,
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(_storage!.lastError.toString()),
+                TextButton(
+                  key: const ValueKey('studio-export-unsaved'),
+                  onPressed: _busy ? null : _exportUnsaved,
+                  child: Text(
+                    _t(
+                      'Export unsaved scenario',
+                      'Экспортировать несохранённый сценарий',
+                    ),
+                  ),
+                ),
+                TextButton(
+                  key: const ValueKey('studio-reopen-saved'),
+                  onPressed: _busy || _pendingSaves > 0 ? null : _reopenSaved,
+                  child: Text(
+                    _t('Reopen saved workspace', 'Открыть сохранённый проект'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  Future<void> _exportUnsaved() async {
+    final StudioScenarioDraft frozen = StudioScenarioDraft.fromJson(
+      _draft.toJson(),
+    );
+    final String clipboard = jsonEncode(frozen.toJson());
+    try {
+      final String path = await widget.store.exportScenario(frozen);
+      await Clipboard.setData(ClipboardData(text: clipboard));
+      if (mounted)
+        setState(
+          () => _notice = _t(
+            'Exported and copied: $path',
+            'Экспортировано и скопировано: $path',
+          ),
+        );
+    } on Object catch (error) {
+      if (mounted)
+        setState(
+          () =>
+              _notice = _t('Export failed: $error', 'Ошибка экспорта: $error'),
+        );
+    }
+  }
+
+  Future<void> _reopenSaved() async {
+    final bool? discard = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          _t(
+            'Reopen and discard your edits?',
+            'Открыть проект и отменить ваши изменения?',
+          ),
+        ),
+        content: Text(
+          _t(
+            'Export your edits first if you want to keep them.',
+            'Сначала экспортируйте изменения, если хотите сохранить их.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(_t('Keep editing', 'Продолжить')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(_t('Reopen and discard', 'Открыть и отменить')),
+          ),
+        ],
+      ),
+    );
+    if (discard == true && mounted) await _load();
   }
 
   String _stageTitle(StudioWorkflowStage stage) {
