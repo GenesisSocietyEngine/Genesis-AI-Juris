@@ -229,10 +229,13 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
     setState(() => _busy = true);
     try {
       final Map<String, dynamic> saving = _copy(_artifact!);
-      final String revision =
-          (BigInt.parse(saving['artifact_revision'] as String? ?? '0') +
-                  BigInt.one)
-              .toString();
+      final String previousRevision =
+          saving['artifact_revision'] as String? ?? '0';
+      // Reopening recalculates against the saved revision. Saving those same
+      // inputs again must not invalidate the freshly validated calculation.
+      final String revision = _dirty || previousRevision == '0'
+          ? (BigInt.parse(previousRevision) + BigInt.one).toString()
+          : previousRevision;
       saving['artifact_revision'] = revision;
       ((saving['request'] as Map<String, dynamic>)['context']
           as Map<String, dynamic>)['revision'] = revision;

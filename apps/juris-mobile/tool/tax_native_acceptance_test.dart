@@ -72,6 +72,13 @@ void main() {
           ((saved['calculation'] as Map<String, dynamic>)['result']
               as Map<String, dynamic>)['recognized_annual_tax_saving'],
           '5000000');
+      expect(saved['artifact_revision'], '1');
+      // An ordinary second Save must retain the validated result and revision.
+      await tester.ensureVisible(find.byKey(const ValueKey('tax-save')));
+      await tester.tap(find.byKey(const ValueKey('tax-save')));
+      await settleIo(tester);
+      expect(await store().read(caseId), saved);
+      expect(find.text('Calculated result'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
       await settleIo(tester);
       await tester.pumpWidget(editor());
@@ -79,6 +86,32 @@ void main() {
       final Map<String, dynamic> reopened = (await store().read(caseId))!;
       expect(reopened, saved);
       expect(find.text('250000.00'), findsOneWidget);
+      expect(find.text('Calculated result'), findsOneWidget);
+      // Reopen performs a fresh native calculation without changing inputs.
+      // Saving it must survive another disposal and disk reopening.
+      await tester.ensureVisible(find.byKey(const ValueKey('tax-save')));
+      await tester.tap(find.byKey(const ValueKey('tax-save')));
+      await settleIo(tester);
+      expect(await store().read(caseId), saved);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await settleIo(tester);
+      await tester.pumpWidget(editor());
+      await settleIo(tester);
+      expect(find.text('Calculated result'), findsOneWidget);
+      // Actual edits still advance the revision, including incomplete drafts.
+      await tester.enterText(
+          find.byKey(const ValueKey('tax-0-baseline_annual_tax_cost')),
+          'unfinished');
+      await tester.ensureVisible(find.byKey(const ValueKey('tax-save')));
+      await tester.tap(find.byKey(const ValueKey('tax-save')));
+      await settleIo(tester);
+      final Map<String, dynamic> incomplete = (await store().read(caseId))!;
+      expect(incomplete['artifact_revision'], '2');
+      expect(
+          (incomplete['edit']
+              as Map<String, dynamic>)['baseline_annual_tax_cost'],
+          'unfinished');
+      expect(incomplete['calculation'], isNull);
       expect(tester.takeException(), isNull);
     });
   });
