@@ -351,52 +351,14 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
   }
 
   Future<void> _exchange() async {
-    final TextEditingController controller = TextEditingController();
-    String kind = 'tax-authoring-artifact-v1';
-    final bool? accepted = await showDialog<bool>(
-        context: context,
-        builder: (BuildContext dialogContext) => StatefulBuilder(
-            builder: (BuildContext context, StateSetter state) => AlertDialog(
-                    title:
-                        Text(_t('Import a saved analysis', 'Импорт анализа')),
-                    content: SizedBox(
-                        width: 520,
-                        child: SingleChildScrollView(
-                            child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                              DropdownButtonFormField<String>(
-                                  initialValue: kind,
-                                  isExpanded: true,
-                                  items: [
-                                    'tax-authoring-artifact-v1',
-                                    'web_amounts_v1',
-                                    'web_rates_fx_v1'
-                                  ]
-                                      .map((String s) => DropdownMenuItem(
-                                          value: s, child: Text(s)))
-                                      .toList(),
-                                  onChanged: (String? v) =>
-                                      state(() => kind = v!)),
-                              TextField(
-                                  controller: controller,
-                                  maxLines: 8,
-                                  decoration: InputDecoration(
-                                      labelText: _t(
-                                          'Saved JSON (original retained)',
-                                          'JSON (оригинал сохраняется)'))),
-                            ]))),
-                    actions: [
-                      TextButton(
-                          onPressed: () => Navigator.pop(dialogContext, false),
-                          child: Text(_t('Cancel', 'Отмена'))),
-                      TextButton(
-                          onPressed: () => Navigator.pop(dialogContext, true),
-                          child: Text(_t('Import', 'Импорт')))
-                    ])));
-    final String raw = controller.text;
-    controller.dispose();
-    if (accepted != true || !mounted) return;
+    final ({String kind, String raw})? imported =
+        await showDialog<({String kind, String raw})>(
+            context: context,
+            builder: (BuildContext context) =>
+                _TaxImportDialog(locale: widget.locale));
+    if (imported == null || !mounted) return;
+    final String kind = imported.kind;
+    final String raw = imported.raw;
     try {
       if (utf8.encode(raw).length > 262144)
         throw const FormatException('Import exceeds 256 KiB.');
@@ -980,4 +942,73 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
                                             'Экспорт анализа с источником'))),
                                 ]))))));
   }
+}
+
+final class _TaxImportDialog extends StatefulWidget {
+  const _TaxImportDialog({required this.locale});
+  final String locale;
+
+  @override
+  State<_TaxImportDialog> createState() => _TaxImportDialogState();
+}
+
+final class _TaxImportDialogState extends State<_TaxImportDialog> {
+  final TextEditingController _controller = TextEditingController();
+  String _kind = 'tax-authoring-artifact-v1';
+  String _t(String en, String ru) => widget.locale == 'ru' ? ru : en;
+
+  @override
+  void dispose() {
+    // A popped route remains mounted during its reverse transition. Keep the
+    // field's controller alive until the dialog itself leaves the widget tree.
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: Text(_t('Import a saved analysis', 'Импорт анализа')),
+        content: SizedBox(
+          width: 520,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: _kind,
+                  isExpanded: true,
+                  items: [
+                    'tax-authoring-artifact-v1',
+                    'web_amounts_v1',
+                    'web_rates_fx_v1'
+                  ]
+                      .map((String value) =>
+                          DropdownMenuItem(value: value, child: Text(value)))
+                      .toList(),
+                  onChanged: (String? value) => setState(() => _kind = value!),
+                ),
+                TextField(
+                  controller: _controller,
+                  maxLines: 8,
+                  decoration: InputDecoration(
+                    labelText: _t('Saved JSON (original retained)',
+                        'JSON (оригинал сохраняется)'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(_t('Cancel', 'Отмена')),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(context, (kind: _kind, raw: _controller.text)),
+            child: Text(_t('Import', 'Импорт')),
+          ),
+        ],
+      );
 }
