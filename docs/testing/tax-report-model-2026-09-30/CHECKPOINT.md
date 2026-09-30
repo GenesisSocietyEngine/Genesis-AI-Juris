@@ -219,12 +219,13 @@ matches the entire fresh browser result through the native C ABI and all four
 profile/language PDFs, with 34 rendered pages. The actual UI's four-page PDF is
 a separate observed download, not one of those generated cohort files.
 
-Remaining acceptance includes actual application-button JSON delivery: earlier
-application attempts lacked a completed file, while later same-origin controls
-downloaded the exact historical receipt through the unchanged helper. The
-follow-up application account-context setup failed before any button execution;
-the [browser record](BROWSER_APPLICATION.md) keeps these outcomes separate.
-Other remaining acceptance includes live authenticated browser/account-history journeys,
+The [browser record](BROWSER_APPLICATION.md) now also closes actual application-button
+JSON delivery on clean local `5b48d30`: the real dialog downloaded a new PDF and
+its 2,036-byte receipt, with terminal GUID events, saved files and closed-profile
+History. The entire observed model/receipt matched fresh independent Node Rust.
+Only the two synthetic identity endpoints were mocked; earlier failed delivery
+and setup attempts remain recorded separately.
+Remaining acceptance includes live authenticated browser/account-history journeys,
 PDF tagging/accessibility, spoken mobile accessibility and physical-device
 checks. P3's broader iOS application matrix and interrupted aggregate-write
 journeys remain source-specific mobile work. User instruction is to use CI and

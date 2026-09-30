@@ -64,3 +64,25 @@ A later same-origin diagnostic used the unchanged production download helper on 
 One subsequent control used a fully normalized native Windows path, with Node and .NET path equality checked. Both same-origin downloads through the unchanged helper completed: the 56-byte control in 267.5 ms and the exact 2,036-byte historical receipt in 163.7 ms. The latter has SHA-256 `469c89e283f0fbebbe75717d57f42c21816deeb122f7c1572978c45e905fa339` and retains the historical generatedAt; it is not a newly generated application receipt. Complete files, timestamped GUID events and closed-profile History were independently verified. The fresh process/profile/directory also differed, so this comparison does not prove separators alone caused the preceding cancellation.
 
 Actual application setup then failed to establish the synthetic account context. An automation command opened a separate temporary context; after returning to the explicit copied-profile endpoint, the account still remained signed out. No actual report preparation, fresh Rust operation or receipt-button click was executed in this follow-up. The copied v2 draft and all four original evidence/profile hashes remained unchanged, and all owned processes/listeners were stopped. The ignored `receipt-json-native-path/result.json` has SHA-256 `c44e83a77a45bb366960645cff98b917d0f241ad707a4688c850eb085035617d`. These successful download controls narrow the diagnostic scope; actual application-button delivery and live authenticated browser acceptance remain open.
+
+
+## Completed actual receipt-button delivery
+
+A subsequent application journey on clean `5b48d30c12aec845cda0fc0a9b6d8b87ef08f53f` completed both actual Download PDF and Download receipt JSON actions. This is local committed-source evidence, distinct from equal-tree PR77 head and main execution. The earlier unsuccessful deliveries and setup attempts above remain unchanged.
+
+A fresh copy of the closed profile restored its existing complete v2 draft. Only the two original synthetic identity endpoints were intercepted; no application, financial input, Rust response, model, receipt or component state was substituted. The initial CLI fixture lacked the JSON content type required by the actual session guard, so the draft did not load. Exact endpoint interception with the required JSON header then established the original account context. This explains that bounded fixture failure, not the earlier init-script or download stalls; no product guard changed.
+
+The actual dialog freshly prepared its preview and downloaded a new four-page PDF, then exposed the receipt button. That actual button delivered the new receipt generated at `2026-09-30T20:33:12.185Z`:
+
+| Actual output | GUID | Bytes / SHA-256 |
+| --- | --- | --- |
+| PDF | `cb90159a-3fa7-4b27-b8fb-5e167a0576cf` | 37,601 / `ad395726de8caaabadcbc274a9ae52df827bf7f34a008b31ce133407952fc134` |
+| Receipt JSON | `2ead824f-2f84-4977-80bb-dcb576aae88b` | 2,036 / `73361034d23c538b91253c07b81b38e02af3c2b76e0b0f93ac6a9c46ced8ec28` |
+
+The JSON event started at 20:33:57.582Z and reached terminal completion at 20:33:57.870Z, 287.809 milliseconds later. Both independent per-GUID observers reached completion, and both closed-profile History rows show complete byte counts and no interruption. The actual saved JSON equals every displayed and stored receipt field after the application's unchanged serialization.
+
+Fresh independent Node Rust reconstruction using the actual captured browser draft/options matches the entire tax model and receipt. All 27 model rows match the actual PDF text, and all four 1400-pixel rendered pages were visually inspected. Complete saved-draft bytes remain unchanged; the original four evidence/profile hashes also remain unchanged. The owned browser/server and listeners on 4320/60199 were absent after cleanup at 20:38:06.713Z.
+
+Evidence is retained in the report worktree's ignored `.artifacts/receipt-json-application-final/`, including complete events, files, read-only model/DOM capture, independent parity, closed History, renders and cleanup. Primary `result.json` SHA-256 is `d01c4d5797d1e2e35ea3789885c62a02858db8e6857b92941d79836a2e754e1a`.
+
+This closes local actual application-button JSON delivery under the explicitly synthetic identity fixture. Live authenticated browser/account-history testing, PDF tagging/accessibility and physical/spoken mobile acceptance remain open.
