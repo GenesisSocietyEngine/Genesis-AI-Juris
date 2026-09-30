@@ -77,9 +77,76 @@ passed `--require-complete` for that bounded matrix. See
 receipt is `android-aggregate-59234/journey-result.json`, SHA-256
 `29867430b432aef5e050c5459570422b8cd431dae3817ee5a4d99b61d3c18d6b`.
 
-Still open: six-phase iOS complete/incomplete/legacy application acceptance,
+## Subsequent six-phase iOS evidence on PR #72
+
+Exact PR source `60c62862f72449e3d87d23ff85935a1b621f77b7`, tree
+`5a93eb9261ec2286ec19cd26683af0ab97517a72`, has an executed, passing
+six-phase push result. This is branch evidence, separate from the accepted
+`5436609` head and its subsequent main runs. PR #72 remains
+unmerged while its companion PR application retry is pending.
+
+Both native workflows at this exact source separately executed and passed
+`RunnerTests.testNativeLogisticsLifecycle()`. Each retained the initial
+arm64/x86_64 and prepared x86_64 archive audits, all 27 fake verifier fixtures
+and eight real macOS fixtures:
+
+| Event | Run / job | Executed XCTest (UTC) | Diagnostic artifact / ZIP SHA-256 |
+| --- | --- | --- | --- |
+| PR | 36772419428 / 110081861097 | 20:35:57.408709Z, 0.266 s | 11124677614 / `50e78fb2f3e6ece314a133a776c569f834a2e78cbfd3afa48dba1ad60f703c7b` |
+| Push | 36772414336 / 110081842908 | 20:46:48.283761Z, 0.205 s | 11124841801 / `ffeda71454476e38bc9f57b66554243c6ede2db366a6307eeda6980db4990db8` |
+
+All fourteen non-iOS checks also passed on their first attempts. Both web
+suites executed 1,140 passing tests, zero failures and three existing skips,
+both D1 migration controls, complete 49-command Rust parity in each packaged
+host, real Worker history/refusal controls and zero dependency-audit findings.
+Both PDF jobs passed the tax 22-PDF/164-page and legacy 47-PDF/760-page cohorts.
+Full source/run/job/log/artifact verification is retained in
+`.artifacts/pr68-ios-2026-09-30/pr72-60c6286-nonios/FINAL_VERIFICATION.json`,
+SHA-256 `3b085c5eec76c6219e70ee0d536bbaa1a28dd6be5a3a4bedfe874b9d505eb769`.
+These native/web checks do not replace the following application evidence.
+
+[Push run 36772414350 / job 110081843927](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36772414350/job/110081843927)
+completed successfully at 20:58:18Z on attempt 1. The selected test
+`production application tax journey across process restart` executed and
+passed in all six phases: write/read, incomplete-write/incomplete-read and
+legacy-write/legacy-read. Distinct PIDs were 39428, 46020, 50038, 54748,
+58091 and 62210; retained process evidence confirms each terminated.
+The same complete installed bundle was verified across all six phases
+(manifest SHA-256
+`8735ddf218f1e91f59bc79aeca2ef13a72e9414bc8b7d37a657529365b6dc460`).
+The committed source verifier passed complete saved-pair equality, fresh
+native recalculation on reopen, the incomplete native error and preservation
+of the whole legacy record. Screenshots and arm64/x86_64 export audits were
+retained for every phase.
+
+[Artifact 11126140650](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36772414350/artifacts/11126140650)
+is 2,191,891 bytes, SHA-256
+`bee8670e08a358f156313ea0d8a8ee6509fda63812bcc2d6d5d0587dc1c6ce34`.
+The complete job-log SHA-256 is
+`e9cf2c5a7d5932fe23b00a277ec3b2c0dad74da895a5480a83ad6a3b92cfdab1`.
+Raw source/run/job metadata, archive and exact-source verification are
+retained under
+`.artifacts/pr68-ios-2026-09-30/ios-application-v2-stable-vm60-push-verified-36772414350-attempt-1/`.
+
+The same source's [PR run 36772419405 / job 110081861356](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36772419405/job/110081861356)
+failed on attempt 1 when the unchanged 900-second first-phase deadline
+expired during the initial Flutter/Xcode build. No completed installation,
+Runner launch, VM attachment or selected-test phase was established. The
+host's `event=launch` line records phase intent only. The retained
+`cleanup_incomplete` and denied process-group probes prevent claiming that
+deadline cleanup completed. This is a build-timeout diagnostic, not an
+executed application-test result. Artifact `11125443230` is 3,074,396 bytes,
+SHA-256 `2d0356ff3db8ab939de20c8bb5ecb364ebc5baf38256bf9a2bc31b6be2acbeec`;
+the failure, full log and diagnosis remain in the companion
+`ios-application-v2-stable-vm60-pr-36772419405-attempt-1/` directory.
+One retry of only the failed job was authorized without changing source,
+timeouts or assertions: attempt 2 / job `110096152290` is pending at this
+checkpoint. The successful push does not replace either PR attempt.
+
+Full P3 remains open. The companion PR six-phase gate is pending;
 iOS aggregate interruption recovery, broader stale/future/conflict journeys,
-physical-device checks, audible screen-reader and full-gesture acceptance.
+physical-device checks, audible screen-reader and full-gesture acceptance
+also remain open.
 P4C/P5 web-editor/version-bound report integration subsequently passed its
 [separate development checkpoint](../tax-report-model-2026-09-30/CHECKPOINT.md)
 in PR #77; that record lists its remaining application and accessibility gates.
