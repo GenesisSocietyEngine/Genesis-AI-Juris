@@ -86,7 +86,7 @@ if [[ "$#" -ne 5 || \
   -z "${1#--arch=}" || \
   "$2" != "--defined-only" || \
   "$3" != "--extern-only" || \
-  "$4" != "--just-symbol-name" || \
+  "$4" != "--export-symbols" || \
   "$5" != "$FAKE_NM_ARCHIVE" ]]; then
   echo "unexpected llvm-nm arguments" >&2
   exit 64
@@ -112,7 +112,7 @@ SYMBOLS
 }
 
 case "$FAKE_NM_CASE" in
-  universal_darwin)
+  thin_darwin|universal_darwin)
     print_darwin_exact
     ;;
   universal_duplicate_symbols)
@@ -128,9 +128,30 @@ case "$FAKE_NM_CASE" in
       print_exact
     fi
     ;;
-  universal_tax_export)
+  thin_tax_export|universal_tax_export)
     print_exact
     echo juris_calculate_tax_economics
+    ;;
+  thin_tax_export_with_colon)
+    print_darwin_exact
+    echo '_juris_calculate_tax_economics:unexpected'
+    ;;
+  thin_unexpected_member_heading)
+    # Export-list mode must suppress this observed Rust archive-member label.
+    # If a reader still emits it, do not hide unexpected juris_ output.
+    echo 'juris_scenario_validator-7db0ca6b678a5979.juris_scenario_validator.501413ffb016bfc6-cgu.08.rcgu.o:'
+    print_darwin_exact
+    ;;
+  thin_missing)
+    printf '%s\n' juris_mobile_bridge_abi_version juris_mobile_bridge_execute
+    ;;
+  thin_fourth)
+    print_darwin_exact
+    echo '_juris_mobile_bridge_unexpected'
+    ;;
+  thin_reader_warning)
+    print_exact
+    echo 'llvm-nm: warning: unexpected synthetic diagnostic' >&2
     ;;
   universal_fourth_arm64)
     print_exact
@@ -415,7 +436,7 @@ if FAKE_NM_CASE=thin_exact \
   FAKE_NM_ARGV_OK_LOG="$selector_argv_ok_log" \
   FAKE_NM_ARCHIVE="$archive" \
   "$fake_llvm_nm" \
-    --defined-only --extern-only --just-symbol-name "$archive" \
+    --defined-only --extern-only --export-symbols "$archive" \
     >/dev/null 2>&1; then
   echo "case reader_selector_contract: FAIL: missing selector was accepted" >&2
   exit 1
@@ -431,6 +452,13 @@ fi
 echo "case reader_selector_contract: PASS"
 
 run_case thin_exact pass 'x86_64' 0 '' 1 'x86_64' ''
+run_case thin_darwin pass 'x86_64' 0 '' 1 'x86_64' ''
+run_case thin_missing fail 'x86_64' 0 '' 1 'x86_64' 'x86_64'
+run_case thin_fourth fail 'x86_64' 0 '' 1 'x86_64' 'x86_64'
+run_case thin_tax_export fail 'x86_64' 0 '' 1 'x86_64' 'x86_64'
+run_case thin_tax_export_with_colon fail 'x86_64' 0 '' 1 'x86_64' 'x86_64'
+run_case thin_unexpected_member_heading fail 'x86_64' 0 '' 1 'x86_64' 'x86_64'
+run_case thin_reader_warning fail 'x86_64' 0 '' 1 'x86_64' 'x86_64'
 run_case universal_exact pass 'x86_64 arm64' 0 '' 2 'arm64 x86_64' ''
 run_case universal_darwin pass 'arm64 x86_64' 0 '' 2 'arm64 x86_64' ''
 run_case universal_duplicate_symbols pass 'x86_64 arm64' 0 '' 2 \
@@ -462,10 +490,10 @@ run_case universal_malformed_arm64 fail 'x86_64 arm64' 0 '' 1 'arm64' 'arm64'
 run_case inspector_diagnostic fail 'x86_64' 0 \
   'lipo: error: zero-status synthetic diagnostic' 0 '' ''
 
-echo 'fake verifier matrix: PASS (20/20)'
+echo 'fake verifier matrix: PASS (27/27)'
 
 if [[ "$#" -eq 0 ]]; then
-  echo 'real macOS universal fixture matrix: SKIP (non-Darwin fake-only run)'
+  echo 'real macOS thin/universal fixture matrix: SKIP (non-Darwin fake-only run)'
   exit 0
 fi
 
@@ -492,12 +520,16 @@ void juris_mobile_bridge_string_free(void) {}
 #ifdef ADD_FOURTH
 void juris_mobile_bridge_unexpected(void) {}
 #endif
+#ifdef ADD_TAX
+void juris_calculate_tax_economics(void) {}
+#endif
 FIXTURE_SOURCE
 
 build_thin_fixture() {
   local architecture="$1"
   local variant="$2"
-  local object_file="$real_directory/$architecture-$variant.o"
+  # Reproduce the member-name shape that broke the prepared thin Rust archive.
+  local object_file="$real_directory/juris_scenario_validator-7db0ca6b678a5979.juris_scenario_validator.501413ffb016bfc6-cgu.08.rcgu.o"
   local archive_file="$real_directory/$architecture-$variant.a"
 
   case "$variant" in
@@ -511,6 +543,10 @@ build_thin_fixture() {
       ;;
     missing)
       "$real_clang" -arch "$architecture" -fno-common -DOMIT_STRING_FREE=1 \
+        -c "$source_file" -o "$object_file"
+      ;;
+    tax)
+      "$real_clang" -arch "$architecture" -fno-common -DADD_TAX=1 \
         -c "$source_file" -o "$object_file"
       ;;
     *)
@@ -530,10 +566,12 @@ build_thin_fixture x86_64 exact
 build_thin_fixture arm64 exact
 build_thin_fixture arm64 fourth
 build_thin_fixture arm64 missing
+build_thin_fixture arm64 tax
 
 real_exact="$real_directory/universal-exact.a"
 real_fourth="$real_directory/universal-arm64-fourth.a"
 real_missing="$real_directory/universal-arm64-missing.a"
+real_tax="$real_directory/universal-arm64-tax.a"
 
 "$real_lipo" -create \
   "$real_directory/arm64-exact.a" \
@@ -547,12 +585,46 @@ real_missing="$real_directory/universal-arm64-missing.a"
   "$real_directory/arm64-missing.a" \
   "$real_directory/x86_64-exact.a" \
   -output "$real_missing"
+"$real_lipo" -create \
+  "$real_directory/arm64-tax.a" \
+  "$real_directory/x86_64-exact.a" \
+  -output "$real_tax"
+
+# Verify that these real fixtures exercise the old heading-bearing output,
+# then require LLVM's export-list mode to emit only the actual symbol names.
+# This covers both thin and universal archive labels with a juris_ member name.
+for fixture_archive in "$real_directory/arm64-exact.a" "$real_exact"; do
+  legacy_output="$real_directory/legacy-headings.stdout"
+  export_output="$real_directory/export-list.stdout"
+  expected_output="$real_directory/export-list.expected"
+  "$real_llvm_nm" --arch=arm64 --defined-only --extern-only \
+    --just-symbol-name "$fixture_archive" >"$legacy_output"
+  if ! grep -Eq \
+    'juris_scenario_validator-7db0ca6b678a5979[.]juris_scenario_validator[.]501413ffb016bfc6-cgu[.]08[.]rcgu[.]o[):]' \
+    "$legacy_output"; then
+    echo "real fixture did not reproduce the juris_ archive-member heading" >&2
+    cat "$legacy_output" >&2
+    exit 1
+  fi
+  "$real_llvm_nm" --arch=arm64 --defined-only --extern-only \
+    --export-symbols "$fixture_archive" >"$export_output"
+  printf '%s\n' \
+    _juris_mobile_bridge_abi_version \
+    _juris_mobile_bridge_execute \
+    _juris_mobile_bridge_string_free >"$expected_output"
+  if ! diff -u "$expected_output" "$export_output"; then
+    echo "real export-list mode did not suppress archive-member headings" >&2
+    exit 1
+  fi
+  echo "real archive heading suppression: PASS ($(basename "$fixture_archive"))"
+done
 
 run_real_fixture() {
   local fixture_name="$1"
   local fixture_archive="$2"
   local expected_result="$3"
   local failing_architecture="$4"
+  local expected_architectures="$5"
   local stdout_file="$real_directory/$fixture_name.stdout"
   local stderr_file="$real_directory/$fixture_name.stderr"
   local private_tmp="$real_directory/$fixture_name.verifier-tmp"
@@ -572,10 +644,12 @@ run_real_fixture() {
   if [[ "$expected_result" == "pass" ]]; then
     if [[ "$status" -ne 0 ]]; then
       report_case_failure "$fixture_name" \
-        "real universal exact fixture failed with status $status" \
+        "real exact fixture failed with status $status" \
         "$stdout_file" "$stderr_file"
     fi
-    for architecture in arm64 x86_64; do
+    local architecture_count=0
+    for architecture in $expected_architectures; do
+      architecture_count=$((architecture_count + 1))
       if ! grep -Fxq \
         "architecture $architecture exact export set: PASS" "$stdout_file"; then
         report_case_failure "$fixture_name" \
@@ -584,7 +658,7 @@ run_real_fixture() {
       fi
     done
     if [[ "$(grep -Fxc \
-      'all 2 architecture slices exact export set: PASS' "$stdout_file")" != "1" ]]; then
+      "all $architecture_count architecture slices exact export set: PASS" "$stdout_file")" != "1" ]]; then
       report_case_failure "$fixture_name" \
         "missing real all-slices PASS" "$stdout_file" "$stderr_file"
     fi
@@ -608,6 +682,12 @@ run_real_fixture() {
       "real asymmetric failure did not identify $failing_architecture" \
       "$stdout_file" "$stderr_file"
   fi
+  if [[ "$fixture_name" == *_tax ]] && \
+    ! grep -Fxq 'juris_calculate_tax_economics' "$stderr_file"; then
+    report_case_failure "$fixture_name" \
+      "real tax symbol was not identified as the forbidden export" \
+      "$stdout_file" "$stderr_file"
+  fi
   echo "--- real fixture $fixture_name verifier stdout ---"
   cat "$stdout_file"
   echo "--- real fixture $fixture_name expected rejection stderr ---"
@@ -616,8 +696,13 @@ run_real_fixture() {
   echo "real fixture $fixture_name: PASS (rejected with status $status)"
 }
 
-run_real_fixture universal_exact "$real_exact" pass ''
-run_real_fixture universal_arm64_fourth "$real_fourth" fail arm64
-run_real_fixture universal_arm64_missing "$real_missing" fail arm64
+run_real_fixture thin_exact "$real_directory/arm64-exact.a" pass '' 'arm64'
+run_real_fixture thin_fourth "$real_directory/arm64-fourth.a" fail arm64 'arm64'
+run_real_fixture thin_missing "$real_directory/arm64-missing.a" fail arm64 'arm64'
+run_real_fixture thin_tax "$real_directory/arm64-tax.a" fail arm64 'arm64'
+run_real_fixture universal_exact "$real_exact" pass '' 'arm64 x86_64'
+run_real_fixture universal_arm64_fourth "$real_fourth" fail arm64 'arm64 x86_64'
+run_real_fixture universal_arm64_missing "$real_missing" fail arm64 'arm64 x86_64'
+run_real_fixture universal_arm64_tax "$real_tax" fail arm64 'arm64 x86_64'
 
-echo 'real macOS universal fixture matrix: PASS (3/3)'
+echo 'real macOS thin/universal fixture matrix: PASS (8/8)'

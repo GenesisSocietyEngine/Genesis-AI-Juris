@@ -592,14 +592,18 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
             _field(
                 '${b['component_id']}-period',
                 _t('Period (blank = unknown)', 'Период (пусто = неизвестно)'),
-                b['period'] as String? ?? '',
-                (String v) => b['period'] = v.isEmpty ? null : v),
+                b['period'] as String? ?? '', (String v) {
+              b['period'] = v.isEmpty ? null : v;
+              b['confirmed'] = false;
+            }),
             _field(
                 '${b['component_id']}-jurisdiction',
                 _t('Jurisdiction (blank = unknown)',
                     'Юрисдикция (пусто = неизвестно)'),
-                b['jurisdiction'] as String? ?? '',
-                (String v) => b['jurisdiction'] = v.isEmpty ? null : v),
+                b['jurisdiction'] as String? ?? '', (String v) {
+              b['jurisdiction'] = v.isEmpty ? null : v;
+              b['confirmed'] = false;
+            }),
             _field(
                 '${b['component_id']}-owner',
                 _t('Confirmed by', 'Кем подтверждено'),
@@ -835,7 +839,12 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
                                             field,
                                             _label(field),
                                             _edit[field] as String,
-                                            (String v) => _edit[field] = v),
+                                            (String v) {
+                                          _edit[field] = v;
+                                          if (field == 'baseline_tax_rate_bps' ||
+                                              field == 'optimized_tax_rate_bps')
+                                            _artifact!['rates_confirmed'] = false;
+                                        }),
                                     if (_input['tax_base_mode'] ==
                                         'manual_override')
                                       for (final String field in [

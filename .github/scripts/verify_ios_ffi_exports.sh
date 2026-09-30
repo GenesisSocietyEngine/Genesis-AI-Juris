@@ -225,12 +225,16 @@ for architecture in "${architectures[@]}"; do
 
   echo "architecture $architecture export audit: START"
 
+  # Unlike --just-symbol-name, LLVM's export-list mode suppresses archive-member
+  # headings (including Rust object names beginning with juris_). Keep the
+  # architecture selector and filters explicit; never discard colon-bearing
+  # output or relax the namespace check to accommodate headings.
   nm_status=0
   if "$llvm_nm" \
     "--arch=$architecture" \
     --defined-only \
     --extern-only \
-    --just-symbol-name \
+    --export-symbols \
     "$archive" >"$raw" 2>"$diagnostics"; then
     nm_status=0
   else
