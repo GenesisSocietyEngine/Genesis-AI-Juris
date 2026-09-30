@@ -292,7 +292,7 @@ class SystemLogTests(unittest.TestCase):
 
 
 class PhaseLifecycleTests(unittest.TestCase):
-    def exercise(self, driver_mode="success", preexisting=False):
+    def exercise(self, driver_mode="success", preexisting=False, phase_name="write"):
         with tempfile.TemporaryDirectory() as temp:
             home = pathlib.Path(temp).resolve()
             evidence = home / "evidence"
@@ -304,7 +304,9 @@ class PhaseLifecycleTests(unittest.TestCase):
             installed = home / "Library/Developer/CoreSimulator/Devices" / device / "data/Containers/Bundle/Application/owned/Runner.app"
             installed.mkdir(parents=True)
             (installed / "Runner").write_bytes(b"one-compiled-source")
-            args = SimpleNamespace(phase="write", device=device, evidence=evidence, source="a" * 40, nonce="12-1")
+            args = SimpleNamespace(phase=phase_name, device=device, evidence=evidence, source="a" * 40, nonce="12-1")
+            if phase_name != "write":
+                (evidence / "write-input-bundle.json").write_bytes(phase.manifest(bundle))
             reader = Mock()
             reader.process.pid = 456
             reader.started_at = phase.utc_now().isoformat()
@@ -335,15 +337,17 @@ class PhaseLifecycleTests(unittest.TestCase):
                         return subprocess.CompletedProcess(command, 7, b"", b"install failed")
                     return native_command(command, **options)
                 driver_commands.append(command)
+                if command[:3] == ["flutter", "build", "ios"] and driver_mode == "failed-build":
+                    raise subprocess.CalledProcessError(2, command)
                 if command[:2] == ["flutter", "drive"]:
                     if driver_mode in ("failed", "failed-probe"):
                         raise subprocess.CalledProcessError(2, command)
                     if driver_mode != "missing":
-                        receipt = {"schema": "tax-mobile-application-acceptance-v2", "phase": "write",
-                                   "completed_phase": "write", "source_sha": args.source,
+                        receipt = {"schema": "tax-mobile-application-acceptance-v2", "phase": phase_name,
+                                   "completed_phase": phase_name, "source_sha": args.source,
                                    "run_nonce": args.nonce, "pid": 124 if driver_mode == "wrong-pid" else 123,
                                    "selected_test": phase.TEST}
-                        phase.write_json(evidence / "write.json", receipt)
+                        phase.write_json(evidence / f"{phase_name}.json", receipt)
                 return subprocess.CompletedProcess(command, 0)
 
             def failed_probe(*_args):
@@ -368,10 +372,10 @@ class PhaseLifecycleTests(unittest.TestCase):
                             phase.run(args)
                         absent.assert_not_called()
                         self.assertFalse(any(cmd[:3] == ["xcrun", "simctl", "terminate"] for cmd in commands))
-                        launch_file = evidence / "write-launch.json"
+                        launch_file = evidence / f"{phase_name}-launch.json"
                         if launch_file.exists():
                             self.assertFalse(json.loads(launch_file.read_text())["complete"])
-                        if not preexisting and driver_mode not in ("failed-launch", "failed-install"):
+                        if not preexisting and driver_mode not in ("failed-launch", "failed-install", "failed-build"):
                             live_probe.assert_called_once_with(args, evidence, 123, installed / "Runner")
                             reader.close.assert_called()
                             self.assertLess(lifecycle.index("live_probe"), lifecycle.index("reader_closed"))
@@ -388,24 +392,52 @@ class PhaseLifecycleTests(unittest.TestCase):
                             self.assertFalse(any(cmd[:3] == ["xcrun", "simctl", "launch"] for cmd in commands))
                             self.assertFalse(any(cmd[:2] == ["flutter", "drive"] for cmd in driver_commands))
                             self.assertFalse(json.loads((evidence / "write-install.json").read_text())["installation_completed"])
+                        if driver_mode == "failed-build":
+                            live_probe.assert_not_called()
+                            reader.close.assert_not_called()
+                            self.assertEqual(commands, [])
+                            self.assertEqual(len(driver_commands), 1)
+                            self.assertFalse((evidence / "write-install-start.json").exists())
                     else:
                         phase.run(args)
                         absent.assert_called_once_with(123)
-                        self.assertTrue(json.loads((evidence / "write-launch.json").read_text())["complete"])
+                        self.assertTrue(json.loads((evidence / f"{phase_name}-launch.json").read_text())["complete"])
                         log = (evidence / "process.log").read_text()
                         self.assertLess(log.index("driver_exit=0"), log.index("event=terminate"))
                         self.assertLess(log.index("event=terminate"), log.index("event=process_absent"))
-                        self.assertEqual(driver_commands[0][:7], ["flutter", "build", "ios", "--verbose", "--simulator", "--debug", "--no-pub"])
+                        builds = [command for command in driver_commands if command[:3] == ["flutter", "build", "ios"]]
+                        if phase_name == "write":
+                            self.assertEqual(builds, [["flutter", "build", "ios", "--verbose", "--simulator", "--debug", "--no-pub",
+                                                     "--target=" + phase.TARGET,
+                                                     "--dart-define=JURIS_ACCEPTANCE_SOURCE_SHA=" + args.source,
+                                                     "--dart-define=JURIS_ACCEPTANCE_RUN_NONCE=" + args.nonce,
+                                                     "-d", device]])
+                        else:
+                            self.assertEqual(builds, [])
+                        drives = [command for command in driver_commands if command[:2] == ["flutter", "drive"]]
+                        self.assertEqual(len(drives), 1)
                         for command in driver_commands:
                             self.assertIn("--target=" + phase.TARGET, command)
                             self.assertIn("--dart-define=JURIS_ACCEPTANCE_SOURCE_SHA=" + args.source, command)
                             self.assertIn("--dart-define=JURIS_ACCEPTANCE_RUN_NONCE=" + args.nonce, command)
-                        self.assertIn("--use-existing-app=" + URI, driver_commands[1])
+                            self.assertEqual(command.count("-d"), 1)
+                            self.assertEqual(command[command.index("-d") + 1], device)
+                        self.assertIn("--use-existing-app=" + URI, drives[0])
+                        self.assertEqual((evidence / f"{phase_name}-input-bundle.json").read_bytes(),
+                                         (evidence / "write-input-bundle.json").read_bytes())
             finally:
                 os.chdir(previous)
 
     def test_success_binds_receipt_and_actual_termination_order(self):
         self.exercise()
+
+    def test_later_phases_keep_the_built_bundle_without_another_build(self):
+        for phase_name in phase.PHASES[1:]:
+            with self.subTest(phase=phase_name):
+                self.exercise(phase_name=phase_name)
+
+    def test_failed_first_build_cannot_install_launch_or_drive(self):
+        self.exercise("failed-build")
 
     def test_failed_missing_or_wrong_pid_driver_never_completes(self):
         for mode in ("failed", "missing", "wrong-pid"):

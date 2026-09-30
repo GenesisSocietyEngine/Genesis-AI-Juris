@@ -462,7 +462,7 @@ def run(args):
                f"--dart-define=JURIS_ACCEPTANCE_RUN_NONCE={args.nonce}"]
     if args.phase == "write":
         subprocess.run(["flutter", "build", "ios", "--verbose", "--simulator", "--debug", "--no-pub",
-                        f"--target={TARGET}", *defines], check=True)
+                        f"--target={TARGET}", *defines, "-d", args.device], check=True)
     require(bundle.is_dir(), "Prebuilt application missing")
     built = manifest(bundle)
     (evidence / f"{args.phase}-input-bundle.json").write_bytes(built)
