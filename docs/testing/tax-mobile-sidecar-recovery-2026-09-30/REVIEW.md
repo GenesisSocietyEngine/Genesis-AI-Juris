@@ -45,7 +45,9 @@ The wizard's existing aggregate import now conditionally writes the sidecar gene
 
 ## Remaining acceptance
 
-Reconcile current canonical main and the PR #69 dependency; refresh exact-source checks and rebuild/retest native code after that reconciliation. Record the final source/run/artifact identities separately from these local dirty-tree receipts.
+The reviewed implementation was committed as `a191f2bae74430e48cabbfb5ea5fd0198fe4a9df`, then reconciled without conflicts with canonical main `bb49049a318059993b47e557770a517b2d0838d9` in integration commit `53cc03bc74d0aaf69447d333f63eb805df408a82`. After that integration, the mobile DLL was rebuilt and both real-native editor tests passed again (`.artifacts/sidecar-integrated-native-build.log`, `.artifacts/sidecar-integrated-native-editor-tests.log`); integrated DLL SHA-256 is `656bb5a3ed6f85f86dfd6cee056457d8ca71bf9510f1d8e7097bf3c7ae984989`. The generated web assets/source/corpus verification also passed under pinned Node 22.23.2 (`.artifacts/sidecar-integrated-web-assets.log`). This receipt update changes documentation only.
+
+The candidate is a dependent branch, not a main-branch acceptance claim. PR #69 and the candidate's own applicable gates must pass before ordinary reviewed integration. Record the final source/run/artifact identities separately from the earlier local dirty-tree receipts; the final source is recorded in the PR after this documentation commit.
 
 Controlled Android/iOS process termination at temporary-verification and old-primary-moved boundaries remains open, together with exact bytes/PIDs, recovery UI and fresh native recomputation where editable. Stopped-app constructed states are useful complementary evidence but are not controlled interruption proof. Spoken screen-reader, complete touch traversal, physical devices, power-loss durability, multiple Dart isolates and cooperating processes remain separate acceptance.
 
