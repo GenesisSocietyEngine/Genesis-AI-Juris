@@ -125,3 +125,18 @@ All 13 local collector regressions pass, including exact/foreign/ambiguous PID
 selection, changed-PID refusal, priority of app logs, shared deadline and native
 tool-error retention. Actual `sample`/socket collection on macOS remains pending;
 these tests establish selection and failure handling, not iOS application success.
+
+The independent PR application run at the same `962e710` source failed earlier:
+run `36747861519`, job `109998547879`, from 17:17:09 to 17:17:32Z. All six collector
+controls passed, but `test_hang_has_real_host_deadline` observed child exit 1
+instead of required 124. The assertion omitted the captured child output, so
+its cause cannot be recovered from this log. No Simulator, build, selected test
+or application phase ran; no artifact directory existed to upload. The complete
+retained log SHA-256 is
+`befeb7e98f5580ab2239176f6d94b8f7bbf84964c340208d4387457230cbcb73`.
+This is distinct from the push run's verified host timeout after app launch.
+
+The narrow follow-up adds captured stdout and stderr to every host-test status
+assertion. Expected statuses, time bounds, subprocess commands and production
+deadline behavior remain unchanged. It neither diagnoses nor fixes the unknown
+PR smoke-test exit, and a new hosted run must execute the same six controls.
