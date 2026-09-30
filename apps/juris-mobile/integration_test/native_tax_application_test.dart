@@ -8,6 +8,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:juris_mobile/app/juris_app.dart';
 import 'package:juris_mobile/data/native_scenario_bridge_client.dart';
 import 'package:juris_mobile/data/scenario_bridge_client.dart';
+import 'package:juris_mobile/data/studio_authoring_services.dart';
 import 'package:juris_mobile/data/studio_draft_store.dart';
 import 'package:juris_mobile/data/tax_artifact_store.dart';
 import 'package:juris_mobile/models/case_type_registry.dart';
@@ -31,8 +32,13 @@ void main() {
       (WidgetTester tester) async {
     final Directory support = await getApplicationSupportDirectory();
     final File proof = File('${support.path}/tax-application-acceptance.json');
-    final _ObservedWorkspaceStore workspaceStore = _ObservedWorkspaceStore();
-    final TaxArtifactStore taxStore = TaxArtifactStore();
+    late final _ObservedWorkspaceStore workspaceStore;
+    final StudioAuthoringServices authoringServices =
+        StudioAuthoringServices.applicationSupport(observeWorkspace: (store) {
+      workspaceStore = _ObservedWorkspaceStore(store);
+      return workspaceStore;
+    });
+    final TaxArtifactStore taxStore = authoringServices.taxArtifacts;
     final _ObservedNativeBridge bridge = _ObservedNativeBridge();
     Map<String, dynamic>? previous;
     if (phase == 'write') {
@@ -54,7 +60,8 @@ void main() {
     }
 
     await tester.pumpWidget(JurisApp.catalog(
-        scenarioBridgeClient: bridge, studioDraftStore: workspaceStore));
+        scenarioBridgeClient: bridge,
+        studioAuthoringServices: authoringServices));
     await _waitFor(
         tester, find.byKey(const ValueKey('product-navigation-menu')));
     await _tap(tester, find.byKey(const ValueKey('product-navigation-menu')));
@@ -214,9 +221,9 @@ Future<void> _save(WidgetTester tester) async {
   expect(tester.takeException(), isNull);
 }
 
-final class _ObservedWorkspaceStore implements StudioDraftStore {
-  final ApplicationSupportStudioDraftStore _store =
-      ApplicationSupportStudioDraftStore();
+final class _ObservedWorkspaceStore implements ConditionalStudioDraftStore {
+  _ObservedWorkspaceStore(this._store);
+  final ConditionalStudioDraftStore _store;
   final List<Future<void>> _writes = <Future<void>>[];
   Future<void> settleWrites() async {
     for (int index = 0; index < _writes.length; index++) {
@@ -226,6 +233,19 @@ final class _ObservedWorkspaceStore implements StudioDraftStore {
 
   @override
   Future<StudioWorkspace?> read() => _store.read();
+  @override
+  Future<StudioWorkspaceSnapshot> readSnapshot() => _store.readSnapshot();
+  @override
+  Future<StudioWorkspaceSnapshot> writeIfUnchanged(
+    StudioWorkspaceSnapshot expected,
+    StudioWorkspace workspace,
+  ) {
+    final Future<StudioWorkspaceSnapshot> operation =
+        _store.writeIfUnchanged(expected, workspace);
+    _writes.add(operation);
+    return operation;
+  }
+
   @override
   Future<void> write(StudioWorkspace workspace) {
     final Future<void> operation = _store.write(workspace);

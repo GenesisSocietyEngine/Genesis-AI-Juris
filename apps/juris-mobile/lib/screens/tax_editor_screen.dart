@@ -23,7 +23,10 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
   late final TaxArtifactStore _store = widget.store ?? TaxArtifactStore();
   Map<String, dynamic>? _artifact;
   Map<String, dynamic>? _prepared;
+  TaxArtifactSnapshot? _snapshot;
   String? _notice;
+  String? _recoveryError;
+  bool _saveConflict = false;
   bool _loading = true,
       _busy = false,
       _supported = false,
@@ -43,6 +46,26 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
   String get _caseId =>
       (widget.scenario['metadata'] as Map<String, dynamic>)['id'] as String;
   String _t(String en, String ru) => widget.locale == 'ru' ? ru : en;
+  Widget _storageFeedback() => Semantics(
+      key: _feedbackKey,
+      liveRegion: true,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (_recoveryError != null) ...[
+          Text(_t('Saved analysis is read-only. Existing files are preserved.',
+              'Сохранённый анализ доступен только для чтения. Файлы сохранены.')),
+          Text(_recoveryError!),
+        ],
+        if (_saveConflict)
+          Text(_t(
+              'Another saved generation changed. Your edits are retained. Export them or reopen the saved analysis before saving.',
+              'Сохранённая версия изменилась. Ваши правки сохранены в редакторе. Экспортируйте их или откройте сохранённый анализ.')),
+        TextButton(
+            key: const ValueKey('tax-reopen'),
+            onPressed: _busy ? null : _reopen,
+            child: Text(_saveConflict || _dirty
+                ? _t('Reopen saved analysis', 'Открыть сохранённый анализ')
+                : _t('Retry', 'Повторить'))),
+      ]));
   Map<String, dynamic> get _input =>
       (_artifact!['request'] as Map<String, dynamic>)['input']
           as Map<String, dynamic>;
@@ -50,6 +73,7 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
   List<dynamic> get _bindings => _artifact!['bindings'] as List<dynamic>;
   List<dynamic> get _benefits => _artifact!['benefits'] as List<dynamic>;
   bool get _known => _artifact != null && validTaxArtifact(_artifact!);
+  bool get _editable => _known && _supported && _recoveryError == null;
   bool get _currencyCanChange =>
       _artifact!['legacy'] == null &&
       _bindings.isEmpty &&
@@ -93,8 +117,25 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
         for (final String field in _numbers) field: '${input[field]}',
       };
   Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _artifact = null;
+      _snapshot = null;
+      _prepared = null;
+      _notice = null;
+      _recoveryError = null;
+      _saveConflict = false;
+      _dirty = false;
+      _validated = false;
+      _supported = false;
+    });
     try {
-      _artifact = await _store.read(_caseId);
+      final TaxArtifactSnapshot snapshot = await _store.readSnapshot(_caseId);
+      if (!mounted) return;
+      _snapshot = snapshot;
+      _artifact = snapshot.artifact;
+      _recoveryError = snapshot.readOnlyReason;
+      if (_recoveryError != null) return;
       _supported = widget.repository.isSupported();
       if (_supported) {
         _prepared = widget.repository
@@ -119,12 +160,40 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
         }
       }
     } on Object catch (error) {
-      _notice = error.toString();
+      _recoveryError = error.toString();
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
     if (!mounted) return;
-    if (_known && _supported && !_stale && _artifact!['calculation'] != null)
+    if (_editable && !_stale && _artifact!['calculation'] != null)
       _calculate(reopening: true);
-    if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _reopen() async {
+    if (_dirty) {
+      final bool? discard = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext c) => AlertDialog(
+                title: Text(_t('Reopen and discard your edits?',
+                    'Открыть сохранённый анализ и отменить ваши изменения?')),
+                content: Text(_t(
+                    'Export your edits first if you want to keep them.',
+                    'Сначала экспортируйте изменения, если хотите их сохранить.')),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(c, false),
+                      child: Text(_t('Keep editing', 'Продолжить'))),
+                  TextButton(
+                      onPressed: () => Navigator.pop(c, true),
+                      child:
+                          Text(_t('Reopen and discard', 'Открыть и отменить'))),
+                ],
+              ));
+      if (discard != true || !mounted) return;
+    }
+    if (!mounted) return;
+    _generation++;
+    await _load();
   }
 
   void _changed(VoidCallback change) {
@@ -258,6 +327,7 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
                   },
           ));
   Future<void> _save() async {
+    if (!_editable || _saveConflict || _snapshot == null) return;
     setState(() => _busy = true);
     try {
       final Map<String, dynamic> saving = _copy(_artifact!);
@@ -274,13 +344,31 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
       final dynamic cached = saving['calculation'];
       if (cached != null && cached['context']['revision'] != revision)
         saving['calculation'] = null;
-      await _store.write(_caseId, saving);
-      if (mounted) _artifact = saving;
+      final TaxArtifactSnapshot committed =
+          await _store.writeIfUnchanged(_snapshot!, saving);
+      if (mounted) {
+        _artifact = saving;
+        _snapshot = committed;
+      }
       if (mounted)
         setState(() {
           _dirty = false;
           _notice = _t('Saved on this device. Reopen Economics to continue.',
               'Сохранено на устройстве. Откройте «Экономика», чтобы продолжить.');
+        });
+    } on TaxStorageException catch (error) {
+      if (mounted)
+        setState(() {
+          if (error.code == 'tax_conflict') {
+            _saveConflict = true;
+            _notice = null;
+          } else if (error.code == 'tax_unsupported' ||
+              error.code == 'tax_recovery_required') {
+            _recoveryError = error.message;
+            _validated = false;
+          } else {
+            _notice = error.message;
+          }
         });
     } on Object catch (error) {
       if (mounted) setState(() => _notice = error.toString());
@@ -694,7 +782,7 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
           ]);
   @override
   Widget build(BuildContext context) {
-    final Map<String, dynamic>? calculation = _known && _supported && _validated
+    final Map<String, dynamic>? calculation = _editable && _validated
         ? _artifact!['calculation'] as Map<String, dynamic>?
         : null;
     return PopScope(
@@ -738,15 +826,15 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
                                   Text(_t(
                                       'Amounts are entered in currency units. 100 basis points = 1%. Drafts can be saved without a valid calculation.',
                                       'Суммы вводятся в единицах валюты. 100 базисных пунктов = 1%. Черновик можно сохранить без расчёта.')),
-                                  if (!_supported)
+                                  if (!_supported && _recoveryError == null)
                                     Text(_t(
                                         'This native library does not support Tax Economics v2. Saved data is preserved.',
                                         'Эта версия библиотеки не поддерживает расчёт v2. Сохранённые данные не изменены.')),
                                   if (_artifact != null && !_known)
                                     Text(_t(
-                                        'Newer saved format. Export it for recovery; editing is disabled.',
-                                        'Более новый формат. Экспортируйте для восстановления; редактирование отключено.')),
-                                  if (_known && _supported) ...[
+                                        'Unsupported saved format. Export it for recovery; editing is disabled.',
+                                        'Неподдерживаемый формат. Экспортируйте для восстановления; редактирование отключено.')),
+                                  if (_editable) ...[
                                     const SizedBox(height: 16),
                                     if (_stale)
                                       Text(_t(
@@ -918,7 +1006,9 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
                                     const SizedBox(height: 8),
                                     FilledButton.tonal(
                                         key: const ValueKey('tax-save'),
-                                        onPressed: _busy ? null : _save,
+                                        onPressed: _busy || _saveConflict
+                                            ? null
+                                            : _save,
                                         child: Text(_busy
                                             ? _t('Saving…', 'Сохранение…')
                                             : _t('Save analysis',
@@ -959,17 +1049,39 @@ final class _TaxEditorScreenState extends State<TaxEditorScreen> {
                                     Text(
                                         'Payback (months): ${(calculation['result'] as Map<String, dynamic>)['payback_months'] ?? _t('Unavailable', 'Недоступно')}'),
                                   ],
-                                  SizedBox(key: _feedbackKey, height: 1),
+                                  if (_saveConflict || _recoveryError != null)
+                                    _storageFeedback()
+                                  else
+                                    SizedBox(key: _feedbackKey, height: 1),
                                   if (_artifact != null)
                                     TextButton(
+                                        key: const ValueKey('tax-export'),
                                         onPressed: () async {
                                           try {
-                                            final String path =
-                                                await _store.export(_artifact!);
+                                            final TaxArtifactSnapshot?
+                                                original = !_known &&
+                                                        !_dirty &&
+                                                        _snapshot
+                                                                ?.readOnlyError !=
+                                                            null
+                                                    ? _snapshot
+                                                    : null;
+                                            final String path;
+                                            final String clipboard;
+                                            if (original != null) {
+                                              clipboard =
+                                                  original.originalJson!;
+                                              path = await _store
+                                                  .exportOriginal(original);
+                                            } else {
+                                              final Map<String, dynamic>
+                                                  exporting = _copy(_artifact!);
+                                              clipboard = jsonEncode(exporting);
+                                              path = await _store
+                                                  .export(exporting);
+                                            }
                                             await Clipboard.setData(
-                                                ClipboardData(
-                                                    text:
-                                                        jsonEncode(_artifact)));
+                                                ClipboardData(text: clipboard));
                                             if (mounted)
                                               setState(() => _notice = _t(
                                                       'Exported and copied: ',
