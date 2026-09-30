@@ -11,6 +11,7 @@ import { useNavigationController } from "./NavigationSession";
 import { registerStudioDeparture, studioDepartureFingerprint, type StudioSavedBaseline } from "./studio-departure";
 import { clearStudioEvidenceInput, emptyStudioEvidenceInput, hasStudioEvidenceInput, updateStudioEvidenceInput, type StudioEvidenceBuffers, type StudioEvidenceInput } from "./studio-evidence-buffer";
 import StudioWorkspaceTabs from "./StudioWorkspaceTabs";
+import StudioRecoveryView, { type StudioRecovery } from "./StudioRecoveryView";
 import StudioDecisionList from "./StudioDecisionList";
 import { graphOverviewScale } from "./graph-viewport";
 import CaseTemplates, { prepareCaseTemplate } from "./CaseTemplates";
@@ -27,7 +28,7 @@ import { initialMetrics } from "./runtime-constants";
 import { LatestRequestGate } from "./latest-request";
 import { useInterfaceLocale, useWorkspaceLocation } from "./use-interface-locale";
 import { workspaceSignInPath, workspaceDestination } from "./workspace-navigation";
-import { createStudioAuthContinuation, readStudioAuthContinuation, STUDIO_AUTH_CONTINUATION_KEY } from "./studio-auth-continuation";
+import { createStudioAuthContinuation, readStudioAuthContinuationState, writeStudioAuthContinuation, LEGACY_STUDIO_AUTH_CONTINUATION_KEY, STUDIO_AUTH_CONTINUATION_KEY } from "./studio-auth-continuation";
 import ReportErrorBoundary from "./ReportErrorBoundary";
 import { withLocalChunkRecovery } from "./stale-chunk-recovery";
 import { reportGenerationErrorMessage } from "./report-generation-error";
@@ -35,12 +36,15 @@ import { readStudioSaveResponse, savedStudioPath, verifiedStudioSaveReceipt } fr
 import { mayChooseImportedPrivacy } from "./studio-import-privacy";
 import { StudioSessionAuthority, shouldDiscardStudioDraft, type StudioReportAuthority } from "./studio-session-authority";
 import { pendingSignOutMessage, subscribeSessionBoundary } from "./session-boundary";
-import { deviceDraftEnvelope, LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, mayPersistReportReceiptOnDevice, mayPersistStudioDraftOnDevice, studioDeviceDraftKey, unwrapDeviceDraft } from "./studio-device-storage";
+import { LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, mayPersistReportReceiptOnDevice, mayPersistStudioDraftOnDevice, readStudioDeviceDraft, removeKnownStudioDeviceDrafts, writeStudioDeviceDraft } from "./studio-device-storage";
 import { addStudioLink, appendStudioHistory, applyStudioPromptIteration, deleteStudioLink, describeStudioPromptOperation, nextStudioLinkId, nextStudioNodeId, nextStudioNodePosition, planStudioPromptIteration, relinkStudioLink, type StudioPromptPlan } from "./studio-editing";
 import { applyValidatedAIStudioPlan, studioAIBaseFingerprint, toStudioAIContext } from "./studio-ai-plan";
 import { compileStudioDraft } from "./studio-compiler";
 import { STUDIO_DRAFT_SERIALIZED_LIMIT, studioJsonBytes } from "./studio-envelope";
 import { caseTypeReference } from "./case-type-reference";
+import { hasTaxAttachment } from "./tax-authoring";
+import { StudioTaxWriteBaseline, type StudioTaxWrite } from "./studio-tax-write-baseline";
+import { freezeStudioDraftSnapshot, readStudioAggregate } from "./studio-aggregate";
 import { STUDIO_NODE_MENU_PAGE_SIZE, studioNodeMenuOptions, studioNodeMenuPage } from "./studio-node-menu";
 import { STUDIO_PROMPT_CHARACTER_LIMIT } from "./studio-prompt-limit";
 import type { CanopyScenarioId } from "./canopy-fixture";
@@ -51,9 +55,7 @@ import { applyDealChangeToTaxEconomics, calculateTaxEconomics, convertRentalTaxB
 import { inferDealEconomicsFromText } from "./deal-economics";
 import type {
   DecisionOption,
-  CaseCoreV2,
   CaseTypeId,
-  CaseTypeReference,
   LocalText,
   MetricKey,
   Scenario,
@@ -217,23 +219,6 @@ type ServerPlaySession = {
   completedAt: string | null;
 };
 
-type CustomCaseFile = {
-  format: "genesis-juris-custom-case";
-  schemaVersion: 4;
-  exportedAt: string;
-  case: {
-    id: string;
-    version: string;
-    fingerprint: string;
-    parent: StudioDraft["parent"];
-    protection: StudioDraft["protection"];
-    coreSchemaVersion: 2;
-    caseType: CaseTypeReference;
-    visibility?: "restricted" | "private";
-  };
-  core: CaseCoreV2;
-  draft: StudioDraft;
-};
 
 const ui = {
   en: {
@@ -487,6 +472,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   const [studioOpenRevision, setStudioOpenRevision] = useState(0);
   const studioOperationPending = useRef(false);
   const studioSavedBaseline = useRef<StudioSavedBaseline | null>(null);
+  const studioTaxWriteBaseline = useRef(new StudioTaxWriteBaseline());
   const [validatedDraft, setValidatedDraft] = useState<StudioDraft>(initialBlankDraft);
   const [studioPrivate, setStudioPrivate] = useState(false);
   const [studioCustomCaseId, setStudioCustomCaseId] = useState<number | null>(null);
@@ -496,8 +482,10 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   const [studioCanDuplicate, setStudioCanDuplicate] = useState(true);
   const [studioCopyProtectionLocked, setStudioCopyProtectionLocked] = useState(false);
   const [studioStorageScope, setStudioStorageScope] = useState<string | null>(null);
+  const [studioRecovery, setStudioRecovery] = useState<StudioRecovery | null>(null);
   const [studioSessionAuthority] = useState(() => new StudioSessionAuthority());
   const studioSession = useSyncExternalStore(studioSessionAuthority.subscribe, studioSessionAuthority.getSnapshot, studioSessionAuthority.getSnapshot);
+  const recoveryVisible = studioRecovery !== null && studioRecovery.scope === studioSession.scope && (studioSession.phase === "ready" || studioRecovery.scope === null && studioSession.phase === "anonymous");
   const studioDiscardVersion = useRef(0);
   const activeProtectedCaseId = view === "play" && privatePlayOrigin ? privatePlayOrigin.customCaseId : studioCustomCaseId;
   const studioCaseAccessRef = useRef(activeProtectedCaseId);
@@ -587,6 +575,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         setSessionNotice("Access ended or changed. Reopen saved work through the signed-in account’s access checks. / Доступ завершён или изменён. Откройте сохранённую работу после проверки доступа аккаунта.");
       }
     }
+    if (currentStudioScopeRef.current !== studioSession.scope) { setStudioRecovery(null); studioTaxWriteBaseline.current.clear(); }
     currentStudioScopeRef.current = studioSession.scope;
     setStudioStorageScope(studioSession.scope);
     setStudioAIEntitlement(studioSession.phase === "ready"
@@ -659,17 +648,27 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     const id = url.searchParams.get("auth_continue");
     if (!id) return;
     // Resolve identity first, then consume the same-tab continuation once.
-    let pending: ReturnType<typeof readStudioAuthContinuation> = null;
+    let pending: Extract<ReturnType<typeof readStudioAuthContinuationState>, { status: "restored" }>["continuation"] | null = null;
     try {
-      const raw = window.sessionStorage.getItem(STUDIO_AUTH_CONTINUATION_KEY);
-      const envelope: unknown = raw ? JSON.parse(raw) : null;
-      if (studioAIEntitlement === "anonymous" && isRecord(envelope) && typeof envelope.scope === "string" && envelope.id === id && readStudioAuthContinuation(raw, id, envelope.scope)) {
+      const currentRaw = window.sessionStorage.getItem(STUDIO_AUTH_CONTINUATION_KEY);
+      const key = currentRaw === null ? LEGACY_STUDIO_AUTH_CONTINUATION_KEY : STUDIO_AUTH_CONTINUATION_KEY;
+      const raw = currentRaw === null ? window.sessionStorage.getItem(key) : currentRaw;
+      const result = readStudioAuthContinuationState(raw, id, studioStorageScope);
+      if (studioAIEntitlement === "anonymous" && result.status === "denied") {
         setSessionNotice(locale === "en" ? "Sign-in was not completed. Your temporary draft is retained for 15 minutes; sign in to the same account to restore it." : "Вход не завершён. Временный черновик хранится 15 минут; войдите в тот же аккаунт для восстановления.");
         return;
       }
-      pending = readStudioAuthContinuation(raw, id, studioStorageScope);
-      window.sessionStorage.removeItem(STUDIO_AUTH_CONTINUATION_KEY);
-    } catch { /* Storage-denied browsers keep the safe blank editor. */ }
+      if (result.status === "unsupported" || result.status === "corrupt") {
+        studioChangedBeforeRestoreRef.current = true;
+        setStudioRecovery({ scope: studioStorageScope, reason: result.reason, rawText: result.rawText, canExport: true, filename: "studio-sign-in-recovery.json" });
+        return;
+      }
+      if (result.status === "restored") { pending = result.continuation; window.sessionStorage.removeItem(key); }
+    } catch {
+      studioChangedBeforeRestoreRef.current = true;
+      setStudioRecovery({ scope: studioStorageScope, reason: "The sign-in draft could not be read. Retry after browser storage becomes available.", canExport: false, filename: "studio-sign-in-recovery.json" });
+      return;
+    }
     url.searchParams.delete("auth_continue");
     if (pending?.action) { url.searchParams.set("studio_step", "run_compare"); url.searchParams.set("resume_action", pending.action); }
     window.history.replaceState(window.history.state, "", url);
@@ -695,12 +694,14 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       try {
       if (studioChangedBeforeRestoreRef.current || new URLSearchParams(window.location.search).has("custom_case")) return;
       try {
-        const stored = studioStorageScope && window.localStorage.getItem(studioDeviceDraftKey(studioStorageScope));
-        if (stored && studioStorageScope) {
-          const candidate = unwrapDeviceDraft(JSON.parse(stored), studioStorageScope);
-          if (!candidate) throw new Error("Invalid device-draft envelope");
-          const restored = normalizeStudioDraft(candidate);
-          if (!mayPersistStudioDraftOnDevice({ canDuplicate: true, customCaseId: null, isPrivate: false, draft: restored })) throw new Error("Workspace or protected draft cannot be restored from device storage");
+        const stored = studioStorageScope ? readStudioDeviceDraft(window.localStorage, studioStorageScope) : { status: "empty" as const };
+        if (stored.status !== "empty" && stored.status !== "editable") {
+          studioChangedBeforeRestoreRef.current = true;
+          setStudioRecovery({ scope: studioStorageScope, reason: stored.reason, rawText: "rawText" in stored ? stored.rawText : undefined, canExport: "canExport" in stored && stored.canExport, filename: "studio-device-recovery.json" });
+          return;
+        }
+        if (stored.status === "editable" && studioStorageScope) {
+          const restored = stored.draft;
           studioSavedBaseline.current = { kind: "device", scope: studioStorageScope, customCaseId: null, fingerprint: studioDepartureFingerprint(restored) };
           const emptyTimeline = emptyStudioTimeline();
           studioChangedBeforeRestoreRef.current = true;
@@ -718,7 +719,11 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
           setStudioCopyProtectionLocked(restored.protection?.copyProtected === true && Boolean(restored.protection.seal));
           return;
         }
-      } catch { /* Invalid or unavailable device storage cannot replace a case. */ }
+      } catch {
+        studioChangedBeforeRestoreRef.current = true;
+        setStudioRecovery({ scope: studioStorageScope, reason: "Device storage could not be read. The retained document has not been replaced.", canExport: false, filename: "studio-device-recovery.json" });
+        return;
+      }
       if (!autoStartCanopy || starterCancelledRef.current || prompt.trim()) return;
       void import("./canopy-fixture").then(({ buildCanopyPackage }) => {
         if (cancelled || studioChangedBeforeRestoreRef.current || starterCancelledRef.current) return;
@@ -761,7 +766,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   useEffect(() => {
     if (!studioStorageScope) return;
     if (!mayPersistStudioDraftOnDevice({ canDuplicate: studioCanDuplicate, customCaseId: studioCustomCaseId, isPrivate: studioPrivate, draft })) {
-      window.localStorage.removeItem(studioDeviceDraftKey(studioStorageScope));
+      try { removeKnownStudioDeviceDrafts(window.localStorage, studioStorageScope); } catch { /* Failed cleanup cannot replace retained work. */ }
     }
   }, [draft, studioCanDuplicate, studioCustomCaseId, studioPrivate, studioStorageScope]);
 
@@ -877,6 +882,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   function replaceStudioDraft(next: StudioDraft) {
     if (hasStudioEvidenceInput(studioEvidenceBuffersRef.current) && !window.confirm(locale === "en" ? "Replace this case and discard its unadded working items? Cancel to return to Sources and evidence and add or copy the form text first." : "Заменить кейс и удалить его недобавленные рабочие элементы? Отмените действие, чтобы вернуться к источникам и добавить или скопировать текст формы.")) return false;
     clearStudioEvidenceBuffers();
+    studioTaxWriteBaseline.current.clear();
     setStudioOpenRevision((revision) => revision + 1);
     syncStudioDraft(next);
     syncStudioTimeline(emptyStudioTimeline());
@@ -908,7 +914,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     cleanUrl.searchParams.delete("custom_case"); cleanUrl.searchParams.delete("resume_action");
     window.history.replaceState(window.history.state, "", cleanUrl);
     restoredSavedCaseRef.current = null;
-    try { if (studioStorageScope) window.localStorage.removeItem(studioDeviceDraftKey(studioStorageScope)); } catch { /* Explicit replacement must still complete when device storage is unavailable. */ }
+    try { if (studioStorageScope) removeKnownStudioDeviceDrafts(window.localStorage, studioStorageScope); } catch { /* Explicit replacement must still complete when device storage is unavailable. */ }
     setStudioPrivate(false);
     setStudioCustomCaseId(null);
     setStudioCanManagePrivacy(true);
@@ -982,6 +988,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   }
   function rememberStudioWorkspaceSave(savedDraft: StudioDraft, customCaseId: number) {
     studioSavedBaseline.current = { kind: "workspace", scope: currentStudioScopeRef.current, customCaseId, fingerprint: studioDepartureFingerprint(savedDraft) };
+    studioTaxWriteBaseline.current.capture(savedDraft, currentStudioScopeRef.current);
   }
   function navigate(next: View, step?: GuidedStudioStep) {
     if (next !== "studio" && !mayLeaveStudio()) return;
@@ -1670,8 +1677,10 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       showSessionNotice(locale === "en" ? "Private, protected and workspace cases stay in the signed-in workspace and are never cached in shared browser storage." : "Приватные, защищённые и workspace-кейсы хранятся только в авторизованном workspace и не кэшируются в общем хранилище браузера.");
       return;
     }
-    const next = { ...draftRef.current, updatedAt: new Date().toISOString() }; syncStudioDraft(next);
-    window.localStorage.setItem(studioDeviceDraftKey(studioStorageScope), JSON.stringify(deviceDraftEnvelope(studioStorageScope, next)));
+    let next: StudioDraft;
+    try { next = writeStudioDeviceDraft(window.localStorage, studioStorageScope, { ...draftRef.current, updatedAt: new Date().toISOString() }); }
+    catch (error) { setSavedFlash(false); showSessionNotice(error instanceof Error ? error.message : "Device save failed. Your input remains in this tab."); return; }
+    syncStudioDraft(next);
     studioSavedBaseline.current = { kind: "device", scope: studioStorageScope, customCaseId: null, fingerprint: studioDepartureFingerprint(next) };
     setSavedFlash(true);
     window.setTimeout(() => setSavedFlash(false), 2200);
@@ -1686,7 +1695,11 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       return;
     }
     let normalized: StudioDraft;
-    try { normalized = normalizeStudioDraft(draft); } catch {
+    try {
+      const read = readStudioAggregate(JSON.stringify(draft), { kind: "draft" });
+      if (read.status !== "editable") throw new Error(read.reason);
+      normalized = read.draft;
+    } catch {
       showSessionNotice(locale === "en" ? "Resolve the Studio validation prompts before exporting." : "Перед экспортом устраните замечания Studio.");
       return;
     }
@@ -1704,30 +1717,14 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     try { current = await studioReportAuthority.verify(); }
     catch { showSessionNotice(locale === "en" ? "Export needs verified access. Sign in and refresh access." : "Для экспорта нужен подтверждённый доступ. Войдите и обновите доступ."); return; }
     const exportedAt = new Date().toISOString();
-    const exportedDraft = { ...normalized, updatedAt: exportedAt };
-    const resolvedCaseType = exportedDraft.caseType ?? caseTypeReference("general_advisory");
-    const { projectCaseCoreV2 } = await import("./case-core");
+    const { buildStudioCustomCaseExport } = await import("./studio-tax-export");
     if (!current()) return;
     try { const refreshed = await studioReportAuthority.verify(); if (!current() || !refreshed()) return; }
     catch { showSessionNotice(locale === "en" ? "Export needs verified access. Sign in and refresh access." : "Для экспорта нужен подтверждённый доступ. Войдите и обновите доступ."); return; }
-    const payload: CustomCaseFile = {
-      format: "genesis-juris-custom-case",
-      schemaVersion: 4,
-      exportedAt,
-      case: {
-        id: normalized.caseId,
-        version: normalized.version,
-        fingerprint: caseFingerprint(normalized),
-        parent: normalized.parent,
-        protection: normalized.protection,
-        coreSchemaVersion: 2,
-        caseType: resolvedCaseType,
-        visibility: studioPrivate ? "private" : "restricted",
-      },
-      core: projectCaseCoreV2(exportedDraft),
-      draft: exportedDraft,
-    };
-    const blob = new Blob([JSON.stringify(payload)], { type: "application/json" }); const url = URL.createObjectURL(blob);
+    let rawText: string;
+    try { rawText = buildStudioCustomCaseExport(normalized, { exportedAt, visibility: studioPrivate ? "private" : "restricted" }).rawText; }
+    catch (error) { showSessionNotice(error instanceof Error ? error.message : "This case could not be exported without changing its data."); return; }
+    const blob = new Blob([rawText], { type: "application/json" }); const url = URL.createObjectURL(blob);
     const link = document.createElement("a"); link.href = url;
     link.download = `${normalized.caseId}-v${normalized.version}.juris-case.json`;
     link.click(); URL.revokeObjectURL(url);
@@ -1737,12 +1734,39 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     const importGeneration = ++savedCaseRequestRef.current;
     const source = draftRef.current;
     const scope = currentStudioScopeRef.current;
-    const currentImport = () => importGeneration === savedCaseRequestRef.current && source === draftRef.current && scope === currentStudioScopeRef.current;
+    const location = new URL(window.location.href);
+    const currentImport = () => {
+      const current = new URL(window.location.href);
+      return importGeneration === savedCaseRequestRef.current && source === draftRef.current && scope === currentStudioScopeRef.current
+        && current.pathname === location.pathname && current.searchParams.get("view") === location.searchParams.get("view")
+        && current.searchParams.get("custom_case") === location.searchParams.get("custom_case");
+    };
     if (file.size > 1_000_000) { setSessionNotice(locale === "en" ? "The case file exceeds 1 MB. Export a smaller Studio JSON file, or shorten node details before retrying. Your current case is unchanged." : "Файл больше 1 МБ. Экспортируйте меньший JSON Studio или сократите описания узлов. Текущий кейс сохранён без изменений."); return; }
     const reader = new FileReader(); reader.onload = async () => {
       if (!currentImport()) return;
       try {
-        const parsed: unknown = JSON.parse(String(reader.result));
+        if (!(reader.result instanceof ArrayBuffer)) throw new Error("The case file could not be read as bytes");
+        const rawText = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(reader.result);
+        const { parsePreservedJson } = await import("./preserved-json");
+        let parsed: unknown;
+        try { parsed = parsePreservedJson(rawText); }
+        catch {
+          if (!currentImport()) return;
+          setSessionNotice("");
+          setStudioRecovery({ scope, reason: "The original case file contains invalid or ambiguous JSON. It is retained for recovery; your open case is unchanged.", rawText, canExport: false, filename: "studio-import-recovery.json" });
+          setView("studio"); return;
+        }
+        const { readStudioCustomCaseExport } = await import("./studio-tax-export");
+        const aggregate = isRecord(parsed) && parsed.format === "genesis-juris-custom-case"
+          ? readStudioCustomCaseExport(rawText) : readStudioAggregate(rawText, { kind: "draft" });
+        if (!currentImport()) return;
+        if (aggregate.status === "unsupported" || aggregate.status === "corrupt" || aggregate.status === "denied") {
+          // An unverified file cannot establish copy/export authority. Keep the
+          // exact original and current editor without reopening a downgraded draft.
+          setSessionNotice("");
+          setStudioRecovery({ scope, reason: aggregate.reason, rawText, canExport: false, filename: "studio-import-recovery.json" });
+          setView("studio"); return;
+        }
         let imported: StudioDraft;
         let newUnsealedRawDraft = false;
         let importedPrivate = false;
@@ -1750,21 +1774,21 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         let importedServerFingerprint: string | null = null;
         let importedServerPublicationFingerprint: string | null = null;
         let importedCanDuplicate = true;
-        if (isRecord(parsed) && parsed.format === "genesis-juris-custom-case" && (parsed.schemaVersion === 1 || parsed.schemaVersion === 2 || parsed.schemaVersion === 3 || parsed.schemaVersion === 4) && isRecord(parsed.case)) {
-          imported = normalizeStudioDraft(parsed.draft);
+        if (isRecord(parsed) && parsed.format === "genesis-juris-custom-case" && (parsed.schemaVersion === 1 || parsed.schemaVersion === 2 || parsed.schemaVersion === 3 || parsed.schemaVersion === 4 || parsed.schemaVersion === 5) && isRecord(parsed.case)) {
+          imported = aggregate.status === "editable" ? aggregate.draft : normalizeStudioDraft(parsed.draft);
           const currentFingerprint = caseFingerprint(imported);
           const legacyFingerprint = legacyCaseFingerprintV15(imported);
           if (parsed.case.id !== imported.caseId || parsed.case.version !== imported.version
             || (parsed.case.fingerprint !== currentFingerprint && parsed.case.fingerprint !== legacyFingerprint)) {
             throw new Error("Custom case identity or fingerprint mismatch");
           }
-          if (parsed.schemaVersion === 4) {
+          if (parsed.schemaVersion === 4 || parsed.schemaVersion === 5) {
             const { projectCaseCoreV2 } = await import("./case-core");
             const resolvedCaseType = imported.caseType ?? caseTypeReference("general_advisory");
             if (parsed.case.coreSchemaVersion !== 2 || canonicalFingerprint(parsed.case.caseType) !== canonicalFingerprint(resolvedCaseType)
               || canonicalFingerprint(parsed.core) !== canonicalFingerprint(projectCaseCoreV2(imported))) throw new Error("Case Core or case-type package mismatch");
           }
-          if (parsed.schemaVersion === 3 || parsed.schemaVersion === 4) {
+          if (parsed.schemaVersion === 3 || parsed.schemaVersion === 4 || parsed.schemaVersion === 5) {
             if (!imported.protection || !isRecord(parsed.case.protection) || parsed.case.protection.currentCode !== imported.protection.currentCode || parsed.case.protection.seal !== imported.protection.seal || parsed.case.protection.parentCode !== imported.protection.parentCode || parsed.case.protection.copyPolicy !== imported.protection.copyPolicy) throw new Error("Case protection metadata mismatch");
             const verificationResponse = await fetch("/api/case-protection/verify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ draft: imported }) });
             const verification = await readJsonResponse<{ valid?: boolean; canDuplicate?: boolean; customCaseId?: number | null; fingerprint?: string; publicationFingerprint?: string }>(verificationResponse);
@@ -1776,13 +1800,15 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
           } else if (imported.protection) throw new Error("Protected metadata requires a sealed v3 export envelope");
           importedPrivate = parsed.case.visibility === "private";
         } else {
-          imported = normalizeStudioDraft(parsed);
+          if (aggregate.status !== "editable") throw new Error("Unsupported raw draft");
+          imported = aggregate.draft;
           if (imported.protection) throw new Error("Protected cases require a sealed v3 export envelope");
           newUnsealedRawDraft = true;
         }
         if (!currentImport() || !mayLeaveStudio()) return;
         const restored = { ...imported, updatedAt: new Date().toISOString() };
         if (!replaceStudioDraft(restored)) return;
+        if (importedServerFingerprint) studioTaxWriteBaseline.current.capture(restored, scope, importedServerFingerprint);
         savedCaseRequestRef.current += 1;
         const importUrl = new URL(window.location.href);
         importUrl.searchParams.delete("custom_case");
@@ -1803,8 +1829,8 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         showSessionNotice(importedCanDuplicate ? (locale === "en" ? "Custom case loaded in the visual editor" : "Custom-кейс открыт в визуальном редакторе") : (locale === "en" ? "Protected case seal verified; opened for inspection only" : "Печать защищённого кейса проверена; открыт режим просмотра"));
       } catch { if (!currentImport()) return; setSessionNotice(locale === "en" ? "The file could not be imported. Use a Studio draft JSON or an unchanged GENESIS custom-case export. Protected exports require sign-in and access to the original case. Your current case is unchanged." : "Не удалось импортировать файл. Используйте JSON-черновик Studio или неизменённый экспорт custom-кейса GENESIS. Защищённый экспорт требует входа и доступа к исходному кейсу. Текущий кейс не изменён."); }
     };
-    reader.onerror = () => setSessionNotice(locale === "en" ? "The file could not be read. Download it again, then retry the import." : "Файл не читается. Скачайте его заново и повторите импорт.");
-    reader.readAsText(file);
+    reader.onerror = () => { if (currentImport()) setSessionNotice(locale === "en" ? "The file could not be read. Download it again, then retry the import." : "Файл не читается. Скачайте его заново и повторите импорт."); };
+    reader.readAsArrayBuffer(file);
   }
   async function openWorkspaceCustomCase(customCaseId: number, preserveStep = false) {
     const requestId = ++savedCaseRequestRef.current;
@@ -1821,8 +1847,18 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     setSavedCaseRestorePending(requestId);
     try {
       const response = await fetch(`/api/custom-cases?id=${customCaseId}`, { cache: "no-store", signal: AbortSignal.timeout(15_000) });
-      const payload = await readJsonResponse<{ customCase?: { id: number; isPrivate: boolean; canManagePrivacy: boolean; copyProtected: boolean; fingerprint: string; publicationFingerprint: string; access: "owner" | "admin" | "shared" }; draft?: unknown; error?: string }>(response);
+      const payload = await readJsonResponse<{ customCase?: { id: number; isPrivate: boolean; canManagePrivacy: boolean; copyProtected: boolean; fingerprint: string; publicationFingerprint: string; access: "owner" | "admin" | "shared" }; draft?: unknown; recovery?: { status: string; reason: string; rawText?: string; canExport: boolean }; error?: string }>(response);
       if (!requestIsCurrent()) return;
+      if (response.ok && payload?.customCase?.id === customCaseId && payload.recovery && ["unsupported", "corrupt"].includes(payload.recovery.status) && typeof payload.recovery.reason === "string") {
+        studioChangedBeforeRestoreRef.current = true;
+        setSessionNotice("");
+        setStudioRecovery({ scope: sourceScope, reason: payload.recovery.reason,
+          rawText: typeof payload.recovery.rawText === "string" ? payload.recovery.rawText : undefined,
+          canExport: payload.customCase.access === "owner" && payload.recovery.canExport === true,
+          filename: `studio-workspace-${customCaseId}-recovery.json` });
+        setView("studio");
+        return;
+      }
       if (!response.ok || !payload?.customCase || payload.customCase.id !== customCaseId || !payload.draft) {
         showSessionNotice(response.status === 401 ? (locale === "en" ? "Your session expired. Sign in from Account, then reopen the saved case. Your open draft is unchanged." : "Сессия истекла. Войдите через Аккаунт и повторно откройте кейс. Черновик не изменён.") : (locale === "en" ? "This saved case could not be opened. Check your account and access, then retry. Your open draft is unchanged." : "Не удалось открыть сохранённый кейс. Проверьте аккаунт и доступ. Черновик не изменён."));
         restoredSavedCaseRef.current = null;
@@ -1832,6 +1868,7 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       if ((caseFingerprint(restored) !== payload.customCase.fingerprint && legacyCaseFingerprintV15(restored) !== payload.customCase.fingerprint) || casePublicationFingerprint(restored) !== payload.customCase.publicationFingerprint) throw new Error("Saved case receipt mismatch");
       if (!replaceStudioDraft(restored)) { restoredSavedCaseRef.current = null; return; }
       studioSavedBaseline.current = { kind: "workspace", scope: sourceScope, customCaseId, fingerprint: studioDepartureFingerprint(restored) };
+      studioTaxWriteBaseline.current.capture(restored, sourceScope, payload.customCase.fingerprint);
       setStudioPrivate(payload.customCase.isPrivate === true);
       setStudioCustomCaseId(payload.customCase.id);
       setStudioCanManagePrivacy(payload.customCase.canManagePrivacy === true);
@@ -2021,10 +2058,12 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     navigate("studio", 1);
   }
   function purgeLocalStudioState() {
+    setStudioRecovery(null);
+    studioTaxWriteBaseline.current.clear();
     clearStudioEvidenceBuffers();
     studioSavedBaseline.current = null;
     studioChangedBeforeRestoreRef.current = true;
-    try { const scope = currentStudioScopeRef.current; if (scope) window.localStorage.removeItem(studioDeviceDraftKey(scope)); } catch { /* Memory state still clears when browser storage is restricted. */ }
+    try { const scope = currentStudioScopeRef.current; if (scope) removeKnownStudioDeviceDrafts(window.localStorage, scope); } catch { /* Memory state still clears when browser storage is restricted. */ }
     const clean = blankStudioDraft();
     const cleanTimeline = emptyStudioTimeline();
     draftRef.current = clean;
@@ -2086,7 +2125,9 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
         sessionSync={playSessionSync} exportSession={exportPlayedCase} replayCase={() => startScenario(activeScenario, { legacyTiming: legacyTimingMode, privateOrigin: privatePlayOrigin })}
         returnLibrary={() => navigate(playReturnView)} returnToStudio={playReturnView === "studio"} returnLabel={playReturnView === "demos" ? (locale === "en" ? "Demo cases" : "Демо-кейсы") : playReturnView === "help" ? text.help : playReturnView === "community" ? text.community : undefined} requestFeedback={(contextType, contextId) => setFeedbackTarget({ caseId: activeScenario.caseId, version: activeScenario.version, title: activeScenario.title[locale], source: "playable", fingerprint: activeScenario.fingerprint, contextType, contextId })}
       /></Suspense>}
-      {view === "studio" && <><div hidden={studioConcealed} inert={studioConcealed ? true : undefined}><StudioView evidenceBuffers={studioEvidenceBuffers} onEvidenceChange={changeStudioEvidenceInput} onEvidenceClear={clearStudioEvidenceType} onWorkspaceSaved={rememberStudioWorkspaceSave} onAuthDeparture={approved => approved ? navigation.approvePageDeparture() : navigation.cancelPageDeparture()} onOperationInterrupted={() => showSessionNotice(locale === "en" ? "A Studio operation was interrupted. Its result may still have been saved. Inspect the saved version before repeating the operation." : "Операция Studio прервана. Результат мог сохраниться. Проверьте сохранённую версию перед повтором.")} operationPending={studioOperationPending} key={studioOpenRevision} standalone={studioOnly} locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} packageRequiresPlayableRoute={packageRequiresPlayableRoute} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} applyCanonicalMarkdownDraft={applyCanonicalMarkdownDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} serverPublicationFingerprint={studioServerPublicationFingerprint} setServerPublicationFingerprint={setStudioServerPublicationFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate && studioReportAuthority.allowed} reportAuthority={studioReportAuthority} reportReceiptStorageScope={studioStorageScope} persistReportReceiptOnDevice={reportReceiptDeviceEligible} aiEntitlement={studioAIEntitlement} restorePending={(savedCaseRestorePending !== null && savedCaseRestorePending === savedCaseRequestRef.current) || studioAIEntitlement === "loading" || (studioAIEntitlement !== "unavailable" && !studioRestoreReady)} /></div></>}
+      {view === "studio" && !studioRecovery && <><div hidden={studioConcealed} inert={studioConcealed ? true : undefined}><StudioView evidenceBuffers={studioEvidenceBuffers} onEvidenceChange={changeStudioEvidenceInput} onEvidenceClear={clearStudioEvidenceType} onWorkspaceSaved={rememberStudioWorkspaceSave} prepareTaxWrite={studioTaxWriteBaseline.current.prepare} onDocumentRecovery={(reason, rawText, filename) => { setSessionNotice(""); setStudioRecovery({scope: currentStudioScopeRef.current, reason, rawText, filename, canExport: false}); }} onAuthDeparture={approved => approved ? navigation.approvePageDeparture() : navigation.cancelPageDeparture()} onOperationInterrupted={() => showSessionNotice(locale === "en" ? "A Studio operation was interrupted. Its result may still have been saved. Inspect the saved version before repeating the operation." : "Операция Studio прервана. Результат мог сохраниться. Проверьте сохранённую версию перед повтором.")} operationPending={studioOperationPending} key={studioOpenRevision} standalone={studioOnly} locale={locale} text={text} prompt={prompt} setPrompt={setPrompt} draft={draft} setDraft={updateStudioDraft} selectedNode={selectedNode} selectedNodeId={selectedNodeId} selectNode={setSelectedNodeId} checks={checks} packageRequiresPlayableRoute={packageRequiresPlayableRoute} generateDraft={generateDraft} applyPromptIteration={applyPromptIteration} applyReviewedAIPlan={applyReviewedAIPlan} applyCanonicalMarkdownDraft={applyCanonicalMarkdownDraft} saveDraft={saveDraft} savedFlash={savedFlash} exportDraft={exportDraft} importRef={importRef} importDraft={importDraft} createChildVersion={createChildVersion} updateNode={updateNode} recordVisualEdit={recordVisualEdit} addNode={addNode} addLink={addLink} relinkLink={relinkLink} deleteLink={deleteLink} deleteNode={deleteNode} moveNode={moveNode} resetDraft={resetStudioDraft} loadExample={loadExampleDraft} loadTaxTemplate={loadTaxTemplate} requestFeedback={() => setFeedbackTarget({ caseId: draft.caseId, version: draft.version, title: draft.title, source: "studio", fingerprint: caseFingerprint(draft), customCaseId: studioCustomCaseId, contextType: selectedNode ? "node" : "case", contextId: selectedNode?.id, privateCase: studioPrivate })} timeline={studioTimeline} undoDraft={() => travelStudioTimeline("undo")} redoDraft={() => travelStudioTimeline("redo")} restoreRevision={restoreStudioRevision} playDraft={playStudioDraft} isPrivate={studioPrivate} setPrivate={setStudioPrivate} customCaseId={studioCustomCaseId} setCustomCaseId={setStudioCustomCaseId} canManagePrivacy={studioCanManagePrivacy} setCanManagePrivacy={setStudioCanManagePrivacy} serverFingerprint={studioServerFingerprint} setServerFingerprint={setStudioServerFingerprint} serverPublicationFingerprint={studioServerPublicationFingerprint} setServerPublicationFingerprint={setStudioServerPublicationFingerprint} copyProtectionLocked={studioCopyProtectionLocked} setCopyProtectionLocked={setStudioCopyProtectionLocked} canDuplicate={studioCanDuplicate && studioReportAuthority.allowed} reportAuthority={studioReportAuthority} reportReceiptStorageScope={studioStorageScope} persistReportReceiptOnDevice={reportReceiptDeviceEligible} aiEntitlement={studioAIEntitlement} restorePending={(savedCaseRestorePending !== null && savedCaseRestorePending === savedCaseRequestRef.current) || studioAIEntitlement === "loading" || (studioAIEntitlement !== "unavailable" && !studioRestoreReady)} /></div></>}
+      {view === "studio" && studioRecovery && recoveryVisible && <StudioRecoveryView recovery={studioRecovery} locale={locale} onReturn={() => setStudioRecovery(null)} />}
+      {view === "studio" && studioRecovery && !recoveryVisible && <section className="studio-entry"><p role="status">{locale === "en" ? "Verify account access before opening the retained document." : "Подтвердите доступ аккаунта перед открытием сохранённого документа."}</p><a href="/account">{locale === "en" ? "Account" : "Аккаунт"}</a></section>}
       {((view === "studio" && studioConcealed) || (view === "play" && privatePlayConcealed)) && <section className="studio-entry"><h2>{locale === "en" ? "Verify access to this workspace" : "Подтвердите доступ к workspace"}</h2><p id="studio-access-status" role="status">{studioSession.signOutPending ? pendingSignOutMessage(locale) : locale === "en" ? "Private content is concealed. Sign in, then refresh access. Unsaved input stays in this tab while access is unconfirmed." : "Приватное содержимое скрыто. Войдите и обновите доступ. Пока доступ не подтверждён, несохранённый ввод остаётся в памяти этой вкладки."}</p><a href="/account">{locale === "en" ? "Account" : "Аккаунт"}</a><button type="button" disabled={studioSession.signOutPending} aria-describedby="studio-access-status" onClick={() => void studioSessionAuthority.refresh(true, activeProtectedCaseId)}>{locale === "en" ? "Refresh access" : "Обновить доступ"}</button></section>}
       {view === "community" && <Suspense fallback={<p className="page-width" role="status">{locale === "en" ? "Loading saved Studio drafts…" : "Загрузка сохранённых черновиков Studio…"}</p>}><CommunityView locale={locale} cases={catalogueRecords} openCustomCase={openWorkspaceCustomCase} refreshCatalogue={() => refreshCatalogue({ force: true })} clearDeviceDraft={purgeLocalStudioState} /></Suspense>}
       {view === "help" && <Suspense fallback={<p className="page-width" role="status">{locale === "en" ? "Loading Help…" : "Загрузка помощи…"}</p>}><HelpCenter locale={locale} onNavigate={navigate} /></Suspense>}
@@ -2249,6 +2290,8 @@ type StudioViewProps = {
   onEvidenceChange: (type: StudioNodeType, patch: Partial<StudioEvidenceInput>) => void;
   onEvidenceClear: (type: StudioNodeType) => void;
   onWorkspaceSaved?: (draft: StudioDraft, customCaseId: number) => void;
+  onDocumentRecovery: (reason: string, rawText: string, filename: string) => void;
+  prepareTaxWrite: (draft: StudioDraft, scope: string | null, serverFingerprint: string | null) => Promise<StudioTaxWrite>;
   onAuthDeparture?: (approved: boolean) => void;
   operationPending: React.RefObject<boolean>;
   onOperationInterrupted: () => void;
@@ -2293,7 +2336,7 @@ function computeStudioDerivations(source: StudioDraft): StudioDerivations {
   };
 }
 
-function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWorkspaceSaved, onAuthDeparture, operationPending, onOperationInterrupted, locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, packageRequiresPlayableRoute, generateDraft, applyPromptIteration, applyReviewedAIPlan, applyCanonicalMarkdownDraft, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadExample, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, serverPublicationFingerprint, setServerPublicationFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, reportAuthority, reportReceiptStorageScope, persistReportReceiptOnDevice, aiEntitlement, restorePending }: StudioViewProps) {
+function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWorkspaceSaved, prepareTaxWrite, onDocumentRecovery, onAuthDeparture, operationPending, onOperationInterrupted, locale, text, prompt, setPrompt, draft, setDraft, selectedNode, selectedNodeId, selectNode, checks, packageRequiresPlayableRoute, generateDraft, applyPromptIteration, applyReviewedAIPlan, applyCanonicalMarkdownDraft, saveDraft, savedFlash, exportDraft, importRef, importDraft, createChildVersion, updateNode, recordVisualEdit, addNode, addLink, relinkLink, deleteLink, deleteNode, moveNode, resetDraft, loadExample, loadTaxTemplate, requestFeedback, timeline, undoDraft, redoDraft, restoreRevision, playDraft, isPrivate, setPrivate, customCaseId, setCustomCaseId, canManagePrivacy, setCanManagePrivacy, serverFingerprint, setServerFingerprint, serverPublicationFingerprint, setServerPublicationFingerprint, copyProtectionLocked, setCopyProtectionLocked, canDuplicate, reportAuthority, reportReceiptStorageScope, persistReportReceiptOnDevice, aiEntitlement, restorePending }: StudioViewProps) {
   const [workspaceState, setWorkspaceState] = useState<"idle" | "saving" | "saved" | "submitted" | "conflict" | "auth_required" | "error">(customCaseId && serverFingerprint && serverPublicationFingerprint ? "saved" : "idle");
   const [workspaceSavedAt, setWorkspaceSavedAt] = useState<string | null>(null);
   const [linkSourceId, setLinkSourceId] = useState<string | null>(null);
@@ -2391,7 +2434,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     frame = requestAnimationFrame(focus);
     return () => { observer.disconnect(); cancelAnimationFrame(frame); };
   }, [actionTarget]);
-  const canonicalPrompt = prompt.includes("GENESIS-JURIS-CANONICAL-V1");
+  const canonicalPrompt = prompt.includes("GENESIS-JURIS-CANONICAL-");
   const promptPlan = useMemo<StudioPromptPlan>(() => canonicalPrompt
     ? { instruction: "", operations: [], diagnostics: [], canApply: false, contextOnly: false, planner: "deterministic" }
     : derivationsSettled
@@ -2424,7 +2467,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     }
     try {
       const pending = createStudioAuthContinuation({ draft, prompt, selectedNodeId, scope: reportReceiptStorageScope, customCaseId, isPrivate, canDuplicate, action });
-      window.sessionStorage.setItem(STUDIO_AUTH_CONTINUATION_KEY, JSON.stringify(pending));
+      writeStudioAuthContinuation(window.sessionStorage, pending);
       const url = new URL(window.location.href);
       url.searchParams.delete("custom_case");
       url.searchParams.set("auth_continue", pending.id);
@@ -2517,18 +2560,19 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     ...draft.editHistory.filter((entry) => entry.action === "prompt_submitted").map((entry) => entry.message),
   ].join("\n")), [draft.editHistory, draft.nodes, draft.premise]);
   const editableDealModel = draft.dealEconomics ?? inferredDealModel;
-  const taxModel = useMemo(() => editableDealModel
+  const taxAttached = hasTaxAttachment(draft);
+  const taxModel = useMemo(() => editableDealModel && !taxAttached
     ? prefillTaxEconomicsFromDeal(draft.taxEconomics, editableDealModel)
-    : draft.taxEconomics ?? defaultTaxEconomics(), [draft.taxEconomics, editableDealModel]);
-  const taxResult = useMemo(() => taxDraft ? calculateTaxEconomics(taxModel) : null, [taxDraft, taxModel]);
+    : draft.taxEconomics ?? defaultTaxEconomics(), [draft.taxEconomics, editableDealModel, taxAttached]);
+  const taxResult = useMemo(() => taxDraft && !taxAttached ? calculateTaxEconomics(taxModel) : null, [taxDraft, taxModel, taxAttached]);
   const taxBaseBreakdown = useMemo(() => {
-    if (!editableDealModel) return null;
+    if (!editableDealModel || taxAttached) return null;
     const source = rentalTaxBaseFromDeal(editableDealModel);
     if (!source) return null;
     if (source.currency === taxModel.currency) return source;
     const rate = taxModel.fx?.sourceCurrency === source.currency && taxModel.fx.targetCurrency === taxModel.currency ? taxModel.fx.rate : null;
     return rate ? convertRentalTaxBase(source, taxModel.currency, rate) : null;
-  }, [editableDealModel, taxModel.currency, taxModel.fx]);
+  }, [editableDealModel, taxModel.currency, taxModel.fx, taxAttached]);
   const syncEconomicPrompt = useCallback((nextDraft: StudioDraft) => {
     const request = ++economicPromptSyncRef.current;
     void import("./studio-economic-prompt").then(({ synchronizedEconomicPrompt }) => {
@@ -2670,11 +2714,11 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   }, [prompt]);
 
   useEffect(() => {
-    if (!taxDraft || JSON.stringify(draft.taxEconomics) === JSON.stringify(taxModel)) return;
+    if (taxAttached || !taxDraft || JSON.stringify(draft.taxEconomics) === JSON.stringify(taxModel)) return;
     const nextDraft = { ...draft, taxEconomics: taxModel };
     setDraft((current) => current === draft ? nextDraft : current);
     syncEconomicPrompt(nextDraft);
-  }, [draft, setDraft, syncEconomicPrompt, taxDraft, taxModel]);
+  }, [draft, setDraft, syncEconomicPrompt, taxDraft, taxModel, taxAttached]);
 
   useEffect(() => { aiInputKeyRef.current = aiInputKey; }, [aiInputKey]);
 
@@ -2709,16 +2753,31 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
       return;
     }
     if (canonicalPrompt) {
+      const sourceKey = aiInputKey;
+      const scope = reportReceiptStorageScope;
+      const current = () => saveMountedRef.current && aiInputKeyRef.current === sourceKey && saveContextRef.current.scope === scope;
       setAIState("analysing");
       setAIError("");
       setCanonicalCandidate(null);
       try {
+        const { readStudioCanonicalMarkdown } = await import("./studio-tax-export");
+        const read = await readStudioCanonicalMarkdown(prompt);
+        if (!current()) return;
+        if (read.status === "unsupported" || read.status === "corrupt") {
+          // Finish local verification before recovery unmounts this editor;
+          // any separate pending workspace save retains its interruption flag.
+          flushSync(() => setAIState("idle"));
+          onDocumentRecovery(read.reason, read.rawText, "studio-canonical-recovery.md");
+          return;
+        }
         const { parseCaseMarkdown } = await import("./case-markdown");
-        const candidate = await parseCaseMarkdown(instruction);
+        const candidate = await parseCaseMarkdown(prompt);
+        if (!current()) return;
         if (!candidate) throw new Error();
         setCanonicalCandidate(candidate);
         setAIState("idle");
       } catch {
+        if (!current()) return;
         setAIState("error");
         setAIError(locale === "en" ? "The canonical Markdown is incomplete or its fingerprint does not match." : "Канонический Markdown неполон либо его отпечаток не совпадает.");
       }
@@ -2946,7 +3005,8 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   }, [canDuplicate, deleteLink, deleteNode, displayMode, draft.links, draft.nodes, focusRelationStatus, graphPresentation, locale, selectedNodeId, selectedRuleLinkId, visibleStep]);
 
   async function shareDraft(action: "save" | "submit") {
-    const targetDraft = draft;
+    const draftAtStart = draft;
+    const targetDraft = freezeStudioDraftSnapshot(draftAtStart);
     const targetPrivate = isPrivate;
     const targetServerFingerprint = serverFingerprint;
     const targetServerPublicationFingerprint = serverPublicationFingerprint;
@@ -2958,12 +3018,25 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     const context = saveContextRef.current;
     const isCurrent = () => saveMountedRef.current && operation === saveOperationRef.current && saveContextRef.current.caseId === context.caseId && saveContextRef.current.version === context.version && saveContextRef.current.scope === context.scope;
     setWorkspaceState("saving"); setWorkspaceError("");
+    let taxWrite: StudioTaxWrite;
+    try { taxWrite = await prepareTaxWrite(targetDraft, context.scope, targetServerFingerprint); }
+    catch (error) {
+      if (!isCurrent()) return;
+      setWorkspaceState("error");
+      setWorkspaceError(error instanceof Error ? error.message : "The prior tax attachment could not be verified. Keep these edits and reopen the saved case before retrying.");
+      return;
+    }
+    if (!isCurrent()) return;
+    if (!taxWrite.current()) {
+      setWorkspaceState("error"); setWorkspaceError("The saved-case authority changed before this save. Your edits remain open; reopen the exact saved case before retrying.");
+      return;
+    }
     try {
       const childFromCurrent = Boolean(targetServerFingerprint && targetServerPublicationFingerprint && targetDraft.parent?.fingerprint === targetServerFingerprint && targetDraft.parent.version !== targetDraft.version);
       const concurrency = targetServerFingerprint && targetServerPublicationFingerprint
         ? childFromCurrent ? { baseFingerprint: targetServerFingerprint, basePublicationFingerprint: targetServerPublicationFingerprint }
           : { expectedFingerprint: targetServerFingerprint, expectedPublicationFingerprint: targetServerPublicationFingerprint } : {};
-      const response = await fetch("/api/submissions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, draft: targetDraft, isPrivate: targetPrivate, ...concurrency }) });
+      const response = await fetch("/api/submissions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, draft: targetDraft, isPrivate: targetPrivate, ...concurrency, taxAttachmentMutation: taxWrite.mutation }) });
       const body = await readStudioSaveResponse(response);
       if (!isCurrent()) return;
       if (response.status === 401) { setWorkspaceState("auth_required"); setWorkspaceError(locale === "en" ? "Your session expired. Your draft remains open. Sign in and retry this save." : "Сессия истекла. Черновик остаётся открытым. Войдите и повторите сохранение."); return; }
@@ -2979,7 +3052,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
       onWorkspaceSaved?.(saved.protection ? { ...targetDraft, protection: saved.protection } : targetDraft, saved.id);
       setCustomCaseId(saved.id); setPrivate(saved.isPrivate); setCanManagePrivacy(true); setServerFingerprint(saved.fingerprint); setServerPublicationFingerprint(saved.publicationFingerprint);
       if (saved.protection) {
-        setDraft(current => current === targetDraft ? { ...current, protection: saved.protection } : current);
+        setDraft(current => current === draftAtStart ? { ...current, protection: saved.protection } : current);
         setCopyProtectionLocked(saved.protection.copyProtected === true);
       }
       setWorkspaceSavedFingerprint(`${studioAIBaseFingerprint(targetDraft)}\u0000${saved.isPrivate ? "private" : "restricted"}`);
@@ -3064,6 +3137,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
     recordVisualEdit("case_updated", locale === "en" ? `Visual edit: changed case ${label}.` : `Визуальная правка: изменено поле кейса «${label}».`, before);
   }
   function applyTaxEconomicsChange(change: Partial<NonNullable<StudioDraft["taxEconomics"]>>, label: string) {
+    if (taxAttached) return;
     const before = draft;
     const nextDraft = { ...draft, taxEconomics: { ...taxModel, ...change } };
     setDraft(nextDraft);
@@ -3073,12 +3147,13 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
   function setDealEconomicsChange(change: Partial<NonNullable<StudioDraft["dealEconomics"]>>) {
     if (!editableDealModel) return;
     const nextDeal = { ...editableDealModel, ...(draft.dealEconomics ?? {}), ...change };
-    const nextTax = taxDraft ? applyDealChangeToTaxEconomics(taxModel, nextDeal, change) : draft.taxEconomics;
+    const nextTax = taxDraft && !taxAttached ? applyDealChangeToTaxEconomics(taxModel, nextDeal, change) : draft.taxEconomics;
     const nextDraft = { ...draft, dealEconomics: nextDeal, ...(nextTax ? { taxEconomics: nextTax } : {}) };
     setDraft(nextDraft);
     syncEconomicPrompt(nextDraft);
   }
   async function changeTaxEconomicsCurrency(targetCurrency: string) {
+    if (taxAttached) return { ok: false, message: locale === "en" ? "The retained tax analysis requires the shared Rust editor before currency changes." : "Для смены валюты сохранённого налогового анализа нужен редактор на общем движке Rust." };
     const sourceCurrency = taxModel.currency;
     if (targetCurrency === sourceCurrency) return { ok: true, message: "" };
     try {
@@ -3428,7 +3503,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
           classification: tax
             ? { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), domain: "tax", complianceOnly: true }
             : { ...(current.classification ?? { practiceArea: "General legal", difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), domain: "general", practiceArea: "General legal", taxTopics: [], purpose: "compliance_review" },
-          ...(tax ? { taxEconomics: current.taxEconomics ?? defaultTaxEconomics(current.dealEconomics?.currency ?? inferredDealModel?.currency ?? "EUR") } : { taxEconomics: undefined }),
+          ...(hasTaxAttachment(current) ? {} : tax ? { taxEconomics: current.taxEconomics ?? defaultTaxEconomics(current.dealEconomics?.currency ?? inferredDealModel?.currency ?? "EUR") } : { taxEconomics: undefined }),
         }));
       }}><option value="general">{locale === "en" ? "General legal" : "Общеправовой"}</option><option value="tax">{locale === "en" ? "Tax / cross-border structuring" : "Налоги / трансграничное структурирование"}</option></select></label>
       <label><span>{locale === "en" ? "Practice area" : "Область практики"}</span><select value={draft.classification?.practiceArea ?? "General legal"} onChange={(event) => applyCaseChange(locale === "en" ? "practice area" : "область практики", (current) => ({ ...current, classification: { ...(current.classification ?? { difficulty: "Intermediate", tags: [], taxTopics: [], complianceOnly: true }), practiceArea: event.target.value } }))}><option value="General legal">{locale === "en" ? "General legal" : "Общая юридическая практика"}</option><option value="International tax planning">{locale === "en" ? "International tax planning" : "Международное налоговое планирование"}</option><option value="Corporate tax">{locale === "en" ? "Corporate tax" : "Корпоративные налоги"}</option><option value="Transfer pricing">{locale === "en" ? "Transfer pricing" : "Трансфертное ценообразование"}</option><option value="Commercial disputes">{locale === "en" ? "Commercial disputes" : "Коммерческие споры"}</option><option value="AI regulation">{locale === "en" ? "AI regulation" : "Регулирование ИИ"}</option><option value="Privacy & cybersecurity">{locale === "en" ? "Privacy & cybersecurity" : "Приватность и кибербезопасность"}</option></select></label>
@@ -3454,6 +3529,7 @@ function StudioView({ evidenceBuffers, onEvidenceChange, onEvidenceClear, onWork
       <div className="parent-trace"><span>{text.parentCase}</span>{draft.parent ? <><b>{draft.parent.caseId}</b><code>v{draft.parent.version} · {draft.parent.fingerprint}</code></> : <em>{locale === "en" ? "Root case · no parent" : "Корневой кейс · родителя нет"}</em>}</div>
     </section> : <section className="studio-version-simple page-width" inert={!canDuplicate}><div><span>{locale === "en" ? "Current version" : "Текущая версия"}</span><b>v{draft.version}</b><small>{draft.parent ? (locale === "en" ? `Child version of v${draft.parent.version}` : `Дочерняя версия от v${draft.parent.version}`) : (locale === "en" ? "Original case" : "Исходный кейс")}</small></div><button className="secondary-cta" disabled={!canDuplicate} onClick={createChildVersion}><Icon name="plus"/>{text.childVersion}</button></section>}
     </details>
+    {taxAttached && <section className="page-width" role="status"><h2>{locale === "en" ? "Tax analysis retained" : "Налоговый анализ сохранён"}</h2><p>{locale === "en" ? "Your tax inputs and previous results are preserved. The editor for this document version is not yet available. Previous results remain historical." : "Налоговые данные и предыдущие результаты сохранены. Редактор для этой версии документа пока недоступен. Предыдущие результаты остаются историческими."}</p></section>}
     {(editableDealModel || (taxDraft && taxResult)) && <Suspense fallback={null}><StudioOutcomeParameters locale={locale} dealModel={editableDealModel} taxModel={taxModel} taxResult={taxDraft ? taxResult : null} taxBaseBreakdown={taxBaseBreakdown} ratePrompt={derivedPrompt} rateDraft={draft} disabled={!canDuplicate} beginFieldEdit={beginFieldEdit} commitDealField={commitDealEconomicsField} setDealModel={setDealEconomicsChange} changeRepaymentBasis={(repaymentBasis) => { const before=draft; setDealEconomicsChange({repaymentBasis}); recordVisualEdit("case_updated", locale === "en" ? "Visual edit: changed cash-flow repayment basis." : "Визуальная правка: изменён вид погашения cash-flow.", before); }} applyTaxChange={applyTaxEconomicsChange} changeTaxCurrency={changeTaxEconomicsCurrency}/></Suspense>}
     {(draft.dealEconomics || draft.nodes.some((node) => node.type === "cash_flow")) && <Suspense fallback={<section className="deal-outcome deal-outcome-empty page-width" role="status"><p>{locale === "en" ? "Calculating case cash flow…" : "Расчёт денежного потока…"}</p></section>}><DealOutcomePanel locale={locale} draft={draft}/></Suspense>}
     </>}

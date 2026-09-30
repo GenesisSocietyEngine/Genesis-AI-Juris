@@ -3,6 +3,7 @@ import { startReportDownload } from "./report-download";
 import { withLocalChunkRecovery } from "./stale-chunk-recovery";
 import { calculateDealEconomics } from "./deal-economics";
 import { calculateTaxEconomics } from "./tax-economics";
+import { hasTaxAttachment } from "./tax-authoring";
 import { buildReportGraphLayout, deriveReportGraphLayoutInput, reportGraphGovernedTextIssue, ReportGraphLayoutError, type ReportGraphLayoutModel } from "./report-graph-layout";
 import { buildReportGraphAppendix } from "./report-graph-pdf";
 import { canonicalFingerprint } from "./case-integrity";
@@ -499,6 +500,7 @@ function caseReportPresentationFingerprint(
 }
 
 function buildCaseReportModels(draft: StudioDraft, options: CaseReportOptions) {
+  if (hasTaxAttachment(draft)) throw new Error("Reports for the retained tax analysis require fresh shared Rust calculation and version-bound output. This report format is not yet available.");
   options = effectiveCaseReportOptions(options);
   const reportModel = buildCanonicalReportModel(draft, {
     profileId: options.profileId,

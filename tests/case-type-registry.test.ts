@@ -73,8 +73,10 @@ test("Case Core v2 is a deterministic, domain-neutral projection", () => {
 test("Studio exposes case types and exports the Case Core v2 package", () => {
   const app = readFileSync(new URL("../app/JurisApp.tsx", import.meta.url), "utf8");
   const selector = readFileSync(new URL("../app/StudioCaseTypeSelector.tsx", import.meta.url), "utf8");
-  assert.match(app, /schemaVersion: 4/);
-  assert.match(app, /core: projectCaseCoreV2\(exportedDraft\)/);
+  const exports = readFileSync(new URL("../app/studio-tax-export.ts", import.meta.url), "utf8");
+  assert.match(app, /buildStudioCustomCaseExport\(normalized/);
+  assert.match(exports, /schemaVersion: hasTaxAttachment\(draft\) \? 5 as const : 4 as const/);
+  assert.match(exports, /core: projectCaseCoreV2\(exportedDraft\)/);
   assert.match(app, /StudioCaseTypeSelector/);
   assert.match(selector, /role="radiogroup"/);
   assert.match(selector, /Pinned definition/);

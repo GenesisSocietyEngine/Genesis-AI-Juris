@@ -21,7 +21,7 @@ export function isSameOriginCredentialMutation(request: Request) {
   }
 }
 
-export async function readJsonObject(request: Request, maxBytes = 32_768): Promise<Record<string, unknown> | null> {
+export async function readJsonObject(request: Request, maxBytes = 32_768, parse: (raw: string) => unknown = JSON.parse): Promise<Record<string, unknown> | null> {
   const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
   if (!contentType.startsWith("application/json")) return null;
   const declaredLength = Number(request.headers.get("content-length"));
@@ -48,9 +48,9 @@ export async function readJsonObject(request: Request, maxBytes = 32_768): Promi
   const bytes = new Uint8Array(total);
   let offset = 0;
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
-  const raw = new TextDecoder().decode(bytes);
   try {
-    const value: unknown = JSON.parse(raw);
+    const raw = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    const value: unknown = parse(raw);
     return typeof value === "object" && value !== null && !Array.isArray(value)
       ? value as Record<string, unknown>
       : null;

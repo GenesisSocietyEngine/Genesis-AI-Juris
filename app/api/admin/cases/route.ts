@@ -1,13 +1,16 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { auditEvents, caseDrafts, cases, caseVersions, customCases, updates, users } from "../../../../db/schema";
 import { buildCaseProtection, requestedCopyProtection } from "../../../case-protection";
-import { casePublicationFingerprint, isTaxDraft, normalizeStudioDraft, studioStructuralIssues } from "../../../case-integrity";
+import { casePublicationFingerprint, isTaxDraft, studioStructuralIssues } from "../../../case-integrity";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 import { compilePublicationPlayable, normalizeTaxPublicationAttestation, type TaxPublicationAttestation } from "../../../publication-integrity";
 import { isSameOriginMutation, readJsonObject } from "../../../request-security";
 import { isPlatformAdmin } from "../../../server-authorization";
-import { CaseProtectionIntegrityError, getOrCreateCaseProtectionKey, resolveExactCaseArtifact } from "../../../server-case-protection";
+import { CaseProtectionIntegrityError, getOrCreateCaseProtectionKey, resolveExactCaseArtifact, type StoredCaseArtifact } from "../../../server-case-protection";
+import { freezeStudioDraftSnapshot, readStudioAggregate } from "../../../studio-aggregate";
+import { parsePreservedJson } from "../../../preserved-json";
+import { assertTaxAttachmentMutation } from "../../../tax-authoring";
 import { toPublicStudioDraft } from "../../../studio-editing";
 import { STUDIO_CASE_BODY_LIMIT } from "../../../studio-envelope";
 import type { CaseProtectionV1 } from "../../../types";
@@ -18,10 +21,14 @@ export async function POST(request: Request) {
   if (!isSameOriginMutation(request)) return Response.json({ error: "Cross-site mutation rejected." }, { status: 403 });
   const identity = await getChatGPTUser();
   if (!identity || !isPlatformAdmin(identity)) return Response.json({ error: "Administrator access is required." }, { status: 403 });
-  const payload = await readJsonObject(request, STUDIO_CASE_BODY_LIMIT);
+  const payload = await readJsonObject(request, STUDIO_CASE_BODY_LIMIT, parsePreservedJson);
   if (!payload) return Response.json({ error: "A valid publication manifest is required." }, { status: 400 });
   let draft;
-  try { draft = normalizeStudioDraft(payload.draft); } catch { return Response.json({ error: "The case payload failed structural validation." }, { status: 400 }); }
+  try {
+    const aggregate = readStudioAggregate(JSON.stringify(payload.draft), { kind: "draft" });
+    if (aggregate.status !== "editable") return Response.json({ error: aggregate.reason, code: "tax_attachment_preservation" }, { status: 409 });
+    draft = freezeStudioDraftSnapshot(aggregate.draft);
+  } catch { return Response.json({ error: "The case payload failed structural validation." }, { status: 400 }); }
   const structuralIssues = studioStructuralIssues(draft);
   if (structuralIssues.length) return Response.json({ error: "The case is not ready for publication.", issues: structuralIssues }, { status: 422 });
   const compilation = compilePublicationPlayable(draft, payload.playableScenario);
@@ -43,6 +50,7 @@ export async function POST(request: Request) {
   if (customCaseId !== null && (!Number.isInteger(customCaseId) || customCaseId <= 0)) return Response.json({ error: "A valid custom-case source is required." }, { status: 400 });
   let customSource: typeof customCases.$inferSelect | null = null;
   let customSourceDraftId: number | null = null;
+  let customSourcePayload: string | null = null;
   if (customCaseId === null) {
     const [hiddenSource] = await db.select({ id: customCases.id }).from(caseDrafts).innerJoin(customCases, eq(customCases.id, caseDrafts.customCaseId)).where(and(
       eq(caseDrafts.caseId, draft.caseId),
@@ -56,13 +64,14 @@ export async function POST(request: Request) {
     const [source] = await db.select().from(customCases).where(eq(customCases.id, customCaseId)).limit(1);
     if (!source || source.isPrivate) return Response.json({ error: "Custom case not found." }, { status: 404 });
     if (source.caseId !== draft.caseId || source.currentVersion !== draft.version || source.fingerprint !== studioFingerprint) return Response.json({ error: "The custom case changed. Reload its exact current version before promotion." }, { status: 409 });
-    const [sourceDraft] = await db.select({ id: caseDrafts.id, payload: caseDrafts.payload }).from(caseDrafts).where(and(eq(caseDrafts.customCaseId, source.id), eq(caseDrafts.version, draft.version), eq(caseDrafts.fingerprint, studioFingerprint))).limit(1);
+    const [sourceDraft] = await db.select({ id: caseDrafts.id, payload: sql<string>`cast(${caseDrafts.payload} as text)` }).from(caseDrafts).where(and(eq(caseDrafts.customCaseId, source.id), eq(caseDrafts.version, draft.version), eq(caseDrafts.fingerprint, studioFingerprint))).limit(1);
     if (!sourceDraft) return Response.json({ error: "The exact custom-case source version is unavailable." }, { status: 409 });
     if (storedPublicationFingerprint(sourceDraft.payload) !== publicationFingerprint) {
       return Response.json({ error: "The custom-case publication-safety binding changed. Reload its exact current version before promotion." }, { status: 409 });
     }
     customSource = source;
     customSourceDraftId = sourceDraft.id;
+    customSourcePayload = sourceDraft.payload;
   }
   let reviewEvidence: { submissionId: number; reviewerEmail: string; reviewedAt: string; publicationFingerprint: string } | null = null;
   if (reviewLevel !== "community_beta") {
@@ -73,7 +82,7 @@ export async function POST(request: Request) {
       reviewedAt: caseDrafts.reviewedAt,
       reviewerDisplayName: users.displayName,
       verifiedPractitioner: users.verifiedPractitioner,
-      payload: caseDrafts.payload,
+      payload: sql<string>`cast(${caseDrafts.payload} as text)`,
     }).from(caseDrafts).leftJoin(users, eq(users.email, caseDrafts.reviewerEmail)).where(and(
       eq(caseDrafts.caseId, draft.caseId),
       eq(caseDrafts.version, draft.version),
@@ -115,6 +124,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "A new version must descend from the currently published version of the same case." }, { status: 409 });
   }
   let protection: CaseProtectionV1;
+  const retainedSources: StoredCaseArtifact[] = [];
   try {
     const protectionKey = await getOrCreateCaseProtectionKey(db);
     const sourceArtifact = customSource ? await resolveExactCaseArtifact(db, {
@@ -126,6 +136,11 @@ export async function POST(request: Request) {
     if (customSource && !sourceArtifact) return Response.json({ error: "The exact protected custom-case source is unavailable." }, { status: 409 });
     const parentArtifact = draft.parent ? await resolveExactCaseArtifact(db, draft.parent, protectionKey) : null;
     if (draft.parent && !parentArtifact) return Response.json({ error: "Parent case lineage could not be verified." }, { status: 409 });
+    const before = sourceArtifact ?? parentArtifact;
+    if (before && !before.editable) return Response.json({ error: "The stored source requires recovery before publication.", code: "tax_attachment_preservation" }, { status: 409 });
+    await assertTaxAttachmentMutation({ before: before?.taxAnalysis, after: draft.taxAnalysis, precondition: payload.taxAttachmentMutation });
+    if (sourceArtifact) retainedSources.push(sourceArtifact);
+    if (parentArtifact) retainedSources.push(parentArtifact);
     const continuingProtectedLineage = Boolean(draft.parent && parentArtifact
       && draft.caseId === parentArtifact.caseId
       && (currentCase?.version === parentArtifact.version || parentArtifact.customCaseId === customSource?.id));
@@ -163,7 +178,12 @@ export async function POST(request: Request) {
     tags: classification.tags, centrallyManaged: true, updatedAt: now,
   }).onConflictDoUpdate({ target: cases.id, set: { currentVersion: draft.version, fingerprint, title: draft.title, jurisdiction: draft.jurisdiction, practiceArea: classification.practiceArea, sector: text(payload.sector, 120) || classification.practiceArea, difficulty: classification.difficulty, durationMinutes: boundedNumber(payload.durationMinutes, 10, 360, 45), status: "published", reviewLevel, authorName, reviewerName, legalAsOf: classification.legalAsOf || null, summary: draft.premisePublication === "author-reviewed" ? draft.premise.slice(0, 2_000) : "", tags: classification.tags, updatedAt: now } });
   const releaseInsert = db.insert(updates).values({ title: `${draft.title} · v${draft.version}`, body: text(payload.changeSummary, 2_000) || "A reviewed case version is now available in the central library.", kind: "case", caseId: draft.caseId, publishedAt: now });
-  const auditInsert = db.insert(auditEvents).values({ actorEmail: identity.email.toLowerCase(), eventType: "case_version_published", objectType: "case", objectId: draft.caseId, detail: { version: draft.version, sourceCustomCaseId: customSource?.id ?? null, playableFingerprint: fingerprint, studioFingerprint, publicationFingerprint, artifactBinding, reviewLevel, reviewSubmissionId: reviewEvidence?.submissionId ?? null, reviewerEmail: reviewEvidence?.reviewerEmail ?? null, taxSafetyAttestation } });
+  const sourceUnchanged = customSourceDraftId === null ? sql<boolean>`1 = 1` : sql<boolean>`EXISTS (SELECT 1 FROM ${caseDrafts} WHERE ${caseDrafts.id} = ${customSourceDraftId} AND cast(${caseDrafts.payload} as text) = ${customSourcePayload})`;
+  const retainedAuthority = and(sourceUnchanged, ...retainedSources.map(publicationArtifactGuard))!;
+  // A failed final source/privacy check yields NULL in a NOT NULL audit column,
+  // so D1 rolls back the entire publication batch, including version and release.
+  const publicationObject = sql<string>`case when ${retainedAuthority} then ${draft.caseId} else NULL end`;
+  const auditInsert = db.insert(auditEvents).values({ actorEmail: identity.email.toLowerCase(), eventType: "case_version_published", objectType: "case", objectId: publicationObject, detail: { version: draft.version, sourceCustomCaseId: customSource?.id ?? null, playableFingerprint: fingerprint, studioFingerprint, publicationFingerprint, artifactBinding, reviewLevel, reviewSubmissionId: reviewEvidence?.submissionId ?? null, reviewerEmail: reviewEvidence?.reviewerEmail ?? null, taxSafetyAttestation } });
   try {
     if (customSource && reviewEvidence) {
       const markPublished = db.update(caseDrafts).set({ status: "published", updatedAt: now }).where(and(eq(caseDrafts.id, reviewEvidence.submissionId), eq(caseDrafts.status, "accepted")));
@@ -188,10 +208,25 @@ export async function POST(request: Request) {
 
 function storedPublicationFingerprint(value: unknown) {
   try {
-    return casePublicationFingerprint(normalizeStudioDraft(value));
+    const aggregate = readStudioAggregate(typeof value === "string" ? value : JSON.stringify(value), { kind: "draft" });
+    return aggregate.status === "editable" ? casePublicationFingerprint(aggregate.draft) : null;
   } catch {
     return null;
   }
+}
+
+function publicationArtifactGuard(artifact: StoredCaseArtifact) {
+  if (artifact.source === "published") return sql<boolean>`EXISTS (
+    SELECT 1 FROM ${caseVersions} WHERE ${caseVersions.caseId} = ${artifact.caseId}
+      AND ${caseVersions.version} = ${artifact.version} AND ${caseVersions.publishedAt} IS NOT NULL
+      AND cast(${caseVersions.payload} as text) = ${artifact.payloadText}
+  )`;
+  return sql<boolean>`EXISTS (
+    SELECT 1 FROM ${caseDrafts} INNER JOIN ${customCases} ON ${customCases.id} = ${caseDrafts.customCaseId}
+    WHERE ${caseDrafts.customCaseId} = ${artifact.customCaseId} AND ${caseDrafts.caseId} = ${artifact.caseId}
+      AND ${caseDrafts.version} = ${artifact.version} AND ${caseDrafts.fingerprint} = ${artifact.studioFingerprint}
+      AND cast(${caseDrafts.payload} as text) = ${artifact.payloadText} AND ${customCases.isPrivate} = false
+  )`;
 }
 
 function text(value: unknown, max: number) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }

@@ -3,6 +3,7 @@ import { applyStudioPromptPlan, nextStudioLinkId, nextStudioNodeId, nextStudioNo
 import { compileStudioDraft } from "./studio-compiler";
 import { DEFAULT_DEAL_SCENARIO_PROBABILITIES, normalizeDealEconomics } from "./deal-economics";
 import { STUDIO_PROMPT_CHARACTER_LIMIT } from "./studio-prompt-limit";
+import { hasTaxAttachment } from "./tax-authoring";
 import type { MetricKey, StudioDraft, StudioLink, StudioNode, StudioNodeType } from "./types";
 
 const nodeTypes = new Set<StudioNodeType>([
@@ -151,7 +152,7 @@ export function toStudioAIContext(draft: StudioDraft) {
     role: draft.role,
     premise: draft.premise,
     classification: draft.classification,
-    taxEconomics: draft.taxEconomics,
+    taxEconomics: hasTaxAttachment(draft) ? undefined : draft.taxEconomics,
     dealEconomics: draft.dealEconomics,
     nodes: draft.nodes,
     links: draft.links,

@@ -199,7 +199,9 @@ test("server routes retain signing-key secrecy, exact lineage checks and copy-pr
 
   assert.match(customCases, /copyProtected/);
   assert.match(customCases, /json_extract/);
-  assert.match(customCases, /caseDrafts\.version} = \$\{customCases\.currentVersion/);
+  assert.match(customCases, /current_draft\.version = custom_cases\.current_version/);
+  assert.match(customCases, /current_draft\.custom_case_id = custom_cases\.id/);
+  assert.match(customCases, /current_draft\.fingerprint = custom_cases\.fingerprint/);
   assert.match(customCases, /Boolean\(record\.copyProtected\)/);
   assert.match(customCases, /casePublicationFingerprint\(storedDraft\)/);
   assert.match(customCases, /publication binding failed integrity verification/);

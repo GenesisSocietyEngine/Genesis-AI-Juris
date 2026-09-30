@@ -1,9 +1,25 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
-import { buildCaseMarkdown, CANONICAL_CASE_MARKER, parseCaseMarkdown } from "../app/case-markdown";
+import { buildCaseMarkdown, CANONICAL_CASE_MARKER, CaseMarkdownRecoveryError, parseCaseMarkdown } from "../app/case-markdown";
 import { caseMarkdownFilename, normalizeCaseMarkdownFilename } from "../app/case-markdown-filename";
 import { caseFingerprint, normalizeStudioDraft } from "../app/case-integrity";
 import type { StudioDraft } from "../app/types";
+import { STUDIO_CASE_BODY_LIMIT } from "../app/studio-envelope";
+
+function attachedDraft() {
+  const corpus = JSON.parse(readFileSync(new URL("./fixtures/tax-runtime/web-corpus.json", import.meta.url), "utf8")) as { cases: { name: string; response: string }[] };
+  const source = JSON.parse(readFileSync(new URL("./fixtures/tax-runtime/web-source.json", import.meta.url), "utf8"));
+  const request = JSON.parse(corpus.cases.find(entry => entry.name === "prepare")!.response).request;
+  const fields = "baseline_annual_tax_cost optimized_annual_tax_cost implementation_cost annual_maintenance_cost terminal_tax_or_unwind_cost annual_tax_base_override baseline_tax_rate_bps optimized_tax_rate_bps analysis_horizon_months annual_discount_rate_bps benefit_realization_bps".split(" ");
+  const draft = reviewedDraft();
+  draft.taxAnalysis = { format: "genesis-juris-tax-attachment", carrierVersion: 1, document: JSON.stringify({
+    schema: "web-tax-authoring-artifact-v1", source: source.descriptor, request,
+    edit: Object.fromEntries(fields.map(key => [key, key === "implementation_cost" ? "12." : ""])), bindings: [], benefits: [], required_component_ids: [], rates_confirmed: false,
+    legacy_documents: [' {"large":18446744073709551617,"decimal":1.2300e+0} \r\n'], previous_source_documents: [], cached_response: "POISON historical result",
+  }, null, "\t") + "\r\n" };
+  return draft;
+}
 
 function reviewedDraft(): StudioDraft {
   return normalizeStudioDraft({
@@ -85,4 +101,48 @@ test("Markdown export filenames are editable, safe and timestamped in local time
   assert.equal(normalizeCaseMarkdownFilename("Client Final / reviewed.md", "fallback.md"), "Client_Final_reviewed.md");
   assert.doesNotMatch(normalizeCaseMarkdownFilename("../../outside.md", "fallback.md"), /[\\/]/);
   assert.equal(normalizeCaseMarkdownFilename("   ", "fallback.md"), "fallback.md");
+});
+
+test("actual Markdown entry points retain incomplete tax data in v2 and suppress all legacy economics", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const draft = attachedDraft(), before = structuredClone(draft);
+    const pending = buildCaseMarkdown(draft, { status: "amended", language });
+    draft.taxAnalysis!.document = "mutated while compressing";
+    const built = await pending;
+    assert.match(built.markdown, /GENESIS-JURIS-CANONICAL-V2/);
+    assert.doesNotMatch(built.markdown, /GENESIS-JURIS-CANONICAL-V1|POISON|1,000,000|Purchase price|Цена покупки|Five units remain five/);
+    assert.match(built.markdown, language === "en" ? /Stored results are historical/ : /результаты являются историческими/);
+    assert.match(built.markdown, /Acquire five flats/);
+    const parsed = await parseCaseMarkdown(built.markdown);
+    assert.ok(parsed);
+    assert.equal(parsed.language, language); assert.equal(parsed.status, "amended");
+    assert.deepEqual(parsed.draft.taxAnalysis, before.taxAnalysis);
+    assert.deepEqual(parsed.draft.dealEconomics, before.dealEconomics, "legacy data is retained without being presented as current economics");
+    assert.deepEqual(parsed.draft.nodes, before.nodes);
+    assert.equal(parsed.draft.parent, null); assert.equal(parsed.draft.protection, undefined); assert.deepEqual(parsed.draft.editHistory, []);
+    assert.equal(caseFingerprint(parsed.draft), built.fingerprint);
+  }
+});
+
+test("future and malformed canonical files return exact recovery data without prompt fallback", async () => {
+  const built = await buildCaseMarkdown(attachedDraft(), { status: "amended", language: "en" });
+  for (const [text, status] of [
+    [built.markdown.replace("GENESIS-JURIS-CANONICAL-V2", "GENESIS-JURIS-CANONICAL-V99"), "unsupported"],
+    [built.markdown.replace(/payload:[^\n]+/, "payload:"), "corrupt"],
+    ['Original\r\n<!-- GENESIS-JURIS-CANONICAL-', "corrupt"],
+  ] as const) {
+    await assert.rejects(parseCaseMarkdown(text), error => error instanceof CaseMarkdownRecoveryError && error.rawText === text && error.status === status);
+  }
+  assert.equal(await parseCaseMarkdown("An ordinary new case prompt."), null);
+  const oversized = "Ж".repeat(STUDIO_CASE_BODY_LIMIT / 2 + 1);
+  await assert.rejects(parseCaseMarkdown(oversized), error => error instanceof CaseMarkdownRecoveryError && error.rawText === oversized && error.status === "unsupported");
+});
+
+test("the whole rendered Markdown respects the byte limit even when the draft and compressed marker fit", async () => {
+  const draft = reviewedDraft();
+  draft.nodes = Array.from({ length: 200 }, (_, index) => ({ id: `node-${index}`, type: "fact", title: "N".repeat(200), detail: "Z".repeat(3900), x: index, y: 0 }));
+  draft.links = Array.from({ length: 500 }, (_, index) => ({ id: `link-${index}`, from: `node-${Math.floor(index / 199)}`, to: `node-${index % 199 + 1}` })).filter(link => link.from !== link.to);
+  const normalized = normalizeStudioDraft(draft);
+  assert.ok(new TextEncoder().encode(JSON.stringify(normalized)).byteLength < 900_000);
+  await assert.rejects(buildCaseMarkdown(normalized, { status: "amended", language: "en" }), /complete Markdown document exceeds/);
 });

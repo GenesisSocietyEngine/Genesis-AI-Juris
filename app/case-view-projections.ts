@@ -1,4 +1,5 @@
 import { calculateTaxEconomics } from "./tax-economics";
+import { hasTaxAttachment } from "./tax-authoring";
 import type { CaseViewId } from "./case-type-registry";
 import type { StudioDraft, StudioLink, StudioNode } from "./types";
 
@@ -165,7 +166,9 @@ function timeline(draft: StudioDraft): CaseViewItem[] {
 
 function economics(draft: StudioDraft): CaseViewItem[] {
   const items: CaseViewItem[] = [];
-  if (draft.taxEconomics) {
+  if (hasTaxAttachment(draft)) {
+    items.push({ id: "tax-authoring", title: "Tax analysis retained", detail: "Tax editing and current results require the shared Rust editor. Stored results remain historical.", kind: "tax", relatedNodeIds: [], status: "attention" });
+  } else if (draft.taxEconomics) {
     const result = calculateTaxEconomics(draft.taxEconomics);
     items.push({
       id: "tax-economics",
