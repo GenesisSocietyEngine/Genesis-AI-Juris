@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juris_mobile/data/scenario_bridge_client.dart';
 import 'package:juris_mobile/data/tax_artifact_store.dart';
@@ -9,6 +10,103 @@ import 'package:juris_mobile/data/tax_authoring_repository.dart';
 import 'package:juris_mobile/screens/tax_editor_screen.dart';
 
 void main() {
+  for (final String locale in <String>['en', 'ru']) {
+    testWidgets('import format and actions fit enlarged text in $locale',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.runAsync(() async {
+        final Directory directory =
+            await Directory.systemTemp.createTemp('tax-import-large-text-');
+        addTearDown(() => directory.delete(recursive: true));
+        final _DialogBridge bridge = _DialogBridge();
+        await tester.pumpWidget(MaterialApp(
+          builder: (BuildContext context, Widget? child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: const TextScaler.linear(1.5)),
+              child: child!),
+          home: TaxEditorScreen(
+            scenario: const <String, dynamic>{
+              'metadata': <String, dynamic>{'id': 'case1'},
+              'facts': <dynamic>[]
+            },
+            repository: TaxAuthoringRepository(bridge),
+            locale: locale,
+            store: TaxArtifactStore(directoryProvider: () async => directory),
+          ),
+        ));
+        await _settleIo(tester);
+        final Finder open = find.text(locale == 'en'
+            ? 'Import analysis / legacy input'
+            : 'Импорт анализа / старых данных');
+        await tester.ensureVisible(open);
+        await tester.tap(open);
+        await tester.pumpAndSettle();
+        final Finder dialog = find.byType(AlertDialog);
+        final Finder selector = find.descendant(
+            of: dialog, matching: find.byType(DropdownButtonFormField<String>));
+        final Finder selected = find
+            .text(locale == 'en' ? 'Saved analysis (v1)' : 'Анализ (v1)')
+            .hitTestable();
+        final Rect box = tester.getRect(selector);
+        final Rect label = tester.getRect(selected);
+        expect(box.contains(label.topLeft), isTrue);
+        expect(
+            box.contains(label.bottomRight - const Offset(0.1, 0.1)), isTrue);
+        expect(tester.renderObject<RenderParagraph>(selected).didExceedMaxLines,
+            isFalse);
+        expect(tester.takeException(), isNull);
+        await tester.tap(selector);
+        await tester.pumpAndSettle();
+        await tester.tap(find
+            .text(locale == 'en'
+                ? 'Legacy rates / FX (v1)'
+                : 'Прежние ставки / FX (v1)')
+            .last);
+        await tester.pumpAndSettle();
+        final Finder legacyLabel = find
+            .text(locale == 'en'
+                ? 'Legacy rates / FX (v1)'
+                : 'Прежние ставки / FX (v1)')
+            .hitTestable();
+        final Rect legacyBounds = tester.getRect(legacyLabel);
+        final Rect selectedBounds = tester.getRect(selector);
+        expect(selectedBounds.contains(legacyBounds.topLeft), isTrue);
+        expect(
+            selectedBounds
+                .contains(legacyBounds.bottomRight - const Offset(0.1, 0.1)),
+            isTrue);
+        expect(
+            tester.renderObject<RenderParagraph>(legacyLabel).didExceedMaxLines,
+            isFalse);
+        final Finder field =
+            find.descendant(of: dialog, matching: find.byType(TextField));
+        final TextField input = tester.widget<TextField>(field);
+        expect(input.autocorrect, isFalse);
+        expect(input.enableSuggestions, isFalse);
+        const String original = '  {"benefitRealizationBps":10000}\n';
+        await tester.enterText(field, original);
+        tester.view.viewInsets = const FakeViewPadding(bottom: 250);
+        await tester.pumpAndSettle();
+        final Finder import = find.widgetWithText(
+            TextButton, locale == 'en' ? 'Import' : 'Импорт');
+        expect(import.hitTestable(), findsOneWidget);
+        expect(
+            find
+                .widgetWithText(
+                    TextButton, locale == 'en' ? 'Cancel' : 'Отмена')
+                .hitTestable(),
+            findsOneWidget);
+        await tester.tap(import);
+        await tester.pumpAndSettle();
+        expect(bridge.imports.single['schema'], 'web_rates_fx_v1');
+        expect(bridge.imports.single['original_json'], original);
+        expect(tester.takeException(), isNull);
+      });
+    });
+  }
+
   for (final String action in <String>[
     'Cancel',
     'system back',
@@ -60,7 +158,7 @@ void main() {
             of: dialog,
             matching: find.byType(DropdownButtonFormField<String>)));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('web_amounts_v1').last);
+        await tester.tap(find.text('Legacy amounts (v1)').last);
         await tester.pumpAndSettle();
         final Finder field =
             find.descendant(of: dialog, matching: find.byType(TextField));
