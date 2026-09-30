@@ -1,0 +1,322 @@
+{
+  "schema": "juris.web-tax-source-fixture.v1",
+  "draft": {
+    "caseId": "web_tax_contract",
+    "version": "1.2.3",
+    "caseType": {
+      "registry": "genesis-juris-case-types",
+      "id": "tax_planning",
+      "version": "1.0.0"
+    },
+    "parent": null,
+    "title": "Edited web source / Налоговый кейс",
+    "jurisdiction": "GB / synthetic",
+    "role": "Reviewer",
+    "premise": "Exact source text: café; café; 💶; \"quoted\".\nSecond line.",
+    "premisePublication": "author-reviewed",
+    "classification": {
+      "domain": "tax",
+      "practiceArea": "Tax planning",
+      "difficulty": "Intermediate",
+      "tags": [
+        "synthetic",
+        "contract"
+      ],
+      "taxTopics": [
+        "timing"
+      ],
+      "complianceOnly": true,
+      "purpose": "compliance_review",
+      "legalAsOf": "2026-09-30",
+      "sourceUrls": [
+        "https://example.invalid/source"
+      ]
+    },
+    "dealEconomics": {
+      "kind": "deal-economics-v1",
+      "currency": "EUR",
+      "purchasePrice": 250000,
+      "loanToValueBps": 6000,
+      "annualInterestRateBps": 400,
+      "termMonths": 120,
+      "repaymentBasis": "amortizing",
+      "grossAnnualIncome": 20000,
+      "annualOperatingCosts": 2000,
+      "oneOffStructureCost": 1000,
+      "annualStructureCost": 100,
+      "otherInitialCosts": null,
+      "targetAnnualReturnBps": 500,
+      "scenarioProbabilities": {
+        "interestOnlyBps": 0,
+        "favorableBps": 3000,
+        "baseBps": 5000,
+        "stressedBps": 2000
+      },
+      "assumptions": [
+        "Source economics are hashed, not recalculated by this adapter."
+      ]
+    },
+    "nodes": [
+      {
+        "id": "fact_z",
+        "type": "fact",
+        "title": "Income",
+        "detail": "Confirmed separately in the tax artifact.",
+        "x": 2,
+        "y": 3
+      },
+      {
+        "id": "fact_a",
+        "type": "fact",
+        "title": "Expense",
+        "detail": "A second source",
+        "x": 5,
+        "y": 4
+      },
+      {
+        "id": "evidence_1",
+        "type": "evidence",
+        "title": "Document",
+        "detail": "Synthetic evidence",
+        "x": 4,
+        "y": 5
+      },
+      {
+        "id": "decision_1",
+        "type": "decision",
+        "title": "Review",
+        "detail": "Rule data retained",
+        "x": 6,
+        "y": 6,
+        "runtime": {
+          "day": 2,
+          "time": "09:30",
+          "pressure": "review",
+          "budgetCostEur": 15,
+          "durationMinutes": 30
+        }
+      },
+      {
+        "id": "outcome_1",
+        "type": "outcome",
+        "title": "Finish",
+        "detail": "End",
+        "x": 7,
+        "y": 8,
+        "runtime": {
+          "terminalOutcome": "strong"
+        }
+      }
+    ],
+    "links": [
+      {
+        "id": "link_z",
+        "from": "fact_z",
+        "to": "decision_1",
+        "rule": {
+          "label": "Assess",
+          "detail": "Keep details",
+          "result": "Reviewed",
+          "cost": 2,
+          "minutes": 15,
+          "effects": {
+            "evidence": 1,
+            "position": 2
+          },
+          "guards": [
+            {
+              "metric": "evidence",
+              "comparison": "gte",
+              "value": 0
+            }
+          ],
+          "repeatability": "limited",
+          "maxUses": 2
+        }
+      },
+      {
+        "id": "link_a",
+        "from": "decision_1",
+        "to": "outcome_1"
+      }
+    ],
+    "editHistory": [],
+    "updatedAt": "2026-09-30T00:00:00.000Z"
+  },
+  "projection": {
+    "format": "genesis-juris-web-tax-source",
+    "schemaVersion": 1,
+    "source": {
+      "caseId": "web_tax_contract",
+      "version": "1.2.3",
+      "caseType": {
+        "registry": "genesis-juris-case-types",
+        "id": "tax_planning",
+        "version": "1.0.0"
+      },
+      "parent": null,
+      "title": "Edited web source / Налоговый кейс",
+      "jurisdiction": "GB / synthetic",
+      "role": "Reviewer",
+      "premise": "Exact source text: café; café; 💶; \"quoted\".\nSecond line.",
+      "premisePublication": "author-reviewed",
+      "classification": {
+        "domain": "tax",
+        "practiceArea": "Tax planning",
+        "difficulty": "Intermediate",
+        "tags": [
+          "synthetic",
+          "contract"
+        ],
+        "taxTopics": [
+          "timing"
+        ],
+        "complianceOnly": true,
+        "purpose": "compliance_review",
+        "legalAsOf": "2026-09-30",
+        "sourceUrls": [
+          "https://example.invalid/source"
+        ]
+      },
+      "dealEconomics": {
+        "kind": "deal-economics-v1",
+        "currency": "EUR",
+        "purchasePrice": 250000,
+        "loanToValueBps": 6000,
+        "annualInterestRateBps": 400,
+        "termMonths": 120,
+        "repaymentBasis": "amortizing",
+        "grossAnnualIncome": 20000,
+        "annualOperatingCosts": 2000,
+        "oneOffStructureCost": 1000,
+        "annualStructureCost": 100,
+        "otherInitialCosts": null,
+        "targetAnnualReturnBps": 500,
+        "scenarioProbabilities": {
+          "interestOnlyBps": 0,
+          "favorableBps": 3000,
+          "baseBps": 5000,
+          "stressedBps": 2000
+        },
+        "assumptions": [
+          "Source economics are hashed, not recalculated by this adapter."
+        ]
+      },
+      "nodes": [
+        {
+          "id": "fact_z",
+          "type": "fact",
+          "title": "Income",
+          "detail": "Confirmed separately in the tax artifact.",
+          "x": 2,
+          "y": 3
+        },
+        {
+          "id": "fact_a",
+          "type": "fact",
+          "title": "Expense",
+          "detail": "A second source",
+          "x": 5,
+          "y": 4
+        },
+        {
+          "id": "evidence_1",
+          "type": "evidence",
+          "title": "Document",
+          "detail": "Synthetic evidence",
+          "x": 4,
+          "y": 5
+        },
+        {
+          "id": "decision_1",
+          "type": "decision",
+          "title": "Review",
+          "detail": "Rule data retained",
+          "x": 6,
+          "y": 6,
+          "runtime": {
+            "day": 2,
+            "time": "09:30",
+            "pressure": "review",
+            "budgetCostEur": 15,
+            "durationMinutes": 30
+          }
+        },
+        {
+          "id": "outcome_1",
+          "type": "outcome",
+          "title": "Finish",
+          "detail": "End",
+          "x": 7,
+          "y": 8,
+          "runtime": {
+            "terminalOutcome": "strong"
+          }
+        }
+      ],
+      "links": [
+        {
+          "id": "link_z",
+          "from": "fact_z",
+          "to": "decision_1",
+          "rule": {
+            "label": "Assess",
+            "detail": "Keep details",
+            "result": "Reviewed",
+            "cost": 2,
+            "minutes": 15,
+            "effects": {
+              "evidence": 1,
+              "position": 2
+            },
+            "guards": [
+              {
+                "metric": "evidence",
+                "comparison": "gte",
+                "value": 0
+              }
+            ],
+            "repeatability": "limited",
+            "maxUses": 2
+          }
+        },
+        {
+          "id": "link_a",
+          "from": "decision_1",
+          "to": "outcome_1"
+        }
+      ]
+    }
+  },
+  "canonicalJson": "{\"format\":\"genesis-juris-web-tax-source\",\"schemaVersion\":1,\"source\":{\"caseId\":\"web_tax_contract\",\"caseType\":{\"id\":\"tax_planning\",\"registry\":\"genesis-juris-case-types\",\"version\":\"1.0.0\"},\"classification\":{\"complianceOnly\":true,\"difficulty\":\"Intermediate\",\"domain\":\"tax\",\"legalAsOf\":\"2026-09-30\",\"practiceArea\":\"Tax planning\",\"purpose\":\"compliance_review\",\"sourceUrls\":[\"https://example.invalid/source\"],\"tags\":[\"synthetic\",\"contract\"],\"taxTopics\":[\"timing\"]},\"dealEconomics\":{\"annualInterestRateBps\":400,\"annualOperatingCosts\":2000,\"annualStructureCost\":100,\"assumptions\":[\"Source economics are hashed, not recalculated by this adapter.\"],\"currency\":\"EUR\",\"grossAnnualIncome\":20000,\"kind\":\"deal-economics-v1\",\"loanToValueBps\":6000,\"oneOffStructureCost\":1000,\"otherInitialCosts\":null,\"purchasePrice\":250000,\"repaymentBasis\":\"amortizing\",\"scenarioProbabilities\":{\"baseBps\":5000,\"favorableBps\":3000,\"interestOnlyBps\":0,\"stressedBps\":2000},\"targetAnnualReturnBps\":500,\"termMonths\":120},\"jurisdiction\":\"GB / synthetic\",\"links\":[{\"from\":\"fact_z\",\"id\":\"link_z\",\"rule\":{\"cost\":2,\"detail\":\"Keep details\",\"effects\":{\"evidence\":1,\"position\":2},\"guards\":[{\"comparison\":\"gte\",\"metric\":\"evidence\",\"value\":0}],\"label\":\"Assess\",\"maxUses\":2,\"minutes\":15,\"repeatability\":\"limited\",\"result\":\"Reviewed\"},\"to\":\"decision_1\"},{\"from\":\"decision_1\",\"id\":\"link_a\",\"to\":\"outcome_1\"}],\"nodes\":[{\"detail\":\"Confirmed separately in the tax artifact.\",\"id\":\"fact_z\",\"title\":\"Income\",\"type\":\"fact\",\"x\":2,\"y\":3},{\"detail\":\"A second source\",\"id\":\"fact_a\",\"title\":\"Expense\",\"type\":\"fact\",\"x\":5,\"y\":4},{\"detail\":\"Synthetic evidence\",\"id\":\"evidence_1\",\"title\":\"Document\",\"type\":\"evidence\",\"x\":4,\"y\":5},{\"detail\":\"Rule data retained\",\"id\":\"decision_1\",\"runtime\":{\"budgetCostEur\":15,\"day\":2,\"durationMinutes\":30,\"pressure\":\"review\",\"time\":\"09:30\"},\"title\":\"Review\",\"type\":\"decision\",\"x\":6,\"y\":6},{\"detail\":\"End\",\"id\":\"outcome_1\",\"runtime\":{\"terminalOutcome\":\"strong\"},\"title\":\"Finish\",\"type\":\"outcome\",\"x\":7,\"y\":8}],\"parent\":null,\"premise\":\"Exact source text: café; café; 💶; \\\"quoted\\\".\\nSecond line.\",\"premisePublication\":\"author-reviewed\",\"role\":\"Reviewer\",\"title\":\"Edited web source / Налоговый кейс\",\"version\":\"1.2.3\"}}",
+  "descriptor": {
+    "source_schema": "web-studio-tax-source-v1",
+    "case_id": "web_tax_contract",
+    "scenario_fingerprint": "dc19c89badf2fa905c3ab0333a08c365115c6e4462a10d5e1855585a0402fb93",
+    "fact_ids": [
+      "fact_a",
+      "fact_z"
+    ],
+    "reference_ids": [
+      "evidence_1"
+    ]
+  },
+  "canonicalCases": [
+    {
+      "inputJson": "{\"2\":\"two\",\"10\":\"ten\",\"z\":null,\"A\":-0}",
+      "expected": "{\"10\":\"ten\",\"2\":\"two\",\"A\":0,\"z\":null}"
+    },
+    {
+      "inputJson": "{\"\\uffff\":2,\"\\ud800\\udc00\":1}",
+      "expected": "{\"𐀀\":1,\"￿\":2}"
+    },
+    {
+      "inputJson": "{\"s\":\"\\ud800\",\"n\":1.25,\"e\":1e30}",
+      "expected": "{\"e\":1e+30,\"n\":1.25,\"s\":\"\\ud800\"}"
+    },
+    {
+      "inputJson": "[true,null,-0,\"caf\\u00e9\",\"cafe\\u0301\"]",
+      "expected": "[true,null,0,\"café\",\"café\"]"
+    }
+  ]
+}

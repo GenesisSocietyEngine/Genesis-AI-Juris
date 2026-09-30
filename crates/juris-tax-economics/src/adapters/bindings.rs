@@ -74,6 +74,48 @@ fn fingerprint(value: &str, field: &str) -> Result<(), AdapterError> {
     }
     Ok(())
 }
+
+/// Structural validation only. This does not attest the caller's source content.
+pub fn validate_source_identity(current: &CurrentSource) -> Result<(), AdapterError> {
+    identifier(&current.case_id, "source.case_id")?;
+    fingerprint(&current.scenario_fingerprint, "source.scenario_fingerprint")
+}
+
+/// Validate the existing source-index policy without changing its supplied order.
+pub fn validate_source_index(current: &CurrentSource) -> Result<(), AdapterError> {
+    if current
+        .fact_ids
+        .len()
+        .saturating_add(current.reference_ids.len())
+        > 10_000
+    {
+        return Err(invalid_binding(
+            "bindings",
+            "collection exceeds source/binding policy",
+        ));
+    }
+    for (field, ids, duplicate) in [
+        (
+            "source.fact_ids",
+            &current.fact_ids,
+            "duplicate fact identifier",
+        ),
+        (
+            "source.reference_ids",
+            &current.reference_ids,
+            "duplicate reference",
+        ),
+    ] {
+        let mut seen = HashSet::new();
+        for value in ids {
+            identifier(value, field)?;
+            if !seen.insert(value.as_str()) {
+                return Err(invalid_binding(field, duplicate));
+            }
+        }
+    }
+    Ok(())
+}
 /// Atomic pure replacement: failures return no partially edited input and never mutate the original.
 /// Missing/unconfirmed required amounts produce an incomplete draft; rates cannot calculate it.
 pub fn bind_components(
@@ -83,8 +125,7 @@ pub fn bind_components(
     bindings: &[ComponentBinding],
 ) -> Result<BindingDraft, AdapterError> {
     original.validate()?;
-    identifier(&current.case_id, "source.case_id")?;
-    fingerprint(&current.scenario_fingerprint, "source.scenario_fingerprint")?;
+    validate_source_identity(current)?;
     if original.context.case_id != current.case_id
         || original.context.scenario_fingerprint != current.scenario_fingerprint
     {
@@ -105,26 +146,9 @@ pub fn bind_components(
             "collection exceeds source/binding policy",
         ));
     }
-    let mut facts = HashSet::new();
-    for fact in &current.fact_ids {
-        identifier(fact, "source.fact_ids")?;
-        if !facts.insert(fact.as_str()) {
-            return Err(invalid_binding(
-                "source.fact_ids",
-                "duplicate fact identifier",
-            ));
-        }
-    }
-    let mut references = HashSet::new();
-    for reference in &current.reference_ids {
-        identifier(reference, "source.reference_ids")?;
-        if !references.insert(reference.as_str()) {
-            return Err(invalid_binding(
-                "source.reference_ids",
-                "duplicate reference",
-            ));
-        }
-    }
+    validate_source_index(current)?;
+    let facts: HashSet<_> = current.fact_ids.iter().map(String::as_str).collect();
+    let references: HashSet<_> = current.reference_ids.iter().map(String::as_str).collect();
     for benefit in &original.input.benefit_items {
         for reference in &benefit.source_node_ids {
             if !facts.contains(reference.as_str()) && !references.contains(reference.as_str()) {

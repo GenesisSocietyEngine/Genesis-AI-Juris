@@ -18,7 +18,10 @@ const require = createRequire(import.meta.url);
 const evidence = join(root, ".artifacts/tax-runtime/packaging");
 mkdirSync(evidence, { recursive: true });
 const sha256 = bytes => createHash("sha256").update(bytes).digest("hex");
-const corpus = JSON.parse(readFileSync(join(root, "tests/fixtures/tax-runtime/native-corpus.json"), "utf8"));
+const nativeCorpus = JSON.parse(readFileSync(join(root, "tests/fixtures/tax-runtime/native-corpus.json"), "utf8"));
+const webCorpus = JSON.parse(readFileSync(join(root, "tests/fixtures/tax-runtime/web-corpus.json"), "utf8"));
+const webSource = JSON.parse(readFileSync(join(root, "tests/fixtures/tax-runtime/web-source.json"), "utf8"));
+const corpus = { cases: [...nativeCorpus.cases, ...webCorpus.cases] };
 const assets = verifyTaxWasmAssets();
 const responseCorpus = `[${corpus.cases.map(entry => entry.response).join(",")}]`;
 const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
@@ -34,9 +37,35 @@ const receipt = {
   miniflare: require("miniflare/package.json").version,
   workerd: require("workerd/package.json").version,
   executedCommandsPerHost: corpus.cases.length,
+  corpusCounts: { native: nativeCorpus.cases.length, web: webCorpus.cases.length },
   responseCorpusSha256: sha256(responseCorpus),
   hosts: {},
 };
+
+// Run the same production repository and source hashing in each emitted host.
+const sourceProof = `
+async function proveSource(fixture) {
+  const changed = structuredClone(fixture.draft);
+  const pending = deriveWebTaxSource(changed);
+  changed.caseId = "mutation_after_hash_started";
+  changed.nodes[0].id = "late_node";
+  const frozen = await pending;
+  const previous = String.prototype.localeCompare;
+  let canonicalCases;
+  try {
+    String.prototype.localeCompare = () => { throw Error("Locale sort used for source identity"); };
+    canonicalCases = fixture.canonicalCases.map(entry => canonicalWebTaxJson(JSON.parse(entry.inputJson)));
+  } finally { String.prototype.localeCompare = previous; }
+  const prepared = await webTaxRepository.prepare(fixture.draft, { artifact_id: "web_probe", revision: "9007199254740993", currency: "EUR" });
+  return { canonicalJson: frozen.canonicalJson, descriptor: frozen.descriptor, canonicalCases, prepared: prepared.response };
+}
+`;
+function checkSource(result) {
+  assert.equal(result.canonicalJson, webSource.canonicalJson);
+  assert.deepEqual(result.descriptor, webSource.descriptor);
+  assert.deepEqual(result.canonicalCases, webSource.canonicalCases.map(entry => entry.expected));
+  assert.equal(result.prepared, webCorpus.cases.find(entry => entry.name === "prepare").response);
+}
 
 function entry(directory, environment) {
   const manifest = JSON.parse(readFileSync(join(directory, "tax-runtime-entry.json"), "utf8"));
@@ -63,15 +92,17 @@ async function verifyWorker(environment, directory) {
   }
   visit(directory);
   modules["runtime-proof.mjs"] = { type: "esm", contents: `
-    import { loadWorkerTaxRuntime } from ${JSON.stringify(`./${runtimeEntry}`)};
+    import { loadWorkerTaxRuntime, deriveWebTaxSource, canonicalWebTaxJson, webTaxRepository } from ${JSON.stringify(`./${runtimeEntry}`)};
+    ${sourceProof}
     export default { async fetch(request) {
       const runtime = await loadWorkerTaxRuntime();
-      const cases = await request.json();
+      const { cases, fixture } = await request.json();
       const responses = cases.map(entry => runtime.execute(entry.request));
+      const webSource = await proveSource(fixture);
       let dynamicCompilationBlocked = false;
       try { await WebAssembly.compile(new Uint8Array([0,97,115,109,1,0,0,0])); }
       catch { dynamicCompilationBlocked = true; }
-      return Response.json({ responses, cached: runtime === await loadWorkerTaxRuntime(), dynamicCompilationBlocked });
+      return Response.json({ responses, webSource, cached: runtime === await loadWorkerTaxRuntime(), dynamicCompilationBlocked });
     } };
   ` };
   const mf = new Miniflare({
@@ -81,23 +112,26 @@ async function verifyWorker(environment, directory) {
       manifest: { mainModule: "runtime-proof.mjs", modulesRoot: directory, modules } } }],
   });
   try {
-    const response = await mf.dispatchFetch("http://runtime.test/", { method: "POST", body: JSON.stringify(corpus.cases) });
+    const response = await mf.dispatchFetch("http://runtime.test/", { method: "POST", body: JSON.stringify({ cases: corpus.cases, fixture: webSource }) });
     assert.equal(response.status, 200, await response.clone().text());
     const result = await response.json();
     assert.deepEqual(result.responses, corpus.cases.map(entry => entry.response));
     assert.equal(result.cached, true);
     assert.equal(result.dynamicCompilationBlocked, true);
+    checkSource(result.webSource);
     const wasm = Object.entries(modules).filter(([, value]) => value.type === "wasm");
     assert.ok(wasm.length > 0);
-    receipt.hosts[environment] = { entry: runtimeEntry, completeNativeParity: true, cached: true, dynamicCompilationBlocked: true, wasm: wasm.map(([path, value]) => ({ path, sha256: sha256(value.contents) })) };
+    receipt.hosts[environment] = { entry: runtimeEntry, completeNativeParity: true, webSourceParity: true, webSourceFingerprint: result.webSource.descriptor.scenario_fingerprint, cached: true, dynamicCompilationBlocked: true, wasm: wasm.map(([path, value]) => ({ path, sha256: sha256(value.contents) })) };
     writeFileSync(join(evidence, `${environment}-responses.json`), `[${result.responses.join(",")}]\n`);
+    writeFileSync(join(evidence, `${environment}-web-source.json`), JSON.stringify(result.webSource, null, 2) + "\n");
   } finally { await mf.dispose(); }
 }
 
 const clientDirectory = join(root, "dist/client");
 const clientEntry = entry(clientDirectory, "client");
 const browserModule = `
-import { loadBrowserTaxRuntime } from ${JSON.stringify(`/${clientEntry}`)};
+import { loadBrowserTaxRuntime, deriveWebTaxSource, canonicalWebTaxJson, webTaxRepository } from ${JSON.stringify(`/${clientEntry}`)};
+${sourceProof}
 const result = { host: "browser", completeNativeParity: false };
 const mode = new URL(location.href).searchParams.get("mode") || "normal";
 try {
@@ -113,17 +147,23 @@ try {
   const runtime = await loadBrowserTaxRuntime();
   const corpus = await (await fetch("/native-corpus.json")).json();
   const responses = corpus.cases.map(entry => runtime.execute(entry.request));
+  const fixture = await (await fetch("/web-source.json")).json();
+  const webSource = await proveSource(fixture);
+  if (webSource.canonicalJson !== fixture.canonicalJson ||
+      JSON.stringify(webSource.descriptor) !== JSON.stringify(fixture.descriptor) ||
+      JSON.stringify(webSource.canonicalCases) !== JSON.stringify(fixture.canonicalCases.map(entry => entry.expected))) throw Error("Web source canonical identity parity failed");
   if (!responses.every((value, index) => value === corpus.cases[index].response)) throw Error("Complete native response parity failed");
   if (runtime !== await loadBrowserTaxRuntime()) throw Error("Readiness was not cached");
   let evalBlocked = false;
   try { globalThis.eval("1 + 1"); } catch { evalBlocked = true; }
   if (!evalBlocked) throw Error("JavaScript eval unexpectedly allowed");
-  Object.assign(result, { completeNativeParity: true, executedCommands: responses.length, evalBlocked, cached: true, responses });
+  Object.assign(result, { completeNativeParity: true, executedCommands: responses.length, evalBlocked, cached: true, responses, webSource });
   }
 } catch (error) { result.error = String(error); result.cause = String(error.cause || ""); }
 const summary = { ...result };
 delete summary.responses;
-document.querySelector("h1").insertAdjacentHTML("afterend", '<p>30 protocol executions; 25 repeat the same calculation. Editor and report integration remain pending.</p>');
+delete summary.webSource;
+document.querySelector("h1").insertAdjacentHTML("afterend", '<p>${nativeCorpus.cases.length} native and ${webCorpus.cases.length} web-descriptor protocol executions. Editor, persistence and report integration remain pending.</p>');
 document.querySelector("pre").textContent = JSON.stringify(summary, null, 2);
 document.querySelector("pre").dataset.evidence = JSON.stringify(result);
 document.body.dataset.result = (result.completeNativeParity || result.expectedFailure) && !result.error ? "passed" : "failed";
@@ -137,6 +177,7 @@ function browserServer() {
     if (url.pathname === "/") { mode = url.searchParams.get("mode") || "normal"; body = '<!doctype html><html><head><title>Shared Rust runtime packaging verification</title></head><body><h1>Shared Rust runtime packaging verification</h1><pre>Running...</pre><script type="module" src="/proof.js"></script></body></html>'; type = "text/html"; }
     else if (url.pathname === "/proof.js") { body = browserModule; type = "text/javascript"; }
     else if (url.pathname === "/native-corpus.json") { body = JSON.stringify(corpus); type = "application/json"; }
+    else if (url.pathname === "/web-source.json") { body = JSON.stringify(webSource); type = "application/json"; }
     else if (/^\/_next\/static\/(?:(?:chunks|media)\/)?[\w.-]+\.(js|wasm)$/.test(url.pathname)) {
       const path = join(clientDirectory, url.pathname);
       if (existsSync(path)) {
@@ -191,6 +232,7 @@ async function verifyBrowser(server) {
     });
     await send("Runtime.enable");
     await send("Page.enable");
+    await send("Emulation.setLocaleOverride", { locale: "tr-TR" });
     for (const mode of ["normal", "missing", "corrupt", "blocked-csp"]) {
       await send("Page.navigate", { url: `http://127.0.0.1:${server.address().port}/?mode=${mode}` });
       let result;
@@ -207,10 +249,14 @@ async function verifyBrowser(server) {
       const parsed = JSON.parse(content.result.value);
       if (mode === "normal") {
         assert.deepEqual(parsed.responses, corpus.cases.map(entry => entry.response));
+        checkSource(parsed.webSource);
+        writeFileSync(join(evidence, "browser-web-source.json"), JSON.stringify(parsed.webSource, null, 2) + "\n");
         writeFileSync(join(evidence, "browser-responses.json"), `[${parsed.responses.join(",")}]\n`);
         delete parsed.responses;
+        const webSourceFingerprint = parsed.webSource.descriptor.scenario_fingerprint;
+        delete parsed.webSource;
         const version = await send("Browser.getVersion");
-        receipt.hosts.browser = { ...parsed, version, entry: clientEntry };
+        receipt.hosts.browser = { ...parsed, webSourceParity: true, webSourceFingerprint, localeOverride: "tr-TR", version, entry: clientEntry };
       } else {
         assert.equal(parsed.expectedFailure, true);
         assert.equal(parsed.mode, mode);
