@@ -229,12 +229,34 @@ application failure: `ios-destination040-independent/receipt.json`, SHA-256
 The 14-job non-iOS receipt is `pr72-040c580-nonios/FINAL_VERIFICATION.json`,
 SHA-256 `b62a2941ef06c5dd2c76497466e0a7d3f9fe516af2cf9484677b256dbb866efe`.
 Both are under `.artifacts/pr68-ios-2026-09-30/`; raw logs and checked archives
-remain retained there. A reviewed test-only fixture-readiness correction is
-local. Build/runtime budget separation is being prepared with the existing
-30-minute exercise and 45-minute job bounds; it is not current-source execution.
+remain retained there. The subsequent correction is recorded below.
 The current helper reinstalls the identical bundle before each phase and
 separately checks saved-state preservation; first-install-only behavior is not
 claimed for these six-phase runs.
+
+## Published preparation/runtime correction `6c86bfb`
+
+Reviewed source `6c86bfb5b2e41331860974342b863536c3a67916`, tree
+`7249e287689bca606a4756d04f2676eefd79f8db`, was published by ordinary
+fast-forward push after fresh head/main checks. It includes the separately
+reviewed test-only fixture-readiness commit `babd8a3` and separates build
+preparation (900 seconds) from each of the six runtime phases (300 seconds).
+The overall exercise remains 30 minutes and the job 45 minutes; this explicitly
+changes the first phase's time accounting. Every phase must verify the completed
+build's source/nonce/Simulator/command and full bundle before installation or
+launch. Its launch receipt binds the same preparation proof. Existing per-phase
+installation and all selected-test, preservation, native and export assertions
+remain required. No application acceptance follows from the build proof alone.
+
+Root and peer independently passed all 48 phase controls, including actual
+Bash orchestration with fake tools proving that a failed preparation prevents
+runtime work and the first runtime receives its own 300-second deadline.
+Current application runs are push `36785086674` / job `110124460827` and PR
+`36785092463` / job `110124479510`; native runs are push `36785086762` /
+job `110124461746` and PR `36785092402` / job `110124479789`.
+All fresh applicable gates and explicit six-phase completion remain pending in
+this snapshot. The preceding source's 15 passes and three failures remain
+source-specific. See the committed [budget review](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/blob/6c86bfb5b2e41331860974342b863536c3a67916/docs/testing/tax-ios-journeys-2026-09-30/BUILD_RUNTIME_BUDGETS.md).
 
 ## Subsequent main evidence
 
