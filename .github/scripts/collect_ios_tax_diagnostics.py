@@ -2,6 +2,7 @@
 """Bounded, read-only evidence from this job's isolated Simulator after failure."""
 
 import json
+import math
 import os
 from pathlib import Path, PurePosixPath
 import re
@@ -97,10 +98,12 @@ def target_still_matches(target, process_text):
     return lines == [[str(target["pid"]), target["executable"]]]
 
 
-def collect(device, evidence):
+def collect(device, evidence, *, budget_seconds=120):
+    if type(budget_seconds) not in (int, float) or not math.isfinite(budget_seconds) or not 0 < budget_seconds <= 120:
+        raise ValueError("Diagnostic budget must be finite, positive and at most 120 seconds")
     output = Path(evidence) / "failure-diagnostics"
     output.mkdir(parents=True, exist_ok=False)
-    deadline = time.monotonic() + 120
+    deadline = time.monotonic() + budget_seconds
     bundle_id = "com.genesissocietyengine.jurisMobile"
     records = {"simulator": device, "acceptance": False, "commands": {}}
 

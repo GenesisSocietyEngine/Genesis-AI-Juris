@@ -1,0 +1,75 @@
+name: iOS Tax Future Application
+
+on:
+  push:
+    paths:
+      - '.github/scripts/ios_tax_future/**'
+      - '.github/workflows/ios-tax-future-application.yml'
+      - 'apps/juris-mobile/**'
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/scripts/run_with_deadline.py'
+      - '.github/scripts/collect_ios_tax_diagnostics.py'
+      - '.github/scripts/verify_ios_ffi_exports.sh'
+  pull_request:
+    paths:
+      - '.github/scripts/ios_tax_future/**'
+      - '.github/workflows/ios-tax-future-application.yml'
+      - 'apps/juris-mobile/**'
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/scripts/run_with_deadline.py'
+      - '.github/scripts/collect_ios_tax_diagnostics.py'
+      - '.github/scripts/verify_ios_ffi_exports.sh'
+  workflow_dispatch:
+
+concurrency:
+  group: ios-tax-future-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  future-format-preservation:
+    runs-on: macos-15-intel
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0 # Read the source-owned pinned generic transport Git object.
+      - name: Verify portable and actual POSIX harness controls
+        timeout-minutes: 5
+        run: |
+          python3 -I -m unittest discover -s .github/scripts/ios_tax_future -p 'test_*.py' -v
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.95.0
+          components: llvm-tools-preview
+          targets: aarch64-apple-ios-sim,x86_64-apple-ios
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          cache: true
+      - name: Resolve locked dependencies and verify driver protocol controls
+        working-directory: apps/juris-mobile
+        run: |
+          test "$(dart --version 2>&1 | sed -E 's/^Dart SDK version: ([0-9.]+).*/\1/')" = '3.12.2'
+          flutter pub get --enforce-lockfile
+          git diff --exit-code -- pubspec.lock
+          flutter analyze integration_test/future_application_test.dart test_driver/tax_future_data_driver.dart test_driver/tax_future_driver_contract.dart test_driver/tax_future_driver_guard.dart test/tax_future_data_driver_test.dart
+          flutter test test/tax_future_data_driver_test.dart --reporter expanded --test-randomize-ordering-seed 27182
+      - name: Exercise ten application phases and restore the owned Simulator
+        timeout-minutes: 33 # 30-minute execution budget plus separate bounded failure cleanup.
+        env:
+          IOS_TAX_FUTURE_EVIDENCE_DIR: ${{ runner.temp }}/ios-tax-future-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          python3 -I .github/scripts/ios_tax_future/run.py "$IOS_TAX_FUTURE_EVIDENCE_DIR"
+      - name: Retain source, process, filesystem, native and cleanup evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ios-tax-future-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ios-tax-future-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 14

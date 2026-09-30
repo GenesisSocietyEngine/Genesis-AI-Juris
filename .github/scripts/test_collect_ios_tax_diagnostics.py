@@ -92,7 +92,7 @@ class RunnerEvidenceTests(unittest.TestCase):
                      "18448 " + self.executable + " --argument", "18448 " + self.executable + "\n1 /other"]:
             self.assertFalse(diagnostics.target_still_matches(target, text))
 
-    def collect(self, overrides=None):
+    def collect(self, overrides=None, **kwargs):
         overrides = overrides or {}
         calls = []
         with tempfile.TemporaryDirectory() as folder:
@@ -109,9 +109,24 @@ class RunnerEvidenceTests(unittest.TestCase):
 
             with mock.patch.object(diagnostics, "capture", side_effect=fake_capture), \
                     mock.patch.object(diagnostics.shutil, "which", return_value=None):
-                diagnostics.collect(self.device, folder)
+                diagnostics.collect(self.device, folder, **kwargs)
             manifest = json.loads((Path(folder) / "failure-diagnostics/manifest.json").read_text(encoding="utf-8"))
             return calls, manifest
+
+    def test_explicit_shorter_budget_is_shared_without_changing_default(self):
+        with mock.patch.object(diagnostics.time, 'monotonic', return_value=100):
+            calls, _ = self.collect(budget_seconds=12.5)
+            self.assertEqual({deadline for _, _, deadline in calls}, {112.5})
+            calls, _ = self.collect()
+            self.assertEqual({deadline for _, _, deadline in calls}, {220})
+
+    def test_invalid_budget_refused_before_evidence_or_command(self):
+        with tempfile.TemporaryDirectory() as folder, mock.patch.object(diagnostics, 'capture') as capture:
+            for value in (0, -1, 121, True, '12', float('inf'), float('nan')):
+                with self.subTest(value=value), self.assertRaises(ValueError):
+                    diagnostics.collect(self.device, folder, budget_seconds=value)
+            self.assertEqual(list(Path(folder).iterdir()), [])
+            capture.assert_not_called()
 
     def test_app_history_precedes_separate_short_springboard_and_native_target(self):
         calls, result = self.collect()
