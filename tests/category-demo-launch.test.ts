@@ -15,12 +15,12 @@ function collect(node: ts.Node) {
 }
 collect(source);
 assert.equal(handlers.length, 2);
-async function launch({ leave = true, confirm = true, enter = true, load = true } = {}) {
+async function launch({ leave = true, confirm = true, enter = true, load = true, locale = "en" as "en" | "ru" } = {}) {
   const original = buildCategoryDemo("contract_review", "en");
   const state = { draft: original, prompts: [] as string[], destinations: [] as [string, number][], confirmations: [] as string[], replacements: 0, notices: [] as string[] };
   const code = ts.transpileModule(`${handlers.join("\n")}\nopenCategoryDemo("tax_planning");`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
   await runInNewContext(code, {
-    locale: "en", prompt: "Unapplied instruction", draftRef: { current: original }, starterCancelledRef: { current: false },
+    locale, prompt: "Unapplied instruction", draftRef: { current: original }, starterCancelledRef: { current: false },
     loadCategoryDemo: async (...args: Parameters<typeof buildCategoryDemo>) => { if (!load) throw new Error("offline chunk"); return buildCategoryDemo(...args); },
     showSessionNotice: (message: string) => state.notices.push(message), mayLeaveStudio: () => leave,
     window: { confirm: (message: string) => { state.confirmations.push(message); return confirm; } },
@@ -37,7 +37,7 @@ test("cancelled example replacement preserves the actual graph, prompt and navig
   assert.equal(state.replacements, 0);
   assert.deepEqual(state.prompts, []);
   assert.deepEqual(state.destinations, []);
-  assert.match(state.confirmations[0], /Save your current draft first/);
+  assert.match(state.confirmations[0], /Save to workspace or export case JSON/);
 });
 test("a pending operation blocks example launch before replacement confirmation", async () => {
   const { state, original } = await launch({ leave: false });
@@ -66,4 +66,12 @@ test("a failed deferred example load preserves the draft and offers a retry", as
   assert.deepEqual(state.confirmations, []);
   assert.deepEqual(state.destinations, []);
   assert.match(state.notices[0], /could not load.*unchanged.*try again/);
+});
+
+test("example confirmation explicitly distinguishes workspace/export from device-only saves in both languages", async () => {
+  const en = (await launch({ confirm: false })).state.confirmations[0];
+  const ru = (await launch({ confirm: false, locale: "ru" })).state.confirmations[0];
+  assert.match(en, /Device-only saves will be removed/);
+  assert.match(ru, /рабочем пространстве.*экспортируйте JSON/);
+  assert.match(ru, /только на устройстве, будут удалены/);
 });

@@ -2076,8 +2076,8 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       return;
     }
     if (!resetStudioDraft(next, "", locale === "en"
-      ? "Open this worked example? Save your current draft first to keep it. Your local graph, prompt and undo history will be replaced."
-      : "Открыть учебный пример? Сначала сохраните текущий черновик. Локальный граф, промпт и история отмены будут заменены.")) return;
+      ? "Open this worked example? Save to workspace or export case JSON first to keep your work. Device-only saves will be removed. Your local graph, prompt and undo history will be replaced."
+      : "Открыть учебный пример? Сначала сохраните работу в рабочем пространстве или экспортируйте JSON кейса. Копии, сохранённые только на устройстве, будут удалены. Локальный граф, промпт и история отмены будут заменены.")) return;
     navigate("studio", 4);
   }
   function purgeLocalStudioState() {

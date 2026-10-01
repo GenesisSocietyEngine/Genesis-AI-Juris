@@ -130,3 +130,22 @@ tests and 23 category/reset checks passed; an added fifth actual-parent handler
 check verifies failed deferred loading preserves work and offers retry. Strict
 TypeScript and targeted lint passed. Browser launch after the split opened Orchard
 at Decision with 12 nodes and 11 connections. Remote CI must rerun on this fix.
+
+### PR review follow-up: device-only save disclosure
+
+User outcome: users can make an informed example replacement choice and do not
+mistake a device-only save for a retained copy. Acceptance: the real replacement
+confirmation in EN/RU names workspace save and JSON export as retention routes,
+explicitly states device-only saves are removed, and cancellation still preserves
+the draft and navigation. Templates guidance gives the same distinction.
+
+PR review identified that `enterNewLocalDraft` deliberately clears account-scoped
+device drafts. Corrected the new guidance and worked-example confirmation rather
+than changing established storage/privacy retention semantics. All 28 focused
+category, reset and catalogue tests pass, including six actual-parent launch tests
+and the bilingual warning assertion. Earlier candidate `bda57eb` passed every CI
+check type at least once: 17 of 18 runs green, with one duplicate PR iOS VM discovery
+timeout after retry. The production-source baseline's iOS workflow passed; these
+observations support a simulator/harness reliability investigation, not a claim
+that application acceptance is complete. Final warning-only candidate requires
+fresh remote CI. Hosted device-only account/browser acceptance remains open.
