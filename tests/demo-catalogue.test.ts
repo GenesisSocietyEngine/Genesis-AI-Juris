@@ -33,6 +33,7 @@ test("Templates contains empty starters and no demo launch or scenario selector 
   for (const locale of ["en","ru"] as const) {
     const html = renderToStaticMarkup(createElement(CaseTemplates,{locale,onStart:()=>{},onDemo:()=>{}}));
     assert.equal((html.match(/class="template-card"/g) ?? []).length,9);
+    assert.match(html, /<ol class="template-grid"/);
     assert.doesNotMatch(html,/GreenFire|Project Canopy|canopy-scenario|Start simulation/);
   }
 });

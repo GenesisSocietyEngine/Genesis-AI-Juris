@@ -8,10 +8,10 @@ export type DemoCard = {
   id: string; title: string; summary: string; jurisdiction: string; practice: string;
   duration: number; version: string; review: string; author: string; legalAsOf?: string;
 };
-export type DemoFormat = "all" | "walkthrough" | "simulation";
+export type DemoFormat = "all" | "walkthrough" | "simulation" | "worked";
 export function matchesCanopy(filters: { query: string; practice: string; jurisdiction: string; difficulty: string; duration: string; tag: string; format: DemoFormat }) {
   const words = "Project Canopy Проект Канопи guided walkthrough пошаговый обзор evidence доказательства business decision бизнес решение Fictional Gulf market";
-  return filters.format !== "simulation" && (!filters.query.trim() || words.toLowerCase().includes(filters.query.trim().toLowerCase()))
+  return (filters.format === "all" || filters.format === "walkthrough") && (!filters.query.trim() || words.toLowerCase().includes(filters.query.trim().toLowerCase()))
     && (filters.practice === "all" || filters.practice === "Business decision")
     && (filters.jurisdiction === "all" || filters.jurisdiction === "Fictional Gulf market")
     && filters.difficulty === "all" && filters.duration === "all" && filters.tag === "all";
