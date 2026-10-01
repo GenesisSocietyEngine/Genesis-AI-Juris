@@ -86,6 +86,52 @@ tests total). Its full log SHA-256 is
 `f3a212efcc900489098e85ab3d8fd979825899c63c947751ec5d353f241d4934`.
 This is local execution; PR/main execution remains separate.
 
+## Published account correction at `073a638`
+
+PR [#79](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/pull/79) is
+published at `073a6382aa03ca7227e36fc134b82180d5e9d700`, tree
+`08e985ad544168249683bae745f68ac2247ed952`. All 18 applicable checks passed at
+that exact head. Its 429 application inputs are byte-identical to the locally
+exercised `53ae4ec500bb48619e16bad31d657ec0dbb4a70a`, with application digest
+`35f178afbdb51f4509f5e3c19525f2b32ff1aec62714794cd3f6494cd8920c98`.
+The authenticated browser journey and local full suite remain evidence from
+`53ae4ec`; these hosted checks remain evidence from `073a638`.
+
+Both native events explicitly passed `RunnerTests.testNativeLogisticsLifecycle()`,
+initial arm64/x86_64 and prepared x86_64 export audits, 27 fake verifier controls
+and eight real macOS fixtures. Both application events passed all six selected
+write/read, incomplete and legacy phases, complete saved/native/legacy equality,
+six terminated processes and six x86_64 export audits. Their exact-source
+verifier uses the older Flutter-drive transport from that dependency; these
+results do not establish execution of PR #72's newer direct-Dart correction.
+
+| Event | Run / job | Test evidence | Artifact / bytes / SHA-256 |
+| --- | --- | --- | --- |
+| Native push | 36785488641 / 110125770859 | XCTest 23:04:27.484407Z, 0.557 s | 11131405742 / 180,770 / `92b9dad3969e7a31ec0c04b092b62ebdda4593c59ef0f6b94513746f65a20308` |
+| Native PR | 36785523641 / 110125886670 | XCTest 23:12:22.528101Z, 0.202 s | 11131940495 / 180,058 / `9751f5afcf81d6edd6662204969b89ffdc9ca52cf92690e65440ad389ae85118` |
+| Application push | 36785488707 / 110125770911 | Six executed phases; PIDs 23725, 29207, 34038, 40250, 43474, 47770 | 11130651413 / 2,142,518 / `6db4af135c3e284a0bba10eb3e595bf8eca7793ea52195d29b9ca9d3b596136b` |
+| Application PR | 36785523702 / 110125886404 | Six executed phases; PIDs 38610, 49331, 53666, 57939, 61982, 67822 | 11132261504 / 2,180,245 / `3255a7a2313678453679c1c7674ad86ae2542215974327b1f167de56129a4e41` |
+
+All four original ZIPs and 396 extracted files passed independent integrity
+verification. The final receipt is
+`.artifacts/pr68-ios-2026-09-30/pr79-073-ci/FINAL_RECEIPT.json`, SHA-256
+`0aef6d929c158d79bd019d919acb16ea79c120432fcd226f5c8b513e91f76dab`.
+Three reopened-editor viewports from each application event were visually
+reviewed; they do not establish keyboard, enlarged-text or screen-reader behavior.
+
+For the authorized production update, independent review confirmed current
+main `54d6d29868db0fe0fa4c570d89571cbfcd55ed18` was already an ancestor of this
+exact candidate. PR #79 was normally retargeted to main without changing source.
+All eighteen gates remained successful; no new pending check or unresolved
+review appeared. The reviewed 33-path scope includes the earlier six-phase
+transport, matching Miniflare dependency correction and account-return fix.
+PR #79 merged normally at 2026-10-01T00:02:07Z as
+`1a8b7ee23c61ae3efc78283a0a29538ecae2bd86`. Fresh fetch confirms containment and
+the identical complete `08e985ad` tree. No force or rule bypass was used.
+Subsequent main execution and production deployment are separate evidence;
+the newer `9f2b733` transport correction continues in PR #72. Provider-backed
+identity, tagged-PDF, physical-device and spoken-accessibility acceptance remain open.
+
 ## Original `8bfa5e7` source and runtime
 
 The clean compiled source was `8bfa5e75007216b7dcf5b5a5e8f48c657192e387`,

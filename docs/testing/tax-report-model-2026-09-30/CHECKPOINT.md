@@ -9,7 +9,7 @@ XCTests and both application events. The push application's original pre-test
 timeout remains recorded below; its single unchanged-source retry passed.
 The PR merged normally at 19:30:19Z on 2026-09-30 as
 `54d6d29868db0fe0fa4c570d89571cbfcd55ed18`.
-No deployment or full product-release acceptance is claimed.
+At the PR #77 checkpoint, no deployment or full product-release acceptance was claimed. Later web production v105 is recorded in the separate deployment receipt.
 
 A subsequent [authenticated browser exercise](AUTHENTICATED_BROWSER.md) found an
 unexpected successful-login unload prompt on local source `8bfa5e7`. Corrected
@@ -18,6 +18,19 @@ history, sign-out, browser restart, new login and history reopen, with full
 observed-model/fresh-Rust parity and unchanged saved inputs. This closes that
 bounded local journey; hosted source gates and production-provider acceptance
 remain separate from this accepted checkpoint and the retained earlier failure.
+
+The account correction is now published in PR #79 at
+`073a6382aa03ca7227e36fc134b82180d5e9d700`, with all 18 checks passing, including
+both executed native XCTests and both verified six-phase application journeys.
+All 429 application inputs match the actual local `53ae4ec` browser source.
+The [account publication record](AUTHENTICATED_BROWSER.md#published-account-correction-at-073a638)
+keeps those local and hosted sources separate and records every iOS run/job and
+artifact. Independent review confirmed it already contained canonical main;
+the PR was retargeted without a source change and merged normally, with all
+eighteen gates green, as `1a8b7ee23c61ae3efc78283a0a29538ecae2bd86` at
+2026-10-01T00:02:07Z. Fresh fetch confirms the identical tested tree. Subsequent
+main execution and authorized production deployment remain separate; no provider
+or accessibility acceptance is inferred.
 
 ## Source and reviewed behavior
 
@@ -236,7 +249,7 @@ and setup attempts remain recorded separately.
 The later [authenticated local journey](AUTHENTICATED_BROWSER.md) separately
 exercises real login/history routes in the emitted production Worker with a
 synthetic credential, including sign-out and a fresh login after browser restart.
-Remaining acceptance includes canonical/hosted validation of that correction,
+Remaining acceptance includes subsequent main execution and hosted production journeys,
 provider-backed identity, PDF tagging/accessibility, spoken mobile accessibility
 and physical-device checks. P3's broader iOS application matrix and interrupted aggregate-write
 journeys remain source-specific mobile work. User instruction is to use CI and

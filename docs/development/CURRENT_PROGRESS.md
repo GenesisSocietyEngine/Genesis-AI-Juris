@@ -1,20 +1,20 @@
 ---
 document_type: cumulative_development_handoff
 project: "GENESIS: JURIS"
-current_release_track: reviewed_web_production_amendment
-current_release_pr: 58
+current_release_track: reviewed_tax_web_production
+current_release_pr: 79
 current_release_source_branch: main
-current_release_code_merge: 354689f17b908628ccdf659d3a8dc3eb5162d00e
-current_release_checkpoint: c86c83bd6dc62c5eee2ae825272e65e3821e7aa5
-current_release_tree: 484669cc62614527b7a1848b24b68d255f724fb1
+current_release_code_merge: 1a8b7ee23c61ae3efc78283a0a29538ecae2bd86
+current_release_checkpoint: 073a6382aa03ca7227e36fc134b82180d5e9d700
+current_release_tree: 08e985ad544168249683bae745f68ac2247ed952
 current_release_status: web_production_published_mobile_and_full_acceptance_open
 current_release_main_contains_candidate: true
-current_release_site_version: 104
-current_release_deployed_source: 4cb050f51a3448f6e051d11d16e58d5ee547e9ec
-current_release_deployed_tree: 4688e29451d2b7eb9a25abe5e7f117bef094dc01
+current_release_site_version: 105
+current_release_deployed_source: 073a6382aa03ca7227e36fc134b82180d5e9d700
+current_release_deployed_tree: 08e985ad544168249683bae745f68ac2247ed952
 current_release_environment_revision: 40
-current_release_receipt: docs/testing/release-amendment-2026-09-29/WEB_PRODUCTION_V104.md
-current_release_deployment_id: appgdep_6abc2257fec4819193797814bd0c64f5
+current_release_receipt: docs/testing/tax-production-2026-10-01/DEPLOYMENT.md
+current_release_deployment_id: appgdep_6abda4ed8aa48191bc363c238958b9a7
 current_release_deployment_status: succeeded
 historical_recovery_pr: 47
 historical_recovery_checkpoint: 83c97a78547c131570df1b752814353ba0cb1fdb
@@ -24,8 +24,8 @@ historical_recovery_receipt: https://github.com/GenesisSocietyEngine/Genesis-AI-
 historical_recovery_deployment_id: appgdep_6a9bf44b2da08191aea2b4fa86b3f2bd
 historical_recovery_deployment_status: succeeded
 current_release_erp_browser_journeys: not_run
-current_release_hosted_smoke: not_run_on_v104_prior_v103_partial_evidence_retained
-current_release_hosted_smoke_receipt: docs/testing/release-amendment-2026-09-29/HOSTED_ACCEPTANCE_FOLLOWUP.md
+current_release_hosted_smoke: v105_served_assets_exact_guest_tax_calculation_pass_authenticated_persistence_open
+current_release_hosted_smoke_receipt: docs/testing/tax-production-2026-10-01/DEPLOYMENT.md
 next_milestone: hosted_invitation_acceptance_recovery_and_remaining_product_validation
 current_release_instruction: docs/testing/release-amendment-2026-09-29/NEXT_ACTIONS.md
 development_continuation_receipt: docs/testing/release-amendment-2026-09-29/IMPLEMENTATION_CONTINUATION.md
@@ -96,8 +96,14 @@ tax_mobile_aggregate_main_checks: eight_pass_native_cancelled_after_main_advance
 tax_mobile_aggregate_checkpoint: docs/testing/tax-mobile-aggregate-recovery-2026-09-30/CHECKPOINT.md
 tax_acceptance_device_scope: ci_and_emulators_physical_device_checks_remain_open_by_user_instruction
 tax_mobile_ios_journeys_pr: 72
-tax_mobile_ios_journeys_head: 6c86bfb5b2e41331860974342b863536c3a67916
-tax_mobile_ios_journeys_status: reviewed_preparation_runtime_budget_split_published_fresh_exact_head_checks_pending
+tax_mobile_ios_journeys_head: 168d5f4517eaa6e2c45c7a4568e882e0345ef797
+tax_mobile_ios_journeys_status: reconciled_168_web_pr_failed_13_pass_four_ios_pending_prior_9f_all_18_pass
+tax_mobile_ios_future_pr: 80
+tax_mobile_ios_future_head: ed4100145c4c93dcf2786b61d34b1cb328716d1f
+tax_mobile_ios_future_status: reviewed_stream_replay_correction_published_fresh_gates_pending_both_7a_failures_retained
+tax_account_return_pr: 79
+tax_account_return_head: 073a6382aa03ca7227e36fc134b82180d5e9d700
+tax_account_return_status: accepted_18_of_18_merged_1a8b7ee_deployed_v105
 tax_web_source_pr: 74
 tax_web_source_head: fe8839520aff06772d30b6eef81d859fb4e71174
 tax_web_source_merge: d4d2902916951f51da0123c243c9945fd5bc807c
@@ -229,10 +235,26 @@ decision_dossier_v62_slice5_gate: frozen_migrations_0012_0015_adversarial_audit_
 decision_dossier_v62_web_gate: strict_type_lint_build_audit_pdf_and_493_of_493_green
 decision_dossier_v62_browser_gate: local_http_green_visual_controller_service_unavailable
 decision_dossier_v62_remote_state: no_production_site_version_or_deployment
-last_updated: 2026-09-30
+last_updated: 2026-10-01
 ---
 
 # Current Progress
+
+## 1 October 2026 — Mobile and authenticated-report acceptance follow-up
+
+Production web v105 deployed successfully at `2026-10-01T00:10:48.512791Z`, following the user's publication instruction. Exact built source is `073a6382aa03ca7227e36fc134b82180d5e9d700`, tree `08e985ad544168249683bae745f68ac2247ed952`, with all 18 PR #79 checks passed. Normal merge `1a8b7ee23c61ae3efc78283a0a29538ecae2bd86` contains the identical complete tested tree. Existing public audience and environment revision 40 are preserved. The [deployment receipt](../testing/tax-production-2026-10-01/DEPLOYMENT.md) separates build/archive/provider identities and live checks; the [PO/UX report](../testing/tax-production-2026-10-01/PO_UX_STATUS.md) lists shipped behavior, evidence and remaining acceptance. Earlier dated release statements below remain historical.
+
+PR #72's reviewed source `9f2b733ab18d5b9dc89e1fce9217a5c5956d0b69` finished with all eighteen checks passing. Both native workflows explicitly executed and passed `RunnerTests.testNativeLogisticsLifecycle()`, both export audits and all 27 fake/eight real macOS fixtures. Both application events passed all six complete/incomplete/legacy write/read phases with actual zero-exit cached Dart drivers, six terminated processes, the same complete bundle and full saved-input/fresh-native-result preservation. Push run `36789437194` / job `110138581263` retained artifact `11131038641`, SHA-256 `e7127fb8c91d13b45313851a4d9bc241f8627e058476bac31d3840f1cce0f4d2`; PR run `36789441459` / job `110138595870` retained artifact `11132339053`, SHA-256 `f7bd1c8e8e5752db060ec469635ee2ce547f3879093812d779ba988a3cae74b0`. All fourteen non-iOS jobs and their web/Worker/PDF/Rust artifacts are independently verified. Ordinary reconciliation with accepted main now publishes `168d5f4517eaa6e2c45c7a4568e882e0345ef797`; its gates require their own terminal evidence. The [aggregate checkpoint](../testing/tax-mobile-aggregate-recovery-2026-09-30/CHECKPOINT.md#direct-dart-and-browser-readiness-correction-9f2b733) records full identities and preserved failures.
+
+PR #80's separate ten-phase future-format harness remains unaccepted. Source `d2ddf17` timed out on initial Simulator inventory before creating a device; artifact `11131383586`, SHA-256 `39f332ace46ce74fee51ae16ad56a27020df55cad16edc9430b9757d272ad083`, remains retained. Startup-corrected `7a9709b` passed initial inventory in both events, but push failed on post-boot inventory before preparation and PR failed in host log replay after the baseline application test passed. Both failures retain exact artifacts and successful owned-device cleanup. The reviewed replay correction recognizes the verified complete-record boundary of an intentionally stopped live JSON stream, while retaining partial-record, authentication and closed finite-backfill checks. The unknown post-boot timeout has no deadline increase. Fresh exact-source ten-phase execution remains required; constructed temporary/backup files do not establish genuine interrupted writes.
+
+The four-path replay correction passed 32 bindings controls with two POSIX skips and 20 final-verifier controls, then merged accepted main without changing its future-format files. Published PR #80 head is `ed4100145c4c93dcf2786b61d34b1cb328716d1f`; all 21 trusted source files match the postcommit source check. Fresh future runs are push `36795697218` / job `110158496010` and PR `36795700450` / job `110158507200`, pending in this snapshot. The [source-bound replay review](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/blob/ed4100145c4c93dcf2786b61d34b1cb328716d1f/docs/testing/tax-ios-future-2026-10-01/STREAM_REPLAY.md) preserves both earlier failures and the exact correction.
+
+At the 00:23Z snapshot, PR #72's reconciled `168d5f4` has thirteen passes, a failed PR web job `110155396558` and four pending iOS jobs. The failure is being retained and classified; no unchanged-source retry or pass is inferred from its companion. Prior `9f2b733` results remain specific to that source.
+
+The corrected account return's 429 application inputs match the reviewed actual Worker/browser journey on `53ae4ec`; that browser evidence remains tied to its local source. Both native XCTests and both six-phase iOS application runs at deployed `073a638` were independently verified. Main `1a8b7ee` now has eight passing jobs: seven non-iOS jobs plus native run `36794112807` / job `110153478772`, whose selected XCTest explicitly passed at `00:20:09.050310Z` in 0.260 seconds with both audits and all 27 fake/eight real fixtures. Artifact `11133656595` is 179,662 bytes, SHA-256 `2041d231b47faa13a179cabfc49011f7dccca60b4d8d28baba58cd6bf06eeaa5`; all 41 files match its original ZIP. Main application run `36794112747` / job `110153478590` remains pending. Physical devices, spoken screen-reader/full-gesture behavior, broader enlarged-text/mobile-keyboard coverage, iOS future-data and genuine interruption journeys, provider-backed identity and tagged-PDF accessibility remain open. Web publication does not close these product acceptance items.
+
+Documentation PR #78's prior head `9ad3ce61057b4411ad72198c339aa5f8479bad2f` ended with 17 passing checks and one failed native push gate. Both two-phase application events and the native PR XCTest passed, with independently verified artifacts. Push run `36785493645` / job `110125786233` built the prepared bundle and passed both export audits, then exceeded the 15-minute prepared-test step without a proven selected-XCTest result. Artifact `11132161991` is 157,386 bytes, SHA-256 `b229977f7394991f106046f2c500ce4cb25f6d42d73eb538495f812467825454`. This differs from the earlier `55cb869` preparation timeout. Both remain failures; neither companion passes nor later sources relabel them.
 
 ## 30 September 2026 — Integrated tax web editor and reports accepted for development
 
@@ -252,7 +274,7 @@ The [Android aggregate application receipt](../testing/tax-mobile-aggregate-reco
 
 The same installed Android `59234db` APK separately passed the [incomplete, legacy and future-format application follow-up](../testing/tax-mobile-aggregate-recovery-2026-09-30/ANDROID_FOLLOWUP.md). Actual editor/aggregate journeys preserve the complete incomplete draft and legacy record across cold restarts, and fresh native calls match complete inputs/results. Two labelled future fixtures separately prove exact-number and unsupported-version refusal while preserving original bytes. Independent review passed all 16 inventories and 128 retained file hashes; the original five authoring files, null clipboard and settings were restored, and the app and owned forward were stopped. These receipts extend that Android source's acceptance without relabelling it as later-head or iOS execution.
 
-The longer PR #72 iOS application matrix remains incomplete. Source `962e71053bd026014f87f1ecd49ef6f7eef9a67c` timed out waiting for a VM service after launch in its push run and failed an earlier deadline smoke control in its PR run. Reviewed diagnostic head `f245149d04f1b03c3f129849b3a8c6bd113c6bd8` exposed `PermissionError` from the process-group liveness probe during timeout cleanup. That finding concerns the host deadline helper; it does not establish the cause of the application's earlier launch stalls. All six application phases and the existing assertions remain required. Physical devices, spoken screen-reader output, full gesture traversal and remaining iOS interruption/recovery checks stay open under the user's CI/emulator instruction. No production deployment, mobile distribution or product-release acceptance is claimed.
+Earlier PR #72 application attempts were incomplete. Source `962e71053bd026014f87f1ecd49ef6f7eef9a67c` timed out waiting for a VM service after launch in its push run and failed an earlier deadline smoke control in its PR run. Reviewed diagnostic head `f245149d04f1b03c3f129849b3a8c6bd113c6bd8` exposed `PermissionError` from the process-group liveness probe during timeout cleanup. That finding concerns the host deadline helper; it does not establish the cause of the application's earlier launch stalls. All six application phases and the existing assertions remain required. Physical devices, spoken screen-reader output, full gesture traversal and remaining iOS interruption/recovery checks stay open under the user's CI/emulator instruction. No production deployment, mobile distribution or product-release acceptance is claimed.
 
 The bounded cleanup correction at `3ea9e65fb8ecf0007c47dc1cec7d10aeddf0bf7f` passed all 11 hosted deadline controls and 13 diagnostic controls. Application run `36754010665` / job `110019511951` then passed write/read/incomplete-write/incomplete-read with four distinct terminated PIDs, identical full application bundle, complete saved-input/native-result equality and exact incomplete-draft preservation. An independent prefix verifier passed; incomplete reopen performed zero native calculations and retained the null result. Legacy-write timed out after 300 seconds waiting for the VM connection before its selected test; the overall job failed with exit 124. Artifact `11117308402`, SHA-256 `5b3a89c2aa87b4954586b7b7045ed556cfdf50e9e620949e9a57f208d5f065fd`, retains all four passing phases and the failure diagnostics. The live Runner had a listening loopback port; that observation does not establish the root cause. This is partial `3ea9e65` application evidence, not a six-phase success or evidence for a later reconciled head.
 
@@ -266,7 +288,7 @@ The combined reviewed successor `60c62862f72449e3d87d23ff85935a1b621f77b7` was p
 
 Subsequent exact `60c6286` execution passed all fourteen non-iOS checks and both native workflows, each explicitly executing `RunnerTests.testNativeLogisticsLifecycle()` with the required export audits and real macOS fixtures. The six-phase application push run `36772414350` / job `110081843927` passed at 20:58:18Z: six distinct terminated PIDs, the same complete installed bundle, whole saved input/result equality, fresh native reopen calculations, incomplete-draft error and full legacy preservation. Artifact `11126140650` has SHA-256 `bee8670e08a358f156313ea0d8a8ee6509fda63812bcc2d6d5d0587dc1c6ce34`. Root and independent exact-source verification passed. The companion PR run `36772419405` / job `110081861356` exhausted its existing 900-second initial-build deadline before installation or test execution; its failure and `cleanup_incomplete` remain retained. The single unchanged-source retry, attempt 2 / job `110096152290`, also failed during the initial build at 21:33:13Z, before installation or any selected test. Artifact `11127388295` has SHA-256 `4d3afe0af858de301bc590d2061f0a7a41a5c3aab68a22c693203590e0f7cecb`. No third retry or deadline increase was made. The [six-phase checkpoint](../testing/tax-mobile-aggregate-recovery-2026-09-30/CHECKPOINT.md#subsequent-six-phase-ios-evidence-on-pr-72) records full identities and limits. That source finished with seventeen successful checks and one failed gate; it is branch evidence, not an accepted PR merge, main-branch proof or full P3 closure.
 
-The [selected-destination successor](../testing/tax-mobile-aggregate-recovery-2026-09-30/CHECKPOINT.md#selected-destination-successor-040c580) `040c5805e09531eed45baee4198669b0e2d5c9d4` finished with 15 passing checks and three failures. Both native workflows explicitly passed the selected XCTest, both archive audits and all real/fake fixtures. Application PR `36781641581` / job `110113073766` completed the build and installation, matched the entire bundle and authenticated Runner PID 49560, then invoked the driver before the shared 900-second first-phase deadline expired. No selected application phase completed; denied process-group probes leave cleanup unproved. Artifact `11128866088` has SHA-256 `802cf6a7d2963ae54a6f667c95584faf22e861311ffbdc1a54c91b5f99a84a75`. Push application failed a fixture-readiness assertion before setup, and push web failed browser DevTools startup after build/tests/RSC/SSR passed. Companion PR web and all remaining non-iOS checks passed; neither companion success replaces a failed gate. Reviewed successor `6c86bfb5b2e41331860974342b863536c3a67916` is now published, combining the test-only readiness correction and separate 900-second build preparation / six 300-second runtime allocations under unchanged 30-minute exercise and 45-minute job limits. Root and peer each passed 48 controls. All fresh source gates and complete six-phase execution remain required; iOS future-data/interrupted writes and physical/accessibility acceptance remain open.
+The [selected-destination successor](../testing/tax-mobile-aggregate-recovery-2026-09-30/CHECKPOINT.md#selected-destination-successor-040c580) `040c5805e09531eed45baee4198669b0e2d5c9d4` finished with 15 passing checks and three failures. Both native workflows explicitly passed the selected XCTest, both archive audits and all real/fake fixtures. Application PR `36781641581` / job `110113073766` completed the build and installation, matched the entire bundle and authenticated Runner PID 49560, then invoked the driver before the shared 900-second first-phase deadline expired. No selected application phase completed; denied process-group probes leave cleanup unproved. Artifact `11128866088` has SHA-256 `802cf6a7d2963ae54a6f667c95584faf22e861311ffbdc1a54c91b5f99a84a75`. Push application failed a fixture-readiness assertion before setup, and push web failed browser DevTools startup after build/tests/RSC/SSR passed. Companion PR web and all remaining non-iOS checks passed; neither companion success replaces a failed gate. The reviewed successor `6c86bfb5b2e41331860974342b863536c3a67916` combined test-only readiness controls and separate 900-second build preparation / six 300-second runtime allocations under unchanged 30-minute exercise and 45-minute job limits; root and peer each passed 48 controls. It subsequently finished with 15 passing checks and three failures: both native tests passed, but both application hosts timed out after their first selected write test passed, and push web failed browser startup. Full terminal artifacts and the later direct-Dart/readiness correction are recorded in the current checkpoint above. iOS future-data/interrupted writes and physical/accessibility acceptance remain open.
 
 ## 30 September 2026 — Web source and mobile workspace recovery accepted
 
