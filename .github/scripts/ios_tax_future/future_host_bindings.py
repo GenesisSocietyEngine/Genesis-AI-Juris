@@ -683,7 +683,10 @@ def replay_transport(spec, read, transport, containers, bundle, prior_pids, proc
         require(not parser.array or parser.closed, "Backfill truncated")
     parser = ref.JsonLogObjects()
     stream_events = parser.feed(read(phase + "-system.log").decode("utf-8"), final=True)
-    require(not parser.array or parser.closed, "System log truncated")
+    # The owned live `log stream` is terminated after the driver/process checks;
+    # macOS may finish its last complete object without closing the outer array.
+    # final=True still rejects partial objects, separators and trailing garbage.
+    # Finite successful `log show` output above must close its array.
     wrapped = [p.decode(line) for line in read(phase + "-system-events.jsonl").splitlines() if line.strip()]
     require([v["event"] for v in wrapped] == stream_events, "Parsed/raw system log differs")
     for event in stream_events:

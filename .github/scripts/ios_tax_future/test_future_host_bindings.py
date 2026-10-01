@@ -520,6 +520,69 @@ class PortableBindings(unittest.TestCase):
         (root / "baseline-write-system-events.jsonl").write_bytes(b"")
         self.refused(lambda: self.h.resume("baseline-read"))
 
+    def observed_open_stream(self, h, *, event_change=None, tail=b""):
+        """Reduced 7a PR log-stream shape; every process/VM identity is synthetic."""
+        root = h.host.evidence.root
+        event = m.p.decode((root / "baseline-write-discovery.json").read_bytes())["event"]
+        if event_change:
+            event_change(event)
+        shape = pathlib.Path(__file__).with_name("fixtures").joinpath("open-system-stream.txt").read_bytes()
+        self.assertEqual(shape.count(b'{"fixture": "VM_EVENT"}'), 1)
+        raw = shape.replace(b'{"fixture": "VM_EVENT"}', json.dumps(event, indent=2).encode())
+        parser = m.pinned_transport().JsonLogObjects()
+        events = parser.feed(raw.decode(), final=True)
+        self.assertTrue(parser.array)
+        self.assertFalse(parser.closed)
+        self.assertEqual(len(events), 2)
+        (root / "baseline-write-system.log").write_bytes(raw + tail)
+        (root / "baseline-write-system-events.jsonl").write_bytes(b"".join(
+            m.p.encode({"arrival_utc": "2025-01-01T00:00:01+00:00", "event": value}) + b"\n"
+            for value in events))
+
+    def test_observed_owned_stream_complete_record_boundary_commits_and_replays(self):
+        spec = self.h.start(0); transport = self.h.app(spec)
+        self.observed_open_stream(self.h)
+        self.h.host.after_phase(spec, transport)
+        self.h.resume("baseline-read")
+        self.assertEqual(len(self.h.host.prior), 1)
+
+    def test_observed_stream_partial_object_separator_or_garbage_never_commits(self):
+        for tail in (b",", b',{"eventType":', b"unexpected", b"]{}", b",,{}"):
+            with self.subTest(tail=tail), tempfile.TemporaryDirectory() as root:
+                h = Harness(root); spec = h.start(0); transport = h.app(spec)
+                self.observed_open_stream(h, tail=tail)
+                self.refused(lambda: h.host.after_phase(spec, transport))
+                self.assertFalse((pathlib.Path(root) / "baseline-write-ledger.json").exists())
+
+    def test_observed_stream_preserves_authenticated_pid_path_time_and_uri_checks(self):
+        changes = (("processID", 999), ("processImagePath", "/other/Runner"),
+                   ("timestamp", "2024-12-31T23:59:59+00:00"),
+                   ("eventMessage", "The Dart VM service is listening on http://127.0.0.1:12345/"))
+        for field, value in changes:
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as root:
+                h = Harness(root); spec = h.start(0); transport = h.app(spec)
+                self.observed_open_stream(h, event_change=lambda event: event.update({field: value}))
+                self.refused(lambda: h.host.after_phase(spec, transport))
+                self.assertFalse((pathlib.Path(root) / "baseline-write-ledger.json").exists())
+
+    def test_observed_stream_still_requires_exact_raw_and_wrapped_events(self):
+        spec = self.h.start(0); transport = self.h.app(spec)
+        self.observed_open_stream(self.h)
+        path = self.h.host.evidence.root / "baseline-write-system-events.jsonl"
+        path.write_bytes(b"\n".join(path.read_bytes().splitlines()[:-1]) + b"\n")
+        self.refused(lambda: self.h.host.after_phase(spec, transport))
+        self.assertFalse((self.h.host.evidence.root / "baseline-write-ledger.json").exists())
+
+    def test_finite_successful_backfill_still_requires_closed_array(self):
+        spec = self.h.start(0); transport = self.h.app(spec)
+        self.observed_open_stream(self.h)
+        root = self.h.host.evidence.root
+        event = m.p.decode((root / "baseline-write-discovery.json").read_bytes())["event"]
+        (root / "baseline-write-backfill.json").write_bytes(b"[" + m.p.encode(event))
+        with self.assertRaisesRegex(RuntimeError, "Backfill truncated"):
+            self.h.host.after_phase(spec, transport)
+        self.assertFalse((root / "baseline-write-ledger.json").exists())
+
     def test_preparation_inputs_and_full_bundle_must_match_before_ledger_commit(self):
         cases = (("source_sha", "f" * 40), ("run_nonce", "555-9"), ("simulator", "FFFFFFFF-BBBB-CCCC-DDDD-EEEEEEEEEEEE"),
                  ("target", "integration_test/other.dart"), ("timeout_seconds", 300), ("source_files", {}),
