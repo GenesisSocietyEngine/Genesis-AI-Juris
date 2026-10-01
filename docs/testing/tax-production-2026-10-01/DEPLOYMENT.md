@@ -99,6 +99,15 @@ separate. The result and report-dialog screenshots were independently inspected:
 not establish a hosted tax-memorandum/economic-assessment PDF journey, all PDF
 pages, tagging or accessibility. Those local/CI report proofs remain distinct.
 
+The final `public-smoke/RESULT.json` has SHA-256
+`fe0799a60decb15dd760e7d8f2f6020b8b194b276a1dbf496bb269fd7e1b6735`;
+all 95 listed evidence files were independently checked for complete byte counts
+and hashes. A later read-only attempt to fetch the preview blob failed with
+`TypeError: Failed to fetch`; no PDF bytes, download or content parity are claimed,
+and the cause was not established. The owned guest browser closed at 00:30:15Z;
+00:30:37Z inspection found zero owned Edge processes and a clean tracked
+production checkout. Its isolated diagnostic profile remains retained.
+
 Exact source, build, archive and provider receipts are retained in
 `.worktrees/tax-production-2026-10-01/.artifacts/production/`. The independent
 hash review is `.artifacts/tax-production-2026-10-01/ARCHIVE_HASH_REVIEW.json`.

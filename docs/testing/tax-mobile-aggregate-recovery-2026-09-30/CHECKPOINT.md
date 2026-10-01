@@ -351,8 +351,11 @@ two POSIX-only Chrome skips. New native runs are push `36794712045` /
 job `110155382993` and PR `36794716392` / job `110155397279`; new application
 runs are push `36794711895` / job `110155382347` and PR `36794716581` /
 job `110155414271`. At 00:23Z, this source has thirteen passing checks, a failed
-PR web job `110155396558` and four pending iOS jobs. Classification and retained
-diagnostics remain separate from the prior source's eighteen passing checks.
+PR web job `110155396558` and four pending iOS jobs. The retained log for run
+`36794716291` identifies `CHROME_READINESS_TIMEOUT` at its 20-second packaged
+browser deadline, after the build and unit suite passed. The cause remains
+unproved; diagnostics and this failure remain separate from the prior source's
+eighteen passing checks.
 Old passing results are not transferred between sources.
 The future-format harness in PR #80 and genuine iOS
 write-interruption journeys remain separate acceptance items.
