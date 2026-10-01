@@ -46,6 +46,19 @@ export default function AccountClient({
   const [error, setError] = useState("");
   const [recoveryCode, setRecoveryCode] = useState("");
 
+  function returnToWorkspace(authority: number) {
+    if (navigation.authorityVersion !== authority) return;
+    // The server confirmed this operation, but busy remains true until finally
+    // commits. Approve only this intentional return before beforeunload runs.
+    navigation.approvePageDeparture();
+    try {
+      window.location.assign(returnTo);
+    } catch (caught) {
+      navigation.cancelPageDeparture();
+      throw caught;
+    }
+  }
+
   async function submit(action: "login" | "register" | "recover" | "reset", event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy !== null) return;
@@ -87,7 +100,7 @@ export default function AccountClient({
       if (action === "login") {
         // Start a new shared session from the confirmed cookie. A retained layout
         // can otherwise keep the pre-login anonymous authority after navigation.
-        window.location.assign(returnTo);
+        returnToWorkspace(authority);
       }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("The credential request could not be completed.", "Не удалось выполнить запрос. Проверьте соединение и повторите."));
@@ -117,7 +130,7 @@ export default function AccountClient({
       formCommitted(element);
       // Recreate the shared session after profile creation; a retained layout can
       // otherwise keep profileRequired=true after a successful client-side return.
-      window.location.assign(returnTo);
+      returnToWorkspace(authority);
     } catch (caught) { setError(caught instanceof Error ? caught.message : t("Check your connection and retry.", "Проверьте соединение и повторите.")); }
     finally { setBusy(null); }
   }
