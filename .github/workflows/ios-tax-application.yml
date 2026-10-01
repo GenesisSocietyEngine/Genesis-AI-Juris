@@ -20,6 +20,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1; Node 24
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify bounded diagnostic capture and phase deadlines
+        timeout-minutes: 1
+        run: |
+          python3 -I "$GITHUB_WORKSPACE/.github/scripts/test_collect_ios_tax_diagnostics.py"
+          python3 -I "$GITHUB_WORKSPACE/.github/scripts/test_run_with_deadline.py"
+          python3 -I "$GITHUB_WORKSPACE/.github/scripts/test_run_ios_tax_phase.py"
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.95.0
@@ -68,6 +74,14 @@ jobs:
         shell: bash
         run: |
           bash "$GITHUB_WORKSPACE/.github/scripts/run_ios_tax_application.sh" \
+            "${{ steps.simulator.outputs.id }}" "$IOS_TAX_EVIDENCE_DIR"
+      - name: Capture bounded simulator diagnostics after application failure
+        if: ${{ failure() && steps.simulator.outputs.id != '' }}
+        timeout-minutes: 3
+        env:
+          IOS_TAX_EVIDENCE_DIR: ${{ runner.temp }}/ios-tax-application-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          python3 -I "$GITHUB_WORKSPACE/.github/scripts/collect_ios_tax_diagnostics.py" \
             "${{ steps.simulator.outputs.id }}" "$IOS_TAX_EVIDENCE_DIR"
       - name: Retain application inputs, native exchanges, screenshots and process evidence
         env:
