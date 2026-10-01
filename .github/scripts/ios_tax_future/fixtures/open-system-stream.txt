@@ -1,0 +1,7 @@
+Filtering the log data using "type == 1024 AND processImagePath == "/synthetic/Runner.app/Runner""
+[{"fixture": "VM_EVENT"},
+{
+  "eventType" : "logEvent",
+  "eventMessage" : "flutter: 00:46 +2: All tests passed!",
+  "processID" : 1000
+}
