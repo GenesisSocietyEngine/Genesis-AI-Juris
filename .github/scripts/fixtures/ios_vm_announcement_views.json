@@ -1,0 +1,81 @@
+{
+  "fixture": "adapted-observed-ios-log-views-v1",
+  "source_sha": "7d6cd91fddec6d7cb706758b0afd8034546bd94b",
+  "artifact_sha256": "201633c1c8aa5e82d03d6e7e373c9add02856a6f6f62fe481ec75cfc555faaa6",
+  "adaptations": [
+    "synthetic PID, image paths/UUIDs, boot UUID and loopback URI",
+    "original timestamp difference, numeric event IDs and record grammar retained"
+  ],
+  "views": [
+    {
+      "origin": "stream",
+      "event": {
+        "timezoneName": "",
+        "messageType": "Default",
+        "eventType": "logEvent",
+        "source": null,
+        "formatString": "%s",
+        "userID": 501,
+        "activityIdentifier": 0,
+        "subsystem": "",
+        "category": "",
+        "threadID": 107329,
+        "senderImageUUID": "22222222-2222-4222-8222-222222222222",
+        "backtrace": {
+          "frames": [
+            {
+              "imageOffset": 6149920,
+              "imageUUID": "22222222-2222-4222-8222-222222222222"
+            }
+          ]
+        },
+        "bootUUID": "",
+        "processImagePath": "/isolated/Runner.app/Runner",
+        "senderImagePath": "/isolated/Runner.app/Frameworks/Flutter.framework/Flutter",
+        "timestamp": "2026-09-30 20:05:36.505261+0000",
+        "machTimestamp": 1619938003043,
+        "eventMessage": "The Dart VM service is listening on http://127.0.0.1:43210/a_b-C=/\n",
+        "processImageUUID": "11111111-1111-4111-8111-111111111111",
+        "traceID": 9249785742145093636,
+        "processID": 123,
+        "senderProgramCounter": 6149920,
+        "parentActivityIdentifier": 0
+      }
+    },
+    {
+      "origin": "backfill",
+      "event": {
+        "timezoneName": "",
+        "messageType": "Default",
+        "eventType": "logEvent",
+        "source": null,
+        "formatString": "%s",
+        "userID": 501,
+        "activityIdentifier": 0,
+        "subsystem": "",
+        "category": "",
+        "threadID": 107329,
+        "senderImageUUID": "22222222-2222-4222-8222-222222222222",
+        "backtrace": {
+          "frames": [
+            {
+              "imageOffset": 6149920,
+              "imageUUID": "22222222-2222-4222-8222-222222222222"
+            }
+          ]
+        },
+        "bootUUID": "33333333-3333-4333-8333-333333333333",
+        "processImagePath": "/isolated/Runner.app/Runner",
+        "senderImagePath": "/isolated/Runner.app/Frameworks/Flutter.framework/Flutter",
+        "timestamp": "2026-09-30 20:05:36.026473+0000",
+        "machTimestamp": 1619938003043,
+        "eventMessage": "The Dart VM service is listening on http://127.0.0.1:43210/a_b-C=/\n",
+        "processImageUUID": "11111111-1111-4111-8111-111111111111",
+        "traceID": 9249785742145093636,
+        "processID": 123,
+        "senderProgramCounter": 6149920,
+        "parentActivityIdentifier": 0
+      }
+    }
+  ]
+}
