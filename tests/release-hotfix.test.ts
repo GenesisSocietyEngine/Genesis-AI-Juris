@@ -276,7 +276,7 @@ test("leaving a restricted Studio context cannot carry snapshots or history into
   assert.match(taxTemplate, /editHistory: \[\]/);
   assert.match(taxTemplate, /enterNewLocalDraft\(template/);
   assert.doesNotMatch(taxTemplate, /current\.editHistory|commitStudioDraft/);
-  assert.match(resetDraft, /function resetStudioDraft\(next = blankStudioDraft\(\), nextPrompt = ""\)/);
+  assert.match(resetDraft, /function resetStudioDraft\(next = blankStudioDraft\(\), nextPrompt = "", replacementMessage\?: string\)/);
   assert.match(resetDraft, /if \(!enterNewLocalDraft\(next, null\)\) return false/);
   assert.match(resetDraft, /setPrompt\(nextPrompt\)/);
   assert.doesNotMatch(resetDraft, /defaultDraft|appendStudioHistory/);

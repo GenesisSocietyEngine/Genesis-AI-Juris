@@ -1,8 +1,9 @@
+import { buildCategoryDemo } from "../app/category-demo-draft";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { CATEGORY_DEMOS, buildCategoryDemo, matchingCategoryDemos } from "../app/category-demos";
+import { CATEGORY_DEMOS, matchingCategoryDemos } from "../app/category-demos";
 import { CASE_TYPE_REGISTRY } from "../app/case-type-registry";
 import { evaluateCaseTypeDraft } from "../app/case-type-playbooks";
 import { normalizeStudioDraft, caseFingerprint } from "../app/case-integrity";

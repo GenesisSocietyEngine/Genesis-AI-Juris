@@ -113,3 +113,20 @@ Canonical remote main was checked again and remains `1a8b7ee`. Existing writers'
 dirty paths were untouched. GitHub CLI authentication reports an invalid token.
 Final commit and synchronization outcome will be recorded in the output receipt;
 no main integration or deployment is implied by the local implementation.
+
+### CI follow-up: deferred draft construction
+
+User outcome: opening a worked example retains the app's initial-load budget and
+existing replacement protections. Acceptance: the unchanged 325 KB entry limit
+passes; restricted-context reset checks, deferred launch/cancel/refusal and failed
+load preservation pass; the example still opens in Decision.
+
+The first remote full-suite run found two failures: an exact-signature assertion
+in the existing reset isolation test, and an initial entry of 355,610 bytes.
+Moved draft construction and its tax dependencies to a deferred module; updated
+the signature assertion while retaining all isolation checks. Initial entry is
+310,769 bytes in the local build, below the unchanged limit. Both rendered-build
+tests and 23 category/reset checks passed; an added fifth actual-parent handler
+check verifies failed deferred loading preserves work and offers retry. Strict
+TypeScript and targeted lint passed. Browser launch after the split opened Orchard
+at Decision with 12 nodes and 11 connections. Remote CI must rerun on this fix.

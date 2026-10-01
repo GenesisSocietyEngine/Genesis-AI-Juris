@@ -16,7 +16,7 @@ import StudioDecisionList from "./StudioDecisionList";
 import { graphOverviewScale } from "./graph-viewport";
 import CaseTemplates, { prepareCaseTemplate } from "./CaseTemplates";
 import CategoryDemoCards from "./CategoryDemoCards";
-import { buildCategoryDemo, matchingCategoryDemos } from "./category-demos";
+import { matchingCategoryDemos } from "./category-demos";
 import { CASE_TYPE_REGISTRY } from "./case-type-registry";
 import DemoCatalogueCards, { matchesCanopy, type DemoFormat } from "./DemoCatalogueCards";
 import { Icon, metricLabels, readJsonResponse } from "./JurisViewShared";
@@ -105,6 +105,11 @@ function graphBoundsForNodes(nodes: StudioNode[]) {
     }, 0))),
   };
 }
+async function loadCategoryDemo(id: CaseTypeId, locale: Locale) {
+  const { buildCategoryDemo } = await import("./category-demo-draft");
+  return buildCategoryDemo(id, locale);
+}
+
 const HelpCenter = lazy(() => import("./HelpCenter"));
 const CommunityView = lazy(() => import("./CommunityWorkspace"));
 const PlayView = lazy(() => import("./PlayWorkspace"));
@@ -2061,9 +2066,15 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
     if (!resetStudioDraft(prepared.draft, prepared.prompt)) return;
     navigate("studio", 1);
   }
-  function openCategoryDemo(id: CaseTypeId) {
+  async function openCategoryDemo(id: CaseTypeId) {
     starterCancelledRef.current = true;
-    const next = buildCategoryDemo(id, locale);
+    let next: StudioDraft;
+    try {
+      next = await loadCategoryDemo(id, locale);
+    } catch {
+      showSessionNotice(locale === "en" ? "The worked example could not load. Your draft is unchanged. Please try again." : "Не удалось загрузить учебный пример. Черновик не изменён. Повторите попытку.");
+      return;
+    }
     if (!resetStudioDraft(next, "", locale === "en"
       ? "Open this worked example? Save your current draft first to keep it. Your local graph, prompt and undo history will be replaced."
       : "Открыть учебный пример? Сначала сохраните текущий черновик. Локальный граф, промпт и история отмены будут заменены.")) return;
