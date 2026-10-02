@@ -3,6 +3,8 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
+import { studioReplacementMessage } from "../app/studio-replacement-message";
+import { LatestRequestGate } from "../app/latest-request";
 import { buildCategoryDemo } from "../app/category-demo-draft";
 import type { StudioDraft } from "../app/types";
 
@@ -10,16 +12,20 @@ import type { StudioDraft } from "../app/types";
 const source = ts.createSourceFile("JurisApp.tsx", readFileSync("app/JurisApp.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 const handlers: string[] = [];
 function collect(node: ts.Node) {
-  if (ts.isFunctionDeclaration(node) && node.name && ["resetStudioDraft", "openCategoryDemo"].includes(node.name.text)) handlers.push(node.getText(source));
+  if (ts.isFunctionDeclaration(node) && node.name && ["resetStudioDraft", "openCategoryDemo", "cancelCategoryDemo"].includes(node.name.text)) handlers.push(node.getText(source));
   ts.forEachChild(node, collect);
 }
 collect(source);
-assert.equal(handlers.length, 2);
+assert.equal(handlers.length, 3);
 async function launch({ leave = true, confirm = true, enter = true, load = true, locale = "en" as "en" | "ru" } = {}) {
   const original = buildCategoryDemo("contract_review", "en");
-  const state = { draft: original, prompts: [] as string[], destinations: [] as [string, number][], confirmations: [] as string[], replacements: 0, notices: [] as string[] };
+  const state = { draft: original, prompts: [] as string[], destinations: [] as [string, number][], confirmations: [] as string[], replacements: 0, notices: [] as string[], launch: null as null | { phase: string } };
   const code = ts.transpileModule(`${handlers.join("\n")}\nopenCategoryDemo("tax_planning");`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
   await runInNewContext(code, {
+    catalogueLaunchRef: { current: 0 }, exampleRequestGateRef: { current: new LatestRequestGate() }, exampleContextRef: { current: "context" },
+    studioSessionAuthority: { getSnapshot: () => ({ epoch: 1, scope: "account", phase: "ready" }) },
+    setExampleLaunch: (value: unknown) => { state.launch = typeof value === "function" ? value(state.launch) : value; },
+    studioReplacementMessage, studioStorageScope: "scope", studioCanDuplicate: true, studioCustomCaseId: null, studioPrivate: false, mayPersistStudioDraftOnDevice: () => true, hasStudioEvidenceInput: () => false, studioEvidenceBuffersRef: { current: {} },
     locale, prompt: "Unapplied instruction", draftRef: { current: original }, starterCancelledRef: { current: false },
     loadCategoryDemo: async (...args: Parameters<typeof buildCategoryDemo>) => { if (!load) throw new Error("offline chunk"); return buildCategoryDemo(...args); },
     showSessionNotice: (message: string) => state.notices.push(message), mayLeaveStudio: () => leave,
@@ -37,7 +43,7 @@ test("cancelled example replacement preserves the actual graph, prompt and navig
   assert.equal(state.replacements, 0);
   assert.deepEqual(state.prompts, []);
   assert.deepEqual(state.destinations, []);
-  assert.match(state.confirmations[0], /Save to workspace or export case JSON/);
+  assert.match(state.confirmations[0], /Earlier device drafts/);
 });
 test("a pending operation blocks example launch before replacement confirmation", async () => {
   const { state, original } = await launch({ leave: false });
@@ -65,13 +71,14 @@ test("a failed deferred example load preserves the draft and offers a retry", as
   assert.equal(state.replacements, 0);
   assert.deepEqual(state.confirmations, []);
   assert.deepEqual(state.destinations, []);
-  assert.match(state.notices[0], /could not load.*unchanged.*try again/);
+  assert.equal(state.launch?.phase, "error");
+  assert.deepEqual(state.notices, []);
 });
 
 test("example confirmation explicitly distinguishes workspace/export from device-only saves in both languages", async () => {
   const en = (await launch({ confirm: false })).state.confirmations[0];
   const ru = (await launch({ confirm: false, locale: "ru" })).state.confirmations[0];
-  assert.match(en, /Device-only saves will be removed/);
-  assert.match(ru, /рабочем пространстве.*экспортируйте JSON/);
-  assert.match(ru, /только на устройстве, будут удалены/);
+  assert.match(en, /before device-only saves are removed/);
+  assert.match(ru, /Предыдущие черновики устройства/);
+  assert.match(ru, /до удаления активных копий устройства/);
 });

@@ -20,6 +20,7 @@ import {
 } from "../app/auth-crypto";
 import { authJson, INVALID_LOGIN_MESSAGE, INVALID_RECOVERY_MESSAGE } from "../app/auth-http";
 import { isSameOriginCredentialMutation } from "../app/request-security";
+import { studioArchiveKey } from "../app/studio-draft-archive";
 import { clearNavigationStorage } from "../app/NavigationSession";
 import { NavigationController } from "../app/navigation-controller";
 import { clearOrganizationSelection, scopedOrganizationHeaders, setOrganizationSelection } from "../app/organization-client";
@@ -342,12 +343,18 @@ test("shared Account sign-out clears the verified account's device state only af
   const ownV2 = studioDeviceDraftV2Key((await studioDeviceScope(email))!);
   const otherDraft = studioDeviceDraftKey((await studioDeviceScope("other-synthetic@example.test"))!);
   const otherV2 = studioDeviceDraftV2Key((await studioDeviceScope("other-synthetic@example.test"))!);
-  const ownKeys = [LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, ownDraft, ownV2];
+  const ownArchive = studioArchiveKey((await studioDeviceScope(email))!);
+  const otherArchive = studioArchiveKey((await studioDeviceScope("other-synthetic@example.test"))!);
+  const ownEntry = `${ownArchive}:entry:future-copy`;
+  const otherEntry = `${otherArchive}:entry:future-copy`;
+  const ownKeys = [LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, ownDraft, ownV2, ownArchive, ownEntry];
   const continuationKeys = ["genesis-invitation-continuation-v1", "genesis-studio-auth-continuation-v1", "genesis-studio-auth-continuation-v2", "genesis.juris.pending-workspace-save.v2", "genesis-juris-pending-case-prompt-v1"];
   const futureRaw = '{"schemaVersion":999,"amount":900719925474099312345}';
-  const local = new Map([...ownKeys, otherDraft, otherV2, "unrelated-preference"].map(key => [key, key === ownV2 || key === otherV2 ? futureRaw : "synthetic"]));
+  const local = new Map([...ownKeys, otherDraft, otherV2, otherArchive, otherEntry, "unrelated-preference"].map(key => [key, key === ownV2 || key === otherV2 || key === ownEntry || key === otherEntry ? futureRaw : "synthetic"]));
   const session = new Map([...continuationKeys, "unrelated-tab-state"].map(key => [key, "synthetic"]));
   const storage = (values: Map<string, string>) => ({
+    get length() { return values.size; },
+    key(index: number) { return [...values.keys()][index] ?? null; },
     removeItem(key: string) { values.delete(key); },
     setItem(key: string, value: string) { values.set(key, value); },
   });
@@ -394,6 +401,8 @@ test("shared Account sign-out clears the verified account's device state only af
     assert.equal(controller.getSnapshot().identity, null);
     assert.equal(local.get(otherDraft), "synthetic", "cleanup must remain bound to the terminating account");
     assert.equal(local.get(otherV2), futureRaw, "explicit cleanup must not erase another account's future record");
+    assert.equal(local.get(otherArchive), "synthetic", "sign-out must retain another account’s archive");
+    assert.equal(local.get(otherEntry), futureRaw, "sign-out must retain another account's future journal entry");
     assert.equal(local.get("unrelated-preference"), "synthetic");
     assert.equal(session.get("unrelated-tab-state"), "synthetic");
   } finally {
