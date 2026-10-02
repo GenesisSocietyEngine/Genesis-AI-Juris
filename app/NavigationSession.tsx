@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState, useSyncExternalStore, t
 import { NavigationController } from "./navigation-controller";
 import { clearOrganizationSelection } from "./organization-client";
 import { LEGACY_STUDIO_DRAFT_KEY, LEGACY_STUDIO_PRIVATE_KEY, studioDeviceDraftKey, studioDeviceDraftV2Key, studioDeviceScope } from "./studio-device-storage";
+import { purgeStudioArchiveForSignOut } from "./studio-draft-archive";
 import { useWorkspaceLocation } from "./use-interface-locale";
 import { isWorkspaceDepartureClick } from "./departure-click";
 import { installDepartureHistory } from "./departure-history";
@@ -20,7 +21,7 @@ export async function clearNavigationStorage(email?: string) {
     // Explicit, server-confirmed sign-out retains the existing privacy cleanup,
     // including future records in this verified account's slots. Ordinary
     // restore and migration must never perform this deletion.
-    try { window.localStorage.removeItem(LEGACY_STUDIO_DRAFT_KEY); window.localStorage.removeItem(LEGACY_STUDIO_PRIVATE_KEY); const scope = await studioDeviceScope(email); if (scope) { window.localStorage.removeItem(studioDeviceDraftKey(scope)); window.localStorage.removeItem(studioDeviceDraftV2Key(scope)); } } catch { /* Server sign-out remains authoritative. */ }
+    try { window.localStorage.removeItem(LEGACY_STUDIO_DRAFT_KEY); window.localStorage.removeItem(LEGACY_STUDIO_PRIVATE_KEY); const scope = await studioDeviceScope(email); if (scope) { window.localStorage.removeItem(studioDeviceDraftKey(scope)); window.localStorage.removeItem(studioDeviceDraftV2Key(scope)); purgeStudioArchiveForSignOut(window.localStorage, scope); } } catch { /* Server sign-out remains authoritative. */ }
   }
 }
 export default function NavigationSession({ children, controller: supplied }: {children:ReactNode; controller?:NavigationController}) {

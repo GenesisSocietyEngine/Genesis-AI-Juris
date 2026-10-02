@@ -269,7 +269,7 @@ test("leaving a restricted Studio context cannot carry snapshots or history into
 
   assert.match(enterNewLocalDraft, /delete isolated\.protection/);
   assert.match(enterNewLocalDraft, /isolated\.parent = null/);
-  assert.match(enterNewLocalDraft, /replaceStudioDraft\(isolated\)/);
+  assert.match(enterNewLocalDraft, /replaceStudioDraft\(isolated, confirmed\)/);
   assert.match(generateDraft, /editHistory: \[\]/);
   assert.match(generateDraft, /enterNewLocalDraft\(rebuilt/);
   assert.doesNotMatch(generateDraft, /draftRef\.current\.editHistory|commitStudioDraft/);
@@ -277,7 +277,7 @@ test("leaving a restricted Studio context cannot carry snapshots or history into
   assert.match(taxTemplate, /enterNewLocalDraft\(template/);
   assert.doesNotMatch(taxTemplate, /current\.editHistory|commitStudioDraft/);
   assert.match(resetDraft, /function resetStudioDraft\(next = blankStudioDraft\(\), nextPrompt = "", replacementMessage\?: string\)/);
-  assert.match(resetDraft, /if \(!enterNewLocalDraft\(next, null\)\) return false/);
+  assert.match(resetDraft, /if \(!enterNewLocalDraft\(next, null, true\)\) return false/);
   assert.match(resetDraft, /setPrompt\(nextPrompt\)/);
   assert.doesNotMatch(resetDraft, /defaultDraft|appendStudioHistory/);
   assert.doesNotMatch(resetDraft, /commitStudioDraft/);

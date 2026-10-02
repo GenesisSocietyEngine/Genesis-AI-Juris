@@ -28,7 +28,7 @@
 
 * { box-sizing: border-box; }
 html { background: var(--ink-950); scroll-behavior: smooth; }
-body { margin: 0; background: var(--ink-950); color: var(--text); font-family: var(--sans); min-width: 320px; }
+body { margin: 0; background: var(--ink-950); color: var(--text); font-family: var(--sans); min-width: 0; }
 button, input, textarea, select { font: inherit; }
 button { color: inherit; }
 button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
