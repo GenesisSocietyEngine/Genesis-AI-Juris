@@ -6,6 +6,7 @@ import ts from "typescript";
 import { studioReplacementMessage } from "../app/studio-replacement-message";
 import { LatestRequestGate } from "../app/latest-request";
 import { buildCategoryDemo } from "../app/category-demo-draft";
+import { categoryDemoPrompt } from "../app/category-demo-prompts";
 import type { StudioDraft } from "../app/types";
 
 // Execute the real parent launch/replacement handlers, rather than duplicating their logic.
@@ -26,8 +27,8 @@ async function launch({ leave = true, confirm = true, enter = true, load = true,
     studioSessionAuthority: { getSnapshot: () => ({ epoch: 1, scope: "account", phase: "ready" }) },
     setExampleLaunch: (value: unknown) => { state.launch = typeof value === "function" ? value(state.launch) : value; },
     studioReplacementMessage, studioStorageScope: "scope", studioCanDuplicate: true, studioCustomCaseId: null, studioPrivate: false, mayPersistStudioDraftOnDevice: () => true, hasStudioEvidenceInput: () => false, studioEvidenceBuffersRef: { current: {} },
-    locale, prompt: "Unapplied instruction", draftRef: { current: original }, starterCancelledRef: { current: false },
-    loadCategoryDemo: async (...args: Parameters<typeof buildCategoryDemo>) => { if (!load) throw new Error("offline chunk"); return buildCategoryDemo(...args); },
+    locale, categoryDemoPrompt, prompt: "Unapplied instruction", draftRef: { current: original }, starterCancelledRef: { current: false },
+    loadCategoryDemo: async (...args: Parameters<typeof buildCategoryDemo>) => { if (!load) throw new Error("offline chunk"); return { draft: buildCategoryDemo(...args), prompt: categoryDemoPrompt(args[0], args[1]) }; },
     showSessionNotice: (message: string) => state.notices.push(message), mayLeaveStudio: () => leave,
     window: { confirm: (message: string) => { state.confirmations.push(message); return confirm; } },
     enterNewLocalDraft: (next: StudioDraft) => { if (!enter) return false; state.replacements++; state.draft = next; return true; },
@@ -51,11 +52,11 @@ test("a pending operation blocks example launch before replacement confirmation"
   assert.deepEqual(state.confirmations, []);
   assert.equal(state.replacements, 0);
 });
-test("confirmed example launch uses the existing isolated replacement path and opens Decision", async () => {
-  const { state } = await launch();
+for (const locale of ["en", "ru"] as const) test(`confirmed ${locale} example launch installs its illustrative brief and opens Decision`, async () => {
+  const { state } = await launch({ locale });
   assert.equal(state.replacements, 1);
   assert.equal(state.draft.caseType?.id, "tax_planning");
-  assert.deepEqual(state.prompts, [""]);
+  assert.deepEqual(state.prompts, [categoryDemoPrompt("tax_planning", locale)]);
   assert.deepEqual(state.destinations, [["studio", 4]]);
 });
 test("a refused protected replacement cannot clear the prompt or navigate", async () => {

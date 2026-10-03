@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { categoryDemoPrompt } from "../app/category-demo-prompts";
 import { CATEGORY_DEMOS, matchingCategoryDemos } from "../app/category-demos";
 import { CASE_TYPE_REGISTRY } from "../app/case-type-registry";
 import { evaluateCaseTypeDraft } from "../app/case-type-playbooks";
@@ -78,6 +79,15 @@ test("Templates exposes nine numbered empty starters and nine explicit examples 
     const cards = renderToStaticMarkup(createElement(CategoryDemoCards, { locale, demos: CATEGORY_DEMOS, onOpen: () => calls++ }));
     assert.equal((cards.match(/class="demo-catalogue-card"/g) ?? []).length, 9);
     assert.doesNotMatch(cards, /Practitioner reviewed|Law as of/);
+    for (const demo of CATEGORY_DEMOS) {
+      const prompt = categoryDemoPrompt(demo.caseTypeId, locale);
+      assert.match(prompt, locale === "en" ? /^Fictional illustration:/ : /^Вымышленный пример:/);
+      assert.ok(prompt.length < 550, `${demo.caseTypeId}: keep the preview concise`);
+      const escapedPrompt = renderToStaticMarkup(createElement("p", null, prompt)).slice(3, -4);
+      assert.ok(cards.includes(escapedPrompt), `${demo.caseTypeId}: visible prompt matches the editable brief`);
+      const draft = buildCategoryDemo(demo.caseTypeId, locale);
+      assert.ok(!JSON.stringify(draft).includes(prompt), "instructions are not recorded as case evidence or conclusions");
+    }
   }
   assert.equal(calls, 0);
 });

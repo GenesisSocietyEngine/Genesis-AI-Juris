@@ -5,6 +5,7 @@ import test from "node:test";
 import ts from "typescript";
 import { LatestRequestGate } from "../app/latest-request";
 import { buildCategoryDemo } from "../app/category-demo-draft";
+import { categoryDemoPrompt } from "../app/category-demo-prompts";
 import { retainStudioReplacement, readStudioArchive, readStudioArchiveBackup, restoreArchivedStudioDraft, studioArchiveKey, STUDIO_ARCHIVE_LIMIT, purgeKnownStudioArchive, deleteArchivedStudioDraft } from "../app/studio-draft-archive";
 import { deviceDraftEnvelope, mayPersistStudioDraftOnDevice, removeKnownStudioDeviceDrafts, studioDeviceDraftKey, studioDeviceDraftV2Key } from "../app/studio-device-storage";
 import { studioReplacementMessage } from "../app/studio-replacement-message";
@@ -46,7 +47,7 @@ function harness(confirm = true) {
   const code = ts.transpileModule(`${handlers.join("\n")}\n({openCategoryDemo, resetStudioDraft, cancelCategoryDemo});`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
   const noop = () => {};
   const functions = runInNewContext(code, {
-    URL, structuredClone, locale: "en", prompt: state.prompt, draftRef, studioStorageScope: scope,
+    URL, structuredClone, locale: "en", categoryDemoPrompt, prompt: state.prompt, draftRef, studioStorageScope: scope,
     studioCanDuplicate: true, studioCustomCaseId: null, studioPrivate: false,
     studioSessionAuthority: { getSnapshot: () => identity }, catalogueLaunchRef: { current: 0 }, exampleRequestGateRef: { current: new LatestRequestGate() }, exampleContextRef: contextRef,
     starterCancelledRef: { current: false }, studioEvidenceBuffersRef: buffersRef, studioTimelineRef: timelineRef,
@@ -56,7 +57,7 @@ function harness(confirm = true) {
     setStudioPrivate: noop, setStudioCustomCaseId: noop, setStudioCanManagePrivacy: noop, setStudioServerFingerprint: noop, setStudioServerPublicationFingerprint: noop, setStudioCanDuplicate: noop, setStudioCopyProtectionLocked: noop, setSelectedNodeId: noop,
     setDraftState: (next: StudioDraft) => { state.draft = next; state.mutations++; }, setStudioTimelineState: noop,
     mayLeaveStudio: () => !pending, mayPersistStudioDraftOnDevice, hasStudioEvidenceInput, retainStudioReplacement, removeKnownStudioDeviceDrafts, studioReplacementMessage, emptyStudioTimeline,
-    blankStudioDraft: () => original, loadCategoryDemo: () => loads[index++].promise,
+    blankStudioDraft: () => original, loadCategoryDemo: () => loads[index++].promise.then(draft => ({ draft, prompt: categoryDemoPrompt(draft.caseType!.id, "en") })),
     setExampleLaunch: (value: unknown) => { if (value === null) state.phase = ""; else if (typeof value === "object") state.phase = (value as { phase: string }).phase; },
     setPrompt: (value: string) => { state.prompt = value; }, navigate: () => { state.navigations++; }, showSessionNotice: (value: string) => state.notices.push(value),
     window: { localStorage: storage, confirm: (value: string) => { state.confirmations.push(value); return confirm; }, get location() { return { href: state.url }; }, history: { state: {}, replaceState: (_state: unknown, _title: string, value: URL) => { state.url = value.toString(); } } },
@@ -69,6 +70,7 @@ test("real launch and storage: latest choice wins and original bytes are archive
   h.loads[1].resolve(buildCategoryDemo("tax_planning", "en")); await second;
   h.loads[0].resolve(buildCategoryDemo("general_advisory", "en")); await first;
   assert.equal(h.state.draft.caseType?.id, "tax_planning"); assert.equal(h.state.mutations, 1); assert.equal(h.state.navigations, 1); assert.equal(h.state.confirmations.length, 1);
+  assert.equal(h.state.prompt, categoryDemoPrompt("tax_planning", "en"));
   const archive = readStudioArchive(h.storage, scope);
   assert.equal(archive[0].original, h.raw); assert.equal(archive[0].prompt, "unapplied instruction");
   assert.equal(h.storage.getItem(studioDeviceDraftKey(scope)), null);
@@ -83,6 +85,7 @@ for (const reason of ["cancel", "navigation", "locale", "workspace", "identity",
     else if (reason === "operation") h.pending(); else h.contextRef.current = reason;
     h.loads[0].resolve(buildCategoryDemo("general_advisory", "en")); await task;
     assert.equal(h.state.mutations, 0); assert.equal(h.state.confirmations.length, 0); assert.equal(h.state.navigations, 0);
+    assert.equal(h.state.prompt, "unapplied instruction");
     assert.equal(h.storage.getItem(studioDeviceDraftKey(scope)), h.raw); assert.equal(h.storage.getItem(studioArchiveKey(scope)), null);
   });
 }
