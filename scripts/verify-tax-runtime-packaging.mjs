@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, mkdtempSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { createServer } from "node:http";
-import { spawn, execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,6 +12,7 @@ import { Miniflare, Log, LogLevel } from "miniflare";
 import { withSecurityHeaders } from "../worker/security-headers.ts";
 import { verifyTaxWasmAssets } from "./tax-wasm-assets.mjs";
 import { buildReleaseIdentity } from "../build/release-identity.ts";
+import { withOwnedChrome } from "./owned-chrome.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const require = createRequire(import.meta.url);
@@ -198,17 +199,11 @@ async function verifyBrowser(server) {
   const chrome = process.env.CHROME_BIN;
   if (!chrome) throw new Error("Set CHROME_BIN to the installed Chrome executable for browser verification.");
   const profile = mkdtempSync(join(evidence, "chrome-"));
-  const child = spawn(chrome, ["--headless=new", "--no-sandbox", "--disable-gpu", "--no-first-run", "--no-default-browser-check", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "about:blank"], { windowsHide: true, stdio: ["ignore", "ignore", "pipe"] });
-  let diagnostics = "";
-  child.stderr.on("data", bytes => { diagnostics += bytes; });
-  let socket;
-  try {
-    const portFile = join(profile, "DevToolsActivePort");
-    for (let attempt = 0; !existsSync(portFile) && attempt < 200; attempt++) await delay(100);
-    const port = Number(readFileSync(portFile, "utf8").split("\n")[0]);
-    const pages = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
-    socket = new WebSocket(pages.find(page => page.type === "page").webSocketDebuggerUrl);
-    await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject; });
+  await withOwnedChrome({
+    command: chrome,
+    args: ["--headless=new", "--no-sandbox", "--disable-gpu", "--no-first-run", "--no-default-browser-check", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "about:blank"],
+    profile, evidence,
+  }, async ({ socket }) => {
     let nextId = 0;
     const pending = new Map();
     const errors = [];
@@ -216,6 +211,7 @@ async function verifyBrowser(server) {
       const event = JSON.parse(data);
       if (event.id) {
         const handler = pending.get(event.id); pending.delete(event.id);
+        if (!handler) return; // A timed-out command can still produce a late reply.
         if (event.error) handler.reject(new Error(JSON.stringify(event.error)));
         else handler.resolve(event.result);
       }
@@ -263,7 +259,7 @@ async function verifyBrowser(server) {
         receipt.hosts[`browser-${mode}`] = parsed;
       }
     }
-  } finally { socket?.close(); child.kill(); writeFileSync(join(evidence, "chrome.log"), diagnostics); }
+  });
 }
 
 try {
