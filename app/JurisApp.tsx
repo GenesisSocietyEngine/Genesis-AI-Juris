@@ -15,7 +15,6 @@ import StudioRecoveryView, { type StudioRecovery } from "./StudioRecoveryView";
 import StudioDecisionList from "./StudioDecisionList";
 import { graphOverviewScale } from "./graph-viewport";
 import CaseTemplates, { prepareCaseTemplate } from "./CaseTemplates";
-import CategoryDemoCards from "./CategoryDemoCards";
 import type { ExampleLaunch } from "./ExampleLaunchStatus";
 import { retainStudioReplacement, purgeKnownStudioArchive, restoreArchivedStudioDraft, type ArchivedStudioDraft } from "./studio-draft-archive";
 import { studioReplacementMessage } from "./studio-replacement-message";
@@ -109,10 +108,13 @@ function graphBoundsForNodes(nodes: StudioNode[]) {
   };
 }
 async function loadCategoryDemo(id: CaseTypeId, locale: Locale) {
-  const { buildCategoryDemo } = await import("./category-demo-draft");
-  return buildCategoryDemo(id, locale);
+  const [{ buildCategoryDemo }, { categoryDemoPrompt }] = await Promise.all([
+    import("./category-demo-draft"), import("./category-demo-prompts"),
+  ]);
+  return { draft: buildCategoryDemo(id, locale), prompt: categoryDemoPrompt(id, locale) };
 }
 
+const CategoryDemoCards = lazy(() => import("./CategoryDemoCards"));
 const HelpCenter = lazy(() => import("./HelpCenter"));
 const StudioDraftArchive = lazy(() => import("./StudioDraftArchive"));
 const CommunityView = lazy(() => import("./CommunityWorkspace"));
@@ -2119,10 +2121,10 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
       && scope === studioSessionAuthority.getSnapshot().scope;
     setExampleLaunch({ id, phase: "loading", context });
     try {
-      const next = await loadCategoryDemo(id, locale);
+      const { draft: next, prompt: nextPrompt } = await loadCategoryDemo(id, locale);
       if (!current()) return;
       if (!mayLeaveStudio()) { cancelCategoryDemo(); return; }
-      if (!resetStudioDraft(next)) { cancelCategoryDemo(); return; }
+      if (!resetStudioDraft(next, nextPrompt)) { cancelCategoryDemo(); return; }
       navigate("studio", 4);
     } catch {
       if (!current()) return;
@@ -2365,7 +2367,7 @@ function LibraryView({ locale, restorePlaySession, text, records, loadedScenario
     {error && <p className="catalogue-status page-width" role="status">{error}</p>}
     <section className="page-width demo-catalogue-results" aria-label={text.library} aria-busy={loading}>
       <DemoCatalogueCards locale={locale} cards={cards} showCanopy={showCanopy} busy={loading} openCanopy={openCanopy} canopyWorkflowHref={canopyWorkflowHref} launch={id => { const record = records.find(item => item.id === id); if (record) launchCase(record); }} feedback={id => { const record = records.find(item => item.id === id); if (record) requestFeedback({ caseId: record.id, version: record.currentVersion, title: record.title, source: "playable", fingerprint: record.fingerprint }); }}/>
-      <CategoryDemoCards demos={categoryDemos} locale={locale} onOpen={openCategoryDemo} exampleLaunch={exampleLaunch} cancelExample={cancelExample}/>
+      {categoryDemos.length > 0 && <Suspense fallback={<p role="status">{locale === "en" ? "Loading worked examples…" : "Загрузка учебных примеров…"}</p>}><CategoryDemoCards demos={categoryDemos} locale={locale} onOpen={openCategoryDemo} exampleLaunch={exampleLaunch} cancelExample={cancelExample}/></Suspense>}
       {!showCanopy && cards.length === 0 && categoryDemos.length === 0 && !loading && <div className="catalogue-empty"><b>{locale === "en" ? "No demo cases match these filters." : "По этим фильтрам демо-кейсы не найдены."}</b><button type="button" className="secondary-cta" onClick={resetFilters}>{locale === "en" ? "Reset filters" : "Сбросить фильтры"}</button></div>}
       {nextCursor && (format === "all" || format === "simulation") && <button className="catalogue-load-more secondary-cta" disabled={loading} onClick={() => void searchCatalogue({ filters: { q: query, practiceArea: practiceFilter, jurisdiction: jurisdictionFilter, difficulty: difficultyFilter, tag: tagFilter }, cursor: nextCursor, append: true })}>{locale === "en" ? `More simulations (${records.length} / ${total})` : `Ещё симуляции (${records.length} / ${total})`}</button>}
     </section>

@@ -1,5 +1,6 @@
 "use client";
 
+import { categoryDemoPrompt } from "./category-demo-prompts";
 import type { CategoryDemo } from "./category-demos";
 import ExampleLaunchStatus, { type ExampleLaunch } from "./ExampleLaunchStatus";
 import { caseTypePlaybook } from "./case-type-playbooks";
@@ -16,10 +17,10 @@ export default function CategoryDemoCards({ demos, locale, onOpen, exampleLaunch
     const book = caseTypePlaybook(caseTypeReference(demo.caseTypeId));
     return <article className="demo-catalogue-card" key={demo.caseTypeId}>
       <span className="demo-format">{en ? "Worked Studio example" : "Учебный пример Studio"}</span>
-      <h2>{demo.title[locale]}</h2><p>{demo.question[locale]}</p>
+      <h2>{demo.title[locale]}</h2><p><b>{en ? "Illustrative prompt" : "Учебный промпт"}:</b> {categoryDemoPrompt(demo.caseTypeId, locale)}</p>
       <p className="demo-card-meta">{caseTypePresentation(book, locale).label} · {en ? "Fictional · 15 min exploration" : "Учебный · 15 минут на изучение"}</p>
       <p><b>{en ? "Work towards" : "Результат"}:</b> {book.primaryOutcome[locale]}</p>
-      <details className="demo-editorial"><summary>{en ? "What to explore" : "Что изучить"}</summary><p>{demo.evidence[locale]}</p><p>{en ? "Trace the decision to its evidence, compare both outcomes and review the expected output. Professional review remains required." : "Проследите доказательства решения, сравните исходы и изучите ожидаемый результат. Требуется профессиональная проверка."}</p>{demo.caseTypeId === "training_simulation" && <p>{en ? "In Studio, choose Test → Play to make decisions on the branching route." : "В Studio выберите «Тест → Играть», чтобы пройти маршрут решений."}</p>}</details>
+      <details className="demo-editorial"><summary>{en ? "What to explore" : "Что изучить"}</summary><p>{en ? "After opening, choose Brief & structure → Edit the brief to adapt this prompt. Opening an example does not run AI." : "После открытия выберите «Задача и структура → Изменить описание», чтобы адаптировать промпт. Открытие примера не запускает ИИ."}</p><p>{demo.evidence[locale]}</p><p>{en ? "Trace the decision to its evidence, compare both outcomes and review the expected output. Professional review remains required." : "Проследите доказательства решения, сравните исходы и изучите ожидаемый результат. Требуется профессиональная проверка."}</p>{demo.caseTypeId === "training_simulation" && <p>{en ? "In Studio, choose Test → Play to make decisions on the branching route." : "В Studio выберите «Тест → Играть», чтобы пройти маршрут решений."}</p>}</details>
       <details className="demo-editorial"><summary>{en ? "Synthetic sources & output outline" : "Учебные источники и структура результата"}<span className="visually-hidden"> — {demo.title[locale]}</span></summary>
         <p>{en ? "These inspectable excerpts are authored for teaching. They are not external documents or verified legal sources." : "Эти доступные для изучения выдержки созданы для обучения. Это не внешние документы и не проверенные правовые источники."}</p>
         <ol>{demo.facts.map((fact, index) => <li key={index}><b>{en ? `Source S${index + 1}: ${index === 0 ? "scenario record" : "unresolved assumption"}` : `Источник S${index + 1}: ${index === 0 ? "данные сценария" : "открытое допущение"}`}</b><p>{fact[locale]}</p></li>)}</ol>

@@ -1,0 +1,73 @@
+CASE STUDIO — ILLUSTRATIVE DEMO PROMPTS
+Reviewed 3 October 2026
+
+Outcome and acceptance
+Each of the nine registered categories has a concise, meaningful English and
+Russian task prompt. A card previews the same text installed in the editable
+Studio brief. Loading is explicit; it does not run AI, promote instructions to
+facts, alter the authored evidence packet or certify an output. Cancelled,
+failed, stale or refused launches must preserve existing work.
+
+Implementation
+Nine prompts cover Harbor, Northline, Cloudbridge, Orchard, Clearpath, Meridian,
+Atlas, Beacon and Signal. Each states a fictional situation, a task and an
+evidence/review constraint. Professional routes remain conditional; the training
+prompt asks the learner to choose and explain a route instead of prescribing it.
+The existing question remains the decision-map trigger. Prompts remain separate
+from draft premise/evidence and are editable through Brief & structure > Edit
+the brief (RU: Задача и структура > Изменить описание).
+The catalogue card replaces its previous question paragraph with a labelled
+prompt preview; no additional tile, badge, banner or nested disclosure is added.
+What to explore explains the edit path and explicit AI behavior.
+Template examples use the same guarded launch. Empty templates retain their
+intake questions. The Canopy walkthrough and published simulations retain their
+existing authored scenario summaries/player instructions; this slice adds
+editable prompts to the nine category teaching drafts.
+
+Review and corrections
+The first implementation exceeded the unchanged 325,000-byte Studio entry
+budget (325,526 bytes). Prompt data and worked-example cards now load through
+deferred modules. The rebuilt entry is 314,516 bytes; the original budget test
+passes. No package dependency or network generation was introduced.
+The prompt and draft load together before the existing latest-request/context/
+identity check and confirmed replacement. Prompt changes occur only after a
+successful replacement; asynchronous losers cannot clear or install a brief.
+The RU navigation label was checked against the actual control wording.
+Static React content uses stable category keys and existing paragraph/disclosure
+styles. No new effects, subscriptions or per-render case serialization were added.
+
+Evidence
+52 focused tests pass, 0 failures/skips: category coverage/rendering, actual parent
+launch, actual preservation/recovery handlers, release hotfix and report model.
+Checks cover bilingual installed prompts, stale/cancel/identity/locale/workspace/
+edit/operation boundaries, quota/protection failure and original prompt retention.
+TypeScript passes. Changed-path ESLint passes without warnings. Production build
+and both existing build/initial-chunk tests pass.
+Local browser: EN worked cards display all nine previews; opening Orchard then
+Brief & structure > Edit the brief displays the exact economics prompt.
+RU Beacon opens and displays its exact investigation prompt in the editable brief
+in an independent Chrome tab. RU catalogue at 320 px: client width and scroll
+width both 305 px with the scrollbar, all nine cards present.
+An edited synthetic prompt survives Stay here in the navigation warning.
+A separate native replacement-confirmation check blocked in-app browser control;
+that manual check is incomplete. Replacement cancellation is covered by the
+passing actual-handler tests. No AI request or saved production-case write was
+performed. This bounded browser evidence is not full accessibility acceptance.
+
+Amended plan
+This closes the empty illustrative-brief gap for the nine category examples.
+Do not count prompts as completed professional sample outputs or adoption proof.
+Next demo work: subject-matter review of each source packet, one reviewed example
+deliverable per category, clearer initial-brief discovery if observed in a pilot,
+and a short task-based test of open > understand > edit > preserve > save > reopen.
+Keep the previous preservation and release gates: shared active-device-slot Save/
+cleanup concurrency, exact-candidate provider/adverse-state acceptance, accessible
+PDFs (prior delivered files were untagged), bilingual spoken-reader/200% checks,
+exact-source iOS restart/device verification and measured consented pilot.
+Production deployment is separate from this reviewed source checkpoint. No new
+production version or deployment is created by this slice.
+
+Source baseline
+Canonical main and local task base: 8ad9683963a45455f14d7837d5a805cc880fb03e.
+Isolated task branch: codex/demo-prompts-2026-10-03.
+Original C:/PROJECTS checkout and other-session changes remain untouched.
