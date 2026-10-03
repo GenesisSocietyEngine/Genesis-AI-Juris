@@ -77,15 +77,311 @@ passed `--require-complete` for that bounded matrix. See
 receipt is `android-aggregate-59234/journey-result.json`, SHA-256
 `29867430b432aef5e050c5459570422b8cd431dae3817ee5a4d99b61d3c18d6b`.
 
-Still open: six-phase iOS complete/incomplete/legacy application acceptance,
+## Subsequent six-phase iOS evidence on PR #72
+
+Exact PR source `60c62862f72449e3d87d23ff85935a1b621f77b7`, tree
+`5a93eb9261ec2286ec19cd26683af0ab97517a72`, has an executed, passing
+six-phase push result. This is branch evidence, separate from the accepted
+`5436609` head and its subsequent main runs. That candidate was not accepted
+because its companion PR application gate failed.
+
+Both native workflows at this exact source separately executed and passed
+`RunnerTests.testNativeLogisticsLifecycle()`. Each retained the initial
+arm64/x86_64 and prepared x86_64 archive audits, all 27 fake verifier fixtures
+and eight real macOS fixtures:
+
+| Event | Run / job | Executed XCTest (UTC) | Diagnostic artifact / ZIP SHA-256 |
+| --- | --- | --- | --- |
+| PR | 36772419428 / 110081861097 | 20:35:57.408709Z, 0.266 s | 11124677614 / `50e78fb2f3e6ece314a133a776c569f834a2e78cbfd3afa48dba1ad60f703c7b` |
+| Push | 36772414336 / 110081842908 | 20:46:48.283761Z, 0.205 s | 11124841801 / `ffeda71454476e38bc9f57b66554243c6ede2db366a6307eeda6980db4990db8` |
+
+All fourteen non-iOS checks also passed on their first attempts. Both web
+suites executed 1,140 passing tests, zero failures and three existing skips,
+both D1 migration controls, complete 49-command Rust parity in each packaged
+host, real Worker history/refusal controls and zero dependency-audit findings.
+Both PDF jobs passed the tax 22-PDF/164-page and legacy 47-PDF/760-page cohorts.
+Full source/run/job/log/artifact verification is retained in
+`.artifacts/pr68-ios-2026-09-30/pr72-60c6286-nonios/FINAL_VERIFICATION.json`,
+SHA-256 `3b085c5eec76c6219e70ee0d536bbaa1a28dd6be5a3a4bedfe874b9d505eb769`.
+These native/web checks do not replace the following application evidence.
+
+[Push run 36772414350 / job 110081843927](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36772414350/job/110081843927)
+completed successfully at 20:58:18Z on attempt 1. The selected test
+`production application tax journey across process restart` executed and
+passed in all six phases: write/read, incomplete-write/incomplete-read and
+legacy-write/legacy-read. Distinct PIDs were 39428, 46020, 50038, 54748,
+58091 and 62210; retained process evidence confirms each terminated.
+The same complete installed bundle was verified across all six phases
+(manifest SHA-256
+`8735ddf218f1e91f59bc79aeca2ef13a72e9414bc8b7d37a657529365b6dc460`).
+The committed source verifier passed complete saved-pair equality, fresh
+native recalculation on reopen, the incomplete native error and preservation
+of the whole legacy record. Screenshots and arm64/x86_64 export audits were
+retained for every phase.
+
+[Artifact 11126140650](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36772414350/artifacts/11126140650)
+is 2,191,891 bytes, SHA-256
+`bee8670e08a358f156313ea0d8a8ee6509fda63812bcc2d6d5d0587dc1c6ce34`.
+The complete job-log SHA-256 is
+`e9cf2c5a7d5932fe23b00a277ec3b2c0dad74da895a5480a83ad6a3b92cfdab1`.
+Raw source/run/job metadata, archive and exact-source verification are
+retained under
+`.artifacts/pr68-ios-2026-09-30/ios-application-v2-stable-vm60-push-verified-36772414350-attempt-1/`.
+
+The same source's [PR run 36772419405 / job 110081861356](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36772419405/job/110081861356)
+failed on attempt 1 when the unchanged 900-second first-phase deadline
+expired during the initial Flutter/Xcode build. No completed installation,
+Runner launch, VM attachment or selected-test phase was established. The
+host's `event=launch` line records phase intent only. The retained
+`cleanup_incomplete` and denied process-group probes prevent claiming that
+deadline cleanup completed. This is a build-timeout diagnostic, not an
+executed application-test result. Artifact `11125443230` is 3,074,396 bytes,
+SHA-256 `2d0356ff3db8ab939de20c8bb5ecb364ebc5baf38256bf9a2bc31b6be2acbeec`;
+the failure, full log and diagnosis remain in the companion
+`ios-application-v2-stable-vm60-pr-36772419405-attempt-1/` directory.
+One retry of only the failed job was authorized without changing source,
+timeouts or assertions. [Attempt 2 / job 110096152290](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36772419405/job/110096152290)
+also failed at 21:33:13Z during the first build. Its 900-second deadline began
+at 21:17:22.079825Z, Xcode started at 21:22:04.760544Z, and the deadline
+returned failure exit 124 at 21:32:22Z. There was no completed build,
+installation, Runner launch, VM attachment or selected-test phase. Diagnostics,
+artifact upload and scoped Simulator shutdown completed; the application-log
+query timed out and no build-stall root cause was established.
+
+[Artifact 11127388295](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/actions/runs/36772419405/artifacts/11127388295)
+is 2,955,409 bytes, SHA-256
+`4d3afe0af858de301bc590d2061f0a7a41a5c3aab68a22c693203590e0f7cecb`;
+the complete job-log SHA-256 is
+`a81d4223a3a44546ee411269bf29a684d07e9e6348745fa2b7962f8c5bbc5d7d`.
+The raw capture and diagnosis remain in
+`ios-application-v2-stable-vm60-pr-retry-36772419405-attempt-2/`.
+The candidate has seventeen successful checks and one failed gate. No third
+retry, deadline increase or assertion relaxation was made. The successful
+push does not replace either PR attempt.
+
+Full P3 remains open. That source's companion PR six-phase gate failed;
 iOS aggregate interruption recovery, broader stale/future/conflict journeys,
-physical-device checks, audible screen-reader and full-gesture acceptance,
-and P4C/P5 web-editor/version-bound report integration. Selected emulator
-evidence does not establish power-loss or cross-process atomicity.
+physical-device checks, audible screen-reader and full-gesture acceptance
+also remain open.
+P4C/P5 web-editor/version-bound report integration subsequently passed its
+[separate development checkpoint](../tax-report-model-2026-09-30/CHECKPOINT.md)
+in PR #77; that record lists its remaining application and accessibility gates.
+Selected emulator evidence does not establish power-loss or cross-process atomicity.
+
+## Selected-destination successor `040c580`
+
+PR #72 advanced to `040c5805e09531eed45baee4198669b0e2d5c9d4`, tree
+`364fbf4365879881ef39ff4eed16d73c77da9011`. Its bounded correction passes
+the existing isolated Simulator UUID to Flutter's supported `-d` argument.
+All 18 checks are terminal: 15 passed and three failed. This source has no
+completed six-phase application acceptance and is not merged.
+
+Both native runs explicitly passed `RunnerTests.testNativeLogisticsLifecycle()`.
+Each retained initial arm64/x86_64 and prepared x86_64 export audits, 27 fake
+verifier cases and eight real macOS fixtures:
+
+| Event | Run / job | Executed XCTest UTC / duration | Artifact / ZIP SHA-256 |
+| --- | --- | --- | --- |
+| PR | 36781641511 / 110113073774 | 22:07:03.639335Z / 0.186 s | 11129350015 / `d5eed0b0fc70c64a4c65cde4fcc875134b9162110687fa89253087cd7958ad24` |
+| Push | 36781636553 / 110113060104 | 22:08:11.332784Z / 0.947 s | 11128498414 / `d2b2443f149c96ffbdfdf46518dae3b89bbdda678ec9627ea9fc411e51e66177` |
+
+Application PR run `36781641581` / job `110113073766` failed at 22:10:59Z.
+The build completed: Xcode reported 526.3 seconds and the full Flutter command
+789.380 seconds. Effective build settings were `ARCHS=x86_64` and
+`ONLY_ACTIVE_ARCH=YES`. Installation exited zero in 27.615 seconds; the entire
+installed bundle matched, and authenticated getVM identified Runner PID 49560.
+Flutter started DDS and invoked the Dart driver. The shared 900-second
+first-phase deadline then expired with exit 124, before a selected-test
+completion or phase receipt. Hosted log-delivery timestamps place driver
+invocation about 34 seconds before nominal expiry, but buffering prevents
+treating that interval as an exact application event clock. Logs do not
+distinguish compilation, connection or requestData wait within the driver.
+This is a later failure than the preceding build/installation/discovery failures.
+No phase export audit ran, so effective build settings are not an archive audit.
+Denied process-group probes and `cleanup_incomplete` remain explicit; scoped
+Simulator shutdown is separate from proven deadline process cleanup.
+
+Artifact `11128866088` is 253,535 bytes, SHA-256
+`802cf6a7d2963ae54a6f667c95584faf22e861311ffbdc1a54c91b5f99a84a75`;
+complete log SHA-256
+`9657851091f6df6d940e39bb88b470b496406c6c9dfa33f80e2d2c85636f6aa2`.
+The companion push `36781636633` / job `110113058076` failed earlier, during
+the POSIX descendant fixture's 0.5-second startup window. Its changing heartbeat
+was never established. That failed readiness assertion does not prove a child
+survived cleanup. It reached no Simulator/build/application phase or artifact;
+full log SHA-256 is
+`eb656d69d29821d1be5747ef30520980e31f3f37b9c629381d9b4f4d878fd20a`.
+
+The third failure was web push `36781636551` / job `110113057328`: build,
+1,140 tests, both D1 guards and complete RSC/SSR parity passed, but browser
+packaging did not observe DevTools readiness within 20 seconds, then failed
+reading `DevToolsActivePort`. Its Chrome output does not establish a startup
+cause or final process state. Worker/audit gates were unreached. Artifact
+`11128811314` has SHA-256
+`2464b1f971e71035c17081d1eae8212c72abb40734c44aad7d0612cac8731b2b`.
+The companion PR web job passed the full browser/RSC/SSR, Worker and audit gates;
+both PDF cohorts, both Android/Flutter jobs and all Rust jobs passed. No old
+failed job was blindly retried or relabelled by its companion pass.
+
+Independent iOS audit binds 138 retained files and both native ZIPs plus the
+application failure: `ios-destination040-independent/receipt.json`, SHA-256
+`a43c42fed907c000879e8e03a2ddedd3e61a4c1599d2930a7c697828617fbef4`.
+The 14-job non-iOS receipt is `pr72-040c580-nonios/FINAL_VERIFICATION.json`,
+SHA-256 `b62a2941ef06c5dd2c76497466e0a7d3f9fe516af2cf9484677b256dbb866efe`.
+Both are under `.artifacts/pr68-ios-2026-09-30/`; raw logs and checked archives
+remain retained there. The subsequent correction is recorded below.
+The current helper reinstalls the identical bundle before each phase and
+separately checks saved-state preservation; first-install-only behavior is not
+claimed for these six-phase runs.
+
+## Published preparation/runtime correction `6c86bfb`
+
+Reviewed source `6c86bfb5b2e41331860974342b863536c3a67916`, tree
+`7249e287689bca606a4756d04f2676eefd79f8db`, was published by ordinary
+fast-forward push after fresh head/main checks. It includes the separately
+reviewed test-only fixture-readiness commit `babd8a3` and separates build
+preparation (900 seconds) from each of the six runtime phases (300 seconds).
+The overall exercise remains 30 minutes and the job 45 minutes; this explicitly
+changes the first phase's time accounting. Every phase must verify the completed
+build's source/nonce/Simulator/command and full bundle before installation or
+launch. Its launch receipt binds the same preparation proof. Existing per-phase
+installation and all selected-test, preservation, native and export assertions
+remain required. No application acceptance follows from the build proof alone.
+
+Root and peer independently passed all 48 phase controls, including actual
+Bash orchestration with fake tools proving that a failed preparation prevents
+runtime work and the first runtime receives its own 300-second deadline.
+Current application runs are push `36785086674` / job `110124460827` and PR
+`36785092463` / job `110124479510`; native runs are push `36785086762` /
+job `110124461746` and PR `36785092402` / job `110124479789`.
+This source finished with 15 passing checks and three failures. Both native
+workflows explicitly passed the selected XCTest and both archive audits, with
+27 fake fixtures and eight real macOS fixtures. Both application runs executed
+and passed the first write test, but the surrounding Flutter driver never
+returned a successful host exit before its 300-second deadline. Neither run
+completed termination/absence proof or a read phase; an application PASS line
+alone was not accepted as the complete journey. The retained push artifact is
+`11130263248`, SHA-256
+`1bc5d1f22406bdc4a5068a2237753c6be29e33e1ea1c4480b5ad2328bdc48643`;
+the PR artifact is `11130023363`, SHA-256
+`7643f5aabe4f8b9dbddcb6450bc4a6fda13a629a48729c27b2c2500ce4d0737c`.
+Buffered job-log delivery does not establish exact driver execution timing,
+and the cause of the host-completion stall remains unproved.
+
+Web push run `36785086781` / job `110124461862` also failed while waiting for
+Chrome DevTools readiness; initialized profile files and four DBus diagnostics
+do not establish its cause. Artifact `11130031665` has SHA-256
+`dd0d18ef8fa67b0ba42b23de6a1af6fb806f32f561efb81013d01212a4f20310`.
+The other thirteen non-iOS jobs passed, with both PDF cohorts independently
+verified. The final non-iOS receipt is `pr72-6c86bfb-nonios/FINAL_VERIFICATION.json`,
+SHA-256 `dc35260094673d704a56d54dbfb44d828f6ebbf5e8ef396a3a3a7cf2c92c1cd9`,
+under `.artifacts/pr68-ios-2026-09-30/`. Earlier failures remain source-specific.
+See the committed [budget review](https://github.com/GenesisSocietyEngine/Genesis-AI-Juris/blob/6c86bfb5b2e41331860974342b863536c3a67916/docs/testing/tax-ios-journeys-2026-09-30/BUILD_RUNTIME_BUDGETS.md).
+
+## Direct-Dart and browser-readiness correction `9f2b733`
+
+PR #72 advanced to `9f2b733ab18d5b9dc89e1fce9217a5c5956d0b69`, tree
+`8adf4b3a55fa800f140efb537c610674aff48c32`. The reviewed transport invokes the
+pinned SDK's Dart driver directly with the authenticated VM URL, checks actual
+child exit zero and preserves all six phases, native assertions, bundle/process
+proofs and export audits. Preparation remains 900 seconds, each application
+phase 300 seconds, the overall exercise 30 minutes and the job 45 minutes.
+Fifty-three transport controls passed root and independent review. This removes
+the surrounding Flutter driver invocation without claiming its stall cause.
+
+The separately reviewed Chrome readiness correction keeps a 20-second absolute
+startup deadline, validates the owned browser endpoint and page, caps diagnostics
+and cleans up only the owned process tree. Its eleven controls ran on hosted
+POSIX systems; local Windows validation passed nine with two POSIX-only skips.
+Neither correction changes financial runtime or editor behavior.
+
+All fourteen exact-source non-iOS jobs passed on attempt 1. Each full web suite
+reported 1,151 passes, zero failures and three existing skips, plus two D1 guards.
+Both events passed complete 49-command Rust parity in each browser/RSC/SSR host,
+real Worker controls, unavailable/corrupt WASM and CSP refusal, and both audits
+with zero findings. Both PDF jobs passed 22 tax PDFs/164 pages and 47 legacy
+PDFs/760 pages. The independent receipt
+`pr72-9f2b733-nonios/FINAL_VERIFICATION.json` has SHA-256
+`e6d0d1269c4cba2dab25877424b6f8de3b5138266dfffa5f0b8b167914de6e49`.
+
+Both native runs explicitly executed `RunnerTests.testNativeLogisticsLifecycle()`;
+both initial arm64/x86_64 and prepared x86_64 audits, 27 fake cases and eight real
+macOS fixtures passed. All original ZIP bytes and 41 files per artifact were
+independently checked.
+
+| Event | Run / job | Executed XCTest UTC / duration | Artifact / bytes / SHA-256 |
+| --- | --- | --- | --- |
+| Push | 36789437181 / 110138581225 | 23:33:09.281349Z / 0.244 s | 11131649748 / 179,936 / `57810ec1fdfb575501321fc3b2cc6ff62668801d59ebf75fe3d9435302579cc6` |
+| PR | 36789441457 / 110138595787 | 23:37:46.302988Z / 0.305 s | 11132430351 / 180,519 / `1ab2a10cf239dfa38706328c514796931604728b547c5766508da530af2a505e` |
+
+Application push run `36789437194` / job `110138581263` passed all six selected
+tests, with terminated PIDs 41770, 45043, 47244, 49830, 51320 and 54140. All phases
+matched the same complete bundle, SHA-256
+`9208ba7b799a1fa395c9758c99dd9d5fdf717af5a271bd1dd44ae8430d46ae5e`,
+and each x86_64 archive exposed exactly the three required mobile exports.
+Whole saved pairs, fresh native results, incomplete-draft refusal and the complete
+legacy record passed the exact-source verifier. The cached Dart processes each
+returned actual exit zero. Artifact `11131038641` is 1,932,097 bytes, SHA-256
+`e7127fb8c91d13b45313851a4d9bc241f8627e058476bac31d3840f1cce0f4d2`;
+full job-log SHA-256 is
+`563fc234d335b6a33d599606ea1d325bc8ac91579bffd91f15f112ed988e6983`.
+All 169 extracted files equal the original verified ZIP. The read, incomplete-read
+and legacy-read screenshots were visually inspected separately; this does not
+establish keyboard, spoken accessibility or physical-device behavior.
+
+The companion PR application run `36789441459` / job `110138595870` completed
+successfully at 2026-10-01T00:00:40Z. All six selected tests, actual direct-driver
+zero exits, complete pairs/fresh native results/incomplete refusal/whole legacy
+preservation, process absence and x86_64 audits passed. PIDs were 58176, 62093,
+64482, 67471, 70117 and 73130; the unchanged full-bundle manifest has SHA-256
+`d933e17a9c2141a7f7ebdc27aef4e2aeb12eb65cca443491f0efe2c891211658`.
+Artifact `11132339053` is 1,917,339 bytes, SHA-256
+`f7bd1c8e8e5752db060ec469635ee2ce547f3879093812d779ba988a3cae74b0`;
+full log SHA-256 is
+`159e7c88c958a0b56d2484557efe84771916f9039420cad52254942a2fd5e0db`.
+All eighteen exact-source gates are now green. PR #79 subsequently integrated
+the earlier six-phase transport and account correction at its separately tested
+`073a638` head into main. PR #72's newer direct-Dart/Chrome changes were then
+ordinarily reconciled with main `1a8b7ee` as
+`168d5f4517eaa6e2c45c7a4568e882e0345ef797`, tree
+`ddadd22f309fcd4f8d49dcaf8fef574d0bc4404c`. The eight remaining paths relative
+to main are byte-identical to reviewed `9f2b733`; its application/account inputs
+match main. Fifty-three transport and nine local Chrome controls passed, with
+two POSIX-only Chrome skips. New native runs are push `36794712045` /
+job `110155382993` and PR `36794716392` / job `110155397279`; new application
+runs are push `36794711895` / job `110155382347` and PR `36794716581` /
+job `110155414271`. At 00:23Z, this source has thirteen passing checks, a failed
+PR web job `110155396558` and four pending iOS jobs. The retained log for run
+`36794716291` identifies `CHROME_READINESS_TIMEOUT` at its 20-second packaged
+browser deadline, after the build and unit suite passed. The cause remains
+unproved; diagnostics and this failure remain separate from the prior source's
+eighteen passing checks.
+Old passing results are not transferred between sources.
+The future-format harness in PR #80 and genuine iOS
+write-interruption journeys remain separate acceptance items.
 
 ## Subsequent main evidence
 
-Main source `0590eaf364c9cdb28abc73c2b8d2de208936ff49` has its own newly
-triggered checks. At this checkpoint they are pending, and no main runtime
-pass is inferred from the accepted PR head. Subsequent receipts must retain
-that exact source, run/job identity, executed test and artifact independently.
+Main source `0590eaf364c9cdb28abc73c2b8d2de208936ff49` has separate execution
+evidence. Application run `36753964104` / job `110019353567` passed its two
+selected phases with terminated PIDs 22707 → 29966, two fresh native
+calculations and complete saved/native equality, screenshots and x86_64 audits.
+Artifact `11116288758` (388,838 bytes), SHA-256
+`85e722fba9444d4c89904c0e74b2ace2be9a048083fc37eea5149fb0ec54622c`, and full
+log SHA-256 `51a4084cf1dc9c277bfcd3be03a185695244878d55861e7251b20756633b0c5b`
+were independently retained and verified. Receipt:
+`ios-application-aggregate-main-0590-receipt.json`.
+
+The same main source's web/PDF run `36753963985` independently matched all 49
+responses per host and the initialization/audit controls; artifact `11116182506`
+(828,256 bytes), SHA-256
+`5f8ea38a91bcda115b7b290bbdea09c9e1ca1d12e96b7cef8ff0b489ee5b3bb2`.
+Its native workflow `36753964033` / job `110019353010` was cancelled after
+main advanced. This is not a native-test pass. The retained diagnostic artifact
+`11116209233` (39,803 bytes), SHA-256
+`40f0e1676dd95b031428ea57334dc33c45afad471da5e664019844b612932763`, and raw
+log SHA-256 `a75108ad1d9534b21497b1f2d148f3c005bb7e6d0e8833e16cc1cc67b2db1961`
+preserve that terminal outcome. Its nine-check snapshot ended with eight
+successes and one cancellation. Newer main
+`3749593df4e249cd9e4ea0e69caf22d47cef43cb` has its own checks; neither accepted
+PR evidence nor these `0590eaf` results establish that newer source's outcome.
