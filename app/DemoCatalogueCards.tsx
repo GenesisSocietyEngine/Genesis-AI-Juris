@@ -2,6 +2,7 @@
 
 import { lazy, Suspense, useState } from "react";
 import type { CanopyScenarioId } from "./canopy-fixture";
+import { CANOPY_LEARNING_PROMPT, demoLearningPrompt } from "./demo-learning-prompts";
 
 const CanopyWalkthrough = lazy(() => import("./DemoCases"));
 export type DemoCard = {
@@ -29,6 +30,7 @@ export default function DemoCatalogueCards({ locale, cards, showCanopy, busy, la
       <span className="demo-format">{en ? "Guided walkthrough" : "Пошаговый обзор"}</span>
       <h2>Project Canopy</h2>
       <p>{en ? "Follow a business decision from source documents to a decision map and report. Compare four scenarios in a working copy." : "Пройдите путь от исходных документов до карты решений и отчёта. Сравните четыре сценария в рабочей копии."}</p>
+      <p><b>{en ? "Illustrative prompt" : "Учебный промпт"}:</b> {CANOPY_LEARNING_PROMPT[locale]}</p>
       <p className="demo-card-meta">{en ? "Fictional Gulf market · Business decision" : "Вымышленный рынок стран Залива · Бизнес-решение"}</p>
       <details onToggle={event => setCanopyExpanded(event.currentTarget.open)}>
         <summary className="secondary-cta">{en ? "View walkthrough" : "Посмотреть обзор"}</summary>
@@ -38,6 +40,7 @@ export default function DemoCatalogueCards({ locale, cards, showCanopy, busy, la
     {cards.map(card => <article className="demo-catalogue-card" key={card.id}>
       <span className="demo-format">{en ? "Decision simulation" : "Симуляция решений"}</span>
       <h2>{card.title}</h2><p>{card.summary}</p>
+      <p><b>{en ? "Illustrative prompt" : "Учебный промпт"}:</b> {demoLearningPrompt(card.id, locale)}</p>
       <p className="demo-card-meta">{card.jurisdiction} · {card.practice} · {card.duration} {en ? "min" : "мин"}</p>
       <details className="demo-editorial"><summary>{en ? "Editorial details" : "Редакционные сведения"}</summary><p>{card.review} · v{card.version}</p><p>{en ? "Author" : "Автор"}: {card.author}</p><p>{card.legalAsOf ? `${en ? "Law as of" : "Право на"} ${card.legalAsOf}` : (en ? "Legal review pending" : "Проверка актуальности ожидается")}</p></details>
       <div className="demo-card-actions"><button type="button" className="primary-cta" disabled={busy} onClick={() => launch(card.id)} aria-label={`${en ? "Start simulation" : "Начать симуляцию"}: ${card.title}`}>{en ? "Start simulation" : "Начать симуляцию"}</button><button type="button" className="secondary-cta" onClick={() => feedback(card.id)}>{en ? "Give feedback" : "Оставить отзыв"}</button></div>
