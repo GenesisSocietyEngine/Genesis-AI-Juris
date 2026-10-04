@@ -4,6 +4,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import DemoCatalogueCards, { matchesCanopy, type DemoCard } from "../app/DemoCatalogueCards";
 import CaseTemplates from "../app/CaseTemplates";
+import { bundledCataloguePresentation } from "../app/catalogue-fallback";
+import { demoLearningPrompt } from "../app/demo-learning-prompts";
 
 const card: DemoCard = { id:"greenfire_first_72_hours", title:"GreenFire — The First 72 Hours", summary:"A fictional industrial incident.", jurisdiction:"NL", practice:"Environmental & crisis", duration:35, version:"0.4.0", review:"Editorial preview", author:"GENESIS" };
 const props = { locale:"en" as const, cards:[card], showCanopy:true, busy:false, launch:()=>{}, feedback:()=>{}, openCanopy:async()=>{}, canopyWorkflowHref:"/canopy" };
@@ -28,6 +30,19 @@ test("Canopy obeys text and format filters and never appears as an empty-result 
   assert.equal(matchesCanopy({...all, jurisdiction:"NL"}),false);
   const empty = renderToStaticMarkup(createElement(DemoCatalogueCards,{...props,cards:[],showCanopy:false}));
   assert.doesNotMatch(empty,/Project Canopy|GreenFire|Start simulation/);
+});
+test("every bundled simulation and Canopy expose bilingual learner tasks without launching", () => {
+  const cards = Object.keys(bundledCataloguePresentation).map(id => ({ ...card, id }));
+  const before = structuredClone(cards);
+  for (const locale of ["en", "ru"] as const) {
+    let calls = 0;
+    const html = renderToStaticMarkup(createElement(DemoCatalogueCards, { ...props, locale, cards, launch: () => calls++, openCanopy: async () => { calls++; } }));
+    assert.equal((html.match(locale === "en" ? /Illustrative prompt/g : /Учебный промпт/g) ?? []).length, cards.length + 1);
+    for (const item of cards) assert.ok(html.includes(demoLearningPrompt(item.id, locale)));
+    assert.ok(demoLearningPrompt("future-catalogue-case", locale).length > 40);
+    assert.equal(calls, 0);
+    assert.deepEqual(cards, before);
+  }
 });
 test("Templates contains empty starters and no demo launch or scenario selector in both languages", () => {
   for (const locale of ["en","ru"] as const) {

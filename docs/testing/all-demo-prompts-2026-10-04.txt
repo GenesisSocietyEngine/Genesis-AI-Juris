@@ -1,0 +1,57 @@
+DEMO PROMPT COVERAGE — 4 OCTOBER 2026
+
+User outcome: every demo has a short meaningful task, written for illustration.
+Acceptance: all 15 catalogue cards expose EN/RU prompts; the nine category drafts
+load their editable brief only after successful replacement. Previewing a card
+does not run AI, start a case or add scenario facts. Existing filters and actions
+remain available, and prompts wrap at narrow widths.
+
+Critical review
+PR #84 covered the nine category examples but left Canopy and five published
+simulations with summaries alone. It also did not reach production, still v106.
+This slice adds a concise task for Canopy, failed ERP, unpaid logistics, GreenFire,
+GoldenShell and Desert Water. Tasks ask the learner to compare, identify evidence
+and explain decisions. They do not prescribe statutory deadlines, legal findings
+or approved outcomes. An unknown future catalogue record receives a neutral task
+without invented facts. Simulations retain their original summaries and player
+flow; their prompts are learner instructions, not AI generation commands.
+Category examples retain their distinct authored prompts and editable brief.
+
+Review evidence for canonical-main development slice
+37 focused tests pass: catalogue/card coverage and neutrality, registered category
+coverage, actual category launch and draft-continuity regression paths.
+TypeScript and changed-path lint pass. Production build and 2 existing build tests
+pass. Initial Studio entry is 317,786 bytes under the unchanged 325,000-byte limit.
+Local browser displays 15 cards with 15 RU prompt labels, and EN card tasks.
+RU simulation filter returns five cards. At 320 px, page scroll width and client
+width both equal 305 px with the scrollbar. Controls remain readable in the
+rendered result. This is bounded reflow evidence, not complete accessibility QA.
+
+Production preparation
+The native Sites read-only workflow opened the exact live-source baseline
+49a53edbb8979063b2c5f0febbf6711206b79459 in an isolated checkout. The prepared patch
+contains demo presentation, bilingual prompt modules, guarded brief assignment,
+deferred worked cards and their tests. It does not promote main's later archive,
+privacy, tax editor, iOS or storage changes. The prompt and case are loaded
+together and existing replacement confirmation is retained. No AI is invoked.
+An initial declaration edit was caught by TypeScript and corrected in the proper
+handler; the release test harness now executes actual handlers in strict mode.
+Exact release checks and the deployment result belong in the final receipt.
+The first source workflow failed in Windows TLS initialization. A later opening
+request was rejected by automatic approval review for unclear checkout state and
+incomplete validation. After completing validation, the same documented read-only
+opening mode was accepted. No push/deployment was performed by that opening.
+
+Amended plan
+The prompt coverage requirement is complete in source. Do not equate illustrative
+prompts with completed professional outputs, verified law or activation evidence.
+Next: editorial acceptance of task/source/output alignment; one reviewed sample
+deliverable per category; a pilot testing comprehension, edit, preserve, save and
+reopen. Existing broader continuity, accessible PDF, provider adverse-state and
+iOS/device acceptance work remains open and must be judged separately.
+
+Ownership and source
+Canonical-main baseline: 64f79efd517bf25773889d92027f716ef22c339d.
+Contributor branch: codex/all-demo-prompts-2026-10-04.
+Isolated canonical and hosted checkouts contain only this task's edits. The
+original C:/PROJECTS checkout and genuine saved production cases are untouched.
