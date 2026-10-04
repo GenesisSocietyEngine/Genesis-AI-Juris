@@ -15,7 +15,6 @@ import StudioRecoveryView, { type StudioRecovery } from "./StudioRecoveryView";
 import StudioDecisionList from "./StudioDecisionList";
 import { graphOverviewScale } from "./graph-viewport";
 import CaseTemplates, { prepareCaseTemplate } from "./CaseTemplates";
-import CategoryDemoCards from "./CategoryDemoCards";
 import { matchingCategoryDemos } from "./category-demos";
 import { CASE_TYPE_REGISTRY } from "./case-type-registry";
 import DemoCatalogueCards, { matchesCanopy, type DemoFormat } from "./DemoCatalogueCards";
@@ -106,10 +105,13 @@ function graphBoundsForNodes(nodes: StudioNode[]) {
   };
 }
 async function loadCategoryDemo(id: CaseTypeId, locale: Locale) {
-  const { buildCategoryDemo } = await import("./category-demo-draft");
-  return buildCategoryDemo(id, locale);
+  const [{ buildCategoryDemo }, { categoryDemoPrompt }] = await Promise.all([
+    import("./category-demo-draft"), import("./category-demo-prompts"),
+  ]);
+  return { draft: buildCategoryDemo(id, locale), prompt: categoryDemoPrompt(id, locale) };
 }
 
+const CategoryDemoCards = lazy(() => import("./CategoryDemoCards"));
 const HelpCenter = lazy(() => import("./HelpCenter"));
 const CommunityView = lazy(() => import("./CommunityWorkspace"));
 const PlayView = lazy(() => import("./PlayWorkspace"));
@@ -2068,14 +2070,14 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   }
   async function openCategoryDemo(id: CaseTypeId) {
     starterCancelledRef.current = true;
-    let next: StudioDraft;
+    let next: StudioDraft, nextPrompt: string;
     try {
-      next = await loadCategoryDemo(id, locale);
+      ({ draft: next, prompt: nextPrompt } = await loadCategoryDemo(id, locale));
     } catch {
       showSessionNotice(locale === "en" ? "The worked example could not load. Your draft is unchanged. Please try again." : "Не удалось загрузить учебный пример. Черновик не изменён. Повторите попытку.");
       return;
     }
-    if (!resetStudioDraft(next, "", locale === "en"
+    if (!resetStudioDraft(next, nextPrompt, locale === "en"
       ? "Open this worked example? Save to workspace or export case JSON first to keep your work. Device-only saves will be removed. Your local graph, prompt and undo history will be replaced."
       : "Открыть учебный пример? Сначала сохраните работу в рабочем пространстве или экспортируйте JSON кейса. Копии, сохранённые только на устройстве, будут удалены. Локальный граф, промпт и история отмены будут заменены.")) return;
     navigate("studio", 4);
@@ -2302,7 +2304,7 @@ function LibraryView({ locale, restorePlaySession, text, records, loadedScenario
     {error && <p className="catalogue-status page-width" role="status">{error}</p>}
     <section className="page-width demo-catalogue-results" aria-label={text.library} aria-busy={loading}>
       <DemoCatalogueCards locale={locale} cards={cards} showCanopy={showCanopy} busy={loading} openCanopy={openCanopy} canopyWorkflowHref={canopyWorkflowHref} launch={id => { const record = records.find(item => item.id === id); if (record) launchCase(record); }} feedback={id => { const record = records.find(item => item.id === id); if (record) requestFeedback({ caseId: record.id, version: record.currentVersion, title: record.title, source: "playable", fingerprint: record.fingerprint }); }}/>
-      <CategoryDemoCards demos={categoryDemos} locale={locale} onOpen={openCategoryDemo}/>
+      {categoryDemos.length > 0 && <Suspense fallback={<p role="status">{locale === "en" ? "Loading worked examples…" : "Загрузка учебных примеров…"}</p>}><CategoryDemoCards demos={categoryDemos} locale={locale} onOpen={openCategoryDemo}/></Suspense>}
       {!showCanopy && cards.length === 0 && categoryDemos.length === 0 && !loading && <div className="catalogue-empty"><b>{locale === "en" ? "No demo cases match these filters." : "По этим фильтрам демо-кейсы не найдены."}</b><button type="button" className="secondary-cta" onClick={resetFilters}>{locale === "en" ? "Reset filters" : "Сбросить фильтры"}</button></div>}
       {nextCursor && (format === "all" || format === "simulation") && <button className="catalogue-load-more secondary-cta" disabled={loading} onClick={() => void searchCatalogue({ filters: { q: query, practiceArea: practiceFilter, jurisdiction: jurisdictionFilter, difficulty: difficultyFilter, tag: tagFilter }, cursor: nextCursor, append: true })}>{locale === "en" ? `More simulations (${records.length} / ${total})` : `Ещё симуляции (${records.length} / ${total})`}</button>}
     </section>
