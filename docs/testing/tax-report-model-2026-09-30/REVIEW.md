@@ -1,6 +1,8 @@
 # Tax report model, output and receipt integration
 
-Initial base: `00b1e390d768edbd0721f23de79c8d435aa1fed5`, the reconciled P4B preservation and fresh-execution foundation. The candidate now includes the fresh async report path, preview/download dispatch and separate v3 device/account receipts. The sections below retain the bounded model and subsequent integration checkpoints. Final browser journey verification and exact committed-source CI remain publication gates; the current local integration evidence is not overall product-release acceptance.
+The accepted development checkpoint is in [CHECKPOINT.md](CHECKPOINT.md): PR #77 passed all 18 checks at `d40caa7` and merged normally as `54d6d29`. The full clean local suite passed 1,140 tests / zero failures / three skips; exact-head hosted web/Worker, tax/legacy PDF, native XCTest and actual application checks passed. The review below preserves earlier implementation and failure checkpoints; its pending statements describe those earlier boundaries. Separate main execution and remaining product acceptance are listed in the checkpoint.
+
+Historical preparation checkpoint — initial base: `00b1e390d768edbd0721f23de79c8d435aa1fed5`, the reconciled P4B preservation and fresh-execution foundation. The candidate now includes the fresh async report path, preview/download dispatch and separate v3 device/account receipts. The sections below retain the bounded model and subsequent integration checkpoints. Final browser journey verification and exact committed-source CI remain publication gates; the current local integration evidence is not overall product-release acceptance.
 
 ## Intended outcome and acceptance
 
