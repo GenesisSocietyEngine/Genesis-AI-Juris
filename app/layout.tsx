@@ -2,17 +2,18 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./workspace-design.css";
 import "./demo-catalogue.css";
+import "./casevant.css";
 import StaleChunkRecovery from "./StaleChunkRecovery";
 import NavigationSession from "./NavigationSession";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://genesis-juris-web.maxim-hayan.chatgpt.site"),
-  title: "GENESIS: JURIS Studio",
+  title: "CaseVant — Make your case.",
   description:
-    "Connect case documents, evidence and reasoning in a versioned, explainable decision package.",
+    "Evidence, options and outcomes. Connected. CaseVant by Genesis.",
   icons: {
-    icon: "/brand/genesis-juris-codex-mark.svg",
-    shortcut: "/brand/genesis-juris-codex-mark.svg",
+    icon: "/brand/casevant-mark.png",
+    shortcut: "/brand/casevant-mark.png",
   },
   openGraph: {
     title: "GENESIS: JURIS",

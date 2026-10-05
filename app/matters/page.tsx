@@ -5,7 +5,7 @@ import OrganizationBoundary from "../organizations/OrganizationBoundary";
 import { chatGPTSignInPath, getChatGPTUser } from "../chatgpt-auth";
 
 export const metadata: Metadata = {
-  title: "My cases · GENESIS: JURIS",
+  title: "My cases · CaseVant",
   description: "Continue personal Studio drafts or governed cases in your selected organization.",
   robots: { index: false, follow: false },
 };

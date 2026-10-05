@@ -12,17 +12,17 @@ async function requestIsFalconStudio(): Promise<boolean> {
 export async function generateMetadata(): Promise<Metadata> {
   if (!await requestIsFalconStudio()) return {};
   return {
-    title: "GENESIS: JURIS Studio",
+    title: "CaseVant — Make your case.",
     description: "A professional workbench for tax and legal advisers to structure cases, compare scenarios and preserve a canonical methodology.",
     openGraph: {
-      title: "GENESIS: JURIS Studio",
+      title: "CaseVant — Make your case.",
       description: "Build, review and document professional tax and legal cases in one auditable workspace.",
       type: "website",
       images: [],
     },
     twitter: {
       card: "summary",
-      title: "GENESIS: JURIS Studio",
+      title: "CaseVant — Make your case.",
       description: "A professional workbench for auditable tax and legal case engineering.",
       images: [],
     },
