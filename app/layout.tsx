@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://genesis-juris-web.maxim-hayan.chatgpt.site"),
   title: "CaseVant — Make your case.",
   description:
-    "Evidence, options and outcomes. Connected. CaseVant by Genesis.",
+    "Evidence, options and outcomes. Connected. CaseVant by Falcon-Merlin Group.",
   icons: {
     icon: "/brand/casevant-mark.png",
     shortcut: "/brand/casevant-mark.png",
