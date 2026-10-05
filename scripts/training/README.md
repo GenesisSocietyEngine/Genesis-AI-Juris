@@ -1,4 +1,4 @@
-# Genesis: Juris training asset source
+# CaseVant training asset source
 
 This is a 600-second narrated illustrated tutorial, not an end-to-end browser recording.
 
@@ -19,3 +19,5 @@ python render_training.py
 `training-script.json` is the content source. `illustrations.py` draws visibly illustrative educational cards and diagrams. `screen-map.json` points to the real screenshot. Generated caches are disposable; `output/` contains delivery files.
 
 The renderer measures every sentence's actual WAV duration. It pads each scene to 30 seconds, never truncates speech, checks output duration and requires the MP4 to remain below 24 MiB. Each sentence appears in the teaching rail; WebVTT provides the same narration as a separate track.
+
+Refreshed 5 October 2026. Opening capture: https://casevant.pro/studio. Current professional workspace and Personal/Team paths verified against live UI and source. No authenticated write is represented as recorded.

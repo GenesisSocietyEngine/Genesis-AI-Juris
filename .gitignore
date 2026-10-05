@@ -60,3 +60,8 @@ next-env.d.ts
 
 # Local linked checkouts
 /.worktrees/
+
+# Reproducible training media intermediates
+/scripts/training/render-cache/
+/scripts/training/output/
+/scripts/training/__pycache__/

@@ -12,7 +12,7 @@ For a complete canonical Markdown export, choose Verify canonical case, inspect 
 
 ## 3. Review the structure and evidence
 
-Give the case a clear title. Follow Brief → Draft review → Facts & evidence → Decision map → Test → Finish. Check proposed facts, alternatives and outcomes before accepting them. Separate verified evidence, estimates and missing information. The Next step card helps you continue; it is not a review or approval.
+Give the case a clear title. Use Overview → Sources & evidence → Decision → Review → Reports. Open Brief & structure to edit the brief or review proposed changes. Check proposed facts, alternatives and outcomes before accepting them. Separate verified evidence, estimates and missing information. The Next step card helps you continue; it is not a review or approval.
 
 ## 4. Save, wait for confirmation, then reopen
 
@@ -56,6 +56,6 @@ Keep the original tab. Open Personal cases separately and inspect the most recen
 
 Check the browser's downloads and popup settings, then try Preview PDF. Open the actual file to confirm it arrived. Keep the case open and report the displayed error if it persists.
 
-### Why does the training video look different?
+### What does the CaseVant training cover?
 
-It is an earlier Genesis: Juris recording with English narration. Menu names, collection locations and example values may differ. Use the current written guides and the inputs in your own case. The original captions and transcript match the recording; account instructions are not recorded successful saves.
+The 10-minute course was rebuilt for CaseVant on 5 October 2026, with current navigation, English narration, captions and transcript. It combines a real CaseVant opening screen with labeled workflow illustrations. Account saves, AI and Team creation are instructions, not recordings of completed actions. Check the inputs in your own case.
