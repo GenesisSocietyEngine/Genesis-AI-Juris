@@ -20,7 +20,6 @@ Review evidence and publication result will be recorded below after verification
 
 - Supplied PNG hash verified identical to the production asset (5,063 bytes); logo is not redrawn.
 - Existing create, import, continue, demo, saved-case, account and organization handlers/routes retained. The only removed preference is the dark-theme switch, following the owner's fixed-light direction. No added hooks, requests, dependencies or persistence state. React component review completed.
-- Strict TypeScript validation passed after updating the navigation fixture.
 - Existing navigation/entry/Canopy/account focused checks: 58 passed, 0 failed. Operations navigation rechecked after removing the obsolete theme props from its fixture: 2 passed.
 - Source diff reviewed, with no auth/backend/schema/migration/report-engine changes. Only expected UI, metadata, tests, brand asset and this review note are included.
 - Measured contrast: main text/white 14.63:1; muted text/white 7.09:1; muted text/light blue 6.57:1; teal/light blue 5.87:1; primary label/pale-blue button 9.96:1.
@@ -31,3 +30,16 @@ Review evidence and publication result will be recorded below after verification
 ## Publication acceptance
 
 Run the existing verified build (strict types, tax assets, D1 migration checks and parity lock), then the built-artifact metadata/lazy-bundle checks. Publish the resulting scoped v107-based source through Sites; preserve public access and runtime bindings. Record exact version and successful deployment in delivery evidence.
+
+## Verified production publication
+
+- Production source committed and pushed by the Sites workflow: `7b6aa7c2c68746c7dfd79175eab8d7ee26a1cbbb`.
+- Verified build passed: strict TypeScript, tax source/asset/corpus checks, both migration checks, 18-route parity lock, Workers production output.
+- Both built-artifact checks passed: CaseVant metadata/worker and bounded lazy client bundle.
+- Saved version **108**: `appgprj_6a88a26d2f808191aa076b9fcd8dbce6~appgver_57052fc522cc8191b5c6b00c77d20494`.
+- Deployment `appgdep_6ac393fd092c8191a00ed51b47dfbf62` returned **succeeded** at 2026-10-05T12:12:10.368510+00:00; environment revision 41 retained.
+- Native production URL: https://genesis-juris-web.maxim-hayan.chatgpt.site. Existing custom production URL retained: https://studio.falcon-merlin.com.
+- Site display title updated to **CaseVant by Genesis**. Public audience and D1/R2 bindings retained.
+- Canonical visual patch synchronized separately at `b728801de0f39be02e16ca2dc0de4caf0d8696f1`, PR #86. All touched existing files matched main except JurisApp.tsx, where only the four theme-removal hunks were applied to main's own file to preserve its newer work.
+- Canonical hosted CI runs were still in progress when production completed. Repository auto-merge is disabled; ordinary PR integration is tracked separately and does not substitute for deployment verification.
+- Remaining limitations: no browser visual QA or fresh authenticated end-to-end run; PDF rendering engines, historical author credits and existing social-preview artwork were outside this web-design slice.
