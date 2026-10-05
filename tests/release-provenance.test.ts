@@ -64,7 +64,7 @@ test("packaging writes the captured identity and rejects input changes during co
   const root = mkdtempSync(join(tmpdir(), "juris-package-"));
   try {
     for (const input of RELEASE_INPUTS) {
-      if (["app", "worker", "build", "db", "public", "drizzle"].includes(input)) mkdirSync(join(root, input));
+      if (["app", "worker", "build", "vendor", "db", "public", "drizzle"].includes(input)) mkdirSync(join(root, input));
       else { mkdirSync(join(root, input, ".."), { recursive: true }); writeFileSync(join(root, input), "fixture\n"); }
     }
     mkdirSync(join(root, ".openai")); writeFileSync(join(root, ".openai/hosting.json"), '{"d1":"DB","project_id":"synthetic"}');
@@ -75,6 +75,9 @@ test("packaging writes the captured identity and rejects input changes during co
     const closeBundle = plugin.closeBundle;
     await closeBundle.call({} as never);
     assert.deepEqual(JSON.parse(readFileSync(join(root, "dist/.openai/release-provenance.json"), "utf8")), identity);
+    writeFileSync(join(root, "vendor/patched-parser.js"), "module.exports = {};\n");
+    await assert.rejects(() => Promise.resolve(closeBundle.call({} as never)), /Release inputs changed during compilation/);
+    rmSync(join(root, "vendor/patched-parser.js"));
     writeFileSync(join(root, "db/new-schema.ts"), "export const changed = true;\n");
     await assert.rejects(() => Promise.resolve(closeBundle.call({} as never)), /Release inputs changed during compilation/);
     assert.deepEqual(JSON.parse(readFileSync(join(root, "dist/.openai/release-provenance.json"), "utf8")), identity);

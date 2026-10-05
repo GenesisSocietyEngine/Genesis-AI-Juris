@@ -7,7 +7,7 @@ import { join, resolve } from "node:path";
 // Versioned input policy, independent of Git availability. Evidence and test
 // output are deliberately excluded. This is a source digest, not a bundle hash.
 export const RELEASE_INPUTS = [
-  "app", "worker", "build", "db", "public", "drizzle", "scripts/build-verified.sh", "scripts/sites-env.sh",
+  "app", "worker", "build", "vendor", "db", "public", "drizzle", "scripts/build-verified.sh", "scripts/sites-env.sh",
   "package.json", "package-lock.json", "vite.config.ts", "next.config.ts",
   "postcss.config.mjs", "tsconfig.json", ".node-version", ".npm-version", ".npmrc", ".gitattributes",
 ] as const;
