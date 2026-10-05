@@ -11,7 +11,7 @@ import { organizationDisplayLabel } from "./organization-label";
 
 export const WORKSPACE_PAGES = [
   { path: "/studio", view: "studio", en: "Case Studio", ru: "Студия кейсов", icon: "studio" },
-  { path: "/matters", view: "matters", en: "My cases", ru: "Мои дела", icon: "cases" },
+  { path: "/matters", view: "matters", en: "My cases", ru: "Мои кейсы", icon: "cases" },
   { path: "/studio?view=demos", view: "demos", en: "Demo", ru: "Демо", icon: "demo" },
   { path: "/templates", view: "templates", en: "Templates", ru: "Шаблоны", icon: "template" },
   { path: "/studio?view=play", view: "play", en: "Operations", ru: "Операции", icon: "tasks" },
@@ -147,7 +147,7 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
         {returnTo&&<a className="genesis-return" href={returnTo} onClick={guardedLink}>{en?"Return to your case":"Вернуться к делу"}</a>}
         <details className="genesis-nav-group" key={`help-${active === "help" || active === "/help/studio-demo"}`} open={active === "help" || active === "/help/studio-demo"}>
           <summary><WorkspaceIcon name="help"/><span>{en ? "Help & training" : "Помощь и обучение"}</span><span className="nav-chevron" aria-hidden="true">⌄</span></summary>
-          <div className="genesis-nav-children"><a href={href("/studio?view=help")} onClick={event=>follow(event,"help")} aria-current={active === "help" ? "page" : undefined}>{en ? "Help & guides" : "Инструкции"}</a><a href={href("/help/studio-demo")} target="_blank" rel="noreferrer" aria-current={active === "/help/studio-demo" ? "page" : undefined}>{en ? "10-minute training ↗" : "Обучение за 10 минут ↗"}</a></div>
+          <div className="genesis-nav-children"><a href={href("/studio?view=help")} onClick={event=>follow(event,"help")} aria-current={active === "help" ? "page" : undefined}>{en ? "Help & guides" : "Инструкции"}</a><a href={href("/help/studio-demo")} target="_blank" rel="noreferrer" aria-current={active === "/help/studio-demo" ? "page" : undefined}>{en ? "Earlier training · 10 min ↗" : "Ранняя запись · 10 минут ↗"}</a></div>
         </details>
         {session.phase==="ready"&&session.identity?<>
           <a href={href("/account")} onClick={guardedLink} aria-current={active==="/account"?"page":undefined}><WorkspaceIcon name="account"/><span>{en?"Account":"Аккаунт"}<small className="genesis-account-name">{session.identity.displayName}</small></span></a>
