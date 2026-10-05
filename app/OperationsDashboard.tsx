@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { readWithTimeout, ReadTimeoutError } from "./read-with-timeout";
+import { createOperationsDiagnostic } from "./operations-diagnostic";
 
 type DashboardState = "current" | "no_data" | "partial" | "stale";
 
@@ -88,6 +90,8 @@ interface DashboardPayload {
   alerts: ActiveAlert[];
 }
 
+class OperationsAccessError extends Error {}
+
 function timestamp(value: string | null) {
   if (!value) return "No anomaly event received";
   const date = new Date(value);
@@ -103,6 +107,10 @@ export default function OperationsDashboard({ locale }: { locale: "en" | "ru" })
   const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [receivedAt, setReceivedAt] = useState("");
+  const [downloadError, setDownloadError] = useState(false);
+  const requestRef = useRef<AbortController | null>(null);
   const copy = locale === "ru" ? {
     eyebrow: "ЭКСПЛУАТАЦИОННАЯ ТЕЛЕМЕТРИЯ · ТОЛЬКО ДЛЯ АДМИНИСТРАТОРА",
     title: "Состояние платформы",
@@ -114,6 +122,8 @@ export default function OperationsDashboard({ locale }: { locale: "en" | "ru" })
     partial: "Данные аномалий неполны или идентификатор релиза неоднозначен.",
     healthy: "Ни один порог аномалий из D1 не активен.",
     externalUnavailable: "Внешнее уведомление недоступно",
+    accessRequired: "Войдите в аккаунт администратора, чтобы открыть диагностику.",
+    timeout: "Ответ не получен за 15 секунд. Повторите обновление.",
   } : {
     eyebrow: "OPERATIONAL TELEMETRY · ADMIN ONLY",
     title: "Platform health",
@@ -125,46 +135,79 @@ export default function OperationsDashboard({ locale }: { locale: "en" | "ru" })
     partial: "Anomaly data is incomplete or the release identity is ambiguous.",
     healthy: "No D1-backed anomaly threshold is active.",
     externalUnavailable: "External notification unavailable",
+    accessRequired: "Sign in with an administrator account to open diagnostics.",
+    timeout: "No response within 15 seconds. Try refreshing again.",
   };
 
-  const load = useCallback(async (signal?: AbortSignal) => {
+  const load = useCallback(async () => {
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    requestRef.current = controller;
     setRefreshing(true);
     setError("");
     try {
-      const response = await fetch("/api/admin/operations", {
-        cache: "no-store",
-        credentials: "same-origin",
-        headers: { Accept: "application/json" },
-        signal,
-      });
-      const result = await response.json().catch(() => null) as DashboardPayload | { error?: string } | null;
-      if (!response.ok || !result || !("aggregate" in result)) {
-        throw new Error(result && "error" in result && result.error ? result.error : copy.unavailable);
-      }
+      const result = await readWithTimeout(async signal => {
+        const response = await fetch("/api/admin/operations", {
+          cache: "no-store",
+          credentials: "same-origin",
+          headers: { Accept: "application/json" },
+          signal,
+        });
+        if (response.status === 401 || response.status === 403) throw new OperationsAccessError();
+        const value = await response.json().catch(() => null) as DashboardPayload | null;
+        if (!response.ok || !value || !["current", "no_data", "partial", "stale"].includes(value.state) || !value.aggregate || !value.requestHealth || !value.productHealth?.d1FailureHealth || !Array.isArray(value.alerts)) throw new Error();
+        return value;
+      }, { signal: controller.signal, timeoutMs: 15000 });
+      if (controller.signal.aborted) return;
       setPayload(result);
+      setReceivedAt(new Date().toISOString());
+      setDownloadError(false);
       setPhase("ready");
     } catch (caught) {
-      if (caught instanceof DOMException && caught.name === "AbortError") return;
-      setError(caught instanceof Error ? caught.message : copy.unavailable);
+      if (controller.signal.aborted) return;
+      if (caught instanceof OperationsAccessError) { setPayload(null); setAutoRefresh(false); }
+      setError(caught instanceof OperationsAccessError ? copy.accessRequired : caught instanceof ReadTimeoutError ? copy.timeout : copy.unavailable);
       setPhase("error");
     } finally {
-      if (!signal?.aborted) setRefreshing(false);
+      if (!controller.signal.aborted) setRefreshing(false);
+      if (requestRef.current === controller) requestRef.current = null;
     }
-  }, [copy.unavailable]);
+  }, [copy.unavailable, copy.accessRequired, copy.timeout]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    const timer = window.setTimeout(() => void load(controller.signal), 0);
+    const timer = window.setTimeout(() => void load(), 0);
     return () => {
       window.clearTimeout(timer);
-      controller.abort();
+      requestRef.current?.abort();
     };
   }, [load]);
+
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible" && !requestRef.current) void load();
+    }, 60000);
+    return () => window.clearInterval(timer);
+  }, [autoRefresh, load]);
+
+  function downloadDiagnostic() {
+    if (!payload) return;
+    try {
+      const body = JSON.stringify(createOperationsDiagnostic(payload, receivedAt, Boolean(error)), null, 2);
+      const url = URL.createObjectURL(new Blob([body], { type: "application/json" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "casevant-operations-diagnostic.json";
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setDownloadError(false);
+    } catch { setDownloadError(true); }
+  }
 
   if (phase === "loading") {
     return <section className="operations-dashboard operations-dashboard-loading" aria-live="polite"><p>{copy.loading}</p></section>;
   }
-  if (phase === "error" || !payload) {
+  if (!payload) {
     return <section className="operations-dashboard operations-dashboard-error" role="alert"><p>{error || copy.unavailable}</p><button type="button" onClick={() => void load()} disabled={refreshing}>{copy.refresh}</button></section>;
   }
 
@@ -175,6 +218,20 @@ export default function OperationsDashboard({ locale }: { locale: "en" | "ru" })
       <div><span>{copy.eyebrow}</span><h2 id="operations-dashboard-title">{copy.title}</h2><p>{payload.overviewWindowMinutes}-minute anomaly overview · policy v{payload.policyRevision} · {payload.retentionDays}-day retention</p></div>
       <div className="operations-dashboard-status"><b>{payload.state.replace("_", " ")}</b><button type="button" onClick={() => void load()} disabled={refreshing}>{refreshing ? "…" : copy.refresh}</button></div>
     </header>
+
+    <section className="operations-diagnostic-tools" aria-labelledby="operations-diagnostic-title">
+      <div><h3 id="operations-diagnostic-title">{locale === "en" ? "Diagnostic snapshot" : "Диагностический снимок"}</h3>
+        <p>{locale === "en" ? "Last successful read" : "Последнее успешное чтение"}: <time dateTime={receivedAt}>{timestamp(receivedAt)}</time></p>
+        <p>{locale === "en" ? "This view covers retained anomalies. Automatic incident notifications are not connected; an administrator must inspect the dashboard and platform logs." : "Здесь показаны сохранённые аномалии. Автоматические уведомления об инцидентах не подключены: администратор должен проверять панель и журналы платформы."}</p>
+      </div>
+      <div className="operations-diagnostic-actions">
+        <label><input type="checkbox" checked={autoRefresh} onChange={event => setAutoRefresh(event.target.checked)}/><span>{locale === "en" ? "Refresh every minute while this page is visible" : "Обновлять каждую минуту, пока страница видна"}</span></label>
+        <button type="button" className="secondary-cta" onClick={downloadDiagnostic} disabled={refreshing}>{locale === "en" ? "Download diagnostic summary" : "Скачать сводку диагностики"}</button>
+        <small>{locale === "en" ? "Release details and anomaly counts only. No case content or account identifiers." : "Только сведения о релизе и счётчики аномалий. Без содержимого кейсов и идентификаторов аккаунтов."}</small>
+      </div>
+    </section>
+    {error && <div className="operations-refresh-error" role="alert"><b>{locale === "en" ? "Refresh failed — showing the previous snapshot" : "Обновление не удалось — показан предыдущий снимок"}</b><p>{error}</p><button type="button" className="secondary-cta" disabled={refreshing} onClick={() => void load()}>{locale === "en" ? "Try again" : "Повторить"}</button></div>}
+    {downloadError && <p role="alert">{locale === "en" ? "The diagnostic file could not be downloaded. Try again." : "Не удалось скачать файл диагностики. Повторите попытку."}</p>}
 
     {stateMessage && <p className="operations-state-message" role="status">{stateMessage}</p>}
 
