@@ -198,7 +198,7 @@ export default function AccountClient({
       <span>{t("DISPLAYED ONCE", "ПОКАЗЫВАЕТСЯ ОДИН РАЗ")}</span><h2>{t("Save your replacement recovery code", "Сохраните новый код восстановления")}</h2>
       <code>{recoveryCode}</code>
       <button type="button" onClick={() => void navigator.clipboard.writeText(recoveryCode).catch(() => setError(t("Copy the code manually.", "Скопируйте код вручную.")))}>{t("Copy recovery code", "Скопировать код восстановления")}</button>
-      <p>{t("Store it in a password manager. GENESIS: JURIS stores only its hash and cannot show this value again.", "Сохраните код в менеджере паролей. GENESIS: JURIS хранит только хеш и не может показать код повторно.")}</p>
+      <p>{t("Store it in a password manager. CaseVant stores only its hash and cannot show this value again.", "Сохраните код в менеджере паролей. CaseVant хранит только хеш и не может показать код повторно.")}</p>
     </section>}
 
     <details className={styles.optional}>

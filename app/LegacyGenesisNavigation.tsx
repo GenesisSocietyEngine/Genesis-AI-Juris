@@ -165,10 +165,10 @@ export default function GenesisNavigation({ locale, location, active, onNavigate
     </div>
   </>;
   return <><header className="genesis-navigation">
-    <a className="genesis-brand" href={href("/studio")} onClick={(event) => follow(event, "studio")} aria-label="GENESIS: JURIS — Case Studio">
+    <a className="genesis-brand" href={href("/studio")} onClick={(event) => follow(event, "studio")} aria-label="CaseVant — Case Studio">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/genesis-juris-codex-mark.svg" alt="" width="34" height="34"/>
-      <span><b>GENESIS: JURIS</b><small>{en ? "Decision workspace" : "Пространство решений"}</small></span>
+      <img src="/brand/casevant-mark.png" alt="" width="48" height="52"/>
+      <span><b>CaseVant</b><small>by Genesis</small></span>
     </a>
     {mobile?<><button type="button" className="genesis-menu-toggle" ref={menuButton} aria-label={en?"Open navigation":"Открыть навигацию"} aria-expanded={drawerOpen} aria-controls="genesis-navigation-drawer" onClick={()=>{drawerRef.current?.showModal();setDrawerOpen(true);}}>{en?"Menu":"Меню"}</button><dialog id="genesis-navigation-drawer" className="genesis-navigation-drawer" ref={drawerRef} aria-label={en?"Workspace menu":"Меню рабочего пространства"} onClose={()=>setDrawerOpen(false)} onClick={event=>{if(event.target===event.currentTarget)closeDrawer(true);}}><div className="genesis-drawer-inner"><button type="button" className="genesis-drawer-close" onClick={()=>closeDrawer(true)}>{en?"Close menu":"Закрыть меню"}</button>{contents}</div></dialog></>:<div className="genesis-nav-body">{contents}</div>}
   </header>

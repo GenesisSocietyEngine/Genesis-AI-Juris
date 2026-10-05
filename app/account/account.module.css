@@ -31,3 +31,7 @@
 .identity b{font:600 12px/1.4 var(--workspace-font);letter-spacing:0}
 .error{color:var(--workspace-danger)}.success{color:var(--workspace-success)}
 @media(max-width:640px){.shell{padding:24px 18px}.hero h1{font-size:28px}.startCard{padding:20px}}
+
+/* CaseVant account and recovery actions share the same light surface. */
+.card form>button,.primaryLink,.identity .primaryLink,.recoveryReveal button{background:var(--workspace-button);color:var(--workspace-button-ink);border:1px solid var(--workspace-border)}
+.recoveryReveal{background:var(--workspace-subtle)}.recoveryReveal code{color:var(--workspace-ink)}
