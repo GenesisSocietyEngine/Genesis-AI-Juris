@@ -1,0 +1,431 @@
+WEBVTT
+
+NOTE Only the opening screen is an actual application screenshot. Other visuals are labeled illustrations or account instructions, not acceptance recordings.
+
+1
+00:00:00.650 --> 00:00:02.365
+Welcome to CaseVant.
+
+2
+00:00:02.525 --> 00:00:03.625
+Make your case.
+
+3
+00:00:03.785 --> 00:00:06.835
+Evidence, options and outcomes, connected.
+
+4
+00:00:06.995 --> 00:00:12.640
+In ten minutes, follow a case from import to review and reporting, then start your own.
+
+5
+00:00:12.800 --> 00:00:19.495
+This course uses the current CaseVant workspace, with a real opening screen and labeled workflow illustrations.
+
+6
+00:00:19.655 --> 00:00:24.155
+Account instructions explain actions rather than claim recorded success.
+
+7
+00:00:24.315 --> 00:00:27.840
+Practise with fictional or de-identified material.
+
+8
+00:00:30.650 --> 00:00:33.745
+Choose Demo to learn from fictional examples.
+
+9
+00:00:33.905 --> 00:00:40.530
+Open Canopy overview for a guided starting point, or browse the available examples and simulations.
+
+10
+00:00:40.690 --> 00:00:45.205
+Choose Templates for a fresh draft with a case type and intake questions.
+
+11
+00:00:45.365 --> 00:00:47.555
+Supply your own facts and evidence.
+
+12
+00:00:47.715 --> 00:00:55.185
+Personal cases and Team records have different destinations; opening an example or template does not create a saved record.
+
+13
+00:01:00.650 --> 00:01:06.995
+Our example is Five Flats, Three Borders, sometimes called Five Flats, Three Countries.
+
+14
+00:01:07.155 --> 00:01:12.075
+Use the complete final Markdown file, including its embedded case data.
+
+15
+00:01:12.235 --> 00:01:15.620
+From the entry screen, choose Import case or prompt.
+
+16
+00:01:15.780 --> 00:01:21.775
+Inside the editor, the equivalent route is More actions, then Import case prompt, dot m d.
+
+17
+00:01:21.935 --> 00:01:25.135
+Importing text is not yet applying its graph.
+
+18
+00:01:30.650 --> 00:01:32.955
+Choose Verify canonical case.
+
+19
+00:01:33.115 --> 00:01:39.355
+This path checks the embedded structure and fingerprint locally, without asking AI to reinterpret the file.
+
+20
+00:01:39.515 --> 00:01:44.365
+Review the verified title, version, twenty-three nodes and thirty-six relations.
+
+21
+00:01:44.525 --> 00:01:48.020
+A matching fingerprint confirms which case data you have.
+
+22
+00:01:48.180 --> 00:01:54.855
+It does not independently verify the evidence, legal conclusions, tax rates or any claimed review date.
+
+23
+00:02:00.650 --> 00:02:04.655
+Choose Apply exact case when the verified preview matches your file.
+
+24
+00:02:04.815 --> 00:02:11.180
+For a professional case, use Overview, Sources and evidence, Decision, Review, and Reports.
+
+25
+00:02:11.340 --> 00:02:15.665
+Brief and structure contains Edit the brief and Review proposed changes.
+
+26
+00:02:15.825 --> 00:02:20.035
+Training simulations retain their guided steps and play controls.
+
+27
+00:02:20.195 --> 00:02:24.930
+These sections organize work; they do not confirm a save or independent approval.
+
+28
+00:02:30.650 --> 00:02:35.000
+Read the title, jurisdiction, professional role and Case context.
+
+29
+00:02:35.160 --> 00:02:42.030
+This fictional matter concerns a PRC-resident client, five English flats and a proposed Liechtenstein structure.
+
+30
+00:02:42.190 --> 00:02:46.955
+The client's preferred structure is a request to investigate, not the answer.
+
+31
+00:02:47.115 --> 00:02:51.550
+Keep alternative routes, unresolved questions and stop conditions visible.
+
+32
+00:02:51.710 --> 00:02:56.210
+Preserve the original file before changing its reviewed working copy.
+
+33
+00:03:00.650 --> 00:03:03.495
+Inspect the evidence and the decision it supports.
+
+34
+00:03:03.655 --> 00:03:09.000
+For example, the KYC questionnaire connects to the ownership and funds investigation.
+
+35
+00:03:09.160 --> 00:03:13.940
+A named evidence node is not proof that its underlying document has been accepted.
+
+36
+00:03:14.100 --> 00:03:19.585
+Record what the source establishes, what remains uncertain, and which decision depends on it.
+
+37
+00:03:19.745 --> 00:03:23.600
+Use case actions to return directly to missing information.
+
+38
+00:03:30.650 --> 00:03:33.890
+Use the economics in the case you actually opened.
+
+39
+00:03:34.050 --> 00:03:38.170
+Check purchase price, debt, interest, repayment basis and term.
+
+40
+00:03:38.330 --> 00:03:43.855
+Then verify annual rent, operating expenses and structure costs against their sources.
+
+41
+00:03:44.015 --> 00:03:46.820
+An older example may use different figures.
+
+42
+00:03:46.980 --> 00:03:52.280
+When assumptions change, recalculate and inspect the result before relying on it.
+
+43
+00:03:52.440 --> 00:03:56.430
+Keep the calculation basis and unresolved inputs visible.
+
+44
+00:04:00.650 --> 00:04:03.980
+The requested ten-percent return needs a named measure.
+
+45
+00:04:04.140 --> 00:04:09.390
+Gross yield, cash-on-cash return and equity I R R answer different questions.
+
+46
+00:04:09.550 --> 00:04:13.765
+Compare the displayed calculations with their assumptions and source evidence.
+
+47
+00:04:13.925 --> 00:04:19.390
+This file contains provisional acquisition costs and unverified tax-rate sources.
+
+48
+00:04:19.550 --> 00:04:26.000
+We are demonstrating the review workflow, not confirming a tax advantage or promising that the target is achieved.
+
+49
+00:04:30.650 --> 00:04:33.420
+Open Decision to inspect the decision map.
+
+50
+00:04:33.580 --> 00:04:38.925
+Select a node, read its detail and follow its connections to the next question or outcome.
+
+51
+00:04:39.085 --> 00:04:44.360
+In Five Flats, defining the return metric and checking lawful funding are meaningful gates.
+
+52
+00:04:44.520 --> 00:04:48.550
+Follow a stop or renegotiation route as well as a proceeding route.
+
+53
+00:04:48.710 --> 00:04:51.605
+Explain which evidence could change the decision.
+
+54
+00:05:00.650 --> 00:05:03.345
+Open Review and read the checks for your case.
+
+55
+00:05:03.505 --> 00:05:07.765
+Return to missing fields, evidence or connections and correct the draft.
+
+56
+00:05:07.925 --> 00:05:12.715
+Training simulations also offer Test and Play controls when their routes are ready.
+
+57
+00:05:12.875 --> 00:05:16.780
+A professional decision package does not need an artificial game route.
+
+58
+00:05:16.940 --> 00:05:23.585
+Structural completeness is one check; evidence quality and professional judgment still require review.
+
+59
+00:05:30.650 --> 00:05:33.950
+Open Reports or choose Create analytical report.
+
+60
+00:05:34.110 --> 00:05:40.565
+The report dialog offers Preview PDF and Download PDF, with further settings and approval options.
+
+61
+00:05:40.725 --> 00:05:42.575
+Begin with an internal draft.
+
+62
+00:05:42.735 --> 00:05:47.190
+Inspect its identity, assumptions, evidence and decision map.
+
+63
+00:05:47.350 --> 00:05:50.420
+Open the downloaded file to confirm delivery.
+
+64
+00:05:50.580 --> 00:05:55.185
+A draft export does not create independent approval or a governed Team report.
+
+65
+00:06:00.650 --> 00:06:06.505
+After choosing Download PDF, check your browser's downloads and open the file yourself.
+
+66
+00:06:06.665 --> 00:06:11.395
+The message PDF download started confirms initiation, not delivery.
+
+67
+00:06:11.555 --> 00:06:18.720
+To preserve an editable canonical handoff, use More actions, then Export Final case prompt, dot m d.
+
+68
+00:06:18.880 --> 00:06:21.390
+Read its status controls carefully.
+
+69
+00:06:21.550 --> 00:06:27.640
+A filename containing Final does not supply missing evidence or create independent reviewer approval.
+
+70
+00:06:30.650 --> 00:06:34.495
+To save a personal case, choose Save to workspace.
+
+71
+00:06:34.655 --> 00:06:37.920
+Sign in and complete your profile if prompted.
+
+72
+00:06:38.080 --> 00:06:43.825
+Wait for Saved to workspace, then open My cases, Personal, with the same account.
+
+73
+00:06:43.985 --> 00:06:48.150
+Check the restored content in a separate tab before closing the original.
+
+74
+00:06:48.310 --> 00:06:49.915
+Team records are separate.
+
+75
+00:06:50.075 --> 00:06:55.215
+These are account instructions; this course does not claim a recorded successful save.
+
+76
+00:07:00.650 --> 00:07:03.090
+Now create your own fictional case.
+
+77
+00:07:03.250 --> 00:07:07.835
+Preserve the current work first, return to Case Studio and choose Create a case.
+
+78
+00:07:07.995 --> 00:07:11.995
+Read any replacement or unsaved-work prompt before proceeding.
+
+79
+00:07:12.155 --> 00:07:14.930
+The new draft starts a separate authoring task.
+
+80
+00:07:15.090 --> 00:07:24.255
+Alternatively, choose a suitable starter in Templates; review its case type and intake questions instead of treating the starter as a finished example.
+
+81
+00:07:30.650 --> 00:07:33.965
+Open Brief and structure, then Edit the brief.
+
+82
+00:07:34.125 --> 00:07:40.020
+Describe the people involved, decision, jurisdiction, known facts, evidence and deadline.
+
+83
+00:07:40.180 --> 00:07:45.540
+For practice, ask whether a fictional business should approve a supplier change before launch.
+
+84
+00:07:45.700 --> 00:07:49.555
+Mark prices and delivery claims as unverified until supported.
+
+85
+00:07:49.715 --> 00:07:54.550
+State the alternatives and the conditions that would make you pause instead of proceeding.
+
+86
+00:08:00.650 --> 00:08:05.660
+This optional AI path is an instruction, not a recorded authenticated request.
+
+87
+00:08:05.820 --> 00:08:10.735
+Where enabled, Understand with AI requires sign-in and a confirmed profile.
+
+88
+00:08:10.895 --> 00:08:14.340
+It proposes changes for review before you apply them.
+
+89
+00:08:14.500 --> 00:08:18.125
+Check the current data-handling notice before sending material.
+
+90
+00:08:18.285 --> 00:08:26.835
+If unavailable, continue with manual editing or the explicitly labeled local fallback; do not mistake fallback output for AI analysis.
+
+91
+00:08:30.650 --> 00:08:34.325
+Complete Sources and evidence, then inspect Decision.
+
+92
+00:08:34.485 --> 00:08:38.750
+Give nodes concrete titles and connect choices to reasoned outcomes.
+
+93
+00:08:38.910 --> 00:08:44.030
+Use Review to identify structural gaps, then Reports to inspect the output.
+
+94
+00:08:44.190 --> 00:08:48.735
+Save to workspace separately and verify the saved copy under Personal.
+
+95
+00:08:48.895 --> 00:08:52.040
+Do not replace missing evidence with confident wording.
+
+96
+00:08:52.200 --> 00:08:57.490
+A useful decision package explains both the recommendation and its unresolved conditions.
+
+97
+00:09:00.650 --> 00:09:05.750
+For shared work, open My cases, Team, and select the intended organization.
+
+98
+00:09:05.910 --> 00:09:09.705
+Use New case and complete the requested matter details.
+
+99
+00:09:09.865 --> 00:09:14.520
+Verify the returned record and organization before adding documents or reviews.
+
+100
+00:09:14.680 --> 00:09:18.505
+A personal Studio save does not create this Team record.
+
+101
+00:09:18.665 --> 00:09:22.420
+These are account instructions, not a recorded creation.
+
+102
+00:09:22.580 --> 00:09:25.695
+Your permissions determine the actions available.
+
+103
+00:09:30.650 --> 00:09:39.570
+Practise importing and verifying a complete case file, tracing one evidence-dependent decision, inspecting a report and starting a fictional case.
+
+104
+00:09:39.730 --> 00:09:43.220
+Confirm any save under My cases, Personal.
+
+105
+00:09:43.380 --> 00:09:50.110
+If moving from the earlier domain, use the same account and preserve device-only drafts before closing that tab.
+
+106
+00:09:50.270 --> 00:09:53.335
+Return to Help and training for current guides.
+
+107
+00:09:53.495 --> 00:09:56.185
+Make your case with evidence you can explain.
