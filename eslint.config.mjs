@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "build/**",
     ".artifacts/**",
     "app/tax-runtime/generated/**",
+    // Vendored upstream CommonJS; changes have focused dependency security tests.
+    "vendor/braces/**",
     "next-env.d.ts",
   ]),
 ]);

@@ -801,9 +801,32 @@ class InstallationTests(unittest.TestCase):
             self.assertIsNone(final["exit_code"])
             self.assertFalse(final["installation_completed"])
             self.assertFalse(final["runtime_acceptance"])
-            self.assertIn(b"install began", (root / "write-install.stdout.log").read_bytes())
+            # A loaded runner can reach the deadline before Python emits its
+            # first byte. Real termination must not depend on startup speed;
+            # available timeout output is checked deterministically below.
+            self.assertTrue((root / "write-install.stdout.log").is_file())
+            self.assertTrue((root / "write-install.stderr.log").is_file())
             self.assertEqual(prior.read_bytes(), b'{"retained":"prior source proof"}')
             self.assertFalse((root / "write.json").exists())
+
+    def test_timeout_retains_partial_or_absent_output_without_acceptance(self):
+        for stdout, stderr in ((b"install began\n", b"still installing\n"), (None, None)):
+            with self.subTest(output=stdout), tempfile.TemporaryDirectory() as temp:
+                root = pathlib.Path(temp)
+                failure = subprocess.TimeoutExpired("simctl install", 120,
+                                                    output=stdout, stderr=stderr)
+                with patch.object(phase.subprocess, "run", side_effect=failure):
+                    with self.assertRaises(subprocess.TimeoutExpired) as raised:
+                        phase.install_bundle(self.args(root), root / "Runner.app", b"[]")
+                self.assertIs(raised.exception, failure)
+                self.assertEqual((root / "write-install.stdout.log").read_bytes(), stdout or b"")
+                self.assertEqual((root / "write-install.stderr.log").read_bytes(), stderr or b"")
+                final = json.loads((root / "write-install.json").read_text())
+                self.assertEqual(final["status"], "timeout")
+                self.assertIsNone(final["exit_code"])
+                self.assertFalse(final["installation_completed"])
+                self.assertFalse(final["runtime_acceptance"])
+                self.assertFalse((root / "write.json").exists())
 
     def test_start_error_is_retained_without_inferred_exit(self):
         with tempfile.TemporaryDirectory() as temp:
