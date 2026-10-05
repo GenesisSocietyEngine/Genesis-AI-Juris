@@ -172,6 +172,12 @@ button, input, select, textarea { accent-color: var(--workspace-accent); }
 .help-video-copy p, .help-transcript li { font-size: 1rem; line-height: 1.65; }
 .help-transcript summary, .help-video-copy > span { font-size: .875rem; letter-spacing: 0; text-transform: none; }
 .training-player video, .help-video-card video, .standalone-demo-player video { background: var(--workspace-subtle); }
+.domain-continuity { margin-block: 1rem; color: var(--workspace-ink); font-size: 1rem; line-height: 1.6; overflow-wrap: anywhere; }
+.domain-continuity details { padding: 0 1rem 1rem; border: 1px solid var(--workspace-border); border-radius: 10px; background: var(--workspace-subtle); }
+.domain-continuity details:not([open]) { padding-bottom: 0; }
+.domain-continuity summary { min-height: 44px; padding-block: .65rem; font-weight: 650; cursor: pointer; }
+.domain-continuity summary:focus-visible, .domain-continuity a:focus-visible { outline: 3px solid var(--workspace-accent); outline-offset: 3px; }
+.domain-continuity li + li { margin-top: .65rem; }
 .case-report-dialog, .decision-modal, .inbox-panel { background: #fff; color: var(--workspace-ink); }
 
 @media (max-width: 1100px) {
