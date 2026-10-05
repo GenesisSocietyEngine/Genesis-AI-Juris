@@ -1,0 +1,169 @@
+/* CaseVant: a white document workspace, blue controls and a restrained teal mark. */
+:root {
+  color-scheme: only light;
+  --workspace-bg: #ffffff;
+  --workspace-rail: #f0f7ff;
+  --workspace-surface: #ffffff;
+  --workspace-subtle: #f0f7ff;
+  --workspace-ink: #172b36;
+  --workspace-muted: #465b69;
+  --workspace-border: #c5d5e4;
+  --workspace-accent: #146b63;
+  --workspace-accent-hover: #10554f;
+  --workspace-accent-soft: #eaf4ff;
+  --workspace-button: #dceeff;
+  --workspace-button-hover: #c8e3fb;
+  --workspace-button-ink: #123b54;
+  --workspace-success: #246447;
+  --workspace-warning: #79551d;
+  --workspace-danger: #a43838;
+  --workspace-radius: 12px;
+  --workspace-shadow: 0 8px 28px rgb(23 43 54 / 6%);
+  --workspace-font: "Aptos", "Segoe UI", Inter, Arial, sans-serif;
+  --casevant-display: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --casevant-lime: #d8ef8a;
+  --ink-950: #ffffff;
+  --ink-900: #f0f7ff;
+  --ink-850: #eaf4ff;
+  --paper-50: #ffffff;
+  --paper-100: #f0f7ff;
+  --paper: #ffffff;
+  --paper-ink: #172b36;
+}
+:root, .app-shell, .app-shell.theme-office, .app-shell.theme-after-hours, .app-shell.studio-host-falcon {
+  --bg: var(--workspace-bg);
+  --panel: var(--workspace-surface);
+  --strong: var(--workspace-subtle);
+  --copy: var(--workspace-ink);
+  --subtle: var(--workspace-muted);
+  --text: var(--workspace-ink);
+  --muted: var(--workspace-muted);
+  --faint: #526878;
+  --rule: var(--workspace-border);
+  --surface: var(--workspace-surface);
+  --surface-strong: var(--workspace-subtle);
+  --cyan: var(--workspace-accent);
+  --brass: var(--workspace-accent);
+  --brass-soft: var(--workspace-accent-hover);
+  --gold: var(--workspace-accent);
+  --green: var(--workspace-success);
+  --red: var(--workspace-danger);
+  --violet: #69519a;
+  --shadow: var(--workspace-shadow);
+  --sans: var(--workspace-font);
+  --serif: var(--workspace-font);
+  color-scheme: only light;
+}
+html, body, .app-shell { background: #fff; color: var(--workspace-ink); }
+body { font-family: var(--workspace-font); line-height: 1.5; }
+::selection { background: var(--casevant-lime); color: var(--workspace-ink); }
+a, button, summary, input, select, textarea { -webkit-tap-highlight-color: #dceeff; }
+:focus-visible { outline: 3px solid var(--workspace-accent); outline-offset: 3px; }
+button, input, select, textarea { accent-color: var(--workspace-accent); }
+
+/* The supplied mark is kept byte-for-byte; its white tile sits on the blue rail. */
+.genesis-navigation { padding: 1.25rem .875rem; background: var(--workspace-rail); gap: 1.25rem; }
+.genesis-brand { gap: .625rem; padding: .125rem .25rem 1.125rem; border-bottom: 1px solid var(--workspace-border); }
+.genesis-brand img { width: 48px; height: auto; aspect-ratio: 67 / 72; flex: 0 0 auto; border-radius: 10px; }
+.genesis-brand b { font: 700 1.625rem/1.15 var(--workspace-font); letter-spacing: -.045em; color: var(--workspace-ink); }
+.genesis-brand small { font: 400 .8125rem/1.4 var(--workspace-font); letter-spacing: .02em; margin-top: .25rem; }
+.genesis-nav-label { font-size: .8125rem; }
+.genesis-nav-group > summary { border: 1px solid transparent; font-size: .875rem; line-height: 1.45; }
+.genesis-nav-group > summary:hover { background: #fff; }
+.genesis-nav-group[open] > summary { color: var(--workspace-accent); background: #fff; border-color: var(--workspace-border); }
+.genesis-nav-children { margin-top: .375rem; border-left: 2px solid var(--workspace-border); }
+.genesis-nav-pages a[aria-current="page"] { background: var(--workspace-button); color: var(--workspace-button-ink); }
+.genesis-nav-children button { background: transparent; border: 0; border-radius: 7px; color: var(--workspace-muted); text-align: left; padding: .7rem .75rem; cursor: pointer; font-family: inherit; }
+.genesis-nav-children button:hover { background: #fff; color: var(--workspace-accent); }
+.genesis-nav-children a, .genesis-nav-children button { line-height: 1.5; }
+.genesis-navigation-confirm { background: #fff; }
+.genesis-navigation-confirm button:last-child { background: var(--workspace-button); color: var(--workspace-button-ink); border-color: var(--workspace-border); }
+
+/* A compact brand opening leaves the actual create/import controls above the fold. */
+.studio-entry { padding-block: 2.5rem; }
+.casevant-entry-header { margin-bottom: 2rem; }
+.casevant-entry-header .workspace-eyebrow { color: var(--workspace-accent); font-size: .875rem; font-weight: 650; }
+.casevant-entry-header h1 { font: 500 clamp(2.25rem, 4.4vw, 3.75rem)/1.12 var(--casevant-display); letter-spacing: -.035em; margin: .5rem 0 .875rem; }
+.casevant-entry-header p { font-size: 1.0625rem; line-height: 1.6; color: var(--workspace-muted); }
+.studio-entry-start { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); border-radius: 16px; border-color: var(--workspace-border); box-shadow: var(--workspace-shadow); }
+.studio-entry-intro, .studio-entry-demo { padding: 1.75rem; }
+.studio-entry-intro { background: #fff; border-top: 4px solid var(--workspace-accent); }
+.studio-entry-demo { background: var(--workspace-subtle); border-top: 4px solid var(--casevant-lime); justify-content: flex-start; }
+.studio-entry-start h2 { font-size: 1.375rem; line-height: 1.35; margin-top: .875rem; }
+.studio-entry-demo h2 { margin-top: .75rem; }
+.studio-entry-demo > .secondary-cta + small { margin-bottom: .75rem; }
+.workspace-icon-tile { background: var(--workspace-accent-soft); border-radius: 10px; }
+.entry-create-actions { gap: 1rem; }
+.entry-create-actions > .primary-cta { min-width: 11rem; }
+.entry-import { min-height: 44px; color: var(--workspace-accent); }
+.studio-entry-recent { margin-top: 2rem; }
+.entry-recent-case { border-radius: 10px; }
+.entry-recent-case:hover { background: var(--workspace-subtle); border-color: var(--workspace-accent); }
+.entry-recent-empty { background: #fff; border-style: solid; padding: 1.25rem; }
+.entry-recent-empty p { font-size: 1rem; }
+.studio-entry-method { font-size: .875rem; }
+.studio-entry-method b { background: var(--workspace-subtle); color: var(--workspace-accent); }
+
+/* Controls use dark labels on pale blue; teal is reserved for links and focus. */
+.app-shell .primary-cta, .app-shell.theme-office .primary-cta, .primary-cta, .generate-button {
+  background: var(--workspace-button); border: 1px solid #adcce2; color: var(--workspace-button-ink);
+  border-radius: 9px; box-shadow: none; min-height: 46px; font: 650 .9375rem/1.5 var(--workspace-font);
+}
+.app-shell .primary-cta:hover:not(:disabled), .app-shell.theme-office .primary-cta:hover:not(:disabled), .primary-cta:hover:not(:disabled), .generate-button:hover:not(:disabled) {
+  background: var(--workspace-button-hover); border-color: #86b0cd; color: var(--workspace-button-ink); transform: none;
+}
+.app-shell .secondary-cta, .secondary-cta { background: #fff; color: var(--workspace-ink); border-radius: 9px; min-height: 46px; font-size: .9375rem; }
+.app-shell .secondary-cta:hover:not(:disabled) { background: var(--workspace-subtle); color: var(--workspace-accent); }
+.app-shell input:not([type="checkbox"]):not([type="radio"]), .app-shell textarea, .app-shell select {
+  background-color: #fff; color: var(--workspace-ink); border-color: var(--workspace-border); font-size: 1rem;
+}
+.app-shell input::placeholder, .app-shell textarea::placeholder { color: #526878; opacity: 1; }
+.app-shell .session-toast, .app-shell .save-toast { background: var(--workspace-button); color: var(--workspace-button-ink); border: 1px solid var(--workspace-border); border-radius: 10px; }
+.theme-office .nav-new, .theme-office .stage-list li.done > span { background: var(--workspace-button); color: var(--workspace-button-ink); }
+.studio-user-view .studio-hero h1, .studio-developer-view .studio-hero h1 { line-height: 1.3; overflow-wrap: anywhere; }
+.studio-user-view .studio-hero p, .studio-guide-task-copy p, .case-view-cards p, .material-sheet p { font-size: 1rem; line-height: 1.7; }
+.studio-case-breadcrumb, .studio-case-breadcrumb button, .studio-view-select, .studio-view-select select,
+.node-inspector label > span, .node-inspector .pane-heading span, .graph-heading > div > span,
+.case-view-focus, .studio-step-context, .studio-guide-task-copy .step-incomplete { font-size: .875rem; line-height: 1.5; }
+.studio-guide-context > div, .prompt-deck, .graph-deck, .checks-panel, .preview-panel { background: #fff; }
+.studio-user-view .node-inspector, .prompt-actions { background: var(--workspace-subtle); }
+.studio-user-view .studio-guide-shell, .studio-user-view .studio-workspace, .case-view-studio { border-radius: 12px; }
+.graph-node { border-radius: 10px; box-shadow: 0 3px 12px rgb(23 43 54 / 7%); }
+.graph-node > b { line-height: 1.45; }
+.case-view-tabs button[aria-selected="true"] { background: var(--workspace-button); color: var(--workspace-button-ink); }
+.demo-catalogue-card, .templates-page .template-card { border-radius: 12px; }
+.demo-catalogue-card .demo-format { background: var(--workspace-accent-soft); color: var(--workspace-accent); }
+.template-number { background: var(--workspace-subtle); border-radius: 10px; }
+.template-card p, .demo-catalogue-card p { color: var(--workspace-muted); }
+.theme-office .help-video-card, .help-video-card, .standalone-demo-player {
+  background: #fff; color: var(--workspace-ink); --muted: var(--workspace-muted); --cyan: var(--workspace-accent); --gold: var(--workspace-accent); --rule: var(--workspace-border);
+}
+.help-video-copy p, .help-transcript li { font-size: 1rem; line-height: 1.65; }
+.help-transcript summary, .help-video-copy > span { font-size: .875rem; letter-spacing: 0; text-transform: none; }
+.training-player video, .help-video-card video, .standalone-demo-player video { background: var(--workspace-subtle); }
+.case-report-dialog, .decision-modal, .inbox-panel { background: #fff; color: var(--workspace-ink); }
+
+@media (max-width: 1100px) {
+  .studio-entry-intro, .studio-entry-demo { padding: 1.5rem; }
+}
+@media (max-width: 800px) {
+  .genesis-navigation { padding: .625rem 1rem; }
+  .genesis-brand { border: 0; padding: 0; }
+  .genesis-brand img { width: 38px; }
+  .genesis-brand b { font-size: 1.5rem; }
+  .genesis-brand small { display: block; font-size: .75rem; margin-top: .125rem; }
+  .studio-entry { padding-block: 1.5rem; }
+  .casevant-entry-header { margin-bottom: 1.5rem; }
+  .casevant-entry-header h1 { font-size: clamp(2.25rem, 8vw, 3rem); }
+  .studio-entry-start { grid-template-columns: minmax(0, 1fr); }
+  .studio-entry-intro { grid-row: 1; }
+  .studio-entry-demo { grid-row: 2; border-left: 0; border-bottom: 0; }
+  .studio-entry-intro, .studio-entry-demo { padding: 1.25rem; }
+  .entry-create-actions { align-items: stretch; }
+  .entry-create-actions > button { max-width: 100%; }
+  .entry-recent-empty { align-items: flex-start; }
+  .studio-entry-method ol { gap: .875rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell, .primary-cta, .secondary-cta, .action-tile { transition: none; }
+}

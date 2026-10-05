@@ -12,8 +12,8 @@ import { safeWorkspaceReturn, workspacePagePath } from "../workspace-navigation"
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Account access · GENESIS: JURIS",
-  description: "Enroll, use or recover local GENESIS: JURIS credentials.",
+  title: "Account access · CaseVant",
+  description: "Enroll, use or recover local CaseVant credentials.",
   robots: { index: false, follow: false },
 };
 

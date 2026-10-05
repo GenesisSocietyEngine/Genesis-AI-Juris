@@ -73,7 +73,6 @@ import type {
 
 export type Locale = "en" | "ru";
 type View = "templates" | "library" | "demos" | "play" | "studio" | "community" | "help";
-type Theme = "office" | "after-hours";
 type GraphOrientation = "vertical" | "horizontal";
 type StudioAIEntitlement = "loading" | "anonymous" | "profile_required" | "ready" | "not_configured" | "unavailable";
 type JurisAppProps = { studioOnly?: boolean; initialView?: View; autoStartCanopy?: boolean };
@@ -452,7 +451,6 @@ const initialBlankDraft = blankStudioDraft(new Date(0).toISOString());
 export default function JurisApp({ studioOnly = false, initialView = "studio", autoStartCanopy = false }: JurisAppProps) {
   const navigation = useNavigationController();
   const [locale, setLocale] = useInterfaceLocale();
-  const [theme, setTheme] = useState<Theme>("office");
   const workspaceLocation = useWorkspaceLocation();
   const [view, setView] = useState<View>(initialView);
   const [catalogueRecords, setCatalogueRecords] = useState<PublishedCaseSummary[]>(() => bundledCatalogueRecords());
@@ -2196,9 +2194,9 @@ export default function JurisApp({ studioOnly = false, initialView = "studio", a
   }
 
   return (
-    <div className={`app-shell theme-${theme}${studioOnly ? " studio-only-shell studio-host-falcon" : ""}`}>
+    <div className={`app-shell theme-office${studioOnly ? " studio-only-shell studio-host-falcon" : ""}`}>
       <div className="atmosphere" aria-hidden="true"><span /><span /><span /></div>
-      <AppNavigation allowDeparture={mayLeaveStudio} newCase={() => { if (resetStudioDraft()) navigate("studio", 1); }} importCase={() => { if (!mayLeaveStudio()) return; flushSync(() => navigate("studio", 1)); importRef.current?.click(); }} locale={locale} view={view} studioOnly={studioOnly} workspaceLocation={workspaceLocation} navigate={navigate} openOperations={() => void openOperations()} restoreSession={() => playedCaseImportRef.current?.click()} exportSession={exportPlayedCase} hasActiveScenario={Boolean(activeScenario) && !privatePlayConcealed} toggleLocale={() => setLocale(locale === "en" ? "ru" : "en")} toggleTheme={() => setTheme(theme === "office" ? "after-hours" : "office")} dark={theme === "after-hours"}/>
+      <AppNavigation allowDeparture={mayLeaveStudio} newCase={() => { if (resetStudioDraft()) navigate("studio", 1); }} importCase={() => { if (!mayLeaveStudio()) return; flushSync(() => navigate("studio", 1)); importRef.current?.click(); }} locale={locale} view={view} studioOnly={studioOnly} workspaceLocation={workspaceLocation} navigate={navigate} openOperations={() => void openOperations()} restoreSession={() => playedCaseImportRef.current?.click()} exportSession={exportPlayedCase} hasActiveScenario={Boolean(activeScenario) && !privatePlayConcealed} toggleLocale={() => setLocale(locale === "en" ? "ru" : "en")}/>
       <input ref={playedCaseImportRef} className="visually-hidden" type="file" accept=".json,application/json" aria-label={locale === "en" ? "Restore a play session" : "Восстановить прохождение"} onChange={(event) => { const file = event.target.files?.[0]; if (file) importPlayedCase(file); event.target.value = ""; }} />
 
       {studioSession.phase === "ready" && studioStorageScope && <div className="page-width"><button type="button" className="secondary-cta" aria-expanded={archiveOpen} onClick={() => setArchiveOpen(value => !value)}>{locale === "en" ? "Earlier device drafts" : "Предыдущие черновики устройства"}</button>{archiveOpen && <Suspense fallback={<p role="status">{locale === "en" ? "Loading earlier drafts…" : "Загрузка предыдущих черновиков…"}</p>}><StudioDraftArchive key={`${studioStorageScope}:${archiveVersion}`} scope={studioStorageScope} locale={locale} context={`${exampleContext}:${studioOpenRevision}:${draft.updatedAt}`} restore={restoreEarlierDraft}/></Suspense>}</div>}

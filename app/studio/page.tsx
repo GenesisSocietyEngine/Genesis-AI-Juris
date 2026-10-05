@@ -3,7 +3,7 @@ import JurisApp from "../JurisApp";
 import { studioEntry } from "../studio-entry";
 
 export const metadata: Metadata = {
-  title: "GENESIS: JURIS Studio",
+  title: "CaseVant — Make your case.",
   description: "A professional workbench for tax and legal advisers to structure cases, compare scenarios and preserve a canonical methodology.",
 };
 

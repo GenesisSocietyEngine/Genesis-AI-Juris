@@ -12,7 +12,7 @@ test("both Studio shells retain public routes and operation actions without inve
     const markup = renderToStaticMarkup(createElement(AppNavigation, {
       locale, studioOnly, view: "studio", workspaceLocation: `/studio?organization=org_example&lang=${locale}`,
       navigate: noop, openOperations: noop, restoreSession: noop, exportSession: noop,
-      hasActiveScenario: true, toggleLocale: noop, toggleTheme: noop, dark: false,
+      hasActiveScenario: true, toggleLocale: noop,
     }));
     assert.match(markup, /aria-current="page"[^>]*>.*?(Case Studio|Студия кейсов)/);
     for (const view of ["play", "demos"]) assert.ok(markup.includes(`view=${view}&amp;organization=org_example&amp;lang=${locale}`), view);
