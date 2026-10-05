@@ -316,7 +316,10 @@ test("Studio opens in Office and current captioned training preserves the earlie
   const demoBuilder = readFileSync(new URL("../scripts/build-studio-demo-video.sh", import.meta.url), "utf8");
   const trainingPlayer = readFileSync(new URL("../app/TrainingVideo.tsx", import.meta.url), "utf8");
 
-  assert.match(appSource, /useState<Theme>\("office"\)/);
+  assert.match(appSource, /app-shell theme-office/);
+  assert.doesNotMatch(appSource, /useState<Theme>/);
+  const brandCss = readFileSync(new URL("../app/casevant.css", import.meta.url), "utf8");
+  assert.match(brandCss, /color-scheme: only light/);
   assert.match(demoPage, /<TrainingVideo\/>/);
   assert.match(trainingPlayer, /Five Flats, Three Borders/);
   assert.match(trainingPlayer, /<track kind="captions" src="\/help\/juris-training-10min\.en\.vtt"/);
@@ -358,3 +361,4 @@ function contrastRatio(foreground: string, background: string) {
   const right = luminance(background);
   return (Math.max(left, right) + 0.05) / (Math.min(left, right) + 0.05);
 }
+
