@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /account/
+Disallow: /api/
+Disallow: /canopy
+Disallow: /invitations
+Disallow: /matters
+Disallow: /organizations
+
+Sitemap: https://casevant.pro/sitemap.xml
+Host: casevant.pro
