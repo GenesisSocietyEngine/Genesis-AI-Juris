@@ -21,3 +21,7 @@ Apex and studio.falcon-merlin.com active with active TLS on existing Site. www i
 The fresh audit also found sharp 0.35.4 / GHSA-wq5f-xc86-pv6w. Pin sharp 0.35.5 for Next and Miniflare; retain all existing top-level framework/tooling versions. Full and production audits now report zero vulnerabilities. Focused SEO/host/training/domain checks passed all 22 tests. Full exact-source gates remain pending.
 
 Pending successor checks and production verification. No release-gate bypass authorized or attempted.
+
+## Full-suite findings
+
+The first full run passed 1198 tests, skipped 3, and failed 2 stale training filename assertions. Update both tests to require the preserved v112 CaseVant captions and transcript, verify all current media assets, and retain legacy-media availability checks. No assertion is removed or disabled. Packaged Worker checks passed for all four public self-canonicals, real crawler text/XML, six private pages with both metadata and header noindex, and the fixed-apex 308. Hosted Windows PDF validation passed all 47 approved baselines and tax-v2 PDFs on the reconciled source tree. Rerun the complete suite on the test reconciliation commit before publication.

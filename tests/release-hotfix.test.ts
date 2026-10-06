@@ -322,8 +322,8 @@ test("Studio opens in Office and current captioned training preserves the earlie
   assert.match(brandCss, /color-scheme: only light/);
   assert.match(demoPage, /<TrainingVideo\/>/);
   assert.match(trainingPlayer, /Five Flats, Three Borders/);
-  assert.match(trainingPlayer, /<track kind="captions" src="\/help\/juris-training-10min\.en\.vtt"/);
-  assert.match(trainingPlayer, /\/help\/juris-training-10min-transcript\.md/);
+  assert.match(trainingPlayer, /<track kind="captions" src="\/help\/casevant-training-20261005\.en\.vtt"/);
+  assert.match(trainingPlayer, /\/help\/casevant-training-20261005-transcript\.md/);
   assert.match(demoBuilder, /voice=slt/);
   assert.match(demoBuilder, /studio-ai-guided-demo\.en\.mp4/);
   assert.match(demoBuilder, /Every following screen uses this exact Five Flats case/);

@@ -359,17 +359,17 @@ test("Help and the legacy demo route share the captioned 10-minute training with
   assert.match(trainingSource, /controls preload="metadata" playsInline/);
   assert.doesNotMatch(trainingSource, /<video[^>]+autoPlay/);
   assert.match(trainingSource, /aria-describedby="training-format"/);
-  assert.match(trainingSource, /<track kind="captions" src="\/help\/juris-training-10min\.en\.vtt" srcLang="en" label="English" default/);
+  assert.match(trainingSource, /<track kind="captions" src="\/help\/casevant-training-20261005\.en\.vtt" srcLang="en" label="English" default/);
   assert.match(trainingSource, /Video could not load\. Use the transcript or download link below/);
   assert.match(trainingSource, /Откройте расшифровку или скачайте MP4 ниже/);
-  assert.match(trainingSource, /href="\/help\/juris-training-10min-transcript\.md" download/);
+  assert.match(trainingSource, /href="\/help\/casevant-training-20261005-transcript\.md" download/);
   assert.match(trainingSource, /video\.current\.currentTime = seconds;\s*video\.current\.focus\(\)/, "chapter controls seek the video and return keyboard focus to it");
   assert.match(trainingSource, /role="status">\{notice\}/);
   assert.match(trainingSource, /training\.scenes\.map\(scene => <section/, "the on-page transcript includes every training scene");
   assert.match(trainingSource, /scene\.kind === "instruction" \? " · Instructions"/, "account instructions must not be presented as recorded completion");
 
   const training = JSON.parse(readFileSync(new URL("../app/training-content.json", import.meta.url), "utf8")) as { durationSeconds: number; sceneDurationSeconds: number; canonicalTitle: string; scenes: { id: string; title: string; narration: string }[] };
-  const transcript = readFileSync(new URL("../public/help/juris-training-10min-transcript.md", import.meta.url), "utf8");
+  const transcript = readFileSync(new URL("../public/help/casevant-training-20261005-transcript.md", import.meta.url), "utf8");
   assert.equal(training.durationSeconds, 600);
   assert.equal(training.scenes.length * training.sceneDurationSeconds, training.durationSeconds);
   assert.equal(training.canonicalTitle, "Five Flats, Three Borders");
@@ -382,6 +382,8 @@ test("Help and the legacy demo route share the captioned 10-minute training with
   }
 
   const assets = [
+    "casevant-training-20261005.en.mp4",
+    "casevant-training-20261005-poster.jpg",
     "juris-training-10min.en.mp4",
     "juris-training-10min-poster.jpg",
     "studio-ai-guided-demo.en.mp4",
@@ -394,6 +396,7 @@ test("Help and the legacy demo route share the captioned 10-minute training with
   for (const name of assets) assert.ok(statSync(new URL(`../public/help/${name}`, import.meta.url)).size > 10_000, `${name} should be a non-empty local asset`);
 
   const captionFiles = [
+    "casevant-training-20261005.en.vtt",
     "juris-training-10min.en.vtt",
     "case-studio-iterative-editing.en.vtt",
     "case-studio-iterative-editing.ru.vtt",
