@@ -11,9 +11,6 @@ export const metadata: Metadata = {
   title: "CaseVant — Make your case.",
   description:
     "Evidence, options and outcomes. Connected. CaseVant by Falcon-Merlin Group.",
-  alternates: {
-    canonical: "/",
-  },
   robots: {
     index: true,
     follow: true,
