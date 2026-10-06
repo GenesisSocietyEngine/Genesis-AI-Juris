@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CASEVANT_HOST, FALCON_STUDIO_HOST, isFalconStudioHost } from "../app/host-mode";
+import { CASEVANT_HOST, CASEVANT_WWW_HOST, FALCON_STUDIO_HOST, isFalconStudioHost } from "../app/host-mode";
 
 test("the Falcon-Merlin custom host opens the standalone Studio experience", () => {
   assert.equal(FALCON_STUDIO_HOST, "studio.falcon-merlin.com");
@@ -12,11 +12,15 @@ test("the Falcon-Merlin custom host opens the standalone Studio experience", () 
   assert.equal(isFalconStudioHost(null), false);
 });
 
-test("CaseVant opens the same Studio experience through direct and forwarded hosts", () => {
+test("CaseVant opens the same Studio experience through apex, www and forwarded hosts", () => {
   assert.equal(CASEVANT_HOST, "casevant.pro");
+  assert.equal(CASEVANT_WWW_HOST, "www.casevant.pro");
   assert.equal(isFalconStudioHost("casevant.pro"), true);
-  assert.equal(isFalconStudioHost("CASEVANT.PRO:443"), true);
+  assert.equal(isFalconStudioHost("www.casevant.pro"), true);
+  assert.equal(isFalconStudioHost("WWW.CASEVANT.PRO:443"), true);
   assert.equal(isFalconStudioHost(" casevant.pro, sites-proxy.internal"), true);
+  assert.equal(isFalconStudioHost(" www.casevant.pro, sites-proxy.internal"), true);
   assert.equal(isFalconStudioHost("casevant.pro.example.com"), false);
+  assert.equal(isFalconStudioHost("www.casevant.pro.example.com"), false);
   assert.equal(isFalconStudioHost("other.example, casevant.pro"), false);
 });
