@@ -1,5 +1,5 @@
 {
-  "title": "Genesis: Juris Studio \u2014 from canonical file to a new case",
+  "title": "CaseVant — Make your case. From file to decision",
   "language": "en",
   "durationSeconds": 600,
   "sceneDurationSeconds": 30,
@@ -14,11 +14,11 @@
       "id": "01",
       "chapter": "Orientation",
       "title": "A case from file to decision",
-      "narration": "Welcome to Genesis: Juris Studio. In ten minutes, we will follow a canonical case from import to review and reporting, then start a new case. This is a narrated, illustrated walkthrough. The opening screen shows the application; clearly labeled instruction segments explain account features that were not recorded. Use fictional or de-identified material when you practise.",
+      "narration": "Welcome to CaseVant. Make your case. Evidence, options and outcomes, connected. In ten minutes, follow a case from import to review and reporting, then start your own. This course uses the current CaseVant workspace, with a real opening screen and labeled workflow illustrations. Account instructions explain actions rather than claim recorded success. Practise with fictional or de-identified material.",
       "takeaways": [
-        "Follow one canonical case",
-        "Start a new working draft",
-        "Instruction segments are labeled"
+        "CaseVant · Make your case.",
+        "Current workspace · 5 October 2026",
+        "Illustrations and account instructions are labeled"
       ],
       "screenKey": "studio-entry",
       "kind": "screen"
@@ -27,11 +27,11 @@
       "id": "02",
       "chapter": "Orientation",
       "title": "Demo, Templates and your own work",
-      "narration": "Choose Demo cases when you want to learn from prepared examples. Its single catalogue includes the Canopy guided walkthrough and five decision simulations. Choose Templates when you want a starting structure for your own case. A template opens a new draft with an intake prompt; you must supply and review its facts. Neither action creates an approved organization record.",
+      "narration": "Choose Demo to learn from fictional examples. Open Canopy overview for a guided starting point, or browse the available examples and simulations. Choose Templates for a fresh draft with a case type and intake questions. Supply your own facts and evidence. Personal cases and Team records have different destinations; opening an example or template does not create a saved record.",
       "takeaways": [
-        "Demo cases: learn from examples",
-        "Templates: begin your own draft",
-        "Canopy + five decision simulations"
+        "Demo: explore fictional examples",
+        "Templates: start a fresh draft",
+        "My cases: Personal or Team"
       ],
       "screenKey": "demo-templates-orientation",
       "kind": "illustration"
@@ -56,7 +56,7 @@
       "narration": "Choose Verify canonical case. This path checks the embedded structure and fingerprint locally, without asking AI to reinterpret the file. Review the verified title, version, twenty-three nodes and thirty-six relations. A matching fingerprint confirms which case data you have. It does not independently verify the evidence, legal conclusions, tax rates or any claimed review date.",
       "takeaways": [
         "Verify canonical case",
-        "23 nodes \u00b7 36 relations",
+        "23 nodes · 36 relations",
         "Integrity is separate from professional review"
       ],
       "screenKey": "canonical-verification",
@@ -65,12 +65,12 @@
     {
       "id": "05",
       "chapter": "Canonical import",
-      "title": "Apply, then review the six steps",
-      "narration": "When the verified preview matches your intended file, choose Apply exact case. Studio reconstructs that graph and opens the working draft. Follow the six steps: Brief, Draft review, Facts and evidence, Decision map, Test, and Finish. The progress indicator describes filled sections. It does not mean every assumption is proven or that the draft has been saved.",
+      "title": "Navigate the current CaseVant workspace",
+      "narration": "Choose Apply exact case when the verified preview matches your file. For a professional case, use Overview, Sources and evidence, Decision, Review, and Reports. Brief and structure contains Edit the brief and Review proposed changes. Training simulations retain their guided steps and play controls. These sections organize work; they do not confirm a save or independent approval.",
       "takeaways": [
-        "Apply exact case",
-        "Follow the six authoring steps",
-        "Filled sections are not approval"
+        "Overview → Sources & evidence → Decision",
+        "Review → Reports",
+        "Brief & structure: edit and review"
       ],
       "screenKey": "canonical-applied-facts",
       "kind": "illustration"
@@ -104,12 +104,12 @@
     {
       "id": "08",
       "chapter": "Economics and assumptions",
-      "title": "Check the current financing inputs",
-      "narration": "Review the current file's economics rather than an older demo. It specifies a one-million-pound price, eight hundred thousand pounds of debt, seven-point-five percent interest and a one-hundred-and-twenty-month amortizing term. Gross annual rent is two hundred and forty-nine thousand, six hundred pounds. Check repayment basis, operating costs and structure costs before interpreting any displayed result.",
+      "title": "Verify the current case inputs",
+      "narration": "Use the economics in the case you actually opened. Check purchase price, debt, interest, repayment basis and term. Then verify annual rent, operating expenses and structure costs against their sources. An older example may use different figures. When assumptions change, recalculate and inspect the result before relying on it. Keep the calculation basis and unresolved inputs visible.",
       "takeaways": [
-        "Price \u00a31,000,000 \u00b7 debt \u00a3800,000",
-        "7.5% \u00b7 120 months \u00b7 amortizing",
-        "Gross annual rent \u00a3249,600"
+        "Verify financing and repayment inputs",
+        "Check rent, operating and structure costs",
+        "Recalculate after changing assumptions"
       ],
       "screenKey": "canonical-economics-inputs",
       "kind": "illustration"
@@ -131,11 +131,11 @@
       "id": "10",
       "chapter": "Decision map and testing",
       "title": "Follow a route and its alternatives",
-      "narration": "Open Decision map and select a decision. Read the node detail, then follow its connections to the next question or outcome. In this case, defining the return metric and checking lawful funding are meaningful gates. Follow a stop or renegotiation route as well as a proceeding route. A useful map explains why different evidence can change the decision.",
+      "narration": "Open Decision to inspect the decision map. Select a node, read its detail and follow its connections to the next question or outcome. In Five Flats, defining the return metric and checking lawful funding are meaningful gates. Follow a stop or renegotiation route as well as a proceeding route. Explain which evidence could change the decision.",
       "takeaways": [
-        "Inspect a node and its connections",
+        "Decision: inspect the map",
         "Compare proceed and stop routes",
-        "Explain why the decision changes"
+        "Trace the evidence behind each choice"
       ],
       "screenKey": "canonical-decision-map",
       "kind": "illustration"
@@ -144,11 +144,11 @@
       "id": "11",
       "chapter": "Decision map and testing",
       "title": "Resolve checks before sharing",
-      "narration": "Choose Test and read the checks for this case type. A playable case needs intentional routes and outcomes; Test this case opens its simulation when ready. Other decision packages use completeness checks. If an action identifies a missing field or connection, open it and correct the draft. A successful structural test does not replace evidence review or professional judgment.",
+      "narration": "Open Review and read the checks for your case. Return to missing fields, evidence or connections and correct the draft. Training simulations also offer Test and Play controls when their routes are ready. A professional decision package does not need an artificial game route. Structural completeness is one check; evidence quality and professional judgment still require review.",
       "takeaways": [
-        "Read the checks for the selected case type",
-        "Open the indicated field or map item",
-        "Structural readiness is only one check"
+        "Review: resolve the listed gaps",
+        "Training simulations: Test → Play",
+        "Completeness does not establish approval"
       ],
       "screenKey": "canonical-test-checks",
       "kind": "illustration"
@@ -157,10 +157,10 @@
       "id": "12",
       "chapter": "Report and preservation",
       "title": "Preview an analytical draft",
-      "narration": "Choose Create analytical report. The Create case report dialog offers Preview PDF and Download PDF, with further options under Report settings and approval. Begin with an internal review draft. Inspect its case identity, assumptions, evidence register and portrait decision map. Downloading a preliminary report does not create independent approval or a governed report in My cases.",
+      "narration": "Open Reports or choose Create analytical report. The report dialog offers Preview PDF and Download PDF, with further settings and approval options. Begin with an internal draft. Inspect its identity, assumptions, evidence and decision map. Open the downloaded file to confirm delivery. A draft export does not create independent approval or a governed Team report.",
       "takeaways": [
         "Create analytical report",
-        "Preview PDF \u00b7 Download PDF",
+        "Preview PDF · Download PDF",
         "Draft export and approval are separate"
       ],
       "screenKey": "canonical-report-options",
@@ -183,11 +183,11 @@
       "id": "14",
       "chapter": "Report and preservation",
       "title": "Save and reopen: account instructions",
-      "narration": "This account workflow is an instruction, not a recorded successful save. With supported sign-in, Save to workspace stores a Studio draft under your account. Reopen it through Open saved Studio drafts and check the restored content. Organization cases in My cases are separate. If a save is uncertain, preserve your export and investigate before repeating a potentially completed write.",
+      "narration": "To save a personal case, choose Save to workspace. Sign in and complete your profile if prompted. Wait for Saved to workspace, then open My cases, Personal, with the same account. Check the restored content in a separate tab before closing the original. Team records are separate. These are account instructions; this course does not claim a recorded successful save.",
       "takeaways": [
-        "Instruction only: authenticated save not recorded",
-        "Studio drafts and organization cases are separate",
-        "Reopen and verify the saved content"
+        "Save to workspace → wait for confirmation",
+        "My cases → Personal → verify content",
+        "Keep the original tab until verified"
       ],
       "screenKey": "instruction-workspace-save-reopen",
       "kind": "instruction"
@@ -199,7 +199,7 @@
       "narration": "Now create your own fictional case. Preserve the current work first, return to Case Studio and choose Create a case. Read any replacement or unsaved-work prompt before proceeding. The new draft starts a separate authoring task. Alternatively, choose a suitable starter in Templates; review its case type and intake questions instead of treating the starter as a finished example.",
       "takeaways": [
         "Preserve your existing work first",
-        "Case Studio \u2192 Create a case",
+        "Case Studio → Create a case",
         "Templates provide starting questions"
       ],
       "screenKey": "new-case-blank",
@@ -209,7 +209,7 @@
       "id": "16",
       "chapter": "Create a new case",
       "title": "Write a useful brief",
-      "narration": "In Brief, describe who is involved, the decision required, the jurisdiction, known facts, available evidence and the deadline. For practice, ask whether a fictional business should approve a supplier change before a planned launch. Mark prices and delivery claims as unverified until supported. State the alternatives and the conditions that would make you pause rather than proceed.",
+      "narration": "Open Brief and structure, then Edit the brief. Describe the people involved, decision, jurisdiction, known facts, evidence and deadline. For practice, ask whether a fictional business should approve a supplier change before launch. Mark prices and delivery claims as unverified until supported. State the alternatives and the conditions that would make you pause instead of proceeding.",
       "takeaways": [
         "Who, where, what decision and when?",
         "List evidence and open questions",
@@ -235,11 +235,11 @@
       "id": "18",
       "chapter": "Create a new case",
       "title": "Complete, connect and review",
-      "narration": "For the new draft, complete Facts and evidence, then build or review the Decision map. Give nodes concrete titles and connect each choice to a reasoned next step. Add the missing evidence instead of writing an unsupported conclusion. Use Test to find structural gaps, then Finish to choose a report, workspace save or expert-review submission when its requirements are met.",
+      "narration": "Complete Sources and evidence, then inspect Decision. Give nodes concrete titles and connect choices to reasoned outcomes. Use Review to identify structural gaps, then Reports to inspect the output. Save to workspace separately and verify the saved copy under Personal. Do not replace missing evidence with confident wording. A useful decision package explains both the recommendation and its unresolved conditions.",
       "takeaways": [
-        "Complete the facts and supporting evidence",
-        "Connect choices to understandable outcomes",
-        "Test, then choose the appropriate final action"
+        "Sources & evidence → Decision",
+        "Review → Reports",
+        "Save, then verify under Personal"
       ],
       "screenKey": "new-case-review-map",
       "kind": "illustration"
@@ -248,11 +248,11 @@
       "id": "19",
       "chapter": "Organization workflow",
       "title": "Create an organization case",
-      "narration": "Creating a shared organization record is a separate authenticated workflow, described here rather than recorded. Select the intended organization, open My cases and choose New case. Create a pilot matter asks for Title, Jurisdiction, Classification and Priority. After creation, verify the returned case before adding documents and reviews. Importing a canonical Studio file alone does not create this organization record.",
+      "narration": "For shared work, open My cases, Team, and select the intended organization. Use New case and complete the requested matter details. Verify the returned record and organization before adding documents or reviews. A personal Studio save does not create this Team record. These are account instructions, not a recorded creation. Your permissions determine the actions available.",
       "takeaways": [
-        "Instruction only: authenticated creation not recorded",
-        "My cases \u2192 New case",
-        "Confirm organization and returned case"
+        "My cases → Team → select organization",
+        "New case → verify returned record",
+        "Personal saves do not create Team records"
       ],
       "screenKey": "instruction-organization-new-case",
       "kind": "instruction"
@@ -261,14 +261,16 @@
       "id": "20",
       "chapter": "Your practice task",
       "title": "Repeat the workflow with your own example",
-      "narration": "Your practice task is to import and verify the canonical file, explain one evidence-dependent decision, inspect a draft report, and start a new fictional case. Preserve the work you want to keep. Return to Help and guides for chapter links, instructions and troubleshooting. You have learned the workflow; reliable evidence, confirmed saves and appropriate review determine when a real case is ready.",
+      "narration": "Practise importing and verifying a complete case file, tracing one evidence-dependent decision, inspecting a report and starting a fictional case. Confirm any save under My cases, Personal. If moving from the earlier domain, use the same account and preserve device-only drafts before closing that tab. Return to Help and training for current guides. Make your case with evidence you can explain.",
       "takeaways": [
-        "Import \u2192 verify \u2192 review \u2192 report",
-        "Create a new fictional case",
-        "Confirm preservation and review before relying on it"
+        "Import → verify → review → report",
+        "Save → My cases → Personal",
+        "Help & training: guides and domain recovery"
       ],
       "screenKey": "help-training-home",
       "kind": "illustration"
     }
-  ]
+  ],
+  "updatedAt": "2026-10-05",
+  "interfaceVersion": "CaseVant workspace with Overview, Sources & evidence, Decision, Review and Reports"
 }

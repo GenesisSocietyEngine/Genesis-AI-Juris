@@ -2,7 +2,7 @@
 from PIL import ImageDraw
 
 def render_illustration(im,scene,font,block):
-    d=ImageDraw.Draw(im); NAVY='#142b46';MUTED='#506477';BLUE='#2458b5';LIGHT='#edf3fc';GOLD='#e4b35b'
+    d=ImageDraw.Draw(im); NAVY='#142b46';MUTED='#506477';BLUE='#176d67';LIGHT='#edf3fc';GOLD='#e4b35b'
     d.rounded_rectangle((26,115,1413,1057),radius=14,fill='white',outline='#d9e2ed',width=1)
     d.rounded_rectangle((64,153,1367,208),radius=8,fill=LIGHT)
     d.text((84,170),'ILLUSTRATED WORKFLOW  •  FOLLOW IN STUDIO',font=font(21,True),fill=BLUE)
@@ -32,9 +32,9 @@ def render_illustration(im,scene,font,block):
     sid=scene['id']
     if sid=='02':
         heading('Choose by intention','A worked example teaches. A template starts your own authoring task.')
-        card(88,426,606,384,'Demo cases','Explore the Canopy guided walkthrough and five decision simulations in one catalogue.',1)
+        card(88,426,606,384,'Demo cases','Explore Canopy overview, worked examples and decision simulations.',1)
         card(741,426,606,384,'Templates','Open a new draft with a starting structure and intake questions. Supply your own reviewed facts.',2,color='#f4efe5')
-        ribbon('Your organization case is a separate, authenticated record.')
+        ribbon('My cases → Personal for Studio saves; Team for organization records.')
     elif sid=='03':
         heading('A canonical file has two parts','Use the complete final Markdown file, including its embedded case data.')
         card(88,416,477,368,'Five Flats, Three Borders','Readable brief\n+ embedded case structure\n+ integrity information',color='#f4efe5')
@@ -48,8 +48,8 @@ def render_illustration(im,scene,font,block):
         table([('Review in the preview','Title · version · fingerprint'),('What integrity establishes','Which case data you are opening')],y=702,row_h=91)
         ribbon('Integrity does not independently verify evidence or legal conclusions.',y=905)
     elif sid=='05':
-        heading('Apply exact case, then review','The six steps organize authoring; they do not certify approval or saving.')
-        steps=['Brief','Draft review','Facts and evidence','Decision map','Test','Finish']
+        heading('Apply exact case, then review','Current professional-case sections organize work without certifying approval.')
+        steps=['Overview','Sources & evidence','Decision','Review','Reports','Brief & structure']
         for j,t in enumerate(steps):
             row=j//3;col=j%3;x=88+col*433;y=423+row*228
             card(x,y,393,183,t,'',j+1)
@@ -67,10 +67,10 @@ def render_illustration(im,scene,font,block):
         table([('Ask of the evidence','What does it establish?'),('Ask of the decision','What remains uncertain?')],y=736,row_h=81)
         ribbon('A named evidence node is not an accepted underlying document.')
     elif sid=='08':
-        heading('Review the current financing inputs','Five Flats, Three Borders · inputs from the supplied canonical file')
-        vals=[('£1,000,000','Purchase price'),('£800,000','Debt'),('7.5%','Interest rate'),('120 months','Amortizing term')]
+        heading('Review the current financing inputs','Use the inputs and supporting sources in the case you have opened.')
+        vals=[('Price & debt','Verify the financing inputs'),('Rate & term','Confirm the repayment basis'),('Annual rent','Check the current source'),('Operating costs','Review expenses and assumptions')]
         for j,(val,label) in enumerate(vals):card(88+(j%2)*649,420+(j//2)*196,610,169,val,label)
-        ribbon('Gross annual rent: £249,600. Check operating and structure costs.',y=853)
+        ribbon('Recalculate after changing assumptions. Keep unresolved inputs visible.',y=853)
     elif sid=='09':
         heading('What does a 10% return mean?','Different measures answer different questions.')
         for j,(t,b) in enumerate([('Gross yield','Rental income relative to purchase price.'),('Cash-on-cash','Cash outcome relative to cash invested.'),('Equity IRR','Return reflecting equity cash flows over time.')]):card(88+j*433,444,393,320,t,b,j+1)
@@ -86,7 +86,7 @@ def render_illustration(im,scene,font,block):
         d.text((178,743),'Conditions supported',font=font(20),fill=MUTED)
         d.text((1003,743),'Gaps remain',font=font(20),fill=MUTED)
     elif sid=='11':
-        heading('Structural checks are one layer','Open Test and act on the check for your selected case type.')
+        heading('Structural checks are one layer','Open Review and act on the checks for your case.')
         card(88,434,603,352,'Playable case','Confirm intentional routes and outcomes. Use Test this case when the simulation is ready.',1)
         card(745,434,603,352,'Decision package','Read completeness checks. Return to the indicated field, evidence item or connection.',2,color='#f4efe5')
         ribbon('A structural pass does not replace evidence review or professional judgment.')
@@ -115,13 +115,13 @@ def render_illustration(im,scene,font,block):
         ribbon('State the conditions that would make you stop rather than proceed.')
     elif sid=='18':
         heading('Build a reasoned decision package','Concrete titles and explicit connections make the case understandable.')
-        for j,(t,b) in enumerate([('Facts & evidence','Separate known facts from open questions.'),('Decision map','Link each choice to a reasoned next step.'),('Test & Finish','Resolve gaps, then choose an available final action.')]):card(88+j*433,440,393,378,t,b,j+1)
+        for j,(t,b) in enumerate([('Sources & evidence','Separate known facts from open questions.'),('Decision','Link each choice to a reasoned next step.'),('Review & Reports','Resolve gaps, inspect the report and verify a save.')]):card(88+j*433,440,393,378,t,b,j+1)
         ribbon('Add missing evidence instead of writing an unsupported conclusion.')
     elif sid=='20':
         heading('Your practice task','Repeat the workflow with a fictional or de-identified example.')
         tasks=['Import and verify the canonical file','Explain one evidence-dependent decision','Inspect a draft report and preserve the case','Start a new fictional case']
         for j,t in enumerate(tasks):
             y=425+j*107;d.ellipse((90,y,140,y+50),fill=BLUE);d.text((107,y+10),str(j+1),font=font(23,True),fill='white');block(d,t,(168,y+6),1165,30,NAVY,True,1.2)
-        ribbon('Help and guides: chapter links, instructions and troubleshooting.')
+        ribbon('Help & training: guides, chapters and domain recovery.')
     else:raise ValueError(f'Missing illustration for scene {sid}')
     return im

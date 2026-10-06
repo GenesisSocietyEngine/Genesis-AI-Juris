@@ -1,0 +1,13 @@
+{
+  "durationSeconds": 600,
+  "videoDuration": "600.000000",
+  "audioDuration": "600.000000",
+  "bytes": 5793588,
+  "sha256": "da0361cd5c6d662f5bb78c5abed877ed0424659e131bbc0783db6c0454e7a70c",
+  "captionCues": 107,
+  "scenes": 20,
+  "maxSpeechTempo": 1,
+  "actualScreenCaptures": 1,
+  "illustrationScenes": 16,
+  "accountInstructionScenes": 3
+}
