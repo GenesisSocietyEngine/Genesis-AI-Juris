@@ -24,6 +24,9 @@ phase = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(phase)
 URI = "http://127.0.0.1:43210/a_b-C=+/".replace("+", "")
 EXE = "/isolated/Runner.app/Runner"
+SDK = {"flutter_root": "/tools/flutter", "dart": "/tools/flutter/bin/cache/dart-sdk/bin/dart",
+       "dart_sha256": "d" * 64, "flutter_version": "3.44.8", "framework_revision": phase.FLUTTER_REVISION,
+       "dart_version": "3.12.2"}
 
 
 def log_event(**changes):
@@ -341,15 +344,25 @@ class PhaseLifecycleTests(unittest.TestCase):
                 driver_commands.append(command)
                 if command[:3] == ["flutter", "build", "ios"] and driver_mode == "failed-build":
                     raise subprocess.CalledProcessError(2, command)
-                if command[:2] == ["flutter", "drive"]:
+                if command == [SDK["dart"], phase.DRIVER]:
+                    self.assertIs(options["check"], False)
+                    self.assertEqual(options["env"]["VM_SERVICE_URL"], URI)
+                    self.assertEqual(options["env"]["JURIS_TAX_APP_PHASE"], phase_name)
+                    self.assertEqual(options["env"]["JURIS_ACCEPTANCE_SOURCE_SHA"], args.source)
+                    self.assertEqual(options["env"]["JURIS_ACCEPTANCE_RUN_NONCE"], args.nonce)
+                    self.assertEqual(options["env"]["JURIS_TAX_ACCEPTANCE_OUTPUT"], str(evidence))
                     if driver_mode in ("failed", "failed-probe"):
                         raise subprocess.CalledProcessError(2, command)
+                    if driver_mode == "timeout":
+                        raise subprocess.TimeoutExpired(command, 240)
                     if driver_mode != "missing":
                         receipt = {"schema": "tax-mobile-application-acceptance-v2", "phase": phase_name,
                                    "completed_phase": phase_name, "source_sha": args.source,
                                    "run_nonce": args.nonce, "pid": 124 if driver_mode == "wrong-pid" else 123,
                                    "selected_test": phase.TEST}
                         phase.write_json(evidence / f"{phase_name}.json", receipt)
+                    if driver_mode == "markers-only":
+                        return subprocess.CompletedProcess(command, 7, b"All tests passed.")
                 return subprocess.CompletedProcess(command, 0)
 
             def failed_probe(*_args):
@@ -361,6 +374,7 @@ class PhaseLifecycleTests(unittest.TestCase):
             os.chdir(home)
             try:
                 with patch.object(phase.pathlib.Path, "home", return_value=home), \
+                     patch.object(phase, "driver_sdk_identity", return_value=SDK), \
                      patch.object(phase, "command", side_effect=native_command), \
                      patch.object(phase.subprocess, "run", side_effect=driver), \
                      patch.object(phase, "LogReader", return_value=reader), \
@@ -376,7 +390,8 @@ class PhaseLifecycleTests(unittest.TestCase):
                         phase.run(args)
 
                     if driver_mode != "success" or preexisting:
-                        with self.assertRaises((RuntimeError, FileNotFoundError, subprocess.CalledProcessError)) as caught:
+                        with self.assertRaises((RuntimeError, FileNotFoundError, subprocess.CalledProcessError,
+                                                subprocess.TimeoutExpired)) as caught:
                             prepare_and_run()
                         absent.assert_not_called()
                         self.assertFalse(any(cmd[:3] == ["xcrun", "simctl", "terminate"] for cmd in commands))
@@ -393,12 +408,12 @@ class PhaseLifecycleTests(unittest.TestCase):
                             live_probe.assert_not_called()
                             self.assertEqual((evidence / "write-launch.stderr.log").read_bytes(), b"launch failed explicitly")
                             self.assertEqual((evidence / "write-launch.stdout.log").read_bytes(), (phase.APP + ": 123\n").encode())
-                            self.assertFalse(any(cmd[:2] == ["flutter", "drive"] for cmd in driver_commands))
+                            self.assertFalse(any(cmd[-1:] == [phase.DRIVER] for cmd in driver_commands))
                         if driver_mode == "failed-install":
                             live_probe.assert_not_called()
                             reader.close.assert_not_called()
                             self.assertFalse(any(cmd[:3] == ["xcrun", "simctl", "launch"] for cmd in commands))
-                            self.assertFalse(any(cmd[:2] == ["flutter", "drive"] for cmd in driver_commands))
+                            self.assertFalse(any(cmd[-1:] == [phase.DRIVER] for cmd in driver_commands))
                             self.assertFalse(json.loads((evidence / "write-install.json").read_text())["installation_completed"])
                         if driver_mode == "failed-build":
                             live_probe.assert_not_called()
@@ -422,15 +437,18 @@ class PhaseLifecycleTests(unittest.TestCase):
                                                      "-d", device]])
                         else:
                             self.assertEqual(builds, [])
-                        drives = [command for command in driver_commands if command[:2] == ["flutter", "drive"]]
-                        self.assertEqual(len(drives), 1)
-                        for command in driver_commands:
+                        drives = [command for command in driver_commands if command[-1:] == [phase.DRIVER]]
+                        self.assertEqual(drives, [[SDK["dart"], phase.DRIVER]])
+                        for command in builds:
                             self.assertIn("--target=" + phase.TARGET, command)
                             self.assertIn("--dart-define=JURIS_ACCEPTANCE_SOURCE_SHA=" + args.source, command)
                             self.assertIn("--dart-define=JURIS_ACCEPTANCE_RUN_NONCE=" + args.nonce, command)
                             self.assertEqual(command.count("-d"), 1)
                             self.assertEqual(command[command.index("-d") + 1], device)
-                        self.assertIn("--use-existing-app=" + URI, drives[0])
+                        driver_proof = json.loads((evidence / f"{phase_name}-driver.json").read_text())
+                        self.assertEqual(driver_proof["exit_code"], 0)
+                        self.assertEqual(driver_proof["argv"], drives[0])
+                        self.assertEqual(driver_proof["environment"]["VM_SERVICE_URL"], URI)
                         self.assertEqual((evidence / f"{phase_name}-input-bundle.json").read_bytes(),
                                          (evidence / "write-input-bundle.json").read_bytes())
                         self.assertEqual((evidence / f"{phase_name}-input-bundle.json").read_bytes(),
@@ -450,7 +468,7 @@ class PhaseLifecycleTests(unittest.TestCase):
         self.exercise("failed-build")
 
     def test_failed_missing_or_wrong_pid_driver_never_completes(self):
-        for mode in ("failed", "missing", "wrong-pid"):
+        for mode in ("failed", "missing", "wrong-pid", "markers-only", "timeout"):
             with self.subTest(mode=mode):
                 self.exercise(mode)
 
@@ -467,6 +485,92 @@ class PhaseLifecycleTests(unittest.TestCase):
         self.exercise(preexisting=True)
 
 
+class DirectDriverTests(unittest.TestCase):
+    def test_resolves_only_pinned_flutter_cached_dart(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp).resolve() / "flutter"
+            launcher = root / "bin" / ("flutter.bat" if os.name == "nt" else "flutter")
+            dart = root / "bin/cache/dart-sdk/bin" / ("dart.exe" if os.name == "nt" else "dart")
+            dart.parent.mkdir(parents=True)
+            launcher.write_bytes(b"synthetic flutter launcher")
+            dart.write_bytes(b"synthetic exact cached Dart")
+            dart.chmod(0o755)
+            metadata = root / "bin/cache/flutter.version.json"
+            version = {"frameworkVersion": "3.44.8", "frameworkRevision": phase.FLUTTER_REVISION,
+                       "dartSdkVersion": "3.12.2"}
+            phase.write_json(metadata, version)
+            with patch.object(phase.shutil, "which", return_value=str(launcher)):
+                identity = phase.driver_sdk_identity()
+                self.assertEqual(identity["dart"], dart.as_posix())
+                self.assertEqual(identity["dart_sha256"], phase.hashlib.sha256(dart.read_bytes()).hexdigest())
+                version["frameworkRevision"] = "0" * 40
+                phase.write_json(metadata, version)
+                with self.assertRaisesRegex(RuntimeError, "pinned"):
+                    phase.driver_sdk_identity()
+                dart.unlink()
+                with self.assertRaisesRegex(RuntimeError, "unavailable"):
+                    phase.driver_sdk_identity()
+        with patch.object(phase.shutil, "which", return_value=None), self.assertRaisesRegex(RuntimeError, "unavailable"):
+            phase.driver_sdk_identity()
+
+    def test_actual_nonzero_child_with_success_text_remains_failure(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            script = root / "synthetic_driver.py"
+            script.write_text("import sys\nprint('All tests passed.')\nsys.exit(7)\n", encoding="utf-8")
+            args = SimpleNamespace(phase="write", source="a" * 40, nonce="12-1")
+            actual_run = subprocess.run
+            observed = []
+            def capture_child(*args, **options):
+                result = actual_run(*args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **options)
+                observed.append(result)
+                return result
+            with patch.object(phase, "DRIVER", str(script)), \
+                 patch.object(phase.subprocess, "run", side_effect=capture_child), \
+                 self.assertRaisesRegex(RuntimeError, "did not exit"):
+                phase.run_direct_driver(args, root, SimpleNamespace(pid=123, uri=URI),
+                                        {**SDK, "dart": sys.executable}, "b" * 64)
+            self.assertIn(b"All tests passed.", observed[0].stdout)
+            record = json.loads((root / "write-driver.json").read_text())
+            self.assertEqual(record["exit_code"], 7)
+            self.assertFalse(record["runtime_acceptance"])
+
+    def test_invalid_vm_uri_never_starts_driver(self):
+        with tempfile.TemporaryDirectory() as temp, patch.object(phase.subprocess, "run") as command:
+            with self.assertRaisesRegex(RuntimeError, "loopback"):
+                phase.run_direct_driver(SimpleNamespace(phase="write", source="a" * 40, nonce="12-1"),
+                    pathlib.Path(temp), SimpleNamespace(pid=123, uri="http://external.invalid/auth=/"), SDK, "b" * 64)
+            command.assert_not_called()
+
+    def test_offline_driver_proof_rejects_identity_exit_and_environment_changes(self):
+        verify = runpy.run_path(str(pathlib.Path(__file__).with_name("verify_ios_tax_journeys.py")))["verify_driver"]
+        with tempfile.TemporaryDirectory() as temp:
+            root = pathlib.Path(temp)
+            start = {"schema": "tax-ios-direct-driver-v1", "source_sha": "a" * 40, "run_nonce": "12-1",
+                     "phase": "write", "runner_pid": 123, "driver_sdk": SDK, "preparation_sha256": "b" * 64,
+                     "argv": [SDK["dart"], phase.DRIVER], "runtime_acceptance": False, "status": "started",
+                     "started_at": "2026-10-01T00:00:00+00:00", "environment": {
+                         "VM_SERVICE_URL": URI, "JURIS_TAX_APP_PHASE": "write", "JURIS_ACCEPTANCE_SOURCE_SHA": "a" * 40,
+                         "JURIS_ACCEPTANCE_RUN_NONCE": "12-1", "JURIS_TAX_ACCEPTANCE_OUTPUT": "/tmp/owned-evidence"}}
+            terminal = {**start, "status": "completed", "exit_code": 0, "completed_at": "2026-10-01T00:00:01+00:00"}
+            def check(a, b):
+                phase.write_json(root / "write-driver-start.json", a)
+                phase.write_json(root / "write-driver.json", b)
+                verify(root, "write", "a" * 40, "12-1", {"pid": 123, "vm_uri": URI}, SDK, "b" * 64)
+            check(start, terminal)
+            for key, value in (("source_sha", "c" * 40), ("runner_pid", 124), ("argv", ["unbound-dart", phase.DRIVER]),
+                               ("driver_sdk", {**SDK, "dart_sha256": "e" * 64}), ("preparation_sha256", "c" * 64)):
+                with self.subTest(key=key), self.assertRaises(AssertionError):
+                    check({**start, key: value}, {**terminal, key: value})
+            for value in (1, None, True):
+                with self.subTest(exit=value), self.assertRaises(AssertionError):
+                    check(start, {**terminal, "exit_code": value})
+            for key in ("VM_SERVICE_URL", "JURIS_TAX_APP_PHASE", "JURIS_ACCEPTANCE_SOURCE_SHA", "JURIS_ACCEPTANCE_RUN_NONCE"):
+                env = {**start["environment"], key: "incorrect"}
+                with self.subTest(environment=key), self.assertRaises(AssertionError):
+                    check({**start, "environment": env}, {**terminal, "environment": env})
+
+
 class PreparationTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -480,8 +584,11 @@ class PreparationTests(unittest.TestCase):
         self.evidence.mkdir()
         self.args = SimpleNamespace(phase="prepare", evidence=self.evidence, source="a" * 40,
                                     nonce="12-1", device="AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")
+        self.sdk_patch = patch.object(phase, "driver_sdk_identity", return_value=SDK)
+        self.sdk_patch.start()
 
     def tearDown(self):
+        self.sdk_patch.stop()
         os.chdir(self.previous)
         self.temp.cleanup()
 
@@ -521,6 +628,16 @@ class PreparationTests(unittest.TestCase):
                 self.assertRaisesRegex(RuntimeError, "lacks Runner"):
             phase.prepare(self.args)
         self.assertFalse((self.evidence / "prepare.json").exists())
+
+    def test_changed_driver_sdk_cannot_install_or_launch(self):
+        self.prepared()
+        self.args.phase = "write"
+        with patch.object(phase, "driver_sdk_identity", return_value={**SDK, "dart_sha256": "e" * 64}), \
+             patch.object(phase.subprocess, "run") as process, patch.object(phase, "command") as native, \
+             self.assertRaisesRegex(RuntimeError, "SDK changed"):
+            phase.run(self.args)
+        process.assert_not_called()
+        native.assert_not_called()
 
     def test_missing_failed_stale_or_altered_preparation_cannot_install_launch_or_rebuild(self):
         for mode in ("missing", "start-only", "nonzero", "source", "nonce", "device", "target", "command",
