@@ -4,8 +4,9 @@ import TrainingVideo from "../../TrainingVideo";
 
 export const metadata: Metadata = {
   title: "10-minute Studio training | CaseVant",
-  description: "Earlier Genesis: Juris training recording with its original captions and transcript. Use Help & Training for current CaseVant instructions.",
+  description: "Current CaseVant training: narrated workflow, workspace sections, Personal and Team cases, captions and transcript. Updated 5 October 2026.",
   alternates: { canonical: "/help/studio-demo" },
+  openGraph: { title: "CaseVant — Make your case.", url: "https://casevant.pro/help/studio-demo", siteName: "CaseVant" },
 };
 
 export default function StudioDemoPage() {

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the Genesis: Juris illustrated course without invented application UI.
+"""Render the CaseVant illustrated course without invented application UI.
 
 Input mapping JSON maps every screen scene's screenKey to an actual capture.
 Instruction scenes are always explicit cards; they cannot imply a saved action.
@@ -15,7 +15,7 @@ import argparse, concurrent.futures, hashlib, json, math, re, subprocess, wave
 ROOT=Path(__file__).resolve().parent
 W,H=1920,1080
 DURATION=30.0
-BG='#edf2f8'; NAVY='#142b46'; MUTED='#506477'; BLUE='#2458b5'; LINE='#d9e2ed'
+BG='#f0f7ff'; NAVY='#18383c'; MUTED='#506477'; BLUE='#176d67'; LINE='#d9e2ed'
 FONT='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
 BOLD='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
 
@@ -59,7 +59,7 @@ def split_cues(text):
 
 def speech_text(text):
     # Retain transcript wording, but make abbreviations pronounceable.
-    return text.replace('PRC-resident','P R C resident').replace('KYC','K Y C').replace('PDF','P D F').replace('AI','A I').replace('Genesis: Juris','Genesis Juris')
+    return text.replace('PRC-resident','P R C resident').replace('KYC','K Y C').replace('PDF','P D F').replace('AI','A I').replace('CaseVant','Case Vant')
 
 def prepare_scene(scene,cache):
     sid=scene['id']; directory=cache/'audio'/sid;directory.mkdir(parents=True,exist_ok=True)
@@ -101,10 +101,11 @@ def chapter_time(idx):return f'{idx//2:02d}:{(idx%2)*30:02d}'
 def render_base(scene,idx,mapping):
     im=Image.new('RGB',(W,H),BG);d=ImageDraw.Draw(im)
     d.rectangle((0,0,W,101),fill='white')
-    d.rounded_rectangle((30,24,76,70),radius=10,fill=NAVY)
-    d.text((40,31),'G',font=font(28,True),fill='white')
-    d.text((94,20),'GENESIS: JURIS',font=font(22,True),fill=NAVY)
-    d.text((94,51),'STUDIO TRAINING  /  CANONICAL FILES & NEW CASES',font=font(16),fill=MUTED)
+    mark=Image.open(ROOT.parent.parent/'public/brand/casevant-mark.png').convert('RGBA')
+    mark.thumbnail((52,52),Image.Resampling.LANCZOS)
+    im.paste(mark,(28,22),mark)
+    d.text((94,20),'CaseVant',font=font(22,True),fill=NAVY)
+    d.text((94,51),'MAKE YOUR CASE.  /  CASEVANT.PRO  /  5 OCTOBER 2026',font=font(16),fill=MUTED)
     d.text((1452,27),f'{chapter_time(idx)} – {chapter_time(idx+1)}',font=font(23,True),fill=NAVY)
     d.text((1735,31),f'{idx+1:02d} / 20',font=font(18),fill=MUTED)
     # Actual UI gets its native dimensions: 1363 × 936 capture fits without distortion.
@@ -176,6 +177,7 @@ def main():
         for j,cue in enumerate(cues):
             start=0 if j==0 else cue['start'];end=cues[j+1]['start'] if j+1<len(cues) else DURATION
             frame=frames/f'{idx:02}-{j:02}.png';add_caption(base,cue['text']).save(frame,optimize=True)
+            with Image.open(frame) as checked:checked.verify()
             concat.extend([f"file '{frame}'",f'duration {end-start:.8f}'])
             vtt.extend([str(n),f"{vtt_time(idx*30+cue['start'])} --> {vtt_time(idx*30+cue['end'])}",cue['text'],'']);n+=1
         transcript.extend([f"## {chapter_time(idx)} — {scene['title']}",'',f"Mode: {'Account workflow instructions — completion not recorded' if scene['kind']=='instruction' else ('Illustrated workflow — not an application screenshot' if scene['kind']=='illustration' else 'Actual opening application screenshot')}",'',scene['narration'],''])
@@ -194,14 +196,17 @@ def main():
         dest.setnchannels(1);dest.setsampwidth(2);dest.setframerate(24000)
         for track in audio:
             with wave.open(track['audio'],'rb') as src:dest.writeframes(src.readframes(src.getnframes()))
-    movie=out/'genesis-juris-training-10min.mp4'
-    command=['ffmpeg','-nostdin','-y','-v','error','-f','concat','-safe','0','-i',cache/'frames.ffconcat','-i',joined,'-t','600','-vf','fps=10,format=yuv420p','-c:v','libx264','-preset','medium','-tune','stillimage','-crf','23','-threads','4','-c:a','aac','-b:a','48k','-ar','24000','-movflags','+faststart','-metadata','title='+script['title'],'-metadata','comment='+script['format'],movie]
+    movie=out/'casevant-training-20261005.en.mp4'
+    command=['ffmpeg','-nostdin','-y','-v','error','-xerror','-f','concat','-safe','0','-i',cache/'frames.ffconcat','-i',joined,'-t','600','-vf','fps=2,format=yuv420p','-c:v','libx264','-preset','veryfast','-tune','stillimage','-crf','23','-threads','4','-c:a','aac','-b:a','48k','-ar','24000','-movflags','+faststart','-metadata','title='+script['title'],'-metadata','comment='+script['format'],movie]
     run(command)
     if movie.stat().st_size>=24*1024*1024:
         command[command.index('-crf')+1]='29';run(command)
     if movie.stat().st_size>=24*1024*1024:raise ValueError('MP4 exceeds 24 MiB; reduce asset rate before integration')
     probe=json.loads(subprocess.run(['ffprobe','-v','error','-show_format','-show_streams','-of','json',str(movie)],capture_output=True,text=True,check=True).stdout)
     if abs(float(probe['format']['duration'])-600)>.15:raise ValueError('Output duration is not 600 seconds')
+    for stream in probe['streams']:
+        if stream['codec_type'] in ('audio','video') and abs(float(stream.get('duration',0))-600)>.55:
+            raise ValueError(f"Incomplete {stream['codec_type']} stream")
     check={'file':str(movie),'bytes':movie.stat().st_size,'sha256':hashlib.sha256(movie.read_bytes()).hexdigest(),'durationSeconds':float(probe['format']['duration']),'sceneCount':20,'sceneDurationSeconds':30,'screenScenes':sum(s['kind']=='screen' for s in scenes),'illustrationScenes':sum(s['kind']=='illustration' for s in scenes),'instructionScenes':sum(s['kind']=='instruction' for s in scenes),'captionCues':n-1,'maxNarrationTempo':max(x['tempo'] for x in audio),'lastSpeechEnds':[round(x['lastSpeechEnd'],3) for x in audio],'streams':[{'type':s['codec_type'],'codec':s['codec_name'],'width':s.get('width'),'height':s.get('height'),'duration':s.get('duration')} for s in probe['streams']]}
     (out/'verification.json').write_text(json.dumps(check,indent=2)+'\n');print(json.dumps(check,indent=2),flush=True)
 

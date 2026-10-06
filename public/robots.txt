@@ -1,11 +1,16 @@
 User-agent: *
 Allow: /
-Disallow: /account/
+Disallow: /account
 Disallow: /api/
 Disallow: /canopy
 Disallow: /invitations
 Disallow: /matters
 Disallow: /organizations
+Disallow: /signin-with-chatgpt
+Disallow: /signout
+Disallow: /logout
+Disallow: /studio?
+Disallow: /?
 
 Sitemap: https://casevant.pro/sitemap.xml
 Host: casevant.pro
